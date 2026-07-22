@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-CONFORMANCE",
-  "revision": 4,
+  "revision": 5,
   "title": "离线 Fixture 与双端执行 Envelope",
   "area": "conformance",
   "contract": "ios/docs/testing-and-conformance.md",
@@ -12,7 +12,7 @@
   ],
   "declared_status": "partial",
   "profiles": {"store_safe": "development_only", "full_compat": "development_only"},
-  "owners": {"targets": ["TestSupport", "ConformanceCLI"], "paths": ["ios/Packages/LegadoKit/Sources/ConformanceCLI/**", "ios/Packages/LegadoKit/Sources/TestSupport/**", "ios/harness/fixtures/**", "ios/harness/source-lab/**"]},
+  "owners": {"targets": ["TestSupport", "ConformanceCLI"], "paths": ["ios/Packages/LegadoKit/Sources/ConformanceCLI/**", "ios/Packages/LegadoKit/Sources/TestSupport/**", "ios/harness/fixtures/**", "ios/harness/source-lab/**", "ios/harness/oracle/**"]},
   "depends_on": ["CAP-BOOTSTRAP", "CAP-CORE"],
   "active_decisions": ["ADR-0002", "ADR-0004"],
   "open_compatibility": [],
@@ -20,12 +20,13 @@
   "blockers": [],
   "required_evidence": ["android-intake-contract", "dependency-policy", "source-lab-contract", "source-lab-tests", "source-lab-smoke", "swift-package-tests", "architecture"],
   "freshness_inputs": ["baseline_sha256", "architecture_digest_sha256", "architecture_rules_sha256", "harness_config_sha256", "dependency_lock_sha256", "source_lab_control_sha256", "source_lab_selection_sha256", "android_intake_control_sha256", "android_requirement_selection_sha256"],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260722T123032Z-ios-source-format-fixtures-001-b9dee29e.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260722T125926Z-ios-oracle-control-plane-001-cbdfb656.json",
   "next_actions": [
-    "推进 IOS-ORACLE-CONTROL-PLANE-001，冻结只读 proposal、payload、canonicalizer 与 comparator 合同",
-    "在受信 Android workflow 中实现 input-presence portable projection 与 Gson characterization runner",
-    "由仓外 Supervisor 审核并发布首批绑定 fixture/runner/canonicalizer 摘要的 Android golden"
+    "创建带 oracle-golden-request 标签的独立请求工作项，冻结 fixture 选择与 Android baseline 绑定",
+    "在受信 Android workflow 中实现 runner 并产出 candidate-only proposal/payload（portable 与 android_characterization）",
+    "由仓外 Supervisor 核验 attestation 后原子发布受保护 Android golden",
+    "golden 发布后创建 IOS-SOURCE-FORMAT-CONFORMANCE-002，执行双端 exact comparison"
   ],
-  "updated_at": "2026-07-22T12:30:35Z",
-  "updated_by": "IOS-SOURCE-FORMAT-FIXTURES-001"
+  "updated_at": "2026-07-22T12:59:26Z",
+  "updated_by": "IOS-ORACLE-CONTROL-PLANE-001"
 }

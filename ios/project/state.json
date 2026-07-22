@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "revision": 25,
+  "revision": 28,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-22T12:31:33Z",
-  "event_head": "9852a7deb72ab9e05ff1a76cb5d37983c615c9bf41da9823e68a4a1084e6467a",
+  "updated_at": "2026-07-22T13:01:04Z",
+  "event_head": "9b8c1691c5c89a007bd6546726c644895ecb1e8c053e1e67d7a1a067d19e23e3",
   "active_work_items": [],
-  "last_completed_work_item": "IOS-SOURCE-FORMAT-FIXTURES-001",
+  "last_completed_work_item": "IOS-ORACLE-CONTROL-PLANE-001",
   "work_items": {
     "IOS-BOOT-001": {
       "status": "completed",
@@ -538,9 +538,53 @@
       "final_tree_sha256": "239bb43b876294df47a069825215d8556c53dc08116c2c6fc565c541221a0db8"
     },
     "IOS-ORACLE-CONTROL-PLANE-001": {
-      "status": "ready",
-      "attempt": 0,
-      "last_evidence": null
+      "status": "completed",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260722T125926Z-ios-oracle-control-plane-001-cbdfb656.json",
+      "claimed_by": "codex-root",
+      "claimed_at": "2026-07-22T12:32:55Z",
+      "lease_expires_at": "2026-07-23T12:32:55Z",
+      "work_item_sha256": "08e11e103bc09cc92624f5cb2ecfb3588e27a30dcb23c65710e04ecba3dff7b2",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "589a4ab7d4492a94c70daeb5a5723ebec44cfd6a",
+      "base_capability_revision": 4,
+      "base_capability_assurance_sha256": "b1d5a642fed3770f6a005218976f4672aeb74fd477f5c7cea1368c87fea2c2f5",
+      "android_requirement_selection_sha256": null,
+      "verify_cycles": 1,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "harness-tests",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "307f335e883f02e96ad97ecbda4c210435c0b955e2bcb9e46db9dc7b0d02c285",
+          "cwd": ".",
+          "started_at": "2026-07-22T12:32:23Z",
+          "duration_ms": 31382,
+          "timeout_seconds": 60,
+          "timed_out": false,
+          "process_leak": false,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "de7d1147dc1f81469dd1f22ac6572a10543e116e94e6bbb76c4bbfa9f4e76aab",
+          "stdout_tail": "",
+          "stderr_tail": "...............\n----------------------------------------------------------------------\nRan 15 tests in 31.152s\n\nOK\n"
+        }
+      ],
+      "last_evidence_sha256": "9ebfe9a9e6a42f693dab9ef75cbf5445eeb102f251acd2b322bced15e6143bda",
+      "verified_at": "2026-07-22T12:59:26Z",
+      "completed_at": "2026-07-22T13:01:04Z",
+      "final_tree_sha256": "a11083b0dc6f9fe94e735e03be93bf2b5cf10c54444b93880b05c893135b2b63"
     }
   },
   "health": {

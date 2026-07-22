@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-ORACLE-CONTROL-PLANE-001",
+  "summary": "已建立独立于产品 Harness 的只读 Android Oracle proposal 控制面：精确 JSON canonicalizer 保留任意精度 number token 并拒绝重复键、非有限数与非法 Unicode；comparator 只比较声明的共享通道并返回稳定 RFC 6901 首分叉；proposal 校验精确绑定 Android commit/tree、clean checkout、runner/image、fixture manifest、需求与事实清单、canonicalizer/comparator 实现闭包及 payload 摘要；CLI 仅暴露 doctor、canonicalize、compare、verify-proposal，普通 Agent 不具备 publish、accept 或 update golden 能力。",
+  "evidence": "ios/harness/evidence/runs/run-20260722T125926Z-ios-oracle-control-plane-001-cbdfb656.json",
+  "capability_updates": [
+    {
+      "id": "CAP-CONFORMANCE",
+      "from_revision": 4,
+      "to_revision": 5,
+      "state_path": "ios/project/capabilities/CAP-CONFORMANCE.json"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": ["ADR-0002", "ADR-0004"]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项只建立候选 proposal/payload 的验证控制面，尚未消费已发布 Android golden，也未执行跨端差异裁决，因此没有新的 COMP 记录"
+  },
+  "pitfalls": {
+    "records": [],
+    "none_reason": "本项未产生新的独立长期陷阱；任意精度 JSON number token 风险继续由 PIT-0006 约束，proposal 的路径、摘要闭包与角色边界已固化为合同和回归测试"
+  },
+  "remaining_risks": [
+    "受信 Android runner 与 candidate proposal 生成 workflow 尚未实现",
+    "当前尚无经过 Supervisor 提升的受保护 Android golden，因此不能宣称跨端兼容已验证",
+    "仓内验证器只能验证内容绑定，执行环境与发布者身份仍须由仓外受信 CI/Supervisor 提供 attestation",
+    "首批 golden 发布前仍需冻结 oracle-golden-request 对 fixture 集合和 Android baseline 的授权"
+  ],
+  "next_actions": [
+    "创建带 oracle-golden-request 标签的独立请求工作项，冻结 fixture 选择与 Android baseline 绑定",
+    "实现冻结 Android runner 与 candidate-only proposal 生成 workflow",
+    "由仓外 Supervisor 审核 attestation 并发布受保护 golden",
+    "创建 IOS-SOURCE-FORMAT-CONFORMANCE-002 消费 golden 做双端 exact comparison"
+  ],
+  "created_at": "2026-07-22T12:59:26Z"
+}

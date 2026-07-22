@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "run_id": "run-20260722T125926Z-ios-oracle-control-plane-001-cbdfb656",
+  "work_item_id": "IOS-ORACLE-CONTROL-PLANE-001",
+  "work_item_sha256": "08e11e103bc09cc92624f5cb2ecfb3588e27a30dcb23c65710e04ecba3dff7b2",
+  "result": "passed",
+  "inputs": {
+    "base_commit": "589a4ab7d4492a94c70daeb5a5723ebec44cfd6a",
+    "head_commit": "589a4ab7d4492a94c70daeb5a5723ebec44cfd6a",
+    "snapshot_sha256": "6e516a9a3606052b5b7999cd2fb77da7afd7f212fa3ef416e38abb8e72c97f4b",
+    "baseline_sha256": "eeeaf0017b79a2420faf73c686a110a2d0372b2da865e42aa8db360fd3015e93",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
+    "architecture_rules_sha256": "51ebc4cff5921643f95d8a045c21ea85cad046acb99ed56026f77bf842642fa5",
+    "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+    "golden_manifest_sha256": "bdfab4595035e6ce3706380b88bd0ebfdff6773b77055c05988c4aa2dd24e597",
+    "fixture_manifest_sha256": "7ea6c2f30f258a65bfeb67ebc8bc3c7d9e283875f31731b513b7380d5f2aff2c",
+    "dependency_lock_sha256": null,
+    "source_lab_control_sha256": "73282c8b72a7db793887290ad2bfff707c61ea8fe57a583ef9bd2e3c3c3b9f2d",
+    "android_intake_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122",
+    "android_requirement_selection_sha256": null,
+    "source_lab_selection_sha256": null,
+    "environment": {
+      "platform": "macOS-26.4.1-arm64-arm-64bit",
+      "python": "3.9.6",
+      "xcode": "Xcode 26.0\nBuild version 17A324",
+      "swift": "Apple Swift version 6.2 (swiftlang-6.2.0.19.9 clang-1700.3.19.1)\nTarget: arm64-apple-macosx26.0"
+    }
+  },
+  "changes": {
+    "paths": [
+      "ios/harness/oracle/README.md",
+      "ios/harness/oracle/__init__.py",
+      "ios/harness/oracle/canonicalizer.py",
+      "ios/harness/oracle/cli.py",
+      "ios/harness/oracle/comparator.py",
+      "ios/harness/oracle/contract.py",
+      "ios/harness/oracle/exact_json.py",
+      "ios/harness/probes/fixture_contract.py",
+      "ios/harness/tests/test_oracle_control.py"
+    ],
+    "changed_lines_approximate": 1573,
+    "file_fingerprints": {
+      "ios/harness/oracle/README.md": "file:0o644:a00a14fd25853320b15e39214c13fc110521bced5ec79c9d10b7dbf55e39081d",
+      "ios/harness/oracle/__init__.py": "file:0o644:29ee0a86a26f75c5392581244f76425be64c13c5e88d4886aa0e7700d7078ae7",
+      "ios/harness/oracle/canonicalizer.py": "file:0o644:8d9ce1288c21b0040ff20959de1fde35c53c2bc09ffc603cdf541c1addc12e44",
+      "ios/harness/oracle/cli.py": "file:0o644:795596f9afd766ce8e5ca70499f1e0ba89b986f8504e83d59bb8cd0ae51de832",
+      "ios/harness/oracle/comparator.py": "file:0o644:a6e0202288f37663b02bb2c5489aba907d4955199f8c68f758697fd1417abae3",
+      "ios/harness/oracle/contract.py": "file:0o644:043ede049bc1b4038176c77a752c86bdad6f1c49611d1c8a2c2886f97aaac48e",
+      "ios/harness/oracle/exact_json.py": "file:0o644:1e61824d3e5c4f58ef1fd504c53059a04247227d1614ab2497e61f342e7ee5aa",
+      "ios/harness/probes/fixture_contract.py": "file:0o644:006516ae2dc4befeba8c590689807942b426b8bb59a4348984027ce9889d9451",
+      "ios/harness/tests/test_oracle_control.py": "file:0o644:2f89608911cacb1dd9a21875418ae011154b54f70303fe12ac8cdc33e967efa1"
+    },
+    "dirty_snapshot": {
+      "ios/harness/oracle/README.md": "file:0o644:a00a14fd25853320b15e39214c13fc110521bced5ec79c9d10b7dbf55e39081d",
+      "ios/harness/oracle/__init__.py": "file:0o644:29ee0a86a26f75c5392581244f76425be64c13c5e88d4886aa0e7700d7078ae7",
+      "ios/harness/oracle/canonicalizer.py": "file:0o644:8d9ce1288c21b0040ff20959de1fde35c53c2bc09ffc603cdf541c1addc12e44",
+      "ios/harness/oracle/cli.py": "file:0o644:795596f9afd766ce8e5ca70499f1e0ba89b986f8504e83d59bb8cd0ae51de832",
+      "ios/harness/oracle/comparator.py": "file:0o644:a6e0202288f37663b02bb2c5489aba907d4955199f8c68f758697fd1417abae3",
+      "ios/harness/oracle/contract.py": "file:0o644:043ede049bc1b4038176c77a752c86bdad6f1c49611d1c8a2c2886f97aaac48e",
+      "ios/harness/oracle/exact_json.py": "file:0o644:1e61824d3e5c4f58ef1fd504c53059a04247227d1614ab2497e61f342e7ee5aa",
+      "ios/harness/probes/fixture_contract.py": "file:0o644:006516ae2dc4befeba8c590689807942b426b8bb59a4348984027ce9889d9451",
+      "ios/harness/tests/test_oracle_control.py": "file:0o644:2f89608911cacb1dd9a21875418ae011154b54f70303fe12ac8cdc33e967efa1",
+      "ios/project/events.jsonl": "file:0o644:02d1ee50361a9507e53f51a44a5ceb7755b7b572cb47b815218d16ee2d3c952d",
+      "ios/project/state.json": "file:0o644:3b896177c6b0f916f340608c453ea757b837a5f5e096addc6d87e8b212f800c0",
+      "ios/project/status.md": "file:0o644:d66c407e9293b7d86e28d440736cc4355ef6b083b5365456487a706734d8e600"
+    },
+    "diff_sha256": "fbdab38cd3a0ab15609c32fb732483171cfe06da45d41c0c01eea5d12437a1ef"
+  },
+  "policy_errors": [],
+  "architecture_errors": [],
+  "architecture_warnings": [],
+  "checks": [
+    {
+      "id": "fixture-contract",
+      "argv": [
+        "python3",
+        "ios/harness/probes/fixture_contract.py",
+        "--root",
+        ".",
+        "--work-item",
+        "IOS-ORACLE-CONTROL-PLANE-001"
+      ],
+      "executable_path": "/usr/bin/python3",
+      "definition_sha256": "32700a22847a7b155c07d7286c9b714d185537581d2d3257cfb9001dac2d2b33",
+      "cwd": ".",
+      "started_at": "2026-07-22T12:59:13Z",
+      "duration_ms": 55,
+      "timeout_seconds": 60,
+      "timed_out": false,
+      "process_leak": false,
+      "exit_code": 0,
+      "passed": true,
+      "stdout_sha256": "704b90e6d7f05ee89be9a091c40ec5fd391f6131f9e29a68a2d6e9e55884d4c9",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_tail": "FIXTURE_CONTRACT: OK (4 fixtures)\n",
+      "stderr_tail": ""
+    },
+    {
+      "id": "dependency-policy",
+      "argv": [
+        "python3",
+        "ios/harness/probes/dependency_contract.py",
+        "--root",
+        "."
+      ],
+      "executable_path": "/usr/bin/python3",
+      "definition_sha256": "eca96cb1b69567829ed8396386b0449da8c0d6e7295a00f1decfb60430ff1153",
+      "cwd": ".",
+      "started_at": "2026-07-22T12:59:13Z",
+      "duration_ms": 1157,
+      "timeout_seconds": 90,
+      "timed_out": false,
+      "process_leak": false,
+      "exit_code": 0,
+      "passed": true,
+      "stdout_sha256": "17595a1d68cdc5b52c010f46dff48514afa3fa3cf0215cdea7ae8eff38677c0a",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_tail": "DEPENDENCY_CONTRACT: OK\n",
+      "stderr_tail": ""
+    },
+    {
+      "id": "harness-tests",
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "ios/harness/tests",
+        "-p",
+        "test_*.py"
+      ],
+      "executable_path": "/usr/bin/python3",
+      "definition_sha256": "307f335e883f02e96ad97ecbda4c210435c0b955e2bcb9e46db9dc7b0d02c285",
+      "cwd": ".",
+      "started_at": "2026-07-22T12:59:14Z",
+      "duration_ms": 11126,
+      "timeout_seconds": 60,
+      "timed_out": false,
+      "process_leak": false,
+      "exit_code": 0,
+      "passed": true,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "fc0f7fffd62584f01de71215fe143a3759244cbcd4811958ef7e1eda49d1d241",
+      "stdout_tail": "",
+      "stderr_tail": "...................\n----------------------------------------------------------------------\nRan 19 tests in 11.046s\n\nOK\n"
+    }
+  ],
+  "failure": null,
+  "started_at": "2026-07-22T12:59:12Z",
+  "finished_at": "2026-07-22T12:59:26Z",
+  "reproduction": "python3 ios/harness/harness.py verify IOS-ORACLE-CONTROL-PLANE-001"
+}
