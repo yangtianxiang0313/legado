@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0004",
+  "revision": 1,
+  "title": "Foundation URL 与 Swift String 会偏离 Python SourceLab target 语义",
+  "fingerprint": "source-lab-target-foundation-python-query-drift",
+  "capabilities": ["CAP-CONFORMANCE"],
+  "symptoms": [
+    "参数顺序、加号与百分号空格等价的请求无法命中已声明路由",
+    "非法 percent escape 被 URLComponents 改写后错误归类，或规范等价 Unicode 被 Swift String 错误视为同一 query key",
+    "外部 authority 的默认端口、大小写或 host 后缀别名被规范化后意外通过"
+  ],
+  "conditions": [
+    "使用 URLComponents.percentEncodedQuery 作为 SourceLab 原始 query 权威",
+    "使用 Swift String 默认相等与排序复刻 Python parse_qsl/code-point 语义",
+    "先规范化 URL authority，再判断是否等于固定逻辑 origin"
+  ],
+  "root_cause": "Python SourceLab 以原始 request target 为输入，采用 parse_qsl(strict_parsing, keep_blank_values, max_num_fields=32) 和 code-point 字符串语义；Foundation URL 规范化及 Swift String 的 Unicode canonical equivalence 不是同一契约。",
+  "diagnosis": [
+    "用 +/%20、query 重排、重复解码 key、%ZZ、组合与分解 Unicode 构造对照请求",
+    "检查 authority/target 失败是否发生在请求预算与 transcript 记录之前"
+  ],
+  "fix": "TestSupport 从 HTTPURL.absoluteString 手工切出固定逻辑 origin 与 raw target，按 Python form-query 规则逐字节解码，仅解码合法 %HH，并用 Unicode scalar 序列完成去重、排序和相等判断；authority 与 // target 在消耗预算前按原始字符串拒绝。",
+  "prevention": {
+    "architecture_rule": "SourceLab 的路由键只能由 FixtureRequestTarget 构造；禁止用 URLComponents query、单值 URL 字符串规范化或 Swift String 默认相等替代 Python 契约",
+    "tests": [
+      "ios/Packages/LegadoKit/Tests/TestSupportTests/FixtureTransportTests.swift#testSourceLabQueryMatchingFollowsFormSemantics",
+      "ios/Packages/LegadoKit/Tests/TestSupportTests/FixtureTransportTests.swift#testSourceLabRejectsAuthorityTargetQueryAndUndeclaredRouteStably"
+    ],
+    "lint": []
+  },
+  "affected_versions": {"from": "source-lab-bootstrap", "until": "IOS-SOURCELAB-ENGINE-001"},
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-22",
+  "last_seen": "2026-07-22",
+  "evidence": ["ios/harness/evidence/runs/run-20260722T103611Z-ios-sourcelab-engine-001-0b9b7cbb.json"]
+}

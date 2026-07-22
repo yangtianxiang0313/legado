@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "revision": 13,
+  "revision": 17,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-22T10:19:21Z",
-  "event_head": "cf6ee2991a8814c740e113e2b59caad8654558ab8e5589c25e4e9ec6c72d1f4f",
+  "updated_at": "2026-07-22T10:37:04Z",
+  "event_head": "146a0392667145695f54cc9a1e8297af3744dcd15077e951a6efca57114eb104",
   "active_work_items": [],
-  "last_completed_work_item": "IOS-CONFORMANCE-001",
+  "last_completed_work_item": "IOS-SOURCELAB-ENGINE-001",
   "work_items": {
     "IOS-BOOT-001": {
       "status": "completed",
@@ -294,9 +294,81 @@
       "final_tree_sha256": "29cd86575583af785eebd45852f22e91270948bac82730c6731db8c661ec7c39"
     },
     "IOS-SOURCELAB-ENGINE-001": {
-      "status": "ready",
-      "attempt": 0,
-      "last_evidence": null
+      "status": "completed",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260722T103611Z-ios-sourcelab-engine-001-0b9b7cbb.json",
+      "claimed_by": "codex-root",
+      "claimed_at": "2026-07-22T10:20:30Z",
+      "lease_expires_at": "2026-07-23T10:20:30Z",
+      "work_item_sha256": "ad6636002d99c9957e479371f6284f52e22f842ab300eaab153dcc0585dc0d7a",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "fe0b72db2fbb85998c9cd381ed097b1bee1205a4",
+      "base_capability_revision": 2,
+      "base_capability_assurance_sha256": "b1d5a642fed3770f6a005218976f4672aeb74fd477f5c7cea1368c87fea2c2f5",
+      "android_requirement_selection_sha256": "6cb1587d0631c4545b1740d0377a0497d38d9876e6a4eff359ef5c610fa4a169",
+      "verify_cycles": 2,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "source-lab-tests",
+          "argv": [
+            "python3",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/source-lab/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "498f03c140d9706195758eacdad80cbd00dde75eef3b2d53f86a242c1aa10eb8",
+          "cwd": ".",
+          "started_at": "2026-07-22T10:20:25Z",
+          "duration_ms": 4205,
+          "timeout_seconds": 60,
+          "timed_out": false,
+          "process_leak": false,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "73f4233cdedb025efacabbe289f98040f42a3f259d85c61644a04e7fa193972e",
+          "stdout_tail": "",
+          "stderr_tail": ".........\n----------------------------------------------------------------------\nRan 9 tests in 4.130s\n\nOK\n"
+        },
+        {
+          "id": "source-lab-smoke",
+          "argv": [
+            "python3",
+            "-B",
+            "ios/harness/source-lab/source_lab.py",
+            "verify-site",
+            "--root",
+            ".",
+            "--scenario",
+            "sl-html-basic-001"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "2646335889ccb4cf3f05c0aa803657f08e2ceca419727e1b892b839e0a21f03d",
+          "cwd": ".",
+          "started_at": "2026-07-22T10:20:30Z",
+          "duration_ms": 592,
+          "timeout_seconds": 30,
+          "timed_out": false,
+          "process_leak": false,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "a69275f319f0244a9c9f46260fe6b5f6d8e50437ee04e0d6acbdd1474237b98c",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_tail": "{\"logical_origin\": \"http://sourcelab.test\", \"route_count\": 12, \"scenario\": \"sl-html-basic-001\", \"schema_version\": 1, \"source_sha256\": \"b1441ef5d67bfdfaeef364d59e61770343d2f9e4550028cf47105a19a22ad64c\", \"transcript_sha256\": \"68e326678641cd38ccdf9e73c9a0ba91c83597e06b9a5ee8af71730b0a29bdbf\"}\n",
+          "stderr_tail": ""
+        }
+      ],
+      "last_evidence_sha256": "59b5321ad947dca887d05a1cce4d98a61ef3bb8cd0d325e8fee2284b56c19d96",
+      "verified_at": "2026-07-22T10:36:11Z",
+      "completed_at": "2026-07-22T10:37:04Z",
+      "final_tree_sha256": "41b780910f020dd5f22404fa2d985ee983f5aaa42b30ed6b1e1b600c507851a5"
     },
     "IOS-SOURCE-FORMAT-001": {
       "status": "ready",
@@ -318,7 +390,7 @@
     "ios_build": "package_verified",
     "android_oracle": "not_started",
     "conformance": "scaffold_verified",
-    "source_lab": "environment_reference_ready"
+    "source_lab": "fixture_transport_integrated"
   },
   "risks": [
     {

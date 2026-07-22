@@ -11,6 +11,8 @@ public enum FixtureLoadingError: String, Error, Codable, Equatable, Sendable {
   case networkNotDisabled = "network_not_disabled"
   case invalidLimits = "invalid_limits"
   case bodyTooLarge = "body_too_large"
+  case invalidLogicalOrigin = "invalid_logical_origin"
+  case inputRouteMismatch = "input_route_mismatch"
 }
 
 public enum FixtureLoader {
@@ -25,63 +27,245 @@ public enum FixtureLoader {
     guard definition.schemaVersion == 1, definition.id == root.lastPathComponent else {
       throw FixtureLoadingError.invalidDefinition
     }
-    guard definition.transport.mode == .offline, definition.determinism.networkAllowed == false else {
+    guard definition.determinism.networkAllowed == false else {
       throw FixtureLoadingError.networkNotDisabled
+    }
+    switch definition.transport.mode {
+    case .offline:
+      break
+    case .fixtureAndLoopback:
+      guard definition.transport.externalNetwork == "deny" else {
+        throw FixtureLoadingError.networkNotDisabled
+      }
     }
     guard
       definition.limits.timeoutMilliseconds > 0,
       definition.limits.maxResponseBytes > 0,
-      definition.limits.maxRequestBodyBytes > 0,
+      definition.limits.maxRequestBodyBytes >= 0,
       definition.limits.maxRequests > 0
     else {
       throw FixtureLoadingError.invalidLimits
     }
 
-    let sourceData = try read(definition.source, from: root)
+    let rawSourceData = try read(definition.source, from: root)
     do {
-      _ = try JSONValueCodec.decode(sourceData)
+      _ = try JSONValueCodec.decode(rawSourceData)
     } catch {
       throw FixtureLoadingError.invalidDefinition
     }
-    let input: FixtureInputDefinition = try decode(definition.input, from: root)
-    let requestBody = try input.bodyFile.map { try read($0, from: root) }
-    if let requestBody, requestBody.count > definition.limits.maxRequestBodyBytes {
-      throw FixtureLoadingError.bodyTooLarge
+    let timeout = try HTTPTimeout(milliseconds: UInt64(definition.limits.timeoutMilliseconds))
+    let logicalOrigin: FixtureOrigin
+    let sourceData: Data
+    let requestCases: [FixtureRequestCase]
+    if definition.transport.mode == .fixtureAndLoopback {
+      guard
+        definition.kind == "source_lab_scenario",
+        definition.operation == .sourceLabSite,
+        let logicalURL = definition.determinism.logicalOrigin
+      else {
+        throw FixtureLoadingError.invalidLogicalOrigin
+      }
+      guard
+        definition.limits.timeoutMilliseconds <= 5_000,
+        definition.limits.maxResponseBytes <= 10 * 1_024 * 1_024,
+        definition.limits.maxRequestBodyBytes <= 1_024 * 1_024,
+        definition.limits.maxRequests <= 1_000,
+        let maxConcurrency = definition.limits.maxConcurrency,
+        (1...32).contains(maxConcurrency)
+      else {
+        throw FixtureLoadingError.invalidLimits
+      }
+      do {
+        logicalOrigin = try FixtureOrigin(url: logicalURL)
+      } catch {
+        throw FixtureLoadingError.invalidLogicalOrigin
+      }
+      guard
+        logicalURL.absoluteString == logicalOrigin.absoluteString,
+        logicalOrigin.absoluteString == "http://sourcelab.test"
+      else {
+        throw FixtureLoadingError.invalidLogicalOrigin
+      }
+      sourceData = try renderSource(rawSourceData, origin: logicalOrigin.absoluteString)
+      let input: SourceLabInputDefinition = try decode(definition.input, from: root)
+      guard input.schemaVersion == 1, !input.cases.isEmpty else {
+        throw FixtureLoadingError.invalidDefinition
+      }
+      var inputIDs: Set<String> = []
+      requestCases = try input.cases.map { inputCase in
+        guard inputIDs.insert(inputCase.id).inserted else {
+          throw FixtureLoadingError.invalidDefinition
+        }
+        let url = try sourceLabURL(origin: logicalOrigin, target: inputCase.request.target)
+        return FixtureRequestCase(
+          id: inputCase.id,
+          operation: inputCase.operation,
+          request: HTTPRequest(method: inputCase.request.method, url: url, timeout: timeout)
+        )
+      }
+    } else {
+      sourceData = rawSourceData
+      let input: FixtureInputDefinition = try decode(definition.input, from: root)
+      do {
+        logicalOrigin = try FixtureOrigin(url: input.url)
+      } catch {
+        throw FixtureLoadingError.invalidDefinition
+      }
+      let requestBody = try input.bodyFile.map { try read($0, from: root) }
+      if let requestBody, requestBody.count > definition.limits.maxRequestBodyBytes {
+        throw FixtureLoadingError.bodyTooLarge
+      }
+      requestCases = [
+        FixtureRequestCase(
+          id: "default",
+          operation: definition.operation,
+          request: HTTPRequest(
+            method: input.method,
+            url: input.url,
+            headers: input.headers,
+            body: requestBody.map(HTTPBody.init),
+            timeout: timeout
+          )
+        )
+      ]
     }
-    let request = HTTPRequest(
-      method: input.method,
-      url: input.url,
-      headers: input.headers,
-      body: requestBody.map(HTTPBody.init),
-      timeout: try HTTPTimeout(milliseconds: UInt64(definition.limits.timeoutMilliseconds))
-    )
 
-    var routeKeys: Set<String> = []
+    var routeIDs: Set<String> = []
+    var routeTargets: [FixtureRequestTarget] = []
     let routes = try definition.transport.responses.map { route in
-      let key = "\(route.match.method.rawValue) \(route.match.url.absoluteString)"
-      guard routeKeys.insert(key).inserted else { throw FixtureLoadingError.duplicateRoute }
+      guard routeIDs.insert(route.id).inserted else {
+        throw FixtureLoadingError.duplicateRoute
+      }
+      let target: FixtureRequestTarget
+      switch definition.transport.mode {
+      case .offline:
+        guard
+          let url = route.match.url,
+          route.match.path == nil,
+          route.match.query == nil,
+          route.respond.effectiveURL != nil
+        else {
+          throw FixtureLoadingError.invalidDefinition
+        }
+        target = try FixtureRequestTarget(method: route.match.method, url: url)
+      case .fixtureAndLoopback:
+        guard
+          route.match.url == nil,
+          let path = route.match.path,
+          let query = route.match.query,
+          route.respond.effectiveURL == nil,
+          route.respond.headers.fields.allSatisfy({ Self.allowedSourceLabHeaders.contains($0.name) })
+        else {
+          throw FixtureLoadingError.invalidDefinition
+        }
+        target = try FixtureRequestTarget(
+          method: route.match.method,
+          origin: logicalOrigin,
+          path: path,
+          query: query
+        )
+      }
+      guard !routeTargets.contains(target) else {
+        throw FixtureLoadingError.duplicateRoute
+      }
+      routeTargets.append(target)
       let body = try read(route.respond.bodyFile, from: root)
       guard body.count <= definition.limits.maxResponseBytes else {
         throw FixtureLoadingError.bodyTooLarge
       }
-      return try FixtureRoute(
+      guard (100...599).contains(route.respond.status) else {
+        throw FixtureLoadingError.invalidDefinition
+      }
+      return FixtureRoute(
         id: route.id,
-        match: route.match,
-        response: HTTPResponse(
-          statusCode: route.respond.status,
-          effectiveURL: route.respond.effectiveURL,
-          headers: route.respond.headers,
-          body: HTTPBody(body)
-        )
+        target: target,
+        statusCode: route.respond.status,
+        effectiveURL: route.respond.effectiveURL,
+        headers: route.respond.headers,
+        body: HTTPBody(body)
       )
     }
-    return LoadedFixture(
+    if definition.transport.mode == .fixtureAndLoopback {
+      let routesByID = Dictionary(uniqueKeysWithValues: routes.map { ($0.id, $0) })
+      do {
+        for requestCase in requestCases {
+          let requestTarget = try FixtureRequestTarget(
+            method: requestCase.request.method,
+            sourceLabURL: requestCase.request.url,
+            origin: logicalOrigin
+          )
+          guard
+            let route = routesByID[requestCase.id],
+            requestTarget == route.target
+          else {
+            throw FixtureLoadingError.inputRouteMismatch
+          }
+        }
+      } catch let error as FixtureLoadingError {
+        throw error
+      } catch {
+        throw FixtureLoadingError.inputRouteMismatch
+      }
+    }
+    return try LoadedFixture(
       definition: definition,
+      sourceTemplateData: rawSourceData,
       sourceData: sourceData,
-      request: request,
+      logicalOrigin: logicalOrigin,
+      requestCases: requestCases,
       routes: routes
     )
   }
+
+  private static func renderSource(_ data: Data, origin: String) throws -> Data {
+    do {
+      let template = try JSONValueCodec.decode(data)
+      let rendered = replaceStrings(
+        template,
+        old: "${SOURCE_LAB_ORIGIN}",
+        new: origin
+      )
+      let renderedData = try JSONValueCodec.encode(rendered)
+      guard !String(decoding: renderedData, as: UTF8.self).contains("${SOURCE_LAB_ORIGIN}") else {
+        throw FixtureLoadingError.invalidDefinition
+      }
+      return renderedData
+    } catch {
+      throw FixtureLoadingError.invalidDefinition
+    }
+  }
+
+  private static func replaceStrings(_ value: JSONValue, old: String, new: String) -> JSONValue {
+    switch value {
+    case .string(let string):
+      .string(string.replacingOccurrences(of: old, with: new))
+    case .array(let values):
+      .array(values.map { replaceStrings($0, old: old, new: new) })
+    case .object(let object):
+      .object(object.mapValues { replaceStrings($0, old: old, new: new) })
+    case .null, .bool, .number:
+      value
+    }
+  }
+
+  private static func sourceLabURL(origin: FixtureOrigin, target: String) throws -> HTTPURL {
+    guard target.hasPrefix("/"), !target.hasPrefix("//") else {
+      throw FixtureLoadingError.invalidDefinition
+    }
+    do {
+      return try HTTPURL(origin.absoluteString + target)
+    } catch {
+      throw FixtureLoadingError.invalidDefinition
+    }
+  }
+
+  private static let allowedSourceLabHeaders: Set<String> = [
+    "cache-control",
+    "content-encoding",
+    "content-type",
+    "location",
+    "set-cookie",
+  ]
 
   private static func decode<Value: Decodable>(_ relativePath: String, from root: URL) throws -> Value {
     do {

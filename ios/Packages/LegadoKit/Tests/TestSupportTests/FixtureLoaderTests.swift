@@ -22,17 +22,47 @@ final class FixtureLoaderTests: XCTestCase {
     XCTAssertEqual(fixture.routes.count, 1)
     XCTAssertFalse(fixture.sourceData.isEmpty)
   }
+
+  func testLoadsSourceLabScenarioAsLogicalOfflineRequests() throws {
+    let fixture = try FixtureLoader.load(from: FixtureTestPaths.sourceLabFixture)
+    let template = String(decoding: fixture.sourceTemplateData, as: UTF8.self)
+    let rendered = String(decoding: fixture.sourceData, as: UTF8.self)
+
+    XCTAssertEqual(fixture.definition.id, "sl-html-basic-001")
+    XCTAssertEqual(fixture.definition.kind, "source_lab_scenario")
+    XCTAssertEqual(fixture.definition.transport.mode, .fixtureAndLoopback)
+    XCTAssertEqual(fixture.definition.limits.maxConcurrency, 4)
+    XCTAssertEqual(fixture.logicalOrigin.absoluteString, "http://sourcelab.test")
+    XCTAssertEqual(fixture.routes.count, 12)
+    XCTAssertEqual(fixture.requestCases.count, 10)
+    XCTAssertEqual(fixture.requestCases.first?.id, "search-hit")
+    XCTAssertEqual(fixture.requestCases.last?.id, "chapter-not-found")
+    XCTAssertTrue(
+      fixture.requestCases.allSatisfy {
+        $0.request.url.absoluteString.hasPrefix("http://sourcelab.test/")
+      }
+    )
+    XCTAssertTrue(template.contains("${SOURCE_LAB_ORIGIN}"))
+    XCTAssertFalse(rendered.contains("${SOURCE_LAB_ORIGIN}"))
+    XCTAssertTrue(rendered.contains("http://sourcelab.test"))
+    XCTAssertFalse(rendered.contains("127.0.0.1"))
+  }
 }
 
 enum FixtureTestPaths {
   static var offlineFixture: URL {
+    fixture("ios/harness/fixtures/conformance/harness-offline-001")
+  }
+
+  static var sourceLabFixture: URL {
+    fixture("ios/harness/fixtures/source-lab/sl-html-basic-001")
+  }
+
+  private static func fixture(_ path: String) -> URL {
     var root = URL(fileURLWithPath: #filePath)
     for _ in 0..<6 {
       root.deleteLastPathComponent()
     }
-    return root.appendingPathComponent(
-      "ios/harness/fixtures/conformance/harness-offline-001",
-      isDirectory: true
-    )
+    return root.appendingPathComponent(path, isDirectory: true)
   }
 }
