@@ -47,15 +47,51 @@ final class FixtureLoaderTests: XCTestCase {
     XCTAssertTrue(rendered.contains("http://sourcelab.test"))
     XCTAssertFalse(rendered.contains("127.0.0.1"))
   }
+
+  func testLoadsSourceRoundTripFixturesWithoutTransportValues() throws {
+    for fixtureID in FixtureTestPaths.sourceFormatFixtureIDs {
+      let fixture = try FixtureLoader.loadForConformance(
+        from: FixtureTestPaths.sourceFormatFixture(fixtureID)
+      )
+      guard case .sourceRoundTrip(let sourceRoundTrip) = fixture else {
+        return XCTFail("expected source-round-trip fixture: \(fixtureID)")
+      }
+      XCTAssertEqual(sourceRoundTrip.definition.id, fixtureID)
+      XCTAssertEqual(sourceRoundTrip.definition.operation, .sourceRoundTrip)
+      XCTAssertEqual(sourceRoundTrip.definition.transport.mode, .offline)
+      XCTAssertTrue(sourceRoundTrip.definition.transport.responses.isEmpty)
+      XCTAssertEqual(sourceRoundTrip.definition.limits.maxRequests, 0)
+      XCTAssertFalse(sourceRoundTrip.sourceData.isEmpty)
+    }
+  }
+
+  func testExistingFixturesStillLoadThroughTransportLane() throws {
+    for url in [FixtureTestPaths.offlineFixture, FixtureTestPaths.sourceLabFixture] {
+      guard case .transport = try FixtureLoader.loadForConformance(from: url) else {
+        return XCTFail("expected transport fixture: \(url.lastPathComponent)")
+      }
+    }
+  }
 }
 
 enum FixtureTestPaths {
+  static let sourceFormatFixtureIDs = [
+    "source-format-minimal-001",
+    "source-format-unknown-fields-001",
+    "source-format-null-missing-empty-001",
+    "source-format-rule-groups-001",
+  ]
+
   static var offlineFixture: URL {
     fixture("ios/harness/fixtures/conformance/harness-offline-001")
   }
 
   static var sourceLabFixture: URL {
     fixture("ios/harness/fixtures/source-lab/sl-html-basic-001")
+  }
+
+  static func sourceFormatFixture(_ id: String) -> URL {
+    fixture("ios/harness/fixtures/source-format/\(id)")
   }
 
   private static func fixture(_ path: String) -> URL {

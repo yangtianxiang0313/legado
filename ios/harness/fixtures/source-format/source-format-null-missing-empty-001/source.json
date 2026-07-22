@@ -1,0 +1,24 @@
+{
+  "bookSourceUrl": "https://presence.invalid",
+  "bookSourceName": "presence",
+  "bookSourceType": null,
+  "customOrder": -0,
+  "enabled": "true",
+  "bookUrlPattern": null,
+  "bookSourceComment": "",
+  "variableComment": "value",
+  "lastUpdateTime": -9223372036854775808,
+  "respondTime": 1.0,
+  "weight": 2147483648,
+  "ruleSearch": null,
+  "ruleBookInfo": {},
+  "ruleToc": {
+    "chapterName": null,
+    "chapterUrl": "",
+    "chapterList": "value"
+  },
+  "xEmptyObject": {},
+  "xEmptyArray": [],
+  "xEmptyString": "",
+  "xNull": null
+}

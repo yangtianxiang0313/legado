@@ -3,17 +3,22 @@ import Foundation
 @main
 struct ConformanceCommand {
   static func main() async throws {
-    guard CommandLine.arguments.count == 2 else {
+    let arguments = Array(CommandLine.arguments.dropFirst())
+    let output: Data
+    if arguments.count == 1 {
+      output = try await ConformanceRunner.run(
+        fixtureDirectory: URL(fileURLWithPath: arguments[0], isDirectory: true)
+      )
+    } else if arguments.count == 2, arguments[0] == "run-work-item" {
+      output = try await ConformanceWorkItemRunner.run(workItemID: arguments[1])
+    } else {
       throw ConformanceCommandError.usage
     }
-    let output = try await ConformanceRunner.run(
-      fixtureDirectory: URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
-    )
     FileHandle.standardOutput.write(output)
     FileHandle.standardOutput.write(Data([10]))
   }
 }
 
 enum ConformanceCommandError: String, Error {
-  case usage = "usage: ConformanceCLI <fixture-directory>"
+  case usage = "usage: ConformanceCLI <fixture-directory> | run-work-item <work-item-id>"
 }

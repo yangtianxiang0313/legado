@@ -13,15 +13,49 @@ public enum FixtureLoadingError: String, Error, Codable, Equatable, Sendable {
   case bodyTooLarge = "body_too_large"
   case invalidLogicalOrigin = "invalid_logical_origin"
   case inputRouteMismatch = "input_route_mismatch"
+  case invalidSourceRoundTrip = "invalid_source_round_trip"
 }
 
 public enum FixtureLoader {
-  public static func load(from directory: URL) throws -> LoadedFixture {
-    let root = directory.standardizedFileURL.resolvingSymlinksInPath()
-    var isDirectory: ObjCBool = false
-    guard FileManager.default.fileExists(atPath: root.path, isDirectory: &isDirectory), isDirectory.boolValue else {
-      throw FixtureLoadingError.invalidDirectory
+  public static func loadForConformance(from directory: URL) throws -> LoadedConformanceFixture {
+    let root = try validatedRoot(directory)
+    let definition: FixtureDefinition = try decode("case.json", from: root)
+    guard definition.schemaVersion == 1, definition.id == root.lastPathComponent else {
+      throw FixtureLoadingError.invalidDefinition
     }
+    guard definition.operation == .sourceRoundTrip else {
+      return .transport(try load(from: root))
+    }
+    guard
+      definition.transport.mode == .offline,
+      definition.transport.responses.isEmpty,
+      definition.determinism.networkAllowed == false,
+      definition.determinism.logicalOrigin == nil,
+      definition.source == definition.input,
+      definition.limits.timeoutMilliseconds > 0,
+      definition.limits.maxResponseBytes > 0,
+      definition.limits.maxRequestBodyBytes == 0,
+      definition.limits.maxRequests == 0,
+      definition.limits.maxConcurrency == nil
+    else {
+      throw FixtureLoadingError.invalidSourceRoundTrip
+    }
+    let sourceData = try read(definition.source, from: root)
+    guard sourceData.count <= definition.limits.maxResponseBytes else {
+      throw FixtureLoadingError.bodyTooLarge
+    }
+    do {
+      _ = try JSONValueCodec.decode(sourceData)
+    } catch {
+      throw FixtureLoadingError.invalidDefinition
+    }
+    return .sourceRoundTrip(
+      LoadedSourceRoundTripFixture(definition: definition, sourceData: sourceData)
+    )
+  }
+
+  public static func load(from directory: URL) throws -> LoadedFixture {
+    let root = try validatedRoot(directory)
 
     let definition: FixtureDefinition = try decode("case.json", from: root)
     guard definition.schemaVersion == 1, definition.id == root.lastPathComponent else {
@@ -277,6 +311,18 @@ public enum FixtureLoader {
     } catch {
       throw FixtureLoadingError.invalidDefinition
     }
+  }
+
+  private static func validatedRoot(_ directory: URL) throws -> URL {
+    let root = directory.standardizedFileURL.resolvingSymlinksInPath()
+    var isDirectory: ObjCBool = false
+    guard
+      FileManager.default.fileExists(atPath: root.path, isDirectory: &isDirectory),
+      isDirectory.boolValue
+    else {
+      throw FixtureLoadingError.invalidDirectory
+    }
+    return root
   }
 
   private static func read(_ relativePath: String, from root: URL) throws -> Data {

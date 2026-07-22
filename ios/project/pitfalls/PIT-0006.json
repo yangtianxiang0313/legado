@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0006",
+  "revision": 1,
+  "title": "JSON 数值相等不等于 canonical token 相同",
+  "fingerprint": "json-number-normalized-equality-hides-token-drift",
+  "capabilities": ["CAP-CONFORMANCE"],
+  "symptoms": [
+    "严格差分把 1 与 1.0、0 与 -0 误判为同一 canonical JSON",
+    "跨端 number token 已变化，但首分叉比较器仍返回 equal"
+  ],
+  "conditions": [
+    "直接使用 JSONValue 或 JSONNumber 的 Equatable 结果判断 canonical bytes 是否一致",
+    "差分合同要求保留任意精度原始 number token"
+  ],
+  "root_cause": "JSONNumber 的 Equatable 按规范化后的数值比较，这是业务数值相等所需行为；canonical conformance 比较关注原始 token，二者是不同等价关系。",
+  "diagnosis": [
+    "分别解析包含 1 与 1.0 的 JSON 并检查 JSONValue == 是否为 true",
+    "同时比较 JSONNumber.rawToken，确认 token 已发生变化"
+  ],
+  "fix": "CanonicalJSONComparator 对 number 节点显式比较 rawToken；portable Int32/Int64 projection 则先解析数值，再输出规范十进制 token，避免把 Android 的合法整数规范化误报为差异。",
+  "prevention": {
+    "architecture_rule": "canonical byte/token 比较禁止复用业务数值 Equatable；必须显式选择 raw-token 或规范整数等价关系",
+    "tests": [
+      "ios/Packages/LegadoKit/Tests/TestSupportTests/CanonicalJSONComparatorTests.swift#testEquivalentJSONNumbersWithDifferentTokensAreNotCanonicalBytes",
+      "ios/Packages/LegadoKit/Tests/ConformanceCLITests/ConformanceCLITests.swift#testPortableProjectionUsesStrictNonNullInputMaskAndCanonicalIntegers"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-SOURCE-FORMAT-FIXTURES-001-development",
+    "until": "IOS-SOURCE-FORMAT-FIXTURES-001"
+  },
+  "status": "mitigated",
+  "occurrences": 1,
+  "first_seen": "2026-07-22",
+  "last_seen": "2026-07-22",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260722T123032Z-ios-source-format-fixtures-001-b9dee29e.json"
+  ]
+}

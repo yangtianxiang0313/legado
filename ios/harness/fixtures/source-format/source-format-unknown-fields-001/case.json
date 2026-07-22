@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "id": "source-format-unknown-fields-001",
+  "operation": "source_round_trip",
+  "capabilities": ["CAP-SOURCE-FORMAT", "CAP-CONFORMANCE"],
+  "compatibility_profile": "android-legado-v1",
+  "source": "source.json",
+  "input": "source.json",
+  "transport": {"mode": "offline", "responses": []},
+  "determinism": {
+    "clock": "2026-01-01T00:00:00Z",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 7,
+    "network_allowed": false
+  },
+  "limits": {
+    "timeout_ms": 1000,
+    "max_response_bytes": 262144,
+    "max_request_body_bytes": 0,
+    "max_requests": 0
+  }
+}

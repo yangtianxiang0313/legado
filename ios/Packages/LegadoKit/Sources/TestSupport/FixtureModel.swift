@@ -267,3 +267,22 @@ public struct LoadedFixture: Sendable {
     )
   }
 }
+
+public enum LoadedConformanceFixture: Sendable {
+  case sourceRoundTrip(LoadedSourceRoundTripFixture)
+  case transport(LoadedFixture)
+
+  public var definition: FixtureDefinition {
+    switch self {
+    case .sourceRoundTrip(let fixture):
+      fixture.definition
+    case .transport(let fixture):
+      fixture.definition
+    }
+  }
+}
+
+public struct LoadedSourceRoundTripFixture: Sendable {
+  public let definition: FixtureDefinition
+  public let sourceData: Data
+}
