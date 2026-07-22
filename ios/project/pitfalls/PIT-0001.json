@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0001",
+  "revision": 1,
+  "title": "Foundation Decimal 会静默舍入任意精度 JSON 数字",
+  "fingerprint": "json-number-foundation-decimal-silent-rounding",
+  "capabilities": ["CAP-CORE"],
+  "symptoms": [
+    "超长整数或高精度小数经 JSONDecoder/Decimal 解码后值被舍入",
+    "JSON round-trip 的数字 token 与输入不一致，未知字段无法做到无损保留"
+  ],
+  "conditions": [
+    "将任意 JSON number 直接建模为 Double 或 Foundation Decimal",
+    "数字有效位数超过 Decimal 精度，或指数超出 Foundation 可精确桥接范围"
+  ],
+  "root_cause": "Foundation Decimal 的精度和指数范围有限，而 JSONDecoder 不暴露原始数字 token；解码成功不代表原始值被精确保留。",
+  "diagnosis": [
+    "使用超过 38 位的整数和高精度小数执行 encode/decode round-trip",
+    "同时断言数字 token 与语义值，避免只验证解码操作没有抛错"
+  ],
+  "fix": "以 JSONNumber 保存经过 JSON 文法校验的原始 token，并由 JSONValueCodec 直接解析和编码；标准 Codable 仅作为可精确桥接范围内的受保护接口。",
+  "prevention": {
+    "architecture_rule": "SourceFormat 处理书源原始 JSON 与 unknown fields 时必须使用 JSONValueCodec",
+    "tests": [
+      "ios/Packages/LegadoKit/Tests/LegadoCoreTests/JSONValueTests.swift#testExactCodecPreservesNumbersBeyondFoundationRanges",
+      "ios/Packages/LegadoKit/Tests/LegadoCoreTests/JSONValueTests.swift#testJSONNumberRejectsInvalidGrammarAndDuplicateObjectKeys"
+    ],
+    "lint": []
+  },
+  "affected_versions": {"from": "IOS-CORE-001-development", "until": "IOS-CORE-001"},
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-22",
+  "last_seen": "2026-07-22",
+  "evidence": ["ios/harness/evidence/runs/run-20260722T095600Z-ios-core-001-f6fb2a9b.json"]
+}
