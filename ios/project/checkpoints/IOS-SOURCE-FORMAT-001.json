@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-SOURCE-FORMAT-001",
+  "summary": "已实现 BookSource 与 Search/Explore/BookInfo/Toc/Content/Review 六组规则共 92 个 Android 声明字段的不可变 Sendable DTO；以原始 JSON object 为唯一事实源，提供 missing/null/value/typeMismatch 强类型投影，并在根和每个规则对象保留未知字段、任意精度 number token 与 canonical round-trip。",
+  "evidence": "ios/harness/evidence/runs/run-20260722T104846Z-ios-source-format-001-5c187d09.json",
+  "capability_updates": [
+    {
+      "id": "CAP-SOURCE-FORMAT",
+      "from_revision": 1,
+      "to_revision": 2,
+      "state_path": "ios/project/capabilities/CAP-SOURCE-FORMAT.json"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": ["ADR-0001", "ADR-0002"]
+  },
+  "requirements": {
+    "mode": "implementation",
+    "refs": [
+      {
+        "id": "REQ-ANDROID-BOOKSOURCE-SCHEMA-001",
+        "revision": 1,
+        "clauses": ["RC-01", "RC-02"]
+      },
+      {
+        "id": "REQ-IOS-SOURCE-ROUNDTRIP-001",
+        "revision": 1,
+        "clauses": ["RC-01", "RC-02"]
+      }
+    ],
+    "selection_sha256": "caf97313dff54e0c9bd800cbaacb65344df0164192a6ab5b744257e129214fb2"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本工作项实现静态构造器合同与已接受的 iOS 无损表示策略，尚未运行 Android golden，因此没有可裁决或接受的跨端行为差异"
+  },
+  "pitfalls": {
+    "records": ["ios/project/pitfalls/PIT-0005.json"],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "当前全量 Swift 单测证明 DTO 自身无损，但尚未用受保护 Android golden 验证 Gson 导入/导出的 canonical 结果",
+    "Android 的字符串内嵌规则、String/Int coercion、构造默认值和旧格式 alias 尚未 characterization；SourceFormat 只保留 typeMismatch 原值，不声称行为兼容",
+    "ReviewRule 与 exploreScreen 等 declaration-only/dormant 字段只有数据表示能力，不代表 iOS 已具备对应运行功能",
+    "LegadoCore JSONValue object 基于 Swift Dictionary，无法同时表示 Unicode canonical-equivalent 但码点不同的两个 object key"
+  ],
+  "next_actions": [
+    "推进 IOS-SOURCE-FORMAT-CONFORMANCE-001，接入受保护 Android BookSource golden 差分",
+    "为 Android Gson coercion、默认值与 legacy import 分别补充 L4 characterization 后再决定兼容实现"
+  ],
+  "created_at": "2026-07-22T10:48:47Z"
+}

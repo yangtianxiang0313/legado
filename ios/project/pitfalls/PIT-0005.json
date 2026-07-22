@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0005",
+  "revision": 1,
+  "title": "Codable Optional 与默认值会破坏书源字段四态",
+  "fingerprint": "source-format-codable-optional-default-presence-loss",
+  "capabilities": ["CAP-SOURCE-FORMAT"],
+  "symptoms": [
+    "显式 null 经 decodeIfPresent/encodeIfPresent round-trip 后变成 missing",
+    "输入中未出现的 enabled、respondTime 或空规则对象被 Kotlin/Swift 默认值自动物化",
+    "已知字段类型错误被解码失败丢弃，导致无法按原始 JSON 重新导出"
+  ],
+  "conditions": [
+    "直接用 synthesized Codable Optional 建模 BookSource 与 Rule DTO",
+    "在 SourceFormat decode 阶段通过 ?? 或属性初值套用 Android 构造默认值",
+    "把 typed properties 而非完整原始 object 作为重新编码的事实源"
+  ],
+  "root_cause": "Optional 无法同时表达 key 缺失与显式 null；构造默认值属于 Android 对象初始化行为，而不是输入 JSON 的表示；typed-only DTO 也没有位置保留未知字段和类型错配的已知字段。",
+  "diagnosis": [
+    "分别输入 missing、null、空字符串、普通值并检查 typed projection 与 canonical 输出",
+    "用空对象执行 round-trip，检查是否凭空生成 enabled、respondTime 或 ruleSearch",
+    "输入错误 JSON kind，确认 typeMismatch 仍持有原始 JSONValue"
+  ],
+  "fix": "SourceFormat 以完整 JSONValue object 为唯一事实源，并用 SourceField.missing/null/value/typeMismatch 动态投影已知字段；编码始终回到原始 object，empty 保持为 value，不在该层套用 Android 默认值或 coercion。",
+  "prevention": {
+    "architecture_rule": "BookSource/Rule 原始边界禁止 synthesized Codable、decodeIfPresent 默认化和 typed-known/unknown merge；只能经 BookSourceCodec 与 SourceObjectStorage round-trip",
+    "tests": [
+      "ios/Packages/LegadoKit/Tests/SourceFormatTests/BookSourceRoundTripTests.swift#testPresenceDistinguishesMissingNullEmptyAndValueWithoutDefaults",
+      "ios/Packages/LegadoKit/Tests/SourceFormatTests/BookSourceRoundTripTests.swift#testKnownFieldsNeverCoerceAndMismatchesRemainLossless"
+    ],
+    "lint": []
+  },
+  "affected_versions": {"from": "IOS-SOURCE-FORMAT-001-development", "until": "IOS-SOURCE-FORMAT-001"},
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-22",
+  "last_seen": "2026-07-22",
+  "evidence": ["ios/harness/evidence/runs/run-20260722T104846Z-ios-source-format-001-5c187d09.json"]
+}
