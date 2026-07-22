@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
   "id": "CAP-RUNTIME-PORTS",
-  "revision": 1,
+  "revision": 2,
   "title": "确定性 HTTP 请求响应与传输端口",
   "area": "source-runtime",
   "contract": "ios/docs/architecture.md",
   "requirement_refs": [
     {"id": "REQ-ANDROID-SOURCE-PIPELINE-001", "revision": 1, "clauses": ["RC-01", "RC-02", "RC-03", "RC-04"]}
   ],
-  "declared_status": "proposed",
+  "declared_status": "verified",
   "profiles": {"store_safe": "planned", "full_compat": "planned"},
   "owners": {"targets": ["SourceRuntime"], "paths": ["ios/Packages/LegadoKit/Sources/SourceRuntime/**"]},
   "depends_on": ["CAP-BOOTSTRAP", "CAP-CORE"],
@@ -18,8 +18,8 @@
   "blockers": [],
   "required_evidence": ["android-intake-contract", "dependency-policy", "swift-package-tests", "architecture"],
   "freshness_inputs": ["baseline_sha256", "architecture_digest_sha256", "architecture_rules_sha256", "harness_config_sha256", "dependency_lock_sha256", "android_intake_control_sha256", "android_requirement_selection_sha256"],
-  "latest_evidence": null,
-  "next_actions": ["定义 Sendable HTTPRequest/HTTPResponse/HTTPTransport 和稳定 transport error"],
-  "updated_at": "2026-07-22T00:00:00+08:00",
-  "updated_by": "project-initialization"
+  "latest_evidence": "ios/harness/evidence/runs/run-20260722T100716Z-ios-runtime-ports-001-ebad144b.json",
+  "next_actions": ["推进 IOS-CONFORMANCE-001，建立 FixtureTransport 与 canonical execution envelope 骨架"],
+  "updated_at": "2026-07-22T10:07:34Z",
+  "updated_by": "IOS-RUNTIME-PORTS-001"
 }

@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0002",
+  "revision": 1,
+  "title": "简化 HTTP 消息模型会丢失重复 Header 与 body presence",
+  "fingerprint": "http-message-dictionary-and-body-presence-loss",
+  "capabilities": ["CAP-RUNTIME-PORTS"],
+  "symptoms": [
+    "重复 Set-Cookie 等 Header 被覆盖，FixtureTransport 与真实 adapter 观察到不同响应",
+    "无请求正文与零字节请求正文被合并，Android GET/POST 差分出现错误分叉"
+  ],
+  "conditions": [
+    "使用 [String: String] 表达 HTTP Header",
+    "使用空 Data 代替 optional body，或在 Codable/envelope 投影时丢弃 presence"
+  ],
+  "root_cause": "字典无法表达重复且有相对顺序的 Header；HTTP body 的缺失与存在但长度为零是两个不同状态，便利模型会不可逆地压缩这些信息。",
+  "diagnosis": [
+    "构造两个同名 Set-Cookie 并检查 round-trip 后的数量和顺序",
+    "分别编码 nil body、空 Data 与非 UTF-8 bytes，比较 canonical envelope"
+  ],
+  "fix": "使用有序 HTTPHeader 数组保存 wire 语义并仅在 envelope 生成 canonical view；请求以 HTTPBody? 表达 presence，响应以非 optional HTTPBody 保存原始字节。",
+  "prevention": {
+    "architecture_rule": "SourceRuntime、FixtureTransport 与 NetworkFoundation 不得用单值 Dictionary 作为 HTTP Header 的规范模型，也不得合并 nil/empty body",
+    "tests": [
+      "ios/Packages/LegadoKit/Tests/SourceRuntimeTests/HTTPMessageTests.swift#testHeadersNormalizeNamesAndCanonicalizeWithoutLosingDuplicates",
+      "ios/Packages/LegadoKit/Tests/SourceRuntimeTests/HTTPMessageTests.swift#testRawMessagesRoundTripAbsentEmptyAndBinaryBodies"
+    ],
+    "lint": []
+  },
+  "affected_versions": {"from": "IOS-RUNTIME-PORTS-001-design", "until": "IOS-RUNTIME-PORTS-001"},
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-22",
+  "last_seen": "2026-07-22",
+  "evidence": ["ios/harness/evidence/runs/run-20260722T100716Z-ios-runtime-ports-001-ebad144b.json"]
+}

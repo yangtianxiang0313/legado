@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-RUNTIME-PORTS-001",
+  "summary": "已在消费方 SourceRuntime 冻结项目自有且 Sendable 的 HTTPRequest、HTTPResponse、HTTPTransport 与稳定错误边界；支持 GET/POST、精确 URL、multi-value Header、nil/empty/binary body、请求超时预算、响应 effective URL，并以 body SHA-256 生成确定性且不含正文的 envelope component。",
+  "evidence": "ios/harness/evidence/runs/run-20260722T100716Z-ios-runtime-ports-001-ebad144b.json",
+  "capability_updates": [
+    {
+      "id": "CAP-RUNTIME-PORTS",
+      "from_revision": 1,
+      "to_revision": 2,
+      "state_path": "ios/project/capabilities/CAP-RUNTIME-PORTS.json"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": ["ADR-0001", "ADR-0002"]
+  },
+  "requirements": {
+    "mode": "enabler",
+    "refs": [
+      {
+        "id": "REQ-ANDROID-SOURCE-PIPELINE-001",
+        "revision": 1,
+        "clauses": ["RC-01", "RC-02", "RC-03", "RC-04"]
+      }
+    ],
+    "selection_sha256": "6cb1587d0631c4545b1740d0377a0497d38d9876e6a4eff359ef5c610fa4a169"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项只冻结 Transport port；Android Requirement 仍为 L2 characterization_required，尚无 protected golden 可用于判定跨端差异"
+  },
+  "pitfalls": {
+    "records": ["ios/project/pitfalls/PIT-0002.json"],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "Android timeout 默认值、redirect、Cookie、retry 与平台自动 Header 尚未由 runner/golden 冻结，不能在 NetworkFoundation 中凭源码印象实现",
+    "当前架构探针没有专门禁止 SourceRuntime 引用 URLSession 类型；本实现未引用，但后续应在独立控制面工作项补强机器规则",
+    "Envelope component 保留非正文 Header/URL 语义；进入持久化 Evidence 前仍需由 Conformance 层执行 Authorization、Cookie 与敏感 query 的版本化脱敏"
+  ],
+  "next_actions": [
+    "推进 IOS-CONFORMANCE-001，建立 FixtureTransport 与 canonical execution envelope 骨架",
+    "在独立控制面提案中增加 SourceRuntime 禁止 URLSession/URLRequest/HTTPURLResponse 的架构规则"
+  ],
+  "created_at": "2026-07-22T10:07:34Z"
+}
