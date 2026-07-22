@@ -1,0 +1,142 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-SOURCE-FORMAT-FIXTURES-001",
+    "title": "建立 BookSource 双轨一致性 fixture 与 iOS 执行骨架",
+    "priority": 69,
+    "risk": "high",
+    "labels": ["phase-1", "source-format", "conformance", "fixture-preparation"]
+  },
+  "spec": {
+    "capability": "CAP-CONFORMANCE",
+    "intent": "先冻结四个无网络、无 HTTP 的 source_round_trip 输入，建立 iOS lossless lane、portable known-field projection、work-item CLI 调度与确定性首分叉比较器；本项不生产或消费 Android golden。",
+    "depends_on": ["IOS-SOURCE-FORMAT-001", "IOS-SOURCELAB-ENGINE-001"],
+    "scope": {
+      "allow_write": [
+        "ios/Packages/LegadoKit/Sources/TestSupport/**",
+        "ios/Packages/LegadoKit/Sources/ConformanceCLI/**",
+        "ios/Packages/LegadoKit/Tests/TestSupportTests/**",
+        "ios/Packages/LegadoKit/Tests/ConformanceCLITests/**",
+        "ios/harness/fixtures/source-format/**",
+        "ios/project/capabilities/CAP-CONFORMANCE.json",
+        "ios/project/checkpoints/IOS-SOURCE-FORMAT-FIXTURES-001.json",
+        "ios/project/compatibility/COMP-*.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        "**/Package.swift",
+        "**/Package.resolved",
+        "ios/harness/goldens/**",
+        "ios/harness/normalization/**",
+        "ios/harness/schemas/**",
+        "ios/harness/work-items/**",
+        "ios/harness/config.json",
+        "ios/docs/**"
+      ],
+      "max_files_changed": 24,
+      "max_changed_lines": 1800
+    },
+    "inputs": {
+      "context_files": [
+        "ios/docs/testing-and-conformance.md",
+        "ios/docs/adr/0002-android-oracle-differential.md",
+        "ios/project/pitfalls/PIT-0005.json"
+      ],
+      "android_source_anchors": [
+        "app/src/main/java/io/legado/app/data/entities/BookSource.kt",
+        "app/src/main/java/io/legado/app/utils/GsonExtensions.kt"
+      ],
+      "fixtures": [
+        "source-format-minimal-001",
+        "source-format-unknown-fields-001",
+        "source-format-null-missing-empty-001",
+        "source-format-rule-groups-001"
+      ]
+    },
+    "architecture_refs": ["ARCH-008", "ARCH-012", "ARCH-014", "ADR-0002", "ADR-0004"],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "四个指定 fixture 均存在、被内容寻址且 source_round_trip 路径不构造 HTTPRequest、FixtureTransport 或虚假网络 origin。",
+          "verified_by": ["fixture-contract", "swift-package-tests"],
+          "requirement_clauses": ["REQ-IOS-SOURCE-ROUNDTRIP-001#RC-01", "REQ-IOS-SOURCE-ROUNDTRIP-001#RC-02"]
+        },
+        {
+          "id": "AC-2",
+          "statement": "iOS envelope 分离 portable_known_projection 与 ios_lossless_extension；未知字段及 missing/null/empty/value 继续无损，不把 Android Gson 有损导出冒充 iOS expected。",
+          "verified_by": ["swift-package-tests", "conformance-targeted"],
+          "requirement_clauses": ["REQ-ANDROID-BOOKSOURCE-SCHEMA-001#RC-01", "REQ-ANDROID-BOOKSOURCE-SCHEMA-001#RC-02", "REQ-IOS-SOURCE-ROUNDTRIP-001#RC-01", "REQ-IOS-SOURCE-ROUNDTRIP-001#RC-02"]
+        },
+        {
+          "id": "AC-3",
+          "statement": "canonical comparator 严格比较 JSON 类型、number token 与数组顺序，并以稳定 RFC 6901 JSON Pointer 返回首个分叉；不得做全局 fuzzy match。",
+          "verified_by": ["swift-package-tests"],
+          "requirement_clauses": ["REQ-IOS-SOURCE-ROUNDTRIP-001#RC-01"]
+        },
+        {
+          "id": "AC-4",
+          "statement": "ConformanceCLI run-work-item 可从受管 manifest 选择本项四个 fixture 并重复产生相同字节，且不读取或修改 golden。",
+          "verified_by": ["conformance-targeted"],
+          "requirement_clauses": ["REQ-ANDROID-BOOKSOURCE-SCHEMA-001#RC-01", "REQ-ANDROID-BOOKSOURCE-SCHEMA-001#RC-02"]
+        }
+      ],
+      "required_checks": [
+        "android-intake-contract",
+        "fixture-contract",
+        "dependency-policy",
+        "swift-format-lint",
+        "swift-package-tests",
+        "conformance-targeted"
+      ]
+    },
+    "baseline_checks": ["harness-tests", "swift-package-tests"],
+    "budget": {
+      "wall_clock_seconds": 3600,
+      "max_edit_verify_cycles": 3,
+      "max_targeted_test_runs": 3,
+      "max_full_test_runs": 1,
+      "max_infra_retries": 1
+    },
+    "gates": [],
+    "completion_effects": {},
+    "memory": {
+      "capability_state_required": true,
+      "compatibility": "required_if_any_delta",
+      "pitfall": "if_non_obvious_and_preventable",
+      "adr": "required_for_semantic_change"
+    },
+    "requirements": {
+      "mode": "enabler",
+      "refs": [
+        {
+          "id": "REQ-ANDROID-BOOKSOURCE-SCHEMA-001",
+          "revision": 1,
+          "clauses": ["RC-01", "RC-02"]
+        },
+        {
+          "id": "REQ-IOS-SOURCE-ROUNDTRIP-001",
+          "revision": 1,
+          "clauses": ["RC-01", "RC-02"]
+        }
+      ],
+      "none_reason": null
+    },
+    "source_lab": {
+      "mode": "not_applicable",
+      "behaviors": [],
+      "scenarios": [],
+      "none_reason": "本项只验证书源 JSON 表示、projection 与 comparator，不执行站点请求或规则"
+    },
+    "stop_on": [
+      "baseline_red",
+      "scope_violation",
+      "golden_mutation",
+      "semantic_decision_required",
+      "same_failure_twice",
+      "budget_exhausted",
+      "human_decision_required"
+    ]
+  }
+}

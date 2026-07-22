@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "revision": 20,
+  "revision": 21,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-22T10:49:26Z",
-  "event_head": "4c8717ade5beb9cc4dd8a5f447e009932ddb35cc54765f16beb4c0f77c845fe6",
+  "updated_at": "2026-07-22T12:12:17Z",
+  "event_head": "bc1fb05bad6fc54a0f2cbb9a6cb416700375e7e3c834ae904c8398ec92406804",
   "active_work_items": [],
   "last_completed_work_item": "IOS-SOURCE-FORMAT-001",
   "work_items": {
@@ -449,10 +449,25 @@
       "final_tree_sha256": "e790b4f697a5b86de9a0ded167cffa9562adbea1baa40b788c22f2284497b1b3"
     },
     "IOS-SOURCE-FORMAT-CONFORMANCE-001": {
-      "status": "blocked",
+      "status": "superseded",
       "attempt": 0,
       "last_evidence": null,
-      "blocker": "等待受保护 Android Oracle runner 与 source-format golden proposal"
+      "superseded_by": [
+        "IOS-SOURCE-FORMAT-FIXTURES-001",
+        "IOS-ORACLE-CONTROL-PLANE-001",
+        "future IOS-SOURCE-FORMAT-CONFORMANCE-002"
+      ],
+      "reason": "fixture/golden 循环依赖，且整包相等与 iOS 无损策略冲突"
+    },
+    "IOS-SOURCE-FORMAT-FIXTURES-001": {
+      "status": "ready",
+      "attempt": 0,
+      "last_evidence": null
+    },
+    "IOS-ORACLE-CONTROL-PLANE-001": {
+      "status": "ready",
+      "attempt": 0,
+      "last_evidence": null
     }
   },
   "health": {
