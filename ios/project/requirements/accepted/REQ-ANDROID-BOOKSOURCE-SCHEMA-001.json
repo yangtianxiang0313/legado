@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "id": "REQ-ANDROID-BOOKSOURCE-SCHEMA-001",
+  "revision": 1,
+  "status": "accepted",
+  "semantic_key": "source-format.book-source-schema",
+  "title": "覆盖 Android BookSource 与规则组的声明式数据契约",
+  "origin": {
+    "kind": "android_observed",
+    "baseline_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "fact_refs": [
+      "AF-BOOKSOURCE-CONSTRUCTOR",
+      "AF-SEARCHRULE-CONSTRUCTOR",
+      "AF-EXPLORERULE-CONSTRUCTOR",
+      "AF-BOOKINFORULE-CONSTRUCTOR",
+      "AF-TOCRULE-CONSTRUCTOR",
+      "AF-CONTENTRULE-CONSTRUCTOR",
+      "AF-REVIEWRULE-CONSTRUCTOR"
+    ],
+    "decision_refs": ["ADR-0001", "ADR-0002"],
+    "admission": "bootstrap_charter"
+  },
+  "classification": {
+    "kind": "portable_parity_behavior",
+    "profiles": ["store_safe", "full_compat"],
+    "support_state": "declaration_only",
+    "evidence_level": "L1"
+  },
+  "capability_refs": ["CAP-SOURCE-FORMAT"],
+  "clauses": [
+    {
+      "id": "RC-01",
+      "statement": "SourceFormat 能表示固定 Android baseline 中 BookSource 主构造器声明的字段名、类型与可空性；字段存在不代表其运行能力已经纳入 iOS 范围。",
+      "proof_kind": "static_source",
+      "required_checks": ["android-intake-contract", "swift-package-tests"],
+      "source_lab_behaviors": []
+    },
+    {
+      "id": "RC-02",
+      "statement": "Search、Explore、BookInfo、Toc、Content、Review 规则组的数据字段可被解码和重新编码；dormant 或未刻画字段只保留数据，不自动生成运行功能。",
+      "proof_kind": "static_source",
+      "required_checks": ["android-intake-contract", "swift-package-tests"],
+      "source_lab_behaviors": []
+    }
+  ],
+  "readiness": {
+    "state": "implementation_ready",
+    "blockers": [],
+    "next_action": "实现声明式 DTO，并把默认值、coercion 和运行语义留给 Android Oracle 刻画"
+  },
+  "supersedes": null
+}

@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0000",
+  "revision": 1,
+  "title": "踩坑标题",
+  "fingerprint": "stable-unique-fingerprint",
+  "capabilities": [],
+  "symptoms": [],
+  "conditions": [],
+  "root_cause": "",
+  "diagnosis": [],
+  "fix": "",
+  "prevention": {"architecture_rule": null, "tests": [], "lint": []},
+  "affected_versions": {"from": null, "until": null},
+  "status": "open",
+  "occurrences": 1,
+  "first_seen": "YYYY-MM-DD",
+  "last_seen": "YYYY-MM-DD",
+  "evidence": []
+}

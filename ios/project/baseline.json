@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "android_oracle": {
+    "repository": "legado",
+    "git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "database_schema": 71,
+    "libraries": {
+      "jsoup": "1.16.2",
+      "jsoup_xpath": "2.5.3",
+      "jayway_jsonpath": "2.9.0",
+      "rhino": "1.7.3-project-module"
+    }
+  },
+  "ios": {
+    "minimum_os": "17.0",
+    "minimum_macos": "14.0",
+    "swift_language_mode": "6",
+    "strict_concurrency": "complete",
+    "toolchain": {
+      "xcode": "26.0",
+      "swift": "6.2"
+    },
+    "profiles": [
+      "store_safe",
+      "full_compat"
+    ]
+  },
+  "architecture": {
+    "version": "1.0",
+    "digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "fixtures": {
+    "manifest": "ios/harness/fixtures/manifest.json",
+    "digest": null
+  },
+  "dependency_lock": {
+    "file": "ios/Packages/LegadoKit/Package.resolved",
+    "digest": null
+  },
+  "accepted_by": [
+    "ADR-0001",
+    "ADR-0002",
+    "ADR-0003",
+    "ADR-0004"
+  ],
+  "updated_at": "2026-07-22T00:00:00+08:00"
+}

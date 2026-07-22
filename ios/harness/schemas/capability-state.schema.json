@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "legado.capability-state/v1",
+  "type": "object",
+  "required": ["schema_version", "id", "revision", "title", "area", "contract", "requirement_refs", "declared_status", "profiles", "owners", "depends_on", "active_decisions", "open_compatibility", "open_pitfalls", "blockers", "required_evidence", "freshness_inputs", "latest_evidence", "next_actions", "updated_at", "updated_by"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "id": {"type": "string", "pattern": "^CAP-[A-Z0-9-]+$"},
+    "revision": {"type": "integer", "minimum": 1},
+    "requirement_refs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "required": ["id", "revision", "clauses"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^REQ-[A-Z0-9-]+$"},
+          "revision": {"type": "integer", "minimum": 1},
+          "clauses": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^RC-[0-9]{2}$"}}
+        }
+      }
+    },
+    "declared_status": {"enum": ["proposed", "implementing", "partial", "verified", "blocked", "stale", "regressed", "deprecated", "unsupported"]},
+    "profiles": {"type": "object"},
+    "owners": {"type": "object"},
+    "depends_on": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "active_decisions": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "open_compatibility": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "open_pitfalls": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "blockers": {"type": "array"},
+    "required_evidence": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+    "freshness_inputs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": ["baseline_sha256", "architecture_digest_sha256", "architecture_rules_sha256", "harness_config_sha256", "golden_manifest_sha256", "fixture_manifest_sha256", "dependency_lock_sha256", "source_lab_control_sha256", "source_lab_selection_sha256", "android_intake_control_sha256", "android_requirement_selection_sha256"]
+      }
+    },
+    "latest_evidence": {"type": ["string", "null"]},
+    "next_actions": {"type": "array", "maxItems": 5},
+    "updated_by": {"type": "string"}
+  }
+}

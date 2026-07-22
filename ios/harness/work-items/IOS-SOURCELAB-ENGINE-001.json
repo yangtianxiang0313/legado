@@ -1,0 +1,80 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-SOURCELAB-ENGINE-001",
+    "title": "将 SourceLab 场景接入 FixtureTransport 与 ConformanceCLI",
+    "priority": 75,
+    "risk": "medium",
+    "labels": ["conformance", "source-lab", "offline", "deterministic"]
+  },
+  "spec": {
+    "capability": "CAP-CONFORMANCE",
+    "intent": "让同一份 SourceLab route/response contract 可被 TestSupport 无 socket 加载，并让 ConformanceCLI 生成端口无关的请求 transcript；真实 loopback 仍只由独立 NetworkFoundation 集成测试使用。",
+    "depends_on": ["IOS-CONFORMANCE-001"],
+    "scope": {
+      "allow_write": [
+        "ios/Packages/LegadoKit/Sources/TestSupport/**",
+        "ios/Packages/LegadoKit/Sources/ConformanceCLI/**",
+        "ios/Packages/LegadoKit/Tests/TestSupportTests/**",
+        "ios/Packages/LegadoKit/Tests/ConformanceCLITests/**",
+        "ios/project/capabilities/CAP-CONFORMANCE.json",
+        "ios/project/checkpoints/IOS-SOURCELAB-ENGINE-001.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        "**/Package.swift",
+        "**/Package.resolved",
+        "ios/harness/source-lab/**",
+        "ios/harness/fixtures/source-lab/**",
+        "ios/harness/goldens/**",
+        "ios/harness/normalization/**",
+        "ios/harness/schemas/**",
+        "ios/docs/**"
+      ],
+      "max_files_changed": 20,
+      "max_changed_lines": 1500
+    },
+    "inputs": {
+      "context_files": [
+        "ios/docs/source-lab.md",
+        "ios/docs/testing-and-conformance.md",
+        "ios/harness/source-lab/manifest.json"
+      ],
+      "android_source_anchors": [
+        "app/src/main/java/io/legado/app/data/entities/BookSource.kt",
+        "app/src/main/java/io/legado/app/model/webBook/WebBook.kt"
+      ],
+      "fixtures": ["sl-html-basic-001"]
+    },
+    "architecture_refs": ["ARCH-005", "ARCH-011", "ARCH-014", "ADR-0002", "ADR-0004"],
+    "acceptance": {
+      "criteria": [
+        {"id": "AC-1", "statement": "TestSupport 从 case/source/input/response 原始字节构造 FixtureTransport，产品代码看不到 scenario ID。", "verified_by": ["source-lab-contract", "swift-package-tests"], "requirement_clauses": ["REQ-ANDROID-SOURCE-PIPELINE-001#RC-01"]},
+        {"id": "AC-2", "statement": "同一场景重复运行产生相同逻辑 origin、请求 transcript 与 execution envelope，不包含随机端口。", "verified_by": ["source-lab-tests", "source-lab-smoke", "swift-package-tests"], "requirement_clauses": ["REQ-ANDROID-SOURCE-PIPELINE-001#RC-02", "REQ-ANDROID-SOURCE-PIPELINE-001#RC-03", "REQ-ANDROID-SOURCE-PIPELINE-001#RC-04"]},
+        {"id": "AC-3", "statement": "ConformanceCLI 不依赖 NetworkFoundation，未声明请求、超限和外部 authority 均稳定失败。", "verified_by": ["architecture", "swift-package-tests"], "requirement_clauses": []},
+        {"id": "AC-4", "statement": "SourceLab 本地站点严格绑定 IPv4 loopback、固定响应头并在测试后关闭监听与线程。", "verified_by": ["source-lab-tests", "source-lab-smoke"], "requirement_clauses": []}
+      ],
+      "required_checks": ["android-intake-contract", "harness-tests", "fixture-contract", "dependency-policy", "source-lab-contract", "source-lab-tests", "source-lab-smoke", "swift-format-lint", "swift-package-tests"]
+    },
+    "baseline_checks": ["source-lab-tests", "source-lab-smoke"],
+    "budget": {"wall_clock_seconds": 3000, "max_edit_verify_cycles": 3, "max_targeted_test_runs": 3, "max_full_test_runs": 1, "max_infra_retries": 1},
+    "gates": [],
+    "completion_effects": {"health": {"source_lab": "fixture_transport_integrated"}},
+    "memory": {"capability_state_required": true, "compatibility": "if_observed", "pitfall": "if_non_obvious_and_preventable", "adr": "not_expected"},
+    "requirements": {
+      "mode": "enabler",
+      "refs": [
+        {"id": "REQ-ANDROID-SOURCE-PIPELINE-001", "revision": 1, "clauses": ["RC-01", "RC-02", "RC-03", "RC-04"]}
+      ],
+      "none_reason": null
+    },
+    "source_lab": {
+      "mode": "reuse",
+      "behaviors": ["transport.get-query", "pipeline.search-html", "pipeline.book-info-html", "pipeline.toc-html", "pipeline.content-html", "url.relative-resolution", "rule.css-selector"],
+      "scenarios": ["sl-html-basic-001"],
+      "none_reason": null
+    },
+    "stop_on": ["baseline_red", "scope_violation", "network_escape", "protected_path_mutation", "same_failure_twice", "budget_exhausted", "human_decision_required"]
+  }
+}

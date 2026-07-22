@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "id": "CAP-RUNTIME-PORTS",
+  "revision": 1,
+  "title": "确定性 HTTP 请求响应与传输端口",
+  "area": "source-runtime",
+  "contract": "ios/docs/architecture.md",
+  "requirement_refs": [
+    {"id": "REQ-ANDROID-SOURCE-PIPELINE-001", "revision": 1, "clauses": ["RC-01", "RC-02", "RC-03", "RC-04"]}
+  ],
+  "declared_status": "proposed",
+  "profiles": {"store_safe": "planned", "full_compat": "planned"},
+  "owners": {"targets": ["SourceRuntime"], "paths": ["ios/Packages/LegadoKit/Sources/SourceRuntime/**"]},
+  "depends_on": ["CAP-BOOTSTRAP", "CAP-CORE"],
+  "active_decisions": ["ADR-0001", "ADR-0002"],
+  "open_compatibility": [],
+  "open_pitfalls": [],
+  "blockers": [],
+  "required_evidence": ["android-intake-contract", "dependency-policy", "swift-package-tests", "architecture"],
+  "freshness_inputs": ["baseline_sha256", "architecture_digest_sha256", "architecture_rules_sha256", "harness_config_sha256", "dependency_lock_sha256", "android_intake_control_sha256", "android_requirement_selection_sha256"],
+  "latest_evidence": null,
+  "next_actions": ["定义 Sendable HTTPRequest/HTTPResponse/HTTPTransport 和稳定 transport error"],
+  "updated_at": "2026-07-22T00:00:00+08:00",
+  "updated_by": "project-initialization"
+}

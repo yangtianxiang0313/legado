@@ -1,0 +1,58 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-SOURCE-FORMAT-001",
+    "title": "实现 BookSource 最小无损 JSON round-trip",
+    "priority": 70,
+    "risk": "high",
+    "labels": ["phase-1", "source-format", "compatibility"]
+  },
+  "spec": {
+    "capability": "CAP-SOURCE-FORMAT",
+    "intent": "覆盖搜索、发现、详情、目录、正文所需书源字段，并在解析/导出中保留未知字段和 JSON 类型。",
+    "depends_on": ["IOS-BOOT-001", "IOS-CORE-001", "IOS-CONFORMANCE-001", "IOS-SOURCELAB-ENGINE-001"],
+    "scope": {
+      "allow_write": [
+        "ios/Packages/LegadoKit/Sources/SourceFormat/**",
+        "ios/Packages/LegadoKit/Tests/SourceFormatTests/**",
+        "ios/project/capabilities/CAP-SOURCE-FORMAT.json",
+        "ios/project/checkpoints/IOS-SOURCE-FORMAT-001.json",
+        "ios/project/compatibility/COMP-*.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": ["**/Package.swift", "**/Package.resolved", "ios/harness/goldens/**", "ios/harness/normalization/**", "ios/harness/schemas/**", "ios/docs/**"],
+      "max_files_changed": 18,
+      "max_changed_lines": 1400
+    },
+    "inputs": {
+      "context_files": ["ios/docs/architecture.md", "ios/docs/testing-and-conformance.md", "ios/docs/adr/0002-android-oracle-differential.md"],
+      "android_source_anchors": ["app/src/main/java/io/legado/app/data/entities/BookSource.kt"],
+      "fixtures": []
+    },
+    "architecture_refs": ["ARCH-002", "ARCH-008", "ARCH-012", "ARCH-014", "ADR-0001", "ADR-0002"],
+    "acceptance": {
+      "criteria": [
+        {"id": "AC-1", "statement": "已知字段映射覆盖 BookSource 及 Search/Explore/BookInfo/Toc/Content/Review rule groups；只声明但不可达的字段不因此获得运行能力。", "verified_by": ["android-intake-contract", "swift-package-tests"], "requirement_clauses": ["REQ-ANDROID-BOOKSOURCE-SCHEMA-001#RC-01", "REQ-ANDROID-BOOKSOURCE-SCHEMA-001#RC-02"]},
+        {"id": "AC-2", "statement": "未知 object/array/number/string/bool/null 字段 round-trip 不丢失、不错误转型。", "verified_by": ["swift-package-tests"], "requirement_clauses": ["REQ-IOS-SOURCE-ROUNDTRIP-001#RC-01"]},
+        {"id": "AC-3", "statement": "本项只保留 missing/null/empty/value 的表示和 round-trip；不自行决定 Domain 默认值或 Android coercion。", "verified_by": ["swift-package-tests"], "requirement_clauses": ["REQ-IOS-SOURCE-ROUNDTRIP-001#RC-02"]}
+      ],
+      "required_checks": ["android-intake-contract", "dependency-policy", "swift-format-lint", "swift-package-tests"]
+    },
+    "baseline_checks": ["harness-tests", "swift-package-tests"],
+    "budget": {"wall_clock_seconds": 3000, "max_edit_verify_cycles": 3, "max_targeted_test_runs": 3, "max_full_test_runs": 1, "max_infra_retries": 1},
+    "gates": [],
+    "completion_effects": {},
+    "memory": {"capability_state_required": true, "compatibility": "required_if_any_delta", "pitfall": "if_non_obvious_and_preventable", "adr": "required_for_semantic_change"},
+    "requirements": {
+      "mode": "implementation",
+      "refs": [
+        {"id": "REQ-ANDROID-BOOKSOURCE-SCHEMA-001", "revision": 1, "clauses": ["RC-01", "RC-02"]},
+        {"id": "REQ-IOS-SOURCE-ROUNDTRIP-001", "revision": 1, "clauses": ["RC-01", "RC-02"]}
+      ],
+      "none_reason": null
+    },
+    "source_lab": {"mode": "not_applicable", "behaviors": [], "scenarios": [], "none_reason": "本项验证 DTO 无损 round-trip，不执行站点请求或规则"},
+    "stop_on": ["baseline_red", "scope_violation", "golden_mutation", "semantic_decision_required", "same_failure_twice", "budget_exhausted", "human_decision_required"]
+  }
+}

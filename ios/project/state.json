@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "revision": 4,
+  "project": "legado-ios",
+  "phase": "phase-0-control-plane-and-bootstrap",
+  "architecture_version": "1.0",
+  "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
+  "updated_at": "2026-07-22T09:43:39Z",
+  "event_head": "eea81536df6a5b9530a87876b6eedaa97378d093acb7dbf8468c3337f4388eb6",
+  "active_work_items": [],
+  "last_completed_work_item": "IOS-BOOT-001",
+  "work_items": {
+    "IOS-BOOT-001": {
+      "status": "completed",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260722T094307Z-ios-boot-001-15a40a65.json",
+      "claimed_by": "codex-root",
+      "claimed_at": "2026-07-22T09:40:05Z",
+      "lease_expires_at": "2026-07-23T09:40:05Z",
+      "work_item_sha256": "5b630ca5b05572a17b162277c1a9e514e861fb90955310eec582be56fff70732",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+      "base_capability_revision": 1,
+      "base_capability_assurance_sha256": "48215c46fb8adbd023bfe61b7d3f59a01c22c4bde1a0fbb6b15f8bcd52c082c2",
+      "android_requirement_selection_sha256": "c58e3d68c8cc7b3dfd09758b853716d4e962f75b193676c22ef05f400f75634f",
+      "verify_cycles": 1,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "harness-tests",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "307f335e883f02e96ad97ecbda4c210435c0b955e2bcb9e46db9dc7b0d02c285",
+          "cwd": ".",
+          "started_at": "2026-07-22T09:39:51Z",
+          "duration_ms": 13930,
+          "timeout_seconds": 60,
+          "timed_out": false,
+          "process_leak": false,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "4426494ae09d13bcf1df2ca321d7602bfc0542b7300dd12283d75b61e532d6f7",
+          "stdout_tail": "",
+          "stderr_tail": "...............\n----------------------------------------------------------------------\nRan 15 tests in 13.794s\n\nOK\n"
+        }
+      ],
+      "last_evidence_sha256": "53e1ff00d2fd1bf2f1270e75f878a5bf666e6ca20bd65f6473f96c52477df941",
+      "verified_at": "2026-07-22T09:43:07Z",
+      "completed_at": "2026-07-22T09:43:39Z",
+      "final_tree_sha256": "86b779b605746cd5334c31b2e41e0caaf09c4856fd045b8c9a1ac69255746b80"
+    },
+    "IOS-CORE-001": {
+      "status": "ready",
+      "attempt": 0,
+      "last_evidence": null
+    },
+    "IOS-RUNTIME-PORTS-001": {
+      "status": "ready",
+      "attempt": 0,
+      "last_evidence": null
+    },
+    "IOS-CONFORMANCE-001": {
+      "status": "ready",
+      "attempt": 0,
+      "last_evidence": null
+    },
+    "IOS-SOURCELAB-ENGINE-001": {
+      "status": "ready",
+      "attempt": 0,
+      "last_evidence": null
+    },
+    "IOS-SOURCE-FORMAT-001": {
+      "status": "ready",
+      "attempt": 0,
+      "last_evidence": null
+    },
+    "IOS-SOURCE-FORMAT-CONFORMANCE-001": {
+      "status": "blocked",
+      "attempt": 0,
+      "last_evidence": null,
+      "blocker": "等待受保护 Android Oracle runner 与 source-format golden proposal"
+    }
+  },
+  "health": {
+    "architecture": "designed",
+    "harness": "ready",
+    "android_intake": "fact_inventory_ready",
+    "requirements": "catalog_ready_one_characterization_gap",
+    "ios_build": "package_verified",
+    "android_oracle": "not_started",
+    "conformance": "not_started",
+    "source_lab": "environment_reference_ready"
+  },
+  "risks": [
+    {
+      "id": "RISK-DISTRIBUTION-001",
+      "summary": "App Store 动态代码政策与 GPLv3 分发义务需在外部发布前完成法律评估",
+      "blocks_development": false
+    }
+  ]
+}

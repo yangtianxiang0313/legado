@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-AREA-000",
+  "summary": "完成了什么，以及用户可观察或兼容行为如何变化",
+  "evidence": "ios/harness/evidence/runs/run-id.json",
+  "capability_updates": [
+    {
+      "id": "CAP-EXAMPLE",
+      "from_revision": 1,
+      "to_revision": 2,
+      "state_path": "ios/project/capabilities/CAP-EXAMPLE.json"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": ["ADR-0001"]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本工作项没有观察到新的 Android/iOS 差异"
+  },
+  "pitfalls": {
+    "records": [],
+    "none_reason": "没有产生非显然且值得长期预防的问题"
+  },
+  "remaining_risks": [],
+  "next_actions": [],
+  "created_at": "YYYY-MM-DDTHH:MM:SSZ"
+}

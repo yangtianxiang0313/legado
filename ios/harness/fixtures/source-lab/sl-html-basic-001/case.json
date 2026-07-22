@@ -1,0 +1,158 @@
+{
+  "schema_version": 1,
+  "kind": "source_lab_scenario",
+  "id": "sl-html-basic-001",
+  "revision": 1,
+  "status": "reference",
+  "operation": "source_lab_site",
+  "capabilities": ["CAP-RUNTIME-PORTS", "CAP-CONFORMANCE", "CAP-SOURCE-FORMAT"],
+  "compatibility_profile": "android-legado-v1",
+  "source": "source.template.json",
+  "input": "input.json",
+  "transport": {
+    "mode": "fixture_and_loopback",
+    "external_network": "deny",
+    "responses": [
+      {
+        "id": "site-index",
+        "match": {"method": "GET", "path": "/", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/html; charset=utf-8"}, "body_file": "responses/index.html"}
+      },
+      {
+        "id": "search-hit",
+        "match": {"method": "GET", "path": "/search.html", "query": {"q": "星河"}},
+        "respond": {"status": 200, "headers": {"content-type": "text/html; charset=utf-8"}, "body_file": "responses/search-hit.html"}
+      },
+      {
+        "id": "search-empty",
+        "match": {"method": "GET", "path": "/search.html", "query": {"q": "不存在"}},
+        "respond": {"status": 200, "headers": {"content-type": "text/html; charset=utf-8"}, "body_file": "responses/search-empty.html"}
+      },
+      {
+        "id": "book-detail",
+        "match": {"method": "GET", "path": "/books/star-river/index.html", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/html; charset=utf-8"}, "body_file": "responses/book-detail.html"}
+      },
+      {
+        "id": "book-detail-missing-cover",
+        "match": {"method": "GET", "path": "/books/no-cover/index.html", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/html; charset=utf-8"}, "body_file": "responses/book-detail-missing-cover.html"}
+      },
+      {
+        "id": "book-not-found",
+        "match": {"method": "GET", "path": "/books/missing/index.html", "query": {}},
+        "respond": {"status": 404, "headers": {"content-type": "application/json; charset=utf-8"}, "body_file": "responses/not-found.json"}
+      },
+      {
+        "id": "toc",
+        "match": {"method": "GET", "path": "/books/star-river/toc.html", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/html; charset=utf-8"}, "body_file": "responses/toc.html"}
+      },
+      {
+        "id": "toc-empty",
+        "match": {"method": "GET", "path": "/books/no-cover/toc.html", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/html; charset=utf-8"}, "body_file": "responses/toc-empty.html"}
+      },
+      {
+        "id": "chapter",
+        "match": {"method": "GET", "path": "/books/star-river/chapter-1.html", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/html; charset=utf-8"}, "body_file": "responses/chapter-1.html"}
+      },
+      {
+        "id": "chapter-second",
+        "match": {"method": "GET", "path": "/books/star-river/chapter-2.html", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/html; charset=utf-8"}, "body_file": "responses/chapter-2.html"}
+      },
+      {
+        "id": "chapter-not-found",
+        "match": {"method": "GET", "path": "/books/star-river/chapter-404.html", "query": {}},
+        "respond": {"status": 404, "headers": {"content-type": "application/json; charset=utf-8"}, "body_file": "responses/not-found.json"}
+      },
+      {
+        "id": "cover",
+        "match": {"method": "GET", "path": "/covers/star-river.svg", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "image/svg+xml"}, "body_file": "responses/star-river.svg"}
+      }
+    ]
+  },
+  "coverage": [
+    {
+      "behavior": "transport.get-query",
+      "cases": [
+        {"id": "search-hit", "role": "nominal", "android_fact_refs": ["AF-WEBBOOK-SEARCH-ENTRYPOINT"], "branch_refs": ["WebBook.searchBookAwait→AnalyzeUrl.getStrResponseAwait"]},
+        {"id": "search-empty", "role": "nominal", "android_fact_refs": ["AF-WEBBOOK-SEARCH-ENTRYPOINT"], "branch_refs": ["WebBook.searchBookAwait→AnalyzeUrl.getStrResponseAwait"]}
+      ]
+    },
+    {
+      "behavior": "pipeline.search-html",
+      "cases": [
+        {"id": "search-hit", "role": "nominal", "android_fact_refs": ["AF-WEBBOOK-SEARCH-ENTRYPOINT"], "branch_refs": ["WebBook.searchBookAwait→BookList.analyzeBookList"]},
+        {"id": "search-empty", "role": "boundary", "android_fact_refs": ["AF-WEBBOOK-SEARCH-ENTRYPOINT"], "branch_refs": ["WebBook.searchBookAwait→BookList.analyzeBookList"]}
+      ]
+    },
+    {
+      "behavior": "pipeline.book-info-html",
+      "cases": [
+        {"id": "book-detail", "role": "nominal", "android_fact_refs": ["AF-WEBBOOK-BOOKINFO-ENTRYPOINT"], "branch_refs": ["WebBook.getBookInfoAwait→BookInfo.analyzeBookInfo"]},
+        {"id": "book-detail-missing-cover", "role": "boundary", "android_fact_refs": ["AF-WEBBOOK-BOOKINFO-ENTRYPOINT"], "branch_refs": ["WebBook.getBookInfoAwait→BookInfo.analyzeBookInfo"]},
+        {"id": "book-not-found", "role": "boundary", "android_fact_refs": ["AF-WEBBOOK-BOOKINFO-ENTRYPOINT"], "branch_refs": ["WebBook.getBookInfoAwait→AnalyzeUrl.getStrResponseAwait"]}
+      ]
+    },
+    {
+      "behavior": "pipeline.toc-html",
+      "cases": [
+        {"id": "toc", "role": "nominal", "android_fact_refs": ["AF-WEBBOOK-TOC-ENTRYPOINT"], "branch_refs": ["WebBook.getChapterListAwait→BookChapterList.analyzeChapterList"]},
+        {"id": "toc-empty", "role": "boundary", "android_fact_refs": ["AF-WEBBOOK-TOC-ENTRYPOINT"], "branch_refs": ["WebBook.getChapterListAwait→BookChapterList.analyzeChapterList"]}
+      ]
+    },
+    {
+      "behavior": "pipeline.content-html",
+      "cases": [
+        {"id": "chapter", "role": "nominal", "android_fact_refs": ["AF-WEBBOOK-CONTENT-ENTRYPOINT"], "branch_refs": ["WebBook.getContentAwait→BookContent.analyzeContent"]},
+        {"id": "chapter-not-found", "role": "boundary", "android_fact_refs": ["AF-WEBBOOK-CONTENT-ENTRYPOINT"], "branch_refs": ["WebBook.getContentAwait→AnalyzeUrl.getStrResponseAwait"]}
+      ]
+    },
+    {
+      "behavior": "url.relative-resolution",
+      "cases": [
+        {"id": "book-detail", "role": "nominal", "android_fact_refs": ["AF-WEBBOOK-BOOKINFO-ENTRYPOINT"], "branch_refs": ["BookInfo.analyzeBookInfo relative URL completion"]},
+        {"id": "toc", "role": "nominal", "android_fact_refs": ["AF-WEBBOOK-TOC-ENTRYPOINT"], "branch_refs": ["BookChapterList.analyzeChapterList relative URL completion"]},
+        {"id": "chapter", "role": "nominal", "android_fact_refs": ["AF-WEBBOOK-CONTENT-ENTRYPOINT"], "branch_refs": ["BookContent.analyzeContent relative resource completion"]}
+      ]
+    },
+    {
+      "behavior": "rule.css-selector",
+      "cases": [
+        {"id": "search-hit", "role": "nominal", "android_fact_refs": ["AF-WEBBOOK-SEARCH-ENTRYPOINT"], "branch_refs": ["BookList.analyzeBookList CSS evaluation"]},
+        {"id": "book-detail", "role": "nominal", "android_fact_refs": ["AF-WEBBOOK-BOOKINFO-ENTRYPOINT"], "branch_refs": ["BookInfo.analyzeBookInfo CSS evaluation"]},
+        {"id": "toc", "role": "nominal", "android_fact_refs": ["AF-WEBBOOK-TOC-ENTRYPOINT"], "branch_refs": ["BookChapterList.analyzeChapterList CSS evaluation"]},
+        {"id": "chapter", "role": "nominal", "android_fact_refs": ["AF-WEBBOOK-CONTENT-ENTRYPOINT"], "branch_refs": ["BookContent.analyzeContent CSS evaluation"]},
+        {"id": "search-empty", "role": "boundary", "android_fact_refs": ["AF-WEBBOOK-SEARCH-ENTRYPOINT"], "branch_refs": ["BookList.analyzeBookList empty selection"]},
+        {"id": "toc-empty", "role": "boundary", "android_fact_refs": ["AF-WEBBOOK-TOC-ENTRYPOINT"], "branch_refs": ["BookChapterList.analyzeChapterList empty selection"]}
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "2026-01-01T00:00:00Z",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 7,
+    "network_allowed": false,
+    "logical_origin": "http://sourcelab.test"
+  },
+  "limits": {
+    "timeout_ms": 1000,
+    "max_response_bytes": 1048576,
+    "max_request_body_bytes": 65536,
+    "max_requests": 64,
+    "max_concurrency": 4
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/data/entities/BookSource.kt",
+      "app/src/main/java/io/legado/app/model/webBook/WebBook.kt"
+    ],
+    "introduced_by": "source-lab-bootstrap"
+  }
+}

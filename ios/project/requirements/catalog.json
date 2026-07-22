@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+  "inventory_sha256": "aba2f2698c87ee5af1266f1c2f4c4afb699dd6e2d0398ca25d8aa8ed1035ed3d",
+  "requirements": [
+    {
+      "id": "REQ-ANDROID-BOOKSOURCE-SCHEMA-001",
+      "revision": 1,
+      "status": "accepted",
+      "semantic_key": "source-format.book-source-schema",
+      "origin_kind": "android_observed",
+      "readiness": "implementation_ready",
+      "path": "ios/project/requirements/accepted/REQ-ANDROID-BOOKSOURCE-SCHEMA-001.json",
+      "record_sha256": "bc62d6aec8ee5f662dec5faa296b6dfef15a8052e44a85a4f01bb3808fa9e12d",
+      "fact_selection_sha256": "e5a9341880d8d442aa2ca191c30da44d81db58812621cefd34788151f9625af3",
+      "clauses": [
+        "RC-01",
+        "RC-02"
+      ]
+    },
+    {
+      "id": "REQ-ANDROID-SOURCE-PIPELINE-001",
+      "revision": 1,
+      "status": "accepted",
+      "semantic_key": "source-runtime.search-to-content-pipeline",
+      "origin_kind": "android_observed",
+      "readiness": "characterization_required",
+      "path": "ios/project/requirements/accepted/REQ-ANDROID-SOURCE-PIPELINE-001.json",
+      "record_sha256": "8b6fa63ce166b2fd63697fab10d56f88f72c7baf0a6feb9b50120a7e51232afa",
+      "fact_selection_sha256": "0f033714b9e2404aab1d2cc8c68d8a26605a91bb876246430c4a5007d18953a2",
+      "clauses": [
+        "RC-01",
+        "RC-02",
+        "RC-03",
+        "RC-04"
+      ]
+    },
+    {
+      "id": "REQ-IOS-SOURCE-ROUNDTRIP-001",
+      "revision": 1,
+      "status": "accepted",
+      "semantic_key": "source-format.forward-compatible-roundtrip",
+      "origin_kind": "ios_product_decision",
+      "readiness": "implementation_ready",
+      "path": "ios/project/requirements/accepted/REQ-IOS-SOURCE-ROUNDTRIP-001.json",
+      "record_sha256": "f9abac1ad6a96553052988a616998e1f4dba62cb0f57e5703e983238195180dd",
+      "fact_selection_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "clauses": [
+        "RC-01",
+        "RC-02"
+      ]
+    }
+  ]
+}

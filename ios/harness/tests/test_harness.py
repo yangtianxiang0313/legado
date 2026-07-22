@@ -1,0 +1,629 @@
+import json
+import shutil
+import subprocess
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+
+HARNESS_DIR = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(HARNESS_DIR))
+
+import harness as harness_module  # noqa: E402
+
+
+class HarnessFixture:
+    def __init__(self, root: Path):
+        self.root = root
+        shutil.copytree(HARNESS_DIR / "schemas", self.root / "ios/harness/schemas")
+        self.write_json(
+            "ios/harness/config.json",
+            {
+                "schema_version": 1,
+                "state_path": "ios/project/state.json",
+                "events_path": "ios/project/events.jsonl",
+                "baseline_path": "ios/project/baseline.json",
+                "status_path": "ios/project/status.md",
+                "capabilities_dir": "ios/project/capabilities",
+                "checkpoints_dir": "ios/project/checkpoints",
+                "approvals_dir": "ios/project/approvals",
+                "work_items_dir": "ios/harness/work-items",
+                "evidence_dir": "ios/harness/evidence/runs",
+                "architecture_rules_path": "ios/harness/architecture-rules.json",
+                "architecture_sources": [
+                    "ios/docs/architecture.md",
+                    "ios/docs/dependencies.md",
+                ],
+                "golden_manifest_path": "ios/harness/goldens/manifest.json",
+                "fixture_manifest_path": "ios/harness/fixtures/manifest.json",
+                "max_parallel_work_items": 1,
+                "evidence_output_tail_bytes": 1000,
+                "redaction_patterns": [
+                    {
+                        "pattern": "(?i)(authorization\\s*[:=]\\s*)([^\\r\\n]+)",
+                        "replacement": "\\1<redacted>",
+                    }
+                ],
+                "harness_managed_paths": [
+                    "ios/project/state.json",
+                    "ios/project/status.md",
+                    "ios/project/events.jsonl",
+                    "ios/harness/evidence/runs/**",
+                    "ios/harness/fixtures/manifest.json",
+                ],
+                "protected_paths": ["ios/harness/goldens/**"],
+                "checks": {
+                    "noop": {
+                        "argv": ["python3", "-c", "print('ok')"],
+                        "cwd": ".",
+                        "timeout_seconds": 10,
+                    }
+                },
+            },
+        )
+        self.write_json(
+            "ios/harness/architecture-rules.json",
+            {
+                "schema_version": 1,
+                "source_root": "ios/Packages/LegadoKit/Sources",
+                "known_project_modules": ["LegadoCore"],
+                "known_external_modules": [],
+                "targets": {
+                    "LegadoCore": {
+                        "dependencies": [],
+                        "external_imports": [],
+                        "forbidden_imports": ["SwiftUI"],
+                    }
+                },
+                "test_targets": {},
+                "banned_patterns": [],
+                "profiles": {},
+            },
+        )
+        self.write_json(
+            "ios/project/baseline.json",
+            {
+                "schema_version": 1,
+                "android_oracle": {"git_commit": "abc"},
+                "accepted_by": ["ADR-0001"],
+                "architecture": {"version": "1", "digest": None},
+            },
+        )
+        self.write_json(
+            "ios/harness/goldens/manifest.json",
+            {"schema_version": 1, "oracle": {"android_git_commit": "abc"}},
+        )
+        self.write_json(
+            "ios/harness/fixtures/manifest.json",
+            {
+                "schema_version": 1,
+                "compatibility_profile": "android-legado-v1",
+                "canonicalizer": "canonical-v1",
+                "fixtures": [],
+            },
+        )
+        self.write_text("ios/docs/architecture.md", "ARCH-001\n")
+        self.write_text("ios/docs/dependencies.md", "# Dependencies\n")
+        self.write_text("ios/docs/adr/0001-test.md", "id: ADR-0001\nstatus: accepted\n")
+
+    def write_json(self, relative: str, value):
+        path = self.root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    def write_text(self, relative: str, value: str):
+        path = self.root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(value, encoding="utf-8")
+
+    @staticmethod
+    def item(item_id: str, capability: str, priority: int, depends_on=None):
+        return {
+            "api_version": "legado.harness/v1",
+            "kind": "WorkItem",
+            "metadata": {
+                "id": item_id,
+                "title": item_id,
+                "priority": priority,
+                "risk": "low",
+                "labels": ["test"],
+            },
+            "spec": {
+                "capability": capability,
+                "intent": "test",
+                "depends_on": depends_on or [],
+                "scope": {
+                    "allow_write": ["ios/**"],
+                    "deny_write": [],
+                    "max_files_changed": 10,
+                    "max_changed_lines": 100,
+                },
+                "inputs": {
+                    "context_files": ["ios/docs/architecture.md"],
+                    "android_source_anchors": [],
+                    "fixtures": [],
+                },
+                "architecture_refs": ["ARCH-001", "ADR-0001"],
+                "acceptance": {
+                    "criteria": [{"id": "AC-1", "statement": "test", "verified_by": ["noop"], "requirement_clauses": []}],
+                    "required_checks": ["noop"],
+                },
+                "baseline_checks": [],
+                "budget": {"max_edit_verify_cycles": 3},
+                "gates": [],
+                "completion_effects": {},
+                "memory": {"capability_state_required": True},
+                "requirements": {
+                    "mode": "control_plane",
+                    "refs": [],
+                    "none_reason": "isolated Harness unit test",
+                },
+                "source_lab": {
+                    "mode": "not_applicable",
+                    "behaviors": [],
+                    "scenarios": [],
+                    "none_reason": "unit test work item does not exercise source behavior",
+                },
+                "stop_on": ["failure"],
+            },
+        }
+
+    def initialize(self):
+        harness = harness_module.Harness(self.root)
+        architecture_digest = harness.architecture_digest()
+        baseline = harness_module.load_json(self.root / "ios/project/baseline.json")
+        baseline["architecture"]["digest"] = architecture_digest
+        self.write_json("ios/project/baseline.json", baseline)
+        first = self.item("IOS-BOOT-001", "CAP-BOOT", 100)
+        second = self.item("IOS-CORE-001", "CAP-CORE", 90, ["IOS-BOOT-001"])
+        self.write_json("ios/harness/work-items/IOS-BOOT-001.json", first)
+        self.write_json("ios/harness/work-items/IOS-CORE-001.json", second)
+        for capability in ("CAP-BOOT", "CAP-CORE"):
+            self.write_json(
+                f"ios/project/capabilities/{capability}.json",
+                {
+                    "schema_version": 1,
+                    "id": capability,
+                    "revision": 1,
+                    "title": capability,
+                    "area": "test",
+                    "contract": "ios/docs/architecture.md",
+                    "requirement_refs": [
+                        {"id": "REQ-TEST-001", "revision": 1, "clauses": ["RC-01"]}
+                    ],
+                    "declared_status": "proposed",
+                    "profiles": {},
+                    "owners": {"targets": [], "paths": []},
+                    "depends_on": [],
+                    "active_decisions": ["ADR-0001"],
+                    "open_compatibility": [],
+                    "open_pitfalls": [],
+                    "blockers": [],
+                    "required_evidence": ["noop"],
+                    "freshness_inputs": [
+                        "baseline_sha256",
+                        "architecture_digest_sha256",
+                        "architecture_rules_sha256",
+                        "harness_config_sha256",
+                        "dependency_lock_sha256",
+                    ],
+                    "latest_evidence": None,
+                    "next_actions": [],
+                    "updated_at": "2026-01-01T00:00:00Z",
+                    "updated_by": "initialization",
+                },
+            )
+        state = {
+            "schema_version": 1,
+            "revision": 1,
+            "project": "test",
+            "phase": "test",
+            "architecture_version": "1",
+            "architecture_digest": architecture_digest,
+            "updated_at": "2026-01-01T00:00:00Z",
+            "event_head": None,
+            "active_work_items": [],
+            "last_completed_work_item": None,
+            "work_items": {
+                "IOS-BOOT-001": {"status": "ready", "attempt": 0, "last_evidence": None},
+                "IOS-CORE-001": {"status": "ready", "attempt": 0, "last_evidence": None},
+            },
+            "health": {},
+            "risks": [],
+        }
+        self.write_json("ios/project/state.json", state)
+        event = {
+            "sequence": 1,
+            "event": "ProjectInitialized",
+            "work_item_id": None,
+            "occurred_at": "2026-01-01T00:00:00Z",
+            "previous_event_hash": None,
+            "payload": {},
+        }
+        event["event_hash"] = harness_module.Harness.event_hash(event)
+        self.write_text(
+            "ios/project/events.jsonl",
+            json.dumps(event, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n",
+        )
+        state["event_head"] = event["event_hash"]
+        self.write_json("ios/project/state.json", state)
+        harness = harness_module.Harness(self.root)
+        self.write_text("ios/project/status.md", harness.render_status(state, harness.work_items()))
+        return harness
+
+
+class HarnessTests(unittest.TestCase):
+    @staticmethod
+    def initialize_git(root: Path):
+        subprocess.run(["git", "init", "-q"], cwd=str(root), check=True)
+        subprocess.run(["git", "config", "user.name", "Harness Test"], cwd=str(root), check=True)
+        subprocess.run(["git", "config", "user.email", "harness@example.invalid"], cwd=str(root), check=True)
+        subprocess.run(["git", "add", "."], cwd=str(root), check=True)
+        subprocess.run(["git", "commit", "-qm", "baseline"], cwd=str(root), check=True)
+
+    def test_doctor_and_dependency_selection(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = HarnessFixture(Path(directory))
+            harness = fixture.initialize()
+            errors, warnings = harness.doctor()
+            self.assertEqual([], errors)
+            self.assertTrue(any("source root" in warning for warning in warnings))
+            self.assertEqual("IOS-BOOT-001", harness.select_next(harness.state(), harness.work_items()))
+
+            state = harness.state()
+            state["work_items"]["IOS-BOOT-001"]["status"] = "completed"
+            self.assertEqual("IOS-CORE-001", harness.select_next(state, harness.work_items()))
+
+    def test_verified_capability_becomes_stale_when_architecture_changes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = HarnessFixture(root)
+            harness = fixture.initialize()
+            self.initialize_git(root)
+            harness.claim("IOS-BOOT-001", "unit-test")
+            fixture.write_text("ios/implementation.txt", "implemented\n")
+            evidence_path = harness.verify("IOS-BOOT-001")
+            evidence_relative = harness.relative(evidence_path)
+            capability = harness.capability("CAP-BOOT")
+            capability.update(
+                {
+                    "revision": 2,
+                    "declared_status": "verified",
+                    "latest_evidence": evidence_relative,
+                    "updated_by": "IOS-BOOT-001",
+                }
+            )
+            fixture.write_json("ios/project/capabilities/CAP-BOOT.json", capability)
+            errors = harness.memory_issues(harness.work_items(), harness.state())
+            self.assertEqual([], errors)
+
+            fixture.write_text("ios/docs/architecture.md", "ARCH-001\nchanged architecture\n")
+            errors = harness.memory_issues(harness.work_items(), harness.state())
+            self.assertTrue(
+                any("architecture_digest_sha256" in error for error in errors),
+                errors,
+            )
+
+    def test_event_hash_chain_detects_tampering(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = HarnessFixture(Path(directory))
+            harness = fixture.initialize()
+            self.assertEqual([], harness.validate_events())
+            events = harness.event_lines()
+            events[0]["payload"] = {"tampered": True}
+            fixture.write_text("ios/project/events.jsonl", json.dumps(events[0]) + "\n")
+            self.assertTrue(any("event_hash" in error for error in harness.validate_events()))
+
+    def test_architecture_forbidden_import(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = HarnessFixture(Path(directory))
+            harness = fixture.initialize()
+            fixture.write_text(
+                "ios/Packages/LegadoKit/Sources/LegadoCore/Bad.swift",
+                "import SwiftUI\npublic struct Bad {}\n",
+            )
+            errors, _ = harness.architecture_issues()
+            self.assertTrue(any("禁止 import SwiftUI" in error for error in errors))
+
+    def test_architecture_detects_implementation_only_import(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = HarnessFixture(Path(directory))
+            harness = fixture.initialize()
+            rules_path = Path(directory) / "ios/harness/architecture-rules.json"
+            rules = json.loads(rules_path.read_text(encoding="utf-8"))
+            rules["known_external_modules"] = ["GRDB"]
+            fixture.write_json("ios/harness/architecture-rules.json", rules)
+            fixture.write_text(
+                "ios/Packages/LegadoKit/Sources/LegadoCore/Bad.swift",
+                "@_implementationOnly import GRDB\npublic struct Bad {}\n",
+            )
+            harness = harness_module.Harness(Path(directory))
+            errors, _ = harness.architecture_issues()
+            self.assertTrue(any("外部模块 GRDB" in error for error in errors), errors)
+
+    def test_path_globs_are_repo_relative(self):
+        self.assertTrue(harness_module.path_matches("ios/project/pitfalls/PIT-0001.json", ["ios/project/pitfalls/PIT-*.json"]))
+        self.assertTrue(harness_module.path_matches("ios/Packages/LegadoKit/Package.swift", ["**/Package.swift"]))
+        self.assertFalse(harness_module.path_matches("app/build.gradle", ["ios/**"]))
+
+    def test_output_redaction(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = HarnessFixture(Path(directory))
+            harness = fixture.initialize()
+            self.assertEqual("Authorization: <redacted>", harness.redact_output(b"Authorization: bearer-secret"))
+
+    def test_intentional_difference_requires_dedicated_adjudication(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = HarnessFixture(root)
+            harness = fixture.initialize()
+            fixture.write_json(
+                "ios/project/compatibility/COMP-0001.json",
+                {
+                    "schema_version": 1,
+                    "id": "COMP-0001",
+                    "revision": 1,
+                    "capability": "CAP-BOOT",
+                    "title": "test difference",
+                    "android": {},
+                    "ios": {},
+                    "classification": "intentional_difference",
+                    "decision": "accept_difference",
+                    "decision_adr": "ADR-0001",
+                    "affected_profiles": ["test"],
+                    "severity": "low",
+                    "tests": [],
+                    "status": "open",
+                    "introduced_by": "IOS-BOOT-001",
+                },
+            )
+            item = harness.work_items()["IOS-BOOT-001"]
+            gates, errors = harness.required_close_gates(
+                "IOS-BOOT-001",
+                item,
+                ["ios/project/compatibility/COMP-0001.json"],
+            )
+            self.assertIn("oracle-adjudication", gates)
+            self.assertTrue(any("COMP-0001" in error for error in errors), errors)
+
+    def test_claim_verify_and_close_memory_transaction(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = HarnessFixture(root)
+            harness = fixture.initialize()
+            self.initialize_git(root)
+
+            harness.claim("IOS-BOOT-001", "unit-test")
+            fixture.write_text("ios/implementation.txt", "implemented\n")
+            evidence_path = harness.verify("IOS-BOOT-001")
+            evidence_relative = harness.relative(evidence_path)
+            self.assertEqual("passed", harness_module.load_json(evidence_path)["result"])
+
+            capability = harness.capability("CAP-BOOT")
+            capability.update(
+                {
+                    "revision": 2,
+                    "declared_status": "verified",
+                    "latest_evidence": evidence_relative,
+                    "updated_by": "IOS-BOOT-001",
+                }
+            )
+            fixture.write_json("ios/project/capabilities/CAP-BOOT.json", capability)
+            fixture.write_json(
+                "ios/project/checkpoints/IOS-BOOT-001.json",
+                {
+                    "schema_version": 1,
+                    "work_item_id": "IOS-BOOT-001",
+                    "summary": "完成测试实现",
+                    "evidence": evidence_relative,
+                    "capability_updates": [
+                        {"id": "CAP-BOOT", "from_revision": 1, "to_revision": 2}
+                    ],
+                    "architecture_impact": {
+                        "kind": "implements_existing",
+                        "adr_refs": ["ADR-0001"],
+                    },
+                    "requirements": {"mode": "control_plane", "refs": [], "selection_sha256": None},
+                    "source_lab": {"mode": "not_applicable", "behaviors": [], "scenarios": [], "selection_sha256": None},
+                    "compatibility": {"records": [], "none_reason": "没有跨端行为"},
+                    "pitfalls": {"records": [], "none_reason": "没有长期踩坑"},
+                    "remaining_risks": [],
+                    "next_actions": [],
+                    "created_at": "2026-01-01T00:00:00Z",
+                },
+            )
+            self.assertEqual("completed", harness.close("IOS-BOOT-001"))
+            errors, _ = harness.doctor()
+            self.assertEqual([], errors)
+
+    def test_verify_rejects_staged_candidate(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = HarnessFixture(root)
+            harness = fixture.initialize()
+            self.initialize_git(root)
+            harness.claim("IOS-BOOT-001", "unit-test")
+            fixture.write_text("ios/implementation.txt", "candidate\n")
+            subprocess.run(["git", "add", "ios/implementation.txt"], cwd=str(root), check=True)
+            evidence = harness_module.load_json(harness.verify("IOS-BOOT-001"))
+            self.assertEqual("failed", evidence["result"])
+            self.assertTrue(any("INDEX_DIRTY" in error for error in evidence["policy_errors"]))
+
+    def test_verify_sees_both_sides_of_protected_rename(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = HarnessFixture(root)
+            harness = fixture.initialize()
+            fixture.write_json("ios/harness/goldens/protected-extra.json", {"protected": True})
+            self.initialize_git(root)
+            harness.claim("IOS-BOOT-001", "unit-test")
+            source = root / "ios/harness/goldens/protected-extra.json"
+            destination = root / "ios/moved-from-protected.json"
+            source.rename(destination)
+            evidence = harness_module.load_json(harness.verify("IOS-BOOT-001"))
+            self.assertEqual("failed", evidence["result"])
+            self.assertTrue(
+                any("protected-extra.json" in error for error in evidence["policy_errors"]),
+                evidence["policy_errors"],
+            )
+
+    def test_verify_rejects_check_that_mutates_candidate(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = HarnessFixture(root)
+            harness = fixture.initialize()
+            config = json.loads((root / "ios/harness/config.json").read_text(encoding="utf-8"))
+            config["checks"]["mutating-check"] = {
+                "argv": [
+                    "python3",
+                    "-c",
+                    "from pathlib import Path; Path('ios/implementation.txt').write_text('mutated-after-check\\n')",
+                ],
+                "cwd": ".",
+                "timeout_seconds": 10,
+            }
+            fixture.write_json("ios/harness/config.json", config)
+            item_path = root / "ios/harness/work-items/IOS-BOOT-001.json"
+            item = json.loads(item_path.read_text(encoding="utf-8"))
+            item["spec"]["acceptance"]["required_checks"] = ["mutating-check"]
+            item["spec"]["acceptance"]["criteria"][0]["verified_by"] = ["mutating-check"]
+            fixture.write_json("ios/harness/work-items/IOS-BOOT-001.json", item)
+            harness = harness_module.Harness(root)
+            fixture.write_text("ios/project/status.md", harness.render_status(harness.state(), harness.work_items()))
+            self.initialize_git(root)
+            harness.claim("IOS-BOOT-001", "unit-test")
+            fixture.write_text("ios/implementation.txt", "candidate-that-was-not-tested\n")
+            evidence = harness_module.load_json(harness.verify("IOS-BOOT-001"))
+            self.assertEqual("failed", evidence["result"])
+            self.assertTrue(any("CHECK_MUTATED_CANDIDATE" in error for error in evidence["policy_errors"]))
+
+    def test_verify_fails_and_cleans_up_orphan_check_process(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = HarnessFixture(root)
+            harness = fixture.initialize()
+            config = json.loads((root / "ios/harness/config.json").read_text(encoding="utf-8"))
+            config["checks"]["leaky-check"] = {
+                "argv": [
+                    "python3",
+                    "-c",
+                    "import subprocess; subprocess.Popen(['sleep', '60'], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)",
+                ],
+                "cwd": ".",
+                "timeout_seconds": 10,
+            }
+            fixture.write_json("ios/harness/config.json", config)
+            item_path = root / "ios/harness/work-items/IOS-BOOT-001.json"
+            item = json.loads(item_path.read_text(encoding="utf-8"))
+            item["spec"]["acceptance"]["required_checks"] = ["leaky-check"]
+            item["spec"]["acceptance"]["criteria"][0]["verified_by"] = ["leaky-check"]
+            fixture.write_json("ios/harness/work-items/IOS-BOOT-001.json", item)
+            harness = harness_module.Harness(root)
+            fixture.write_text("ios/project/status.md", harness.render_status(harness.state(), harness.work_items()))
+            self.initialize_git(root)
+            harness.claim("IOS-BOOT-001", "unit-test")
+            fixture.write_text("ios/implementation.txt", "candidate\n")
+            evidence = harness_module.load_json(harness.verify("IOS-BOOT-001"))
+            self.assertEqual("failed", evidence["result"])
+            self.assertTrue(evidence["checks"][0]["process_leak"])
+            self.assertEqual("PROCESS_LEAK", evidence["failure"]["class"])
+
+    def test_close_rejects_invalid_pitfall_before_completion(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = HarnessFixture(root)
+            harness = fixture.initialize()
+            self.initialize_git(root)
+            harness.claim("IOS-BOOT-001", "unit-test")
+            fixture.write_text("ios/implementation.txt", "implemented\n")
+            evidence_path = harness.verify("IOS-BOOT-001")
+            evidence_relative = harness.relative(evidence_path)
+            capability = harness.capability("CAP-BOOT")
+            capability.update(
+                {"revision": 2, "declared_status": "verified", "latest_evidence": evidence_relative, "updated_by": "IOS-BOOT-001"}
+            )
+            fixture.write_json("ios/project/capabilities/CAP-BOOT.json", capability)
+            fixture.write_json("ios/project/pitfalls/PIT-0001.json", {})
+            fixture.write_json(
+                "ios/project/checkpoints/IOS-BOOT-001.json",
+                {
+                    "schema_version": 1,
+                    "work_item_id": "IOS-BOOT-001",
+                    "summary": "完成测试实现",
+                    "evidence": evidence_relative,
+                    "capability_updates": [{"id": "CAP-BOOT", "from_revision": 1, "to_revision": 2}],
+                    "architecture_impact": {"kind": "implements_existing", "adr_refs": ["ADR-0001"]},
+                    "requirements": {"mode": "control_plane", "refs": [], "selection_sha256": None},
+                    "source_lab": {"mode": "not_applicable", "behaviors": [], "scenarios": [], "selection_sha256": None},
+                    "compatibility": {"records": [], "none_reason": "没有跨端行为"},
+                    "pitfalls": {"records": ["ios/project/pitfalls/PIT-0001.json"], "none_reason": None},
+                    "remaining_risks": [],
+                    "next_actions": [],
+                    "created_at": "2026-01-01T00:00:00Z",
+                },
+            )
+            with self.assertRaisesRegex(harness_module.HarnessError, "Pitfall"):
+                harness.close("IOS-BOOT-001")
+            self.assertEqual("verified", harness.state()["work_items"]["IOS-BOOT-001"]["status"])
+
+    def test_human_gate_binds_stable_review_subject(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = HarnessFixture(root)
+            harness = fixture.initialize()
+            item_path = root / "ios/harness/work-items/IOS-BOOT-001.json"
+            item = json.loads(item_path.read_text(encoding="utf-8"))
+            item["spec"]["gates"] = ["security-review"]
+            fixture.write_json("ios/harness/work-items/IOS-BOOT-001.json", item)
+            harness = harness_module.Harness(root)
+            fixture.write_text("ios/project/status.md", harness.render_status(harness.state(), harness.work_items()))
+            self.initialize_git(root)
+            harness.claim("IOS-BOOT-001", "unit-test")
+            fixture.write_text("ios/implementation.txt", "implemented\n")
+            evidence_path = harness.verify("IOS-BOOT-001")
+            evidence_relative = harness.relative(evidence_path)
+            capability = harness.capability("CAP-BOOT")
+            capability.update(
+                {"revision": 2, "declared_status": "verified", "latest_evidence": evidence_relative, "updated_by": "IOS-BOOT-001"}
+            )
+            fixture.write_json("ios/project/capabilities/CAP-BOOT.json", capability)
+            fixture.write_json(
+                "ios/project/checkpoints/IOS-BOOT-001.json",
+                {
+                    "schema_version": 1,
+                    "work_item_id": "IOS-BOOT-001",
+                    "summary": "完成测试实现",
+                    "evidence": evidence_relative,
+                    "capability_updates": [{"id": "CAP-BOOT", "from_revision": 1, "to_revision": 2}],
+                    "architecture_impact": {"kind": "implements_existing", "adr_refs": ["ADR-0001"]},
+                    "requirements": {"mode": "control_plane", "refs": [], "selection_sha256": None},
+                    "source_lab": {"mode": "not_applicable", "behaviors": [], "scenarios": [], "selection_sha256": None},
+                    "compatibility": {"records": [], "none_reason": "没有跨端行为"},
+                    "pitfalls": {"records": [], "none_reason": "没有长期踩坑"},
+                    "remaining_risks": [],
+                    "next_actions": [],
+                    "created_at": "2026-01-01T00:00:00Z",
+                },
+            )
+            self.assertEqual("awaiting_human", harness.close("IOS-BOOT-001"))
+            runtime = harness.state()["work_items"]["IOS-BOOT-001"]
+            fixture.write_json(
+                "ios/project/approvals/IOS-BOOT-001--security-review.json",
+                {
+                    "schema_version": 1,
+                    "work_item_id": "IOS-BOOT-001",
+                    "gate": "security-review",
+                    "work_item_sha256": harness_module.sha256_json(item),
+                    "tree_sha256": runtime["review_subject_sha256"],
+                    "reviewer": "human-reviewer@example.invalid",
+                    "approved_at": "2026-01-01T00:00:00Z",
+                    "expires_at": "2099-01-01T00:00:00Z",
+                    "signature": None,
+                },
+            )
+            self.assertEqual("completed", harness.close("IOS-BOOT-001"))
+
+
+if __name__ == "__main__":
+    unittest.main()

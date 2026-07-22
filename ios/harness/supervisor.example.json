@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "mode": "trusted-isolated",
+  "attempt": {
+    "ephemeral_worktree": true,
+    "single_writer": true,
+    "lease_seconds": 86400,
+    "network_default": "deny",
+    "environment": "secret-free-allowlist",
+    "writable_paths_from_work_item": true,
+    "process_group_limits": true
+  },
+  "control_state": {
+    "location": "external-protected-service-or-branch",
+    "agent_write_access": false,
+    "signed_event_chain": true
+  },
+  "promotion": {
+    "trusted_reverify": true,
+    "signed_human_gates": true,
+    "atomic_code_test_memory_commit": true,
+    "automatic_golden_update": false
+  },
+  "agent_invocation": null
+}

@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "id": "CAP-BOOTSTRAP",
+  "revision": 2,
+  "title": "iOS 构建与模块骨架",
+  "area": "foundation",
+  "contract": "ios/docs/architecture.md",
+  "requirement_refs": [
+    {"id": "REQ-ANDROID-BOOKSOURCE-SCHEMA-001", "revision": 1, "clauses": ["RC-01", "RC-02"]},
+    {"id": "REQ-IOS-SOURCE-ROUNDTRIP-001", "revision": 1, "clauses": ["RC-01", "RC-02"]},
+    {"id": "REQ-ANDROID-SOURCE-PIPELINE-001", "revision": 1, "clauses": ["RC-01", "RC-02", "RC-03", "RC-04"]}
+  ],
+  "declared_status": "verified",
+  "profiles": {
+    "store_safe": "planned",
+    "full_compat": "planned"
+  },
+  "owners": {
+    "targets": ["LegadoCore", "LibraryDomain", "SourceFormat", "RuleRuntime", "SourceRuntime", "ReaderCore", "AppUseCases", "TestSupport", "ConformanceCLI"],
+    "paths": ["ios/Packages/LegadoKit/**"]
+  },
+  "depends_on": [],
+  "active_decisions": ["ADR-0001", "ADR-0004"],
+  "open_compatibility": [],
+  "open_pitfalls": [],
+  "blockers": [],
+  "required_evidence": ["android-intake-contract", "android-intake-tests", "harness-tests", "dependency-policy", "swift-package-tests", "architecture"],
+  "freshness_inputs": ["baseline_sha256", "architecture_digest_sha256", "architecture_rules_sha256", "harness_config_sha256", "dependency_lock_sha256", "android_intake_control_sha256", "android_requirement_selection_sha256"],
+  "latest_evidence": "ios/harness/evidence/runs/run-20260722T094307Z-ios-boot-001-15a40a65.json",
+  "next_actions": ["推进 IOS-CORE-001，实现核心类型与稳定错误模型"],
+  "updated_at": "2026-07-22T09:43:17Z",
+  "updated_by": "IOS-BOOT-001"
+}

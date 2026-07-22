@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {"id": "search-hit", "operation": "search", "arguments": {"keyword": "星河"}, "request": {"method": "GET", "target": "/search.html?q=%E6%98%9F%E6%B2%B3"}},
+    {"id": "search-empty", "operation": "search", "arguments": {"keyword": "不存在"}, "request": {"method": "GET", "target": "/search.html?q=%E4%B8%8D%E5%AD%98%E5%9C%A8"}},
+    {"id": "book-detail", "operation": "book_info", "arguments": {"book_path": "/books/star-river/index.html"}, "request": {"method": "GET", "target": "/books/star-river/index.html"}},
+    {"id": "book-detail-missing-cover", "operation": "book_info", "arguments": {"book_path": "/books/no-cover/index.html"}, "request": {"method": "GET", "target": "/books/no-cover/index.html"}},
+    {"id": "book-not-found", "operation": "book_info", "arguments": {"book_path": "/books/missing/index.html"}, "request": {"method": "GET", "target": "/books/missing/index.html"}},
+    {"id": "toc", "operation": "chapters", "arguments": {"toc_path": "/books/star-river/toc.html"}, "request": {"method": "GET", "target": "/books/star-river/toc.html"}},
+    {"id": "toc-empty", "operation": "chapters", "arguments": {"toc_path": "/books/no-cover/toc.html"}, "request": {"method": "GET", "target": "/books/no-cover/toc.html"}},
+    {"id": "chapter", "operation": "content", "arguments": {"chapter_path": "/books/star-river/chapter-1.html"}, "request": {"method": "GET", "target": "/books/star-river/chapter-1.html"}},
+    {"id": "chapter-second", "operation": "content", "arguments": {"chapter_path": "/books/star-river/chapter-2.html"}, "request": {"method": "GET", "target": "/books/star-river/chapter-2.html"}},
+    {"id": "chapter-not-found", "operation": "content", "arguments": {"chapter_path": "/books/star-river/chapter-404.html"}, "request": {"method": "GET", "target": "/books/star-river/chapter-404.html"}}
+  ]
+}

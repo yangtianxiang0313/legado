@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "id": "canonical-v1",
+  "normalize": [
+    "http_header_names_ascii_lowercase",
+    "json_object_keys_sorted",
+    "line_endings_lf"
+  ],
+  "ignore_json_pointers": [
+    "/trace_id",
+    "/timing",
+    "/environment/run_started_at"
+  ],
+  "global_fuzzy_matching": false
+}

@@ -14,3 +14,9 @@ node_modules/
 package-lock.json
 .idea/
 
+# Legado iOS local build and large test artifacts
+ios/**/.build/
+ios/**/DerivedData/
+ios/**/*.xcresult/
+.harness-runtime/
+ios/harness/evidence/artifacts/

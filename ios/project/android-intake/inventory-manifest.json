@@ -1,0 +1,757 @@
+{
+  "schema_version": 1,
+  "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+  "android_tree": "c81f5d383116e37c1eefee3eb86654514e82022b",
+  "control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122",
+  "policy_sha256": "de7fbfb70bc4e871d41b29a36c374da94e57bece18d492ea044aa3e7ef0ddace",
+  "facts": [
+    {
+      "id": "AF-BOOKINFORULE-CONSTRUCTOR",
+      "fact_key": "book-source.schema.book-info-rule",
+      "category": "data_contract",
+      "evidence_level": "L1",
+      "support_state": "declaration_only",
+      "extractor": "kotlin_primary_constructor",
+      "symbol_id": "kotlin://io.legado.app.data.entities.rule/BookInfoRule/primary-constructor",
+      "path": "app/src/main/java/io/legado/app/data/entities/rule/BookInfoRule.kt",
+      "git_blob": "54fd639003b4b4780d095c5afa379eac25a8620b",
+      "source_sha256": "d78aaa3b6c8700abf0b20d61e1419f1469ae1b4e67705278b90fe96185fa513d",
+      "start_line": 12,
+      "end_line": 25,
+      "payload": {
+        "kind": "kotlin_primary_constructor",
+        "symbol": "BookInfoRule",
+        "properties": [
+          {
+            "name": "init",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "name",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "author",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "intro",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "kind",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "lastChapter",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "updateTime",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "coverUrl",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "tocUrl",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "wordCount",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "canReName",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "downloadUrls",
+            "type": "String?",
+            "default": "null"
+          }
+        ]
+      },
+      "revision_sha256": "0a8831430959b5809a6325cf405ecae9b81f60b7999b55dba40a0111ef082014",
+      "maps_to": [
+        "REQ-ANDROID-BOOKSOURCE-SCHEMA-001"
+      ]
+    },
+    {
+      "id": "AF-BOOKSOURCE-CONSTRUCTOR",
+      "fact_key": "book-source.schema.book-source",
+      "category": "data_contract",
+      "evidence_level": "L1",
+      "support_state": "declaration_only",
+      "extractor": "kotlin_primary_constructor",
+      "symbol_id": "kotlin://io.legado.app.data.entities/BookSource/primary-constructor",
+      "path": "app/src/main/java/io/legado/app/data/entities/BookSource.kt",
+      "git_blob": "d2ac6002cbaabe508f72a77e138f95b376c424c4",
+      "source_sha256": "cec69a129fc81102dfb96f4080b9b7f69ae5e0b63fadacd2b2a47c532ea4670b",
+      "start_line": 31,
+      "end_line": 98,
+      "payload": {
+        "kind": "kotlin_primary_constructor",
+        "symbol": "BookSource",
+        "properties": [
+          {
+            "name": "bookSourceUrl",
+            "type": "String",
+            "default": "\"\""
+          },
+          {
+            "name": "bookSourceName",
+            "type": "String",
+            "default": "\"\""
+          },
+          {
+            "name": "bookSourceGroup",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "bookSourceType",
+            "type": "Int",
+            "default": "0"
+          },
+          {
+            "name": "bookUrlPattern",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "customOrder",
+            "type": "Int",
+            "default": "0"
+          },
+          {
+            "name": "enabled",
+            "type": "Boolean",
+            "default": "true"
+          },
+          {
+            "name": "enabledExplore",
+            "type": "Boolean",
+            "default": "true"
+          },
+          {
+            "name": "jsLib",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "enabledCookieJar",
+            "type": "Boolean?",
+            "default": "true"
+          },
+          {
+            "name": "concurrentRate",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "header",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "loginUrl",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "loginUi",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "loginCheckJs",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "coverDecodeJs",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "bookSourceComment",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "variableComment",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "lastUpdateTime",
+            "type": "Long",
+            "default": "0"
+          },
+          {
+            "name": "respondTime",
+            "type": "Long",
+            "default": "180000L"
+          },
+          {
+            "name": "weight",
+            "type": "Int",
+            "default": "0"
+          },
+          {
+            "name": "exploreUrl",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "exploreScreen",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "ruleExplore",
+            "type": "ExploreRule?",
+            "default": "null"
+          },
+          {
+            "name": "searchUrl",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "ruleSearch",
+            "type": "SearchRule?",
+            "default": "null"
+          },
+          {
+            "name": "ruleBookInfo",
+            "type": "BookInfoRule?",
+            "default": "null"
+          },
+          {
+            "name": "ruleToc",
+            "type": "TocRule?",
+            "default": "null"
+          },
+          {
+            "name": "ruleContent",
+            "type": "ContentRule?",
+            "default": "null"
+          },
+          {
+            "name": "ruleReview",
+            "type": "ReviewRule?",
+            "default": "null"
+          }
+        ]
+      },
+      "revision_sha256": "cdbdd9cea0b5d2a18b4f9043590e87e60512b83627704112106de534f0c58365",
+      "maps_to": [
+        "REQ-ANDROID-BOOKSOURCE-SCHEMA-001"
+      ]
+    },
+    {
+      "id": "AF-CONTENTRULE-CONSTRUCTOR",
+      "fact_key": "book-source.schema.content-rule",
+      "category": "data_contract",
+      "evidence_level": "L1",
+      "support_state": "declaration_only",
+      "extractor": "kotlin_primary_constructor",
+      "symbol_id": "kotlin://io.legado.app.data.entities.rule/ContentRule/primary-constructor",
+      "path": "app/src/main/java/io/legado/app/data/entities/rule/ContentRule.kt",
+      "git_blob": "aef453668216619314f556bdf5d100733c9c5414",
+      "source_sha256": "85700523c6f19b35265a4a30c57d7665a8694a2358e4bb925ba18cb0f078d24c",
+      "start_line": 12,
+      "end_line": 22,
+      "payload": {
+        "kind": "kotlin_primary_constructor",
+        "symbol": "ContentRule",
+        "properties": [
+          {
+            "name": "content",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "title",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "nextContentUrl",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "webJs",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "sourceRegex",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "replaceRegex",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "imageStyle",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "imageDecode",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "payAction",
+            "type": "String?",
+            "default": "null"
+          }
+        ]
+      },
+      "revision_sha256": "06f77e75bf85f0bf899e19f1720bc0f2c1ba6c0422efc133e2e4caada32a09f4",
+      "maps_to": [
+        "REQ-ANDROID-BOOKSOURCE-SCHEMA-001"
+      ]
+    },
+    {
+      "id": "AF-EXPLORERULE-CONSTRUCTOR",
+      "fact_key": "book-source.schema.explore-rule",
+      "category": "data_contract",
+      "evidence_level": "L1",
+      "support_state": "declaration_only",
+      "extractor": "kotlin_primary_constructor",
+      "symbol_id": "kotlin://io.legado.app.data.entities.rule/ExploreRule/primary-constructor",
+      "path": "app/src/main/java/io/legado/app/data/entities/rule/ExploreRule.kt",
+      "git_blob": "6871515ea685dc4cb2245ecc45c952604634267d",
+      "source_sha256": "f1d681306351643bba37f2ff5e1fc6a164075199bbd2d3ac73c0a426fdcc0941",
+      "start_line": 12,
+      "end_line": 23,
+      "payload": {
+        "kind": "kotlin_primary_constructor",
+        "symbol": "ExploreRule",
+        "properties": [
+          {
+            "name": "bookList",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "name",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "author",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "intro",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "kind",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "lastChapter",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "updateTime",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "bookUrl",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "coverUrl",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "wordCount",
+            "type": "String?",
+            "default": "null"
+          }
+        ]
+      },
+      "revision_sha256": "bb0fa40fcd034a9984f17e7fd9b4548d23139a74743eb82ef1800fc6b5073405",
+      "maps_to": [
+        "REQ-ANDROID-BOOKSOURCE-SCHEMA-001"
+      ]
+    },
+    {
+      "id": "AF-REVIEWRULE-CONSTRUCTOR",
+      "fact_key": "book-source.schema.review-rule",
+      "category": "data_contract",
+      "evidence_level": "L1",
+      "support_state": "declaration_only",
+      "extractor": "kotlin_primary_constructor",
+      "symbol_id": "kotlin://io.legado.app.data.entities.rule/ReviewRule/primary-constructor",
+      "path": "app/src/main/java/io/legado/app/data/entities/rule/ReviewRule.kt",
+      "git_blob": "7d1c22b208892ddf22ca9f3bc816674eca216fcb",
+      "source_sha256": "377ecbb9125626968563a66069de383f1aa05a9db6bec4431357bf3e129eb467",
+      "start_line": 9,
+      "end_line": 22,
+      "payload": {
+        "kind": "kotlin_primary_constructor",
+        "symbol": "ReviewRule",
+        "properties": [
+          {
+            "name": "reviewUrl",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "avatarRule",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "contentRule",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "postTimeRule",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "reviewQuoteUrl",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "voteUpUrl",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "voteDownUrl",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "postReviewUrl",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "postQuoteUrl",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "deleteUrl",
+            "type": "String?",
+            "default": "null"
+          }
+        ]
+      },
+      "revision_sha256": "f81b7e38e3afe5b24cfd6171ee7257786bdb2fa2e86dd086b3807c72e988ca9c",
+      "maps_to": [
+        "REQ-ANDROID-BOOKSOURCE-SCHEMA-001"
+      ]
+    },
+    {
+      "id": "AF-SEARCHRULE-CONSTRUCTOR",
+      "fact_key": "book-source.schema.search-rule",
+      "category": "data_contract",
+      "evidence_level": "L1",
+      "support_state": "declaration_only",
+      "extractor": "kotlin_primary_constructor",
+      "symbol_id": "kotlin://io.legado.app.data.entities.rule/SearchRule/primary-constructor",
+      "path": "app/src/main/java/io/legado/app/data/entities/rule/SearchRule.kt",
+      "git_blob": "ba8cda4543a4afb507224ba57f0f1f5ab4ad5594",
+      "source_sha256": "cf4973f893fc91b414bc19d93d4faa6dba808a6878d188789b689a4c6773aba9",
+      "start_line": 12,
+      "end_line": 25,
+      "payload": {
+        "kind": "kotlin_primary_constructor",
+        "symbol": "SearchRule",
+        "properties": [
+          {
+            "name": "checkKeyWord",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "bookList",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "name",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "author",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "intro",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "kind",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "lastChapter",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "updateTime",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "bookUrl",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "coverUrl",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "wordCount",
+            "type": "String?",
+            "default": "null"
+          }
+        ]
+      },
+      "revision_sha256": "f89bd4c1afa4d1edfe7d85304609a72926b03e752f6e9a75f1a1ed330433ce06",
+      "maps_to": [
+        "REQ-ANDROID-BOOKSOURCE-SCHEMA-001"
+      ]
+    },
+    {
+      "id": "AF-TOCRULE-CONSTRUCTOR",
+      "fact_key": "book-source.schema.toc-rule",
+      "category": "data_contract",
+      "evidence_level": "L1",
+      "support_state": "declaration_only",
+      "extractor": "kotlin_primary_constructor",
+      "symbol_id": "kotlin://io.legado.app.data.entities.rule/TocRule/primary-constructor",
+      "path": "app/src/main/java/io/legado/app/data/entities/rule/TocRule.kt",
+      "git_blob": "f525e912340257125059b6ad87d0cf7e73d6a1dc",
+      "source_sha256": "effce50998e428af679448814c2c9ad393cac0f1fd400aac44e2cd67e806f407",
+      "start_line": 9,
+      "end_line": 20,
+      "payload": {
+        "kind": "kotlin_primary_constructor",
+        "symbol": "TocRule",
+        "properties": [
+          {
+            "name": "preUpdateJs",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "chapterList",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "chapterName",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "chapterUrl",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "formatJs",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "isVolume",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "isVip",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "isPay",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "updateTime",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "nextTocUrl",
+            "type": "String?",
+            "default": "null"
+          }
+        ]
+      },
+      "revision_sha256": "9c859daa6b8a22e3842951537f31b314c4f2ac2cd63644a839ec4c842af086cb",
+      "maps_to": [
+        "REQ-ANDROID-BOOKSOURCE-SCHEMA-001"
+      ]
+    },
+    {
+      "id": "AF-WEBBOOK-BOOKINFO-ENTRYPOINT",
+      "fact_key": "book-source.pipeline.book-info",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook/getBookInfoAwait",
+      "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
+      "git_blob": "af03cf51cef2eb31f54b8240c39e868ceabdba54",
+      "source_sha256": "7dac81aeeee865a5b5d25738863c2f03d682dd027d2e045a00391ae331c3fbae",
+      "start_line": 142,
+      "end_line": 183,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "getBookInfoAwait",
+        "signature": "suspend fun getBookInfoAwait( bookSource: BookSource, book: Book, canReName: Boolean = true, ): Book",
+        "body_semantic_sha256": "d9de741b44a707e0e4f432603247bd1a2b22b708158f52b1f5c49cbfe3992c2c"
+      },
+      "revision_sha256": "63ef9fc9ca819935217e2daa25eb25c164dab608d3199a9bf04d4bd8b120bda6",
+      "maps_to": [
+        "REQ-ANDROID-SOURCE-PIPELINE-001"
+      ]
+    },
+    {
+      "id": "AF-WEBBOOK-CONTENT-ENTRYPOINT",
+      "fact_key": "book-source.pipeline.content",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook/getContentAwait",
+      "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
+      "git_blob": "af03cf51cef2eb31f54b8240c39e868ceabdba54",
+      "source_sha256": "7dac81aeeee865a5b5d25738863c2f03d682dd027d2e045a00391ae331c3fbae",
+      "start_line": 282,
+      "end_line": 339,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "getContentAwait",
+        "signature": "suspend fun getContentAwait( bookSource: BookSource, book: Book, bookChapter: BookChapter, nextChapterUrl: String? = null, needSave: Boolean = true ): String",
+        "body_semantic_sha256": "28cef32d58251690632a104ca3f4a9fe5064bc89b3d973262251ad46d55a95e8"
+      },
+      "revision_sha256": "0cdcadbe1342235f318cae2a3285664a34122f32b5be5d733f126380887e76ee",
+      "maps_to": [
+        "REQ-ANDROID-SOURCE-PIPELINE-001"
+      ]
+    },
+    {
+      "id": "AF-WEBBOOK-EXPLORE-ENTRYPOINT",
+      "fact_key": "book-source.pipeline.explore",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook/exploreBookAwait",
+      "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
+      "git_blob": "af03cf51cef2eb31f54b8240c39e868ceabdba54",
+      "source_sha256": "7dac81aeeee865a5b5d25738863c2f03d682dd027d2e045a00391ae331c3fbae",
+      "start_line": 95,
+      "end_line": 125,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "exploreBookAwait",
+        "signature": "suspend fun exploreBookAwait( bookSource: BookSource, url: String, page: Int? = 1, ): ArrayList<SearchBook>",
+        "body_semantic_sha256": "98f60004d929b5645dbdd0d4cd672161e5866110d68bc0ab6daa363e77507bba"
+      },
+      "revision_sha256": "5f131d1489348bd32c52424e76a003ab1463ead89c9eb6ebdc96fe38988fec9e",
+      "maps_to": [
+        "REQ-ANDROID-SOURCE-PIPELINE-001"
+      ]
+    },
+    {
+      "id": "AF-WEBBOOK-SEARCH-ENTRYPOINT",
+      "fact_key": "book-source.pipeline.search",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook/searchBookAwait",
+      "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
+      "git_blob": "af03cf51cef2eb31f54b8240c39e868ceabdba54",
+      "source_sha256": "7dac81aeeee865a5b5d25738863c2f03d682dd027d2e045a00391ae331c3fbae",
+      "start_line": 43,
+      "end_line": 78,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "searchBookAwait",
+        "signature": "suspend fun searchBookAwait( bookSource: BookSource, key: String, page: Int? = 1, ): ArrayList<SearchBook>",
+        "body_semantic_sha256": "faa2c395d2c4f646acbd1d124d2709ebde30092f7c269cc5b2d48f8bcb19d058"
+      },
+      "revision_sha256": "43355d256cd1b62d485824d6216c386b836bb772877be40e7933b2adff9ab4cc",
+      "maps_to": [
+        "REQ-ANDROID-SOURCE-PIPELINE-001"
+      ]
+    },
+    {
+      "id": "AF-WEBBOOK-TOC-ENTRYPOINT",
+      "fact_key": "book-source.pipeline.toc",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook/getChapterListAwait",
+      "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
+      "git_blob": "af03cf51cef2eb31f54b8240c39e868ceabdba54",
+      "source_sha256": "7dac81aeeee865a5b5d25738863c2f03d682dd027d2e045a00391ae331c3fbae",
+      "start_line": 218,
+      "end_line": 261,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "getChapterListAwait",
+        "signature": "suspend fun getChapterListAwait( bookSource: BookSource, book: Book, runPerJs: Boolean = false ): Result<List<BookChapter>>",
+        "body_semantic_sha256": "c3a5b868f2fe5f5e0665c64fdd09616f9940e0ec08bae3384afee0ea04f02137"
+      },
+      "revision_sha256": "48dde421dedb9043fece31e2e8ad487fa4e818b4179ea00ffb2bc727fd83678f",
+      "maps_to": [
+        "REQ-ANDROID-SOURCE-PIPELINE-001"
+      ]
+    }
+  ]
+}

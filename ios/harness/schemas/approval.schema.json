@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "legado.approval/v1",
+  "type": "object",
+  "required": ["schema_version", "work_item_id", "gate", "work_item_sha256", "tree_sha256", "reviewer", "approved_at", "expires_at"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "work_item_id": {"type": "string"},
+    "gate": {"type": "string"},
+    "work_item_sha256": {"type": "string"},
+    "tree_sha256": {"type": "string"},
+    "reviewer": {"type": "string", "minLength": 1},
+    "approved_at": {"type": "string"},
+    "expires_at": {"type": "string"},
+    "signature": {"type": ["string", "null"]}
+  }
+}

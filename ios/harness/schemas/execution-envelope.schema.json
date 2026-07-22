@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "legado.execution-envelope/v1",
+  "type": "object",
+  "required": ["schema_version", "fixture_id", "engine", "request_plan", "stages", "result", "issues"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "fixture_id": {"type": "string"},
+    "engine": {
+      "type": "object",
+      "required": ["platform", "revision", "compatibility_profile"],
+      "properties": {
+        "platform": {"enum": ["android", "ios"]},
+        "revision": {"type": "string"},
+        "compatibility_profile": {"type": "string"}
+      }
+    },
+    "request_plan": {"type": "array", "items": {"type": "object"}},
+    "decode": {"type": ["object", "null"]},
+    "stages": {"type": "array", "items": {"type": "object"}},
+    "result": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {"type": {"type": "string"}}
+    },
+    "issues": {"type": "array", "items": {"type": "object"}}
+  }
+}

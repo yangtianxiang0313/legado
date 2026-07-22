@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "legado.dependency-policy/v1",
+  "type": "object",
+  "required": ["schema_version", "packages"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "packages": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "required": ["identity", "url", "exact_version", "expected_revision", "products", "allowed_targets", "allowed_profiles", "license", "status", "allow_binary_targets", "allow_plugins", "allow_macros", "traits"],
+        "properties": {
+          "identity": {"type": "string", "pattern": "^[a-z0-9._-]+$"},
+          "url": {"type": "string", "pattern": "^https://.+$"},
+          "exact_version": {"type": "string", "minLength": 1},
+          "expected_revision": {"type": ["string", "null"]},
+          "products": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+          "allowed_targets": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+          "allowed_profiles": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["store_safe", "full_compat", "test_only"]}},
+          "license": {"type": "string", "minLength": 1},
+          "status": {"enum": ["approved_not_enabled", "enabled", "deprecated"]},
+          "allow_binary_targets": {"const": false},
+          "allow_plugins": {"const": false},
+          "allow_macros": {"const": false},
+          "traits": {"type": "array", "maxItems": 0}
+        }
+      }
+    }
+  }
+}

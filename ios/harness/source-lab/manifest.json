@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "logical_origin": "http://sourcelab.test",
+  "control_sha256": "73282c8b72a7db793887290ad2bfff707c61ea8fe57a583ef9bd2e3c3c3b9f2d",
+  "scenarios": [
+    {
+      "id": "sl-html-basic-001",
+      "status": "reference",
+      "path": "ios/harness/fixtures/source-lab/sl-html-basic-001",
+      "sha256": "8ba78bb03d5b7ee941b4573e7f67ef0f992327fb48b1ccdc2599a70a77b059d1"
+    }
+  ],
+  "coverage": {
+    "pipeline.book-info-html": {
+      "boundary": [
+        "sl-html-basic-001:book-detail-missing-cover",
+        "sl-html-basic-001:book-not-found"
+      ],
+      "nominal": [
+        "sl-html-basic-001:book-detail"
+      ]
+    },
+    "pipeline.content-html": {
+      "boundary": [
+        "sl-html-basic-001:chapter-not-found"
+      ],
+      "nominal": [
+        "sl-html-basic-001:chapter"
+      ]
+    },
+    "pipeline.search-html": {
+      "boundary": [
+        "sl-html-basic-001:search-empty"
+      ],
+      "nominal": [
+        "sl-html-basic-001:search-hit"
+      ]
+    },
+    "pipeline.toc-html": {
+      "boundary": [
+        "sl-html-basic-001:toc-empty"
+      ],
+      "nominal": [
+        "sl-html-basic-001:toc"
+      ]
+    },
+    "rule.css-selector": {
+      "boundary": [
+        "sl-html-basic-001:search-empty",
+        "sl-html-basic-001:toc-empty"
+      ],
+      "nominal": [
+        "sl-html-basic-001:book-detail",
+        "sl-html-basic-001:chapter",
+        "sl-html-basic-001:search-hit",
+        "sl-html-basic-001:toc"
+      ]
+    },
+    "transport.get-query": {
+      "nominal": [
+        "sl-html-basic-001:search-empty",
+        "sl-html-basic-001:search-hit"
+      ]
+    },
+    "url.relative-resolution": {
+      "nominal": [
+        "sl-html-basic-001:book-detail",
+        "sl-html-basic-001:chapter",
+        "sl-html-basic-001:toc"
+      ]
+    }
+  }
+}

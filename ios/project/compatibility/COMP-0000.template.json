@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "id": "COMP-0000",
+  "revision": 1,
+  "capability": "CAP-EXAMPLE",
+  "title": "差异标题",
+  "android": {"baseline_revision": 1, "fixture": "fixture-id", "observed": ""},
+  "ios": {"observed": "", "expected": ""},
+  "classification": "unknown",
+  "decision": "defer",
+  "decision_adr": null,
+  "affected_profiles": ["store_safe", "full_compat"],
+  "severity": "medium",
+  "reason": "",
+  "workaround": null,
+  "tests": {"required": [], "preventive": []},
+  "status": "open",
+  "owner": "",
+  "introduced_by": "",
+  "resolved_by": null,
+  "review_after": null
+}

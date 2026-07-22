@@ -1,0 +1,264 @@
+{
+  "schema_version": 1,
+  "state_path": "ios/project/state.json",
+  "events_path": "ios/project/events.jsonl",
+  "baseline_path": "ios/project/baseline.json",
+  "status_path": "ios/project/status.md",
+  "capabilities_dir": "ios/project/capabilities",
+  "checkpoints_dir": "ios/project/checkpoints",
+  "approvals_dir": "ios/project/approvals",
+  "work_items_dir": "ios/harness/work-items",
+  "evidence_dir": "ios/harness/evidence/runs",
+  "architecture_rules_path": "ios/harness/architecture-rules.json",
+  "dependency_policy_path": "ios/harness/dependency-policy.json",
+  "architecture_sources": [
+    "ios/AGENTS.md",
+    "ios/docs/architecture.md",
+    "ios/docs/dependencies.md",
+    "ios/docs/testing-and-conformance.md",
+    "ios/docs/ai-harness.md",
+    "ios/docs/project-memory.md",
+    "ios/docs/android-requirement-intake.md",
+    "ios/docs/trusted-supervisor.md",
+    "ios/docs/source-lab.md",
+    "ios/harness/source-lab/coverage-policy-v1.json",
+    "ios/harness/dependency-policy.json"
+  ],
+  "golden_manifest_path": "ios/harness/goldens/manifest.json",
+  "fixture_manifest_path": "ios/harness/fixtures/manifest.json",
+  "source_lab_manifest_path": "ios/harness/source-lab/manifest.json",
+  "android_intake_manifest_path": "ios/project/android-intake/inventory-manifest.json",
+  "requirement_catalog_path": "ios/project/requirements/catalog.json",
+  "android_intake_script_path": "ios/harness/android-intake/android_intake.py",
+  "max_parallel_work_items": 1,
+  "lease_seconds": 86400,
+  "evidence_output_tail_bytes": 6000,
+  "redaction_patterns": [
+    {
+      "pattern": "(?i)(authorization\\s*[:=]\\s*)([^\\r\\n]+)",
+      "replacement": "\\1<redacted>"
+    },
+    {
+      "pattern": "(?i)((?:cookie|set-cookie)\\s*[:=]\\s*)([^\\r\\n]+)",
+      "replacement": "\\1<redacted>"
+    },
+    {
+      "pattern": "(?i)((?:token|password|secret|api[_-]?key)\\s*[:=]\\s*)([^\\s,;]+)",
+      "replacement": "\\1<redacted>"
+    }
+  ],
+  "harness_managed_paths": [
+    "ios/project/state.json",
+    "ios/project/status.md",
+    "ios/project/events.jsonl",
+    "ios/harness/evidence/runs/**",
+    "ios/harness/fixtures/manifest.json",
+    "ios/harness/source-lab/manifest.json",
+    "ios/project/android-intake/inventory-manifest.json",
+    "ios/project/requirements/catalog.json"
+  ],
+  "protected_paths": [
+    "ios/harness/goldens/**",
+    "ios/harness/fixtures/manifest.json",
+    "ios/harness/schemas/**",
+    "ios/harness/work-items/**",
+    "ios/harness/config.json",
+    "ios/harness/architecture-rules.json",
+    "ios/harness/dependency-policy.json",
+    "ios/harness/normalization/**",
+    "ios/harness/source-lab/source_lab.py",
+    "ios/harness/source-lab/coverage-policy-v1.json",
+    "ios/harness/source-lab/manifest.json",
+    "ios/harness/android-intake/**",
+    "ios/project/android-intake/**",
+    "ios/project/requirements/accepted/**",
+    "ios/project/requirements/catalog.json",
+    "ios/harness/fixtures/source-lab/sl-html-basic-001/**",
+    "ios/AGENTS.md",
+    "ios/docs/architecture.md",
+    "ios/docs/dependencies.md",
+    "ios/docs/testing-and-conformance.md",
+    "ios/docs/ai-harness.md",
+    "ios/docs/project-memory.md",
+    "ios/docs/android-requirement-intake.md",
+    "ios/docs/trusted-supervisor.md",
+    "ios/docs/source-lab.md",
+    "ios/docs/adr/0000-template.md",
+    "ios/docs/adr/0001-modular-compatibility-kernel.md",
+    "ios/docs/adr/0002-android-oracle-differential.md",
+    "ios/docs/adr/0003-dual-runtime-profiles.md",
+    "ios/docs/adr/0004-harness-memory-transaction.md",
+    "ios/project/baseline.json",
+    "ios/project/approvals/**",
+    "ios/project/**/README.md",
+    "ios/project/**/*.template.json"
+  ],
+  "checks": {
+    "android-intake-contract": {
+      "argv": [
+        "python3",
+        "-B",
+        "ios/harness/android-intake/android_intake.py",
+        "doctor",
+        "--root",
+        ".",
+        "--work-item",
+        "{work_item_id}"
+      ],
+      "cwd": ".",
+      "timeout_seconds": 90
+    },
+    "android-intake-tests": {
+      "argv": [
+        "python3",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "ios/harness/android-intake/tests",
+        "-p",
+        "test_*.py"
+      ],
+      "cwd": ".",
+      "timeout_seconds": 90
+    },
+    "harness-tests": {
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "ios/harness/tests",
+        "-p",
+        "test_*.py"
+      ],
+      "cwd": ".",
+      "timeout_seconds": 60
+    },
+    "package-contract": {
+      "argv": [
+        "python3",
+        "ios/harness/probes/package_contract.py",
+        "--root",
+        "."
+      ],
+      "cwd": ".",
+      "timeout_seconds": 90
+    },
+    "fixture-contract": {
+      "argv": [
+        "python3",
+        "ios/harness/probes/fixture_contract.py",
+        "--root",
+        ".",
+        "--work-item",
+        "{work_item_id}"
+      ],
+      "cwd": ".",
+      "timeout_seconds": 60
+    },
+    "dependency-policy": {
+      "argv": [
+        "python3",
+        "ios/harness/probes/dependency_contract.py",
+        "--root",
+        "."
+      ],
+      "cwd": ".",
+      "timeout_seconds": 90
+    },
+    "source-lab-contract": {
+      "argv": [
+        "python3",
+        "-B",
+        "ios/harness/source-lab/source_lab.py",
+        "doctor",
+        "--root",
+        ".",
+        "--work-item",
+        "{work_item_id}"
+      ],
+      "cwd": ".",
+      "timeout_seconds": 60
+    },
+    "source-lab-tests": {
+      "argv": [
+        "python3",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "ios/harness/source-lab/tests",
+        "-p",
+        "test_*.py"
+      ],
+      "cwd": ".",
+      "timeout_seconds": 60
+    },
+    "source-lab-smoke": {
+      "argv": [
+        "python3",
+        "-B",
+        "ios/harness/source-lab/source_lab.py",
+        "verify-site",
+        "--root",
+        ".",
+        "--scenario",
+        "sl-html-basic-001"
+      ],
+      "cwd": ".",
+      "timeout_seconds": 30
+    },
+    "swift-package-tests": {
+      "argv": [
+        "swift",
+        "test",
+        "--disable-automatic-resolution",
+        "--skip-update",
+        "--resolver-fingerprint-checking",
+        "strict",
+        "--resolver-signing-entity-checking",
+        "strict",
+        "--package-path",
+        "ios/Packages/LegadoKit"
+      ],
+      "cwd": ".",
+      "timeout_seconds": 600
+    },
+    "swift-format-lint": {
+      "argv": [
+        "swift",
+        "format",
+        "lint",
+        "--recursive",
+        "--strict",
+        "ios/Packages/LegadoKit/Sources",
+        "ios/Packages/LegadoKit/Tests"
+      ],
+      "cwd": ".",
+      "timeout_seconds": 120
+    },
+    "conformance-targeted": {
+      "argv": [
+        "swift",
+        "run",
+        "--disable-automatic-resolution",
+        "--skip-update",
+        "--resolver-fingerprint-checking",
+        "strict",
+        "--resolver-signing-entity-checking",
+        "strict",
+        "--package-path",
+        "ios/Packages/LegadoKit",
+        "ConformanceCLI",
+        "run-work-item",
+        "{work_item_id}"
+      ],
+      "cwd": ".",
+      "timeout_seconds": 300
+    }
+  }
+}

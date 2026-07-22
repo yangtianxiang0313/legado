@@ -1,0 +1,77 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-BOOT-001",
+    "title": "建立 Swift Package 与首批模块骨架",
+    "priority": 100,
+    "risk": "medium",
+    "labels": ["phase-0", "bootstrap", "architecture"]
+  },
+  "spec": {
+    "capability": "CAP-BOOTSTRAP",
+    "intent": "创建可在 Swift 6.2 下编译测试的 LegadoKit package，并把核心 Target 依赖固化为机器可检查的骨架。",
+    "depends_on": [],
+    "scope": {
+      "allow_write": [
+        "ios/Packages/LegadoKit/**",
+        "ios/project/capabilities/CAP-BOOTSTRAP.json",
+        "ios/project/checkpoints/IOS-BOOT-001.json"
+      ],
+      "deny_write": [
+        "ios/harness/**",
+        "ios/docs/**",
+        "ios/project/baseline.json",
+        "ios/project/approvals/**"
+      ],
+      "max_files_changed": 30,
+      "max_changed_lines": 1600
+    },
+    "inputs": {
+      "context_files": [
+        "ios/docs/architecture.md",
+        "ios/harness/architecture-rules.json",
+        "ios/docs/adr/0001-modular-compatibility-kernel.md"
+      ],
+      "android_source_anchors": [],
+      "fixtures": []
+    },
+    "architecture_refs": ["ARCH-001", "ARCH-002", "ARCH-005", "ARCH-008", "ADR-0001"],
+    "acceptance": {
+      "criteria": [
+        {"id": "AC-1", "statement": "Package.swift 使用 Swift tools 6.2、iOS 17+/macOS 14+，不包含三方依赖。", "verified_by": ["package-contract"], "requirement_clauses": ["REQ-ANDROID-BOOKSOURCE-SCHEMA-001#RC-01", "REQ-IOS-SOURCE-ROUNDTRIP-001#RC-01"]},
+        {"id": "AC-2", "statement": "定义全部首批核心 Target、StoreSafe/FullCompat library products、ConformanceCLI executable 与当前队列所需 test targets，依赖及发行闭包符合 architecture-rules.json。", "verified_by": ["package-contract", "architecture"], "requirement_clauses": ["REQ-ANDROID-BOOKSOURCE-SCHEMA-001#RC-02", "REQ-IOS-SOURCE-ROUNDTRIP-001#RC-02", "REQ-ANDROID-SOURCE-PIPELINE-001#RC-01", "REQ-ANDROID-SOURCE-PIPELINE-001#RC-02", "REQ-ANDROID-SOURCE-PIPELINE-001#RC-03", "REQ-ANDROID-SOURCE-PIPELINE-001#RC-04"]},
+        {"id": "AC-3", "statement": "每个已声明 Target 有可编译最小源码，测试发现正常。", "verified_by": ["package-contract", "swift-package-tests"], "requirement_clauses": []},
+        {"id": "AC-4", "statement": "显式使用 Swift 6 language mode；Swift 6 complete concurrency checking 生效。", "verified_by": ["package-contract", "swift-package-tests"], "requirement_clauses": []}
+      ],
+    "required_checks": ["android-intake-contract", "android-intake-tests", "harness-tests", "package-contract", "dependency-policy", "swift-format-lint", "swift-package-tests"]
+    },
+    "baseline_checks": ["harness-tests"],
+    "budget": {
+      "wall_clock_seconds": 2400,
+      "max_edit_verify_cycles": 3,
+      "max_targeted_test_runs": 3,
+      "max_full_test_runs": 1,
+      "max_infra_retries": 1
+    },
+    "gates": [],
+    "completion_effects": {"health": {"ios_build": "package_verified"}},
+    "memory": {
+      "capability_state_required": true,
+      "compatibility": "if_observed",
+      "pitfall": "if_non_obvious_and_preventable",
+      "adr": "not_expected"
+    },
+    "requirements": {
+      "mode": "enabler",
+      "refs": [
+        {"id": "REQ-ANDROID-BOOKSOURCE-SCHEMA-001", "revision": 1, "clauses": ["RC-01", "RC-02"]},
+        {"id": "REQ-IOS-SOURCE-ROUNDTRIP-001", "revision": 1, "clauses": ["RC-01", "RC-02"]},
+        {"id": "REQ-ANDROID-SOURCE-PIPELINE-001", "revision": 1, "clauses": ["RC-01", "RC-02", "RC-03", "RC-04"]}
+      ],
+      "none_reason": null
+    },
+    "source_lab": {"mode": "not_applicable", "behaviors": [], "scenarios": [], "none_reason": "仅建立 Swift Package 与模块边界，不实现书源行为"},
+    "stop_on": ["baseline_red", "scope_violation", "protected_path_mutation", "same_failure_twice", "budget_exhausted", "human_decision_required"]
+  }
+}

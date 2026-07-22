@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "legado.compatibility-record/v1",
+  "type": "object",
+  "required": ["schema_version", "id", "revision", "capability", "title", "android", "ios", "classification", "decision", "affected_profiles", "severity", "tests", "status", "introduced_by"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "id": {"type": "string", "pattern": "^COMP-[0-9]{4}$"},
+    "revision": {"type": "integer", "minimum": 1},
+    "capability": {"type": "string"},
+    "classification": {"enum": ["bug", "intentional_difference", "unsupported", "unknown"]},
+    "decision": {"enum": ["align_android", "accept_difference", "defer"]},
+    "severity": {"enum": ["low", "medium", "high", "critical"]},
+    "status": {"enum": ["open", "resolved", "obsolete"]}
+  }
+}

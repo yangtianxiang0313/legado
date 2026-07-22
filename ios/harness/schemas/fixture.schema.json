@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "legado.fixture/v1",
+  "type": "object",
+  "required": ["schema_version", "id", "operation", "capabilities", "compatibility_profile", "source", "input", "transport", "determinism", "limits"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]+$"},
+    "operation": {"enum": ["source_round_trip", "source_lab_site", "search", "explore", "book_info", "chapters", "content", "rule"]},
+    "capabilities": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "compatibility_profile": {"type": "string"},
+    "source": {"type": "string"},
+    "input": {"type": "string"},
+    "transport": {
+      "type": "object",
+      "required": ["mode", "responses"],
+      "properties": {
+        "mode": {"enum": ["offline", "fixture_and_loopback"]},
+        "responses": {"type": "array", "items": {"type": "object"}}
+      }
+    },
+    "determinism": {
+      "type": "object",
+      "required": ["clock", "timezone", "locale", "random_seed", "network_allowed"],
+      "properties": {
+        "clock": {"type": "string"},
+        "timezone": {"type": "string"},
+        "locale": {"type": "string"},
+        "random_seed": {"type": "integer"},
+        "network_allowed": {"const": false}
+      }
+    },
+    "limits": {
+      "type": "object",
+      "required": ["timeout_ms", "max_response_bytes"],
+      "properties": {
+        "timeout_ms": {"type": "integer", "minimum": 1},
+        "max_response_bytes": {"type": "integer", "minimum": 1}
+      }
+    }
+  }
+}

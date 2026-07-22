@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "legado.pitfall-record/v1",
+  "type": "object",
+  "required": ["schema_version", "id", "revision", "title", "fingerprint", "capabilities", "symptoms", "conditions", "root_cause", "diagnosis", "fix", "prevention", "status", "occurrences", "first_seen", "last_seen", "evidence"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "id": {"type": "string", "pattern": "^PIT-[0-9]{4}$"},
+    "revision": {"type": "integer", "minimum": 1},
+    "fingerprint": {"type": "string", "minLength": 1},
+    "capabilities": {"type": "array", "items": {"type": "string"}},
+    "root_cause": {"type": "string", "minLength": 1},
+    "prevention": {"type": "object"},
+    "status": {"enum": ["open", "mitigated", "resolved", "obsolete"]},
+    "occurrences": {"type": "integer", "minimum": 1},
+    "evidence": {"type": "array", "items": {"type": "string"}}
+  }
+}

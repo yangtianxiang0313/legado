@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "id": "ARQ-AREA-BEHAVIOR",
+  "status": "proposed",
+  "dedupe_key": "CAP-AREA/observable.behavior/profile",
+  "source_facts": ["AF-EXAMPLE"],
+  "evidence_level": "L2",
+  "observable_intent": "只描述用户或调用方可观察结果，不把源码实现细节当需求",
+  "unknowns": ["需要 Android runner 刻画的分支与错误语义"],
+  "source_lab_gap": [],
+  "auto_action": "create_characterization_dag"
+}

@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "id": "DEP-0000",
+  "identity": "package-identity",
+  "from_version": null,
+  "to_exact_version": "0.0.0",
+  "products": ["Product"],
+  "allowed_targets": ["ApprovedAdapter"],
+  "expected_revision": "0000000000000000000000000000000000000000",
+  "adr": "ADR-0000",
+  "reason": "why system APIs or existing dependencies are insufficient",
+  "alternatives": ["evaluated alternative"],
+  "transitive_dependencies": [],
+  "license": "SPDX identifier",
+  "privacy_manifest": "present/absent and audit conclusion",
+  "security_review": "advisory, binary, plugin, macro and provenance conclusion",
+  "size_delta_bytes": 0,
+  "exit_plan": "adapter boundary and removal plan",
+  "owner": "team-or-person",
+  "required_checks": ["dependency-policy"],
+  "status": "proposed"
+}

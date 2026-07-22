@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "scope": "phase-0-and-phase-1-source-domain",
+  "unmapped_fact_action": "fail",
+  "sensors": [
+    {
+      "fact_id": "AF-BOOKSOURCE-CONSTRUCTOR",
+      "fact_key": "book-source.schema.book-source",
+      "category": "data_contract",
+      "evidence_level": "L1",
+      "support_state": "declaration_only",
+      "extractor": "kotlin_primary_constructor",
+      "path": "app/src/main/java/io/legado/app/data/entities/BookSource.kt",
+      "symbol": "BookSource",
+      "symbol_id": "kotlin://io.legado.app.data.entities/BookSource/primary-constructor",
+      "maps_to": ["REQ-ANDROID-BOOKSOURCE-SCHEMA-001"]
+    },
+    {
+      "fact_id": "AF-SEARCHRULE-CONSTRUCTOR",
+      "fact_key": "book-source.schema.search-rule",
+      "category": "data_contract",
+      "evidence_level": "L1",
+      "support_state": "declaration_only",
+      "extractor": "kotlin_primary_constructor",
+      "path": "app/src/main/java/io/legado/app/data/entities/rule/SearchRule.kt",
+      "symbol": "SearchRule",
+      "symbol_id": "kotlin://io.legado.app.data.entities.rule/SearchRule/primary-constructor",
+      "maps_to": ["REQ-ANDROID-BOOKSOURCE-SCHEMA-001"]
+    },
+    {
+      "fact_id": "AF-EXPLORERULE-CONSTRUCTOR",
+      "fact_key": "book-source.schema.explore-rule",
+      "category": "data_contract",
+      "evidence_level": "L1",
+      "support_state": "declaration_only",
+      "extractor": "kotlin_primary_constructor",
+      "path": "app/src/main/java/io/legado/app/data/entities/rule/ExploreRule.kt",
+      "symbol": "ExploreRule",
+      "symbol_id": "kotlin://io.legado.app.data.entities.rule/ExploreRule/primary-constructor",
+      "maps_to": ["REQ-ANDROID-BOOKSOURCE-SCHEMA-001"]
+    },
+    {
+      "fact_id": "AF-BOOKINFORULE-CONSTRUCTOR",
+      "fact_key": "book-source.schema.book-info-rule",
+      "category": "data_contract",
+      "evidence_level": "L1",
+      "support_state": "declaration_only",
+      "extractor": "kotlin_primary_constructor",
+      "path": "app/src/main/java/io/legado/app/data/entities/rule/BookInfoRule.kt",
+      "symbol": "BookInfoRule",
+      "symbol_id": "kotlin://io.legado.app.data.entities.rule/BookInfoRule/primary-constructor",
+      "maps_to": ["REQ-ANDROID-BOOKSOURCE-SCHEMA-001"]
+    },
+    {
+      "fact_id": "AF-TOCRULE-CONSTRUCTOR",
+      "fact_key": "book-source.schema.toc-rule",
+      "category": "data_contract",
+      "evidence_level": "L1",
+      "support_state": "declaration_only",
+      "extractor": "kotlin_primary_constructor",
+      "path": "app/src/main/java/io/legado/app/data/entities/rule/TocRule.kt",
+      "symbol": "TocRule",
+      "symbol_id": "kotlin://io.legado.app.data.entities.rule/TocRule/primary-constructor",
+      "maps_to": ["REQ-ANDROID-BOOKSOURCE-SCHEMA-001"]
+    },
+    {
+      "fact_id": "AF-CONTENTRULE-CONSTRUCTOR",
+      "fact_key": "book-source.schema.content-rule",
+      "category": "data_contract",
+      "evidence_level": "L1",
+      "support_state": "declaration_only",
+      "extractor": "kotlin_primary_constructor",
+      "path": "app/src/main/java/io/legado/app/data/entities/rule/ContentRule.kt",
+      "symbol": "ContentRule",
+      "symbol_id": "kotlin://io.legado.app.data.entities.rule/ContentRule/primary-constructor",
+      "maps_to": ["REQ-ANDROID-BOOKSOURCE-SCHEMA-001"]
+    },
+    {
+      "fact_id": "AF-REVIEWRULE-CONSTRUCTOR",
+      "fact_key": "book-source.schema.review-rule",
+      "category": "data_contract",
+      "evidence_level": "L1",
+      "support_state": "declaration_only",
+      "extractor": "kotlin_primary_constructor",
+      "path": "app/src/main/java/io/legado/app/data/entities/rule/ReviewRule.kt",
+      "symbol": "ReviewRule",
+      "symbol_id": "kotlin://io.legado.app.data.entities.rule/ReviewRule/primary-constructor",
+      "maps_to": ["REQ-ANDROID-BOOKSOURCE-SCHEMA-001"]
+    },
+    {
+      "fact_id": "AF-WEBBOOK-SEARCH-ENTRYPOINT",
+      "fact_key": "book-source.pipeline.search",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
+      "symbol": "searchBookAwait",
+      "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook/searchBookAwait",
+      "maps_to": ["REQ-ANDROID-SOURCE-PIPELINE-001"]
+    },
+    {
+      "fact_id": "AF-WEBBOOK-EXPLORE-ENTRYPOINT",
+      "fact_key": "book-source.pipeline.explore",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
+      "symbol": "exploreBookAwait",
+      "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook/exploreBookAwait",
+      "maps_to": ["REQ-ANDROID-SOURCE-PIPELINE-001"]
+    },
+    {
+      "fact_id": "AF-WEBBOOK-BOOKINFO-ENTRYPOINT",
+      "fact_key": "book-source.pipeline.book-info",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
+      "symbol": "getBookInfoAwait",
+      "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook/getBookInfoAwait",
+      "maps_to": ["REQ-ANDROID-SOURCE-PIPELINE-001"]
+    },
+    {
+      "fact_id": "AF-WEBBOOK-TOC-ENTRYPOINT",
+      "fact_key": "book-source.pipeline.toc",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
+      "symbol": "getChapterListAwait",
+      "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook/getChapterListAwait",
+      "maps_to": ["REQ-ANDROID-SOURCE-PIPELINE-001"]
+    },
+    {
+      "fact_id": "AF-WEBBOOK-CONTENT-ENTRYPOINT",
+      "fact_key": "book-source.pipeline.content",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
+      "symbol": "getContentAwait",
+      "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook/getContentAwait",
+      "maps_to": ["REQ-ANDROID-SOURCE-PIPELINE-001"]
+    }
+  ]
+}

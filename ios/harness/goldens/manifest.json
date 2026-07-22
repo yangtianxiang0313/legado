@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "oracle": {
+    "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "profile": "android-legado-v1",
+    "runner_digest": null
+  },
+  "canonicalizer_sha256": null,
+  "fixtures": {}
+}

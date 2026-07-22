@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "id": "CAP-CONFORMANCE",
+  "revision": 1,
+  "title": "离线 Fixture 与双端执行 Envelope",
+  "area": "conformance",
+  "contract": "ios/docs/testing-and-conformance.md",
+  "requirement_refs": [
+    {"id": "REQ-ANDROID-BOOKSOURCE-SCHEMA-001", "revision": 1, "clauses": ["RC-01", "RC-02"]},
+    {"id": "REQ-IOS-SOURCE-ROUNDTRIP-001", "revision": 1, "clauses": ["RC-01", "RC-02"]},
+    {"id": "REQ-ANDROID-SOURCE-PIPELINE-001", "revision": 1, "clauses": ["RC-01", "RC-02", "RC-03", "RC-04"]}
+  ],
+  "declared_status": "proposed",
+  "profiles": {"store_safe": "development_only", "full_compat": "development_only"},
+  "owners": {"targets": ["TestSupport", "ConformanceCLI"], "paths": ["ios/Packages/LegadoKit/Sources/ConformanceCLI/**", "ios/Packages/LegadoKit/Sources/TestSupport/**", "ios/harness/fixtures/**", "ios/harness/source-lab/**"]},
+  "depends_on": ["CAP-BOOTSTRAP", "CAP-CORE"],
+  "active_decisions": ["ADR-0002", "ADR-0004"],
+  "open_compatibility": [],
+  "open_pitfalls": [],
+  "blockers": [],
+  "required_evidence": ["android-intake-contract", "dependency-policy", "source-lab-contract", "source-lab-tests", "source-lab-smoke", "swift-package-tests", "architecture"],
+  "freshness_inputs": ["baseline_sha256", "architecture_digest_sha256", "architecture_rules_sha256", "harness_config_sha256", "dependency_lock_sha256", "source_lab_control_sha256", "source_lab_selection_sha256", "android_intake_control_sha256", "android_requirement_selection_sha256"],
+  "latest_evidence": null,
+  "next_actions": ["实现 fixture schema、FixtureTransport 与 canonical execution envelope", "将 SourceLab reference scenario 接入 TestSupport 和 ConformanceCLI"],
+  "updated_at": "2026-07-22T00:00:00+08:00",
+  "updated_by": "project-initialization"
+}

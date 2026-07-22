@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "compatibility_profile": "android-legado-v1",
+  "canonicalizer": "canonical-v1",
+  "fixtures": [
+    {
+      "id": "sl-html-basic-001",
+      "path": "ios/harness/fixtures/source-lab/sl-html-basic-001",
+      "sha256": "9f87981be618e50dd4ff66ceb5a838aba6cc66ef3c1f9034cf889bb05515ee4e"
+    }
+  ]
+}

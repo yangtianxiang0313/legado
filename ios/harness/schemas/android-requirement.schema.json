@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "legado.android-requirement/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "revision", "status", "semantic_key", "title", "origin", "classification", "capability_refs", "clauses", "readiness", "supersedes"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "id": {"type": "string", "pattern": "^REQ-[A-Z0-9-]+$"},
+    "revision": {"type": "integer", "minimum": 1},
+    "status": {"enum": ["candidate", "accepted", "deferred", "rejected", "superseded"]},
+    "semantic_key": {"type": "string", "minLength": 1},
+    "title": {"type": "string", "minLength": 1},
+    "origin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "baseline_commit", "fact_refs", "decision_refs", "admission"],
+      "properties": {
+        "kind": {"enum": ["android_observed", "ios_product_decision", "ios_enabler"]},
+        "baseline_commit": {"type": ["string", "null"]},
+        "fact_refs": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^AF-[A-Z0-9-]+$"}},
+        "decision_refs": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "admission": {"enum": ["bootstrap_charter", "policy_auto", "human_review"]}
+      }
+    },
+    "classification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "profiles", "support_state", "evidence_level"],
+      "properties": {
+        "kind": {"enum": ["portable_parity_behavior", "native_equivalent", "ios_policy_extension", "ios_enabler", "unsupported"]},
+        "profiles": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["store_safe", "full_compat", "development_only"]}},
+        "support_state": {"enum": ["active", "active_untested", "declaration_only", "declared_dormant", "project_only"]},
+        "evidence_level": {"enum": ["L1", "L2", "L3", "L4", "project"]}
+      }
+    },
+    "capability_refs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^CAP-[A-Z0-9-]+$"}},
+    "clauses": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "statement", "proof_kind", "required_checks", "source_lab_behaviors"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^RC-[0-9]{2}$"},
+          "statement": {"type": "string", "minLength": 1},
+          "proof_kind": {"enum": ["static_source", "android_oracle", "architecture_decision", "human_adjudication"]},
+          "required_checks": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+          "source_lab_behaviors": {"type": "array", "uniqueItems": true, "items": {"type": "string"}}
+        }
+      }
+    },
+    "readiness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "blockers", "next_action"],
+      "properties": {
+        "state": {"enum": ["observed", "characterization_required", "decision_required", "implementation_ready", "retired"]},
+        "blockers": {"type": "array", "items": {"type": "string"}},
+        "next_action": {"type": "string", "minLength": 1}
+      }
+    },
+    "supersedes": {"type": ["object", "null"]}
+  }
+}

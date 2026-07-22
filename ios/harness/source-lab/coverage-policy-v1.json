@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "roles": ["nominal", "boundary", "malformed", "denied"],
+  "behaviors": [
+    {"id": "transport.get-query", "status": "active", "required_roles": ["nominal"], "min_cases_per_role": 1, "phase": 1},
+    {"id": "pipeline.search-html", "status": "active", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 1},
+    {"id": "pipeline.book-info-html", "status": "active", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 1},
+    {"id": "pipeline.toc-html", "status": "active", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 1},
+    {"id": "pipeline.content-html", "status": "active", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 1},
+    {"id": "url.relative-resolution", "status": "active", "required_roles": ["nominal"], "min_cases_per_role": 1, "phase": 1},
+    {"id": "rule.css-selector", "status": "active", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 1},
+    {"id": "transport.post-form", "status": "planned", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 1},
+    {"id": "transport.post-json", "status": "planned", "required_roles": ["nominal", "malformed"], "min_cases_per_role": 1, "phase": 1},
+    {"id": "transport.redirect", "status": "planned", "required_roles": ["nominal", "denied"], "min_cases_per_role": 1, "phase": 1},
+    {"id": "transport.cookie-session", "status": "planned", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 1},
+    {"id": "transport.rate-limit", "status": "planned", "required_roles": ["nominal", "denied"], "min_cases_per_role": 1, "phase": 1},
+    {"id": "decode.charset", "status": "planned", "required_roles": ["nominal", "malformed"], "min_cases_per_role": 1, "phase": 1},
+    {"id": "decode.compression", "status": "planned", "required_roles": ["nominal", "malformed"], "min_cases_per_role": 1, "phase": 1},
+    {"id": "rule.xpath", "status": "planned", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 3},
+    {"id": "rule.jsonpath", "status": "planned", "required_roles": ["nominal", "malformed"], "min_cases_per_role": 1, "phase": 3},
+    {"id": "rule.regex", "status": "planned", "required_roles": ["nominal", "malformed"], "min_cases_per_role": 1, "phase": 3},
+    {"id": "rule.javascript", "status": "planned", "required_roles": ["nominal", "denied"], "min_cases_per_role": 1, "phase": 3},
+    {"id": "runtime.dynamic-web", "status": "planned", "required_roles": ["nominal", "denied"], "min_cases_per_role": 1, "phase": 3},
+    {"id": "runtime.cancellation", "status": "planned", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 3},
+    {"id": "profile.store-safe-denial", "status": "planned", "required_roles": ["denied"], "min_cases_per_role": 1, "phase": 4}
+  ]
+}

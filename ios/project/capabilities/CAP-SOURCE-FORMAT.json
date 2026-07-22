@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "id": "CAP-SOURCE-FORMAT",
+  "revision": 1,
+  "title": "Android 书源 JSON 解析与无损 round-trip",
+  "area": "source-format",
+  "contract": "ios/docs/architecture.md",
+  "requirement_refs": [
+    {"id": "REQ-ANDROID-BOOKSOURCE-SCHEMA-001", "revision": 1, "clauses": ["RC-01", "RC-02"]},
+    {"id": "REQ-IOS-SOURCE-ROUNDTRIP-001", "revision": 1, "clauses": ["RC-01", "RC-02"]}
+  ],
+  "declared_status": "proposed",
+  "profiles": {"store_safe": "planned", "full_compat": "planned"},
+  "owners": {"targets": ["SourceFormat"], "paths": ["ios/Packages/LegadoKit/Sources/SourceFormat/**"]},
+  "depends_on": ["CAP-BOOTSTRAP", "CAP-CORE", "CAP-CONFORMANCE"],
+  "active_decisions": ["ADR-0001", "ADR-0002", "ADR-0003"],
+  "open_compatibility": [],
+  "open_pitfalls": [],
+  "blockers": [],
+  "required_evidence": ["android-intake-contract", "dependency-policy", "swift-package-tests", "conformance-targeted", "architecture"],
+  "freshness_inputs": ["baseline_sha256", "architecture_digest_sha256", "architecture_rules_sha256", "harness_config_sha256", "golden_manifest_sha256", "fixture_manifest_sha256", "dependency_lock_sha256", "android_intake_control_sha256", "android_requirement_selection_sha256"],
+  "latest_evidence": null,
+  "next_actions": ["实现 BookSource DTO、未知字段保留、校验和 canonical JSON round-trip"],
+  "updated_at": "2026-07-22T00:00:00+08:00",
+  "updated_by": "project-initialization"
+}

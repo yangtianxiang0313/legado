@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "id": "REQ-IOS-SOURCE-ROUNDTRIP-001",
+  "revision": 1,
+  "status": "accepted",
+  "semantic_key": "source-format.forward-compatible-roundtrip",
+  "title": "iOS 书源 JSON 前向兼容与未知字段无损保留",
+  "origin": {
+    "kind": "ios_product_decision",
+    "baseline_commit": null,
+    "fact_refs": [],
+    "decision_refs": ["ARCH-012", "ADR-0001"],
+    "admission": "bootstrap_charter"
+  },
+  "classification": {
+    "kind": "ios_policy_extension",
+    "profiles": ["store_safe", "full_compat"],
+    "support_state": "project_only",
+    "evidence_level": "project"
+  },
+  "capability_refs": ["CAP-SOURCE-FORMAT"],
+  "clauses": [
+    {
+      "id": "RC-01",
+      "statement": "未知 object、array、number、string、boolean 与 null 字段经过 decode/encode round-trip 后保持 JSON 类型和值。",
+      "proof_kind": "architecture_decision",
+      "required_checks": ["swift-package-tests"],
+      "source_lab_behaviors": []
+    },
+    {
+      "id": "RC-02",
+      "statement": "missing、null、empty 与 value 在 SourceFormat 层保持可区分，Domain 默认值和 Android coercion 只能由独立行为证据决定。",
+      "proof_kind": "architecture_decision",
+      "required_checks": ["swift-package-tests"],
+      "source_lab_behaviors": []
+    }
+  ],
+  "readiness": {
+    "state": "implementation_ready",
+    "blockers": [],
+    "next_action": "随 BookSource DTO 一起实现并执行 round-trip 性质测试"
+  },
+  "supersedes": null
+}
