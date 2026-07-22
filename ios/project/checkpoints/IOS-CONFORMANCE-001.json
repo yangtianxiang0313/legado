@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-CONFORMANCE-001",
+  "summary": "已建立受 manifest 哈希约束的离线 fixture、具备路径/重复路由/资源上限校验的 loader、无网络 fallback 的 actor FixtureTransport、精确 JSON canonical execution envelope，以及可重复运行并输出字节一致 artifact 的 ConformanceCLI 骨架。",
+  "evidence": "ios/harness/evidence/runs/run-20260722T101817Z-ios-conformance-001-9a8c634c.json",
+  "capability_updates": [
+    {
+      "id": "CAP-CONFORMANCE",
+      "from_revision": 1,
+      "to_revision": 2,
+      "state_path": "ios/project/capabilities/CAP-CONFORMANCE.json"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": ["ADR-0002", "ADR-0004"]
+  },
+  "requirements": {
+    "mode": "enabler",
+    "refs": [
+      {
+        "id": "REQ-ANDROID-BOOKSOURCE-SCHEMA-001",
+        "revision": 1,
+        "clauses": ["RC-01", "RC-02"]
+      },
+      {
+        "id": "REQ-IOS-SOURCE-ROUNDTRIP-001",
+        "revision": 1,
+        "clauses": ["RC-01", "RC-02"]
+      },
+      {
+        "id": "REQ-ANDROID-SOURCE-PIPELINE-001",
+        "revision": 1,
+        "clauses": ["RC-01", "RC-02", "RC-03", "RC-04"]
+      }
+    ],
+    "selection_sha256": "c58e3d68c8cc7b3dfd09758b853716d4e962f75b193676c22ef05f400f75634f"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "当前只完成 iOS 离线执行骨架，尚未接入受保护 Android golden，因此没有可裁决的跨端差异"
+  },
+  "pitfalls": {
+    "records": ["ios/project/pitfalls/PIT-0003.json"],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "PIT-0003 仍为 mitigated：受保护 schema/normalizer 尚未正式冻结 artifact 与 comparison projection 的共同协议",
+    "Standalone CLI 当前按 fixture 目录运行；Harness 会绑定 manifest hash，但未来对外入口应改为按 manifest ID 解析，拒绝未索引目录",
+    "clock、timezone、locale 与 random seed 已固定在 fixture，实际规则/书源执行器接入后还需注入对应 runtime ports"
+  ],
+  "next_actions": [
+    "推进 IOS-SOURCELAB-ENGINE-001，将 SourceLab reference scenario 接入 FixtureTransport 与 ConformanceCLI",
+    "创建受保护契约提案，修正 execution-envelope schema 与 canonical-v1 的 comparison projection"
+  ],
+  "created_at": "2026-07-22T10:18:50Z"
+}

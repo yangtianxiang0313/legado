@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0003",
+  "revision": 1,
+  "title": "Envelope provenance 未排除会导致跨端比较必然首差",
+  "fingerprint": "execution-envelope-platform-provenance-comparison-drift",
+  "capabilities": ["CAP-CONFORMANCE"],
+  "symptoms": [
+    "Android 与 iOS 业务语义完全一致时，差分仍首先报告 /engine/platform 或 /engine/revision 不同",
+    "完整 artifact 可追溯性字段被误当作业务语义字段"
+  ],
+  "conditions": [
+    "直接比较符合 execution-envelope/v1 的完整 artifact",
+    "canonical-v1 未忽略或单独投影 engine.platform 与 engine.revision"
+  ],
+  "root_cause": "Envelope schema 要求 platform/revision 作为 provenance，但当前受保护 normalizer 没有定义跨端 comparison projection，追溯字段与语义字段边界混在同一对象中。",
+  "diagnosis": [
+    "构造仅 platform/revision 不同的 Android/iOS envelope 并比较 canonical bytes",
+    "检查首个 JSON Pointer 是否为 /engine/platform 或 /engine/revision"
+  ],
+  "fix": "当前 Swift 侧分别提供 artifactData 与 comparisonData，后者只保留 compatibility_profile；最终需由受保护契约工作项让 Android runner、schema、canonical-v1 与 comparator 共同采用同一 comparison projection。",
+  "prevention": {
+    "architecture_rule": "完整 artifact 与 semantic comparison payload 必须是两个显式 API，禁止直接跨平台比较 provenance 字段",
+    "tests": [
+      "ios/Packages/LegadoKit/Tests/TestSupportTests/ExecutionEnvelopeTests.swift#testComparisonExcludesPlatformAndRevisionButKeepsProfile"
+    ],
+    "lint": []
+  },
+  "affected_versions": {"from": "canonical-v1", "until": null},
+  "status": "mitigated",
+  "occurrences": 1,
+  "first_seen": "2026-07-22",
+  "last_seen": "2026-07-22",
+  "evidence": ["ios/harness/evidence/runs/run-20260722T101817Z-ios-conformance-001-9a8c634c.json"]
+}

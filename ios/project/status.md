@@ -2,13 +2,13 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-22T10:08:43Z
+- 更新时间：2026-07-22T10:19:21Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
-- 下一个可领取工作项：IOS-CONFORMANCE-001
-- 最近完成：IOS-RUNTIME-PORTS-001
+- 下一个可领取工作项：IOS-SOURCELAB-ENGINE-001
+- 最近完成：IOS-CONFORMANCE-001
 
 ## 健康度
 
@@ -17,7 +17,7 @@
 | android_intake | `fact_inventory_ready` |
 | android_oracle | `not_started` |
 | architecture | `designed` |
-| conformance | `not_started` |
+| conformance | `scaffold_verified` |
 | harness | `ready` |
 | ios_build | `package_verified` |
 | requirements | `catalog_ready_one_characterization_gap` |
@@ -30,7 +30,7 @@
 | IOS-BOOT-001 | 100 | `completed` | 无 | 建立 Swift Package 与首批模块骨架 |
 | IOS-CORE-001 | 90 | `completed` | IOS-BOOT-001 | 实现稳定 ID、JSONValue、Clock、Trace 和错误基础 |
 | IOS-RUNTIME-PORTS-001 | 85 | `completed` | IOS-BOOT-001, IOS-CORE-001 | 定义确定性 HTTP 请求响应与 Transport port |
-| IOS-CONFORMANCE-001 | 80 | `ready` | IOS-BOOT-001, IOS-CORE-001, IOS-RUNTIME-PORTS-001 | 建立离线 Fixture 与 canonical execution envelope 骨架 |
+| IOS-CONFORMANCE-001 | 80 | `completed` | IOS-BOOT-001, IOS-CORE-001, IOS-RUNTIME-PORTS-001 | 建立离线 Fixture 与 canonical execution envelope 骨架 |
 | IOS-SOURCELAB-ENGINE-001 | 75 | `ready` | IOS-CONFORMANCE-001 | 将 SourceLab 场景接入 FixtureTransport 与 ConformanceCLI |
 | IOS-SOURCE-FORMAT-001 | 70 | `ready` | IOS-BOOT-001, IOS-CORE-001, IOS-CONFORMANCE-001, IOS-SOURCELAB-ENGINE-001 | 实现 BookSource 最小无损 JSON round-trip |
 | IOS-SOURCE-FORMAT-CONFORMANCE-001 | 65 | `blocked` | IOS-SOURCE-FORMAT-001, IOS-SOURCELAB-ENGINE-001 | 接入 BookSource Android golden 差分 |

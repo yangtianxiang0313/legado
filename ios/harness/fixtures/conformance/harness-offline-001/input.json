@@ -1,0 +1,8 @@
+{
+  "method": "GET",
+  "url": "https://fixture.test/search?q=%E6%98%9F%E6%B2%B3",
+  "headers": [
+    {"name": "accept", "value": "application/json"}
+  ],
+  "body_file": null
+}

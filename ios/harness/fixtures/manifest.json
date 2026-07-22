@@ -4,6 +4,11 @@
   "canonicalizer": "canonical-v1",
   "fixtures": [
     {
+      "id": "harness-offline-001",
+      "path": "ios/harness/fixtures/conformance/harness-offline-001",
+      "sha256": "67524464e9c2f0b5ce9bf6420532cb0ca382f698f9a16229ce8d1a7af9b10f7f"
+    },
+    {
       "id": "sl-html-basic-001",
       "path": "ios/harness/fixtures/source-lab/sl-html-basic-001",
       "sha256": "9f87981be618e50dd4ff66ceb5a838aba6cc66ef3c1f9034cf889bb05515ee4e"
