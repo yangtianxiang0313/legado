@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "revision": 36,
+  "revision": 37,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-23T08:09:31Z",
-  "event_head": "4661bcbf0198377c6d518d611e4e4a04e273bbad296cfa1d34cc36596acbab43",
+  "updated_at": "2026-07-23T08:17:04Z",
+  "event_head": "55952f7808bd32837dcaef6b42431f374f66de0d4ff12489d3aac54975475804",
   "active_work_items": [],
   "last_completed_work_item": "IOS-KNOWLEDGE-DAG-REPAIR-001",
   "work_items": {
@@ -718,6 +718,11 @@
       "verified_at": "2026-07-23T08:08:20Z",
       "completed_at": "2026-07-23T08:09:31Z",
       "final_tree_sha256": "17d1a4347df8dce60b8a7b297b66c5d0ca9fb7d9034c1aa674a0e4835dd03b00"
+    },
+    "IOS-KNOWLEDGE-LEDGER-GATE-REPAIR-001": {
+      "status": "ready",
+      "attempt": 0,
+      "last_evidence": null
     }
   },
   "health": {
