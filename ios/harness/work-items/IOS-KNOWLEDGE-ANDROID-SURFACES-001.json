@@ -1,0 +1,175 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-KNOWLEDGE-ANDROID-SURFACES-001",
+    "title": "提取 Android 业务表面与领域索引",
+    "priority": 90,
+    "risk": "high",
+    "labels": ["phase-1", "knowledge", "android-scan", "business-surface"]
+  },
+  "spec": {
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "intent": "从冻结 Android baseline 的生产入口、用户可见页面、领域实体与集成入口中提取业务表面，形成首个 Business Knowledge Packet candidate；只描述业务概念、用户流程、证据边界和后续扫描缺口，不复制 Android package 架构，不接受产品范围，不修改 iOS 产品代码。",
+    "depends_on": ["IOS-KNOWLEDGE-SELECTION-ROBUSTNESS-001"],
+    "scope": {
+      "allow_write": [
+        "ios/project/business-knowledge/packets/proposals/BKP-ANDROID-SURFACES-001/r0001.json",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-KNOWLEDGE-ANDROID-SURFACES-001.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "ios/harness/**",
+        "ios/project/android-intake/**",
+        "ios/project/business-knowledge/packets/published/**",
+        "ios/project/business-knowledge/drivers/**",
+        "ios/project/business-knowledge/coverage/**",
+        "ios/project/requirements/**",
+        "ios/project/requirement-proposals/**",
+        "ios/project/work-item-proposals/**",
+        "ios/project/baseline.json",
+        "ios/project/approvals/**",
+        "ios/docs/**"
+      ],
+      "max_files_changed": 4,
+      "max_changed_lines": 1600
+    },
+    "inputs": {
+      "context_files": [
+        "ios/docs/android-requirement-intake.md",
+        "ios/docs/business-knowledge-control-plane.md",
+        "ios/project/android-intake/inventory-manifest.json",
+        "ios/project/work-item-proposals/initialization-dag.json"
+      ],
+      "android_source_anchors": [
+        "app/src/main/AndroidManifest.xml",
+        "app/src/main/java/io/legado/app/ui/main/MainActivity.kt",
+        "app/src/main/java/io/legado/app/ui/main/bookshelf/BaseBookshelfFragment.kt",
+        "app/src/main/java/io/legado/app/ui/book/search/SearchActivity.kt",
+        "app/src/main/java/io/legado/app/ui/book/info/BookInfoActivity.kt",
+        "app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt",
+        "app/src/main/java/io/legado/app/ui/book/source/manage/BookSourceActivity.kt",
+        "app/src/main/java/io/legado/app/ui/main/rss/RssFragment.kt",
+        "app/src/main/java/io/legado/app/help/storage/Backup.kt",
+        "app/src/main/java/io/legado/app/web/HttpServer.kt"
+      ],
+      "fixtures": []
+    },
+    "architecture_refs": ["ARCH-017", "ARCH-018", "ADR-0004"],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "Packet candidate 给出稳定的 bounded-context 与 subject 索引，覆盖书架/书籍、搜索发现、书源运行、阅读会话、RSS、导入备份与设置集成等主要业务表面。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "每条 Claim 明确区分静态事实、业务推断、运行行为、风险和开放问题；不得把 Android package、Activity、Room 或依赖库直接解释成 iOS Target 或架构结论。",
+          "verified_by": ["harness-tests", "dependency-policy"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "每条 Claim 都绑定冻结 commit 的真实源码锚点或受控 Fact revision；尚未有 Android 运行证据的行为保持 candidate/open_question，并声明 characterization 或 human decision。",
+          "verified_by": ["harness-tests", "android-intake-contract"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-4",
+          "statement": "现有 Fact Inventory 的 12 个条目全部被引用或被明确列为 detector/证据缺口，不能在业务扫描中静默丢失。",
+          "verified_by": ["harness-tests", "android-intake-contract"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-5",
+          "statement": "输出仅位于 packet proposal 区，不修改 published knowledge、Coverage、Requirement、架构文档、Swift 产品代码或 Android 源码。",
+          "verified_by": ["dependency-policy", "harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-6",
+          "statement": "Checkpoint 记录下一批分域扫描任务、需 Android characterization 的运行语义和仍待人工决定的产品范围；Capability 保持 partial。",
+          "verified_by": ["memory-close"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": [
+        "android-intake-contract",
+        "dependency-policy",
+        "harness-tests"
+      ]
+    },
+    "baseline_checks": ["android-intake-contract", "harness-tests"],
+    "budget": {
+      "wall_clock_seconds": 5400,
+      "max_edit_verify_cycles": 3,
+      "max_targeted_test_runs": 5,
+      "max_full_test_runs": 2,
+      "max_infra_retries": 1
+    },
+    "gates": [],
+    "completion_effects": {
+      "health": {
+        "knowledge_android_surfaces": "candidate_verified"
+      }
+    },
+    "memory": {
+      "capability_state_required": true,
+      "compatibility": "not_applicable",
+      "pitfall": "if_non_obvious_and_preventable",
+      "adr": "required_for_architecture_change"
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "refs": [],
+      "none_reason": "本项只生产业务知识候选，不接受或实现产品行为"
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "produce",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [
+        {
+          "kind": "packet",
+          "id": "BKP-ANDROID-SURFACES-001",
+          "revision": 1
+        }
+      ],
+      "expected_ledger_transitions": [],
+      "context_budget": {
+        "max_claims": 40,
+        "max_bytes": 65536
+      },
+      "none_reason": null
+    },
+    "source_lab": {
+      "mode": "not_applicable",
+      "behaviors": [],
+      "scenarios": [],
+      "none_reason": "本项只做源码业务表面扫描，不执行书源规则或本地站点"
+    },
+    "stop_on": [
+      "baseline_red",
+      "scope_violation",
+      "authority_escalation",
+      "knowledge_drift",
+      "same_failure_twice",
+      "budget_exhausted",
+      "human_decision_required"
+    ]
+  }
+}
