@@ -1,0 +1,229 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "legado.business-knowledge-packet/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "id",
+    "revision",
+    "status",
+    "semantic_key",
+    "title",
+    "baseline",
+    "scope",
+    "claims",
+    "supersedes",
+    "created_by"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "kind": {"const": "BusinessKnowledgePacket"},
+    "id": {"type": "string", "pattern": "^BKP-[A-Z][A-Z0-9-]*-[0-9]{3}$"},
+    "revision": {"type": "integer", "minimum": 1},
+    "status": {"enum": ["candidate", "published"]},
+    "semantic_key": {"type": "string", "pattern": "^[a-z][a-z0-9.-]+$"},
+    "title": {"type": "string", "minLength": 1},
+    "baseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["android_commit", "inventory_control_sha256"],
+      "properties": {
+        "android_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "inventory_control_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bounded_contexts", "capability_refs", "subject_keys"],
+      "properties": {
+        "bounded_contexts": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^[a-z][a-z0-9.-]+$"}
+        },
+        "capability_refs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^CAP-[A-Z0-9-]+$"}
+        },
+        "subject_keys": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^[a-z][a-z0-9.-]+$"}
+        }
+      }
+    },
+    "claims": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "semantic_key",
+          "kind",
+          "topic",
+          "statement",
+          "subject_keys",
+          "depends_on",
+          "support",
+          "conflicts_with",
+          "supersedes"
+        ],
+        "properties": {
+          "id": {"type": "string", "pattern": "^BKC-[A-Z][A-Z0-9-]*-[0-9]{3}$"},
+          "revision": {"type": "integer", "minimum": 1},
+          "semantic_key": {"type": "string", "pattern": "^[a-z][a-z0-9.-]+$"},
+          "kind": {
+            "enum": [
+              "composite_static_fact",
+              "runtime_behavior",
+              "business_inference",
+              "candidate_invariant",
+              "risk_or_anomaly",
+              "open_question"
+            ]
+          },
+          "topic": {"type": "string", "minLength": 1},
+          "statement": {"type": "string", "minLength": 1},
+          "subject_keys": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {"type": "string", "pattern": "^[a-z][a-z0-9.-]+$"}
+          },
+          "depends_on": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "revision"],
+              "properties": {
+                "id": {"type": "string", "pattern": "^BKC-[A-Z][A-Z0-9-]*-[0-9]{3}$"},
+                "revision": {"type": "integer", "minimum": 1}
+              }
+            }
+          },
+          "support": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "state",
+              "fact_refs",
+              "source_anchors",
+              "runtime_evidence",
+              "runtime_requirement"
+            ],
+            "properties": {
+              "state": {
+                "enum": [
+                  "candidate_source_anchored",
+                  "static_supported",
+                  "candidate_observed",
+                  "runtime_verified",
+                  "disputed"
+                ]
+              },
+              "fact_refs": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["id", "revision_sha256"],
+                  "properties": {
+                    "id": {"type": "string", "pattern": "^AF-[A-Z0-9-]+$"},
+                    "revision_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+                  }
+                }
+              },
+              "source_anchors": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["android_commit", "git_blob", "path", "symbol_id"],
+                  "properties": {
+                    "android_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+                    "git_blob": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+                    "path": {"type": "string", "minLength": 1},
+                    "symbol_id": {"type": "string", "minLength": 1}
+                  }
+                }
+              },
+              "runtime_evidence": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "relation",
+                    "kind",
+                    "artifact_uri",
+                    "artifact_sha256",
+                    "projection_pointer",
+                    "observed_sha256",
+                    "android_commit",
+                    "runner_digest",
+                    "canonicalizer_sha256"
+                  ],
+                  "properties": {
+                    "relation": {"enum": ["supports", "contradicts", "bounds"]},
+                    "kind": {"enum": ["android_characterization", "real_source_capture"]},
+                    "artifact_uri": {"type": "string", "minLength": 1},
+                    "artifact_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+                    "projection_pointer": {"type": "string", "minLength": 1},
+                    "observed_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+                    "android_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+                    "runner_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+                    "canonicalizer_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+                  }
+                }
+              },
+              "runtime_requirement": {
+                "enum": ["none", "android_characterization", "human_decision"]
+              }
+            }
+          },
+          "conflicts_with": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "revision"],
+              "properties": {
+                "id": {"type": "string", "pattern": "^BKC-[A-Z][A-Z0-9-]*-[0-9]{3}$"},
+                "revision": {"type": "integer", "minimum": 1}
+              }
+            }
+          },
+          "supersedes": {
+            "type": ["object", "null"],
+            "properties": {
+              "id": {"type": "string", "pattern": "^BKC-[A-Z][A-Z0-9-]*-[0-9]{3}$"},
+              "revision": {"type": "integer", "minimum": 1}
+            }
+          }
+        }
+      }
+    },
+    "supersedes": {
+      "type": ["object", "null"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^BKP-[A-Z][A-Z0-9-]*-[0-9]{3}$"},
+        "revision": {"type": "integer", "minimum": 1}
+      }
+    },
+    "created_by": {"type": "string", "pattern": "^IOS-[A-Z][A-Z0-9-]*-[0-9]{3}$"}
+  }
+}

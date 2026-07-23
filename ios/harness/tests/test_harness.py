@@ -262,6 +262,47 @@ class HarnessTests(unittest.TestCase):
         subprocess.run(["git", "add", "."], cwd=str(root), check=True)
         subprocess.run(["git", "commit", "-qm", "baseline"], cwd=str(root), check=True)
 
+    @staticmethod
+    def enable_business_knowledge(fixture: HarnessFixture):
+        root = fixture.root
+        shutil.copytree(
+            HARNESS_DIR / "business-knowledge",
+            root / "ios/harness/business-knowledge",
+            ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+        )
+        baseline = harness_module.load_json(root / "ios/project/baseline.json")
+        baseline["android_oracle"]["git_commit"] = "a" * 40
+        fixture.write_json("ios/project/baseline.json", baseline)
+        golden = harness_module.load_json(root / "ios/harness/goldens/manifest.json")
+        golden["oracle"]["android_git_commit"] = "a" * 40
+        fixture.write_json("ios/harness/goldens/manifest.json", golden)
+        fixture.write_json(
+            "ios/project/android-intake/inventory-manifest.json",
+            {"control_sha256": "b" * 64, "facts": []},
+        )
+        fixture.write_json(
+            "ios/project/requirements/catalog.json",
+            {"schema_version": 1, "requirements": []},
+        )
+        for path in (root / "ios/harness/work-items").glob("*.json"):
+            item = harness_module.load_json(path)
+            item["spec"]["knowledge"] = {
+                "contract_version": 1,
+                "mode": "not_applicable",
+                "claim_refs": [],
+                "driver_refs": [],
+                "coverage_refs": [],
+                "produces": [],
+                "expected_ledger_transitions": [],
+                "context_budget": {"max_claims": 40, "max_bytes": 65536},
+                "none_reason": "isolated Harness unit test",
+            }
+            item["spec"]["acceptance"]["criteria"][0]["knowledge_claims"] = []
+            fixture.write_json(f"ios/harness/work-items/{path.name}", item)
+        harness = harness_module.Harness(root)
+        harness.refresh_business_knowledge_catalog()
+        return harness
+
     def test_doctor_and_dependency_selection(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = HarnessFixture(Path(directory))
@@ -274,6 +315,42 @@ class HarnessTests(unittest.TestCase):
             state = harness.state()
             state["work_items"]["IOS-BOOT-001"]["status"] = "completed"
             self.assertEqual("IOS-CORE-001", harness.select_next(state, harness.work_items()))
+
+    def test_business_knowledge_is_frozen_and_written_to_evidence(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = HarnessFixture(root)
+            fixture.initialize()
+            harness = self.enable_business_knowledge(fixture)
+            self.initialize_git(root)
+            harness.claim("IOS-BOOT-001", "unit-test")
+            runtime = harness.state()["work_items"]["IOS-BOOT-001"]
+            self.assertTrue(runtime["business_knowledge_control_sha256"])
+            fixture.write_text("ios/implementation.txt", "implemented\n")
+            evidence = harness_module.load_json(harness.verify("IOS-BOOT-001"))
+            self.assertEqual(
+                runtime["business_knowledge_control_sha256"],
+                evidence["inputs"]["business_knowledge_control_sha256"],
+            )
+            self.assertNotIn(
+                "ios/project/business-knowledge/catalog.json",
+                evidence["changes"]["paths"],
+            )
+
+    def test_business_knowledge_control_drift_stops_verify(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = HarnessFixture(root)
+            fixture.initialize()
+            harness = self.enable_business_knowledge(fixture)
+            self.initialize_git(root)
+            harness.claim("IOS-BOOT-001", "unit-test")
+            policy_path = root / "ios/harness/business-knowledge/policy-v1.json"
+            policy = harness_module.load_json(policy_path)
+            policy["default_context_budget"]["max_bytes"] += 1
+            fixture.write_json("ios/harness/business-knowledge/policy-v1.json", policy)
+            with self.assertRaisesRegex(harness_module.HarnessError, "KNOWLEDGE_DRIFT"):
+                harness.verify("IOS-BOOT-001")
 
     def test_verified_capability_becomes_stale_when_architecture_changes(self):
         with tempfile.TemporaryDirectory() as directory:

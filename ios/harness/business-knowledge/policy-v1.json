@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "contract_version": 1,
+  "max_claims_per_packet": 30,
+  "default_context_budget": {
+    "max_claims": 40,
+    "max_bytes": 65536
+  },
+  "directories": {
+    "published_packets": "ios/project/business-knowledge/packets/published",
+    "packet_proposals": "ios/project/business-knowledge/packets/proposals",
+    "published_drivers": "ios/project/business-knowledge/drivers/published",
+    "driver_proposals": "ios/project/business-knowledge/drivers/proposals",
+    "coverage": "ios/project/business-knowledge/coverage",
+    "catalog": "ios/project/business-knowledge/catalog.json"
+  },
+  "implementation_ready_support": [
+    "static_supported",
+    "runtime_verified"
+  ],
+  "terminal_dispositions": [
+    "intentional_omission",
+    "unsupported",
+    "deferred",
+    "rejected"
+  ],
+  "published_packet_statuses": ["published"],
+  "proposal_packet_statuses": ["candidate"],
+  "published_driver_statuses": ["active", "resolved"],
+  "proposal_driver_statuses": ["proposed"]
+}

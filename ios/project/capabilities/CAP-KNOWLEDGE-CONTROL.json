@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 1,
+  "revision": 2,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -10,7 +10,7 @@
     {"id": "REQ-IOS-SOURCE-ROUNDTRIP-001", "revision": 1, "clauses": ["RC-01", "RC-02"]},
     {"id": "REQ-ANDROID-SOURCE-PIPELINE-001", "revision": 1, "clauses": ["RC-01", "RC-02", "RC-03", "RC-04"]}
   ],
-  "declared_status": "proposed",
+  "declared_status": "partial",
   "profiles": {
     "store_safe": "development_only",
     "full_compat": "development_only"
@@ -34,11 +34,14 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": null,
+  "latest_evidence": "ios/harness/evidence/runs/run-20260723T075047Z-ios-knowledge-control-plane-001-cea10190.json",
   "next_actions": [
-    "实现业务知识 schema、Catalog 和选择摘要",
-    "将知识漂移门禁接入 Harness 生命周期"
+    "由 Trusted Supervisor 审核并 materialize Android surface 知识扫描工作项",
+    "从冻结 Android 源码生成首批 Packet、Coverage 与 Architecture Driver proposal",
+    "通过 proposed ADR 决定是否把知识层提升为正式架构权威并同步 architecture/project-memory",
+    "在后续治理升级中把知识 selection 加入 Capability freshness schema",
+    "用 Android characterization 与真实书源 capture 提升运行语义证据"
   ],
-  "updated_at": "2026-07-23T07:16:02Z",
-  "updated_by": "project-owner-chat"
+  "updated_at": "2026-07-23T07:50:48Z",
+  "updated_by": "IOS-KNOWLEDGE-CONTROL-PLANE-001"
 }

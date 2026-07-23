@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "legado.business-knowledge-coverage-ledger/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "id",
+    "revision",
+    "status",
+    "packet_refs",
+    "generated_from",
+    "entries",
+    "updated_by",
+    "updated_at"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "kind": {"const": "BusinessKnowledgeCoverageLedger"},
+    "id": {"type": "string", "pattern": "^BKL-[A-Z][A-Z0-9-]*-[0-9]{3}$"},
+    "revision": {"type": "integer", "minimum": 1},
+    "status": {"enum": ["current"]},
+    "packet_refs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "revision"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^BKP-[A-Z][A-Z0-9-]*-[0-9]{3}$"},
+          "revision": {"type": "integer", "minimum": 1}
+        }
+      }
+    },
+    "generated_from": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "knowledge_authority_sha256",
+        "requirement_catalog_sha256",
+        "architecture_digest_sha256"
+      ],
+      "properties": {
+        "knowledge_authority_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "requirement_catalog_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "architecture_digest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "claim_ref",
+          "validation",
+          "product_disposition",
+          "delivery",
+          "computed"
+        ],
+        "properties": {
+          "id": {"type": "string", "pattern": "^BKE-[A-Z][A-Z0-9-]*-[0-9]{3}$"},
+          "claim_ref": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "revision"],
+            "properties": {
+              "id": {"type": "string", "pattern": "^BKC-[A-Z][A-Z0-9-]*-[0-9]{3}$"},
+              "revision": {"type": "integer", "minimum": 1}
+            }
+          },
+          "validation": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["required", "state", "evidence_refs", "blockers"],
+            "properties": {
+              "required": {"enum": ["none", "static_source", "android_runtime", "human_decision"]},
+              "state": {"enum": ["missing", "supported", "verified", "disputed", "not_applicable"]},
+              "evidence_refs": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+              "blockers": {"type": "array", "uniqueItems": true, "items": {"type": "string"}}
+            }
+          },
+          "product_disposition": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind", "refs", "reason", "review_after"],
+            "properties": {
+              "kind": {
+                "enum": [
+                  "knowledge_only",
+                  "characterization_planned",
+                  "requirement_candidate",
+                  "covered_by_requirement",
+                  "architecture_driver",
+                  "intentional_omission",
+                  "unsupported",
+                  "deferred",
+                  "rejected"
+                ]
+              },
+              "refs": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+              "reason": {"type": ["string", "null"]},
+              "review_after": {"type": ["string", "null"]}
+            }
+          },
+          "delivery": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "state",
+              "requirement_refs",
+              "work_item_refs",
+              "capability_refs",
+              "evidence_refs"
+            ],
+            "properties": {
+              "state": {
+                "enum": [
+                  "not_ready",
+                  "planned",
+                  "implementing",
+                  "implemented",
+                  "verified",
+                  "blocked",
+                  "not_applicable"
+                ]
+              },
+              "requirement_refs": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+              "work_item_refs": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+              "capability_refs": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+              "evidence_refs": {"type": "array", "uniqueItems": true, "items": {"type": "string"}}
+            }
+          },
+          "computed": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["accounted", "coverage_state"],
+            "properties": {
+              "accounted": {"type": "boolean"},
+              "coverage_state": {"enum": ["covered", "gap", "blocked", "stale", "conflicted"]}
+            }
+          }
+        }
+      }
+    },
+    "updated_by": {"type": "string", "pattern": "^IOS-[A-Z][A-Z0-9-]*-[0-9]{3}$"},
+    "updated_at": {"type": "string", "minLength": 1}
+  }
+}
