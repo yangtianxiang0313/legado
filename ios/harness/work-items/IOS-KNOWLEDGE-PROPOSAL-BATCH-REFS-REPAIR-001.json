@@ -1,0 +1,163 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-KNOWLEDGE-PROPOSAL-BATCH-REFS-REPAIR-001",
+    "title": "闭合同批知识候选引用契约",
+    "priority": 96,
+    "risk": "high",
+    "labels": ["phase-0", "knowledge", "corrective", "governance", "control-plane"]
+  },
+  "spec": {
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "intent": "修复初始化知识 DAG 与 Business Knowledge doctor 的候选引用矛盾：允许 proposed Architecture Driver 引用同一 Work Item 精确 produces 批次内 Packet proposal 的 Claim，同时保持 published authority、跨任务 proposal 隔离、精确 revision 与 implementation 消费门禁不变。",
+    "depends_on": ["IOS-KNOWLEDGE-ANDROID-SURFACES-001"],
+    "scope": {
+      "allow_write": [
+        "ios/harness/business-knowledge/business_knowledge.py",
+        "ios/harness/tests/test_business_knowledge.py",
+        "ios/docs/business-knowledge-control-plane.md",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-KNOWLEDGE-PROPOSAL-BATCH-REFS-REPAIR-001.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "ios/harness/harness.py",
+        "ios/harness/config.json",
+        "ios/harness/schemas/**",
+        "ios/harness/work-items/**",
+        "ios/harness/business-knowledge/policy-v1.json",
+        "ios/harness/business-knowledge/schemas/**",
+        "ios/harness/android-intake/**",
+        "ios/harness/source-lab/**",
+        "ios/project/android-intake/**",
+        "ios/project/business-knowledge/**",
+        "ios/project/requirements/**",
+        "ios/project/requirement-proposals/**",
+        "ios/project/work-item-proposals/**",
+        "ios/project/baseline.json",
+        "ios/project/approvals/**",
+        "ios/docs/architecture.md",
+        "ios/docs/project-memory.md",
+        "ios/docs/adr/**"
+      ],
+      "max_files_changed": 6,
+      "max_changed_lines": 800
+    },
+    "inputs": {
+      "context_files": [
+        "ios/docs/business-knowledge-control-plane.md",
+        "ios/project/work-item-proposals/initialization-dag.json",
+        "ios/harness/work-items/IOS-KNOWLEDGE-ANDROID-SURFACES-001.json",
+        "ios/project/business-knowledge/packets/proposals/BKP-ANDROID-SURFACES-001/r0001.json",
+        "ios/project/checkpoints/IOS-KNOWLEDGE-ANDROID-SURFACES-001.json"
+      ],
+      "android_source_anchors": [],
+      "fixtures": []
+    },
+    "architecture_refs": ["ARCH-017", "ARCH-018", "ADR-0004"],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "proposal Driver 的 claim_refs 可引用 current published Claim，或引用由其 created_by Work Item 在同一 knowledge.produces 批次中精确声明的 Packet proposal Claim。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "跨 Work Item、未声明 produces、重复生产声明、缺失 Claim、错误 revision 与不匹配 created_by 的 proposal 引用必须失败关闭并给出可诊断错误。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "published Driver 仍只能引用 current published Claim；proposal Packet/Driver 不进入 authority_sha256、Coverage 或 implementation selection，普通 AI 仍无 publish/accept 能力。",
+          "verified_by": ["harness-tests", "dependency-policy"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-4",
+          "statement": "候选批次归属只从不可模糊的 Work Item metadata.id、knowledge.mode、精确 produces kind/id/revision 与记录 created_by 推导，不依赖路径前缀、标题或声明顺序。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-5",
+          "statement": "控制文档明确区分 proposed Driver 的同批候选引用与 published Driver 的权威引用，并明确候选不得驱动实现。",
+          "verified_by": ["harness-tests", "memory-close"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-6",
+          "statement": "新 Evidence、Checkpoint、Capability revision 与 Pitfall 独立记录本次控制面纠错，既有 Evidence 与候选知识保持不可变。",
+          "verified_by": ["harness-tests", "memory-close"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": ["dependency-policy", "harness-tests"]
+    },
+    "baseline_checks": ["harness-tests"],
+    "budget": {
+      "wall_clock_seconds": 2400,
+      "max_edit_verify_cycles": 3,
+      "max_targeted_test_runs": 5,
+      "max_full_test_runs": 2,
+      "max_infra_retries": 1
+    },
+    "gates": [],
+    "completion_effects": {
+      "health": {
+        "knowledge_control_plane": "proposal_batch_claim_refs_verified"
+      }
+    },
+    "memory": {
+      "capability_state_required": true,
+      "compatibility": "not_applicable",
+      "pitfall": "if_non_obvious_and_preventable",
+      "adr": "required_for_architecture_change"
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "refs": [],
+      "none_reason": "本项纠正候选知识批次引用控制，不接受或实现产品行为"
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "not_applicable",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [],
+      "expected_ledger_transitions": [],
+      "context_budget": {
+        "max_claims": 40,
+        "max_bytes": 65536
+      },
+      "none_reason": "本项修复 Business Knowledge 控制面自身，不生产、消费或发布业务知识"
+    },
+    "source_lab": {
+      "mode": "not_applicable",
+      "behaviors": [],
+      "scenarios": [],
+      "none_reason": "本项不执行书源规则、本地站点或 Android runner"
+    },
+    "stop_on": [
+      "baseline_red",
+      "scope_violation",
+      "authority_escalation",
+      "knowledge_drift",
+      "same_failure_twice",
+      "budget_exhausted"
+    ]
+  }
+}
