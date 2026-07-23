@@ -7,9 +7,16 @@
   "control_sha256": "4f3057dad0dc1014ca26c65ad4bd84155a49752b9b694e6520cbbc2ce9e1ab51",
   "authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
   "coverage_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-  "proposal_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "proposal_sha256": "7e3578697469af13b1d0568b29ea7db1f2a2f93458a5582f34a1450b2ce5708d",
   "packets": [],
   "architecture_drivers": [],
   "coverage_ledgers": [],
-  "proposals": []
+  "proposals": [
+    {
+      "id": "BKP-ANDROID-SURFACES-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/packets/proposals/BKP-ANDROID-SURFACES-001/r0001.json",
+      "sha256": "fa088a7a4811826053e6d09501a28997a55467b763eb5f03f4a516c3d6c3f120"
+    }
+  ]
 }

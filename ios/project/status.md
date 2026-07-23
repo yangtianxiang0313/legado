@@ -2,13 +2,13 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-23T10:59:50Z
+- 更新时间：2026-07-23T12:06:32Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
-- 下一个可领取工作项：IOS-KNOWLEDGE-ANDROID-SURFACES-001
-- 最近完成：IOS-KNOWLEDGE-SELECTION-ROBUSTNESS-001
+- 下一个可领取工作项：无
+- 最近完成：IOS-KNOWLEDGE-ANDROID-SURFACES-001
 
 ## 健康度
 
@@ -20,6 +20,7 @@
 | conformance | `scaffold_verified` |
 | harness | `ready` |
 | ios_build | `package_verified` |
+| knowledge_android_surfaces | `candidate_verified` |
 | knowledge_control_plane | `selection_union_and_malformed_input_verified` |
 | knowledge_initialization_dag | `proposal_verified` |
 | requirements | `catalog_ready_one_characterization_gap` |
@@ -34,7 +35,7 @@
 | IOS-KNOWLEDGE-LEDGER-GATE-REPAIR-001 | 95 | `completed` | IOS-KNOWLEDGE-DAG-REPAIR-001 | 闭合知识台账选择与人工审批门禁 |
 | IOS-KNOWLEDGE-SELECTION-ROBUSTNESS-001 | 95 | `completed` | IOS-KNOWLEDGE-LEDGER-GATE-REPAIR-001 | 加固知识条目选择合并与异常输入处理 |
 | IOS-CORE-001 | 90 | `completed` | IOS-BOOT-001 | 实现稳定 ID、JSONValue、Clock、Trace 和错误基础 |
-| IOS-KNOWLEDGE-ANDROID-SURFACES-001 | 90 | `ready` | IOS-KNOWLEDGE-SELECTION-ROBUSTNESS-001 | 提取 Android 业务表面与领域索引 |
+| IOS-KNOWLEDGE-ANDROID-SURFACES-001 | 90 | `completed` | IOS-KNOWLEDGE-SELECTION-ROBUSTNESS-001 | 提取 Android 业务表面与领域索引 |
 | IOS-KNOWLEDGE-CONTROL-PLANE-001 | 90 | `completed` | IOS-ORACLE-CONTROL-PLANE-001 | 建立业务知识与架构驱动控制面 |
 | IOS-RUNTIME-PORTS-001 | 85 | `completed` | IOS-BOOT-001, IOS-CORE-001 | 定义确定性 HTTP 请求响应与 Transport port |
 | IOS-CONFORMANCE-001 | 80 | `completed` | IOS-BOOT-001, IOS-CORE-001, IOS-RUNTIME-PORTS-001 | 建立离线 Fixture 与 canonical execution envelope 骨架 |
