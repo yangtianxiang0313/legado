@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0008",
+  "revision": 1,
+  "title": "自定义校验不能假设 JSON Schema 已完成类型收窄",
+  "fingerprint": "custom-validator-trusts-schema-type-narrowing",
+  "capabilities": ["CAP-KNOWLEDGE-CONTROL"],
+  "symptoms": [
+    "doctor 遇到非法 Work Item 时抛出 TypeError，而不是列出契约错误",
+    "数组或对象被直接用作 set 成员、dict key，或对 null 执行迭代"
+  ],
+  "conditions": [
+    "JSON Schema 错误被收集后，自定义语义校验仍继续执行",
+    "自定义校验把尚未确认类型的 JSON 值放入集合、映射或迭代器"
+  ],
+  "root_cause": "Schema 校验与语义校验是累积执行的；前者报告错误不会中止后者，因此自定义校验必须独立完成类型收窄，不能依赖 Schema 已拒绝非法值。",
+  "diagnosis": [
+    "用 null、object、嵌套数组和数组 ID 分别替换 Ledger transition 字段并运行 doctor",
+    "检查异常是否被收集为 Work Item 校验错误，而不是从 set、dict 或 for 循环抛出"
+  ],
+  "fix": "Coverage map 只接纳已验证的字符串 ID，entries 先过滤再合并；entry_updates 仅在 list 时迭代，entry ID 仅在合法字符串时进入集合；补充六类畸形输入 doctor 回归。",
+  "prevention": {
+    "architecture_rule": "所有自定义 JSON validator 都必须把输入视为未受信数据，在集合、映射、迭代和正则操作前独立进行类型收窄",
+    "tests": [
+      "ios/harness/tests/test_harness.py#test_doctor_reports_malformed_ledger_updates_without_crashing",
+      "ios/harness/tests/test_harness.py#test_ledger_close_matches_declared_sections_and_transaction_refs"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-KNOWLEDGE-LEDGER-GATE-REPAIR-001",
+    "until": "IOS-KNOWLEDGE-SELECTION-ROBUSTNESS-001"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-23",
+  "last_seen": "2026-07-23",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260723T083305Z-ios-knowledge-selection-robustness-001-384d1118.json"
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 4,
+  "revision": 5,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -34,7 +34,7 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260723T082300Z-ios-knowledge-ledger-gate-repair-001-14d9bbe3.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260723T083305Z-ios-knowledge-selection-robustness-001-384d1118.json",
   "next_actions": [
     "由 Trusted Supervisor 审核并 materialize Android surface 知识扫描工作项",
     "从冻结 Android 源码生成首批 Packet、Coverage 与 Architecture Driver proposal",
@@ -42,6 +42,6 @@
     "在后续治理升级中把知识 selection 加入 Capability freshness schema",
     "用 Android characterization 与真实书源 capture 提升运行语义证据"
   ],
-  "updated_at": "2026-07-23T08:23:00Z",
-  "updated_by": "IOS-KNOWLEDGE-LEDGER-GATE-REPAIR-001"
+  "updated_at": "2026-07-23T08:33:05Z",
+  "updated_by": "IOS-KNOWLEDGE-SELECTION-ROBUSTNESS-001"
 }

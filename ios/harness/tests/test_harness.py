@@ -463,6 +463,43 @@ class HarnessTests(unittest.TestCase):
                 harness.knowledge_close_issues("IOS-BOOT-001", item, runtime),
             )
 
+            item["spec"]["knowledge"]["coverage_refs"] = [
+                {
+                    "id": ledger_id,
+                    "revision": 1,
+                    "entries": [entry_id],
+                },
+                {
+                    "id": ledger_id,
+                    "revision": 1,
+                    "entries": ["BKE-TEST-CLOSE-999"],
+                },
+            ]
+            self.assertFalse(any(
+                "越出显式 Coverage selection" in error
+                for error in harness.validate_business_knowledge_spec(
+                    item, "IOS-BOOT-001"
+                )
+            ))
+            self.assertFalse(any(
+                "越出显式 Coverage selection" in error
+                for error in harness.knowledge_close_issues(
+                    "IOS-BOOT-001", item, runtime
+                )
+            ))
+            item["spec"]["knowledge"]["coverage_refs"][1]["revision"] = 2
+            self.assertTrue(any(
+                "必须使用相同 revision" in error
+                for error in harness.validate_business_knowledge_spec(
+                    item, "IOS-BOOT-001"
+                )
+            ))
+
+            item["spec"]["knowledge"]["coverage_refs"] = [{
+                "id": ledger_id,
+                "revision": 1,
+                "entries": [entry_id],
+            }]
             item["spec"]["knowledge"]["coverage_refs"][0]["entries"] = [
                 "BKE-TEST-CLOSE-999"
             ]
@@ -508,6 +545,71 @@ class HarnessTests(unittest.TestCase):
                 "verified delivery 缺少当前事务" in error
                 for error in harness.knowledge_close_issues("IOS-BOOT-001", item, runtime)
             ))
+
+    def test_doctor_reports_malformed_ledger_updates_without_crashing(self):
+        variants = (
+            "null-updates",
+            "object-updates",
+            "nested-entry-selection",
+            "array-ledger-ref-id",
+            "array-transition-id",
+            "array-update-id",
+        )
+        for variant in variants:
+            with self.subTest(variant=variant), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                fixture = HarnessFixture(root)
+                harness = fixture.initialize()
+                item_path = root / "ios/harness/work-items/IOS-BOOT-001.json"
+                item = harness_module.load_json(item_path)
+                claim_ref = {"id": "BKC-TEST-MALFORMED-001", "revision": 1}
+                item["spec"]["knowledge"] = {
+                    "contract_version": 1,
+                    "mode": "consume",
+                    "claim_refs": [claim_ref],
+                    "driver_refs": [],
+                    "coverage_refs": [{
+                        "id": "BKL-TEST-MALFORMED-001",
+                        "revision": 1,
+                        "entries": ["BKE-TEST-MALFORMED-001"],
+                    }],
+                    "produces": [],
+                    "expected_ledger_transitions": [{
+                        "id": "BKL-TEST-MALFORMED-001",
+                        "from_revision": 1,
+                        "to_revision": 2,
+                        "entry_updates": [{
+                            "id": "BKE-TEST-MALFORMED-001",
+                            "set": {"computed": {"accounted": True}},
+                        }],
+                    }],
+                    "context_budget": {"max_claims": 40, "max_bytes": 65536},
+                    "none_reason": None,
+                }
+                knowledge = item["spec"]["knowledge"]
+                transition = knowledge["expected_ledger_transitions"][0]
+                if variant == "null-updates":
+                    transition["entry_updates"] = None
+                elif variant == "object-updates":
+                    transition["entry_updates"] = {}
+                elif variant == "nested-entry-selection":
+                    knowledge["coverage_refs"][0]["entries"] = [[]]
+                elif variant == "array-ledger-ref-id":
+                    knowledge["coverage_refs"][0]["id"] = []
+                elif variant == "array-transition-id":
+                    transition["id"] = []
+                elif variant == "array-update-id":
+                    transition["entry_updates"][0]["id"] = []
+                item["spec"]["acceptance"]["criteria"][0]["knowledge_claims"] = [
+                    claim_ref
+                ]
+                fixture.write_json(
+                    "ios/harness/work-items/IOS-BOOT-001.json",
+                    item,
+                )
+                harness = harness_module.Harness(root)
+                errors, _ = harness.doctor()
+                self.assertTrue(errors, variant)
 
     def test_verified_capability_becomes_stale_when_architecture_changes(self):
         with tempfile.TemporaryDirectory() as directory:

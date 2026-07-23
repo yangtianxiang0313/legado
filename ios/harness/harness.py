@@ -770,12 +770,12 @@ class Harness:
                 if (
                     not isinstance(entries, list)
                     or not entries
-                    or len(entries) != len(set(entries))
                     or any(
                         not isinstance(entry, str)
                         or KNOWLEDGE_ENTRY_ID.fullmatch(entry) is None
                         for entry in entries
                     )
+                    or len(entries) != len(set(entries))
                 ):
                     errors.append(f"{item_id}: knowledge.coverage_refs[].entries 无效")
         for produced in values["produces"]:
@@ -833,7 +833,8 @@ class Harness:
                     or entry_id in seen_entry_ids
                 ):
                     errors.append(f"{item_id}: Ledger entry update id 无效或重复")
-                seen_entry_ids.add(entry_id)
+                else:
+                    seen_entry_ids.add(entry_id)
                 allowed = {"validation", "product_disposition", "delivery", "computed"}
                 if (
                     not isinstance(changes, dict)
@@ -844,30 +845,43 @@ class Harness:
                     errors.append(
                         f"{item_id}: Ledger entry update set 只能声明非空受控 section"
                     )
-        coverage_revisions = {
-            reference.get("id"): reference.get("revision")
-            for reference in values["coverage_refs"]
-            if isinstance(reference, dict)
-        }
-        coverage_entries = {
-            reference.get("id"): set(reference.get("entries", []))
-            for reference in values["coverage_refs"]
-            if isinstance(reference, dict)
-            and isinstance(reference.get("entries"), list)
-        }
+        coverage_revisions: Dict[Any, Any] = {}
+        coverage_entries: Dict[Any, Set[Any]] = {}
+        for reference in values["coverage_refs"]:
+            if not isinstance(reference, dict):
+                continue
+            identifier = reference.get("id")
+            if not isinstance(identifier, str):
+                continue
+            revision = reference.get("revision")
+            if identifier in coverage_revisions and coverage_revisions[identifier] != revision:
+                errors.append(
+                    f"{item_id}: 同一 Ledger 的 coverage_refs 必须使用相同 revision"
+                )
+            else:
+                coverage_revisions[identifier] = revision
+            entries = reference.get("entries")
+            if isinstance(entries, list):
+                coverage_entries.setdefault(identifier, set()).update(
+                    entry for entry in entries if isinstance(entry, str)
+                )
         for transition in values["expected_ledger_transitions"]:
             if not isinstance(transition, dict):
                 continue
-            if coverage_revisions.get(transition.get("id")) != transition.get("from_revision"):
+            identifier = transition.get("id")
+            if not isinstance(identifier, str):
+                continue
+            if coverage_revisions.get(identifier) != transition.get("from_revision"):
                 errors.append(
                     f"{item_id}: Ledger transition 必须以 coverage_refs 中的精确 revision 为起点"
                 )
+            entry_updates = transition.get("entry_updates")
             update_ids = {
                 update.get("id")
-                for update in transition.get("entry_updates", [])
+                for update in entry_updates
                 if isinstance(update, dict) and isinstance(update.get("id"), str)
-            }
-            if not update_ids <= coverage_entries.get(transition.get("id"), set()):
+            } if isinstance(entry_updates, list) else set()
+            if not update_ids <= coverage_entries.get(identifier, set()):
                 errors.append(
                     f"{item_id}: Ledger entry update 越出显式 Coverage selection"
                 )
@@ -2981,21 +2995,31 @@ class Harness:
         snapshots = runtime.get("knowledge_ledger_snapshots")
         if not isinstance(baselines, dict) or not isinstance(snapshots, dict):
             return ["claim 未冻结 Knowledge Ledger revision/snapshot"]
-        selected_entries = {
-            reference.get("id"): set(reference.get("entries", []))
-            for reference in knowledge.get("coverage_refs", [])
-            if isinstance(reference, dict)
-            and isinstance(reference.get("entries"), list)
-        }
+        selected_entries: Dict[Any, Set[Any]] = {}
+        for reference in knowledge.get("coverage_refs", []):
+            if not isinstance(reference, dict):
+                continue
+            identifier = reference.get("id")
+            if not isinstance(identifier, str):
+                continue
+            entries = reference.get("entries")
+            if isinstance(entries, list):
+                selected_entries.setdefault(identifier, set()).update(
+                    entry for entry in entries if isinstance(entry, str)
+                )
         for transition in transitions:
             if not isinstance(transition, dict):
                 continue
             identifier = transition.get("id")
             before = transition.get("from_revision")
             after = transition.get("to_revision")
+            entry_updates = transition.get("entry_updates")
+            if not isinstance(entry_updates, list):
+                errors.append(f"{identifier}: Ledger transition entry_updates 无效")
+                continue
             update_ids = {
                 update.get("id")
-                for update in transition.get("entry_updates", [])
+                for update in entry_updates
                 if isinstance(update, dict) and isinstance(update.get("id"), str)
             }
             if not update_ids <= selected_entries.get(identifier, set()):
@@ -3044,7 +3068,7 @@ class Harness:
                 continue
             updates = {
                 update.get("id"): update.get("set", {})
-                for update in transition.get("entry_updates", [])
+                for update in entry_updates
                 if isinstance(update, dict)
             }
             declared = set(updates)

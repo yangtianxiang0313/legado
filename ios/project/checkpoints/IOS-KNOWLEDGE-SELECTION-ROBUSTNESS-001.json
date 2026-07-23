@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-KNOWLEDGE-SELECTION-ROBUSTNESS-001",
+  "summary": "加固 Coverage selection 边界：同一 Ledger 的多段 entry 选择按并集合并、冲突 revision 明确失败；非法 entry_updates、Ledger ID、entry ID 和嵌套 entries 由 doctor 返回结构化错误，不再触发 TypeError。",
+  "evidence": "ios/harness/evidence/runs/run-20260723T083305Z-ios-knowledge-selection-robustness-001-384d1118.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 4,
+      "to_revision": 5,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": ["ADR-0004"]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项纠正知识控制面自身，不消费或发布业务知识"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项只修复控制面健壮性，不改变 Android/iOS 产品行为"
+  },
+  "pitfalls": {
+    "records": ["ios/project/pitfalls/PIT-0008.json"],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "Catalog 尚无已发布 Packet、Coverage Ledger 或 Architecture Driver，不能启动产品实现",
+    "Business Knowledge 仍是 ADR-0004 下的派生控制合同；正式架构权威需要 proposed ADR 与人工批准",
+    "Capability schema 尚不能把 knowledge selection 声明为 freshness input，因此能力保持 partial"
+  ],
+  "next_actions": [
+    "由 Trusted Supervisor 审核 initialization DAG 的第一个 Android surface proposal",
+    "从冻结 Android 源码生成首批 Packet、Coverage 与 Architecture Driver proposal",
+    "用 Android characterization 与真实书源 capture 建立运行语义证据",
+    "提出知识权威层及 Capability freshness schema 的治理升级 ADR"
+  ],
+  "created_at": "2026-07-23T08:33:05Z"
+}
