@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "revision": 44,
+  "revision": 45,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-23T08:33:50Z",
-  "event_head": "600586772f87660a7e1cb8fe71861764245e9ecdcae6dd4ff4c34690cb582a7a",
+  "updated_at": "2026-07-23T10:59:50Z",
+  "event_head": "30186e924073c6b3f20fab793c755ccbfdee157886b7879dd7506ab5a1ae95ac",
   "active_work_items": [],
   "last_completed_work_item": "IOS-KNOWLEDGE-SELECTION-ROBUSTNESS-001",
   "work_items": {
@@ -830,6 +830,11 @@
       "verified_at": "2026-07-23T08:33:05Z",
       "completed_at": "2026-07-23T08:33:50Z",
       "final_tree_sha256": "08461d5206c2d97ab9a395256a0aa2481b7df304db6becca74a0d78dda088487"
+    },
+    "IOS-KNOWLEDGE-ANDROID-SURFACES-001": {
+      "status": "ready",
+      "attempt": 0,
+      "last_evidence": null
     }
   },
   "health": {
