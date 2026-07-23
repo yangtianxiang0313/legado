@@ -1,0 +1,172 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-KNOWLEDGE-CONTROL-PLANE-001",
+    "title": "建立业务知识与架构驱动控制面",
+    "priority": 90,
+    "risk": "high",
+    "labels": ["phase-0", "knowledge", "control-plane", "architecture-input"]
+  },
+  "spec": {
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "intent": "建立 Android Fact 与 accepted Requirement 之间的业务知识层，提供 Business Knowledge Packet、Coverage Ledger、Architecture Driver 的候选/发布隔离、确定性目录、精确上下文选择与生命周期漂移门禁；本项不接受新的产品需求，也不修改 iOS 产品代码。",
+    "depends_on": ["IOS-ORACLE-CONTROL-PLANE-001"],
+    "scope": {
+      "allow_write": [
+        "ios/harness/harness.py",
+        "ios/harness/business-knowledge/**",
+        "ios/harness/tests/test_business_knowledge.py",
+        "ios/harness/tests/test_harness.py",
+        "ios/harness/README.md",
+        "ios/docs/business-knowledge-control-plane.md",
+        "ios/project/business-knowledge/**",
+        "ios/project/work-item-proposals/**",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-KNOWLEDGE-CONTROL-PLANE-001.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "ios/harness/config.json",
+        "ios/harness/schemas/**",
+        "ios/harness/work-items/**",
+        "ios/harness/goldens/**",
+        "ios/harness/normalization/**",
+        "ios/harness/fixtures/**",
+        "ios/harness/source-lab/**",
+        "ios/harness/android-intake/**",
+        "ios/project/android-intake/**",
+        "ios/project/requirements/**",
+        "ios/project/baseline.json",
+        "ios/project/approvals/**",
+        "ios/docs/architecture.md",
+        "ios/docs/adr/**"
+      ],
+      "max_files_changed": 24,
+      "max_changed_lines": 3600
+    },
+    "inputs": {
+      "context_files": [
+        "ios/docs/ai-harness.md",
+        "ios/docs/project-memory.md",
+        "ios/docs/android-requirement-intake.md",
+        "ios/docs/trusted-supervisor.md",
+        "ios/docs/adr/0004-harness-memory-transaction.md"
+      ],
+      "android_source_anchors": [],
+      "fixtures": []
+    },
+    "architecture_refs": ["ARCH-014", "ADR-0004"],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "Business Knowledge Packet、Coverage Ledger 与 Architecture Driver 有独立 schema 和语义校验；稳定 ID、revision、supersede、Android anchor、运行 Evidence 与冲突状态均可机械验证。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "候选知识与发布知识物理隔离；普通知识生产任务只能写 proposal，发布目录和受控 Catalog 不能由同一 AI 实现任务提升。",
+          "verified_by": ["harness-tests", "scope-policy"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "Catalog、知识 authority 摘要与 Coverage 摘要可确定性重建；Coverage 进度变化不会改变知识 authority 摘要。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-4",
+          "statement": "Work Item 能精确选择 claim、driver 和 coverage entry；context 只展开依赖闭包与摘要，超过声明预算时以 CONTEXT_OVERSIZED 失败而不是静默截断。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-5",
+          "statement": "claim 冻结 knowledge、coverage、driver 三个 selection digest；verify 检测 KNOWLEDGE_DRIFT，并将摘要写入 Evidence；历史完成工作项保持兼容。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-6",
+          "statement": "implementation 工作项不能消费 candidate、stale、disputed 或 conflicted claim，也不能绕过 unresolved Architecture Driver；知识生产任务不能同时修改 Swift 产品代码。",
+          "verified_by": ["harness-tests", "scope-policy"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-7",
+          "statement": "Checkpoint 可记录消费/产出的知识和 Ledger transition，并与最新 Evidence 中的 selection digest 一致；后续初始化 Work Item 以 proposal DAG 沉淀而不自动 materialize。",
+          "verified_by": ["harness-tests", "memory-close"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": ["android-intake-tests", "dependency-policy", "harness-tests"]
+    },
+    "baseline_checks": ["harness-tests", "android-intake-tests"],
+    "budget": {
+      "wall_clock_seconds": 7200,
+      "max_edit_verify_cycles": 4,
+      "max_targeted_test_runs": 5,
+      "max_full_test_runs": 2,
+      "max_infra_retries": 1
+    },
+    "gates": [],
+    "completion_effects": {
+      "health": {
+        "knowledge_control_plane": "selection_and_drift_guards_verified"
+      }
+    },
+    "memory": {
+      "capability_state_required": true,
+      "compatibility": "not_applicable",
+      "pitfall": "if_non_obvious_and_preventable",
+      "adr": "required_for_architecture_change"
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "refs": [],
+      "none_reason": "本项只建立业务知识与架构输入的控制合同，不接受或实现新的产品行为"
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "not_applicable",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [],
+      "expected_ledger_transitions": [],
+      "context_budget": {
+        "max_claims": 40,
+        "max_bytes": 65536
+      },
+      "none_reason": "本项正在建立知识控制面，尚无可消费的已发布业务知识"
+    },
+    "source_lab": {
+      "mode": "not_applicable",
+      "behaviors": [],
+      "scenarios": [],
+      "none_reason": "本项不执行书源规则或本地站点"
+    },
+    "stop_on": [
+      "baseline_red",
+      "scope_violation",
+      "authority_escalation",
+      "knowledge_drift",
+      "same_failure_twice",
+      "budget_exhausted",
+      "human_decision_required"
+    ]
+  }
+}

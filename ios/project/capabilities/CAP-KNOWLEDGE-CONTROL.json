@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "id": "CAP-KNOWLEDGE-CONTROL",
+  "revision": 1,
+  "title": "业务知识与架构输入控制面",
+  "area": "foundation",
+  "contract": "ios/docs/project-memory.md",
+  "requirement_refs": [
+    {"id": "REQ-ANDROID-BOOKSOURCE-SCHEMA-001", "revision": 1, "clauses": ["RC-01", "RC-02"]},
+    {"id": "REQ-IOS-SOURCE-ROUNDTRIP-001", "revision": 1, "clauses": ["RC-01", "RC-02"]},
+    {"id": "REQ-ANDROID-SOURCE-PIPELINE-001", "revision": 1, "clauses": ["RC-01", "RC-02", "RC-03", "RC-04"]}
+  ],
+  "declared_status": "proposed",
+  "profiles": {
+    "store_safe": "development_only",
+    "full_compat": "development_only"
+  },
+  "owners": {
+    "targets": [],
+    "paths": [
+      "ios/harness/business-knowledge/**",
+      "ios/project/business-knowledge/**"
+    ]
+  },
+  "depends_on": ["CAP-BOOTSTRAP"],
+  "active_decisions": ["ADR-0004"],
+  "open_compatibility": [],
+  "open_pitfalls": [],
+  "blockers": [],
+  "required_evidence": ["harness-tests", "dependency-policy", "architecture"],
+  "freshness_inputs": [
+    "baseline_sha256",
+    "architecture_digest_sha256",
+    "harness_config_sha256",
+    "android_intake_control_sha256"
+  ],
+  "latest_evidence": null,
+  "next_actions": [
+    "实现业务知识 schema、Catalog 和选择摘要",
+    "将知识漂移门禁接入 Harness 生命周期"
+  ],
+  "updated_at": "2026-07-23T07:16:02Z",
+  "updated_by": "project-owner-chat"
+}
