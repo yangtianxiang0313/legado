@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0009",
+  "revision": 1,
+  "title": "候选批次隔离必须校验完整引用闭包",
+  "fingerprint": "proposal-batch-validates-direct-reference-but-not-claim-closure",
+  "capabilities": ["CAP-KNOWLEDGE-CONTROL"],
+  "symptoms": [
+    "初始化 DAG 要求同一 Work Item 生成 Packet 与 Driver，但 Driver 只能引用 published Claim，导致 Phase-2 任务天然无法通过",
+    "只放开 Driver 的直接 claim_refs 后，Driver 可引用同批 Claim，而该 Claim 再通过 depends_on 或 conflicts_with 间接指向另一批 candidate",
+    "同一 Claim key 或同一 proposal output 可出现多个 producer，造成候选归属歧义"
+  ],
+  "conditions": [
+    "跨文件语义关系无法由单文件 JSON Schema 证明",
+    "校验器只验证直接引用，没有沿 Claim 依赖与冲突边检查 authority closure",
+    "生产者索引使用集合去重，或未同时绑定 Work Item mode、精确 produces 与 artifact.created_by"
+  ],
+  "root_cause": "proposal lineage 是图级不变量，不是单文件字段约束。若只校验 Driver 的直接引用或只检查 created_by 字符串，candidate 可通过间接边、重复稳定 ID 或重复 producer 越过批次隔离。",
+  "diagnosis": [
+    "构造两个 producer 批次，让批次 A 的 Driver 引用 A Claim，再让 A Claim 依赖或冲突于 B Claim",
+    "让两个 producer 声明同一 kind/id/revision，或让同一 producer 重复声明同一 output",
+    "把同一 Claim id/revision/content 放入两个批次，确认 doctor 返回结构化错误",
+    "用 null、array 与 boolean revision 破坏 proposal 字段，确认 doctor fail-closed 而不崩溃"
+  ],
+  "fix": "从受保护 Work Item 构建精确 producer 索引；proposal artifact 的 created_by 必须匹配唯一 produces；proposal Claim key 在批次间唯一；Driver claim_refs 以及同批 Claim 的 depends_on/conflicts_with 只能解析 current published 或同 owner batch；schema-invalid 记录不进入语义索引。",
+  "prevention": {
+    "architecture_rule": "任何候选跨文件引用都必须有唯一 producer lineage，并对完整引用闭包执行与直接边相同的 authority 规则；单文件 schema 通过不代表图级授权通过",
+    "tests": [
+      "ios/harness/tests/test_business_knowledge.py#test_proposal_driver_can_reference_claim_from_same_producer_batch",
+      "ios/harness/tests/test_business_knowledge.py#test_proposal_claim_dependency_cannot_cross_producer_batch",
+      "ios/harness/tests/test_business_knowledge.py#test_proposal_claim_conflict_cannot_cross_producer_batch",
+      "ios/harness/tests/test_business_knowledge.py#test_same_claim_key_cannot_belong_to_different_proposal_batches",
+      "ios/harness/tests/test_business_knowledge.py#test_malformed_packet_proposals_return_errors_without_crashing"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-KNOWLEDGE-CONTROL-PLANE-001",
+    "until": "IOS-KNOWLEDGE-PROPOSAL-BATCH-REFS-REPAIR-001"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-23",
+  "last_seen": "2026-07-23",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260723T122628Z-ios-knowledge-proposal-batch-refs-repair-001-bc2b3a24.json"
+  ]
+}

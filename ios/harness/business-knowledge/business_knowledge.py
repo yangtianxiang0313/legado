@@ -178,12 +178,100 @@ def _current(records: Iterable[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
         record = entry["record"]
         identifier = record.get("id")
         revision = record.get("revision")
-        if not isinstance(identifier, str) or not isinstance(revision, int):
+        if (
+            not isinstance(identifier, str)
+            or not isinstance(revision, int)
+            or isinstance(revision, bool)
+        ):
             continue
         existing = result.get(identifier)
         if existing is None or revision > existing["record"].get("revision", 0):
             result[identifier] = entry
     return result
+
+
+def _proposal_producers(
+    root: Path,
+) -> Tuple[Dict[Tuple[str, str, int], Tuple[str, ...]], List[str]]:
+    """Index exact proposal outputs by their immutable Work Item producer."""
+
+    producers: Dict[Tuple[str, str, int], List[str]] = {}
+    errors: List[str] = []
+    work_items_dir = root / "ios/harness/work-items"
+    if not work_items_dir.exists():
+        return {}, errors
+    for path in sorted(work_items_dir.glob("IOS-*.json")):
+        try:
+            work_item = load_json(path)
+        except KnowledgeError as error:
+            errors.append(str(error))
+            continue
+        if not isinstance(work_item, dict):
+            continue
+        metadata = work_item.get("metadata")
+        spec = work_item.get("spec")
+        if not isinstance(metadata, dict) or not isinstance(spec, dict):
+            continue
+        item_id = metadata.get("id")
+        knowledge = spec.get("knowledge")
+        if (
+            not isinstance(item_id, str)
+            or item_id != path.stem
+            or not isinstance(knowledge, dict)
+            or knowledge.get("mode") not in {"produce", "supersede"}
+        ):
+            continue
+        produces = knowledge.get("produces")
+        if not isinstance(produces, list):
+            continue
+        for output in produces:
+            if not isinstance(output, dict) or set(output) != {"kind", "id", "revision"}:
+                continue
+            kind = output.get("kind")
+            identifier = output.get("id")
+            revision = output.get("revision")
+            if (
+                kind not in {"packet", "driver"}
+                or not isinstance(identifier, str)
+                or not isinstance(revision, int)
+                or isinstance(revision, bool)
+            ):
+                continue
+            producers.setdefault((kind, identifier, revision), []).append(item_id)
+
+    result: Dict[Tuple[str, str, int], Tuple[str, ...]] = {}
+    for key, item_ids in sorted(producers.items()):
+        ordered = tuple(sorted(item_ids))
+        result[key] = ordered
+        if len(ordered) > 1:
+            errors.append(
+                f"proposal 生产声明不唯一：{key[0]} {key[1]}@{key[2]} -> "
+                + ", ".join(ordered)
+            )
+    return result, errors
+
+
+def _proposal_owner(
+    entry: Dict[str, Any],
+    kind: str,
+    producers: Dict[Tuple[str, str, int], Tuple[str, ...]],
+) -> Tuple[Optional[str], List[str]]:
+    record = entry["record"]
+    key = (kind, record.get("id"), record.get("revision"))
+    declared = producers.get(key, ())
+    created_by = record.get("created_by")
+    if not declared:
+        return None, [
+            f"{entry['path']}: proposal 未由 created_by Work Item 精确声明 knowledge.produces"
+        ]
+    if len(declared) != 1:
+        return None, []
+    if created_by != declared[0]:
+        return None, [
+            f"{entry['path']}: proposal created_by={created_by!r} "
+            f"与 knowledge.produces producer={declared[0]!r} 不一致"
+        ]
+    return declared[0], []
 
 
 def _revision_issues(
@@ -199,7 +287,7 @@ def _revision_issues(
         revision = record.get("revision")
         if not isinstance(identifier, str) or identifier_pattern.fullmatch(identifier) is None:
             continue
-        if not isinstance(revision, int):
+        if not isinstance(revision, int) or isinstance(revision, bool):
             continue
         revisions = grouped.setdefault(identifier, {})
         if revision in revisions:
@@ -224,9 +312,18 @@ def _claim_revision_issues(packet_entries: Sequence[Dict[str, Any]]) -> List[str
     grouped: Dict[str, Dict[int, bytes]] = {}
     records: Dict[Tuple[str, int], Dict[str, Any]] = {}
     for packet in packet_entries:
-        for claim in packet["record"].get("claims", []):
+        claims = packet["record"].get("claims")
+        if not isinstance(claims, list):
+            continue
+        for claim in claims:
+            if not isinstance(claim, dict):
+                continue
             identifier, revision = claim.get("id"), claim.get("revision")
-            if not isinstance(identifier, str) or not isinstance(revision, int):
+            if (
+                not isinstance(identifier, str)
+                or not isinstance(revision, int)
+                or isinstance(revision, bool)
+            ):
                 continue
             encoded = canonical_bytes(claim)
             prior = grouped.setdefault(identifier, {}).get(revision)
@@ -254,7 +351,11 @@ def _path_issues(entry: Dict[str, Any], authority: str, kind: str) -> List[str]:
     path = Path(entry["path"])
     errors: List[str] = []
     if kind in {"packet", "driver"}:
-        expected_name = f"r{revision:04d}.json" if isinstance(revision, int) else None
+        expected_name = (
+            f"r{revision:04d}.json"
+            if isinstance(revision, int) and not isinstance(revision, bool)
+            else None
+        )
         if path.parent.name != identifier or path.name != expected_name:
             errors.append(f"{entry['path']}: ID/revision 与路径不一致")
     elif kind == "ledger" and path.name != f"{identifier}.json":
@@ -309,6 +410,12 @@ def _graph(root: Path) -> Tuple[Dict[str, Any], List[str]]:
     errors.extend(_revision_issues(all_packets, PACKET_ID, "Packet"))
     errors.extend(_revision_issues(all_drivers, DRIVER_ID, "Driver"))
     errors.extend(_claim_revision_issues(all_packets))
+    proposal_producers, proposal_producer_errors = _proposal_producers(root)
+    errors.extend(proposal_producer_errors)
+    proposal_owner_by_path: Dict[str, str] = {}
+    proposal_claims_by_owner: Dict[str, Dict[Tuple[str, int], Dict[str, Any]]] = {}
+    proposal_claim_owner_by_key: Dict[Tuple[str, int], str] = {}
+    valid_published_packets: List[Dict[str, Any]] = []
 
     for authority, entries in (
         ("published", data["packets_published"]),
@@ -316,13 +423,45 @@ def _graph(root: Path) -> Tuple[Dict[str, Any], List[str]]:
     ):
         for entry in entries:
             record = entry["record"]
-            errors.extend(f"{entry['path']}: {error}" for error in validate_schema(record, packet_schema))
+            schema_errors = validate_schema(record, packet_schema)
+            errors.extend(f"{entry['path']}: {error}" for error in schema_errors)
             errors.extend(_path_issues(entry, authority, "packet"))
+            if schema_errors:
+                continue
+            if authority == "published":
+                valid_published_packets.append(entry)
             allowed_status = policy[
                 "published_packet_statuses" if authority == "published" else "proposal_packet_statuses"
             ]
             if record.get("status") not in allowed_status:
                 errors.append(f"{entry['path']}: Packet status 与 authority 不一致")
+            if authority == "proposal":
+                owner, owner_errors = _proposal_owner(entry, "packet", proposal_producers)
+                errors.extend(owner_errors)
+                if owner is not None:
+                    proposal_owner_by_path[entry["path"]] = owner
+                    batch_claims = proposal_claims_by_owner.setdefault(owner, {})
+                    for claim in record.get("claims", []):
+                        key = (claim.get("id"), claim.get("revision"))
+                        if (
+                            isinstance(key[0], str)
+                            and isinstance(key[1], int)
+                            and not isinstance(key[1], bool)
+                        ):
+                            if key in batch_claims:
+                                errors.append(
+                                    f"{entry['path']}: 同一 proposal 批次 claim 重复 "
+                                    f"{key[0]}@{key[1]}"
+                                )
+                            prior_owner = proposal_claim_owner_by_key.get(key)
+                            if prior_owner is not None and prior_owner != owner:
+                                errors.append(
+                                    f"{entry['path']}: proposal claim 归属批次不唯一 "
+                                    f"{key[0]}@{key[1]} -> {prior_owner}, {owner}"
+                                )
+                            else:
+                                proposal_claim_owner_by_key[key] = owner
+                            batch_claims[key] = claim
             packet_baseline = record.get("baseline", {})
             if packet_baseline.get("android_commit") != android_commit:
                 errors.append(f"{entry['path']}: Android baseline 不一致")
@@ -375,7 +514,7 @@ def _graph(root: Path) -> Tuple[Dict[str, Any], List[str]]:
                             "real-source capture 只能提供真实输入，不能单独定义运行语义"
                         )
 
-    current_packets = _current(data["packets_published"])
+    current_packets = _current(valid_published_packets)
     current_claims: Dict[Tuple[str, int], Dict[str, Any]] = {}
     claim_semantic_keys: Dict[str, str] = {}
     claim_packet: Dict[Tuple[str, int], Dict[str, Any]] = {}
@@ -406,20 +545,58 @@ def _graph(root: Path) -> Tuple[Dict[str, Any], List[str]]:
         if claim.get("conflicts_with") and claim.get("support", {}).get("state") != "disputed":
             errors.append(f"存在 conflicts_with 的 claim 必须标记 disputed：{key[0]}@{key[1]}")
 
+    for owner, batch_claims in sorted(proposal_claims_by_owner.items()):
+        for key, claim in sorted(batch_claims.items()):
+            for field, label in (
+                ("depends_on", "依赖"),
+                ("conflicts_with", "冲突"),
+            ):
+                for reference in claim.get(field, []):
+                    reference_key = (reference.get("id"), reference.get("revision"))
+                    if (
+                        reference_key not in current_claims
+                        and reference_key not in batch_claims
+                    ):
+                        errors.append(
+                            f"proposal claim {label}既非 current published claim，"
+                            f"也不属于 created_by 同批 Packet proposal："
+                            f"{owner} {key[0]}@{key[1]} -> "
+                            f"{reference_key[0]}@{reference_key[1]}"
+                        )
+            if (
+                claim.get("conflicts_with")
+                and claim.get("support", {}).get("state") != "disputed"
+            ):
+                errors.append(
+                    f"存在 conflicts_with 的 proposal claim 必须标记 disputed："
+                    f"{key[0]}@{key[1]}"
+                )
+
     accepted_adrs = _accepted_adrs(root)
+    valid_published_drivers: List[Dict[str, Any]] = []
     for authority, entries in (
         ("published", data["drivers_published"]),
         ("proposal", data["drivers_proposals"]),
     ):
         for entry in entries:
             record = entry["record"]
-            errors.extend(f"{entry['path']}: {error}" for error in validate_schema(record, driver_schema))
+            schema_errors = validate_schema(record, driver_schema)
+            errors.extend(f"{entry['path']}: {error}" for error in schema_errors)
             errors.extend(_path_issues(entry, authority, "driver"))
+            if schema_errors:
+                continue
+            if authority == "published":
+                valid_published_drivers.append(entry)
             allowed_status = policy[
                 "published_driver_statuses" if authority == "published" else "proposal_driver_statuses"
             ]
             if record.get("status") not in allowed_status:
                 errors.append(f"{entry['path']}: Driver status 与 authority 不一致")
+            if authority == "proposal":
+                owner, owner_errors = _proposal_owner(entry, "driver", proposal_producers)
+                errors.extend(owner_errors)
+                if owner is not None:
+                    proposal_owner_by_path[entry["path"]] = owner
             if authority == "published" and not isinstance(record.get("promotion"), dict):
                 errors.append(f"{entry['path']}: published Driver 缺少 promotion")
             elif authority == "published" and any(
@@ -430,17 +607,30 @@ def _graph(root: Path) -> Tuple[Dict[str, Any], List[str]]:
                 errors.append(f"{entry['path']}: published Driver promotion 无效")
             if authority == "proposal" and record.get("promotion") is not None:
                 errors.append(f"{entry['path']}: proposal Driver 不得伪造 promotion")
+            proposal_claims = proposal_claims_by_owner.get(
+                proposal_owner_by_path.get(entry["path"], ""),
+                {},
+            )
             for reference in record.get("claim_refs", []):
                 key = (reference.get("id"), reference.get("revision"))
-                if key not in current_claims:
+                if authority == "published" and key not in current_claims:
                     errors.append(f"{entry['path']}: Driver 引用不存在或非 current claim {key}")
+                elif (
+                    authority == "proposal"
+                    and key not in current_claims
+                    and key not in proposal_claims
+                ):
+                    errors.append(
+                        f"{entry['path']}: proposal Driver 引用既非 current published claim，"
+                        f"也不属于 created_by 同批 Packet proposal {key}"
+                    )
             resolution = record.get("resolution", {})
             if resolution.get("state") in {"resolved", "accepted_risk"}:
                 adr_refs = resolution.get("adr_refs", [])
                 if not adr_refs or any(adr not in accepted_adrs for adr in adr_refs):
                     errors.append(f"{entry['path']}: resolved Driver 必须引用 accepted ADR")
 
-    current_drivers = _current(data["drivers_published"])
+    current_drivers = _current(valid_published_drivers)
     driver_semantic_keys: Dict[str, str] = {}
     for identifier, entry in current_drivers.items():
         semantic_key = entry["record"].get("semantic_key")
@@ -457,8 +647,8 @@ def _graph(root: Path) -> Tuple[Dict[str, Any], List[str]]:
         policy,
         android_commit,
         inventory_control,
-        data["packets_published"],
-        data["drivers_published"],
+        valid_published_packets,
+        valid_published_drivers,
     )
     ledger_entries_by_claim: Dict[Tuple[str, int], List[Tuple[Dict[str, Any], Dict[str, Any]]]] = {}
     ledger_entry_ids: set[str] = set()

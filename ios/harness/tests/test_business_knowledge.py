@@ -170,6 +170,32 @@ class BusinessKnowledgeTests(unittest.TestCase):
         }
 
     @staticmethod
+    def proposal_driver(
+        *,
+        driver_id: str = DRIVER_ID,
+        creator: str = CREATOR,
+        claim_id: str = DEPENDENT_CLAIM_ID,
+        claim_revision: int = 1,
+    ) -> dict[str, object]:
+        value = BusinessKnowledgeTests.driver()
+        value.update(
+            {
+                "id": driver_id,
+                "status": "proposed",
+                "semantic_key": f"test.{driver_id.lower()}",
+                "claim_refs": [{"id": claim_id, "revision": claim_revision}],
+                "resolution": {
+                    "state": "open",
+                    "adr_refs": [],
+                    "work_item_refs": [creator],
+                },
+                "promotion": None,
+                "created_by": creator,
+            }
+        )
+        return value
+
+    @staticmethod
     def coverage_entry(
         entry_id: str,
         claim_id: str,
@@ -241,6 +267,26 @@ class BusinessKnowledgeTests(unittest.TestCase):
                 }
             },
         }
+
+    def write_producer(
+        self,
+        item_id: str,
+        produces: list[dict[str, object]],
+        *,
+        mode: str = "produce",
+    ) -> None:
+        write_json(
+            self.root / f"ios/harness/work-items/{item_id}.json",
+            {
+                "metadata": {"id": item_id},
+                "spec": {
+                    "knowledge": {
+                        "mode": mode,
+                        "produces": produces,
+                    }
+                },
+            },
+        )
 
     def install_valid_graph(
         self,
@@ -412,6 +458,10 @@ class BusinessKnowledgeTests(unittest.TestCase):
             self.root
             / f"ios/project/business-knowledge/packets/proposals/{PACKET_ID}/r0001.json"
         )
+        self.write_producer(
+            CREATOR,
+            [{"kind": "packet", "id": PACKET_ID, "revision": 1}],
+        )
         write_json(proposal_path, self.packet(status="candidate"))
         write_json(
             self.root / "ios/project/business-knowledge/catalog.json",
@@ -428,6 +478,496 @@ class BusinessKnowledgeTests(unittest.TestCase):
             "current published revision",
         ):
             knowledge.selection_value(self.root, item)
+
+    def test_proposal_driver_can_reference_claim_from_same_producer_batch(self) -> None:
+        self.write_producer(
+            CREATOR,
+            [
+                {"kind": "packet", "id": PACKET_ID, "revision": 1},
+                {"kind": "driver", "id": DRIVER_ID, "revision": 1},
+            ],
+        )
+        before = knowledge.catalog_value(self.root)
+        write_json(
+            self.root
+            / f"ios/project/business-knowledge/packets/proposals/{PACKET_ID}/r0001.json",
+            self.packet(status="candidate"),
+        )
+        write_json(
+            self.root
+            / f"ios/project/business-knowledge/drivers/proposals/{DRIVER_ID}/r0001.json",
+            self.proposal_driver(),
+        )
+        write_json(
+            self.root / "ios/project/business-knowledge/catalog.json",
+            knowledge.catalog_value(self.root),
+        )
+        after = knowledge.catalog_value(self.root)
+
+        self.assertEqual([], knowledge.doctor(self.root))
+        self.assertEqual(before["authority_sha256"], after["authority_sha256"])
+        self.assertNotEqual(before["proposal_sha256"], after["proposal_sha256"])
+
+    def test_proposal_driver_can_reference_current_published_claim(self) -> None:
+        self.install_valid_graph()
+        proposal_driver_id = "DRV-TEST-PROPOSAL-002"
+        producer = "IOS-TEST-PROPOSAL-002"
+        self.write_producer(
+            producer,
+            [{"kind": "driver", "id": proposal_driver_id, "revision": 1}],
+        )
+        write_json(
+            self.root
+            / (
+                "ios/project/business-knowledge/drivers/proposals/"
+                f"{proposal_driver_id}/r0001.json"
+            ),
+            self.proposal_driver(
+                driver_id=proposal_driver_id,
+                creator=producer,
+            ),
+        )
+        write_json(
+            self.root / "ios/project/business-knowledge/catalog.json",
+            knowledge.catalog_value(self.root),
+        )
+
+        self.assertEqual([], knowledge.doctor(self.root))
+
+    def test_proposal_driver_cannot_reference_packet_from_another_batch(self) -> None:
+        packet_creator = "IOS-TEST-PACKET-002"
+        driver_creator = "IOS-TEST-DRIVER-003"
+        self.write_producer(
+            packet_creator,
+            [{"kind": "packet", "id": PACKET_ID, "revision": 1}],
+        )
+        self.write_producer(
+            driver_creator,
+            [{"kind": "driver", "id": DRIVER_ID, "revision": 1}],
+        )
+        packet = self.packet(status="candidate")
+        packet["created_by"] = packet_creator
+        write_json(
+            self.root
+            / f"ios/project/business-knowledge/packets/proposals/{PACKET_ID}/r0001.json",
+            packet,
+        )
+        write_json(
+            self.root
+            / f"ios/project/business-knowledge/drivers/proposals/{DRIVER_ID}/r0001.json",
+            self.proposal_driver(creator=driver_creator),
+        )
+
+        errors = knowledge.doctor(self.root, check_catalog=False)
+
+        self.assertTrue(
+            any("不属于 created_by 同批 Packet proposal" in error for error in errors),
+            errors,
+        )
+
+    def test_proposal_created_by_must_match_exact_produces_declaration(self) -> None:
+        other_creator = "IOS-TEST-PACKET-002"
+        self.write_producer(
+            other_creator,
+            [{"kind": "packet", "id": PACKET_ID, "revision": 1}],
+        )
+        write_json(
+            self.root
+            / f"ios/project/business-knowledge/packets/proposals/{PACKET_ID}/r0001.json",
+            self.packet(status="candidate"),
+        )
+
+        errors = knowledge.doctor(self.root, check_catalog=False)
+
+        self.assertTrue(
+            any("与 knowledge.produces producer" in error for error in errors),
+            errors,
+        )
+
+    def test_proposal_artifact_without_produces_declaration_is_rejected(self) -> None:
+        write_json(
+            self.root
+            / f"ios/project/business-knowledge/packets/proposals/{PACKET_ID}/r0001.json",
+            self.packet(status="candidate"),
+        )
+
+        errors = knowledge.doctor(self.root, check_catalog=False)
+
+        self.assertTrue(
+            any("未由 created_by Work Item 精确声明" in error for error in errors),
+            errors,
+        )
+
+    def test_duplicate_proposal_producer_declaration_is_rejected(self) -> None:
+        output = {"kind": "packet", "id": PACKET_ID, "revision": 1}
+        self.write_producer(CREATOR, [output])
+        self.write_producer("IOS-TEST-PACKET-002", [output])
+
+        errors = knowledge.doctor(self.root, check_catalog=False)
+
+        self.assertTrue(
+            any("proposal 生产声明不唯一" in error for error in errors),
+            errors,
+        )
+
+    def test_duplicate_output_in_one_producer_is_rejected(self) -> None:
+        output = {"kind": "packet", "id": PACKET_ID, "revision": 1}
+        self.write_producer(CREATOR, [output, output])
+
+        errors = knowledge.doctor(self.root, check_catalog=False)
+
+        self.assertTrue(
+            any("proposal 生产声明不唯一" in error for error in errors),
+            errors,
+        )
+
+    def test_same_claim_key_cannot_belong_to_different_proposal_batches(self) -> None:
+        packet_a_id = "BKP-TEST-BATCH-A-002"
+        packet_b_id = "BKP-TEST-BATCH-B-003"
+        creator_a = "IOS-TEST-BATCH-A-002"
+        creator_b = "IOS-TEST-BATCH-B-003"
+        claim = self.claim(BASE_CLAIM_ID, "test.shared", depends_on=[])
+        for packet_id, creator, semantic_key in (
+            (packet_a_id, creator_a, "test.batch-a"),
+            (packet_b_id, creator_b, "test.batch-b"),
+        ):
+            self.write_producer(
+                creator,
+                [{"kind": "packet", "id": packet_id, "revision": 1}],
+            )
+            packet = self.packet(status="candidate")
+            packet.update(
+                {
+                    "id": packet_id,
+                    "semantic_key": semantic_key,
+                    "claims": [claim],
+                    "created_by": creator,
+                }
+            )
+            write_json(
+                self.root
+                / (
+                    "ios/project/business-knowledge/packets/proposals/"
+                    f"{packet_id}/r0001.json"
+                ),
+                packet,
+            )
+
+        errors = knowledge.doctor(self.root, check_catalog=False)
+
+        self.assertTrue(
+            any("proposal claim 归属批次不唯一" in error for error in errors),
+            errors,
+        )
+
+    def test_proposal_claim_dependency_cannot_cross_producer_batch(self) -> None:
+        packet_a_id = "BKP-TEST-BATCH-A-002"
+        packet_b_id = "BKP-TEST-BATCH-B-003"
+        claim_a_id = "BKC-TEST-BATCH-A-003"
+        claim_b_id = "BKC-TEST-BATCH-B-004"
+        creator_a = "IOS-TEST-BATCH-A-002"
+        creator_b = "IOS-TEST-BATCH-B-003"
+        self.write_producer(
+            creator_a,
+            [
+                {"kind": "packet", "id": packet_a_id, "revision": 1},
+                {"kind": "driver", "id": DRIVER_ID, "revision": 1},
+            ],
+        )
+        self.write_producer(
+            creator_b,
+            [{"kind": "packet", "id": packet_b_id, "revision": 1}],
+        )
+        packet_a = self.packet(status="candidate")
+        packet_a.update(
+            {
+                "id": packet_a_id,
+                "semantic_key": "test.batch-a",
+                "claims": [
+                    self.claim(
+                        claim_a_id,
+                        "test.batch-a.claim",
+                        depends_on=[{"id": claim_b_id, "revision": 1}],
+                    )
+                ],
+                "created_by": creator_a,
+            }
+        )
+        packet_b = self.packet(status="candidate")
+        packet_b.update(
+            {
+                "id": packet_b_id,
+                "semantic_key": "test.batch-b",
+                "claims": [
+                    self.claim(
+                        claim_b_id,
+                        "test.batch-b.claim",
+                        depends_on=[],
+                    )
+                ],
+                "created_by": creator_b,
+            }
+        )
+        write_json(
+            self.root
+            / (
+                "ios/project/business-knowledge/packets/proposals/"
+                f"{packet_a_id}/r0001.json"
+            ),
+            packet_a,
+        )
+        write_json(
+            self.root
+            / (
+                "ios/project/business-knowledge/packets/proposals/"
+                f"{packet_b_id}/r0001.json"
+            ),
+            packet_b,
+        )
+        write_json(
+            self.root
+            / f"ios/project/business-knowledge/drivers/proposals/{DRIVER_ID}/r0001.json",
+            self.proposal_driver(
+                creator=creator_a,
+                claim_id=claim_a_id,
+            ),
+        )
+
+        errors = knowledge.doctor(self.root, check_catalog=False)
+
+        self.assertTrue(
+            any("proposal claim 依赖既非 current published claim" in error for error in errors),
+            errors,
+        )
+
+    def test_proposal_claim_dependency_can_cross_packets_in_same_batch(self) -> None:
+        packet_a_id = "BKP-TEST-BATCH-A-002"
+        packet_b_id = "BKP-TEST-BATCH-B-003"
+        claim_a_id = "BKC-TEST-BATCH-A-003"
+        claim_b_id = "BKC-TEST-BATCH-B-004"
+        creator = "IOS-TEST-BATCH-A-002"
+        self.write_producer(
+            creator,
+            [
+                {"kind": "packet", "id": packet_a_id, "revision": 1},
+                {"kind": "packet", "id": packet_b_id, "revision": 1},
+                {"kind": "driver", "id": DRIVER_ID, "revision": 1},
+            ],
+        )
+        for packet_id, semantic_key, claim in (
+            (
+                packet_a_id,
+                "test.batch-a",
+                self.claim(
+                    claim_a_id,
+                    "test.batch-a.claim",
+                    depends_on=[{"id": claim_b_id, "revision": 1}],
+                ),
+            ),
+            (
+                packet_b_id,
+                "test.batch-b",
+                self.claim(
+                    claim_b_id,
+                    "test.batch-b.claim",
+                    depends_on=[],
+                ),
+            ),
+        ):
+            packet = self.packet(status="candidate")
+            packet.update(
+                {
+                    "id": packet_id,
+                    "semantic_key": semantic_key,
+                    "claims": [claim],
+                    "created_by": creator,
+                }
+            )
+            write_json(
+                self.root
+                / (
+                    "ios/project/business-knowledge/packets/proposals/"
+                    f"{packet_id}/r0001.json"
+                ),
+                packet,
+            )
+        write_json(
+            self.root
+            / f"ios/project/business-knowledge/drivers/proposals/{DRIVER_ID}/r0001.json",
+            self.proposal_driver(
+                creator=creator,
+                claim_id=claim_a_id,
+            ),
+        )
+        write_json(
+            self.root / "ios/project/business-knowledge/catalog.json",
+            knowledge.catalog_value(self.root),
+        )
+
+        self.assertEqual([], knowledge.doctor(self.root))
+
+    def test_proposal_claim_conflict_cannot_cross_producer_batch(self) -> None:
+        packet_a_id = "BKP-TEST-BATCH-A-002"
+        packet_b_id = "BKP-TEST-BATCH-B-003"
+        claim_a_id = "BKC-TEST-BATCH-A-003"
+        claim_b_id = "BKC-TEST-BATCH-B-004"
+        creator_a = "IOS-TEST-BATCH-A-002"
+        creator_b = "IOS-TEST-BATCH-B-003"
+        self.write_producer(
+            creator_a,
+            [{"kind": "packet", "id": packet_a_id, "revision": 1}],
+        )
+        self.write_producer(
+            creator_b,
+            [{"kind": "packet", "id": packet_b_id, "revision": 1}],
+        )
+        claim_a = self.claim(claim_a_id, "test.batch-a.claim", depends_on=[])
+        claim_a["conflicts_with"] = [{"id": claim_b_id, "revision": 1}]
+        claim_a["support"]["state"] = "disputed"
+        for packet_id, semantic_key, claim, creator in (
+            (packet_a_id, "test.batch-a", claim_a, creator_a),
+            (
+                packet_b_id,
+                "test.batch-b",
+                self.claim(claim_b_id, "test.batch-b.claim", depends_on=[]),
+                creator_b,
+            ),
+        ):
+            packet = self.packet(status="candidate")
+            packet.update(
+                {
+                    "id": packet_id,
+                    "semantic_key": semantic_key,
+                    "claims": [claim],
+                    "created_by": creator,
+                }
+            )
+            write_json(
+                self.root
+                / (
+                    "ios/project/business-knowledge/packets/proposals/"
+                    f"{packet_id}/r0001.json"
+                ),
+                packet,
+            )
+
+        errors = knowledge.doctor(self.root, check_catalog=False)
+
+        self.assertTrue(
+            any("proposal claim 冲突既非 current published claim" in error for error in errors),
+            errors,
+        )
+
+    def test_malformed_packet_proposals_return_errors_without_crashing(self) -> None:
+        self.write_producer(
+            CREATOR,
+            [{"kind": "packet", "id": PACKET_ID, "revision": 1}],
+        )
+        path = (
+            self.root
+            / f"ios/project/business-knowledge/packets/proposals/{PACKET_ID}/r0001.json"
+        )
+        variants = [
+            ("id", []),
+            ("revision", []),
+            ("revision", True),
+            ("claims", None),
+            ("claims", [[]]),
+            ("baseline", []),
+            ("scope", []),
+        ]
+        for field, value in variants:
+            with self.subTest(field=field, value=value):
+                packet = self.packet(status="candidate")
+                packet[field] = value
+                write_json(path, packet)
+                errors = knowledge.doctor(self.root, check_catalog=False)
+                self.assertTrue(errors)
+                self.assertTrue(any("$.%s" % field in error for error in errors), errors)
+        packet = self.packet(status="candidate")
+        packet["claims"][0]["support"] = []
+        write_json(path, packet)
+        errors = knowledge.doctor(self.root, check_catalog=False)
+        self.assertTrue(any("$.claims[0].support" in error for error in errors), errors)
+
+    def test_malformed_driver_proposals_return_errors_without_crashing(self) -> None:
+        self.write_producer(
+            CREATOR,
+            [{"kind": "driver", "id": DRIVER_ID, "revision": 1}],
+        )
+        path = (
+            self.root
+            / f"ios/project/business-knowledge/drivers/proposals/{DRIVER_ID}/r0001.json"
+        )
+        variants = [
+            ("id", []),
+            ("revision", []),
+            ("revision", True),
+            ("claim_refs", None),
+            ("claim_refs", [[]]),
+            ("claim_refs", [{"id": [], "revision": 1}]),
+            ("resolution", []),
+        ]
+        for field, value in variants:
+            with self.subTest(field=field, value=value):
+                driver = self.proposal_driver()
+                driver[field] = value
+                write_json(path, driver)
+                errors = knowledge.doctor(self.root, check_catalog=False)
+                self.assertTrue(errors)
+                self.assertTrue(any("$.%s" % field in error for error in errors), errors)
+
+    def test_published_driver_cannot_reference_proposal_claim(self) -> None:
+        self.write_producer(
+            CREATOR,
+            [{"kind": "packet", "id": PACKET_ID, "revision": 1}],
+        )
+        write_json(
+            self.root
+            / f"ios/project/business-knowledge/packets/proposals/{PACKET_ID}/r0001.json",
+            self.packet(status="candidate"),
+        )
+        write_json(
+            self.root
+            / f"ios/project/business-knowledge/drivers/published/{DRIVER_ID}/r0001.json",
+            self.driver(),
+        )
+        adr_path = self.root / "ios/docs/adr/0001-test.md"
+        adr_path.parent.mkdir(parents=True, exist_ok=True)
+        adr_path.write_text("id: ADR-0001\nstatus: accepted\n", encoding="utf-8")
+
+        errors = knowledge.doctor(self.root, check_catalog=False)
+
+        self.assertTrue(
+            any("Driver 引用不存在或非 current claim" in error for error in errors),
+            errors,
+        )
+
+    def test_proposal_driver_requires_exact_candidate_claim_revision(self) -> None:
+        self.write_producer(
+            CREATOR,
+            [
+                {"kind": "packet", "id": PACKET_ID, "revision": 1},
+                {"kind": "driver", "id": DRIVER_ID, "revision": 1},
+            ],
+        )
+        write_json(
+            self.root
+            / f"ios/project/business-knowledge/packets/proposals/{PACKET_ID}/r0001.json",
+            self.packet(status="candidate"),
+        )
+        write_json(
+            self.root
+            / f"ios/project/business-knowledge/drivers/proposals/{DRIVER_ID}/r0001.json",
+            self.proposal_driver(claim_revision=2),
+        )
+
+        errors = knowledge.doctor(self.root, check_catalog=False)
+
+        self.assertTrue(
+            any("不属于 created_by 同批 Packet proposal" in error for error in errors),
+            errors,
+        )
 
     def test_context_budget_applies_after_dependency_closure(self) -> None:
         self.install_valid_graph()

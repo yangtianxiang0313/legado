@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 6,
+  "revision": 7,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -34,14 +34,14 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260723T113040Z-ios-knowledge-android-surfaces-001-fc5f623f.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260723T122628Z-ios-knowledge-proposal-batch-refs-repair-001-bc2b3a24.json",
   "next_actions": [
-    "人工审查 BKP-ANDROID-SURFACES-001 candidate；通过后由 Trusted Publisher 发布并 materialize Book/Shelf/Progress 分域扫描",
-    "materialize 书源格式、规则与执行流水线分域扫描",
-    "materialize 阅读会话、正文、进度与预取分域扫描",
-    "materialize 页面结构、导航图与多级菜单分域扫描",
-    "materialize 外部集成、权限、依赖与发布约束分域扫描"
+    "materialize Book/Shelf/Progress 分域扫描，并让同一 Work Item 的 DRV-BOOK-IDENTITY-001 只引用同批 Packet Claim 或 current published Claim",
+    "materialize 书源格式/规则/执行流水线与阅读会话/正文/进度/预取分域扫描",
+    "materialize 页面结构/导航图/多级菜单与外部集成/权限/依赖/发布约束分域扫描",
+    "Phase-2 分域候选齐备后由 Trusted Publisher 原子发布 Packet/Driver、Coverage 与 Catalog",
+    "在首个 supersede 任务前独立闭合 produce/supersede revision 语义与 verification invalidation 生命周期"
   ],
-  "updated_at": "2026-07-23T11:30:41Z",
-  "updated_by": "IOS-KNOWLEDGE-ANDROID-SURFACES-001"
+  "updated_at": "2026-07-23T12:26:29Z",
+  "updated_by": "IOS-KNOWLEDGE-PROPOSAL-BATCH-REFS-REPAIR-001"
 }

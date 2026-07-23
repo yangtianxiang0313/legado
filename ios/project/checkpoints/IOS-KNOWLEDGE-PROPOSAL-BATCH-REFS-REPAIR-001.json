@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-KNOWLEDGE-PROPOSAL-BATCH-REFS-REPAIR-001",
+  "summary": "闭合 Phase-2 知识生产的候选批次契约：以 Work Item knowledge.produces 与 artifact.created_by 证明 Packet/Driver 归属；proposed Driver 及其 Claim 依赖/冲突闭包只能解析 current published Claim 或同批 Packet proposal Claim；跨批、未声明、重复归属、错误 revision 与 malformed proposal 均 fail-closed。",
+  "evidence": "ios/harness/evidence/runs/run-20260723T122628Z-ios-knowledge-proposal-batch-refs-repair-001-bc2b3a24.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 6,
+      "to_revision": 7,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": ["ADR-0004"]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项修复 Business Knowledge 控制面自身，不生产、消费或发布业务知识"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项只修复候选知识 lineage 与校验健壮性，不改变 Android/iOS 产品行为"
+  },
+  "pitfalls": {
+    "records": ["ios/project/pitfalls/PIT-0009.json"],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "Catalog 尚无 published Packet、Coverage Ledger 或 published Architecture Driver，任何产品实现仍被阻断",
+    "knowledge.produce 与 knowledge.supersede 当前都可声明 proposal producer；revision 迁移语义应在首个 supersede 任务前由独立治理 Work Item 闭合",
+    "Harness 尚无原生 VerificationInvalidated 命令；本项在首次 verify 后由独立审计发现 blocker，只能保留旧 Evidence、追加可审计失效事件并重新验证",
+    "Business Knowledge 仍是 ADR-0004 下的派生控制合同，正式架构权威需要 published Driver、proposed ADR 与人工批准"
+  ],
+  "next_actions": [
+    "materialize IOS-KNOWLEDGE-BOOK-DOMAIN-001，并依赖本纠错任务",
+    "用已完成的 Android Book/Shelf/Progress 只读扫描生成 BKP-BOOK-DOMAIN-001 与 DRV-BOOK-IDENTITY-001 candidate",
+    "继续 materialize Source Runtime、Reader Lifecycle、UI Topology 与 Integrations 分域扫描",
+    "在首个 supersede 任务前新增 mode/revision 语义与 verification invalidation 生命周期治理项"
+  ],
+  "created_at": "2026-07-23T12:26:29Z"
+}

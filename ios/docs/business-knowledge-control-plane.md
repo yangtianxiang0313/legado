@@ -44,7 +44,7 @@ flowchart LR
 | Packet | 哪些事实属于同一 bounded context 或业务主题？ | 聚合与定位知识，不决定产品范围 |
 | Claim | 对业务数据、行为、生命周期、UI 结构或风险作出什么原子陈述？ | 必须带稳定 ID、revision、support、依赖和冲突 |
 | Coverage Ledger | 这条已发布 Claim 是否已验证、如何处置、交付到哪里？ | 每个 current published Claim 恰有一个 entry |
-| Architecture Driver | 哪些已发布 Claim 形成质量属性、约束或架构问题？ | 未解决 Driver 不能被实现任务绕过 |
+| Architecture Driver | 哪些 Claim 形成质量属性、约束或架构问题？ | proposed Driver 仅供同批审查；published Driver 的未解决状态不能被实现任务绕过 |
 | Requirement | 哪些可观察行为进入 iOS 产品范围？ | 只有 accepted revision/clause 才能驱动产品实现 |
 | ADR | iOS 如何在约束与质量属性之间取舍？ | 只有 accepted ADR 才是架构决定 |
 | Work Item | 本次有界交付做什么、可写哪里、如何验收？ | 精确消费已发布知识与 accepted Requirement/ADR |
@@ -93,7 +93,9 @@ Ledger 的 revision 与 Knowledge Authority digest 绑定。知识 revision 变�
 
 ### 3.4 Architecture Driver
 
-Driver 使用 `DRV-*`，只引用 current published Claim。它把业务事实翻译成架构决策输入：
+Driver 使用 `DRV-*`。published Driver 只引用 current published Claim；proposed Driver 可以引用
+current published Claim，也可以引用其 `created_by` Work Item 在同一
+`knowledge.produces` 批次中精确声明的 Packet proposal Claim。它把业务事实翻译成架构决策输入：
 
 - 质量属性和具体 scenario；
 - criticality；
@@ -102,6 +104,12 @@ Driver 使用 `DRV-*`，只引用 current published Claim。它把业务事实�
 - 最终 accepted ADR 与后续 Work Item。
 
 Android 模块划分只能作为来源线索，不能直接成为 Driver 的结论。Driver 在 `open / requires_*` 状态时会阻断相关 implementation；只有 `resolved` 或 `accepted_risk` 且引用 accepted ADR 后才能解除。
+
+同批候选引用不提升 authority。Harness 以
+`Work Item metadata.id + knowledge.mode + produces(kind/id/revision) + artifact.created_by`
+确定性证明批次归属；重复生产声明、未声明产物、跨 Work Item 引用、错误 revision
+或伪造 `created_by` 都会失败。candidate Claim 与 proposed Driver 仍不能被
+`knowledge.consume` 或 implementation 选择。
 
 ## 4. 候选与发布隔离
 
@@ -126,6 +134,11 @@ ios/project/business-knowledge/
 - 直接编辑 Catalog；
 - 在同一 Work Item 中生产知识并修改 Swift 产品代码；
 - 用 candidate Claim 驱动 Requirement implementation。
+
+知识生产 Work Item 可以原子产出一个或多个 Packet/Driver proposal。proposed Driver
+只可引用同一 Work Item 精确 `produces` 的 Packet proposal Claim，或引用既有 current
+published Claim；它不能从其他候选批次取数。此规则只让 Packet 与 Driver 作为一组候选
+接受审查，不改变 proposal/published 物理隔离、promotion 权限或 authority digest。
 
 发布必须由可信 Supervisor/人工审查后的 publisher 完成。Packet promotion、对应初始 Ledger 与 Catalog 更新必须作为一个受信事务提交，避免出现“已发布 Claim 没有 Coverage entry”的中间状态。发布动作不从本仓的只读 CLI 暴露。
 

@@ -2,13 +2,13 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-23T12:15:08Z
+- 更新时间：2026-07-23T12:28:44Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
-- 下一个可领取工作项：IOS-KNOWLEDGE-PROPOSAL-BATCH-REFS-REPAIR-001
-- 最近完成：IOS-KNOWLEDGE-ANDROID-SURFACES-001
+- 下一个可领取工作项：无
+- 最近完成：IOS-KNOWLEDGE-PROPOSAL-BATCH-REFS-REPAIR-001
 
 ## 健康度
 
@@ -21,7 +21,7 @@
 | harness | `ready` |
 | ios_build | `package_verified` |
 | knowledge_android_surfaces | `candidate_verified` |
-| knowledge_control_plane | `selection_union_and_malformed_input_verified` |
+| knowledge_control_plane | `proposal_batch_claim_refs_verified` |
 | knowledge_initialization_dag | `proposal_verified` |
 | requirements | `catalog_ready_one_characterization_gap` |
 | source_lab | `fixture_transport_integrated` |
@@ -31,7 +31,7 @@
 | ID | 优先级 | 状态 | 依赖 | 标题 |
 |---|---:|---|---|---|
 | IOS-BOOT-001 | 100 | `completed` | 无 | 建立 Swift Package 与首批模块骨架 |
-| IOS-KNOWLEDGE-PROPOSAL-BATCH-REFS-REPAIR-001 | 96 | `ready` | IOS-KNOWLEDGE-ANDROID-SURFACES-001 | 闭合同批知识候选引用契约 |
+| IOS-KNOWLEDGE-PROPOSAL-BATCH-REFS-REPAIR-001 | 96 | `completed` | IOS-KNOWLEDGE-ANDROID-SURFACES-001 | 闭合同批知识候选引用契约 |
 | IOS-KNOWLEDGE-DAG-REPAIR-001 | 95 | `completed` | IOS-KNOWLEDGE-CONTROL-PLANE-001 | 修复初始化 DAG 验收缺口并收紧知识演进门禁 |
 | IOS-KNOWLEDGE-LEDGER-GATE-REPAIR-001 | 95 | `completed` | IOS-KNOWLEDGE-DAG-REPAIR-001 | 闭合知识台账选择与人工审批门禁 |
 | IOS-KNOWLEDGE-SELECTION-ROBUSTNESS-001 | 95 | `completed` | IOS-KNOWLEDGE-LEDGER-GATE-REPAIR-001 | 加固知识条目选择合并与异常输入处理 |
