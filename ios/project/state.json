@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "revision": 49,
+  "revision": 50,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-23T12:06:32Z",
-  "event_head": "2d7ec38a41eb67797a6cc153f626a05adfdb9232da5421828d1df507e58a0800",
+  "updated_at": "2026-07-23T12:15:08Z",
+  "event_head": "c53bd0e0b650270ae4e4ce131695d2c523c637acb7a5dda2a7f83261abb5482c",
   "active_work_items": [],
   "last_completed_work_item": "IOS-KNOWLEDGE-ANDROID-SURFACES-001",
   "work_items": {
@@ -922,6 +922,11 @@
       },
       "completed_at": "2026-07-23T12:06:32Z",
       "final_tree_sha256": "657c9ab67db9e0190833c41ae86a8c5061ba0d19979712e91f1900f948e69740"
+    },
+    "IOS-KNOWLEDGE-PROPOSAL-BATCH-REFS-REPAIR-001": {
+      "status": "ready",
+      "attempt": 0,
+      "last_evidence": null
     }
   },
   "health": {
