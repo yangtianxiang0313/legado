@@ -1,0 +1,142 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-KNOWLEDGE-SELECTION-ROBUSTNESS-001",
+    "title": "加固知识条目选择合并与异常输入处理",
+    "priority": 95,
+    "risk": "high",
+    "labels": ["phase-0", "knowledge", "corrective", "governance"]
+  },
+  "spec": {
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "intent": "修复 Ledger selection 审计新增的两个边界缺口：同一 Ledger 的多段 coverage_refs 必须按 entry 并集合并，格式损坏的 entry_updates 必须产生可诊断校验错误而不能让 doctor 抛出异常。",
+    "depends_on": ["IOS-KNOWLEDGE-LEDGER-GATE-REPAIR-001"],
+    "scope": {
+      "allow_write": [
+        "ios/harness/harness.py",
+        "ios/harness/tests/test_harness.py",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-KNOWLEDGE-SELECTION-ROBUSTNESS-001.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "ios/harness/config.json",
+        "ios/harness/schemas/**",
+        "ios/harness/work-items/**",
+        "ios/harness/goldens/**",
+        "ios/harness/normalization/**",
+        "ios/harness/fixtures/**",
+        "ios/harness/source-lab/**",
+        "ios/harness/android-intake/**",
+        "ios/project/android-intake/**",
+        "ios/project/business-knowledge/**",
+        "ios/project/requirements/**",
+        "ios/project/baseline.json",
+        "ios/project/approvals/**",
+        "ios/docs/**"
+      ],
+      "max_files_changed": 5,
+      "max_changed_lines": 400
+    },
+    "inputs": {
+      "context_files": [
+        "ios/docs/business-knowledge-control-plane.md",
+        "ios/docs/ai-harness.md",
+        "ios/project/checkpoints/IOS-KNOWLEDGE-LEDGER-GATE-REPAIR-001.json"
+      ],
+      "android_source_anchors": [],
+      "fixtures": []
+    },
+    "architecture_refs": ["ARCH-017", "ARCH-018", "ADR-0004"],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "同一 Ledger 可在多个 coverage_refs 中分段选择 entries；spec 与 close 校验按 Ledger ID 求 entry 并集，不得错误覆盖先前选择。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "同一 Ledger 的多段 coverage_refs 若声明不同 revision，必须产生明确契约错误。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "entry_updates 为 null、object 或其他非法类型时，Work Item/doctor 返回结构化校验错误而不是抛出 TypeError。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-4",
+          "statement": "新 Evidence、Checkpoint、Capability revision 与事件链独立记录本次纠错，之前的 Evidence 保持不可变。",
+          "verified_by": ["harness-tests", "memory-close"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": ["dependency-policy", "harness-tests"]
+    },
+    "baseline_checks": ["harness-tests"],
+    "budget": {
+      "wall_clock_seconds": 1800,
+      "max_edit_verify_cycles": 3,
+      "max_targeted_test_runs": 5,
+      "max_full_test_runs": 2,
+      "max_infra_retries": 1
+    },
+    "gates": [],
+    "completion_effects": {
+      "health": {
+        "knowledge_control_plane": "selection_union_and_malformed_input_verified"
+      }
+    },
+    "memory": {
+      "capability_state_required": true,
+      "compatibility": "not_applicable",
+      "pitfall": "if_non_obvious_and_preventable",
+      "adr": "required_for_architecture_change"
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "refs": [],
+      "none_reason": "本项修复控制面边界健壮性，不接受或实现产品行为"
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "not_applicable",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [],
+      "expected_ledger_transitions": [],
+      "context_budget": {
+        "max_claims": 40,
+        "max_bytes": 65536
+      },
+      "none_reason": "本项纠正知识控制面自身，不消费或发布业务知识"
+    },
+    "source_lab": {
+      "mode": "not_applicable",
+      "behaviors": [],
+      "scenarios": [],
+      "none_reason": "本项不执行书源规则或本地站点"
+    },
+    "stop_on": [
+      "baseline_red",
+      "scope_violation",
+      "authority_escalation",
+      "knowledge_drift",
+      "same_failure_twice",
+      "budget_exhausted"
+    ]
+  }
+}
