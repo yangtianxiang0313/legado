@@ -1,0 +1,162 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-KNOWLEDGE-DAG-REPAIR-001",
+    "title": "修复初始化 DAG 验收缺口并收紧知识演进门禁",
+    "priority": 95,
+    "risk": "high",
+    "labels": ["phase-0", "knowledge", "corrective", "governance"]
+  },
+  "spec": {
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "intent": "以独立纠错事务恢复被工具截断但已被旧 Evidence 误验收的 initialization proposal DAG，补上 DAG 结构合同测试，并修复终态选择、Driver 完整闭包与 Coverage close 字段约束，保持旧 Evidence 不可变。",
+    "depends_on": ["IOS-KNOWLEDGE-CONTROL-PLANE-001"],
+    "scope": {
+      "allow_write": [
+        "ios/project/work-item-proposals/initialization-dag.json",
+        "ios/harness/harness.py",
+        "ios/harness/business-knowledge/business_knowledge.py",
+        "ios/harness/tests/test_business_knowledge.py",
+        "ios/harness/tests/test_harness.py",
+        "ios/docs/business-knowledge-control-plane.md",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-KNOWLEDGE-DAG-REPAIR-001.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "ios/harness/config.json",
+        "ios/harness/schemas/**",
+        "ios/harness/work-items/**",
+        "ios/harness/goldens/**",
+        "ios/harness/normalization/**",
+        "ios/harness/fixtures/**",
+        "ios/harness/source-lab/**",
+        "ios/harness/android-intake/**",
+        "ios/project/android-intake/**",
+        "ios/project/business-knowledge/**",
+        "ios/project/requirements/**",
+        "ios/project/baseline.json",
+        "ios/project/approvals/**",
+        "ios/docs/architecture.md",
+        "ios/docs/project-memory.md",
+        "ios/docs/adr/**"
+      ],
+      "max_files_changed": 8,
+      "max_changed_lines": 1200
+    },
+    "inputs": {
+      "context_files": [
+        "ios/docs/business-knowledge-control-plane.md",
+        "ios/docs/ai-harness.md",
+        "ios/docs/project-memory.md",
+        "ios/docs/trusted-supervisor.md",
+        "ios/project/checkpoints/IOS-KNOWLEDGE-CONTROL-PLANE-001.json"
+      ],
+      "android_source_anchors": [],
+      "fixtures": []
+    },
+    "architecture_refs": ["ARCH-017", "ARCH-018", "ADR-0004"],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "初始化 proposal DAG 是合法 JSON，13 个节点 ID 唯一，内部依赖闭合且无环，外部前置已完成，并记录本纠错来源。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "DAG 的 queue/materialization 副作用全部为 false；trusted promotion 只能由外部可信 publisher 执行，普通 Work Item/gate 不得写 published。",
+          "verified_by": ["harness-tests", "scope-policy"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "doctor 只对非终态 Work Item 重算当前 knowledge selection；终态任务继续由其 Evidence 与 Checkpoint 证明历史 revision，Ledger 合规演进不会毒化全局 doctor。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-4",
+          "statement": "选择 Claim 时自动纳入所有引用该闭包的 current Architecture Driver，未解决 Driver 无法通过省略 driver_refs 绕过 implementation 门禁。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-5",
+          "statement": "Coverage close 只允许 Work Item 声明的字段和值变化；Requirement、Evidence、Work Item、Capability 和人工裁决引用必须可解析且与当前事务匹配。",
+          "verified_by": ["harness-tests", "memory-close"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-6",
+          "statement": "旧 Evidence 保持不可变，新 Evidence、Checkpoint、Capability revision 与事件链显式记录本次纠错。",
+          "verified_by": ["harness-tests", "memory-close"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": ["dependency-policy", "harness-tests"]
+    },
+    "baseline_checks": ["harness-tests"],
+    "budget": {
+      "wall_clock_seconds": 3600,
+      "max_edit_verify_cycles": 3,
+      "max_targeted_test_runs": 5,
+      "max_full_test_runs": 2,
+      "max_infra_retries": 1
+    },
+    "gates": [],
+    "completion_effects": {
+      "health": {
+        "knowledge_control_plane": "selection_drift_and_repair_verified",
+        "knowledge_initialization_dag": "proposal_verified"
+      }
+    },
+    "memory": {
+      "capability_state_required": true,
+      "compatibility": "not_applicable",
+      "pitfall": "if_non_obvious_and_preventable",
+      "adr": "required_for_architecture_change"
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "refs": [],
+      "none_reason": "本项修复控制面验收和演进门禁，不接受或实现产品行为"
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "not_applicable",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [],
+      "expected_ledger_transitions": [],
+      "context_budget": {"max_claims": 40, "max_bytes": 65536},
+      "none_reason": "本项纠正知识控制面自身，不消费或发布业务知识"
+    },
+    "source_lab": {
+      "mode": "not_applicable",
+      "behaviors": [],
+      "scenarios": [],
+      "none_reason": "本项不执行书源规则或本地站点"
+    },
+    "stop_on": [
+      "baseline_red",
+      "scope_violation",
+      "authority_escalation",
+      "knowledge_drift",
+      "same_failure_twice",
+      "budget_exhausted"
+    ]
+  }
+}
