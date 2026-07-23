@@ -731,7 +731,7 @@ def selection_value(root: Path, work_item: Dict[str, Any]) -> Dict[str, Any]:
     for reference in knowledge.get("claim_refs", []):
         include(reference)
 
-    drivers: List[Dict[str, Any]] = []
+    drivers_by_id: Dict[str, Dict[str, Any]] = {}
     for reference in knowledge.get("driver_refs", []):
         driver = data["current_drivers"].get(reference.get("id"))
         if driver is None or driver["record"].get("revision") != reference.get("revision"):
@@ -739,9 +739,21 @@ def selection_value(root: Path, work_item: Dict[str, Any]) -> Dict[str, Any]:
                 f"Architecture Driver 不存在或 revision 不匹配："
                 f"{reference.get('id')}@{reference.get('revision')}"
             )
-        drivers.append(driver)
+        drivers_by_id[driver["record"]["id"]] = driver
         for claim_ref in driver["record"].get("claim_refs", []):
             include(claim_ref)
+    changed = True
+    while changed:
+        changed = False
+        for identifier, driver in data["current_drivers"].items():
+            driver_claims = {_ref_key(reference) for reference in driver["record"].get("claim_refs", [])}
+            if identifier in drivers_by_id or not driver_claims.intersection(selected):
+                continue
+            drivers_by_id[identifier] = driver
+            for claim_ref in driver["record"].get("claim_refs", []):
+                include(claim_ref)
+            changed = True
+    drivers = list(drivers_by_id.values())
 
     coverage: List[Dict[str, Any]] = []
     covered_claims: set[Tuple[str, int]] = set()

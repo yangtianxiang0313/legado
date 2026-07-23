@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0007",
+  "revision": 1,
+  "title": "Token 优化命令代理会截断重定向的超长单行 JSON",
+  "fingerprint": "rtk-filtered-stdout-redirection-truncates-long-json",
+  "capabilities": ["CAP-KNOWLEDGE-CONTROL"],
+  "symptoms": [
+    "格式化后的 JSON 文件只剩一个带省略号的短行",
+    "普通代码测试通过，但下游 jq/json parser 报 Unfinished string"
+  ],
+  "conditions": [
+    "通过会过滤或压缩 stdout 的命令代理输出超长单行内容",
+    "把代理 stdout 直接重定向回工作区文件，且验收未解析该文件"
+  ],
+  "root_cause": "命令代理为节省上下文会截断长 stdout 并插入省略号；shell 重定向保存的是过滤后输出，不是底层 formatter 的完整字节。",
+  "diagnosis": [
+    "写入后立即用独立 JSON parser 解析并检查预期顶层字段",
+    "比较格式化前后的 byte count 与 SHA，确认文件没有省略号截断"
+  ],
+  "fix": "从结构化原稿恢复 initialization DAG；新增 JSON、节点唯一、依赖闭合、无环、无自动 materialize 和 trusted publisher 合同测试，并通过独立纠错 Work Item 重新生成 Evidence。",
+  "prevention": {
+    "architecture_rule": "不得把 token-optimized/filtered stdout 直接重定向为项目 artifact；生成或格式化后必须由独立 parser 做语义验收",
+    "tests": [
+      "ios/harness/tests/test_business_knowledge.py#test_initialization_proposal_dag_contract"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-KNOWLEDGE-CONTROL-PLANE-001",
+    "until": "IOS-KNOWLEDGE-DAG-REPAIR-001"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-23",
+  "last_seen": "2026-07-23",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260723T080820Z-ios-knowledge-dag-repair-001-ad03d875.json"
+  ]
+}

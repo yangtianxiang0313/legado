@@ -5,6 +5,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 HARNESS_DIR = Path(__file__).resolve().parents[1]
@@ -351,6 +352,130 @@ class HarnessTests(unittest.TestCase):
             fixture.write_json("ios/harness/business-knowledge/policy-v1.json", policy)
             with self.assertRaisesRegex(harness_module.HarnessError, "KNOWLEDGE_DRIFT"):
                 harness.verify("IOS-BOOT-001")
+
+    def test_doctor_does_not_reselect_terminal_knowledge_revision(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = HarnessFixture(root)
+            fixture.initialize()
+            harness = self.enable_business_knowledge(fixture)
+            state = harness.state()
+            for runtime in state["work_items"].values():
+                runtime["status"] = "superseded"
+            fixture.write_json("ios/project/state.json", state)
+            fixture.write_text(
+                "ios/project/status.md",
+                harness.render_status(state, harness.work_items()),
+            )
+            with mock.patch.object(
+                harness,
+                "business_knowledge_selection",
+                side_effect=AssertionError("terminal selection must not be recomputed"),
+            ):
+                errors, _ = harness.doctor()
+            self.assertEqual([], errors)
+
+    def test_ledger_close_matches_declared_sections_and_transaction_refs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = HarnessFixture(root)
+            harness = fixture.initialize()
+            fixture.write_json(
+                "ios/project/android-intake/inventory-manifest.json",
+                {"facts": []},
+            )
+            fixture.write_json(
+                "ios/project/requirements/catalog.json",
+                {"requirements": []},
+            )
+            ledger_id = "BKL-TEST-CLOSE-001"
+            entry_id = "BKE-TEST-CLOSE-001"
+            path = f"ios/project/business-knowledge/coverage/{ledger_id}.json"
+            old_delivery = {
+                "state": "planned",
+                "requirement_refs": [],
+                "work_item_refs": [],
+                "capability_refs": [],
+                "evidence_refs": [],
+            }
+            ledger = {
+                "schema_version": 1,
+                "kind": "BusinessKnowledgeCoverageLedger",
+                "id": ledger_id,
+                "revision": 1,
+                "status": "current",
+                "packet_refs": [],
+                "generated_from": {},
+                "entries": [{
+                    "id": entry_id,
+                    "claim_ref": {"id": "BKC-TEST-CLOSE-001", "revision": 1},
+                    "validation": {
+                        "required": "none",
+                        "state": "not_applicable",
+                        "evidence_refs": [],
+                        "blockers": [],
+                    },
+                    "product_disposition": {
+                        "kind": "knowledge_only",
+                        "refs": [],
+                        "reason": None,
+                        "review_after": None,
+                    },
+                    "delivery": old_delivery,
+                    "computed": {"accounted": True, "coverage_state": "covered"},
+                }],
+                "updated_by": "IOS-BOOT-001",
+                "updated_at": "2026-01-01T00:00:00Z",
+            }
+            fixture.write_json(path, ledger)
+            new_delivery = {**old_delivery, "state": "implemented"}
+            item = fixture.item("IOS-BOOT-001", "CAP-BOOT", 100)
+            item["spec"]["knowledge"] = {
+                "expected_ledger_transitions": [{
+                    "id": ledger_id,
+                    "from_revision": 1,
+                    "to_revision": 2,
+                    "entry_updates": [{"id": entry_id, "set": {"delivery": new_delivery}}],
+                }]
+            }
+            selection = {
+                "coverage": [{
+                    "ledger": {"id": ledger_id, "revision": 1, "path": path},
+                }]
+            }
+            runtime = {
+                "knowledge_ledger_revisions": {ledger_id: 1},
+                "knowledge_ledger_snapshots": harness.business_knowledge_ledger_snapshots(
+                    item, selection
+                ),
+                "last_evidence": "ios/harness/evidence/runs/current.json",
+            }
+            ledger["revision"] = 2
+            ledger["entries"][0]["delivery"] = new_delivery
+            fixture.write_json(path, ledger)
+            self.assertEqual(
+                [],
+                harness.knowledge_close_issues("IOS-BOOT-001", item, runtime),
+            )
+
+            ledger["entries"][0]["product_disposition"]["reason"] = "undeclared"
+            fixture.write_json(path, ledger)
+            self.assertTrue(any(
+                "实际变化 section" in error
+                for error in harness.knowledge_close_issues("IOS-BOOT-001", item, runtime)
+            ))
+
+            ledger["entries"][0]["product_disposition"]["reason"] = None
+            verified_delivery = {**old_delivery, "state": "verified"}
+            ledger["entries"][0]["delivery"] = verified_delivery
+            item["spec"]["knowledge"]["expected_ledger_transitions"][0]["entry_updates"][0][
+                "set"
+            ]["delivery"] = verified_delivery
+            fixture.write_json(path, ledger)
+            self.assertTrue(any(
+                "verified delivery 缺少当前事务" in error
+                for error in harness.knowledge_close_issues("IOS-BOOT-001", item, runtime)
+            ))
 
     def test_verified_capability_becomes_stale_when_architecture_changes(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -519,6 +519,20 @@ class Harness:
                     for entry in record.get("entries", [])
                     if isinstance(entry, dict) and isinstance(entry.get("id"), str)
                 },
+                "entry_section_sha256": {
+                    entry["id"]: {
+                        key: sha256_json(entry.get(key))
+                        for key in (
+                            "claim_ref",
+                            "validation",
+                            "product_disposition",
+                            "delivery",
+                            "computed",
+                        )
+                    }
+                    for entry in record.get("entries", [])
+                    if isinstance(entry, dict) and isinstance(entry.get("id"), str)
+                },
             }
         return snapshots
 
@@ -783,11 +797,11 @@ class Harness:
                 "id",
                 "from_revision",
                 "to_revision",
-                "entry_ids",
+                "entry_updates",
             }:
                 errors.append(
                     f"{item_id}: knowledge.expected_ledger_transitions[] "
-                    "必须精确包含 id/from_revision/to_revision/entry_ids"
+                    "必须精确包含 id/from_revision/to_revision/entry_updates"
                 )
                 continue
             if (
@@ -799,18 +813,37 @@ class Harness:
             after = transition.get("to_revision")
             if not isinstance(before, int) or before < 1 or after != before + 1:
                 errors.append(f"{item_id}: Ledger transition revision 必须严格 +1")
-            entry_ids = transition.get("entry_ids")
+            entry_updates = transition.get("entry_updates")
             if (
-                not isinstance(entry_ids, list)
-                or not entry_ids
-                or len(entry_ids) != len(set(entry_ids))
-                or any(
-                    not isinstance(entry, str)
-                    or KNOWLEDGE_ENTRY_ID.fullmatch(entry) is None
-                    for entry in entry_ids
-                )
+                not isinstance(entry_updates, list)
+                or not entry_updates
+                or any(not isinstance(entry, dict) for entry in entry_updates)
             ):
-                errors.append(f"{item_id}: Ledger transition entry_ids 无效")
+                errors.append(f"{item_id}: Ledger transition entry_updates 无效")
+                continue
+            seen_entry_ids: Set[str] = set()
+            for update in entry_updates:
+                if set(update) != {"id", "set"}:
+                    errors.append(f"{item_id}: Ledger entry update 必须精确包含 id/set")
+                    continue
+                entry_id, changes = update.get("id"), update.get("set")
+                if (
+                    not isinstance(entry_id, str)
+                    or KNOWLEDGE_ENTRY_ID.fullmatch(entry_id) is None
+                    or entry_id in seen_entry_ids
+                ):
+                    errors.append(f"{item_id}: Ledger entry update id 无效或重复")
+                seen_entry_ids.add(entry_id)
+                allowed = {"validation", "product_disposition", "delivery", "computed"}
+                if (
+                    not isinstance(changes, dict)
+                    or not changes
+                    or not set(changes) <= allowed
+                    or any(not isinstance(value, dict) for value in changes.values())
+                ):
+                    errors.append(
+                        f"{item_id}: Ledger entry update set 只能声明非空受控 section"
+                    )
         coverage_revisions = {
             reference.get("id"): reference.get("revision")
             for reference in values["coverage_refs"]
@@ -1508,6 +1541,17 @@ class Harness:
                 checkpoint = self.resolve(self.config["checkpoints_dir"]) / f"{item_id}.json"
                 if not checkpoint.exists():
                     errors.append(f"{item_id}: completed 但缺少 checkpoint")
+                elif isinstance(
+                    items.get(item_id, {}).get("spec", {}).get("knowledge"),
+                    dict,
+                ):
+                    _, checkpoint_errors = self.validate_checkpoint(
+                        item_id, items[item_id], runtime
+                    )
+                    errors.extend(
+                        f"{item_id}: terminal checkpoint: {error}"
+                        for error in checkpoint_errors
+                    )
 
         try:
             current_inputs = self.verification_input_hashes()
@@ -1880,7 +1924,7 @@ class Harness:
                 if status not in TERMINAL_STATUSES and not isinstance(knowledge, dict):
                     errors.append(f"{item_id}: 非终态工作项必须声明 Business Knowledge contract")
                     continue
-                if not isinstance(knowledge, dict):
+                if status in TERMINAL_STATUSES or not isinstance(knowledge, dict):
                     continue
                 try:
                     selection = self.business_knowledge_selection(item)
@@ -2141,6 +2185,16 @@ class Harness:
         return sorted(paths)
 
     @staticmethod
+    def business_knowledge_control_upgrade(item: Dict[str, Any]) -> bool:
+        labels = item.get("metadata", {}).get("labels", [])
+        return (
+            item.get("spec", {}).get("requirements", {}).get("mode") == "control_plane"
+            and item.get("spec", {}).get("knowledge", {}).get("mode") == "not_applicable"
+            and isinstance(labels, list)
+            and any(label in {"control-plane", "governance", "corrective"} for label in labels)
+        )
+
+    @staticmethod
     def knowledge_ledger_paths(item: Dict[str, Any]) -> List[str]:
         knowledge = item.get("spec", {}).get("knowledge", {})
         paths: List[str] = []
@@ -2175,10 +2229,9 @@ class Harness:
         ]
         coverage_root = ["ios/project/business-knowledge/coverage/**"]
         expected_proposals = set(self.knowledge_proposal_paths(item))
-        item_id = item.get("metadata", {}).get("id")
         for path in product_changes:
             if path_matches(path, ["ios/harness/business-knowledge/**"]):
-                if item_id != "IOS-KNOWLEDGE-CONTROL-PLANE-001":
+                if not self.business_knowledge_control_upgrade(item):
                     errors.append(f"KNOWLEDGE_CONTROL_MUTATION: {path}")
             elif path_matches(path, published_roots):
                 errors.append(f"AUTHORITY_ESCALATION: 普通工作项不得修改 published 知识：{path}")
@@ -2434,6 +2487,12 @@ class Harness:
                 for key, value in current_knowledge_hashes.items()
                 if runtime.get(key) != value
             ]
+            if self.business_knowledge_control_upgrade(item):
+                drifted = [
+                    key
+                    for key in drifted
+                    if key != "business_knowledge_control_sha256"
+                ]
             if drifted:
                 raise HarnessError(
                     "KNOWLEDGE_DRIFT: Business Knowledge 在 claim 后变化："
@@ -2766,6 +2825,131 @@ class Harness:
             errors.append("checkpoint next_actions 必须是最多 5 项的数组")
         return checkpoint, errors
 
+    def knowledge_entry_reference_issues(
+        self,
+        item_id: str,
+        item: Dict[str, Any],
+        runtime: Dict[str, Any],
+        ledger_id: str,
+        entry_id: str,
+        entry: Dict[str, Any],
+    ) -> List[str]:
+        errors: List[str] = []
+        label = f"{ledger_id}#{entry_id}"
+        catalog = load_json(self.resolve("ios/project/requirements/catalog.json"))
+        requirements = {
+            (value.get("id"), value.get("revision")): value
+            for value in catalog.get("requirements", [])
+            if isinstance(value, dict)
+        }
+
+        def requirement_reference_valid(reference: Any) -> bool:
+            match = (
+                re.fullmatch(
+                    r"(REQ-[A-Z0-9-]+)@([0-9]+)(?:#(RC-[0-9]{2}))?",
+                    reference,
+                )
+                if isinstance(reference, str)
+                else None
+            )
+            if match is None:
+                return False
+            record = requirements.get((match.group(1), int(match.group(2))))
+            return isinstance(record, dict) and (
+                match.group(3) is None or match.group(3) in record.get("clauses", [])
+            )
+
+        inventory = load_json(self.resolve("ios/project/android-intake/inventory-manifest.json"))
+        fact_ids = {
+            value.get("id")
+            for value in inventory.get("facts", [])
+            if isinstance(value, dict)
+        }
+
+        def evidence_reference_valid(reference: Any) -> bool:
+            return isinstance(reference, str) and (
+                reference in fact_ids
+                or (
+                    reference.startswith("ios/")
+                    and self.resolve(reference).is_file()
+                )
+            )
+
+        validation = entry.get("validation", {})
+        validation_evidence = validation.get("evidence_refs", [])
+        if validation.get("state") in {"supported", "verified"} and (
+            not validation_evidence
+            or any(not evidence_reference_valid(ref) for ref in validation_evidence)
+        ):
+            errors.append(f"{label}: validation Evidence 引用不可解析")
+
+        delivery = entry.get("delivery", {})
+        work_items = self.work_items()
+        if any(ref not in work_items for ref in delivery.get("work_item_refs", [])):
+            errors.append(f"{label}: delivery Work Item 引用不可解析")
+        if any(
+            not isinstance(ref, str)
+            or not (self.resolve(self.config["capabilities_dir"]) / f"{ref}.json").is_file()
+            for ref in delivery.get("capability_refs", [])
+        ):
+            errors.append(f"{label}: delivery Capability 引用不可解析")
+        if any(
+            not evidence_reference_valid(ref)
+            for ref in delivery.get("evidence_refs", [])
+        ):
+            errors.append(f"{label}: delivery Evidence 引用不可解析")
+        if any(
+            not requirement_reference_valid(ref)
+            for ref in delivery.get("requirement_refs", [])
+        ):
+            errors.append(f"{label}: delivery Requirement 引用不可解析")
+        if delivery.get("state") == "verified":
+            required = {
+                "work_item_refs": item_id,
+                "capability_refs": item.get("spec", {}).get("capability"),
+                "evidence_refs": runtime.get("last_evidence"),
+            }
+            for field, reference in required.items():
+                if reference not in delivery.get(field, []):
+                    errors.append(f"{label}: verified delivery 缺少当前事务 {field}")
+
+        disposition = entry.get("product_disposition", {})
+        kind, refs = disposition.get("kind"), disposition.get("refs", [])
+        if kind == "covered_by_requirement" and (
+            not refs or any(not requirement_reference_valid(ref) for ref in refs)
+        ):
+            errors.append(f"{label}: covered_by_requirement 引用不可解析")
+        if kind == "architecture_driver":
+            drivers = {
+                (value.get("id"), value.get("revision"))
+                for value in load_json(self.business_knowledge_catalog_path).get(
+                    "architecture_drivers", []
+                )
+                if isinstance(value, dict)
+            }
+            if not refs or any(
+                not isinstance(ref, str)
+                or (
+                    (match := re.fullmatch(r"(DRV-[A-Z][A-Z0-9-]*-[0-9]{3})@([0-9]+)", ref))
+                    is None
+                )
+                or (match.group(1), int(match.group(2))) not in drivers
+                for ref in refs
+            ):
+                errors.append(f"{label}: architecture_driver 引用不可解析")
+        if kind in {"intentional_omission", "unsupported", "deferred", "rejected"} and (
+            not refs
+            or f"ios/project/approvals/{item_id}--product-scope-review.json" not in refs
+            or any(
+                not isinstance(ref, str)
+                or not ref.startswith("ios/project/approvals/")
+                or not self.resolve(ref).is_file()
+                for ref in refs
+            )
+        ):
+            errors.append(f"{label}: terminal disposition 必须引用现存人工批准")
+        return errors
+
     def knowledge_close_issues(
         self,
         item_id: str,
@@ -2829,7 +3013,12 @@ class Harness:
             if set(entries) != set(previous):
                 errors.append(f"{identifier}: Ledger close 不得增删 Coverage entry")
                 continue
-            declared = set(transition.get("entry_ids", []))
+            updates = {
+                update.get("id"): update.get("set", {})
+                for update in transition.get("entry_updates", [])
+                if isinstance(update, dict)
+            }
+            declared = set(updates)
             missing_entries = sorted(declared - set(entries))
             changed_entries = {
                 entry_id
@@ -2847,6 +3036,37 @@ class Harness:
                 errors.append(
                     f"{identifier}: 修改了未声明的 Coverage entry：{', '.join(undeclared)}"
                 )
+            section_baselines = snapshot.get("entry_section_sha256", {})
+            for entry_id, expected_sections in updates.items():
+                entry = entries.get(entry_id)
+                before_sections = section_baselines.get(entry_id, {})
+                if not isinstance(entry, dict) or not isinstance(before_sections, dict):
+                    continue
+                if sha256_json(entry.get("claim_ref")) != before_sections.get("claim_ref"):
+                    errors.append(f"{identifier}#{entry_id}: claim_ref 不可变")
+                actual_changed: Set[str] = set()
+                for section in (
+                    "validation",
+                    "product_disposition",
+                    "delivery",
+                    "computed",
+                ):
+                    if sha256_json(entry.get(section)) != before_sections.get(section):
+                        actual_changed.add(section)
+                    if section in expected_sections and entry.get(section) != expected_sections[section]:
+                        errors.append(
+                            f"{identifier}#{entry_id}: {section} 未达到 Work Item 声明值"
+                        )
+                if actual_changed != set(expected_sections):
+                    errors.append(
+                        f"{identifier}#{entry_id}: 实际变化 section 与声明不一致 "
+                        f"expected={sorted(expected_sections)}, actual={sorted(actual_changed)}"
+                    )
+                errors.extend(
+                    self.knowledge_entry_reference_issues(
+                        item_id, item, runtime, identifier, entry_id, entry
+                    )
+                )
         return errors
 
     def required_close_gates(
@@ -2858,6 +3078,19 @@ class Harness:
         gates = set(item.get("spec", {}).get("gates", []))
         errors: List[str] = []
         expected_proposals = set(self.knowledge_proposal_paths(item))
+        transitions = (
+            item.get("spec", {})
+            .get("knowledge", {})
+            .get("expected_ledger_transitions", [])
+        )
+        if any(
+            "product_disposition" in update.get("set", {})
+            for transition in transitions
+            if isinstance(transition, dict)
+            for update in transition.get("entry_updates", [])
+            if isinstance(update, dict)
+        ):
+            gates.add("product-scope-review")
         for relative in changed_paths:
             if relative in expected_proposals:
                 gates.add("knowledge-review")

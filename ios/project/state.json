@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "revision": 33,
+  "revision": 36,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-23T07:59:08Z",
-  "event_head": "4416dc2cd31f4c0102a73ae45afbab59d96ef73196b242b4decff7129a23d122",
+  "updated_at": "2026-07-23T08:09:31Z",
+  "event_head": "4661bcbf0198377c6d518d611e4e4a04e273bbad296cfa1d34cc36596acbab43",
   "active_work_items": [],
-  "last_completed_work_item": "IOS-KNOWLEDGE-CONTROL-PLANE-001",
+  "last_completed_work_item": "IOS-KNOWLEDGE-DAG-REPAIR-001",
   "work_items": {
     "IOS-BOOT-001": {
       "status": "completed",
@@ -664,9 +664,60 @@
       "final_tree_sha256": "0abe003847de5dbd0536547f4945e861a892ab4422dcc380cab36a971169d99b"
     },
     "IOS-KNOWLEDGE-DAG-REPAIR-001": {
-      "status": "ready",
-      "attempt": 0,
-      "last_evidence": null
+      "status": "completed",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260723T080820Z-ios-knowledge-dag-repair-001-ad03d875.json",
+      "claimed_by": "codex-root",
+      "claimed_at": "2026-07-23T07:59:46Z",
+      "lease_expires_at": "2026-07-24T07:59:46Z",
+      "work_item_sha256": "113a86303554754c7e9935db88a3708cfd54150973e1ab26f541a3f125bbda59",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "3c4e7cdca899776ea0abab023b41dfe056331b91",
+      "base_capability_revision": 2,
+      "base_capability_assurance_sha256": "6c08426cf2cc8f0277426284e00909a10444767bc01eeb84e0db43db8dcbb2ac",
+      "android_requirement_selection_sha256": null,
+      "business_knowledge_control_sha256": "ace62e8ec6f0bb8fd0f71a9b7b92f00558a18219daa68b5957d1872075a980e1",
+      "business_knowledge_authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 1,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "harness-tests",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "307f335e883f02e96ad97ecbda4c210435c0b955e2bcb9e46db9dc7b0d02c285",
+          "cwd": ".",
+          "started_at": "2026-07-23T07:59:35Z",
+          "duration_ms": 10550,
+          "timeout_seconds": 60,
+          "timed_out": false,
+          "process_leak": false,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "8f6111f151910f1a3442b6142d40109875850a96b4bedb357731061c7bde18cd",
+          "stdout_tail": "",
+          "stderr_tail": "............................\n----------------------------------------------------------------------\nRan 28 tests in 10.435s\n\nOK\n"
+        }
+      ],
+      "last_evidence_sha256": "0a43aeafcd787db074ed2d746a4e83939f60b0b3c481db4dcb45716493708786",
+      "verified_at": "2026-07-23T08:08:20Z",
+      "completed_at": "2026-07-23T08:09:31Z",
+      "final_tree_sha256": "17d1a4347df8dce60b8a7b297b66c5d0ca9fb7d9034c1aa674a0e4835dd03b00"
     }
   },
   "health": {
@@ -678,7 +729,8 @@
     "android_oracle": "not_started",
     "conformance": "scaffold_verified",
     "source_lab": "fixture_transport_integrated",
-    "knowledge_control_plane": "selection_and_drift_guards_verified"
+    "knowledge_control_plane": "selection_drift_and_repair_verified",
+    "knowledge_initialization_dag": "proposal_verified"
   },
   "risks": [
     {

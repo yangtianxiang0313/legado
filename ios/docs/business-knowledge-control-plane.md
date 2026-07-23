@@ -1,7 +1,7 @@
 # 业务知识与架构驱动控制面
 
-版本：1  
-适用范围：`ios/` 初始化与后续 Android → iOS 迁移工作  
+版本：1
+适用范围：`ios/` 初始化与后续 Android → iOS 迁移工作
 控制实现：`ios/harness/business-knowledge/`
 
 > 状态：`derived_control_contract`。本文件是在 accepted `ADR-0004` 记忆事务下对 Harness 的可执行细化，不是新的 accepted 架构来源，也不替代 `architecture.md`、`project-memory.md` 或 ADR。是否把知识层提升为正式架构权威，必须由后续 Architecture Driver、proposed ADR 和人工批准完成；此前能力状态保持 `partial`。
@@ -159,12 +159,13 @@ Work Item 在 `spec.knowledge` 中声明：
 合同没有模糊路径或通配产物。`produces` 的每一项精确为
 `{"kind":"packet"|"driver","id":"...","revision":N}`；
 `expected_ledger_transitions` 的每一项精确为
-`{"id":"BKL-*","from_revision":N,"to_revision":N+1,"entry_ids":["BKE-*"]}`。
+`{"id":"BKL-*","from_revision":N,"to_revision":N+1,"entry_updates":[{"id":"BKE-*","set":{"delivery":{...},"computed":{...}}}]}`。
+`set` 只能包含 `validation`、`product_disposition`、`delivery`、`computed`，且给出完整目标 section；未声明 section、其他 entry 和 `claim_ref` 必须保持不变。修改产品 disposition 还会触发独立人工范围裁决。
 `not_applicable` 必须让这些数组全部为空并提供 `none_reason`。Proposal DAG 可以延后
 选择具体 Claim，但 Trusted Supervisor 在 materialize 前必须把所有引用解析为精确 current
 revision，未完成绑定的节点不能进入 queue。
 
-`context` 只读取 published current revision，递归展开 Claim 依赖闭包，并加入显式选择的 Coverage entry 和 Driver。缺 revision、缺 Coverage、引用 candidate 或超过预算都失败关闭；`CONTEXT_OVERSIZED` 不允许静默截断。
+`context` 只读取 published current revision，递归展开 Claim 依赖闭包，并自动纳入所有引用该闭包的 current Driver；Driver 引入的 Claim 同样必须有显式 Coverage selection。这样 implementation 不能靠省略未决 Driver 绕过门禁。缺 revision、缺 Coverage、引用 candidate 或超过预算都失败关闭；`CONTEXT_OVERSIZED` 不允许静默截断。
 
 ### Claim
 
@@ -175,6 +176,8 @@ revision，未完成绑定的节点不能进入 queue。
 - Claim、Coverage 与 Driver 三个 selection digest。
 
 Implementation 还必须满足：Claim support 可用于实现、Coverage 非 stale/disputed/conflicted/blocked/gap、Driver 已解决、每条 AC 都回指它实际覆盖的 Claim。知识生产与产品实现的写范围互斥。
+
+只有 Trusted Supervisor 已 materialize、标记为 `control_plane` 且知识为 `not_applicable` 的治理/纠错任务可以升级控制实现；它可改变 control digest，但 authority 与所有 selection 仍必须保持冻结。普通实现任务的 control drift 一律失败。
 
 ### Verify
 
@@ -192,6 +195,8 @@ Evidence 同时记录这些摘要、实际修改路径和固定检查结果。�
 - 未完成风险和下一步。
 
 只允许修改 Work Item 预先声明的 proposal 和 Ledger transition。Knowledge、Requirement、ADR 或产品代码之间若发生新的语义关系，必须通过新的 revision/独立工作项表达，不能在 checkpoint 里补写未经验证的事实。
+
+终态 Work Item 不再用 current Catalog 重算历史 selection；doctor 改为核对其不可变 Evidence 与 Checkpoint。因此 Ledger 从 `N` 合规推进到 `N+1` 不会让已完成任务失效，非终态任务仍会因 revision 漂移停止。
 
 Checkpoint 的 `business_knowledge` 至少固定
 `knowledge_selection_sha256`、`coverage_selection_sha256`、

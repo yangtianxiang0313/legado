@@ -1,1 +1,139 @@
-{"schema_version":1,"kind":"InitializationWorkItemProposalDAG","id":"WIPD-IOS-INITIALIZATION-001","revision":1,"autho...
+{
+  "schema_version": 1,
+  "kind": "InitializationWorkItemProposalDAG",
+  "id": "WIPD-IOS-INITIALIZATION-001",
+  "revision": 1,
+  "authority": "proposal_only",
+  "status": "proposed",
+  "created_by": "IOS-KNOWLEDGE-CONTROL-PLANE-001",
+  "repaired_by": "IOS-KNOWLEDGE-DAG-REPAIR-001",
+  "repair_reason": "原文件被本地格式化工具截断，旧 Evidence 未验证 proposal DAG 语义",
+  "goal": "从冻结 Android baseline 分域提取、验证和发布业务知识，再生成产品范围、iOS 架构决策与最短交付 DAG。",
+  "queue_effect": {"materializes_work_items": false, "changes_project_state": false, "changes_authority": false},
+  "baseline_refs": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "baseline": "ios/project/baseline.json",
+    "facts": "ios/project/android-intake/inventory-manifest.json",
+    "knowledge": "ios/project/business-knowledge/catalog.json",
+    "architecture": "ios/docs/architecture.md"
+  },
+  "external_prerequisites": ["IOS-KNOWLEDGE-CONTROL-PLANE-001", "IOS-SOURCELAB-ENGINE-001", "IOS-ORACLE-CONTROL-PLANE-001"],
+  "invariants": [
+    "Android 源码结构只产生 Fact/知识候选，不直接决定 iOS 架构",
+    "candidate 与 published 物理隔离；普通 AI 无 publish/accept/materialize 权限",
+    "场景输入、Android expected、iOS 实现由不同 Work Item 变更",
+    "运行行为无固定 Android characterization 时不得 implementation-ready",
+    "UI 对齐结构、导航、多级菜单和状态，允许 iOS 平台细节不同",
+    "书源按源码和运行证据对齐，代表性测试只辅助验证与回归"
+  ],
+  "knowledge_contract": {
+    "modes": ["not_applicable", "consume", "produce", "supersede"],
+    "produces_item": {"exact_keys": ["kind", "id", "revision"], "kind_values": ["packet", "driver"]},
+    "ledger_transition_item": {"exact_keys": ["id", "from_revision", "to_revision", "entry_updates"], "entry_update_keys": ["id", "set"], "allowed_sections": ["validation", "product_disposition", "delivery", "computed"], "revision_rule": "to_revision = from_revision + 1"},
+    "binding_rule": "materialize 前必须把所有选择、产物和 Ledger transition 绑定到精确 current revision",
+    "checkpoint_fields": ["knowledge_selection_sha256", "coverage_selection_sha256", "architecture_driver_selection_sha256", "produced_refs", "ledger_updates"]
+  },
+  "materialization_policy": {
+    "owner": "trusted_supervisor",
+    "preconditions": ["补齐 immutable Work Item 的 scope、预算、AC、selection 与 stop_on", "doctor、Catalog、上游 selection 和人工 gate 均通过", "冻结 canonical hash 后原子更新受信 queue/state/event"],
+    "auto_materialize": false
+  },
+  "nodes": [
+    {
+      "proposal_id": "IOS-KNOWLEDGE-ANDROID-SURFACES-001", "phase": 1, "class": "knowledge_production", "depends_on": [], "knowledge_mode": "produce",
+      "title": "Android 业务表面与 bounded-context 索引",
+      "outputs": [{"kind": "packet", "id": "BKP-ANDROID-SURFACES-001", "revision": 1}, "bounded-context/subject proposal", "Fact 与 detector 缺口"],
+      "gates": [], "constraint": "按 Fact/生产入口分包，不把 Android package 当作 iOS Target"
+    },
+    {
+      "proposal_id": "IOS-KNOWLEDGE-BOOK-DOMAIN-001", "phase": 2, "class": "knowledge_production", "depends_on": ["IOS-KNOWLEDGE-ANDROID-SURFACES-001"], "knowledge_mode": "produce",
+      "title": "Book/Shelf/Progress 领域知识",
+      "outputs": [{"kind": "packet", "id": "BKP-BOOK-DOMAIN-001", "revision": 1}, {"kind": "driver", "id": "DRV-BOOK-IDENTITY-001", "revision": 1}, "生命周期 gaps"],
+      "gates": [], "constraint": "区分 Record/DTO/Domain/UI；不改 migration、身份模型或 Swift"
+    },
+    {
+      "proposal_id": "IOS-KNOWLEDGE-SOURCE-RUNTIME-001", "phase": 2, "class": "knowledge_production", "depends_on": ["IOS-KNOWLEDGE-ANDROID-SURFACES-001"], "knowledge_mode": "produce",
+      "title": "书源格式、规则与执行流水线知识",
+      "outputs": [{"kind": "packet", "id": "BKP-SOURCE-RUNTIME-001", "revision": 1}, {"kind": "driver", "id": "DRV-SOURCE-RUNTIME-BOUNDARY-001", "revision": 1}, "SourceLab/Android characterization gaps"],
+      "gates": [], "constraint": "按 pipeline/transport/rule/session 核算，不逐书源穷举 TDD"
+    },
+    {
+      "proposal_id": "IOS-KNOWLEDGE-READER-LIFECYCLE-001", "phase": 2, "class": "knowledge_production", "depends_on": ["IOS-KNOWLEDGE-ANDROID-SURFACES-001"], "knowledge_mode": "produce",
+      "title": "阅读会话、正文、进度与预取知识",
+      "outputs": [{"kind": "packet", "id": "BKP-READER-LIFECYCLE-001", "revision": 1}, {"kind": "driver", "id": "DRV-READER-LIFECYCLE-001", "revision": 1}, "并发/状态 gaps"],
+      "gates": [], "constraint": "区分可观察行为、Android UI 细节和 iOS 平台选择"
+    },
+    {
+      "proposal_id": "IOS-KNOWLEDGE-UI-TOPOLOGY-001", "phase": 2, "class": "knowledge_production", "depends_on": ["IOS-KNOWLEDGE-ANDROID-SURFACES-001"], "knowledge_mode": "produce",
+      "title": "页面结构、导航图与多级菜单知识",
+      "outputs": [{"kind": "packet", "id": "BKP-UI-TOPOLOGY-001", "revision": 1}, {"kind": "driver", "id": "DRV-UI-TOPOLOGY-001", "revision": 1}, "模拟器结构验收矩阵 proposal"],
+      "gates": [], "constraint": "覆盖入口、层级、返回路径和状态；不写 SwiftUI/snapshot golden"
+    },
+    {
+      "proposal_id": "IOS-KNOWLEDGE-INTEGRATIONS-001", "phase": 2, "class": "knowledge_production", "depends_on": ["IOS-KNOWLEDGE-ANDROID-SURFACES-001"], "knowledge_mode": "produce",
+      "title": "外部集成、权限、依赖与发布约束知识",
+      "outputs": [{"kind": "packet", "id": "BKP-INTEGRATIONS-001", "revision": 1}, {"kind": "driver", "id": "DRV-INTEGRATION-PROFILES-001", "revision": 1}, "依赖/权限/spike proposals"],
+      "gates": [], "constraint": "Android 使用某库不等于 iOS 选择同类库；不改 Package/entitlements"
+    },
+    {
+      "proposal_id": "IOS-KNOWLEDGE-COVERAGE-BASELINE-001", "phase": 3, "class": "trusted_promotion_transaction",
+      "depends_on": ["IOS-KNOWLEDGE-BOOK-DOMAIN-001", "IOS-KNOWLEDGE-SOURCE-RUNTIME-001", "IOS-KNOWLEDGE-READER-LIFECYCLE-001", "IOS-KNOWLEDGE-UI-TOPOLOGY-001", "IOS-KNOWLEDGE-INTEGRATIONS-001"], "knowledge_mode": "supersede",
+      "title": "首批知识 promotion 与 Coverage baseline", "outputs": ["reviewed published revisions", "每 Claim 一个初始 Ledger entry", "deterministic Catalog"],
+      "gates": ["knowledge-promotion", "conflict-adjudication-if-needed"], "constraint": "仅由外部 trusted publisher 原子发布 Packet/Driver、Ledger、Catalog；普通 Work Item/gate 不执行 promotion"
+    },
+    {
+      "proposal_id": "IOS-KNOWLEDGE-PRODUCT-SCOPE-PROPOSAL-001", "phase": 4, "class": "scope_proposal", "depends_on": ["IOS-KNOWLEDGE-COVERAGE-BASELINE-001"], "knowledge_mode": "consume",
+      "title": "Published Claim 产品范围 disposition", "outputs": ["Ledger transition proposal", "产品范围 decision queue", "证据/裁决 gaps"],
+      "gates": ["product-scope-review"], "constraint": "每 Claim 必须核算；证据不足只能 characterization_planned"
+    },
+    {
+      "proposal_id": "IOS-KNOWLEDGE-ARCHITECTURE-TOPOLOGY-PROPOSAL-001", "phase": 4, "class": "architecture_proposal", "depends_on": ["IOS-KNOWLEDGE-COVERAGE-BASELINE-001"], "knowledge_mode": "consume",
+      "title": "从 Driver 形成 iOS 架构拓扑 proposal", "outputs": ["Driver resolution proposal", "proposed ADR", "架构规则变更 proposal"],
+      "gates": ["architecture-review", "dependency/security-review-if-needed"], "constraint": "结论回指 Claim/Driver；独立 package 与 UI 可替换性由 ADR 论证"
+    },
+    {
+      "proposal_id": "IOS-KNOWLEDGE-REQUIREMENT-CANDIDATES-FOUNDATION-001", "phase": 5, "class": "requirement_production", "depends_on": ["IOS-KNOWLEDGE-PRODUCT-SCOPE-PROPOSAL-001"], "knowledge_mode": "consume",
+      "title": "从 disposition 生成 Requirement candidates", "outputs": ["Requirement proposal revisions", "Claim→clause traceability", "readiness gaps"],
+      "gates": ["requirement-review"], "constraint": "运行 Claim 无 Android characterization 时不得 implementation_ready"
+    },
+    {
+      "proposal_id": "IOS-KNOWLEDGE-REAL-SOURCE-CORPUS-001", "phase": 5, "class": "environment_proposal", "depends_on": ["IOS-KNOWLEDGE-PRODUCT-SCOPE-PROPOSAL-001"], "knowledge_mode": "consume",
+      "title": "真实书源 corpus 与 SourceLab scenario proposals", "outputs": ["capture manifest candidate", "SourceLab scenario candidates", "behavior×case-role coverage proposal"],
+      "gates": ["source-lab-provenance"], "constraint": "capture 只保存真实输入/provenance，不保存 iOS 推导 expected"
+    },
+    {
+      "proposal_id": "IOS-KNOWLEDGE-ANDROID-CHARACTERIZATION-001", "phase": 6, "class": "oracle_proposal", "depends_on": ["IOS-KNOWLEDGE-REAL-SOURCE-CORPUS-001"], "knowledge_mode": "supersede",
+      "title": "固定 Android runner 运行证据 proposals",
+      "outputs": ["candidate Android oracle proposal/payload", {"kind": "packet", "id": "BKP-SOURCE-RUNTIME-001", "revision": 2}, "Coverage validation transition proposal"],
+      "gates": ["oracle-promotion", "knowledge-promotion"], "constraint": "real_source_capture 单独不能让 runtime_behavior ready；不发布 golden/Packet、不改 Swift"
+    },
+    {
+      "proposal_id": "IOS-KNOWLEDGE-INIT-DAG-COMPILER-001", "phase": 7, "class": "control_plane",
+      "depends_on": ["IOS-KNOWLEDGE-ARCHITECTURE-TOPOLOGY-PROPOSAL-001", "IOS-KNOWLEDGE-REQUIREMENT-CANDIDATES-FOUNDATION-001"], "knowledge_mode": "consume",
+      "title": "按证据缺口编译最短交付 DAG",
+      "outputs": ["characterization/enabler/implementation/verification/close proposals", "精确 selections", "UI 模拟器与书源结构化差分验收节点"],
+      "gates": ["accepted-requirement-and-ADR-inputs"], "constraint": "结果仍是 proposal；证据或决策不足的节点保持 blocked"
+    }
+  ],
+  "compiler_rules": [
+    "静态合同且 Driver 已解决：生成 enabler/implementation proposal",
+    "缺真实输入先生成 capture/SourceLab proposal；缺 Android expected 再生成 characterization/oracle proposal",
+    "Requirement 未 accepted 或非 implementation_ready：禁止产品 implementation",
+    "实现后分别生成公开差分、held-out attestation 与 capability close",
+    "UI 节点必须运行固定模拟器并输出导航/accessibility/screenshot 结构证据",
+    "书源节点必须输出 canonical envelope、trace stage 与 Android golden 结构化差分"
+  ],
+  "trusted_transitions": [
+    {"id": "GATE-KNOWLEDGE-PROMOTION", "executor": "external_trusted_publisher", "effect": "原子发布 Packet/Driver、Ledger 与 Catalog"},
+    {"id": "GATE-PRODUCT-SCOPE", "executor": "external_trusted_publisher", "effect": "裁决 Claim disposition，不自动接受 Requirement"},
+    {"id": "GATE-REQUIREMENT-AND-ADR", "executor": "external_trusted_publisher", "effect": "独立接受 Requirement revision/ADR 并重算 selection"},
+    {"id": "GATE-RUNTIME-EVIDENCE-PROMOTION", "executor": "external_trusted_publisher", "effect": "发布 Android golden、Packet revision 与 Ledger transition"}
+  ],
+  "exit_criteria": [
+    "五个 bounded context 均有结论或 blocker，每个 published Claim 恰有一个 Coverage entry",
+    "未决 Claim、Driver 或运行证据不会进入 implementation queue",
+    "架构结论绑定 published Driver 与 accepted ADR，而非复制 Android 模块",
+    "首批交付 proposal 均有精确 selection、单一行为和完整验收",
+    "本文件未改变 queue、accepted authority、architecture 或 iOS 产品代码"
+  ]
+}

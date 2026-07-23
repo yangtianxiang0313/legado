@@ -12,6 +12,7 @@ from pathlib import Path
 
 
 CONTROL_SOURCE = Path(__file__).resolve().parents[1] / "business-knowledge"
+REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(CONTROL_SOURCE))
 
 import business_knowledge as knowledge  # noqa: E402
@@ -357,6 +358,43 @@ class BusinessKnowledgeTests(unittest.TestCase):
             set(selected["required_paths"]),
         )
 
+    def test_related_driver_is_selected_even_when_work_item_omits_it(self) -> None:
+        _, driver_path, ledger_path = self.install_valid_graph()
+        selected = knowledge.selection_value(
+            self.root,
+            self.work_item(driver_refs=[]),
+        )
+        self.assertEqual([DRIVER_ID], [entry["ref"]["id"] for entry in selected["drivers"]])
+
+        driver = knowledge.load_json(driver_path)
+        driver["status"] = "active"
+        driver["resolution"] = {
+            "state": "requires_adr",
+            "adr_refs": [],
+            "work_item_refs": [CREATOR],
+        }
+        write_json(driver_path, driver)
+        ledger = knowledge.load_json(ledger_path)
+        ledger["generated_from"]["knowledge_authority_sha256"] = knowledge._authority_digest(
+            self.root,
+            knowledge._policy(self.root),
+            ANDROID_COMMIT,
+            INVENTORY_CONTROL,
+            [knowledge._record(
+                self.root
+                / f"ios/project/business-knowledge/packets/published/{PACKET_ID}/r0001.json",
+                self.root,
+            )],
+            [knowledge._record(driver_path, self.root)],
+        )
+        write_json(ledger_path, ledger)
+        write_json(
+            self.root / "ios/project/business-knowledge/catalog.json",
+            knowledge.catalog_value(self.root),
+        )
+        selected = knowledge.selection_value(self.root, self.work_item(driver_refs=[]))
+        self.assertTrue(any("unresolved" in reason for reason in selected["blocking_reasons"]))
+
     def test_coverage_change_does_not_change_authority(self) -> None:
         _, _, ledger_path = self.install_valid_graph()
         before = knowledge.catalog_value(self.root)
@@ -422,6 +460,42 @@ class BusinessKnowledgeTests(unittest.TestCase):
         self.assertIn("{doctor,manifest,selection}", result.stdout)
         self.assertNotIn("publish", result.stdout.lower())
         self.assertNotIn("accept", result.stdout.lower())
+
+    def test_initialization_proposal_dag_contract(self) -> None:
+        dag = knowledge.load_json(
+            REPOSITORY_ROOT
+            / "ios/project/work-item-proposals/initialization-dag.json"
+        )
+        self.assertEqual("proposal_only", dag["authority"])
+        self.assertEqual(
+            {
+                "materializes_work_items": False,
+                "changes_project_state": False,
+                "changes_authority": False,
+            },
+            dag["queue_effect"],
+        )
+        self.assertFalse(dag["materialization_policy"]["auto_materialize"])
+        self.assertEqual("IOS-KNOWLEDGE-DAG-REPAIR-001", dag["repaired_by"])
+        nodes = {node["proposal_id"]: node for node in dag["nodes"]}
+        self.assertEqual(13, len(nodes))
+        for node in nodes.values():
+            for dependency in node["depends_on"]:
+                self.assertIn(dependency, nodes)
+                self.assertLess(nodes[dependency]["phase"], node["phase"])
+        state = knowledge.load_json(REPOSITORY_ROOT / "ios/project/state.json")
+        self.assertTrue(
+            all(
+                state["work_items"][item_id]["status"] == "completed"
+                for item_id in dag["external_prerequisites"]
+            )
+        )
+        self.assertTrue(
+            all(
+                transition["executor"] == "external_trusted_publisher"
+                for transition in dag["trusted_transitions"]
+            )
+        )
 
 
 if __name__ == "__main__":
