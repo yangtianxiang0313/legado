@@ -1,0 +1,206 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-KNOWLEDGE-BOOK-DOMAIN-001",
+    "title": "提取 Book、Shelf 与 Progress 领域知识",
+    "priority": 90,
+    "risk": "high",
+    "labels": ["phase-2", "knowledge", "android-scan", "book-domain", "architecture-driver"]
+  },
+  "spec": {
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "intent": "从冻结 Android baseline 深入提取 Book、Shelf、Chapter、Group、Bookmark、ReadRecord、Progress 及其生命周期、身份关联、换源迁移、删除保留和同步冲突知识，形成 Packet 与 Book Identity Architecture Driver candidate；只描述业务合同、Android 已知实现、运行证据缺口和架构决策问题，不把 Room、Activity、ViewModel 或 Android package 直接复制为 iOS 模型与模块，不修改产品代码。",
+    "depends_on": [
+      "IOS-KNOWLEDGE-ANDROID-SURFACES-001",
+      "IOS-KNOWLEDGE-PROPOSAL-BATCH-REFS-REPAIR-001"
+    ],
+    "scope": {
+      "allow_write": [
+        "ios/project/business-knowledge/packets/proposals/BKP-BOOK-DOMAIN-001/r0001.json",
+        "ios/project/business-knowledge/drivers/proposals/DRV-BOOK-IDENTITY-001/r0001.json",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-KNOWLEDGE-BOOK-DOMAIN-001.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "ios/harness/business-knowledge/**",
+        "ios/harness/tests/**",
+        "ios/project/android-intake/**",
+        "ios/project/business-knowledge/packets/published/**",
+        "ios/project/business-knowledge/drivers/published/**",
+        "ios/project/business-knowledge/coverage/**",
+        "ios/project/business-knowledge/packets/proposals/BKP-ANDROID-SURFACES-001/**",
+        "ios/project/requirements/**",
+        "ios/project/requirement-proposals/**",
+        "ios/project/work-item-proposals/**",
+        "ios/project/baseline.json",
+        "ios/project/approvals/**",
+        "ios/docs/**"
+      ],
+      "max_files_changed": 5,
+      "max_changed_lines": 2800
+    },
+    "inputs": {
+      "context_files": [
+        "ios/docs/android-requirement-intake.md",
+        "ios/docs/business-knowledge-control-plane.md",
+        "ios/project/android-intake/inventory-manifest.json",
+        "ios/project/business-knowledge/catalog.json",
+        "ios/project/business-knowledge/packets/proposals/BKP-ANDROID-SURFACES-001/r0001.json",
+        "ios/project/checkpoints/IOS-KNOWLEDGE-PROPOSAL-BATCH-REFS-REPAIR-001.json",
+        "ios/project/work-item-proposals/initialization-dag.json"
+      ],
+      "android_source_anchors": [
+        "app/src/main/java/io/legado/app/data/entities/Book.kt",
+        "app/src/main/java/io/legado/app/data/entities/SearchBook.kt",
+        "app/src/main/java/io/legado/app/data/entities/BookChapter.kt",
+        "app/src/main/java/io/legado/app/data/entities/BookGroup.kt",
+        "app/src/main/java/io/legado/app/data/entities/BookProgress.kt",
+        "app/src/main/java/io/legado/app/data/entities/Bookmark.kt",
+        "app/src/main/java/io/legado/app/data/entities/ReadRecord.kt",
+        "app/src/main/java/io/legado/app/data/dao/BookDao.kt",
+        "app/src/main/java/io/legado/app/data/dao/BookChapterDao.kt",
+        "app/src/main/java/io/legado/app/data/dao/BookGroupDao.kt",
+        "app/src/main/java/io/legado/app/data/dao/BookmarkDao.kt",
+        "app/src/main/java/io/legado/app/data/dao/ReadRecordDao.kt",
+        "app/src/main/java/io/legado/app/data/dao/SearchBookDao.kt",
+        "app/src/main/java/io/legado/app/help/AppWebDav.kt",
+        "app/src/main/java/io/legado/app/help/book/BookHelp.kt",
+        "app/src/main/java/io/legado/app/help/book/BookExtensions.kt",
+        "app/src/main/java/io/legado/app/model/ReadBook.kt",
+        "app/src/main/java/io/legado/app/model/localBook/LocalBook.kt",
+        "app/src/main/java/io/legado/app/model/remote/RemoteBookWebDav.kt",
+        "app/src/main/java/io/legado/app/model/webBook/SearchModel.kt",
+        "app/src/main/java/io/legado/app/ui/main/MainViewModel.kt",
+        "app/src/main/java/io/legado/app/ui/main/bookshelf/BaseBookshelfFragment.kt",
+        "app/src/main/java/io/legado/app/ui/main/bookshelf/BookshelfViewModel.kt",
+        "app/src/main/java/io/legado/app/ui/book/info/BookInfoViewModel.kt",
+        "app/src/main/java/io/legado/app/ui/book/manage/BookshelfManageViewModel.kt",
+        "app/src/main/java/io/legado/app/ui/book/changesource/ChangeBookSourceViewModel.kt",
+        "app/src/main/java/io/legado/app/ui/book/read/ReadBookViewModel.kt"
+      ],
+      "fixtures": []
+    },
+    "architecture_refs": ["ARCH-017", "ARCH-018", "ADR-0004"],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "Packet candidate 给出 Book/Shelf/Progress 的业务边界、用户流程与状态关系，覆盖搜索暂存、入架、分组排序、详情、目录、阅读位置、书签/记录、换源、本地/远程导入、缓存、删除和 WebDAV 同步。",
+          "verified_by": ["harness-tests", "android-intake-contract"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "身份主张逐项说明 Android 的 bookUrl、name+author、url+bookUrl、time、deviceId+bookName 等键及其用途，并明确区分数据库实现键、用户可观察身份和待人工决定的跨平台权威 ID。",
+          "verified_by": ["harness-tests", "android-intake-contract"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "换源迁移、阅读位置恢复、同步冲突、目录重排、删除保留、本地文件重定位、缓存完成态和搜索结果合并等尚无固定 Android expected 的行为声明 android_characterization 或 human_decision，不以源码推断冒充运行真值。",
+          "verified_by": ["android-intake-contract", "harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-4",
+          "statement": "DRV-BOOK-IDENTITY-001 只引用本 Work Item 同批 Packet 的候选 Claim或 current published Claim，列出身份稳定性、迁移、离线、同步、可测试性与数据演进 forces 及决策问题；保持 proposed/open 或 requires_characterization/requires_adr，不生成 accepted ADR 或 iOS 架构结论。",
+          "verified_by": ["dependency-policy", "harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-5",
+          "statement": "每条 Claim 绑定冻结 commit 的真实源码锚点或同批/已发布 Claim；输出只位于 Packet/Driver proposal 区，不修改 published knowledge、Coverage、Requirement、架构文档、Swift 产品代码或 Android 源码。",
+          "verified_by": ["android-intake-contract", "dependency-policy", "harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-6",
+          "statement": "Checkpoint 记录 Book Identity ADR 问题、需 Android characterization 的场景、与 Source/Reader/UI/Integration 后续扫描的依赖；Capability 保持 partial。",
+          "verified_by": ["memory-close"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": [
+        "android-intake-contract",
+        "dependency-policy",
+        "harness-tests"
+      ]
+    },
+    "baseline_checks": ["android-intake-contract", "harness-tests"],
+    "budget": {
+      "wall_clock_seconds": 7200,
+      "max_edit_verify_cycles": 3,
+      "max_targeted_test_runs": 5,
+      "max_full_test_runs": 2,
+      "max_infra_retries": 1
+    },
+    "gates": [],
+    "completion_effects": {
+      "health": {
+        "knowledge_book_domain": "candidate_verified"
+      }
+    },
+    "memory": {
+      "capability_state_required": true,
+      "compatibility": "not_applicable",
+      "pitfall": "if_non_obvious_and_preventable",
+      "adr": "required_for_architecture_change"
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "refs": [],
+      "none_reason": "本项只生产 Book Domain 业务知识与 Architecture Driver 候选，不接受或实现产品行为"
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "produce",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [
+        {
+          "kind": "packet",
+          "id": "BKP-BOOK-DOMAIN-001",
+          "revision": 1
+        },
+        {
+          "kind": "driver",
+          "id": "DRV-BOOK-IDENTITY-001",
+          "revision": 1
+        }
+      ],
+      "expected_ledger_transitions": [],
+      "context_budget": {
+        "max_claims": 40,
+        "max_bytes": 65536
+      },
+      "none_reason": null
+    },
+    "source_lab": {
+      "mode": "not_applicable",
+      "behaviors": [],
+      "scenarios": [],
+      "none_reason": "本项只做 Book Domain 源码知识扫描，不执行书源规则、本地站点或 Android runner"
+    },
+    "stop_on": [
+      "baseline_red",
+      "scope_violation",
+      "authority_escalation",
+      "knowledge_drift",
+      "same_failure_twice",
+      "budget_exhausted",
+      "human_decision_required"
+    ]
+  }
+}
