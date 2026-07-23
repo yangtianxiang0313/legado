@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-KNOWLEDGE-LEDGER-GATE-REPAIR-001",
+  "summary": "闭合 Coverage Ledger 的 entry 选择边界与 product-scope-review 两阶段审批流程：未选择 entry 在 claim 前和 close 时都会失败，claim_ref 保持不可变，首次 close 可冻结审批主题并等待独立人工批准。",
+  "evidence": "ios/harness/evidence/runs/run-20260723T082300Z-ios-knowledge-ledger-gate-repair-001-14d9bbe3.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 3,
+      "to_revision": 4,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": ["ADR-0004"]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项纠正知识控制面自身，不消费或发布业务知识"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项只修复控制面选择和人工审批门禁，不改变 Android/iOS 产品行为"
+  },
+  "pitfalls": {
+    "records": [],
+    "none_reason": "本次缺口已由端到端回归测试固化，没有新增独立长期踩坑记录"
+  },
+  "remaining_risks": [
+    "Catalog 尚无已发布 Packet、Coverage Ledger 或 Architecture Driver，不能启动产品实现",
+    "Business Knowledge 仍是 ADR-0004 下的派生控制合同；正式架构权威需要 proposed ADR 与人工批准",
+    "Capability schema 尚不能把 knowledge selection 声明为 freshness input，因此能力保持 partial"
+  ],
+  "next_actions": [
+    "由 Trusted Supervisor 审核 initialization DAG 的第一个 Android surface proposal",
+    "从冻结 Android 源码生成首批 Packet、Coverage 与 Architecture Driver proposal",
+    "用 Android characterization 与真实书源 capture 建立运行语义证据",
+    "提出知识权威层及 Capability freshness schema 的治理升级 ADR"
+  ],
+  "created_at": "2026-07-23T08:23:00Z"
+}

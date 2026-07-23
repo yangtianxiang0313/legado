@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "revision": 37,
+  "revision": 40,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-23T08:17:04Z",
-  "event_head": "55952f7808bd32837dcaef6b42431f374f66de0d4ff12489d3aac54975475804",
+  "updated_at": "2026-07-23T08:23:34Z",
+  "event_head": "22a4e5304e3dc6ba8d0f4540ef80a56faac8c37a969a11221e3ff0f7ff41dd72",
   "active_work_items": [],
-  "last_completed_work_item": "IOS-KNOWLEDGE-DAG-REPAIR-001",
+  "last_completed_work_item": "IOS-KNOWLEDGE-LEDGER-GATE-REPAIR-001",
   "work_items": {
     "IOS-BOOT-001": {
       "status": "completed",
@@ -720,9 +720,60 @@
       "final_tree_sha256": "17d1a4347df8dce60b8a7b297b66c5d0ca9fb7d9034c1aa674a0e4835dd03b00"
     },
     "IOS-KNOWLEDGE-LEDGER-GATE-REPAIR-001": {
-      "status": "ready",
-      "attempt": 0,
-      "last_evidence": null
+      "status": "completed",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260723T082300Z-ios-knowledge-ledger-gate-repair-001-14d9bbe3.json",
+      "claimed_by": "codex-root",
+      "claimed_at": "2026-07-23T08:17:42Z",
+      "lease_expires_at": "2026-07-24T08:17:42Z",
+      "work_item_sha256": "56f77c07c05024f0ee072814ac73ef4b8f366de3580c85be2e63eac81d5ec709",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "899cfc19720f366d12f038453ddb04020ae711ba",
+      "base_capability_revision": 3,
+      "base_capability_assurance_sha256": "6c08426cf2cc8f0277426284e00909a10444767bc01eeb84e0db43db8dcbb2ac",
+      "android_requirement_selection_sha256": null,
+      "business_knowledge_control_sha256": "19045a21b9b8664326bbe54ff19672aab82c617b21dbf3294cd4f6d2f09229d6",
+      "business_knowledge_authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 1,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "harness-tests",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "307f335e883f02e96ad97ecbda4c210435c0b955e2bcb9e46db9dc7b0d02c285",
+          "cwd": ".",
+          "started_at": "2026-07-23T08:17:27Z",
+          "duration_ms": 14577,
+          "timeout_seconds": 60,
+          "timed_out": false,
+          "process_leak": false,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "b0f1d0a1d4ff669333f82b50473a4ec242f29c82253c98206389616472c98cc6",
+          "stdout_tail": "",
+          "stderr_tail": "................................\n----------------------------------------------------------------------\nRan 32 tests in 14.422s\n\nOK\n"
+        }
+      ],
+      "last_evidence_sha256": "d847a06cf9c77ef01de31e59a99e6250844366eea5ec388283d2f8deb1f170af",
+      "verified_at": "2026-07-23T08:23:00Z",
+      "completed_at": "2026-07-23T08:23:34Z",
+      "final_tree_sha256": "e464011d68809659010fc3f7ff5212c76fe72cd6a933174f471c7acd449b7a83"
     }
   },
   "health": {
@@ -734,7 +785,7 @@
     "android_oracle": "not_started",
     "conformance": "scaffold_verified",
     "source_lab": "fixture_transport_integrated",
-    "knowledge_control_plane": "selection_drift_and_repair_verified",
+    "knowledge_control_plane": "ledger_close_and_review_gates_verified",
     "knowledge_initialization_dag": "proposal_verified"
   },
   "risks": [

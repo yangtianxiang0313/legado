@@ -160,7 +160,7 @@ Work Item 在 `spec.knowledge` 中声明：
 `{"kind":"packet"|"driver","id":"...","revision":N}`；
 `expected_ledger_transitions` 的每一项精确为
 `{"id":"BKL-*","from_revision":N,"to_revision":N+1,"entry_updates":[{"id":"BKE-*","set":{"delivery":{...},"computed":{...}}}]}`。
-`set` 只能包含 `validation`、`product_disposition`、`delivery`、`computed`，且给出完整目标 section；未声明 section、其他 entry 和 `claim_ref` 必须保持不变。修改产品 disposition 还会触发独立人工范围裁决。
+`set` 只能包含 `validation`、`product_disposition`、`delivery`、`computed`，且给出完整目标 section；每个更新 entry 必须属于同一 Ledger 在 `coverage_refs` 中显式选择的 entries，未声明 section、其他 entry 和 `claim_ref` 必须保持不变。终态产品 disposition 必须预先声明当前工作项的精确 approval ref；首次 close 冻结 review subject 并进入 `awaiting_human`，之后由 `approval_issues` 独立校验批准文件、reviewer、tree 绑定和有效期。
 `not_applicable` 必须让这些数组全部为空并提供 `none_reason`。Proposal DAG 可以延后
 选择具体 Claim，但 Trusted Supervisor 在 materialize 前必须把所有引用解析为精确 current
 revision，未完成绑定的节点不能进入 queue。

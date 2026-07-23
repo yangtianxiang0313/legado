@@ -431,6 +431,11 @@ class HarnessTests(unittest.TestCase):
             new_delivery = {**old_delivery, "state": "implemented"}
             item = fixture.item("IOS-BOOT-001", "CAP-BOOT", 100)
             item["spec"]["knowledge"] = {
+                "coverage_refs": [{
+                    "id": ledger_id,
+                    "revision": 1,
+                    "entries": [entry_id],
+                }],
                 "expected_ledger_transitions": [{
                     "id": ledger_id,
                     "from_revision": 1,
@@ -457,6 +462,33 @@ class HarnessTests(unittest.TestCase):
                 [],
                 harness.knowledge_close_issues("IOS-BOOT-001", item, runtime),
             )
+
+            item["spec"]["knowledge"]["coverage_refs"][0]["entries"] = [
+                "BKE-TEST-CLOSE-999"
+            ]
+            self.assertTrue(any(
+                "越出显式 Coverage selection" in error
+                for error in harness.validate_business_knowledge_spec(
+                    item, "IOS-BOOT-001"
+                )
+            ))
+            self.assertTrue(any(
+                "越出显式 Coverage selection" in error
+                for error in harness.knowledge_close_issues(
+                    "IOS-BOOT-001", item, runtime
+                )
+            ))
+            item["spec"]["knowledge"]["coverage_refs"][0]["entries"] = [entry_id]
+
+            ledger["entries"][0]["claim_ref"]["revision"] = 2
+            fixture.write_json(path, ledger)
+            self.assertTrue(any(
+                "claim_ref 不可变" in error
+                for error in harness.knowledge_close_issues(
+                    "IOS-BOOT-001", item, runtime
+                )
+            ))
+            ledger["entries"][0]["claim_ref"]["revision"] = 1
 
             ledger["entries"][0]["product_disposition"]["reason"] = "undeclared"
             fixture.write_json(path, ledger)
@@ -825,6 +857,247 @@ class HarnessTests(unittest.TestCase):
                 },
             )
             self.assertEqual("completed", harness.close("IOS-BOOT-001"))
+
+    def test_product_scope_review_uses_two_stage_close(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = HarnessFixture(root)
+            harness = fixture.initialize()
+            item_id = "IOS-BOOT-001"
+            ledger_id = "BKL-TEST-SCOPE-001"
+            entry_id = "BKE-TEST-SCOPE-001"
+            claim_ref = {"id": "BKC-TEST-SCOPE-001", "revision": 1}
+            ledger_path = (
+                f"ios/project/business-knowledge/coverage/{ledger_id}.json"
+            )
+            fixture.write_json(
+                "ios/project/requirements/catalog.json",
+                {"schema_version": 1, "requirements": []},
+            )
+            fixture.write_json(
+                "ios/project/android-intake/inventory-manifest.json",
+                {"facts": []},
+            )
+            approval_ref = (
+                "ios/project/approvals/"
+                f"{item_id}--product-scope-review.json"
+            )
+            old_disposition = {
+                "kind": "knowledge_only",
+                "refs": [],
+                "reason": None,
+                "review_after": None,
+            }
+            terminal_disposition = {
+                "kind": "deferred",
+                "refs": [approval_ref],
+                "reason": "等待产品范围裁决",
+                "review_after": "2026-12-01",
+            }
+            ledger = {
+                "schema_version": 1,
+                "kind": "BusinessKnowledgeCoverageLedger",
+                "id": ledger_id,
+                "revision": 1,
+                "status": "current",
+                "packet_refs": [],
+                "generated_from": {},
+                "entries": [{
+                    "id": entry_id,
+                    "claim_ref": claim_ref,
+                    "validation": {
+                        "required": "none",
+                        "state": "not_applicable",
+                        "evidence_refs": [],
+                        "blockers": [],
+                    },
+                    "product_disposition": old_disposition,
+                    "delivery": {
+                        "state": "planned",
+                        "requirement_refs": [],
+                        "work_item_refs": [],
+                        "capability_refs": [],
+                        "evidence_refs": [],
+                    },
+                    "computed": {
+                        "accounted": True,
+                        "coverage_state": "covered",
+                    },
+                }],
+                "updated_by": "IOS-BOOT-001",
+                "updated_at": "2026-01-01T00:00:00Z",
+            }
+            fixture.write_json(ledger_path, ledger)
+
+            item_path = root / f"ios/harness/work-items/{item_id}.json"
+            item = harness_module.load_json(item_path)
+            coverage_refs = [{
+                "id": ledger_id,
+                "revision": 1,
+                "entries": [entry_id],
+            }]
+            transitions = [{
+                "id": ledger_id,
+                "from_revision": 1,
+                "to_revision": 2,
+                "entry_updates": [{
+                    "id": entry_id,
+                    "set": {"product_disposition": terminal_disposition},
+                }],
+            }]
+            item["spec"]["knowledge"] = {
+                "contract_version": 1,
+                "mode": "consume",
+                "claim_refs": [claim_ref],
+                "driver_refs": [],
+                "coverage_refs": coverage_refs,
+                "produces": [],
+                "expected_ledger_transitions": transitions,
+                "context_budget": {"max_claims": 40, "max_bytes": 65536},
+                "none_reason": None,
+            }
+            item["spec"]["acceptance"]["criteria"][0]["knowledge_claims"] = [
+                claim_ref
+            ]
+            fixture.write_json(
+                f"ios/harness/work-items/{item_id}.json",
+                item,
+            )
+            harness = harness_module.Harness(root)
+            fixture.write_text(
+                "ios/project/status.md",
+                harness.render_status(harness.state(), harness.work_items()),
+            )
+            selection = {
+                "control_sha256": "1" * 64,
+                "authority_sha256": "2" * 64,
+                "knowledge_selection_sha256": "3" * 64,
+                "coverage_selection_sha256": "4" * 64,
+                "architecture_driver_selection_sha256": "5" * 64,
+                "coverage": [{
+                    "ledger": {
+                        "id": ledger_id,
+                        "revision": 1,
+                        "path": ledger_path,
+                    },
+                }],
+            }
+
+            self.initialize_git(root)
+            with mock.patch.object(
+                harness,
+                "business_knowledge_selection",
+                return_value=selection,
+            ):
+                harness.claim(item_id, "unit-test")
+                fixture.write_text("ios/implementation.txt", "implemented\n")
+                evidence_path = harness.verify(item_id)
+            evidence_relative = harness.relative(evidence_path)
+            evidence = harness_module.load_json(evidence_path)
+            self.assertEqual("passed", evidence["result"])
+
+            capability = harness.capability("CAP-BOOT")
+            capability.update({
+                "revision": 2,
+                "declared_status": "verified",
+                "latest_evidence": evidence_relative,
+                "updated_by": item_id,
+            })
+            fixture.write_json(
+                "ios/project/capabilities/CAP-BOOT.json",
+                capability,
+            )
+            ledger["revision"] = 2
+            ledger["updated_by"] = item_id
+            ledger["updated_at"] = "2026-07-23T00:00:00Z"
+            ledger["entries"][0]["product_disposition"] = terminal_disposition
+            fixture.write_json(ledger_path, ledger)
+            fixture.write_json(
+                f"ios/project/checkpoints/{item_id}.json",
+                {
+                    "schema_version": 1,
+                    "work_item_id": item_id,
+                    "summary": "验证产品范围审批两阶段关闭",
+                    "evidence": evidence_relative,
+                    "capability_updates": [{
+                        "id": "CAP-BOOT",
+                        "from_revision": 1,
+                        "to_revision": 2,
+                    }],
+                    "architecture_impact": {
+                        "kind": "implements_existing",
+                        "adr_refs": ["ADR-0001"],
+                    },
+                    "requirements": {
+                        "mode": "control_plane",
+                        "refs": [],
+                        "selection_sha256": evidence["inputs"][
+                            "android_requirement_selection_sha256"
+                        ],
+                    },
+                    "business_knowledge": {
+                        "mode": "consume",
+                        "claim_refs": [claim_ref],
+                        "driver_refs": [],
+                        "coverage_refs": coverage_refs,
+                        "selection_sha256": evidence["inputs"][
+                            "knowledge_selection_sha256"
+                        ],
+                        "coverage_selection_sha256": evidence["inputs"][
+                            "coverage_selection_sha256"
+                        ],
+                        "architecture_driver_selection_sha256": evidence[
+                            "inputs"
+                        ]["architecture_driver_selection_sha256"],
+                        "produced_refs": [],
+                        "ledger_updates": transitions,
+                        "none_reason": None,
+                    },
+                    "source_lab": {
+                        "mode": "not_applicable",
+                        "behaviors": [],
+                        "scenarios": [],
+                        "selection_sha256": evidence["inputs"][
+                            "source_lab_selection_sha256"
+                        ],
+                    },
+                    "compatibility": {
+                        "records": [],
+                        "none_reason": "没有跨端行为",
+                    },
+                    "pitfalls": {
+                        "records": [],
+                        "none_reason": "没有长期踩坑",
+                    },
+                    "remaining_risks": [],
+                    "next_actions": [],
+                    "created_at": "2026-07-23T00:00:00Z",
+                },
+            )
+
+            self.assertFalse((root / approval_ref).exists())
+            self.assertEqual("awaiting_human", harness.close(item_id))
+            runtime = harness.state()["work_items"][item_id]
+            self.assertTrue(runtime["review_subject_sha256"])
+            self.assertTrue(any(
+                "product-scope-review" in reason
+                for reason in runtime["awaiting_human_reasons"]
+            ))
+            fixture.write_json(
+                approval_ref,
+                {
+                    "schema_version": 1,
+                    "work_item_id": item_id,
+                    "gate": "product-scope-review",
+                    "work_item_sha256": harness_module.sha256_json(item),
+                    "tree_sha256": runtime["review_subject_sha256"],
+                    "reviewer": "human-reviewer@example.invalid",
+                    "approved_at": "2026-07-23T00:00:00Z",
+                    "expires_at": "2099-01-01T00:00:00Z",
+                    "signature": None,
+                },
+            )
+            self.assertEqual("completed", harness.close(item_id))
 
 
 if __name__ == "__main__":

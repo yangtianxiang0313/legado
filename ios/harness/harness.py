@@ -849,12 +849,27 @@ class Harness:
             for reference in values["coverage_refs"]
             if isinstance(reference, dict)
         }
+        coverage_entries = {
+            reference.get("id"): set(reference.get("entries", []))
+            for reference in values["coverage_refs"]
+            if isinstance(reference, dict)
+            and isinstance(reference.get("entries"), list)
+        }
         for transition in values["expected_ledger_transitions"]:
             if not isinstance(transition, dict):
                 continue
             if coverage_revisions.get(transition.get("id")) != transition.get("from_revision"):
                 errors.append(
                     f"{item_id}: Ledger transition 必须以 coverage_refs 中的精确 revision 为起点"
+                )
+            update_ids = {
+                update.get("id")
+                for update in transition.get("entry_updates", [])
+                if isinstance(update, dict) and isinstance(update.get("id"), str)
+            }
+            if not update_ids <= coverage_entries.get(transition.get("id"), set()):
+                errors.append(
+                    f"{item_id}: Ledger entry update 越出显式 Coverage selection"
                 )
 
         budget = knowledge.get("context_budget")
@@ -2943,11 +2958,10 @@ class Harness:
             or any(
                 not isinstance(ref, str)
                 or not ref.startswith("ios/project/approvals/")
-                or not self.resolve(ref).is_file()
                 for ref in refs
             )
         ):
-            errors.append(f"{label}: terminal disposition 必须引用现存人工批准")
+            errors.append(f"{label}: terminal disposition 必须引用当前工作项的人工批准")
         return errors
 
     def knowledge_close_issues(
@@ -2967,12 +2981,27 @@ class Harness:
         snapshots = runtime.get("knowledge_ledger_snapshots")
         if not isinstance(baselines, dict) or not isinstance(snapshots, dict):
             return ["claim 未冻结 Knowledge Ledger revision/snapshot"]
+        selected_entries = {
+            reference.get("id"): set(reference.get("entries", []))
+            for reference in knowledge.get("coverage_refs", [])
+            if isinstance(reference, dict)
+            and isinstance(reference.get("entries"), list)
+        }
         for transition in transitions:
             if not isinstance(transition, dict):
                 continue
             identifier = transition.get("id")
             before = transition.get("from_revision")
             after = transition.get("to_revision")
+            update_ids = {
+                update.get("id")
+                for update in transition.get("entry_updates", [])
+                if isinstance(update, dict) and isinstance(update.get("id"), str)
+            }
+            if not update_ids <= selected_entries.get(identifier, set()):
+                errors.append(
+                    f"{identifier}: Ledger entry update 越出显式 Coverage selection"
+                )
             if baselines.get(identifier) != before:
                 errors.append(
                     f"{identifier}: Ledger from_revision 与 claim 基线不一致"
