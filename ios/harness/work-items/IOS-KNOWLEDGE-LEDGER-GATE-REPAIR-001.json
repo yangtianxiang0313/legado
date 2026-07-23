@@ -1,0 +1,154 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-KNOWLEDGE-LEDGER-GATE-REPAIR-001",
+    "title": "闭合知识台账选择与人工审批门禁",
+    "priority": 95,
+    "risk": "high",
+    "labels": ["phase-0", "knowledge", "corrective", "governance"]
+  },
+  "spec": {
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "intent": "修复 Coverage Ledger 关闭事务的最后两个审计缺口：只允许更新工作项显式选择的 entry，并让 product-scope-review 能先冻结审批主题、进入 awaiting_human，再由独立批准完成关闭；同时补齐 claim_ref 不可变和两阶段门禁回归测试。",
+    "depends_on": ["IOS-KNOWLEDGE-DAG-REPAIR-001"],
+    "scope": {
+      "allow_write": [
+        "ios/harness/harness.py",
+        "ios/harness/tests/test_harness.py",
+        "ios/docs/business-knowledge-control-plane.md",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-KNOWLEDGE-LEDGER-GATE-REPAIR-001.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "ios/harness/config.json",
+        "ios/harness/schemas/**",
+        "ios/harness/work-items/**",
+        "ios/harness/goldens/**",
+        "ios/harness/normalization/**",
+        "ios/harness/fixtures/**",
+        "ios/harness/source-lab/**",
+        "ios/harness/android-intake/**",
+        "ios/project/android-intake/**",
+        "ios/project/business-knowledge/**",
+        "ios/project/requirements/**",
+        "ios/project/baseline.json",
+        "ios/project/approvals/**",
+        "ios/docs/architecture.md",
+        "ios/docs/project-memory.md",
+        "ios/docs/adr/**"
+      ],
+      "max_files_changed": 6,
+      "max_changed_lines": 700
+    },
+    "inputs": {
+      "context_files": [
+        "ios/docs/business-knowledge-control-plane.md",
+        "ios/docs/ai-harness.md",
+        "ios/docs/project-memory.md",
+        "ios/docs/trusted-supervisor.md",
+        "ios/project/checkpoints/IOS-KNOWLEDGE-DAG-REPAIR-001.json"
+      ],
+      "android_source_anchors": [],
+      "fixtures": []
+    },
+    "architecture_refs": ["ARCH-017", "ARCH-018", "ADR-0004"],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "expected_ledger_transitions 中每个 entry_updates ID 都必须属于同一 Ledger 在 coverage_refs 中显式选择的 entries，未选择 entry 在 claim 前即被拒绝。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "关闭事务再次校验更新集合未越出冻结的 Coverage selection，且 entry 的 claim_ref、未声明 section 和未声明值都不可变化。",
+          "verified_by": ["harness-tests", "memory-close"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "terminal product disposition 必须声明工作项对应的精确 approval ref，但首次 close 不要求批准文件预先存在，能够冻结 review subject 并进入 awaiting_human。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-4",
+          "statement": "第二次 close 仍由 approval_issues 校验批准文件、reviewer、tree、有效期和 subject 绑定，缺失或失效批准不得完成工作项。",
+          "verified_by": ["harness-tests", "memory-close"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-5",
+          "statement": "新 Evidence、Checkpoint、Capability revision 和事件链独立记录本次纠错，之前的 Evidence 保持不可变。",
+          "verified_by": ["harness-tests", "memory-close"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": ["dependency-policy", "harness-tests"]
+    },
+    "baseline_checks": ["harness-tests"],
+    "budget": {
+      "wall_clock_seconds": 2400,
+      "max_edit_verify_cycles": 3,
+      "max_targeted_test_runs": 5,
+      "max_full_test_runs": 2,
+      "max_infra_retries": 1
+    },
+    "gates": [],
+    "completion_effects": {
+      "health": {
+        "knowledge_control_plane": "ledger_close_and_review_gates_verified"
+      }
+    },
+    "memory": {
+      "capability_state_required": true,
+      "compatibility": "not_applicable",
+      "pitfall": "if_non_obvious_and_preventable",
+      "adr": "required_for_architecture_change"
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "refs": [],
+      "none_reason": "本项修复控制面选择与人工审批门禁，不接受或实现产品行为"
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "not_applicable",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [],
+      "expected_ledger_transitions": [],
+      "context_budget": {
+        "max_claims": 40,
+        "max_bytes": 65536
+      },
+      "none_reason": "本项纠正知识控制面自身，不消费或发布业务知识"
+    },
+    "source_lab": {
+      "mode": "not_applicable",
+      "behaviors": [],
+      "scenarios": [],
+      "none_reason": "本项不执行书源规则或本地站点"
+    },
+    "stop_on": [
+      "baseline_red",
+      "scope_violation",
+      "authority_escalation",
+      "knowledge_drift",
+      "same_failure_twice",
+      "budget_exhausted"
+    ]
+  }
+}
