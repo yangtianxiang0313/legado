@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "revision": 80,
+  "revision": 84,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-24T08:17:02Z",
-  "event_head": "4dcd6c5d01a0c657cc7bb7f455ce463280eadbc46a2b5cab0132741d82c9d6f2",
+  "updated_at": "2026-07-24T08:23:17Z",
+  "event_head": "16356c6ded0e256897de234c631fff6ad6f624b227f7c0f49e7a9d3dcb6121ca",
   "active_work_items": [],
-  "last_completed_work_item": "IOS-KNOWLEDGE-SOURCE-RUNTIME-001",
+  "last_completed_work_item": "IOS-KNOWLEDGE-READER-LIFECYCLE-001",
   "work_items": {
     "IOS-BOOT-001": {
       "status": "completed",
@@ -1277,9 +1277,105 @@
       "final_tree_sha256": "24d9bf6711b331dcd37713fe37bb3f90dac558b5a8a0d57f85fe736168ba7bf6"
     },
     "IOS-KNOWLEDGE-READER-LIFECYCLE-001": {
-      "status": "ready",
-      "attempt": 0,
-      "last_evidence": null
+      "status": "completed",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260724T082154Z-ios-knowledge-reader-lifecycle-001-9e5fb86a.json",
+      "claimed_by": "codex-root",
+      "claimed_at": "2026-07-24T08:17:33Z",
+      "lease_expires_at": "2026-07-25T08:17:33Z",
+      "work_item_sha256": "1956a40e68b5be8aa80a1c1a1ce0d7d74e1084570f0cf6f61767ba1a4706a2c0",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "cbf1c52a5b134c9a4206eb8636eb963df9bc29e7",
+      "base_capability_revision": 11,
+      "base_capability_assurance_sha256": "6c08426cf2cc8f0277426284e00909a10444767bc01eeb84e0db43db8dcbb2ac",
+      "android_requirement_selection_sha256": null,
+      "business_knowledge_control_sha256": "b2a30fd1b81cc1d82d528f05f54cd3188e40aa141fac3b94c3cd5c2b0ff7a9b5",
+      "business_knowledge_authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 1,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "android-intake-contract",
+          "argv": [
+            "python3",
+            "-B",
+            "ios/harness/android-intake/android_intake.py",
+            "doctor",
+            "--root",
+            ".",
+            "--work-item",
+            "IOS-KNOWLEDGE-READER-LIFECYCLE-001"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "1bf88f85f3f416e092d2c3bf30c0b86ae55ad95e050f05321da60bed60f3d5f8",
+          "cwd": ".",
+          "started_at": "2026-07-24T08:17:17Z",
+          "duration_ms": 339,
+          "timeout_seconds": 90,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "84f6b9d590a230c755728f08a7cc4071122d7bd66d14c218c852a45cdc0a64fe",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_tail": "android-intake: OK\n",
+          "stderr_tail": ""
+        },
+        {
+          "id": "harness-tests",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "307f335e883f02e96ad97ecbda4c210435c0b955e2bcb9e46db9dc7b0d02c285",
+          "cwd": ".",
+          "started_at": "2026-07-24T08:17:17Z",
+          "duration_ms": 15868,
+          "timeout_seconds": 60,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "b53c673ec9b04f16dab1cedc641e48945b32cae87fcf4728ac0402be3e4e2207",
+          "stdout_tail": "",
+          "stderr_tail": "......................................................................\n----------------------------------------------------------------------\nRan 70 tests in 15.759s\n\nOK\n"
+        }
+      ],
+      "last_evidence_sha256": "15e4e662d9dda36046d5cc0c3df2859b4167b9ee388b0032133f7ac02b7ce49d",
+      "verified_at": "2026-07-24T08:21:54Z",
+      "approval_requested_at": "2026-07-24T08:22:57Z",
+      "approval_request_existing_fingerprints": {
+        "ios/project/approvals/IOS-KNOWLEDGE-READER-LIFECYCLE-001--architecture-review.json": "missing",
+        "ios/project/approvals/IOS-KNOWLEDGE-READER-LIFECYCLE-001--knowledge-review.json": "missing"
+      },
+      "awaiting_human_reasons": [
+        "缺少人工批准：architecture-review",
+        "缺少人工批准：knowledge-review"
+      ],
+      "review_subject_sha256": "2a1eba8446ff52ac89966cc87c8f33127f2b1012b7c879308911a2c8358650a6",
+      "review_subject_files": {
+        "ios/project/business-knowledge/drivers/proposals/DRV-READER-LIFECYCLE-001/r0001.json": "file:0o644:8257bbc49bc91eb4438a483f04f1a261471d4df59e86c9e8806b655e5109a9bd",
+        "ios/project/business-knowledge/packets/proposals/BKP-READER-LIFECYCLE-001/r0001.json": "file:0o644:054d8d312e4a85a17293e6e10e53a2e8783ea19724cac8e76637ea0f552702c6",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json": "file:0o644:adc40a6e75c1698ef12b2d07cc360c3a5a16efa1a2971dd8ea9e726ff24e5085",
+        "ios/project/checkpoints/IOS-KNOWLEDGE-READER-LIFECYCLE-001.json": "file:0o644:58cf4ae9b0136a895324baafc4db18e9d6c396662ac1a3be5abf2015127aef57"
+      },
+      "completed_at": "2026-07-24T08:23:17Z",
+      "final_tree_sha256": "6360f97a07cf9819a390ff55871e17ee5586855b0d7ef9b8df5a81a879e6ca2e"
     }
   },
   "health": {
@@ -1297,7 +1393,8 @@
     "knowledge_book_domain": "candidate_verified",
     "local_approval_ui": "verified",
     "harness_timeout_cleanup": "verified",
-    "knowledge_source_runtime": "candidate_verified"
+    "knowledge_source_runtime": "candidate_verified",
+    "knowledge_reader_lifecycle": "candidate_verified"
   },
   "risks": [
     {

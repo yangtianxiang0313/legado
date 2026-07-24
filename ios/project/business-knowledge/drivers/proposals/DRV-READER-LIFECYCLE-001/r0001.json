@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-READER-LIFECYCLE-001",
+  "revision": 1,
+  "status": "proposed",
+  "semantic_key": "reader.lifecycle-session-boundaries",
+  "title": "独立、可恢复且抗迟到结果的 Reader 生命周期",
+  "claim_refs": [
+    {"id": "BKC-RD-SESSION-STATE-001", "revision": 1},
+    {"id": "BKC-RD-SESSION-RESET-001", "revision": 1},
+    {"id": "BKC-RD-PROGRESS-COORDINATE-001", "revision": 1},
+    {"id": "BKC-RD-LAYOUT-PROJECTION-001", "revision": 1},
+    {"id": "BKC-RD-LAYOUT-STREAM-001", "revision": 1},
+    {"id": "BKC-RD-CONTENT-ACQUISITION-001", "revision": 1},
+    {"id": "BKC-RD-CONTENT-NORMALIZE-001", "revision": 1},
+    {"id": "BKC-RD-CHAPTER-WINDOW-001", "revision": 1},
+    {"id": "BKC-RD-LOAD-DEDUP-001", "revision": 1},
+    {"id": "BKC-RD-LATE-RESULT-RISK-001", "revision": 1},
+    {"id": "BKC-RD-CHAPTER-NAVIGATION-001", "revision": 1},
+    {"id": "BKC-RD-PROGRESS-SAVE-001", "revision": 1},
+    {"id": "BKC-RD-PROGRESS-REMAP-001", "revision": 1},
+    {"id": "BKC-RD-TOC-REFRESH-001", "revision": 1},
+    {"id": "BKC-RD-PREFETCH-POLICY-001", "revision": 1},
+    {"id": "BKC-RD-OFFLINE-CACHE-QUEUE-001", "revision": 1},
+    {"id": "BKC-RD-AUDIO-COUPLING-001", "revision": 1},
+    {"id": "BKC-RD-TYPED-CURSOR-DECISION-001", "revision": 1},
+    {"id": "BKC-RD-READ-RECORD-001", "revision": 1},
+    {"id": "BKC-RD-CANCELLATION-CLOSE-001", "revision": 1},
+    {"id": "BKC-RD-UI-CALLBACK-COUPLING-001", "revision": 1},
+    {"id": "BKC-RD-CACHE-LAYERS-DECISION-001", "revision": 1},
+    {"id": "BKC-RD-SESSION-BOUNDARY-DECISION-001", "revision": 1}
+  ],
+  "forces": [
+    {
+      "quality_attribute": "correctness",
+      "scenario": "快速换书、跳章、换源、重排和恢复时，旧正文或旧排版结果不能覆盖当前 ReaderSession。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "recoverability",
+      "scenario": "字体、宽度、设备方向、正文 revision 或目录变化后，持久 TextCursor 可确定性映射到新 LayoutProjection，无法映射时显式降级。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "concurrency",
+      "scenario": "正文获取、归一化、排版、图片、预取和朗读任务按 session generation 与内容/layout revision 隔离并可取消。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "testability",
+      "scenario": "ReaderKit 可用固定 ChapterContentProvider、Clock、布局参数和内容 revision 离线验证状态转换，不依赖网络、数据库或 SwiftUI。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "modularity",
+      "scenario": "ReaderKit 只消费中立章节内容与目录协议，不依赖 SourceKit 实现、Library 数据库、具体 UI 或平台音频服务。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "observability",
+      "scenario": "每次状态转换记录 ReaderSessionID、generation、ChapterID、ContentRevision、DocumentHash、LayoutKey、取消原因与首个失败阶段。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "performance",
+      "scenario": "长章节、图片内容和连续翻页在明确内存预算下增量排版，预取与缓存策略可替换且不改变阅读合同。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "accessibility",
+      "scenario": "文本阅读、VoiceOver 与朗读共享语义内容，但 TextCursor、可访问段落和 AudioCursor 不混用一个无类型整数。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "evolvability",
+      "scenario": "替换排版引擎、分页/滚动投影、预取窗口或音频实现，不改变持久进度与 Reader 公共状态合同。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "data_integrity",
+      "scenario": "进度、阅读时长和目录重映射写入具备明确所有者、顺序与冲突策略，异常终止不会把旧 session 状态写回新书。",
+      "criticality": "critical"
+    }
+  ],
+  "decision_questions": [
+    "ReaderKit 是否作为独立 Swift Package；它与 ApplicationKit、SourceKit API、PlatformKit 和 UIKit 的唯一依赖方向是什么？",
+    "ReaderSession 是否由 actor 拥有，状态机是否采用 idle、restoring、acquiring、normalizing、layingOut、ready、failed、closing、closed？",
+    "异步结果必须绑定哪些 identity：ReaderSessionID、SessionGeneration、BookID、ChapterID、SourceEditionID、ContentRevision、DocumentHash 与 LayoutKey？",
+    "ChapterContentProvider 返回原始正文、已规范正文还是两阶段 AcquiredContent/NormalizedDocument；SourceKit 到 ReaderKit 的映射由谁完成？",
+    "TextCursor 的 semantic anchor、content hash、章节内 offset fallback 与目录重映射算法如何版本化？",
+    "AudioCursor、朗读段落位置与媒体 elapsed time 如何独立于 TextCursor 持久化和恢复？",
+    "LayoutProjection 的 key 是否包含 viewport、字体、字号、行距、方向、排版引擎和 normalizer version；哪些变化只失效 layout？",
+    "acquisition、normalized、layout、progress 与 image 五层缓存的 key、所有者、持久性、容量与清理策略是什么？",
+    "增量排版何时进入 ready；目标 cursor 尚未覆盖、部分页面失败或排版被取消时 UI 显示什么状态？",
+    "预取是 ReaderSession 的可替换策略还是 Application UseCase；其并发、公平性、失败预算和低电量/后台限制如何表达？",
+    "目录变化、整书换源、单章覆盖和正文编辑后，旧 cursor、content revision、normalized cache 与 layout cache 如何迁移或失效？",
+    "进度保存由 ReaderSession 发事件、Repository debounce，还是每次交互同步写入；后台、崩溃和多设备冲突如何保证单调性？",
+    "ReaderStore 如何在 MainActor 上消费 ReaderEvent 并向 SwiftUI 暴露只读状态，而不把 View、Route 或平台生命周期注入 ReaderKit？",
+    "Android 三章窗口、Service 缓存队列和全局 ReadBook 的哪些可观察行为需要兼容，哪些明确作为实现细节舍弃？",
+    "Reader characterization 应如何输出结构化 state trace、cursor、document/layout identity 与 first-divergence，避免仅用截图或页码断言？"
+  ],
+  "resolution": {
+    "state": "requires_characterization",
+    "adr_refs": [],
+    "work_item_refs": []
+  },
+  "promotion": null,
+  "supersedes": null,
+  "created_by": "IOS-KNOWLEDGE-READER-LIFECYCLE-001"
+}

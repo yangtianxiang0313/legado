@@ -1,0 +1,547 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-READER-LIFECYCLE-001",
+  "revision": 1,
+  "status": "candidate",
+  "semantic_key": "reader.lifecycle-content-progress",
+  "title": "阅读会话、正文、排版、进度、预取与朗读知识",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122"
+  },
+  "scope": {
+    "bounded_contexts": ["reader.session", "reader.content", "reader.progress"],
+    "capability_refs": ["CAP-KNOWLEDGE-CONTROL"],
+    "subject_keys": [
+      "reader.audio",
+      "reader.cache",
+      "reader.content",
+      "reader.layout",
+      "reader.progress",
+      "reader.session"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-RD-SESSION-STATE-001",
+      "revision": 1,
+      "semantic_key": "reader.session.android-state-aggregate",
+      "kind": "composite_static_fact",
+      "topic": "Android 阅读状态聚合",
+      "statement": "Android ReadBook 以进程级可变 object 同时持有当前 Book、BookSource、章节总数、当前章节索引与字符位置、前中后三个 TextChapter、加载集合、预下载状态、阅读时长和 UI callback；这是现状与风险输入，不是 iOS ReaderKit 的对象边界。",
+      "subject_keys": ["reader.session", "reader.progress", "reader.cache"],
+      "depends_on": [],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d", "path": "app/src/main/java/io/legado/app/model/ReadBook.kt", "symbol_id": "kotlin://io.legado.app.model.ReadBook"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "none"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-RD-SESSION-RESET-001",
+      "revision": 1,
+      "semantic_key": "reader.session.reset-from-book",
+      "kind": "runtime_behavior",
+      "topic": "打开与重置阅读会话",
+      "statement": "打开或重置书籍时，Android 从 Book 与章节表恢复章节总数、受上界约束的章节索引、字符位置、本地书标记、内容处理器和书源，并清空页面、加载中集合、临时跳转进度与图片状态；精确回调顺序和失败恢复需运行特征化。",
+      "subject_keys": ["reader.session", "reader.progress", "reader.content"],
+      "depends_on": [{"id": "BKC-RD-SESSION-STATE-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d", "path": "app/src/main/java/io/legado/app/model/ReadBook.kt", "symbol_id": "kotlin://io.legado.app.model.ReadBook/resetData"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-RD-PROGRESS-COORDINATE-001",
+      "revision": 1,
+      "semantic_key": "reader.progress.chapter-character-coordinate",
+      "kind": "composite_static_fact",
+      "topic": "稳定阅读坐标",
+      "statement": "Android 持久阅读坐标由章节索引、章节标题、章节内字符位置和更新时间组成；页索引由当前排版结果换算，不属于稳定持久字段。",
+      "subject_keys": ["reader.progress", "reader.layout"],
+      "depends_on": [],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "e1815f3c4bc90c77fe68aafeea8fc4d10c219a79", "path": "app/src/main/java/io/legado/app/data/entities/Book.kt", "symbol_id": "kotlin://io.legado.app.data.entities.Book/durChapterIndex"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "d5fd70d102f0afa50c12982cb6aedcec16b70c4c", "path": "app/src/main/java/io/legado/app/data/entities/BookProgress.kt", "symbol_id": "kotlin://io.legado.app.data.entities.BookProgress"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "none"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-RD-LAYOUT-PROJECTION-001",
+      "revision": 1,
+      "semantic_key": "reader.layout.page-projection",
+      "kind": "runtime_behavior",
+      "topic": "字符位置与页面投影",
+      "statement": "TextChapter 以每页首行的 chapterPosition 把字符位置投影为页索引，并把页索引换回字符位置；排版未覆盖目标字符时可返回不可用，字体、宽度或排版变化后的精确落点需 Android characterization。",
+      "subject_keys": ["reader.layout", "reader.progress"],
+      "depends_on": [{"id": "BKC-RD-PROGRESS-COORDINATE-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "eb8524f5b531f076e5708cad56cfe9a592a55d7a", "path": "app/src/main/java/io/legado/app/ui/book/read/page/entities/TextChapter.kt", "symbol_id": "kotlin://io.legado.app.ui.book.read.page.entities.TextChapter/getPageIndexByCharIndex"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "eb8524f5b531f076e5708cad56cfe9a592a55d7a", "path": "app/src/main/java/io/legado/app/ui/book/read/page/entities/TextChapter.kt", "symbol_id": "kotlin://io.legado.app.ui.book.read.page.entities.TextChapter/getReadLength"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-RD-LAYOUT-STREAM-001",
+      "revision": 1,
+      "semantic_key": "reader.layout.incremental-stream",
+      "kind": "runtime_behavior",
+      "topic": "增量排版可用性",
+      "statement": "章节排版通过 channel 增量产出页面；当前章节一旦覆盖持久字符位置即可刷新阅读 UI，滚动模式还会随早期页面继续刷新，完成后再次通知。页面事件顺序、取消点和部分排版失败结果需特征化。",
+      "subject_keys": ["reader.layout", "reader.session"],
+      "depends_on": [{"id": "BKC-RD-LAYOUT-PROJECTION-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d", "path": "app/src/main/java/io/legado/app/model/ReadBook.kt", "symbol_id": "kotlin://io.legado.app.model.ReadBook/contentLoadFinish"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "eb8524f5b531f076e5708cad56cfe9a592a55d7a", "path": "app/src/main/java/io/legado/app/ui/book/read/page/entities/TextChapter.kt", "symbol_id": "kotlin://io.legado.app.ui.book.read.page.entities.TextChapter/layoutChannel"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-RD-CONTENT-ACQUISITION-001",
+      "revision": 1,
+      "semantic_key": "reader.content.cache-first-acquisition",
+      "kind": "runtime_behavior",
+      "topic": "正文获取",
+      "statement": "加载章节时 Android 先按 Book 与 BookChapter 查询文件缓存，缺失时再委托书源缓存模型下载；本地书或缺少书源时会把失败说明作为正文交给后续显示。缓存命中、网络失败与错误正文的结构化语义需特征化。",
+      "subject_keys": ["reader.content", "reader.cache", "reader.session"],
+      "depends_on": [{"id": "BKC-RD-SESSION-RESET-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d", "path": "app/src/main/java/io/legado/app/model/ReadBook.kt", "symbol_id": "kotlin://io.legado.app.model.ReadBook/loadContent"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "40f47f3a0f6bfa63cce79efb7a1518737b84dc45", "path": "app/src/main/java/io/legado/app/help/book/BookHelp.kt", "symbol_id": "kotlin://io.legado.app.help.book.BookHelp/getContent"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-RD-CONTENT-NORMALIZE-001",
+      "revision": 1,
+      "semantic_key": "reader.content.display-normalization",
+      "kind": "runtime_behavior",
+      "topic": "正文显示归一化",
+      "statement": "取得原始正文后，Android 根据书名、来源与用户设置计算显示标题、去重标题和有效替换规则，再生成供排版使用的内容；替换顺序、同标题删除和版本失效需要结构化 expected。",
+      "subject_keys": ["reader.content", "reader.layout"],
+      "depends_on": [{"id": "BKC-RD-CONTENT-ACQUISITION-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d", "path": "app/src/main/java/io/legado/app/model/ReadBook.kt", "symbol_id": "kotlin://io.legado.app.model.ReadBook/contentLoadFinish"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-RD-CHAPTER-WINDOW-001",
+      "revision": 1,
+      "semantic_key": "reader.cache.three-chapter-window",
+      "kind": "composite_static_fact",
+      "topic": "前中后三章窗口",
+      "statement": "Android 常驻前一章、当前章和后一章三个 TextChapter，切章时旋转窗口并取消被淘汰章节的排版；这是性能策略，不是稳定业务合同，iOS 可以采用不同预取窗口。",
+      "subject_keys": ["reader.cache", "reader.session", "reader.layout"],
+      "depends_on": [{"id": "BKC-RD-SESSION-STATE-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d", "path": "app/src/main/java/io/legado/app/model/ReadBook.kt", "symbol_id": "kotlin://io.legado.app.model.ReadBook/moveToNextChapter"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d", "path": "app/src/main/java/io/legado/app/model/ReadBook.kt", "symbol_id": "kotlin://io.legado.app.model.ReadBook/moveToPrevChapter"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "none"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-RD-LOAD-DEDUP-001",
+      "revision": 1,
+      "semantic_key": "reader.content.index-load-dedup",
+      "kind": "runtime_behavior",
+      "topic": "章节加载去重",
+      "statement": "Android 以同步保护的章节索引列表阻止同一索引重复加载，并在完成或错误时移除；该 key 未绑定 Book 身份、内容版本或会话 generation，换书与换源并发下的迟到结果需要 characterization。",
+      "subject_keys": ["reader.content", "reader.session"],
+      "depends_on": [{"id": "BKC-RD-CONTENT-ACQUISITION-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d", "path": "app/src/main/java/io/legado/app/model/ReadBook.kt", "symbol_id": "kotlin://io.legado.app.model.ReadBook/addLoading"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-RD-LATE-RESULT-RISK-001",
+      "revision": 1,
+      "semantic_key": "reader.session.late-result-risk",
+      "kind": "risk_or_anomaly",
+      "topic": "迟到正文与排版结果",
+      "statement": "正文完成时 Android 只检查章节索引是否仍在当前索引前后一章，再按 index 差值写入前中后槽位；没有显式校验 BookID、来源、内容 revision、排版 key 或 session generation，快速换书、换源、重排和连续跳章可能发生旧结果覆盖。",
+      "subject_keys": ["reader.session", "reader.content", "reader.layout"],
+      "depends_on": [
+        {"id": "BKC-RD-LOAD-DEDUP-001", "revision": 1},
+        {"id": "BKC-RD-CHAPTER-WINDOW-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d", "path": "app/src/main/java/io/legado/app/model/ReadBook.kt", "symbol_id": "kotlin://io.legado.app.model.ReadBook/contentLoadFinish"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-RD-CHAPTER-NAVIGATION-001",
+      "revision": 1,
+      "semantic_key": "reader.session.chapter-navigation",
+      "kind": "runtime_behavior",
+      "topic": "翻页与切章",
+      "statement": "翻页把目标页首字符位置写入进度；跨章时下一章从 0 开始，上一章可用已排版末页位置或 Int.MAX_VALUE 作为末尾请求，再旋转章节窗口、加载缺失邻章并保存进度。首尾页、未完成排版和空章行为需特征化。",
+      "subject_keys": ["reader.session", "reader.progress", "reader.layout"],
+      "depends_on": [
+        {"id": "BKC-RD-LAYOUT-PROJECTION-001", "revision": 1},
+        {"id": "BKC-RD-CHAPTER-WINDOW-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d", "path": "app/src/main/java/io/legado/app/model/ReadBook.kt", "symbol_id": "kotlin://io.legado.app.model.ReadBook/moveToNextPage"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d", "path": "app/src/main/java/io/legado/app/model/ReadBook.kt", "symbol_id": "kotlin://io.legado.app.model.ReadBook/moveToPrevChapter"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-RD-PROGRESS-SAVE-001",
+      "revision": 1,
+      "semantic_key": "reader.progress.save-runtime",
+      "kind": "runtime_behavior",
+      "topic": "进度保存时机",
+      "statement": "Android 在翻页、切章、打开章节、改变字符集、暂停和朗读联动等路径更新 Book 的章节索引、字符位置、标题和时间；页内变化可跳过标题查询，进程终止前最后一段进度是否落盘需 characterization。",
+      "subject_keys": ["reader.progress", "reader.session"],
+      "depends_on": [{"id": "BKC-RD-PROGRESS-COORDINATE-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d", "path": "app/src/main/java/io/legado/app/model/ReadBook.kt", "symbol_id": "kotlin://io.legado.app.model.ReadBook/saveRead"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "b116c77fa2d48c9d1a1013e60a92236f71bea1bc", "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt", "symbol_id": "kotlin://io.legado.app.ui.book.read.ReadBookActivity/onPause"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-RD-PROGRESS-REMAP-001",
+      "revision": 1,
+      "semantic_key": "reader.progress.toc-remap",
+      "kind": "runtime_behavior",
+      "topic": "目录变化后的进度重映射",
+      "statement": "目录或书源变化时，Android 先比较同索引标题，再以清洗标题相似度、章节号和邻域窗口选择新章节，失败时回退到受新目录边界约束的旧索引；重复标题、插章和大范围重排需要 Android golden。",
+      "subject_keys": ["reader.progress", "reader.session"],
+      "depends_on": [{"id": "BKC-RD-PROGRESS-COORDINATE-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "40f47f3a0f6bfa63cce79efb7a1518737b84dc45", "path": "app/src/main/java/io/legado/app/help/book/BookHelp.kt", "symbol_id": "kotlin://io.legado.app.help.book.BookHelp/getDurChapter"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-RD-TOC-REFRESH-001",
+      "revision": 1,
+      "semantic_key": "reader.session.toc-refresh",
+      "kind": "runtime_behavior",
+      "topic": "阅读中目录刷新",
+      "statement": "在线书可在尝试越过目录末尾时触发目录刷新，但受 canUpdate 和十分钟间隔限制；只有仍为同一 bookUrl 且新目录更长时才插入章节、更新总数并加载下一章。换源、目录缩短和并发刷新结果需特征化。",
+      "subject_keys": ["reader.session", "reader.content"],
+      "depends_on": [{"id": "BKC-RD-CHAPTER-NAVIGATION-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d", "path": "app/src/main/java/io/legado/app/model/ReadBook.kt", "symbol_id": "kotlin://io.legado.app.model.ReadBook/upToc"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-RD-PREFETCH-POLICY-001",
+      "revision": 1,
+      "semantic_key": "reader.cache.prefetch-policy",
+      "kind": "runtime_behavior",
+      "topic": "阅读预取",
+      "statement": "页面变化后，在线书会取消旧预取任务，并从当前章之后第二章起向前预取配置数量、从之前第二章起向后最多预取五章；已成功章节跳过，失败三次后不再尝试。顺序、公平性、取消和资源预算需特征化。",
+      "subject_keys": ["reader.cache", "reader.session"],
+      "depends_on": [{"id": "BKC-RD-CHAPTER-WINDOW-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d", "path": "app/src/main/java/io/legado/app/model/ReadBook.kt", "symbol_id": "kotlin://io.legado.app.model.ReadBook/preDownload"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-RD-OFFLINE-CACHE-QUEUE-001",
+      "revision": 1,
+      "semantic_key": "reader.cache.offline-queue",
+      "kind": "runtime_behavior",
+      "topic": "离线缓存队列",
+      "statement": "离线缓存以 bookUrl 对应的内存模型维护等待、下载中、成功与错误集合，由后台 Service 控制线程池；普通失败累计三次后停止重试，ConcurrentException 不计普通失败。任务、重试和完成统计在进程恢复后的语义需特征化。",
+      "subject_keys": ["reader.cache", "reader.content"],
+      "depends_on": [{"id": "BKC-RD-CONTENT-ACQUISITION-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "cdcbbf5696c1d2b018e25c2819c0461e8c667866", "path": "app/src/main/java/io/legado/app/model/CacheBook.kt", "symbol_id": "kotlin://io.legado.app.model.CacheBook.CacheBookModel"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "4916633d8c891cbdb2fc28a66c93a9b4750fa938", "path": "app/src/main/java/io/legado/app/service/CacheBookService.kt", "symbol_id": "kotlin://io.legado.app.service.CacheBookService"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-RD-AUDIO-COUPLING-001",
+      "revision": 1,
+      "semantic_key": "reader.audio.page-progress-coupling",
+      "kind": "runtime_behavior",
+      "topic": "朗读与阅读进度联动",
+      "statement": "页面变化时，若朗读服务运行且章节排版完成，Android 会根据滚动模式和暂停状态重新驱动朗读；朗读文本来自当前页之后的已排版内容。文本字符位置、朗读段落位置和媒体毫秒位置的精确对应需特征化。",
+      "subject_keys": ["reader.audio", "reader.progress", "reader.layout"],
+      "depends_on": [
+        {"id": "BKC-RD-LAYOUT-PROJECTION-001", "revision": 1},
+        {"id": "BKC-RD-CHAPTER-NAVIGATION-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d", "path": "app/src/main/java/io/legado/app/model/ReadBook.kt", "symbol_id": "kotlin://io.legado.app.model.ReadBook/curPageChanged"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "eb8524f5b531f076e5708cad56cfe9a592a55d7a", "path": "app/src/main/java/io/legado/app/ui/book/read/page/entities/TextChapter.kt", "symbol_id": "kotlin://io.legado.app.ui.book.read.page.entities.TextChapter/getNeedReadAloud"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-RD-TYPED-CURSOR-DECISION-001",
+      "revision": 1,
+      "semantic_key": "reader.progress.typed-cursor-decision",
+      "kind": "open_question",
+      "topic": "文本与音频位置类型化",
+      "statement": "Android 的 durChapterPos 在文本阅读链中表示章节字符位置，而相关朗读与音频路径还存在页内起点和媒体时间语义；iOS 需人工决定 TextCursor、AudioCursor、semantic anchor 与 Android offset fallback 的独立类型和迁移规则。",
+      "subject_keys": ["reader.audio", "reader.progress"],
+      "depends_on": [
+        {"id": "BKC-RD-PROGRESS-COORDINATE-001", "revision": 1},
+        {"id": "BKC-RD-AUDIO-COUPLING-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d", "path": "app/src/main/java/io/legado/app/model/ReadBook.kt", "symbol_id": "kotlin://io.legado.app.model.ReadBook/durChapterPos"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "eb8524f5b531f076e5708cad56cfe9a592a55d7a", "path": "app/src/main/java/io/legado/app/ui/book/read/page/entities/TextChapter.kt", "symbol_id": "kotlin://io.legado.app.ui.book.read.page.entities.TextChapter/getNeedReadAloud"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "human_decision"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-RD-READ-RECORD-001",
+      "revision": 1,
+      "semantic_key": "reader.progress.read-duration-session",
+      "kind": "runtime_behavior",
+      "topic": "阅读时长",
+      "statement": "Android 在页面变化和暂停等时机以当前时间减去 readStartTime 累加阅读时长，再更新会话起点与最后阅读时间；记录以 bookName 和 deviceId 模型持久化，重复插入、后台停留和异常终止的精确累计需 characterization。",
+      "subject_keys": ["reader.progress", "reader.session"],
+      "depends_on": [{"id": "BKC-RD-SESSION-STATE-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d", "path": "app/src/main/java/io/legado/app/model/ReadBook.kt", "symbol_id": "kotlin://io.legado.app.model.ReadBook/upReadTime"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "c1638ac313e3d71997e9830383e3d604a8c3ec2f", "path": "app/src/main/java/io/legado/app/data/entities/ReadRecord.kt", "symbol_id": "kotlin://io.legado.app.data.entities.ReadRecord"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-RD-CANCELLATION-CLOSE-001",
+      "revision": 1,
+      "semantic_key": "reader.session.close-cancellation",
+      "kind": "runtime_behavior",
+      "topic": "关闭与取消",
+      "statement": "取消注册阅读 UI 时，Android 清空 callback 和消息，取消预下载、下载子任务、主 scope 子任务、图片状态与当前章节排版；已启动数据库写入、Source 下载和 Service 队列是否全部停止没有单一结构化合同。",
+      "subject_keys": ["reader.session", "reader.cache", "reader.content"],
+      "depends_on": [{"id": "BKC-RD-SESSION-STATE-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d", "path": "app/src/main/java/io/legado/app/model/ReadBook.kt", "symbol_id": "kotlin://io.legado.app.model.ReadBook/unregister"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-RD-UI-CALLBACK-COUPLING-001",
+      "revision": 1,
+      "semantic_key": "reader.session.ui-callback-coupling",
+      "kind": "risk_or_anomaly",
+      "topic": "Reader 与 UI 回调耦合",
+      "statement": "ReadBook 直接通过单一 callback 驱动菜单、正文、页面、排版进度和书籍变化，并从 Activity 生命周期调用保存、同步与朗读；iOS 需要把 Reader 状态/事件与 SwiftUI Store、Route 和平台生命周期分离。",
+      "subject_keys": ["reader.session", "reader.layout"],
+      "depends_on": [{"id": "BKC-RD-SESSION-STATE-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d", "path": "app/src/main/java/io/legado/app/model/ReadBook.kt", "symbol_id": "kotlin://io.legado.app.model.ReadBook.CallBack"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "b116c77fa2d48c9d1a1013e60a92236f71bea1bc", "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt", "symbol_id": "kotlin://io.legado.app.ui.book.read.ReadBookActivity"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "human_decision"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-RD-CACHE-LAYERS-DECISION-001",
+      "revision": 1,
+      "semantic_key": "reader.cache.layering-decision",
+      "kind": "open_question",
+      "topic": "Reader 缓存分层",
+      "statement": "Android 将原始正文文件、替换后内容、TextChapter 页面、进度、图片和离线队列分散在多个对象与存储位置；iOS 需人工确定 acquisition、normalized document、layout projection、progress 与 image cache 的 key、所有者、持久性和失效规则。",
+      "subject_keys": ["reader.cache", "reader.content", "reader.layout", "reader.progress"],
+      "depends_on": [
+        {"id": "BKC-RD-CONTENT-NORMALIZE-001", "revision": 1},
+        {"id": "BKC-RD-LAYOUT-PROJECTION-001", "revision": 1},
+        {"id": "BKC-RD-OFFLINE-CACHE-QUEUE-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d", "path": "app/src/main/java/io/legado/app/model/ReadBook.kt", "symbol_id": "kotlin://io.legado.app.model.ReadBook"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "cdcbbf5696c1d2b018e25c2819c0461e8c667866", "path": "app/src/main/java/io/legado/app/model/CacheBook.kt", "symbol_id": "kotlin://io.legado.app.model.CacheBook"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "human_decision"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-RD-SESSION-BOUNDARY-DECISION-001",
+      "revision": 1,
+      "semantic_key": "reader.session.boundary-decision",
+      "kind": "open_question",
+      "topic": "ReaderKit 架构边界",
+      "statement": "Android 将正文获取、内容处理、排版、进度、缓存、朗读、同步和 UI callback 汇聚在全局 ReadBook；iOS 是否采用独立 ReaderKit、ReaderSession actor、ChapterContentProvider、NormalizedDocument、LayoutProjection 与 MainActor ReaderStore，必须由架构决策确定。",
+      "subject_keys": ["reader.session", "reader.content", "reader.layout", "reader.progress"],
+      "depends_on": [
+        {"id": "BKC-RD-LATE-RESULT-RISK-001", "revision": 1},
+        {"id": "BKC-RD-TYPED-CURSOR-DECISION-001", "revision": 1},
+        {"id": "BKC-RD-CACHE-LAYERS-DECISION-001", "revision": 1},
+        {"id": "BKC-RD-UI-CALLBACK-COUPLING-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d", "path": "app/src/main/java/io/legado/app/model/ReadBook.kt", "symbol_id": "kotlin://io.legado.app.model.ReadBook"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "b116c77fa2d48c9d1a1013e60a92236f71bea1bc", "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt", "symbol_id": "kotlin://io.legado.app.ui.book.read.ReadBookActivity"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "human_decision"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-KNOWLEDGE-READER-LIFECYCLE-001"
+}

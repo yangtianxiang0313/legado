@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-KNOWLEDGE-READER-LIFECYCLE-001",
+  "summary": "从冻结 Android commit 30bfdf70224ed3006f2777777ff414ebdb3a9eb3 提取 Reader 生命周期知识：BKP-READER-LIFECYCLE-001 以 23 条候选 Claim 区分阅读会话、缓存优先正文获取、显示归一化、增量排版、字符进度与页面投影、前中后三章策略、迟到结果、目录重映射、预取/离线缓存、朗读和关闭取消；DRV-READER-LIFECYCLE-001 提出独立 ReaderKit、ReaderSession actor、typed cursor、generation/revision 与分层缓存等决策问题，不把 Android 全局 ReadBook、Activity、Service 或三章窗口提升为 iOS 结论。",
+  "evidence": "ios/harness/evidence/runs/run-20260724T082154Z-ios-knowledge-reader-lifecycle-001-9e5fb86a.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 11,
+      "to_revision": 12,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "none",
+    "adr_refs": []
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null
+  },
+  "business_knowledge": {
+    "mode": "produce",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [
+      {
+        "kind": "packet",
+        "id": "BKP-READER-LIFECYCLE-001",
+        "revision": 1
+      },
+      {
+        "kind": "driver",
+        "id": "DRV-READER-LIFECYCLE-001",
+        "revision": 1
+      }
+    ],
+    "ledger_updates": [],
+    "none_reason": null
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项只沉淀 Android Reader 行为与待决 Architecture Driver，不接受或实现任何跨端行为"
+  },
+  "pitfalls": {
+    "records": [],
+    "none_reason": "本项未发现新的 Harness 缺陷；Android ReadBook 的全局状态和按 index 接收迟到结果已作为候选风险 Claim 记录"
+  },
+  "remaining_risks": [
+    "Packet 与 Driver 仍是 candidate/proposed；在知识 Review、Trusted Publisher promotion 和 Coverage baseline 前不能驱动 Swift 实现",
+    "首尾页、未完成排版、快速跳章、连续换书/换源、后台与异常终止的精确行为仍需 Android characterization",
+    "Reader 迟到结果只以章节 index 和当前窗口过滤，缺少 BookID、generation、content revision 与 layout key，需要结构化竞态场景",
+    "目录重排、重复标题、插章/删章、单章覆盖和整书换源后的 cursor 映射尚无 Android golden",
+    "朗读文本起点、段落位置、文本字符位置与媒体时间语义尚未类型化，不能沿用单一整数",
+    "离线缓存与预取队列主要驻留内存，重启恢复、重试预算、取消和完成统计需 characterization"
+  ],
+  "next_actions": [
+    "完成 UI Topology 与 Integrations 分域候选，补足 Reader 的导航、平台能力和发布约束 forces",
+    "起草 ReaderSession 状态机与 generation/content revision/document hash/layout key 结构化 characterization schema",
+    "为 TextCursor/AudioCursor、目录重映射、进度保存与缓存分层准备 ADR 决策表",
+    "在固定 iPhone/iPad 模拟器中把 Reader route、state、action availability、accessibility tree 与 screenshot 分开验收",
+    "最终由 ApplicationKit 将 SourceKit 的中立 SourceContent 映射为 ChapterContentProvider，禁止 ReaderKit 直接依赖 Source Runtime"
+  ],
+  "created_at": "2026-07-24T08:21:54Z"
+}

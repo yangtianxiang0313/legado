@@ -7,7 +7,7 @@
   "control_sha256": "b2a30fd1b81cc1d82d528f05f54cd3188e40aa141fac3b94c3cd5c2b0ff7a9b5",
   "authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
   "coverage_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-  "proposal_sha256": "4dc599a7435c715f351e2c22b70378b8039450c45e451c8eda9e2ccaef0f127f",
+  "proposal_sha256": "9a87cabcab0ff455063af391716d8718f129ab12beb59145a96ffa61f827aa77",
   "packets": [],
   "architecture_drivers": [],
   "coverage_ledgers": [],
@@ -25,6 +25,12 @@
       "sha256": "6c368b570fc4ab9900f12786e508b06bf12e4279f2f9be7caee20468f3c79e07"
     },
     {
+      "id": "BKP-READER-LIFECYCLE-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/packets/proposals/BKP-READER-LIFECYCLE-001/r0001.json",
+      "sha256": "054d8d312e4a85a17293e6e10e53a2e8783ea19724cac8e76637ea0f552702c6"
+    },
+    {
       "id": "BKP-SOURCE-RUNTIME-001",
       "revision": 1,
       "path": "ios/project/business-knowledge/packets/proposals/BKP-SOURCE-RUNTIME-001/r0001.json",
@@ -35,6 +41,12 @@
       "revision": 1,
       "path": "ios/project/business-knowledge/drivers/proposals/DRV-BOOK-IDENTITY-001/r0001.json",
       "sha256": "6b67089a6ec964dee6a9603ad0e49a2338db794daa40748455ab2a4fa6c4ec17"
+    },
+    {
+      "id": "DRV-READER-LIFECYCLE-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/drivers/proposals/DRV-READER-LIFECYCLE-001/r0001.json",
+      "sha256": "8257bbc49bc91eb4438a483f04f1a261471d4df59e86c9e8806b655e5109a9bd"
     },
     {
       "id": "DRV-SOURCE-RUNTIME-BOUNDARY-001",

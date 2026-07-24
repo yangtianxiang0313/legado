@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "run_id": "run-20260724T082154Z-ios-knowledge-reader-lifecycle-001-9e5fb86a",
+  "work_item_id": "IOS-KNOWLEDGE-READER-LIFECYCLE-001",
+  "work_item_sha256": "1956a40e68b5be8aa80a1c1a1ce0d7d74e1084570f0cf6f61767ba1a4706a2c0",
+  "result": "passed",
+  "inputs": {
+    "base_commit": "cbf1c52a5b134c9a4206eb8636eb963df9bc29e7",
+    "head_commit": "cbf1c52a5b134c9a4206eb8636eb963df9bc29e7",
+    "snapshot_sha256": "4e4076b53dbbe29187fdd8f127eedac0b811b6b436291ee765400314d30442bf",
+    "baseline_sha256": "eeeaf0017b79a2420faf73c686a110a2d0372b2da865e42aa8db360fd3015e93",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
+    "architecture_rules_sha256": "51ebc4cff5921643f95d8a045c21ea85cad046acb99ed56026f77bf842642fa5",
+    "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+    "golden_manifest_sha256": "bdfab4595035e6ce3706380b88bd0ebfdff6773b77055c05988c4aa2dd24e597",
+    "fixture_manifest_sha256": "7ea6c2f30f258a65bfeb67ebc8bc3c7d9e283875f31731b513b7380d5f2aff2c",
+    "dependency_lock_sha256": null,
+    "source_lab_control_sha256": "73282c8b72a7db793887290ad2bfff707c61ea8fe57a583ef9bd2e3c3c3b9f2d",
+    "android_intake_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122",
+    "business_knowledge_control_sha256": "b2a30fd1b81cc1d82d528f05f54cd3188e40aa141fac3b94c3cd5c2b0ff7a9b5",
+    "business_knowledge_authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
+    "business_knowledge_coverage_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "business_knowledge_proposal_sha256": "9a87cabcab0ff455063af391716d8718f129ab12beb59145a96ffa61f827aa77",
+    "android_requirement_selection_sha256": null,
+    "source_lab_selection_sha256": null,
+    "knowledge_selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "environment": {
+      "platform": "macOS-26.4.1-arm64-arm-64bit",
+      "python": "3.9.6",
+      "xcode": "Xcode 26.0\nBuild version 17A324",
+      "swift": "Apple Swift version 6.2 (swiftlang-6.2.0.19.9 clang-1700.3.19.1)\nTarget: arm64-apple-macosx26.0"
+    }
+  },
+  "changes": {
+    "paths": [
+      "ios/project/business-knowledge/drivers/proposals/DRV-READER-LIFECYCLE-001/r0001.json",
+      "ios/project/business-knowledge/packets/proposals/BKP-READER-LIFECYCLE-001/r0001.json"
+    ],
+    "changed_lines_approximate": 658,
+    "file_fingerprints": {
+      "ios/project/business-knowledge/drivers/proposals/DRV-READER-LIFECYCLE-001/r0001.json": "file:0o644:8257bbc49bc91eb4438a483f04f1a261471d4df59e86c9e8806b655e5109a9bd",
+      "ios/project/business-knowledge/packets/proposals/BKP-READER-LIFECYCLE-001/r0001.json": "file:0o644:054d8d312e4a85a17293e6e10e53a2e8783ea19724cac8e76637ea0f552702c6"
+    },
+    "dirty_snapshot": {
+      "ios/project/business-knowledge/catalog.json": "file:0o644:8bc2adc3d308f86abd013b3c8d2148efcd6392d45bf16e154c8e6640a49c3f27",
+      "ios/project/business-knowledge/drivers/proposals/DRV-READER-LIFECYCLE-001/r0001.json": "file:0o644:8257bbc49bc91eb4438a483f04f1a261471d4df59e86c9e8806b655e5109a9bd",
+      "ios/project/business-knowledge/packets/proposals/BKP-READER-LIFECYCLE-001/r0001.json": "file:0o644:054d8d312e4a85a17293e6e10e53a2e8783ea19724cac8e76637ea0f552702c6",
+      "ios/project/events.jsonl": "file:0o644:55b9d621677863c2ae604b31ad607de5b69fd7cb8b76d2ba7b3e164f2cdf9b1a",
+      "ios/project/state.json": "file:0o644:523242e3fc499363fbbb39c1a3376da759b6d2c6033248f144d4c596fb951988",
+      "ios/project/status.md": "file:0o644:521eeb43750f10065e0af0be3250219bd75e3c548164cf7fd666b313e50f0680"
+    },
+    "diff_sha256": "8f22efb6e02273db4c0bcff6c79c550c610231a55bc956da0491541814eda4cd"
+  },
+  "policy_errors": [],
+  "architecture_errors": [],
+  "architecture_warnings": [],
+  "checks": [
+    {
+      "id": "android-intake-contract",
+      "argv": [
+        "python3",
+        "-B",
+        "ios/harness/android-intake/android_intake.py",
+        "doctor",
+        "--root",
+        ".",
+        "--work-item",
+        "IOS-KNOWLEDGE-READER-LIFECYCLE-001"
+      ],
+      "executable_path": "/usr/bin/python3",
+      "definition_sha256": "1bf88f85f3f416e092d2c3bf30c0b86ae55ad95e050f05321da60bed60f3d5f8",
+      "cwd": ".",
+      "started_at": "2026-07-24T08:21:35Z",
+      "duration_ms": 429,
+      "timeout_seconds": 90,
+      "timed_out": false,
+      "process_leak": false,
+      "cleanup_error": null,
+      "exit_code": 0,
+      "passed": true,
+      "stdout_sha256": "84f6b9d590a230c755728f08a7cc4071122d7bd66d14c218c852a45cdc0a64fe",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_tail": "android-intake: OK\n",
+      "stderr_tail": ""
+    },
+    {
+      "id": "dependency-policy",
+      "argv": [
+        "python3",
+        "ios/harness/probes/dependency_contract.py",
+        "--root",
+        "."
+      ],
+      "executable_path": "/usr/bin/python3",
+      "definition_sha256": "eca96cb1b69567829ed8396386b0449da8c0d6e7295a00f1decfb60430ff1153",
+      "cwd": ".",
+      "started_at": "2026-07-24T08:21:36Z",
+      "duration_ms": 1667,
+      "timeout_seconds": 90,
+      "timed_out": false,
+      "process_leak": false,
+      "cleanup_error": null,
+      "exit_code": 0,
+      "passed": true,
+      "stdout_sha256": "17595a1d68cdc5b52c010f46dff48514afa3fa3cf0215cdea7ae8eff38677c0a",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_tail": "DEPENDENCY_CONTRACT: OK\n",
+      "stderr_tail": ""
+    },
+    {
+      "id": "harness-tests",
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "ios/harness/tests",
+        "-p",
+        "test_*.py"
+      ],
+      "executable_path": "/usr/bin/python3",
+      "definition_sha256": "307f335e883f02e96ad97ecbda4c210435c0b955e2bcb9e46db9dc7b0d02c285",
+      "cwd": ".",
+      "started_at": "2026-07-24T08:21:37Z",
+      "duration_ms": 16377,
+      "timeout_seconds": 60,
+      "timed_out": false,
+      "process_leak": false,
+      "cleanup_error": null,
+      "exit_code": 0,
+      "passed": true,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "f910caeafeccace055aaba80a3a7eb699a66570d641fbe8f1677268e9caac2c8",
+      "stdout_tail": "",
+      "stderr_tail": "......................................................................\n----------------------------------------------------------------------\nRan 70 tests in 15.966s\n\nOK\n"
+    }
+  ],
+  "failure": null,
+  "started_at": "2026-07-24T08:21:35Z",
+  "finished_at": "2026-07-24T08:21:54Z",
+  "reproduction": "python3 ios/harness/harness.py verify IOS-KNOWLEDGE-READER-LIFECYCLE-001"
+}
