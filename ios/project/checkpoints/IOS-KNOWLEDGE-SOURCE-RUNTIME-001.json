@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-KNOWLEDGE-SOURCE-RUNTIME-001",
+  "summary": "从冻结 Android commit 30bfdf70224ed3006f2777777ff414ebdb3a9eb3 提取书源运行时知识：BKP-SOURCE-RUNTIME-001 以 30 条候选 Claim 明确区分 BookSource 声明、RequestPlan 编译、Transport/Cookie/限流、规则 parser/后端、SourceSession 以及搜索、发现、详情、目录、正文五阶段流水线，并覆盖分页、动态 Web、登录/付费和结构化错误边界；DRV-SOURCE-RUNTIME-BOUNDARY-001 只记录独立 Package、能力隔离、确定性与可验证性 forces，不把 Android 类图或三方库直接提升为 iOS 架构结论。",
+  "evidence": "ios/harness/evidence/runs/run-20260724T074328Z-ios-knowledge-source-runtime-001-aead99cc.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 10,
+      "to_revision": 11,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "none",
+    "adr_refs": []
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null
+  },
+  "business_knowledge": {
+    "mode": "produce",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [
+      {
+        "kind": "packet",
+        "id": "BKP-SOURCE-RUNTIME-001",
+        "revision": 1
+      },
+      {
+        "kind": "driver",
+        "id": "DRV-SOURCE-RUNTIME-BOUNDARY-001",
+        "revision": 1
+      }
+    ],
+    "ledger_updates": [],
+    "none_reason": null
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项只沉淀 Android 书源运行时知识候选与待决 Architecture Driver，不接受或实现任何跨端行为"
+  },
+  "pitfalls": {
+    "records": [],
+    "none_reason": "本项未发现新的非显然可复发 Harness 或实现缺陷；PIT-0010 已由前置修复工作项关闭"
+  },
+  "remaining_risks": [
+    "Packet 与 Driver 仍是 candidate/proposed；在知识与架构 Review、Trusted Publisher promotion 和 Coverage baseline 前不能驱动 Swift 实现",
+    "URL JS/page/key 求值、header 覆盖、GET/POST 编码、charset/redirect/retry、Cookie、限流和取消的精确结果仍需 Android characterization",
+    "CSS/XPath/JSONPath/Regex/JS 的空值、列表/单值 coercion、组合优先级、相对 URL 和非法输入语义没有结构化 Android golden",
+    "目录与正文串行/并发分页、循环终止、部分失败、登录/付费和动态 WebView 的可观察结果及安全策略尚未裁决",
+    "真实书源 capture 只能提供输入与 provenance；必须由冻结 Android runner 产生 expected，再由 SourceLab 稳定重放"
+  ],
+  "next_actions": [
+    "完成 Reader Lifecycle、UI Topology 与 Integrations 分域候选，补足 Source Runtime 的上下游 forces",
+    "建立真实书源 corpus、SourceLab case-role 矩阵和冻结 Android runner，优先固定 RequestPlan、规则 coercion、分页及错误阶段",
+    "起草 SourceKit 独立 Package 的 API/SPI、SourceSession actor、RuntimePolicy 与 StoreSafe/FullCompat 链接闭包 ADR",
+    "把书源结构化验收定义为 canonical execution envelope 与 first-divergence，而不是按书源数量穷举 TDD",
+    "在最终架构 Review Bundle 中展示候选 Claim、Driver、未决 characterization 和不允许进入实现队列的边界"
+  ],
+  "created_at": "2026-07-24T07:43:28Z"
+}

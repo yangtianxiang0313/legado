@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 10,
+  "revision": 11,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -35,14 +35,14 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260724T072655Z-ios-harness-timeout-cleanup-001-dfa83366.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260724T074328Z-ios-knowledge-source-runtime-001-aead99cc.json",
   "next_actions": [
-    "恢复 IOS-KNOWLEDGE-SOURCE-RUNTIME-001，完成书源格式、规则后端、请求/session 与五阶段执行流水线知识候选",
-    "materialize 书源/规则/执行流水线、阅读会话/正文/进度/预取、UI topology 与外部集成等剩余分域扫描，并在候选齐备后由 Trusted Publisher 原子发布 Packet/Driver、Coverage 与 Catalog",
-    "为换源、目录重排、阅读落点、删除保留、缓存完成态和 WebDAV 冲突建立 Android characterization 任务与结构化 expected",
-    "待依赖领域扫描与 characterization 齐备后，用 ADR 裁决 BookID、来源实例、子对象归属、进度坐标与迁移策略",
-    "用仓外 Touch ID/FIDO2 helper、Approval v2（attempt/Evidence/Gate policy 绑定）和可恢复的受保护 CI journal/CAS 替代 local_unverified v1 发布审批"
+    "materialize 阅读会话/正文/进度/预取、UI topology 与外部集成三个剩余分域扫描，并在候选齐备后准备架构 Review Bundle",
+    "为 URL 编译、规则 coercion、分页终止、登录/付费、动态 Web、换源和阅读落点建立 Android characterization 与结构化 expected",
+    "建立真实书源 capture corpus 与分层 SourceLab 场景，按源码能力矩阵覆盖 nominal、boundary、malformed 与 denied case-role",
+    "候选知识与架构 Review 通过后，由 Trusted Publisher 原子发布 Packet/Driver、Coverage 与 Catalog，再接受 Requirement/ADR",
+    "待依赖领域扫描齐备后，用 ADR 裁决 SourceKit API/SPI、Book Identity、Reader typed cursor、UI route graph 与 Integration profile"
   ],
-  "updated_at": "2026-07-24T07:26:56Z",
-  "updated_by": "IOS-HARNESS-TIMEOUT-CLEANUP-001"
+  "updated_at": "2026-07-24T07:43:28Z",
+  "updated_by": "IOS-KNOWLEDGE-SOURCE-RUNTIME-001"
 }

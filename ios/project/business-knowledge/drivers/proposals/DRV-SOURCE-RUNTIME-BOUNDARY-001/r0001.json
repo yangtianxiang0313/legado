@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-SOURCE-RUNTIME-BOUNDARY-001",
+  "revision": 1,
+  "status": "proposed",
+  "semantic_key": "source.execution.runtime-boundaries",
+  "title": "独立、可验证且按能力隔离的 Source Runtime",
+  "claim_refs": [
+    {"id": "BKC-SR-FORMAT-CONTRACT-001", "revision": 1},
+    {"id": "BKC-SR-FORMAT-EXTENSIBILITY-001", "revision": 1},
+    {"id": "BKC-SR-URL-TEMPLATE-COMPILE-001", "revision": 1},
+    {"id": "BKC-SR-URL-OPTION-CONTRACT-001", "revision": 1},
+    {"id": "BKC-SR-TRANSPORT-DISPATCH-001", "revision": 1},
+    {"id": "BKC-SR-RESPONSE-DECODE-001", "revision": 1},
+    {"id": "BKC-SR-RATE-LIMIT-STATE-001", "revision": 1},
+    {"id": "BKC-SR-COOKIE-LAYERS-001", "revision": 1},
+    {"id": "BKC-SR-RULE-DATA-VARIABLES-001", "revision": 1},
+    {"id": "BKC-SR-JS-HOST-CAPABILITY-001", "revision": 1},
+    {"id": "BKC-SR-RULE-GRAMMAR-001", "revision": 1},
+    {"id": "BKC-SR-RULE-BACKEND-DISPATCH-001", "revision": 1},
+    {"id": "BKC-SR-RULE-COMBINATION-COERCION-001", "revision": 1},
+    {"id": "BKC-SR-RULE-URL-NORMALIZATION-001", "revision": 1},
+    {"id": "BKC-SR-PAGINATION-TERMINATION-001", "revision": 1},
+    {"id": "BKC-SR-DYNAMIC-WEB-RUNTIME-001", "revision": 1},
+    {"id": "BKC-SR-AUTH-PAID-BOUNDARY-001", "revision": 1},
+    {"id": "BKC-SR-ERROR-STAGE-CONTRACT-001", "revision": 1},
+    {"id": "BKC-SR-RUNTIME-BOUNDARY-DECISION-001", "revision": 1}
+  ],
+  "forces": [
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "BookSource JSON、请求模板、规则组合、五阶段流水线及 Android coercion 可逐阶段比对，同时允许实现技术与 Android 不同。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "security",
+      "scenario": "不可信书源、脚本、Web 内容与网络响应不能直接获得凭据、文件、数据库、任意 Host API 或跨来源状态。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "isolation",
+      "scenario": "每个 SourceSession 的 Cookie、变量、JS context、限流和取消状态相互隔离，多个搜索与阅读任务不会串源。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "determinism",
+      "scenario": "相同 SourceDefinition、Input、Clock、Transport fixture 与 RuntimePolicy 产生可 canonicalize 的 RequestPlan、stage trace 和 Pipeline Result。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "testability",
+      "scenario": "格式、URL compiler、规则 AST/backend、Transport、session 与各业务 stage 可分别以离线 fixture 验证，并由 Android golden 提供运行 expected。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "observability",
+      "scenario": "每次执行具有 TraceID，并明确记录模板、请求、解码、节点选择、字段、脚本、分页与保存阶段的脱敏输入输出摘要。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "evolvability",
+      "scenario": "替换 DOM、XPath、JSONPath、Regex、JavaScript、WebView 或 HTTP adapter 不改变 Domain、Feature 与 SourceDefinition 公共合同。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "concurrency",
+      "scenario": "跨源调度、单源频率、取消和超时符合 Swift 6 隔离规则；迟到结果不能覆盖更新的 session 或页面请求。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "portability",
+      "scenario": "Source Runtime 可作为不依赖 SwiftUI/UIKit/数据库具体实现的独立 Package，被原生 UI、CLI、SourceLab 和后续定制壳复用。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "profile_integrity",
+      "scenario": "StoreSafe 与 FullCompat 在 Target 链接闭包和 RuntimePolicy 两层限制脚本、动态页面、任意导入、私网和开发调试能力。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "performance",
+      "scenario": "多源搜索、目录和正文预取在受控并发与资源预算内完成，DOM/脚本/响应对象不会跨 stage 无界持有。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "privacy",
+      "scenario": "Cookie、Authorization、书源变量、响应正文和脚本错误在 trace、golden 与诊断 UI 中默认脱敏。",
+      "criticality": "critical"
+    }
+  ],
+  "decision_questions": [
+    "SourceFormat、RuleSyntax/AST、RuleBackends、SourceRuntime、Transport 与 WebRuntime 应拆成哪些 SwiftPM Target 或 Package，公开依赖方向是什么？",
+    "SourceDefinition 的已知字段、未知字段、规范化视图与原始 JSON 如何同时保存并保证无损 round-trip？",
+    "URL template 应编译成什么稳定 RequestPlan；变量、page/key、JS、header、body、charset、retry 和 WebView option 的求值顺序如何冻结？",
+    "Cookie、source variables、chapter variables、share scope、限流记录与 JS context 分别由哪个 SourceSession/actor 拥有，生命周期到何时结束？",
+    "CSS、XPath、JSONPath、Regex 和 JavaScript 的兼容级别、方言与 fallback 如何由 Android corpus/characterization 证明？",
+    "规则 parser/AST 是单一中间表示还是保留 backend-specific 节点；如何支持未知或未来规则而不静默降级？",
+    "StoreSafe 是否只允许签名声明式规则；FullCompat 的任意 JS、WebView、私网、远程导入和 SourceDeveloper 如何形成不可绕过的链接闭包？",
+    "JavaScript Host API 的最小白名单是什么；网络、Cookie、缓存、书籍刷新等副作用采用命令端口还是直接对象桥接？",
+    "搜索、发现、详情、目录和正文是否共享统一 Pipeline executor；每阶段的 typed input/output、取消点和 retry 边界是什么？",
+    "分页如何检测空值、自环、重复 URL 与资源上限；部分页失败返回 partial 还是整体失败？",
+    "响应 charset、重定向、相对 URL 和错误 coercion 的 expected 如何由 Android runner 固定并进入 canonical envelope？",
+    "SourceError/Trace 的稳定 stage code、retryability、recovery 和脱敏规则是什么；哪些诊断仅开发 profile 可见？",
+    "SourceLab 的行为覆盖矩阵和真实书源 corpus 如何分工；哪些场景需要本地 HTTP，哪些只需 FixtureTransport？",
+    "多源搜索的全局并发、单源 concurrentRate、公平性、超时和取消策略如何避免复制 Android 全局 mutable map？",
+    "独立 Source Runtime 的公开 SPI 如何保证 UI 定制、CLI 和未来平台复用，同时不泄漏 DOM、JSValue、URLSession 或数据库类型？"
+  ],
+  "resolution": {
+    "state": "requires_characterization",
+    "adr_refs": [],
+    "work_item_refs": []
+  },
+  "promotion": null,
+  "supersedes": null,
+  "created_by": "IOS-KNOWLEDGE-SOURCE-RUNTIME-001"
+}

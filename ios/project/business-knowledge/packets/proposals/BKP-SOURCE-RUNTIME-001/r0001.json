@@ -1,0 +1,755 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-SOURCE-RUNTIME-001",
+  "revision": 1,
+  "status": "candidate",
+  "semantic_key": "source.runtime-pipeline",
+  "title": "书源声明、请求编译、规则执行与五阶段流水线知识",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "discovery.catalog",
+      "source.execution",
+      "source.management"
+    ],
+    "capability_refs": [
+      "CAP-KNOWLEDGE-CONTROL"
+    ],
+    "subject_keys": [
+      "source.cookie",
+      "source.format",
+      "source.pipeline",
+      "source.request",
+      "source.rule",
+      "source.script",
+      "source.session",
+      "source.transport"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-SR-FORMAT-CONTRACT-001",
+      "revision": 1,
+      "semantic_key": "source.format.android-declaration-contract",
+      "kind": "composite_static_fact",
+      "topic": "Android BookSource 声明合同",
+      "statement": "BookSource 以 bookSourceUrl 作为 Android 持久键，并声明名称、分组、类型、启停、发现开关、排序、header、Cookie、并发、登录、JS library、封面解密以及搜索、发现、详情、目录、正文等规则段；这些字段构成迁移输入，但数据库主键和 Parcelable/Room 形态不是 iOS 领域边界。",
+      "subject_keys": ["source.format", "source.management"],
+      "depends_on": [],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "d2ac6002cbaabe508f72a77e138f95b376c424c4", "path": "app/src/main/java/io/legado/app/data/entities/BookSource.kt", "symbol_id": "kotlin://io.legado.app.data.entities/BookSource"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "none"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-FORMAT-EXTENSIBILITY-001",
+      "revision": 1,
+      "semantic_key": "source.format.lossless-evolution-decision",
+      "kind": "open_question",
+      "topic": "书源格式无损演进",
+      "statement": "Android 通过固定实体与嵌套规则对象反序列化书源，未知字段的跨版本保留并非源码保证；iOS 需人工决定原始 JSON、已知字段与未知字段如何分层保存，确保编辑和导出不会静默丢失未来扩展。",
+      "subject_keys": ["source.format"],
+      "depends_on": [{"id": "BKC-SR-FORMAT-CONTRACT-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "d2ac6002cbaabe508f72a77e138f95b376c424c4", "path": "app/src/main/java/io/legado/app/data/entities/BookSource.kt", "symbol_id": "kotlin://io.legado.app.data.entities/BookSource.Converters"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "2cd48c6e1696b66bc71f90da7810353669d4ae5c", "path": "app/src/main/java/io/legado/app/data/entities/BookSourcePart.kt", "symbol_id": "kotlin://io.legado.app.data.entities/BookSourcePart"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "human_decision"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-SOURCE-POLICY-FLAGS-001",
+      "revision": 1,
+      "semantic_key": "source.management.execution-policy-flags",
+      "kind": "composite_static_fact",
+      "topic": "书源管理与执行开关",
+      "statement": "enabled、enabledExplore、bookSourceType、bookSourceGroup、customOrder、weight、respondTime、enabledCookieJar 与 concurrentRate 同时影响可选来源、发现入口、排序和运行行为；它们应被区分为用户配置、运行策略与观测统计，而不是合并进不可变规则定义。",
+      "subject_keys": ["source.format", "source.management", "source.session"],
+      "depends_on": [{"id": "BKC-SR-FORMAT-CONTRACT-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "d2ac6002cbaabe508f72a77e138f95b376c424c4", "path": "app/src/main/java/io/legado/app/data/entities/BookSource.kt", "symbol_id": "kotlin://io.legado.app.data.entities/BookSource"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "61ac5400f999a0d38d80db3477c8f9f833b1de4d", "path": "app/src/main/java/io/legado/app/help/source/BookSourceExtensions.kt", "symbol_id": "kotlin://io.legado.app.help.source/BookSourceExtensions"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "none"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-RULE-SECTION-SCHEMA-001",
+      "revision": 1,
+      "semantic_key": "source.rule.stage-section-schema",
+      "kind": "composite_static_fact",
+      "topic": "五阶段规则段",
+      "statement": "搜索与发现规则描述列表节点、字段和下一页，详情规则描述书籍字段与目录 URL，目录规则描述章节列表和下一页，正文规则描述正文、下一页与替换；这些声明共同定义阶段输入输出，但不规定 iOS 的类或 Target 数量。",
+      "subject_keys": ["source.format", "source.pipeline", "source.rule"],
+      "depends_on": [{"id": "BKC-SR-FORMAT-CONTRACT-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "ba8cda4543a4afb507224ba57f0f1f5ab4ad5594", "path": "app/src/main/java/io/legado/app/data/entities/rule/SearchRule.kt", "symbol_id": "kotlin://io.legado.app.data.entities.rule/SearchRule"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "6871515ea685dc4cb2245ecc45c952604634267d", "path": "app/src/main/java/io/legado/app/data/entities/rule/ExploreRule.kt", "symbol_id": "kotlin://io.legado.app.data.entities.rule/ExploreRule"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "54fd639003b4b4780d095c5afa379eac25a8620b", "path": "app/src/main/java/io/legado/app/data/entities/rule/BookInfoRule.kt", "symbol_id": "kotlin://io.legado.app.data.entities.rule/BookInfoRule"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "f525e912340257125059b6ad87d0cf7e73d6a1dc", "path": "app/src/main/java/io/legado/app/data/entities/rule/TocRule.kt", "symbol_id": "kotlin://io.legado.app.data.entities.rule/TocRule"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "aef453668216619314f556bdf5d100733c9c5414", "path": "app/src/main/java/io/legado/app/data/entities/rule/ContentRule.kt", "symbol_id": "kotlin://io.legado.app.data.entities.rule/ContentRule"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "none"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-URL-TEMPLATE-COMPILE-001",
+      "revision": 1,
+      "semantic_key": "source.request.url-template-compilation",
+      "kind": "runtime_behavior",
+      "topic": "URL 模板编译顺序",
+      "statement": "AnalyzeUrl 先执行 @js/<js> 片段，再求值 {{js}}，随后替换关键字和页码分支，最后把相对地址转为绝对 URL 并解析附加 option；嵌套、空值、数字 coercion 和多分支页码的精确结果需要 Android characterization。",
+      "subject_keys": ["source.request", "source.script"],
+      "depends_on": [{"id": "BKC-SR-RULE-SECTION-SCHEMA-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da", "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt", "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/initUrl"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-URL-OPTION-CONTRACT-001",
+      "revision": 1,
+      "semantic_key": "source.request.url-option-contract",
+      "kind": "composite_static_fact",
+      "topic": "URL option 请求合同",
+      "statement": "URL option 可覆盖 method、headers、body、response type、charset、retry、useWebView、webJs、post-compile JS 与 serverID；因此 URL 字符串不是 Transport 请求本身，必须先编译为显式 RequestPlan。",
+      "subject_keys": ["source.request", "source.transport"],
+      "depends_on": [{"id": "BKC-SR-URL-TEMPLATE-COMPILE-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da", "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt", "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/analyzeUrl"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "none"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-REQUEST-FIELD-ENCODING-001",
+      "revision": 1,
+      "semantic_key": "source.request.field-encoding-runtime",
+      "kind": "runtime_behavior",
+      "topic": "查询与表单字段编码",
+      "statement": "GET query 与非 JSON/XML POST body 会被拆为字段；值可能保留既有 URL encoding、按 UTF-8 或声明 charset 编码，或采用 escape 模式。重复键、空键值、非法 charset 与混合已编码文本的结果需 Android characterization。",
+      "subject_keys": ["source.request"],
+      "depends_on": [{"id": "BKC-SR-URL-OPTION-CONTRACT-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da", "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt", "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/analyzeFields"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-TRANSPORT-DISPATCH-001",
+      "revision": 1,
+      "semantic_key": "source.transport.request-dispatch-contract",
+      "kind": "runtime_behavior",
+      "topic": "请求派发与响应类型",
+      "statement": "AnalyzeUrl 根据 GET/POST、body 类型、header、proxy、read timeout 和 source policy 构造请求，可返回字符串、字节、流或媒体相关结果；执行前后还参与限流和 Cookie 合并。真实请求等价性必须通过固定 RequestPlan 与 Android characterization 对齐。",
+      "subject_keys": ["source.request", "source.transport"],
+      "depends_on": [
+        {"id": "BKC-SR-URL-OPTION-CONTRACT-001", "revision": 1},
+        {"id": "BKC-SR-REQUEST-FIELD-ENCODING-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da", "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt", "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/getStrResponseAwait"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "b4ead2bb5a02cebe9e5bf7e42fbced5f67785485", "path": "app/src/main/java/io/legado/app/help/http/OkHttpUtils.kt", "symbol_id": "kotlin://io.legado.app.help.http/OkHttpUtils"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-RESPONSE-DECODE-001",
+      "revision": 1,
+      "semantic_key": "source.transport.response-decoding-runtime",
+      "kind": "runtime_behavior",
+      "topic": "响应解码与最终 URL",
+      "statement": "字符串响应同时携带 body 与最终 URL，正文解码可能依据声明 charset、响应信息或内容探测；重定向后的 URL 会继续参与 baseUrl 与相对链接求值。BOM、错误声明、压缩与非文本响应的优先级需 Android characterization。",
+      "subject_keys": ["source.transport", "source.rule"],
+      "depends_on": [{"id": "BKC-SR-TRANSPORT-DISPATCH-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da", "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt", "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/getStrResponseAwait"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "0e11ea3db2ec8f03b583ec5742a11a56b0e800b3", "path": "app/src/main/java/io/legado/app/help/http/StrResponse.kt", "symbol_id": "kotlin://io.legado.app.help.http/StrResponse"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-RETRY-REDIRECT-001",
+      "revision": 1,
+      "semantic_key": "source.transport.retry-redirect-runtime",
+      "kind": "runtime_behavior",
+      "topic": "重试、超时与重定向",
+      "statement": "请求 option 可声明 retry，调用方还会检查重定向后是否仍匹配当前书源；哪些网络错误可重试、重试是否重新执行脚本/限流、取消传播和跨域重定向处理均需 characterization，不能由源码分支直接当作跨端 expected。",
+      "subject_keys": ["source.transport", "source.pipeline"],
+      "depends_on": [
+        {"id": "BKC-SR-TRANSPORT-DISPATCH-001", "revision": 1},
+        {"id": "BKC-SR-RESPONSE-DECODE-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da", "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt", "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "af03cf51cef2eb31f54b8240c39e868ceabdba54", "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt", "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook/checkRedirect"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-RATE-LIMIT-STATE-001",
+      "revision": 1,
+      "semantic_key": "source.session.rate-limit-shared-state",
+      "kind": "risk_or_anomaly",
+      "topic": "单源并发与频率状态",
+      "statement": "AnalyzeUrl 用进程级 concurrentRecordMap 按 source key 共享限流记录，并把 concurrentRate 同时解释为最小间隔或次数/时间窗；异常配置会降级为不等待。iOS 需保留可观测限流语义但不能复制无隔离的可变 static 状态。",
+      "subject_keys": ["source.session", "source.transport"],
+      "depends_on": [{"id": "BKC-SR-SOURCE-POLICY-FLAGS-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da", "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt", "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/fetchStart"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-COOKIE-LAYERS-001",
+      "revision": 1,
+      "semantic_key": "source.cookie.persistent-session-merge-runtime",
+      "kind": "runtime_behavior",
+      "topic": "Cookie 持久层与会话层",
+      "statement": "请求 Cookie 可来自持久 CookieStore、内存 sessionCookie、显式 header 与响应 Set-Cookie，并按 enabledCookieJar 决定自动保存；domain 归一化、同名覆盖、path/expiry、跨重定向与清理结果需要 characterization。",
+      "subject_keys": ["source.cookie", "source.session", "source.transport"],
+      "depends_on": [{"id": "BKC-SR-TRANSPORT-DISPATCH-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "fbd720ca3df874038f6d8e232a671958e5217632", "path": "app/src/main/java/io/legado/app/help/http/CookieManager.kt", "symbol_id": "kotlin://io.legado.app.help.http/CookieManager"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "bc17fab6ccf68d507a045b08ad5418da1ba410b5", "path": "app/src/main/java/io/legado/app/help/http/CookieStore.kt", "symbol_id": "kotlin://io.legado.app.help.http/CookieStore"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da", "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt", "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-RULE-DATA-VARIABLES-001",
+      "revision": 1,
+      "semantic_key": "source.session.rule-variable-scope",
+      "kind": "runtime_behavior",
+      "topic": "规则变量读写与作用域",
+      "statement": "URL 与规则脚本可通过 put/get 读写 chapter 或 RuleData 变量，并对 bookName/title 等提供特殊映射；变量会跨同一流水线的后续字段和请求传播。覆盖优先级、生命周期、并发隔离和失败回滚需要 characterization。",
+      "subject_keys": ["source.rule", "source.script", "source.session"],
+      "depends_on": [{"id": "BKC-SR-URL-TEMPLATE-COMPILE-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "ba17c882ede5e1a3dd4de4d7a0598f9f27527efd", "path": "app/src/main/java/io/legado/app/model/analyzeRule/RuleData.kt", "symbol_id": "kotlin://io.legado.app.model.analyzeRule/RuleData"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "7bb96778bbf33c5277867cd8a1e8db6ea19090df", "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt", "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeRule/put"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da", "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt", "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/put"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-JS-HOST-CAPABILITY-001",
+      "revision": 1,
+      "semantic_key": "source.script.android-host-capability-risk",
+      "kind": "risk_or_anomaly",
+      "topic": "JavaScript Host API 能力边界",
+      "statement": "Android 脚本上下文可见 source、book、chapter、cookie、cache、result、baseUrl、网络辅助与 JsExtensions，并可触发重新获取书籍/目录等副作用；这证明兼容面远超纯表达式，也形成网络、凭据、存储和可变对象越权风险。",
+      "subject_keys": ["source.script", "source.session"],
+      "depends_on": [
+        {"id": "BKC-SR-RULE-DATA-VARIABLES-001", "revision": 1},
+        {"id": "BKC-SR-COOKIE-LAYERS-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "7bb96778bbf33c5277867cd8a1e8db6ea19090df", "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt", "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeRule/evalJS"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da", "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt", "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/evalJS"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "ceda1dd22c5d23fb80ed2fc4b2599266f096eaa6", "path": "app/src/main/java/io/legado/app/help/JsExtensions.kt", "symbol_id": "kotlin://io.legado.app.help/JsExtensions"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "human_decision"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-RULE-GRAMMAR-001",
+      "revision": 1,
+      "semantic_key": "source.rule.composite-grammar",
+      "kind": "composite_static_fact",
+      "topic": "组合规则语法",
+      "statement": "RuleAnalyzer 与 AnalyzeRule 识别平衡括号、内嵌代码、规则分隔、all-in-one、put、replace、JS 与不同解析模式，并把字符串拆为有序 SourceRule；兼容实现需要显式 parser/AST，不能在各 Feature 中临时切字符串。",
+      "subject_keys": ["source.rule"],
+      "depends_on": [{"id": "BKC-SR-RULE-SECTION-SCHEMA-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "5fd91e15d077d83aa89772ee9306d943640017de", "path": "app/src/main/java/io/legado/app/model/analyzeRule/RuleAnalyzer.kt", "symbol_id": "kotlin://io.legado.app.model.analyzeRule/RuleAnalyzer"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "7bb96778bbf33c5277867cd8a1e8db6ea19090df", "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt", "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeRule/splitSourceRule"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "none"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-RULE-BACKEND-DISPATCH-001",
+      "revision": 1,
+      "semantic_key": "source.rule.backend-dispatch-runtime",
+      "kind": "runtime_behavior",
+      "topic": "规则后端选择",
+      "statement": "AnalyzeRule 根据规则前缀、内容形态与 mode 在 JSoup/CSS、XPath、JSONPath、Regex 和 JavaScript 间派发，并复用按当前 content 缓存的解析器；未标前缀规则、JSON/HTML 误判和内容对象变化时的精确选择需 characterization。",
+      "subject_keys": ["source.rule"],
+      "depends_on": [{"id": "BKC-SR-RULE-GRAMMAR-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "7bb96778bbf33c5277867cd8a1e8db6ea19090df", "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt", "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeRule"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-CSS-BACKEND-001",
+      "revision": 1,
+      "semantic_key": "source.rule.dom-selector-backends",
+      "kind": "composite_static_fact",
+      "topic": "CSS 与 XPath DOM 规则后端",
+      "statement": "JSoup 后端对 HTML DOM 执行 CSS 选择并派生文本、HTML、属性、索引、children 与绝对 URL；XPath 后端把输入转换为可查询文档并返回节点、节点列表或字符串。它们是两组 Android 可达语义，不等于 iOS 必须采用同名库；容错 HTML、namespace、函数、节点转字符串和空节点行为需 characterization。",
+      "subject_keys": ["source.rule"],
+      "depends_on": [{"id": "BKC-SR-RULE-BACKEND-DISPATCH-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "1ef7db8d36bf1cfcaf46a16121c76fe5fea9609c", "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByJSoup.kt", "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeByJSoup"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "b0d52cf3ac39cf0a43576acf2a5d223f73670d7d", "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByXPath.kt", "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeByXPath"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-JSONPATH-BACKEND-001",
+      "revision": 1,
+      "semantic_key": "source.rule.jsonpath-regex-backends",
+      "kind": "runtime_behavior",
+      "topic": "JSONPath 与 Regex 规则后端",
+      "statement": "JSONPath 后端从 JSON 字符串或对象求值并返回标量、对象或列表；Regex 后端支持匹配、捕获、替换和列表结果，并与 replacement/put 继续串联。JSONPath 方言、缺失/null/数字、Java Pattern 的 Unicode/零宽/组引用及非法表达式必须由 Android characterization 固定。",
+      "subject_keys": ["source.rule"],
+      "depends_on": [{"id": "BKC-SR-RULE-BACKEND-DISPATCH-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "71d9006ce17a96f2e9db9c9288047f2a66bf2c28", "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByJSonPath.kt", "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeByJSonPath"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "7e41eba6a3967746338f12a22ef4ea64dee8254e", "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByRegex.kt", "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeByRegex"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "7bb96778bbf33c5277867cd8a1e8db6ea19090df", "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt", "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeRule/replaceRegex"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-RULE-COMBINATION-COERCION-001",
+      "revision": 1,
+      "semantic_key": "source.rule.combination-and-coercion-runtime",
+      "kind": "runtime_behavior",
+      "topic": "列表、单值与组合求值",
+      "statement": "同一规则串可按顺序变换当前 result，并分别由 getString、getStringList、getElement 或 getElements 消费；实现会把节点、数组、数字、布尔和 null coercion 为字符串或列表。空值传播、列表拼接、去重和异常中断必须通过样例矩阵固定。",
+      "subject_keys": ["source.rule"],
+      "depends_on": [
+        {"id": "BKC-SR-RULE-GRAMMAR-001", "revision": 1},
+        {"id": "BKC-SR-RULE-BACKEND-DISPATCH-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "7bb96778bbf33c5277867cd8a1e8db6ea19090df", "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt", "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeRule/getStringList"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "7bb96778bbf33c5277867cd8a1e8db6ea19090df", "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt", "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeRule/getString"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-RULE-URL-NORMALIZATION-001",
+      "revision": 1,
+      "semantic_key": "source.rule.url-normalization-runtime",
+      "kind": "runtime_behavior",
+      "topic": "规则结果 URL 归一化",
+      "statement": "规则求值可标记 isUrl，并基于当前 baseUrl/redirect URL 把字段或列表结果转为绝对地址；详情、目录、正文和图片会连续改变 URL 上下文。协议相对、data URI、空值、转义和跨页 base 继承需 characterization。",
+      "subject_keys": ["source.rule", "source.request", "source.pipeline"],
+      "depends_on": [
+        {"id": "BKC-SR-RESPONSE-DECODE-001", "revision": 1},
+        {"id": "BKC-SR-RULE-COMBINATION-COERCION-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "7bb96778bbf33c5277867cd8a1e8db6ea19090df", "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt", "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeRule/setBaseUrl"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "7bb96778bbf33c5277867cd8a1e8db6ea19090df", "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt", "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeRule/setRedirectUrl"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-SEARCH-PIPELINE-001",
+      "revision": 1,
+      "semantic_key": "source.pipeline.search-runtime",
+      "kind": "runtime_behavior",
+      "topic": "搜索阶段流水线",
+      "statement": "搜索以 source、keyword、page 编译 searchUrl，获取 StrResponse，可执行响应 check JS，再以列表规则产生带来源信息的候选书籍和下一页；空 URL、检查脚本改变响应、部分字段失败和重复结果需 characterization。",
+      "subject_keys": ["source.pipeline", "source.request", "source.rule"],
+      "depends_on": [
+        {"id": "BKC-SR-URL-TEMPLATE-COMPILE-001", "revision": 1},
+        {"id": "BKC-SR-RULE-COMBINATION-COERCION-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "af03cf51cef2eb31f54b8240c39e868ceabdba54", "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt", "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook/searchBookAwait"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "d9f233dcf30a370d34e75c080a4d822f2eeb6754", "path": "app/src/main/java/io/legado/app/model/webBook/BookList.kt", "symbol_id": "kotlin://io.legado.app.model.webBook/BookList/analyzeBookList"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-EXPLORE-PIPELINE-001",
+      "revision": 1,
+      "semantic_key": "source.pipeline.explore-runtime",
+      "kind": "runtime_behavior",
+      "topic": "发现阶段流水线",
+      "statement": "发现以分类 URL 与页码编译请求，获取和可选检查响应后复用书籍列表解析；发现入口还受 enabledExplore、exploreUrl 与筛选声明影响。分类参数、筛选组合、分页停止和空列表结果需 characterization。",
+      "subject_keys": ["source.pipeline", "source.request", "source.rule"],
+      "depends_on": [
+        {"id": "BKC-SR-SOURCE-POLICY-FLAGS-001", "revision": 1},
+        {"id": "BKC-SR-SEARCH-PIPELINE-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "af03cf51cef2eb31f54b8240c39e868ceabdba54", "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt", "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook/exploreBookAwait"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "d9f233dcf30a370d34e75c080a4d822f2eeb6754", "path": "app/src/main/java/io/legado/app/model/webBook/BookList.kt", "symbol_id": "kotlin://io.legado.app.model.webBook/BookList/analyzeBookList"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-BOOK-INFO-PIPELINE-001",
+      "revision": 1,
+      "semantic_key": "source.pipeline.book-info-runtime",
+      "kind": "runtime_behavior",
+      "topic": "详情阶段流水线",
+      "statement": "详情阶段可直接在已有内容上解析，或先请求 bookUrl、执行响应检查，再提取名称、作者、简介、封面、分类、字数、最新章与 tocUrl 等，并把最终 URL 作为后续上下文；字段回退和来源覆盖规则需 characterization。",
+      "subject_keys": ["source.pipeline", "source.rule"],
+      "depends_on": [
+        {"id": "BKC-SR-SEARCH-PIPELINE-001", "revision": 1},
+        {"id": "BKC-SR-RULE-URL-NORMALIZATION-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "af03cf51cef2eb31f54b8240c39e868ceabdba54", "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt", "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook/getBookInfoAwait"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "d260a7348545c062faa729a8c98ffd94354e2925", "path": "app/src/main/java/io/legado/app/model/webBook/BookInfo.kt", "symbol_id": "kotlin://io.legado.app.model.webBook/BookInfo/analyzeBookInfo"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-TOC-PIPELINE-001",
+      "revision": 1,
+      "semantic_key": "source.pipeline.toc-runtime",
+      "kind": "runtime_behavior",
+      "topic": "目录阶段流水线",
+      "statement": "目录阶段可运行 preUpdate JS，随后从已有内容或 tocUrl 响应提取章节列表、卷名、章节 URL、VIP/付费标志、更新时间与下一页；跨页合并、去重、索引重排、空 URL 和 preUpdate 副作用需 characterization。",
+      "subject_keys": ["source.pipeline", "source.rule", "source.script"],
+      "depends_on": [
+        {"id": "BKC-SR-BOOK-INFO-PIPELINE-001", "revision": 1},
+        {"id": "BKC-SR-RULE-DATA-VARIABLES-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "af03cf51cef2eb31f54b8240c39e868ceabdba54", "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt", "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook/getChapterListAwait"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "6f1b758fed28cb7212d748e1270d64c13463800a", "path": "app/src/main/java/io/legado/app/model/webBook/BookChapterList.kt", "symbol_id": "kotlin://io.legado.app.model.webBook/BookChapterList/analyzeChapterList"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-CONTENT-PIPELINE-001",
+      "revision": 1,
+      "semantic_key": "source.pipeline.content-runtime",
+      "kind": "runtime_behavior",
+      "topic": "正文阶段流水线",
+      "statement": "正文阶段以 Book、Chapter、nextChapterUrl 和 source session 编译请求，获取和可选检查响应后提取 content 与下一页，可应用正文替换并选择保存；本地已有内容与远端内容走不同分支。正文净化、图片、VIP、空正文和保存时机需 characterization。",
+      "subject_keys": ["source.pipeline", "source.rule", "source.session"],
+      "depends_on": [
+        {"id": "BKC-SR-TOC-PIPELINE-001", "revision": 1},
+        {"id": "BKC-SR-RULE-DATA-VARIABLES-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "af03cf51cef2eb31f54b8240c39e868ceabdba54", "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt", "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook/getContentAwait"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "fcf27c884aa557b539f009067ae55e79c5fa3591", "path": "app/src/main/java/io/legado/app/model/webBook/BookContent.kt", "symbol_id": "kotlin://io.legado.app.model.webBook/BookContent/analyzeContent"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-PAGINATION-TERMINATION-001",
+      "revision": 1,
+      "semantic_key": "source.pipeline.pagination-termination-runtime",
+      "kind": "runtime_behavior",
+      "topic": "跨阶段分页与终止",
+      "statement": "搜索、发现、目录和正文均可能从规则结果生成下一页，并在调用方循环请求、合并结果或把 nextChapterUrl 传入正文；空值、自环、重复 URL、最大页数、部分页失败和取消的终止语义没有统一静态合同，必须分别 characterization。",
+      "subject_keys": ["source.pipeline", "source.request"],
+      "depends_on": [
+        {"id": "BKC-SR-SEARCH-PIPELINE-001", "revision": 1},
+        {"id": "BKC-SR-EXPLORE-PIPELINE-001", "revision": 1},
+        {"id": "BKC-SR-TOC-PIPELINE-001", "revision": 1},
+        {"id": "BKC-SR-CONTENT-PIPELINE-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "ba8cda4543a4afb507224ba57f0f1f5ab4ad5594", "path": "app/src/main/java/io/legado/app/data/entities/rule/SearchRule.kt", "symbol_id": "kotlin://io.legado.app.data.entities.rule/SearchRule/bookList"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "f525e912340257125059b6ad87d0cf7e73d6a1dc", "path": "app/src/main/java/io/legado/app/data/entities/rule/TocRule.kt", "symbol_id": "kotlin://io.legado.app.data.entities.rule/TocRule/nextTocUrl"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "aef453668216619314f556bdf5d100733c9c5414", "path": "app/src/main/java/io/legado/app/data/entities/rule/ContentRule.kt", "symbol_id": "kotlin://io.legado.app.data.entities.rule/ContentRule/nextContentUrl"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-ERROR-STAGE-CONTRACT-001",
+      "revision": 1,
+      "semantic_key": "source.pipeline.error-stage-contract-gap",
+      "kind": "risk_or_anomaly",
+      "topic": "错误、取消、登录与付费边界",
+      "statement": "URL 编译、限流、请求、响应检查、解码、列表定位、字段求值、脚本、WebView、登录/付费与保存均可能失败，但 Android 路径主要以异常和消息传播，缺少统一稳定阶段码；iOS 需保留原始 cause，同时用阶段、source、trace、retryability 与 recovery 结构化失败。",
+      "subject_keys": ["source.pipeline", "source.session", "source.transport"],
+      "depends_on": [
+        {"id": "BKC-SR-RETRY-REDIRECT-001", "revision": 1},
+        {"id": "BKC-SR-JS-HOST-CAPABILITY-001", "revision": 1},
+        {"id": "BKC-SR-CONTENT-PIPELINE-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "af03cf51cef2eb31f54b8240c39e868ceabdba54", "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt", "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "b7efa3029bc50a47ef693a23016752aa032f2978", "path": "app/src/main/java/io/legado/app/ui/book/source/debug/BookSourceDebugModel.kt", "symbol_id": "kotlin://io.legado.app.ui.book.source.debug/BookSourceDebugModel"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "human_decision"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-DYNAMIC-WEB-RUNTIME-001",
+      "revision": 1,
+      "semantic_key": "source.transport.dynamic-web-runtime",
+      "kind": "runtime_behavior",
+      "topic": "WebView 动态请求",
+      "statement": "URL option.useWebView 可把 GET 交给后台 WebView；POST 可先由 HTTP transport 获取页面再把最终 URL 与 HTML 注入 WebView。webJs 可轮询页面结果，sourceRegex 可嗅探资源，Cookie 会在 WebView 与 CookieStore 间桥接；终止、SSL、超时和页面副作用需 characterization。",
+      "subject_keys": ["source.script", "source.session", "source.transport"],
+      "depends_on": [
+        {"id": "BKC-SR-URL-OPTION-CONTRACT-001", "revision": 1},
+        {"id": "BKC-SR-COOKIE-LAYERS-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da", "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt", "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/getStrResponseAwait"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "16b89cd63b3d19ac7574cf850d66f885fecf5c54", "path": "app/src/main/java/io/legado/app/help/http/BackstageWebView.kt", "symbol_id": "kotlin://io.legado.app.help.http/BackstageWebView"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-AUTH-PAID-BOUNDARY-001",
+      "revision": 1,
+      "semantic_key": "source.session.authentication-payment-boundary",
+      "kind": "risk_or_anomaly",
+      "topic": "登录、VIP 与付费动作",
+      "statement": "书源可声明 loginUrl/loginUi/loginCheckJs 和登录 header/Cookie；目录可标记 VIP/已购买，正文 payAction JS 可返回网页 URL 或触发清缓存与刷新目录。凭据迁移、登录成功、重登录、重复购买、外部网页返回与支付合规都没有稳定结构合同，必须先 characterization 并由 profile 决策约束。",
+      "subject_keys": ["source.pipeline", "source.script", "source.session"],
+      "depends_on": [
+        {"id": "BKC-SR-COOKIE-LAYERS-001", "revision": 1},
+        {"id": "BKC-SR-TOC-PIPELINE-001", "revision": 1},
+        {"id": "BKC-SR-CONTENT-PIPELINE-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "99ab1b9c548ba17127baa43ead435555ed026f4a", "path": "app/src/main/java/io/legado/app/data/entities/BaseSource.kt", "symbol_id": "kotlin://io.legado.app.data.entities/BaseSource/login"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "f525e912340257125059b6ad87d0cf7e73d6a1dc", "path": "app/src/main/java/io/legado/app/data/entities/rule/TocRule.kt", "symbol_id": "kotlin://io.legado.app.data.entities.rule/TocRule/isVip"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "aef453668216619314f556bdf5d100733c9c5414", "path": "app/src/main/java/io/legado/app/data/entities/rule/ContentRule.kt", "symbol_id": "kotlin://io.legado.app.data.entities.rule/ContentRule/payAction"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-RUNTIME-BOUNDARY-DECISION-001",
+      "revision": 1,
+      "semantic_key": "source.execution.runtime-boundary-decision",
+      "kind": "open_question",
+      "topic": "独立 Source Runtime 架构边界",
+      "statement": "书源 DTO、规则 AST、SourceSession、RequestPlan、Transport 和 Pipeline Result 具有不同生命周期与可信度；iOS 需人工裁决独立 Package/API、StoreSafe/FullCompat 能力闭包、JS/WebView 隔离、session 所有权、可取消并发与 trace 脱敏合同。",
+      "subject_keys": ["source.format", "source.pipeline", "source.rule", "source.script", "source.session", "source.transport"],
+      "depends_on": [
+        {"id": "BKC-SR-FORMAT-EXTENSIBILITY-001", "revision": 1},
+        {"id": "BKC-SR-RATE-LIMIT-STATE-001", "revision": 1},
+        {"id": "BKC-SR-JS-HOST-CAPABILITY-001", "revision": 1},
+        {"id": "BKC-SR-DYNAMIC-WEB-RUNTIME-001", "revision": 1},
+        {"id": "BKC-SR-AUTH-PAID-BOUNDARY-001", "revision": 1},
+        {"id": "BKC-SR-ERROR-STAGE-CONTRACT-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "d2ac6002cbaabe508f72a77e138f95b376c424c4", "path": "app/src/main/java/io/legado/app/data/entities/BookSource.kt", "symbol_id": "kotlin://io.legado.app.data.entities/BookSource"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da", "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt", "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "7bb96778bbf33c5277867cd8a1e8db6ea19090df", "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt", "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeRule"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "af03cf51cef2eb31f54b8240c39e868ceabdba54", "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt", "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "human_decision"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-KNOWLEDGE-SOURCE-RUNTIME-001"
+}
