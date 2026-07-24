@@ -2,12 +2,12 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-24T08:23:17Z
+- 更新时间：2026-07-24T08:24:23Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
-- 下一个可领取工作项：无
+- 下一个可领取工作项：IOS-KNOWLEDGE-UI-TOPOLOGY-001
 - 最近完成：IOS-KNOWLEDGE-READER-LIFECYCLE-001
 
 ## 健康度
@@ -48,6 +48,7 @@
 | IOS-KNOWLEDGE-CONTROL-PLANE-001 | 90 | `completed` | IOS-ORACLE-CONTROL-PLANE-001 | 建立业务知识与架构驱动控制面 |
 | IOS-KNOWLEDGE-SOURCE-RUNTIME-001 | 89 | `completed` | IOS-KNOWLEDGE-ANDROID-SURFACES-001, IOS-KNOWLEDGE-PROPOSAL-BATCH-REFS-REPAIR-001 | 提取书源格式、规则与执行流水线知识 |
 | IOS-KNOWLEDGE-READER-LIFECYCLE-001 | 88 | `completed` | IOS-KNOWLEDGE-ANDROID-SURFACES-001, IOS-KNOWLEDGE-BOOK-DOMAIN-001, IOS-KNOWLEDGE-SOURCE-RUNTIME-001 | 提取阅读会话、正文、进度与预取知识 |
+| IOS-KNOWLEDGE-UI-TOPOLOGY-001 | 87 | `ready` | IOS-KNOWLEDGE-ANDROID-SURFACES-001, IOS-KNOWLEDGE-BOOK-DOMAIN-001, IOS-KNOWLEDGE-SOURCE-RUNTIME-001, IOS-KNOWLEDGE-READER-LIFECYCLE-001 | 提取页面结构、导航图与多级菜单知识 |
 | IOS-RUNTIME-PORTS-001 | 85 | `completed` | IOS-BOOT-001, IOS-CORE-001 | 定义确定性 HTTP 请求响应与 Transport port |
 | IOS-CONFORMANCE-001 | 80 | `completed` | IOS-BOOT-001, IOS-CORE-001, IOS-RUNTIME-PORTS-001 | 建立离线 Fixture 与 canonical execution envelope 骨架 |
 | IOS-SOURCELAB-ENGINE-001 | 75 | `completed` | IOS-CONFORMANCE-001 | 将 SourceLab 场景接入 FixtureTransport 与 ConformanceCLI |
