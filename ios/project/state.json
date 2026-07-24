@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "revision": 72,
+  "revision": 75,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-24T07:17:40Z",
-  "event_head": "22b16d011114208816388cf7fb286d45e32ead9417feff02ba862b3131c8643b",
+  "updated_at": "2026-07-24T07:28:34Z",
+  "event_head": "341188531d41fc739d6f0f5a7f7642d5d9b4501da0320f669f596613115a464b",
   "active_work_items": [],
-  "last_completed_work_item": "IOS-HARNESS-APPROVAL-UI-001",
+  "last_completed_work_item": "IOS-HARNESS-TIMEOUT-CLEANUP-001",
   "work_items": {
     "IOS-BOOT-001": {
       "status": "completed",
@@ -1153,9 +1153,32 @@
       "last_evidence": null
     },
     "IOS-HARNESS-TIMEOUT-CLEANUP-001": {
-      "status": "ready",
-      "attempt": 0,
-      "last_evidence": null
+      "status": "completed",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260724T072655Z-ios-harness-timeout-cleanup-001-dfa83366.json",
+      "claimed_by": "codex-root",
+      "claimed_at": "2026-07-24T07:19:04Z",
+      "lease_expires_at": "2026-07-25T07:19:04Z",
+      "work_item_sha256": "a020e4993cc3a70a710ba5034aaa0eced3d9717e07483de2eb9f0095ce0546b2",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "375dd45c95f889b7c5e89773ecfa960f4d1d263a",
+      "base_capability_revision": 9,
+      "base_capability_assurance_sha256": "6c08426cf2cc8f0277426284e00909a10444767bc01eeb84e0db43db8dcbb2ac",
+      "android_requirement_selection_sha256": null,
+      "business_knowledge_control_sha256": "feab83ec98328171a5dd77874d05891d92c603084bda06f3f562c967c2e86ab9",
+      "business_knowledge_authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 1,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [],
+      "last_evidence_sha256": "5c4b188ceb7a9ad24b815af464f7683dc25a5e557b1607bd0e64442b342899dd",
+      "verified_at": "2026-07-24T07:26:56Z",
+      "completed_at": "2026-07-24T07:28:34Z",
+      "final_tree_sha256": "24d9bf6711b331dcd37713fe37bb3f90dac558b5a8a0d57f85fe736168ba7bf6"
     }
   },
   "health": {
@@ -1171,7 +1194,8 @@
     "knowledge_initialization_dag": "proposal_verified",
     "knowledge_android_surfaces": "candidate_verified",
     "knowledge_book_domain": "candidate_verified",
-    "local_approval_ui": "verified"
+    "local_approval_ui": "verified",
+    "harness_timeout_cleanup": "verified"
   },
   "risks": [
     {

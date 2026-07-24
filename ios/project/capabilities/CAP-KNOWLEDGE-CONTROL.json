@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 9,
+  "revision": 10,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -26,9 +26,7 @@
   "depends_on": ["CAP-BOOTSTRAP"],
   "active_decisions": ["ADR-0004"],
   "open_compatibility": [],
-  "open_pitfalls": [
-    "PIT-0010"
-  ],
+  "open_pitfalls": [],
   "blockers": [],
   "required_evidence": ["harness-tests", "dependency-policy", "architecture"],
   "freshness_inputs": [
@@ -37,14 +35,14 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260724T032425Z-ios-harness-approval-ui-001-05ecc601.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260724T072655Z-ios-harness-timeout-cleanup-001-dfa83366.json",
   "next_actions": [
+    "恢复 IOS-KNOWLEDGE-SOURCE-RUNTIME-001，完成书源格式、规则后端、请求/session 与五阶段执行流水线知识候选",
     "materialize 书源/规则/执行流水线、阅读会话/正文/进度/预取、UI topology 与外部集成等剩余分域扫描，并在候选齐备后由 Trusted Publisher 原子发布 Packet/Driver、Coverage 与 Catalog",
     "为换源、目录重排、阅读落点、删除保留、缓存完成态和 WebDAV 冲突建立 Android characterization 任务与结构化 expected",
     "待依赖领域扫描与 characterization 齐备后，用 ADR 裁决 BookID、来源实例、子对象归属、进度坐标与迁移策略",
-    "独立修复 PIT-0010 的 Harness 超时进程组清理，并在首个 supersede 任务前闭合 revision 与 verification invalidation 语义",
     "用仓外 Touch ID/FIDO2 helper、Approval v2（attempt/Evidence/Gate policy 绑定）和可恢复的受保护 CI journal/CAS 替代 local_unverified v1 发布审批"
   ],
-  "updated_at": "2026-07-24T03:24:36Z",
-  "updated_by": "IOS-HARNESS-APPROVAL-UI-001"
+  "updated_at": "2026-07-24T07:26:56Z",
+  "updated_by": "IOS-HARNESS-TIMEOUT-CLEANUP-001"
 }

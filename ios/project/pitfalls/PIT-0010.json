@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "PIT-0010",
-  "revision": 1,
+  "revision": 2,
   "title": "macOS 超时进程组清理异常会中断 Evidence 生成",
   "fingerprint": "harness-timeout-killpg-permissionerror-before-evidence",
   "capabilities": [
@@ -10,7 +10,8 @@
   "symptoms": [
     "Harness check 到达超时清理路径后，terminate_process_group 调用 os.killpg 抛出 PermissionError",
     "verify 直接以 Python traceback 退出，未生成 failed Evidence，也未递增 verify cycle",
-    "相同 49 个 Harness 测试直接运行约 28 秒全部通过，清理残留进程后的一次基础设施重试可通过"
+    "相同 Harness 测试直接运行可以通过，清理残留进程后的一次基础设施重试可通过",
+    "IOS-KNOWLEDGE-SOURCE-RUNTIME-001 的 claim 再次复现 fail-before-Evidence；IOS-HARNESS-TIMEOUT-CLEANUP-001 因此被物化为阻塞修复"
   ],
   "conditions": [
     "macOS 上由 Harness 以新进程组启动 acceptance check",
@@ -24,25 +25,29 @@
     "直接运行同一 check，区分真实测试失败、测试时长抖动和清理路径故障",
     "仅在 Doctor 通过且无残留进程时使用 Work Item 预算内的一次 max_infra_retries"
   ],
-  "fix": "在独立 Harness 工作项中让 terminate_process_group 重新确认进程/进程组状态，安全处理 ProcessLookupError 与 PermissionError，并无论清理是否成功都把 timeout、cleanup_error 和 process_leak 写入 failed Evidence；补充 macOS 权限异常与竞态测试。",
+  "fix": "IOS-HARNESS-TIMEOUT-CLEANUP-001 已让 terminate_process_group 将 ProcessLookupError 视为已退出、将 SIGTERM/SIGKILL PermissionError 转换为稳定诊断；run_check 在超时后只进行有界 communicate，记录 timed_out、cleanup_error 与 process_leak，并在直接 kill 也被拒绝时 fail-closed。回归测试覆盖权限异常、退出竞态、普通完成、结构化 VerificationFailed Evidence 和遗留子进程。",
   "prevention": {
     "architecture_rule": "受保护验收的超时与清理路径不得以未捕获异常绕过 Evidence；清理失败必须 fail-closed、可诊断且保留审计记录",
     "tests": [
-      "模拟 killpg 抛 PermissionError，断言 verify 仍生成 failed Evidence",
-      "模拟进程在 timeout 与 cleanup 之间退出，断言无 traceback 且无误报残留",
-      "断言基础设施重试次数受 Work Item max_infra_retries 约束"
+      "模拟 SIGTERM/SIGKILL killpg 抛 PermissionError，断言返回稳定 cleanup_error",
+      "模拟进程在 timeout 与 cleanup 之间退出，断言无 traceback 且无误报清理错误",
+      "模拟第二次 communicate 仍超时且直接 kill 被拒绝，断言在固定时间界内返回 fail-closed 结果",
+      "断言 verify 仍生成 failed Evidence、VerificationFailed 事件、failure fingerprint 并递增 verify cycle",
+      "保留正常完成与正常退出后遗留子进程的语义回归测试"
     ],
     "lint": []
   },
   "affected_versions": {
     "from": "IOS-KNOWLEDGE-BOOK-DOMAIN-001",
-    "until": null
+    "until": "IOS-HARNESS-TIMEOUT-CLEANUP-001"
   },
-  "status": "open",
-  "occurrences": 2,
+  "status": "resolved",
+  "occurrences": 3,
   "first_seen": "2026-07-23",
-  "last_seen": "2026-07-23",
+  "last_seen": "2026-07-24",
   "evidence": [
-    "ios/harness/evidence/runs/run-20260723T130532Z-ios-knowledge-book-domain-001-9a40d6cd.json"
+    "ios/harness/evidence/runs/run-20260723T130532Z-ios-knowledge-book-domain-001-9a40d6cd.json",
+    "ios/project/events.jsonl#sequence-74",
+    "ios/harness/evidence/runs/run-20260724T072655Z-ios-harness-timeout-cleanup-001-dfa83366.json"
   ]
 }

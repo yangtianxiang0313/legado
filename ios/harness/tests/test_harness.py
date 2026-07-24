@@ -689,6 +689,132 @@ class HarnessTests(unittest.TestCase):
             harness = fixture.initialize()
             self.assertEqual("Authorization: <redacted>", harness.redact_output(b"Authorization: bearer-secret"))
 
+    def test_terminate_process_group_returns_stable_permission_diagnostics(self):
+        with mock.patch.object(
+            harness_module.os, "killpg", side_effect=PermissionError
+        ):
+            diagnostic = harness_module.Harness.terminate_process_group(123)
+        self.assertEqual("sigterm_permission_denied", diagnostic)
+
+        with mock.patch.object(
+            harness_module.os,
+            "killpg",
+            side_effect=[None, PermissionError],
+        ):
+            diagnostic = harness_module.Harness.terminate_process_group(
+                123, grace_seconds=0
+            )
+        self.assertEqual("sigkill_permission_denied", diagnostic)
+
+    def test_terminate_process_group_tolerates_process_exit_race(self):
+        with mock.patch.object(
+            harness_module.os,
+            "killpg",
+            side_effect=[None, ProcessLookupError],
+        ):
+            diagnostic = harness_module.Harness.terminate_process_group(123)
+        self.assertIsNone(diagnostic)
+
+    def test_run_check_timeout_cleanup_is_bounded_and_structured(self):
+        class TimeoutProcess:
+            pid = 123
+            returncode = None
+
+            def __init__(self):
+                self.communicate_timeouts = []
+
+            def communicate(self, timeout=None):
+                self.communicate_timeouts.append(timeout)
+                raise subprocess.TimeoutExpired(
+                    ["fake-check"],
+                    timeout,
+                    output=b"partial stdout",
+                    stderr=b"partial stderr",
+                )
+
+            def kill(self):
+                raise PermissionError
+
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = HarnessFixture(Path(directory))
+            harness = fixture.initialize()
+            process = TimeoutProcess()
+            with (
+                mock.patch.object(
+                    harness_module.subprocess, "Popen", return_value=process
+                ),
+                mock.patch.object(
+                    harness,
+                    "terminate_process_group",
+                    return_value="sigterm_permission_denied",
+                ),
+                mock.patch.object(harness, "process_group_exists", return_value=True),
+            ):
+                result = harness.run_check("noop", "IOS-BOOT-001")
+
+        self.assertFalse(result["passed"])
+        self.assertTrue(result["timed_out"])
+        self.assertTrue(result["process_leak"])
+        self.assertEqual(
+            "sigterm_permission_denied;process_kill_permission_denied;"
+            "communicate_timeout_after_cleanup",
+            result["cleanup_error"],
+        )
+        self.assertEqual([10, 1.0], process.communicate_timeouts)
+        self.assertIn("CLEANUP_ERROR:", result["stderr_tail"])
+
+    def test_run_check_normal_completion_has_no_cleanup_error(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = HarnessFixture(Path(directory))
+            harness = fixture.initialize()
+            result = harness.run_check("noop", "IOS-BOOT-001")
+        self.assertTrue(result["passed"])
+        self.assertFalse(result["timed_out"])
+        self.assertFalse(result["process_leak"])
+        self.assertIsNone(result["cleanup_error"])
+
+    def test_verify_persists_cleanup_failure_evidence_and_event(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = HarnessFixture(root)
+            harness = fixture.initialize()
+            self.initialize_git(root)
+            harness.claim("IOS-BOOT-001", "unit-test")
+            fixture.write_text("ios/implementation.txt", "candidate\n")
+            failed_check = {
+                "id": "noop",
+                "argv": ["fake-check"],
+                "executable_path": "/fake-check",
+                "definition_sha256": "definition",
+                "cwd": ".",
+                "started_at": "2026-01-01T00:00:00Z",
+                "duration_ms": 1000,
+                "timeout_seconds": 10,
+                "timed_out": True,
+                "process_leak": True,
+                "cleanup_error": "sigterm_permission_denied",
+                "exit_code": None,
+                "passed": False,
+                "stdout_sha256": "stdout",
+                "stderr_sha256": "stderr",
+                "stdout_tail": "",
+                "stderr_tail": "CLEANUP_ERROR: sigterm_permission_denied",
+            }
+            with mock.patch.object(harness, "run_check", return_value=failed_check):
+                evidence = harness_module.load_json(harness.verify("IOS-BOOT-001"))
+
+            self.assertEqual("failed", evidence["result"])
+            self.assertEqual(
+                "sigterm_permission_denied",
+                evidence["checks"][0]["cleanup_error"],
+            )
+            self.assertEqual("PROCESS_LEAK", evidence["failure"]["class"])
+            self.assertEqual("VerificationFailed", harness.event_lines()[-1]["event"])
+            self.assertEqual(
+                1,
+                harness.state()["work_items"]["IOS-BOOT-001"]["verify_cycles"],
+            )
+
     def test_intentional_difference_requires_dedicated_adjudication(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

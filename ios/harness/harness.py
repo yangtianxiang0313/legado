@@ -2337,20 +2337,37 @@ class Harness:
             return True
 
     @classmethod
-    def terminate_process_group(cls, process_group_id: int, grace_seconds: float = 0.75) -> None:
+    def terminate_process_group(
+        cls, process_group_id: int, grace_seconds: float = 0.75
+    ) -> Optional[str]:
         try:
             os.killpg(process_group_id, signal.SIGTERM)
         except ProcessLookupError:
-            return
+            return None
+        except PermissionError:
+            return "sigterm_permission_denied"
         deadline = time.monotonic() + grace_seconds
         while time.monotonic() < deadline:
             if not cls.process_group_exists(process_group_id):
-                return
+                return None
             time.sleep(0.025)
         try:
             os.killpg(process_group_id, signal.SIGKILL)
         except ProcessLookupError:
-            return
+            return None
+        except PermissionError:
+            return "sigkill_permission_denied"
+        return None
+
+    @staticmethod
+    def timeout_output(value: Any) -> bytes:
+        if value is None:
+            return b""
+        if isinstance(value, bytes):
+            return value
+        if isinstance(value, str):
+            return value.encode("utf-8")
+        return bytes(value)
 
     def run_check(self, check_id: str, item_id: str) -> Dict[str, Any]:
         definition = self.config["checks"][check_id]
@@ -2363,6 +2380,12 @@ class Harness:
         started_at = utc_now()
         executable_path = shutil.which(argv[0], path=self.command_environment(item_id).get("PATH"))
         process_leak = False
+        cleanup_errors: List[str] = []
+
+        def record_cleanup_error(value: Optional[str]) -> None:
+            if value and value not in cleanup_errors:
+                cleanup_errors.append(value)
+
         try:
             process = subprocess.Popen(
                 argv,
@@ -2376,22 +2399,52 @@ class Harness:
                 stdout, stderr = process.communicate(timeout=timeout)
                 exit_code: Optional[int] = process.returncode
                 timed_out = False
-            except subprocess.TimeoutExpired:
-                self.terminate_process_group(process.pid, grace_seconds=0.1)
-                stdout, stderr = process.communicate()
+            except subprocess.TimeoutExpired as error:
+                stdout = self.timeout_output(error.output)
+                stderr = self.timeout_output(error.stderr)
+                cleanup_diagnostic = self.terminate_process_group(
+                    process.pid, grace_seconds=0.1
+                )
+                record_cleanup_error(cleanup_diagnostic)
+                if cleanup_diagnostic:
+                    try:
+                        process.kill()
+                    except ProcessLookupError:
+                        pass
+                    except PermissionError:
+                        record_cleanup_error("process_kill_permission_denied")
+                try:
+                    final_stdout, final_stderr = process.communicate(timeout=1.0)
+                    stdout = self.timeout_output(final_stdout) or stdout
+                    stderr = self.timeout_output(final_stderr) or stderr
+                except subprocess.TimeoutExpired as cleanup_timeout:
+                    stdout = self.timeout_output(cleanup_timeout.output) or stdout
+                    stderr = self.timeout_output(cleanup_timeout.stderr) or stderr
+                    record_cleanup_error("communicate_timeout_after_cleanup")
+                    try:
+                        process.kill()
+                    except ProcessLookupError:
+                        pass
+                    except PermissionError:
+                        record_cleanup_error("process_kill_permission_denied")
                 exit_code = None
                 timed_out = True
             if self.process_group_exists(process.pid):
                 process_leak = not timed_out
-                self.terminate_process_group(process.pid)
-                if process_leak:
-                    stderr += b"\nPROCESS_LEAK: check exited while child processes were still alive\n"
+                record_cleanup_error(self.terminate_process_group(process.pid))
+                if timed_out:
+                    process_leak = self.process_group_exists(process.pid)
+            if process_leak:
+                stderr += b"\nPROCESS_LEAK: check exited while child processes were still alive\n"
         except FileNotFoundError as error:
             exit_code = None
             stdout = b""
             stderr = str(error).encode("utf-8")
             timed_out = False
             process_leak = False
+        cleanup_error = ";".join(cleanup_errors) or None
+        if cleanup_error:
+            stderr += f"\nCLEANUP_ERROR: {cleanup_error}\n".encode("utf-8")
         duration_ms = int((time.monotonic() - started) * 1000)
         output_limit = int(self.config.get("evidence_output_tail_bytes", 6000))
         return {
@@ -2405,8 +2458,14 @@ class Harness:
             "timeout_seconds": timeout,
             "timed_out": timed_out,
             "process_leak": process_leak,
+            "cleanup_error": cleanup_error,
             "exit_code": exit_code,
-            "passed": exit_code == 0 and not timed_out and not process_leak,
+            "passed": (
+                exit_code == 0
+                and not timed_out
+                and not process_leak
+                and cleanup_error is None
+            ),
             "stdout_sha256": sha256_bytes(stdout),
             "stderr_sha256": sha256_bytes(stderr),
             "stdout_tail": self.redact_output(stdout[-output_limit:]),

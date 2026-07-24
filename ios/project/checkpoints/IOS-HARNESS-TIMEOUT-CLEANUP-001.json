@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-HARNESS-TIMEOUT-CLEANUP-001",
+  "summary": "修复 Harness 的 fail-before-Evidence 超时清理缺口：进程组已退出与 SIGTERM/SIGKILL 权限异常均被归一化，第二次 communicate 固定有界，直接进程清理失败也会记录稳定 cleanup_error；verify 因而能持续生成 failed Evidence、事件和 failure fingerprint，而不会以 traceback 越过审计。Source Runtime claim 的第三次真实复现由 WorkItemMaterialized sequence 74 记录；当时没有 failed Evidence 正是本缺陷，修复的结构化失败由单元故障注入覆盖，完整检查由本 Checkpoint 引用的 passed Evidence 证明。",
+  "evidence": "ios/harness/evidence/runs/run-20260724T072655Z-ios-harness-timeout-cleanup-001-dfa83366.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 9,
+      "to_revision": 10,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": [
+      "ADR-0004"
+    ]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项是 Harness 控制面可靠性修复，不消费或发布业务知识"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项不改变 Android/iOS 产品行为，只保证验收超时与清理故障被结构化记录"
+  },
+  "pitfalls": {
+    "records": [
+      "ios/project/pitfalls/PIT-0010.json"
+    ],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "操作系统拒绝进程组和直接进程信号时，Harness 只能 fail-closed 并报告 process_leak，无法保证外部进程已被回收",
+    "缺陷修复前因 traceback 丢失的 failed Evidence 无法事后重建；事件 sequence 74 只保留第三次复现与修复物化原因",
+    "固定 1 秒的清理后 communicate 界限优先保证 Harness 不挂死；极慢退出会被记录为 cleanup_error，需由受控基础设施重试区分"
+  ],
+  "next_actions": [
+    "重新领取 IOS-KNOWLEDGE-SOURCE-RUNTIME-001 并运行原 baseline checks，确认超时分支不再绕过 Evidence",
+    "在受保护 macOS CI 持续采集 timed_out、cleanup_error 与 process_leak 频率，区分测试时长抖动和真实残留进程",
+    "保留 Work Item max_infra_retries 上限，禁止通过扩大 check timeout 掩盖回归"
+  ],
+  "created_at": "2026-07-24T07:26:56Z"
+}
