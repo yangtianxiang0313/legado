@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "revision": 63,
+  "revision": 70,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-24T02:57:32Z",
-  "event_head": "9b37c2d3b3911990d3f8a04b099beedb54403087fa74cc29042f2825109b1fa6",
+  "updated_at": "2026-07-24T05:54:55Z",
+  "event_head": "40ca2871e424a796ad084ccbacd1e4b526f65c378effff032bf3fcdb842a3f20",
   "active_work_items": [],
-  "last_completed_work_item": "IOS-KNOWLEDGE-BOOK-DOMAIN-001",
+  "last_completed_work_item": "IOS-HARNESS-APPROVAL-UI-001",
   "work_items": {
     "IOS-BOOT-001": {
       "status": "completed",
@@ -1075,9 +1075,77 @@
       "final_tree_sha256": "319d1200514b0c8be046e38e4bccfe6dd033f11885289134c947f3f6cad3d4ea"
     },
     "IOS-HARNESS-APPROVAL-UI-001": {
-      "status": "ready",
-      "attempt": 0,
-      "last_evidence": null
+      "status": "completed",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260724T032425Z-ios-harness-approval-ui-001-05ecc601.json",
+      "claimed_by": "codex-root",
+      "claimed_at": "2026-07-24T02:58:08Z",
+      "lease_expires_at": "2026-07-25T02:58:08Z",
+      "work_item_sha256": "f0c77d94cc94b46239e39909a1e0050bf7576e06ef68ae4c5d58343e60971495",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "2cebd558ca0690014875cdaf188e57f002987456",
+      "base_capability_revision": 8,
+      "base_capability_assurance_sha256": "6c08426cf2cc8f0277426284e00909a10444767bc01eeb84e0db43db8dcbb2ac",
+      "android_requirement_selection_sha256": null,
+      "business_knowledge_control_sha256": "861cfc63ba4c4b79480c81df1ad6780f7222fc20ec7a878062553163fe08e896",
+      "business_knowledge_authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 2,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "harness-tests",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "307f335e883f02e96ad97ecbda4c210435c0b955e2bcb9e46db9dc7b0d02c285",
+          "cwd": ".",
+          "started_at": "2026-07-24T02:57:53Z",
+          "duration_ms": 14450,
+          "timeout_seconds": 60,
+          "timed_out": false,
+          "process_leak": false,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "a986f60592a0c88f29ae1f16e93abe99f77256f2f96f86907c65d5f242227725",
+          "stdout_tail": "",
+          "stderr_tail": ".................................................\n----------------------------------------------------------------------\nRan 49 tests in 14.199s\n\nOK\n"
+        }
+      ],
+      "last_evidence_sha256": "5e1cf552e19fa059ac27578539296b62dca1eab32c31f2eea4d2c7c0026e8698",
+      "verified_at": "2026-07-24T03:24:26Z",
+      "approval_requested_at": "2026-07-24T03:25:16Z",
+      "approval_request_existing_fingerprints": {
+        "ios/project/approvals/IOS-HARNESS-APPROVAL-UI-001--security-review.json": "missing"
+      },
+      "awaiting_human_reasons": [
+        "缺少人工批准：security-review"
+      ],
+      "review_subject_sha256": "ab6716341d7b3611b3052183c634600da06dd108afda66a16109a8f54d9744f2",
+      "review_subject_files": {
+        "ios/harness/approval_ui.py": "file:0o644:5c2da00286952f5424d6c76e40c9b93e964debdbbe33d2bbc45b60713b588a63",
+        "ios/harness/harness.py": "file:0o644:c0deee05487076cb57c56daa9b9d0f6da7698399ab830f95657af80df8c076f1",
+        "ios/harness/tests/test_approval_ui.py": "file:0o644:1527d8229986dc077a3a37b3a805f50776c0b2bdf1a04debe3420806ac367e2b",
+        "ios/harness/tests/test_harness.py": "file:0o644:e022b945d9044527c9bbb141bb05b9a657c676f75ae06898663398018e08c4d2",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json": "file:0o644:2f8d785d6c8a22f6d3edda2da8203e2b04f05ee10c956f1f413be47cf8153ddd",
+        "ios/project/checkpoints/IOS-HARNESS-APPROVAL-UI-001.json": "file:0o644:7a1aa7a142511db7b2105402e303b3c6a8573775b8f08354d9fffee5e7ae2c0a",
+        "ios/project/pitfalls/PIT-0011.json": "file:0o644:0757b67c950473dcf96a418b92aa1de7999ee9a6dea287403cf431d8025f6c90"
+      },
+      "completed_at": "2026-07-24T05:54:55Z",
+      "final_tree_sha256": "c4c52b34154fa3987cd71696601119e6099614b51b5787f98b0f5923dd14ca7d"
     }
   },
   "health": {
@@ -1092,7 +1160,8 @@
     "knowledge_control_plane": "proposal_batch_claim_refs_verified",
     "knowledge_initialization_dag": "proposal_verified",
     "knowledge_android_surfaces": "candidate_verified",
-    "knowledge_book_domain": "candidate_verified"
+    "knowledge_book_domain": "candidate_verified",
+    "local_approval_ui": "verified"
   },
   "risks": [
     {

@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0011",
+  "revision": 1,
+  "title": "单线程本地审批服务的 HTTP keep-alive 会延迟执行批准",
+  "fingerprint": "approval-ui-http11-keepalive-starves-followup-post",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "浏览器先 GET 验收页并保持 HTTP/1.1 连接后，另一连接上的批准 POST 一直等待或在客户端超时",
+    "GET 连接稍后关闭时，排队的 POST 才被服务器处理，可能出现页面报告失败但任务实际完成",
+    "仅直接调用审批函数或每次请求都主动关闭连接的单元测试无法复现"
+  ],
+  "conditions": [
+    "使用单线程 Python HTTPServer 和 HTTP/1.1",
+    "响应未发送 Connection: close，BaseHTTPRequestHandler 继续在首个 socket 等待下一请求",
+    "浏览器为 fetch POST 新建连接，或半包请求占住唯一处理线程"
+  ],
+  "root_cause": "HTTPServer 一次只处理一个连接；HTTP/1.1 默认持久连接使 handler 在首个浏览器 socket 上阻塞，server 无法 accept 后续批准连接。server.timeout 只限制 accept，不限制已接收 socket 的 header/body 读取。",
+  "diagnosis": [
+    "保持 GET 的 HTTPConnection 不关闭，再从第二连接发送 POST并观察是否超时",
+    "关闭首连接后检查排队 POST 是否突然执行，以区分前端 fetch、token 校验和服务端连接饥饿",
+    "使用 raw socket 发送不完整 header/body，确认会话 deadline 是否仍能生效"
+  ],
+  "fix": "所有本地审批响应显式发送 Connection: close 并设置 close_connection；accepted socket 设置短读超时，慢请求 fail-closed；浏览器 GET 保持对象存活时从第二连接执行真实批准的回归测试必须通过。",
+  "prevention": {
+    "architecture_rule": "一次性本地控制面若使用单线程 HTTPServer，必须显式关闭每个响应连接并给 accepted socket 设置有限 I/O timeout；不得只依赖 server.accept timeout",
+    "tests": [
+      "ios/harness/tests/test_approval_ui.py#test_get_connection_cannot_starve_followup_approval",
+      "ios/harness/tests/test_approval_ui.py#test_one_click_writes_all_gates_and_closes"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-HARNESS-APPROVAL-UI-001",
+    "until": "IOS-HARNESS-APPROVAL-UI-001"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-24",
+  "last_seen": "2026-07-24",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260724T032425Z-ios-harness-approval-ui-001-05ecc601.json"
+  ]
+}

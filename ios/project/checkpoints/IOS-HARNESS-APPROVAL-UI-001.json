@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-HARNESS-APPROVAL-UI-001",
+  "summary": "新增 Harness review 本地验收页，把手写 Approval JSON 改为一次人工点击：页面展示冻结 Work Item、Evidence、Gate 与文件摘要，loopback 服务在点击时重新校验候选，以一次性 token 生成全部 v1 Approval 并执行 close；取消、陈旧候选、跨域、重放、超时和后端失败均 fail-closed。",
+  "evidence": "ios/harness/evidence/runs/run-20260724T032425Z-ios-harness-approval-ui-001-05ecc601.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 8,
+      "to_revision": 9,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": [
+      "ADR-0004"
+    ]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项是 Harness 控制面交互，不消费或发布业务知识"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项不改变 Android/iOS 产品行为，只改变本地 Harness 人工审批交互"
+  },
+  "pitfalls": {
+    "records": [
+      "ios/project/pitfalls/PIT-0011.json"
+    ],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "local reviewer 来自本机账号且 v1 signature 为 null；同权限恶意进程不受仓内 Web UI 约束，本地按钮只能作为 cooperative guardrail",
+    "v1 Approval schema 未直接持久化 attempt、Evidence hash 与 Gate policy；本地 Harness 通过冻结会话、Evidence 重验和本次请求前文件 fingerprint 防旧文件复用，发布级仍需签名 v2",
+    "Approval 文件与 WorkItemCompleted event/state/status 不是单一存储事务；close 异常会保留人类决定并返回 recovery_required，生产环境需 append-only journal/CAS",
+    "Harness 完成前会二次比较候选，但 mutation lock 不会冻结普通编辑器或恶意进程；最终 promotion 必须在受保护 CI 的 immutable tree 上重新 verify 与验签"
+  ],
+  "next_actions": [
+    "实现仓外原生 approval helper，以 Secure Enclave/Keychain userPresence 或 FIDO2 产生签名 ReviewDecision",
+    "设计 Approval v2，显式绑定 repository、attempt、Gate policy、review subject、Evidence hash、nonce、TTL 与受信 reviewer credential",
+    "让受保护 Supervisor/CI 持有 append-only journal、重算最终候选并执行唯一 patch promotion",
+    "为 close 的 event/state/status 部分写故障增加恢复事务和故障注入测试"
+  ],
+  "created_at": "2026-07-24T03:24:36Z"
+}

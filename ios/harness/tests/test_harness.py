@@ -942,10 +942,43 @@ class HarnessTests(unittest.TestCase):
                     "created_at": "2026-01-01T00:00:00Z",
                 },
             )
+            approval_ref = (
+                "ios/project/approvals/"
+                "IOS-BOOT-001--security-review.json"
+            )
+            verified_runtime = harness.state()["work_items"]["IOS-BOOT-001"]
+            preexisting_subject, _ = harness.candidate_snapshot(
+                verified_runtime,
+                [approval_ref],
+            )
+            fixture.write_json(
+                approval_ref,
+                {
+                    "schema_version": 1,
+                    "work_item_id": "IOS-BOOT-001",
+                    "gate": "security-review",
+                    "work_item_sha256": harness_module.sha256_json(item),
+                    "tree_sha256": preexisting_subject,
+                    "reviewer": "preexisting-human@example.invalid",
+                    "approved_at": harness_module.utc_now(),
+                    "expires_at": "2099-01-01T00:00:00Z",
+                    "signature": None,
+                },
+            )
             self.assertEqual("awaiting_human", harness.close("IOS-BOOT-001"))
             runtime = harness.state()["work_items"]["IOS-BOOT-001"]
+            self.assertEqual(
+                harness.file_fingerprint(approval_ref),
+                runtime["approval_request_existing_fingerprints"][approval_ref],
+            )
+            self.assertTrue(
+                any(
+                    "未在本次人工请求后更新" in reason
+                    for reason in runtime["awaiting_human_reasons"]
+                )
+            )
             fixture.write_json(
-                "ios/project/approvals/IOS-BOOT-001--security-review.json",
+                approval_ref,
                 {
                     "schema_version": 1,
                     "work_item_id": "IOS-BOOT-001",
@@ -953,7 +986,7 @@ class HarnessTests(unittest.TestCase):
                     "work_item_sha256": harness_module.sha256_json(item),
                     "tree_sha256": runtime["review_subject_sha256"],
                     "reviewer": "human-reviewer@example.invalid",
-                    "approved_at": "2026-01-01T00:00:00Z",
+                    "approved_at": harness_module.utc_now(),
                     "expires_at": "2099-01-01T00:00:00Z",
                     "signature": None,
                 },
@@ -1194,7 +1227,7 @@ class HarnessTests(unittest.TestCase):
                     "work_item_sha256": harness_module.sha256_json(item),
                     "tree_sha256": runtime["review_subject_sha256"],
                     "reviewer": "human-reviewer@example.invalid",
-                    "approved_at": "2026-07-23T00:00:00Z",
+                    "approved_at": harness_module.utc_now(),
                     "expires_at": "2099-01-01T00:00:00Z",
                     "signature": None,
                 },

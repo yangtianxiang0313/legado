@@ -3188,9 +3188,23 @@ class Harness:
         item: Dict[str, Any],
         tree_sha256: str,
         gates: Sequence[str],
+        *,
+        requested_at: Optional[str] = None,
+        preexisting_fingerprints: Optional[Dict[str, str]] = None,
     ) -> List[str]:
         errors: List[str] = []
         work_item_hash = sha256_json(item)
+        request_time: Optional[dt.datetime] = None
+        if requested_at is not None:
+            try:
+                request_time = dt.datetime.fromisoformat(
+                    requested_at.replace("Z", "+00:00")
+                )
+                if request_time.tzinfo is None:
+                    errors.append("approval_requested_at 必须含时区")
+                    request_time = None
+            except (TypeError, ValueError):
+                errors.append("approval_requested_at 无效")
         for gate in gates:
             path = self.resolve(self.config["approvals_dir"]) / f"{item_id}--{gate}.json"
             try:
@@ -3198,6 +3212,13 @@ class Harness:
             except HarnessError:
                 errors.append(f"缺少人工批准：{gate}")
                 continue
+            relative = self.relative(path)
+            if (
+                preexisting_fingerprints is not None
+                and preexisting_fingerprints.get(relative)
+                == self.file_fingerprint(relative)
+            ):
+                errors.append(f"approval 未在本次人工请求后更新：{gate}")
             if approval.get("work_item_id") != item_id or approval.get("gate") != gate:
                 errors.append(f"approval 与工作项/gate 不匹配：{gate}")
             if approval.get("work_item_sha256") != work_item_hash or approval.get("tree_sha256") != tree_sha256:
@@ -3205,6 +3226,16 @@ class Harness:
             reviewer = approval.get("reviewer")
             if not isinstance(reviewer, str) or not reviewer.strip() or reviewer.lower().startswith("ai"):
                 errors.append(f"approval reviewer 无效：{gate}")
+            try:
+                approved = dt.datetime.fromisoformat(
+                    str(approval.get("approved_at")).replace("Z", "+00:00")
+                )
+                if approved.tzinfo is None:
+                    errors.append(f"approval approved_at 必须含时区：{gate}")
+                elif request_time is not None and approved < request_time:
+                    errors.append(f"approval 早于本次人工请求：{gate}")
+            except (TypeError, ValueError):
+                errors.append(f"approval approved_at 无效：{gate}")
             try:
                 expires = dt.datetime.fromisoformat(str(approval.get("expires_at")).replace("Z", "+00:00"))
                 if expires.tzinfo is None:
@@ -3304,7 +3335,25 @@ class Harness:
         frozen_subject = runtime.get("review_subject_sha256")
         if frozen_subject is not None and frozen_subject != review_subject_sha256:
             raise HarnessError("候选内容在请求人工批准后发生变化；旧批准主题已失效，必须重新 verify")
-        approval_errors = self.approval_issues(item_id, item, review_subject_sha256, required_gates)
+        if required_gates and not isinstance(
+            runtime.get("approval_requested_at"),
+            str,
+        ):
+            runtime["approval_requested_at"] = utc_now()
+            runtime["approval_request_existing_fingerprints"] = {
+                path: self.file_fingerprint(path)
+                for path in approval_paths
+            }
+        approval_errors = self.approval_issues(
+            item_id,
+            item,
+            review_subject_sha256,
+            required_gates,
+            requested_at=runtime.get("approval_requested_at"),
+            preexisting_fingerprints=runtime.get(
+                "approval_request_existing_fingerprints"
+            ),
+        )
         architecture_kind = checkpoint.get("architecture_impact", {}).get("kind")
         if architecture_kind == "changes_architecture" and not item["spec"].get("gates"):
             approval_errors.append("架构变化工作项必须声明人工 gate")
@@ -3318,6 +3367,14 @@ class Harness:
             return "awaiting_human"
 
         final_tree_sha256, _ = self.snapshot_hash()
+        commit_subject_sha256, _ = self.candidate_snapshot(
+            runtime,
+            approval_paths,
+        )
+        if commit_subject_sha256 != review_subject_sha256:
+            raise HarnessError(
+                "候选在批准校验与完成提交之间发生变化；停止完成并重新 verify"
+            )
         runtime["status"] = "completed"
         runtime["completed_at"] = utc_now()
         runtime["final_tree_sha256"] = final_tree_sha256
@@ -3540,6 +3597,12 @@ def build_parser() -> argparse.ArgumentParser:
     close = subparsers.add_parser("close", help="验证项目记忆事务并完成工作项")
     close.add_argument("item_id")
 
+    review = subparsers.add_parser(
+        "review",
+        help="打开本地人工审批页（仅 awaiting_human；无非交互 approve 入口）",
+    )
+    review.add_argument("item_id")
+
     architecture = subparsers.add_parser("architecture", help="只运行架构检查")
     architecture.add_argument("--json", action="store_true")
 
@@ -3584,6 +3647,22 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 outcome = harness.close(args.item_id)
             print(f"{args.item_id}: {outcome}")
             return 0 if outcome == "completed" else 2
+        if args.command == "review":
+            try:
+                if __package__:
+                    from .approval_ui import ApprovalUIError as LocalApprovalUIError
+                    from .approval_ui import run_local_review
+                else:
+                    from approval_ui import ApprovalUIError as LocalApprovalUIError
+                    from approval_ui import run_local_review
+            except ImportError as error:
+                raise HarnessError(f"无法加载本地审批 UI：{error}") from error
+            try:
+                outcome = run_local_review(harness, args.item_id)
+            except LocalApprovalUIError as error:
+                raise HarnessError(str(error)) from error
+            print(f"{args.item_id}: {outcome}")
+            return 0
         if args.command == "architecture":
             errors, warnings = harness.architecture_issues()
             if args.json:
