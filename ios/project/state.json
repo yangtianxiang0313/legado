@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "revision": 56,
+  "revision": 62,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-23T12:30:46Z",
-  "event_head": "dd0b6b35198a79acaf4305b0345e41379c22f4170cfb1ea27a2b5aa1c89c90dd",
+  "updated_at": "2026-07-24T02:51:42Z",
+  "event_head": "327f4a36ad260b4f976e62b9a71fbd8edf722ecfbf3f2c08b633189cdcc1eca9",
   "active_work_items": [],
-  "last_completed_work_item": "IOS-KNOWLEDGE-PROPOSAL-BATCH-REFS-REPAIR-001",
+  "last_completed_work_item": "IOS-KNOWLEDGE-BOOK-DOMAIN-001",
   "work_items": {
     "IOS-BOOT-001": {
       "status": "completed",
@@ -980,9 +980,99 @@
       "final_tree_sha256": "af23742468c07975011666755b94629d04a4fc57a1ce5957b81f4d9c03ba981e"
     },
     "IOS-KNOWLEDGE-BOOK-DOMAIN-001": {
-      "status": "ready",
-      "attempt": 0,
-      "last_evidence": null
+      "status": "completed",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260723T130532Z-ios-knowledge-book-domain-001-9a40d6cd.json",
+      "claimed_by": "codex-root",
+      "claimed_at": "2026-07-23T12:33:46Z",
+      "lease_expires_at": "2026-07-24T12:33:46Z",
+      "work_item_sha256": "4369ba809f02f38796e9ae85496aac620bac9239bb91f24c5e2d726e1ad56355",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "c3c320e85f715e6f5828ca167be5ee51ea439592",
+      "base_capability_revision": 7,
+      "base_capability_assurance_sha256": "6c08426cf2cc8f0277426284e00909a10444767bc01eeb84e0db43db8dcbb2ac",
+      "android_requirement_selection_sha256": null,
+      "business_knowledge_control_sha256": "861cfc63ba4c4b79480c81df1ad6780f7222fc20ec7a878062553163fe08e896",
+      "business_knowledge_authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 2,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "android-intake-contract",
+          "argv": [
+            "python3",
+            "-B",
+            "ios/harness/android-intake/android_intake.py",
+            "doctor",
+            "--root",
+            ".",
+            "--work-item",
+            "IOS-KNOWLEDGE-BOOK-DOMAIN-001"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "1bf88f85f3f416e092d2c3bf30c0b86ae55ad95e050f05321da60bed60f3d5f8",
+          "cwd": ".",
+          "started_at": "2026-07-23T12:33:31Z",
+          "duration_ms": 462,
+          "timeout_seconds": 90,
+          "timed_out": false,
+          "process_leak": false,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "84f6b9d590a230c755728f08a7cc4071122d7bd66d14c218c852a45cdc0a64fe",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_tail": "android-intake: OK\n",
+          "stderr_tail": ""
+        },
+        {
+          "id": "harness-tests",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "307f335e883f02e96ad97ecbda4c210435c0b955e2bcb9e46db9dc7b0d02c285",
+          "cwd": ".",
+          "started_at": "2026-07-23T12:33:32Z",
+          "duration_ms": 14199,
+          "timeout_seconds": 60,
+          "timed_out": false,
+          "process_leak": false,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "194c732d57b8c8509553860015afbfb56595d4fb61073d7879fd0be533e64729",
+          "stdout_tail": "",
+          "stderr_tail": ".................................................\n----------------------------------------------------------------------\nRan 49 tests in 14.080s\n\nOK\n"
+        }
+      ],
+      "last_evidence_sha256": "ac402225f7e9d51b9f2472aae5082c718177374cd6fa16bf0470d95f40d0afa8",
+      "verified_at": "2026-07-23T13:05:32Z",
+      "awaiting_human_reasons": [
+        "缺少人工批准：architecture-review",
+        "缺少人工批准：knowledge-review"
+      ],
+      "review_subject_sha256": "ba5b4fd287dfc1f1481ed267ea909de00e821c61432cc14ca15ee6fd00cebc9c",
+      "review_subject_files": {
+        "ios/project/business-knowledge/drivers/proposals/DRV-BOOK-IDENTITY-001/r0001.json": "file:0o644:6b67089a6ec964dee6a9603ad0e49a2338db794daa40748455ab2a4fa6c4ec17",
+        "ios/project/business-knowledge/packets/proposals/BKP-BOOK-DOMAIN-001/r0001.json": "file:0o644:6c368b570fc4ab9900f12786e508b06bf12e4279f2f9be7caee20468f3c79e07",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json": "file:0o644:87b033c2c383405da4601f2312d7e1aac6bb7ea0f06e783175ebb8b059556aff",
+        "ios/project/checkpoints/IOS-KNOWLEDGE-BOOK-DOMAIN-001.json": "file:0o644:2ce880780e34efa3e4caef9a153d4e7ee31ea9cad2576a8906330bc5c909db11",
+        "ios/project/pitfalls/PIT-0010.json": "file:0o644:252e045adf299a48aa6a29e78eb74e0849b978a375b4f441c332ce5e67c59ff9"
+      },
+      "completed_at": "2026-07-24T02:51:42Z",
+      "final_tree_sha256": "319d1200514b0c8be046e38e4bccfe6dd033f11885289134c947f3f6cad3d4ea"
     }
   },
   "health": {
@@ -996,7 +1086,8 @@
     "source_lab": "fixture_transport_integrated",
     "knowledge_control_plane": "proposal_batch_claim_refs_verified",
     "knowledge_initialization_dag": "proposal_verified",
-    "knowledge_android_surfaces": "candidate_verified"
+    "knowledge_android_surfaces": "candidate_verified",
+    "knowledge_book_domain": "candidate_verified"
   },
   "risks": [
     {

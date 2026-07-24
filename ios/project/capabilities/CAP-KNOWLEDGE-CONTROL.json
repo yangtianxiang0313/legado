@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 7,
+  "revision": 8,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -25,7 +25,9 @@
   "depends_on": ["CAP-BOOTSTRAP"],
   "active_decisions": ["ADR-0004"],
   "open_compatibility": [],
-  "open_pitfalls": [],
+  "open_pitfalls": [
+    "PIT-0010"
+  ],
   "blockers": [],
   "required_evidence": ["harness-tests", "dependency-policy", "architecture"],
   "freshness_inputs": [
@@ -34,14 +36,14 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260723T122628Z-ios-knowledge-proposal-batch-refs-repair-001-bc2b3a24.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260723T130532Z-ios-knowledge-book-domain-001-9a40d6cd.json",
   "next_actions": [
-    "materialize Book/Shelf/Progress 分域扫描，并让同一 Work Item 的 DRV-BOOK-IDENTITY-001 只引用同批 Packet Claim 或 current published Claim",
-    "materialize 书源格式/规则/执行流水线与阅读会话/正文/进度/预取分域扫描",
-    "materialize 页面结构/导航图/多级菜单与外部集成/权限/依赖/发布约束分域扫描",
+    "materialize 书源/规则/执行流水线、阅读会话/正文/进度/预取、UI topology 与外部集成等剩余分域扫描",
+    "为换源、目录重排、阅读落点、删除保留、缓存完成态和 WebDAV 冲突建立 Android characterization 任务与结构化 expected",
+    "待依赖领域扫描与 characterization 齐备后，用 ADR 裁决 BookID、来源实例、子对象归属、进度坐标与迁移策略",
     "Phase-2 分域候选齐备后由 Trusted Publisher 原子发布 Packet/Driver、Coverage 与 Catalog",
-    "在首个 supersede 任务前独立闭合 produce/supersede revision 语义与 verification invalidation 生命周期"
+    "独立修复 PIT-0010 的 Harness 超时进程组清理，并在首个 supersede 任务前闭合 revision 与 verification invalidation 语义"
   ],
-  "updated_at": "2026-07-23T12:26:29Z",
-  "updated_by": "IOS-KNOWLEDGE-PROPOSAL-BATCH-REFS-REPAIR-001"
+  "updated_at": "2026-07-23T13:05:38Z",
+  "updated_by": "IOS-KNOWLEDGE-BOOK-DOMAIN-001"
 }

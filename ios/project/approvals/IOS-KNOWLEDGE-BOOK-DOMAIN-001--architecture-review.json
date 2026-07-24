@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-KNOWLEDGE-BOOK-DOMAIN-001",
+  "gate": "architecture-review",
+  "work_item_sha256": "4369ba809f02f38796e9ae85496aac620bac9239bb91f24c5e2d726e1ad56355",
+  "tree_sha256": "ba5b4fd287dfc1f1481ed267ea909de00e821c61432cc14ca15ee6fd00cebc9c",
+  "reviewer": "ytx",
+  "approved_at": "2026-07-24T02:51:41Z",
+  "expires_at": "2026-07-31T02:51:41Z",
+  "signature": null
+}

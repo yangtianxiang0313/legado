@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-BOOK-IDENTITY-001",
+  "revision": 1,
+  "status": "proposed",
+  "semantic_key": "library.book.identity-and-lifecycle",
+  "title": "书籍稳定身份、来源实例与阅读进度关联",
+  "claim_refs": [
+    {
+      "id": "BKC-BOOK-ENTITY-IDENTITY-001",
+      "revision": 1
+    },
+    {
+      "id": "BKC-BOOK-CANONICAL-IDENTITY-001",
+      "revision": 1
+    },
+    {
+      "id": "BKC-BOOK-SOURCE-MIGRATION-001",
+      "revision": 1
+    },
+    {
+      "id": "BKC-LOCAL-BOOK-RELOCATION-001",
+      "revision": 1
+    },
+    {
+      "id": "BKC-BOOK-DELETION-CASCADE-001",
+      "revision": 1
+    },
+    {
+      "id": "BKC-BOOK-PROGRESS-MODEL-001",
+      "revision": 1
+    },
+    {
+      "id": "BKC-BOOK-PROGRESS-SYNC-POLICY-001",
+      "revision": 1
+    },
+    {
+      "id": "BKC-BOOK-DELETION-POLICY-001",
+      "revision": 1
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "data_integrity",
+      "scenario": "换源、URL 变化、导入导出或本地路径迁移后，书籍身份及其章节、书签、阅读记录与进度不得静默错绑或丢失。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "portability",
+      "scenario": "Android 数据迁移到 iOS 时，应能将旧模型中的 name、author、bookUrl、origin 与 originOrder 映射到明确且可审计的新身份模型。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "consistency",
+      "scenario": "书架、详情、阅读器、换源和同步对同一本逻辑书及其来源实例使用一致的身份与进度语义。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "recoverability",
+      "scenario": "来源失效、同步冲突或误删除后，系统能够保留足够信息恢复书籍关系和用户阅读状态。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "evolvability",
+      "scenario": "后续增加多来源、合并书籍、跨设备同步或新的本地存储策略时，不需要让 UI 直接依赖 Android 的复合主键细节。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "testability",
+      "scenario": "身份生成、换源重映射、删除级联和同步冲突必须可在独立领域 Package 中以确定性输入输出验证。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "iOS 是否需要独立且不可变的 BookID，而不是直接沿用 Android 的 bookUrl 或 name+author 作为跨层身份？",
+    "逻辑书籍与某个书源下的来源实例是否应拆分建模；若拆分，两者的基数和生命周期分别是什么？",
+    "章节、书签、阅读记录、缓存和进度应归属于逻辑书、来源实例还是二者的组合？",
+    "阅读位置的稳定坐标应采用章节索引、章节 URL、章节身份、文本锚点还是组合形式？",
+    "换源时如何匹配目标章节并迁移进度；匹配失败、部分匹配和回滚分别如何处理？",
+    "本地书路径变化、远程书 URL 变化和 WebDAV 恢复时，哪些字段可变，哪些字段参与去重或冲突判定？",
+    "从 Android 复合身份迁移到 iOS 新身份时，如何记录映射、歧义和不可逆损失并提供可验证回退？"
+  ],
+  "resolution": {
+    "state": "requires_adr",
+    "adr_refs": [],
+    "work_item_refs": []
+  },
+  "promotion": null,
+  "supersedes": null,
+  "created_by": "IOS-KNOWLEDGE-BOOK-DOMAIN-001"
+}

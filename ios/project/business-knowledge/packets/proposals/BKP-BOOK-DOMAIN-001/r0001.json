@@ -1,0 +1,790 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-BOOK-DOMAIN-001",
+  "revision": 1,
+  "status": "candidate",
+  "semantic_key": "library.book-shelf-progress",
+  "title": "Book、Shelf、Chapter 与 Progress 领域知识",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "content.cache",
+      "library.catalog",
+      "library.shelf",
+      "reader.history",
+      "reader.progress",
+      "user.data-portability"
+    ],
+    "capability_refs": ["CAP-KNOWLEDGE-CONTROL"],
+    "subject_keys": [
+      "content.cache",
+      "content.import",
+      "content.source-switch",
+      "library.book",
+      "library.book-identity",
+      "library.chapter",
+      "library.deletion",
+      "library.group",
+      "library.shelf",
+      "reader.bookmark",
+      "reader.history",
+      "reader.progress",
+      "user.data-portability"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-BOOK-ENTITY-IDENTITY-001",
+      "revision": 1,
+      "semantic_key": "library.book.android-identity-constraints",
+      "kind": "composite_static_fact",
+      "topic": "Android Book 存储身份",
+      "statement": "Android Book 以 bookUrl 为主键，同时以 name + author 建立唯一约束；这两套数据库约束共同影响书架记录的插入、替换与关联，但不自动定义 iOS 的逻辑书籍身份。",
+      "subject_keys": ["library.book", "library.book-identity"],
+      "depends_on": [],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "e1815f3c4bc90c77fe68aafeea8fc4d10c219a79", "path": "app/src/main/java/io/legado/app/data/entities/Book.kt", "symbol_id": "kotlin://io.legado.app.data.entities/Book"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "none"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SEARCH-BOOK-LIFECYCLE-001",
+      "revision": 1,
+      "semantic_key": "discovery.search-book.persistence-lifecycle",
+      "kind": "runtime_behavior",
+      "topic": "搜索结果暂存与合并",
+      "statement": "搜索结果按来源持久化为 SearchBook，跨来源展示时再按 name + author 合并；记录还会受书源级联删除和启动期 TTL 清理影响，具体超时、重启与陈旧结果行为需要 Android characterization。",
+      "subject_keys": ["library.book", "library.book-identity"],
+      "depends_on": [{"id": "BKC-BOOK-ENTITY-IDENTITY-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "1b054cb732405956a6e9a48b83cd0a99adc5fda7", "path": "app/src/main/java/io/legado/app/data/entities/SearchBook.kt", "symbol_id": "kotlin://io.legado.app.data.entities/SearchBook"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "50b811063ab13636744dadf2a2c862834de9d5c3", "path": "app/src/main/java/io/legado/app/model/webBook/SearchModel.kt", "symbol_id": "kotlin://io.legado.app.model.webBook/SearchModel/mergeItems"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "0ca2e8ffbcdecaef8e2000e10a7e303deba0f74c", "path": "app/src/main/java/io/legado/app/App.kt", "symbol_id": "kotlin://io.legado.app/App/onCreate"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9444a09644d5b90f3eea76ebbeea28f35bc3c911", "path": "app/src/main/java/io/legado/app/data/dao/SearchBookDao.kt", "symbol_id": "kotlin://io.legado.app.data.dao/SearchBookDao/clearExpired"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-BOOK-CANONICAL-IDENTITY-001",
+      "revision": 1,
+      "semantic_key": "library.book.canonical-identity-decision",
+      "kind": "open_question",
+      "topic": "跨平台逻辑书籍身份",
+      "statement": "bookUrl、name + author、搜索结果身份、本地文件路径和云进度文件名并非同一键；iOS 需要人工确定不可变 BookID、来源别名、低置信度合并与重名冲突策略。",
+      "subject_keys": ["library.book-identity"],
+      "depends_on": [
+        {"id": "BKC-BOOK-ENTITY-IDENTITY-001", "revision": 1},
+        {"id": "BKC-SEARCH-BOOK-LIFECYCLE-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "e1815f3c4bc90c77fe68aafeea8fc4d10c219a79", "path": "app/src/main/java/io/legado/app/data/entities/Book.kt", "symbol_id": "kotlin://io.legado.app.data.entities/Book"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "d821c73323eada9be8c043207e4bb83bd66baa5c", "path": "app/src/main/java/io/legado/app/help/AppWebDav.kt", "symbol_id": "kotlin://io.legado.app.help/AppWebDav/getProgressFileName"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "0c0c50252d9c2590053fbf10cd39c49e314839e0", "path": "app/src/main/java/io/legado/app/model/localBook/LocalBook.kt", "symbol_id": "kotlin://io.legado.app.model.localBook/LocalBook/importFile"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "human_decision"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-BOOK-CHAPTER-IDENTITY-001",
+      "revision": 1,
+      "semantic_key": "library.chapter.android-identity-ownership",
+      "kind": "composite_static_fact",
+      "topic": "Android 章节身份与归属",
+      "statement": "BookChapter 以 (url, bookUrl) 为主键、以 (bookUrl, index) 为唯一约束，并通过 bookUrl 外键归属 Book、随 Book 级联删除；这些键是 Android 存储实现，不是跨目录版本的稳定章节 ID。",
+      "subject_keys": ["library.book", "library.chapter"],
+      "depends_on": [{"id": "BKC-BOOK-ENTITY-IDENTITY-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "3c962707818d3ad976867221a2f76da20e001e11", "path": "app/src/main/java/io/legado/app/data/entities/BookChapter.kt", "symbol_id": "kotlin://io.legado.app.data.entities/BookChapter"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "43ad9bd7818372f6447891d7064eab3c0b669087", "path": "app/src/main/java/io/legado/app/data/dao/BookChapterDao.kt", "symbol_id": "kotlin://io.legado.app.data.dao/BookChapterDao"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "none"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-BOOK-GROUP-MODEL-001",
+      "revision": 1,
+      "semantic_key": "library.shelf.android-group-model",
+      "kind": "composite_static_fact",
+      "topic": "书架分组模型",
+      "statement": "用户分组以 Book.group 的 64 位 one-hot 位掩码表示；负数 ID 保留给全部、未分组、本地、音频和更新失败等派生视图，删除用户组时需从每本书手工移除对应位。",
+      "subject_keys": ["library.group", "library.shelf"],
+      "depends_on": [{"id": "BKC-BOOK-ENTITY-IDENTITY-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "f97974cbbeb321838367fcbd8714c0a8e6b522ff", "path": "app/src/main/java/io/legado/app/data/entities/BookGroup.kt", "symbol_id": "kotlin://io.legado.app.data.entities/BookGroup"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "ddb4ebf7c4ef630ee0c4c5fb42b9aa736953697b", "path": "app/src/main/java/io/legado/app/data/dao/BookDao.kt", "symbol_id": "kotlin://io.legado.app.data.dao/BookDao/removeGroup"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "0c3fd7fc1224e8ec87ac6a61b6cd6ae7cc2f5d0d", "path": "app/src/main/java/io/legado/app/data/dao/BookGroupDao.kt", "symbol_id": "kotlin://io.legado.app.data.dao/BookGroupDao"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "none"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-BOOK-GROUP-BOUNDARY-RISK-001",
+      "revision": 1,
+      "semantic_key": "library.shelf.group-bit-boundary-risk",
+      "kind": "risk_or_anomaly",
+      "topic": "分组位边界风险",
+      "statement": "第 64 个 one-hot 分组会落到 Long.MIN_VALUE；现有 groupId >= 0 的选择条件与成员判断 > 0 可能使该分组不可选择或不可识别。",
+      "subject_keys": ["library.group", "library.shelf"],
+      "depends_on": [{"id": "BKC-BOOK-GROUP-MODEL-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "0c3fd7fc1224e8ec87ac6a61b6cd6ae7cc2f5d0d", "path": "app/src/main/java/io/legado/app/data/dao/BookGroupDao.kt", "symbol_id": "kotlin://io.legado.app.data.dao/BookGroupDao"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "e153d81b2a5c82efb802b8c9380fef64d6cc7290", "path": "app/src/main/java/io/legado/app/ui/book/group/GroupSelectDialog.kt", "symbol_id": "kotlin://io.legado.app.ui.book.group/GroupSelectDialog"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-BOOK-PROGRESS-MODEL-001",
+      "revision": 1,
+      "semantic_key": "reader.progress.android-position-model",
+      "kind": "composite_static_fact",
+      "topic": "Android 阅读位置坐标",
+      "statement": "Android 持久阅读位置由章节索引、章节标题、首行字符位置和更新时间组成；页码由当前排版临时反推，不属于稳定持久字段。",
+      "subject_keys": ["library.book", "library.chapter", "reader.progress"],
+      "depends_on": [
+        {"id": "BKC-BOOK-ENTITY-IDENTITY-001", "revision": 1},
+        {"id": "BKC-BOOK-CHAPTER-IDENTITY-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "e1815f3c4bc90c77fe68aafeea8fc4d10c219a79", "path": "app/src/main/java/io/legado/app/data/entities/Book.kt", "symbol_id": "kotlin://io.legado.app.data.entities/Book/durChapterIndex"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "d5fd70d102f0afa50c12982cb6aedcec16b70c4c", "path": "app/src/main/java/io/legado/app/data/entities/BookProgress.kt", "symbol_id": "kotlin://io.legado.app.data.entities/BookProgress"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d", "path": "app/src/main/java/io/legado/app/model/ReadBook.kt", "symbol_id": "kotlin://io.legado.app.model/ReadBook/durPageIndex"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "none"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-BOOK-PROGRESS-RUNTIME-001",
+      "revision": 1,
+      "semantic_key": "reader.progress.layout-save-runtime",
+      "kind": "runtime_behavior",
+      "topic": "阅读位置保存时机",
+      "statement": "阅读器在排版后由页对象换算字符位置，并在翻页、朗读切章、初始化或暂停等时机异步写回 Book；首尾页、重排和进程终止时的精确落点需要 Android characterization。",
+      "subject_keys": ["reader.progress"],
+      "depends_on": [{"id": "BKC-BOOK-PROGRESS-MODEL-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d", "path": "app/src/main/java/io/legado/app/model/ReadBook.kt", "symbol_id": "kotlin://io.legado.app.model/ReadBook"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "4426655e6bed8c4c3a874d57f47c917120406a1a", "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookViewModel.kt", "symbol_id": "kotlin://io.legado.app.ui.book.read/ReadBookViewModel"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "0299cf552d36a1ab6a45d15988730cf73c2f20ad", "path": "app/src/main/java/io/legado/app/model/AudioPlay.kt", "symbol_id": "kotlin://io.legado.app.model/AudioPlay/saveRead"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "b116c77fa2d48c9d1a1013e60a92236f71bea1bc", "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt", "symbol_id": "kotlin://io.legado.app.ui.book.read/ReadBookActivity/onPause"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-BOOK-PROGRESS-REMAP-001",
+      "revision": 1,
+      "semantic_key": "reader.progress.toc-remap-runtime",
+      "kind": "runtime_behavior",
+      "topic": "目录变化后的进度重映射",
+      "statement": "整书换源或单章替代目录匹配时，Android 通过同索引标题、章节号、标题相似度和邻域窗口启发式重映射旧进度；重复标题、目录缩放和映射失败行为需要 Android characterization。",
+      "subject_keys": ["library.chapter", "reader.progress"],
+      "depends_on": [
+        {"id": "BKC-BOOK-CHAPTER-IDENTITY-001", "revision": 1},
+        {"id": "BKC-BOOK-PROGRESS-MODEL-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "40f47f3a0f6bfa63cce79efb7a1518737b84dc45", "path": "app/src/main/java/io/legado/app/help/book/BookHelp.kt", "symbol_id": "kotlin://io.legado.app.help.book/BookHelp/getDurChapter"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "e1815f3c4bc90c77fe68aafeea8fc4d10c219a79", "path": "app/src/main/java/io/legado/app/data/entities/Book.kt", "symbol_id": "kotlin://io.legado.app.data.entities/Book/migrateTo"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "bb7215d31e2832e84675a8493672c8321be63baf", "path": "app/src/main/java/io/legado/app/ui/book/changesource/ChangeChapterSourceDialog.kt", "symbol_id": "kotlin://io.legado.app.ui.book.changesource/ChangeChapterSourceDialog/openToc"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-BOOK-SOURCE-MIGRATION-001",
+      "revision": 1,
+      "semantic_key": "library.book.source-switch-migration-runtime",
+      "kind": "runtime_behavior",
+      "topic": "整书换源迁移",
+      "statement": "整书换源先由 Book.migrateTo 迁移映射后的阅读位置与部分用户字段；详情与书架批量路径随后删除旧 Book 并写入新 Book 与目录，阅读/听书内跨类型路径则替换 Book 后跳转，入口间目录写入差异与失败原子性需 characterization。",
+      "subject_keys": ["content.source-switch", "library.book", "reader.progress"],
+      "depends_on": [
+        {"id": "BKC-BOOK-ENTITY-IDENTITY-001", "revision": 1},
+        {"id": "BKC-BOOK-CHAPTER-IDENTITY-001", "revision": 1},
+        {"id": "BKC-BOOK-PROGRESS-REMAP-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "e1815f3c4bc90c77fe68aafeea8fc4d10c219a79", "path": "app/src/main/java/io/legado/app/data/entities/Book.kt", "symbol_id": "kotlin://io.legado.app.data.entities/Book/migrateTo"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "a461b135ca389a687189b6661a0a02e04456c7f2", "path": "app/src/main/java/io/legado/app/ui/book/info/BookInfoViewModel.kt", "symbol_id": "kotlin://io.legado.app.ui.book.info/BookInfoViewModel/changeTo"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "0bb1754bfa3eae7cb12ae1e30ddb72789bb05f90", "path": "app/src/main/java/io/legado/app/ui/book/manage/BookshelfManageViewModel.kt", "symbol_id": "kotlin://io.legado.app.ui.book.manage/BookshelfManageViewModel/changeSource"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "b116c77fa2d48c9d1a1013e60a92236f71bea1bc", "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt", "symbol_id": "kotlin://io.legado.app.ui.book.read/ReadBookActivity/changeTo"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "49cf4a452254c2fc0f0130b6eddd02a9c0cc0181", "path": "app/src/main/java/io/legado/app/ui/book/audio/AudioPlayActivity.kt", "symbol_id": "kotlin://io.legado.app.ui.book.audio/AudioPlayActivity/changeTo"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-CHAPTER-SOURCE-OVERRIDE-001",
+      "revision": 1,
+      "semantic_key": "reader.chapter.source-override-runtime",
+      "kind": "runtime_behavior",
+      "topic": "单章换源覆盖",
+      "statement": "单章换源从替代书源获取正文后，以当前 Book 和当前 Chapter 的缓存身份落盘，不持久记录内容的实际来源；缓存复用、失效和恢复行为需要 characterization。",
+      "subject_keys": ["content.source-switch", "library.chapter"],
+      "depends_on": [{"id": "BKC-BOOK-CHAPTER-IDENTITY-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "c97d0406de9e7b4a9fbd9025aee038306175bbc5", "path": "app/src/main/java/io/legado/app/ui/book/changesource/ChangeChapterSourceViewModel.kt", "symbol_id": "kotlin://io.legado.app.ui.book.changesource/ChangeChapterSourceViewModel/getContent"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "4426655e6bed8c4c3a874d57f47c917120406a1a", "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookViewModel.kt", "symbol_id": "kotlin://io.legado.app.ui.book.read/ReadBookViewModel/saveContent"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-BOOK-SOURCE-MIGRATION-POLICY-001",
+      "revision": 1,
+      "semantic_key": "library.book.source-switch-policy-decision",
+      "kind": "open_question",
+      "topic": "iOS 换源事务政策",
+      "statement": "iOS 需人工确定整书换源的字段所有权、来源实例边界、原子提交与失败回滚，以及单章覆盖的来源追踪、失效和恢复策略。",
+      "subject_keys": ["content.source-switch", "library.book-identity"],
+      "depends_on": [
+        {"id": "BKC-BOOK-SOURCE-MIGRATION-001", "revision": 1},
+        {"id": "BKC-CHAPTER-SOURCE-OVERRIDE-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "e1815f3c4bc90c77fe68aafeea8fc4d10c219a79", "path": "app/src/main/java/io/legado/app/data/entities/Book.kt", "symbol_id": "kotlin://io.legado.app.data.entities/Book/migrateTo"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "c97d0406de9e7b4a9fbd9025aee038306175bbc5", "path": "app/src/main/java/io/legado/app/ui/book/changesource/ChangeChapterSourceViewModel.kt", "symbol_id": "kotlin://io.legado.app.ui.book.changesource/ChangeChapterSourceViewModel"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "human_decision"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-BOOK-DELETION-CASCADE-001",
+      "revision": 1,
+      "semantic_key": "library.book.android-deletion-cascade",
+      "kind": "composite_static_fact",
+      "topic": "Book 删除级联边界",
+      "statement": "基础 Book.delete 只删除 Book；章节因外键级联删除，而 Bookmark、ReadRecord、SearchBook 和云进度没有统一的 Book 外键级联关系。",
+      "subject_keys": ["library.book", "library.deletion"],
+      "depends_on": [
+        {"id": "BKC-BOOK-ENTITY-IDENTITY-001", "revision": 1},
+        {"id": "BKC-BOOK-CHAPTER-IDENTITY-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "e1815f3c4bc90c77fe68aafeea8fc4d10c219a79", "path": "app/src/main/java/io/legado/app/data/entities/Book.kt", "symbol_id": "kotlin://io.legado.app.data.entities/Book/delete"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "3c962707818d3ad976867221a2f76da20e001e11", "path": "app/src/main/java/io/legado/app/data/entities/BookChapter.kt", "symbol_id": "kotlin://io.legado.app.data.entities/BookChapter"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "1093970423bc64d7405a142a75befd23c09ec163", "path": "app/src/main/java/io/legado/app/data/entities/Bookmark.kt", "symbol_id": "kotlin://io.legado.app.data.entities/Bookmark"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "c1638ac313e3d71997e9830383e3d604a8c3ec2f", "path": "app/src/main/java/io/legado/app/data/entities/ReadRecord.kt", "symbol_id": "kotlin://io.legado.app.data.entities/ReadRecord"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "1b054cb732405956a6e9a48b83cd0a99adc5fda7", "path": "app/src/main/java/io/legado/app/data/entities/SearchBook.kt", "symbol_id": "kotlin://io.legado.app.data.entities/SearchBook"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "d5fd70d102f0afa50c12982cb6aedcec16b70c4c", "path": "app/src/main/java/io/legado/app/data/entities/BookProgress.kt", "symbol_id": "kotlin://io.legado.app.data.entities/BookProgress"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "d821c73323eada9be8c043207e4bb83bd66baa5c", "path": "app/src/main/java/io/legado/app/help/AppWebDav.kt", "symbol_id": "kotlin://io.legado.app.help/AppWebDav"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "none"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-BOOK-DELETION-POLICY-001",
+      "revision": 1,
+      "semantic_key": "library.book.deletion-policy-decision",
+      "kind": "open_question",
+      "topic": "iOS 删除与保留政策",
+      "statement": "iOS 需人工确定移出书架、删除本地缓存、删除原始文件、清理阅读历史与书签、删除云进度是否为同一操作，以及重新加入、tombstone 与撤销策略。",
+      "subject_keys": ["library.deletion"],
+      "depends_on": [{"id": "BKC-BOOK-DELETION-CASCADE-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "0c0c50252d9c2590053fbf10cd39c49e314839e0", "path": "app/src/main/java/io/legado/app/model/localBook/LocalBook.kt", "symbol_id": "kotlin://io.legado.app.model.localBook/LocalBook/deleteBook"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "d821c73323eada9be8c043207e4bb83bd66baa5c", "path": "app/src/main/java/io/legado/app/help/AppWebDav.kt", "symbol_id": "kotlin://io.legado.app.help/AppWebDav"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "human_decision"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-BOOK-CACHE-STORAGE-001",
+      "revision": 1,
+      "semantic_key": "content.cache.android-file-storage",
+      "kind": "composite_static_fact",
+      "topic": "离线正文文件身份",
+      "statement": "离线正文使用文件系统缓存；书目录由书名片段和 MD5(bookUrl) 派生，章节文件名由章节索引和标题摘要派生，因此缓存身份同时耦合来源 URL 与目录投影。",
+      "subject_keys": ["content.cache", "library.book", "library.chapter"],
+      "depends_on": [
+        {"id": "BKC-BOOK-ENTITY-IDENTITY-001", "revision": 1},
+        {"id": "BKC-BOOK-CHAPTER-IDENTITY-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "e1815f3c4bc90c77fe68aafeea8fc4d10c219a79", "path": "app/src/main/java/io/legado/app/data/entities/Book.kt", "symbol_id": "kotlin://io.legado.app.data.entities/Book/getFolderNameNoCache"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "3c962707818d3ad976867221a2f76da20e001e11", "path": "app/src/main/java/io/legado/app/data/entities/BookChapter.kt", "symbol_id": "kotlin://io.legado.app.data.entities/BookChapter/getFileName"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "40f47f3a0f6bfa63cce79efb7a1518737b84dc45", "path": "app/src/main/java/io/legado/app/help/book/BookHelp.kt", "symbol_id": "kotlin://io.legado.app.help.book/BookHelp"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "none"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-BOOK-CACHE-RUNTIME-001",
+      "revision": 1,
+      "semantic_key": "content.cache.queue-completion-runtime",
+      "kind": "runtime_behavior",
+      "topic": "离线缓存完成态",
+      "statement": "缓存任务、重试和成功失败集合主要驻留内存，正文失败存在有限重试；缓存完成统计主要依据正文文件和卷节点，不必然等同图片资源完整，需对进程终止和部分图片做 characterization。",
+      "subject_keys": ["content.cache"],
+      "depends_on": [{"id": "BKC-BOOK-CACHE-STORAGE-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "40f47f3a0f6bfa63cce79efb7a1518737b84dc45", "path": "app/src/main/java/io/legado/app/help/book/BookHelp.kt", "symbol_id": "kotlin://io.legado.app.help.book/BookHelp/hasContent"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "cdcbbf5696c1d2b018e25c2819c0461e8c667866", "path": "app/src/main/java/io/legado/app/model/CacheBook.kt", "symbol_id": "kotlin://io.legado.app.model/CacheBook"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-LOCAL-BOOK-RELOCATION-001",
+      "revision": 1,
+      "semantic_key": "library.local-book.relocation-runtime",
+      "kind": "runtime_behavior",
+      "topic": "本地文件重定位",
+      "statement": "本地书文件失效后，Android 可按原文件名搜索或由用户重选目录，并直接修改 bookUrl 后重载目录；主键替换、旧目录与缓存残留需要 characterization。",
+      "subject_keys": ["content.import", "library.book-identity"],
+      "depends_on": [
+        {"id": "BKC-BOOK-ENTITY-IDENTITY-001", "revision": 1},
+        {"id": "BKC-BOOK-CHAPTER-IDENTITY-001", "revision": 1},
+        {"id": "BKC-BOOK-CACHE-STORAGE-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "d5c2b821ea1caa131078e36d0bdf83a73bb8e3dc", "path": "app/src/main/java/io/legado/app/help/book/BookExtensions.kt", "symbol_id": "kotlin://io.legado.app.help.book/BookExtensions/getLocalUri"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "4426655e6bed8c4c3a874d57f47c917120406a1a", "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookViewModel.kt", "symbol_id": "kotlin://io.legado.app.ui.book.read/ReadBookViewModel/loadChapterList"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "8496ae09111fce34dee650d73ce7949735f7327e", "path": "app/src/main/java/io/legado/app/ui/book/read/BaseReadBookActivity.kt", "symbol_id": "kotlin://io.legado.app.ui.book.read/BaseReadBookActivity"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-BOOK-PROGRESS-WEBDAV-MODEL-001",
+      "revision": 1,
+      "semantic_key": "reader.progress.webdav-payload-identity",
+      "kind": "composite_static_fact",
+      "topic": "WebDAV 进度载荷",
+      "statement": "WebDAV 进度文件以清洗后的 name_author.json 命名，载荷包含书名、作者、章节索引、字符位置、时间和标题，但不含书源、目录版本或版本向量。",
+      "subject_keys": ["reader.progress", "user.data-portability"],
+      "depends_on": [
+        {"id": "BKC-BOOK-ENTITY-IDENTITY-001", "revision": 1},
+        {"id": "BKC-BOOK-PROGRESS-MODEL-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "d5fd70d102f0afa50c12982cb6aedcec16b70c4c", "path": "app/src/main/java/io/legado/app/data/entities/BookProgress.kt", "symbol_id": "kotlin://io.legado.app.data.entities/BookProgress"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "d821c73323eada9be8c043207e4bb83bd66baa5c", "path": "app/src/main/java/io/legado/app/help/AppWebDav.kt", "symbol_id": "kotlin://io.legado.app.help/AppWebDav/getProgressFileName"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "none"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-BOOK-PROGRESS-WEBDAV-RUNTIME-001",
+      "revision": 1,
+      "semantic_key": "reader.progress.webdav-conflict-runtime",
+      "kind": "runtime_behavior",
+      "topic": "WebDAV 进度冲突行为",
+      "statement": "单书同步自动采用更靠后的云端位置，云端较旧时仅手动入口可确认回读；批量同步与 Web API 保存路径使用不同过滤或覆盖策略，多设备、回退和目录变化需要 characterization。",
+      "subject_keys": ["reader.progress", "user.data-portability"],
+      "depends_on": [
+        {"id": "BKC-BOOK-PROGRESS-RUNTIME-001", "revision": 1},
+        {"id": "BKC-BOOK-PROGRESS-REMAP-001", "revision": 1},
+        {"id": "BKC-BOOK-PROGRESS-WEBDAV-MODEL-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "d821c73323eada9be8c043207e4bb83bd66baa5c", "path": "app/src/main/java/io/legado/app/help/AppWebDav.kt", "symbol_id": "kotlin://io.legado.app.help/AppWebDav/downloadAllBookProgress"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "4426655e6bed8c4c3a874d57f47c917120406a1a", "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookViewModel.kt", "symbol_id": "kotlin://io.legado.app.ui.book.read/ReadBookViewModel/syncBookProgress"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "b116c77fa2d48c9d1a1013e60a92236f71bea1bc", "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt", "symbol_id": "kotlin://io.legado.app.ui.book.read/ReadBookActivity/sureSyncProgress"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "74582f58d4cf4b632baec1e8ff2e356713632f97", "path": "app/src/main/java/io/legado/app/api/controller/BookController.kt", "symbol_id": "kotlin://io.legado.app.api.controller/BookController/saveBookProgress"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-BOOK-PROGRESS-SYNC-POLICY-001",
+      "revision": 1,
+      "semantic_key": "reader.progress.cross-device-policy-decision",
+      "kind": "open_question",
+      "topic": "iOS 跨设备进度政策",
+      "statement": "iOS 需人工决定跨设备进度身份、冲突排序、允许回退的交互、目录变化后的重映射，以及整书换源后是否继承同步时钟。",
+      "subject_keys": ["reader.progress", "user.data-portability"],
+      "depends_on": [
+        {"id": "BKC-BOOK-PROGRESS-WEBDAV-MODEL-001", "revision": 1},
+        {"id": "BKC-BOOK-PROGRESS-WEBDAV-RUNTIME-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "d821c73323eada9be8c043207e4bb83bd66baa5c", "path": "app/src/main/java/io/legado/app/help/AppWebDav.kt", "symbol_id": "kotlin://io.legado.app.help/AppWebDav"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "e1815f3c4bc90c77fe68aafeea8fc4d10c219a79", "path": "app/src/main/java/io/legado/app/data/entities/Book.kt", "symbol_id": "kotlin://io.legado.app.data.entities/Book/migrateTo"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "human_decision"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-BOOK-READ-RECORD-MODEL-001",
+      "revision": 1,
+      "semantic_key": "reader.history.android-read-record-model",
+      "kind": "composite_static_fact",
+      "topic": "Android 阅读时长记录",
+      "statement": "ReadRecord 以 (deviceId, bookName) 为主键，持久化累计阅读时长与最后阅读时间，不通过 Book 外键关联书架实体；当前会话起点由 ReadBook.readStartTime 单独驻留内存。",
+      "subject_keys": ["reader.history"],
+      "depends_on": [{"id": "BKC-BOOK-ENTITY-IDENTITY-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "c1638ac313e3d71997e9830383e3d604a8c3ec2f", "path": "app/src/main/java/io/legado/app/data/entities/ReadRecord.kt", "symbol_id": "kotlin://io.legado.app.data.entities/ReadRecord"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "2846fe844b7dcfd3d5ddd568d08b54cd891a5afb", "path": "app/src/main/java/io/legado/app/data/dao/ReadRecordDao.kt", "symbol_id": "kotlin://io.legado.app.data.dao/ReadRecordDao"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d", "path": "app/src/main/java/io/legado/app/model/ReadBook.kt", "symbol_id": "kotlin://io.legado.app.model/ReadBook/readStartTime"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "none"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-BOOK-READ-RECORD-RISK-001",
+      "revision": 1,
+      "semantic_key": "reader.history.read-record-runtime-risk",
+      "kind": "risk_or_anomaly",
+      "topic": "阅读时长聚合风险",
+      "statement": "当前阅读会话默认写入空 deviceId，初始化又可能以所有设备累计值作为基数；多设备恢复可能重复累计，末段停留时间也可能因结算时机丢失，需 characterization。",
+      "subject_keys": ["reader.history"],
+      "depends_on": [{"id": "BKC-BOOK-READ-RECORD-MODEL-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d", "path": "app/src/main/java/io/legado/app/model/ReadBook.kt", "symbol_id": "kotlin://io.legado.app.model/ReadBook"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "2846fe844b7dcfd3d5ddd568d08b54cd891a5afb", "path": "app/src/main/java/io/legado/app/data/dao/ReadRecordDao.kt", "symbol_id": "kotlin://io.legado.app.data.dao/ReadRecordDao/getReadTime"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "b116c77fa2d48c9d1a1013e60a92236f71bea1bc", "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt", "symbol_id": "kotlin://io.legado.app.ui.book.read/ReadBookActivity/onPause"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-BOOKMARK-MODEL-001",
+      "revision": 1,
+      "semantic_key": "reader.bookmark.android-identity-retention",
+      "kind": "composite_static_fact",
+      "topic": "Android 书签身份与保留",
+      "statement": "Bookmark 以创建时间为主键，以书名作者关联书籍，并保存章节索引、字符位置、章节名、摘要和内容；它没有 Book 外键，删除 Book 后仍可保留。",
+      "subject_keys": ["reader.bookmark"],
+      "depends_on": [
+        {"id": "BKC-BOOK-ENTITY-IDENTITY-001", "revision": 1},
+        {"id": "BKC-BOOK-CHAPTER-IDENTITY-001", "revision": 1},
+        {"id": "BKC-BOOK-DELETION-CASCADE-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "1093970423bc64d7405a142a75befd23c09ec163", "path": "app/src/main/java/io/legado/app/data/entities/Bookmark.kt", "symbol_id": "kotlin://io.legado.app.data.entities/Bookmark"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "e1815f3c4bc90c77fe68aafeea8fc4d10c219a79", "path": "app/src/main/java/io/legado/app/data/entities/Book.kt", "symbol_id": "kotlin://io.legado.app.data.entities/Book/delete"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "none"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-BOOKMARK-RUNTIME-RISK-001",
+      "revision": 1,
+      "semantic_key": "reader.bookmark.search-runtime-risk",
+      "kind": "risk_or_anomaly",
+      "topic": "书签搜索与迁移风险",
+      "statement": "Bookmark 搜索 SQL 的 content LIKE 分支可能绕过书名作者限制而返回其他书的记录；换源、改名与目录重排后也可能形成无法正确关联或定位的书签，需要 characterization。",
+      "subject_keys": ["reader.bookmark"],
+      "depends_on": [{"id": "BKC-BOOKMARK-MODEL-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "7940139ff5c87e977f4aeefa43064e733055ddca", "path": "app/src/main/java/io/legado/app/data/dao/BookmarkDao.kt", "symbol_id": "kotlin://io.legado.app.data.dao/BookmarkDao/flowSearch"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "1093970423bc64d7405a142a75befd23c09ec163", "path": "app/src/main/java/io/legado/app/data/entities/Bookmark.kt", "symbol_id": "kotlin://io.legado.app.data.entities/Bookmark"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-BOOK-DETAIL-STAGING-001",
+      "revision": 1,
+      "semantic_key": "library.book.detail-staging-runtime",
+      "kind": "runtime_behavior",
+      "topic": "详情候选态与入架提交",
+      "statement": "搜索书进入详情后仍可处于候选态；明确加入或选择正数分组时提交，进入阅读或目录则可能先暂存 Book 与目录，再按返回结果保留或删除；进程终止边界需 characterization。",
+      "subject_keys": ["library.book", "library.shelf"],
+      "depends_on": [
+        {"id": "BKC-BOOK-ENTITY-IDENTITY-001", "revision": 1},
+        {"id": "BKC-SEARCH-BOOK-LIFECYCLE-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "a461b135ca389a687189b6661a0a02e04456c7f2", "path": "app/src/main/java/io/legado/app/ui/book/info/BookInfoViewModel.kt", "symbol_id": "kotlin://io.legado.app.ui.book.info/BookInfoViewModel/addToBookshelf"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "4426655e6bed8c4c3a874d57f47c917120406a1a", "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookViewModel.kt", "symbol_id": "kotlin://io.legado.app.ui.book.read/ReadBookViewModel/removeFromBookshelf"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "611ce1a9a56ed26ce71ca482eea0e908c7634857", "path": "app/src/main/java/io/legado/app/ui/book/info/BookInfoActivity.kt", "symbol_id": "kotlin://io.legado.app.ui.book.info/BookInfoActivity"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "b116c77fa2d48c9d1a1013e60a92236f71bea1bc", "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt", "symbol_id": "kotlin://io.legado.app.ui.book.read/ReadBookActivity/finish"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SHELF-SORT-UNREAD-001",
+      "revision": 1,
+      "semantic_key": "library.shelf.sort-and-unread-runtime",
+      "kind": "runtime_behavior",
+      "topic": "书架排序与新增章节状态",
+      "statement": "书架支持最近阅读、最近更新、名称、手动与综合时间排序，并可按分组覆盖全局设置；目录增长形成新增章节标记，进入阅读后清零，等长重排与缩短行为需 characterization。",
+      "subject_keys": ["library.group", "library.shelf"],
+      "depends_on": [
+        {"id": "BKC-BOOK-GROUP-MODEL-001", "revision": 1},
+        {"id": "BKC-BOOK-PROGRESS-MODEL-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "f97974cbbeb321838367fcbd8714c0a8e6b522ff", "path": "app/src/main/java/io/legado/app/data/entities/BookGroup.kt", "symbol_id": "kotlin://io.legado.app.data.entities/BookGroup/getRealBookSort"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d", "path": "app/src/main/java/io/legado/app/model/ReadBook.kt", "symbol_id": "kotlin://io.legado.app.model/ReadBook/saveRead"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "fe9977c72fd4506a4dce934a9b0a1491287860ed", "path": "app/src/main/java/io/legado/app/ui/main/bookshelf/style1/books/BooksFragment.kt", "symbol_id": "kotlin://io.legado.app.ui.main.bookshelf.style1.books/BooksFragment/upRecyclerData"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "6f1b758fed28cb7212d748e1270d64c13463800a", "path": "app/src/main/java/io/legado/app/model/webBook/BookChapterList.kt", "symbol_id": "kotlin://io.legado.app.model.webBook/BookChapterList/analyzeChapterList"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SHELF-BATCH-PARTIAL-001",
+      "revision": 1,
+      "semantic_key": "library.shelf.batch-partial-commit-runtime",
+      "kind": "runtime_behavior",
+      "topic": "书架批量操作部分提交",
+      "statement": "批量管理支持筛选、全选、分组、更新开关、换源、清缓存、删除和手动排序；批量换源逐书执行，失败或取消不一定回滚已完成项目，部分提交结果需 characterization。",
+      "subject_keys": ["library.shelf"],
+      "depends_on": [
+        {"id": "BKC-BOOK-GROUP-MODEL-001", "revision": 1},
+        {"id": "BKC-BOOK-SOURCE-MIGRATION-001", "revision": 1},
+        {"id": "BKC-BOOK-DELETION-CASCADE-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "0bb1754bfa3eae7cb12ae1e30ddb72789bb05f90", "path": "app/src/main/java/io/legado/app/ui/book/manage/BookshelfManageViewModel.kt", "symbol_id": "kotlin://io.legado.app.ui.book.manage/BookshelfManageViewModel"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "d0f564d8c17cceb37674e343e6fc2c1cef047bb5", "path": "app/src/main/java/io/legado/app/ui/book/manage/BookshelfManageActivity.kt", "symbol_id": "kotlin://io.legado.app.ui.book.manage/BookshelfManageActivity"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-BOOK-IMPORT-CHANNELS-001",
+      "revision": 1,
+      "semantic_key": "library.book.import-channel-runtime",
+      "kind": "runtime_behavior",
+      "topic": "网址与本地导入入口",
+      "statement": "网址入架先由 base URL 或 bookUrlPattern 推断书源并拉取详情；本地入架按 URI 导入并支持扫描、压缩包与文件名解析，两类入口具有不同身份与失败语义，需 characterization。",
+      "subject_keys": ["content.import", "library.book"],
+      "depends_on": [
+        {"id": "BKC-BOOK-ENTITY-IDENTITY-001", "revision": 1},
+        {"id": "BKC-LOCAL-BOOK-RELOCATION-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "5730590bffb6f8f6109ba66441a0937fdd10ec9b", "path": "app/src/main/java/io/legado/app/ui/main/bookshelf/BookshelfViewModel.kt", "symbol_id": "kotlin://io.legado.app.ui.main.bookshelf/BookshelfViewModel/addBookByUrl"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "0c0c50252d9c2590053fbf10cd39c49e314839e0", "path": "app/src/main/java/io/legado/app/model/localBook/LocalBook.kt", "symbol_id": "kotlin://io.legado.app.model.localBook/LocalBook"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "ef3977f03fcb1b639d53953c9c0131c4cf21d5ce", "path": "app/src/main/java/io/legado/app/ui/book/import/local/ImportBookViewModel.kt", "symbol_id": "kotlin://io.legado.app.ui.book.import.local/ImportBookViewModel/scanDoc"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-REMOTE-BOOK-LOCALIZATION-001",
+      "revision": 1,
+      "semantic_key": "library.remote-book.download-localize-runtime",
+      "kind": "runtime_behavior",
+      "topic": "远程书本地化导入",
+      "statement": "WebDAV 远程书先下载到默认本地目录，再复用本地书导入；远程路径与 serverID 作为来源信息保留，批量中途失败、同名覆盖和远程删除后的本地可读性需 characterization。",
+      "subject_keys": ["content.import", "user.data-portability"],
+      "depends_on": [
+        {"id": "BKC-BOOK-IMPORT-CHANNELS-001", "revision": 1},
+        {"id": "BKC-LOCAL-BOOK-RELOCATION-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "8fa7d02236d51f0614351862060aec764b66570a", "path": "app/src/main/java/io/legado/app/model/remote/RemoteBookWebDav.kt", "symbol_id": "kotlin://io.legado.app.model.remote/RemoteBookWebDav/downloadRemoteBook"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "0c0c50252d9c2590053fbf10cd39c49e314839e0", "path": "app/src/main/java/io/legado/app/model/localBook/LocalBook.kt", "symbol_id": "kotlin://io.legado.app.model.localBook/LocalBook/importFile"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "b670934d763fd8d2d3592272f097db5a7b2b6838", "path": "app/src/main/java/io/legado/app/ui/book/import/remote/RemoteBookViewModel.kt", "symbol_id": "kotlin://io.legado.app.ui.book.import.remote/RemoteBookViewModel/addToBookshelf"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-BOOK-TOC-UPDATE-001",
+      "revision": 1,
+      "semantic_key": "library.chapter.toc-update-runtime",
+      "kind": "runtime_behavior",
+      "topic": "目录更新与错误状态",
+      "statement": "书架更新只处理非本地且允许更新的书，按 URL 去重并发，成功时替换目录并计算新增章节，失败时进入更新错误状态；阅读器内更新另有节流与只接纳增长的分支，需 characterization。",
+      "subject_keys": ["library.chapter", "library.shelf", "reader.progress"],
+      "depends_on": [
+        {"id": "BKC-BOOK-CHAPTER-IDENTITY-001", "revision": 1},
+        {"id": "BKC-BOOK-PROGRESS-MODEL-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "ed8efcdfff50c8e9a7eb10eaf901705a5997828d", "path": "app/src/main/java/io/legado/app/ui/main/MainViewModel.kt", "symbol_id": "kotlin://io.legado.app.ui.main/MainViewModel"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d", "path": "app/src/main/java/io/legado/app/model/ReadBook.kt", "symbol_id": "kotlin://io.legado.app.model/ReadBook/upToc"},
+          {"android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3", "git_blob": "6f1b758fed28cb7212d748e1270d64c13463800a", "path": "app/src/main/java/io/legado/app/model/webBook/BookChapterList.kt", "symbol_id": "kotlin://io.legado.app.model.webBook/BookChapterList/analyzeChapterList"}
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-KNOWLEDGE-BOOK-DOMAIN-001"
+}

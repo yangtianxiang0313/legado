@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-KNOWLEDGE-BOOK-DOMAIN-001",
+  "summary": "从冻结 Android commit 30bfdf70224ed3006f2777777ff414ebdb3a9eb3 提取 Book、Shelf、Chapter、Group、Bookmark、ReadRecord、Progress 的业务知识：BKP-BOOK-DOMAIN-001 包含 30 条候选 Claim、52 条闭合依赖和 88 个精确 blob 锚点，覆盖搜索暂存、入架、详情、分组排序、目录、阅读位置、换源、导入、缓存、删除与 WebDAV 同步；DRV-BOOK-IDENTITY-001 仅把源码事实提升为待 ADR 裁决的问题，不预设 iOS 架构结论。",
+  "evidence": "ios/harness/evidence/runs/run-20260723T130532Z-ios-knowledge-book-domain-001-9a40d6cd.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 7,
+      "to_revision": 8,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "none",
+    "adr_refs": []
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null
+  },
+  "business_knowledge": {
+    "mode": "produce",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [
+      {
+        "kind": "packet",
+        "id": "BKP-BOOK-DOMAIN-001",
+        "revision": 1
+      },
+      {
+        "kind": "driver",
+        "id": "DRV-BOOK-IDENTITY-001",
+        "revision": 1
+      }
+    ],
+    "ledger_updates": [],
+    "none_reason": null
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项只沉淀 Android 业务知识候选与待决架构 Driver，不接受或改变 iOS/Android 产品行为差异"
+  },
+  "pitfalls": {
+    "records": [
+      "ios/project/pitfalls/PIT-0010.json"
+    ],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "Packet 与 Driver 仍是 candidate/proposed；在人工知识审查和 Trusted Publisher promotion 前不能作为 iOS 实现权威",
+    "整书与单章换源、目录重排映射、阅读器精确落点、缓存完成态、本地文件重定位、批量部分提交和 WebDAV 冲突仍需 Android characterization 结构化 expected",
+    "稳定 BookID、逻辑书与来源实例边界、章节/书签/记录/缓存归属、删除保留、同步时钟和 Android 数据迁移必须由后续 ADR 裁决",
+    "Source、Reader、UI topology 与 Integration 分域尚未扫描，可能为 Book Identity Driver 增加新的 forces 或约束",
+    "PIT-0010 尚未修复；Harness check 超时时可能因 macOS killpg PermissionError 在写入 failed Evidence 前崩溃"
+  ],
+  "next_actions": [
+    "完成人工 knowledge-review 与 architecture-review，确认本批候选没有把源码推断当作运行真值",
+    "建立 Android characterization 工作项与结构化 expected，覆盖换源、进度、目录、删除、缓存、导入和同步边界",
+    "继续扫描 Source/Rule/Pipeline 与 Reader/Content/Progress/Prefetch 分域，补足 Book Identity Driver 的上下游约束",
+    "依赖扫描与运行证据齐备后起草 Book Identity ADR，裁决稳定 ID、来源实例、归属关系和迁移策略",
+    "用独立 Harness 修复工作项关闭 PIT-0010，并保留所有超时/清理失败的 Evidence"
+  ],
+  "created_at": "2026-07-23T13:05:38Z"
+}

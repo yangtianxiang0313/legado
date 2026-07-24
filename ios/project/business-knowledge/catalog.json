@@ -7,7 +7,7 @@
   "control_sha256": "861cfc63ba4c4b79480c81df1ad6780f7222fc20ec7a878062553163fe08e896",
   "authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
   "coverage_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-  "proposal_sha256": "7e3578697469af13b1d0568b29ea7db1f2a2f93458a5582f34a1450b2ce5708d",
+  "proposal_sha256": "27611f0d63122cb9be494e2ceccfd10d880622067628f8177b8f45d9fb74b49d",
   "packets": [],
   "architecture_drivers": [],
   "coverage_ledgers": [],
@@ -17,6 +17,18 @@
       "revision": 1,
       "path": "ios/project/business-knowledge/packets/proposals/BKP-ANDROID-SURFACES-001/r0001.json",
       "sha256": "fa088a7a4811826053e6d09501a28997a55467b763eb5f03f4a516c3d6c3f120"
+    },
+    {
+      "id": "BKP-BOOK-DOMAIN-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/packets/proposals/BKP-BOOK-DOMAIN-001/r0001.json",
+      "sha256": "6c368b570fc4ab9900f12786e508b06bf12e4279f2f9be7caee20468f3c79e07"
+    },
+    {
+      "id": "DRV-BOOK-IDENTITY-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/drivers/proposals/DRV-BOOK-IDENTITY-001/r0001.json",
+      "sha256": "6b67089a6ec964dee6a9603ad0e49a2338db794daa40748455ab2a4fa6c4ec17"
     }
   ]
 }

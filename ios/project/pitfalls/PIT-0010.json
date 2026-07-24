@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0010",
+  "revision": 1,
+  "title": "macOS 超时进程组清理异常会中断 Evidence 生成",
+  "fingerprint": "harness-timeout-killpg-permissionerror-before-evidence",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "Harness check 到达超时清理路径后，terminate_process_group 调用 os.killpg 抛出 PermissionError",
+    "verify 直接以 Python traceback 退出，未生成 failed Evidence，也未递增 verify cycle",
+    "相同 49 个 Harness 测试直接运行约 28 秒全部通过，清理残留进程后的一次基础设施重试可通过"
+  ],
+  "conditions": [
+    "macOS 上由 Harness 以新进程组启动 acceptance check",
+    "check 偶发超过 timeout_seconds，或清理时子进程组已退出、变更或不再允许当前进程发送信号",
+    "terminate_process_group 只容忍 ProcessLookupError，没有把 PermissionError 转换为结构化检查失败"
+  ],
+  "root_cause": "超时清理路径假定 killpg 始终可用；PermissionError 未被捕获，异常越过 run_check 的失败归一化与 verify 的 Evidence 写入，因此基础设施清理故障被表现为整个 Harness 命令崩溃。",
+  "diagnosis": [
+    "确认 verify 没有新增 Evidence，state 仍保持 implementing 或上一有效状态",
+    "使用 pgrep 检查对应 unittest、Swift 或 xcodebuild 进程是否仍存活，避免并发重试",
+    "直接运行同一 check，区分真实测试失败、测试时长抖动和清理路径故障",
+    "仅在 Doctor 通过且无残留进程时使用 Work Item 预算内的一次 max_infra_retries"
+  ],
+  "fix": "在独立 Harness 工作项中让 terminate_process_group 重新确认进程/进程组状态，安全处理 ProcessLookupError 与 PermissionError，并无论清理是否成功都把 timeout、cleanup_error 和 process_leak 写入 failed Evidence；补充 macOS 权限异常与竞态测试。",
+  "prevention": {
+    "architecture_rule": "受保护验收的超时与清理路径不得以未捕获异常绕过 Evidence；清理失败必须 fail-closed、可诊断且保留审计记录",
+    "tests": [
+      "模拟 killpg 抛 PermissionError，断言 verify 仍生成 failed Evidence",
+      "模拟进程在 timeout 与 cleanup 之间退出，断言无 traceback 且无误报残留",
+      "断言基础设施重试次数受 Work Item max_infra_retries 约束"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-KNOWLEDGE-BOOK-DOMAIN-001",
+    "until": null
+  },
+  "status": "open",
+  "occurrences": 2,
+  "first_seen": "2026-07-23",
+  "last_seen": "2026-07-23",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260723T130532Z-ios-knowledge-book-domain-001-9a40d6cd.json"
+  ]
+}
