@@ -1,0 +1,213 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-PROPOSAL-COMPILER-001",
+    "title": "建立 initialization DAG 到不可变候选的编译器",
+    "priority": 100,
+    "risk": "high",
+    "labels": [
+      "phase-0",
+      "control-plane",
+      "automation",
+      "proposal-compiler",
+      "recovery-lineage"
+    ]
+  },
+  "spec": {
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "intent": "把 proposal-only initialization DAG 转换为确定性、可审计但不自动物化的 Work Item candidate。编译器必须以 recipe 中人工设计的完整 Work Item 为语义来源，只负责验证 DAG 节点一致性、解析 completed/replacement/knowledge-output recovery 谱系、冻结输入摘要并原子写 candidate 与 provenance manifest；不得根据 Android package 或节点标题臆造 scope、AC、Gate、预算或知识合同，不得修改 Harness queue/state/event/status/work-items，不得提供 materialize/approve/publish/accept 旁路。本项同时为当前唯一可推进的 Integrations 节点建立 recipe，并证明生成 candidate 可通过 Loop Supervisor preflight。",
+    "depends_on": [
+      "IOS-KNOWLEDGE-DAG-REPAIR-001",
+      "IOS-LOOP-SUPERVISOR-E2E-001"
+    ],
+    "scope": {
+      "allow_write": [
+        "ios/harness/proposal_compiler.py",
+        "ios/harness/tests/test_proposal_compiler.py",
+        "ios/harness/README.md",
+        "ios/project/work-item-proposals/recipes/IOS-KNOWLEDGE-INTEGRATIONS-001.json",
+        "ios/project/work-item-proposals/candidates/IOS-KNOWLEDGE-INTEGRATIONS-001.json",
+        "ios/project/work-item-proposals/candidate-manifests/IOS-KNOWLEDGE-INTEGRATIONS-001.json",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-PROPOSAL-COMPILER-001.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "ios/harness/harness.py",
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/approval_ui.py",
+        "ios/harness/config.json",
+        "ios/harness/architecture-rules.json",
+        "ios/harness/dependency-policy.json",
+        "ios/harness/schemas/**",
+        "ios/harness/business-knowledge/**",
+        "ios/harness/android-intake/**",
+        "ios/harness/source-lab/**",
+        "ios/harness/oracle/**",
+        "ios/harness/goldens/**",
+        "ios/project/android-intake/**",
+        "ios/project/business-knowledge/**",
+        "ios/project/requirements/**",
+        "ios/project/approvals/**",
+        "ios/project/baseline.json",
+        "ios/project/work-item-proposals/initialization-dag.json",
+        "ios/docs/**"
+      ],
+      "max_files_changed": 9,
+      "max_changed_lines": 2600
+    },
+    "inputs": {
+      "context_files": [
+        "ios/project/work-item-proposals/initialization-dag.json",
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/README.md",
+        "ios/project/checkpoints/IOS-LOOP-SUPERVISOR-E2E-001.json",
+        "ios/docs/trusted-supervisor.md"
+      ],
+      "android_source_anchors": [],
+      "fixtures": []
+    },
+    "architecture_refs": [
+      "ARCH-014",
+      "ADR-0004"
+    ],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "只读 plan 输出版本化确定性 JSON，逐节点区分 completed、ready_for_recipe、recipe_ready、materialized、dependency_blocked、gate_blocked 与 terminal_unresolved；同一输入重复执行字节一致，且不会写 candidate、manifest、queue、state、event、status 或 work-items。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "依赖解析先接受直接 completed，再沿 state.replacement 有界解析；terminal 节点无 replacement 时，仅当存在唯一 completed Work Item 且其 knowledge.produces 覆盖原节点全部 kind/id 并使用更高 revision 时才视为 recovery。循环、缺失、歧义、部分覆盖和非递增 revision 均返回结构化 blocker。当前 UI Topology exhausted 节点必须解析到 IOS-KNOWLEDGE-UI-TOPOLOGY-RECOVERY-002，而不是被静默当成 completed。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "recipe 必须包含完整 Work Item，编译器通过真实 Harness validator，并机械核对 proposal_id/title/depends_on、knowledge_mode、精确 produces kind/id/revision、Gate 与 DAG constraint；任何不一致均 fail closed，编译器不生成或补写 scope、AC、预算、Gate、Requirement、SourceLab 或 knowledge 字段。",
+          "verified_by": [
+            "harness-tests",
+            "scope-policy"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-4",
+          "statement": "compile 只允许选择 plan 中 recipe_ready 的单个 proposal；以 create-only 原子事务写 candidate 和 candidate-manifest，任一写入失败时两者均回滚。已存在且字节相同则幂等成功，任一文件漂移或目标成为 symlink 时拒绝覆盖，不提供 --force/--replace。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-5",
+          "statement": "candidate-manifest 冻结 DAG digest、节点 fingerprint、recipe digest、candidate digest、原始与 resolved dependency、每个 completed dependency 的 Work Item/Evidence/Checkpoint digest，以及生成器版本。manifest 可独立重算；任何输入变化后旧 manifest 必须报告 stale，不能继续冒充当前候选。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-6",
+          "statement": "为 IOS-KNOWLEDGE-INTEGRATIONS-001 提供完整 recipe，编译出的 candidate 通过 Loop Supervisor preflight，依赖冻结到已完成 Android Surfaces；输出仍是 proposal candidate，不自动 materialize、不运行 Agent、不发布 Packet/Driver、不接受 ADR。CLI help 不含 materialize、approve、publish、accept。",
+          "verified_by": [
+            "harness-tests",
+            "dependency-policy"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-7",
+          "statement": "README 描述 DAG proposal、recipe、candidate、manifest、按钮物化四层边界和推荐命令；Checkpoint 记录当前节点解析结果、Integrations 下一步、外部受信 Supervisor 与真实 Agent adapter 仍未完成的边界。",
+          "verified_by": [
+            "memory-close"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": [
+        "dependency-policy",
+        "harness-tests"
+      ]
+    },
+    "baseline_checks": [
+      "dependency-policy",
+      "harness-tests"
+    ],
+    "budget": {
+      "wall_clock_seconds": 7200,
+      "max_edit_verify_cycles": 3,
+      "max_targeted_test_runs": 10,
+      "max_full_test_runs": 3,
+      "max_infra_retries": 1
+    },
+    "gates": [
+      "architecture-review"
+    ],
+    "completion_effects": {
+      "health": {
+        "proposal_compiler": "local_verified"
+      }
+    },
+    "memory": {
+      "capability_state_required": true,
+      "checkpoint_required": true,
+      "pitfall_update_required": true
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "refs": [],
+      "none_reason": "本项实现 proposal-only 自动化控制面，不交付产品 Requirement"
+    },
+    "source_lab": {
+      "mode": "not_applicable",
+      "behaviors": [],
+      "scenarios": [],
+      "none_reason": "本项不执行书源运行行为"
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "not_applicable",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [],
+      "expected_ledger_transitions": [],
+      "context_budget": {
+        "max_claims": 20,
+        "max_bytes": 32768
+      },
+      "none_reason": "本项只编译候选，不消费、生成或发布业务知识"
+    },
+    "stop_on": [
+      "doctor_red",
+      "dag_invalid",
+      "dependency_unresolved",
+      "recipe_missing",
+      "recipe_mismatch",
+      "candidate_conflict",
+      "manifest_stale",
+      "test_failure",
+      "budget_exhausted",
+      "human_gate"
+    ]
+  }
+}
