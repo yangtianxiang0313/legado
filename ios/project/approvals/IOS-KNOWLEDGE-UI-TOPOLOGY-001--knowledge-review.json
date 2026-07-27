@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-KNOWLEDGE-UI-TOPOLOGY-001",
+  "gate": "knowledge-review",
+  "work_item_sha256": "722d4e80a9adc4dac0dbf90b7cea78091a0600251e9ceee6c3c4fdb38c1c14eb",
+  "tree_sha256": "1f82839a330f49d898386030194c8f4d18179817ff01f6f2a563e94ebebf79d6",
+  "reviewer": "local-user:yangtianxiang",
+  "approved_at": "2026-07-24T08:53:42Z",
+  "expires_at": "2026-07-25T08:53:42Z",
+  "signature": null
+}

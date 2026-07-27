@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "run_id": "run-20260724T114053Z-ios-knowledge-ui-topology-001-db65986e",
+  "work_item_id": "IOS-KNOWLEDGE-UI-TOPOLOGY-001",
+  "work_item_sha256": "722d4e80a9adc4dac0dbf90b7cea78091a0600251e9ceee6c3c4fdb38c1c14eb",
+  "result": "failed",
+  "inputs": {
+    "base_commit": "3dd2163b1f01a314c33eec6c5e0845fd5b17d5c5",
+    "head_commit": "3dd2163b1f01a314c33eec6c5e0845fd5b17d5c5",
+    "snapshot_sha256": "8b7368f49b3db8fdb0a8f4ed38534cb6cb6374d284c02cfe9fc3c4d718259d59",
+    "baseline_sha256": "eeeaf0017b79a2420faf73c686a110a2d0372b2da865e42aa8db360fd3015e93",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
+    "architecture_rules_sha256": "51ebc4cff5921643f95d8a045c21ea85cad046acb99ed56026f77bf842642fa5",
+    "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+    "golden_manifest_sha256": "bdfab4595035e6ce3706380b88bd0ebfdff6773b77055c05988c4aa2dd24e597",
+    "fixture_manifest_sha256": "7ea6c2f30f258a65bfeb67ebc8bc3c7d9e283875f31731b513b7380d5f2aff2c",
+    "dependency_lock_sha256": null,
+    "source_lab_control_sha256": "73282c8b72a7db793887290ad2bfff707c61ea8fe57a583ef9bd2e3c3c3b9f2d",
+    "android_intake_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122",
+    "business_knowledge_control_sha256": "b2a30fd1b81cc1d82d528f05f54cd3188e40aa141fac3b94c3cd5c2b0ff7a9b5",
+    "business_knowledge_authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
+    "business_knowledge_coverage_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "business_knowledge_proposal_sha256": "d448f3ca6fc50dc50c9a17089bd96c83be0cc95842566fd75d92fb935877c06e",
+    "android_requirement_selection_sha256": null,
+    "source_lab_selection_sha256": null,
+    "knowledge_selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "environment": {
+      "platform": "macOS-26.4.1-arm64-arm-64bit",
+      "python": "3.9.6",
+      "xcode": "Xcode 26.0\nBuild version 17A324",
+      "swift": "Apple Swift version 6.2 (swiftlang-6.2.0.19.9 clang-1700.3.19.1)\nTarget: arm64-apple-macosx26.0"
+    }
+  },
+  "changes": {
+    "paths": [
+      "ios/project/business-knowledge/drivers/proposals/DRV-UI-TOPOLOGY-001/r0001.json",
+      "ios/project/business-knowledge/packets/proposals/BKP-UI-TOPOLOGY-001/r0001.json"
+    ],
+    "changed_lines_approximate": 742,
+    "file_fingerprints": {
+      "ios/project/business-knowledge/drivers/proposals/DRV-UI-TOPOLOGY-001/r0001.json": "file:0o644:eaf8e2931860fab3853aa048506e0f0b470649bc1a90ae094e5888c0c552c5f6",
+      "ios/project/business-knowledge/packets/proposals/BKP-UI-TOPOLOGY-001/r0001.json": "file:0o644:e2370e64985e7ab55fb0375606c9ad31410db722d4c3c00e1c2ae9ac5d50fa51"
+    },
+    "dirty_snapshot": {
+      "ios/harness/evidence/runs/run-20260724T082904Z-ios-knowledge-ui-topology-001-f6f50b59.json": "file:0o644:18ce7237270b1c84dcc857aa34ff9052e1f3ef7840bdaaa21c2bc528cffc4a46",
+      "ios/harness/evidence/runs/run-20260724T085022Z-ios-knowledge-ui-topology-001-83f41fa7.json": "file:0o644:6b7b99ac505f17c2abe00e63feaf118b6ba621ef33a8f193720203a390cb3081",
+      "ios/harness/evidence/runs/run-20260724T090726Z-ios-knowledge-ui-topology-001-798a994c.json": "file:0o644:0eb692603a31ffafdae9e3fecbad3dad20239ac44eee76bbd566022b0e8f1884",
+      "ios/project/approvals/IOS-KNOWLEDGE-UI-TOPOLOGY-001--architecture-review.json": "file:0o600:fbead7cd216e12505b1b18c2a7e24518764d3eb19a9bcd21777ce71c9e1d4330",
+      "ios/project/approvals/IOS-KNOWLEDGE-UI-TOPOLOGY-001--knowledge-review.json": "file:0o600:61fdfc05c61959f7d330042b4df58b6ad475aae96611f9a63bebb822413d0cdf",
+      "ios/project/business-knowledge/catalog.json": "file:0o644:55a408b16036e29f15f666b4c973f1dd72b8066ed99e64c12e77465077f02aca",
+      "ios/project/business-knowledge/drivers/proposals/DRV-UI-TOPOLOGY-001/r0001.json": "file:0o644:eaf8e2931860fab3853aa048506e0f0b470649bc1a90ae094e5888c0c552c5f6",
+      "ios/project/business-knowledge/packets/proposals/BKP-UI-TOPOLOGY-001/r0001.json": "file:0o644:e2370e64985e7ab55fb0375606c9ad31410db722d4c3c00e1c2ae9ac5d50fa51",
+      "ios/project/events.jsonl": "file:0o644:9faeeba26ed789bb5356d989275a1a74d063c26ba287a48735690db03047ce42",
+      "ios/project/state.json": "file:0o644:d4f92f1e9e002f2aad9633864e0ab244d2cc0859718f1eb63b4c800f549ee43f",
+      "ios/project/status.md": "file:0o644:f0104587f7cdd72123ed2cdd8784c7bcc85f056cb7c93eb1bec6f682be916833"
+    },
+    "diff_sha256": "14ec831e0d7fa46dc9589eb364428ea67351e63b5bbfaa83944053dfd6cf278d"
+  },
+  "policy_errors": [
+    "BUDGET_EXCEEDED wall_clock_seconds: 11759 > 7200"
+  ],
+  "architecture_errors": [],
+  "architecture_warnings": [],
+  "checks": [],
+  "failure": {
+    "class": "BUDGET_EXCEEDED wall_clock_seconds",
+    "message": "BUDGET_EXCEEDED wall_clock_seconds: 11759 > 7200",
+    "fingerprint": "f3f2beae8da506418f196868660644f57ef27265ebe87c43318efadf6931ddad"
+  },
+  "started_at": "2026-07-24T11:40:52Z",
+  "finished_at": "2026-07-24T11:40:54Z",
+  "reproduction": "python3 ios/harness/harness.py verify IOS-KNOWLEDGE-UI-TOPOLOGY-001"
+}

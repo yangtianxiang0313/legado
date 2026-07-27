@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "revision": 85,
+  "revision": 97,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-24T08:24:23Z",
-  "event_head": "ff8b60e24968c1045a2d33c1480cf510a464849c5f920f258a19612d35d1703f",
+  "updated_at": "2026-07-24T11:40:54Z",
+  "event_head": "269a35ee5ae595e4bb9ddf2c53f57549656cad69d39e0f888cdc0a0fdad67a7b",
   "active_work_items": [],
   "last_completed_work_item": "IOS-KNOWLEDGE-READER-LIFECYCLE-001",
   "work_items": {
@@ -1378,9 +1378,93 @@
       "final_tree_sha256": "6360f97a07cf9819a390ff55871e17ee5586855b0d7ef9b8df5a81a879e6ca2e"
     },
     "IOS-KNOWLEDGE-UI-TOPOLOGY-001": {
-      "status": "ready",
-      "attempt": 0,
-      "last_evidence": null
+      "status": "exhausted",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260724T114053Z-ios-knowledge-ui-topology-001-db65986e.json",
+      "claimed_by": "codex-root",
+      "claimed_at": "2026-07-24T08:24:53Z",
+      "lease_expires_at": "2026-07-25T08:24:53Z",
+      "work_item_sha256": "722d4e80a9adc4dac0dbf90b7cea78091a0600251e9ceee6c3c4fdb38c1c14eb",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "3dd2163b1f01a314c33eec6c5e0845fd5b17d5c5",
+      "base_capability_revision": 12,
+      "base_capability_assurance_sha256": "6c08426cf2cc8f0277426284e00909a10444767bc01eeb84e0db43db8dcbb2ac",
+      "android_requirement_selection_sha256": null,
+      "business_knowledge_control_sha256": "b2a30fd1b81cc1d82d528f05f54cd3188e40aa141fac3b94c3cd5c2b0ff7a9b5",
+      "business_knowledge_authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 4,
+      "last_failure_fingerprint": "f3f2beae8da506418f196868660644f57ef27265ebe87c43318efadf6931ddad",
+      "baseline_checks": [
+        {
+          "id": "android-intake-contract",
+          "argv": [
+            "python3",
+            "-B",
+            "ios/harness/android-intake/android_intake.py",
+            "doctor",
+            "--root",
+            ".",
+            "--work-item",
+            "IOS-KNOWLEDGE-UI-TOPOLOGY-001"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "1bf88f85f3f416e092d2c3bf30c0b86ae55ad95e050f05321da60bed60f3d5f8",
+          "cwd": ".",
+          "started_at": "2026-07-24T08:24:37Z",
+          "duration_ms": 413,
+          "timeout_seconds": 90,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "84f6b9d590a230c755728f08a7cc4071122d7bd66d14c218c852a45cdc0a64fe",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_tail": "android-intake: OK\n",
+          "stderr_tail": ""
+        },
+        {
+          "id": "harness-tests",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "307f335e883f02e96ad97ecbda4c210435c0b955e2bcb9e46db9dc7b0d02c285",
+          "cwd": ".",
+          "started_at": "2026-07-24T08:24:37Z",
+          "duration_ms": 15220,
+          "timeout_seconds": 60,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "3f9a20babfcbaee2b5793a05aff252206f25d4f4a2ff989cc3bf780bedaa8277",
+          "stdout_tail": "",
+          "stderr_tail": "......................................................................\n----------------------------------------------------------------------\nRan 70 tests in 15.112s\n\nOK\n"
+        }
+      ],
+      "last_evidence_sha256": "19539e518ef754db58574effa94fb54370b087e8bf895eb1728497fdd9992c1f",
+      "verified_at": "2026-07-24T09:07:27Z",
+      "base_dirty_fingerprints": {
+        "ios/project/approvals/IOS-KNOWLEDGE-UI-TOPOLOGY-001--architecture-review.json": "file:0o600:fbead7cd216e12505b1b18c2a7e24518764d3eb19a9bcd21777ce71c9e1d4330",
+        "ios/project/approvals/IOS-KNOWLEDGE-UI-TOPOLOGY-001--knowledge-review.json": "file:0o600:61fdfc05c61959f7d330042b4df58b6ad475aae96611f9a63bebb822413d0cdf"
+      },
+      "verified_product_fingerprints": null,
+      "exhausted_reason": "budget_exhausted"
     }
   },
   "health": {
