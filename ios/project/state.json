@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "revision": 97,
+  "revision": 98,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-24T11:40:54Z",
-  "event_head": "269a35ee5ae595e4bb9ddf2c53f57549656cad69d39e0f888cdc0a0fdad67a7b",
+  "updated_at": "2026-07-27T02:41:35Z",
+  "event_head": "d374d4182225a73382a0ff57cd1c295c51569eaad5dd44fb5e3fee41e5744ca3",
   "active_work_items": [],
   "last_completed_work_item": "IOS-KNOWLEDGE-READER-LIFECYCLE-001",
   "work_items": {
@@ -1465,6 +1465,11 @@
       },
       "verified_product_fingerprints": null,
       "exhausted_reason": "budget_exhausted"
+    },
+    "IOS-KNOWLEDGE-UI-TOPOLOGY-CONTINUATION-001": {
+      "status": "ready",
+      "attempt": 0,
+      "last_evidence": null
     }
   },
   "health": {
