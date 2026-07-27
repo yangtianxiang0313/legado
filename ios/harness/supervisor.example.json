@@ -21,5 +21,38 @@
     "atomic_code_test_memory_commit": true,
     "automatic_golden_update": false
   },
-  "agent_invocation": null
+  "local_loop_driver": {
+    "command": [
+      "python3",
+      "ios/harness/loop_supervisor.py",
+      "drive",
+      "--config",
+      "ios/harness/supervisor.example.json",
+      "--agent",
+      "local-agent",
+      "--max-transitions",
+      "3"
+    ],
+    "stop_states": [
+      "doctor_red",
+      "awaiting_human",
+      "dependency_blocked",
+      "terminal_recovery",
+      "queue_empty"
+    ],
+    "candidate_root": "ios/project/work-item-proposals/candidates",
+    "materialization": "human-click-only-local-unverified"
+  },
+  "agent_invocation": {
+    "argv": [
+      "<replace-with-agent-runner>",
+      "--work-item",
+      "{work_item_id}",
+      "--context",
+      "{context_path}",
+      "--repo",
+      "{repo_root}"
+    ],
+    "timeout_seconds": 3600
+  }
 }

@@ -15,6 +15,7 @@ python3 ios/harness/harness.py context IOS-BOOT-001
 python3 ios/harness/harness.py claim IOS-BOOT-001 --agent codex-main
 python3 ios/harness/harness.py verify IOS-BOOT-001
 python3 ios/harness/harness.py close IOS-BOOT-001
+python3 ios/harness/loop_supervisor.py inspect
 ```
 
 目录含义：
@@ -39,3 +40,24 @@ claim/verify/close 生命周期见
 `ios/docs/business-knowledge-control-plane.md`。该 CLI 故意不提供
 `publish`、`accept`、`promote` 或 Work Item `materialize`；初始化规划仅保存在
 `ios/project/work-item-proposals/initialization-dag.json`，不会自动进入队列。
+
+## Loop Supervisor
+
+`loop_supervisor.py` 是 Harness 外层的本地 cooperative driver：
+
+```bash
+python3 ios/harness/loop_supervisor.py inspect
+python3 ios/harness/loop_supervisor.py drive \
+  --config ios/harness/supervisor.example.json \
+  --agent local-agent \
+  --max-transitions 3
+python3 ios/harness/loop_supervisor.py materialize-review \
+  ios/project/work-item-proposals/candidates/IOS-EXAMPLE-001.json
+```
+
+- `inspect` 输出互斥的结构化状态与稳定 reason code，不再把队列为空和已有活跃项合并；
+- `drive` 只接受配置中的 argv 数组 Agent adapter，达到 transition 上限或遇到红基线、人工 Gate、终态失败、无进展时立即停；
+- `materialize-review` 只接受 `work-item-proposals/candidates` 下的普通 JSON，重新校验依赖、写范围、预算和永久知识产出 reservation 后打开一次性按钮；
+- CLI 没有非交互 `materialize` 或 `approve`，也不会更新 golden、发布知识或接受 ADR。
+
+本地按钮产生的是 `local_unverified` 协作事实。真正无人值守与发布仍必须由隔离、签名的外部 Supervisor/CI 重验。

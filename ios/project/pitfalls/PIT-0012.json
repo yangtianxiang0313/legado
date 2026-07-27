@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "PIT-0012",
-  "revision": 1,
+  "revision": 2,
   "title": "取消的知识生产工作项仍永久占有 proposal revision",
   "fingerprint": "cancelled-knowledge-producer-reserves-output-revision",
   "capabilities": [
@@ -23,17 +23,20 @@
     "同时检查 Packet 内每个 Claim 的 producer、连续 revision 与 supersedes，而不是只看 Packet 文件名",
     "在 materialize 前 dry-run Business Knowledge graph，并把 reservation 冲突作为结构化 stop reason 输出"
   ],
-  "fix": "本次由可信 Supervisor 保留 cancelled r0002 归属，物化结构性 r0002 lineage carrier，再由恢复项生成并验证 r0003。长期修复是在 Loop Supervisor 中加入 proposal reservation/tombstone 和 recovery compiler：自动选择下一合法 revision、生成逐 Claim supersedes 计划并在按钮确认前展示。",
+  "fix": "本次由可信 Supervisor 保留 cancelled r0002 归属，物化结构性 r0002 lineage carrier，再由恢复项生成并验证 r0003。Loop Supervisor materialization preflight 现会扫描所有终态与非终态 Work Item 的永久 knowledge.produces reservation，拒绝复用并返回 owner 与 suggested_revision；按钮页在写入前重复校验。显式 output-abandoned tombstone 与自动生成逐 Claim supersedes 的 recovery compiler 仍待后续增强。",
   "prevention": {
     "architecture_rule": "任何知识恢复或续接工作项在 materialize 前必须解析永久 proposal reservation；不得复用已由任何终态工作项声明的 kind/id/revision，也不得只提升 Packet/Driver 而遗漏 Claim 和内部引用 revision。",
-    "tests": [],
+    "tests": [
+      "ios/harness/tests/test_loop_supervisor.py#test_cancelled_producer_keeps_permanent_output_reservation",
+      "ios/harness/tests/test_loop_supervisor.py#test_candidate_drift_and_event_head_drift_fail_closed"
+    ],
     "lint": []
   },
   "affected_versions": {
     "from": "IOS-KNOWLEDGE-UI-TOPOLOGY-CONTINUATION-001",
     "until": null
   },
-  "status": "open",
+  "status": "mitigated",
   "occurrences": 2,
   "first_seen": "2026-07-27",
   "last_seen": "2026-07-27",

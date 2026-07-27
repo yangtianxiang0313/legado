@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "revision": 106,
+  "revision": 109,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-27T02:53:42Z",
-  "event_head": "4857c10e1540fcf63028856494ee775dae5f38b2312ca6700756cb8a1c11b30c",
+  "updated_at": "2026-07-27T03:03:11Z",
+  "event_head": "3d6cf13e48610190b6b94271c807cc2cfdfe6caa803fd71a178708b9e1b06e87",
   "active_work_items": [],
   "last_completed_work_item": "IOS-KNOWLEDGE-UI-TOPOLOGY-RECOVERY-002",
   "work_items": {
@@ -1653,6 +1653,62 @@
       "final_tree_sha256": "0e9a448f0a8a33292ef0b98ff7aa63eeeb919d628876aae0b2fb3e537ec4b231"
     },
     "IOS-LOOP-SUPERVISOR-001": {
+      "status": "cancelled",
+      "attempt": 1,
+      "last_evidence": null,
+      "claimed_by": "codex-root",
+      "claimed_at": "2026-07-27T02:55:13Z",
+      "lease_expires_at": "2026-07-28T02:55:13Z",
+      "work_item_sha256": "8a9c9a505c877b33e1cb8e987b34191c66d7da40c4d7815f9507df8155e9354d",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "d7412dbbfeb338377ed877a993a3f2b27fa8fe77",
+      "base_dirty_fingerprints": {},
+      "base_capability_revision": 13,
+      "base_capability_assurance_sha256": "6c08426cf2cc8f0277426284e00909a10444767bc01eeb84e0db43db8dcbb2ac",
+      "android_requirement_selection_sha256": null,
+      "business_knowledge_control_sha256": "b2a30fd1b81cc1d82d528f05f54cd3188e40aa141fac3b94c3cd5c2b0ff7a9b5",
+      "business_knowledge_authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 0,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "harness-tests",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "307f335e883f02e96ad97ecbda4c210435c0b955e2bcb9e46db9dc7b0d02c285",
+          "cwd": ".",
+          "started_at": "2026-07-27T02:54:55Z",
+          "duration_ms": 17912,
+          "timeout_seconds": 60,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "0666310d74d513bdd3ad5612cf6006ca0820b66b2861f0da4d22de3282023f14",
+          "stdout_tail": "",
+          "stderr_tail": "......................................................................\n----------------------------------------------------------------------\nRan 70 tests in 17.638s\n\nOK\n"
+        }
+      ],
+      "cancelled_reason": "scope_unsatisfiable_protected_architecture_sources",
+      "replacement": "IOS-LOOP-SUPERVISOR-RECOVERY-002"
+    },
+    "IOS-LOOP-SUPERVISOR-RECOVERY-002": {
       "status": "ready",
       "attempt": 0,
       "last_evidence": null
