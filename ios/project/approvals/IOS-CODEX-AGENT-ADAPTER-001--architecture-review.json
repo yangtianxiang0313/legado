@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-CODEX-AGENT-ADAPTER-001",
+  "gate": "architecture-review",
+  "work_item_sha256": "ab924fafa95dbe909199d948cf93acd54c6075667af51ea67c77557b47830ed1",
+  "tree_sha256": "dfcfb38d0196565d9a99d9563158f824409f7925bcf22a1c1c0c48e7e06fb9fc",
+  "reviewer": "local-user:yangtianxiang",
+  "approved_at": "2026-07-27T03:56:10Z",
+  "expires_at": "2026-07-28T03:56:10Z",
+  "signature": null
+}

@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "run_id": "run-20260727T035217Z-ios-codex-agent-adapter-001-86ffbaf3",
+  "work_item_id": "IOS-CODEX-AGENT-ADAPTER-001",
+  "work_item_sha256": "ab924fafa95dbe909199d948cf93acd54c6075667af51ea67c77557b47830ed1",
+  "result": "passed",
+  "inputs": {
+    "base_commit": "e3d1d088586950f34d95aa529441e43babf70879",
+    "head_commit": "e3d1d088586950f34d95aa529441e43babf70879",
+    "snapshot_sha256": "3c79ae6c999e1601dd1f149f24b5f97760c79825d2c14a470f253869efd6074b",
+    "baseline_sha256": "eeeaf0017b79a2420faf73c686a110a2d0372b2da865e42aa8db360fd3015e93",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
+    "architecture_rules_sha256": "51ebc4cff5921643f95d8a045c21ea85cad046acb99ed56026f77bf842642fa5",
+    "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+    "golden_manifest_sha256": "bdfab4595035e6ce3706380b88bd0ebfdff6773b77055c05988c4aa2dd24e597",
+    "fixture_manifest_sha256": "7ea6c2f30f258a65bfeb67ebc8bc3c7d9e283875f31731b513b7380d5f2aff2c",
+    "dependency_lock_sha256": null,
+    "source_lab_control_sha256": "73282c8b72a7db793887290ad2bfff707c61ea8fe57a583ef9bd2e3c3c3b9f2d",
+    "android_intake_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122",
+    "business_knowledge_control_sha256": "b2a30fd1b81cc1d82d528f05f54cd3188e40aa141fac3b94c3cd5c2b0ff7a9b5",
+    "business_knowledge_authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
+    "business_knowledge_coverage_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "business_knowledge_proposal_sha256": "6dfcba76a1c73795cf5024efca44801f2b90b665964456785ad27813ea05b003",
+    "android_requirement_selection_sha256": null,
+    "source_lab_selection_sha256": null,
+    "knowledge_selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "environment": {
+      "platform": "macOS-26.4.1-arm64-arm-64bit",
+      "python": "3.9.6",
+      "xcode": "Xcode 26.0\nBuild version 17A324",
+      "swift": "Apple Swift version 6.2 (swiftlang-6.2.0.19.9 clang-1700.3.19.1)\nTarget: arm64-apple-macosx26.0"
+    }
+  },
+  "changes": {
+    "paths": [
+      "ios/harness/README.md",
+      "ios/harness/codex-agent.example.json",
+      "ios/harness/codex_agent_adapter.py",
+      "ios/harness/tests/test_codex_agent_adapter.py"
+    ],
+    "changed_lines_approximate": 851,
+    "file_fingerprints": {
+      "ios/harness/README.md": "file:0o644:356fb41694bc85bb519990d32ea0fc36f3ce10c09030367b8bf80e6e11bf9c88",
+      "ios/harness/codex-agent.example.json": "file:0o644:3638ecc22e875ab88c9e9d106d3cae00278af66250f3d4c227b9a463bf05f5e5",
+      "ios/harness/codex_agent_adapter.py": "file:0o644:11a48b015b88d35bdf970eade9dadd16c17e24d8093cb95ae371f8be175f368d",
+      "ios/harness/tests/test_codex_agent_adapter.py": "file:0o644:894480babeb3a28cc81f4205c0d2856c8fc8b2aa32a5d2ba2178a56c7f40e461"
+    },
+    "dirty_snapshot": {
+      "ios/harness/README.md": "file:0o644:356fb41694bc85bb519990d32ea0fc36f3ce10c09030367b8bf80e6e11bf9c88",
+      "ios/harness/codex-agent.example.json": "file:0o644:3638ecc22e875ab88c9e9d106d3cae00278af66250f3d4c227b9a463bf05f5e5",
+      "ios/harness/codex_agent_adapter.py": "file:0o644:11a48b015b88d35bdf970eade9dadd16c17e24d8093cb95ae371f8be175f368d",
+      "ios/harness/tests/test_codex_agent_adapter.py": "file:0o644:894480babeb3a28cc81f4205c0d2856c8fc8b2aa32a5d2ba2178a56c7f40e461",
+      "ios/project/events.jsonl": "file:0o644:935684707b06c3321b60c55088882e3f731e9b4ee22b62275384f65ebe534e62",
+      "ios/project/state.json": "file:0o644:5c751c48b061ee1e688d3e635ec6d76d2b89b4af840071d00aade6b7e8813835",
+      "ios/project/status.md": "file:0o644:0791d73ae450cff3ce56938b9eb7e84eb6345803d59f44fbf19188e8e652981b"
+    },
+    "diff_sha256": "02e814e12e44f22738d6436438437135539321d8aeb15de547c3805eb4c50ffb"
+  },
+  "policy_errors": [],
+  "architecture_errors": [],
+  "architecture_warnings": [],
+  "checks": [
+    {
+      "id": "dependency-policy",
+      "argv": [
+        "python3",
+        "ios/harness/probes/dependency_contract.py",
+        "--root",
+        "."
+      ],
+      "executable_path": "/usr/bin/python3",
+      "definition_sha256": "eca96cb1b69567829ed8396386b0449da8c0d6e7295a00f1decfb60430ff1153",
+      "cwd": ".",
+      "started_at": "2026-07-27T03:51:47Z",
+      "duration_ms": 204,
+      "timeout_seconds": 90,
+      "timed_out": false,
+      "process_leak": false,
+      "cleanup_error": null,
+      "exit_code": 0,
+      "passed": true,
+      "stdout_sha256": "17595a1d68cdc5b52c010f46dff48514afa3fa3cf0215cdea7ae8eff38677c0a",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_tail": "DEPENDENCY_CONTRACT: OK\n",
+      "stderr_tail": ""
+    },
+    {
+      "id": "harness-tests",
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "ios/harness/tests",
+        "-p",
+        "test_*.py"
+      ],
+      "executable_path": "/usr/bin/python3",
+      "definition_sha256": "307f335e883f02e96ad97ecbda4c210435c0b955e2bcb9e46db9dc7b0d02c285",
+      "cwd": ".",
+      "started_at": "2026-07-27T03:51:48Z",
+      "duration_ms": 28475,
+      "timeout_seconds": 60,
+      "timed_out": false,
+      "process_leak": false,
+      "cleanup_error": null,
+      "exit_code": 0,
+      "passed": true,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "219f67869622e8572babdb747dbd07a8524c3d37f7d29fe76d4daa3aeee36c99",
+      "stdout_tail": "",
+      "stderr_tail": "....................................................................................................\n----------------------------------------------------------------------\nRan 100 tests in 28.359s\n\nOK\n"
+    }
+  ],
+  "failure": null,
+  "started_at": "2026-07-27T03:51:47Z",
+  "finished_at": "2026-07-27T03:52:17Z",
+  "reproduction": "python3 ios/harness/harness.py verify IOS-CODEX-AGENT-ADAPTER-001"
+}

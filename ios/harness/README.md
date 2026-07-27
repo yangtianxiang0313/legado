@@ -98,3 +98,34 @@ python3 ios/harness/loop_supervisor.py preflight \
 `knowledge.produces` recovery。终态无恢复、replacement 成环、部分覆盖或多个恢复候选
 都会保持 blocker。该 CLI 不改变 Harness queue/state/event/status/work-items，也不提供
 物化、审批、发布或接受权威事实的命令。
+
+## Codex exec Agent Adapter
+
+`codex_agent_adapter.py` 是 Loop Supervisor 的 Codex CLI argv adapter。它使用稳定的
+非交互 `codex exec`、显式 `workspace-write` sandbox、`never` approval 和 JSONL，
+不会使用已弃用的 `--full-auto`，也不会启用 `danger-full-access`：
+
+```bash
+python3 ios/harness/codex_agent_adapter.py doctor \
+  --codex /absolute/path/to/native/codex
+
+python3 ios/harness/loop_supervisor.py drive \
+  --config ios/harness/codex-agent.example.json \
+  --agent local-codex \
+  --max-transitions 3
+```
+
+示例中的 Codex executable 和 `CODEX_HOME` 必须替换为显式绝对路径；不要提交个人
+路径或认证文件。adapter 只把专用 `CODEX_HOME` 路径传给单次 Codex 子进程，不读取、
+复制、hash 或输出 `auth.json`。宿主环境按白名单重建，prompt 从 stdin 传入，最终
+stdout 只含 thread、事件计数、usage 和输出摘要。
+
+成功 turn 的 thread ID 保存在忽略版本控制的
+`.harness-runtime/codex-sessions/<work-item>.json`，绑定 Work Item hash 与 repo
+commit；后续 transition 使用 `codex exec resume`。失败、JSONL 漂移、context
+权限过宽或绑定变化不会推进 session head。
+
+若 `doctor` 报 `EXECUTABLE_BROKEN`、`VERSION_EXIT_NONZERO` 或其他 unavailable
+reason，应先在控制面之外修复/重新安装 CLI，再重跑 doctor。adapter 不修改全局
+安装。即使本地 CLI 可用，它仍与 Agent 共享用户权限；生产无人值守必须由隔离 runner
+提供一次性凭据、签名 journal、受信复验和独立 patch promotion。

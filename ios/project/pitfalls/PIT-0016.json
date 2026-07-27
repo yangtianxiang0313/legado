@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0016",
+  "revision": 1,
+  "title": "Codex launcher 存在不代表原生 CLI payload 可执行",
+  "fingerprint": "codex-node-launcher-present-native-payload-missing",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "which codex 成功且全局 package/version metadata 存在，但 codex --version 立即失败",
+    "Node launcher 尝试 spawn vendor/aarch64-apple-darwin/codex 时收到 ENOENT",
+    "自动化若只检查 PATH 会在 claim 后才发现 Agent 根本无法启动"
+  ],
+  "conditions": [
+    "npm/Homebrew 全局安装只留下 JavaScript launcher 或 optional platform package metadata",
+    "平台 package 的 vendor 目录缺失原生 codex binary",
+    "adapter 在任务开始前没有真正执行 --version 健康检查"
+  ],
+  "root_cause": "包管理器入口、package metadata 与原生平台 payload 的安装完整性不是同一事实；PATH/文件存在性只能证明 launcher 可见，不能证明 codex exec 能启动。",
+  "diagnosis": [
+    "对明确的普通 executable 执行 argv [codex, --version] 并检查 timeout、exit code 与非空版本",
+    "若 Node launcher 非零，检查 platform package vendor 目录是否包含目标架构原生 binary",
+    "不要在 Work Item claim 后自动执行全局 reinstall；先把 unavailable reason 作为控制面 blocker"
+  ],
+  "fix": "codex_agent_adapter doctor 在任何 Agent turn 前执行真实 --version，并区分 not found、symlink、not executable、spawn broken、timeout、nonzero 与 empty version。当前安装稳定报告 VERSION_EXIT_NONZERO；仓库内不自动修复全局 CLI。",
+  "prevention": {
+    "architecture_rule": "真实 Agent adapter 的 readiness 必须由可执行 smoke probe 证明，不能以 which、package.json 或路径存在替代；全局工具修复属于仓库外显式运维动作。",
+    "tests": [
+      "ios/harness/tests/test_codex_agent_adapter.py#test_doctor_reports_regular_symlink_nonzero_and_broken",
+      "ios/harness/tests/test_codex_agent_adapter.py#test_current_machine_doctor_is_truthful",
+      "ios/harness/tests/test_codex_agent_adapter.py#test_first_turn_resume_and_secret_minimization"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "codex-cli-0.130.0-launcher",
+    "until": null
+  },
+  "status": "mitigated",
+  "occurrences": 1,
+  "first_seen": "2026-07-27",
+  "last_seen": "2026-07-27",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260727T035217Z-ios-codex-agent-adapter-001-86ffbaf3.json"
+  ]
+}

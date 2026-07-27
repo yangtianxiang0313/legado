@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "revision": 124,
+  "revision": 128,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-27T03:47:18Z",
-  "event_head": "b9751eca82d2bab17494b56d9bf3b455c1d57cb8c6b61bde6a2490505c043d27",
+  "updated_at": "2026-07-27T03:56:12Z",
+  "event_head": "b0f5be1da719be873eb6c01ee58b35843f1f649c78ba56401ba5e239b926e092",
   "active_work_items": [],
-  "last_completed_work_item": "IOS-PROPOSAL-COMPILER-001",
+  "last_completed_work_item": "IOS-CODEX-AGENT-ADAPTER-001",
   "work_items": {
     "IOS-BOOT-001": {
       "status": "completed",
@@ -1956,9 +1956,102 @@
       "final_tree_sha256": "e3fdb7dead0d9ff9213ecb9928732062db0346a4c86adefa238660f0a58186d1"
     },
     "IOS-CODEX-AGENT-ADAPTER-001": {
-      "status": "ready",
-      "attempt": 0,
-      "last_evidence": null
+      "status": "completed",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260727T035217Z-ios-codex-agent-adapter-001-86ffbaf3.json",
+      "claimed_by": "codex",
+      "claimed_at": "2026-07-27T03:47:50Z",
+      "lease_expires_at": "2026-07-28T03:47:50Z",
+      "work_item_sha256": "ab924fafa95dbe909199d948cf93acd54c6075667af51ea67c77557b47830ed1",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "e3d1d088586950f34d95aa529441e43babf70879",
+      "base_capability_revision": 16,
+      "base_capability_assurance_sha256": "6c08426cf2cc8f0277426284e00909a10444767bc01eeb84e0db43db8dcbb2ac",
+      "android_requirement_selection_sha256": null,
+      "business_knowledge_control_sha256": "b2a30fd1b81cc1d82d528f05f54cd3188e40aa141fac3b94c3cd5c2b0ff7a9b5",
+      "business_knowledge_authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 1,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "dependency-policy",
+          "argv": [
+            "python3",
+            "ios/harness/probes/dependency_contract.py",
+            "--root",
+            "."
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "eca96cb1b69567829ed8396386b0449da8c0d6e7295a00f1decfb60430ff1153",
+          "cwd": ".",
+          "started_at": "2026-07-27T03:47:28Z",
+          "duration_ms": 1175,
+          "timeout_seconds": 90,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "17595a1d68cdc5b52c010f46dff48514afa3fa3cf0215cdea7ae8eff38677c0a",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_tail": "DEPENDENCY_CONTRACT: OK\n",
+          "stderr_tail": ""
+        },
+        {
+          "id": "harness-tests",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "307f335e883f02e96ad97ecbda4c210435c0b955e2bcb9e46db9dc7b0d02c285",
+          "cwd": ".",
+          "started_at": "2026-07-27T03:47:29Z",
+          "duration_ms": 21233,
+          "timeout_seconds": 60,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "803c7031e8543ccb1a54ce2838ada48274ae00db62a503e0cab5684e768a5836",
+          "stdout_tail": "",
+          "stderr_tail": ".............................................................................................\n----------------------------------------------------------------------\nRan 93 tests in 21.118s\n\nOK\n"
+        }
+      ],
+      "last_evidence_sha256": "2d1d9203cf6c24e559a7cdea50cb0357393036a7d3a4c4b502b0570b35c0a944",
+      "verified_at": "2026-07-27T03:52:17Z",
+      "approval_requested_at": "2026-07-27T03:53:13Z",
+      "approval_request_existing_fingerprints": {
+        "ios/project/approvals/IOS-CODEX-AGENT-ADAPTER-001--architecture-review.json": "missing"
+      },
+      "awaiting_human_reasons": [
+        "缺少人工批准：architecture-review"
+      ],
+      "review_subject_sha256": "dfcfb38d0196565d9a99d9563158f824409f7925bcf22a1c1c0c48e7e06fb9fc",
+      "review_subject_files": {
+        "ios/harness/README.md": "file:0o644:356fb41694bc85bb519990d32ea0fc36f3ce10c09030367b8bf80e6e11bf9c88",
+        "ios/harness/codex-agent.example.json": "file:0o644:3638ecc22e875ab88c9e9d106d3cae00278af66250f3d4c227b9a463bf05f5e5",
+        "ios/harness/codex_agent_adapter.py": "file:0o644:11a48b015b88d35bdf970eade9dadd16c17e24d8093cb95ae371f8be175f368d",
+        "ios/harness/tests/test_codex_agent_adapter.py": "file:0o644:894480babeb3a28cc81f4205c0d2856c8fc8b2aa32a5d2ba2178a56c7f40e461",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json": "file:0o644:31772734f73fb7196e8fa9c2e3d02b6598a2c5f8118613c9a7f544dfc55f82b4",
+        "ios/project/checkpoints/IOS-CODEX-AGENT-ADAPTER-001.json": "file:0o644:fa54283e168548bd4681748cc6fbbfb70cd09d749ae664d32ffc8b3c3f7e10fa",
+        "ios/project/pitfalls/PIT-0016.json": "file:0o644:2429aa0c9f5c38780a67d6983fee184fa2fdd2ad7e1ce945194409902eafd5df"
+      },
+      "completed_at": "2026-07-27T03:56:12Z",
+      "final_tree_sha256": "9362f0b7a3faa6765dff6755da7bc7aa4fc0675d743399e012b5ac6d5532320b"
     }
   },
   "health": {
@@ -1981,7 +2074,8 @@
     "knowledge_ui_topology": "candidate_verified",
     "loop_supervisor": "local_verified",
     "loop_engine": "local_mature",
-    "proposal_compiler": "local_verified"
+    "proposal_compiler": "local_verified",
+    "codex_agent_adapter": "local_verified"
   },
   "risks": [
     {
