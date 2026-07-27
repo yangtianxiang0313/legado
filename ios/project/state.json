@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "revision": 123,
+  "revision": 124,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-27T03:43:26Z",
-  "event_head": "1731afc8baab1a67027c8bd2665a6c493c9ef4667151b14d1b6545a8e9c11f60",
+  "updated_at": "2026-07-27T03:47:18Z",
+  "event_head": "b9751eca82d2bab17494b56d9bf3b455c1d57cb8c6b61bde6a2490505c043d27",
   "active_work_items": [],
   "last_completed_work_item": "IOS-PROPOSAL-COMPILER-001",
   "work_items": {
@@ -1954,6 +1954,11 @@
       },
       "completed_at": "2026-07-27T03:43:26Z",
       "final_tree_sha256": "e3fdb7dead0d9ff9213ecb9928732062db0346a4c86adefa238660f0a58186d1"
+    },
+    "IOS-CODEX-AGENT-ADAPTER-001": {
+      "status": "ready",
+      "attempt": 0,
+      "last_evidence": null
     }
   },
   "health": {
