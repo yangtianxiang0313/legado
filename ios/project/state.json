@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "revision": 105,
+  "revision": 106,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-27T02:51:40Z",
-  "event_head": "54f79629199b90f0e0922af035cce486ddc211bfc84ad5781d48c0eaff7ccbcd",
+  "updated_at": "2026-07-27T02:53:42Z",
+  "event_head": "4857c10e1540fcf63028856494ee775dae5f38b2312ca6700756cb8a1c11b30c",
   "active_work_items": [],
   "last_completed_work_item": "IOS-KNOWLEDGE-UI-TOPOLOGY-RECOVERY-002",
   "work_items": {
@@ -1651,6 +1651,11 @@
       },
       "completed_at": "2026-07-27T02:51:40Z",
       "final_tree_sha256": "0e9a448f0a8a33292ef0b98ff7aa63eeeb919d628876aae0b2fb3e537ec4b231"
+    },
+    "IOS-LOOP-SUPERVISOR-001": {
+      "status": "ready",
+      "attempt": 0,
+      "last_evidence": null
     }
   },
   "health": {
