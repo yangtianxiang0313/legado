@@ -7,7 +7,7 @@
   "control_sha256": "b2a30fd1b81cc1d82d528f05f54cd3188e40aa141fac3b94c3cd5c2b0ff7a9b5",
   "authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
   "coverage_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-  "proposal_sha256": "09eefe87fdaf32b144c4fbb81ada82bf7fe9f375a1104623a5eb2aef5c6951ef",
+  "proposal_sha256": "6dfcba76a1c73795cf5024efca44801f2b90b665964456785ad27813ea05b003",
   "packets": [],
   "architecture_drivers": [],
   "coverage_ledgers": [],
@@ -49,6 +49,12 @@
       "sha256": "539968710e0eaaa6ba0b19b345ba0e7c07178db1e2c4fd30f3551234c525799d"
     },
     {
+      "id": "BKP-UI-TOPOLOGY-001",
+      "revision": 3,
+      "path": "ios/project/business-knowledge/packets/proposals/BKP-UI-TOPOLOGY-001/r0003.json",
+      "sha256": "9b04ebc4198a793bc4fbfcf3e3cdb5bd7e9ae72f02a053913e44b8e7d9dcfa68"
+    },
+    {
       "id": "DRV-BOOK-IDENTITY-001",
       "revision": 1,
       "path": "ios/project/business-knowledge/drivers/proposals/DRV-BOOK-IDENTITY-001/r0001.json",
@@ -77,6 +83,12 @@
       "revision": 2,
       "path": "ios/project/business-knowledge/drivers/proposals/DRV-UI-TOPOLOGY-001/r0002.json",
       "sha256": "3b4765875905faa8f355c8bdcf0072985be13806af82727093689c708a51581c"
+    },
+    {
+      "id": "DRV-UI-TOPOLOGY-001",
+      "revision": 3,
+      "path": "ios/project/business-knowledge/drivers/proposals/DRV-UI-TOPOLOGY-001/r0003.json",
+      "sha256": "b61cf7729c4b4f9f332cf1693cbeefb3a3dac0d2a271bd023f18a1d2a1eb4ae5"
     }
   ]
 }

@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-KNOWLEDGE-UI-TOPOLOGY-RECOVERY-002",
+  "gate": "architecture-review",
+  "work_item_sha256": "17a9661ec38d129f68e01103113d3b0d7ffbc564ffc66be8f63d2c8e6babbc71",
+  "tree_sha256": "762b2f0bc4f8ef3779a3f41b430fa1836ce184a0b6d63b283143381aab3feead",
+  "reviewer": "local-user:yangtianxiang",
+  "approved_at": "2026-07-27T02:51:38Z",
+  "expires_at": "2026-07-28T02:51:38Z",
+  "signature": null
+}

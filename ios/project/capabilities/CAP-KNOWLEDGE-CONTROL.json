@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 12,
+  "revision": 13,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -26,7 +26,7 @@
   "depends_on": ["CAP-BOOTSTRAP"],
   "active_decisions": ["ADR-0004"],
   "open_compatibility": [],
-  "open_pitfalls": [],
+  "open_pitfalls": ["PIT-0012"],
   "blockers": [],
   "required_evidence": ["harness-tests", "dependency-policy", "architecture"],
   "freshness_inputs": [
@@ -35,14 +35,14 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260724T082154Z-ios-knowledge-reader-lifecycle-001-9e5fb86a.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260727T024920Z-ios-knowledge-ui-topology-recovery-002-5505077f.json",
   "next_actions": [
-    "materialize UI topology 与外部集成两个剩余分域扫描，并在候选齐备后准备 Coverage baseline 与架构 Review Bundle",
+    "实现 Loop Supervisor 的精确队列状态、输出 reservation/tombstone 与 exhausted/cancelled 恢复事务，关闭 PIT-0012",
+    "materialize 外部集成分域扫描，并在五个候选齐备后准备 Coverage baseline 与架构 Review Bundle",
     "为 ReaderSession generation、字符落点、目录重映射、增量排版、预取取消、朗读联动和阅读时长建立 Android characterization 与结构化 expected",
     "建立真实书源 capture corpus 与分层 SourceLab 场景，按源码能力矩阵覆盖 nominal、boundary、malformed 与 denied case-role",
-    "候选知识与架构 Review 通过后，由 Trusted Publisher 原子发布 Packet/Driver、Coverage 与 Catalog，再接受 Requirement/ADR",
-    "待依赖领域扫描齐备后，用 ADR 裁决 SourceKit API/SPI、Book Identity、ReaderSession/typed cursor/cache、UI route graph 与 Integration profile"
+    "候选知识与架构 Review 通过后，由 Trusted Publisher 原子发布 Packet/Driver、Coverage 与 Catalog，再接受 Requirement/ADR"
   ],
-  "updated_at": "2026-07-24T08:21:54Z",
-  "updated_by": "IOS-KNOWLEDGE-READER-LIFECYCLE-001"
+  "updated_at": "2026-07-27T02:49:20Z",
+  "updated_by": "IOS-KNOWLEDGE-UI-TOPOLOGY-RECOVERY-002"
 }

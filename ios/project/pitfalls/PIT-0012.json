@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0012",
+  "revision": 1,
+  "title": "取消的知识生产工作项仍永久占有 proposal revision",
+  "fingerprint": "cancelled-knowledge-producer-reserves-output-revision",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "续接工作项复用 cancelled 工作项已声明的 Packet/Driver revision 时，Business Knowledge doctor 报 proposal 生产声明不唯一",
+    "只提升 Packet/Driver 顶层 revision、但复用内部 Claim revision 时，doctor 报 proposal claim 归属批次不唯一",
+    "Harness next 只显示队列可领取，无法在 materialize 前解释输出 reservation 冲突或生成合法恢复方案"
+  ],
+  "conditions": [
+    "知识生产工作项已 materialize 并声明 knowledge.produces，随后在 verify 前因 spec/AC 设计矛盾被取消",
+    "恢复项希望保留旧候选语义并重做验证",
+    "Packet、Claim 与 Driver 均要求连续 revision 和精确 supersedes"
+  ],
+  "root_cause": "Work Item 与 knowledge.produces 是不可变审计事实，终态不会释放已声明的输出归属；当前控制面又没有显式 output-abandoned tombstone 或受信恢复编译器，因此人工续接容易错误复用 revision，或只提升容器 revision 而遗漏内部 Claim lineage。",
+  "diagnosis": [
+    "读取所有 Work Item 的 knowledge.produces，按 kind/id/revision 建立永久 reservation 索引",
+    "同时检查 Packet 内每个 Claim 的 producer、连续 revision 与 supersedes，而不是只看 Packet 文件名",
+    "在 materialize 前 dry-run Business Knowledge graph，并把 reservation 冲突作为结构化 stop reason 输出"
+  ],
+  "fix": "本次由可信 Supervisor 保留 cancelled r0002 归属，物化结构性 r0002 lineage carrier，再由恢复项生成并验证 r0003。长期修复是在 Loop Supervisor 中加入 proposal reservation/tombstone 和 recovery compiler：自动选择下一合法 revision、生成逐 Claim supersedes 计划并在按钮确认前展示。",
+  "prevention": {
+    "architecture_rule": "任何知识恢复或续接工作项在 materialize 前必须解析永久 proposal reservation；不得复用已由任何终态工作项声明的 kind/id/revision，也不得只提升 Packet/Driver 而遗漏 Claim 和内部引用 revision。",
+    "tests": [],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-KNOWLEDGE-UI-TOPOLOGY-CONTINUATION-001",
+    "until": null
+  },
+  "status": "open",
+  "occurrences": 2,
+  "first_seen": "2026-07-27",
+  "last_seen": "2026-07-27",
+  "evidence": [
+    "ios/project/events.jsonl#sequence-102",
+    "ios/harness/work-items/IOS-KNOWLEDGE-UI-TOPOLOGY-CONTINUATION-001.json",
+    "ios/harness/evidence/runs/run-20260727T024920Z-ios-knowledge-ui-topology-recovery-002-5505077f.json"
+  ]
+}

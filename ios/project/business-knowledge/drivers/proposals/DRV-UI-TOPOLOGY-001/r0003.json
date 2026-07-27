@@ -1,0 +1,219 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-UI-TOPOLOGY-001",
+  "revision": 3,
+  "status": "proposed",
+  "semantic_key": "ui.topology.route-graph-and-simulator",
+  "title": "统一 Route Graph、平台投影与结构化模拟器验收",
+  "claim_refs": [
+    {
+      "id": "BKC-UI-ROOTS-001",
+      "revision": 3
+    },
+    {
+      "id": "BKC-UI-ROOT-VISIBILITY-001",
+      "revision": 3
+    },
+    {
+      "id": "BKC-UI-SHELF-ROOT-001",
+      "revision": 3
+    },
+    {
+      "id": "BKC-UI-SEARCH-FLOW-001",
+      "revision": 3
+    },
+    {
+      "id": "BKC-UI-EXPLORE-FLOW-001",
+      "revision": 3
+    },
+    {
+      "id": "BKC-UI-BOOK-DETAIL-001",
+      "revision": 3
+    },
+    {
+      "id": "BKC-UI-DETAIL-CONDITIONAL-ACTIONS-001",
+      "revision": 3
+    },
+    {
+      "id": "BKC-UI-TOC-RESULT-001",
+      "revision": 3
+    },
+    {
+      "id": "BKC-UI-READER-SURFACE-001",
+      "revision": 3
+    },
+    {
+      "id": "BKC-UI-READER-MENU-001",
+      "revision": 3
+    },
+    {
+      "id": "BKC-UI-READER-BACK-001",
+      "revision": 3
+    },
+    {
+      "id": "BKC-UI-SOURCE-MANAGEMENT-001",
+      "revision": 3
+    },
+    {
+      "id": "BKC-UI-SOURCE-BULK-MENU-001",
+      "revision": 3
+    },
+    {
+      "id": "BKC-UI-SOURCE-EDITOR-DEBUG-001",
+      "revision": 3
+    },
+    {
+      "id": "BKC-UI-RSS-FLOW-001",
+      "revision": 3
+    },
+    {
+      "id": "BKC-UI-SETTINGS-FLOW-001",
+      "revision": 3
+    },
+    {
+      "id": "BKC-UI-ROUTE-CATALOG-001",
+      "revision": 3
+    },
+    {
+      "id": "BKC-UI-ACTION-CATALOG-001",
+      "revision": 3
+    },
+    {
+      "id": "BKC-UI-MENU-TOPOLOGY-SCOPE-001",
+      "revision": 3
+    },
+    {
+      "id": "BKC-UI-MENU-DISPOSITION-001",
+      "revision": 3
+    },
+    {
+      "id": "BKC-UI-ACTION-SIGNATURE-001",
+      "revision": 3
+    },
+    {
+      "id": "BKC-UI-STATE-CATALOG-001",
+      "revision": 3
+    },
+    {
+      "id": "BKC-UI-ROUTE-TRANSITIONS-001",
+      "revision": 3
+    },
+    {
+      "id": "BKC-UI-OVERLAY-CONTRACT-001",
+      "revision": 3
+    },
+    {
+      "id": "BKC-UI-RESULT-CONTRACT-001",
+      "revision": 3
+    },
+    {
+      "id": "BKC-UI-PLATFORM-PROJECTION-001",
+      "revision": 3
+    },
+    {
+      "id": "BKC-UI-FEATURE-BOUNDARY-001",
+      "revision": 3
+    },
+    {
+      "id": "BKC-UI-ASYNC-ACCEPTANCE-001",
+      "revision": 3
+    },
+    {
+      "id": "BKC-UI-SIMULATOR-CONTRACT-001",
+      "revision": 3
+    },
+    {
+      "id": "BKC-UI-SIMULATOR-SCENARIOS-001",
+      "revision": 3
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "structural_fidelity",
+      "scenario": "iOS 保留 Android 业务根、页面层级、多级菜单、动作、结果和返回语义，同时允许控件与像素细节平台化。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "adaptability",
+      "scenario": "同一 Route Graph 在 iPhone 与 iPad 上分别投影为 Stack 与 Split，不复制两套业务导航状态。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "testability",
+      "scenario": "固定模拟器可输出 route/state/action/a11y/result envelope，失败定位到首个结构差异而非只比较截图。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "modularity",
+      "scenario": "Feature 只持有 State/Action/Output，不直接实例化 Repository、URLSession、文件、数据库或平台导航器。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "accessibility",
+      "scenario": "关键页面、菜单、选区、结果和错误在 VoiceOver tree 中具有稳定角色、标签、顺序和可用动作。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "determinism",
+      "scenario": "隐藏发现/RSS、不同书籍/来源状态和返回优先级都有固定 fixture 与可重复 Route trace。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "evolvability",
+      "scenario": "新增 Feature 或替换 sheet/popover/sidebar 投影时，不改变 Domain、UseCase 与其他 Feature 的内部状态。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "observability",
+      "scenario": "每次导航和关键动作记录 RouteID、FeatureID、StateRevision、ActionID、Output/Result 与错误阶段；typed ID 只记录不可逆 RedactedIDToken，不泄漏 URL、文件路径、导入原文、正文或凭据。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "privacy",
+      "scenario": "SourceID/RSSSourceID 的内部身份、UI evidence token 与用户可见 source URL 分离；日志、a11y、截图和 xcresult 经同一 sanitizer 后才可持久化，失败时 fail closed。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "profile_integrity",
+      "scenario": "StoreSafe 隐藏不允许的开发/动态能力 Route；FullCompat 只在 composition 与 capability policy 同时允许时显示。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "usability",
+      "scenario": "多级菜单、取消、返回和任务完成后的焦点/选择恢复在 compact 与 regular 布局中语义一致。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "是否批准 Route Catalog/edge v1 的稳定 RouteID、typed 参数、guard、output、返回恢复和版本演进规则；哪些信息只通过 Repository/UseCase 按 ID 读取？",
+    "是否批准四个 Root、可见性、RootSelection 与隐藏目标固定 fallback=root.shelf；运行时切换后的 path、selection 和恢复数据如何迁移？",
+    "在现有 ARCH-007/ARCH-010 与 architecture §3.3/§4 约束下，具体 Route/Result enum、AppRouter ownership 与 Feature Output→Route 映射是什么？",
+    "iPhone Tab+NavigationStack 与 iPad Sidebar+NavigationSplitView 如何共享 route state、selection 和恢复数据？",
+    "sheet、full-screen cover、popover、inspector 和 detail column 的选择由 Route 语义还是平台 projector 决定？",
+    "阅读器主菜单、更多设置、选中文本菜单和目录/搜索/换源任务如何建模层级、互斥与返回优先级？",
+    "书源管理的过滤、排序、多选和批量动作状态是否独立 Feature；编辑/调试/登录如何受 profile capability 约束？",
+    "typed Route Result 如何覆盖目录选择、书源编辑、换源、文件选择、登录和设置变化，并避免闭包/Store 穿透？",
+    "UIExecutionEnvelope 的 schema、canonicalizer、首差异路径与敏感字段脱敏规则是什么；如何保证日志、a11y、截图与 xcresult 使用同一 fail-closed sanitizer？",
+    "是否把 SourceID/RSSSourceID 迁移为与 URL 解耦的 opaque app ID；现有可编码 URL rawValue 如何通过 Repository alias 迁移，过渡期 canonicalizer 如何生成 fixture 内稳定且不可逆的 RedactedIDToken？",
+    "FeatureID、StateID、ActionID、OverlayID 的命名空间、版本演进、可见/可用状态与 UIExecutionEnvelope 映射由谁拥有，如何保证 scenario expected 可机读？",
+    "是否批准 TopologyScope/v1 与 DeferredSurfaceCatalog/v1：初始化冻结菜单层级和关键可执行叶子，长尾叶子必须进入后续 Feature packet，不能被静默删除或误报为已实现？",
+    "是否批准 simulator matrix v1 与场景 v1；runtime、device type、locale、字体、方向、appearance 或 toolchain 升级时如何显式递增 revision？",
+    "结构 Gate 中哪些字段必须完全一致，哪些允许顺序或平台投影差异；截图只在哪些节点人工 Review？",
+    "accessibility tree 如何稳定化动态 ID、系统控件和异步内容，同时保留角色、标签、顺序与 action availability？",
+    "Feature fixture 如何注入 Repository/Clock/ID/Source/Reader 状态，使 UI 测试不依赖真源和外部网络？",
+    "跨层烟囱测试如何覆盖导入书源→搜索→详情→入架→阅读，同时把 Source、Domain、Reader 和 UI 的失败定位分开？",
+    "Android Activity/Fragment/Intent/Menu 中哪些只是证据锚点，哪些可观察行为必须先由模拟器或 Android runner 特征化？"
+  ],
+  "resolution": {
+    "state": "requires_adr",
+    "adr_refs": [],
+    "work_item_refs": []
+  },
+  "promotion": null,
+  "supersedes": {
+    "id": "DRV-UI-TOPOLOGY-001",
+    "revision": 2
+  },
+  "created_by": "IOS-KNOWLEDGE-UI-TOPOLOGY-RECOVERY-002"
+}
