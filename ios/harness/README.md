@@ -47,6 +47,8 @@ claim/verify/close 生命周期见
 
 ```bash
 python3 ios/harness/loop_supervisor.py inspect
+python3 ios/harness/loop_supervisor.py preflight \
+  ios/project/work-item-proposals/candidates/IOS-EXAMPLE-001.json
 python3 ios/harness/loop_supervisor.py drive \
   --config ios/harness/supervisor.example.json \
   --agent local-agent \
@@ -56,6 +58,7 @@ python3 ios/harness/loop_supervisor.py materialize-review \
 ```
 
 - `inspect` 输出互斥的结构化状态与稳定 reason code，不再把队列为空和已有活跃项合并；
+- `preflight` 是纯只读检查，能在 claim 前发现依赖、schema、显式 allow/deny/protected 冲突和永久知识 revision reservation；
 - `drive` 只接受配置中的 argv 数组 Agent adapter，达到 transition 上限或遇到红基线、人工 Gate、终态失败、无进展时立即停；
 - `materialize-review` 只接受 `work-item-proposals/candidates` 下的普通 JSON，重新校验依赖、写范围、预算和永久知识产出 reservation 后打开一次性按钮；
 - CLI 没有非交互 `materialize` 或 `approve`，也不会更新 golden、发布知识或接受 ADR。

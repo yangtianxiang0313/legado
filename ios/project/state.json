@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "revision": 109,
+  "revision": 113,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-27T03:03:11Z",
-  "event_head": "3d6cf13e48610190b6b94271c807cc2cfdfe6caa803fd71a178708b9e1b06e87",
+  "updated_at": "2026-07-27T03:09:10Z",
+  "event_head": "e832ce5ae4deb0065b3aefaf12e7fc2ee99e4f42d3ab2fbb7900e4864da97e96",
   "active_work_items": [],
-  "last_completed_work_item": "IOS-KNOWLEDGE-UI-TOPOLOGY-RECOVERY-002",
+  "last_completed_work_item": "IOS-LOOP-SUPERVISOR-RECOVERY-002",
   "work_items": {
     "IOS-BOOT-001": {
       "status": "completed",
@@ -1709,9 +1709,77 @@
       "replacement": "IOS-LOOP-SUPERVISOR-RECOVERY-002"
     },
     "IOS-LOOP-SUPERVISOR-RECOVERY-002": {
-      "status": "ready",
-      "attempt": 0,
-      "last_evidence": null
+      "status": "completed",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260727T030740Z-ios-loop-supervisor-recovery-002-4af98b36.json",
+      "claimed_by": "codex-root",
+      "claimed_at": "2026-07-27T03:04:30Z",
+      "lease_expires_at": "2026-07-28T03:04:30Z",
+      "work_item_sha256": "44eccb384cb9b2daa8ccced4ec357df8448229de4e84d33a904e4c04be42415d",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "f802ce8779ab6a12c86787b91123d8b538e1c72a",
+      "base_capability_revision": 13,
+      "base_capability_assurance_sha256": "6c08426cf2cc8f0277426284e00909a10444767bc01eeb84e0db43db8dcbb2ac",
+      "android_requirement_selection_sha256": null,
+      "business_knowledge_control_sha256": "b2a30fd1b81cc1d82d528f05f54cd3188e40aa141fac3b94c3cd5c2b0ff7a9b5",
+      "business_knowledge_authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 1,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "harness-tests",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "307f335e883f02e96ad97ecbda4c210435c0b955e2bcb9e46db9dc7b0d02c285",
+          "cwd": ".",
+          "started_at": "2026-07-27T03:04:12Z",
+          "duration_ms": 17791,
+          "timeout_seconds": 60,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "9a4fba1d787c4513ef1a46c0270464fc5f1ea7ce3e9fc138aae15403d5eee85a",
+          "stdout_tail": "",
+          "stderr_tail": "...................................................................................\n----------------------------------------------------------------------\nRan 83 tests in 17.648s\n\nOK\n"
+        }
+      ],
+      "last_evidence_sha256": "8f897f5425ef2cf3f2a70a084176e04acdb6bc7ca53c0acdb0bfe2ab67f5a6a9",
+      "verified_at": "2026-07-27T03:07:40Z",
+      "approval_requested_at": "2026-07-27T03:08:57Z",
+      "approval_request_existing_fingerprints": {
+        "ios/project/approvals/IOS-LOOP-SUPERVISOR-RECOVERY-002--architecture-review.json": "missing"
+      },
+      "awaiting_human_reasons": [
+        "缺少人工批准：architecture-review"
+      ],
+      "review_subject_sha256": "262b3e5d0986277540cab5ecd75d9f8a31646d22a9cb24c282b2d34c2cd0d612",
+      "review_subject_files": {
+        "ios/harness/README.md": "file:0o644:cefbdba702edea1127f08d967b5546b2e7a56a4952877a8e5abe87af4c927823",
+        "ios/harness/loop_supervisor.py": "file:0o644:f5074ec2ba16ba3787f686aea836b147e003756c9d27d24c1b1a853dbc77f0a9",
+        "ios/harness/tests/test_loop_supervisor.py": "file:0o644:e4f92c83463d5a9a853fc57c70523a63daeb24028127e6442e539e2a89fc0522",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json": "file:0o644:04bf16de639c96b3b1f4ca0ec51d27f23e9f251574df03b7626ae0cfe71e45ec",
+        "ios/project/checkpoints/IOS-LOOP-SUPERVISOR-RECOVERY-002.json": "file:0o644:72cc2d9ac2ada9c5717aa8579e4eb8807e9ba09dc1f88bc311dfd0c238524865",
+        "ios/project/pitfalls/PIT-0013.json": "file:0o644:9e55c6af09d09f350e937d62af7b51d321f89c3bc7a1c6e25747f5147ce971b0"
+      },
+      "completed_at": "2026-07-27T03:09:10Z",
+      "final_tree_sha256": "ae02c478bf7ee6558f92f7d9b8c55b913f970bf9db99f49a76498a8ba68c94be"
     }
   },
   "health": {
@@ -1731,7 +1799,8 @@
     "harness_timeout_cleanup": "verified",
     "knowledge_source_runtime": "candidate_verified",
     "knowledge_reader_lifecycle": "candidate_verified",
-    "knowledge_ui_topology": "candidate_verified"
+    "knowledge_ui_topology": "candidate_verified",
+    "loop_supervisor": "local_verified"
   },
   "risks": [
     {

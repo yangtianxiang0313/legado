@@ -126,6 +126,29 @@ class MaterializationPreview:
             self.produces,
         )
 
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "source": self.source_relative,
+            "work_item_id": self.item_id,
+            "title": self.title,
+            "work_item_sha256": self.work_item_sha256,
+            "source_fingerprint": self.source_fingerprint,
+            "event_head": self.event_head,
+            "dependencies": list(self.dependencies),
+            "allow_write": list(self.allow_write),
+            "budget": dict(self.budgets),
+            "acceptance": [
+                {"id": identifier, "statement": statement}
+                for identifier, statement in self.criteria
+            ],
+            "gates": list(self.gates),
+            "produces": [
+                {"kind": kind, "id": identifier, "revision": revision}
+                for kind, identifier, revision in self.produces
+            ],
+        }
+
 
 def _sha256_bytes(payload: bytes) -> str:
     return hashlib.sha256(payload).hexdigest()
@@ -948,6 +971,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[2])
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("inspect", help="输出精确 loop decision")
+    preflight = subparsers.add_parser(
+        "preflight",
+        help="只读校验 Work Item candidate 并输出冻结摘要",
+    )
+    preflight.add_argument("candidate", type=Path)
     drive = subparsers.add_parser("drive", help="有界调用外部 Agent adapter")
     drive.add_argument("--config", type=Path, required=True)
     drive.add_argument("--agent", required=True)
@@ -968,6 +996,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             print(
                 json.dumps(
                     supervisor.inspect().to_dict(),
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            )
+            return 0
+        if args.command == "preflight":
+            print(
+                json.dumps(
+                    supervisor.preflight_candidate(args.candidate).to_dict(),
                     ensure_ascii=False,
                     indent=2,
                 )

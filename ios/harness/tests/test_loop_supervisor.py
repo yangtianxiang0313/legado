@@ -405,10 +405,27 @@ class MaterializationUITests(unittest.TestCase):
     def test_cli_has_review_but_no_noninteractive_materialize(self):
         parser = loop_supervisor.build_parser()
         help_text = parser.format_help()
+        self.assertIn("preflight", help_text)
         self.assertIn("materialize-review", help_text)
         with contextlib.redirect_stderr(io.StringIO()):
             with self.assertRaises(SystemExit):
                 parser.parse_args(["materialize", "candidate.json"])
+
+    def test_preflight_cli_is_read_only(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            path, _ = fixture.candidate()
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                result = loop_supervisor.main(
+                    ["--root", str(fixture.root), "preflight", str(path)]
+                )
+            self.assertEqual(0, result)
+            payload = json.loads(stdout.getvalue())
+            self.assertEqual("IOS-CANDIDATE-001", payload["work_item_id"])
+            self.assertFalse(
+                (fixture.root / "ios/harness/work-items/IOS-CANDIDATE-001.json").exists()
+            )
 
 
 class DriveTests(unittest.TestCase):

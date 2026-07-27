@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 13,
+  "revision": 14,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -35,14 +35,14 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260727T024920Z-ios-knowledge-ui-topology-recovery-002-5505077f.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260727T030740Z-ios-loop-supervisor-recovery-002-4af98b36.json",
   "next_actions": [
-    "实现 Loop Supervisor 的精确队列状态、输出 reservation/tombstone 与 exhausted/cancelled 恢复事务，关闭 PIT-0012",
-    "materialize 外部集成分域扫描，并在五个候选齐备后准备 Coverage baseline 与架构 Review Bundle",
-    "为 ReaderSession generation、字符落点、目录重映射、增量排版、预取取消、朗读联动和阅读时长建立 Android characterization 与结构化 expected",
-    "建立真实书源 capture corpus 与分层 SourceLab 场景，按源码能力矩阵覆盖 nominal、boundary、malformed 与 denied case-role",
-    "候选知识与架构 Review 通过后，由 Trusted Publisher 原子发布 Packet/Driver、Coverage 与 Catalog，再接受 Requirement/ADR"
+    "用 preflight + materialize-review 物化 Integrations 分域扫描 candidate，验证真实 queue_empty→button→ready→drive 链路",
+    "为本地 drive 配置真实 argv Agent runner，并在隔离环境验证多工作项连续推进与 no_progress/timeout 停止",
+    "在外部受保护 Supervisor 实现签名 journal、OS 隔离、受信复验和 patch promotion，不信任本地身份与事件头",
+    "为 cancelled knowledge output 增加显式 abandoned/tombstone 协议和逐 Claim recovery compiler，最终关闭 PIT-0012",
+    "五个知识域齐备后执行受信 Knowledge promotion、Coverage baseline 与 iOS Architecture Review Bundle"
   ],
-  "updated_at": "2026-07-27T02:49:20Z",
-  "updated_by": "IOS-KNOWLEDGE-UI-TOPOLOGY-RECOVERY-002"
+  "updated_at": "2026-07-27T03:07:40Z",
+  "updated_by": "IOS-LOOP-SUPERVISOR-RECOVERY-002"
 }

@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-LOOP-SUPERVISOR-RECOVERY-002",
+  "gate": "architecture-review",
+  "work_item_sha256": "44eccb384cb9b2daa8ccced4ec357df8448229de4e84d33a904e4c04be42415d",
+  "tree_sha256": "262b3e5d0986277540cab5ecd75d9f8a31646d22a9cb24c282b2d34c2cd0d612",
+  "reviewer": "local-user:yangtianxiang",
+  "approved_at": "2026-07-27T03:09:08Z",
+  "expires_at": "2026-07-28T03:09:08Z",
+  "signature": null
+}

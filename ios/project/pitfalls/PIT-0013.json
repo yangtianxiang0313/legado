@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0013",
+  "revision": 1,
+  "title": "Work Item 的 allow_write 可与 deny/protected 形成不可满足 scope",
+  "fingerprint": "materialized-work-item-allow-write-overlaps-deny-or-protected",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "Work Item 可以通过 schema、doctor 和 claim，但实现一旦修改 AC 明确要求的文件，verify 必然报 PROTECTED_PATH_MUTATION 或 deny_write scope violation",
+    "工作项表面上具有写权限，实际不存在任何能同时满足 AC 与 Harness policy 的候选",
+    "缺陷在 materialize 后才暴露，会浪费 attempt、预算并产生额外 cancelled 恢复链"
+  ],
+  "conditions": [
+    "scope.allow_write 显式列出一个路径",
+    "同一路径同时命中 scope.deny_write 或 Harness config protected_paths",
+    "Acceptance criterion 又要求该路径发生变化"
+  ],
+  "root_cause": "旧 materialization 流程只验证 Work Item schema、依赖与输出声明，没有在受信写入前计算显式 allow_write 与 deny/protected 的可满足性；Harness verify 的保护规则优先于 allow_write，因此冲突 spec 从设计上不可完成。",
+  "diagnosis": [
+    "在 materialize 前对每个无 glob 的 allow_write 路径执行 deny_write 和 protected_paths 匹配",
+    "若 AC 点名受保护输入，拆成独立架构/策略决策而不是扩大普通工作项 allow_write",
+    "看到 claim 后 doctor 因 architecture digest 变化变红时，先核对修改文件是否属于 architecture_sources/protected_paths"
+  ],
+  "fix": "Loop Supervisor preflight 现会在按钮出现前返回 SCOPE_UNSATISFIABLE，列出同时命中 deny/protected 的显式 allow_write；IOS-LOOP-SUPERVISOR-001 被保留为 cancelled，恢复项不再修改受保护架构文档。",
+  "prevention": {
+    "architecture_rule": "Work Item candidate 物化前必须证明显式 allow_write 不命中 deny_write 或 protected_paths；涉及 protected architecture source 的变更必须走独立受信架构事务，普通 allow_write 不能覆盖保护规则。",
+    "tests": [
+      "ios/harness/tests/test_loop_supervisor.py#test_preflight_rejects_explicit_allow_path_that_is_protected",
+      "ios/harness/tests/test_loop_supervisor.py#test_preflight_cli_is_read_only"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-LOOP-SUPERVISOR-001",
+    "until": "IOS-LOOP-SUPERVISOR-RECOVERY-002"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-27",
+  "last_seen": "2026-07-27",
+  "evidence": [
+    "ios/project/events.jsonl#sequence-110",
+    "ios/harness/evidence/runs/run-20260727T030740Z-ios-loop-supervisor-recovery-002-4af98b36.json"
+  ]
+}
