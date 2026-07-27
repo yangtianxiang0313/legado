@@ -1,0 +1,173 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-KNOWLEDGE-UI-TOPOLOGY-RECOVERY-002",
+    "title": "按知识 revision 规则恢复 UI Topology 候选",
+    "priority": 100,
+    "risk": "high",
+    "labels": ["phase-2", "knowledge", "corrective", "ui-topology", "recovery", "architecture-driver"]
+  },
+  "spec": {
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "intent": "保留 IOS-KNOWLEDGE-UI-TOPOLOGY-001 的 exhausted 历史、IOS-KNOWLEDGE-UI-TOPOLOGY-CONTINUATION-001 的 cancelled 设计失败和全部 Evidence。取消项已永久占有 r0002，因此可信 Supervisor 只物化一个结构性、未验证的 r0002 中间 revision；本恢复项将已完成独立语义审计的 UI Topology Packet/Driver 演进为 r0003。Packet 内 30 个 Claim 必须逐条升为 revision 3 并 supersede 同 ID revision 2；Driver 必须引用对应 revision 3。除受控 revision lineage、created_by 与引用 revision 外不得改变 r0001 的业务语义。本项不重开旧工作项、不增加旧预算、不发布知识、不接受 ADR、不生成 SwiftUI 或产品代码。",
+    "depends_on": [
+      "IOS-KNOWLEDGE-ANDROID-SURFACES-001",
+      "IOS-KNOWLEDGE-BOOK-DOMAIN-001",
+      "IOS-KNOWLEDGE-SOURCE-RUNTIME-001",
+      "IOS-KNOWLEDGE-READER-LIFECYCLE-001"
+    ],
+    "scope": {
+      "allow_write": [
+        "ios/project/business-knowledge/packets/proposals/BKP-UI-TOPOLOGY-001/r0003.json",
+        "ios/project/business-knowledge/drivers/proposals/DRV-UI-TOPOLOGY-001/r0003.json",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-KNOWLEDGE-UI-TOPOLOGY-RECOVERY-002.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "ios/harness/business-knowledge/**",
+        "ios/harness/tests/**",
+        "ios/harness/fixtures/**",
+        "ios/harness/source-lab/**",
+        "ios/harness/oracle/**",
+        "ios/project/android-intake/**",
+        "ios/project/business-knowledge/packets/published/**",
+        "ios/project/business-knowledge/drivers/published/**",
+        "ios/project/business-knowledge/coverage/**",
+        "ios/project/requirements/**",
+        "ios/project/requirement-proposals/**",
+        "ios/project/work-item-proposals/**",
+        "ios/project/baseline.json",
+        "ios/project/approvals/**",
+        "ios/docs/**"
+      ],
+      "max_files_changed": 5,
+      "max_changed_lines": 12000
+    },
+    "inputs": {
+      "context_files": [
+        "ios/docs/ai-harness.md",
+        "ios/docs/trusted-supervisor.md",
+        "ios/docs/business-knowledge-control-plane.md",
+        "ios/docs/architecture.md",
+        "ios/harness/work-items/IOS-KNOWLEDGE-UI-TOPOLOGY-001.json",
+        "ios/harness/work-items/IOS-KNOWLEDGE-UI-TOPOLOGY-CONTINUATION-001.json",
+        "ios/harness/evidence/runs/run-20260724T114053Z-ios-knowledge-ui-topology-001-db65986e.json",
+        "ios/project/business-knowledge/packets/proposals/BKP-UI-TOPOLOGY-001/r0001.json",
+        "ios/project/business-knowledge/packets/proposals/BKP-UI-TOPOLOGY-001/r0002.json",
+        "ios/project/business-knowledge/drivers/proposals/DRV-UI-TOPOLOGY-001/r0001.json",
+        "ios/project/business-knowledge/drivers/proposals/DRV-UI-TOPOLOGY-001/r0002.json",
+        "ios/project/business-knowledge/catalog.json"
+      ],
+      "android_source_anchors": [
+        "app/src/main/java/io/legado/app/ui/main/MainActivity.kt",
+        "app/src/main/java/io/legado/app/ui/main/bookshelf/BaseBookshelfFragment.kt",
+        "app/src/main/java/io/legado/app/ui/main/explore/ExploreFragment.kt",
+        "app/src/main/java/io/legado/app/ui/main/rss/RssFragment.kt",
+        "app/src/main/java/io/legado/app/ui/book/search/SearchActivity.kt",
+        "app/src/main/java/io/legado/app/ui/book/explore/ExploreShowActivity.kt",
+        "app/src/main/java/io/legado/app/ui/book/info/BookInfoActivity.kt",
+        "app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt",
+        "app/src/main/java/io/legado/app/ui/book/source/manage/BookSourceActivity.kt",
+        "app/src/main/java/io/legado/app/ui/config/ConfigActivity.kt",
+        "app/src/main/java/io/legado/app/ui/rss/read/ReadRssActivity.kt"
+      ],
+      "fixtures": []
+    },
+    "architecture_refs": ["ARCH-007", "ARCH-010", "ARCH-014", "ARCH-017", "ARCH-018", "ADR-0004"],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "Packet r0003 精确 supersede BKP-UI-TOPOLOGY-001@2；30 个 Claim 均保持 ID 与顺序、升为 revision 3 并 supersede 同 ID revision 2。去除顶层和 Claim 的 revision/supersedes/created_by 以及内部依赖 revision 后，canonical 业务载荷必须与冻结 r0001 相同。",
+          "verified_by": ["android-intake-contract", "harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "Driver r0003 精确 supersede DRV-UI-TOPOLOGY-001@2，并将全部 30 个 claim refs 精确提升到 revision 3；去除受控 revision lineage 后，forces、decision questions、Route Graph、Feature boundary 与 simulator matrix 必须与冻结 r0001 相同。",
+          "verified_by": ["dependency-policy", "harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "Business Knowledge doctor、Android intake contract、依赖策略和完整 Harness 测试在新 attempt 中通过；原工作项保持 exhausted、首次续接保持 cancelled，旧失败 Evidence、旧审批与 r0001 均未被修改。",
+          "verified_by": ["android-intake-contract", "dependency-policy", "harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-4",
+          "statement": "Checkpoint 明确绑定旧 exhausted Evidence、cancelled 设计失败、r0001/r0002/r0003 摘要、独立语义审计结论、未决 Android characterization 和后续 Integrations 扫描；Capability 保持 partial，不宣称知识已发布或架构已接受。",
+          "verified_by": ["memory-close"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": ["android-intake-contract", "dependency-policy", "harness-tests"]
+    },
+    "baseline_checks": ["android-intake-contract", "harness-tests"],
+    "budget": {
+      "wall_clock_seconds": 1800,
+      "max_edit_verify_cycles": 2,
+      "max_targeted_test_runs": 3,
+      "max_full_test_runs": 2,
+      "max_infra_retries": 1
+    },
+    "gates": ["architecture-review", "knowledge-review"],
+    "completion_effects": {
+      "health": {
+        "knowledge_ui_topology": "candidate_verified"
+      }
+    },
+    "memory": {
+      "capability_state_required": true,
+      "compatibility": "not_applicable",
+      "pitfall": "if_non_obvious_and_preventable",
+      "adr": "required_for_architecture_change"
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "refs": [],
+      "none_reason": "本项只续接并验证 UI Topology 知识候选，不接受或实现产品行为"
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "supersede",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [
+        {"kind": "packet", "id": "BKP-UI-TOPOLOGY-001", "revision": 3},
+        {"kind": "driver", "id": "DRV-UI-TOPOLOGY-001", "revision": 3}
+      ],
+      "expected_ledger_transitions": [],
+      "context_budget": {
+        "max_claims": 40,
+        "max_bytes": 65536
+      },
+      "none_reason": null
+    },
+    "source_lab": {
+      "mode": "not_applicable",
+      "behaviors": [],
+      "scenarios": [],
+      "none_reason": "本项只续接 Android UI 结构知识，不运行产品模拟器、截图或书源规则"
+    },
+    "stop_on": [
+      "baseline_red",
+      "scope_violation",
+      "authority_escalation",
+      "knowledge_drift",
+      "same_failure_twice",
+      "budget_exhausted",
+      "human_decision_required"
+    ]
+  }
+}
