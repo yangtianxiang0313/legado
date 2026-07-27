@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 15,
+  "revision": 16,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -21,8 +21,13 @@
       "ios/harness/business-knowledge/**",
       "ios/harness/approval_ui.py",
       "ios/harness/loop_supervisor.py",
+      "ios/harness/proposal_compiler.py",
       "ios/harness/tests/test_loop_supervisor.py",
-      "ios/project/business-knowledge/**"
+      "ios/harness/tests/test_proposal_compiler.py",
+      "ios/project/business-knowledge/**",
+      "ios/project/work-item-proposals/recipes/**",
+      "ios/project/work-item-proposals/candidates/**",
+      "ios/project/work-item-proposals/candidate-manifests/**"
     ]
   },
   "depends_on": ["CAP-BOOTSTRAP"],
@@ -37,14 +42,14 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260727T031933Z-ios-loop-supervisor-e2e-001-16dc9d56.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260727T034217Z-ios-proposal-compiler-001-c9f9be40.json",
   "next_actions": [
-    "用已通过 E2E 的本地闭环物化 Integrations 分域扫描 candidate，并接入真实 Codex argv adapter",
-    "把 initialization DAG 编译为逐项 immutable candidate，并用相同按钮与 preflight 进入队列",
+    "人工复核并按钮物化已编译的 IOS-KNOWLEDGE-INTEGRATIONS-001 candidate",
+    "为本地 Loop Supervisor 接入真实 Codex argv adapter，推进 Integrations 扫描并在 Gate 停靠",
     "在外部受保护 Supervisor 实现签名 journal、OS 隔离、受信复验和 patch promotion，不信任本地身份与事件头",
     "为 cancelled knowledge output 增加显式 abandoned/tombstone 协议和逐 Claim recovery compiler，最终关闭 PIT-0012",
     "五个知识域齐备后执行受信 Knowledge promotion、Coverage baseline 与 iOS Architecture Review Bundle"
   ],
-  "updated_at": "2026-07-27T03:19:33Z",
-  "updated_by": "IOS-LOOP-SUPERVISOR-E2E-001"
+  "updated_at": "2026-07-27T03:42:18Z",
+  "updated_by": "IOS-PROPOSAL-COMPILER-001"
 }

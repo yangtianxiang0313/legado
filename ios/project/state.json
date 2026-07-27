@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "revision": 119,
+  "revision": 123,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-27T03:36:37Z",
-  "event_head": "d0f7347ac5127bbff1a4b21fa6b76b3f959509bbce2d4bce5c03e946f714afd6",
+  "updated_at": "2026-07-27T03:43:26Z",
+  "event_head": "1731afc8baab1a67027c8bd2665a6c493c9ef4667151b14d1b6545a8e9c11f60",
   "active_work_items": [],
-  "last_completed_work_item": "IOS-LOOP-SUPERVISOR-E2E-001",
+  "last_completed_work_item": "IOS-PROPOSAL-COMPILER-001",
   "work_items": {
     "IOS-BOOT-001": {
       "status": "completed",
@@ -1856,9 +1856,104 @@
       "final_tree_sha256": "f674dd1da9cdff434e7d36dc1d357ec043c7dfb7627974799f5d59db7a13ca48"
     },
     "IOS-PROPOSAL-COMPILER-001": {
-      "status": "ready",
-      "attempt": 0,
-      "last_evidence": null
+      "status": "completed",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260727T034217Z-ios-proposal-compiler-001-c9f9be40.json",
+      "claimed_by": "codex",
+      "claimed_at": "2026-07-27T03:37:16Z",
+      "lease_expires_at": "2026-07-28T03:37:16Z",
+      "work_item_sha256": "d529cc2d1216f16598fa485937bdd052b69b094984ec64ed64f45b10e11c5ff2",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "d62ac4de370623ee5b8016f063bc753ba2d59945",
+      "base_capability_revision": 15,
+      "base_capability_assurance_sha256": "6c08426cf2cc8f0277426284e00909a10444767bc01eeb84e0db43db8dcbb2ac",
+      "android_requirement_selection_sha256": null,
+      "business_knowledge_control_sha256": "b2a30fd1b81cc1d82d528f05f54cd3188e40aa141fac3b94c3cd5c2b0ff7a9b5",
+      "business_knowledge_authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 1,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "dependency-policy",
+          "argv": [
+            "python3",
+            "ios/harness/probes/dependency_contract.py",
+            "--root",
+            "."
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "eca96cb1b69567829ed8396386b0449da8c0d6e7295a00f1decfb60430ff1153",
+          "cwd": ".",
+          "started_at": "2026-07-27T03:36:51Z",
+          "duration_ms": 1455,
+          "timeout_seconds": 90,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "17595a1d68cdc5b52c010f46dff48514afa3fa3cf0215cdea7ae8eff38677c0a",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_tail": "DEPENDENCY_CONTRACT: OK\n",
+          "stderr_tail": ""
+        },
+        {
+          "id": "harness-tests",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "307f335e883f02e96ad97ecbda4c210435c0b955e2bcb9e46db9dc7b0d02c285",
+          "cwd": ".",
+          "started_at": "2026-07-27T03:36:52Z",
+          "duration_ms": 23347,
+          "timeout_seconds": 60,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "508894bba57225c490ffc6e10a86da186a8cd8f13477d788d3325bdf14488683",
+          "stdout_tail": "",
+          "stderr_tail": ".......................................................................................\n----------------------------------------------------------------------\nRan 87 tests in 23.172s\n\nOK\n"
+        }
+      ],
+      "last_evidence_sha256": "bd6105c7a80159a0f4fc491cd5905c560b6f602c6d6d5070ca8ed1e341e05fd6",
+      "verified_at": "2026-07-27T03:42:18Z",
+      "approval_requested_at": "2026-07-27T03:43:14Z",
+      "approval_request_existing_fingerprints": {
+        "ios/project/approvals/IOS-PROPOSAL-COMPILER-001--architecture-review.json": "missing"
+      },
+      "awaiting_human_reasons": [
+        "缺少人工批准：architecture-review"
+      ],
+      "review_subject_sha256": "adb8342c4d03b08c939a28931403b1047a490badef57f4de2029b82646538637",
+      "review_subject_files": {
+        "ios/harness/README.md": "file:0o644:b56890bf500af5722d7460a0a088d81624ddaf7c0662ccfe4073c2319b40e262",
+        "ios/harness/proposal_compiler.py": "file:0o644:cce2623a0345605836804b3c01f8c005061424187789dad76cd163c89c436928",
+        "ios/harness/tests/test_proposal_compiler.py": "file:0o644:313d44e19fea29f571d45fa8fa2dd322ab10e41137dc936c93905e0c3a66f4e3",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json": "file:0o644:8db0c95d040499e57075ae7d3bf196a347ddab31fb85a133abe31d4d58eb3f6d",
+        "ios/project/checkpoints/IOS-PROPOSAL-COMPILER-001.json": "file:0o644:a58f9e76f5a99eb740a5ba4b9231d61144c45be63da5e75dc59d944c681b30ac",
+        "ios/project/pitfalls/PIT-0015.json": "file:0o644:31e5cc92777852cb0272ec78f935efc2ac734a898e7f5fff30e267b0ddbf72e2",
+        "ios/project/work-item-proposals/candidate-manifests/IOS-KNOWLEDGE-INTEGRATIONS-001.json": "file:0o644:4142447f9a98a5f793dd6279176d0b0b949679dcf1e24e179c87c273424c6718",
+        "ios/project/work-item-proposals/candidates/IOS-KNOWLEDGE-INTEGRATIONS-001.json": "file:0o644:9a47bdc11e036b231268542dd307767c5748087fadda8ab09bda9fdcafc26298",
+        "ios/project/work-item-proposals/recipes/IOS-KNOWLEDGE-INTEGRATIONS-001.json": "file:0o644:b70ed3bf0245fa04fd315d352010feac780ea628ef970ab6d51f0f82c54d222e"
+      },
+      "completed_at": "2026-07-27T03:43:26Z",
+      "final_tree_sha256": "e3fdb7dead0d9ff9213ecb9928732062db0346a4c86adefa238660f0a58186d1"
     }
   },
   "health": {
@@ -1880,7 +1975,8 @@
     "knowledge_reader_lifecycle": "candidate_verified",
     "knowledge_ui_topology": "candidate_verified",
     "loop_supervisor": "local_verified",
-    "loop_engine": "local_mature"
+    "loop_engine": "local_mature",
+    "proposal_compiler": "local_verified"
   },
   "risks": [
     {

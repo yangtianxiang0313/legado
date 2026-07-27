@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-PROPOSAL-COMPILER-001",
+  "summary": "建立 proposal-only initialization DAG 编译器。plan 确定性区分 completed、recipe_ready、materialized、dependency/gate/terminal blocker；依赖可沿显式 replacement 或唯一更高 revision knowledge output recovery 解析，当前 UI Topology exhausted 原节点精确解析到 IOS-KNOWLEDGE-UI-TOPOLOGY-RECOVERY-002。recipe 承载人工设计的完整 Work Item，编译器只机械核对 DAG 约束并以 create-only 双文件事务生成 candidate 与 provenance manifest，不臆造 scope、AC、预算、Gate 或知识合同。已生成 IOS-KNOWLEDGE-INTEGRATIONS-001 candidate，manifest 冻结 DAG、recipe、Android Surfaces Work Item/Evidence/Checkpoint 和 candidate 摘要；Loop Supervisor preflight 通过。正式 Evidence 覆盖 93 项 Harness 测试与依赖策略。",
+  "evidence": "ios/harness/evidence/runs/run-20260727T034217Z-ios-proposal-compiler-001-c9f9be40.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 15,
+      "to_revision": 16,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": ["ADR-0004"]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项只编译候选，不消费、生成或发布业务知识"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项只改变 proposal 自动化控制面，不改变 Android 或 iOS 产品行为"
+  },
+  "pitfalls": {
+    "records": [
+      "ios/project/pitfalls/PIT-0015.json"
+    ],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "recipe 仍需业务/架构分析生成；编译器故意不从标题或 Android package 自动臆造完整 Work Item",
+    "candidate 与 manifest 是本地 proposal-only 事实，仍需按钮物化和后续 Harness 生命周期",
+    "当前只生成 Integrations recipe；后续受信 promotion、产品范围和架构节点在前置 Gate 完成前保持 blocker",
+    "本地控制面与 Agent 共享文件权限，生产无人值守仍需外部签名 journal、隔离 runner 和受信 patch publisher",
+    "PIT-0012 的 cancelled knowledge revision tombstone/recovery 自动生成尚未实现"
+  ],
+  "next_actions": [
+    "人工复核 candidate-manifest 后按钮物化 IOS-KNOWLEDGE-INTEGRATIONS-001",
+    "接入真实 Codex argv adapter，按冻结 Android baseline 完成 Integrations Packet/Driver",
+    "Integrations 完成后重跑 plan，确认 Coverage baseline 仅剩 trusted knowledge-promotion Gate",
+    "在外部 Supervisor/CI 实现签名 journal、隔离 runner、受信复验与 patch promotion",
+    "为后续 DAG 节点逐项补充人工 recipe，而不是扩大编译器推断权"
+  ],
+  "created_at": "2026-07-27T03:42:18Z"
+}

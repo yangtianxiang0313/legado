@@ -73,3 +73,28 @@ adapter、真实 Harness 生命周期、Evidence/Capability/Checkpoint/Event 绑
 本地按钮产生的仍是 `local_unverified` 协作事实。跨机器无人值守、并行 DAG 调度、
 签名控制状态、真实 Integrations 扫描和发布晋级，仍必须由隔离、签名的外部
 Supervisor/CI 重验；这些属于下一阶段，不由本地 adapter 冒充。
+
+## Proposal Compiler
+
+`proposal_compiler.py` 把初始化规划连接到按钮物化，但刻意保留四层边界：
+
+1. `initialization-dag.json` 只描述 proposal 拓扑、约束与受信 Gate，不包含可执行权限；
+2. `recipes/<proposal-id>.json` 由架构/业务分析写出完整 Work Item，编译器不会补写
+   scope、AC、预算、Gate、Requirement、SourceLab 或知识合同；
+3. `candidates/<proposal-id>.json` 与 `candidate-manifests/<proposal-id>.json`
+   是 create-only 输出，manifest 冻结 DAG、recipe、依赖 Work Item、Evidence、
+   Checkpoint 和 recovery lineage 摘要；
+4. candidate 仍需 `loop_supervisor.py materialize-review` 的本地按钮才能进入队列。
+
+```bash
+python3 ios/harness/proposal_compiler.py plan
+python3 ios/harness/proposal_compiler.py compile IOS-KNOWLEDGE-INTEGRATIONS-001
+python3 ios/harness/proposal_compiler.py check IOS-KNOWLEDGE-INTEGRATIONS-001
+python3 ios/harness/loop_supervisor.py preflight \
+  ios/project/work-item-proposals/candidates/IOS-KNOWLEDGE-INTEGRATIONS-001.json
+```
+
+依赖解析只接受直接完成、显式 `state.replacement`，或唯一的更高 revision
+`knowledge.produces` recovery。终态无恢复、replacement 成环、部分覆盖或多个恢复候选
+都会保持 blocker。该 CLI 不改变 Harness queue/state/event/status/work-items，也不提供
+物化、审批、发布或接受权威事实的命令。

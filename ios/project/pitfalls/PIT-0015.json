@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0015",
+  "revision": 1,
+  "title": "Proposal DAG 只检查原 Work Item ID 会永久阻塞已恢复能力",
+  "fingerprint": "proposal-dag-terminal-dependency-ignores-recovery-lineage",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "原工作项 exhausted/cancelled 后，恢复项已经完成并产出更高知识 revision，但所有下游节点仍显示 dependency_blocked",
+    "人工知道能力已经恢复，自动编译器却只能看到原 ID 不是 completed",
+    "为解除阻塞而直接把终态改成 completed 会破坏历史、Evidence 和预算语义"
+  ],
+  "conditions": [
+    "DAG 依赖稳定 proposal ID，而执行过程中产生 continuation/recovery Work Item",
+    "恢复关系只存在 state.replacement，或通过相同 knowledge kind/id 的更高 revision 表达",
+    "调度器只执行 state[dependency].status == completed"
+  ],
+  "root_cause": "Proposal 拓扑的逻辑能力依赖与 Work Item attempt 的物理 ID 被混为一体；终态是不可改写历史，而恢复项是新的执行事实，必须通过显式、可审计谱系解析连接二者。",
+  "diagnosis": [
+    "先沿 state.replacement 有界遍历并检测 cycle",
+    "无显式 replacement 时比较原项全部 knowledge.produces kind/id，寻找唯一 completed 且 revision 全部递增的恢复项",
+    "部分覆盖、多个候选、非递增 revision 或缺 Evidence/Checkpoint 时保持结构化 blocker"
+  ],
+  "fix": "proposal_compiler.py 的依赖解析器保留原 ID 和完整 chain，接受直接 completed、显式 replacement 或唯一更高 revision knowledge output recovery；当前 UI Topology 原节点解析到 IOS-KNOWLEDGE-UI-TOPOLOGY-RECOVERY-002，manifest 同时冻结 original/resolved 及其 Work Item、Evidence、Checkpoint 摘要。",
+  "prevention": {
+    "architecture_rule": "DAG 编译不得改写终态或凭命名猜测 continuation；逻辑依赖必须解析为唯一、可重算并绑定 Evidence/Checkpoint 的 completed recovery，否则 fail closed。",
+    "tests": [
+      "ios/harness/tests/test_proposal_compiler.py#test_terminal_dependency_resolves_unique_output_recovery",
+      "ios/harness/tests/test_proposal_compiler.py#test_replacement_cycle_and_atomic_pair_rollback_are_structured",
+      "ios/harness/tests/test_proposal_compiler.py#test_current_integrations_candidate_is_bound_and_preflightable"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-KNOWLEDGE-UI-TOPOLOGY-001",
+    "until": "IOS-PROPOSAL-COMPILER-001"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-27",
+  "last_seen": "2026-07-27",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260727T034217Z-ios-proposal-compiler-001-c9f9be40.json"
+  ]
+}
