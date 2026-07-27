@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-LOOP-SUPERVISOR-E2E-001",
+  "summary": "本地 Loop Engine 已达到单机单写者成熟线。真实临时 Harness 仓库从未物化 candidate 开始，依次通过 preflight、materialization event/state/status 原子事务、ready、argv fake Agent、claim、context binding、范围内实现、verify、Evidence、Capability revision、Checkpoint、completed event，最后 inspect 精确返回 queue_empty；测试没有直接写最终 state。Agent adapter 改为新 session/process group，超时执行 TERM、有界等待、KILL，并证明直接子进程和孙进程均在 drive 返回前消失。正式 Evidence 覆盖 87 个 Harness 测试、依赖策略和架构检查。",
+  "evidence": "ios/harness/evidence/runs/run-20260727T031933Z-ios-loop-supervisor-e2e-001-16dc9d56.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 14,
+      "to_revision": 15,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": ["ADR-0004"]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项验证 Loop Supervisor，不消费、生成或发布业务知识"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项只改变 AI/Harness 外层控制面，不改变 Android 或 iOS 产品行为"
+  },
+  "pitfalls": {
+    "records": [
+      "ios/project/pitfalls/PIT-0014.json"
+    ],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "本地 Loop Supervisor 与 Agent 仍共享用户文件权限，本地身份、事件头和 Evidence 不构成发布信任",
+    "当前 E2E 使用确定性 fake argv Agent；真实 Codex adapter 的长任务续接、凭据隔离和网络策略需在外部隔离 runner 验证",
+    "本地 driver 是单写者顺序循环，不负责编译 initialization DAG 或执行多 worktree 并行调度",
+    "PIT-0012 的 cancelled knowledge output 已禁止 revision 复用，但显式 abandoned/tombstone 和 recovery compiler 尚未实现"
+  ],
+  "next_actions": [
+    "物化 Integrations 分域扫描 candidate，使用真实 Codex argv adapter 推进首个业务知识工作项",
+    "实现 initialization DAG 到 immutable candidate 的编译器和恢复项生成器",
+    "在外部受保护 Supervisor/CI 落地签名 journal、隔离 runner、受信 reverify 与 patch promotion",
+    "扩展真实 Source Lab/Android oracle 任务的连续调度与人工 Gate 停靠验证",
+    "完成五域知识 promotion 后生成 iOS Architecture Review Bundle 与 feature delivery DAG"
+  ],
+  "created_at": "2026-07-27T03:19:33Z"
+}

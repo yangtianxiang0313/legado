@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0014",
+  "revision": 1,
+  "title": "Agent adapter 超时只终止直接进程会遗留子孙进程",
+  "fingerprint": "agent-adapter-timeout-without-process-group-reclamation",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "Supervisor 已返回 agent_timeout，但 adapter 创建的子进程或孙进程仍在后台运行",
+    "残留进程继续占用文件、端口、模拟器或输出管道，导致下一 attempt 无进展、冲突或误判",
+    "subprocess.run 的 timeout 看似终止调用，实际不能证明完整进程树已经消失"
+  ],
+  "conditions": [
+    "Agent adapter 会派生构建、测试、模拟器或其他长生命周期子进程",
+    "Supervisor 只对直接 Popen 对象调用 terminate/kill，或没有为 adapter 创建独立 process group",
+    "timeout、异常退出或父进程提前退出后立即开始下一 transition"
+  ],
+  "root_cause": "进程生命周期的隔离与回收单位错误地使用了直接子进程，而 AI 开发任务天然会创建多层进程树；如果不以新 session/process group 启动并对整个 group 执行有界 TERM/KILL，Supervisor 无法保证 attempt 结束。",
+  "diagnosis": [
+    "记录 adapter group leader PID，并在 drive 返回前用 killpg(pid, 0) 检查进程组是否仍存在",
+    "在测试 adapter 中显式创建子进程和孙进程、记录各自 PID，timeout 后逐个验证均不可达",
+    "把 signal 权限错误、SIGKILL 后仍存活和 cleanup communicate 超时作为结构化 cleanup_error，而不是吞掉异常"
+  ],
+  "fix": "Loop Supervisor 现以 start_new_session 启动 argv adapter；timeout 后对完整 process group 发送 SIGTERM，有限等待后发送 SIGKILL并再次有限等待。transition 始终记录 timed_out、process_leak 与 cleanup_error，且不回显 context 或 stdout/stderr 内容。",
+  "prevention": {
+    "architecture_rule": "所有外部 Agent/check runner 必须以独立进程组作为 attempt 生命周期边界；任何 timeout 或正常退出残留都必须在开始下一 transition 前结构化失败并完成有界回收。",
+    "tests": [
+      "ios/harness/tests/test_loop_supervisor.py#test_timeout_reclaims_child_and_grandchild_processes",
+      "ios/harness/tests/test_loop_supervisor.py#test_cleanup_permission_failure_is_structured",
+      "ios/harness/tests/test_loop_supervisor.py#test_real_harness_e2e_materialize_drive_verify_close_and_empty"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-LOOP-SUPERVISOR-RECOVERY-002",
+    "until": "IOS-LOOP-SUPERVISOR-E2E-001"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-27",
+  "last_seen": "2026-07-27",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260727T031933Z-ios-loop-supervisor-e2e-001-16dc9d56.json"
+  ]
+}

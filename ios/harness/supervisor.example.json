@@ -41,7 +41,15 @@
       "queue_empty"
     ],
     "candidate_root": "ios/project/work-item-proposals/candidates",
-    "materialization": "human-click-only-local-unverified"
+    "materialization": "human-click-only-local-unverified",
+    "adapter_contract": {
+      "launch": "argv-only-new-session-process-group",
+      "timeout_cleanup": "sigterm-bounded-wait-sigkill",
+      "environment": "secret-free-allowlist",
+      "output_recording": "byte-count-and-sha256-only",
+      "must_finish_harness_lifecycle": true
+    },
+    "local_maturity": "e2e-verified-single-writer"
   },
   "agent_invocation": {
     "argv": [

@@ -60,7 +60,16 @@ python3 ios/harness/loop_supervisor.py materialize-review \
 - `inspect` 输出互斥的结构化状态与稳定 reason code，不再把队列为空和已有活跃项合并；
 - `preflight` 是纯只读检查，能在 claim 前发现依赖、schema、显式 allow/deny/protected 冲突和永久知识 revision reservation；
 - `drive` 只接受配置中的 argv 数组 Agent adapter，达到 transition 上限或遇到红基线、人工 Gate、终态失败、无进展时立即停；
+- 每次 Agent 调用都在新的 session/process group 中启动；超时按 TERM → 有界等待 → KILL 回收完整进程树，并结构化返回 `timed_out`、`process_leak`、`cleanup_error`；
+- Supervisor 只向 adapter 传递显式环境白名单和临时 context 路径，结果只保留输出长度与 SHA-256，不回显 context、stdout/stderr 或宿主环境 secret；
 - `materialize-review` 只接受 `work-item-proposals/candidates` 下的普通 JSON，重新校验依赖、写范围、预算和永久知识产出 reservation 后打开一次性按钮；
 - CLI 没有非交互 `materialize` 或 `approve`，也不会更新 golden、发布知识或接受 ADR。
 
-本地按钮产生的是 `local_unverified` 协作事实。真正无人值守与发布仍必须由隔离、签名的外部 Supervisor/CI 重验。
+本地 Loop Engine 的成熟边界是：确定性 inspect、按钮物化、受限 argv
+adapter、真实 Harness 生命周期、Evidence/Capability/Checkpoint/Event 绑定，以及
+进程树有界回收均有自动化 E2E。它足以在单机、单写者、人工 Gate 保留的前提下持续
+推进工作项。
+
+本地按钮产生的仍是 `local_unverified` 协作事实。跨机器无人值守、并行 DAG 调度、
+签名控制状态、真实 Integrations 扫描和发布晋级，仍必须由隔离、签名的外部
+Supervisor/CI 重验；这些属于下一阶段，不由本地 adapter 冒充。

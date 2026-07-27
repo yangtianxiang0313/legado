@@ -2,10 +2,14 @@ import contextlib
 import http.client
 import io
 import json
+import os
 import shutil
+import subprocess
 import sys
 import tempfile
+import textwrap
 import threading
+import time
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -429,6 +433,35 @@ class MaterializationUITests(unittest.TestCase):
 
 
 class DriveTests(unittest.TestCase):
+    @staticmethod
+    def initialize_git(root):
+        subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+        subprocess.run(
+            ["git", "config", "user.name", "Loop Supervisor Test"],
+            cwd=root,
+            check=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.email", "loop@example.invalid"],
+            cwd=root,
+            check=True,
+        )
+        subprocess.run(["git", "add", "."], cwd=root, check=True)
+        subprocess.run(["git", "commit", "-qm", "baseline"], cwd=root, check=True)
+
+    @staticmethod
+    def commit_all(root, message):
+        subprocess.run(["git", "add", "."], cwd=root, check=True)
+        subprocess.run(["git", "commit", "-qm", message], cwd=root, check=True)
+
+    @staticmethod
+    def process_exists(pid):
+        try:
+            os.kill(pid, 0)
+            return True
+        except ProcessLookupError:
+            return False
+
     def test_drive_without_adapter_does_not_claim(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = MaterializationFixture(Path(directory))
@@ -464,12 +497,7 @@ class DriveTests(unittest.TestCase):
                     }
                 },
             )
-            subprocess = __import__("subprocess")
-            subprocess.run(["git", "init", "-q"], cwd=root, check=True)
-            subprocess.run(["git", "config", "user.name", "Test"], cwd=root, check=True)
-            subprocess.run(["git", "config", "user.email", "test@example.invalid"], cwd=root, check=True)
-            subprocess.run(["git", "add", "."], cwd=root, check=True)
-            subprocess.run(["git", "commit", "-qm", "baseline"], cwd=root, check=True)
+            self.initialize_git(root)
             supervisor = loop_supervisor.LoopSupervisor(fixture.harness)
             result = supervisor.drive(
                 config_path=config,
@@ -482,6 +510,316 @@ class DriveTests(unittest.TestCase):
                 "implementing",
                 fixture.harness.state()["work_items"]["IOS-BOOT-001"]["status"],
             )
+
+    def test_timeout_reclaims_child_and_grandchild_processes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = MaterializationFixture(root)
+            pid_file = root / "adapter-pids.txt"
+            grandchild = (
+                "import os,sys,time;"
+                "open(sys.argv[1],'a').write(str(os.getpid())+'\\n');"
+                "time.sleep(60)"
+            )
+            child = (
+                "import os,subprocess,sys,time;"
+                "open(sys.argv[1],'a').write(str(os.getpid())+'\\n');"
+                f"subprocess.Popen([sys.executable,'-c',{grandchild!r},sys.argv[1]]);"
+                "time.sleep(60)"
+            )
+            adapter = (
+                "import os,subprocess,sys,time;"
+                "open(sys.argv[1],'a').write(str(os.getpid())+'\\n');"
+                f"subprocess.Popen([sys.executable,'-c',{child!r},sys.argv[1]]);"
+                "time.sleep(60)"
+            )
+            fixture.fixture.write_json(
+                "supervisor.json",
+                {
+                    "agent_invocation": {
+                        "argv": [sys.executable, "-c", adapter, str(pid_file)],
+                        "timeout_seconds": 1,
+                    }
+                },
+            )
+            self.initialize_git(root)
+            result = loop_supervisor.LoopSupervisor(fixture.harness).drive(
+                config_path=root / "supervisor.json",
+                agent_id="timeout-test",
+                max_transitions=1,
+            )
+            self.assertEqual("agent_timeout", result["outcome"])
+            transition = result["transitions"][0]
+            self.assertTrue(transition["timed_out"])
+            self.assertFalse(transition["process_leak"])
+            self.assertIsNone(transition["cleanup_error"])
+            pids = [int(value) for value in pid_file.read_text().splitlines()]
+            self.assertEqual(3, len(pids))
+            deadline = time.monotonic() + 2
+            while time.monotonic() < deadline and any(
+                self.process_exists(pid) for pid in pids
+            ):
+                time.sleep(0.02)
+            self.assertEqual([], [pid for pid in pids if self.process_exists(pid)])
+
+    def test_cleanup_permission_failure_is_structured(self):
+        class TimeoutProcess:
+            pid = 123
+            returncode = -9
+
+            def __init__(self):
+                self.calls = 0
+
+            def communicate(self, timeout=None):
+                self.calls += 1
+                if self.calls < 3:
+                    raise subprocess.TimeoutExpired(
+                        ["fake-agent"],
+                        timeout,
+                        output=b"partial",
+                        stderr=b"",
+                    )
+                return b"", b""
+
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            supervisor = loop_supervisor.LoopSupervisor(fixture.harness)
+            with (
+                mock.patch.object(
+                    loop_supervisor.subprocess,
+                    "Popen",
+                    return_value=TimeoutProcess(),
+                ),
+                mock.patch.object(
+                    supervisor,
+                    "_signal_process_group",
+                    side_effect=[
+                        "sigterm_permission_denied",
+                        "sigkill_permission_denied",
+                    ],
+                ),
+                mock.patch.object(
+                    supervisor,
+                    "_process_group_exists",
+                    return_value=False,
+                ),
+            ):
+                transition = supervisor._run_agent_adapter(
+                    item_id="IOS-BOOT-001",
+                    argv=["fake-agent"],
+                    environment={},
+                    timeout_seconds=1,
+                )
+            self.assertTrue(transition["timed_out"])
+            self.assertFalse(transition["process_leak"])
+            self.assertEqual(
+                "sigterm_permission_denied;sigkill_permission_denied",
+                transition["cleanup_error"],
+            )
+
+    def test_real_harness_e2e_materialize_drive_verify_close_and_empty(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = MaterializationFixture(root)
+            state = fixture.harness.state()
+            for runtime in state["work_items"].values():
+                runtime["status"] = "superseded"
+            fixture.fixture.write_json("ios/project/state.json", state)
+            fixture.refresh_status()
+
+            item_id = "IOS-LOOP-E2E-001"
+            candidate = fixture.fixture.item(item_id, "CAP-BOOT", 100)
+            candidate["spec"]["scope"].update(
+                {
+                    "allow_write": [
+                        "ios/implementation.txt",
+                        "ios/project/capabilities/CAP-BOOT.json",
+                        f"ios/project/checkpoints/{item_id}.json",
+                    ],
+                    "max_files_changed": 3,
+                    "max_changed_lines": 100,
+                }
+            )
+            candidate["spec"]["completion_effects"] = {
+                "health": {"loop_engine": "local_mature"}
+            }
+            candidate_path = fixture.candidate_root / f"{item_id}.json"
+            fixture.fixture.write_json(
+                str(candidate_path.relative_to(root)),
+                candidate,
+            )
+            agent_source = textwrap.dedent(
+                f"""
+                import json
+                import os
+                import sys
+                from pathlib import Path
+
+                sys.path.insert(0, {str(HARNESS_DIR)!r})
+                import harness
+
+                root = Path(sys.argv[1])
+                context_path = Path(sys.argv[2])
+                assert os.environ["LEGADO_CONTEXT_PATH"] == str(context_path)
+                context = json.loads(context_path.read_text(encoding="utf-8"))
+                item_id = os.environ["LEGADO_WORK_ITEM_ID"]
+                assert context["work_item"]["metadata"]["id"] == item_id
+                assert context["work_item_sha256"]
+
+                instance = harness.Harness(root)
+                (root / "ios/implementation.txt").write_text(
+                    "implemented by argv adapter\\n",
+                    encoding="utf-8",
+                )
+                evidence_path = instance.verify(item_id)
+                evidence_relative = instance.relative(evidence_path)
+                evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+                assert evidence["result"] == "passed"
+
+                capability_path = root / "ios/project/capabilities/CAP-BOOT.json"
+                capability = json.loads(capability_path.read_text(encoding="utf-8"))
+                capability.update({{
+                    "revision": 2,
+                    "declared_status": "verified",
+                    "latest_evidence": evidence_relative,
+                    "updated_by": item_id,
+                }})
+                capability_path.write_text(
+                    json.dumps(capability, ensure_ascii=False, indent=2) + "\\n",
+                    encoding="utf-8",
+                )
+                checkpoint = {{
+                    "schema_version": 1,
+                    "work_item_id": item_id,
+                    "summary": "真实 argv Agent 完成 Harness 闭环",
+                    "evidence": evidence_relative,
+                    "capability_updates": [
+                        {{"id": "CAP-BOOT", "from_revision": 1, "to_revision": 2}}
+                    ],
+                    "architecture_impact": {{
+                        "kind": "implements_existing",
+                        "adr_refs": ["ADR-0001"],
+                    }},
+                    "requirements": {{
+                        "mode": "control_plane",
+                        "refs": [],
+                        "selection_sha256": None,
+                    }},
+                    "source_lab": {{
+                        "mode": "not_applicable",
+                        "behaviors": [],
+                        "scenarios": [],
+                        "selection_sha256": None,
+                    }},
+                    "compatibility": {{
+                        "records": [],
+                        "none_reason": "测试不涉及跨端差异",
+                    }},
+                    "pitfalls": {{
+                        "records": [],
+                        "none_reason": "测试未发现长期陷阱",
+                    }},
+                    "remaining_risks": [],
+                    "next_actions": [],
+                    "created_at": "2026-01-01T00:00:00Z",
+                }}
+                checkpoint_path = (
+                    root / "ios/project/checkpoints" / f"{{item_id}}.json"
+                )
+                checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+                checkpoint_path.write_text(
+                    json.dumps(checkpoint, ensure_ascii=False, indent=2) + "\\n",
+                    encoding="utf-8",
+                )
+                assert instance.close(item_id) == "completed"
+                """
+            )
+            fixture.fixture.write_json(
+                "supervisor.json",
+                {
+                    "agent_invocation": {
+                        "argv": [
+                            sys.executable,
+                            "-c",
+                            agent_source,
+                            "{repo_root}",
+                            "{context_path}",
+                        ],
+                        "timeout_seconds": 10,
+                    }
+                },
+            )
+            self.initialize_git(root)
+
+            supervisor = loop_supervisor.LoopSupervisor(fixture.harness)
+            preview = supervisor.preflight_candidate(candidate_path)
+            self.assertEqual(item_id, supervisor.materialize(preview, reason="e2e"))
+            self.assertEqual(
+                "ready",
+                fixture.harness.state()["work_items"][item_id]["status"],
+            )
+            self.commit_all(root, "materialized")
+
+            result = supervisor.drive(
+                config_path=root / "supervisor.json",
+                agent_id="e2e-agent",
+                max_transitions=2,
+            )
+            self.assertEqual(
+                "no_materialized_ready_work_item",
+                result["outcome"],
+            )
+            self.assertEqual("queue_empty", result["decision"]["state"])
+            transition = result["transitions"][0]
+            self.assertEqual(0, transition["exit_code"])
+            self.assertFalse(transition["timed_out"])
+            self.assertFalse(transition["process_leak"])
+            self.assertIsNone(transition["cleanup_error"])
+
+            final_state = fixture.harness.state()
+            self.assertEqual(
+                "completed",
+                final_state["work_items"][item_id]["status"],
+            )
+            self.assertEqual("local_mature", final_state["health"]["loop_engine"])
+            self.assertEqual([], final_state["active_work_items"])
+            events = fixture.harness.event_lines()
+            item_events = [
+                event["event"]
+                for event in events
+                if event.get("work_item_id") == item_id
+            ]
+            self.assertEqual(
+                [
+                    "WorkItemMaterialized",
+                    "WorkItemClaimed",
+                    "VerificationPassed",
+                    "WorkItemCompleted",
+                ],
+                item_events,
+            )
+            self.assertEqual(events[-1]["event_hash"], final_state["event_head"])
+            evidence_path = root / final_state["work_items"][item_id]["last_evidence"]
+            evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+            self.assertEqual("passed", evidence["result"])
+            self.assertEqual(
+                candidate["metadata"]["id"],
+                evidence["work_item_id"],
+            )
+            checkpoint = json.loads(
+                (
+                    root
+                    / "ios/project/checkpoints"
+                    / f"{item_id}.json"
+                ).read_text(encoding="utf-8")
+            )
+            self.assertEqual(evidence_path.relative_to(root).as_posix(), checkpoint["evidence"])
+            self.assertIn(
+                f"| {item_id} | 100 | `completed` |",
+                (root / "ios/project/status.md").read_text(encoding="utf-8"),
+            )
+            errors, _ = fixture.harness.doctor()
+            self.assertEqual([], errors)
 
 
 if __name__ == "__main__":

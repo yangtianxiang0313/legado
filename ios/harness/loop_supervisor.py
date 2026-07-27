@@ -15,6 +15,7 @@ import html
 import json
 import os
 import secrets
+import signal
 import subprocess
 import sys
 import tempfile
@@ -152,10 +153,6 @@ class MaterializationPreview:
 
 def _sha256_bytes(payload: bytes) -> str:
     return hashlib.sha256(payload).hexdigest()
-
-
-def _tail(value: str, limit: int = 2000) -> str:
-    return value[-limit:]
 
 
 def _atomic_write_bytes(path: Path, payload: bytes, mode: int = 0o644) -> None:
@@ -650,50 +647,44 @@ class LoopSupervisor:
                     }
                 )
                 started = time.monotonic()
-                result = subprocess.run(
-                    argv,
-                    cwd=str(self.harness.root),
-                    env=environment,
-                    capture_output=True,
-                    text=True,
-                    timeout=timeout_seconds,
-                    check=False,
+                transition = self._run_agent_adapter(
+                    item_id=item_id,
+                    argv=argv,
+                    environment=environment,
+                    timeout_seconds=timeout_seconds,
                 )
-                transition = {
-                    "work_item_id": item_id,
-                    "argv": argv,
-                    "exit_code": result.returncode,
-                    "duration_ms": int((time.monotonic() - started) * 1000),
-                    "stdout_sha256": _sha256_bytes(result.stdout.encode()),
-                    "stderr_sha256": _sha256_bytes(result.stderr.encode()),
-                    "stdout_tail": _tail(result.stdout),
-                    "stderr_tail": _tail(result.stderr),
-                }
+                transition["duration_ms"] = int(
+                    (time.monotonic() - started) * 1000
+                )
                 transitions.append(transition)
-                if result.returncode != 0:
+                if transition["cleanup_error"] is not None:
+                    return {
+                        "schema_version": SCHEMA_VERSION,
+                        "outcome": "agent_cleanup_failed",
+                        "decision": self.inspect().to_dict(),
+                        "transitions": transitions,
+                    }
+                if transition["process_leak"]:
+                    return {
+                        "schema_version": SCHEMA_VERSION,
+                        "outcome": "agent_process_leak",
+                        "decision": self.inspect().to_dict(),
+                        "transitions": transitions,
+                    }
+                if transition["timed_out"]:
+                    return {
+                        "schema_version": SCHEMA_VERSION,
+                        "outcome": "agent_timeout",
+                        "decision": self.inspect().to_dict(),
+                        "transitions": transitions,
+                    }
+                if transition["exit_code"] != 0:
                     return {
                         "schema_version": SCHEMA_VERSION,
                         "outcome": "agent_failed",
                         "decision": self.inspect().to_dict(),
                         "transitions": transitions,
                     }
-            except subprocess.TimeoutExpired as error:
-                transitions.append(
-                    {
-                        "work_item_id": item_id,
-                        "argv": argv if "argv" in locals() else [],
-                        "timed_out": True,
-                        "timeout_seconds": timeout_seconds,
-                        "stdout_tail": _tail((error.stdout or "") if isinstance(error.stdout, str) else ""),
-                        "stderr_tail": _tail((error.stderr or "") if isinstance(error.stderr, str) else ""),
-                    }
-                )
-                return {
-                    "schema_version": SCHEMA_VERSION,
-                    "outcome": "agent_timeout",
-                    "decision": self.inspect().to_dict(),
-                    "transitions": transitions,
-                }
             finally:
                 context_path.unlink(missing_ok=True)
 
@@ -710,6 +701,153 @@ class LoopSupervisor:
             "outcome": "transition_budget_reached",
             "decision": self.inspect().to_dict(),
             "transitions": transitions,
+        }
+
+    @staticmethod
+    def _output_bytes(value: Any) -> bytes:
+        if value is None:
+            return b""
+        if isinstance(value, bytes):
+            return value
+        if isinstance(value, str):
+            return value.encode("utf-8")
+        return bytes(value)
+
+    @staticmethod
+    def _process_group_exists(process_group_id: int) -> bool:
+        try:
+            os.killpg(process_group_id, 0)
+            return True
+        except ProcessLookupError:
+            return False
+        except PermissionError:
+            return True
+
+    @staticmethod
+    def _signal_process_group(process_group_id: int, sig: signal.Signals) -> Optional[str]:
+        try:
+            os.killpg(process_group_id, sig)
+            return None
+        except ProcessLookupError:
+            return None
+        except PermissionError:
+            return f"{sig.name.lower()}_permission_denied"
+
+    def _run_agent_adapter(
+        self,
+        *,
+        item_id: str,
+        argv: Sequence[str],
+        environment: Mapping[str, str],
+        timeout_seconds: int,
+    ) -> Dict[str, Any]:
+        """Run one adapter without shell and reclaim its complete process group."""
+        stdout = b""
+        stderr = b""
+        exit_code: Optional[int] = None
+        timed_out = False
+        process_leak = False
+        cleanup_errors: List[str] = []
+
+        def record_cleanup_error(value: Optional[str]) -> None:
+            if value and value not in cleanup_errors:
+                cleanup_errors.append(value)
+
+        try:
+            process = subprocess.Popen(
+                list(argv),
+                cwd=str(self.harness.root),
+                env=dict(environment),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                start_new_session=True,
+            )
+        except OSError as error:
+            stderr = str(error).encode("utf-8", errors="replace")
+            return {
+                "work_item_id": item_id,
+                "argv": list(argv),
+                "exit_code": None,
+                "timeout_seconds": timeout_seconds,
+                "timed_out": False,
+                "process_leak": False,
+                "cleanup_error": None,
+                "stdout_bytes": 0,
+                "stderr_bytes": len(stderr),
+                "stdout_sha256": _sha256_bytes(stdout),
+                "stderr_sha256": _sha256_bytes(stderr),
+            }
+
+        try:
+            stdout, stderr = process.communicate(timeout=timeout_seconds)
+            stdout = self._output_bytes(stdout)
+            stderr = self._output_bytes(stderr)
+            exit_code = process.returncode
+        except subprocess.TimeoutExpired as error:
+            timed_out = True
+            stdout = self._output_bytes(error.output)
+            stderr = self._output_bytes(error.stderr)
+            record_cleanup_error(
+                self._signal_process_group(process.pid, signal.SIGTERM)
+            )
+            try:
+                final_stdout, final_stderr = process.communicate(timeout=0.25)
+                stdout = self._output_bytes(final_stdout) or stdout
+                stderr = self._output_bytes(final_stderr) or stderr
+            except subprocess.TimeoutExpired as term_timeout:
+                stdout = self._output_bytes(term_timeout.output) or stdout
+                stderr = self._output_bytes(term_timeout.stderr) or stderr
+                record_cleanup_error(
+                    self._signal_process_group(process.pid, signal.SIGKILL)
+                )
+                try:
+                    final_stdout, final_stderr = process.communicate(timeout=1.0)
+                    stdout = self._output_bytes(final_stdout) or stdout
+                    stderr = self._output_bytes(final_stderr) or stderr
+                except subprocess.TimeoutExpired as kill_timeout:
+                    stdout = self._output_bytes(kill_timeout.output) or stdout
+                    stderr = self._output_bytes(kill_timeout.stderr) or stderr
+                    record_cleanup_error("communicate_timeout_after_sigkill")
+            exit_code = process.returncode
+
+        if self._process_group_exists(process.pid):
+            if not timed_out:
+                process_leak = True
+                record_cleanup_error(
+                    self._signal_process_group(process.pid, signal.SIGTERM)
+                )
+                deadline = time.monotonic() + 0.25
+                while (
+                    time.monotonic() < deadline
+                    and self._process_group_exists(process.pid)
+                ):
+                    time.sleep(0.01)
+                if self._process_group_exists(process.pid):
+                    record_cleanup_error(
+                        self._signal_process_group(process.pid, signal.SIGKILL)
+                    )
+            deadline = time.monotonic() + 1.0
+            while (
+                time.monotonic() < deadline
+                and self._process_group_exists(process.pid)
+            ):
+                time.sleep(0.01)
+            if self._process_group_exists(process.pid):
+                process_leak = True
+                record_cleanup_error("process_group_survived_cleanup")
+
+        return {
+            "work_item_id": item_id,
+            "argv": list(argv),
+            "exit_code": exit_code,
+            "timeout_seconds": timeout_seconds,
+            "timed_out": timed_out,
+            "process_leak": process_leak,
+            "cleanup_error": ";".join(cleanup_errors) or None,
+            "stdout_bytes": len(stdout),
+            "stderr_bytes": len(stderr),
+            "stdout_sha256": _sha256_bytes(stdout),
+            "stderr_sha256": _sha256_bytes(stderr),
         }
 
 
@@ -1017,7 +1155,17 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 max_transitions=args.max_transitions,
             )
             print(json.dumps(result, ensure_ascii=False, indent=2))
-            return 0 if result["outcome"] not in {"agent_failed", "agent_timeout"} else 1
+            return (
+                0
+                if result["outcome"]
+                not in {
+                    "agent_failed",
+                    "agent_timeout",
+                    "agent_process_leak",
+                    "agent_cleanup_failed",
+                }
+                else 1
+            )
         if args.command == "materialize-review":
             outcome = run_materialization_review(supervisor, args.candidate)
             print(f"materialize-review: {outcome}")

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 14,
+  "revision": 15,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -20,6 +20,8 @@
     "paths": [
       "ios/harness/business-knowledge/**",
       "ios/harness/approval_ui.py",
+      "ios/harness/loop_supervisor.py",
+      "ios/harness/tests/test_loop_supervisor.py",
       "ios/project/business-knowledge/**"
     ]
   },
@@ -35,14 +37,14 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260727T030740Z-ios-loop-supervisor-recovery-002-4af98b36.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260727T031933Z-ios-loop-supervisor-e2e-001-16dc9d56.json",
   "next_actions": [
-    "用 preflight + materialize-review 物化 Integrations 分域扫描 candidate，验证真实 queue_empty→button→ready→drive 链路",
-    "为本地 drive 配置真实 argv Agent runner，并在隔离环境验证多工作项连续推进与 no_progress/timeout 停止",
+    "用已通过 E2E 的本地闭环物化 Integrations 分域扫描 candidate，并接入真实 Codex argv adapter",
+    "把 initialization DAG 编译为逐项 immutable candidate，并用相同按钮与 preflight 进入队列",
     "在外部受保护 Supervisor 实现签名 journal、OS 隔离、受信复验和 patch promotion，不信任本地身份与事件头",
     "为 cancelled knowledge output 增加显式 abandoned/tombstone 协议和逐 Claim recovery compiler，最终关闭 PIT-0012",
     "五个知识域齐备后执行受信 Knowledge promotion、Coverage baseline 与 iOS Architecture Review Bundle"
   ],
-  "updated_at": "2026-07-27T03:07:40Z",
-  "updated_by": "IOS-LOOP-SUPERVISOR-RECOVERY-002"
+  "updated_at": "2026-07-27T03:19:33Z",
+  "updated_by": "IOS-LOOP-SUPERVISOR-E2E-001"
 }

@@ -2,13 +2,13 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-27T03:12:36Z
+- 更新时间：2026-07-27T03:21:01Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
-- 下一个可领取工作项：IOS-LOOP-SUPERVISOR-E2E-001
-- 最近完成：IOS-LOOP-SUPERVISOR-RECOVERY-002
+- 下一个可领取工作项：无
+- 最近完成：IOS-LOOP-SUPERVISOR-E2E-001
 
 ## 健康度
 
@@ -29,6 +29,7 @@
 | knowledge_source_runtime | `candidate_verified` |
 | knowledge_ui_topology | `candidate_verified` |
 | local_approval_ui | `verified` |
+| loop_engine | `local_mature` |
 | loop_supervisor | `local_verified` |
 | requirements | `catalog_ready_one_characterization_gap` |
 | source_lab | `fixture_transport_integrated` |
@@ -43,7 +44,7 @@
 | IOS-KNOWLEDGE-UI-TOPOLOGY-CONTINUATION-001 | 100 | `cancelled` | IOS-KNOWLEDGE-ANDROID-SURFACES-001, IOS-KNOWLEDGE-BOOK-DOMAIN-001, IOS-KNOWLEDGE-SOURCE-RUNTIME-001, IOS-KNOWLEDGE-READER-LIFECYCLE-001 | 续接并冻结 UI Topology 知识候选 |
 | IOS-KNOWLEDGE-UI-TOPOLOGY-RECOVERY-002 | 100 | `completed` | IOS-KNOWLEDGE-ANDROID-SURFACES-001, IOS-KNOWLEDGE-BOOK-DOMAIN-001, IOS-KNOWLEDGE-SOURCE-RUNTIME-001, IOS-KNOWLEDGE-READER-LIFECYCLE-001 | 按知识 revision 规则恢复 UI Topology 候选 |
 | IOS-LOOP-SUPERVISOR-001 | 100 | `cancelled` | IOS-HARNESS-APPROVAL-UI-001, IOS-HARNESS-TIMEOUT-CLEANUP-001, IOS-KNOWLEDGE-UI-TOPOLOGY-RECOVERY-002 | 建立可执行 Loop Supervisor 与按钮化物化控制面 |
-| IOS-LOOP-SUPERVISOR-E2E-001 | 100 | `ready` | IOS-LOOP-SUPERVISOR-RECOVERY-002 | 完成 Loop Supervisor 自托管 E2E 与进程组回收 |
+| IOS-LOOP-SUPERVISOR-E2E-001 | 100 | `completed` | IOS-LOOP-SUPERVISOR-RECOVERY-002 | 完成 Loop Supervisor 自托管 E2E 与进程组回收 |
 | IOS-LOOP-SUPERVISOR-RECOVERY-002 | 100 | `completed` | IOS-HARNESS-APPROVAL-UI-001, IOS-HARNESS-TIMEOUT-CLEANUP-001, IOS-KNOWLEDGE-UI-TOPOLOGY-RECOVERY-002 | 恢复并验证 Loop Supervisor 控制面 |
 | IOS-KNOWLEDGE-PROPOSAL-BATCH-REFS-REPAIR-001 | 96 | `completed` | IOS-KNOWLEDGE-ANDROID-SURFACES-001 | 闭合同批知识候选引用契约 |
 | IOS-KNOWLEDGE-DAG-REPAIR-001 | 95 | `completed` | IOS-KNOWLEDGE-CONTROL-PLANE-001 | 修复初始化 DAG 验收缺口并收紧知识演进门禁 |
