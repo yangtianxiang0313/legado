@@ -1,0 +1,160 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-LOOP-SUPERVISOR-E2E-001",
+    "title": "完成 Loop Supervisor 自托管 E2E 与进程组回收",
+    "priority": 100,
+    "risk": "critical",
+    "labels": ["phase-0", "harness", "control-plane", "loop-engine", "supervisor", "e2e", "process-isolation"]
+  },
+  "spec": {
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "intent": "完成本地 Loop Supervisor 的成熟度闭环：用真实临时 Harness 仓库验证 materialization transaction 后，drive 通过 argv Agent adapter 自动完成 claim、实现、verify、memory、close 并回到 queue_empty；Agent 超时或中断时必须回收整个新 session 进程组并输出 cleanup 诊断，不能遗留孙进程或无限等待。本项不提供默认凭据、不自动批准、不更新 golden、不修改受保护架构输入。",
+    "depends_on": [
+      "IOS-LOOP-SUPERVISOR-RECOVERY-002"
+    ],
+    "scope": {
+      "allow_write": [
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/tests/test_loop_supervisor.py",
+        "ios/harness/README.md",
+        "ios/harness/supervisor.example.json",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-LOOP-SUPERVISOR-E2E-001.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "ios/harness/harness.py",
+        "ios/harness/approval_ui.py",
+        "ios/harness/config.json",
+        "ios/harness/architecture-rules.json",
+        "ios/harness/dependency-policy.json",
+        "ios/harness/schemas/**",
+        "ios/harness/business-knowledge/**",
+        "ios/harness/android-intake/**",
+        "ios/harness/source-lab/**",
+        "ios/harness/oracle/**",
+        "ios/harness/goldens/**",
+        "ios/harness/normalization/**",
+        "ios/project/android-intake/**",
+        "ios/project/business-knowledge/**",
+        "ios/project/requirements/**",
+        "ios/project/approvals/**",
+        "ios/project/baseline.json",
+        "ios/docs/**"
+      ],
+      "max_files_changed": 7,
+      "max_changed_lines": 1200
+    },
+    "inputs": {
+      "context_files": [
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/tests/test_loop_supervisor.py",
+        "ios/harness/supervisor.example.json",
+        "ios/harness/work-items/IOS-LOOP-SUPERVISOR-RECOVERY-002.json",
+        "ios/project/checkpoints/IOS-LOOP-SUPERVISOR-RECOVERY-002.json",
+        "ios/project/pitfalls/PIT-0012.json",
+        "ios/project/pitfalls/PIT-0013.json"
+      ],
+      "android_source_anchors": [],
+      "fixtures": []
+    },
+    "architecture_refs": ["ARCH-014", "ADR-0004"],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "真实临时 Harness 仓库的 E2E 从未物化 candidate 开始，执行 preflight/materialize transaction 后得到 ready；drive 通过 argv fake Agent 完成 claim、写范围内变更、verify、checkpoint/capability close，最终 inspect 精确返回 queue_empty。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "E2E 同时证明 materialization event/state/status、Agent context placeholder、Evidence、capability revision、checkpoint 和 completed event 互相绑定；测试不得直接伪造最终 state 绕过 Harness 生命周期。",
+          "verified_by": ["harness-tests", "memory-close"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "Agent adapter 以新 session/process group 启动；timeout 后先 TERM、有限等待、再 KILL，并记录 timed_out、process_leak 与 cleanup_error。直接子进程及孙进程都不能在 drive 返回后存活。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-4",
+          "statement": "Agent 非零退出、timeout、cleanup 权限异常、无进展、transition budget 和人工 Gate 都有结构化 outcome；任何分支不自动 approve/materialize，不执行 shell 字符串，不泄露 context 或环境 secret。",
+          "verified_by": ["dependency-policy", "harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-5",
+          "statement": "Harness README 明确成熟的本地闭环、adapter 责任和生产隔离差距；Checkpoint 基于 E2E 与完整测试证据判定本地 Loop Engine 成熟，并保留 external trusted Supervisor、DAG compiler 与真实 Integrations 扫描为下一阶段工作。",
+          "verified_by": ["dependency-policy", "memory-close"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": ["dependency-policy", "harness-tests"]
+    },
+    "baseline_checks": ["harness-tests"],
+    "budget": {
+      "wall_clock_seconds": 5400,
+      "max_edit_verify_cycles": 3,
+      "max_targeted_test_runs": 8,
+      "max_full_test_runs": 3,
+      "max_infra_retries": 1
+    },
+    "gates": ["architecture-review"],
+    "completion_effects": {
+      "health": {
+        "loop_engine": "local_mature"
+      }
+    },
+    "memory": {
+      "capability_state_required": true,
+      "compatibility": "not_applicable",
+      "pitfall": "if_non_obvious_and_preventable",
+      "adr": "not_required"
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "refs": [],
+      "none_reason": "本项验证 AI/Harness 外层推进器，不接受或实现 Android 产品行为"
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "not_applicable",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [],
+      "expected_ledger_transitions": [],
+      "context_budget": {
+        "max_claims": 20,
+        "max_bytes": 32768
+      },
+      "none_reason": "本项验证 Loop Supervisor，不消费、生成或发布业务知识"
+    },
+    "source_lab": {
+      "mode": "not_applicable",
+      "behaviors": [],
+      "scenarios": [],
+      "none_reason": "本项不执行书源规则、本地站点或 Android runner"
+    },
+    "stop_on": [
+      "scope_violation",
+      "authority_escalation",
+      "same_failure_twice",
+      "budget_exhausted",
+      "human_decision_required"
+    ]
+  }
+}
