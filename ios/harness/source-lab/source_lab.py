@@ -569,14 +569,23 @@ def validate_candidate_characterization(
     labels = set(metadata.get("labels", []))
     requirements = spec.get("requirements", {})
     allow_write = spec.get("scope", {}).get("allow_write", [])
+    recovers = spec.get("recovers")
+    is_direct_characterization = (
+        requirements.get("mode") == "characterization"
+    )
+    is_control_recovery = (
+        requirements.get("mode") == "control_plane"
+        and isinstance(recovers, str)
+        and bool(recovers)
+    )
     if (
         not CANDIDATE_CHARACTERIZATION_LABELS.issubset(labels)
-        or requirements.get("mode") != "characterization"
+        or not (is_direct_characterization or is_control_recovery)
         or spec.get("gates") != []
     ):
         errors.append(
             f"{work_item_id}: candidate reuse 仅限无 Gate 的 "
-            "android-oracle/candidate-only characterization"
+            "android-oracle/candidate-only characterization 或其 control recovery"
         )
 
     if not isinstance(allow_write, list) or any(
@@ -640,6 +649,44 @@ def validate_candidate_characterization(
             f"{work_item_id}: candidate introduced_by 尚未完成合法 extend："
             f"{introduced_by}"
         )
+
+    if is_control_recovery:
+        predecessor_path = (
+            root / "ios/harness/work-items" / f"{recovers}.json"
+        )
+        try:
+            predecessor = load_json(predecessor_path)
+        except SourceLabError as error:
+            errors.append(
+                f"{work_item_id}: candidate recovery predecessor 无效：{error}"
+            )
+        else:
+            predecessor_spec = predecessor.get("spec", {})
+            predecessor_labels = set(
+                predecessor.get("metadata", {}).get("labels", [])
+            )
+            predecessor_runtime = state.get("work_items", {}).get(
+                recovers,
+                {},
+            )
+            if (
+                predecessor_spec.get("capability") != spec.get("capability")
+                or predecessor_spec.get("requirements", {}).get("mode")
+                != "characterization"
+                or predecessor_spec.get("source_lab", {}).get("mode")
+                != "reuse"
+                or predecessor_spec.get("source_lab", {}).get("scenarios")
+                != [scenario_id]
+                or not CANDIDATE_CHARACTERIZATION_LABELS.issubset(
+                    predecessor_labels
+                )
+                or predecessor_runtime.get("status")
+                not in {"blocked", "rejected", "exhausted", "cancelled"}
+            ):
+                errors.append(
+                    f"{work_item_id}: control recovery 未精确承接 "
+                    f"candidate characterization：{recovers}"
+                )
 
     policy = coverage_policy(root)
     candidate_coverage: Dict[str, Dict[str, int]] = {}

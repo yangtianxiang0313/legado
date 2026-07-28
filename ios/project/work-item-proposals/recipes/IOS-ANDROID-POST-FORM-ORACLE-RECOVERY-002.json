@@ -103,9 +103,7 @@
               "source-lab-contract",
               "source-lab-tests"
             ],
-            "requirement_clauses": [
-              "REQ-ANDROID-SOURCE-PIPELINE-001#RC-01"
-            ],
+            "requirement_clauses": [],
             "knowledge_claims": []
           },
           {
@@ -116,9 +114,7 @@
               "source-lab-tests",
               "dependency-policy"
             ],
-            "requirement_clauses": [
-              "REQ-ANDROID-SOURCE-PIPELINE-001#RC-01"
-            ],
+            "requirement_clauses": [],
             "knowledge_claims": []
           },
           {
@@ -130,9 +126,7 @@
               "source-lab-contract",
               "source-lab-smoke"
             ],
-            "requirement_clauses": [
-              "REQ-ANDROID-SOURCE-PIPELINE-001#RC-01"
-            ],
+            "requirement_clauses": [],
             "knowledge_claims": []
           },
           {
@@ -142,9 +136,7 @@
               "harness-tests",
               "memory-close"
             ],
-            "requirement_clauses": [
-              "REQ-ANDROID-SOURCE-PIPELINE-001#RC-01"
-            ],
+            "requirement_clauses": [],
             "knowledge_claims": []
           }
         ],
@@ -182,17 +174,9 @@
         "pitfall_update_required": true
       },
       "requirements": {
-        "mode": "characterization",
-        "refs": [
-          {
-            "id": "REQ-ANDROID-SOURCE-PIPELINE-001",
-            "revision": 1,
-            "clauses": [
-              "RC-01"
-            ]
-          }
-        ],
-        "none_reason": null
+        "mode": "control_plane",
+        "refs": [],
+        "none_reason": "本项只恢复 SourceLab candidate→Android Oracle 的控制合同；原 characterization WorkItem 继续绑定 REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01"
       },
       "source_lab": {
         "mode": "reuse",

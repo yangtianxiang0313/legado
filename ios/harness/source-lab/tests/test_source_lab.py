@@ -180,6 +180,69 @@ class SourceLabTests(unittest.TestCase):
             )
         )
 
+    def test_control_recovery_must_bind_terminal_characterization(self):
+        predecessor_id = "IOS-ANDROID-POST-FORM-ORACLE-001"
+        recovery_id = "IOS-ANDROID-POST-FORM-ORACLE-RECOVERY-TEST"
+        predecessor_path = (
+            REPO_ROOT
+            / "ios/harness/work-items"
+            / f"{predecessor_id}.json"
+        )
+        recovery_path = (
+            REPO_ROOT
+            / "ios/harness/work-items"
+            / f"{recovery_id}.json"
+        )
+        predecessor = source_lab.load_json(predecessor_path)
+        recovery = copy.deepcopy(predecessor)
+        recovery["metadata"]["id"] = recovery_id
+        recovery["metadata"]["labels"].extend(["corrective", "recovery"])
+        recovery["spec"]["recovers"] = predecessor_id
+        recovery["spec"]["requirements"] = {
+            "mode": "control_plane",
+            "refs": [],
+            "none_reason": "test recovery",
+        }
+        state = source_lab.load_json(REPO_ROOT / "ios/project/state.json")
+        manifest = source_lab.manifest_value(REPO_ROOT)
+        original_load_json = source_lab.load_json
+
+        def controlled_load_json(path):
+            if path == recovery_path:
+                return recovery
+            return original_load_json(path)
+
+        with mock.patch.object(
+            source_lab,
+            "load_json",
+            side_effect=controlled_load_json,
+        ):
+            self.assertEqual(
+                [],
+                source_lab.validate_work_item_contract(
+                    REPO_ROOT,
+                    recovery_id,
+                    manifest,
+                ),
+            )
+
+        recovery["spec"]["recovers"] = "IOS-SOURCELAB-POST-FORM-001"
+        with mock.patch.object(
+            source_lab,
+            "load_json",
+            side_effect=controlled_load_json,
+        ):
+            self.assertTrue(
+                any(
+                    "control recovery 未精确承接" in value
+                    for value in source_lab.validate_work_item_contract(
+                        REPO_ROOT,
+                        recovery_id,
+                        manifest,
+                    )
+                )
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,6 +1,6 @@
 {
   "authority": "proposal_only",
-  "candidate_sha256": "2a3ce07153594c014dc8c6421dfa52106ff53d7725f1a7ed7ec0ac6cca14a8f2",
+  "candidate_sha256": "d14a4b333055c26850b055e85b9186b3af5e1d74a2c1ad72046d70101fd9c840",
   "compiler_version": "proposal-compiler-v1",
   "dag": {
     "id": "WIPD-IOS-INITIALIZATION-001",
@@ -25,7 +25,7 @@
   "node_sha256": "ed9651434d249da4e582c598ab63f55cb2c439cbcd54cc55ffe5e581a42c3f1d",
   "proposal_id": "IOS-ANDROID-POST-FORM-ORACLE-RECOVERY-002",
   "queue_effect": "none",
-  "recipe_sha256": "2491647405c059652695ac93e16107e0d18f66e2a8f177cb47b1368464012cc3",
+  "recipe_sha256": "18a4098cbe79324eb54c33ad30874288a1f154510af8b5a272f6011c3bef8b50",
   "recovery": {
     "capability": "CAP-CONFORMANCE",
     "checkpoint": null,

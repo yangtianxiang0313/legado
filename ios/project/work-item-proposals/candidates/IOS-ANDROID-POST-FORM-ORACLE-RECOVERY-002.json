@@ -24,9 +24,7 @@
         {
           "id": "AC-1",
           "knowledge_claims": [],
-          "requirement_clauses": [
-            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-01"
-          ],
+          "requirement_clauses": [],
           "statement": "reference reuse 合同保持原样：scenario 必须为 reference，并按 coverage policy 满足全部 required roles；普通工作项不能借 candidate 分支绕过 reference/Golden。",
           "verified_by": [
             "source-lab-contract",
@@ -36,9 +34,7 @@
         {
           "id": "AC-2",
           "knowledge_claims": [],
-          "requirement_clauses": [
-            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-01"
-          ],
+          "requirement_clauses": [],
           "statement": "candidate reuse 只允许标记 android-oracle 与 candidate-only、requirements.mode=characterization、gates=[]、唯一 scenario 的 introduced_by WorkItem 已 completed 且列入 depends_on，并禁止 Fixture/Golden/Publisher/Workflow/产品写入；任一条件漂移均 fail closed。",
           "verified_by": [
             "source-lab-contract",
@@ -49,9 +45,7 @@
         {
           "id": "AC-3",
           "knowledge_claims": [],
-          "requirement_clauses": [
-            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-01"
-          ],
+          "requirement_clauses": [],
           "statement": "IOS-ANDROID-POST-FORM-ORACLE-001 与本恢复项都能合法选择 sl-post-form-001 candidate；正式 Evidence 仍绑定 candidate scenario selection、Requirement selection、Android intake、Fixture 与 SourceLab smoke，不把 candidate 提升为 reference。",
           "verified_by": [
             "android-intake-contract",
@@ -63,9 +57,7 @@
         {
           "id": "AC-4",
           "knowledge_claims": [],
-          "requirement_clauses": [
-            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-01"
-          ],
+          "requirement_clauses": [],
           "statement": "恢复项重新验证已提交的 POST Form Android runner 测试；Checkpoint 记录真实 local_unverified candidate 摘要、两次失败证据、恢复谱系和下一步 Oracle settlement→受信 proposal/Golden 的自动续接缺口。",
           "verified_by": [
             "harness-tests",
@@ -154,17 +146,9 @@
     },
     "recovers": "IOS-ANDROID-POST-FORM-ORACLE-001",
     "requirements": {
-      "mode": "characterization",
-      "none_reason": null,
-      "refs": [
-        {
-          "clauses": [
-            "RC-01"
-          ],
-          "id": "REQ-ANDROID-SOURCE-PIPELINE-001",
-          "revision": 1
-        }
-      ]
+      "mode": "control_plane",
+      "none_reason": "本项只恢复 SourceLab candidate→Android Oracle 的控制合同；原 characterization WorkItem 继续绑定 REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "refs": []
     },
     "scope": {
       "allow_write": [

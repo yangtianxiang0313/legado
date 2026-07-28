@@ -21,3 +21,5 @@ Android Oracle characterization：它可以消费一个 `candidate`，但必须�
 无 Gate、唯一依赖该场景的已完成 `introduced_by` WorkItem，并且写范围不得覆盖
 Fixture、SourceLab 控制文件、Golden、Publisher、Workflow 或产品代码。这个例外只赋予
 “运行并生成 local candidate”的权限，不会把场景变成 reference，也不带发布权限。
+若原 characterization 进入可恢复终态，同 Capability 的 `control_plane` recovery
+可以复用该例外，但必须用 `recovers` 精确绑定原工作项，且原工作项仍需满足上述全部条件。
