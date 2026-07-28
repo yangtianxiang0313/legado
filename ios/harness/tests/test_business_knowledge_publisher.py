@@ -363,6 +363,14 @@ class BusinessKnowledgePublisherTests(unittest.TestCase):
             "business_knowledge_publisher.py",
             workflow,
         )
+        self.assertEqual(
+            3,
+            workflow.count("git -C publisher ls-remote origin"),
+        )
+        self.assertNotIn(
+            "\n            git ls-remote origin",
+            workflow,
+        )
         self.assertIn(
             "business_knowledge.py \\\n            doctor",
             workflow,

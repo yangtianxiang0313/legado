@@ -2,13 +2,13 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-28T14:26:32Z
+- 更新时间：2026-07-28T14:33:30Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
 - 下一个可领取工作项：无
-- 最近完成：IOS-BUSINESS-KNOWLEDGE-PUBLISHER-YAML-002
+- 最近完成：IOS-BUSINESS-KNOWLEDGE-PUBLISHER-REMOTE-003
 
 ## 健康度
 
@@ -20,7 +20,7 @@
 | android_oracle | `trusted_candidate_verified` |
 | architecture | `designed` |
 | auto_materialization_policy | `compiled_control_plane_v1` |
-| business_knowledge_publisher | `workflow_dispatch_syntax_verified` |
+| business_knowledge_publisher | `checkout_remote_bound` |
 | codex_agent_adapter | `cli_0_145_compatible_real_smoke_verified` |
 | conformance | `scaffold_verified` |
 | control_catalog_resume | `bounded_self_heal` |
@@ -76,6 +76,7 @@
 | IOS-AUTO-MATERIALIZATION-POLICY-001 | 100 | `completed` | IOS-PROPOSAL-COMPILER-001, IOS-DECISION-GATE-POLICY-001, IOS-LOOP-SUPERVISOR-E2E-001 | 让无决策、无权威迁移的编译候选自动进入队列 |
 | IOS-BOOT-001 | 100 | `completed` | 无 | 建立 Swift Package 与首批模块骨架 |
 | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-001 | 100 | `completed` | IOS-ANDROID-GOLDEN-PUBLISHER-001, IOS-KNOWLEDGE-SOURCE-RUNTIME-GOLDEN-002 | 建立受信 Business Knowledge Publisher |
+| IOS-BUSINESS-KNOWLEDGE-PUBLISHER-REMOTE-003 | 100 | `completed` | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-YAML-002 | 修复 Publisher checkout remote 绑定 |
 | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-YAML-002 | 100 | `completed` | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-001 | 修复 Business Knowledge Publisher workflow YAML |
 | IOS-CODEX-AGENT-ADAPTER-001 | 100 | `completed` | IOS-LOOP-SUPERVISOR-E2E-001, IOS-PROPOSAL-COMPILER-001 | 接入可诊断、可续接的 Codex exec Agent adapter |
 | IOS-CODEX-AGENT-ADAPTER-COMPAT-002 | 100 | `completed` | IOS-CODEX-AGENT-ADAPTER-001, IOS-AUTO-MATERIALIZATION-POLICY-001 | 对齐当前 Codex CLI 并固化真实 turn/resume smoke |

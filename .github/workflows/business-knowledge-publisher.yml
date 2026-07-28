@@ -78,7 +78,8 @@ jobs:
           test "$(shasum -a 256 "publisher/${GOLDEN_RECEIPT}" | cut -d' ' -f1)" = \
             "${GOLDEN_RECEIPT_SHA256}"
           remote_target="$(
-            git ls-remote origin "refs/heads/${TARGET_BRANCH}" | cut -f1
+            git -C publisher ls-remote origin \
+              "refs/heads/${TARGET_BRANCH}" | cut -f1
           )"
           test "${remote_target}" = "${SOURCE_COMMIT}"
 
@@ -205,12 +206,14 @@ jobs:
         run: |
           set -euo pipefail
           remote_target="$(
-            git ls-remote origin "refs/heads/${TARGET_BRANCH}" | cut -f1
+            git -C publisher ls-remote origin \
+              "refs/heads/${TARGET_BRANCH}" | cut -f1
           )"
           test "${remote_target}" = "${SOURCE_COMMIT}"
           release_branch="knowledge/source-runtime-html-css-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           test -z "$(
-            git ls-remote origin "refs/heads/${release_branch}"
+            git -C publisher ls-remote origin \
+              "refs/heads/${release_branch}"
           )"
           git -C publisher switch -c "${release_branch}"
           git -C publisher config user.name "github-actions[bot]"
