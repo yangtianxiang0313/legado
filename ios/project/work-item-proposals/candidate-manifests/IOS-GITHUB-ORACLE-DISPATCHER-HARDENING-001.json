@@ -1,0 +1,43 @@
+{
+  "authority": "proposal_only",
+  "candidate_sha256": "4f288e0af0ff6052a0155e67d0a767fd507387bc6b09c9a4cc10e902f38eac96",
+  "compiler_version": "proposal-compiler-v1",
+  "dag": {
+    "id": "WIPD-IOS-INITIALIZATION-001",
+    "revision": 16,
+    "sha256": "10a056eca3b4403cafa2559ea1aa57f5c48b4f4c267894b6f9cbb18c13e0c770"
+  },
+  "dependencies": [
+    {
+      "chain": [
+        "IOS-GITHUB-ORACLE-DISPATCHER-001"
+      ],
+      "checkpoint": "ios/project/checkpoints/IOS-GITHUB-ORACLE-DISPATCHER-001.json",
+      "checkpoint_sha256": "b163ec5d20b31f9a4b4a69f1f42e967c1913396e6897553e05ecc5734bb77ba9",
+      "evidence": "ios/harness/evidence/runs/run-20260728T202133Z-ios-github-oracle-dispatcher-001-f4aa23e4.json",
+      "evidence_sha256": "f86e025e2d90309699f761dff5070e4964a0b528d374ea8d611382ed3b238979",
+      "original": "IOS-GITHUB-ORACLE-DISPATCHER-001",
+      "reason_code": "DIRECT_COMPLETION",
+      "resolved": "IOS-GITHUB-ORACLE-DISPATCHER-001",
+      "work_item_sha256": "13ff58c33f882442dc169346a839aa5c61f6d314e87876089ec19e27a2a5e2bf"
+    },
+    {
+      "chain": [
+        "IOS-GITHUB-ORACLE-PUSH-TRIGGER-RECOVERY-002"
+      ],
+      "checkpoint": "ios/project/checkpoints/IOS-GITHUB-ORACLE-PUSH-TRIGGER-RECOVERY-002.json",
+      "checkpoint_sha256": "4907464f81385238e411828f006d038718040a4e55c9d56c33188a1424d12e88",
+      "evidence": "ios/harness/evidence/runs/run-20260728T210432Z-ios-github-oracle-push-trigger-recovery-002-8a2364b3.json",
+      "evidence_sha256": "518ee4172c1265bdd62aeb675e87f0d25bc1f7da511df9e11989c7195f837bd8",
+      "original": "IOS-GITHUB-ORACLE-PUSH-TRIGGER-RECOVERY-002",
+      "reason_code": "DIRECT_COMPLETION",
+      "resolved": "IOS-GITHUB-ORACLE-PUSH-TRIGGER-RECOVERY-002",
+      "work_item_sha256": "95e68fa7a0aa8a059cafb46e882d1069d255a7fbb5921f2f0cf6551c425b19fe"
+    }
+  ],
+  "node_sha256": "60ab13fb3050678921764b3cfe43db1a260065370ee6b5f71334bc7d0adfb98f",
+  "proposal_id": "IOS-GITHUB-ORACLE-DISPATCHER-HARDENING-001",
+  "queue_effect": "none",
+  "recipe_sha256": "136d753897e6f56e60c9519320c5c8fb6078870a92adee91af20346044c66677",
+  "schema_version": 1
+}
