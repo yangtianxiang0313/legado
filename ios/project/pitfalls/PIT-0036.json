@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0036",
+  "revision": 1,
+  "title": "受保护发布器的边界代码不能假设工具路径和 JSON AST 类型",
+  "fingerprint": "golden-publisher-host-path-strict-json-assumption",
+  "capabilities": ["CAP-CONFORMANCE"],
+  "symptoms": ["可信导入在 CI 中因 gh 可执行路径为符号链接而被发布器提前拒绝", "manifest 或 release receipt 在严格 JSON 序列化时因原生整数触发 unsupported JSON node"],
+  "conditions": ["发布器对已由 trusted_import 校验的 gh 路径重复施加普通文件限制", "发布器构造新 JSON 文档时直接把 Python int 传给保留 number token 的 exact_json.dumps"],
+  "root_cause": "发布边界把 archive 输入的无链接安全策略错误套用到宿主工具路径，同时没有显式跨越 Python 对象与严格 Exact JSON AST 的类型边界。",
+  "diagnosis": ["在测试中让 gh 路径指向可执行文件的符号链接", "对新构造的 manifest/receipt 执行 exact_json.dumps 并检查 schema_version 整数", "确认 archive 与 attestation 输入仍拒绝符号链接"],
+  "fix": "gh 可执行路径交由 trusted_import 的受限 subprocess 校验；archive/bundle 继续要求无符号链接的普通文件。新增 canonical bytes 转换，把原生整数显式转换为 NumberToken，并对两次外部暂存结果做字节级确定性比较。",
+  "prevention": {"architecture_rule": "安全校验必须按输入类别分层；数据 artifact、宿主工具路径和严格 JSON AST 不得共享未经论证的通用假设。", "tests": ["ios/harness/tests/test_android_golden_publisher.py#test_prepare_accepts_a_symlinked_gh_executable", "ios/harness/tests/test_android_golden_publisher.py#test_prepare_is_deterministic_staging_only_and_fully_bound"], "lint": []},
+  "affected_versions": {"from": "IOS-ANDROID-GOLDEN-PUBLISHER-001-development", "until": "IOS-ANDROID-GOLDEN-PUBLISHER-001"},
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": ["ios/harness/evidence/runs/run-20260728T121628Z-ios-android-golden-publisher-001-7803c73c.json"]
+}
