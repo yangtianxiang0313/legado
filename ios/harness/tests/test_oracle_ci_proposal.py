@@ -217,9 +217,19 @@ class OracleCIProposalTests(unittest.TestCase):
             '            >>"${GITHUB_ENV}"'
         )
         self.assertIn(workspace_initialization, workflow)
+        avd_home_initialization = (
+            "          printf 'ANDROID_AVD_HOME=%s\\n' \\\n"
+            '            "${RUNNER_TEMP}/legado-android-oracle/avd" \\\n'
+            '            >>"${GITHUB_ENV}"'
+        )
+        self.assertIn(avd_home_initialization, workflow)
         self.assertLess(
             workflow.index(workspace_initialization),
             workflow.index("${ORACLE_TEMP}"),
+        )
+        self.assertLess(
+            workflow.index(avd_home_initialization),
+            workflow.index("${ANDROID_AVD_HOME}"),
         )
         sdk_tools_initialization = (
             '          sdkmanager="${ANDROID_HOME}/'
@@ -289,6 +299,34 @@ class OracleCIProposalTests(unittest.TestCase):
         self.assertIn(
             '"${ANDROID_HOME}/emulator/emulator"',
             workflow,
+        )
+        avd_ini_validation = (
+            'test -f "${ANDROID_AVD_HOME}/${AVD_NAME}.ini"'
+        )
+        avd_list_validation = (
+            '"${ANDROID_HOME}/emulator/emulator" -list-avds'
+        )
+        emulator_launch = (
+            '"${ANDROID_HOME}/emulator/emulator" \\\n'
+            '            -avd "${AVD_NAME}"'
+        )
+        self.assertIn(
+            'mkdir -p "${ORACLE_TEMP}" "${ANDROID_AVD_HOME}"',
+            workflow,
+        )
+        self.assertIn(avd_ini_validation, workflow)
+        self.assertIn(avd_list_validation, workflow)
+        self.assertIn(
+            'grep -Fqx -- "${AVD_NAME}"',
+            workflow,
+        )
+        self.assertLess(
+            workflow.index(avd_ini_validation),
+            workflow.index(emulator_launch),
+        )
+        self.assertLess(
+            workflow.index(avd_list_validation),
+            workflow.index(emulator_launch),
         )
         self.assertIn(
             '--adb "${ADB}"',

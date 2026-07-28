@@ -41,6 +41,9 @@ jobs:
           printf 'ORACLE_TEMP=%s\n' \
             "${RUNNER_TEMP}/legado-android-oracle" \
             >>"${GITHUB_ENV}"
+          printf 'ANDROID_AVD_HOME=%s\n' \
+            "${RUNNER_TEMP}/legado-android-oracle/avd" \
+            >>"${GITHUB_ENV}"
           printf 'SDKMANAGER=%s\n' "${sdkmanager}" >>"${GITHUB_ENV}"
           printf 'AVDMANAGER=%s\n' "${avdmanager}" >>"${GITHUB_ENV}"
           printf 'ADB=%s\n' "${adb}" >>"${GITHUB_ENV}"
@@ -115,11 +118,22 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "${ORACLE_TEMP}"
+          mkdir -p "${ORACLE_TEMP}" "${ANDROID_AVD_HOME}"
           echo no | "${AVDMANAGER}" create avd \
             --force \
             --name "${AVD_NAME}" \
             --package "${ANDROID_IMAGE}"
+          if ! test -f "${ANDROID_AVD_HOME}/${AVD_NAME}.ini"; then
+            echo "::error::AVD ini was not created in ANDROID_AVD_HOME"
+            find "${ANDROID_AVD_HOME}" -maxdepth 2 -print || true
+            exit 1
+          fi
+          avd_list="$("${ANDROID_HOME}/emulator/emulator" -list-avds)"
+          printf 'Discoverable AVDs:\n%s\n' "${avd_list}"
+          if ! printf '%s\n' "${avd_list}" | grep -Fqx -- "${AVD_NAME}"; then
+            echo "::error::Created AVD is not discoverable by emulator"
+            exit 1
+          fi
           "${ANDROID_HOME}/emulator/emulator" \
             -avd "${AVD_NAME}" \
             -port 5554 \
