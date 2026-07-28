@@ -2,13 +2,13 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-28T21:33:23Z
+- 更新时间：2026-07-28T22:00:49Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
 - 下一个可领取工作项：无
-- 最近完成：IOS-TRUSTED-ORACLE-SETTLEMENT-ROBUSTNESS-001
+- 最近完成：IOS-GITHUB-ORACLE-PACKAGER-SCOPE-001
 
 ## 健康度
 
@@ -60,6 +60,7 @@
 | loop_supervisor | `local_verified` |
 | loop_trusted_verification | `real_codex_verified` |
 | migration_demand | `source_anchored_v1` |
+| oracle_ci_packager_auto_scope | `exact_corrective_v1` |
 | oracle_dag_compiler | `source_anchored_v1` |
 | oracle_settlement_compiler | `recovery_aware_trusted_proposal_v1` |
 | proposal_compiler | `local_verified` |
@@ -127,6 +128,7 @@
 | IOS-GITHUB-ORACLE-DISPATCHER-001 | 100 | `completed` | IOS-GITHUB-ORACLE-AUTO-SCOPE-001 | 建立可恢复的 GitHub Android Oracle 外部执行适配层 |
 | IOS-GITHUB-ORACLE-DISPATCHER-HARDENING-001 | 100 | `completed` | IOS-GITHUB-ORACLE-DISPATCHER-001, IOS-GITHUB-ORACLE-PUSH-TRIGGER-RECOVERY-002 | 以 branch push/run 对账闭合 GitHub Oracle 幂等恢复 |
 | IOS-GITHUB-ORACLE-OWNER-001 | 100 | `completed` | IOS-TRUSTED-ORACLE-SETTLEMENT-COMPILER-001 | 预声明 GitHub Oracle 外部适配层的 Capability 所有权 |
+| IOS-GITHUB-ORACLE-PACKAGER-SCOPE-001 | 100 | `completed` | IOS-TRUSTED-ORACLE-SETTLEMENT-ROBUSTNESS-001 | 建立 Android Oracle CI packager 的精确自动纠错边界 |
 | IOS-GITHUB-ORACLE-PUSH-TRIGGER-001 | 100 | `exhausted` | IOS-GITHUB-ORACLE-WORKFLOW-SCOPE-001 | 以 create-only Oracle branch 建立服务端幂等 Workflow 触发 |
 | IOS-GITHUB-ORACLE-PUSH-TRIGGER-RECOVERY-002 | 100 | `completed` | IOS-GITHUB-ORACLE-WORKFLOW-SCOPE-001 | 恢复 create-only Oracle branch 的服务端幂等触发合同 |
 | IOS-GITHUB-ORACLE-WORKFLOW-OWNER-001 | 100 | `completed` | IOS-GITHUB-ORACLE-DISPATCHER-001 | 预声明 Android Oracle Workflow 的 Conformance 所有权 |
