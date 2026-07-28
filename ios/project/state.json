@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "revision": 171,
+  "revision": 172,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-28T04:29:54Z",
-  "event_head": "98abca28caca11d5a7ca0bd71a3d96d81e9bfd61175b5e91b21ecccac9871750",
+  "updated_at": "2026-07-28T04:30:34Z",
+  "event_head": "044f1e50c518b53ea5a02e42f9e2fcd76e5b2bf21290bd2d6f9a813d9d93694b",
   "active_work_items": [],
   "last_completed_work_item": "IOS-SWIFTPM-VERIFY-SANDBOX-001",
   "work_items": {
@@ -2822,9 +2822,40 @@
       "final_tree_sha256": "94ee1a6b1aa50261ecbe7225300509c69d0747d262120c98e5c0d4bf4e36e292"
     },
     "IOS-SUPERVISOR-OWNED-VERIFY-001": {
-      "status": "ready",
+      "status": "blocked",
       "attempt": 0,
-      "last_evidence": null
+      "last_evidence": null,
+      "blocker": "baseline_red",
+      "baseline_checks": [
+        {
+          "id": "harness-tests",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "307f335e883f02e96ad97ecbda4c210435c0b955e2bcb9e46db9dc7b0d02c285",
+          "cwd": ".",
+          "started_at": "2026-07-28T04:30:00Z",
+          "duration_ms": 33391,
+          "timeout_seconds": 60,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 1,
+          "passed": false,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "e677a702eb2c350a2958a5db9e54d62a9c1318940338e1dc168a296a2b4b8787",
+          "stdout_tail": "",
+          "stderr_tail": "..........................................................................................................................F\n======================================================================\nFAIL: test_timeout_reclaims_child_and_grandchild (test_trusted_supervisor_reference.TrustedSupervisorReferenceTests)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_trusted_supervisor_reference.py\", line 219, in test_timeout_reclaims_child_and_grandchild\n    self.assertFalse(result[\"process_leak\"])\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 123 tests in 33.290s\n\nFAILED (failures=1)\n"
+        }
+      ]
     }
   },
   "health": {
