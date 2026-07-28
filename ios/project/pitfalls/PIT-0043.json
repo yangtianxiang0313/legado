@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0043",
+  "revision": 1,
+  "title": "Actions checkout 使用 path 时所有 Git 命令必须绑定该目录",
+  "fingerprint": "actions-checkout-path-bare-git-remote",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "actions/checkout 成功且 git -C publisher rev-parse HEAD 通过，随后 git ls-remote origin 报父目录没有 remote",
+    "Publisher 在 immutable input step 失败，后续 staging/install/doctor 全部跳过",
+    "本地测试因工作目录本身是仓库而无法复现 GitHub runner 父 workspace 布局"
+  ],
+  "conditions": [
+    "actions/checkout 配置 path: publisher",
+    "部分 Git 命令使用 git -C publisher，另一些 remote 查询依赖当前工作目录",
+    "workflow 测试只检查命令存在，没有检查每个 Git 命令的 cwd 绑定"
+  ],
+  "root_cause": "把 GitHub runner workspace 根目录误认为 checkout 仓库根目录。checkout path 会让二者分离，任何遗漏 -C 的 Git 命令都会读到错误的 repository context。",
+  "diagnosis": [
+    "从失败 step 日志确认 checkout path 与 Git 命令实际 cwd",
+    "枚举 workflow 中所有以 git 开头的命令，逐个检查 -C publisher",
+    "特别检查 ls-remote、status、rev-parse、switch、config、add、commit 与 push"
+  ],
+  "fix": "三处 ls-remote 全部改为 git -C publisher ls-remote origin；回归测试精确要求三处绑定并禁止 bare remote 查询。",
+  "prevention": {
+    "architecture_rule": "authority workflow 只要 actions/checkout 使用 path，所有 Git 命令必须显式绑定该 checkout 目录；不得依赖 step 默认 cwd。",
+    "tests": [
+      "ios/harness/tests/test_business_knowledge_publisher.py#test_workflow_is_environment_protected_pinned_and_pr_only"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-001",
+    "until": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-REMOTE-003"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T143252Z-ios-business-knowledge-publisher-remote-003-1e77455e.json"
+  ]
+}
