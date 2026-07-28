@@ -1,0 +1,183 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-CONTROL-CATALOG-RESUME-001",
+    "title": "恢复控制面变更后的 Supervisor 续跑",
+    "priority": 100,
+    "risk": "high",
+    "labels": [
+      "phase-0",
+      "control-plane",
+      "corrective",
+      "loop-engine",
+      "recovery",
+      "business-knowledge",
+      "resume"
+    ]
+  },
+  "spec": {
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "intent": "恢复并取代错误前提的 IOS-MATERIALIZATION-CATALOG-REFRESH-001。真实断点不是 materialize，而是合法 control-plane Work Item 修改 harness.py/Business Knowledge control 文件后，若 Supervisor 在同轮 verify 前中断，下一次 drive 的全局 Doctor 会因派生 Catalog 过期而拒绝恢复。新增有界 self-heal：仅当恰有一个 active implementing 项、它满足 business_knowledge_control_upgrade、全部 Doctor errors 精确归因于 Catalog stale、changed paths 非空且通过当前 scope，并确实命中 control digest 输入时，Supervisor 才能在受信 mutation lock 中刷新 Catalog；刷新前后 state/event/control binding 必须不变，刷新后 Doctor 必须绿色。随后复用同一 Work Item/attempt，跳过重复 Agent edit，直接进入 Supervisor verify。其他 graph/control/selection 错误继续 fail-closed。",
+    "recovers": "IOS-MATERIALIZATION-CATALOG-REFRESH-001",
+    "depends_on": [
+      "IOS-RECOVERY-COMPILER-BINDING-001"
+    ],
+    "scope": {
+      "allow_write": [
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/tests/test_loop_supervisor.py",
+        "ios/harness/README.md",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-CONTROL-CATALOG-RESUME-001.json",
+        "ios/project/pitfalls/PIT-0026.json"
+      ],
+      "deny_write": [
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "**/Package.swift",
+        "ios/harness/harness.py",
+        "ios/harness/approval_ui.py",
+        "ios/harness/codex_agent_adapter.py",
+        "ios/harness/proposal_compiler.py",
+        "ios/harness/config.json",
+        "ios/harness/architecture-rules.json",
+        "ios/harness/dependency-policy.json",
+        "ios/harness/schemas/**",
+        "ios/harness/business-knowledge/**",
+        "ios/harness/android-intake/**",
+        "ios/harness/source-lab/**",
+        "ios/harness/oracle/**",
+        "ios/harness/goldens/**",
+        "ios/project/android-intake/**",
+        "ios/project/business-knowledge/**",
+        "ios/project/requirements/**",
+        "ios/project/work-item-proposals/**",
+        "ios/project/approvals/**",
+        "ios/project/baseline.json",
+        "ios/docs/**",
+        ".github/**"
+      ],
+      "max_files_changed": 6,
+      "max_changed_lines": 1400
+    },
+    "inputs": {
+      "context_files": [
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/harness.py",
+        "ios/harness/business-knowledge/business_knowledge.py",
+        "ios/harness/tests/test_loop_supervisor.py",
+        "ios/harness/work-items/IOS-MATERIALIZATION-CATALOG-REFRESH-001.json",
+        "ios/harness/work-items/IOS-RECOVERY-COMPILER-BINDING-001.json",
+        "ios/project/checkpoints/IOS-RECOVERY-COMPILER-BINDING-001.json",
+        "ios/project/business-knowledge/catalog.json"
+      ],
+      "android_source_anchors": [],
+      "fixtures": []
+    },
+    "architecture_refs": [
+      "ARCH-018",
+      "ADR-0004"
+    ],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "Doctor red 只有在单一 active implementing、business_knowledge_control_upgrade、非空 scope 合法 control-digest diff 且每条错误都精确包含 Business Knowledge catalog stale 时才可进入 Supervisor catalog refresh；其他错误不放宽。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "刷新在 mutation lock 中执行，前后 event head、active runtime control binding 不变；只记录 Catalog 前后 fingerprint/SHA 与结构化 transition，不回显内容。刷新失败、控制状态变化或 Doctor 未恢复均结构化停止。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "合法中断恢复在刷新后复用同一 Work Item/attempt，跳过重复 implementation Agent turn，直接由 Supervisor verify；测试证明 fake Agent 不被再次调用，Evidence 通过。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-4",
+          "statement": "错误前提 Work Item 通过本任务 typed recovers close 后被显式 replacement 消解；README、Checkpoint、PIT-0026 与 Capability 记录假设推翻、真实根因、保护条件和 Evidence。",
+          "verified_by": [
+            "memory-close"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": [
+        "dependency-policy",
+        "harness-tests"
+      ]
+    },
+    "baseline_checks": [
+      "harness-tests"
+    ],
+    "budget": {
+      "wall_clock_seconds": 5400,
+      "max_edit_verify_cycles": 3,
+      "max_targeted_test_runs": 10,
+      "max_full_test_runs": 3,
+      "max_infra_retries": 1
+    },
+    "gates": [],
+    "completion_effects": {
+      "health": {
+        "control_catalog_resume": "bounded_self_heal"
+      }
+    },
+    "memory": {
+      "adr": "not_required",
+      "capability_state_required": true,
+      "compatibility": "not_applicable",
+      "pitfall": "required"
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "refs": [],
+      "none_reason": "本项只修复 Supervisor 控制面续跑，不改变产品需求"
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "not_applicable",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [],
+      "expected_ledger_transitions": [],
+      "context_budget": {
+        "max_claims": 20,
+        "max_bytes": 32768
+      },
+      "none_reason": "本项不消费、生成或发布业务知识"
+    },
+    "source_lab": {
+      "mode": "not_applicable",
+      "behaviors": [],
+      "scenarios": [],
+      "none_reason": "本项不执行书源或双端行为"
+    },
+    "stop_on": [
+      "baseline_red",
+      "scope_violation",
+      "authority_escalation",
+      "same_failure_twice",
+      "budget_exhausted",
+      "human_decision_required"
+    ]
+  }
+}
