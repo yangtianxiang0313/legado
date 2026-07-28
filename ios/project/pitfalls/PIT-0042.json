@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0042",
+  "revision": 1,
+  "title": "关键字断言不能证明 GitHub workflow 语法有效",
+  "fingerprint": "workflow-substring-tests-miss-yaml-block-escape",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "workflow 文件包含 on.workflow_dispatch 文本，单元测试全绿，但 GitHub dispatch 返回 HTTP 422",
+    "gh workflow view 能显示原始 YAML，目标 ref 仍被判定为没有 workflow_dispatch trigger",
+    "actionlint 报 did not find expected key，错误位置在多行 shell 字符串附近"
+  ],
+  "conditions": [
+    "测试只断言 workflow 中存在关键字、权限和命令",
+    "run: | 内的多行 shell 双引号内容没有保持 YAML block scalar 缩进",
+    "工作流只存在集成分支，默认分支没有同 path 的 workflow_dispatch 登记"
+  ],
+  "root_cause": "把文本包含关系当成了 YAML/Actions 语法证明，同时遗漏 GitHub workflow_dispatch 必须先在默认分支登记的控制面约束。",
+  "diagnosis": [
+    "对目标 ref 的完整 workflow 运行 actionlint，而不是只查看 gh workflow view 输出",
+    "检查所有 run: | 子行缩进及 gh pr create 多行 body",
+    "确认同一 workflow path 已在默认分支以 workflow_dispatch 激活，再从集成 ref dispatch"
+  ],
+  "fix": "用 printf -v 在 run block 内构造 PR body，避免多行文本逃逸；增加回归测试；通过最小 master PR 登记无权限 bootstrap workflow，真实发布仍只运行集成分支的完整定义。",
+  "prevention": {
+    "architecture_rule": "任何新增/修改 GitHub authority workflow 在真实 dispatch 前必须同时通过 actionlint、关键权限/路径合同测试和默认分支 registration 检查。",
+    "tests": [
+      "ios/harness/tests/test_business_knowledge_publisher.py#test_workflow_is_environment_protected_pinned_and_pr_only"
+    ],
+    "lint": [
+      "go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12 .github/workflows/business-knowledge-publisher.yml"
+    ]
+  },
+  "affected_versions": {
+    "from": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-001",
+    "until": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-YAML-002"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T142556Z-ios-business-knowledge-publisher-yaml-002-ce56c6ea.json"
+  ]
+}

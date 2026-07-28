@@ -133,6 +133,30 @@ class BusinessKnowledgePublisherTests(unittest.TestCase):
             if path.is_file()
         }
 
+    def _assert_block_scalars_are_indented(self, workflow):
+        lines = workflow.splitlines()
+        for index, line in enumerate(lines):
+            if line.strip() != "run: |":
+                continue
+            parent_indent = len(line) - len(line.lstrip())
+            child_count = 0
+            for child in lines[index + 1 :]:
+                if not child.strip():
+                    continue
+                indent = len(child) - len(child.lstrip())
+                if indent <= parent_indent:
+                    break
+                child_count += 1
+            self.assertGreater(
+                child_count,
+                0,
+                f"run block at line {index + 1} has no indented body",
+            )
+        self.assertFalse(
+            any(line.startswith("- Publisher ") for line in lines),
+            "PR body escaped from the YAML run block",
+        )
+
     def _commit_mutation(self, path):
         self._git("add", path)
         self._git("commit", "-qm", f"mutate {path}")
@@ -315,6 +339,7 @@ class BusinessKnowledgePublisherTests(unittest.TestCase):
             REPOSITORY_ROOT
             / ".github/workflows/business-knowledge-publisher.yml"
         ).read_text(encoding="utf-8")
+        self._assert_block_scalars_are_indented(workflow)
         self.assertIn("workflow_dispatch:", workflow)
         self.assertIn(
             "environment: business-knowledge-publisher",

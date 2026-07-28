@@ -1,0 +1,164 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-YAML-002",
+    "title": "修复 Business Knowledge Publisher workflow YAML",
+    "priority": 100,
+    "risk": "high",
+    "labels": [
+      "phase-0",
+      "control-plane",
+      "corrective",
+      "publisher",
+      "github-actions",
+      "workflow-syntax"
+    ]
+  },
+  "spec": {
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "intent": "修复真实 workflow_dispatch 返回 HTTP 422 的 YAML 语法错误。根因是 gh pr create --body 的多行 shell 双引号内容退回 YAML 顶层缩进，导致集成分支 workflow 无法被 GitHub 解析为含 workflow_dispatch 的有效定义。把 PR body 改为在 run block 内保持合法缩进的 shell 变量/printf 形式，增加回归测试验证多行 body 不逃逸 block scalar，并用 actionlint 对最终文件做外部语法核验。不得改变 Publisher 输入绑定、Environment、权限、目标分支、安装白名单或 PR-only authority 边界。",
+    "depends_on": [
+      "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-001"
+    ],
+    "scope": {
+      "allow_write": [
+        ".github/workflows/business-knowledge-publisher.yml",
+        "ios/harness/tests/test_business_knowledge_publisher.py",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-BUSINESS-KNOWLEDGE-PUBLISHER-YAML-002.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "ios/publisher/business_knowledge_publisher.py",
+        "ios/harness/business-knowledge/**",
+        "ios/harness/goldens/**",
+        "ios/project/business-knowledge/**",
+        "ios/project/requirements/**",
+        "ios/project/approvals/**",
+        "ios/project/baseline.json",
+        "ios/docs/**"
+      ],
+      "max_files_changed": 5,
+      "max_changed_lines": 500
+    },
+    "inputs": {
+      "context_files": [
+        ".github/workflows/business-knowledge-publisher.yml",
+        "ios/harness/tests/test_business_knowledge_publisher.py",
+        "ios/project/checkpoints/IOS-BUSINESS-KNOWLEDGE-PUBLISHER-001.json"
+      ],
+      "android_source_anchors": [],
+      "fixtures": []
+    },
+    "architecture_refs": [
+      "ARCH-014",
+      "ADR-0004"
+    ],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "workflow 通过 actionlint YAML/Actions 语法检查，GitHub 能在 feature/ios-ai-harness-bootstrap ref 上识别 workflow_dispatch。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "PR body 的所有多行内容保持在 run block scalar 内；回归测试会在内容逃逸到 YAML 顶层时失败。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "Environment、actor、目标分支、精确摘要、五个 install、两个 delete、doctor、Demand Compiler 和 PR-only push 合同不变。",
+          "verified_by": [
+            "harness-tests",
+            "dependency-policy"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-4",
+          "statement": "Checkpoint、Capability 与 Pitfall 记录默认分支 bootstrap 约束、YAML 语法漏测原因和真实 dispatch 恢复步骤。",
+          "verified_by": [
+            "memory-close"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": [
+        "dependency-policy",
+        "harness-tests"
+      ]
+    },
+    "baseline_checks": [
+      "dependency-policy",
+      "harness-tests"
+    ],
+    "budget": {
+      "wall_clock_seconds": 7200,
+      "max_edit_verify_cycles": 3,
+      "max_targeted_test_runs": 12,
+      "max_full_test_runs": 3,
+      "max_infra_retries": 2
+    },
+    "gates": [],
+    "completion_effects": {
+      "health": {
+        "business_knowledge_publisher": "workflow_dispatch_syntax_verified"
+      }
+    },
+    "memory": {
+      "capability_state_required": true,
+      "checkpoint_required": true,
+      "pitfall_update_required": true,
+      "adr": "not_required"
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "refs": [],
+      "none_reason": "本项修复 Publisher workflow 语法，不修改产品 Requirement"
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "not_applicable",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [],
+      "expected_ledger_transitions": [],
+      "context_budget": {
+        "max_claims": 8,
+        "max_bytes": 32768
+      },
+      "none_reason": "本项不消费、生成或发布业务知识"
+    },
+    "source_lab": {
+      "mode": "not_applicable",
+      "behaviors": [],
+      "scenarios": [],
+      "none_reason": "本项只修复 GitHub workflow YAML"
+    },
+    "stop_on": [
+      "baseline_red",
+      "scope_violation",
+      "authority_escalation",
+      "publisher_contract_drift",
+      "same_failure_twice",
+      "budget_exhausted",
+      "human_decision_required"
+    ]
+  }
+}
