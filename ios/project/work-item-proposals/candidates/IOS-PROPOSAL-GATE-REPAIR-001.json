@@ -1,0 +1,208 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-PROPOSAL-GATE-REPAIR-001",
+    "title": "移除 proposal 橡皮图章并允许受限修复 turn",
+    "priority": 100,
+    "risk": "high",
+    "labels": [
+      "phase-0",
+      "control-plane",
+      "corrective",
+      "loop-engine",
+      "gate",
+      "repair-turn",
+      "business-knowledge"
+    ]
+  },
+  "spec": {
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "intent": "修复真实 Integrations Recovery 004 暴露的两个控制面死路。第一，创建未发布 Knowledge Packet/Architecture Driver proposal 只沉淀候选，不提升 authority，不应自动要求 knowledge-review/architecture-review；只有 Work Item 显式声明 v1 decision contract 时才触发 proposal review，publish/accept/product disposition/oracle adjudication 等权威变化仍 fail closed。第二，活跃 knowledge producer 的候选图错误会让全局 Doctor 红并阻断 Agent 修复；Supervisor 仅在单一 implementing Work Item、错误全部属于 Business Knowledge 图、当前 diff 仍满足 scope 时提供绑定错误摘要的 repair implementation turn，恢复 Doctor 后再由外层 verify。所有其他 Doctor red 仍停止。",
+    "depends_on": [
+      "IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002",
+      "IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-004"
+    ],
+    "scope": {
+      "allow_write": [
+        "ios/harness/harness.py",
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/tests/test_harness.py",
+        "ios/harness/tests/test_loop_supervisor.py",
+        "ios/harness/README.md",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-PROPOSAL-GATE-REPAIR-001.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "**/Package.swift",
+        "**/*.entitlements",
+        "**/Info.plist",
+        "ios/harness/codex_agent_adapter.py",
+        "ios/harness/approval_ui.py",
+        "ios/harness/trusted_supervisor_reference.py",
+        "ios/harness/config.json",
+        "ios/harness/architecture-rules.json",
+        "ios/harness/dependency-policy.json",
+        "ios/harness/schemas/**",
+        "ios/harness/business-knowledge/**",
+        "ios/harness/android-intake/**",
+        "ios/harness/source-lab/**",
+        "ios/harness/oracle/**",
+        "ios/harness/goldens/**",
+        "ios/project/android-intake/**",
+        "ios/project/business-knowledge/**",
+        "ios/project/requirements/**",
+        "ios/project/requirement-proposals/**",
+        "ios/project/dependency-proposals/**",
+        "ios/project/work-item-proposals/**",
+        "ios/project/approvals/**",
+        "ios/project/baseline.json",
+        "ios/docs/**",
+        ".github/**"
+      ],
+      "max_files_changed": 8,
+      "max_changed_lines": 2200
+    },
+    "inputs": {
+      "context_files": [
+        "ios/harness/harness.py",
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/tests/test_harness.py",
+        "ios/harness/tests/test_loop_supervisor.py",
+        "ios/harness/README.md",
+        "ios/harness/work-items/IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-004.json",
+        "ios/project/checkpoints/IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-004.json",
+        "ios/project/approvals/IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-004--knowledge-review.json",
+        "ios/project/approvals/IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-004--architecture-review.json"
+      ],
+      "android_source_anchors": [],
+      "fixtures": []
+    },
+    "architecture_refs": [
+      "ARCH-018",
+      "ADR-0004"
+    ],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "knowledge_proposal_paths 的普通新增/修订不再自动产生 knowledge-review 或 architecture-review；没有显式 v1 decision contract 的 proposal-only Work Item 可由 Supervisor close 完成。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "若 Work Item 显式声明 trigger=knowledge-proposal-change/architecture-proposal-change 的 v1 decision contract，实际 proposal 变化仍触发对应 Gate；product disposition、oracle difference、publish/accept/promotion 的权威边界不放宽。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "Supervisor 只在单一 active implementing knowledge producer、所有 Doctor blocker 均为 Business Knowledge control/selection、changed paths 通过 scope_issues 时进入 repair implementation；context 绑定原 Work Item/hash/runtime、required_read_order 和结构化 doctor errors。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-4",
+          "statement": "repair Agent turn 后必须保持 control binding 不变；Doctor 恢复才进入 verify。非知识错误、多 active、越权 diff、非 implementing 状态、Agent 控制状态变更或 transition budget 到期均结构化停止。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-5",
+          "statement": "Supervisor 捕获 Harness.verify 在 Evidence 创建前抛出的 HarnessError，返回 supervisor_verification_error transition；若错误转化为满足 repair 条件的 Doctor red，可在剩余 transition budget 中续接修复，不能让 drive 进程裸异常退出。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-6",
+          "statement": "Checkpoint/Pitfall 记录 revision 4 的旧式 Gate 迁移桥和 r4 depends_on 修复死路；Capability 保持 partial，历史 policy approval 明确不代表内容或架构被接受。",
+          "verified_by": [
+            "memory-close"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": [
+        "dependency-policy",
+        "harness-tests"
+      ]
+    },
+    "baseline_checks": [
+      "harness-tests"
+    ],
+    "budget": {
+      "wall_clock_seconds": 7200,
+      "max_edit_verify_cycles": 3,
+      "max_targeted_test_runs": 10,
+      "max_full_test_runs": 3,
+      "max_infra_retries": 1
+    },
+    "gates": [],
+    "completion_effects": {
+      "health": {
+        "proposal_gate_policy": "authority_only",
+        "active_candidate_repair": "bounded"
+      }
+    },
+    "memory": {
+      "adr": "not_required",
+      "capability_state_required": true,
+      "compatibility": "not_applicable",
+      "pitfall": "required"
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "refs": [],
+      "none_reason": "本项只修复 Gate 与 Loop recovery 控制面，不改变产品需求"
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "not_applicable",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [],
+      "expected_ledger_transitions": [],
+      "context_budget": {
+        "max_claims": 20,
+        "max_bytes": 32768
+      },
+      "none_reason": "本项不消费、生成或发布业务知识"
+    },
+    "source_lab": {
+      "mode": "not_applicable",
+      "behaviors": [],
+      "scenarios": [],
+      "none_reason": "本项不执行书源或双端行为"
+    },
+    "stop_on": [
+      "baseline_red",
+      "scope_violation",
+      "authority_escalation",
+      "same_failure_twice",
+      "budget_exhausted",
+      "human_decision_required"
+    ]
+  }
+}
