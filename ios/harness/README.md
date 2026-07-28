@@ -177,21 +177,47 @@ scope 都会 fail closed，并给出稳定 blocker，不会退回一个“请确
 python3 ios/harness/codex_agent_adapter.py doctor \
   --codex /absolute/path/to/native/codex
 
+python3 ios/harness/codex_agent_adapter.py smoke \
+  --codex /absolute/path/to/native/codex \
+  --codex-home /absolute/dedicated/codex-home
+
 python3 ios/harness/loop_supervisor.py drive \
   --config ios/harness/codex-agent.example.json \
   --agent local-codex \
   --max-transitions 3
 ```
 
+Codex CLI 的参数层级是兼容合同的一部分。当前 v2 adapter 的首次 turn 固定为：
+
+```text
+codex --sandbox <read-only|workspace-write> --ask-for-approval never \
+  --cd <repo> exec --json --ignore-user-config -
+```
+
+续接固定为：
+
+```text
+codex --sandbox <read-only|workspace-write> --ask-for-approval never \
+  --cd <repo> exec resume --json --ignore-user-config <thread-id> -
+```
+
+`sandbox`、`ask-for-approval` 和 `cd` 是顶层参数，不能放到 `exec` 或 `resume` 后面。
+`doctor` 会实际探测 version、`exec --help` 和 `exec resume --help`，在 claim 前发现
+CLI 漂移。`smoke` 总是创建临时 Git repo 并使用 `read-only`，连续执行首次 turn 和
+同 thread resume，最后要求 repo clean；它只返回版本/hash、thread、事件计数、usage
+和 stdout/stderr digest，不返回 prompt、agent message 或 stderr 内容。
+
 示例中的 Codex executable 和 `CODEX_HOME` 必须替换为显式绝对路径；不要提交个人
 路径或认证文件。adapter 只把专用 `CODEX_HOME` 路径传给单次 Codex 子进程，不读取、
-复制、hash 或输出 `auth.json`。宿主环境按白名单重建，prompt 从 stdin 传入，最终
-stdout 只含 thread、事件计数、usage 和输出摘要。
+复制、hash 或输出 `auth.json`；认证准备与清理由控制面在 adapter 外完成。宿主环境
+按白名单重建，prompt 从 stdin 传入，最终 stdout 只含 thread、事件计数、usage 和
+输出摘要。
 
 成功 turn 的 thread ID 保存在忽略版本控制的
 `.harness-runtime/codex-sessions/<work-item>.json`，绑定 Work Item hash 与 repo
-commit；后续 transition 使用 `codex exec resume`。失败、JSONL 漂移、context
-权限过宽或绑定变化不会推进 session head。
+commit；后续 transition 使用 `codex exec resume`。session 还绑定 adapter major
+contract，旧 v1 session 不会被 v2 静默复用。失败、JSONL 漂移、context 权限过宽或
+绑定变化不会推进 session head。
 
 若 `doctor` 报 `EXECUTABLE_BROKEN`、`VERSION_EXIT_NONZERO` 或其他 unavailable
 reason，应先在控制面之外修复/重新安装 CLI，再重跑 doctor。adapter 不修改全局

@@ -61,6 +61,14 @@ from pathlib import Path
 if "--version" in sys.argv:
     print("codex-cli 0.130.0-test")
     raise SystemExit(0)
+if "--help" in sys.argv:
+    if {mode!r} == "badhelp":
+        print("incompatible help")
+    elif "resume" in sys.argv:
+        print("Usage: codex exec resume [SESSION_ID] [PROMPT] --json --ignore-user-config")
+    else:
+        print("Usage: codex exec [PROMPT] --json --ignore-user-config")
+    raise SystemExit(0)
 
 prompt = sys.stdin.read()
 home = Path(os.environ["CODEX_HOME"])
@@ -165,9 +173,38 @@ class CodexAgentAdapterTests(unittest.TestCase):
             self.assertEqual("resume", second["invocation"])
             calls = fixture.invocations()
             self.assertEqual(2, len(calls))
-            self.assertNotIn("resume", calls[0]["argv"])
-            self.assertIn("resume", calls[1]["argv"])
-            self.assertIn(fixture.thread_id, calls[1]["argv"])
+            self.assertEqual(
+                [
+                    "--sandbox",
+                    "workspace-write",
+                    "--ask-for-approval",
+                    "never",
+                    "--cd",
+                    str(fixture.root.resolve()),
+                    "exec",
+                    "--json",
+                    "--ignore-user-config",
+                    "-",
+                ],
+                calls[0]["argv"],
+            )
+            self.assertEqual(
+                [
+                    "--sandbox",
+                    "workspace-write",
+                    "--ask-for-approval",
+                    "never",
+                    "--cd",
+                    str(fixture.root.resolve()),
+                    "exec",
+                    "resume",
+                    "--json",
+                    "--ignore-user-config",
+                    fixture.thread_id,
+                    "-",
+                ],
+                calls[1]["argv"],
+            )
             for call in calls:
                 self.assertIsNone(call["host_secret"])
                 self.assertEqual(str(fixture.codex_home), call["codex_home"])
@@ -204,6 +241,12 @@ class CodexAgentAdapterTests(unittest.TestCase):
                 "CONTEXT_PERMISSIONS_TOO_BROAD",
                 caught.exception.reason_code,
             )
+            self.assertFalse((fixture.codex_home / "invocations.jsonl").exists())
+
+            fixture.environment["LEGADO_WORK_ITEM_ID"] = "IOS-BOOT-001"
+            with self.assertRaises(adapter.AdapterError) as caught:
+                fixture.run(executable, sandbox_mode="danger-full-access")
+            self.assertEqual("SANDBOX_MODE_UNSAFE", caught.exception.reason_code)
             self.assertFalse((fixture.codex_home / "invocations.jsonl").exists())
 
             os.chmod(fixture.context_path, 0o600)
@@ -251,6 +294,16 @@ class CodexAgentAdapterTests(unittest.TestCase):
                 / ".harness-runtime/codex-sessions/IOS-BOOT-001.json"
             )
             value = json.loads(session.read_text())
+            value["adapter_version"] = "codex-exec-adapter-v1"
+            session.write_text(json.dumps(value))
+            with self.assertRaises(adapter.AdapterError) as caught:
+                fixture.run(executable)
+            self.assertEqual(
+                "SESSION_VERSION_UNSUPPORTED",
+                caught.exception.reason_code,
+            )
+
+            value["adapter_version"] = adapter.ADAPTER_VERSION
             value["work_item_sha256"] = "f" * 64
             session.write_text(json.dumps(value))
             with self.assertRaises(adapter.AdapterError) as caught:
@@ -295,6 +348,42 @@ class CodexAgentAdapterTests(unittest.TestCase):
             caught.exception.reason_code,
         )
 
+    def test_doctor_rejects_cli_help_contract_drift(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = AdapterFixture(Path(directory))
+            result = adapter.doctor(
+                str(fixture.fake("badhelp")),
+                fixture.environment,
+            )
+            self.assertEqual("unavailable", result["status"])
+            self.assertEqual(
+                "EXEC_HELP_CONTRACT_MISMATCH",
+                result["reason_code"],
+            )
+
+    def test_real_smoke_contract_is_read_only_and_secret_minimized(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = AdapterFixture(Path(directory))
+            result = adapter.real_smoke(
+                executable=str(fixture.fake("leak")),
+                codex_home=fixture.codex_home,
+                environment=fixture.environment,
+            )
+            self.assertEqual("real_smoke_passed", result["outcome"])
+            self.assertEqual(fixture.thread_id, result["thread_id"])
+            self.assertTrue(result["repo_clean"])
+            rendered = json.dumps(result)
+            self.assertNotIn("agent-private-message", rendered)
+            self.assertNotIn("must-not-reach-child", rendered)
+            calls = fixture.invocations()
+            self.assertEqual(2, len(calls))
+            self.assertEqual("read-only", calls[0]["argv"][1])
+            self.assertEqual("read-only", calls[1]["argv"][1])
+            self.assertNotIn("resume", calls[0]["argv"])
+            self.assertIn("resume", calls[1]["argv"])
+            self.assertIsNone(calls[0]["host_secret"])
+            self.assertIsNone(calls[1]["host_secret"])
+
     def test_current_machine_doctor_is_truthful(self):
         path = Path("/opt/homebrew/lib/node_modules/@openai/codex/bin/codex.js")
         if not path.exists():
@@ -309,6 +398,14 @@ class CodexAgentAdapterTests(unittest.TestCase):
                     "VERSION_EXIT_NONZERO",
                     "VERSION_TIMEOUT",
                     "VERSION_EMPTY",
+                    "EXEC_HELP_TIMEOUT",
+                    "EXEC_HELP_BROKEN",
+                    "EXEC_HELP_EXIT_NONZERO",
+                    "EXEC_HELP_CONTRACT_MISMATCH",
+                    "RESUME_HELP_TIMEOUT",
+                    "RESUME_HELP_BROKEN",
+                    "RESUME_HELP_EXIT_NONZERO",
+                    "RESUME_HELP_CONTRACT_MISMATCH",
                 },
             )
 

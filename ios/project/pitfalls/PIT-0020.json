@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0020",
+  "revision": 1,
+  "title": "Codex CLI 全局参数不能按子命令参数拼接",
+  "fingerprint": "codex-cli-global-options-after-exec-break-real-adapter",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "fake CLI 单测通过，但真实 Codex 在启动前报 unknown argument",
+    "首次 turn 把 sandbox、approval 和 cd 放在 exec 后面",
+    "resume 把全局参数和 exec 参数一起放在 thread ID 后面",
+    "doctor 只执行 --version，因此错误直到 Work Item 已 claim 后才暴露"
+  ],
+  "conditions": [
+    "测试替身只检查参数是否存在，不检查完整顺序和所属命令层级",
+    "Codex CLI 更新后，全局 parser 与 exec/resume parser 的参数集合发生分化",
+    "adapter 没有用真实 binary 做 read-only first/resume smoke",
+    "session 没有绑定 adapter 参数合同版本"
+  ],
+  "root_cause": "适配器把所有 Codex 参数视为可交换的公共列表，而 clap 风格 CLI 会在进入子命令后按该子命令的 schema 解析；参数名称正确并不代表参数位置有效。",
+  "diagnosis": [
+    "分别读取顶层、exec 和 exec resume 的帮助输出，不从参数名称猜测层级",
+    "对首次 turn 和 resume 断言完整 argv，而不是只断言包含某个 token",
+    "在 claim 前运行 doctor 的 exec/resume 帮助契约探测",
+    "用当前真实 binary 在临时 Git repo 和 read-only sandbox 下运行同 thread first/resume"
+  ],
+  "fix": "codex-exec-adapter-v2 使用单一 `_codex_argv` builder：sandbox、ask-for-approval 和 cd 固定放在 `exec` 前；json 与 ignore-user-config 放在 exec/resume 后；resume 的 thread ID 和 stdin `-` 位于子命令 options 后。doctor 增加真实 help probe，session 绑定 v2，新增临时 repo 的只读 first/resume smoke。",
+  "prevention": {
+    "architecture_rule": "外部 CLI adapter 必须把参数层级作为版本化合同：完整 argv 单测 + 当前 binary help probe + 无副作用真实 smoke 三者缺一不可；不得用宽松 fake parser 代替真实兼容性。",
+    "tests": [
+      "ios/harness/tests/test_codex_agent_adapter.py#test_first_turn_resume_and_secret_minimization",
+      "ios/harness/tests/test_codex_agent_adapter.py#test_doctor_rejects_cli_help_contract_drift",
+      "ios/harness/tests/test_codex_agent_adapter.py#test_real_smoke_contract_is_read_only_and_secret_minimized",
+      "ios/harness/tests/test_codex_agent_adapter.py#test_current_machine_doctor_is_truthful"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-CODEX-AGENT-ADAPTER-001",
+    "until": "IOS-CODEX-AGENT-ADAPTER-COMPAT-002"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T033521Z-ios-codex-agent-adapter-compat-002-29a3f9d6.json"
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 20,
+  "revision": 21,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -49,14 +49,13 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260728T032518Z-ios-auto-materialization-policy-001-539bfb34.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260728T033521Z-ios-codex-agent-adapter-compat-002-29a3f9d6.json",
   "next_actions": [
-    "修复 Codex adapter 的顶层 approval/sandbox/cd 参数顺序，把 ChatGPT 内置 Codex binary 的真实首次 turn/resume smoke 固化为证据，并用于 Integrations 知识任务",
-    "由 compiled-control-plane-v1 自动物化已通过资格检查的 IOS-KNOWLEDGE-INTEGRATIONS-001，并用真实 Codex adapter 推进知识产出",
+    "由 compiled-control-plane-v1 自动物化 IOS-KNOWLEDGE-INTEGRATIONS-001，并用已验证的 Codex v2 adapter 推进知识产出",
     "把 reference runner 迁入 Agent 不可达的受保护服务，以 KMS/企业身份签名、OS/container 隔离、资源上限和 deny-by-default egress 替代本地 HMAC/用户权限",
     "实现独立 patch publisher，只消费已签名 verified artifact，并经受保护 authority transition 完成 promotion",
     "为 cancelled knowledge output 增加显式 abandoned/tombstone 协议和逐 Claim recovery compiler，最终关闭 PIT-0012"
   ],
-  "updated_at": "2026-07-28T03:25:31Z",
-  "updated_by": "IOS-AUTO-MATERIALIZATION-POLICY-001"
+  "updated_at": "2026-07-28T03:35:41Z",
+  "updated_by": "IOS-CODEX-AGENT-ADAPTER-COMPAT-002"
 }

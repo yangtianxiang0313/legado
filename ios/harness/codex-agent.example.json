@@ -1,5 +1,9 @@
 {
   "schema_version": 1,
+  "auto_materialization": {
+    "enabled": true,
+    "policy": "compiled-control-plane-v1"
+  },
   "agent_invocation": {
     "argv": [
       "python3",
@@ -14,7 +18,9 @@
       "--context",
       "{context_path}",
       "--work-item",
-      "{work_item_id}"
+      "{work_item_id}",
+      "--sandbox-mode",
+      "workspace-write"
     ],
     "timeout_seconds": 7200
   }

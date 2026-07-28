@@ -23,9 +23,10 @@ except ImportError:
 
 
 SCHEMA_VERSION = 1
-ADAPTER_VERSION = "codex-exec-adapter-v1"
+ADAPTER_VERSION = "codex-exec-adapter-v2"
 THREAD_ID = re.compile(r"^[A-Za-z0-9_-]{8,128}$")
 SAFE_ENVIRONMENT = ("PATH", "TMPDIR", "LANG", "LC_ALL", "USER", "LOGNAME")
+SAFE_SANDBOX_MODES = {"read-only", "workspace-write"}
 
 
 class AdapterError(RuntimeError):
@@ -106,6 +107,69 @@ def doctor(
             raise AdapterError("VERSION_EXIT_NONZERO", str(result.returncode))
         if not version:
             raise AdapterError("VERSION_EMPTY", str(path))
+        help_root = tempfile.gettempdir()
+        help_contracts = (
+            (
+                "EXEC",
+                [
+                    str(path),
+                    "--sandbox",
+                    "read-only",
+                    "--ask-for-approval",
+                    "never",
+                    "--cd",
+                    help_root,
+                    "exec",
+                    "--help",
+                ],
+                ("--json", "--ignore-user-config"),
+            ),
+            (
+                "RESUME",
+                [
+                    str(path),
+                    "--sandbox",
+                    "read-only",
+                    "--ask-for-approval",
+                    "never",
+                    "--cd",
+                    help_root,
+                    "exec",
+                    "resume",
+                    "--help",
+                ],
+                ("SESSION_ID", "--json", "--ignore-user-config"),
+            ),
+        )
+        for label, argv, required in help_contracts:
+            try:
+                help_result = subprocess.run(
+                    argv,
+                    env=child_environment,
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    timeout=5,
+                    check=False,
+                )
+            except subprocess.TimeoutExpired:
+                raise AdapterError(f"{label}_HELP_TIMEOUT", str(path))
+            except OSError as error:
+                raise AdapterError(
+                    f"{label}_HELP_BROKEN", type(error).__name__
+                ) from error
+            if help_result.returncode != 0:
+                raise AdapterError(
+                    f"{label}_HELP_EXIT_NONZERO",
+                    str(help_result.returncode),
+                )
+            help_text = help_result.stdout.decode("utf-8", errors="replace")
+            missing = [value for value in required if value not in help_text]
+            if missing:
+                raise AdapterError(
+                    f"{label}_HELP_CONTRACT_MISMATCH",
+                    ",".join(missing),
+                )
         return {
             "schema_version": SCHEMA_VERSION,
             "adapter_version": ADAPTER_VERSION,
@@ -209,6 +273,11 @@ def _session(
         raise AdapterError("SESSION_INVALID", type(error).__name__) from error
     if not isinstance(value, dict):
         raise AdapterError("SESSION_INVALID", "not_object")
+    if (
+        value.get("schema_version") != SCHEMA_VERSION
+        or value.get("adapter_version") != ADAPTER_VERSION
+    ):
+        raise AdapterError("SESSION_VERSION_UNSUPPORTED", work_item_id)
     binding = (
         value.get("work_item_id"),
         value.get("work_item_sha256"),
@@ -235,6 +304,39 @@ def _prompt(work_item_id: str, context_path: Path) -> str:
         "Capability/Checkpoint/Pitfall memory after passing Evidence, call close, and "
         "stop cleanly when a human gate or blocker is reached."
     )
+
+
+def _codex_argv(
+    executable: Path,
+    repo: Path,
+    *,
+    sandbox_mode: str,
+    thread_id: Optional[str],
+) -> Sequence[str]:
+    if sandbox_mode not in SAFE_SANDBOX_MODES:
+        raise AdapterError("SANDBOX_MODE_UNSAFE", sandbox_mode)
+    if thread_id is not None and THREAD_ID.fullmatch(thread_id) is None:
+        raise AdapterError("THREAD_ID_INVALID", thread_id)
+    top_level = [
+        str(executable),
+        "--sandbox",
+        sandbox_mode,
+        "--ask-for-approval",
+        "never",
+        "--cd",
+        str(repo),
+    ]
+    exec_options = ["--json", "--ignore-user-config"]
+    if thread_id is None:
+        return [*top_level, "exec", *exec_options, "-"]
+    return [
+        *top_level,
+        "exec",
+        "resume",
+        *exec_options,
+        thread_id,
+        "-",
+    ]
 
 
 def _parse_jsonl(
@@ -310,10 +412,13 @@ def run_adapter(
     repo: Path,
     context_path: Path,
     work_item_id: str,
+    sandbox_mode: str = "workspace-write",
     max_jsonl_bytes: int = 10 * 1024 * 1024,
     environment: Optional[Mapping[str, str]] = None,
 ) -> Mapping[str, Any]:
     source_environment = dict(os.environ if environment is None else environment)
+    if sandbox_mode not in SAFE_SANDBOX_MODES:
+        raise AdapterError("SANDBOX_MODE_UNSAFE", sandbox_mode)
     diagnostic = doctor(executable, source_environment)
     if diagnostic["status"] != "available":
         raise AdapterError(str(diagnostic["reason_code"]), str(diagnostic.get("detail")))
@@ -341,30 +446,27 @@ def run_adapter(
         work_item_sha256,
         repo_sha256,
     )
-    common = [
-        "--json",
-        "--sandbox",
-        "workspace-write",
-        "--ask-for-approval",
-        "never",
-        "--ignore-user-config",
-        "--cd",
-        str(repo),
-    ]
     if prior is None:
-        argv = [str(executable_path), "exec", *common, "-"]
+        argv = list(
+            _codex_argv(
+                executable_path,
+                repo,
+                sandbox_mode=sandbox_mode,
+                thread_id=None,
+            )
+        )
         expected_thread = None
         invocation = "new"
     else:
         expected_thread = str(prior["thread_id"])
-        argv = [
-            str(executable_path),
-            "exec",
-            "resume",
-            expected_thread,
-            *common,
-            "-",
-        ]
+        argv = list(
+            _codex_argv(
+                executable_path,
+                repo,
+                sandbox_mode=sandbox_mode,
+                thread_id=expected_thread,
+            )
+        )
         invocation = "resume"
     forbidden = {"--yolo", "--dangerously-bypass-approvals-and-sandbox", "--full-auto", "danger-full-access"}
     if any(value in forbidden for value in argv):
@@ -432,6 +534,180 @@ def run_adapter(
     }
 
 
+def _smoke_git(repo: Path, environment: Mapping[str, str], *arguments: str) -> bytes:
+    try:
+        result = subprocess.run(
+            ["git", *arguments],
+            cwd=repo,
+            env=dict(environment),
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=10,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        raise AdapterError("SMOKE_GIT_FAILED", type(error).__name__) from error
+    if result.returncode != 0:
+        raise AdapterError("SMOKE_GIT_EXIT_NONZERO", str(result.returncode))
+    return result.stdout
+
+
+def _smoke_turn(
+    argv: Sequence[str],
+    prompt: str,
+    environment: Mapping[str, str],
+    expected_thread: Optional[str],
+    max_jsonl_bytes: int,
+) -> Mapping[str, Any]:
+    try:
+        result = subprocess.run(
+            list(argv),
+            env=dict(environment),
+            input=prompt.encode("utf-8"),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=300,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as error:
+        raise AdapterError("SMOKE_TURN_TIMEOUT", "300") from error
+    except OSError as error:
+        raise AdapterError("SMOKE_TURN_SPAWN_FAILED", type(error).__name__) from error
+    try:
+        parsed = _parse_jsonl(result.stdout, expected_thread, max_jsonl_bytes)
+    except AdapterError as error:
+        if result.returncode != 0 and error.reason_code not in {
+            "CODEX_ERROR_EVENT",
+            "TURN_FAILED",
+        }:
+            raise AdapterError(
+                "SMOKE_CODEX_EXIT_NONZERO",
+                str(result.returncode),
+            ) from error
+        raise
+    if result.returncode != 0:
+        raise AdapterError("SMOKE_CODEX_EXIT_NONZERO", str(result.returncode))
+    return {
+        **parsed,
+        "stderr_sha256": _sha256(result.stderr),
+        "stderr_bytes": len(result.stderr),
+    }
+
+
+def real_smoke(
+    *,
+    executable: str,
+    codex_home: Path,
+    max_jsonl_bytes: int = 10 * 1024 * 1024,
+    environment: Optional[Mapping[str, str]] = None,
+) -> Mapping[str, Any]:
+    source_environment = dict(os.environ if environment is None else environment)
+    diagnostic = doctor(executable, source_environment)
+    if diagnostic["status"] != "available":
+        raise AdapterError(
+            str(diagnostic["reason_code"]),
+            str(diagnostic.get("detail")),
+        )
+    executable_path = Path(str(diagnostic["executable"]))
+    if not codex_home.is_absolute():
+        raise AdapterError("CODEX_HOME_NOT_ABSOLUTE", str(codex_home))
+    if codex_home.is_symlink() or not codex_home.is_dir():
+        raise AdapterError("CODEX_HOME_INVALID", str(codex_home))
+    child_environment = {
+        key: source_environment[key]
+        for key in SAFE_ENVIRONMENT
+        if key in source_environment
+    }
+    child_environment.update(
+        {
+            "CODEX_HOME": str(codex_home),
+            "PYTHONDONTWRITEBYTECODE": "1",
+            "TZ": "UTC",
+        }
+    )
+    with tempfile.TemporaryDirectory(prefix="legado-codex-smoke-") as directory:
+        repo = Path(directory).resolve()
+        _smoke_git(repo, child_environment, "init", "-q")
+        _smoke_git(repo, child_environment, "config", "user.name", "Codex Smoke")
+        _smoke_git(
+            repo,
+            child_environment,
+            "config",
+            "user.email",
+            "codex-smoke@example.invalid",
+        )
+        marker = repo / "README.md"
+        marker.write_text("Legado Codex adapter read-only smoke\n", encoding="utf-8")
+        _smoke_git(repo, child_environment, "add", "README.md")
+        _smoke_git(repo, child_environment, "commit", "-qm", "smoke baseline")
+        first = _smoke_turn(
+            _codex_argv(
+                executable_path,
+                repo,
+                sandbox_mode="read-only",
+                thread_id=None,
+            ),
+            (
+                "This is a read-only adapter integration smoke. Do not run commands "
+                "and do not modify files. Reply with exactly CODEX_ADAPTER_SMOKE_FIRST."
+            ),
+            child_environment,
+            None,
+            max_jsonl_bytes,
+        )
+        thread_id = str(first["thread_id"])
+        resumed = _smoke_turn(
+            _codex_argv(
+                executable_path,
+                repo,
+                sandbox_mode="read-only",
+                thread_id=thread_id,
+            ),
+            (
+                "Continue the read-only integration smoke. Do not run commands and "
+                "do not modify files. Reply with exactly CODEX_ADAPTER_SMOKE_RESUME."
+            ),
+            child_environment,
+            thread_id,
+            max_jsonl_bytes,
+        )
+        status = _smoke_git(
+            repo,
+            child_environment,
+            "status",
+            "--porcelain=v1",
+            "--untracked-files=all",
+        )
+        if status:
+            raise AdapterError("SMOKE_REPO_MUTATED", _sha256(status))
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "adapter_version": ADAPTER_VERSION,
+        "outcome": "real_smoke_passed",
+        "reason_code": "CODEX_FIRST_RESUME_READ_ONLY_VERIFIED",
+        "executable": diagnostic["executable"],
+        "version": diagnostic["version"],
+        "version_sha256": diagnostic["version_sha256"],
+        "thread_id": thread_id,
+        "first": {
+            "event_counts": first["event_counts"],
+            "usage": first["usage"],
+            "jsonl_sha256": first["jsonl_sha256"],
+            "stderr_sha256": first["stderr_sha256"],
+            "stderr_bytes": first["stderr_bytes"],
+        },
+        "resume": {
+            "event_counts": resumed["event_counts"],
+            "usage": resumed["usage"],
+            "jsonl_sha256": resumed["jsonl_sha256"],
+            "stderr_sha256": resumed["stderr_sha256"],
+            "stderr_bytes": resumed["stderr_bytes"],
+        },
+        "repo_clean": True,
+    }
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Codex exec adapter for Loop Supervisor")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -443,7 +719,23 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--repo", type=Path, required=True)
     run_parser.add_argument("--context", type=Path, required=True)
     run_parser.add_argument("--work-item", required=True)
+    run_parser.add_argument(
+        "--sandbox-mode",
+        choices=sorted(SAFE_SANDBOX_MODES),
+        default="workspace-write",
+    )
     run_parser.add_argument("--max-jsonl-bytes", type=int, default=10 * 1024 * 1024)
+    smoke_parser = subparsers.add_parser(
+        "smoke",
+        help="Run a read-only real first-turn/resume compatibility smoke",
+    )
+    smoke_parser.add_argument("--codex", required=True)
+    smoke_parser.add_argument("--codex-home", type=Path, required=True)
+    smoke_parser.add_argument(
+        "--max-jsonl-bytes",
+        type=int,
+        default=10 * 1024 * 1024,
+    )
     return parser
 
 
@@ -453,7 +745,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if args.command == "doctor":
             result = doctor(args.codex)
             exit_code = 0 if result["status"] == "available" else 2
-        else:
+        elif args.command == "run":
             if not 1024 <= args.max_jsonl_bytes <= 100 * 1024 * 1024:
                 raise AdapterError("JSONL_LIMIT_INVALID", str(args.max_jsonl_bytes))
             result = run_adapter(
@@ -462,6 +754,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 repo=args.repo,
                 context_path=args.context,
                 work_item_id=args.work_item,
+                sandbox_mode=args.sandbox_mode,
+                max_jsonl_bytes=args.max_jsonl_bytes,
+            )
+            exit_code = 0
+        else:
+            if not 1024 <= args.max_jsonl_bytes <= 100 * 1024 * 1024:
+                raise AdapterError("JSONL_LIMIT_INVALID", str(args.max_jsonl_bytes))
+            result = real_smoke(
+                executable=args.codex,
+                codex_home=args.codex_home,
                 max_jsonl_bytes=args.max_jsonl_bytes,
             )
             exit_code = 0
