@@ -4,6 +4,10 @@
     "enabled": true,
     "policy": "compiled-control-plane-v1"
   },
+  "trusted_verification": {
+    "enabled": true,
+    "policy": "supervisor-owned-verification-v1"
+  },
   "agent_invocation": {
     "argv": [
       "python3",

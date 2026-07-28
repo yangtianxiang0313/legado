@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002",
+  "summary": "实现本地 Loop 的 supervisor-owned-verification-v1。显式启用后，Agent 只在 implementation phase 修改候选；Supervisor 对 Agent turn 前后的 event/status/attempt/verify cycle/Evidence binding 做不变量检查，然后在宿主进程执行 Harness.verify。失败且可重试时，同一 Work Item/Codex task 读取最新 Evidence 继续；通过后 Agent 进入 memory_close，只写 Work Item 已授权的 Capability/Checkpoint/Pitfall 等记忆，Supervisor 最终调用 close。Codex adapter 升级为 v3，phase 由 0600 context packet 绑定，prompt 明确禁止 claim/verify/close；旧配置保持 legacy 行为。E2E fake Agent 不调用 verify/close 仍完成 materialize→claim→edit→verify→memory→close→queue_empty；另覆盖 failed Evidence 后续接、memory close 结构化失败、Agent 控制状态篡改和 adapter phase/session/secret 合同。正式 Evidence 通过 dependency policy 与 127 项 Harness 测试。原 IOS-SUPERVISOR-OWNED-VERIFY-001 baseline_red 永久保留，根因由 IOS-PROCESS-GROUP-REAP-001 修复。",
+  "evidence": "ios/harness/evidence/runs/run-20260728T044352Z-ios-supervisor-owned-verify-recovery-002-78c25113.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 25,
+      "to_revision": 26,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": [
+      "ADR-0004"
+    ]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项不消费、生成或发布业务知识"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "只改变本地 Loop 控制职责与 Codex adapter prompt，不改变产品行为"
+  },
+  "pitfalls": {
+    "records": [
+      "ios/project/pitfalls/PIT-0022.json"
+    ],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "本地 Supervisor 与 Agent 仍共享用户和仓库权限；control binding 能检测但不能阻止 Agent 直接写 state，生产环境仍需进程/文件系统隔离与签名 journal",
+    "memory_close 失败目前结构化返回但不把错误持久化进下一次 context；再次 drive 时 Agent 需从现有记忆文件和 close 合同诊断",
+    "PIT-0022 需要真实 Codex Integrations recovery 成功后才能从 mitigated 更新为 resolved",
+    "max_transitions 以 Agent turn 为单位；implementation 与 memory_close 至少需要两个 transition budget"
+  ],
+  "next_actions": [
+    "创建 IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-004，使用 revision 3 proposal 作为输入并生产 revision 4",
+    "通过真实 Codex v3 adapter 跑通 Supervisor-owned verify/close 后关闭 PIT-0022",
+    "把 control state 移出 Agent 可写工作树并用签名 journal 代替事后 binding 检测",
+    "将 memory close 错误作为受控 feedback 注入下一次 context"
+  ],
+  "created_at": "2026-07-28T04:43:52Z"
+}

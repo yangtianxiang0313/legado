@@ -62,6 +62,13 @@ python3 ios/harness/loop_supervisor.py materialize-review \
 - `drive` 只接受配置中的 argv 数组 Agent adapter；当显式启用
   `compiled-control-plane-v1` 时，可以先自动物化唯一的最高优先候选，再继续 claim 和
   Agent transition；
+- 显式启用 `supervisor-owned-verification-v1` 后，单次工作项按 Agent edit →
+  Supervisor verify → Agent memory → Supervisor close 推进。Agent 不能通过直接调用
+  `verify/close` 改变控制状态；Supervisor 在每个 Agent turn 后核对 event/status/
+  Evidence binding，并独立产生验收 Evidence；
+- required checks 在 Supervisor 宿主进程中运行，不继承 Codex workspace-write 对
+  loopback、SwiftPM 二级 sandbox 或 iOS Simulator 的限制；验证失败仍由 Harness
+  决定 implementing/rejected/exhausted，下一轮 Agent 读取最新 Evidence 后修复；
 - 每次 Agent 调用都在新的 session/process group 中启动；超时按 TERM → 有界等待 → KILL 回收完整进程树，并结构化返回 `timed_out`、`process_leak`、`cleanup_error`；
 - Supervisor 只向 adapter 传递显式环境白名单和临时 context 路径，结果只保留输出长度与 SHA-256，不回显 context、stdout/stderr 或宿主环境 secret；
 - 普通候选不再要求点击确认：自动策略要求 repo/index clean，candidate、recipe、
@@ -193,7 +200,7 @@ python3 ios/harness/loop_supervisor.py drive \
   --max-transitions 3
 ```
 
-Codex CLI 的参数层级是兼容合同的一部分。当前 v2 adapter 的首次 turn 固定为：
+Codex CLI 的参数层级是兼容合同的一部分。当前 v3 adapter 的首次 turn 固定为：
 
 ```text
 codex --sandbox <read-only|workspace-write> --ask-for-approval never \
@@ -222,7 +229,10 @@ CLI 漂移。`smoke` 总是创建临时 Git repo 并使用 `read-only`，连续�
 成功 turn 的 thread ID 保存在忽略版本控制的
 `.harness-runtime/codex-sessions/<work-item>.json`，绑定 Work Item hash 与 repo
 commit；后续 transition 使用 `codex exec resume`。session 还绑定 adapter major
-contract，旧 v1 session 不会被 v2 静默复用。失败、JSONL 漂移、context 权限过宽或
+contract，旧 v1/v2 session 不会被 v3 静默复用。v3 prompt 还绑定
+`implementation` / `memory_close` phase：前者只写候选，后者只在 passed Evidence
+之后写记忆事务；`verify/close` 始终由 Supervisor 执行。失败、JSONL 漂移、
+context 权限过宽或
 绑定变化不会推进 session head。
 
 若 `doctor` 报 `EXECUTABLE_BROKEN`、`VERSION_EXIT_NONZERO` 或其他 unavailable

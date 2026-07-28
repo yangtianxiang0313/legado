@@ -23,7 +23,8 @@ except ImportError:
 
 
 SCHEMA_VERSION = 1
-ADAPTER_VERSION = "codex-exec-adapter-v2"
+ADAPTER_VERSION = "codex-exec-adapter-v3"
+SUPERVISOR_VERIFICATION_POLICY = "supervisor-owned-verification-v1"
 THREAD_ID = re.compile(r"^[A-Za-z0-9_-]{8,128}$")
 SAFE_ENVIRONMENT = ("PATH", "TMPDIR", "LANG", "LC_ALL", "USER", "LOGNAME")
 SAFE_SANDBOX_MODES = {"read-only", "workspace-write"}
@@ -292,18 +293,55 @@ def _session(
     return value
 
 
-def _prompt(work_item_id: str, context_path: Path) -> str:
-    return (
+def _prompt(
+    work_item_id: str,
+    context_path: Path,
+    context: Mapping[str, Any],
+) -> str:
+    base = (
         "You are the implementation Agent for exactly one already-claimed Legado iOS "
         f"Harness Work Item: {work_item_id}. Read the immutable context packet at "
         f"{context_path}. Follow required_read_order and the Work Item scope, AC, "
         "budget, stop_on, architecture, Requirement, SourceLab and knowledge contracts. "
         "Do not claim another item, edit protected inputs, approve gates, materialize "
         "candidates, update golden/published authority, or bypass Harness state. "
-        "Implement only allowed changes, run the declared verification, update "
-        "Capability/Checkpoint/Pitfall memory after passing Evidence, call close, and "
-        "stop cleanly when a human gate or blocker is reached."
     )
+    control = context.get("supervisor_control")
+    if not isinstance(control, dict):
+        return (
+            base
+            + "Implement only allowed changes, run the declared verification, update "
+            "Capability/Checkpoint/Pitfall memory after passing Evidence, call close, "
+            "and stop cleanly when a human gate or blocker is reached."
+        )
+    if control.get("policy") != SUPERVISOR_VERIFICATION_POLICY:
+        raise AdapterError(
+            "SUPERVISOR_POLICY_UNSUPPORTED",
+            str(control.get("policy")),
+        )
+    phase = control.get("phase")
+    if phase == "implementation":
+        return (
+            base
+            + "This turn is the implementation phase. Change only scoped candidate "
+            "files and optionally run targeted read-only checks. Do not call Harness "
+            "claim, verify, close, review, materialize, or mutate project state/events/"
+            "status. Do not write Capability/Checkpoint/Pitfall close memory before "
+            "passed Evidence exists. The outer Supervisor exclusively runs required "
+            "verification and records Evidence. Stop after the scoped implementation "
+            "is ready for that verification."
+        )
+    if phase == "memory_close":
+        return (
+            base
+            + "This turn is the memory_close phase. Passed Evidence is already bound "
+            "in the context. Do not change implementation/product files and do not "
+            "call Harness claim, verify, close, review, or materialize. Write only the "
+            "Work Item-authorized Capability/Checkpoint/Pitfall/compatibility/ledger "
+            "memory required by the close contract, then stop. The outer Supervisor "
+            "exclusively validates the memory transaction and closes the Work Item."
+        )
+    raise AdapterError("SUPERVISOR_PHASE_UNSUPPORTED", str(phase))
 
 
 def _codex_argv(
@@ -485,6 +523,7 @@ def run_adapter(
             "TZ": "UTC",
         }
     )
+    prompt = _prompt(work_item_id, context_path, context).encode("utf-8")
     try:
         process = subprocess.Popen(
             argv,
@@ -495,7 +534,7 @@ def run_adapter(
             stderr=subprocess.PIPE,
         )
         stdout, stderr = process.communicate(
-            input=_prompt(work_item_id, context_path).encode("utf-8")
+            input=prompt
         )
     except OSError as error:
         raise AdapterError("CODEX_SPAWN_FAILED", type(error).__name__) from error

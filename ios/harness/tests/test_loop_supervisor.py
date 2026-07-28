@@ -690,6 +690,135 @@ class DriveTests(unittest.TestCase):
                 transition["cleanup_error"],
             )
 
+    def test_supervisor_verification_retries_and_close_failure_is_structured(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = MaterializationFixture(root)
+            config_value = json.loads(
+                (root / "ios/harness/config.json").read_text(encoding="utf-8")
+            )
+            config_value["checks"]["noop"]["argv"] = [
+                sys.executable,
+                "-c",
+                "from pathlib import Path; assert Path('ios/fixed.txt').exists()",
+            ]
+            fixture.fixture.write_json("ios/harness/config.json", config_value)
+            agent_source = textwrap.dedent(
+                """
+                import json
+                import os
+                from pathlib import Path
+
+                context = json.loads(
+                    Path(os.environ["LEGADO_CONTEXT_PATH"]).read_text(encoding="utf-8")
+                )
+                control = context["supervisor_control"]
+                if (
+                    control["phase"] == "implementation"
+                    and control["verify_cycles"] >= 1
+                ):
+                    Path("ios/fixed.txt").write_text("fixed\\n", encoding="utf-8")
+                """
+            )
+            fixture.fixture.write_json(
+                "supervisor.json",
+                {
+                    "agent_invocation": {
+                        "argv": [sys.executable, "-c", agent_source],
+                        "timeout_seconds": 10,
+                    },
+                    "trusted_verification": {
+                        "enabled": True,
+                        "policy": loop_supervisor.SUPERVISOR_VERIFICATION_POLICY,
+                    },
+                },
+            )
+            self.initialize_git(root)
+            supervisor = loop_supervisor.LoopSupervisor(fixture.harness)
+            result = supervisor.drive(
+                config_path=root / "supervisor.json",
+                agent_id="retry-agent",
+                max_transitions=2,
+            )
+            self.assertEqual("transition_budget_reached", result["outcome"])
+            self.assertEqual("verified", result["decision"]["state"])
+            self.assertEqual(
+                ["failed", "passed"],
+                [
+                    transition["result"]
+                    for transition in result["transitions"]
+                    if transition["kind"] == "supervisor_verification"
+                ],
+            )
+            self.assertEqual(
+                ["implementation", "implementation"],
+                [
+                    transition["phase"]
+                    for transition in result["transitions"]
+                    if transition["kind"] == "agent"
+                ],
+            )
+            runtime = fixture.harness.state()["work_items"]["IOS-BOOT-001"]
+            self.assertEqual(2, runtime["verify_cycles"])
+            self.assertEqual("verified", runtime["status"])
+
+            close_result = supervisor.drive(
+                config_path=root / "supervisor.json",
+                agent_id="retry-agent",
+                max_transitions=1,
+            )
+            self.assertEqual("supervisor_close_failed", close_result["outcome"])
+            self.assertEqual("verified", close_result["decision"]["state"])
+            self.assertEqual("memory_close", close_result["transitions"][0]["phase"])
+            self.assertEqual("failed", close_result["transitions"][1]["result"])
+            self.assertIn(
+                "close 前记忆事务无效",
+                close_result["transitions"][1]["error"],
+            )
+
+    def test_supervisor_rejects_agent_control_plane_mutation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = MaterializationFixture(root)
+            agent_source = textwrap.dedent(
+                """
+                import json
+                from pathlib import Path
+
+                path = Path("ios/project/state.json")
+                state = json.loads(path.read_text(encoding="utf-8"))
+                state["work_items"]["IOS-BOOT-001"]["verify_cycles"] = 99
+                path.write_text(json.dumps(state, indent=2) + "\\n", encoding="utf-8")
+                """
+            )
+            fixture.fixture.write_json(
+                "supervisor.json",
+                {
+                    "agent_invocation": {
+                        "argv": [sys.executable, "-c", agent_source],
+                        "timeout_seconds": 10,
+                    },
+                    "trusted_verification": {
+                        "enabled": True,
+                        "policy": loop_supervisor.SUPERVISOR_VERIFICATION_POLICY,
+                    },
+                },
+            )
+            self.initialize_git(root)
+            result = loop_supervisor.LoopSupervisor(fixture.harness).drive(
+                config_path=root / "supervisor.json",
+                agent_id="mutating-agent",
+                max_transitions=1,
+            )
+            self.assertEqual("agent_control_plane_mutation", result["outcome"])
+            self.assertEqual("agent", result["transitions"][0]["kind"])
+            self.assertEqual(
+                99,
+                fixture.harness.state()["work_items"]["IOS-BOOT-001"][
+                    "verify_cycles"
+                ],
+            )
+
     def test_real_harness_e2e_materialize_drive_verify_close_and_empty(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -725,86 +854,89 @@ class DriveTests(unittest.TestCase):
                 f"""
                 import json
                 import os
-                import sys
                 from pathlib import Path
 
-                sys.path.insert(0, {str(HARNESS_DIR)!r})
-                import harness
-
-                root = Path(sys.argv[1])
-                context_path = Path(sys.argv[2])
+                root = Path({str(root)!r})
+                context_path = Path(os.environ["LEGADO_CONTEXT_PATH"])
                 assert os.environ["LEGADO_CONTEXT_PATH"] == str(context_path)
                 context = json.loads(context_path.read_text(encoding="utf-8"))
                 item_id = os.environ["LEGADO_WORK_ITEM_ID"]
                 assert context["work_item"]["metadata"]["id"] == item_id
                 assert context["work_item_sha256"]
-
-                instance = harness.Harness(root)
-                (root / "ios/implementation.txt").write_text(
-                    "implemented by argv adapter\\n",
-                    encoding="utf-8",
-                )
-                evidence_path = instance.verify(item_id)
-                evidence_relative = instance.relative(evidence_path)
-                evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
-                assert evidence["result"] == "passed"
-
-                capability_path = root / "ios/project/capabilities/CAP-BOOT.json"
-                capability = json.loads(capability_path.read_text(encoding="utf-8"))
-                capability.update({{
-                    "revision": 2,
-                    "declared_status": "verified",
-                    "latest_evidence": evidence_relative,
-                    "updated_by": item_id,
-                }})
-                capability_path.write_text(
-                    json.dumps(capability, ensure_ascii=False, indent=2) + "\\n",
-                    encoding="utf-8",
-                )
-                checkpoint = {{
-                    "schema_version": 1,
-                    "work_item_id": item_id,
-                    "summary": "真实 argv Agent 完成 Harness 闭环",
-                    "evidence": evidence_relative,
-                    "capability_updates": [
-                        {{"id": "CAP-BOOT", "from_revision": 1, "to_revision": 2}}
-                    ],
-                    "architecture_impact": {{
-                        "kind": "implements_existing",
-                        "adr_refs": ["ADR-0001"],
-                    }},
-                    "requirements": {{
-                        "mode": "control_plane",
-                        "refs": [],
-                        "selection_sha256": None,
-                    }},
-                    "source_lab": {{
-                        "mode": "not_applicable",
-                        "behaviors": [],
-                        "scenarios": [],
-                        "selection_sha256": None,
-                    }},
-                    "compatibility": {{
-                        "records": [],
-                        "none_reason": "测试不涉及跨端差异",
-                    }},
-                    "pitfalls": {{
-                        "records": [],
-                        "none_reason": "测试未发现长期陷阱",
-                    }},
-                    "remaining_risks": [],
-                    "next_actions": [],
-                    "created_at": "2026-01-01T00:00:00Z",
-                }}
-                checkpoint_path = (
-                    root / "ios/project/checkpoints" / f"{{item_id}}.json"
-                )
-                checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
-                checkpoint_path.write_text(
-                    json.dumps(checkpoint, ensure_ascii=False, indent=2) + "\\n",
-                    encoding="utf-8",
-                )
-                assert instance.close(item_id) == "completed"
+                control = context["supervisor_control"]
+                assert control["policy"] == {loop_supervisor.SUPERVISOR_VERIFICATION_POLICY!r}
+                assert os.environ["LEGADO_SUPERVISOR_PHASE"] == control["phase"]
+                if control["phase"] == "implementation":
+                    assert control["latest_evidence"] is None
+                    (root / "ios/implementation.txt").write_text(
+                        "implemented by argv adapter\\n",
+                        encoding="utf-8",
+                    )
+                elif control["phase"] == "memory_close":
+                    evidence_relative = control["latest_evidence"]
+                    evidence = json.loads(
+                        (root / evidence_relative).read_text(encoding="utf-8")
+                    )
+                    assert evidence["result"] == "passed"
+                    capability_path = root / "ios/project/capabilities/CAP-BOOT.json"
+                    capability = json.loads(
+                        capability_path.read_text(encoding="utf-8")
+                    )
+                    capability.update({{
+                        "revision": 2,
+                        "declared_status": "verified",
+                        "latest_evidence": evidence_relative,
+                        "updated_by": item_id,
+                    }})
+                    capability_path.write_text(
+                        json.dumps(capability, ensure_ascii=False, indent=2) + "\\n",
+                        encoding="utf-8",
+                    )
+                    checkpoint = {{
+                        "schema_version": 1,
+                        "work_item_id": item_id,
+                        "summary": "Supervisor-owned verify/close 完成 Harness 闭环",
+                        "evidence": evidence_relative,
+                        "capability_updates": [
+                            {{"id": "CAP-BOOT", "from_revision": 1, "to_revision": 2}}
+                        ],
+                        "architecture_impact": {{
+                            "kind": "implements_existing",
+                            "adr_refs": ["ADR-0001"],
+                        }},
+                        "requirements": {{
+                            "mode": "control_plane",
+                            "refs": [],
+                            "selection_sha256": None,
+                        }},
+                        "source_lab": {{
+                            "mode": "not_applicable",
+                            "behaviors": [],
+                            "scenarios": [],
+                            "selection_sha256": None,
+                        }},
+                        "compatibility": {{
+                            "records": [],
+                            "none_reason": "测试不涉及跨端差异",
+                        }},
+                        "pitfalls": {{
+                            "records": [],
+                            "none_reason": "测试未发现长期陷阱",
+                        }},
+                        "remaining_risks": [],
+                        "next_actions": [],
+                        "created_at": "2026-01-01T00:00:00Z",
+                    }}
+                    checkpoint_path = (
+                        root / "ios/project/checkpoints" / f"{{item_id}}.json"
+                    )
+                    checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+                    checkpoint_path.write_text(
+                        json.dumps(checkpoint, ensure_ascii=False, indent=2) + "\\n",
+                        encoding="utf-8",
+                    )
+                else:
+                    raise AssertionError(control)
                 """
             )
             fixture.fixture.write_json(
@@ -819,7 +951,11 @@ class DriveTests(unittest.TestCase):
                             "{context_path}",
                         ],
                         "timeout_seconds": 10,
-                    }
+                    },
+                    "trusted_verification": {
+                        "enabled": True,
+                        "policy": loop_supervisor.SUPERVISOR_VERIFICATION_POLICY,
+                    },
                 },
             )
             self.initialize_git(root)
@@ -836,7 +972,7 @@ class DriveTests(unittest.TestCase):
             result = supervisor.drive(
                 config_path=root / "supervisor.json",
                 agent_id="e2e-agent",
-                max_transitions=2,
+                max_transitions=3,
             )
             self.assertEqual(
                 "no_eligible_compiled_candidate",
@@ -844,10 +980,33 @@ class DriveTests(unittest.TestCase):
             )
             self.assertEqual("queue_empty", result["decision"]["state"])
             transition = result["transitions"][0]
+            self.assertEqual("agent", transition["kind"])
+            self.assertEqual("implementation", transition["phase"])
             self.assertEqual(0, transition["exit_code"])
             self.assertFalse(transition["timed_out"])
             self.assertFalse(transition["process_leak"])
             self.assertIsNone(transition["cleanup_error"])
+            self.assertEqual(
+                [
+                    "agent",
+                    "supervisor_verification",
+                    "agent",
+                    "supervisor_close",
+                ],
+                [entry["kind"] for entry in result["transitions"]],
+            )
+            self.assertEqual(
+                "memory_close",
+                result["transitions"][2]["phase"],
+            )
+            self.assertEqual(
+                "passed",
+                result["transitions"][1]["result"],
+            )
+            self.assertEqual(
+                "completed",
+                result["transitions"][3]["result"],
+            )
 
             final_state = fixture.harness.state()
             self.assertEqual(

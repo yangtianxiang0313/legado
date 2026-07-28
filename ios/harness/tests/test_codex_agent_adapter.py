@@ -118,6 +118,47 @@ print(json.dumps({{"type": "turn.completed", "usage": {{
 
 
 class CodexAgentAdapterTests(unittest.TestCase):
+    def test_supervisor_phases_bind_agent_responsibilities(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = AdapterFixture(Path(directory))
+            executable = fixture.fake()
+            context = json.loads(fixture.context_path.read_text(encoding="utf-8"))
+            context["supervisor_control"] = {
+                "policy": adapter.SUPERVISOR_VERIFICATION_POLICY,
+                "phase": "implementation",
+                "latest_evidence": None,
+                "verify_cycles": 0,
+            }
+            fixture.context_path.write_text(json.dumps(context), encoding="utf-8")
+            fixture.run(executable)
+
+            context["supervisor_control"].update(
+                {
+                    "phase": "memory_close",
+                    "latest_evidence": "ios/harness/evidence/passed.json",
+                    "verify_cycles": 1,
+                }
+            )
+            fixture.context_path.write_text(json.dumps(context), encoding="utf-8")
+            fixture.run(executable)
+
+            prompts = [call["prompt"] for call in fixture.invocations()]
+            self.assertIn("implementation phase", prompts[0])
+            self.assertIn("outer Supervisor exclusively runs required", prompts[0])
+            self.assertIn("memory_close phase", prompts[1])
+            self.assertIn("exclusively validates the memory transaction", prompts[1])
+            for prompt in prompts:
+                self.assertIn("not call Harness", prompt)
+
+            context["supervisor_control"]["phase"] = "unknown"
+            fixture.context_path.write_text(json.dumps(context), encoding="utf-8")
+            with self.assertRaises(adapter.AdapterError) as caught:
+                fixture.run(executable)
+            self.assertEqual(
+                "SUPERVISOR_PHASE_UNSUPPORTED",
+                caught.exception.reason_code,
+            )
+
     def test_doctor_reports_regular_symlink_nonzero_and_broken(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = AdapterFixture(Path(directory))

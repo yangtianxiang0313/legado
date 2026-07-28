@@ -71,6 +71,7 @@ except ImportError:
 SCHEMA_VERSION = 1
 CANDIDATE_ROOT = "ios/project/work-item-proposals/candidates"
 AUTO_MATERIALIZATION_POLICY = "compiled-control-plane-v1"
+SUPERVISOR_VERIFICATION_POLICY = "supervisor-owned-verification-v1"
 TERMINAL_RECOVERY_STATUSES = {"blocked", "rejected", "exhausted", "cancelled"}
 ACTIVE_DECISIONS = {
     "implementing": ("agent_required", False),
@@ -962,6 +963,107 @@ class LoopSupervisor:
             provenance=candidate.to_dict(),
         )
 
+    @staticmethod
+    def _control_binding(state: Mapping[str, Any], item_id: str) -> Tuple[Any, ...]:
+        runtime = state.get("work_items", {}).get(item_id, {})
+        return (
+            state.get("event_head"),
+            runtime.get("status"),
+            runtime.get("attempt"),
+            runtime.get("verify_cycles"),
+            runtime.get("last_evidence"),
+            runtime.get("last_evidence_sha256"),
+        )
+
+    def _invoke_agent_phase(
+        self,
+        *,
+        item_id: str,
+        phase: str,
+        policy: Optional[str],
+        argv_template: Sequence[str],
+        timeout_seconds: int,
+    ) -> Dict[str, Any]:
+        context = self.harness.context_packet(item_id)
+        if policy is not None:
+            runtime = self.harness.state().get("work_items", {}).get(item_id, {})
+            context["supervisor_control"] = {
+                "policy": policy,
+                "phase": phase,
+                "latest_evidence": runtime.get("last_evidence"),
+                "verify_cycles": runtime.get("verify_cycles", 0),
+            }
+        descriptor, raw_context = tempfile.mkstemp(
+            prefix=f"legado-{item_id.lower()}-",
+            suffix=".json",
+        )
+        context_path = Path(raw_context)
+        try:
+            with os.fdopen(descriptor, "wb") as handle:
+                handle.write(
+                    json.dumps(context, ensure_ascii=False, indent=2).encode()
+                )
+                handle.write(b"\n")
+            replacements = {
+                "{work_item_id}": item_id,
+                "{context_path}": str(context_path),
+                "{repo_root}": str(self.harness.root),
+            }
+            argv = [
+                _replace_placeholders(value, replacements)
+                for value in argv_template
+            ]
+            environment = {
+                key: os.environ[key]
+                for key in (
+                    "PATH",
+                    "DEVELOPER_DIR",
+                    "SDKROOT",
+                    "TMPDIR",
+                    "LANG",
+                    "LC_ALL",
+                )
+                if key in os.environ
+            }
+            environment.update(
+                {
+                    "LEGADO_WORK_ITEM_ID": item_id,
+                    "LEGADO_CONTEXT_PATH": str(context_path),
+                    "LEGADO_SUPERVISOR_PHASE": phase,
+                    "PYTHONDONTWRITEBYTECODE": "1",
+                    "TZ": "UTC",
+                }
+            )
+            started = time.monotonic()
+            transition = self._run_agent_adapter(
+                item_id=item_id,
+                argv=argv,
+                environment=environment,
+                timeout_seconds=timeout_seconds,
+            )
+            transition.update(
+                {
+                    "kind": "agent",
+                    "phase": phase,
+                    "duration_ms": int((time.monotonic() - started) * 1000),
+                }
+            )
+            return transition
+        finally:
+            context_path.unlink(missing_ok=True)
+
+    @staticmethod
+    def _agent_failure_outcome(transition: Mapping[str, Any]) -> Optional[str]:
+        if transition.get("cleanup_error") is not None:
+            return "agent_cleanup_failed"
+        if transition.get("process_leak"):
+            return "agent_process_leak"
+        if transition.get("timed_out"):
+            return "agent_timeout"
+        if transition.get("exit_code") != 0:
+            return "agent_failed"
+        return None
+
     def drive(
         self,
         *,
@@ -1008,6 +1110,21 @@ class LoopSupervisor:
                 "启用 auto_materialization 时 policy 必须是 "
                 + AUTO_MATERIALIZATION_POLICY
             )
+        verification_config = config.get("trusted_verification", {})
+        if verification_config is None:
+            verification_config = {}
+        if not isinstance(verification_config, dict):
+            raise LoopSupervisorError("trusted_verification 必须是 object")
+        trusted_verification = verification_config.get("enabled") is True
+        verification_policy = verification_config.get("policy")
+        if (
+            trusted_verification
+            and verification_policy != SUPERVISOR_VERIFICATION_POLICY
+        ):
+            raise LoopSupervisorError(
+                "启用 trusted_verification 时 policy 必须是 "
+                + SUPERVISOR_VERIFICATION_POLICY
+            )
 
         transitions: List[Dict[str, Any]] = []
         for _ in range(max_transitions):
@@ -1032,6 +1149,138 @@ class LoopSupervisor:
                     }
                 )
                 before = self.inspect()
+            if trusted_verification:
+                if before.state == "ready":
+                    item_id = before.work_item_id
+                    assert item_id is not None
+                    with self.harness.mutation_lock():
+                        self.harness.claim(item_id, agent_id)
+                    before = self.inspect()
+
+                if before.state == "implementing":
+                    item_id = before.work_item_id
+                    assert item_id is not None
+                    control_before = self._control_binding(
+                        self.harness.state(), item_id
+                    )
+                    transition = self._invoke_agent_phase(
+                        item_id=item_id,
+                        phase="implementation",
+                        policy=str(verification_policy),
+                        argv_template=argv_template,
+                        timeout_seconds=timeout_seconds,
+                    )
+                    transitions.append(transition)
+                    failure_outcome = self._agent_failure_outcome(transition)
+                    if failure_outcome is not None:
+                        return {
+                            "schema_version": SCHEMA_VERSION,
+                            "outcome": failure_outcome,
+                            "decision": self.inspect().to_dict(),
+                            "transitions": transitions,
+                        }
+                    control_after = self._control_binding(
+                        self.harness.state(), item_id
+                    )
+                    if control_after != control_before:
+                        return {
+                            "schema_version": SCHEMA_VERSION,
+                            "outcome": "agent_control_plane_mutation",
+                            "decision": self.inspect().to_dict(),
+                            "transitions": transitions,
+                        }
+                    with self.harness.mutation_lock():
+                        evidence_path = self.harness.verify(item_id)
+                    evidence = json.loads(
+                        evidence_path.read_text(encoding="utf-8")
+                    )
+                    transitions.append(
+                        {
+                            "kind": "supervisor_verification",
+                            "work_item_id": item_id,
+                            "evidence": self.harness.relative(evidence_path),
+                            "result": evidence.get("result"),
+                            "failure": evidence.get("failure"),
+                        }
+                    )
+                    after_verify = self.inspect()
+                    if evidence.get("result") != "passed":
+                        if after_verify.state == "implementing":
+                            continue
+                        return {
+                            "schema_version": SCHEMA_VERSION,
+                            "outcome": after_verify.reason_code.lower(),
+                            "decision": after_verify.to_dict(),
+                            "transitions": transitions,
+                        }
+                    continue
+
+                if before.state == "verified":
+                    item_id = before.work_item_id
+                    assert item_id is not None
+                    control_before = self._control_binding(
+                        self.harness.state(), item_id
+                    )
+                    transition = self._invoke_agent_phase(
+                        item_id=item_id,
+                        phase="memory_close",
+                        policy=str(verification_policy),
+                        argv_template=argv_template,
+                        timeout_seconds=timeout_seconds,
+                    )
+                    transitions.append(transition)
+                    failure_outcome = self._agent_failure_outcome(transition)
+                    if failure_outcome is not None:
+                        return {
+                            "schema_version": SCHEMA_VERSION,
+                            "outcome": failure_outcome,
+                            "decision": self.inspect().to_dict(),
+                            "transitions": transitions,
+                        }
+                    control_after = self._control_binding(
+                        self.harness.state(), item_id
+                    )
+                    if control_after != control_before:
+                        return {
+                            "schema_version": SCHEMA_VERSION,
+                            "outcome": "agent_control_plane_mutation",
+                            "decision": self.inspect().to_dict(),
+                            "transitions": transitions,
+                        }
+                    try:
+                        with self.harness.mutation_lock():
+                            close_outcome = self.harness.close(item_id)
+                    except HarnessError as error:
+                        transitions.append(
+                            {
+                                "kind": "supervisor_close",
+                                "work_item_id": item_id,
+                                "result": "failed",
+                                "error": str(error),
+                            }
+                        )
+                        return {
+                            "schema_version": SCHEMA_VERSION,
+                            "outcome": "supervisor_close_failed",
+                            "decision": self.inspect().to_dict(),
+                            "transitions": transitions,
+                        }
+                    transitions.append(
+                        {
+                            "kind": "supervisor_close",
+                            "work_item_id": item_id,
+                            "result": close_outcome,
+                        }
+                    )
+                    continue
+
+                return {
+                    "schema_version": SCHEMA_VERSION,
+                    "outcome": before.reason_code.lower(),
+                    "decision": before.to_dict(),
+                    "transitions": transitions,
+                }
+
             if before.state not in {"ready", "implementing"}:
                 return {
                     "schema_version": SCHEMA_VERSION,
@@ -1041,89 +1290,25 @@ class LoopSupervisor:
                 }
             item_id = before.work_item_id
             assert item_id is not None
-            context = self.harness.context_packet(item_id)
-            descriptor, raw_context = tempfile.mkstemp(
-                prefix=f"legado-{item_id.lower()}-",
-                suffix=".json",
+            if before.state == "ready":
+                with self.harness.mutation_lock():
+                    self.harness.claim(item_id, agent_id)
+            transition = self._invoke_agent_phase(
+                item_id=item_id,
+                phase="legacy",
+                policy=None,
+                argv_template=argv_template,
+                timeout_seconds=timeout_seconds,
             )
-            context_path = Path(raw_context)
-            try:
-                with os.fdopen(descriptor, "wb") as handle:
-                    handle.write(json.dumps(context, ensure_ascii=False, indent=2).encode())
-                    handle.write(b"\n")
-                if before.state == "ready":
-                    with self.harness.mutation_lock():
-                        self.harness.claim(item_id, agent_id)
-                replacements = {
-                    "{work_item_id}": item_id,
-                    "{context_path}": str(context_path),
-                    "{repo_root}": str(self.harness.root),
+            transitions.append(transition)
+            failure_outcome = self._agent_failure_outcome(transition)
+            if failure_outcome is not None:
+                return {
+                    "schema_version": SCHEMA_VERSION,
+                    "outcome": failure_outcome,
+                    "decision": self.inspect().to_dict(),
+                    "transitions": transitions,
                 }
-                argv = [
-                    _replace_placeholders(value, replacements)
-                    for value in argv_template
-                ]
-                environment = {
-                    key: os.environ[key]
-                    for key in (
-                        "PATH",
-                        "DEVELOPER_DIR",
-                        "SDKROOT",
-                        "TMPDIR",
-                        "LANG",
-                        "LC_ALL",
-                    )
-                    if key in os.environ
-                }
-                environment.update(
-                    {
-                        "LEGADO_WORK_ITEM_ID": item_id,
-                        "LEGADO_CONTEXT_PATH": str(context_path),
-                        "PYTHONDONTWRITEBYTECODE": "1",
-                        "TZ": "UTC",
-                    }
-                )
-                started = time.monotonic()
-                transition = self._run_agent_adapter(
-                    item_id=item_id,
-                    argv=argv,
-                    environment=environment,
-                    timeout_seconds=timeout_seconds,
-                )
-                transition["duration_ms"] = int(
-                    (time.monotonic() - started) * 1000
-                )
-                transitions.append(transition)
-                if transition["cleanup_error"] is not None:
-                    return {
-                        "schema_version": SCHEMA_VERSION,
-                        "outcome": "agent_cleanup_failed",
-                        "decision": self.inspect().to_dict(),
-                        "transitions": transitions,
-                    }
-                if transition["process_leak"]:
-                    return {
-                        "schema_version": SCHEMA_VERSION,
-                        "outcome": "agent_process_leak",
-                        "decision": self.inspect().to_dict(),
-                        "transitions": transitions,
-                    }
-                if transition["timed_out"]:
-                    return {
-                        "schema_version": SCHEMA_VERSION,
-                        "outcome": "agent_timeout",
-                        "decision": self.inspect().to_dict(),
-                        "transitions": transitions,
-                    }
-                if transition["exit_code"] != 0:
-                    return {
-                        "schema_version": SCHEMA_VERSION,
-                        "outcome": "agent_failed",
-                        "decision": self.inspect().to_dict(),
-                        "transitions": transitions,
-                    }
-            finally:
-                context_path.unlink(missing_ok=True)
 
             after = self.inspect()
             if after.to_dict() == before.to_dict():
