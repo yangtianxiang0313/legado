@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "revision": 358,
+  "revision": 363,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-28T17:44:35Z",
-  "event_head": "e21475dd1aaca15b85ea126d8a048e71195a3f639ab2ca731b8a207bacb6f679",
+  "updated_at": "2026-07-28T17:48:34Z",
+  "event_head": "df99e753e29dba2ead15d4febad8fa56f84cb491c4c0d240b355bd6c91684a9d",
   "active_work_items": [],
-  "last_completed_work_item": "IOS-CHARACTERIZATION-POLICY-GATE-003",
+  "last_completed_work_item": "IOS-SOURCELAB-POST-FORM-001",
   "work_items": {
     "IOS-BOOT-001": {
       "status": "completed",
@@ -6539,6 +6539,109 @@
       "verified_at": "2026-07-28T17:43:56Z",
       "completed_at": "2026-07-28T17:44:35Z",
       "final_tree_sha256": "ff6cad40823ba6be463a56c14f247b94f4e4c2355980a12d914cf2578fd391f6"
+    },
+    "IOS-SOURCELAB-POST-FORM-001": {
+      "status": "completed",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260728T174753Z-ios-sourcelab-post-form-001-23fcaaa0.json",
+      "claimed_by": "codex",
+      "claimed_at": "2026-07-28T17:45:07Z",
+      "lease_expires_at": "2026-07-29T17:45:07Z",
+      "work_item_sha256": "11c641f304d6d7187c9bb3b45d2c49bbc7ce7177465b9fca4ad9dc95c1aecce2",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "c589e88abe129e24fc0169673f94b7f2202d8164",
+      "base_capability_revision": 16,
+      "base_capability_assurance_sha256": "b1d5a642fed3770f6a005218976f4672aeb74fd477f5c7cea1368c87fea2c2f5",
+      "android_requirement_selection_sha256": "73f854c3eaab694dfe8f7d61a38d765c55828934a90f6e380236b65a9af5bbba",
+      "business_knowledge_control_sha256": "85228a4aa826bd1f9d6f22231a6e04fe622cec925714d4bdceacdca704186979",
+      "business_knowledge_authority_sha256": "9a898622fab665e380b0fdb7837d6aa24f938f5c87e4bc635c32fbdf4dfe81c8",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 1,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "source-lab-tests",
+          "argv": [
+            "python3",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/source-lab/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "498f03c140d9706195758eacdad80cbd00dde75eef3b2d53f86a242c1aa10eb8",
+          "cwd": ".",
+          "started_at": "2026-07-28T17:45:02Z",
+          "duration_ms": 4183,
+          "timeout_seconds": 60,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "6d1eb8cde431d360a2408cf0f38eb77bf8c860aa709c79b58b0bab4a7284e2bc",
+          "stdout_tail": "",
+          "stderr_tail": ".........\n----------------------------------------------------------------------\nRan 9 tests in 4.109s\n\nOK\n"
+        },
+        {
+          "id": "source-lab-smoke",
+          "argv": [
+            "python3",
+            "-B",
+            "ios/harness/source-lab/source_lab.py",
+            "verify-site",
+            "--root",
+            ".",
+            "--scenario",
+            "sl-html-basic-001"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "2646335889ccb4cf3f05c0aa803657f08e2ceca419727e1b892b839e0a21f03d",
+          "cwd": ".",
+          "started_at": "2026-07-28T17:45:06Z",
+          "duration_ms": 598,
+          "timeout_seconds": 30,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "a69275f319f0244a9c9f46260fe6b5f6d8e50437ee04e0d6acbdd1474237b98c",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_tail": "{\"logical_origin\": \"http://sourcelab.test\", \"route_count\": 12, \"scenario\": \"sl-html-basic-001\", \"schema_version\": 1, \"source_sha256\": \"b1441ef5d67bfdfaeef364d59e61770343d2f9e4550028cf47105a19a22ad64c\", \"transcript_sha256\": \"68e326678641cd38ccdf9e73c9a0ba91c83597e06b9a5ee8af71730b0a29bdbf\"}\n",
+          "stderr_tail": ""
+        }
+      ],
+      "last_evidence_sha256": "9c42c195f466a395081d317730a5ef11a40a8441eefc764ebccd961e339f69c7",
+      "verified_at": "2026-07-28T17:47:54Z",
+      "approval_requested_at": "2026-07-28T17:48:28Z",
+      "approval_request_existing_fingerprints": {
+        "ios/project/approvals/IOS-SOURCELAB-POST-FORM-001--scenario-provenance-review.json": "missing"
+      },
+      "awaiting_human_reasons": [
+        "缺少人工批准：scenario-provenance-review"
+      ],
+      "review_subject_sha256": "c47f45879670815bf44b1895aa4fdea6666c873460d1ce9c564ec18f47906aa0",
+      "review_subject_files": {
+        "ios/harness/fixtures/source-lab/sl-post-form-001/case.json": "file:0o644:890be36db0bc55d381ef06ea93cb4611ca86d7e0d65aefba84b96669ca0d6daf",
+        "ios/harness/fixtures/source-lab/sl-post-form-001/input.json": "file:0o644:875882768c240683c307116a99dac841492e962638ba705d2fd8d5c354dbf45c",
+        "ios/harness/fixtures/source-lab/sl-post-form-001/responses/boundary.html": "file:0o644:15af1434066122c7584c73fd0b8720772ee97743324d82a391b220dbc9a8e0fa",
+        "ios/harness/fixtures/source-lab/sl-post-form-001/responses/nominal.html": "file:0o644:dad5f3dc2e06b1d134ae98b61ac673d0f0767a76760e4310e1d51aa8d69898c3",
+        "ios/harness/fixtures/source-lab/sl-post-form-001/source.template.json": "file:0o644:1e9b6187e4c9876e4a0f29739eb005aa489a9b80345a4cac7e21ce681b96f150",
+        "ios/project/capabilities/CAP-CONFORMANCE.json": "file:0o644:f619a8e7050238aa4749964871e54fc9ecb06060a574b2fe87858790766c25be",
+        "ios/project/checkpoints/IOS-SOURCELAB-POST-FORM-001.json": "file:0o644:f06b328c46fc46918ea5faffa29b29f4e9360b29037830784a9a31033f572bb6"
+      },
+      "completed_at": "2026-07-28T17:48:34Z",
+      "final_tree_sha256": "043768f88d849a36f50e8a318e66b261d08fef9ce9c2bc9a183d72a565ae257e"
     }
   },
   "health": {
@@ -6599,7 +6702,8 @@
     "source_request_options_intake": "proposal_ready",
     "characterization_dag_compiler": "source_anchored_v1",
     "characterization_blueprint_path_binding": "intent_keyed_verified",
-    "synthetic_provenance_gate": "policy_managed"
+    "synthetic_provenance_gate": "policy_managed",
+    "source_lab_post_form": "candidate_verified"
   },
   "risks": [
     {

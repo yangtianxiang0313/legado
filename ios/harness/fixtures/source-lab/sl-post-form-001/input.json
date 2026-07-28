@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "post-form-nominal",
+      "operation": "search",
+      "arguments": {
+        "keyword": "nominal"
+      },
+      "request": {
+        "method": "POST",
+        "target": "/post/nominal",
+        "body": "keyword=星河&author=北辰"
+      }
+    },
+    {
+      "id": "post-form-boundary",
+      "operation": "search",
+      "arguments": {
+        "keyword": "boundary"
+      },
+      "request": {
+        "method": "POST",
+        "target": "/post/boundary",
+        "body": "empty=&dup=first&dup=second&encoded=%E6%98%9F%E6%B2%B3"
+      }
+    }
+  ]
+}

@@ -2,13 +2,13 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-28T17:44:35Z
+- 更新时间：2026-07-28T17:48:34Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
 - 下一个可领取工作项：无
-- 最近完成：IOS-CHARACTERIZATION-POLICY-GATE-003
+- 最近完成：IOS-SOURCELAB-POST-FORM-001
 
 ## 健康度
 
@@ -62,6 +62,7 @@
 | requirement_readiness_publisher | `implemented_external_authority` |
 | requirements | `catalog_ready_one_characterization_gap` |
 | source_lab | `fixture_transport_integrated` |
+| source_lab_post_form | `candidate_verified` |
 | source_request_options_intake | `proposal_ready` |
 | source_runtime_golden_conformance | `android_exact_first_slice` |
 | source_runtime_html_css | `golden_verified_first_slice` |
@@ -133,6 +134,7 @@
 | IOS-REQUIREMENT-READINESS-PUBLISHER-RECOVERY-002 | 100 | `completed` | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-PLAN-006 | 恢复发布后基线并建立 Requirement Readiness Publisher |
 | IOS-SOURCE-RUNTIME-GOLDEN-CONFORMANCE-001 | 100 | `completed` | IOS-SOURCE-RUNTIME-HTML-CSS-001, IOS-DELIVERY-INTENT-SETTLEMENT-001 | 让 iOS SourceRuntime 与 Android Golden 做真实结构化验收 |
 | IOS-SOURCE-RUNTIME-HTML-CSS-001 | 100 | `completed` | IOS-RUNTIME-PORTS-001, IOS-SOURCELAB-ENGINE-001, IOS-KNOWLEDGE-SOURCE-RUNTIME-GOLDEN-002, IOS-REQUIREMENT-READINESS-PUBLISHER-RECOVERY-002 | 实现 Android Golden 对齐的 HTML/CSS SourceRuntime 纵向能力 |
+| IOS-SOURCELAB-POST-FORM-001 | 100 | `completed` | IOS-CHARACTERIZATION-DAG-COMPILER-001 | 构建 POST Form 确定性本地书源场景 |
 | IOS-SUPERVISOR-OWNED-VERIFY-001 | 100 | `blocked` | IOS-CODEX-AGENT-ADAPTER-COMPAT-002, IOS-SWIFTPM-VERIFY-SANDBOX-001 | 将受信 verify 与 close 移出 Agent 沙箱 |
 | IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002 | 100 | `completed` | IOS-CODEX-AGENT-ADAPTER-COMPAT-002, IOS-SWIFTPM-VERIFY-SANDBOX-001, IOS-PROCESS-GROUP-REAP-001 | 恢复 Supervisor-owned verify 与 close |
 | IOS-SUPERVISOR-RUN-JOURNAL-001 | 100 | `completed` | IOS-CONTROL-CATALOG-RESUME-001 | 为 Loop Supervisor 增加可重放运行日志 |

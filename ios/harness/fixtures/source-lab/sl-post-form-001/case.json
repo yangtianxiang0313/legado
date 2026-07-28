@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "kind": "source_lab_scenario",
+  "id": "sl-post-form-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "source_lab_site",
+  "capabilities": [
+    "CAP-RUNTIME-PORTS",
+    "CAP-CONFORMANCE",
+    "CAP-SOURCE-FORMAT"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": "source.template.json",
+  "input": "input.json",
+  "transport": {
+    "mode": "fixture_and_loopback",
+    "external_network": "deny",
+    "responses": [
+      {
+        "id": "post-form-nominal",
+        "match": {
+          "method": "POST",
+          "path": "/post/nominal",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "body_file": "responses/nominal.html"
+        }
+      },
+      {
+        "id": "post-form-boundary",
+        "match": {
+          "method": "POST",
+          "path": "/post/boundary",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "body_file": "responses/boundary.html"
+        }
+      }
+    ]
+  },
+  "coverage": [
+    {
+      "behavior": "transport.post-form",
+      "cases": [
+        {
+          "id": "post-form-nominal",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "WebBook.searchBookAwait→AnalyzeUrl.analyzeUrl→AnalyzeUrl.analyzeFields→AnalyzeUrl.getStrResponseAwait",
+            "AnalyzeUrl.getStrResponseAwait RequestMethod.POST→postForm"
+          ]
+        },
+        {
+          "id": "post-form-boundary",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "WebBook.searchBookAwait→AnalyzeUrl.analyzeUrl→AnalyzeUrl.analyzeFields→AnalyzeUrl.getStrResponseAwait",
+            "AnalyzeUrl.analyzeFields empty-value/repeated-key/pre-encoded-value branches"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "2026-01-01T00:00:00Z",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 11,
+    "network_allowed": false,
+    "logical_origin": "http://sourcelab.test"
+  },
+  "limits": {
+    "timeout_ms": 1000,
+    "max_response_bytes": 1048576,
+    "max_request_body_bytes": 65536,
+    "max_requests": 16,
+    "max_concurrency": 2
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+      "app/src/main/java/io/legado/app/model/webBook/WebBook.kt"
+    ],
+    "introduced_by": "IOS-SOURCELAB-POST-FORM-001"
+  }
+}

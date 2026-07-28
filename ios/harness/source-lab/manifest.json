@@ -8,6 +8,12 @@
       "status": "reference",
       "path": "ios/harness/fixtures/source-lab/sl-html-basic-001",
       "sha256": "8ba78bb03d5b7ee941b4573e7f67ef0f992327fb48b1ccdc2599a70a77b059d1"
+    },
+    {
+      "id": "sl-post-form-001",
+      "status": "candidate",
+      "path": "ios/harness/fixtures/source-lab/sl-post-form-001",
+      "sha256": "f427538d556c7ed65dcf3723029eb272edb2ce6a0ce25671007368476bf2607b"
     }
   ],
   "coverage": {

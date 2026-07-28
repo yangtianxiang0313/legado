@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-CONFORMANCE",
-  "revision": 16,
+  "revision": 17,
   "title": "离线 Fixture 与双端执行 Envelope",
   "area": "conformance",
   "contract": "ios/docs/testing-and-conformance.md",
@@ -20,12 +20,13 @@
   "blockers": [],
   "required_evidence": ["android-intake-contract", "dependency-policy", "source-lab-contract", "source-lab-tests", "source-lab-smoke", "swift-package-tests", "architecture"],
   "freshness_inputs": ["baseline_sha256", "architecture_digest_sha256", "architecture_rules_sha256", "harness_config_sha256", "dependency_lock_sha256", "source_lab_control_sha256", "source_lab_selection_sha256", "android_intake_control_sha256", "android_requirement_selection_sha256"],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260728T163210Z-ios-source-runtime-golden-conformance-001-739c1839.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260728T174753Z-ios-sourcelab-post-form-001-23fcaaa0.json",
   "next_actions": [
-    "基于 Android 业务地图选择第二个高价值书源规则族，并新增对应 Android characterization、SourceLab fixture 与 protected Golden",
+    "为 sl-post-form-001 生成独立 Android Oracle WorkItem，输出 method、URL、ordered form fields、headers、body bytes、response 与 first-divergence 的结构化 proposal",
+    "由受信 Android Golden Publisher 重跑固定 baseline 并发布 transport.post-form protected Golden",
     "扩充非 XHTML、错误闭合、复杂 selector 与规则组合样本，逐步替换当前受控 HTML/CSS 子集而不破坏 portable projection",
     "让后续每个 SourceRuntime 切片都复用 source_pipeline canonical projection、Golden digest binding 与 first-divergence fail-closed 路径"
   ],
-  "updated_at": "2026-07-28T16:32:10Z",
-  "updated_by": "IOS-SOURCE-RUNTIME-GOLDEN-CONFORMANCE-001"
+  "updated_at": "2026-07-28T17:48:02Z",
+  "updated_by": "IOS-SOURCELAB-POST-FORM-001"
 }
