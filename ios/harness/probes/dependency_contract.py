@@ -9,6 +9,9 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Set
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from swiftpm_manifest import dump_package
+
 
 def strings(value: Any) -> Iterable[str]:
     if isinstance(value, str):
@@ -122,8 +125,7 @@ def main() -> int:
         if any(entry.get("status") == "enabled" for entry in packages if isinstance(entry, dict)):
             errors.append("存在 enabled dependency，但 Package.swift 尚未创建")
     else:
-        command = ["swift", "package", "--package-path", str(package_root), "dump-package"]
-        result = subprocess.run(command, cwd=str(root), capture_output=True, text=True, check=False)
+        result = dump_package(package_root, cwd=root, timeout=60)
         if result.returncode != 0:
             errors.append("swift package dump-package 失败：" + (result.stderr or result.stdout)[-1000:])
             package = {}

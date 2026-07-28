@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "revision": 166,
+  "revision": 170,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-28T04:18:45Z",
-  "event_head": "4d141022165e71578bfcf8cb1a499ff99f5986a5019aae81c96beb2631d37258",
+  "updated_at": "2026-07-28T04:27:37Z",
+  "event_head": "e5afe74f3897c4777481deb7f80f1b69c1655d9f2972718f68bae2d47a08fb0e",
   "active_work_items": [],
-  "last_completed_work_item": "IOS-KNOWLEDGE-TOMBSTONE-PROTOCOL-001",
+  "last_completed_work_item": "IOS-SWIFTPM-VERIFY-SANDBOX-001",
   "work_items": {
     "IOS-BOOT-001": {
       "status": "completed",
@@ -2765,9 +2765,61 @@
       "exhausted_reason": "budget_exhausted"
     },
     "IOS-SWIFTPM-VERIFY-SANDBOX-001": {
-      "status": "ready",
-      "attempt": 0,
-      "last_evidence": null
+      "status": "completed",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260728T042625Z-ios-swiftpm-verify-sandbox-001-e696ad44.json",
+      "claimed_by": "local-codex-v2",
+      "claimed_at": "2026-07-28T04:19:41Z",
+      "lease_expires_at": "2026-07-29T04:19:41Z",
+      "work_item_sha256": "24e0b7e83cde006ecd335bd3f22eda2ee9945441fba1fb73c69e6f866d63c534",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "bebc0ef98ebff82635449a8e66c7936d67ac92f0",
+      "base_capability_revision": 23,
+      "base_capability_assurance_sha256": "6c08426cf2cc8f0277426284e00909a10444767bc01eeb84e0db43db8dcbb2ac",
+      "android_requirement_selection_sha256": null,
+      "business_knowledge_control_sha256": "ae252180aa33d3a3acfcac21a32009e94357d56a811de08c5bcf75afb6c571ad",
+      "business_knowledge_authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 2,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "harness-tests",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "307f335e883f02e96ad97ecbda4c210435c0b955e2bcb9e46db9dc7b0d02c285",
+          "cwd": ".",
+          "started_at": "2026-07-28T04:19:01Z",
+          "duration_ms": 39808,
+          "timeout_seconds": 60,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "fadd39312b7bf973269f4e5acaae87b51cb2bf9b583a7e31d446e28b9ddf8ef4",
+          "stdout_tail": "",
+          "stderr_tail": ".........................................................................................................................\n----------------------------------------------------------------------\nRan 121 tests in 39.682s\n\nOK\n"
+        }
+      ],
+      "last_evidence_sha256": "c2a8aef7f6cf54a3347adabcd45a4c9757542ee0594bafb1c3a4f587d3e8bed3",
+      "verified_at": "2026-07-28T04:26:26Z",
+      "completed_at": "2026-07-28T04:27:37Z",
+      "final_tree_sha256": "94ee1a6b1aa50261ecbe7225300509c69d0747d262120c98e5c0d4bf4e36e292"
     }
   },
   "health": {
@@ -2796,7 +2848,8 @@
     "human_gate_policy": "decision_only",
     "auto_materialization_policy": "compiled_control_plane_v1",
     "proposal_lifecycle_tests": "state_aware",
-    "knowledge_revision_tombstones": "v1_verified"
+    "knowledge_revision_tombstones": "v1_verified",
+    "swiftpm_manifest_verification": "sandbox_isolated"
   },
   "risks": [
     {

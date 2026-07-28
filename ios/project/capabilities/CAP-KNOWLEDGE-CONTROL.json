@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 23,
+  "revision": 24,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -24,12 +24,14 @@
       "ios/harness/harness.py",
       "ios/harness/loop_supervisor.py",
       "ios/harness/proposal_compiler.py",
+      "ios/harness/swiftpm_manifest.py",
       "ios/harness/trusted_supervisor_reference.py",
       "ios/harness/tests/test_loop_supervisor.py",
       "ios/harness/tests/test_approval_ui.py",
       "ios/harness/tests/test_codex_agent_adapter.py",
       "ios/harness/tests/test_harness.py",
       "ios/harness/tests/test_proposal_compiler.py",
+      "ios/harness/tests/test_swiftpm_manifest.py",
       "ios/harness/tests/test_trusted_supervisor_reference.py",
       "ios/project/business-knowledge/**",
       "ios/project/work-item-proposals/recipes/**",
@@ -40,7 +42,7 @@
   "depends_on": ["CAP-BOOTSTRAP"],
   "active_decisions": ["ADR-0004"],
   "open_compatibility": [],
-  "open_pitfalls": ["PIT-0012", "PIT-0016"],
+  "open_pitfalls": ["PIT-0012", "PIT-0016", "PIT-0022"],
   "blockers": [],
   "required_evidence": ["harness-tests", "dependency-policy", "architecture"],
   "freshness_inputs": [
@@ -49,13 +51,14 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260728T040333Z-ios-knowledge-tombstone-protocol-001-cda9fac5.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260728T042625Z-ios-swiftpm-verify-sandbox-001-e696ad44.json",
   "next_actions": [
-    "创建 IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-003，生产 tombstoned predecessor 之后的 packet/driver revision 3",
+    "把 verify/close 从受限 Agent 移到外层 Supervisor，避免 loopback、模拟器和其他受信检查受 Agent sandbox 权限影响",
+    "创建 IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-004，基于已生成 revision 3 proposal 生产并验证 revision 4",
     "把 reference runner 迁入 Agent 不可达的受保护服务，以 KMS/企业身份签名、OS/container 隔离、资源上限和 deny-by-default egress 替代本地 HMAC/用户权限",
     "实现独立 patch publisher，只消费已签名 verified artifact，并经受保护 authority transition 完成 promotion",
     "为 recovery compiler 增加逐 Claim supersedes 自动生成，最终关闭 PIT-0012"
   ],
-  "updated_at": "2026-07-28T04:03:49Z",
-  "updated_by": "IOS-KNOWLEDGE-TOMBSTONE-PROTOCOL-001"
+  "updated_at": "2026-07-28T04:26:26Z",
+  "updated_by": "IOS-SWIFTPM-VERIFY-SANDBOX-001"
 }

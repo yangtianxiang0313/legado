@@ -230,6 +230,11 @@ reason，应先在控制面之外修复/重新安装 CLI，再重跑 doctor。ad
 安装。即使本地 CLI 可用，它仍与 Agent 共享用户权限；生产无人值守必须由隔离 runner
 提供一次性凭据、签名 journal、受信复验和独立 patch promotion。
 
+SwiftPM manifest 检查统一通过 `swiftpm_manifest.py`。适配器显式使用
+`--disable-sandbox`，避免在 Codex workspace-write 内再次启动 `sandbox-exec`；
+每次调用独立创建 SwiftPM cache/config/security/scratch 和 Clang module cache，
+继承宿主环境但不覆写 `HOME`、`CODEX_HOME` 或使用宿主永久缓存，调用完成后立即清理。
+
 ## Trusted Supervisor Reference
 
 `trusted_supervisor_reference.py` 把本地 cooperative loop 与生产边界之间最关键的

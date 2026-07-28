@@ -27,6 +27,8 @@ import uuid
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
+from swiftpm_manifest import dump_package
+
 
 DEFAULT_ROOT = Path(__file__).resolve().parents[2]
 ACTIVE_STATUSES = {"implementing", "verified", "awaiting_human"}
@@ -1353,9 +1355,8 @@ class Harness:
     ) -> Tuple[List[str], List[str]]:
         errors: List[str] = []
         warnings: List[str] = []
-        command = ["swift", "package", "--package-path", str(package_path.parent), "dump-package"]
         try:
-            result = subprocess.run(command, cwd=str(self.root), capture_output=True, text=True, timeout=60, check=False)
+            result = dump_package(package_path.parent, cwd=self.root, timeout=60)
         except (FileNotFoundError, subprocess.TimeoutExpired) as error:
             return errors, [f"无法读取 Swift package graph：{error}"]
         if result.returncode != 0:

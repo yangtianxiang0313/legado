@@ -1,0 +1,158 @@
+{
+  "schema_version": 1,
+  "run_id": "run-20260728T042415Z-ios-swiftpm-verify-sandbox-001-4fc84a4b",
+  "work_item_id": "IOS-SWIFTPM-VERIFY-SANDBOX-001",
+  "work_item_sha256": "24e0b7e83cde006ecd335bd3f22eda2ee9945441fba1fb73c69e6f866d63c534",
+  "result": "failed",
+  "inputs": {
+    "base_commit": "bebc0ef98ebff82635449a8e66c7936d67ac92f0",
+    "head_commit": "bebc0ef98ebff82635449a8e66c7936d67ac92f0",
+    "snapshot_sha256": "3cf2778fa0640b5860a050e41af8540fef8bce3b0b32b1d8f1b890e9f5abef7a",
+    "baseline_sha256": "eeeaf0017b79a2420faf73c686a110a2d0372b2da865e42aa8db360fd3015e93",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
+    "architecture_rules_sha256": "51ebc4cff5921643f95d8a045c21ea85cad046acb99ed56026f77bf842642fa5",
+    "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+    "golden_manifest_sha256": "bdfab4595035e6ce3706380b88bd0ebfdff6773b77055c05988c4aa2dd24e597",
+    "fixture_manifest_sha256": "7ea6c2f30f258a65bfeb67ebc8bc3c7d9e283875f31731b513b7380d5f2aff2c",
+    "dependency_lock_sha256": null,
+    "source_lab_control_sha256": "73282c8b72a7db793887290ad2bfff707c61ea8fe57a583ef9bd2e3c3c3b9f2d",
+    "android_intake_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122",
+    "business_knowledge_control_sha256": "3b0b4452d52db635b5f6b8d7c414e3219a84f2b28d23944f484b0bf94ef80099",
+    "business_knowledge_authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
+    "business_knowledge_coverage_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "business_knowledge_proposal_sha256": "a5ea7f3b23dea440693dce8270125b08356ff0e61ce6036e4844121dbeeeeebd",
+    "android_requirement_selection_sha256": null,
+    "source_lab_selection_sha256": null,
+    "knowledge_selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "environment": {
+      "platform": "macOS-26.4.1-arm64-arm-64bit",
+      "python": "3.9.6",
+      "xcode": "Xcode 26.0\nBuild version 17A324",
+      "swift": "Apple Swift version 6.2 (swiftlang-6.2.0.19.9 clang-1700.3.19.1)\nTarget: arm64-apple-macosx26.0"
+    }
+  },
+  "changes": {
+    "paths": [
+      "ios/harness/README.md",
+      "ios/harness/harness.py",
+      "ios/harness/probes/dependency_contract.py",
+      "ios/harness/probes/package_contract.py",
+      "ios/harness/swiftpm_manifest.py",
+      "ios/harness/tests/test_swiftpm_manifest.py"
+    ],
+    "changed_lines_approximate": 202,
+    "file_fingerprints": {
+      "ios/harness/README.md": "file:0o644:02ff9b140bf26d3c7e5eafe196daf9a0edd587d5fcb876cf315a2fd26bef2f71",
+      "ios/harness/harness.py": "file:0o644:525ee043b51e22fda0128fed49d698e74e7ca2f22578ca05a4661bd34a6dfe33",
+      "ios/harness/probes/dependency_contract.py": "file:0o644:220423df82ad0d52b069c3beb90c9facf213bf248107d95b5144bb6d218b5f4a",
+      "ios/harness/probes/package_contract.py": "file:0o644:8197837a986c2b9c92a4fe6ec246182e239deb2c009748c20593f45106dbea1f",
+      "ios/harness/swiftpm_manifest.py": "file:0o644:631e8379df4ffac260799fda527ff6b9b488be62d460d892472d1f3690a71bcc",
+      "ios/harness/tests/test_swiftpm_manifest.py": "file:0o644:dd255760ce892ce0f96f4a69cfacef0d41f3bff92cad4405f3a7d6f18e3eeebc"
+    },
+    "dirty_snapshot": {
+      "ios/harness/README.md": "file:0o644:02ff9b140bf26d3c7e5eafe196daf9a0edd587d5fcb876cf315a2fd26bef2f71",
+      "ios/harness/harness.py": "file:0o644:525ee043b51e22fda0128fed49d698e74e7ca2f22578ca05a4661bd34a6dfe33",
+      "ios/harness/probes/dependency_contract.py": "file:0o644:220423df82ad0d52b069c3beb90c9facf213bf248107d95b5144bb6d218b5f4a",
+      "ios/harness/probes/package_contract.py": "file:0o644:8197837a986c2b9c92a4fe6ec246182e239deb2c009748c20593f45106dbea1f",
+      "ios/harness/swiftpm_manifest.py": "file:0o644:631e8379df4ffac260799fda527ff6b9b488be62d460d892472d1f3690a71bcc",
+      "ios/harness/tests/test_swiftpm_manifest.py": "file:0o644:dd255760ce892ce0f96f4a69cfacef0d41f3bff92cad4405f3a7d6f18e3eeebc",
+      "ios/project/business-knowledge/catalog.json": "file:0o644:a16759ddc72d6c7341ebe6c58dbde596b467931f9825be389e8cb253d71d7246",
+      "ios/project/events.jsonl": "file:0o644:690e9960be595455bfa8f5e2e9bc385693586e115757cc24f51f338e3d81ef07",
+      "ios/project/state.json": "file:0o644:7480fcd9d99b1ff3513b5b7753fbd3f968bed6f7fa004cd866e2045159677f68",
+      "ios/project/status.md": "file:0o644:2ef8c1183e77ae4e416dc54c463e8dfc804858042d624d87332689a0e5b37670"
+    },
+    "diff_sha256": "dfab781e85963ff54d595e86dee5c1fe7f1843b85d290d8dfc67274901706219"
+  },
+  "policy_errors": [],
+  "architecture_errors": [],
+  "architecture_warnings": [],
+  "checks": [
+    {
+      "id": "package-contract",
+      "argv": [
+        "python3",
+        "ios/harness/probes/package_contract.py",
+        "--root",
+        "."
+      ],
+      "executable_path": "/usr/bin/python3",
+      "definition_sha256": "2ae8fe32a35b82380cc093c01fe3ece20bc9bd0537389317f5c2a0b16f1aaee9",
+      "cwd": ".",
+      "started_at": "2026-07-28T04:23:40Z",
+      "duration_ms": 713,
+      "timeout_seconds": 90,
+      "timed_out": false,
+      "process_leak": false,
+      "cleanup_error": null,
+      "exit_code": 0,
+      "passed": true,
+      "stdout_sha256": "b74b994faa402eeca6774865e9bd765c57d087575bc2161c972c53c797b69447",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_tail": "PACKAGE_CONTRACT: OK\n",
+      "stderr_tail": ""
+    },
+    {
+      "id": "dependency-policy",
+      "argv": [
+        "python3",
+        "ios/harness/probes/dependency_contract.py",
+        "--root",
+        "."
+      ],
+      "executable_path": "/usr/bin/python3",
+      "definition_sha256": "eca96cb1b69567829ed8396386b0449da8c0d6e7295a00f1decfb60430ff1153",
+      "cwd": ".",
+      "started_at": "2026-07-28T04:23:40Z",
+      "duration_ms": 734,
+      "timeout_seconds": 90,
+      "timed_out": false,
+      "process_leak": false,
+      "cleanup_error": null,
+      "exit_code": 0,
+      "passed": true,
+      "stdout_sha256": "17595a1d68cdc5b52c010f46dff48514afa3fa3cf0215cdea7ae8eff38677c0a",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_tail": "DEPENDENCY_CONTRACT: OK\n",
+      "stderr_tail": ""
+    },
+    {
+      "id": "harness-tests",
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "ios/harness/tests",
+        "-p",
+        "test_*.py"
+      ],
+      "executable_path": "/usr/bin/python3",
+      "definition_sha256": "307f335e883f02e96ad97ecbda4c210435c0b955e2bcb9e46db9dc7b0d02c285",
+      "cwd": ".",
+      "started_at": "2026-07-28T04:23:41Z",
+      "duration_ms": 32243,
+      "timeout_seconds": 60,
+      "timed_out": false,
+      "process_leak": false,
+      "cleanup_error": null,
+      "exit_code": 1,
+      "passed": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "6d27ca17856fd3b0fed4b3c88f054fdfb150f7b4280e36dc39b9a81933ed2822",
+      "stdout_tail": "",
+      "stderr_tail": " self.server = LoopbackHTTPServer(\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/socketserver.py\", line 452, in __init__\n    self.server_bind()\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/http/server.py\", line 138, in server_bind\n    socketserver.TCPServer.server_bind(self)\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/socketserver.py\", line 466, in server_bind\n    self.socket.bind(self.server_address)\nPermissionError: [Errno 1] Operation not permitted\n\n======================================================================\nERROR: test_token_is_one_time_and_replay_is_rejected (test_approval_ui.ApprovalUITests)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_approval_ui.py\", line 546, in test_token_is_one_time_and_replay_is_rejected\n    harness, session = self.make_session(root)\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_approval_ui.py\", line 199, in make_session\n    session = approval_ui.LocalApprovalSession(\n  File \"/Users/yangtianxiang/legado/ios/harness/approval_ui.py\", line 437, in __init__\n    self.server = LoopbackHTTPServer(\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/socketserver.py\", line 452, in __init__\n    self.server_bind()\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/http/server.py\", line 138, in server_bind\n    socketserver.TCPServer.server_bind(self)\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/socketserver.py\", line 466, in server_bind\n    self.socket.bind(self.server_address)\nPermissionError: [Errno 1] Operation not permitted\n\n======================================================================\nERROR: test_wrong_token_and_cross_origin_cannot_write (test_approval_ui.ApprovalUITests)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_approval_ui.py\", line 355, in test_wrong_token_and_cross_origin_cannot_write\n    harness, session = self.make_session(root)\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_approval_ui.py\", line 199, in make_session\n    session = approval_ui.LocalApprovalSession(\n  File \"/Users/yangtianxiang/legado/ios/harness/approval_ui.py\", line 437, in __init__\n    self.server = LoopbackHTTPServer(\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/socketserver.py\", line 452, in __init__\n    self.server_bind()\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/http/server.py\", line 138, in server_bind\n    socketserver.TCPServer.server_bind(self)\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/socketserver.py\", line 466, in server_bind\n    self.socket.bind(self.server_address)\nPermissionError: [Errno 1] Operation not permitted\n\n======================================================================\nERROR: test_cross_origin_cancel_and_replay_fail_closed (test_loop_supervisor.MaterializationUITests)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_loop_supervisor.py\", line 452, in test_cross_origin_cancel_and_replay_fail_closed\n    session = loop_supervisor.MaterializationReviewSession(\n  File \"/Users/yangtianxiang/legado/ios/harness/loop_supervisor.py\", line 1346, in __init__\n    self.server = LoopbackHTTPServer(\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/socketserver.py\", line 452, in __init__\n    self.server_bind()\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/http/server.py\", line 138, in server_bind\n    socketserver.TCPServer.server_bind(self)\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/socketserver.py\", line 466, in server_bind\n    self.socket.bind(self.server_address)\nPermissionError: [Errno 1] Operation not permitted\n\n======================================================================\nERROR: test_one_click_materializes_and_token_is_not_public (test_loop_supervisor.MaterializationUITests)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_loop_supervisor.py\", line 425, in test_one_click_materializes_and_token_is_not_public\n    session = loop_supervisor.MaterializationReviewSession(supervisor, path)\n  File \"/Users/yangtianxiang/legado/ios/harness/loop_supervisor.py\", line 1346, in __init__\n    self.server = LoopbackHTTPServer(\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/socketserver.py\", line 452, in __init__\n    self.server_bind()\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/http/server.py\", line 138, in server_bind\n    socketserver.TCPServer.server_bind(self)\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/socketserver.py\", line 466, in server_bind\n    self.socket.bind(self.server_address)\nPermissionError: [Errno 1] Operation not permitted\n\n----------------------------------------------------------------------\nRan 123 tests in 32.084s\n\nFAILED (errors=14)\n"
+    }
+  ],
+  "failure": {
+    "class": "CHECK_FAILED",
+    "check_id": "harness-tests",
+    "message": "e_click_materializes_and_token_is_not_public session = loop_supervisor.MaterializationReviewSession(supervisor, path) File \"/Users/yangtianxiang/legado/ios/harness/loop_supervisor.py\", line 1346, in __init__ self.server = LoopbackHTTPServer( File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/socketserver.py\", line 452, in __init__ self.server_bind() File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/http/server.py\", line 138, in server_bind socketserver.TCPServer.server_bind(self) File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/socketserver.py\", line 466, in server_bind self.socket.bind(self.server_address) PermissionError: [Errno 1] Operation not permitted ---------------------------------------------------------------------- Ran 123 tests in 32.084s FAILED (errors=14)",
+    "fingerprint": "a0cb7816c80ee143d018816429121f2229cf9b0cce2f7fea8a6efb0297da065b"
+  },
+  "started_at": "2026-07-28T04:23:39Z",
+  "finished_at": "2026-07-28T04:24:15Z",
+  "reproduction": "python3 ios/harness/harness.py verify IOS-SWIFTPM-VERIFY-SANDBOX-001"
+}

@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0022",
+  "revision": 1,
+  "title": "受限 Agent 沙箱不能承担全部受信验证",
+  "fingerprint": "agent-sandbox-blocks-nested-swiftpm-and-loopback-tests",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "真实 Codex workspace-write Loop 中 swift package dump-package 报 sandbox_apply: Operation not permitted",
+    "共享 ~/.cache/clang ModuleCache 出现损坏或标准库无法加载",
+    "SwiftPM 隔离后 package-contract 与 dependency-policy 通过，但审批 UI 测试因 loopback bind 被 Agent 沙箱拒绝",
+    "Agent 已正确实现改动，Work Item 却因验证执行环境而消耗 verify cycle"
+  ],
+  "conditions": [
+    "Harness verify 由 workspace-write Agent 进程内部直接调用",
+    "检查工具会再次启用 sandbox-exec、访问宿主共享编译缓存或监听本地端口",
+    "同一 required_checks 集合同时包含纯文件检查和需要更高本地运行权限的受信检查",
+    "Supervisor 只驱动 Agent，不在 Agent 返回后独立执行 verify/close"
+  ],
+  "root_cause": "实现者与验收者运行在同一个受限 Agent 沙箱。Agent 的最小权限适合修改候选文件，却不一定具备 SwiftPM 二级沙箱、loopback server、iOS Simulator 等验收能力；把 verify 交给 Agent 既削弱信任边界，也会把环境拒绝误判为实现失败。",
+  "diagnosis": [
+    "分别查看每个 required check 的退出码，不把整体 CHECK_FAILED 当成同一根因",
+    "在宿主外层复跑相同 verify，区分产品/实现失败与 Agent sandbox 权限失败",
+    "检查 SwiftPM stderr 是否包含 sandbox_apply、ModuleCache 或 unable to load standard library",
+    "检查 Harness 测试 traceback 是否在 HTTPServer.bind、Simulator 或其他受限系统资源处失败"
+  ],
+  "fix": "SwiftPM manifest 检查统一使用 swiftpm_manifest.py：显式 --disable-sandbox，并为每次调用隔离 cache/config/security/scratch 与 Clang module cache。当前 Work Item 由外层 Harness 完成验证；下一步把 Agent transition 与 Supervisor verify/close 拆开，由 Supervisor 执行受信检查。",
+  "prevention": {
+    "architecture_rule": "Agent 只负责生成受 scope 限制的候选改动；最终 required_checks、Evidence 和 close 必须可由独立 Supervisor 执行。需要网络监听、模拟器、签名或系统服务的检查不得依赖 Agent sandbox 权限。",
+    "tests": [
+      "ios/harness/tests/test_swiftpm_manifest.py",
+      "ios/harness/tests/test_approval_ui.py",
+      "ios/harness/tests/test_loop_supervisor.py"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-CODEX-AGENT-ADAPTER-COMPAT-002",
+    "until": null
+  },
+  "status": "mitigated",
+  "occurrences": 2,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T041433Z-ios-knowledge-integrations-recovery-003-45b527ee.json",
+    "ios/harness/evidence/runs/run-20260728T041446Z-ios-knowledge-integrations-recovery-003-3e0bb1ea.json",
+    "ios/harness/evidence/runs/run-20260728T041524Z-ios-knowledge-integrations-recovery-003-a7c1c25d.json",
+    "ios/harness/evidence/runs/run-20260728T042415Z-ios-swiftpm-verify-sandbox-001-4fc84a4b.json",
+    "ios/harness/evidence/runs/run-20260728T042625Z-ios-swiftpm-verify-sandbox-001-e696ad44.json"
+  ]
+}

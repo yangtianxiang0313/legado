@@ -8,6 +8,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from swiftpm_manifest import dump_package
+
 
 REQUIRED_SOURCE_TARGETS = {
     "LegadoCore",
@@ -64,8 +67,7 @@ def main() -> int:
         except json.JSONDecodeError as error:
             errors.append(f".swift-format 不是有效 JSON：{error}")
 
-    command = ["swift", "package", "--package-path", str(package_root), "dump-package"]
-    result = subprocess.run(command, cwd=str(root), capture_output=True, text=True, check=False)
+    result = dump_package(package_root, cwd=root, timeout=60)
     if result.returncode != 0:
         errors.append("swift package dump-package 失败：" + (result.stderr or result.stdout)[-1000:])
     else:
