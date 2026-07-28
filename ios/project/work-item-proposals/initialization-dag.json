@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "InitializationWorkItemProposalDAG",
   "id": "WIPD-IOS-INITIALIZATION-001",
-  "revision": 23,
+  "revision": 24,
   "authority": "proposal_only",
   "status": "proposed",
   "created_by": "IOS-KNOWLEDGE-CONTROL-PLANE-001",
@@ -272,6 +272,13 @@
       "title": "强化 Oracle Receipt 的真实结算与消费合同",
       "outputs": ["real-shape receipt regression", "canonical manifest binding", "audited external publisher transition"],
       "gates": [], "constraint": "补齐 Receipt Settlement 的真实合同测试并修复 canonical manifest digest、完整 fixture tree、Run/Artifact provenance、create-only/symlink/error 边界；必须证明 DemandCompiler 能消费真实 Settler schema 且 drive 停在 external publisher，不得访问网络、生成真实 Receipt 或修改 Workflow/Oracle/Dispatcher/Golden/Publisher/产品"
+    },
+    {
+      "proposal_id": "IOS-GITHUB-ORACLE-RECEIPT-GH-EXECUTABLE-001", "phase": 28, "class": "control_plane",
+      "depends_on": ["IOS-GITHUB-ORACLE-RECEIPT-HARDENING-001"], "knowledge_mode": "not_applicable",
+      "title": "兼容安全的 Homebrew gh 可执行路径",
+      "outputs": ["resolved executable target", "Homebrew symlink compatibility", "broken/non-regular denial"],
+      "gates": [], "constraint": "修复 Receipt Settler 对 Homebrew gh symlink 的过度拒绝：允许解析后目标为可执行普通文件的安全 symlink，继续拒绝 broken/cycle/non-regular/non-executable；只修改 Settler、测试/README 与记忆，不访问网络、不生成 Receipt或修改其他 authority"
     }
   ],
   "compiler_rules": [
