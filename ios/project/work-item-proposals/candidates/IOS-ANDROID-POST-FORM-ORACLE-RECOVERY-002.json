@@ -152,8 +152,6 @@
     },
     "scope": {
       "allow_write": [
-        "ios/harness/source-lab/tests/test_source_lab.py",
-        "ios/harness/source-lab/README.md",
         "ios/project/capabilities/CAP-CONFORMANCE.json",
         "ios/project/checkpoints/IOS-ANDROID-POST-FORM-ORACLE-RECOVERY-002.json",
         "ios/project/pitfalls/PIT-*.json"
@@ -186,7 +184,7 @@
         "ios/docs/**"
       ],
       "max_changed_lines": 1400,
-      "max_files_changed": 5
+      "max_files_changed": 3
     },
     "source_lab": {
       "behaviors": [
