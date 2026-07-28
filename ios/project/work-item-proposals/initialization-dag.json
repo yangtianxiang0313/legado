@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "InitializationWorkItemProposalDAG",
   "id": "WIPD-IOS-INITIALIZATION-001",
-  "revision": 25,
+  "revision": 26,
   "authority": "proposal_only",
   "status": "proposed",
   "created_by": "IOS-KNOWLEDGE-CONTROL-PLANE-001",
@@ -286,6 +286,13 @@
       "title": "预声明无人工 Gate Golden Publisher 所有权",
       "outputs": ["exact golden workflow owner", "publisher test owner", "golden tree owner", "fixture contract owner"],
       "gates": [], "constraint": "只在 CAP-CONFORMANCE 精确登记 Golden Publisher workflow、publisher test、Golden 树与 fixture contract probe 所有权；不得修改 owner 指向内容、Loop、Package、产品或执行外部发布"
+    },
+    {
+      "proposal_id": "IOS-GITHUB-GOLDEN-DISPATCHER-OWNER-001", "phase": 30, "class": "control_plane",
+      "depends_on": ["IOS-GITHUB-GOLDEN-PUBLISHER-OWNER-001"], "knowledge_mode": "not_applicable",
+      "title": "预声明 Golden Dispatcher 与结果回收所有权",
+      "outputs": ["golden dispatcher owner", "golden dispatcher test owner"],
+      "gates": [], "constraint": "只在 CAP-KNOWLEDGE-CONTROL 精确登记独立 Golden Dispatcher 与测试所有权；不得创建代码、修改 Publisher/Workflow/Golden、执行网络或回收结果"
     }
   ],
   "compiler_rules": [
