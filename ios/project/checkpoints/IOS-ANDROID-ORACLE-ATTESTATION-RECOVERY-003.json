@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-003",
+  "summary": "已修复 GitHub-hosted ubuntu-24.04 Runner 不把 sdkmanager/avdmanager 加入 PATH 的问题。Initialize Oracle workspace 从 ANDROID_HOME/cmdline-tools/latest/bin 绑定并验证 SDKMANAGER 与 AVDMANAGER，再通过 GITHUB_ENV 提供给后续 step；SDK license pipeline 暂停 pipefail 但保留 sdkmanager 自身退出码语义，避免 yes 正常 SIGPIPE 误报。回归测试固定显式路径、初始化顺序、无裸命令、Android runtime inputs 与 action pins。commit 8a2297027132af069fe47111c8b41aa5c74f1195 的 run 30346029275 已通过 SDK 安装和完整 Gradle APK/androidTest 预热，证明前述修复生效；随后 Boot dedicated emulator 在首个裸 adb 调用处以 127 失败，尚未执行 Android Oracle 或 attestation。",
+  "evidence": "ios/harness/evidence/runs/run-20260728T091805Z-ios-android-oracle-attestation-recovery-003-0641757b.json",
+  "capability_updates": [
+    {
+      "id": "CAP-CONFORMANCE",
+      "from_revision": 8,
+      "to_revision": 9,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": [
+      "ADR-0002",
+      "ADR-0004"
+    ]
+  },
+  "requirements": {
+    "mode": "enabler",
+    "refs": [
+      {
+        "id": "REQ-ANDROID-SOURCE-PIPELINE-001",
+        "revision": 1,
+        "clauses": [
+          "RC-01",
+          "RC-02",
+          "RC-03",
+          "RC-04"
+        ]
+      }
+    ],
+    "selection_sha256": "6cb1587d0631c4545b1740d0377a0497d38d9876e6a4eff359ef5c610fa4a169"
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项只修复 GitHub-hosted Android SDK tool 路径，不生成业务知识"
+  },
+  "source_lab": {
+    "mode": "reuse",
+    "behaviors": [
+      "transport.get-query",
+      "pipeline.search-html",
+      "pipeline.book-info-html",
+      "pipeline.toc-html",
+      "pipeline.content-html",
+      "url.relative-resolution",
+      "rule.css-selector"
+    ],
+    "scenarios": [
+      "sl-html-basic-001"
+    ],
+    "selection_sha256": "c11e45f946d1d9f32a02ed371ce759d34712cca3d35097b905b34da4f0e59585"
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项尚未执行 Android 或 iOS 解析，不产生跨端行为差异"
+  },
+  "pitfalls": {
+    "records": [
+      "ios/project/pitfalls/PIT-0031.json"
+    ],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "run 30346029275 在 Boot dedicated emulator 的裸 adb 调用处发现同类 PATH 假设；Android Oracle 与双证明仍未运行",
+    "必须审计 Stop dedicated emulator 等所有后续 step，不能只修当前最先失败的一行",
+    "Requirement readiness 仍为 characterization_required；受保护 Golden 发布前不得启动 iOS SourceRuntime 产品实现"
+  ],
+  "next_actions": [
+    "自动物化 adb 路径恢复项，把所有 workflow adb 调用绑定到 ANDROID_HOME/platform-tools/adb",
+    "重新 dispatch 并跟踪 emulator、offline Oracle、双 attestation 与 artifact upload 到终态",
+    "成功后在同一 source commit 上运行 trusted_import.py verify，再交由独立 Publisher 审核 Golden"
+  ],
+  "created_at": "2026-07-28T09:24:43Z"
+}

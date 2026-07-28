@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0031",
+  "revision": 1,
+  "title": "逐行修 PATH 会串行暴露下一个裸 Android 工具",
+  "fingerprint": "hosted-runner-partial-android-tool-path-binding",
+  "capabilities": [
+    "CAP-CONFORMANCE"
+  ],
+  "symptoms": [
+    "第一次真实 run 在裸 sdkmanager 处 exit 127",
+    "绑定 sdkmanager/avdmanager 后，第二次 run 通过 SDK 安装与 Gradle 构建，却在裸 adb 处再次 exit 127",
+    "每次失败都发生在 Runner 内，局部静态测试通过但端到端能力仍不可用"
+  ],
+  "conditions": [
+    "workflow 混用 ANDROID_HOME 显式路径、GITHUB_ENV 别名与裸 Android 工具名",
+    "GitHub-hosted image 安装了 Android SDK，但不同工具目录不保证全部加入 PATH",
+    "回归测试只覆盖当前失败命令，没有清点全 workflow 的同类 executable references"
+  ],
+  "root_cause": "修复按最先失败的命令局部推进，没有先建立 Android executable inventory；sdkmanager、avdmanager、adb 与 emulator 分属不同 SDK 子目录，Runner 镜像的 PATH 不能作为统一合同。",
+  "diagnosis": [
+    "从 workflow 提取所有 Android SDK 可执行文件引用并按目录分类",
+    "将真实 run 的失败 step 与首个裸调用逐一对应",
+    "确认已显式绑定的工具通过后，再检查后续 step 和 always cleanup 中是否仍有裸调用"
+  ],
+  "fix": "已显式绑定 sdkmanager 与 avdmanager；后续恢复项必须把 Boot/Stop 的全部 adb 调用统一绑定到 ANDROID_HOME/platform-tools/adb，并增加全 workflow 裸 Android 工具审计。",
+  "prevention": {
+    "architecture_rule": "GitHub-hosted Android workflow 必须由初始化 step 验证并导出每个 SDK executable；业务与 cleanup step 不得依赖 Runner PATH 隐式发现 Android 工具。",
+    "tests": [
+      "ios/harness/tests/test_oracle_ci_proposal.py"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-ANDROID-ORACLE-ATTESTATION-001",
+    "until": null
+  },
+  "status": "mitigated",
+  "occurrences": 2,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "https://github.com/yangtianxiang0313/legado/actions/runs/30345425140",
+    "https://github.com/yangtianxiang0313/legado/actions/runs/30346029275",
+    "ios/harness/evidence/runs/run-20260728T091805Z-ios-android-oracle-attestation-recovery-003-0641757b.json"
+  ]
+}
