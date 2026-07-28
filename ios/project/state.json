@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "revision": 156,
+  "revision": 157,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-28T03:54:51Z",
-  "event_head": "a390ab129bce4c4512e70cc3ceeb3c73c5825552a9e6e19e4a964a3f58bce9e7",
+  "updated_at": "2026-07-28T03:56:32Z",
+  "event_head": "8f7ff2f1d46a3d3e75309cf0f975fe059ca38ced5d54bde1eaeff0ae47386964",
   "active_work_items": [],
   "last_completed_work_item": "IOS-PROPOSAL-LIFECYCLE-RECOVERY-002",
   "work_items": {
@@ -2597,6 +2597,11 @@
       "last_evidence_sha256": "631df614f1384aae70e09dda73314efcad6910bfb3b012553f70b8bcd0298009",
       "verified_product_fingerprints": null,
       "exhausted_reason": "same_failure_twice"
+    },
+    "IOS-KNOWLEDGE-TOMBSTONE-PROTOCOL-001": {
+      "status": "ready",
+      "attempt": 0,
+      "last_evidence": null
     }
   },
   "health": {

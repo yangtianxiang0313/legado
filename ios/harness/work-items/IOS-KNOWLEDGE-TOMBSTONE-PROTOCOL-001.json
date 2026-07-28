@@ -1,0 +1,229 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-KNOWLEDGE-TOMBSTONE-PROTOCOL-001",
+    "title": "建立失败知识产出 revision tombstone 协议",
+    "priority": 100,
+    "risk": "high",
+    "labels": [
+      "phase-0",
+      "control-plane",
+      "governance",
+      "corrective",
+      "business-knowledge",
+      "revision",
+      "tombstone",
+      "recovery"
+    ]
+  },
+  "spec": {
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "intent": "解决 Harness 永久保留失败 Work Item 的 knowledge.produces revision，而 Business Knowledge doctor 又要求物理 proposal revision 连续的矛盾。新增显式 KnowledgeRevisionTombstone artifact：只能引用一个真实 Work Item 已声明但未产生物理 artifact 的 packet/driver revision，且该 producer 必须处于 blocked/rejected/exhausted/cancelled 等终态；tombstone 自身由独立 corrective Work Item 创建，记录 producer、terminal status、reason/evidence/event lineage，不伪装成业务知识、不包含 Claim、不进入 published authority。doctor 用“物理 revision + 有效 tombstone”检查连续性和 supersedes，catalog 公开 tombstone digest，但 selection/coverage 不把它当 Claim。Harness 仅允许 control-plane corrective 工作项在显式 allow_write 下修改 tombstone。为 Integrations 原 Work Item revision 1 和首次 recovery revision 2 各创建 packet/driver tombstone，使下一次 recovery 可合法生产 revision 3。",
+    "depends_on": [
+      "IOS-KNOWLEDGE-CONTROL-PLANE-001",
+      "IOS-PROPOSAL-LIFECYCLE-RECOVERY-002",
+      "IOS-CODEX-AGENT-ADAPTER-COMPAT-002"
+    ],
+    "scope": {
+      "allow_write": [
+        "ios/harness/business-knowledge/business_knowledge.py",
+        "ios/harness/business-knowledge/schemas/knowledge-revision-tombstone.schema.json",
+        "ios/harness/tests/test_business_knowledge.py",
+        "ios/harness/harness.py",
+        "ios/harness/tests/test_harness.py",
+        "ios/harness/README.md",
+        "ios/docs/business-knowledge-control-plane.md",
+        "ios/project/business-knowledge/tombstones/packets/BKP-INTEGRATIONS-001/r0001.json",
+        "ios/project/business-knowledge/tombstones/packets/BKP-INTEGRATIONS-001/r0002.json",
+        "ios/project/business-knowledge/tombstones/drivers/DRV-INTEGRATION-PROFILES-001/r0001.json",
+        "ios/project/business-knowledge/tombstones/drivers/DRV-INTEGRATION-PROFILES-001/r0002.json",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-KNOWLEDGE-TOMBSTONE-PROTOCOL-001.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "ios/harness/config.json",
+        "ios/harness/architecture-rules.json",
+        "ios/harness/dependency-policy.json",
+        "ios/harness/schemas/**",
+        "ios/harness/android-intake/**",
+        "ios/harness/source-lab/**",
+        "ios/harness/oracle/**",
+        "ios/harness/goldens/**",
+        "ios/project/android-intake/**",
+        "ios/project/business-knowledge/packets/**",
+        "ios/project/business-knowledge/drivers/**",
+        "ios/project/business-knowledge/coverage/**",
+        "ios/project/requirements/**",
+        "ios/project/work-item-proposals/**",
+        "ios/project/approvals/**",
+        "ios/project/baseline.json",
+        ".github/**"
+      ],
+      "max_files_changed": 14,
+      "max_changed_lines": 3200
+    },
+    "inputs": {
+      "context_files": [
+        "ios/harness/business-knowledge/business_knowledge.py",
+        "ios/harness/business-knowledge/policy-v1.json",
+        "ios/harness/business-knowledge/schemas/business-knowledge-packet.schema.json",
+        "ios/harness/business-knowledge/schemas/architecture-driver.schema.json",
+        "ios/harness/tests/test_business_knowledge.py",
+        "ios/harness/harness.py",
+        "ios/harness/work-items/IOS-KNOWLEDGE-INTEGRATIONS-001.json",
+        "ios/harness/work-items/IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-002.json",
+        "ios/harness/evidence/runs/run-20260728T035450Z-ios-knowledge-integrations-recovery-002-019525f9.json",
+        "ios/project/pitfalls/PIT-0021.json"
+      ],
+      "android_source_anchors": [],
+      "fixtures": []
+    },
+    "architecture_refs": [
+      "ARCH-014",
+      "ADR-0004"
+    ],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "v1 tombstone schema 精确包含 kind、knowledge_kind、id、revision、status=abandoned、producer_work_item、producer_terminal_status、reason_code、evidence、created_by、created_at；不允许 claims、driver forces、promotion 或 published status。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "doctor 仅接受 producer Work Item 精确声明同 kind/id/revision、state 为终态、对应 proposal/published artifact 均不存在、tombstone 路径/ID/revision 匹配且 evidence/event lineage 可验证的记录；否则 fail closed。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "packet/driver revision 连续性使用物理 revision 与有效 tombstone 的并集；物理 revision 的 supersedes 可以指向前一 tombstone，但 tombstone 不能提供 Claim、Driver、published authority 或 coverage。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-4",
+          "statement": "catalog 以独立 tombstones 数组列出 path、knowledge_kind、id、revision、producer、terminal status 和 sha256；selection/claim/driver/coverage 摘要不把 tombstone 当知识内容。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-5",
+          "statement": "Harness scope 只有 business_knowledge_control_upgrade=true 的 corrective/control-plane Work Item 且路径显式命中 allow_write 时允许 tombstone；普通 produce/supersede/implementation Work Item 写 tombstone 返回 KNOWLEDGE_PATH_UNDECLARED 或 AUTHORITY_ESCALATION。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-6",
+          "statement": "为 BKP-INTEGRATIONS-001@1/@2 和 DRV-INTEGRATION-PROFILES-001@1/@2 写四个真实 tombstone，分别绑定 blocked 原任务与 exhausted recovery、baseline_red/KNOWLEDGE_OUTPUT_MISSING Evidence，不伪造业务 proposal。",
+          "verified_by": [
+            "harness-tests",
+            "memory-close"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-7",
+          "statement": "Business Knowledge doctor/catalog 在四个 tombstone 存在且物理 Integrations proposal 不存在时通过；后续 revision 3 proposal 的 schema/continuity/owner 可验证。",
+          "verified_by": [
+            "harness-tests",
+            "memory-close"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-8",
+          "statement": "README、控制面文档、Checkpoint 和 Pitfall 说明 reservation、artifact、tombstone、recovery revision 的完整状态机以及禁止伪造空业务知识的原因。",
+          "verified_by": [
+            "memory-close"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": [
+        "dependency-policy",
+        "harness-tests"
+      ]
+    },
+    "baseline_checks": [
+      "dependency-policy",
+      "harness-tests"
+    ],
+    "budget": {
+      "wall_clock_seconds": 10800,
+      "max_edit_verify_cycles": 3,
+      "max_targeted_test_runs": 14,
+      "max_full_test_runs": 3,
+      "max_infra_retries": 1
+    },
+    "gates": [],
+    "completion_effects": {
+      "health": {
+        "knowledge_revision_tombstones": "v1_verified"
+      }
+    },
+    "memory": {
+      "capability_state_required": true,
+      "checkpoint_required": true,
+      "pitfall_update_required": true
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "refs": [],
+      "none_reason": "本项只修复 Business Knowledge 控制面 revision 恢复协议"
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "not_applicable",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [],
+      "expected_ledger_transitions": [],
+      "context_budget": {
+        "max_claims": 20,
+        "max_bytes": 32768
+      },
+      "none_reason": "本项不生产业务知识；tombstone 只记录失败 reservation，不是 Claim/Driver"
+    },
+    "source_lab": {
+      "mode": "not_applicable",
+      "behaviors": [],
+      "scenarios": [],
+      "none_reason": "本项不执行书源运行行为"
+    },
+    "stop_on": [
+      "baseline_red",
+      "required_check_failed",
+      "scope_violation",
+      "budget_exhausted",
+      "nonterminal_producer_tombstoned",
+      "existing_artifact_tombstoned",
+      "authority_escalation"
+    ]
+  }
+}
