@@ -36,6 +36,7 @@ from oracle.exact_json import (  # noqa: E402
     integer,
     loads,
 )
+from oracle.contract import ProposalError, verify_proposal  # noqa: E402
 
 
 COMMANDS = ("verify",)
@@ -288,11 +289,13 @@ def verify(
         raise TrustedImportError("PROPOSAL_JSON_NOT_CANONICAL")
     if proposal_payload != evidence_payload:
         raise TrustedImportError("EVIDENCE_PROPOSAL_PAYLOAD_DRIFT")
-    if proposal.get("request") != {
+    expected_proposal_request = {
         "work_item_id": request_work_item,
         "fixture_ids": [scenario_id],
-        "scenario_id": scenario_id,
-    }:
+    }
+    if scenario_id != FIXTURE_ID:
+        expected_proposal_request["scenario_id"] = scenario_id
+    if proposal.get("request") != expected_proposal_request:
         raise TrustedImportError("PROPOSAL_SCENARIO_BINDING_DRIFT")
     producer = _object(proposal.get("producer"), "proposal.producer")
     evidence_producer = _object(
@@ -356,29 +359,40 @@ def verify(
         )
         _write_temp(proposal_path, proposal_bytes)
         _write_temp(payload_path, proposal_payload)
-        contract_report = {
-            "proposal_sha256": _sha256(proposal_bytes),
-            "fixture_ids": [scenario_id],
-        }
+        try:
+            contract_report = verify_proposal(
+                root,
+                proposal_path,
+                request_work_item,
+            )
+        except (OSError, ValueError, ProposalError) as error:
+            raise TrustedImportError(
+                "PROPOSAL_CONTRACT_INVALID",
+                str(error),
+            ) from error
     bindings = _object(proposal.get("bindings"), "proposal.bindings")
     evidence_bindings = _object(evidence_run.get("bindings"), "evidence.bindings")
-    for field in (
+    shared_binding_fields = [
         "android_baseline_sha256",
         "runner_digest",
         "runner_image_digest",
-        "source_lab_manifest_sha256",
-    ):
+    ]
+    if scenario_id != FIXTURE_ID:
+        shared_binding_fields.append("source_lab_manifest_sha256")
+    for field in shared_binding_fields:
         if bindings.get(field) != evidence_bindings.get(field):
             raise TrustedImportError("PROPOSAL_DIGEST_BINDING_DRIFT", field)
-    for field in (
+    scenario_fields = (
         "scenario_id",
         "scenario_sha256",
         "source_lab_manifest_sha256",
         "input_sha256",
-    ):
-        if evidence_payload_value.get(field) is None:
-            raise TrustedImportError("PROPOSAL_DIGEST_BINDING_MISSING", field)
-    return {
+    )
+    if scenario_id != FIXTURE_ID:
+        for field in scenario_fields:
+            if evidence_payload_value.get(field) is None:
+                raise TrustedImportError("PROPOSAL_DIGEST_BINDING_MISSING", field)
+    report = {
         "schema_version": 1,
         "authority": "candidate_only",
         "status": "verified_for_human_review",
@@ -396,14 +410,20 @@ def verify(
         "proposal_sha256": contract_report["proposal_sha256"],
         "fixture_ids": contract_report["fixture_ids"],
         "scenario_id": scenario_id,
-        "scenario_sha256": evidence_payload_value["scenario_sha256"],
-        "source_lab_manifest_sha256": evidence_payload_value[
-            "source_lab_manifest_sha256"
-        ],
         "runner_digest": bindings["runner_digest"],
         "payload_sha256": _sha256(proposal_payload),
         "next_authority": "independent_golden_publisher",
     }
+    if scenario_id != FIXTURE_ID:
+        report.update(
+            {
+                "scenario_sha256": evidence_payload_value["scenario_sha256"],
+                "source_lab_manifest_sha256": evidence_payload_value[
+                    "source_lab_manifest_sha256"
+                ],
+            }
+        )
+    return report
 
 
 def build_parser() -> argparse.ArgumentParser:

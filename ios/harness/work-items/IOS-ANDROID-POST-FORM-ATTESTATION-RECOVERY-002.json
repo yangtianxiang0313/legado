@@ -1,0 +1,240 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-002",
+    "labels": [
+      "phase-1",
+      "control-plane",
+      "conformance",
+      "android-oracle",
+      "source-lab",
+      "post-form",
+      "attestation",
+      "github-actions",
+      "trusted-proposal",
+      "candidate-only",
+      "corrective",
+      "recovery"
+    ],
+    "priority": 100,
+    "risk": "high",
+    "title": "恢复 POST Form proposal 的共享 Oracle contract 验证"
+  },
+  "spec": {
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "oracle.contract.verify_proposal 继续逐字节接受既有 sl-html-basic-001 proposal，并以精确字段集合接受 scenario-aware v1 扩展；两种 schema 之外的额外/缺失字段全部拒绝。",
+          "verified_by": [
+            "harness-tests"
+          ]
+        },
+        {
+          "id": "AC-2",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "scenario-aware proposal 仅授权同时带 trusted-proposal、candidate-only、android-oracle、attestation 与 github-actions 的无 Gate WorkItem；request.scenario_id 必须等于唯一 fixture，且 WorkItem 必须选择同一 fixture。",
+          "verified_by": [
+            "harness-tests",
+            "source-lab-contract"
+          ]
+        },
+        {
+          "id": "AC-3",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "共享 contract 复算 SourceLab manifest、scenario、fixture、input、runner、Android baseline 与 canonicalizer/comparator digest；payload、proposal bindings、request 和 archive 任一跨场景重放或漂移都失败。",
+          "verified_by": [
+            "harness-tests",
+            "fixture-contract",
+            "android-intake-contract"
+          ]
+        },
+        {
+          "id": "AC-4",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "ci_proposal.finalize 在形成 archive 前调用 verify_proposal；workflow 保留显式 verify-proposal 或等价 finalize fail-closed 调用；trusted_import 解包到私有临时目录后再次调用同一 verify_proposal，不得用仅计算 SHA 的 report 替代。",
+          "verified_by": [
+            "harness-tests",
+            "dependency-policy"
+          ]
+        },
+        {
+          "id": "AC-5",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "测试直接断言 POST Form proposal 通过共享 contract，并覆盖旧 HTML 兼容、错误标签、scenario/fixture 不一致、manifest/scenario/input digest 漂移、未知字段、archive 重放及 trusted importer contract 失败传播。",
+          "verified_by": [
+            "harness-tests",
+            "source-lab-tests"
+          ]
+        },
+        {
+          "id": "AC-6",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "恢复项不新增 promote、publish、accept 或 update-golden 命令，不修改 Fixture、Golden、Publisher、Requirement、Approval、SourceLab 控制或产品；Checkpoint 保留原 passed Evidence 被 post-verify audit 否决的事实。",
+          "verified_by": [
+            "dependency-policy",
+            "memory-close"
+          ]
+        }
+      ],
+      "required_checks": [
+        "android-intake-contract",
+        "fixture-contract",
+        "dependency-policy",
+        "harness-tests",
+        "source-lab-contract",
+        "source-lab-tests",
+        "source-lab-smoke"
+      ]
+    },
+    "architecture_refs": [
+      "ARCH-008",
+      "ARCH-011",
+      "ARCH-014",
+      "ARCH-017",
+      "ADR-0002",
+      "ADR-0004"
+    ],
+    "baseline_checks": [
+      "source-lab-smoke"
+    ],
+    "budget": {
+      "max_edit_verify_cycles": 4,
+      "max_full_test_runs": 4,
+      "max_infra_retries": 2,
+      "max_targeted_test_runs": 20,
+      "wall_clock_seconds": 14400
+    },
+    "capability": "CAP-CONFORMANCE",
+    "completion_effects": {
+      "health": {
+        "android_post_form_attestation": "shared_contract_verified"
+      }
+    },
+    "depends_on": [
+      "IOS-SOURCELAB-POST-FORM-001"
+    ],
+    "gates": [],
+    "inputs": {
+      "android_source_anchors": [
+        "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+        "app/src/main/java/io/legado/app/model/webBook/WebBook.kt"
+      ],
+      "context_files": [
+        "ios/harness/oracle/contract.py",
+        "ios/harness/oracle/ci_proposal.py",
+        "ios/harness/oracle/trusted_import.py",
+        ".github/workflows/android-oracle-attestation.yml",
+        "ios/harness/tests/test_oracle_contract.py",
+        "ios/harness/tests/test_oracle_ci_proposal.py",
+        "ios/harness/tests/test_oracle_trusted_import.py",
+        "ios/harness/evidence/runs/run-20260728T190038Z-ios-android-post-form-attestation-001-b9c9f493.json",
+        "ios/harness/work-items/IOS-ANDROID-POST-FORM-ATTESTATION-001.json",
+        "ios/harness/fixtures/source-lab/sl-post-form-001/case.json"
+      ],
+      "fixtures": [
+        "sl-post-form-001"
+      ]
+    },
+    "intent": "恢复被 post-verify authority audit 拒绝的 IOS-ANDROID-POST-FORM-ATTESTATION-001。原实现正确泛化了 scenario selector、archive 与 importer digest，但为了容纳新字段删除了共享 oracle.contract.verify_proposal 调用，只保留 proposal SHA 与 importer 私有检查，违反了统一 contract authority。恢复项扩展共享 contract 的精确 schema：旧 sl-html-basic-001 proposal 字节与调用保持兼容；新 sl-post-form-001 request/payload/bindings 可以携带 scenario id、scenario digest、SourceLab manifest digest 与 input digest，但必须与唯一 fixture、manifest、WorkItem 和 evidence 精确一致。ci_proposal finalize、GitHub workflow 与 trusted_import 都必须调用同一个 verify_proposal；任何字段遗漏、额外字段、跨场景重放、标签越权或 digest 漂移失败。本项仍只形成 candidate-only review report，不发布 Golden。",
+    "knowledge": {
+      "claim_refs": [],
+      "context_budget": {
+        "max_bytes": 49152,
+        "max_claims": 12
+      },
+      "contract_version": 1,
+      "coverage_refs": [],
+      "driver_refs": [],
+      "expected_ledger_transitions": [],
+      "mode": "not_applicable",
+      "none_reason": "本项修复 Oracle proposal 控制合同，不生成或发布业务知识",
+      "produces": []
+    },
+    "memory": {
+      "adr": "not_required",
+      "capability_state_required": true,
+      "checkpoint_required": true,
+      "pitfall": "required"
+    },
+    "recovers": "IOS-ANDROID-POST-FORM-ATTESTATION-001",
+    "requirements": {
+      "mode": "control_plane",
+      "none_reason": "本恢复项只修复 candidate proposal 的共享验证 authority；原 characterization WorkItem 继续绑定 REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "refs": []
+    },
+    "scope": {
+      "allow_write": [
+        ".github/workflows/android-oracle-attestation.yml",
+        "ios/harness/oracle/contract.py",
+        "ios/harness/oracle/ci_proposal.py",
+        "ios/harness/oracle/trusted_import.py",
+        "ios/harness/oracle/README.md",
+        "ios/harness/tests/test_oracle_contract.py",
+        "ios/harness/tests/test_oracle_ci_proposal.py",
+        "ios/harness/tests/test_oracle_trusted_import.py",
+        "ios/project/capabilities/CAP-CONFORMANCE.json",
+        "ios/project/checkpoints/IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-002.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        "app/**",
+        "modules/**",
+        "build.gradle",
+        "settings.gradle",
+        "gradle/**",
+        "ios/Packages/**",
+        "ios/publisher/**",
+        "ios/harness/harness.py",
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/demand_compiler.py",
+        "ios/harness/config.json",
+        "ios/harness/schemas/**",
+        "ios/harness/android-intake/**",
+        "ios/harness/source-lab/**",
+        "ios/harness/fixtures/**",
+        "ios/harness/goldens/**",
+        "ios/harness/normalization/**",
+        "ios/harness/oracle/android-runner/**",
+        "ios/project/android-intake/**",
+        "ios/project/requirements/**",
+        "ios/project/business-knowledge/**",
+        "ios/project/approvals/**",
+        "ios/project/work-item-proposals/**",
+        "ios/project/baseline.json",
+        "ios/docs/**"
+      ],
+      "max_changed_lines": 3600,
+      "max_files_changed": 11
+    },
+    "source_lab": {
+      "behaviors": [
+        "transport.post-form"
+      ],
+      "mode": "reuse",
+      "none_reason": null,
+      "scenarios": [
+        "sl-post-form-001"
+      ]
+    },
+    "stop_on": [
+      "baseline_red",
+      "scope_violation",
+      "contract_authority_bypass",
+      "network_escape",
+      "golden_mutation",
+      "protected_path_mutation",
+      "same_failure_twice",
+      "budget_exhausted",
+      "human_decision_required"
+    ]
+  }
+}

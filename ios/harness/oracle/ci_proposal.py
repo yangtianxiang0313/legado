@@ -23,9 +23,11 @@ if str(HARNESS_ROOT) not in sys.path:
 
 from oracle.canonicalizer import canonicalize_bytes, load_config  # noqa: E402
 from oracle.contract import (  # noqa: E402
+    ProposalError,
     canonical_file_digest,
     fixture_digest,
     implementation_digest,
+    verify_proposal,
 )
 from oracle.exact_json import (  # noqa: E402
     NumberToken,
@@ -589,15 +591,11 @@ def _payload(
     runner_digest: str,
     runner_image_digest: str,
 ) -> Dict[str, Any]:
-    return {
+    payload = {
         "schema_version": 1,
         "kind": "android_oracle_payload",
         "fixture_id": scenario_id,
         "fixture_sha256": fixture["sha256"],
-        "scenario_id": scenario_id,
-        "scenario_sha256": scenario["sha256"],
-        "source_lab_manifest_sha256": source_lab_manifest_sha256,
-        "input_sha256": input_sha256,
         "operation": operation,
         "compatibility_profile": "android-legado-v1",
         "oracle": {
@@ -607,6 +605,16 @@ def _payload(
         },
         "artifact": artifact,
     }
+    if scenario_id != FIXTURE_ID:
+        payload.update(
+            {
+                "scenario_id": scenario_id,
+                "scenario_sha256": scenario["sha256"],
+                "source_lab_manifest_sha256": source_lab_manifest_sha256,
+                "input_sha256": input_sha256,
+            }
+        )
+    return payload
 
 
 def prepare(
@@ -881,7 +889,10 @@ def _validate_evidence(
     if (
         payload.get("fixture_id") != scenario_id
         or payload.get("fixture_sha256") != fixture["sha256"]
-        or payload.get("scenario_id") != scenario_id
+    ):
+        raise CIProposalError("EVIDENCE_SCENARIO_BINDING_DRIFT")
+    if scenario_id != FIXTURE_ID and (
+        payload.get("scenario_id") != scenario_id
         or payload.get("scenario_sha256") != scenario["sha256"]
         or payload.get("source_lab_manifest_sha256")
         != expected_controls["source_lab_manifest_sha256"]
@@ -927,6 +938,8 @@ def finalize(
     bindings = dict(_object(run["bindings"], "evidence.bindings"))
     for local_only in ("local_run_sha256", "artifact_sha256"):
         bindings.pop(local_only, None)
+    if scenario_id == FIXTURE_ID:
+        bindings.pop("source_lab_manifest_sha256", None)
     producer = _object(run["producer"], "evidence.producer")
     proposal_id = (
         f"{scenario_id}-{producer['source_digest'][:12]}"
@@ -940,7 +953,6 @@ def finalize(
         "request": {
             "work_item_id": request_work_item,
             "fixture_ids": [scenario_id],
-            "scenario_id": scenario_id,
         },
         "producer": {
             "system": "github-actions",
@@ -962,6 +974,8 @@ def finalize(
             }
         ],
     }
+    if scenario_id != FIXTURE_ID:
+        proposal["request"]["scenario_id"] = scenario_id
     output_dir = _private_directory(
         _external_output(root, output_dir),
         empty=True,
@@ -971,7 +985,10 @@ def finalize(
     payload_path = output_dir / f"proposal/payloads/{scenario_id}.json"
     _private_write(proposal_path, proposal_bytes)
     _private_write(payload_path, payload_bytes)
-    report = {"proposal_sha256": _sha256(proposal_bytes)}
+    try:
+        report = verify_proposal(root, proposal_path, request_work_item)
+    except (OSError, ValueError, ProposalError) as error:
+        raise CIProposalError("PROPOSAL_CONTRACT_INVALID", str(error)) from error
     archive_path = output_dir / PROPOSAL_ARCHIVE_NAME
     archive_sha256 = deterministic_tar(
         archive_path,

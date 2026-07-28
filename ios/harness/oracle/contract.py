@@ -91,7 +91,12 @@ def verify_proposal(
         raise ProposalError("proposal_id must use lowercase stable-id syntax")
 
     request = _object(proposal["request"], "proposal.request")
-    _exact_keys(request, {"work_item_id", "fixture_ids"}, "proposal.request")
+    request_fields = set(request)
+    legacy_request_fields = {"work_item_id", "fixture_ids"}
+    scenario_request_fields = legacy_request_fields | {"scenario_id"}
+    if request_fields not in (legacy_request_fields, scenario_request_fields):
+        raise ProposalError("proposal.request fields mismatch")
+    scenario_aware = request_fields == scenario_request_fields
     request_id = _string(request["work_item_id"], "proposal.request.work_item_id")
     if re.fullmatch(r"IOS-[A-Z][A-Z0-9-]*-[0-9]{3}", request_id) is None:
         raise ProposalError("request.work_item_id is invalid")
@@ -101,10 +106,26 @@ def verify_proposal(
     request_node = _read_json(request_path)
     request_item = _object(request_node, "proposal request work item")
     metadata = _object(request_item.get("metadata"), "proposal request metadata")
+    labels = metadata.get("labels", [])
+    gates = request_item.get("spec", {}).get("gates")
+    legacy_authorized = not scenario_aware and "oracle-golden-request" in labels
+    scenario_labels = {
+        "trusted-proposal",
+        "candidate-only",
+        "android-oracle",
+        "attestation",
+        "github-actions",
+    }
+    scenario_authorized = (
+        scenario_aware
+        and isinstance(labels, list)
+        and scenario_labels.issubset(labels)
+        and gates == []
+    )
     if (
         request_item.get("kind") != "WorkItem"
         or metadata.get("id") != request_id
-        or "oracle-golden-request" not in metadata.get("labels", [])
+        or not (legacy_authorized or scenario_authorized)
     ):
         raise ProposalError("request work item is not authorized for Oracle golden generation")
     try:
@@ -116,6 +137,10 @@ def verify_proposal(
         raise ProposalError("request.fixture_ids must be a non-empty sorted unique set")
     if fixture_ids != sorted(_string_list(expected_fixture_ids, "request work item fixtures")):
         raise ProposalError("proposal fixture selection drifts from protected work item")
+    if scenario_aware:
+        scenario_id = _string(request["scenario_id"], "proposal.request.scenario_id")
+        if fixture_ids != [scenario_id]:
+            raise ProposalError("proposal scenario must equal the unique selected fixture")
 
     producer = _object(proposal["producer"], "proposal.producer")
     _exact_keys(
@@ -131,7 +156,7 @@ def verify_proposal(
 
     manifest = _read_json(root / "ios/harness/fixtures/manifest.json")
     bindings = _object(proposal["bindings"], "proposal.bindings")
-    _validate_bindings(root, bindings, request_node, manifest)
+    _validate_bindings(root, bindings, request_node, manifest, scenario_aware)
     config = load_config(root / "ios/harness/normalization/canonical-v1.json")
     indexed = _fixture_index(manifest)
 
@@ -141,7 +166,9 @@ def verify_proposal(
     proposal_root = proposal_path.parent.resolve(strict=True)
     validated_ids: list[str] = []
     for entry in fixtures:
-        fixture_id = _verify_fixture_entry(root, proposal_root, entry, indexed, bindings, config)
+        fixture_id = _verify_fixture_entry(
+            root, proposal_root, entry, indexed, bindings, config, scenario_aware
+        )
         validated_ids.append(fixture_id)
     if validated_ids != fixture_ids:
         raise ProposalError("proposal fixtures must exactly match request.fixture_ids order")
@@ -192,6 +219,7 @@ def _validate_bindings(
     bindings: dict[str, JSONNode],
     request: JSONNode,
     fixture_manifest: JSONNode,
+    scenario_aware: bool,
 ) -> None:
     expected = {
         "compatibility_profile",
@@ -212,6 +240,8 @@ def _validate_bindings(
         "comparator_id",
         "comparator_implementation_sha256",
     }
+    if scenario_aware:
+        expected.add("source_lab_manifest_sha256")
     _exact_keys(bindings, expected, "proposal.bindings")
     _equals(bindings["compatibility_profile"], "android-legado-v1", "compatibility_profile")
     commit = _string(bindings["android_git_commit"], "android_git_commit")
@@ -224,6 +254,23 @@ def _validate_bindings(
         value = _string(bindings[field], field)
         if DIGEST.fullmatch(value) is None:
             raise ProposalError(f"{field} must be an immutable sha256 digest")
+    if scenario_aware:
+        runner_inventory = [
+            {
+                "path": name,
+                "sha256": file_digest(
+                    root / "ios/harness/oracle/android-runner" / name
+                ),
+            }
+            for name in sorted(
+                ("LegadoOracleInstrumentedTest.kt", "orchestrator.py")
+            )
+        ]
+        if (
+            bindings["runner_digest"]
+            != hashlib.sha256(dumps(runner_inventory)).hexdigest()
+        ):
+            raise ProposalError("binding drift: runner_digest")
 
     baseline = _object(_read_json(root / "ios/project/baseline.json"), "baseline")
     oracle = _object(baseline.get("android_oracle"), "baseline.android_oracle")
@@ -255,6 +302,10 @@ def _validate_bindings(
             "__init__.py", "canonicalizer.py", "comparator.py", "exact_json.py"
         ),
     }
+    if scenario_aware:
+        expected_digests["source_lab_manifest_sha256"] = canonical_file_digest(
+            root / "ios/harness/source-lab/manifest.json"
+        )
     for field, expected_digest in expected_digests.items():
         _hex64(bindings[field], field)
         if bindings[field] != expected_digest:
@@ -270,6 +321,7 @@ def _verify_fixture_entry(
     indexed: dict[str, dict[str, JSONNode]],
     bindings: dict[str, JSONNode],
     config: dict[str, JSONNode],
+    scenario_aware: bool,
 ) -> str:
     entry = _object(entry, "proposal fixture")
     _exact_keys(
@@ -313,7 +365,7 @@ def _verify_fixture_entry(
         raise ProposalError(f"payload hash drift: {fixture_id}")
     if canonicalize_bytes(payload, config) != payload:
         raise ProposalError(f"payload is not canonical-v1 bytes: {fixture_id}")
-    _validate_payload(loads(payload), fixture_id, entry, bindings)
+    _validate_payload(loads(payload), fixture_id, entry, bindings, root, scenario_aware)
     return fixture_id
 
 
@@ -322,11 +374,11 @@ def _validate_payload(
     fixture_id: str,
     fixture: dict[str, JSONNode],
     bindings: dict[str, JSONNode],
+    root: Path,
+    scenario_aware: bool,
 ) -> None:
     payload = _object(payload, "oracle payload")
-    _exact_keys(
-        payload,
-        {
+    expected_payload_fields = {
             "schema_version",
             "kind",
             "fixture_id",
@@ -335,9 +387,17 @@ def _validate_payload(
             "compatibility_profile",
             "oracle",
             "artifact",
-        },
-        "oracle payload",
-    )
+    }
+    if scenario_aware:
+        expected_payload_fields.update(
+            {
+                "scenario_id",
+                "scenario_sha256",
+                "source_lab_manifest_sha256",
+                "input_sha256",
+            }
+        )
+    _exact_keys(payload, expected_payload_fields, "oracle payload")
     _schema_one(payload["schema_version"], "payload.schema_version")
     _equals(payload["kind"], "android_oracle_payload", "payload.kind")
     payload_bindings = {
@@ -350,6 +410,30 @@ def _validate_payload(
             raise ProposalError(f"payload binding drift: {fixture_id}.{field}")
     if payload["compatibility_profile"] != bindings["compatibility_profile"]:
         raise ProposalError("payload compatibility profile drift")
+    if scenario_aware:
+        if payload["scenario_id"] != fixture_id:
+            raise ProposalError("payload scenario identity drift")
+        source_lab_manifest = _object(
+            _read_json(root / "ios/harness/source-lab/manifest.json"),
+            "source lab manifest",
+        )
+        scenarios = [
+            value
+            for value in source_lab_manifest.get("scenarios", [])
+            if isinstance(value, dict) and value.get("id") == fixture_id
+        ]
+        if len(scenarios) != 1:
+            raise ProposalError("source lab scenario must be unique")
+        scenario = scenarios[0]
+        if (
+            scenario.get("path") != fixture["fixture_path"]
+            or payload["scenario_sha256"] != scenario.get("sha256")
+            or payload["source_lab_manifest_sha256"]
+            != bindings["source_lab_manifest_sha256"]
+            or payload["input_sha256"]
+            != file_digest(root / fixture["fixture_path"] / "input.json")
+        ):
+            raise ProposalError("payload source lab binding drift")
     oracle = _object(payload["oracle"], "payload.oracle")
     _exact_keys(oracle, {"android_git_commit", "runner_digest", "runner_image_digest"}, "payload.oracle")
     for field in oracle:
