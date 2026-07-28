@@ -1,0 +1,175 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-KNOWLEDGE-PROMOTION-CONTEXT-004",
+    "title": "让 Harness 识别已提升知识 proposal 的历史上下文",
+    "priority": 100,
+    "risk": "critical",
+    "labels": [
+      "phase-0",
+      "control-plane",
+      "corrective",
+      "business-knowledge",
+      "promotion-lineage",
+      "harness-doctor"
+    ]
+  },
+  "spec": {
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "intent": "修复真实 Publisher run 30369032111 已成功 stage/install 且 Business Knowledge doctor 通过后，Harness doctor 因 completed producer 的 context_files 中原 proposal 已被 authority promotion 原子删除而失败。Harness 仍默认要求所有 context file 存在；仅对 completed Work Item 自己声明的 knowledge proposal output，允许由唯一 protected_business_knowledge release receipt 替代物理 proposal。receipt 必须精确绑定 producer、原 proposal path/sha（与 state.verified_product_fingerprints 一致）、published path/sha、source commit，并且 published 文件真实存在且摘要匹配；任何缺 receipt、多 receipt、指纹缺失、路径/摘要/producer/authority 漂移都继续报错。不得允许普通 context、未完成 producer 或无外部 authority 的缺失文件。",
+    "depends_on": [
+      "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-REMOTE-003"
+    ],
+    "scope": {
+      "allow_write": [
+        "ios/harness/harness.py",
+        "ios/harness/tests/test_harness.py",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-KNOWLEDGE-PROMOTION-CONTEXT-004.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        ".github/**",
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "ios/publisher/**",
+        "ios/harness/business-knowledge/**",
+        "ios/harness/goldens/**",
+        "ios/project/business-knowledge/**",
+        "ios/project/requirements/**",
+        "ios/project/approvals/**",
+        "ios/project/baseline.json",
+        "ios/docs/**"
+      ],
+      "max_files_changed": 5,
+      "max_changed_lines": 900
+    },
+    "inputs": {
+      "context_files": [
+        "ios/harness/harness.py",
+        "ios/harness/tests/test_harness.py",
+        "ios/publisher/business_knowledge_publisher.py",
+        "ios/project/checkpoints/IOS-BUSINESS-KNOWLEDGE-PUBLISHER-REMOTE-003.json"
+      ],
+      "android_source_anchors": [],
+      "fixtures": []
+    },
+    "architecture_refs": [
+      "ARCH-014",
+      "ADR-0004"
+    ],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "存在且普通 context file 仍按原规则通过；缺失的非 knowledge proposal、未完成 producer 或未声明 output 仍报 context file 不存在。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "completed producer 的精确 proposal context 仅在唯一 protected release receipt 绑定 state 冻结原摘要、producer、published path/sha 且物理 published 文件匹配时视为 promoted history。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "receipt 缺失/重复、authority/producer/path/input sha/output sha/source commit 漂移、published 缺失/篡改均 fail closed，错误包含稳定 PROMOTED_CONTEXT reason。",
+          "verified_by": [
+            "harness-tests",
+            "dependency-policy"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-4",
+          "statement": "修复合入后 Publisher 最终树上的 Business Knowledge doctor、Harness doctor 与 Demand Compiler 可连续通过。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-5",
+          "statement": "Checkpoint、Capability 与 Pitfall 记录 proposal promotion 后历史上下文的 receipt 替代规则和失败 run。",
+          "verified_by": [
+            "memory-close"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": [
+        "dependency-policy",
+        "harness-tests"
+      ]
+    },
+    "baseline_checks": [
+      "dependency-policy",
+      "harness-tests"
+    ],
+    "budget": {
+      "wall_clock_seconds": 10800,
+      "max_edit_verify_cycles": 4,
+      "max_targeted_test_runs": 18,
+      "max_full_test_runs": 4,
+      "max_infra_retries": 2
+    },
+    "gates": [],
+    "completion_effects": {
+      "health": {
+        "knowledge_promotion_context": "receipt_bound"
+      }
+    },
+    "memory": {
+      "capability_state_required": true,
+      "checkpoint_required": true,
+      "pitfall_update_required": true,
+      "adr": "not_required"
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "refs": [],
+      "none_reason": "本项修复 Harness 历史上下文验证，不修改产品 Requirement"
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "not_applicable",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [],
+      "expected_ledger_transitions": [],
+      "context_budget": {
+        "max_claims": 8,
+        "max_bytes": 32768
+      },
+      "none_reason": "本项不消费、生成或发布业务知识"
+    },
+    "source_lab": {
+      "mode": "not_applicable",
+      "behaviors": [],
+      "scenarios": [],
+      "none_reason": "本项只修复 Harness 控制面"
+    },
+    "stop_on": [
+      "baseline_red",
+      "scope_violation",
+      "authority_escalation",
+      "receipt_lineage_ambiguous",
+      "same_failure_twice",
+      "budget_exhausted",
+      "human_decision_required"
+    ]
+  }
+}

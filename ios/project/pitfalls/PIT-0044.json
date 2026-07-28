@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0044",
+  "revision": 1,
+  "title": "Authority promotion 后历史 context 不能继续要求 proposal 物理存在",
+  "fingerprint": "promoted-proposal-breaks-completed-context-reference",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "发布事务正确删除 proposal、安装 published 与 Coverage，Business Knowledge doctor 通过",
+    "Harness doctor 随后对历史 completed Work Item 报 context file 不存在",
+    "保留 proposal 会造成同 ID/revision 双 authority，删除又使历史上下文断链"
+  ],
+  "conditions": [
+    "Work Item 在发布前把 proposal 列为 context_files",
+    "可信 Publisher 把 proposal 原子移动为 published authority",
+    "Harness 引用校验只识别物理文件存在，不识别 promotion release receipt"
+  ],
+  "root_cause": "历史上下文模型只支持稳定路径，没有建模 authority transition。proposal 的内容身份需要保留，但其候选路径在 promotion 后必须消失。",
+  "diagnosis": [
+    "先确认 Business Knowledge doctor 是否通过，排除双 revision 或 Coverage 错误",
+    "从 completed Work Item Evidence 的 file_fingerprints/dirty_snapshot 或 base commit 恢复原 proposal SHA",
+    "核对唯一 release receipt 的 input path/sha、producer Evidence、published output path/sha 与 deletion"
+  ],
+  "fix": "Harness 对缺失的知识 proposal context 增加严格 receipt-bound 替代规则；同时支持 producer 和完成态 consumer，所有非 proposal 或 lineage 漂移继续失败。",
+  "prevention": {
+    "architecture_rule": "可被 authority promotion 删除的 artifact 不能只靠路径维持历史引用；必须用原内容摘要、完成态 producer Evidence、唯一 release receipt 和新 authority artifact 摘要闭合 lineage。",
+    "tests": [
+      "ios/harness/tests/test_harness.py#test_promoted_knowledge_context_requires_exact_release_lineage",
+      "ios/harness/tests/test_business_knowledge_publisher.py#test_prepare_is_deterministic_staging_only_and_complete"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-001",
+    "until": "IOS-KNOWLEDGE-PROMOTION-CONTEXT-004"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T144422Z-ios-knowledge-promotion-context-004-d855a2b2.json"
+  ]
+}
