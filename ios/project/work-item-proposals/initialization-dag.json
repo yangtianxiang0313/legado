@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "InitializationWorkItemProposalDAG",
   "id": "WIPD-IOS-INITIALIZATION-001",
-  "revision": 21,
+  "revision": 22,
   "authority": "proposal_only",
   "status": "proposed",
   "created_by": "IOS-KNOWLEDGE-CONTROL-PLANE-001",
@@ -258,6 +258,13 @@
       "title": "建立 GitHub Oracle Receipt Settlement 的精确自动实现边界",
       "outputs": ["exact receipt settlement scope", "authority denial regression", "receipt implementation eligibility"],
       "gates": [], "constraint": "只在 Loop Supervisor 增加固定 Receipt Settlement 的最小自动实现策略；精确允许 Settler、DemandCompiler/Supervisor 接线、对应测试/README 与记忆文件，禁止 Workflow、Oracle、Dispatcher、Golden、Publisher、SourceLab、产品和 wildcard"
+    },
+    {
+      "proposal_id": "IOS-GITHUB-ORACLE-RECEIPT-SETTLEMENT-001", "phase": 26, "class": "control_plane",
+      "depends_on": ["IOS-GITHUB-ORACLE-RECEIPT-SCOPE-001", "IOS-GITHUB-ORACLE-DISPATCHER-HARDENING-001", "IOS-GITHUB-ORACLE-PAYLOAD-CANONICALIZATION-001"], "knowledge_mode": "not_applicable",
+      "title": "实现 GitHub Oracle Attestation Receipt Settlement",
+      "outputs": ["create-only verified candidate receipt", "historical source authority validation", "Golden Publisher demand state"],
+      "gates": [], "constraint": "实现独立、create-only、历史源码可验证的 GitHub Oracle Receipt Settler，并让 DemandCompiler/Supervisor 只消费已提交且 authority 未漂移的 Receipt；不得信任 runtime journal、修改 Workflow/Oracle/Dispatcher/Golden/Publisher/产品或在 WorkItem 内访问网络和生成真实 Receipt"
     }
   ],
   "compiler_rules": [
