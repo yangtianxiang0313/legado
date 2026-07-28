@@ -5,10 +5,13 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 import re
+import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 from typing import Any, Dict, Iterable
 
@@ -134,6 +137,22 @@ def _write(root: Path, relative: str, payload: bytes) -> None:
 def _require_refs(values: Iterable[Any], label: str) -> None:
     if set(values) != set(EXPECTED_REFS):
         raise RequirementPublisherError(f"{label}_REQUIREMENT_COVERAGE_INVALID")
+
+
+def _business_module(root: Path) -> Any:
+    path = (
+        root
+        / "ios/harness/business-knowledge/business_knowledge.py"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "requirement_publisher_business_control",
+        path,
+    )
+    if spec is None or spec.loader is None:
+        raise RequirementPublisherError("BUSINESS_CONTROL_UNAVAILABLE")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def prepare(
@@ -278,6 +297,28 @@ def prepare(
     target_entry["readiness"] = "implementation_ready"
     target_entry["record_sha256"] = _json_digest(updated_record)
     catalog_bytes = _canonical(updated_catalog)
+    updated_coverage = json.loads(json.dumps(coverage))
+    updated_coverage["generated_from"]["requirement_catalog_sha256"] = (
+        _json_digest(updated_catalog)
+    )
+    coverage_bytes = _canonical(updated_coverage)
+    business_catalog_relative = "ios/project/business-knowledge/catalog.json"
+    with tempfile.TemporaryDirectory(
+        prefix="requirement-readiness-verifier-"
+    ) as raw_verifier:
+        verifier = Path(raw_verifier) / "repo"
+        shutil.copytree(root / "ios", verifier / "ios")
+        (verifier / requirement_record).write_bytes(record_bytes)
+        (verifier / requirement_catalog).write_bytes(catalog_bytes)
+        (verifier / coverage_ledger).write_bytes(coverage_bytes)
+        control = _business_module(verifier)
+        try:
+            business_catalog = control.catalog_value(verifier)
+        except Exception as error:
+            raise RequirementPublisherError(
+                f"STAGED_BUSINESS_GRAPH_INVALID:{error}"
+            ) from error
+    business_catalog_bytes = _canonical(business_catalog)
     release_relative = (
         "ios/project/requirements/releases/"
         f"{REQUIREMENT_ID}-r0001-{authorized_run_id.replace('/', '-')}.json"
@@ -287,6 +328,8 @@ def prepare(
     outputs = {
         requirement_record: _sha(record_bytes),
         requirement_catalog: _sha(catalog_bytes),
+        coverage_ledger: _sha(coverage_bytes),
+        business_catalog_relative: _sha(business_catalog_bytes),
     }
     receipt = {
         "schema_version": 1,
@@ -320,6 +363,8 @@ def prepare(
     payloads = {
         requirement_record: record_bytes,
         requirement_catalog: catalog_bytes,
+        coverage_ledger: coverage_bytes,
+        business_catalog_relative: business_catalog_bytes,
         release_relative: receipt_bytes,
     }
     for relative, payload in sorted(payloads.items()):
@@ -342,7 +387,7 @@ def prepare(
         "status": "staged_for_external_publisher",
         "requirement": f"{REQUIREMENT_ID}@{REQUIREMENT_REVISION}",
         "readiness": "implementation_ready",
-        "install_count": 3,
+        "install_count": 5,
         "receipt": release_relative,
     }
 

@@ -39,16 +39,30 @@ class RequirementReadinessPublisherTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.base = Path(self.temp.name)
         self.root = self.base / "repo"
-        for relative in (
-            self.record,
-            self.catalog,
-            self.golden,
-            self.release,
-            self.coverage,
-        ):
+        paths = (
+            "ios/harness/business-knowledge",
+            "ios/harness/evidence",
+            "ios/harness/goldens",
+            "ios/harness/harness.py",
+            "ios/harness/work-items",
+            "ios/docs/adr",
+            "ios/project/android-intake/inventory-manifest.json",
+            "ios/project/baseline.json",
+            "ios/project/business-knowledge",
+            "ios/project/capabilities",
+            "ios/project/checkpoints",
+            "ios/project/events.jsonl",
+            "ios/project/requirements",
+            "ios/project/state.json",
+        )
+        for relative in paths:
+            source = ROOT / relative
             target = self.root / relative
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(ROOT / relative, target)
+            if source.is_dir():
+                shutil.copytree(source, target)
+            else:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, target)
         self._git("init", "-q")
         self._git("config", "user.name", "Requirement Publisher Tests")
         self._git("config", "user.email", "requirement@example.invalid")
@@ -106,7 +120,7 @@ class RequirementReadinessPublisherTests(unittest.TestCase):
         transaction = json.loads(
             (self.base / "first/transaction.json").read_text()
         )
-        self.assertEqual(3, len(transaction["install"]))
+        self.assertEqual(5, len(transaction["install"]))
         record = json.loads((self.base / "first" / self.record).read_text())
         self.assertEqual(
             "implementation_ready", record["readiness"]["state"]
