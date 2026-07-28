@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 49,
+  "revision": 50,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -62,14 +62,14 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260728T170025Z-ios-android-migration-demand-001-a0b6c6fe.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260728T170723Z-ios-android-request-options-intake-001-0717e0c8.json",
   "next_actions": [
     "BKP-INTEGRATIONS-001@4 与 DRV-INTEGRATION-PROFILES-001@4 在 Trusted Publisher promotion 前保持 proposal；只有 promotion/accept 决策才要求权威审查",
     "由 Harness/Proposal Compiler 的 recovers 内容寻址合同维持恢复谱系，并用有界 Catalog self-heal 支持控制面中断续跑；下一步由 Trusted Publisher 提升 JSON Schema，并自动重写 recovery Claim supersedes 以关闭 PIT-0012",
-    "由 source-anchored Android Migration Intent 自动物化 IOS-ANDROID-REQUEST-OPTIONS-INTAKE-001，产出 POST form/request options 的知识与 Requirement proposal",
-    "Requirement proposal 结算后，由受信 authority 接受或驳回需求；接受后生成 SourceLab characterization 工作项与真实 Android runner Golden",
+    "由受信 authority 复核 ARQ-SOURCE-REQUEST-POST-FORM 的源码事实、unknowns 与去重键并接受或驳回，不让普通 Agent 写 accepted Requirement",
+    "需求接受后自动生成 transport.post-form 的本地网站场景、Android runner 结构化 expected 与 protected Golden",
     "将 migration intent 扩展为多条显式积压，验证稳定优先级、并列阻塞和连续第三轮推进"
   ],
-  "updated_at": "2026-07-28T17:00:25Z",
-  "updated_by": "IOS-ANDROID-MIGRATION-DEMAND-001"
+  "updated_at": "2026-07-28T17:07:23Z",
+  "updated_by": "IOS-ANDROID-REQUEST-OPTIONS-INTAKE-001"
 }

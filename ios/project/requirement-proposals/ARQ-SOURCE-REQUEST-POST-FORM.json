@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "id": "ARQ-SOURCE-REQUEST-POST-FORM",
+  "target_requirement_id": "REQ-ANDROID-SOURCE-REQUEST-OPTIONS-001",
+  "status": "proposed",
+  "dedupe_key": "CAP-RUNTIME-PORTS/source.request.post-form/store_safe+full_compat",
+  "source_facts": [
+    "BKC-SR-POST-FORM-SELECTION-001@1",
+    "BKC-SR-POST-BODY-DISPATCH-001@1",
+    "BKC-SR-POST-FIELD-ENCODING-001@1",
+    "BKC-SR-REQUEST-HEADER-COOKIE-RETRY-001@1",
+    "BKC-SR-RESPONSE-XML-NORMALIZATION-001@1"
+  ],
+  "evidence_level": "L1",
+  "observable_intent": "书源 URL option 声明 POST 时，运行时应按 Android 的分支规则确定 form、raw Content-Type body 或 JSON body，合并 headers/Cookie/retry，并以结构化 RequestPlan 和响应结果对齐；iOS 的具体 HTTP 实现可以不同。",
+  "unknowns": [
+    "form 字段重复 key、顺序、空 key/value、加号与混合预编码文本的精确语义",
+    "body 为空、空白、JSON、XML、显式 Content-Type 和 WebView POST 分支的实际 wire bytes 与 headers",
+    "charset=escape、非法 charset、响应声明/BOM/Content-Type 冲突时的编码与错误阶段",
+    "Cookie/header 大小写与覆盖优先级、retry 是否重放 body 以及最终错误分类"
+  ],
+  "source_lab_gap": [
+    "transport.post-form"
+  ],
+  "auto_action": "create_characterization_dag"
+}

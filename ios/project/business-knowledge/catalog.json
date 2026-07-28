@@ -7,7 +7,7 @@
   "control_sha256": "85228a4aa826bd1f9d6f22231a6e04fe622cec925714d4bdceacdca704186979",
   "authority_sha256": "9a898622fab665e380b0fdb7837d6aa24f938f5c87e4bc635c32fbdf4dfe81c8",
   "coverage_sha256": "8cd21f8c89530ad6b94a2a6f35c5f671b052ec180f93a365f0c9c0cfa4357961",
-  "proposal_sha256": "2f4226ae8c6e830a3b21d6dbeac9a2bfb35db1e70b1fa86063b7d61aef52cc5c",
+  "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
     {
@@ -92,6 +92,12 @@
       "sha256": "054d8d312e4a85a17293e6e10e53a2e8783ea19724cac8e76637ea0f552702c6"
     },
     {
+      "id": "BKP-SOURCE-REQUEST-OPTIONS-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/packets/proposals/BKP-SOURCE-REQUEST-OPTIONS-001/r0001.json",
+      "sha256": "7e736404904c77b2e6a73df70d47b0bd12583aeda7b04d6f7bfb6b1c5cc76e12"
+    },
+    {
       "id": "BKP-SOURCE-RUNTIME-001",
       "revision": 1,
       "path": "ios/project/business-knowledge/packets/proposals/BKP-SOURCE-RUNTIME-001/r0001.json",
@@ -138,6 +144,12 @@
       "revision": 1,
       "path": "ios/project/business-knowledge/drivers/proposals/DRV-READER-LIFECYCLE-001/r0001.json",
       "sha256": "8257bbc49bc91eb4438a483f04f1a261471d4df59e86c9e8806b655e5109a9bd"
+    },
+    {
+      "id": "DRV-SOURCE-REQUEST-OPTIONS-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/drivers/proposals/DRV-SOURCE-REQUEST-OPTIONS-001/r0001.json",
+      "sha256": "ad56782fe25ea2fa2d41faa38ceefe6e18046de2bc6aecf8b40139585c89c4d4"
     },
     {
       "id": "DRV-SOURCE-RUNTIME-BOUNDARY-001",

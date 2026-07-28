@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-ANDROID-REQUEST-OPTIONS-INTAKE-001",
+  "summary": "第二轮 Android migration intake 已由 Loop 自动物化并完成。基于冻结 AnalyzeUrl.kt blob 9ac49ded，BKP-SOURCE-REQUEST-OPTIONS-001@1 形成 5 条 source-anchored candidate Claim：POST/form 选择条件、form/raw Content-Type/JSON body 派发、字段 charset 编码、header/Cookie/retry 分层、XML 响应声明补全；每条都区分静态源码事实与必须由真实 Android runner 刻画的动态语义。DRV-SOURCE-REQUEST-OPTIONS-001@1 将 RequestPlan、Transport、SourceSession、StoreSafe/FullCompat 和结构化差分表达为架构 forces，不接受 ADR。ARQ-SOURCE-REQUEST-POST-FORM 以精确 target_requirement_id、dedupe_key、source facts、unknowns 和 source_lab_gap=[transport.post-form] 保持 proposed，下一步进入受信 Requirement authority。207 项完整 Harness tests 通过。",
+  "evidence": "ios/harness/evidence/runs/run-20260728T170723Z-ios-android-request-options-intake-001-0717e0c8.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 49,
+      "to_revision": 50,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "none",
+    "adr_refs": []
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null
+  },
+  "business_knowledge": {
+    "mode": "produce",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [
+      {
+        "kind": "packet",
+        "id": "BKP-SOURCE-REQUEST-OPTIONS-001",
+        "revision": 1
+      },
+      {
+        "kind": "driver",
+        "id": "DRV-SOURCE-REQUEST-OPTIONS-001",
+        "revision": 1
+      }
+    ],
+    "ledger_updates": [],
+    "none_reason": null
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项只生成源码知识与 Requirement proposal，不实现或声称任何 iOS 兼容行为"
+  },
+  "pitfalls": {
+    "records": [],
+    "none_reason": "本项未发现新的非显然可复发缺陷；需求来源空洞问题已记录并关闭于 PIT-0052"
+  },
+  "remaining_risks": [
+    "Packet 为 candidate、Driver 与 Requirement 均为 proposed，未经过受信 authority 前不能驱动产品实现",
+    "POST form 的 wire bytes、字段顺序/重复 key、空值、header 大小写和 Cookie 优先级仍没有真实 Android runner 结构化 expected",
+    "charset=escape、非法 charset、XML/BOM/Content-Type 冲突与 retry body replay 的错误阶段尚未冻结",
+    "WebView POST 预取与普通 Transport 的显式 Content-Type 分支不同，FullCompat 边界仍需 characterization 和架构裁决",
+    "当前只有一个 Migration Intent 完成 intake 结算；多项优先级和连续第三轮仍需实证"
+  ],
+  "next_actions": [
+    "由受信 authority 接受或驳回 ARQ-SOURCE-REQUEST-POST-FORM，并保留 disposition/tombstone",
+    "接受后创建 transport.post-form nominal/boundary 本地站点与 Android runner WorkItem",
+    "把 Android request/result envelope 规范化为 method、URL、ordered form fields、headers、body bytes、response 与 first-divergence",
+    "发布 protected Golden 后生成 CAP-RUNTIME-PORTS 的独立 Package 实现 Delivery Intent",
+    "增加下一条显式 Android Migration Intent，验证多切片稳定排序与连续推进"
+  ],
+  "created_at": "2026-07-28T17:07:23Z"
+}

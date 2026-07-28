@@ -2,13 +2,13 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-28T17:01:28Z
+- 更新时间：2026-07-28T17:07:56Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
 - 下一个可领取工作项：无
-- 最近完成：IOS-ANDROID-MIGRATION-DEMAND-001
+- 最近完成：IOS-ANDROID-REQUEST-OPTIONS-INTAKE-001
 
 ## 健康度
 
@@ -60,6 +60,7 @@
 | requirement_readiness_publisher | `implemented_external_authority` |
 | requirements | `catalog_ready_one_characterization_gap` |
 | source_lab | `fixture_transport_integrated` |
+| source_request_options_intake | `proposal_ready` |
 | source_runtime_golden_conformance | `android_exact_first_slice` |
 | source_runtime_html_css | `golden_verified_first_slice` |
 | supervisor_run_journal | `local_replayable` |
@@ -85,6 +86,7 @@
 | IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-008 | 100 | `completed` | IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-007 | 建立 hosted Runner 的 KVM 访问合同 |
 | IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-009 | 100 | `completed` | IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-008 | 对齐 GitHub 当前 SLSA provenance 身份 |
 | IOS-ANDROID-ORACLE-RUNNER-001 | 100 | `completed` | IOS-ORACLE-CONTROL-PLANE-001, IOS-SOURCELAB-ENGINE-001 | 建立冻结 Android WebBook 的 SourceLab Oracle Runner |
+| IOS-ANDROID-REQUEST-OPTIONS-INTAKE-001 | 100 | `completed` | IOS-ANDROID-MIGRATION-DEMAND-001 | 提取 AnalyzeUrl POST Form 与请求选项迁移合同 |
 | IOS-AUTO-MATERIALIZATION-POLICY-001 | 100 | `completed` | IOS-PROPOSAL-COMPILER-001, IOS-DECISION-GATE-POLICY-001, IOS-LOOP-SUPERVISOR-E2E-001 | 让无决策、无权威迁移的编译候选自动进入队列 |
 | IOS-BOOT-001 | 100 | `completed` | 无 | 建立 Swift Package 与首批模块骨架 |
 | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-001 | 100 | `completed` | IOS-ANDROID-GOLDEN-PUBLISHER-001, IOS-KNOWLEDGE-SOURCE-RUNTIME-GOLDEN-002 | 建立受信 Business Knowledge Publisher |

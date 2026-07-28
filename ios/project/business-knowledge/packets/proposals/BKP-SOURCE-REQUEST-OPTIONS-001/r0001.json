@@ -1,0 +1,201 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-SOURCE-REQUEST-OPTIONS-001",
+  "revision": 1,
+  "status": "candidate",
+  "semantic_key": "source.request.post-form-options",
+  "title": "AnalyzeUrl POST Form 与请求选项源码合同",
+  "scope": {
+    "bounded_contexts": [
+      "source.execution"
+    ],
+    "capability_refs": [
+      "CAP-RUNTIME-PORTS",
+      "CAP-CONFORMANCE"
+    ],
+    "subject_keys": [
+      "source.request",
+      "source.session",
+      "source.transport"
+    ]
+  },
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122"
+  },
+  "claims": [
+    {
+      "id": "BKC-SR-POST-FORM-SELECTION-001",
+      "revision": 1,
+      "semantic_key": "source.request.post-form-selection",
+      "kind": "runtime_behavior",
+      "topic": "POST body 到 form 字段的选择条件",
+      "statement": "AnalyzeUrl 只把 method 不区分大小写等于 POST 的 option 切换为 POST。POST body 在不是 JSON、不是 XML 且没有 Content-Type 时进入 analyzeFields；GET 则从 URL query 进入同一字段路径。由此产生的 fieldMap、urlNoQuery、空 body 和重复字段结果仍需 Android runner 逐案刻画。",
+      "subject_keys": [
+        "source.request",
+        "source.transport"
+      ],
+      "depends_on": [],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da",
+            "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+            "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/analyzeUrl"
+          }
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-POST-BODY-DISPATCH-001",
+      "revision": 1,
+      "semantic_key": "source.request.post-body-dispatch",
+      "kind": "runtime_behavior",
+      "topic": "form、显式 Content-Type 与 JSON body 派发",
+      "statement": "非 WebView 字符串/字节请求的 POST 派发顺序是：fieldMap 非空或 body 空白时 postForm；否则存在 Content-Type 时按该 media type 构造原始 RequestBody；否则 postJson。WebView POST 预取分支只有 postForm 与 postJson 两路，不执行显式 Content-Type 的原始 body 分支。精确 Content-Type、空值和错误语义必须由真实 Android 请求结构化输出固定。",
+      "subject_keys": [
+        "source.request",
+        "source.transport"
+      ],
+      "depends_on": [
+        {
+          "id": "BKC-SR-POST-FORM-SELECTION-001",
+          "revision": 1
+        }
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da",
+            "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+            "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/getStrResponseAwait"
+          }
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-POST-FIELD-ENCODING-001",
+      "revision": 1,
+      "semantic_key": "source.request.post-field-encoding",
+      "kind": "runtime_behavior",
+      "topic": "表单字段拆分与字符编码",
+      "statement": "analyzeFields 按 & 拆分非空片段，再按首个 = 分出 key/value；缺 value 视为空字符串。未声明 charset 时保留已 URL encoded 的 value，否则按 UTF-8 编码；charset=escape 使用 escape，其他值直接作为 URLEncoder charset。重复 key 覆盖、空 key、非法 charset、加号和混合已编码文本的可观察结果尚未由 Android runner 固定。",
+      "subject_keys": [
+        "source.request"
+      ],
+      "depends_on": [
+        {
+          "id": "BKC-SR-POST-FORM-SELECTION-001",
+          "revision": 1
+        }
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da",
+            "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+            "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/analyzeFields"
+          }
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-REQUEST-HEADER-COOKIE-RETRY-001",
+      "revision": 1,
+      "semantic_key": "source.request.header-cookie-retry-layering",
+      "kind": "runtime_behavior",
+      "topic": "Header、Cookie 与 retry 的请求前处理",
+      "statement": "构造时先继承调用方或书源 header，再以 URL option headers 按 key 覆盖；请求前 setCookie 把持久 Cookie 与显式 Cookie 合并，enabledCookieJar 还加入内部标记。UrlOption retry 缺失或非法时为 0，并传给网络调用的 retry 参数。Cookie 优先级、header 大小写、每次 retry 是否重放 body 及失败分类仍需 Android characterization。",
+      "subject_keys": [
+        "source.request",
+        "source.session",
+        "source.transport"
+      ],
+      "depends_on": [
+        {
+          "id": "BKC-SR-POST-BODY-DISPATCH-001",
+          "revision": 1
+        }
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da",
+            "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+            "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/getStrResponseAwait"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da",
+            "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+            "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/setCookie"
+          }
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-RESPONSE-XML-NORMALIZATION-001",
+      "revision": 1,
+      "semantic_key": "source.response.xml-declaration-normalization",
+      "kind": "runtime_behavior",
+      "topic": "字符串响应 XML 声明补全",
+      "statement": "非 WebView getStrResponseAwait 在响应 Content-Type 匹配 XML 且 body 去空白后不以 XML 声明开头时，会给字符串响应前置标准 XML declaration；该路径与最终 URL 一同返回。charset 探测、BOM、错误 Content-Type、空 body 与压缩响应仍需 Android characterization。",
+      "subject_keys": [
+        "source.transport"
+      ],
+      "depends_on": [
+        {
+          "id": "BKC-SR-POST-BODY-DISPATCH-001",
+          "revision": 1
+        }
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da",
+            "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+            "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/getStrResponseAwait"
+          }
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-ANDROID-REQUEST-OPTIONS-INTAKE-001"
+}

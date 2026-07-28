@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-SOURCE-REQUEST-OPTIONS-001",
+  "revision": 1,
+  "status": "proposed",
+  "semantic_key": "source.execution.request-options-boundary",
+  "title": "以稳定 RequestPlan 隔离书源请求语义与传输实现",
+  "claim_refs": [
+    {
+      "id": "BKC-SR-POST-FORM-SELECTION-001",
+      "revision": 1
+    },
+    {
+      "id": "BKC-SR-POST-BODY-DISPATCH-001",
+      "revision": 1
+    },
+    {
+      "id": "BKC-SR-POST-FIELD-ENCODING-001",
+      "revision": 1
+    },
+    {
+      "id": "BKC-SR-REQUEST-HEADER-COOKIE-RETRY-001",
+      "revision": 1
+    },
+    {
+      "id": "BKC-SR-RESPONSE-XML-NORMALIZATION-001",
+      "revision": 1
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "GET、POST form、JSON、XML 与显式 Content-Type body 的选择顺序必须与 Android 可观察结果一致，但 Swift 实现不复制 OkHttp builder 分支。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "determinism",
+      "scenario": "相同 URL option、变量、session 与输入必须先生成可 canonicalize 的 RequestPlan；本地站点和 FixtureTransport 能逐字段记录 method、URL、headers、body、charset 与 retry。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "isolation",
+      "scenario": "Cookie、书源 headers 与 retry 状态由 SourceSession/Transport 端口拥有，不能泄漏到其他书源或 UI。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "portability",
+      "scenario": "请求编译保持在独立 SourceRuntime package 中，不向 UI、Domain 或书源编辑器暴露 URLSession、OkHttp 或 WebView 类型。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "profile_integrity",
+      "scenario": "StoreSafe 与 FullCompat 共用声明式 RequestPlan；WebView、JS、私网与动态副作用只能由显式 profile policy 扩展。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "observability",
+      "scenario": "结构化验收输出必须包含脱敏后的 RequestPlan、Android expected、iOS actual 与 first-divergence，不用 HTTP 摘要替代业务语义。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "RequestPlan 如何表达 form 字段顺序、重复 key、raw body、JSON/XML、显式 Content-Type、charset 与 retry，而不绑定具体 HTTP client？",
+    "Cookie 与 header 合并的大小写、覆盖优先级和敏感字段脱敏如何由 SourceSession 统一执行？",
+    "WebView POST 预取与普通 Transport 的 body dispatch 差异应作为 FullCompat 子端口还是 RequestPlan capability flag？",
+    "SourceLab 本地站点如何同时回显 raw request 与规范化业务结果，供 Android runner 和 iOS Runtime 使用同一 fixture？"
+  ],
+  "resolution": {
+    "state": "requires_characterization",
+    "adr_refs": [],
+    "work_item_refs": [
+      "IOS-ANDROID-REQUEST-OPTIONS-INTAKE-001"
+    ]
+  },
+  "promotion": null,
+  "supersedes": null,
+  "created_by": "IOS-ANDROID-REQUEST-OPTIONS-INTAKE-001"
+}
