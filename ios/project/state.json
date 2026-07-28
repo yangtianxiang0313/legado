@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "revision": 206,
+  "revision": 208,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-28T05:39:16Z",
-  "event_head": "c79552d6ac9e90aed877f51667efb2b71dd77854dcad3e7f0120834ba1c18bfd",
+  "updated_at": "2026-07-28T05:41:56Z",
+  "event_head": "c9876faa1214ac31a532682932894e5b22ec4f6d57728bb69e63b9f6bfb94420",
   "active_work_items": [],
   "last_completed_work_item": "IOS-RECOVERY-COMPILER-BINDING-001",
   "work_items": {
@@ -3361,9 +3361,60 @@
       "final_tree_sha256": "3b514ab1d9a1ca34821de3b2566134d1c528e02633b2f6b13dd9865e41dfd2f4"
     },
     "IOS-MATERIALIZATION-CATALOG-REFRESH-001": {
-      "status": "ready",
-      "attempt": 0,
-      "last_evidence": null
+      "status": "cancelled",
+      "attempt": 1,
+      "last_evidence": null,
+      "claimed_by": "root-codex",
+      "claimed_at": "2026-07-28T05:40:02Z",
+      "lease_expires_at": "2026-07-29T05:40:02Z",
+      "work_item_sha256": "7e328031251a4e1fc8fbae4970ac8a722bdd29cc5edb3c5f4d1c9b7c934a7f54",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "1933eb3d26968295aafdf967d9dd30aa7a2773df",
+      "base_dirty_fingerprints": {},
+      "base_capability_revision": 32,
+      "base_capability_assurance_sha256": "6c08426cf2cc8f0277426284e00909a10444767bc01eeb84e0db43db8dcbb2ac",
+      "android_requirement_selection_sha256": null,
+      "business_knowledge_control_sha256": "d365aeebe99b650855f54da69a28059ce3a978f391c36a5ffc62d3c7e320fc4b",
+      "business_knowledge_authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 0,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "harness-tests",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "307f335e883f02e96ad97ecbda4c210435c0b955e2bcb9e46db9dc7b0d02c285",
+          "cwd": ".",
+          "started_at": "2026-07-28T05:39:25Z",
+          "duration_ms": 37366,
+          "timeout_seconds": 60,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "b3ac128785c46851e97e74289e91753264f3a4f8294c6927b3f339dcbc77f455",
+          "stdout_tail": "",
+          "stderr_tail": "......................................................................................................................................\n----------------------------------------------------------------------\nRan 134 tests in 37.254s\n\nOK\n"
+        }
+      ],
+      "cancelled_at": "2026-07-28T05:41:56Z",
+      "cancelled_reason": "invalidated_assumption: catalog drift is caused by active harness.py control digest changes, not Work Item materialization"
     }
   },
   "health": {
