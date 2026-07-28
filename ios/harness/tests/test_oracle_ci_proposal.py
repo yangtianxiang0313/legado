@@ -226,6 +226,7 @@ class OracleCIProposalTests(unittest.TestCase):
             'cmdline-tools/latest/bin/sdkmanager"\n'
             '          avdmanager="${ANDROID_HOME}/'
             'cmdline-tools/latest/bin/avdmanager"\n'
+            '          adb="${ANDROID_HOME}/platform-tools/adb"\n'
             '          test -x "${sdkmanager}"\n'
             '          test -x "${avdmanager}"'
         )
@@ -240,6 +241,15 @@ class OracleCIProposalTests(unittest.TestCase):
             '>>"${GITHUB_ENV}"',
             workflow,
         )
+        self.assertIn(
+            'adb="${ANDROID_HOME}/platform-tools/adb"',
+            workflow,
+        )
+        self.assertIn('test -x "${adb}"', workflow)
+        self.assertIn(
+            'printf \'ADB=%s\\n\' "${adb}" >>"${GITHUB_ENV}"',
+            workflow,
+        )
         self.assertLess(
             workflow.index(sdk_tools_initialization),
             workflow.index('"${SDKMANAGER}" --licenses'),
@@ -250,11 +260,22 @@ class OracleCIProposalTests(unittest.TestCase):
         )
         self.assertNotIn("yes | sdkmanager --licenses", workflow)
         self.assertNotIn("echo no | avdmanager create avd", workflow)
+        self.assertNotIn("\n          adb -s", workflow)
+        self.assertNotIn("$(adb -s", workflow)
         self.assertIn(
             '"${SDKMANAGER}" \\\n'
             '            "platform-tools"',
             workflow,
         )
+        self.assertIn(
+            '"${ANDROID_HOME}/emulator/emulator"',
+            workflow,
+        )
+        self.assertIn(
+            '--adb "${ADB}"',
+            workflow,
+        )
+        self.assertEqual(4, workflow.count('"${ADB}" -s "${AVD_SERIAL}"'))
         self.assertIn("set +o pipefail", workflow)
         attest_action = (
             "actions/attest@"

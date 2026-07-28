@@ -34,13 +34,16 @@ jobs:
           set -euo pipefail
           sdkmanager="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
           avdmanager="${ANDROID_HOME}/cmdline-tools/latest/bin/avdmanager"
+          adb="${ANDROID_HOME}/platform-tools/adb"
           test -x "${sdkmanager}"
           test -x "${avdmanager}"
+          test -x "${adb}"
           printf 'ORACLE_TEMP=%s\n' \
             "${RUNNER_TEMP}/legado-android-oracle" \
             >>"${GITHUB_ENV}"
           printf 'SDKMANAGER=%s\n' "${sdkmanager}" >>"${GITHUB_ENV}"
           printf 'AVDMANAGER=%s\n' "${avdmanager}" >>"${GITHUB_ENV}"
+          printf 'ADB=%s\n' "${adb}" >>"${GITHUB_ENV}"
 
       - name: Set up JDK 17
         uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9
@@ -128,17 +131,17 @@ jobs:
             -gpu swiftshader_indirect \
             >"${ORACLE_TEMP}/emulator.log" 2>&1 &
           echo "$!" >"${ORACLE_TEMP}/emulator.pid"
-          adb -s "${AVD_SERIAL}" wait-for-device
+          "${ADB}" -s "${AVD_SERIAL}" wait-for-device
           ready=false
           for _ in $(seq 1 120); do
-            if test "$(adb -s "${AVD_SERIAL}" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1"; then
+            if test "$("${ADB}" -s "${AVD_SERIAL}" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1"; then
               ready=true
               break
             fi
             sleep 2
           done
           test "${ready}" = true
-          adb -s "${AVD_SERIAL}" shell input keyevent 82
+          "${ADB}" -s "${AVD_SERIAL}" shell input keyevent 82
 
       - name: Run frozen Android Oracle offline
         shell: bash
@@ -147,7 +150,7 @@ jobs:
           python3 -B ios/harness/oracle/android-runner/orchestrator.py \
             run \
             --root . \
-            --adb "${ANDROID_HOME}/platform-tools/adb" \
+            --adb "${ADB}" \
             --serial "${AVD_SERIAL}" \
             --output ".harness-runtime/android-oracle/ci-local-run.json"
 
@@ -246,4 +249,4 @@ jobs:
         if: always()
         shell: bash
         run: |
-          adb -s "${AVD_SERIAL}" emu kill >/dev/null 2>&1 || true
+          "${ADB}" -s "${AVD_SERIAL}" emu kill >/dev/null 2>&1 || true
