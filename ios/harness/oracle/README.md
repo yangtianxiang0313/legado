@@ -119,12 +119,21 @@ archive 重放都会失败关闭。Orchestrator 的 `doctor` 和 `run` 均收到
 
 CI 分为两个不可交换的证明阶段：
 
+真实 GitHub run `30401218234` 已完成冻结 Android Oracle 步骤，但旧版 evidence
+prepare 随后失败：真实 RequestPlan 含 `User-Agent`，canonical-v1 合同要求 header
+名 ASCII 小写，而 packager 把这个合法转换误报为
+`PAYLOAD_CANONICALIZATION_DRIFT`。修复只更正下述 prepare 转换边界；不重跑或改写
+该失败 run。
+
 1. 在线阶段只安装明确的 Android 35 system image，并把冻结 baseline 的 Gradle 依赖
    预热进 cache；实际 Orchestrator 仍使用 `--offline`，网络面仍只有本次 SourceLab
    loopback 与精确 `adb reverse`。
 2. `ci_proposal.py prepare` 把 Android local-run 转成 canonical-v1 payload，并生成
-   确定性的 `android-oracle-evidence.tar`。GitHub OIDC/Sigstore 先为这个 evidence
-   subject 生成 provenance attestation。
+   确定性的 `android-oracle-evidence.tar`。它保留原始 local-run 与 artifact 的
+   SHA-256 provenance 绑定，同时以 canonicalizer 的返回 bytes 作为 evidence
+   payload：只执行 header 名 ASCII 小写、换行 LF、固定 ignore pointers 与 object
+   key sort，不要求 Android raw payload 预先 canonical。GitHub OIDC/Sigstore 先为
+   这个 evidence subject 生成 provenance attestation。
 3. `ci_proposal.py finalize` 才能生成 candidate proposal。proposal 内绑定上一步
    attestation URL、原始 bundle SHA-256、scenario/source/input/manifest digest、
    Android baseline、Runner 与 canonical payload。

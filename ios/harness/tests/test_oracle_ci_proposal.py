@@ -132,6 +132,125 @@ class OracleCIProposalTests(unittest.TestCase):
         )
         self.assertEqual([scenario], report["fixture_ids"])
 
+    def test_prepare_canonicalizes_real_request_plan_and_preserves_raw_provenance(self):
+        scenario = "sl-post-form-001"
+        value = self._local_run(scenario)
+        artifact = value["artifact"]
+        artifact["request_plan"] = [
+            {
+                "method": "POST",
+                "url": "http://sourcelab.test/search?q=Legado",
+                "headers": [
+                    {"name": "User-Agent", "value": "Legado/Test\r\nAgent"},
+                    {"name": "X-Exact", "value": "A\rB"},
+                ],
+                "body": "q=Legado\r\npage=2",
+                "body_base64": "cT1MZWdhZG8NCnBhZ2U9Mg==",
+                "form_fields": [
+                    {"name": "q", "value": "Legado"},
+                    {"name": "page", "value": "2"},
+                ],
+            }
+        ]
+        artifact["trace_id"] = "raw-trace"
+        artifact["timing"] = {"elapsed_ms": 17}
+        artifact["environment"] = {
+            "run_started_at": "2026-07-28T20:00:00Z",
+            "locale": "en_US",
+        }
+        value["artifact_sha256"] = ci_proposal._sha256(
+            ci_proposal._dump(artifact)
+        )
+        local_bytes = ci_proposal._dump(value) + b"\n"
+        self.local_run.write_bytes(local_bytes)
+
+        prepared = self._prepare("real-request-plan", scenario)
+        members = ci_proposal.read_deterministic_tar(
+            Path(prepared["archive"]),
+            ci_proposal.expected_evidence_members(scenario),
+        )
+        payload_bytes = members[f"evidence/payloads/{scenario}.json"]
+        payload = loads(payload_bytes)
+        run = loads(members["evidence/run.json"])
+        request = payload["artifact"]["request_plan"][0]
+
+        self.assertEqual("POST", request["method"])
+        self.assertEqual(
+            "http://sourcelab.test/search?q=Legado",
+            request["url"],
+        )
+        self.assertEqual("q=Legado\npage=2", request["body"])
+        self.assertEqual(
+            "cT1MZWdhZG8NCnBhZ2U9Mg==",
+            request["body_base64"],
+        )
+        self.assertEqual(
+            [
+                {"name": "q", "value": "Legado"},
+                {"name": "page", "value": "2"},
+            ],
+            request["form_fields"],
+        )
+        self.assertEqual(
+            [
+                {"name": "user-agent", "value": "Legado/Test\nAgent"},
+                {"name": "x-exact", "value": "A\nB"},
+            ],
+            request["headers"],
+        )
+        self.assertNotIn("trace_id", payload["artifact"])
+        self.assertNotIn("timing", payload["artifact"])
+        self.assertNotIn(
+            "run_started_at",
+            payload["artifact"]["environment"],
+        )
+        self.assertEqual(
+            "en_US",
+            payload["artifact"]["environment"]["locale"],
+        )
+        config = ci_proposal.load_config(
+            REPOSITORY_ROOT
+            / "ios/harness/normalization/canonical-v1.json"
+        )
+        self.assertEqual(payload_bytes, dumps(loads(payload_bytes)))
+        self.assertEqual(
+            payload_bytes,
+            ci_proposal.canonicalize_bytes(payload_bytes, config),
+        )
+        self.assertEqual(
+            ci_proposal._sha256(local_bytes),
+            run["bindings"]["local_run_sha256"],
+        )
+        self.assertEqual(
+            ci_proposal._sha256(ci_proposal._dump(artifact)),
+            run["bindings"]["artifact_sha256"],
+        )
+        self.assertEqual(
+            ci_proposal._sha256(payload_bytes),
+            run["payloads"][0]["sha256"],
+        )
+        self.assertEqual(
+            len(payload_bytes),
+            ci_proposal.integer(
+                run["payloads"][0]["bytes"],
+                "payload.bytes",
+            ),
+        )
+        self.assertEqual(
+            ci_proposal.canonical_file_digest(
+                REPOSITORY_ROOT
+                / "ios/harness/normalization/canonical-v1.json"
+            ),
+            run["bindings"]["canonicalizer_config_sha256"],
+        )
+        self.assertEqual(
+            ci_proposal.implementation_digest(
+                "canonicalizer.py",
+                "exact_json.py",
+            ),
+            run["bindings"]["canonicalizer_implementation_sha256"],
+        )
+
     def test_selector_rejects_unknown_and_path_traversal(self):
         for selector in ("sl-retired-001", "../sl-post-form-001"):
             with self.subTest(selector=selector), self.assertRaisesRegex(

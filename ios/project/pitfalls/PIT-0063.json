@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0063",
+  "revision": 1,
+  "title": "负责 canonical 转换的边界不能要求输入预先 canonical",
+  "fingerprint": "canonicalizing-packager-rejects-legitimate-normalization-drift",
+  "capabilities": [
+    "CAP-CONFORMANCE"
+  ],
+  "symptoms": [
+    "真实 Android Oracle 已成功产生 artifact，但 ci_proposal.py prepare 返回 PAYLOAD_CANONICALIZATION_DRIFT",
+    "RequestPlan 中合法的 User-Agent header 名触发失败，即使 canonical-v1 明确要求 header 名 ASCII 小写",
+    "README 声明 prepare 负责把 local-run 转为 canonical-v1，运行实现却只接受已经 canonical 的 raw payload"
+  ],
+  "conditions": [
+    "packager 同时承担 raw provenance 绑定与 canonical evidence payload 生成",
+    "受保护 canonicalizer 允许 header 名大小写、换行、固定 ignore pointers 或 object key order 转换",
+    "实现把 raw bytes 与 canonicalizer 返回 bytes 不相等视为策略漂移"
+  ],
+  "root_cause": "混淆了转换边界与验证边界。prepare 应对完整 raw payload 执行固定 canonical-v1 并使用其返回 bytes；只有 finalize/共享 contract 对已规范化 evidence payload 要求 canonical 幂等。把 raw!=canonical 视为失败会拒绝合同明确允许且由该边界负责完成的转换。",
+  "diagnosis": [
+    "确认 raw local-run 与 raw artifact 各自的 SHA-256 绑定仍在 canonicalization 前计算",
+    "对完整 payload 同时比较 raw bytes、canonicalizer 返回 bytes、dumps(loads(canonical)) 与再次 canonicalize 的结果",
+    "构造含 User-Agent、CRLF、trace、timing 与 environment.run_started_at 的真实形状 RequestPlan，逐字段检查只发生 canonical-v1 允许的转换",
+    "确认未知字段与 artifact/scenario/runner/control/fixture/input/manifest 漂移仍由独立 fail-closed 校验拒绝"
+  ],
+  "fix": "ci_proposal.py prepare 保留 raw local_run_sha256 与 raw artifact_sha256 provenance，直接把固定 canonical-v1 的返回 bytes 写入 evidence payload并绑定其 SHA/长度；删除 raw payload 必须等于 canonical bytes 的错误前置条件。finalize 与共享 proposal contract 继续验证已 canonical payload。真实形状回归固定允许的转换、canonical 幂等、raw provenance 与既有 digest 绑定。",
+  "prevention": {
+    "architecture_rule": "任何声明负责 canonicalization 的入口必须显式分离 raw provenance 与 canonical payload：raw digest 在转换前绑定，输出使用受保护 canonicalizer bytes；只有消费已 canonical artifact 的验证边界可要求输入字节幂等。",
+    "tests": [
+      "ios/harness/tests/test_oracle_ci_proposal.py#test_prepare_canonicalizes_real_request_plan_and_preserves_raw_provenance",
+      "ios/harness/tests/test_oracle_ci_proposal.py#test_prepare_and_finalize_are_deterministic_and_contract_valid",
+      "ios/harness/tests/test_oracle_ci_proposal.py#test_post_form_proposal_still_passes_repository_contract"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-GITHUB-ORACLE-PUSH-TRIGGER-RECOVERY-002",
+    "until": "IOS-GITHUB-ORACLE-PAYLOAD-CANONICALIZATION-001"
+  },
+  "status": "mitigated",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T220902Z-ios-github-oracle-payload-canonicalization-001-2edb24f3.json"
+  ]
+}

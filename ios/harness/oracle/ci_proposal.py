@@ -729,8 +729,6 @@ def prepare(
     )
     config = load_config(root / "ios/harness/normalization/canonical-v1.json")
     payload_bytes = canonicalize_bytes(_dump(payload_value), config)
-    if payload_bytes != _dump(payload_value):
-        raise CIProposalError("PAYLOAD_CANONICALIZATION_DRIFT")
     run_value = {
         "schema_version": 1,
         "kind": "android_oracle_execution_evidence",

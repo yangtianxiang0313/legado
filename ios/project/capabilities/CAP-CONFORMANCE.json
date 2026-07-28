@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-CONFORMANCE",
-  "revision": 21,
+  "revision": 22,
   "title": "离线 Fixture 与双端执行 Envelope",
   "area": "conformance",
   "contract": "ios/docs/testing-and-conformance.md",
@@ -16,17 +16,17 @@
   "depends_on": ["CAP-BOOTSTRAP", "CAP-CORE"],
   "active_decisions": ["ADR-0002", "ADR-0004"],
   "open_compatibility": [],
-  "open_pitfalls": ["PIT-0003", "PIT-0006", "PIT-0061"],
+  "open_pitfalls": ["PIT-0003", "PIT-0006", "PIT-0061", "PIT-0063"],
   "blockers": [],
   "required_evidence": ["android-intake-contract", "dependency-policy", "source-lab-contract", "source-lab-tests", "source-lab-smoke", "swift-package-tests", "architecture"],
   "freshness_inputs": ["baseline_sha256", "architecture_digest_sha256", "architecture_rules_sha256", "harness_config_sha256", "dependency_lock_sha256", "source_lab_control_sha256", "source_lab_selection_sha256", "android_intake_control_sha256", "android_requirement_selection_sha256"],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260728T210432Z-ios-github-oracle-push-trigger-recovery-002-8a2364b3.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260728T220902Z-ios-github-oracle-payload-canonicalization-001-2edb24f3.json",
   "next_actions": [
-    "让 Dispatcher 以服务端 branch/run 对账替代无返回 ID 的 gh workflow run，并补齐恢复测试",
-    "在精确 source digest 上创建 sl-post-form-001 Oracle branch 并监控真实 GitHub-hosted run",
+    "在包含 canonical-v1 packager 修复的新 exact source digest 上创建新的 deterministic sl-post-form-001 Oracle branch；禁止重写 run 30401218234 或复用其旧 branch",
+    "监控新 branch 对应的唯一 GitHub-hosted push run，并保留 evidence/proposal archive 与双 attestation bundle",
     "下载 evidence/proposal archive 与双 attestation bundle，并用 trusted_import --scenario sl-post-form-001 生成 candidate_only review report",
     "修复 scenario-aware Android Golden Publisher，发布 protected Golden 后续接 iOS Package 与验收"
   ],
-  "updated_at": "2026-07-28T21:04:32Z",
-  "updated_by": "IOS-GITHUB-ORACLE-PUSH-TRIGGER-RECOVERY-002"
+  "updated_at": "2026-07-28T22:09:02Z",
+  "updated_by": "IOS-GITHUB-ORACLE-PAYLOAD-CANONICALIZATION-001"
 }

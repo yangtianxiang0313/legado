@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-GITHUB-ORACLE-PAYLOAD-CANONICALIZATION-001",
+  "summary": "修复 Android Oracle CI packager 对真实 canonical-v1 转换的错误拒绝。GitHub run 30401218234 的冻结 Android Oracle offline 步骤已成功，但 evidence prepare 因真实 RequestPlan 含 User-Agent 而返回 PAYLOAD_CANONICALIZATION_DRIFT：canonical-v1 合同要求 header 名 ASCII 小写，旧实现却在计算 canonical bytes 后要求 raw payload 与其完全相等。prepare 现在直接使用受保护 canonicalizer 的返回 bytes 作为 evidence payload，同时继续以 raw local_run_sha256 与 raw artifact_sha256 绑定原始真源，并以 canonical payload SHA/长度及既有 canonicalizer config/implementation digest 绑定规范化输出。真实形状回归覆盖混合大小写 headers、CRLF、trace/timing/run_started_at，证明只发生 header ASCII 小写、LF、固定 ignore pointers 与 object key sort，method、URL、body、form field 顺序和值保持精确；canonical 输出满足 exact JSON 与 canonicalizer 幂等。旧 HTML、已 canonical POST Form、两阶段 archive、finalize 与共享 proposal contract 保持兼容，未知字段及 artifact/scenario/runner/control/fixture/input/manifest 漂移仍失败关闭。正式 Evidence 通过 dependency policy 与 256 项 Harness tests；本项未触发或重跑 GitHub，未修改 Workflow、canonicalizer policy、contract、trusted_import、Android runner、Golden、Publisher、SourceLab 或产品。",
+  "evidence": "ios/harness/evidence/runs/run-20260728T220902Z-ios-github-oracle-payload-canonicalization-001-2edb24f3.json",
+  "capability_updates": [
+    {
+      "id": "CAP-CONFORMANCE",
+      "from_revision": 21,
+      "to_revision": 22,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": [
+      "ADR-0002",
+      "ADR-0004"
+    ]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null,
+    "none_reason": "本项只修复 Android Oracle evidence packager 的规范化控制合同"
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项不消费、生成或发布业务知识"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null,
+    "none_reason": "本项修复 packager 对已产生 raw Android artifact 的规范化，不运行或消费 SourceLab"
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项不改变 Android Oracle 业务语义、Fixture、Golden、canonicalizer policy 或 iOS 产品行为；旧 HTML、已 canonical POST Form 与共享 proposal contract 均由回归保持兼容"
+  },
+  "pitfalls": {
+    "records": [
+      "ios/project/pitfalls/PIT-0063.json"
+    ],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "run 30401218234 是绑定旧 source digest 的不可变失败历史，不能用本修复重写或续跑",
+    "包含本修复的新 exact source digest 尚未创建新的 deterministic sl-post-form-001 Oracle branch 或取得对应 GitHub-hosted run",
+    "新 run 的 evidence/proposal archive、双 attestation trusted import 与受信 receipt settlement 尚未完成",
+    "scenario-aware Android Golden Publisher 与后续 SourceRuntime POST Form iOS 验收尚未完成"
+  ],
+  "next_actions": [
+    "在包含本修复的新 exact source digest 上创建新的 deterministic sl-post-form-001 Oracle branch，禁止复用旧 branch",
+    "监控新 branch 的唯一 GitHub-hosted push run，并下载 evidence/proposal archive 与双 attestation bundle",
+    "执行 trusted_import --scenario sl-post-form-001 生成 candidate_only review report，并完成远端 run/source/scenario/contract receipt settlement",
+    "由独立 Publisher 审核并发布 scenario-aware protected Golden，再续接 SourceRuntime POST Form iOS 验收"
+  ],
+  "created_at": "2026-07-28T22:09:02Z"
+}
