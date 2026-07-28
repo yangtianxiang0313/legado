@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-TYPED-RECOVERY-LINEAGE-001",
+  "summary": "恢复谱系已从 recovery 标签、标题和 context_files 启发式升级为受控 typed edge。Work Item 可用单值 spec.recovers 声明 predecessor；Harness 语义校验拒绝非法 ID、自引用、depends_on 冲突、缺失目标、不同 capability 和声明环。close 在当前任务通过 Evidence、记忆与 Gate 后，才要求 predecessor 处于 blocked/rejected/exhausted/cancelled，拒绝已有不同 replacement 或 runtime cycle，并写入 predecessor.runtime.replacement、replacement_bound_at 与 WorkItemRecoveryBound 哈希链事件。Loop 已删除旧启发式，只消费 direct completion、显式 replacement 或 knowledge output semantic recovery。本任务依赖既有 Supervisor Recovery 002，并将 IOS-SUPERVISOR-OWNED-VERIFY-001 绑定到当前 typed replacement；历史 Work Item、旧事件和旧 Evidence 未改写。受保护 work-item JSON Schema 未由本地 Agent 修改，authority 提升留给 Trusted Publisher。正式 Evidence 通过 dependency policy 与完整 Harness tests。",
+  "evidence": "ios/harness/evidence/runs/run-20260728T052710Z-ios-typed-recovery-lineage-001-31c86f08.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 30,
+      "to_revision": 31,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": [
+      "ADR-0004"
+    ]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项不消费、生成或发布业务知识"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项只升级 Loop 恢复谱系控制边"
+  },
+  "pitfalls": {
+    "records": [
+      "ios/project/pitfalls/PIT-0025.json"
+    ],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "recovers 已由 Harness 语义合同严格执行，但受保护 work-item JSON Schema 尚未由 Trusted Publisher 增加显式 property",
+    "本地 state/event 仍与 Agent 共享文件权限；生产环境需要独立签名 Supervisor 承载 replacement authority",
+    "knowledge recovery 仍由 output revision 语义匹配；多个候选时会 fail-closed，需要显式 replacement 裁决"
+  ],
+  "next_actions": [
+    "由 Trusted Publisher 把 recovers 提升为 work-item JSON Schema 的显式可选字段",
+    "为 Proposal Compiler 增加 recovery recipe 到 recovers 的确定性编译与 manifest binding",
+    "把 replacement/state/event 写入 Agent 不可达的受保护控制服务",
+    "继续实现 recovery Claim revision、supersedes 与 depends_on 的自动重写"
+  ],
+  "created_at": "2026-07-28T05:27:15Z"
+}

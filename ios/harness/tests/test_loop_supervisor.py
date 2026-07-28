@@ -146,88 +146,38 @@ class LoopSupervisorInspectTests(unittest.TestCase):
             "status": "completed"
         }
         decision = supervisor.inspect()
-        self.assertEqual("queue_empty", decision.state)
-        self.assertEqual("NO_ELIGIBLE_COMPILED_CANDIDATE", decision.reason_code)
-
-        harness.items["IOS-FIX-002"] = {
-            "metadata": {
-                "priority": 1,
-                "labels": ["recovery"],
-            },
-            "spec": {
-                "capability": "CAP-WRONG",
-                "depends_on": [],
-                "inputs": {
-                    "context_files": [
-                        "ios/harness/work-items/IOS-READY-001.json"
-                    ]
-                },
-            },
-        }
-        harness.state_value["work_items"]["IOS-FIX-002"] = {
-            "status": "completed"
-        }
-        self.assertEqual(
-            ["IOS-FIX-001"],
-            supervisor._explicit_recovery_candidates(
-                "IOS-READY-001",
-                harness.items,
-                harness.state_value["work_items"],
-            ),
-        )
-
-        harness.items["IOS-FIX-002"]["spec"]["capability"] = "CAP-TEST"
-        harness.items["IOS-FIX-002"]["spec"]["inputs"]["context_files"] = []
-        self.assertEqual(
-            ["IOS-FIX-001"],
-            supervisor._explicit_recovery_candidates(
-                "IOS-READY-001",
-                harness.items,
-                harness.state_value["work_items"],
-            ),
-        )
-
-        harness.items["IOS-FIX-002"]["spec"]["inputs"]["context_files"] = [
-            "ios/harness/work-items/IOS-READY-001.json"
-        ]
-        harness.state_value["work_items"]["IOS-FIX-002"]["status"] = "implementing"
-        self.assertEqual(
-            ["IOS-FIX-001"],
-            supervisor._explicit_recovery_candidates(
-                "IOS-READY-001",
-                harness.items,
-                harness.state_value["work_items"],
-            ),
-        )
-
-        harness.state_value["work_items"]["IOS-FIX-002"]["status"] = "completed"
-        decision = supervisor.inspect()
         self.assertEqual("terminal_recovery", decision.state)
         self.assertEqual(
-            "EXPLICIT_RECOVERY_AMBIGUOUS",
+            "TERMINAL_WITHOUT_RECOVERY",
             decision.blockers[0]["resolution"]["reason_code"],
         )
 
-        harness.items["IOS-FIX-002"]["spec"]["inputs"]["context_files"].append(
-            "ios/harness/work-items/IOS-OTHER-FAILURE.json"
+        harness.state_value["work_items"]["IOS-READY-001"]["replacement"] = (
+            "IOS-FIX-001"
         )
-        harness.state_value["work_items"]["IOS-OTHER-FAILURE"] = {
-            "status": "rejected"
-        }
+        resolution = supervisor._terminal_resolution(
+            "IOS-READY-001",
+            harness.items,
+            harness.state_value["work_items"],
+        )
         self.assertEqual(
-            ["IOS-FIX-001"],
-            supervisor._explicit_recovery_candidates(
-                "IOS-READY-001",
-                harness.items,
-                harness.state_value["work_items"],
-            ),
+            "EXPLICIT_REPLACEMENT",
+            resolution["reason_code"],
+        )
+        decision = supervisor.inspect()
+        self.assertEqual("queue_empty", decision.state)
+        self.assertEqual("NO_ELIGIBLE_COMPILED_CANDIDATE", decision.reason_code)
+
+        harness.state_value["work_items"]["IOS-READY-001"]["replacement"] = (
+            "IOS-MISSING-RECOVERY"
+        )
+        decision = supervisor.inspect()
+        self.assertEqual("terminal_recovery", decision.state)
+        self.assertEqual(
+            "DEPENDENCY_MISSING",
+            decision.blockers[0]["resolution"]["reason_code"],
         )
 
-        harness.items.pop("IOS-FIX-002")
-        harness.state_value["work_items"].pop("IOS-FIX-002")
-        harness.state_value["work_items"].pop("IOS-OTHER-FAILURE")
-        harness.items.pop("IOS-FIX-001")
-        harness.state_value["work_items"].pop("IOS-FIX-001")
         harness.state_value["work_items"]["IOS-READY-001"] = {
             "status": "blocked",
             "blocker": "baseline_red",

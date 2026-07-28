@@ -317,6 +317,88 @@ class HarnessTests(unittest.TestCase):
             state["work_items"]["IOS-BOOT-001"]["status"] = "completed"
             self.assertEqual("IOS-CORE-001", harness.select_next(state, harness.work_items()))
 
+    def test_recovers_contract_rejects_invalid_edges(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = HarnessFixture(Path(directory))
+            harness = fixture.initialize()
+            item = fixture.item("IOS-RECOVERY-001", "CAP-BOOT", 100)
+
+            item["spec"]["recovers"] = "not-a-work-item"
+            errors = harness.validate_work_item(item, "IOS-RECOVERY-001")
+            self.assertTrue(any("recovers 必须" in error for error in errors), errors)
+
+            item["spec"]["recovers"] = "IOS-RECOVERY-001"
+            errors = harness.validate_work_item(item, "IOS-RECOVERY-001")
+            self.assertTrue(any("不得自引用" in error for error in errors), errors)
+
+            item["spec"]["recovers"] = "IOS-BOOT-001"
+            item["spec"]["depends_on"] = ["IOS-BOOT-001"]
+            errors = harness.validate_work_item(item, "IOS-RECOVERY-001")
+            self.assertTrue(
+                any("不得同时出现在 depends_on" in error for error in errors),
+                errors,
+            )
+
+            item["spec"]["depends_on"] = []
+            items = harness.work_items()
+            items["IOS-RECOVERY-001"] = item
+            errors = harness.validate_references(items)
+            self.assertEqual([], [
+                error
+                for error in errors
+                if "recovers" in error or "恢复成环" in error
+            ])
+
+            item["spec"]["recovers"] = "IOS-CORE-001"
+            errors = harness.validate_references(items)
+            self.assertTrue(
+                any("recovers capability 不一致" in error for error in errors),
+                errors,
+            )
+
+            item["spec"]["recovers"] = "IOS-MISSING-001"
+            errors = harness.validate_references(items)
+            self.assertTrue(any("recovers 不存在" in error for error in errors), errors)
+
+            item["spec"]["recovers"] = "IOS-BOOT-001"
+            state = harness.state()
+            state["work_items"]["IOS-RECOVERY-001"] = {
+                "status": "verified",
+            }
+            issues = harness.recovery_binding_issues(
+                "IOS-RECOVERY-001",
+                item,
+                items,
+                state,
+            )
+            self.assertTrue(any("可恢复终态" in issue for issue in issues), issues)
+
+            state["work_items"]["IOS-BOOT-001"] = {
+                "status": "blocked",
+                "replacement": "IOS-OTHER-001",
+            }
+            issues = harness.recovery_binding_issues(
+                "IOS-RECOVERY-001",
+                item,
+                items,
+                state,
+            )
+            self.assertTrue(any("不同 replacement" in issue for issue in issues), issues)
+
+            state["work_items"]["IOS-BOOT-001"] = {"status": "blocked"}
+            state["work_items"]["IOS-RECOVERY-001"]["replacement"] = "IOS-BOOT-001"
+            issues = harness.recovery_binding_issues(
+                "IOS-RECOVERY-001",
+                item,
+                items,
+                state,
+            )
+            self.assertTrue(any("会成环" in issue for issue in issues), issues)
+
+            items["IOS-BOOT-001"]["spec"]["recovers"] = "IOS-RECOVERY-001"
+            errors = harness.validate_references(items)
+            self.assertTrue(any("工作项恢复成环" in error for error in errors), errors)
+
     def test_business_knowledge_is_frozen_and_written_to_evidence(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -1121,6 +1203,36 @@ class HarnessTests(unittest.TestCase):
             root = Path(directory)
             fixture = HarnessFixture(root)
             harness = fixture.initialize()
+            predecessor_id = "IOS-FAILED-001"
+            predecessor = fixture.item(
+                predecessor_id,
+                "CAP-BOOT",
+                80,
+            )
+            fixture.write_json(
+                f"ios/harness/work-items/{predecessor_id}.json",
+                predecessor,
+            )
+            item_path = root / "ios/harness/work-items/IOS-BOOT-001.json"
+            item = harness_module.load_json(item_path)
+            item["spec"]["recovers"] = predecessor_id
+            fixture.write_json(
+                "ios/harness/work-items/IOS-BOOT-001.json",
+                item,
+            )
+            state = harness.state()
+            state["work_items"][predecessor_id] = {
+                "status": "blocked",
+                "attempt": 1,
+                "last_evidence": None,
+                "blocker": "baseline_red",
+            }
+            fixture.write_json("ios/project/state.json", state)
+            harness = harness_module.Harness(root)
+            fixture.write_text(
+                "ios/project/status.md",
+                harness.render_status(harness.state(), harness.work_items()),
+            )
             self.initialize_git(root)
 
             harness.claim("IOS-BOOT-001", "unit-test")
@@ -1163,6 +1275,23 @@ class HarnessTests(unittest.TestCase):
                 },
             )
             self.assertEqual("completed", harness.close("IOS-BOOT-001"))
+            predecessor_runtime = harness.state()["work_items"][predecessor_id]
+            self.assertEqual(
+                "IOS-BOOT-001",
+                predecessor_runtime["replacement"],
+            )
+            self.assertTrue(predecessor_runtime["replacement_bound_at"])
+            recovery_events = [
+                event
+                for event in harness.event_lines()
+                if event.get("event") == "WorkItemRecoveryBound"
+            ]
+            self.assertEqual(1, len(recovery_events))
+            self.assertEqual(predecessor_id, recovery_events[0]["work_item_id"])
+            self.assertEqual(
+                "IOS-BOOT-001",
+                recovery_events[0]["payload"]["replacement"],
+            )
             errors, _ = harness.doctor()
             self.assertEqual([], errors)
 

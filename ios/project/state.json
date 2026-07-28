@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "revision": 198,
+  "revision": 201,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-28T05:22:01Z",
-  "event_head": "b0fd78c4fc9446474361105b1b94c58eabf7d183d9df7b8046b60eb2357ab468",
+  "updated_at": "2026-07-28T05:27:55Z",
+  "event_head": "8993add1ed16f9d5fb37c6d33b2213c4b0f6c01b94854a9778eb822fc2fdaf13",
   "active_work_items": [],
-  "last_completed_work_item": "IOS-TERMINAL-RECOVERY-RESOLUTION-002",
+  "last_completed_work_item": "IOS-TYPED-RECOVERY-LINEAGE-001",
   "work_items": {
     "IOS-BOOT-001": {
       "status": "completed",
@@ -2855,7 +2855,9 @@
           "stdout_tail": "",
           "stderr_tail": "..........................................................................................................................F\n======================================================================\nFAIL: test_timeout_reclaims_child_and_grandchild (test_trusted_supervisor_reference.TrustedSupervisorReferenceTests)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_trusted_supervisor_reference.py\", line 219, in test_timeout_reclaims_child_and_grandchild\n    self.assertFalse(result[\"process_leak\"])\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 123 tests in 33.290s\n\nFAILED (failures=1)\n"
         }
-      ]
+      ],
+      "replacement": "IOS-TYPED-RECOVERY-LINEAGE-001",
+      "replacement_bound_at": "2026-07-28T05:27:55Z"
     },
     "IOS-PROCESS-GROUP-REAP-001": {
       "status": "completed",
@@ -3245,9 +3247,61 @@
       "final_tree_sha256": "70c97c164360be5b3b5467577c09d20268f8c605ec32f8a975dc11a0a29d6344"
     },
     "IOS-TYPED-RECOVERY-LINEAGE-001": {
-      "status": "ready",
-      "attempt": 0,
-      "last_evidence": null
+      "status": "completed",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260728T052710Z-ios-typed-recovery-lineage-001-31c86f08.json",
+      "claimed_by": "root-codex",
+      "claimed_at": "2026-07-28T05:22:49Z",
+      "lease_expires_at": "2026-07-29T05:22:49Z",
+      "work_item_sha256": "036812f7afc2e4d706aa60bdecb65d5d1e6a3ba1dc2bbc8b929b79143fd71feb",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "d5426ed65bc4e9b84076d019724cb6ff1356076a",
+      "base_capability_revision": 30,
+      "base_capability_assurance_sha256": "6c08426cf2cc8f0277426284e00909a10444767bc01eeb84e0db43db8dcbb2ac",
+      "android_requirement_selection_sha256": null,
+      "business_knowledge_control_sha256": "d6a33d36d2ce8385cf195fb80e538d4e050e61e28fdf21dc1487b6f1ee0c09ca",
+      "business_knowledge_authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 1,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "harness-tests",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "307f335e883f02e96ad97ecbda4c210435c0b955e2bcb9e46db9dc7b0d02c285",
+          "cwd": ".",
+          "started_at": "2026-07-28T05:22:13Z",
+          "duration_ms": 36142,
+          "timeout_seconds": 60,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "5f9cb3e2eee1484730c8f879634d60ffcf02db73605db1c4628772fd8b464c99",
+          "stdout_tail": "",
+          "stderr_tail": "..................................................................................................................................\n----------------------------------------------------------------------\nRan 130 tests in 36.021s\n\nOK\n"
+        }
+      ],
+      "last_evidence_sha256": "42c8f3ff8ea6463e4aa4d85f5c96d28953c46107b2a0aef3c4e4f974c814b11a",
+      "verified_at": "2026-07-28T05:27:10Z",
+      "completed_at": "2026-07-28T05:27:55Z",
+      "final_tree_sha256": "2c5d664d25a489d74e54e0715a3e74067ae25a9adf6ea591b19d685f6260c077"
     }
   },
   "health": {
@@ -3283,7 +3337,8 @@
     "knowledge_integrations": "candidate_verified",
     "proposal_gate_policy": "authority_only",
     "active_candidate_repair": "bounded",
-    "terminal_recovery_resolution": "single_terminal_predecessor"
+    "terminal_recovery_resolution": "single_terminal_predecessor",
+    "terminal_recovery_lineage": "typed_runtime_replacement"
   },
   "risks": [
     {

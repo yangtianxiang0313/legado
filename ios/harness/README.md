@@ -170,9 +170,18 @@ python3 ios/harness/loop_supervisor.py preflight \
 ```
 
 依赖解析只接受直接完成、显式 `state.replacement`，或唯一的更高 revision
-`knowledge.produces` recovery。终态无恢复、replacement 成环、部分覆盖或多个恢复候选
-都会保持 blocker。该 CLI 不改变 Harness queue/state/event/status/work-items，也不提供
-物化、审批、发布或接受权威事实的命令。
+`knowledge.produces` recovery。新的非知识恢复 Work Item 用单值 `spec.recovers`
+声明 predecessor；Harness 在它通过 Evidence、记忆事务和全部 Gate 后，才于 close
+原子写入 predecessor 的 `state.replacement` 与 `WorkItemRecoveryBound` 哈希链事件。
+predecessor 必须同 capability 且处于 blocked/rejected/exhausted/cancelled，已有不同
+replacement、自引用、`depends_on` 冲突和 recovery cycle 都会 fail closed。
+`recovery` 标签、标题与 `inputs.context_files` 只作为上下文，不再具有恢复 authority。
+受保护 JSON Schema 的 authority 提升留给 Trusted Publisher；本地 Harness 先以严格
+语义校验执行该字段，不能由 Agent 借恢复任务修改自己的 Schema。
+
+终态无恢复、replacement 成环、部分 knowledge output 覆盖或多个语义恢复候选都会保持
+blocker。该 CLI 不改变 Harness queue/state/event/status/work-items，也不提供物化、
+审批、发布或接受权威事实的命令。
 
 知识 producer 终态退出但未写 artifact 时，reservation 不复用。独立 corrective
 Work Item 可写 `business-knowledge/tombstones/**`，绑定原 producer 的 output、

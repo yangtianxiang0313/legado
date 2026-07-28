@@ -33,6 +33,7 @@ from swiftpm_manifest import dump_package
 DEFAULT_ROOT = Path(__file__).resolve().parents[2]
 ACTIVE_STATUSES = {"implementing", "verified", "awaiting_human"}
 TERMINAL_STATUSES = {"completed", "rejected", "exhausted", "cancelled", "superseded"}
+RECOVERABLE_STATUSES = {"blocked", "rejected", "exhausted", "cancelled"}
 ALL_STATUSES = ACTIVE_STATUSES | TERMINAL_STATUSES | {"ready", "blocked"}
 WORK_ITEM_ID = re.compile(r"^IOS-[A-Z][A-Z0-9-]*-[0-9]{3}$")
 CAPABILITY_ID = re.compile(r"^CAP-[A-Z0-9-]+$")
@@ -1103,6 +1104,14 @@ class Harness:
         depends = spec.get("depends_on")
         if not isinstance(depends, list) or any(not isinstance(entry, str) for entry in depends):
             errors.append(f"{item_id}: depends_on 必须是字符串数组")
+        recovers = spec.get("recovers")
+        if recovers is not None:
+            if not isinstance(recovers, str) or WORK_ITEM_ID.fullmatch(recovers) is None:
+                errors.append(f"{item_id}: recovers 必须是单个 Work Item ID")
+            elif recovers == item_id:
+                errors.append(f"{item_id}: recovers 不得自引用")
+            elif isinstance(depends, list) and recovers in depends:
+                errors.append(f"{item_id}: recovers 不得同时出现在 depends_on")
         scope = require_mapping(spec.get("scope"), f"{item_id}.scope", errors)
         if scope is not None:
             for name in ("allow_write", "deny_write"):
@@ -1460,6 +1469,18 @@ class Harness:
             for dependency in spec.get("depends_on", []):
                 if dependency not in items:
                     errors.append(f"{item_id}: depends_on 不存在：{dependency}")
+            recovers = spec.get("recovers")
+            if isinstance(recovers, str):
+                predecessor = items.get(recovers)
+                if predecessor is None:
+                    errors.append(f"{item_id}: recovers 不存在：{recovers}")
+                elif (
+                    predecessor.get("spec", {}).get("capability")
+                    != spec.get("capability")
+                ):
+                    errors.append(
+                        f"{item_id}: recovers capability 不一致：{recovers}"
+                    )
             for reference in spec.get("architecture_refs", []):
                 if reference.startswith("ARCH-") and reference not in architecture_text:
                     errors.append(f"{item_id}: 架构引用不存在：{reference}")
@@ -1483,6 +1504,7 @@ class Harness:
             if not isinstance(contract, str) or not self.resolve(contract).exists():
                 errors.append(f"{item_id}: capability contract 不存在：{contract}")
         errors.extend(self.detect_dependency_cycles(items))
+        errors.extend(self.detect_recovery_cycles(items))
         return errors
 
     def memory_issues(self, items: Dict[str, Dict[str, Any]], state: Dict[str, Any]) -> List[str]:
@@ -1837,6 +1859,25 @@ class Harness:
         for item_id in items:
             visit(item_id, [])
         return errors
+
+    @staticmethod
+    def detect_recovery_cycles(items: Dict[str, Dict[str, Any]]) -> List[str]:
+        errors: List[str] = []
+        for item_id in sorted(items):
+            chain: List[str] = []
+            current = item_id
+            while current in items:
+                if current in chain:
+                    errors.append(
+                        "工作项恢复成环：" + " -> ".join(chain + [current])
+                    )
+                    break
+                chain.append(current)
+                predecessor = items[current].get("spec", {}).get("recovers")
+                if not isinstance(predecessor, str):
+                    break
+                current = predecessor
+        return sorted(set(errors))
 
     def render_status(self, state: Dict[str, Any], items: Dict[str, Dict[str, Any]]) -> str:
         next_item = self.select_next(state, items)
@@ -3548,6 +3589,89 @@ class Harness:
                 errors.append(f"approval expires_at 无效：{gate}")
         return errors
 
+    def recovery_binding_issues(
+        self,
+        item_id: str,
+        item: Dict[str, Any],
+        items: Dict[str, Dict[str, Any]],
+        state: Dict[str, Any],
+    ) -> List[str]:
+        predecessor_id = item.get("spec", {}).get("recovers")
+        if predecessor_id is None:
+            return []
+        errors: List[str] = []
+        if not isinstance(predecessor_id, str):
+            return [f"{item_id}: recovers 必须是单个 Work Item ID"]
+        predecessor = items.get(predecessor_id)
+        predecessor_runtime = state.get("work_items", {}).get(predecessor_id)
+        if not isinstance(predecessor, dict) or not isinstance(
+            predecessor_runtime,
+            dict,
+        ):
+            return [f"{item_id}: recovers predecessor 不存在：{predecessor_id}"]
+        if (
+            predecessor.get("spec", {}).get("capability")
+            != item.get("spec", {}).get("capability")
+        ):
+            errors.append(f"{item_id}: recovers capability 不一致：{predecessor_id}")
+        if predecessor_runtime.get("status") not in RECOVERABLE_STATUSES:
+            errors.append(
+                f"{item_id}: recovers predecessor 必须处于可恢复终态，"
+                f"当前 {predecessor_id}={predecessor_runtime.get('status')}"
+            )
+        existing = predecessor_runtime.get("replacement")
+        if existing not in {None, item_id}:
+            errors.append(
+                f"{item_id}: predecessor 已绑定不同 replacement："
+                f"{predecessor_id}->{existing}"
+            )
+
+        chain: List[str] = []
+        current = item_id
+        while current not in chain:
+            chain.append(current)
+            runtime = state.get("work_items", {}).get(current)
+            replacement = (
+                runtime.get("replacement")
+                if isinstance(runtime, dict)
+                else None
+            )
+            if not isinstance(replacement, str) or not replacement:
+                break
+            if replacement == predecessor_id:
+                errors.append(
+                    f"{item_id}: recovery replacement 会成环："
+                    + " -> ".join([predecessor_id, *chain, predecessor_id])
+                )
+                break
+            current = replacement
+        return errors
+
+    def bind_recovery(
+        self,
+        item_id: str,
+        item: Dict[str, Any],
+        state: Dict[str, Any],
+        runtime: Dict[str, Any],
+    ) -> None:
+        predecessor_id = item.get("spec", {}).get("recovers")
+        if not isinstance(predecessor_id, str):
+            return
+        predecessor_runtime = state["work_items"][predecessor_id]
+        bound_at = utc_now()
+        predecessor_runtime["replacement"] = item_id
+        predecessor_runtime["replacement_bound_at"] = bound_at
+        self.append_event(
+            "WorkItemRecoveryBound",
+            predecessor_id,
+            {
+                "replacement": item_id,
+                "recovery_work_item_sha256": sha256_json(item),
+                "evidence": runtime["last_evidence"],
+                "evidence_sha256": runtime.get("last_evidence_sha256"),
+            },
+        )
+
     def close(self, item_id: str) -> str:
         items = self.work_items()
         if item_id not in items:
@@ -3643,7 +3767,19 @@ class Harness:
             self.refresh_business_knowledge_catalog()
         except HarnessError as error:
             memory_errors.append(f"Business Knowledge memory 无效：{error}")
-        all_errors = checkpoint_errors + memory_errors + close_scope_errors + dynamic_gate_errors
+        recovery_errors = self.recovery_binding_issues(
+            item_id,
+            item,
+            items,
+            state,
+        )
+        all_errors = (
+            checkpoint_errors
+            + memory_errors
+            + close_scope_errors
+            + dynamic_gate_errors
+            + recovery_errors
+        )
         all_errors.extend(self.memory_issues(items, state))
         if all_errors:
             raise HarnessError("close 前记忆事务无效：\n- " + "\n- ".join(all_errors))
@@ -3690,6 +3826,7 @@ class Harness:
             raise HarnessError(
                 "候选在批准校验与完成提交之间发生变化；停止完成并重新 verify"
             )
+        self.bind_recovery(item_id, item, state, runtime)
         runtime["status"] = "completed"
         runtime["completed_at"] = utc_now()
         runtime["final_tree_sha256"] = final_tree_sha256
