@@ -379,6 +379,33 @@ class BusinessKnowledgePublisherTests(unittest.TestCase):
             '.state == "requirement_readiness_required"',
             workflow,
         )
+        freeze = workflow.index(
+            "- name: Freeze staged authority transaction in a local commit"
+        )
+        verify = workflow.index(
+            "- name: Independently verify the installed graph and next Loop state"
+        )
+        push = workflow.index(
+            "- name: Push verified release commit and create review PR"
+        )
+        self.assertLess(freeze, verify)
+        self.assertLess(verify, push)
+        self.assertIn(
+            "git -C publisher commit",
+            workflow[freeze:verify],
+        )
+        self.assertNotIn(
+            "git -C publisher push",
+            workflow[freeze:verify],
+        )
+        self.assertNotIn(
+            "git -C publisher commit",
+            workflow[verify:push],
+        )
+        self.assertIn(
+            'test "$(git -C publisher branch --show-current)" = "${RELEASE_BRANCH}"',
+            workflow[push:],
+        )
         self.assertIn("gh pr create", workflow)
         self.assertNotIn(
             'HEAD:refs/heads/${TARGET_BRANCH}',

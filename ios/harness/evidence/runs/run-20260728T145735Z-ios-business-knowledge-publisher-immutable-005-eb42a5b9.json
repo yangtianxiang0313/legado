@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "run_id": "run-20260728T145735Z-ios-business-knowledge-publisher-immutable-005-eb42a5b9",
+  "work_item_id": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-IMMUTABLE-005",
+  "work_item_sha256": "9f3f3ee30232ac518e2a64c5bd069db56bb67692e1eacd8711e2d418ec132bb0",
+  "result": "passed",
+  "inputs": {
+    "base_commit": "ed9daaa9718aebc703fb707f2840a637f32be239",
+    "head_commit": "ed9daaa9718aebc703fb707f2840a637f32be239",
+    "snapshot_sha256": "3431b073dfc09de4334c82ae5d55d728c3430d146169c6b993feb490babddd8c",
+    "baseline_sha256": "eeeaf0017b79a2420faf73c686a110a2d0372b2da865e42aa8db360fd3015e93",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
+    "architecture_rules_sha256": "51ebc4cff5921643f95d8a045c21ea85cad046acb99ed56026f77bf842642fa5",
+    "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+    "golden_manifest_sha256": "13364dacf63643ebc9a0c48ca50d4937da85610a8975191ec1b86d8b80621f57",
+    "fixture_manifest_sha256": "7ea6c2f30f258a65bfeb67ebc8bc3c7d9e283875f31731b513b7380d5f2aff2c",
+    "dependency_lock_sha256": null,
+    "source_lab_control_sha256": "73282c8b72a7db793887290ad2bfff707c61ea8fe57a583ef9bd2e3c3c3b9f2d",
+    "android_intake_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122",
+    "business_knowledge_control_sha256": "b921f3965df5086df523aec6c90c175ffc470273cf76d73d61ac24dc71ed0e4f",
+    "business_knowledge_authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
+    "business_knowledge_coverage_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "business_knowledge_proposal_sha256": "31246a007a8d20fea7b6542a7ce72912156cc1cc440a99cd57e218a8333aeda5",
+    "android_requirement_selection_sha256": null,
+    "source_lab_selection_sha256": null,
+    "knowledge_selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "environment": {
+      "platform": "macOS-26.4.1-arm64-arm-64bit",
+      "python": "3.9.6",
+      "xcode": "Xcode 26.0\nBuild version 17A324",
+      "swift": "Apple Swift version 6.2 (swiftlang-6.2.0.19.9 clang-1700.3.19.1)\nTarget: arm64-apple-macosx26.0"
+    }
+  },
+  "changes": {
+    "paths": [
+      ".github/workflows/business-knowledge-publisher.yml",
+      "ios/harness/tests/test_business_knowledge_publisher.py"
+    ],
+    "changed_lines_approximate": 80,
+    "file_fingerprints": {
+      ".github/workflows/business-knowledge-publisher.yml": "file:0o644:9ccca2d4715537ac5671fb1db0507d8f018e6d2e9c025293d006129d647e0169",
+      "ios/harness/tests/test_business_knowledge_publisher.py": "file:0o644:a58ee43513cf2e6a763ce850a71829507ea12f595c82869d14da2a0cd265b757"
+    },
+    "dirty_snapshot": {
+      ".github/workflows/business-knowledge-publisher.yml": "file:0o644:9ccca2d4715537ac5671fb1db0507d8f018e6d2e9c025293d006129d647e0169",
+      "ios/harness/tests/test_business_knowledge_publisher.py": "file:0o644:a58ee43513cf2e6a763ce850a71829507ea12f595c82869d14da2a0cd265b757",
+      "ios/harness/work-items/IOS-BUSINESS-KNOWLEDGE-PUBLISHER-IMMUTABLE-005.json": "file:0o644:a7a64759cc189f4625e7bf4956287c6cd1320589cafdfaddd4a35db0f9891749",
+      "ios/project/events.jsonl": "file:0o644:e71720a9b79c9e98e8b4be9dc216048d2025bc80746e91c755ea2664d65306ff",
+      "ios/project/state.json": "file:0o644:f0c9c9424769a8c4d4a6d41d061940efdd848adb45ccdfdafd2e88334096c29c",
+      "ios/project/status.md": "file:0o644:10ea41c1ed5e8ab015ab01e975dc497411a9724f27a2b240d3a10fd7ad075f61",
+      "ios/project/work-item-proposals/candidates/IOS-BUSINESS-KNOWLEDGE-PUBLISHER-IMMUTABLE-005.json": "file:0o644:a7a64759cc189f4625e7bf4956287c6cd1320589cafdfaddd4a35db0f9891749"
+    },
+    "diff_sha256": "fd679ca1261045ee847712dadc5c6f49de30312c285e28ca91ee48a363ec23b9"
+  },
+  "policy_errors": [],
+  "architecture_errors": [],
+  "architecture_warnings": [],
+  "checks": [
+    {
+      "id": "dependency-policy",
+      "argv": [
+        "python3",
+        "ios/harness/probes/dependency_contract.py",
+        "--root",
+        "."
+      ],
+      "executable_path": "/usr/bin/python3",
+      "definition_sha256": "eca96cb1b69567829ed8396386b0449da8c0d6e7295a00f1decfb60430ff1153",
+      "cwd": ".",
+      "started_at": "2026-07-28T14:56:28Z",
+      "duration_ms": 690,
+      "timeout_seconds": 90,
+      "timed_out": false,
+      "process_leak": false,
+      "cleanup_error": null,
+      "exit_code": 0,
+      "passed": true,
+      "stdout_sha256": "17595a1d68cdc5b52c010f46dff48514afa3fa3cf0215cdea7ae8eff38677c0a",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_tail": "DEPENDENCY_CONTRACT: OK\n",
+      "stderr_tail": ""
+    },
+    {
+      "id": "harness-tests",
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "ios/harness/tests",
+        "-p",
+        "test_*.py"
+      ],
+      "executable_path": "/usr/bin/python3",
+      "definition_sha256": "244d512cbdd15fe0c5e35e6d9676510c943b19e9437987c24ac6e627a2e7ad94",
+      "cwd": ".",
+      "started_at": "2026-07-28T14:56:29Z",
+      "duration_ms": 65004,
+      "timeout_seconds": 180,
+      "timed_out": false,
+      "process_leak": false,
+      "cleanup_error": null,
+      "exit_code": 0,
+      "passed": true,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "00a09934ba32004bd659f524b2e0650f1e2c23d60d0efcea8c63a0331278b073",
+      "stdout_tail": "",
+      "stderr_tail": "...............................................................................................................................................................................................\n----------------------------------------------------------------------\nRan 191 tests in 64.379s\n\nOK\n"
+    }
+  ],
+  "failure": null,
+  "started_at": "2026-07-28T14:56:25Z",
+  "finished_at": "2026-07-28T14:57:35Z",
+  "reproduction": "python3 ios/harness/harness.py verify IOS-BUSINESS-KNOWLEDGE-PUBLISHER-IMMUTABLE-005"
+}
