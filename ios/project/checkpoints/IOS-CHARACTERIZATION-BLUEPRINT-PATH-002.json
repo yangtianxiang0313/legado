@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-CHARACTERIZATION-BLUEPRINT-PATH-002",
+  "summary": "修复了真实干净 HEAD 演练暴露的 Characterization blueprint 路径误判。preflight_candidate 新增默认开启的 require_filename_match，普通 candidate 仍严格要求文件名等于 metadata.id；仅 Characterization preview 与物化复算显式关闭该冗余假设，同时继续绑定允许根目录、DemandPlan.target_work_item_id、work_item_sha256 和 blueprint source_fingerprint。新增回归证明默认路径仍拒绝错名，专用路径可以接受 intent-keyed 文件。正式 Evidence 通过 dependency policy 与 213 项 Harness tests。",
+  "evidence": "ios/harness/evidence/runs/run-20260728T173829Z-ios-characterization-blueprint-path-002-7bdd3ad0.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 51,
+      "to_revision": 52,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": [
+      "ADR-0004"
+    ]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项不消费、生成或发布业务知识"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项只纠正控制面蓝图身份校验，不实现产品兼容行为"
+  },
+  "pitfalls": {
+    "records": [
+      "ios/project/pitfalls/PIT-0054.json"
+    ],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "尚需在提交后的真正干净 HEAD 上运行 inspect 和 auto_materialize_characterization，完成 AC-3 的链路实证",
+    "文件名约束关闭仅依赖专用调用点纪律，后续新增 blueprint 类型必须显式选择 identity 规则"
+  ],
+  "next_actions": [
+    "关闭并提交纠正 WorkItem",
+    "在干净 HEAD 上运行 Demand Compiler 和 Supervisor inspect",
+    "自动物化并领取 IOS-SOURCELAB-POST-FORM-001",
+    "构建 POST form nominal/boundary 本地书源场景"
+  ],
+  "created_at": "2026-07-28T17:38:33Z"
+}

@@ -1,0 +1,166 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-CHARACTERIZATION-BLUEPRINT-PATH-002",
+    "title": "修复 Characterization 蓝图路径与 WorkItem ID 的错误耦合",
+    "priority": 100,
+    "risk": "medium",
+    "labels": [
+      "phase-0",
+      "control-plane",
+      "loop-engine",
+      "characterization",
+      "corrective"
+    ]
+  },
+  "spec": {
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "intent": "真实干净 HEAD 演练发现 Characterization blueprint 按 Migration Intent ID 命名，但通用 candidate preflight 强制文件名等于 metadata.id，导致合法 Demand Plan 在物化前 fail closed。本项为 preflight 增加默认开启的 filename binding 参数，仅 Characterization 路径关闭该通用假设；Characterization 自身仍必须把 metadata.id、WorkItem SHA-256、blueprint SHA-256 与 DemandPlan.target_work_item_id 精确绑定。补充真实命名差异与错误 target 的回归，不修改 Migration Intent、blueprint、书源场景、Golden、Oracle 或产品代码。",
+    "depends_on": [
+      "IOS-CHARACTERIZATION-DAG-COMPILER-001"
+    ],
+    "scope": {
+      "allow_write": [
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/tests/test_loop_supervisor.py",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-CHARACTERIZATION-BLUEPRINT-PATH-002.json",
+        "ios/project/pitfalls/PIT-0054.json"
+      ],
+      "deny_write": [
+        ".github/**",
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "ios/harness/config.json",
+        "ios/harness/schemas/**",
+        "ios/harness/android-intake/**",
+        "ios/harness/source-lab/**",
+        "ios/harness/oracle/**",
+        "ios/harness/goldens/**",
+        "ios/harness/fixtures/source-lab/**",
+        "ios/harness/demand_compiler.py",
+        "ios/project/migration-intents/**",
+        "ios/project/requirement-proposals/**",
+        "ios/project/work-item-proposals/characterization-blueprints/**",
+        "ios/project/android-intake/**",
+        "ios/project/requirements/**",
+        "ios/project/business-knowledge/**",
+        "ios/project/approvals/**",
+        "ios/project/baseline.json",
+        "ios/docs/**"
+      ],
+      "max_files_changed": 5,
+      "max_changed_lines": 600
+    },
+    "inputs": {
+      "context_files": [
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/tests/test_loop_supervisor.py",
+        "ios/project/migration-intents/MINT-SOURCE-REQUEST-POST-FORM-001.json",
+        "ios/project/work-item-proposals/characterization-blueprints/MINT-SOURCE-REQUEST-POST-FORM-001.json",
+        "ios/project/checkpoints/IOS-CHARACTERIZATION-DAG-COMPILER-001.json"
+      ],
+      "android_source_anchors": [],
+      "fixtures": []
+    },
+    "architecture_refs": [
+      "ARCH-014",
+      "ARCH-017",
+      "ADR-0004"
+    ],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "preflight_candidate 默认仍要求普通 candidate 文件名等于 metadata.id，只有 Characterization blueprint 调用点显式关闭该假设。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "文件名使用 Migration Intent ID、metadata.id 使用目标 WorkItem ID 的 committed blueprint 能通过 Characterization preview；target ID、内容 SHA 或路径漂移仍 fail closed。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "干净 HEAD 上真实 inspect 输出 characterization_materialization_ready，随后自动物化 IOS-SOURCELAB-POST-FORM-001。",
+          "verified_by": [
+            "harness-tests",
+            "memory-close"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": [
+        "dependency-policy",
+        "harness-tests"
+      ]
+    },
+    "baseline_checks": [
+      "dependency-policy",
+      "harness-tests"
+    ],
+    "budget": {
+      "wall_clock_seconds": 3600,
+      "max_edit_verify_cycles": 3,
+      "max_targeted_test_runs": 8,
+      "max_full_test_runs": 2,
+      "max_infra_retries": 1
+    },
+    "gates": [],
+    "completion_effects": {
+      "health": {
+        "characterization_blueprint_path_binding": "intent_keyed_verified"
+      }
+    },
+    "memory": {
+      "capability_state_required": true,
+      "checkpoint_required": true,
+      "pitfall_update_required": true,
+      "adr": "not_required"
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "refs": [],
+      "none_reason": "本项修复控制面路径假设，不实现产品行为"
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "not_applicable",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [],
+      "expected_ledger_transitions": [],
+      "context_budget": {
+        "max_claims": 8,
+        "max_bytes": 24576
+      },
+      "none_reason": "本项不消费、生成或发布业务知识"
+    },
+    "source_lab": {
+      "mode": "not_applicable",
+      "behaviors": [],
+      "scenarios": [],
+      "none_reason": "本项不创建或修改 SourceLab 场景"
+    },
+    "stop_on": [
+      "baseline_red",
+      "scope_violation",
+      "authority_escalation",
+      "same_failure_twice",
+      "budget_exhausted",
+      "human_decision_required"
+    ]
+  }
+}

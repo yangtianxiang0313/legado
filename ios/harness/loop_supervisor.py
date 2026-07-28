@@ -922,6 +922,7 @@ class LoopSupervisor:
         preview = self.preflight_candidate(
             path,
             allowed_root=CHARACTERIZATION_BLUEPRINT_ROOT,
+            require_filename_match=False,
         )
         if (
             preview.item_id != plan.target_work_item_id
@@ -1792,6 +1793,7 @@ class LoopSupervisor:
         raw_path: Path,
         *,
         allowed_root: str = CANDIDATE_ROOT,
+        require_filename_match: bool = True,
     ) -> MaterializationPreview:
         errors, _ = self.harness.doctor()
         if errors:
@@ -1807,7 +1809,10 @@ class LoopSupervisor:
         item_id = item.get("metadata", {}).get("id")
         if not isinstance(item_id, str):
             raise MaterializationConflict("candidate 缺少 metadata.id")
-        if candidate_path.name != f"{item_id}.json":
+        if (
+            require_filename_match
+            and candidate_path.name != f"{item_id}.json"
+        ):
             raise MaterializationConflict("candidate 文件名必须与 metadata.id 一致")
         validation = self.harness.validate_work_item(item, item_id)
         if validation:
@@ -1964,6 +1969,9 @@ class LoopSupervisor:
         current = self.preflight_candidate(
             self.harness.resolve(preview.source_relative),
             allowed_root=allowed_root,
+            require_filename_match=(
+                allowed_root != CHARACTERIZATION_BLUEPRINT_ROOT
+            ),
         )
         if current.binding() != preview.binding():
             raise MaterializationConflict("验收页打开后 candidate 或事件头发生变化")

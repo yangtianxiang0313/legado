@@ -580,6 +580,34 @@ class MaterializationTests(unittest.TestCase):
             with self.assertRaisesRegex(loop_supervisor.MaterializationConflict, "必须位于|普通 JSON"):
                 supervisor.preflight_candidate(path)
 
+    def test_preflight_filename_binding_is_explicitly_scoped(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            path, item = fixture.candidate(
+                "IOS-TEST-CHARACTERIZATION-001"
+            )
+            intent_named = (
+                fixture.candidate_root
+                / "MINT-TEST-CHARACTERIZATION-001.json"
+            )
+            path.rename(intent_named)
+            supervisor = loop_supervisor.LoopSupervisor(fixture.harness)
+
+            with self.assertRaisesRegex(
+                loop_supervisor.MaterializationConflict,
+                "文件名必须与 metadata.id 一致",
+            ):
+                supervisor.preflight_candidate(intent_named)
+
+            preview = supervisor.preflight_candidate(
+                intent_named,
+                require_filename_match=False,
+            )
+            self.assertEqual(
+                item["metadata"]["id"],
+                preview.item_id,
+            )
+
     def test_preflight_rejects_explicit_allow_path_that_is_protected(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = MaterializationFixture(Path(directory))

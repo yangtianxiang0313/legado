@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0054",
+  "revision": 1,
+  "title": "把蓝图文件名恒等于 WorkItem ID 会阻断按需求键组织的蓝图",
+  "fingerprint": "generic-candidate-filename-binding-rejects-intent-keyed-characterization-blueprint",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "Demand Compiler 输出 characterization_ready 且所有 hash/Requirement/scope 绑定闭合",
+    "Supervisor inspect 却返回 CHARACTERIZATION_BLUEPRINT_INVALID",
+    "唯一错误是蓝图文件名使用 Migration Intent ID，而 metadata.id 使用目标 WorkItem ID"
+  ],
+  "conditions": [
+    "同一 Demand Intent 的蓝图按 intent identity 存储，以便每轮内容寻址重算",
+    "通用 candidate preflight 默认把文件 stem 当 WorkItem ID",
+    "专用 Characterization preview 已另行绑定 target_work_item_id 与 blueprint 内容摘要"
+  ],
+  "root_cause": "通用 candidate 的目录命名约定被错误提升为所有 blueprint 的语义不变量。Characterization blueprint 的稳定索引是 Migration Intent，而待物化 WorkItem ID 是蓝图内容，两者可以且应由专用绑定分别校验。",
+  "diagnosis": [
+    "先区分路径索引 identity、蓝图 metadata.id 与 DemandPlan.target_work_item_id",
+    "检查专用 preview 是否已绑定 metadata.id、work_item_sha256、source_fingerprint 与允许根目录",
+    "只有缺少专用内容绑定时才依赖文件名作为身份保护"
+  ],
+  "fix": "为 preflight_candidate 增加默认开启的 require_filename_match；普通 candidate、Delivery 与 Migration intake 保持原规则，Characterization 调用点显式关闭文件名假设，并继续强校验 metadata.id 与 Demand Plan 目标及双 SHA-256。",
+  "prevention": {
+    "architecture_rule": "通用安全校验的默认约束可以比专用蓝图严格，但专用调用点移除冗余约束时必须提供等价或更强的内容寻址身份绑定，并有默认路径不变的回归测试。",
+    "tests": [
+      "ios/harness/tests/test_loop_supervisor.py"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-CHARACTERIZATION-DAG-COMPILER-001",
+    "until": "IOS-CHARACTERIZATION-BLUEPRINT-PATH-002"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T173829Z-ios-characterization-blueprint-path-002-7bdd3ad0.json"
+  ]
+}
