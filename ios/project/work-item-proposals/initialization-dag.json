@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "InitializationWorkItemProposalDAG",
   "id": "WIPD-IOS-INITIALIZATION-001",
-  "revision": 16,
+  "revision": 17,
   "authority": "proposal_only",
   "status": "proposed",
   "created_by": "IOS-KNOWLEDGE-CONTROL-PLANE-001",
@@ -223,6 +223,13 @@
       "title": "以 branch push/run 对账闭合 GitHub Oracle 幂等恢复",
       "outputs": ["branch-push-only external dispatcher", "server-reconciled run identity", "crash-safe runtime journal"],
       "gates": [], "constraint": "只强化既有 GitHub Oracle Dispatcher 与 Supervisor 外部执行路径；create-only branch push 必须成为唯一服务端创建动作，禁止继续调用 workflow_dispatch，禁止下载/信任 artifact、生成 receipt、发布 Golden 或修改 Workflow/Oracle/产品"
+    },
+    {
+      "proposal_id": "IOS-TRUSTED-ORACLE-SETTLEMENT-ROBUSTNESS-001", "phase": 21, "class": "control_plane",
+      "depends_on": ["IOS-TRUSTED-ORACLE-SETTLEMENT-COMPILER-001", "IOS-GITHUB-ORACLE-DISPATCHER-HARDENING-001"], "knowledge_mode": "not_applicable",
+      "title": "让 trusted Oracle 历史结算兼容 Capability 单调演进",
+      "outputs": ["historical capability transition settlement", "monotonic live revision validation", "current HEAD external execution binding"],
+      "gates": [], "constraint": "只修复 trusted Oracle 历史结算对后续 Capability 单调演进的错误依赖；不得放宽原 WorkItem/Evidence/Checkpoint/recovery/Requirement/SourceLab/shared-contract 校验，不得触发 GitHub、修改 Workflow/Dispatcher/Oracle/Golden/产品"
     }
   ],
   "compiler_rules": [

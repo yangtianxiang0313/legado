@@ -1,0 +1,43 @@
+{
+  "authority": "proposal_only",
+  "candidate_sha256": "f2c830e9b22744a0a34df9aa67904044e33b908e5521ce9933fec7311b739891",
+  "compiler_version": "proposal-compiler-v1",
+  "dag": {
+    "id": "WIPD-IOS-INITIALIZATION-001",
+    "revision": 17,
+    "sha256": "e0f0ccb647046b6d47cfc3c91dc4a2eb059d3f1e19b99199d91f1c6353fc48f2"
+  },
+  "dependencies": [
+    {
+      "chain": [
+        "IOS-TRUSTED-ORACLE-SETTLEMENT-COMPILER-001"
+      ],
+      "checkpoint": "ios/project/checkpoints/IOS-TRUSTED-ORACLE-SETTLEMENT-COMPILER-001.json",
+      "checkpoint_sha256": "95b5e2c1fa433441efba99032507183d8e058348dc11d89b1cadb2caa9778dfe",
+      "evidence": "ios/harness/evidence/runs/run-20260728T194704Z-ios-trusted-oracle-settlement-compiler-001-5274cee4.json",
+      "evidence_sha256": "9038b2023b3f139c38020394d52557656fb3cad4fd0dde08162ec20a99c64339",
+      "original": "IOS-TRUSTED-ORACLE-SETTLEMENT-COMPILER-001",
+      "reason_code": "DIRECT_COMPLETION",
+      "resolved": "IOS-TRUSTED-ORACLE-SETTLEMENT-COMPILER-001",
+      "work_item_sha256": "773356e44d9bec68fa1b7f8bbb619df6f7652833aa5c7be27a04be12093f1d22"
+    },
+    {
+      "chain": [
+        "IOS-GITHUB-ORACLE-DISPATCHER-HARDENING-001"
+      ],
+      "checkpoint": "ios/project/checkpoints/IOS-GITHUB-ORACLE-DISPATCHER-HARDENING-001.json",
+      "checkpoint_sha256": "b1522c3c18b80a2e3ba845b2cd4196efbd8134c60ddb87784740b9c62d67d207",
+      "evidence": "ios/harness/evidence/runs/run-20260728T211633Z-ios-github-oracle-dispatcher-hardening-001-2839cb49.json",
+      "evidence_sha256": "260efef43f876c0113fbc2ab2792468ab23b36e4be5a5f4005173e8b3abfaa52",
+      "original": "IOS-GITHUB-ORACLE-DISPATCHER-HARDENING-001",
+      "reason_code": "DIRECT_COMPLETION",
+      "resolved": "IOS-GITHUB-ORACLE-DISPATCHER-HARDENING-001",
+      "work_item_sha256": "93d1936a28a46c57104c632a909f4de3921a79a5fc483dd9d7a4973cd5444d2a"
+    }
+  ],
+  "node_sha256": "909ad4925b12b4e376a3b4191860e142bd7fc4a98c6d58e58babbc0ed7e6ab87",
+  "proposal_id": "IOS-TRUSTED-ORACLE-SETTLEMENT-ROBUSTNESS-001",
+  "queue_effect": "none",
+  "recipe_sha256": "624306e34234d4922f4cad12704df7116a9d115520ba50cc777c3c5891e8a43b",
+  "schema_version": 1
+}
