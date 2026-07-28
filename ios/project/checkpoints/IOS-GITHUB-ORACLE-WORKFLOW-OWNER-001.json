@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-GITHUB-ORACLE-WORKFLOW-OWNER-001",
+  "summary": "已在修改 Android Oracle Workflow 前完成独立 Conformance 所有权事务。CAP-CONFORMANCE owners.paths 只新增 .github/workflows/android-oracle-attestation.yml 精确路径，没有增加 .github/**、其他 Workflow、Publisher、Golden 或产品权限；Capability revision 由 19 提升到 20。首轮 Agent 没有产生范围内变化，正式 VerificationFailed 正确拒绝空实现；第二轮补齐 owner 后，正式 Evidence 通过 245 项 Harness tests、依赖策略与 SourceLab contract。本项没有修改 Workflow 内容、Dispatcher、LoopSupervisor，也没有执行网络、生成 receipt 或发布 Golden。",
+  "evidence": "ios/harness/evidence/runs/run-20260728T203237Z-ios-github-oracle-workflow-owner-001-9da23828.json",
+  "capability_updates": [
+    {
+      "id": "CAP-CONFORMANCE",
+      "from_revision": 19,
+      "to_revision": 20,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": [
+      "ADR-0002",
+      "ADR-0004"
+    ]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null,
+    "none_reason": "本项只预声明固定 Android Oracle Workflow 的 Capability owner"
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项不消费、生成或发布业务知识"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null,
+    "none_reason": "本项只更新 Workflow owner，不运行或修改 SourceLab"
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项只预声明 Workflow 路径，不改变书源或运行时兼容行为"
+  },
+  "pitfalls": {
+    "records": [
+      "ios/project/pitfalls/PIT-0061.json"
+    ],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "attestation Workflow 尚未支持 deterministic branch push trigger",
+    "Dispatcher 仍调用无返回 run ID 的 gh workflow run",
+    "真实 POST Form Oracle、trusted receipt 与 scenario-aware Golden Publisher 尚未完成"
+  ],
+  "next_actions": [
+    "建立只允许固定 attestation Workflow 的自动策略特例",
+    "实现 create-only Oracle branch push trigger 与 selector 解析",
+    "硬化 Dispatcher，使 branch/run 成为服务端幂等对账事实",
+    "运行真实 sl-post-form-001 Android Oracle"
+  ],
+  "created_at": "2026-07-28T20:32:58Z"
+}

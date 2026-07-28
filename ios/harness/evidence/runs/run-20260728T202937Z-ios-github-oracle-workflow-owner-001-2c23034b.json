@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "run_id": "run-20260728T202937Z-ios-github-oracle-workflow-owner-001-2c23034b",
+  "work_item_id": "IOS-GITHUB-ORACLE-WORKFLOW-OWNER-001",
+  "work_item_sha256": "608b15df326bfd6fff465196847e8940b4580c53146833b94b1d4e988cfe9273",
+  "result": "failed",
+  "inputs": {
+    "base_commit": "9ffe59eb4bc2674924eca276ff7710482ca17fc4",
+    "head_commit": "9ffe59eb4bc2674924eca276ff7710482ca17fc4",
+    "snapshot_sha256": "1c3790f5e036079e941584358ed0bbb3dd299bee54c063708cb1ea9b3eb8af96",
+    "baseline_sha256": "eeeaf0017b79a2420faf73c686a110a2d0372b2da865e42aa8db360fd3015e93",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
+    "architecture_rules_sha256": "51ebc4cff5921643f95d8a045c21ea85cad046acb99ed56026f77bf842642fa5",
+    "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+    "golden_manifest_sha256": "13364dacf63643ebc9a0c48ca50d4937da85610a8975191ec1b86d8b80621f57",
+    "fixture_manifest_sha256": "76b8ba91dfca774e1fd548280a927dd383b7efadabed81704dcba408b6874243",
+    "dependency_lock_sha256": null,
+    "source_lab_control_sha256": "05ec6fbf150a6caedfbd9ec12fd3b3151f791825a4066b162be77524aa960c0e",
+    "android_intake_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122",
+    "business_knowledge_control_sha256": "fe12e0037e5105f470f6a4f7c774ec66041d2051f856f8590b9d71b7990d2fee",
+    "business_knowledge_authority_sha256": "9a898622fab665e380b0fdb7837d6aa24f938f5c87e4bc635c32fbdf4dfe81c8",
+    "business_knowledge_coverage_sha256": "8cd21f8c89530ad6b94a2a6f35c5f671b052ec180f93a365f0c9c0cfa4357961",
+    "business_knowledge_proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
+    "android_requirement_selection_sha256": null,
+    "source_lab_selection_sha256": null,
+    "knowledge_selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "environment": {
+      "platform": "macOS-26.4.1-arm64-arm-64bit",
+      "python": "3.9.6",
+      "xcode": "Xcode 26.0\nBuild version 17A324",
+      "swift": "Apple Swift version 6.2 (swiftlang-6.2.0.19.9 clang-1700.3.19.1)\nTarget: arm64-apple-macosx26.0"
+    }
+  },
+  "changes": {
+    "paths": [],
+    "changed_lines_approximate": 0,
+    "file_fingerprints": {},
+    "dirty_snapshot": {
+      "ios/harness/work-items/IOS-GITHUB-ORACLE-WORKFLOW-OWNER-001.json": "file:0o644:65bdf2d7a2379615bd07298ce34a3fb61cc71efaa72c48b36d7a90492ff722f4",
+      "ios/project/events.jsonl": "file:0o644:6134048be3487857d6eefad93916168b1fd5f344a956d8ca1acdfd35307111d4",
+      "ios/project/state.json": "file:0o644:4a3c75596e410e4fe350d9a5dc3ecd0b4c7172f7bd8e6490e5bb05f4f3f1125c",
+      "ios/project/status.md": "file:0o644:7e2ff54881954762a6f5fef939c515efc211b82885a7af143a0f336ed695ed45"
+    },
+    "diff_sha256": "21dbd62d3e2e064169744f621da55515f958ca73717c9ac898670b3c682d916c"
+  },
+  "policy_errors": [
+    "没有检测到工作项范围内的实现或记忆变化"
+  ],
+  "architecture_errors": [],
+  "architecture_warnings": [],
+  "checks": [],
+  "failure": {
+    "class": "POLICY",
+    "message": "没有检测到工作项范围内的实现或记忆变化",
+    "fingerprint": "4d8c7d415046c73424c1c60c5c723eaffed242089cefced41b7d4973b6360d40"
+  },
+  "started_at": "2026-07-28T20:29:34Z",
+  "finished_at": "2026-07-28T20:29:37Z",
+  "reproduction": "python3 ios/harness/harness.py verify IOS-GITHUB-ORACLE-WORKFLOW-OWNER-001"
+}

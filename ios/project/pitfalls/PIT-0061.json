@@ -1,11 +1,12 @@
 {
   "schema_version": 1,
   "id": "PIT-0061",
-  "revision": 1,
+  "revision": 2,
   "title": "没有服务端幂等键的 workflow_dispatch 存在不可消除的发送歧义",
   "fingerprint": "workflow-dispatch-crash-window-without-server-visible-execution-id",
   "capabilities": [
-    "CAP-KNOWLEDGE-CONTROL"
+    "CAP-KNOWLEDGE-CONTROL",
+    "CAP-CONFORMANCE"
   ],
   "symptoms": [
     "本地在调用 gh workflow run 前写入 dispatched journal，以避免崩溃后重复触发",
@@ -25,7 +26,7 @@
     "模拟 gh 返回错误但远端实际创建 run，以及返回错误且远端无 run 两种情况",
     "确认多 run、identity 漂移和终态重写均 fail closed"
   ],
-  "fix": "当前 Dispatcher 先采用 create-only deterministic branch 与 write-ahead journal，保证不会静默重复触发；下一独立 hardening WorkItem 将 execution_id 加入 Workflow 输入/run-name，并补齐失败歧义、延迟可见、状态与 journal 恢复测试后再运行真实远端。",
+  "fix": "当前 Dispatcher 先采用 create-only deterministic branch 与 write-ahead journal，保证不会静默重复触发；IOS-GITHUB-ORACLE-WORKFLOW-OWNER-001 已把固定 attestation workflow 精确登记到 CAP-CONFORMANCE。下一阶段将由 create-only branch 的 push 事件成为服务端幂等创建事实，并补齐失败歧义、延迟可见、状态与 journal 恢复测试后再运行真实远端。",
   "prevention": {
     "architecture_rule": "任何无返回资源 ID 的外部创建 API，都必须把客户端确定性 identity 写入服务端可查询字段；本地 journal 只能辅助恢复，不能作为唯一幂等证明。",
     "tests": [
@@ -43,6 +44,7 @@
   "first_seen": "2026-07-28",
   "last_seen": "2026-07-28",
   "evidence": [
-    "ios/harness/evidence/runs/run-20260728T202133Z-ios-github-oracle-dispatcher-001-f4aa23e4.json"
+    "ios/harness/evidence/runs/run-20260728T202133Z-ios-github-oracle-dispatcher-001-f4aa23e4.json",
+    "ios/harness/evidence/runs/run-20260728T203237Z-ios-github-oracle-workflow-owner-001-9da23828.json"
   ]
 }

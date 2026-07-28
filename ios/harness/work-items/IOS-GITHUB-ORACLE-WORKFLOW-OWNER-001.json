@@ -1,0 +1,164 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-GITHUB-ORACLE-WORKFLOW-OWNER-001",
+    "labels": [
+      "phase-0",
+      "control-plane",
+      "architecture",
+      "capability-owner",
+      "android-oracle",
+      "github-actions"
+    ],
+    "priority": 100,
+    "risk": "medium",
+    "title": "预声明 Android Oracle Workflow 的 Conformance 所有权"
+  },
+  "spec": {
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "CAP-CONFORMANCE owners.paths 只精确新增 .github/workflows/android-oracle-attestation.yml，不增加 .github/**、Publisher、Golden、产品或其他 Workflow 权限。",
+          "verified_by": [
+            "harness-tests",
+            "dependency-policy"
+          ]
+        },
+        {
+          "id": "AC-2",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "Capability revision 从 19 精确提升到 20，latest_evidence、updated_by、updated_at 与本 WorkItem 正式 Evidence/Checkpoint 一致；doctor 可重算通过。",
+          "verified_by": [
+            "harness-tests",
+            "source-lab-contract",
+            "memory-close"
+          ]
+        },
+        {
+          "id": "AC-3",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "本项不修改 Workflow 内容、Dispatcher、LoopSupervisor、Oracle producer/importer、Publisher、receipt、Golden、Fixture、Requirement、SourceLab、产品或 Package。",
+          "verified_by": [
+            "dependency-policy",
+            "memory-close"
+          ]
+        }
+      ],
+      "required_checks": [
+        "dependency-policy",
+        "harness-tests",
+        "source-lab-contract"
+      ]
+    },
+    "architecture_refs": [
+      "ARCH-014",
+      "ARCH-017",
+      "ADR-0002",
+      "ADR-0004"
+    ],
+    "baseline_checks": [
+      "dependency-policy",
+      "harness-tests"
+    ],
+    "budget": {
+      "max_edit_verify_cycles": 3,
+      "max_full_test_runs": 3,
+      "max_infra_retries": 1,
+      "max_targeted_test_runs": 8,
+      "wall_clock_seconds": 7200
+    },
+    "capability": "CAP-CONFORMANCE",
+    "completion_effects": {
+      "health": {
+        "android_oracle_workflow_owner": "declared_v1"
+      }
+    },
+    "depends_on": [
+      "IOS-GITHUB-ORACLE-DISPATCHER-001"
+    ],
+    "gates": [],
+    "inputs": {
+      "android_source_anchors": [],
+      "context_files": [
+        "ios/project/capabilities/CAP-CONFORMANCE.json",
+        ".github/workflows/android-oracle-attestation.yml",
+        "ios/project/checkpoints/IOS-GITHUB-ORACLE-DISPATCHER-001.json",
+        "ios/project/pitfalls/PIT-0061.json"
+      ],
+      "fixtures": []
+    },
+    "intent": "在把 Android Oracle 从无返回 ID 的 workflow_dispatch 演进为 create-only branch push trigger 前，先完成 Workflow 的架构所有权事务。将 .github/workflows/android-oracle-attestation.yml 精确加入 CAP-CONFORMANCE owners.paths，并把 Capability revision 19 提升到 20，绑定正式 Evidence 与 Checkpoint。本项只登记固定路径，不修改 Workflow 内容、不修改 Dispatcher/LoopSupervisor、不执行网络、不生成 receipt 或 Golden。后续自动策略授权与 Workflow hardening 必须依赖本项。",
+    "knowledge": {
+      "claim_refs": [],
+      "context_budget": {
+        "max_bytes": 32768,
+        "max_claims": 8
+      },
+      "contract_version": 1,
+      "coverage_refs": [],
+      "driver_refs": [],
+      "expected_ledger_transitions": [],
+      "mode": "not_applicable",
+      "none_reason": "本项不消费、生成或发布业务知识",
+      "produces": []
+    },
+    "memory": {
+      "adr": "not_required",
+      "capability_state_required": true,
+      "checkpoint_required": true,
+      "pitfall": "required"
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "none_reason": "本项只预声明固定 Android Oracle Workflow 的 Capability owner",
+      "refs": []
+    },
+    "scope": {
+      "allow_write": [
+        "ios/project/capabilities/CAP-CONFORMANCE.json",
+        "ios/project/checkpoints/IOS-GITHUB-ORACLE-WORKFLOW-OWNER-001.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        ".github/**",
+        "app/**",
+        "modules/**",
+        "build.gradle",
+        "settings.gradle",
+        "gradle/**",
+        "ios/Packages/**",
+        "ios/publisher/**",
+        "ios/harness/**",
+        "ios/project/android-intake/**",
+        "ios/project/requirements/**",
+        "ios/project/business-knowledge/**",
+        "ios/project/approvals/**",
+        "ios/project/work-item-proposals/**",
+        "ios/project/baseline.json",
+        "ios/docs/**"
+      ],
+      "max_changed_lines": 900,
+      "max_files_changed": 3
+    },
+    "source_lab": {
+      "behaviors": [],
+      "mode": "not_applicable",
+      "none_reason": "本项只更新 Workflow owner，不运行或修改 SourceLab",
+      "scenarios": []
+    },
+    "stop_on": [
+      "doctor_red",
+      "scope_violation",
+      "owner_scope_expansion",
+      "same_failure_twice",
+      "budget_exhausted",
+      "human_decision_required"
+    ]
+  }
+}
