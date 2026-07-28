@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "revision": 264,
+  "revision": 266,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-28T12:17:18Z",
-  "event_head": "ead133a4b4d053e21687a45919c10f51b1ce281d3fca63588bc7ccb4390e53dd",
+  "updated_at": "2026-07-28T13:08:03Z",
+  "event_head": "86650be72b4b74d3d143760e5ecc7fb5ed3121ca26b67113c463f8c6df84986b",
   "active_work_items": [],
   "last_completed_work_item": "IOS-ANDROID-GOLDEN-PUBLISHER-001",
   "work_items": {
@@ -4388,6 +4388,66 @@
       "verified_at": "2026-07-28T12:16:28Z",
       "completed_at": "2026-07-28T12:17:18Z",
       "final_tree_sha256": "f7687e5c30f916b51ee56d10e9ce39e37f35a0723bb2ed7b599a5ffa1eb3d1f7"
+    },
+    "IOS-LOOP-DEMAND-AUTONOMY-001": {
+      "status": "blocked",
+      "attempt": 0,
+      "last_evidence": null,
+      "blocker": "baseline_red",
+      "baseline_checks": [
+        {
+          "id": "dependency-policy",
+          "argv": [
+            "python3",
+            "ios/harness/probes/dependency_contract.py",
+            "--root",
+            "."
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "eca96cb1b69567829ed8396386b0449da8c0d6e7295a00f1decfb60430ff1153",
+          "cwd": ".",
+          "started_at": "2026-07-28T13:07:14Z",
+          "duration_ms": 711,
+          "timeout_seconds": 90,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "17595a1d68cdc5b52c010f46dff48514afa3fa3cf0215cdea7ae8eff38677c0a",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_tail": "DEPENDENCY_CONTRACT: OK\n",
+          "stderr_tail": ""
+        },
+        {
+          "id": "harness-tests",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "244d512cbdd15fe0c5e35e6d9676510c943b19e9437987c24ac6e627a2e7ad94",
+          "cwd": ".",
+          "started_at": "2026-07-28T13:07:15Z",
+          "duration_ms": 48657,
+          "timeout_seconds": 180,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 1,
+          "passed": false,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "7ee3d8383b04a6ccd87eb2a8b61f037b251fe67d8b43ad548eb6c8517fc754d1",
+          "stdout_tail": "",
+          "stderr_tail": "EE.F.................................F.........................................................................................................................................\n======================================================================\nERROR: test_prepare_accepts_a_symlinked_gh_executable (test_android_golden_publisher.AndroidGoldenPublisherTests)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_android_golden_publisher.py\", line 209, in test_prepare_accepts_a_symlinked_gh_executable\n    report = self._prepare(\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_android_golden_publisher.py\", line 301, in _prepare\n    return publisher.prepare(\n  File \"/Users/yangtianxiang/legado/ios/publisher/android_golden_publisher.py\", line 269, in prepare\n    raise GoldenPublisherError(\"GOLDEN_ALREADY_PUBLISHED\")\nandroid_golden_publisher.GoldenPublisherError: GOLDEN_ALREADY_PUBLISHED\n\n======================================================================\nERROR: test_prepare_is_deterministic_staging_only_and_fully_bound (test_android_golden_publisher.AndroidGoldenPublisherTests)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_android_golden_publisher.py\", line 118, in test_prepare_is_deterministic_staging_only_and_fully_bound\n    first = self._prepare(self.root / \"first\")\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_android_golden_publisher.py\", line 301, in _prepare\n    return publisher.prepare(\n  File \"/Users/yangtianxiang/legado/ios/publisher/android_golden_publisher.py\", line 269, in prepare\n    raise GoldenPublisherError(\"GOLDEN_ALREADY_PUBLISHED\")\nandroid_golden_publisher.GoldenPublisherError: GOLDEN_ALREADY_PUBLISHED\n\n======================================================================\nFAIL: test_prepare_rejects_every_repository_output_path (test_android_golden_publisher.AndroidGoldenPublisherTests)\n----------------------------------------------------------------------\nandroid_golden_publisher.GoldenPublisherError: GOLDEN_ALREADY_PUBLISHED\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_android_golden_publisher.py\", line 203, in test_prepare_rejects_every_repository_output_path\n    self._prepare(forbidden)\nAssertionError: \"OUTPUT_INSIDE_REPOSITORY\" does not match \"GOLDEN_ALREADY_PUBLISHED\"\n\n======================================================================\nFAIL: test_initialization_proposal_dag_contract (test_business_knowledge.BusinessKnowledgeTests)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_business_knowledge.py\", line 1206, in test_initialization_proposal_dag_contract\n    self.assertEqual(13, len(nodes))\nAssertionError: 13 != 14\n\n----------------------------------------------------------------------\nRan 175 tests in 48.360s\n\nFAILED (failures=2, errors=2)\n"
+        }
+      ]
     }
   },
   "health": {

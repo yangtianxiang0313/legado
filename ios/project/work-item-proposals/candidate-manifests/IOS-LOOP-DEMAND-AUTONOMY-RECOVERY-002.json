@@ -1,0 +1,69 @@
+{
+  "authority": "proposal_only",
+  "candidate_sha256": "6725e15026a6c8920c2310c6c430108b26e3a95fe41b5c58290851528628b1ff",
+  "compiler_version": "proposal-compiler-v1",
+  "dag": {
+    "id": "WIPD-IOS-INITIALIZATION-001",
+    "revision": 3,
+    "sha256": "fe6407d5364297310bc5381e52419d3f59fa5a0fb322867e3ef180489b97225d"
+  },
+  "dependencies": [
+    {
+      "chain": [
+        "IOS-AUTO-MATERIALIZATION-POLICY-001"
+      ],
+      "checkpoint": "ios/project/checkpoints/IOS-AUTO-MATERIALIZATION-POLICY-001.json",
+      "checkpoint_sha256": "0a76c775b59d098683cae81d3e55ec5f0ed9ed80615cdfad1e8dc00d38a089f6",
+      "evidence": "ios/harness/evidence/runs/run-20260728T032518Z-ios-auto-materialization-policy-001-539bfb34.json",
+      "evidence_sha256": "ef1bf3898edcfc137326ea7a3e14207c860604785ea76a977f6e277dd08e9df4",
+      "original": "IOS-AUTO-MATERIALIZATION-POLICY-001",
+      "reason_code": "DIRECT_COMPLETION",
+      "resolved": "IOS-AUTO-MATERIALIZATION-POLICY-001",
+      "work_item_sha256": "971103cff2929ac8954b52a506debf4e3c8654e7e76ab9d458da20e2e770ed46"
+    },
+    {
+      "chain": [
+        "IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002"
+      ],
+      "checkpoint": "ios/project/checkpoints/IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002.json",
+      "checkpoint_sha256": "b0ceae3da5d75f39acbafdfd6ee68e4239a6a019700f1388732517c92a35383f",
+      "evidence": "ios/harness/evidence/runs/run-20260728T044352Z-ios-supervisor-owned-verify-recovery-002-78c25113.json",
+      "evidence_sha256": "c6d6b46718705a4dc126692d84635f40897f39a053cadf00994cf121a69e8dba",
+      "original": "IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002",
+      "reason_code": "DIRECT_COMPLETION",
+      "resolved": "IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002",
+      "work_item_sha256": "ddb1fd0f3989d083e0da87f64aa52873b53ad86e51eff7a20f8044ddf295294e"
+    },
+    {
+      "chain": [
+        "IOS-ANDROID-GOLDEN-PUBLISHER-001"
+      ],
+      "checkpoint": "ios/project/checkpoints/IOS-ANDROID-GOLDEN-PUBLISHER-001.json",
+      "checkpoint_sha256": "b67a32a3ea88e2343585520b37f2f02170de12c458863889446b7b4b03fbbac7",
+      "evidence": "ios/harness/evidence/runs/run-20260728T121628Z-ios-android-golden-publisher-001-7803c73c.json",
+      "evidence_sha256": "4d6441aefe2c585611cb11999ab664ca348c6d0bf16371c96070dde488993b4d",
+      "original": "IOS-ANDROID-GOLDEN-PUBLISHER-001",
+      "reason_code": "DIRECT_COMPLETION",
+      "resolved": "IOS-ANDROID-GOLDEN-PUBLISHER-001",
+      "work_item_sha256": "e45b4fd4808f25df6b74914742456185287fec9ef8b76e22baf3acc748cf767d"
+    }
+  ],
+  "node_sha256": "5ce12d9eb159ab0291c245045955c29738786448cdacc7935551b82c8e5d756e",
+  "proposal_id": "IOS-LOOP-DEMAND-AUTONOMY-RECOVERY-002",
+  "queue_effect": "none",
+  "recipe_sha256": "335b8650ba78ff1cf80ceabb3c9352d4a23740a88f268d349e3686d32d33f13f",
+  "recovery": {
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "checkpoint": null,
+    "checkpoint_sha256": null,
+    "evidence": null,
+    "evidence_sha256": null,
+    "predecessor": "IOS-LOOP-DEMAND-AUTONOMY-001",
+    "replacement": null,
+    "runtime_sha256": "17d191d2e3d0e6d437b5303849b8d6a342c470936147a4c242c727c3b5c316fd",
+    "status": "blocked",
+    "work_item": "ios/harness/work-items/IOS-LOOP-DEMAND-AUTONOMY-001.json",
+    "work_item_sha256": "9cfd82922607786ebe92bfdb5a78d371d3400b7b5197e5604a1bfe354a374b51"
+  },
+  "schema_version": 1
+}
