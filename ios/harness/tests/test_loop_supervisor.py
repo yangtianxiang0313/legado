@@ -242,6 +242,22 @@ class MaterializationFixture:
 
 
 class MaterializationTests(unittest.TestCase):
+    def test_auto_scope_allows_only_registered_dispatcher_path(self):
+        allowed = loop_supervisor.LoopSupervisor._auto_scope_allowed
+
+        self.assertTrue(
+            allowed("ios/harness/github_oracle_dispatcher.py")
+        )
+        self.assertFalse(allowed("ios/harness/unregistered.py"))
+        self.assertFalse(allowed("ios/harness/**"))
+
+        self.assertTrue(allowed("ios/harness/demand_compiler.py"))
+        self.assertTrue(allowed("ios/harness/tests/test_example.py"))
+        self.assertFalse(
+            allowed(".github/workflows/android-oracle-attestation.yml")
+        )
+        self.assertFalse(allowed("ios/harness/goldens/example.json"))
+
     def test_inspect_surfaces_authority_demand_instead_of_queue_empty(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = MaterializationFixture(Path(directory))

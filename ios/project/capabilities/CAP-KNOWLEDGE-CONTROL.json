@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 57,
+  "revision": 58,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -67,7 +67,7 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260728T200056Z-ios-github-oracle-owner-001-992b8117.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260728T200946Z-ios-github-oracle-auto-scope-001-23d9da01.json",
   "next_actions": [
     "在精确 source digest 上触发 GitHub-hosted android-oracle-attestation workflow，scenario=sl-post-form-001",
     "下载 evidence/proposal archive 与双 attestation bundle，并由 trusted_import 生成结构化 candidate_only review report",
@@ -75,6 +75,6 @@
     "自动物化独立 Android Golden Publisher WorkItem，禁止 CI proposal 或 receipt settlement 直接发布 Golden",
     "protected Golden 发布后自动续接 SourceRuntime POST Form Package、结构化差分与 iOS UI 集成任务"
   ],
-  "updated_at": "2026-07-28T20:01:10Z",
-  "updated_by": "IOS-GITHUB-ORACLE-OWNER-001"
+  "updated_at": "2026-07-28T20:10:00Z",
+  "updated_by": "IOS-GITHUB-ORACLE-AUTO-SCOPE-001"
 }

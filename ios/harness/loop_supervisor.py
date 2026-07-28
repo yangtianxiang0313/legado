@@ -112,6 +112,7 @@ ACTIVE_DECISIONS = {
 }
 AUTO_SAFE_HARNESS_PATHS = {
     "ios/harness/demand_compiler.py",
+    "ios/harness/github_oracle_dispatcher.py",
     "ios/harness/loop_supervisor.py",
     "ios/harness/proposal_compiler.py",
     "ios/harness/README.md",

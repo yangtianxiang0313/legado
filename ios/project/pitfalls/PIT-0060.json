@@ -1,31 +1,33 @@
 {
   "schema_version": 1,
   "id": "PIT-0060",
-  "revision": 1,
-  "title": "任务 allowlist 不能替代 Capability owner 对新控制面路径的授权",
-  "fingerprint": "new-control-module-allowed-by-work-item-but-absent-from-capability-owner",
+  "revision": 2,
+  "title": "任务 allowlist、Capability owner 与自动策略白名单是三层独立授权",
+  "fingerprint": "new-control-module-missing-owner-or-exact-auto-safe-policy",
   "capabilities": [
     "CAP-KNOWLEDGE-CONTROL"
   ],
   "symptoms": [
     "Dispatcher proposal 已声明新模块和测试路径，但 Supervisor 返回 AUTO_POLICY_SCOPE_DENIED",
     "直接把路径加入 Capability 同时伪造 revision/updated_by 会被 doctor 拒绝",
-    "实现任务无法物化，而 Capability owner 又必须通过已登记 WorkItem 的记忆事务更新"
+    "实现任务无法物化，而 Capability owner 又必须通过已登记 WorkItem 的记忆事务更新",
+    "完成 Capability owner 事务后，真实 inspect 仍因 AUTO_SAFE_HARNESS_PATHS 未授权新模块而拒绝"
   ],
   "conditions": [
     "架构新增独立控制面模块",
     "Capability owners.paths 使用精确路径而非宽泛 wildcard",
     "实现 WorkItem 的 allow_write 先于 owner 事务声明新路径"
   ],
-  "root_cause": "把 WorkItem 的局部写入范围误当成架构所有权。自动策略要求 allow_write 同时落在 Capability owner 内；owner 本身又是受 Evidence/Checkpoint 约束的版本化状态，不能在提案阶段顺手修改。",
+  "root_cause": "把 WorkItem 局部 allow_write、Capability 架构所有权与 compiled-control-plane 自动策略白名单混成一个概念。三者分别控制任务范围、长期归属和无人值守创建权限，任一缺失都必须 fail closed。",
   "diagnosis": [
     "检查 AUTO_POLICY_SCOPE_DENIED 指向的路径是否存在于目标 Capability owners.paths",
     "确认 Capability revision、latest_evidence 与 updated_by 是否仍绑定最后一个已完成 WorkItem",
-    "区分架构 owner 预声明任务与后续实现任务，避免循环授权"
+    "区分架构 owner 预声明任务、自动策略精确授权任务与后续实现任务，避免循环授权",
+    "检查 AUTO_SAFE_HARNESS_PATHS 是否只包含所需精确文件，不能用 ios/harness/** 解决"
   ],
-  "fix": "新增独立 IOS-GITHUB-ORACLE-OWNER-001 前置 WorkItem，只在 CAP-KNOWLEDGE-CONTROL 中精确登记 dispatcher 与测试路径并完成 revision/Evidence/Checkpoint 事务；Dispatcher 实现任务依赖该项后再物化。",
+  "fix": "先由 IOS-GITHUB-ORACLE-OWNER-001 在 CAP-KNOWLEDGE-CONTROL 中精确登记 dispatcher 与测试路径并完成 revision/Evidence/Checkpoint；再由 IOS-GITHUB-ORACLE-AUTO-SCOPE-001 只把 dispatcher 文件加入 AUTO_SAFE_HARNESS_PATHS，并用反例证明任意路径和目录 wildcard 仍被拒绝；实现任务依赖两层事务后再物化。",
   "prevention": {
-    "architecture_rule": "任何新模块路径必须先由仅修改 Capability/Checkpoint 的 owner WorkItem 预声明；实现 WorkItem 不得同时以自己的 allowlist 为自己扩权。",
+    "architecture_rule": "任何无人值守创建的新模块必须依次闭合 WorkItem allow_write、Capability owner 与精确 auto-safe policy；每层独立 WorkItem，不允许实现任务为自己扩权，也不允许目录级 wildcard。",
     "tests": [
       "ios/harness/tests/test_loop_supervisor.py",
       "ios/harness/tests/test_harness.py"
@@ -34,13 +36,14 @@
   },
   "affected_versions": {
     "from": "IOS-GITHUB-ORACLE-DISPATCHER-001-PROPOSAL",
-    "until": "IOS-GITHUB-ORACLE-OWNER-001"
+    "until": "IOS-GITHUB-ORACLE-AUTO-SCOPE-001"
   },
   "status": "resolved",
-  "occurrences": 1,
+  "occurrences": 2,
   "first_seen": "2026-07-28",
   "last_seen": "2026-07-28",
   "evidence": [
-    "ios/harness/evidence/runs/run-20260728T200056Z-ios-github-oracle-owner-001-992b8117.json"
+    "ios/harness/evidence/runs/run-20260728T200056Z-ios-github-oracle-owner-001-992b8117.json",
+    "ios/harness/evidence/runs/run-20260728T200946Z-ios-github-oracle-auto-scope-001-23d9da01.json"
   ]
 }
