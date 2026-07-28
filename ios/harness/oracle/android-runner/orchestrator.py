@@ -19,14 +19,14 @@ from typing import Any, Dict, Iterable, Mapping, Optional, Sequence
 
 RUNNER_VERSION = "android-webbook-instrumentation-v1"
 COMMANDS = ("doctor", "run")
-SCENARIO_ID = "sl-html-basic-001"
+DEFAULT_SCENARIO_ID = "sl-html-basic-001"
+SCENARIO_ID = DEFAULT_SCENARIO_ID
 LOGICAL_ORIGIN = "http://sourcelab.test"
 BASELINE_PATH = "ios/project/baseline.json"
 INVENTORY_PATH = "ios/project/android-intake/inventory-manifest.json"
 FIXTURE_MANIFEST_PATH = "ios/harness/fixtures/manifest.json"
 SOURCE_LAB_MANIFEST_PATH = "ios/harness/source-lab/manifest.json"
 CANONICALIZER_PATH = "ios/harness/normalization/canonical-v1.json"
-FIXTURE_PATH = "ios/harness/fixtures/source-lab/sl-html-basic-001"
 KOTLIN_RUNNER = "LegadoOracleInstrumentedTest.kt"
 OVERLAY_RELATIVE = (
     "app/src/androidTest/java/io/legado/app/oracle/"
@@ -58,6 +58,21 @@ NOMINAL_CASES = {
     "toc",
     "chapter",
     "chapter-second",
+}
+SCENARIO_CONTRACTS = {
+    "sl-html-basic-001": {
+        "status": "reference",
+        "expected_cases": EXPECTED_CASES,
+        "nominal_cases": frozenset(NOMINAL_CASES),
+    },
+    "sl-post-form-001": {
+        "status": "candidate",
+        "expected_cases": (
+            ("post-form-nominal", "search"),
+            ("post-form-boundary", "search"),
+        ),
+        "nominal_cases": frozenset({"post-form-nominal"}),
+    },
 }
 ANDROID_PRODUCT_PATHS = (
     "app/src/main",
@@ -212,8 +227,22 @@ def frozen_identity(root: Path) -> Dict[str, str]:
     return {"android_git_commit": commit, "android_git_tree": tree}
 
 
-def repository_bindings(root: Path) -> Dict[str, str]:
+def _scenario_contract(scenario_id: str) -> Mapping[str, Any]:
+    contract = SCENARIO_CONTRACTS.get(scenario_id)
+    if contract is None:
+        raise AndroidOracleRunnerError(
+            "SCENARIO_NOT_SUPPORTED",
+            scenario_id,
+        )
+    return contract
+
+
+def repository_bindings(
+    root: Path,
+    scenario_id: str = DEFAULT_SCENARIO_ID,
+) -> Dict[str, str]:
     identity = frozen_identity(root)
+    contract = _scenario_contract(scenario_id)
     fixture_manifest = _read_json(root / FIXTURE_MANIFEST_PATH)
     source_lab_manifest = _read_json(root / SOURCE_LAB_MANIFEST_PATH)
     fixture_entries = {
@@ -226,20 +255,28 @@ def repository_bindings(root: Path) -> Dict[str, str]:
         for entry in source_lab_manifest.get("scenarios", [])
         if isinstance(entry, dict)
     }
-    fixture_entry = fixture_entries.get(SCENARIO_ID)
-    scenario_entry = source_lab_entries.get(SCENARIO_ID)
+    fixture_entry = fixture_entries.get(scenario_id)
+    scenario_entry = source_lab_entries.get(scenario_id)
     if (
         not isinstance(fixture_entry, dict)
         or not isinstance(scenario_entry, dict)
-        or scenario_entry.get("status") != "reference"
+        or scenario_entry.get("status") != contract["status"]
     ):
         raise AndroidOracleRunnerError("SOURCE_LAB_BINDING_MISSING")
-    fixture_root = root / FIXTURE_PATH
+    fixture_path = fixture_entry.get("path")
+    expected_path = f"ios/harness/fixtures/source-lab/{scenario_id}"
+    if (
+        fixture_path != expected_path
+        or scenario_entry.get("path") != expected_path
+    ):
+        raise AndroidOracleRunnerError("SOURCE_LAB_PATH_DRIFT")
+    fixture_root = root / expected_path
     source_path = fixture_root / "source.template.json"
     input_path = fixture_root / "input.json"
     case_path = fixture_root / "case.json"
     return {
         **identity,
+        "scenario_id": scenario_id,
         "runner_id": RUNNER_VERSION,
         "runner_digest": runner_digest(),
         "fixture_sha256": str(fixture_entry.get("sha256")),
@@ -273,10 +310,14 @@ def _recursive_strings(value: Any) -> Iterable[str]:
 def normalize_raw_artifact(
     raw: Mapping[str, Any],
     bindings: Mapping[str, str],
+    scenario_id: str = DEFAULT_SCENARIO_ID,
 ) -> Dict[str, Any]:
+    contract = _scenario_contract(scenario_id)
+    expected_cases = tuple(contract["expected_cases"])
+    nominal_cases = set(contract["nominal_cases"])
     if (
         raw.get("schema_version") != 1
-        or raw.get("scenario_id") != SCENARIO_ID
+        or raw.get("scenario_id") != scenario_id
         or raw.get("logical_origin") != LOGICAL_ORIGIN
     ):
         raise AndroidOracleRunnerError("RAW_ARTIFACT_IDENTITY_INVALID")
@@ -295,7 +336,7 @@ def normalize_raw_artifact(
         for entry in cases
         if isinstance(entry, dict)
     ]
-    if actual_cases != list(EXPECTED_CASES) or len(request_plan) != len(cases):
+    if actual_cases != list(expected_cases) or len(request_plan) != len(cases):
         raise AndroidOracleRunnerError("RAW_CASE_SELECTION_DRIFT")
     portable_cases = []
     issues = []
@@ -311,7 +352,7 @@ def normalize_raw_artifact(
             raise AndroidOracleRunnerError("RAW_CASE_INVALID")
         issue = entry["issue"]
         result = entry["result"]
-        if entry["id"] in NOMINAL_CASES and (
+        if entry["id"] in nominal_cases and (
             issue is not None or not isinstance(result, dict)
         ):
             raise AndroidOracleRunnerError(
@@ -330,19 +371,61 @@ def normalize_raw_artifact(
         if entry["request"] != request_plan[index]:
             raise AndroidOracleRunnerError("RAW_REQUEST_BINDING_DRIFT")
         request = request_plan[index]
+        expected_request_keys = {
+            "method",
+            "url",
+            "headers",
+            "body",
+            "timeout_ms",
+        }
+        if scenario_id == "sl-post-form-001":
+            expected_request_keys.update(
+                {"body_base64", "form_fields"}
+            )
         if (
             not isinstance(request, dict)
-            or request.get("method") != "GET"
+            or request.get("method")
+            != (
+                "POST"
+                if scenario_id == "sl-post-form-001"
+                else "GET"
+            )
             or not str(request.get("url", "")).startswith(LOGICAL_ORIGIN + "/")
-            or set(request) != {
-                "method",
-                "url",
-                "headers",
-                "body",
-                "timeout_ms",
-            }
+            or set(request) != expected_request_keys
         ):
             raise AndroidOracleRunnerError("RAW_REQUEST_INVALID")
+        if scenario_id == "sl-post-form-001":
+            body = request.get("body")
+            body_base64 = request.get("body_base64")
+            fields = request.get("form_fields")
+            if (
+                not isinstance(body, str)
+                or not isinstance(body_base64, str)
+                or not isinstance(fields, list)
+                or any(
+                    not isinstance(value, dict)
+                    or set(value) != {"key", "value"}
+                    or not isinstance(value["key"], str)
+                    or not isinstance(value["value"], str)
+                    for value in fields
+                )
+            ):
+                raise AndroidOracleRunnerError(
+                    "RAW_POST_REQUEST_INVALID"
+                )
+            try:
+                decoded_body = base64.b64decode(
+                    body_base64,
+                    validate=True,
+                ).decode("utf-8")
+            except (ValueError, UnicodeDecodeError) as error:
+                raise AndroidOracleRunnerError(
+                    "RAW_POST_BODY_INVALID"
+                ) from error
+            if decoded_body != body:
+                raise AndroidOracleRunnerError(
+                    "RAW_POST_BODY_BINDING_DRIFT"
+                )
         portable_issue = (
             {
                 "code": "rule_failed",
@@ -378,7 +461,7 @@ def normalize_raw_artifact(
         raise AndroidOracleRunnerError("DEVICE_ORIGIN_LEAK")
     stages = []
     issue_cases = {entry["case_id"] for entry in issues}
-    for case_id, _ in EXPECTED_CASES:
+    for case_id, _ in expected_cases:
         for stage in (
             "url_template",
             "request_build",
@@ -414,7 +497,7 @@ def normalize_raw_artifact(
                 break
     artifact = {
         "schema_version": 1,
-        "fixture_id": SCENARIO_ID,
+        "fixture_id": scenario_id,
         "engine": {
             "platform": "android",
             "revision": bindings["android_git_commit"],
@@ -455,6 +538,7 @@ def local_run_document(
     bindings: Mapping[str, str],
     *,
     emulator_serial: str,
+    scenario_id: str = DEFAULT_SCENARIO_ID,
 ) -> Dict[str, Any]:
     artifact_sha256 = _sha256(_canonical(artifact))
     return {
@@ -462,7 +546,7 @@ def local_run_document(
         "kind": "android_oracle_local_run",
         "authority": "local_unverified",
         "status": "candidate_only",
-        "scenario_id": SCENARIO_ID,
+        "scenario_id": scenario_id,
         "emulator": {
             "serial_sha256": _sha256(emulator_serial.encode("utf-8")),
         },
@@ -497,10 +581,14 @@ def _atomic_private_write(path: Path, payload: bytes) -> None:
         temporary.unlink(missing_ok=True)
 
 
-def _output_path(root: Path, requested: Optional[Path]) -> Path:
+def _output_path(
+    root: Path,
+    requested: Optional[Path],
+    scenario_id: str = DEFAULT_SCENARIO_ID,
+) -> Path:
     output_root = root / ".harness-runtime/android-oracle"
     if requested is None:
-        return output_root / f"{SCENARIO_ID}-local-run.json"
+        return output_root / f"{scenario_id}-local-run.json"
     candidate = requested if requested.is_absolute() else root / requested
     candidate = candidate.absolute()
     try:
@@ -568,22 +656,39 @@ def _single_apk(worktree: Path, pattern: str) -> Path:
     return matches[0]
 
 
-def _render_source(root: Path, origin: str) -> Dict[str, Any]:
+def _render_source(
+    root: Path,
+    origin: str,
+    scenario_id: str,
+) -> Dict[str, Any]:
     source_lab_directory = root / "ios/harness/source-lab"
     if str(source_lab_directory) not in sys.path:
         sys.path.insert(0, str(source_lab_directory))
     import source_lab  # type: ignore
 
-    return source_lab.build_source(root, SCENARIO_ID, origin)
+    return source_lab.build_source(root, scenario_id, origin)
 
 
-def _source_lab_server(root: Path):
+def _source_lab_server(root: Path, scenario_id: str):
     source_lab_directory = root / "ios/harness/source-lab"
     if str(source_lab_directory) not in sys.path:
         sys.path.insert(0, str(source_lab_directory))
     import source_lab  # type: ignore
 
-    return source_lab.running_server(root, SCENARIO_ID)
+    return source_lab.running_server(root, scenario_id)
+
+
+def _render_inputs(root: Path, scenario_id: str) -> Dict[str, Any]:
+    path = (
+        root
+        / "ios/harness/fixtures/source-lab"
+        / scenario_id
+        / "input.json"
+    )
+    value = _read_json(path)
+    if not isinstance(value, dict):
+        raise AndroidOracleRunnerError("INPUT_DOCUMENT_INVALID")
+    return value
 
 
 def run_characterization(
@@ -592,9 +697,12 @@ def run_characterization(
     adb: Path,
     serial: str,
     output: Optional[Path] = None,
+    scenario_id: str = DEFAULT_SCENARIO_ID,
 ) -> Dict[str, Any]:
     root = root.resolve(strict=True)
-    bindings = repository_bindings(root)
+    contract = _scenario_contract(scenario_id)
+    expected_cases = tuple(contract["expected_cases"])
+    bindings = repository_bindings(root, scenario_id)
     _device_ready(root, adb, serial)
     temporary_root = Path(
         tempfile.mkdtemp(prefix="legado-android-oracle-")
@@ -663,7 +771,7 @@ def run_characterization(
         )
         installed_packages.append(TEST_PACKAGE)
 
-        with _source_lab_server(root) as server:
+        with _source_lab_server(root, scenario_id) as server:
             reverse_port = int(server.server_address[1])
             _run(
                 [
@@ -678,9 +786,17 @@ def run_characterization(
                 timeout=30,
             )
             device_origin = f"http://127.0.0.1:{reverse_port}"
-            source = _render_source(root, device_origin)
+            source = _render_source(
+                root,
+                device_origin,
+                scenario_id,
+            )
+            inputs = _render_inputs(root, scenario_id)
             source_base64 = base64.b64encode(
                 _canonical(source)
+            ).decode("ascii")
+            input_base64 = base64.b64encode(
+                _canonical(inputs)
             ).decode("ascii")
             instrumentation = _run(
                 [
@@ -701,6 +817,12 @@ def run_characterization(
                     "-e",
                     "logicalOrigin",
                     LOGICAL_ORIGIN,
+                    "-e",
+                    "scenarioId",
+                    scenario_id,
+                    "-e",
+                    "inputBase64",
+                    input_base64,
                     INSTRUMENTATION,
                 ],
                 cwd=root,
@@ -735,25 +857,34 @@ def run_characterization(
             ) from error
         if not isinstance(raw, dict):
             raise AndroidOracleRunnerError("RAW_ARTIFACT_SHAPE_INVALID")
-        artifact = normalize_raw_artifact(raw, bindings)
+        artifact = normalize_raw_artifact(
+            raw,
+            bindings,
+            scenario_id,
+        )
         document = local_run_document(
             artifact,
             bindings,
             emulator_serial=serial,
+            scenario_id=scenario_id,
         )
-        output_path = _output_path(root, output)
+        output_path = _output_path(
+            root,
+            output,
+            scenario_id,
+        )
         payload = _canonical(document)
         _atomic_private_write(output_path, payload)
         return {
             "schema_version": 1,
             "authority": "local_unverified",
             "status": "candidate_only",
-            "scenario_id": SCENARIO_ID,
+            "scenario_id": scenario_id,
             "runner_digest": bindings["runner_digest"],
             "artifact_sha256": document["artifact_sha256"],
             "local_run_sha256": _sha256(payload),
             "output": output_path.relative_to(root).as_posix(),
-            "case_count": len(EXPECTED_CASES),
+            "case_count": len(expected_cases),
         }
     finally:
         if reverse_port is not None:
@@ -790,9 +921,12 @@ def run_characterization(
             shutil.rmtree(temporary_root, ignore_errors=True)
 
 
-def doctor(root: Path) -> Dict[str, Any]:
+def doctor(
+    root: Path,
+    scenario_id: str = DEFAULT_SCENARIO_ID,
+) -> Dict[str, Any]:
     root = root.resolve(strict=True)
-    bindings = repository_bindings(root)
+    bindings = repository_bindings(root, scenario_id)
     forbidden = {
         "accept",
         "publish",
@@ -806,7 +940,7 @@ def doctor(root: Path) -> Dict[str, Any]:
         "schema_version": 1,
         "ok": True,
         "commands": list(COMMANDS),
-        "scenario_id": SCENARIO_ID,
+        "scenario_id": scenario_id,
         "android_git_commit": bindings["android_git_commit"],
         "android_git_tree": bindings["android_git_tree"],
         "runner_digest": bindings["runner_digest"],
@@ -818,24 +952,35 @@ def build_parser() -> argparse.ArgumentParser:
     commands = parser.add_subparsers(dest="command", required=True)
     doctor_parser = commands.add_parser("doctor")
     doctor_parser.add_argument("--root", type=Path, required=True)
+    doctor_parser.add_argument(
+        "--scenario",
+        default=DEFAULT_SCENARIO_ID,
+        choices=sorted(SCENARIO_CONTRACTS),
+    )
     run_parser = commands.add_parser("run")
     run_parser.add_argument("--root", type=Path, required=True)
     run_parser.add_argument("--adb", type=Path, required=True)
     run_parser.add_argument("--serial", required=True)
     run_parser.add_argument("--output", type=Path)
+    run_parser.add_argument(
+        "--scenario",
+        default=DEFAULT_SCENARIO_ID,
+        choices=sorted(SCENARIO_CONTRACTS),
+    )
     return parser
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     args = build_parser().parse_args(argv)
     if args.command == "doctor":
-        report = doctor(args.root)
+        report = doctor(args.root, args.scenario)
     else:
         report = run_characterization(
             args.root,
             adb=args.adb.resolve(strict=True),
             serial=args.serial,
             output=args.output,
+            scenario_id=args.scenario,
         )
     sys.stdout.buffer.write(_canonical(report) + b"\n")
     return 0

@@ -1,4 +1,5 @@
 import importlib.util
+import base64
 import json
 import stat
 import sys
@@ -71,6 +72,62 @@ def raw_artifact():
     }
 
 
+def post_raw_artifact():
+    requests = []
+    cases = []
+    values = (
+        (
+            "post-form-nominal",
+            [
+                {"key": "keyword", "value": "%E6%98%9F%E6%B2%B3"},
+                {"key": "author", "value": "%E5%8C%97%E8%BE%B0"},
+            ],
+        ),
+        (
+            "post-form-boundary",
+            [
+                {"key": "empty", "value": ""},
+                {"key": "dup", "value": "second"},
+                {"key": "encoded", "value": "%E6%98%9F%E6%B2%B3"},
+            ],
+        ),
+    )
+    for case_id, fields in values:
+        body = "&".join(
+            f"{value['key']}={value['value']}"
+            for value in fields
+        )
+        request = {
+            "method": "POST",
+            "url": f"{runner.LOGICAL_ORIGIN}/post/{case_id.split('-')[-1]}",
+            "headers": [],
+            "body": body,
+            "body_base64": base64.b64encode(
+                body.encode("utf-8")
+            ).decode("ascii"),
+            "form_fields": fields,
+            "timeout_ms": None,
+        }
+        requests.append(request)
+        cases.append(
+            {
+                "id": case_id,
+                "operation": "search",
+                "request": request,
+                "result": {"books": []},
+                "issue": None,
+            }
+        )
+    return {
+        "schema_version": 1,
+        "scenario_id": "sl-post-form-001",
+        "device_origin": "http://127.0.0.1:49152",
+        "logical_origin": runner.LOGICAL_ORIGIN,
+        "request_plan": requests,
+        "cases": cases,
+    }
+
+
 class AndroidOracleRunnerTests(unittest.TestCase):
     def test_doctor_binds_frozen_android_tree_and_exposes_no_authority(self):
         report = runner.doctor(ROOT)
@@ -92,6 +149,8 @@ class AndroidOracleRunnerTests(unittest.TestCase):
             "update-golden",
         ):
             self.assertNotIn(forbidden, report["commands"])
+        post = runner.doctor(ROOT, "sl-post-form-001")
+        self.assertEqual("sl-post-form-001", post["scenario_id"])
 
     def test_product_tree_drift_fails_before_runner_execution(self):
         baseline = {
@@ -149,6 +208,51 @@ class AndroidOracleRunnerTests(unittest.TestCase):
             "127.0.0.1",
             json.dumps(artifact, ensure_ascii=False),
         )
+
+    def test_post_form_android_request_plan_preserves_ordered_fields_and_bytes(self):
+        artifact = runner.normalize_raw_artifact(
+            post_raw_artifact(),
+            {
+                **bindings(),
+                "scenario_id": "sl-post-form-001",
+            },
+            "sl-post-form-001",
+        )
+        self.assertEqual(
+            "sl-post-form-001",
+            artifact["fixture_id"],
+        )
+        nominal, boundary = artifact["request_plan"]
+        self.assertEqual("POST", nominal["method"])
+        self.assertEqual(
+            nominal["body"].encode("utf-8"),
+            base64.b64decode(nominal["body_base64"]),
+        )
+        self.assertEqual(
+            ["empty", "dup", "encoded"],
+            [
+                value["key"]
+                for value in boundary["form_fields"]
+            ],
+        )
+        self.assertEqual(
+            "second",
+            boundary["form_fields"][1]["value"],
+        )
+
+        drift = post_raw_artifact()
+        drift["request_plan"][0]["body_base64"] = base64.b64encode(
+            b"wrong"
+        ).decode("ascii")
+        with self.assertRaisesRegex(
+            runner.AndroidOracleRunnerError,
+            "RAW_POST_BODY_BINDING_DRIFT",
+        ):
+            runner.normalize_raw_artifact(
+                drift,
+                bindings(),
+                "sl-post-form-001",
+            )
 
     def test_nominal_issue_external_request_and_device_origin_leak_fail_closed(self):
         issue = raw_artifact()

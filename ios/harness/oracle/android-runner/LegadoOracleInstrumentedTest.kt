@@ -21,6 +21,16 @@ import java.io.File
 class LegadoOracleInstrumentedTest {
     private val arguments = InstrumentationRegistry.getArguments()
     private val logicalOrigin = requiredArgument("logicalOrigin").trimEnd('/')
+    private val scenarioId = requiredArgument("scenarioId")
+    private val input = JSONObject(
+        String(
+            Base64.decode(
+                requiredArgument("inputBase64"),
+                Base64.DEFAULT
+            ),
+            Charsets.UTF_8
+        )
+    )
     private val sourceJson = String(
         Base64.decode(requiredArgument("sourceBase64"), Base64.DEFAULT),
         Charsets.UTF_8
@@ -37,6 +47,9 @@ class LegadoOracleInstrumentedTest {
         }
         source.enabledCookieJar = false
 
+        if (scenarioId == "sl-post-form-001") {
+            runPostFormCases()
+        } else {
         runCase("search-hit", "search", searchRequest("星河")) {
             searchProjection(WebBook.searchBookAwait(source, "星河"))
         }
@@ -121,16 +134,98 @@ class LegadoOracleInstrumentedTest {
         ) {
             contentProjection("chapter-2.html", 1)
         }
+        }
 
         val raw = JSONObject()
             .put("schema_version", 1)
-            .put("scenario_id", "sl-html-basic-001")
+            .put("scenario_id", scenarioId)
             .put("device_origin", deviceOrigin)
             .put("logical_origin", logicalOrigin)
             .put("request_plan", requestPlan)
             .put("cases", cases)
         val target = InstrumentationRegistry.getInstrumentation().targetContext
         File(target.filesDir, OUTPUT_FILE).writeText(raw.toString(), Charsets.UTF_8)
+    }
+
+    private suspend fun runPostFormCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            require(value.getString("operation") == "search") {
+                "POST form scenario only accepts search stimuli"
+            }
+            val keyword = value
+                .getJSONObject("arguments")
+                .getString("keyword")
+            runCase(
+                value.getString("id"),
+                "search",
+                postSearchRequest(keyword)
+            ) {
+                searchProjection(
+                    WebBook.searchBookAwait(source, keyword)
+                )
+            }
+        }
+    }
+
+    private fun postSearchRequest(keyword: String): JSONObject {
+        val analyze = AnalyzeUrl(
+            mUrl = requireNotNull(source.searchUrl),
+            key = keyword,
+            page = 1,
+            baseUrl = source.bookSourceUrl,
+            source = source,
+            headerMapF = source.getHeaderMap(true)
+        )
+        require(analyze.isPost()) {
+            "POST form scenario did not produce POST"
+        }
+        val field = AnalyzeUrl::class.java.getDeclaredField("fieldMap")
+        field.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        val fields = field.get(analyze) as LinkedHashMap<String, String>
+        val body = fields.entries.joinToString("&") {
+            "${it.key}=${it.value}"
+        }
+        return JSONObject()
+            .put("method", "POST")
+            .put("url", logical(analyze.url))
+            .put(
+                "headers",
+                JSONArray().apply {
+                    analyze.headerMap.entries
+                        .sortedBy { it.key.lowercase() }
+                        .forEach {
+                            put(
+                                JSONObject()
+                                    .put("name", it.key)
+                                    .put("value", it.value)
+                            )
+                        }
+                }
+            )
+            .put("body", body)
+            .put(
+                "body_base64",
+                Base64.encodeToString(
+                    body.toByteArray(Charsets.UTF_8),
+                    Base64.NO_WRAP
+                )
+            )
+            .put(
+                "form_fields",
+                JSONArray().apply {
+                    fields.forEach { (key, value) ->
+                        put(
+                            JSONObject()
+                                .put("key", key)
+                                .put("value", value)
+                        )
+                    }
+                }
+            )
+            .put("timeout_ms", JSONObject.NULL)
     }
 
     private suspend fun contentProjection(

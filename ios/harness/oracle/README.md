@@ -62,6 +62,20 @@ python3 ios/harness/oracle/android-runner/orchestrator.py run \
   --serial emulator-5554
 ```
 
+`doctor` 与 `run` 都接受显式 `--scenario`。省略时仍运行既有 reference
+`sl-html-basic-001`；POST Form characterization 使用：
+
+```text
+python3 ios/harness/oracle/android-runner/orchestrator.py doctor \
+  --root . \
+  --scenario sl-post-form-001
+python3 ios/harness/oracle/android-runner/orchestrator.py run \
+  --root . \
+  --scenario sl-post-form-001 \
+  --adb /absolute/android-sdk/platform-tools/adb \
+  --serial emulator-5554
+```
+
 Runner 使用 Gradle `--offline` 打包 baseline worktree；依赖和 Android SDK 必须由
 控制面预先准备。运行时 SourceLab 只绑定本机 `127.0.0.1:0`，并通过该 serial 的
 精确 `adb reverse tcp:<port> tcp:<port>` 暴露给设备。设备 source、全部 request 和
@@ -75,6 +89,13 @@ Runner 使用 Gradle `--offline` 打包 baseline worktree；依赖和 Android SD
 SourceLab scenario、source/input/case 与 canonicalizer digest。它不是 Golden，也
 不含 attestation 或发布权限。只有仓外受信 workflow 在相同输入上重跑、签名并生成
 `android_oracle_proposal` 后，独立 publisher 才能晋级受保护 Golden。
+
+`sl-post-form-001` 仍由冻结 Android 的真实 `WebBook.searchBookAwait` 发出请求；
+Runner 同时从同一次 source/keyword 输入构造真实 `AnalyzeUrl`，输出 `POST` method、
+逻辑 URL、headers、UTF-8 body、`body_base64` 与有序 `form_fields`。归一化器要求
+body bytes 与 base64 精确一致，保留重复字段经 Android `LinkedHashMap` 处理后的最终
+值与顺序。该结构化输出是可审查的 Android 真值候选，不会从 SourceLab input 或响应
+HTML 推导 iOS expected。
 
 ## GitHub-hosted 双证明提案链
 
