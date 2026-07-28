@@ -2,13 +2,13 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-28T20:55:26Z
+- 更新时间：2026-07-28T21:06:02Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
 - 下一个可领取工作项：无
-- 最近完成：IOS-GITHUB-ORACLE-WORKFLOW-SCOPE-001
+- 最近完成：IOS-GITHUB-ORACLE-PUSH-TRIGGER-RECOVERY-002
 
 ## 健康度
 
@@ -18,6 +18,7 @@
 | android_golden_publisher | `implemented_external_authority` |
 | android_intake | `fact_inventory_ready` |
 | android_oracle | `trusted_candidate_verified` |
+| android_oracle_trigger | `create_only_branch_push_v1` |
 | android_oracle_workflow_owner | `declared_v1` |
 | android_oracle_workflow_scope | `exact_hardening_policy_v1` |
 | android_post_form_attestation | `shared_contract_verified` |
@@ -126,6 +127,7 @@
 | IOS-GITHUB-ORACLE-DISPATCHER-001 | 100 | `completed` | IOS-GITHUB-ORACLE-AUTO-SCOPE-001 | 建立可恢复的 GitHub Android Oracle 外部执行适配层 |
 | IOS-GITHUB-ORACLE-OWNER-001 | 100 | `completed` | IOS-TRUSTED-ORACLE-SETTLEMENT-COMPILER-001 | 预声明 GitHub Oracle 外部适配层的 Capability 所有权 |
 | IOS-GITHUB-ORACLE-PUSH-TRIGGER-001 | 100 | `exhausted` | IOS-GITHUB-ORACLE-WORKFLOW-SCOPE-001 | 以 create-only Oracle branch 建立服务端幂等 Workflow 触发 |
+| IOS-GITHUB-ORACLE-PUSH-TRIGGER-RECOVERY-002 | 100 | `completed` | IOS-GITHUB-ORACLE-WORKFLOW-SCOPE-001 | 恢复 create-only Oracle branch 的服务端幂等触发合同 |
 | IOS-GITHUB-ORACLE-WORKFLOW-OWNER-001 | 100 | `completed` | IOS-GITHUB-ORACLE-DISPATCHER-001 | 预声明 Android Oracle Workflow 的 Conformance 所有权 |
 | IOS-GITHUB-ORACLE-WORKFLOW-SCOPE-001 | 100 | `completed` | IOS-GITHUB-ORACLE-WORKFLOW-OWNER-001 | 建立固定 Android Oracle Workflow 的受限自动修改策略 |
 | IOS-HARNESS-APPROVAL-UI-001 | 100 | `completed` | IOS-KNOWLEDGE-BOOK-DOMAIN-001 | 提供本地一键人工审批界面 |

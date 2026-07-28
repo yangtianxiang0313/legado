@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "logical_origin": "http://sourcelab.test",
-  "control_sha256": "b5fd8fcef4a0587a25f9e5941c2cd6e0ca9f8ef33358a36552bb320e223564b7",
+  "control_sha256": "07735447b310c1cbaeb361851520bde93087b801a13995078674ed03564cb2fa",
   "scenarios": [
     {
       "id": "sl-html-basic-001",

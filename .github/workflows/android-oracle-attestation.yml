@@ -57,6 +57,10 @@ jobs:
               esac
               ;;
             push)
+              if [[ ! "${GITHUB_SHA}" =~ ^[0-9a-f]{40}$ ]]; then
+                echo "::error::Push GITHUB_SHA must be exactly 40 lowercase hex characters"
+                exit 1
+              fi
               case "${GITHUB_REF}" in
                 "refs/heads/feature/oracle-sl-html-basic-001-${GITHUB_SHA}")
                   scenario=sl-html-basic-001

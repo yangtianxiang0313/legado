@@ -121,6 +121,19 @@ class SourceLabTests(unittest.TestCase):
                 sha,
                 "",
             ),
+            (
+                "push",
+                "refs/heads/feature/oracle-sl-html-basic-001-not-a-sha",
+                "not-a-sha",
+                "",
+            ),
+            (
+                "push",
+                "refs/heads/feature/oracle-sl-html-basic-001-"
+                + ("A" * 40),
+                "A" * 40,
+                "",
+            ),
             ("pull_request", "refs/pull/1/merge", sha, ""),
         )
         for event, ref, source_sha, scenario in invalid:
@@ -255,6 +268,27 @@ class SourceLabTests(unittest.TestCase):
                 REPO_ROOT,
                 "IOS-ANDROID-ORACLE-RUNNER-001",
                 manifest,
+            ),
+        )
+
+    def test_push_trigger_recovery_does_not_consume_source_lab_scenarios(self):
+        item_id = "IOS-GITHUB-ORACLE-PUSH-TRIGGER-RECOVERY-002"
+        item = source_lab.load_json(
+            REPO_ROOT
+            / "ios/harness/work-items"
+            / f"{item_id}.json"
+        )
+        contract = item["spec"]["source_lab"]
+        self.assertEqual("not_applicable", contract["mode"])
+        self.assertEqual([], contract["behaviors"])
+        self.assertEqual([], contract["scenarios"])
+        self.assertTrue(contract["none_reason"])
+        self.assertEqual(
+            [],
+            source_lab.validate_work_item_contract(
+                REPO_ROOT,
+                item_id,
+                source_lab.manifest_value(REPO_ROOT),
             ),
         )
 
