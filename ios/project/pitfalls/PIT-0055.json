@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0055",
+  "revision": 1,
+  "title": "确定性来源策略不应伪装成人工决策 Gate",
+  "fingerprint": "deterministic-synthetic-provenance-policy-misclassified-as-legacy-human-gate",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "Characterization blueprint 只声明 scenario-provenance-review，仍被 preflight 作为 legacy human gate 拒绝",
+    "为了通过通用校验，系统倾向添加没有真实选择价值的 decision contract 或要求用户点击",
+    "用户会盲批来源确认，Gate 既不增加信息也打断自动循环"
+  ],
+  "conditions": [
+    "SourceLab extend 契约要求保留来源确认",
+    "synthetic 场景的接受条件已经由机器可验证的 provenance、源码锚点、禁网和 scope 规则完整表达",
+    "通用 candidate preflight 默认拒绝非结构化 gate"
+  ],
+  "root_cause": "系统没有区分“需要人做不可推导选择的 Decision Gate”和“可以由受信策略确定性裁决的 Policy Gate”，导致安全保护被实现成橡皮图章。",
+  "diagnosis": [
+    "判断 gate 是否存在两个以上无法由证据推导的有效选项",
+    "若接受条件能被完整结构化验证，应建模为专用 policy 并限定调用点",
+    "检查通用 preflight 的默认拒绝是否仍覆盖其他 gate 和其他蓝图类型"
+  ],
+  "fix": "preflight_candidate 增加默认空的 policy_managed_gates；Characterization preview 与物化复算只传入 scenario-provenance-review。只有 gate 列表精确相等才绕过 legacy human gate 拒绝，后续仍由 synthetic-source-provenance-v1 验证来源和 scope；任何额外 gate 继续拒绝。",
+  "prevention": {
+    "architecture_rule": "Gate 必须分为 human decision、trusted authority 与 deterministic policy 三类；只有第一类需要用户交互，第三类必须使用精确 allowlist、专用调用点和 fail-closed 回归。",
+    "tests": [
+      "ios/harness/tests/test_loop_supervisor.py"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-CHARACTERIZATION-DAG-COMPILER-001",
+    "until": "IOS-CHARACTERIZATION-POLICY-GATE-003"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T174356Z-ios-characterization-policy-gate-003-a68a4796.json"
+  ]
+}

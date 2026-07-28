@@ -923,6 +923,7 @@ class LoopSupervisor:
             path,
             allowed_root=CHARACTERIZATION_BLUEPRINT_ROOT,
             require_filename_match=False,
+            policy_managed_gates=("scenario-provenance-review",),
         )
         if (
             preview.item_id != plan.target_work_item_id
@@ -1794,6 +1795,7 @@ class LoopSupervisor:
         *,
         allowed_root: str = CANDIDATE_ROOT,
         require_filename_match: bool = True,
+        policy_managed_gates: Sequence[str] = (),
     ) -> MaterializationPreview:
         errors, _ = self.harness.doctor()
         if errors:
@@ -1818,7 +1820,11 @@ class LoopSupervisor:
         if validation:
             raise MaterializationConflict("Work Item 无效：" + "；".join(validation))
         gates = item.get("spec", {}).get("gates", [])
-        if gates:
+        gates_are_policy_managed = (
+            bool(gates)
+            and tuple(gates) == tuple(policy_managed_gates)
+        )
+        if gates and not gates_are_policy_managed:
             contracts, decision_errors = self.harness.decision_gate_contracts(item)
             if (
                 item.get("spec", {}).get("gate_contract_version") != 1
@@ -1971,6 +1977,11 @@ class LoopSupervisor:
             allowed_root=allowed_root,
             require_filename_match=(
                 allowed_root != CHARACTERIZATION_BLUEPRINT_ROOT
+            ),
+            policy_managed_gates=(
+                ("scenario-provenance-review",)
+                if allowed_root == CHARACTERIZATION_BLUEPRINT_ROOT
+                else ()
             ),
         )
         if current.binding() != preview.binding():

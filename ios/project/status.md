@@ -2,13 +2,13 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-28T17:39:10Z
+- 更新时间：2026-07-28T17:44:35Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
 - 下一个可领取工作项：无
-- 最近完成：IOS-CHARACTERIZATION-BLUEPRINT-PATH-002
+- 最近完成：IOS-CHARACTERIZATION-POLICY-GATE-003
 
 ## 健康度
 
@@ -67,6 +67,7 @@
 | source_runtime_html_css | `golden_verified_first_slice` |
 | supervisor_run_journal | `local_replayable` |
 | swiftpm_manifest_verification | `sandbox_isolated` |
+| synthetic_provenance_gate | `policy_managed` |
 | terminal_recovery_lineage | `typed_runtime_replacement` |
 | terminal_recovery_resolution | `single_terminal_predecessor` |
 | trusted_process_cleanup | `bounded_stable` |
@@ -98,6 +99,7 @@
 | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-YAML-002 | 100 | `completed` | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-001 | 修复 Business Knowledge Publisher workflow YAML |
 | IOS-CHARACTERIZATION-BLUEPRINT-PATH-002 | 100 | `completed` | IOS-CHARACTERIZATION-DAG-COMPILER-001 | 修复 Characterization 蓝图路径与 WorkItem ID 的错误耦合 |
 | IOS-CHARACTERIZATION-DAG-COMPILER-001 | 100 | `completed` | IOS-ANDROID-REQUEST-OPTIONS-INTAKE-001 | 把已接受 Requirement 的迁移缺口编译为无人工 Gate 的 Characterization DAG |
+| IOS-CHARACTERIZATION-POLICY-GATE-003 | 100 | `completed` | IOS-CHARACTERIZATION-BLUEPRINT-PATH-002 | 将 synthetic SourceLab 来源确认建模为策略托管 Gate |
 | IOS-CODEX-AGENT-ADAPTER-001 | 100 | `completed` | IOS-LOOP-SUPERVISOR-E2E-001, IOS-PROPOSAL-COMPILER-001 | 接入可诊断、可续接的 Codex exec Agent adapter |
 | IOS-CODEX-AGENT-ADAPTER-COMPAT-002 | 100 | `completed` | IOS-CODEX-AGENT-ADAPTER-001, IOS-AUTO-MATERIALIZATION-POLICY-001 | 对齐当前 Codex CLI 并固化真实 turn/resume smoke |
 | IOS-CONTROL-CATALOG-RESUME-001 | 100 | `completed` | IOS-RECOVERY-COMPILER-BINDING-001 | 恢复控制面变更后的 Supervisor 续跑 |

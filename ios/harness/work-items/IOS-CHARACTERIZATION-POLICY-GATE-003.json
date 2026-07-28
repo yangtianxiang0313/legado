@@ -1,0 +1,167 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-CHARACTERIZATION-POLICY-GATE-003",
+    "title": "将 synthetic SourceLab 来源确认建模为策略托管 Gate",
+    "priority": 100,
+    "risk": "medium",
+    "labels": [
+      "phase-0",
+      "control-plane",
+      "loop-engine",
+      "characterization",
+      "corrective"
+    ]
+  },
+  "spec": {
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "intent": "真实物化演练发现通用 preflight 会把 SourceLab 强制声明的 scenario-provenance-review 当作 legacy human gate 拒绝。该 gate 对 synthetic 场景不是产品决策：其可接受条件已由 synthetic-source-provenance-v1 确定性表达。本项为 preflight 增加默认空的 policy_managed_gates，仅 Characterization preview/物化复算传入唯一 scenario-provenance-review；任意额外 gate、其他调用点或未满足 Characterization 权限合同仍拒绝。补充默认拒绝、精确允许和额外 gate 拒绝测试。",
+    "depends_on": [
+      "IOS-CHARACTERIZATION-BLUEPRINT-PATH-002"
+    ],
+    "scope": {
+      "allow_write": [
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/tests/test_loop_supervisor.py",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-CHARACTERIZATION-POLICY-GATE-003.json",
+        "ios/project/pitfalls/PIT-0055.json"
+      ],
+      "deny_write": [
+        ".github/**",
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "ios/harness/config.json",
+        "ios/harness/schemas/**",
+        "ios/harness/android-intake/**",
+        "ios/harness/source-lab/**",
+        "ios/harness/oracle/**",
+        "ios/harness/goldens/**",
+        "ios/harness/fixtures/source-lab/**",
+        "ios/harness/demand_compiler.py",
+        "ios/project/migration-intents/**",
+        "ios/project/requirement-proposals/**",
+        "ios/project/work-item-proposals/characterization-blueprints/**",
+        "ios/project/android-intake/**",
+        "ios/project/requirements/**",
+        "ios/project/business-knowledge/**",
+        "ios/project/approvals/**",
+        "ios/project/baseline.json",
+        "ios/docs/**"
+      ],
+      "max_files_changed": 5,
+      "max_changed_lines": 700
+    },
+    "inputs": {
+      "context_files": [
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/tests/test_loop_supervisor.py",
+        "ios/harness/harness.py",
+        "ios/harness/source-lab/source_lab.py",
+        "ios/project/work-item-proposals/characterization-blueprints/MINT-SOURCE-REQUEST-POST-FORM-001.json",
+        "ios/project/checkpoints/IOS-CHARACTERIZATION-BLUEPRINT-PATH-002.json"
+      ],
+      "android_source_anchors": [],
+      "fixtures": []
+    },
+    "architecture_refs": [
+      "ARCH-014",
+      "ARCH-017",
+      "ADR-0004"
+    ],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "preflight_candidate 默认仍拒绝任何未声明 v1 decision contract 的非空 gate。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "Characterization 专用调用点只允许精确的 scenario-provenance-review 作为 policy_managed_gates，额外或不同 gate 仍 fail closed。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "干净 HEAD 上真实 inspect 输出 characterization_materialization_ready，随后自动物化 IOS-SOURCELAB-POST-FORM-001。",
+          "verified_by": [
+            "harness-tests",
+            "memory-close"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": [
+        "dependency-policy",
+        "harness-tests"
+      ]
+    },
+    "baseline_checks": [
+      "dependency-policy",
+      "harness-tests"
+    ],
+    "budget": {
+      "wall_clock_seconds": 3600,
+      "max_edit_verify_cycles": 3,
+      "max_targeted_test_runs": 8,
+      "max_full_test_runs": 2,
+      "max_infra_retries": 1
+    },
+    "gates": [],
+    "completion_effects": {
+      "health": {
+        "synthetic_provenance_gate": "policy_managed"
+      }
+    },
+    "memory": {
+      "capability_state_required": true,
+      "checkpoint_required": true,
+      "pitfall_update_required": true,
+      "adr": "not_required"
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "refs": [],
+      "none_reason": "本项修复控制面 gate 分类，不实现产品行为"
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "not_applicable",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [],
+      "expected_ledger_transitions": [],
+      "context_budget": {
+        "max_claims": 8,
+        "max_bytes": 24576
+      },
+      "none_reason": "本项不消费、生成或发布业务知识"
+    },
+    "source_lab": {
+      "mode": "not_applicable",
+      "behaviors": [],
+      "scenarios": [],
+      "none_reason": "本项不创建或修改 SourceLab 场景"
+    },
+    "stop_on": [
+      "baseline_red",
+      "scope_violation",
+      "authority_escalation",
+      "same_failure_twice",
+      "budget_exhausted",
+      "human_decision_required"
+    ]
+  }
+}

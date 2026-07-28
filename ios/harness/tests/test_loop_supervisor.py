@@ -608,6 +608,51 @@ class MaterializationTests(unittest.TestCase):
                 preview.item_id,
             )
 
+    def test_preflight_policy_managed_gate_is_exactly_scoped(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            path, item = fixture.candidate(
+                "IOS-TEST-POLICY-GATE-001"
+            )
+            item["spec"]["gates"] = [
+                "scenario-provenance-review"
+            ]
+            fixture.fixture.write_json(
+                str(path.relative_to(fixture.root)),
+                item,
+            )
+            supervisor = loop_supervisor.LoopSupervisor(fixture.harness)
+
+            with self.assertRaisesRegex(
+                loop_supervisor.MaterializationConflict,
+                "LEGACY_HUMAN_GATE_REJECTED",
+            ):
+                supervisor.preflight_candidate(path)
+
+            preview = supervisor.preflight_candidate(
+                path,
+                policy_managed_gates=(
+                    "scenario-provenance-review",
+                ),
+            )
+            self.assertEqual(item["metadata"]["id"], preview.item_id)
+
+            item["spec"]["gates"].append("architecture-review")
+            fixture.fixture.write_json(
+                str(path.relative_to(fixture.root)),
+                item,
+            )
+            with self.assertRaisesRegex(
+                loop_supervisor.MaterializationConflict,
+                "LEGACY_HUMAN_GATE_REJECTED",
+            ):
+                supervisor.preflight_candidate(
+                    path,
+                    policy_managed_gates=(
+                        "scenario-provenance-review",
+                    ),
+                )
+
     def test_preflight_rejects_explicit_allow_path_that_is_protected(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = MaterializationFixture(Path(directory))
