@@ -1,0 +1,114 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-008",
+    "title": "建立 hosted Runner 的 KVM 访问合同",
+    "priority": 100,
+    "risk": "medium",
+    "labels": ["phase-1", "conformance", "android-oracle", "github-actions", "corrective", "recovery", "candidate-only"]
+  },
+  "spec": {
+    "capability": "CAP-CONFORMANCE",
+    "intent": "恢复 run 30354183324 中 x86_64 emulator 因 runner 用户没有 /dev/kvm 权限而立即退出的问题。依据 GitHub hosted Linux Runner 支持 Android 硬件加速的合同，在昂贵 Gradle 预热前安装仅作用于临时 Runner 的 kvm udev 权限规则，reload/trigger 后验证设备节点存在且当前用户可读写；失败输出 ls 与 id 诊断并立即退出。不得改变 Android 镜像、Runner、SourceLab、双 attestation、candidate-only authority、Golden 或产品边界。",
+    "depends_on": ["IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-007"],
+    "scope": {
+      "allow_write": [
+        ".github/workflows/android-oracle-attestation.yml",
+        "ios/harness/tests/test_oracle_ci_proposal.py",
+        "ios/project/capabilities/CAP-CONFORMANCE.json",
+        "ios/project/checkpoints/IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-008.json",
+        "ios/project/pitfalls/PIT-0034.json"
+      ],
+      "deny_write": [
+        "app/**", "modules/**", "build.gradle", "settings.gradle", "gradle/**",
+        "ios/Packages/**", "ios/harness/goldens/**", "ios/harness/normalization/**",
+        "ios/harness/schemas/**", "ios/harness/source-lab/**", "ios/harness/fixtures/**",
+        "ios/harness/oracle/**", "ios/harness/harness.py", "ios/harness/config.json",
+        "ios/harness/architecture-rules.json", "ios/harness/dependency-policy.json",
+        "ios/project/android-intake/**", "ios/project/requirements/**",
+        "ios/project/approvals/**", "ios/docs/**"
+      ],
+      "max_files_changed": 5,
+      "max_changed_lines": 700
+    },
+    "inputs": {
+      "context_files": [
+        ".github/workflows/android-oracle-attestation.yml",
+        "ios/harness/tests/test_oracle_ci_proposal.py",
+        "ios/project/checkpoints/IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-007.json",
+        "ios/project/pitfalls/PIT-0033.json"
+      ],
+      "android_source_anchors": [],
+      "fixtures": ["sl-html-basic-001"]
+    },
+    "architecture_refs": ["ARCH-008", "ARCH-011", "ARCH-014", "ADR-0002", "ADR-0004"],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "Workflow 在 Gradle 预热与 emulator 启动前安装 kvm udev 权限规则并 reload/trigger，仅修改一次性 hosted Runner。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "KVM step 验证 /dev/kvm 存在且当前用户可读写；失败时输出 ls -l /dev/kvm 与 id 后非零退出，回归测试固定顺序和现有 action pins。",
+          "verified_by": ["harness-tests", "dependency-policy"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "修复不改变 Android Runner、镜像、SourceLab、payload/proposal、trusted importer、Golden、Requirement、架构或产品代码。",
+          "verified_by": ["android-intake-contract", "harness-tests", "source-lab-contract", "source-lab-tests", "source-lab-smoke"],
+          "requirement_clauses": ["REQ-ANDROID-SOURCE-PIPELINE-001#RC-01", "REQ-ANDROID-SOURCE-PIPELINE-001#RC-02", "REQ-ANDROID-SOURCE-PIPELINE-001#RC-03", "REQ-ANDROID-SOURCE-PIPELINE-001#RC-04"],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-4",
+          "statement": "Capability、Checkpoint 与 PIT-0034 记录 run 30354183324、KVM 权限根因、重新 dispatch 结果和 Golden authority 边界。",
+          "verified_by": ["memory-close"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": ["android-intake-contract", "dependency-policy", "harness-tests", "source-lab-contract", "source-lab-tests", "source-lab-smoke"]
+    },
+    "baseline_checks": ["android-intake-contract"],
+    "budget": {
+      "wall_clock_seconds": 5400,
+      "max_edit_verify_cycles": 3,
+      "max_targeted_test_runs": 8,
+      "max_full_test_runs": 3,
+      "max_infra_retries": 3
+    },
+    "gates": [],
+    "completion_effects": {"health": {"android_oracle": "kvm_access_verified"}},
+    "memory": {"adr": "not_required", "capability_state_required": true, "compatibility": "not_applicable", "pitfall": "required"},
+    "requirements": {
+      "mode": "enabler",
+      "refs": [{"id": "REQ-ANDROID-SOURCE-PIPELINE-001", "revision": 1, "clauses": ["RC-01", "RC-02", "RC-03", "RC-04"]}],
+      "none_reason": null
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "not_applicable",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [],
+      "expected_ledger_transitions": [],
+      "context_budget": {"max_claims": 20, "max_bytes": 32768},
+      "none_reason": "本项只建立 hosted Runner 的 KVM 访问合同，不生成业务知识"
+    },
+    "source_lab": {
+      "mode": "reuse",
+      "behaviors": ["transport.get-query", "pipeline.search-html", "pipeline.book-info-html", "pipeline.toc-html", "pipeline.content-html", "url.relative-resolution", "rule.css-selector"],
+      "scenarios": ["sl-html-basic-001"],
+      "none_reason": null
+    },
+    "stop_on": ["baseline_red", "scope_violation", "authority_escalation", "golden_mutation", "same_failure_twice", "budget_exhausted", "human_decision_required"]
+  }
+}
