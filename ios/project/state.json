@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "revision": 145,
+  "revision": 147,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-28T03:36:50Z",
-  "event_head": "f6d2c714f17f2259a263887f50d3e2291c2f218cda9c70f1401761247a8c5c6b",
+  "updated_at": "2026-07-28T03:38:59Z",
+  "event_head": "8ca289a5a78d37b25c4d32d236d7fd668500d52612d07a175a66e3787d5a0894",
   "active_work_items": [],
   "last_completed_work_item": "IOS-CODEX-AGENT-ADAPTER-COMPAT-002",
   "work_items": {
@@ -2395,6 +2395,70 @@
       "verified_at": "2026-07-28T03:35:22Z",
       "completed_at": "2026-07-28T03:36:50Z",
       "final_tree_sha256": "dbd37fc26a46632fca00781cd7860d3928b133dafb4c67c5583021e981a68de5"
+    },
+    "IOS-KNOWLEDGE-INTEGRATIONS-001": {
+      "status": "blocked",
+      "attempt": 0,
+      "last_evidence": null,
+      "blocker": "baseline_red",
+      "baseline_checks": [
+        {
+          "id": "android-intake-contract",
+          "argv": [
+            "python3",
+            "-B",
+            "ios/harness/android-intake/android_intake.py",
+            "doctor",
+            "--root",
+            ".",
+            "--work-item",
+            "IOS-KNOWLEDGE-INTEGRATIONS-001"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "1bf88f85f3f416e092d2c3bf30c0b86ae55ad95e050f05321da60bed60f3d5f8",
+          "cwd": ".",
+          "started_at": "2026-07-28T03:38:24Z",
+          "duration_ms": 546,
+          "timeout_seconds": 90,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "84f6b9d590a230c755728f08a7cc4071122d7bd66d14c218c852a45cdc0a64fe",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_tail": "android-intake: OK\n",
+          "stderr_tail": ""
+        },
+        {
+          "id": "harness-tests",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "307f335e883f02e96ad97ecbda4c210435c0b955e2bcb9e46db9dc7b0d02c285",
+          "cwd": ".",
+          "started_at": "2026-07-28T03:38:24Z",
+          "duration_ms": 34356,
+          "timeout_seconds": 60,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 1,
+          "passed": false,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "199c678f02d3190378034f877efa9adf71d04f82752f515283eaa020772de73e",
+          "stdout_tail": "",
+          "stderr_tail": ".........................................................................................................F.............\n======================================================================\nFAIL: test_current_integrations_candidate_is_bound_and_preflightable (test_proposal_compiler.ProposalCompilerTests)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_proposal_compiler.py\", line 318, in test_current_integrations_candidate_is_bound_and_preflightable\n    self.assertEqual(\nAssertionError: 'recipe_ready' != 'materialized'\n- recipe_ready\n+ materialized\n\n\n----------------------------------------------------------------------\nRan 119 tests in 34.228s\n\nFAILED (failures=1)\n"
+        }
+      ]
     }
   },
   "health": {
