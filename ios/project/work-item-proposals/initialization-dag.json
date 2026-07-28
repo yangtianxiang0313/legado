@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "InitializationWorkItemProposalDAG",
   "id": "WIPD-IOS-INITIALIZATION-001",
-  "revision": 4,
+  "revision": 5,
   "authority": "proposal_only",
   "status": "proposed",
   "created_by": "IOS-KNOWLEDGE-CONTROL-PLANE-001",
@@ -136,6 +136,13 @@
       "title": "恢复 candidate SourceLab 的 Android Oracle characterization",
       "outputs": ["candidate scenario 受限复用合同", "POST Form Android structured candidate evidence", "Oracle 后续 settlement 缺口"],
       "gates": [], "constraint": "只允许 requirements.mode=characterization 的 Android Oracle 消费已完成上游引入的 candidate scenario；不得把 candidate 当 reference、跳过真实 Android、修改 Fixture/Golden/Publisher/产品或获得发布权限"
+    },
+    {
+      "proposal_id": "IOS-ORACLE-SETTLEMENT-COMPILER-001", "phase": 10, "class": "control_plane",
+      "depends_on": ["IOS-ANDROID-POST-FORM-ORACLE-RECOVERY-002"], "knowledge_mode": "not_applicable",
+      "title": "将完成的 Android Oracle 结算为受信 proposal DAG",
+      "outputs": ["oracle recovery-aware settlement", "trusted-oracle blueprint state", "受限 CI proposal 自动物化策略"],
+      "gates": [], "constraint": "必须精确结算原 Oracle 或其 recovery chain 的 WorkItem/Evidence/Checkpoint/Requirement/SourceLab/Capability；下一节点只可泛化受信 CI proposal，禁止发布 Golden、修改产品或跳过独立 Publisher"
     }
   ],
   "compiler_rules": [
