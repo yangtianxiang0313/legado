@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "InitializationWorkItemProposalDAG",
   "id": "WIPD-IOS-INITIALIZATION-001",
-  "revision": 1,
+  "revision": 2,
   "authority": "proposal_only",
   "status": "proposed",
   "created_by": "IOS-KNOWLEDGE-CONTROL-PLANE-001",
@@ -113,6 +113,13 @@
       "title": "按证据缺口编译最短交付 DAG",
       "outputs": ["characterization/enabler/implementation/verification/close proposals", "精确 selections", "UI 模拟器与书源结构化差分验收节点"],
       "gates": ["accepted-requirement-and-ADR-inputs"], "constraint": "结果仍是 proposal；证据或决策不足的节点保持 blocked"
+    },
+    {
+      "proposal_id": "IOS-LOOP-DEMAND-AUTONOMY-001", "phase": 8, "class": "control_plane",
+      "depends_on": ["IOS-AUTO-MATERIALIZATION-POLICY-001", "IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002", "IOS-ANDROID-GOLDEN-PUBLISHER-001"], "knowledge_mode": "not_applicable",
+      "title": "让 Loop 从受控交付蓝图持续生成并自动推进普通工作项",
+      "outputs": ["bound-delivery-blueprint-v1", "普通交付项安全自动物化策略", "SourceRuntime HTML/CSS 毕业场景前置能力"],
+      "gates": [], "constraint": "只允许绑定已提交蓝图、accepted Requirement、受保护 Golden、既有架构 owner 与无人工决策 scope；不得生成需求、放宽 authority 或自动修改 Golden"
     }
   ],
   "compiler_rules": [
