@@ -1,0 +1,42 @@
+name: Android Golden Publisher
+
+# GitHub only accepts workflow_dispatch when this path exists on the default
+# branch. Authorized releases must select the protected iOS integration branch,
+# whose version of this workflow contains the real publisher implementation.
+on:
+  workflow_dispatch:
+    inputs:
+      oracle_run_id:
+        description: Successful Android Oracle workflow run ID
+        required: true
+        type: string
+      oracle_run_attempt:
+        description: Android Oracle workflow run attempt
+        required: true
+        default: "1"
+        type: string
+      oracle_source_digest:
+        description: Exact source commit attested by the Oracle run
+        required: true
+        type: string
+      proposal_sha256:
+        description: Trusted proposal.json SHA-256
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  reject-default-branch:
+    name: Select the protected iOS integration branch
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    steps:
+      - name: Reject default-branch publication
+        shell: bash
+        run: |
+          printf '%s\n' \
+            'Android Golden publication is disabled on master.' \
+            'Dispatch this workflow from feature/ios-ai-harness-bootstrap.'
+          exit 1
