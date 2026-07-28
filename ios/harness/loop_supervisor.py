@@ -106,6 +106,7 @@ ACTIVE_DECISIONS = {
     "awaiting_human": ("human_decision_required", True),
 }
 AUTO_SAFE_HARNESS_PATHS = {
+    "ios/harness/demand_compiler.py",
     "ios/harness/loop_supervisor.py",
     "ios/harness/proposal_compiler.py",
     "ios/harness/README.md",
