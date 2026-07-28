@@ -533,6 +533,69 @@ class Harness:
             raise HarnessError("Requirement selection_sha256 无效")
         return digest
 
+    def readiness_transition_defers_enabler_freshness(
+        self,
+        item: Dict[str, Any],
+        state: Dict[str, Any],
+    ) -> bool:
+        requirements = item.get("spec", {}).get("requirements", {})
+        if requirements.get("mode") != "enabler":
+            return False
+        selected = {
+            f"{reference['id']}@{reference['revision']}#{clause}"
+            for reference in requirements.get("refs", [])
+            if isinstance(reference, dict)
+            for clause in reference.get("clauses", [])
+            if isinstance(clause, str)
+        }
+        releases = self.resolve("ios/project/requirements/releases")
+        matches = []
+        if releases.is_dir() and not releases.is_symlink():
+            for path in sorted(releases.glob("*.json")):
+                try:
+                    receipt = load_json(path)
+                except HarnessError:
+                    continue
+                binding = receipt.get("binding", {})
+                clauses = set(binding.get("clauses", []))
+                target = binding.get("target_work_item")
+                outputs = receipt.get("outputs", {})
+                if (
+                    receipt.get("kind") == "requirement_readiness_release"
+                    and receipt.get("authority")
+                    == "protected_requirement_readiness"
+                    and receipt.get("authorization")
+                    == "github_environment_review"
+                    and binding.get("from") == "characterization_required"
+                    and binding.get("to") == "implementation_ready"
+                    and clauses
+                    and clauses.issubset(selected)
+                    and isinstance(target, str)
+                    and state.get("work_items", {}).get(target, {}).get("status")
+                    != "completed"
+                    and isinstance(outputs, dict)
+                    and outputs
+                    and all(
+                        isinstance(relative, str)
+                        and isinstance(digest, str)
+                        and (
+                            relative
+                            == "ios/project/business-knowledge/catalog.json"
+                            or (
+                                self.resolve(relative).is_file()
+                                and not self.resolve(relative).is_symlink()
+                                and sha256_bytes(
+                                    self.resolve(relative).read_bytes()
+                                )
+                                == digest
+                            )
+                        )
+                        for relative, digest in outputs.items()
+                    )
+                ):
+                    matches.append(path)
+        return len(matches) == 1
+
     @property
     def business_knowledge_script_path(self) -> Path:
         return self.resolve("ios/harness/business-knowledge/business_knowledge.py")
@@ -2122,7 +2185,13 @@ class Harness:
                         errors.append(f"{capability_id}: {error}")
                         continue
                     if evidence_inputs.get(input_name) != expected_hash:
-                        errors.append(f"{capability_id}: verified Evidence 输入已过期：{input_name}")
+                        if not self.readiness_transition_defers_enabler_freshness(
+                            item,
+                            state,
+                        ):
+                            errors.append(
+                                f"{capability_id}: verified Evidence 输入已过期：{input_name}"
+                            )
                     continue
                 if input_name == "source_lab_selection_sha256":
                     if not isinstance(item, dict):
