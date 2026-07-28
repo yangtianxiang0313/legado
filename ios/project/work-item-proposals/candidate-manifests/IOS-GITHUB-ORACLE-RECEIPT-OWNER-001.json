@@ -1,0 +1,30 @@
+{
+  "authority": "proposal_only",
+  "candidate_sha256": "4133a5be0cb58e0452a234b98dfc6764dd3607fc1df86cb59efed476dee244fb",
+  "compiler_version": "proposal-compiler-v1",
+  "dag": {
+    "id": "WIPD-IOS-INITIALIZATION-001",
+    "revision": 20,
+    "sha256": "9f647fac8c812cc4613224de19714e8c2297b154a5aa3b6f47c920fb78e0427b"
+  },
+  "dependencies": [
+    {
+      "chain": [
+        "IOS-GITHUB-ORACLE-PAYLOAD-CANONICALIZATION-001"
+      ],
+      "checkpoint": "ios/project/checkpoints/IOS-GITHUB-ORACLE-PAYLOAD-CANONICALIZATION-001.json",
+      "checkpoint_sha256": "cdc6a228051a274b6fdbdd5a01455ad54723d6e8114a387719966ebc9d1c3e30",
+      "evidence": "ios/harness/evidence/runs/run-20260728T220902Z-ios-github-oracle-payload-canonicalization-001-2edb24f3.json",
+      "evidence_sha256": "d924cb5b7945a2472f94fbc4aee3ac4999333c945dcd3efb41d7908e21bdc16c",
+      "original": "IOS-GITHUB-ORACLE-PAYLOAD-CANONICALIZATION-001",
+      "reason_code": "DIRECT_COMPLETION",
+      "resolved": "IOS-GITHUB-ORACLE-PAYLOAD-CANONICALIZATION-001",
+      "work_item_sha256": "643a53068a8a3ba28c86821f3e93ebd8adfa7e37b391881c80116375cc35a5ac"
+    }
+  ],
+  "node_sha256": "b2b7f2462532391d566e6c75bc4df81cdddd2729da6383c753b3fb1dae070c62",
+  "proposal_id": "IOS-GITHUB-ORACLE-RECEIPT-OWNER-001",
+  "queue_effect": "none",
+  "recipe_sha256": "881c3defe5bde190c0774905ff2a4b7ba3f920b4236ac0c9d3463dfc2042bc6d",
+  "schema_version": 1
+}
