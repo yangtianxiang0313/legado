@@ -1,0 +1,258 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-SOURCE-RUNTIME-GOLDEN-CONFORMANCE-001",
+    "title": "让 iOS SourceRuntime 与 Android Golden 做真实结构化验收",
+    "priority": 100,
+    "risk": "high",
+    "labels": [
+      "product",
+      "conformance",
+      "source-runtime",
+      "android-golden",
+      "first-divergence",
+      "false-green"
+    ]
+  },
+  "spec": {
+    "capability": "CAP-CONFORMANCE",
+    "intent": "消除 conformance-targeted 只校验 FixtureTransport HTTP 摘要、未执行 SourceRuntime 的假绿。ConformanceCLI 必须从受控 SourceLab source.json 构造 HTML/CSS SourceRuntime，依次执行 search、book_info、chapters、content，输出稳定 source_pipeline portable_known_projection，并与受保护 Android Golden 的同名投影做 canonical exact comparison。差异必须以确定性的首个 JSON Pointer fail closed；404 边界用例继续由 transport lane 覆盖，不得伪装成 Android 已观测的 portable cases。不得访问真实网络、硬编码书名/正文/业务结果或修改 Golden。",
+    "depends_on": [
+      "IOS-SOURCE-RUNTIME-HTML-CSS-001",
+      "IOS-DELIVERY-INTENT-SETTLEMENT-001"
+    ],
+    "scope": {
+      "allow_write": [
+        "ios/Packages/LegadoKit/Sources/ConformanceCLI/**",
+        "ios/Packages/LegadoKit/Sources/TestSupport/FixtureModel.swift",
+        "ios/Packages/LegadoKit/Sources/TestSupport/FixtureLoader.swift",
+        "ios/Packages/LegadoKit/Sources/SourceRuntime/HTMLCSSSourceRuntime.swift",
+        "ios/Packages/LegadoKit/Tests/ConformanceCLITests/**",
+        "ios/project/capabilities/CAP-CONFORMANCE.json",
+        "ios/project/checkpoints/IOS-SOURCE-RUNTIME-GOLDEN-CONFORMANCE-001.json",
+        "ios/project/pitfalls/PIT-0051.json"
+      ],
+      "deny_write": [
+        ".github/**",
+        "ios/Packages/LegadoKit/Package.swift",
+        "ios/harness/config.json",
+        "ios/harness/harness.py",
+        "ios/harness/schemas/**",
+        "ios/harness/fixtures/**",
+        "ios/harness/goldens/**",
+        "ios/harness/oracle/**",
+        "ios/harness/source-lab/**",
+        "ios/project/business-knowledge/**",
+        "ios/project/requirements/**",
+        "ios/project/approvals/**",
+        "ios/docs/**",
+        "app/**",
+        "modules/**"
+      ],
+      "max_files_changed": 12,
+      "max_changed_lines": 2200
+    },
+    "inputs": {
+      "context_files": [
+        "ios/project/business-knowledge/packets/published/BKP-SOURCE-RUNTIME-HTML-CSS-001/r0001.json",
+        "ios/project/business-knowledge/drivers/published/DRV-SOURCE-RUNTIME-HTML-CSS-001/r0001.json",
+        "ios/project/business-knowledge/coverage/BKL-SOURCE-RUNTIME-HTML-CSS-001.json",
+        "ios/project/requirements/accepted/REQ-ANDROID-SOURCE-PIPELINE-001.json",
+        "ios/harness/goldens/manifest.json",
+        "ios/harness/goldens/android-legado-v1/sl-html-basic-001.json",
+        "ios/Packages/LegadoKit/Sources/ConformanceCLI/ConformanceRunner.swift",
+        "ios/Packages/LegadoKit/Sources/ConformanceCLI/ConformanceWorkItemRunner.swift",
+        "ios/Packages/LegadoKit/Sources/SourceRuntime/HTMLCSSSourceRuntime.swift",
+        "ios/Packages/LegadoKit/Sources/TestSupport/CanonicalJSONComparator.swift"
+      ],
+      "android_source_anchors": [],
+      "fixtures": [
+        "sl-html-basic-001"
+      ]
+    },
+    "architecture_refs": [
+      "ADR-0001",
+      "ADR-0002",
+      "ADR-0004"
+    ],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "Conformance WorkItem runner 对 source_lab_site 执行真实 HTMLCSSSourceRuntime，而不是仅返回 HTTP response hash；规则来自渲染后的 source.json，结果不得硬编码。",
+          "verified_by": ["swift-package-tests", "conformance-targeted"],
+          "requirement_clauses": [
+            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-01",
+            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-02",
+            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-03",
+            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-04"
+          ],
+          "knowledge_claims": [
+            {"id": "BKC-SR-HTML-CSS-PIPELINE-001", "revision": 1},
+            {"id": "BKC-SR-HTML-CSS-REQUEST-001", "revision": 1}
+          ]
+        },
+        {
+          "id": "AC-2",
+          "statement": "iOS source_pipeline portable_known_projection 的 8 个 Android 已观测 cases 逐字段完全一致，覆盖 search、详情缺失字段、目录排序与 typed issue、正文缩进和相对图片 URL。",
+          "verified_by": ["swift-package-tests", "conformance-targeted"],
+          "requirement_clauses": [
+            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-01",
+            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-02",
+            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-03",
+            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-04"
+          ],
+          "knowledge_claims": [
+            {"id": "BKC-SR-HTML-CSS-PIPELINE-001", "revision": 1},
+            {"id": "BKC-SR-HTML-CSS-ERROR-001", "revision": 1},
+            {"id": "BKC-SR-HTML-CSS-CONTENT-001", "revision": 1}
+          ]
+        },
+        {
+          "id": "AC-3",
+          "statement": "Golden comparison 使用 canonical JSON 且差异以确定性的首个 RFC 6901 JSON Pointer 报错；缺 Golden、错误 fixture 绑定、摘要漂移和投影缺失均 fail closed。",
+          "verified_by": ["swift-package-tests", "conformance-targeted", "android-intake-contract"],
+          "requirement_clauses": [
+            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-01",
+            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-02",
+            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-03",
+            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-04"
+          ],
+          "knowledge_claims": [
+            {"id": "BKC-SR-HTML-CSS-PIPELINE-001", "revision": 1}
+          ]
+        },
+        {
+          "id": "AC-4",
+          "statement": "所有请求通过 FixtureTransport，编译出的 method/URL 与 SourceLab case 对齐；404 用例保留在 transport 边界测试中，不进入 Android 未观测的 portable projection。",
+          "verified_by": ["swift-package-tests", "source-lab-contract", "conformance-targeted"],
+          "requirement_clauses": [
+            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-01",
+            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-02",
+            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-03",
+            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-04"
+          ],
+          "knowledge_claims": [
+            {"id": "BKC-SR-HTML-CSS-REQUEST-001", "revision": 1},
+            {"id": "BKC-SR-HTML-CSS-ERROR-001", "revision": 1}
+          ]
+        },
+        {
+          "id": "AC-5",
+          "statement": "Capability、Checkpoint 与 Pitfall 明确记录假绿根因、已覆盖行为、404 lane 边界和下一规则切片；不得把首个 HTML/CSS Golden 通过宣称为全部书源兼容。",
+          "verified_by": ["memory-close"],
+          "requirement_clauses": [
+            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-01",
+            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-02",
+            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-03",
+            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-04"
+          ],
+          "knowledge_claims": [
+            {"id": "BKC-SR-HTML-CSS-PIPELINE-001", "revision": 1}
+          ]
+        }
+      ],
+      "required_checks": [
+        "android-intake-contract",
+        "dependency-policy",
+        "source-lab-contract",
+        "swift-package-tests",
+        "conformance-targeted"
+      ]
+    },
+    "baseline_checks": [
+      "android-intake-contract",
+      "dependency-policy",
+      "source-lab-contract",
+      "swift-package-tests",
+      "conformance-targeted"
+    ],
+    "budget": {
+      "wall_clock_seconds": 10800,
+      "max_edit_verify_cycles": 6,
+      "max_targeted_test_runs": 24,
+      "max_full_test_runs": 5,
+      "max_infra_retries": 2
+    },
+    "gates": [],
+    "completion_effects": {
+      "health": {
+        "source_runtime_golden_conformance": "android_exact_first_slice"
+      }
+    },
+    "memory": {
+      "capability_state_required": true,
+      "checkpoint_required": true,
+      "pitfall_update_required": true,
+      "adr": "not_required"
+    },
+    "requirements": {
+      "mode": "verification",
+      "refs": [
+        {
+          "id": "REQ-ANDROID-SOURCE-PIPELINE-001",
+          "revision": 1,
+          "clauses": ["RC-01", "RC-02", "RC-03", "RC-04"]
+        }
+      ],
+      "none_reason": null
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "consume",
+      "claim_refs": [
+        {"id": "BKC-SR-HTML-CSS-PIPELINE-001", "revision": 1},
+        {"id": "BKC-SR-HTML-CSS-REQUEST-001", "revision": 1},
+        {"id": "BKC-SR-HTML-CSS-ERROR-001", "revision": 1},
+        {"id": "BKC-SR-HTML-CSS-CONTENT-001", "revision": 1}
+      ],
+      "driver_refs": [
+        {"id": "DRV-SOURCE-RUNTIME-HTML-CSS-001", "revision": 1}
+      ],
+      "coverage_refs": [
+        {
+          "id": "BKL-SOURCE-RUNTIME-HTML-CSS-001",
+          "revision": 1,
+          "entries": [
+            "BKE-SR-HTML-CSS-PIPELINE-001",
+            "BKE-SR-HTML-CSS-REQUEST-001",
+            "BKE-SR-HTML-CSS-ERROR-001",
+            "BKE-SR-HTML-CSS-CONTENT-001"
+          ]
+        }
+      ],
+      "produces": [],
+      "expected_ledger_transitions": [],
+      "context_budget": {
+        "max_claims": 6,
+        "max_bytes": 65536
+      },
+      "none_reason": null
+    },
+    "source_lab": {
+      "mode": "reuse",
+      "behaviors": [
+        "transport.get-query",
+        "pipeline.search-html",
+        "pipeline.book-info-html",
+        "pipeline.toc-html",
+        "pipeline.content-html",
+        "url.relative-resolution",
+        "rule.css-selector"
+      ],
+      "scenarios": ["sl-html-basic-001"],
+      "none_reason": null
+    },
+    "stop_on": [
+      "baseline_red",
+      "scope_violation",
+      "golden_drift",
+      "requirement_drift",
+      "knowledge_drift",
+      "same_failure_twice",
+      "budget_exhausted",
+      "human_decision_required"
+    ]
+  }
+}
