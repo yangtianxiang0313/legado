@@ -2,13 +2,13 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-28T04:46:24Z
+- 更新时间：2026-07-28T04:56:31Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
-- 下一个可领取工作项：IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-004
-- 最近完成：IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002
+- 下一个可领取工作项：无
+- 最近完成：IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-004
 
 ## 健康度
 
@@ -28,6 +28,7 @@
 | knowledge_book_domain | `candidate_verified` |
 | knowledge_control_plane | `proposal_batch_claim_refs_verified` |
 | knowledge_initialization_dag | `proposal_verified` |
+| knowledge_integrations | `candidate_verified` |
 | knowledge_reader_lifecycle | `candidate_verified` |
 | knowledge_revision_tombstones | `v1_verified` |
 | knowledge_source_runtime | `candidate_verified` |
@@ -35,7 +36,7 @@
 | local_approval_ui | `verified` |
 | loop_engine | `local_mature` |
 | loop_supervisor | `local_verified` |
-| loop_trusted_verification | `supervisor_owned` |
+| loop_trusted_verification | `real_codex_verified` |
 | proposal_compiler | `local_verified` |
 | proposal_lifecycle_tests | `state_aware` |
 | requirements | `catalog_ready_one_characterization_gap` |
@@ -78,7 +79,7 @@
 | IOS-KNOWLEDGE-CONTROL-PLANE-001 | 90 | `completed` | IOS-ORACLE-CONTROL-PLANE-001 | 建立业务知识与架构驱动控制面 |
 | IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-002 | 90 | `exhausted` | IOS-KNOWLEDGE-ANDROID-SURFACES-001, IOS-PROPOSAL-LIFECYCLE-RECOVERY-002, IOS-CODEX-AGENT-ADAPTER-COMPAT-002 | 恢复外部集成、权限、依赖与发布约束知识 |
 | IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-003 | 90 | `exhausted` | IOS-KNOWLEDGE-ANDROID-SURFACES-001, IOS-KNOWLEDGE-TOMBSTONE-PROTOCOL-001, IOS-CODEX-AGENT-ADAPTER-COMPAT-002 | 恢复外部集成、权限、依赖与发布约束知识 revision 3 |
-| IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-004 | 90 | `ready` | IOS-KNOWLEDGE-ANDROID-SURFACES-001, IOS-KNOWLEDGE-TOMBSTONE-PROTOCOL-001, IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002 | 验证恢复 Integrations 知识 revision 4 |
+| IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-004 | 90 | `completed` | IOS-KNOWLEDGE-ANDROID-SURFACES-001, IOS-KNOWLEDGE-TOMBSTONE-PROTOCOL-001, IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002 | 验证恢复 Integrations 知识 revision 4 |
 | IOS-KNOWLEDGE-SOURCE-RUNTIME-001 | 89 | `completed` | IOS-KNOWLEDGE-ANDROID-SURFACES-001, IOS-KNOWLEDGE-PROPOSAL-BATCH-REFS-REPAIR-001 | 提取书源格式、规则与执行流水线知识 |
 | IOS-KNOWLEDGE-READER-LIFECYCLE-001 | 88 | `completed` | IOS-KNOWLEDGE-ANDROID-SURFACES-001, IOS-KNOWLEDGE-BOOK-DOMAIN-001, IOS-KNOWLEDGE-SOURCE-RUNTIME-001 | 提取阅读会话、正文、进度与预取知识 |
 | IOS-KNOWLEDGE-UI-TOPOLOGY-001 | 87 | `exhausted` | IOS-KNOWLEDGE-ANDROID-SURFACES-001, IOS-KNOWLEDGE-BOOK-DOMAIN-001, IOS-KNOWLEDGE-SOURCE-RUNTIME-001, IOS-KNOWLEDGE-READER-LIFECYCLE-001 | 提取页面结构、导航图与多级菜单知识 |

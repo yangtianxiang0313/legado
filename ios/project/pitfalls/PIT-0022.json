@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "PIT-0022",
-  "revision": 2,
+  "revision": 3,
   "title": "受限 Agent 沙箱不能承担全部受信验证",
   "fingerprint": "agent-sandbox-blocks-nested-swiftpm-and-loopback-tests",
   "capabilities": [
@@ -26,7 +26,7 @@
     "检查 SwiftPM stderr 是否包含 sandbox_apply、ModuleCache 或 unable to load standard library",
     "检查 Harness 测试 traceback 是否在 HTTPServer.bind、Simulator 或其他受限系统资源处失败"
   ],
-  "fix": "SwiftPM manifest 检查统一使用 swiftpm_manifest.py：显式 --disable-sandbox，并为每次调用隔离 cache/config/security/scratch 与 Clang module cache。Loop 新增显式 supervisor-owned-verification-v1：implementation turn 后由 Supervisor 独立 verify，passed Evidence 后再启动 memory_close turn，最终由 Supervisor close；每个 Agent turn 前后核对 event/status/Evidence control binding，检测 Agent 直接改变控制状态。fake Agent E2E、失败后续接、memory close 失败和控制状态篡改路径均已通过；真实 Integrations recovery 通过前保持 mitigated。",
+  "fix": "SwiftPM manifest 检查统一使用 swiftpm_manifest.py：显式 --disable-sandbox，并为每次调用隔离 cache/config/security/scratch 与 Clang module cache。Loop 新增显式 supervisor-owned-verification-v1：implementation turn 后由 Supervisor 独立 verify，passed Evidence 后再启动 memory_close turn，最终由 Supervisor close；每个 Agent turn 前后核对 event/status/Evidence control binding，检测 Agent 直接改变控制状态。fake Agent E2E、失败后续接、memory close 失败和控制状态篡改路径均已通过；IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-004 又以真实 Codex v3 adapter 完成 Agent edit → Supervisor verify → Agent memory 过渡，宿主 required checks 全部通过，关闭前置验证成立。",
   "prevention": {
     "architecture_rule": "Agent 只负责生成受 scope 限制的候选改动；最终 required_checks、Evidence 和 close 必须可由独立 Supervisor 执行。需要网络监听、模拟器、签名或系统服务的检查不得依赖 Agent sandbox 权限。",
     "tests": [
@@ -41,9 +41,9 @@
   },
   "affected_versions": {
     "from": "IOS-CODEX-AGENT-ADAPTER-COMPAT-002",
-    "until": null
+    "until": "IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-004"
   },
-  "status": "mitigated",
+  "status": "resolved",
   "occurrences": 2,
   "first_seen": "2026-07-28",
   "last_seen": "2026-07-28",
@@ -53,6 +53,7 @@
     "ios/harness/evidence/runs/run-20260728T041524Z-ios-knowledge-integrations-recovery-003-a7c1c25d.json",
     "ios/harness/evidence/runs/run-20260728T042415Z-ios-swiftpm-verify-sandbox-001-4fc84a4b.json",
     "ios/harness/evidence/runs/run-20260728T042625Z-ios-swiftpm-verify-sandbox-001-e696ad44.json",
-    "ios/harness/evidence/runs/run-20260728T044352Z-ios-supervisor-owned-verify-recovery-002-78c25113.json"
+    "ios/harness/evidence/runs/run-20260728T044352Z-ios-supervisor-owned-verify-recovery-002-78c25113.json",
+    "ios/harness/evidence/runs/run-20260728T045220Z-ios-knowledge-integrations-recovery-004-3d38b389.json"
   ]
 }

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 26,
+  "revision": 27,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -42,7 +42,7 @@
   "depends_on": ["CAP-BOOTSTRAP"],
   "active_decisions": ["ADR-0004"],
   "open_compatibility": [],
-  "open_pitfalls": ["PIT-0012", "PIT-0016", "PIT-0022"],
+  "open_pitfalls": ["PIT-0012", "PIT-0016"],
   "blockers": [],
   "required_evidence": ["harness-tests", "dependency-policy", "architecture"],
   "freshness_inputs": [
@@ -51,14 +51,14 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260728T044352Z-ios-supervisor-owned-verify-recovery-002-78c25113.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260728T045220Z-ios-knowledge-integrations-recovery-004-3d38b389.json",
   "next_actions": [
-    "创建 IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-004，基于已生成 revision 3 proposal 生产并验证 revision 4",
-    "用真实 Codex v3 adapter 验证 Agent edit → Supervisor verify → Agent memory → Supervisor close 全链路，并在成功后关闭 PIT-0022",
+    "人工审查 BKP-INTEGRATIONS-001@4 与 DRV-INTEGRATION-PROFILES-001@4；在 Trusted Publisher promotion 前保持 proposal，不作为 Requirement、依赖、权限或发布 authority",
+    "为 IntegrationKit/adapter、双 profile、权限最小化、备份迁移、依赖准入与可观测性问题建立独立裁决和 characterization/spike 工作项",
     "把 reference runner 迁入 Agent 不可达的受保护服务，以 KMS/企业身份签名、OS/container 隔离、资源上限和 deny-by-default egress 替代本地 HMAC/用户权限",
     "实现独立 patch publisher，只消费已签名 verified artifact，并经受保护 authority transition 完成 promotion",
     "为 recovery compiler 增加逐 Claim supersedes 自动生成，最终关闭 PIT-0012"
   ],
-  "updated_at": "2026-07-28T04:43:52Z",
-  "updated_by": "IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002"
+  "updated_at": "2026-07-28T04:52:20Z",
+  "updated_by": "IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-004"
 }

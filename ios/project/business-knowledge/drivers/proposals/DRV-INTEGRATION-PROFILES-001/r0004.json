@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-INTEGRATION-PROFILES-001",
+  "revision": 4,
+  "status": "proposed",
+  "semantic_key": "integration.architecture.profiles-and-adapters",
+  "title": "集成适配、最小权限与双发布 Profile 边界",
+  "claim_refs": [
+    {
+      "id": "BKC-INTEGRATION-EXTERNAL-ENTRY-001",
+      "revision": 2
+    },
+    {
+      "id": "BKC-INTEGRATION-REMOTE-SERVICE-001",
+      "revision": 2
+    },
+    {
+      "id": "BKC-INTEGRATION-WEBDAV-001",
+      "revision": 2
+    },
+    {
+      "id": "BKC-INTEGRATION-BACKUP-ENVELOPE-001",
+      "revision": 2
+    },
+    {
+      "id": "BKC-INTEGRATION-LEGACY-IMPORT-001",
+      "revision": 2
+    },
+    {
+      "id": "BKC-INTEGRATION-STORAGE-PERMISSIONS-001",
+      "revision": 2
+    },
+    {
+      "id": "BKC-INTEGRATION-BACKGROUND-NOTIFICATION-001",
+      "revision": 2
+    },
+    {
+      "id": "BKC-INTEGRATION-DYNAMIC-CAPABILITIES-001",
+      "revision": 2
+    },
+    {
+      "id": "BKC-INTEGRATION-NETWORK-STACK-001",
+      "revision": 2
+    },
+    {
+      "id": "BKC-INTEGRATION-ARCHIVE-CODEC-001",
+      "revision": 2
+    },
+    {
+      "id": "BKC-INTEGRATION-CAPABILITY-INJECTION-001",
+      "revision": 2
+    },
+    {
+      "id": "BKC-INTEGRATION-OBSERVABILITY-001",
+      "revision": 2
+    },
+    {
+      "id": "BKC-INTEGRATION-PROFILE-MATRIX-001",
+      "revision": 2
+    },
+    {
+      "id": "BKC-INTEGRATION-CROSS-DOMAIN-001",
+      "revision": 2
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "profile_integrity",
+      "scenario": "StoreSafe 链接闭包排除任意脚本、动态规则页面和未批准入站服务；FullCompat 的附加 adapter 仍受显式 policy 和发布裁决约束。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "security",
+      "scenario": "外部 URL、分享、文件、局域网请求、WebDAV、备份与历史归档都在解析和副作用前验证，凭据与密钥由专用隔离器持有。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "privacy",
+      "scenario": "权限仅在用户动作需要时请求，trace 不包含凭据、正文、文件内容、Cookie 或密钥，发布材料能解释每项数据使用。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "portability",
+      "scenario": "IntegrationKit ports 使用项目自有 Sendable 值，平台 API、Android 类型和第三方依赖均止于 adapter。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "recoverability",
+      "scenario": "备份和迁移先验证版本/完整性，再以可报告、可取消、可重试的事务阶段处理冲突、未知字段和部分失败。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "testability",
+      "scenario": "codec、ports、受控网络、多 WebDAV 服务器、Android 历史样本、iOS 设备后台/权限及 profile 链接闭包可分层验证。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "dependency_governance",
+      "scenario": "优先验证标准库；每个候选第三方库在准入前记录许可证、维护、体积、隐私、协议兼容与 Swift 6 并发风险。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "observability",
+      "scenario": "远程命令、传输、备份、恢复、迁移、导出和朗读具有稳定 stage、TraceID、取消与恢复分类，同时默认脱敏。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "IntegrationKit 应包含哪些消费方 ports，RemoteService、WebDAV、Archive、LegacyImport、Speech、DocumentAccess 和 Background adapter 如何拆分 Target？",
+    "哪些能力属于 StoreSafe 链接闭包，哪些仅 FullCompat 可注入；差异如何由构建图和 RuntimePolicy 双重证明？",
+    "本地 HTTP/WebSocket 远程管理是否属于 iOS 产品范围；若是，认证、绑定接口、Local Network 用途、后台终止与 App Store 分发如何裁决？",
+    "每项文件、网络、通知、音频与后台能力的最小授权时机、降级 UX、撤销路径和隐私披露是什么？",
+    "备份 envelope 的版本、清单、完整性、加密/KDF、未知字段和跨设备密钥策略是什么？",
+    "恢复按何种事务边界处理覆盖、合并、部分成功、取消与失败重试；Source、Book、Reader 进度的身份冲突如何裁决？",
+    "支持哪些 Android 历史版本与 WebDAV 服务器；哪些兼容行为必须由 Android characterization 或真实服务器 spike 固定？",
+    "URLSession、Network.framework、Compression 和 CryptoKit 能否覆盖协议；何种可量化缺口才允许提出第三方依赖审批？",
+    "第三方网络、WebDAV、归档或加密候选的许可证、维护、二进制体积、隐私清单和 Swift 6 并发门槛是什么？",
+    "权限、远程请求、备份、迁移和朗读 trace 的稳定 stage、脱敏字段、资源预算、取消和 retry 语义是什么？",
+    "Source Runtime、Reader、AppUseCases 与 UI 分别拥有哪些集成状态，如何避免 Feature 直接调用 URLSession、FileManager、AVFoundation 或 WebView？",
+    "如何在 CI 验证 StoreSafe/FullCompat 链接闭包、entitlement/Info 配置清单和依赖锁，而不让 proposal 自动成为发布授权？"
+  ],
+  "resolution": {
+    "state": "requires_adr",
+    "adr_refs": [],
+    "work_item_refs": []
+  },
+  "promotion": null,
+  "supersedes": {
+    "id": "DRV-INTEGRATION-PROFILES-001",
+    "revision": 3
+  },
+  "created_by": "IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-004"
+}
