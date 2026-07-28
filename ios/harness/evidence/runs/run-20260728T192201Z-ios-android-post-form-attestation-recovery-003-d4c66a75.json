@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "run_id": "run-20260728T192201Z-ios-android-post-form-attestation-recovery-003-d4c66a75",
+  "work_item_id": "IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-003",
+  "work_item_sha256": "e156a9028c12ae98e14fd852b82924ad23de2cd51ac24090ab1be4a35d5f0371",
+  "result": "failed",
+  "inputs": {
+    "base_commit": "5ee2a9e412f0bb82da472a53c2ac20dd64cc277f",
+    "head_commit": "5ee2a9e412f0bb82da472a53c2ac20dd64cc277f",
+    "snapshot_sha256": "2c62ce234358f4d3241fa8207c4ff924bf93ba54e2c1168a2d4ec1c1905ef099",
+    "baseline_sha256": "eeeaf0017b79a2420faf73c686a110a2d0372b2da865e42aa8db360fd3015e93",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
+    "architecture_rules_sha256": "51ebc4cff5921643f95d8a045c21ea85cad046acb99ed56026f77bf842642fa5",
+    "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+    "golden_manifest_sha256": "13364dacf63643ebc9a0c48ca50d4937da85610a8975191ec1b86d8b80621f57",
+    "fixture_manifest_sha256": "76b8ba91dfca774e1fd548280a927dd383b7efadabed81704dcba408b6874243",
+    "dependency_lock_sha256": null,
+    "source_lab_control_sha256": "05ec6fbf150a6caedfbd9ec12fd3b3151f791825a4066b162be77524aa960c0e",
+    "android_intake_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122",
+    "business_knowledge_control_sha256": "85228a4aa826bd1f9d6f22231a6e04fe622cec925714d4bdceacdca704186979",
+    "business_knowledge_authority_sha256": "9a898622fab665e380b0fdb7837d6aa24f938f5c87e4bc635c32fbdf4dfe81c8",
+    "business_knowledge_coverage_sha256": "8cd21f8c89530ad6b94a2a6f35c5f671b052ec180f93a365f0c9c0cfa4357961",
+    "business_knowledge_proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
+    "android_requirement_selection_sha256": null,
+    "source_lab_selection_sha256": "51295f739917dc507c8ee6756af5d39ff85b0332162ed822c3a174f501869dc1",
+    "knowledge_selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "environment": {
+      "platform": "macOS-26.4.1-arm64-arm-64bit",
+      "python": "3.9.6",
+      "xcode": "Xcode 26.0\nBuild version 17A324",
+      "swift": "Apple Swift version 6.2 (swiftlang-6.2.0.19.9 clang-1700.3.19.1)\nTarget: arm64-apple-macosx26.0"
+    }
+  },
+  "changes": {
+    "paths": [],
+    "changed_lines_approximate": 0,
+    "file_fingerprints": {},
+    "dirty_snapshot": {
+      "ios/harness/work-items/IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-003.json": "file:0o644:6bdb0806736438f5e2d6b3be340d97b688cf183a33b2d4f9c25200b0c1086fa4",
+      "ios/project/events.jsonl": "file:0o644:a6a2238501bb9215cbe70ba734c8126d43b1c479c74f038c4c81e251f44bf742",
+      "ios/project/state.json": "file:0o644:e03c002794e99b96b6a920c714b587053e310e2f3077e986912a19baeb09ace5",
+      "ios/project/status.md": "file:0o644:8d2005b45d9083adf8194494dde89baaaa2de2c569c3ff5f2459405bb6eec3e3"
+    },
+    "diff_sha256": "21dbd62d3e2e064169744f621da55515f958ca73717c9ac898670b3c682d916c"
+  },
+  "policy_errors": [
+    "没有检测到工作项范围内的实现或记忆变化"
+  ],
+  "architecture_errors": [],
+  "architecture_warnings": [],
+  "checks": [],
+  "failure": {
+    "class": "POLICY",
+    "message": "没有检测到工作项范围内的实现或记忆变化",
+    "fingerprint": "4d8c7d415046c73424c1c60c5c723eaffed242089cefced41b7d4973b6360d40"
+  },
+  "started_at": "2026-07-28T19:21:59Z",
+  "finished_at": "2026-07-28T19:22:01Z",
+  "reproduction": "python3 ios/harness/harness.py verify IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-003"
+}

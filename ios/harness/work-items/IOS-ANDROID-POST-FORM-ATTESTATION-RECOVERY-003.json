@@ -1,0 +1,240 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-003",
+    "labels": [
+      "phase-1",
+      "control-plane",
+      "conformance",
+      "android-oracle",
+      "source-lab",
+      "post-form",
+      "attestation",
+      "github-actions",
+      "trusted-proposal",
+      "candidate-only",
+      "corrective",
+      "recovery"
+    ],
+    "priority": 100,
+    "risk": "high",
+    "title": "完成 POST Form proposal 的共享 Oracle contract 恢复"
+  },
+  "spec": {
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "oracle.contract.verify_proposal 逐字节兼容既有 sl-html-basic-001，并用精确、向后兼容的 scenario-aware schema 验证 sl-post-form-001；其他额外/缺失字段拒绝。",
+          "verified_by": [
+            "harness-tests"
+          ]
+        },
+        {
+          "id": "AC-2",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "ci_proposal.finalize 在归档前调用共享 verify_proposal，trusted_import 在双 attestation 与安全解包后再次调用同一函数；test_oracle_contract 的 authority guard 与直接 POST Form contract 测试通过。",
+          "verified_by": [
+            "harness-tests",
+            "dependency-policy"
+          ]
+        },
+        {
+          "id": "AC-3",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "共享 contract 绑定 request WorkItem、唯一 scenario/fixture、SourceLab manifest、scenario、input、runner、Android baseline、canonicalizer/comparator 与 payload；跨场景重放和任一 digest 漂移失败。",
+          "verified_by": [
+            "harness-tests",
+            "fixture-contract",
+            "android-intake-contract",
+            "source-lab-contract"
+          ]
+        },
+        {
+          "id": "AC-4",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "恢复谱系 003→002→001 由 SourceLab 验证为无环、同 Capability、同场景/behavior、每层可恢复终态并最终落到原 characterization；固定 attestation workflow 可继承，其他 workflow 拒绝。",
+          "verified_by": [
+            "source-lab-contract",
+            "source-lab-tests"
+          ]
+        },
+        {
+          "id": "AC-5",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "完整 Harness 回归覆盖旧临时仓库 fixture、旧 HTML proposal、新 POST Form proposal、标签越权、schema 漂移、digest 漂移、archive 重放和 importer contract 失败传播。",
+          "verified_by": [
+            "harness-tests"
+          ]
+        },
+        {
+          "id": "AC-6",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "本项不新增 promote、publish、accept 或 update-golden，不修改 Fixture、Golden、Publisher、Requirement、Approval、SourceLab 控制或产品；Checkpoint 记录 001 后验拒绝和 002 两次失败 Evidence。",
+          "verified_by": [
+            "dependency-policy",
+            "memory-close"
+          ]
+        }
+      ],
+      "required_checks": [
+        "android-intake-contract",
+        "fixture-contract",
+        "dependency-policy",
+        "harness-tests",
+        "source-lab-contract",
+        "source-lab-tests",
+        "source-lab-smoke"
+      ]
+    },
+    "architecture_refs": [
+      "ARCH-008",
+      "ARCH-011",
+      "ARCH-014",
+      "ARCH-017",
+      "ADR-0002",
+      "ADR-0004"
+    ],
+    "baseline_checks": [
+      "source-lab-smoke"
+    ],
+    "budget": {
+      "max_edit_verify_cycles": 4,
+      "max_full_test_runs": 4,
+      "max_infra_retries": 2,
+      "max_targeted_test_runs": 20,
+      "wall_clock_seconds": 14400
+    },
+    "capability": "CAP-CONFORMANCE",
+    "completion_effects": {
+      "health": {
+        "android_post_form_attestation": "shared_contract_verified"
+      }
+    },
+    "depends_on": [
+      "IOS-SOURCELAB-POST-FORM-001"
+    ],
+    "gates": [],
+    "inputs": {
+      "android_source_anchors": [
+        "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+        "app/src/main/java/io/legado/app/model/webBook/WebBook.kt"
+      ],
+      "context_files": [
+        "ios/harness/oracle/contract.py",
+        "ios/harness/oracle/ci_proposal.py",
+        "ios/harness/oracle/trusted_import.py",
+        ".github/workflows/android-oracle-attestation.yml",
+        "ios/harness/tests/test_oracle_contract.py",
+        "ios/harness/tests/test_oracle_ci_proposal.py",
+        "ios/harness/tests/test_oracle_trusted_import.py",
+        "ios/harness/evidence/runs/run-20260728T191336Z-ios-android-post-form-attestation-recovery-002-e1113435.json",
+        "ios/harness/evidence/runs/run-20260728T191635Z-ios-android-post-form-attestation-recovery-002-fe4a815d.json",
+        "ios/harness/work-items/IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-002.json"
+      ],
+      "fixtures": [
+        "sl-post-form-001"
+      ]
+    },
+    "intent": "恢复 IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-002。002 已实现 scenario-aware 共享 Oracle contract，并修复临时仓库缺少 runner 文件的兼容，但其不可变 WorkItem 仍被旧 SourceLab 规则拒绝：control recovery 未继承固定 attestation workflow 例外且 recovery 只能一层。控制合同现已升级为最多 16 层、无环、同 Capability/场景/behavior、每层可恢复终态并最终落到 characterization 的谱系。003 只需保留并完成共享 verify_proposal 实现，确保 ci_proposal.finalize 与 trusted_import 都调用该 contract，旧 HTML 与 POST Form 直接 contract 测试、完整 Harness 和 SourceLab 检查全部通过。本项仍不发布 Golden。",
+    "knowledge": {
+      "claim_refs": [],
+      "context_budget": {
+        "max_bytes": 49152,
+        "max_claims": 12
+      },
+      "contract_version": 1,
+      "coverage_refs": [],
+      "driver_refs": [],
+      "expected_ledger_transitions": [],
+      "mode": "not_applicable",
+      "none_reason": "本项修复 Oracle proposal 控制合同，不生成或发布业务知识",
+      "produces": []
+    },
+    "memory": {
+      "adr": "not_required",
+      "capability_state_required": true,
+      "checkpoint_required": true,
+      "pitfall": "required"
+    },
+    "recovers": "IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-002",
+    "requirements": {
+      "mode": "control_plane",
+      "none_reason": "本恢复项只完成 candidate proposal 的共享验证 authority；原 characterization WorkItem 继续绑定 REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "refs": []
+    },
+    "scope": {
+      "allow_write": [
+        ".github/workflows/android-oracle-attestation.yml",
+        "ios/harness/oracle/contract.py",
+        "ios/harness/oracle/ci_proposal.py",
+        "ios/harness/oracle/trusted_import.py",
+        "ios/harness/oracle/README.md",
+        "ios/harness/tests/test_oracle_contract.py",
+        "ios/harness/tests/test_oracle_ci_proposal.py",
+        "ios/harness/tests/test_oracle_trusted_import.py",
+        "ios/project/capabilities/CAP-CONFORMANCE.json",
+        "ios/project/checkpoints/IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-003.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        "app/**",
+        "modules/**",
+        "build.gradle",
+        "settings.gradle",
+        "gradle/**",
+        "ios/Packages/**",
+        "ios/publisher/**",
+        "ios/harness/harness.py",
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/demand_compiler.py",
+        "ios/harness/config.json",
+        "ios/harness/schemas/**",
+        "ios/harness/android-intake/**",
+        "ios/harness/source-lab/**",
+        "ios/harness/fixtures/**",
+        "ios/harness/goldens/**",
+        "ios/harness/normalization/**",
+        "ios/harness/oracle/android-runner/**",
+        "ios/project/android-intake/**",
+        "ios/project/requirements/**",
+        "ios/project/business-knowledge/**",
+        "ios/project/approvals/**",
+        "ios/project/work-item-proposals/**",
+        "ios/project/baseline.json",
+        "ios/docs/**"
+      ],
+      "max_changed_lines": 3600,
+      "max_files_changed": 11
+    },
+    "source_lab": {
+      "behaviors": [
+        "transport.post-form"
+      ],
+      "mode": "reuse",
+      "none_reason": null,
+      "scenarios": [
+        "sl-post-form-001"
+      ]
+    },
+    "stop_on": [
+      "baseline_red",
+      "scope_violation",
+      "contract_authority_bypass",
+      "network_escape",
+      "golden_mutation",
+      "protected_path_mutation",
+      "same_failure_twice",
+      "budget_exhausted",
+      "human_decision_required"
+    ]
+  }
+}

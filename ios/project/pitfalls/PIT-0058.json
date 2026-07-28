@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0058",
+  "revision": 1,
+  "title": "为新场景另写私有校验会绕过共享 Oracle proposal authority",
+  "fingerprint": "scenario-aware-proposal-replaces-shared-contract-with-private-hash-check",
+  "capabilities": [
+    "CAP-CONFORMANCE"
+  ],
+  "symptoms": [
+    "scenario selector、archive 与 trusted importer 单测全部通过，正式 Harness Evidence 初次显示 passed",
+    "ci_proposal.finalize 删除 oracle.contract.verify_proposal，只返回 proposal SHA",
+    "workflow 删除显式 verify-proposal，trusted_import 用私有字段检查替代共享 contract",
+    "补充直接 contract 测试后，POST Form proposal 因 request 新字段立即失败",
+    "第一层恢复又被只支持直接 characterization 的 SourceLab recovery 规则阻断"
+  ],
+  "conditions": [
+    "既有共享 contract 使用精确字段集合，新场景需要增加 scenario/manifest/input binding",
+    "实现者只修改 CI producer/importer，没有同步演进共享 contract",
+    "验收只测试打包与 importer 自洽，没有直接调用 authority contract",
+    "typed recovery 连续发生，控制合同只支持一层 recovers"
+  ],
+  "root_cause": "把 schema 演进误当成 producer 私有实现细节。producer、workflow、importer 可以彼此自洽，却共同绕开真正的 proposal authority；同时 recovery lineage 只按一层特殊情况实现，无法承接后验审计产生的连续修复。",
+  "diagnosis": [
+    "搜索 ci_proposal.finalize、workflow 与 trusted_import 是否都实际调用 oracle.contract.verify_proposal",
+    "从最终 proposal 文件直接调用 verify_proposal，而不是只断言 archive SHA 或 importer report",
+    "检查旧 HTML proposal 字节兼容与新 POST Form 精确 schema 是否同时覆盖",
+    "检查 SourceLab recovery chain 是否无环、有界、同 Capability/场景/behavior 且最终终止于 characterization"
+  ],
+  "fix": "拒绝初次 passed Evidence，不把后验 authority audit 当完成；用 typed recovery 扩展共享 verify_proposal 的向后兼容精确 schema，绑定 request/scenario/fixture/SourceLab manifest/input/runner/baseline/canonicalizer，并让 ci_proposal 与 trusted_import 运行时引用同一个函数。SourceLab recovery 改为最多 16 层的无环谱系，只继承固定 attestation workflow，其他 authority 路径继续拒绝。",
+  "prevention": {
+    "architecture_rule": "任何 producer/importer schema 演进都必须先给共享 authority contract 增加直接正反例；私有 SHA、自洽字段检查或 workflow 成功不能替代共享 contract。所有可恢复状态机必须测试 recovery-of-recovery 与成环边界。",
+    "tests": [
+      "ios/harness/tests/test_oracle_contract.py",
+      "ios/harness/tests/test_oracle_ci_proposal.py",
+      "ios/harness/tests/test_oracle_trusted_import.py",
+      "ios/harness/source-lab/tests/test_source_lab.py"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-ANDROID-POST-FORM-ATTESTATION-001",
+    "until": "IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-003"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T190038Z-ios-android-post-form-attestation-001-b9c9f493.json",
+    "ios/harness/evidence/runs/run-20260728T191336Z-ios-android-post-form-attestation-recovery-002-e1113435.json",
+    "ios/harness/evidence/runs/run-20260728T191635Z-ios-android-post-form-attestation-recovery-002-fe4a815d.json",
+    "ios/harness/evidence/runs/run-20260728T192539Z-ios-android-post-form-attestation-recovery-003-2810b9da.json"
+  ]
+}

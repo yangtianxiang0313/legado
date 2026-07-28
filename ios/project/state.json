@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "revision": 389,
+  "revision": 394,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-28T19:17:20Z",
-  "event_head": "8c07f385add456c5f140512d3217467893d434bc6f8db455c419d922e0080862",
+  "updated_at": "2026-07-28T19:26:58Z",
+  "event_head": "9d52cc2ecff4cd6c50a550a0fec329ec2a97340d6d14e10dd7e2c531c4240957",
   "active_work_items": [],
-  "last_completed_work_item": "IOS-ORACLE-SETTLEMENT-COMPILER-001",
+  "last_completed_work_item": "IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-003",
   "work_items": {
     "IOS-BOOT-001": {
       "status": "completed",
@@ -7174,7 +7174,66 @@
           "ios/harness/evidence/runs/run-20260728T191336Z-ios-android-post-form-attestation-recovery-002-e1113435.json",
           "ios/harness/evidence/runs/run-20260728T191635Z-ios-android-post-form-attestation-recovery-002-fe4a815d.json"
         ]
-      }
+      },
+      "replacement": "IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-003",
+      "replacement_bound_at": "2026-07-28T19:26:58Z"
+    },
+    "IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-003": {
+      "status": "completed",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260728T192539Z-ios-android-post-form-attestation-recovery-003-2810b9da.json",
+      "claimed_by": "codex",
+      "claimed_at": "2026-07-28T19:20:09Z",
+      "lease_expires_at": "2026-07-29T19:20:09Z",
+      "work_item_sha256": "e156a9028c12ae98e14fd852b82924ad23de2cd51ac24090ab1be4a35d5f0371",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "5ee2a9e412f0bb82da472a53c2ac20dd64cc277f",
+      "base_capability_revision": 18,
+      "base_capability_assurance_sha256": "b1d5a642fed3770f6a005218976f4672aeb74fd477f5c7cea1368c87fea2c2f5",
+      "android_requirement_selection_sha256": null,
+      "business_knowledge_control_sha256": "85228a4aa826bd1f9d6f22231a6e04fe622cec925714d4bdceacdca704186979",
+      "business_knowledge_authority_sha256": "9a898622fab665e380b0fdb7837d6aa24f938f5c87e4bc635c32fbdf4dfe81c8",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 2,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "source-lab-smoke",
+          "argv": [
+            "python3",
+            "-B",
+            "ios/harness/source-lab/source_lab.py",
+            "verify-site",
+            "--root",
+            ".",
+            "--scenario",
+            "sl-html-basic-001"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "2646335889ccb4cf3f05c0aa803657f08e2ceca419727e1b892b839e0a21f03d",
+          "cwd": ".",
+          "started_at": "2026-07-28T19:20:08Z",
+          "duration_ms": 577,
+          "timeout_seconds": 30,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "a69275f319f0244a9c9f46260fe6b5f6d8e50437ee04e0d6acbdd1474237b98c",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_tail": "{\"logical_origin\": \"http://sourcelab.test\", \"route_count\": 12, \"scenario\": \"sl-html-basic-001\", \"schema_version\": 1, \"source_sha256\": \"b1441ef5d67bfdfaeef364d59e61770343d2f9e4550028cf47105a19a22ad64c\", \"transcript_sha256\": \"68e326678641cd38ccdf9e73c9a0ba91c83597e06b9a5ee8af71730b0a29bdbf\"}\n",
+          "stderr_tail": ""
+        }
+      ],
+      "last_evidence_sha256": "45f4e3a1adb9c6c70ae4d62ed492eae91f8978ffd12398f893127d9d26ada268",
+      "verified_at": "2026-07-28T19:25:39Z",
+      "completed_at": "2026-07-28T19:26:58Z",
+      "final_tree_sha256": "ef5f26c97e9eb04b1ce341e2c9cd58849cd3f1d3e404649fd6afa59bee0c9aba"
     }
   },
   "health": {
@@ -7240,7 +7299,8 @@
     "oracle_dag_compiler": "source_anchored_v1",
     "android_post_form_oracle": "candidate_verified",
     "source_lab_candidate_characterization": "typed_reuse_v1",
-    "oracle_settlement_compiler": "recovery_aware_trusted_proposal_v1"
+    "oracle_settlement_compiler": "recovery_aware_trusted_proposal_v1",
+    "android_post_form_attestation": "shared_contract_verified"
   },
   "risks": [
     {
