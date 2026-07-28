@@ -3647,6 +3647,68 @@ class Harness:
             current = replacement
         return errors
 
+    def recovery_candidate_issues(
+        self,
+        item_id: str,
+        item: Dict[str, Any],
+        items: Dict[str, Dict[str, Any]],
+        state: Dict[str, Any],
+    ) -> List[str]:
+        predecessor_id = item.get("spec", {}).get("recovers")
+        if predecessor_id is None:
+            return []
+        if not isinstance(predecessor_id, str):
+            return [f"{item_id}: recovers 必须是单个 Work Item ID"]
+        errors: List[str] = []
+        predecessor = items.get(predecessor_id)
+        state_items = state.get("work_items", {})
+        predecessor_runtime = state_items.get(predecessor_id)
+        if not isinstance(predecessor, dict) or not isinstance(
+            predecessor_runtime,
+            dict,
+        ):
+            return [f"{item_id}: recovers predecessor 不存在：{predecessor_id}"]
+        if (
+            predecessor.get("spec", {}).get("capability")
+            != item.get("spec", {}).get("capability")
+        ):
+            errors.append(f"{item_id}: recovers capability 不一致：{predecessor_id}")
+        if predecessor_runtime.get("status") not in RECOVERABLE_STATUSES:
+            errors.append(
+                f"{item_id}: recovers predecessor 必须处于可恢复终态，"
+                f"当前 {predecessor_id}={predecessor_runtime.get('status')}"
+            )
+        existing = predecessor_runtime.get("replacement")
+        if existing is not None:
+            errors.append(
+                f"{item_id}: predecessor 已绑定 replacement："
+                f"{predecessor_id}->{existing}"
+            )
+
+        prospective = dict(items)
+        prospective[item_id] = item
+        errors.extend(self.detect_recovery_cycles(prospective))
+        competing = sorted(
+            candidate_id
+            for candidate_id, candidate in items.items()
+            if candidate_id != item_id
+            and candidate.get("spec", {}).get("recovers") == predecessor_id
+            and state_items.get(candidate_id, {}).get("status")
+            not in {
+                "blocked",
+                "rejected",
+                "exhausted",
+                "cancelled",
+                "superseded",
+            }
+        )
+        if competing:
+            errors.append(
+                f"{item_id}: predecessor 已有未终结 recovery："
+                + ", ".join(competing)
+            )
+        return errors
+
     def bind_recovery(
         self,
         item_id: str,

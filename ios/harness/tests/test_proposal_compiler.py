@@ -156,11 +156,131 @@ class ProposalCompilerTests(unittest.TestCase):
             )
             self.assertEqual(before, {path: path.read_bytes() for path in controlled})
 
+    def test_recovery_recipe_manifest_binds_predecessor_and_detects_drift(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = CompilerFixture(Path(directory))
+            predecessor_id = "IOS-FAILED-001"
+            dag = fixture.dag()
+            dag["nodes"][0]["recovers"] = predecessor_id
+            fixture.fixture.write_json(proposal_compiler.DAG_PATH, dag)
+            recipe = fixture.recipe()
+            recipe["work_item"]["spec"]["recovers"] = predecessor_id
+            recipe["work_item"]["spec"]["scope"]["allow_write"] = [
+                "ios/project/checkpoints/IOS-COMPILE-TARGET-001.json",
+                "ios/project/capabilities/CAP-BOOT.json",
+            ]
+            fixture.fixture.write_json(
+                f"{proposal_compiler.RECIPE_ROOT}/IOS-COMPILE-TARGET-001.json",
+                recipe,
+            )
+            fixture.fixture.write_json(
+                f"ios/harness/work-items/{predecessor_id}.json",
+                fixture.item(predecessor_id),
+            )
+            state = fixture.harness.state()
+            state["work_items"][predecessor_id] = {
+                "status": "blocked",
+                "attempt": 1,
+                "last_evidence": None,
+                "blocker": "baseline_red",
+            }
+            fixture.fixture.write_json("ios/project/state.json", state)
+            fixture.fixture.write_text(
+                "ios/project/status.md",
+                fixture.harness.render_status(
+                    state,
+                    fixture.harness.work_items(),
+                ),
+            )
+
+            compiler = fixture.compiler()
+            self.assertEqual("recipe_ready", compiler.plan()["nodes"][0]["status"])
+            compiler.compile("IOS-COMPILE-TARGET-001")
+            manifest = harness_module.load_json(
+                fixture.root
+                / proposal_compiler.MANIFEST_ROOT
+                / "IOS-COMPILE-TARGET-001.json"
+            )
+            recovery = manifest["recovery"]
+            self.assertEqual(predecessor_id, recovery["predecessor"])
+            self.assertEqual("blocked", recovery["status"])
+            self.assertIsNone(recovery["replacement"])
+            self.assertTrue(recovery["work_item_sha256"])
+            self.assertTrue(recovery["runtime_sha256"])
+            self.assertIsNone(recovery["checkpoint"])
+            self.assertIsNone(recovery["evidence"])
+
+            fixture.initialize_git()
+            supervisor = loop_supervisor.LoopSupervisor(fixture.harness)
+            with mock.patch.object(
+                supervisor,
+                "_require_head_regular",
+                wraps=supervisor._require_head_regular,
+            ) as require_head:
+                auto_candidate = supervisor._auto_candidate(
+                    "IOS-COMPILE-TARGET-001"
+                )
+            self.assertEqual(
+                "IOS-COMPILE-TARGET-001",
+                auto_candidate.proposal_id,
+            )
+            provenance_paths = set(require_head.call_args.args[0])
+            self.assertIn(recovery["work_item"], provenance_paths)
+
+            state["work_items"][predecessor_id]["blocker"] = "changed"
+            fixture.fixture.write_json("ios/project/state.json", state)
+            result = compiler.check("IOS-COMPILE-TARGET-001")
+            self.assertEqual("stale", result["status"])
+
+    def test_recovery_recipe_fails_closed_for_mismatch_status_and_replacement(self):
+        variants = (
+            ("recipe-mismatch", "blocked", None),
+            ("non-terminal", "ready", None),
+            ("already-bound", "blocked", "IOS-OTHER-RECOVERY-001"),
+        )
+        for variant, status, replacement in variants:
+            with self.subTest(variant=variant), tempfile.TemporaryDirectory() as directory:
+                fixture = CompilerFixture(Path(directory))
+                predecessor_id = "IOS-FAILED-001"
+                dag = fixture.dag()
+                dag["nodes"][0]["recovers"] = predecessor_id
+                fixture.fixture.write_json(proposal_compiler.DAG_PATH, dag)
+                recipe = fixture.recipe()
+                if variant != "recipe-mismatch":
+                    recipe["work_item"]["spec"]["recovers"] = predecessor_id
+                fixture.fixture.write_json(
+                    f"{proposal_compiler.RECIPE_ROOT}/IOS-COMPILE-TARGET-001.json",
+                    recipe,
+                )
+                fixture.fixture.write_json(
+                    f"ios/harness/work-items/{predecessor_id}.json",
+                    fixture.item(predecessor_id),
+                )
+                state = fixture.harness.state()
+                runtime = {
+                    "status": status,
+                    "attempt": 1,
+                    "last_evidence": None,
+                }
+                if replacement is not None:
+                    runtime["replacement"] = replacement
+                state["work_items"][predecessor_id] = runtime
+                fixture.fixture.write_json("ios/project/state.json", state)
+
+                entry = fixture.compiler().plan()["nodes"][0]
+                if variant == "recipe-mismatch":
+                    self.assertEqual("ready_for_recipe", entry["status"])
+                    self.assertEqual("RECIPE_INVALID", entry["reason_code"])
+                else:
+                    self.assertEqual("recovery_blocked", entry["status"])
+                    self.assertEqual("RECOVERY_INVALID", entry["reason_code"])
+
     def test_recipe_mismatch_fails_closed_without_inventing_fields(self):
         variants = (
             ("proposal_constraint", "wrong"),
             ("work_item.metadata.title", "wrong"),
             ("work_item.spec.depends_on", ["IOS-OTHER-001"]),
+            ("work_item.spec.recovers", "IOS-BOOT-001"),
             ("work_item.spec.gates", ["architecture-review"]),
         )
         for path, value in variants:

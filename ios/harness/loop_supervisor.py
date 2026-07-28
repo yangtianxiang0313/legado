@@ -181,6 +181,7 @@ class MaterializationPreview:
     source_fingerprint: str
     event_head: str
     dependencies: Tuple[str, ...]
+    recovers: Optional[str]
     allow_write: Tuple[str, ...]
     budgets: Tuple[Tuple[str, Any], ...]
     criteria: Tuple[Tuple[str, str], ...]
@@ -195,6 +196,7 @@ class MaterializationPreview:
             self.source_fingerprint,
             self.event_head,
             self.dependencies,
+            self.recovers,
             self.allow_write,
             self.budgets,
             self.criteria,
@@ -212,6 +214,7 @@ class MaterializationPreview:
             "source_fingerprint": self.source_fingerprint,
             "event_head": self.event_head,
             "dependencies": list(self.dependencies),
+            "recovers": self.recovers,
             "allow_write": list(self.allow_write),
             "budget": dict(self.budgets),
             "acceptance": [
@@ -414,6 +417,14 @@ class LoopSupervisor:
                 provenance_paths.append(
                     f"ios/harness/work-items/{resolved}.json"
                 )
+        manifest_recovery = manifest.get("recovery")
+        if manifest_recovery is not None:
+            if not isinstance(manifest_recovery, dict):
+                raise MaterializationConflict("PROVENANCE_RECOVERY_INVALID")
+            for key in ("work_item", "evidence", "checkpoint"):
+                value = manifest_recovery.get(key)
+                if isinstance(value, str):
+                    provenance_paths.append(value)
         self._require_head_regular(provenance_paths)
 
         compiler_result = ProposalCompiler(self.harness).check(proposal_id)
@@ -431,6 +442,14 @@ class LoopSupervisor:
             raise MaterializationConflict("CANDIDATE_ID_MISMATCH")
         if manifest.get("candidate_sha256") != preview.work_item_sha256:
             raise MaterializationConflict("CANDIDATE_MANIFEST_HASH_MISMATCH")
+        if preview.recovers is None:
+            if manifest_recovery is not None:
+                raise MaterializationConflict("PROVENANCE_RECOVERY_UNEXPECTED")
+        elif (
+            not isinstance(manifest_recovery, dict)
+            or manifest_recovery.get("predecessor") != preview.recovers
+        ):
+            raise MaterializationConflict("PROVENANCE_RECOVERY_MISMATCH")
 
         item = json.loads(
             self.harness.resolve(candidate_relative).read_text(encoding="utf-8")
@@ -836,6 +855,17 @@ class LoopSupervisor:
         if destination.exists() or destination.is_symlink():
             raise MaterializationConflict(f"Work Item destination 已存在：{item_id}")
 
+        recovery_issues = self.harness.recovery_candidate_issues(
+            item_id,
+            item,
+            items,
+            state,
+        )
+        if recovery_issues:
+            raise MaterializationConflict(
+                "RECOVERY_PREFLIGHT_INVALID: " + "；".join(recovery_issues)
+            )
+
         dependencies = tuple(item["spec"].get("depends_on", []))
         incomplete = [
             dependency
@@ -922,6 +952,7 @@ class LoopSupervisor:
             source_fingerprint=_sha256_bytes(payload),
             event_head=event_head,
             dependencies=dependencies,
+            recovers=item["spec"].get("recovers"),
             allow_write=allow_write,
             budgets=tuple(sorted(item["spec"]["budget"].items())),
             criteria=criteria,

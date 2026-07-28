@@ -275,6 +275,64 @@ class MaterializationTests(unittest.TestCase):
             ):
                 supervisor.preflight_candidate(path)
 
+    def test_preflight_validates_typed_recovery_before_materialization(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            path, item = fixture.candidate()
+            item["spec"]["recovers"] = "IOS-BOOT-001"
+            fixture.fixture.write_json(str(path.relative_to(fixture.root)), item)
+            supervisor = loop_supervisor.LoopSupervisor(fixture.harness)
+
+            with self.assertRaisesRegex(
+                loop_supervisor.MaterializationConflict,
+                "可恢复终态",
+            ):
+                supervisor.preflight_candidate(path)
+
+            state = fixture.harness.state()
+            state["work_items"]["IOS-BOOT-001"]["status"] = "blocked"
+            fixture.fixture.write_json("ios/project/state.json", state)
+            fixture.refresh_status()
+            preview = supervisor.preflight_candidate(path)
+            self.assertEqual("IOS-BOOT-001", preview.recovers)
+            self.assertEqual("IOS-BOOT-001", preview.to_dict()["recovers"])
+
+            state["work_items"]["IOS-BOOT-001"]["replacement"] = (
+                "IOS-OTHER-RECOVERY-001"
+            )
+            fixture.fixture.write_json("ios/project/state.json", state)
+            fixture.refresh_status()
+            with self.assertRaisesRegex(
+                loop_supervisor.MaterializationConflict,
+                "已绑定 replacement",
+            ):
+                supervisor.preflight_candidate(path)
+
+            state["work_items"]["IOS-BOOT-001"].pop("replacement")
+            competing_id = "IOS-OTHER-RECOVERY-001"
+            competing = fixture.fixture.item(
+                competing_id,
+                "CAP-BOOT",
+                70,
+            )
+            competing["spec"]["recovers"] = "IOS-BOOT-001"
+            fixture.fixture.write_json(
+                f"ios/harness/work-items/{competing_id}.json",
+                competing,
+            )
+            state["work_items"][competing_id] = {
+                "status": "ready",
+                "attempt": 0,
+                "last_evidence": None,
+            }
+            fixture.fixture.write_json("ios/project/state.json", state)
+            fixture.refresh_status()
+            with self.assertRaisesRegex(
+                loop_supervisor.MaterializationConflict,
+                "未终结 recovery",
+            ):
+                supervisor.preflight_candidate(path)
+
     def test_preflight_rejects_legacy_gate_and_accepts_structured_decision(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = MaterializationFixture(Path(directory))

@@ -179,6 +179,14 @@ replacement、自引用、`depends_on` 冲突和 recovery cycle 都会 fail clos
 受保护 JSON Schema 的 authority 提升留给 Trusted Publisher；本地 Harness 先以严格
 语义校验执行该字段，不能由 Agent 借恢复任务修改自己的 Schema。
 
+由 Proposal Compiler 产生恢复任务时，DAG node 与 recipe Work Item 必须声明相同的
+`recovers`。编译器在生成 candidate 前验证 predecessor 的 capability、终态和当前
+replacement，并把 predecessor Work Item、runtime、Evidence、Checkpoint 的路径与
+SHA-256 写入 manifest；其中任一事实变化都会让 `check` 变为 stale。Loop preflight
+对手工 candidate 执行同一组检查，并拒绝已有未终结 recovery 的竞争写入。
+`MaterializationPreview` 与 auto-materialization provenance 同样绑定该 predecessor，
+因此错误恢复边不会先进入 ready queue 再等待 close 才暴露。
+
 终态无恢复、replacement 成环、部分 knowledge output 覆盖或多个语义恢复候选都会保持
 blocker。该 CLI 不改变 Harness queue/state/event/status/work-items，也不提供物化、
 审批、发布或接受权威事实的命令。

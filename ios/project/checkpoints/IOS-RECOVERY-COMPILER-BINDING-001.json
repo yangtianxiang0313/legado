@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-RECOVERY-COMPILER-BINDING-001",
+  "summary": "Typed recovery 已覆盖 recipe→compile→manifest→preflight→materialize 的入队前链路。Initialization DAG node 可选声明 recovers，recipe Work Item 必须精确匹配；编译器调用 Harness recovery candidate contract，拒绝缺失目标、不同 capability、非可恢复终态、已有 replacement、声明环和未终结竞争 recovery。Recovery manifest 内容寻址绑定 predecessor Work Item、runtime/status/replacement、Evidence 与 Checkpoint，任一事实漂移都会使 check stale；无 recovers 的既有 manifest 不增加字段并保持兼容。MaterializationPreview/binding/to_dict 包含 recovers，手工 candidate 也执行相同 preflight。Auto materialization 校验 manifest predecessor 与 candidate 一致，并将绑定的 Work Item/Evidence/Checkpoint 纳入 HEAD regular-file provenance。正式 Evidence 通过 dependency policy 与完整 Harness tests。真实仓库验证同时暴露 materialize 后 Business Knowledge Catalog 会 stale，当前由 Supervisor 显式 refresh 恢复，已记录为下一自动化项。",
+  "evidence": "ios/harness/evidence/runs/run-20260728T053631Z-ios-recovery-compiler-binding-001-e40fc465.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 31,
+      "to_revision": 32,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": [
+      "ADR-0004"
+    ]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项不消费、生成或发布业务知识"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项只补齐恢复谱系编译与物化控制链"
+  },
+  "pitfalls": {
+    "records": [
+      "ios/project/pitfalls/PIT-0025.json"
+    ],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "受保护 work-item JSON Schema 仍未由 Trusted Publisher 增加 recovers 显式 property",
+    "materialize 新 Work Item 后 Business Knowledge Catalog 会暂时 stale，Supervisor 当前必须显式 refresh，尚未纳入原子事务",
+    "本地 manifest/state/event 与 Agent 仍共享文件权限，生产环境需要签名 Supervisor",
+    "knowledge recovery 的 Claim revision、supersedes 与 depends_on 仍需自动重写"
+  ],
+  "next_actions": [
+    "让 materialize 在同一回滚事务中刷新 Business Knowledge Catalog，并增加故障注入测试",
+    "由 Trusted Publisher 把 recovers 提升为受保护 work-item JSON Schema 字段",
+    "为 recovery Claim revision、supersedes 与 depends_on 增加确定性编译",
+    "把 manifest/state/event/replacement authority 移出 Agent 可写工作树"
+  ],
+  "created_at": "2026-07-28T05:36:36Z"
+}

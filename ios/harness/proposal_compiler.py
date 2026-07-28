@@ -13,9 +13,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 try:
-    from .harness import Harness, HarnessError, sha256_json
+    from .harness import Harness, HarnessError, WORK_ITEM_ID, sha256_json
 except ImportError:
-    from harness import Harness, HarnessError, sha256_json  # type: ignore
+    from harness import Harness, HarnessError, WORK_ITEM_ID, sha256_json  # type: ignore
 
 
 SCHEMA_VERSION = 1
@@ -106,6 +106,18 @@ class ProposalCompiler:
                 not isinstance(value, str) for value in depends_on
             ):
                 raise ProposalCompilerError(f"{proposal_id}: depends_on 无效")
+            recovers = node.get("recovers")
+            if recovers is not None and (
+                not isinstance(recovers, str)
+                or WORK_ITEM_ID.fullmatch(recovers) is None
+            ):
+                raise ProposalCompilerError(f"{proposal_id}: recovers 无效")
+            if recovers == proposal_id:
+                raise ProposalCompilerError(f"{proposal_id}: recovers 不得自引用")
+            if recovers is not None and recovers in depends_on:
+                raise ProposalCompilerError(
+                    f"{proposal_id}: recovers 不得同时出现在 depends_on"
+                )
             indexed[proposal_id] = node
         return dag, indexed
 
@@ -275,6 +287,8 @@ class ProposalCompiler:
             raise ProposalCompilerError(f"{proposal_id}: title 与 DAG 不一致")
         if item.get("spec", {}).get("depends_on") != list(resolved_dependencies):
             raise ProposalCompilerError(f"{proposal_id}: resolved depends_on 与 DAG 不一致")
+        if item.get("spec", {}).get("recovers") != node.get("recovers"):
+            raise ProposalCompilerError(f"{proposal_id}: recovers 与 DAG 不一致")
         knowledge = item.get("spec", {}).get("knowledge", {})
         if knowledge.get("mode") != node.get("knowledge_mode"):
             raise ProposalCompilerError(f"{proposal_id}: knowledge_mode 与 DAG 不一致")
@@ -319,6 +333,82 @@ class ProposalCompiler:
             ),
             "checkpoint": self.harness.relative(checkpoint_path),
             "checkpoint_sha256": _file_digest(checkpoint_path),
+        }
+
+    def _recovery_binding(
+        self,
+        proposal_id: str,
+        item: Mapping[str, Any],
+        items: Mapping[str, Mapping[str, Any]],
+        state_items: Mapping[str, Mapping[str, Any]],
+    ) -> Optional[Mapping[str, Any]]:
+        predecessor_id = item.get("spec", {}).get("recovers")
+        if predecessor_id is None:
+            return None
+        prospective_items = {
+            key: dict(value)
+            for key, value in items.items()
+            if isinstance(value, Mapping)
+        }
+        prospective_item = dict(item)
+        issues = self.harness.recovery_candidate_issues(
+            proposal_id,
+            prospective_item,
+            prospective_items,
+            {"work_items": dict(state_items)},
+        )
+        if issues:
+            raise ProposalCompilerError(
+                f"{proposal_id}: recovery 无效：" + "；".join(issues)
+            )
+        if not isinstance(predecessor_id, str):
+            raise ProposalCompilerError(f"{proposal_id}: recovers 无效")
+        runtime = state_items.get(predecessor_id)
+        if not isinstance(runtime, Mapping):
+            raise ProposalCompilerError(
+                f"{proposal_id}: predecessor runtime 不存在：{predecessor_id}"
+            )
+        work_item_relative = (
+            f"ios/harness/work-items/{predecessor_id}.json"
+        )
+        work_item_path = self.harness.resolve(work_item_relative)
+        evidence_relative = runtime.get("last_evidence")
+        evidence_path = (
+            self.harness.resolve(evidence_relative)
+            if isinstance(evidence_relative, str)
+            else None
+        )
+        if evidence_path is not None and not evidence_path.is_file():
+            raise ProposalCompilerError(
+                f"{proposal_id}: predecessor Evidence 不存在：{evidence_relative}"
+            )
+        checkpoint_relative = (
+            f"ios/project/checkpoints/{predecessor_id}.json"
+        )
+        checkpoint_path = self.harness.resolve(checkpoint_relative)
+        checkpoint_exists = checkpoint_path.is_file() and not checkpoint_path.is_symlink()
+        return {
+            "predecessor": predecessor_id,
+            "capability": item.get("spec", {}).get("capability"),
+            "work_item": work_item_relative,
+            "work_item_sha256": _file_digest(work_item_path),
+            "runtime_sha256": sha256_json(runtime),
+            "status": runtime.get("status"),
+            "replacement": runtime.get("replacement"),
+            "evidence": evidence_relative,
+            "evidence_sha256": (
+                _file_digest(evidence_path)
+                if evidence_path is not None
+                else None
+            ),
+            "checkpoint": (
+                checkpoint_relative if checkpoint_exists else None
+            ),
+            "checkpoint_sha256": (
+                _file_digest(checkpoint_path)
+                if checkpoint_exists
+                else None
+            ),
         }
 
     def _entry(
@@ -400,12 +490,27 @@ class ProposalCompiler:
             }
         resolved = [str(value["resolved"]) for value in resolutions]
         try:
-            self._load_recipe(node, resolved)
+            _, item, _ = self._load_recipe(node, resolved)
         except ProposalCompilerError as error:
             return {
                 "proposal_id": proposal_id,
                 "status": "ready_for_recipe",
                 "reason_code": "RECIPE_INVALID",
+                "dependencies": resolutions,
+                "blockers": [{"message": str(error)}],
+            }
+        try:
+            self._recovery_binding(
+                proposal_id,
+                item,
+                items,
+                state_items,
+            )
+        except ProposalCompilerError as error:
+            return {
+                "proposal_id": proposal_id,
+                "status": "recovery_blocked",
+                "reason_code": "RECOVERY_INVALID",
                 "dependencies": resolutions,
                 "blockers": [{"message": str(error)}],
             }
@@ -451,6 +556,12 @@ class ProposalCompiler:
         resolved_ids = [str(value["resolved"]) for value in resolutions]
         recipe, item, recipe_path = self._load_recipe(node, resolved_ids)
         candidate_bytes = _json_bytes(item)
+        recovery = self._recovery_binding(
+            proposal_id,
+            item,
+            items,
+            state_items,
+        )
         manifest = {
             "schema_version": SCHEMA_VERSION,
             "compiler_version": COMPILER_VERSION,
@@ -477,6 +588,8 @@ class ProposalCompiler:
             "authority": "proposal_only",
             "queue_effect": "none",
         }
+        if recovery is not None:
+            manifest["recovery"] = recovery
         return candidate_bytes, _json_bytes(manifest), manifest
 
     @staticmethod

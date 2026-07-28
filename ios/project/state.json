@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "revision": 202,
+  "revision": 205,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-28T05:30:51Z",
-  "event_head": "069bd10cdf106d29011c0301928ae29f5a60236ea1c4b06dc4aeb7a30e76e686",
+  "updated_at": "2026-07-28T05:37:05Z",
+  "event_head": "1cb474d678c76e7e3733c5021e932f7fff180e7570e187be87454c99844d6734",
   "active_work_items": [],
-  "last_completed_work_item": "IOS-TYPED-RECOVERY-LINEAGE-001",
+  "last_completed_work_item": "IOS-RECOVERY-COMPILER-BINDING-001",
   "work_items": {
     "IOS-BOOT-001": {
       "status": "completed",
@@ -3304,9 +3304,61 @@
       "final_tree_sha256": "2c5d664d25a489d74e54e0715a3e74067ae25a9adf6ea591b19d685f6260c077"
     },
     "IOS-RECOVERY-COMPILER-BINDING-001": {
-      "status": "ready",
-      "attempt": 0,
-      "last_evidence": null
+      "status": "completed",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260728T053631Z-ios-recovery-compiler-binding-001-e40fc465.json",
+      "claimed_by": "root-codex",
+      "claimed_at": "2026-07-28T05:31:35Z",
+      "lease_expires_at": "2026-07-29T05:31:35Z",
+      "work_item_sha256": "bb278d3ac6cb2d8a81d997804fc2a4ad335e3649684ea3246e654692c487a40a",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "35ffb3fce47500ec392dba74540b4ca6d3adfbc6",
+      "base_capability_revision": 31,
+      "base_capability_assurance_sha256": "6c08426cf2cc8f0277426284e00909a10444767bc01eeb84e0db43db8dcbb2ac",
+      "android_requirement_selection_sha256": null,
+      "business_knowledge_control_sha256": "f6a1bc8ff94bd73efbea02d2ce1acbd516323761566a6b357cf68d253ec40d17",
+      "business_knowledge_authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 1,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "harness-tests",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "307f335e883f02e96ad97ecbda4c210435c0b955e2bcb9e46db9dc7b0d02c285",
+          "cwd": ".",
+          "started_at": "2026-07-28T05:30:57Z",
+          "duration_ms": 36788,
+          "timeout_seconds": 60,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "14a16f08f5db20a1dbb5c450645a226f4f5d0a414a73ae3d5e7c6b2309d3ca30",
+          "stdout_tail": "",
+          "stderr_tail": "...................................................................................................................................\n----------------------------------------------------------------------\nRan 131 tests in 36.676s\n\nOK\n"
+        }
+      ],
+      "last_evidence_sha256": "438f962f65a0e7e05195c50e235287ea7d83952560d7394aa02cabaa073aa95c",
+      "verified_at": "2026-07-28T05:36:31Z",
+      "completed_at": "2026-07-28T05:37:05Z",
+      "final_tree_sha256": "3b514ab1d9a1ca34821de3b2566134d1c528e02633b2f6b13dd9865e41dfd2f4"
     }
   },
   "health": {
@@ -3343,7 +3395,8 @@
     "proposal_gate_policy": "authority_only",
     "active_candidate_repair": "bounded",
     "terminal_recovery_resolution": "single_terminal_predecessor",
-    "terminal_recovery_lineage": "typed_runtime_replacement"
+    "terminal_recovery_lineage": "typed_runtime_replacement",
+    "recovery_compiler_binding": "content_addressed"
   },
   "risks": [
     {
