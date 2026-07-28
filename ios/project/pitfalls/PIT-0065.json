@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0065",
+  "revision": 1,
+  "title": "新增 WorkItem 必须经 proposal provenance 物化，不能直接写受信队列",
+  "fingerprint": "direct-work-item-write-bypasses-materialization-provenance",
+  "capabilities": ["CAP-CONFORMANCE"],
+  "symptoms": [
+    "直接提交 ios/harness/work-items/IOS-GITHUB-GOLDEN-PUBLISHER-OWNER-001.json 后，doctor 报 state 缺少工作项并禁止 claim",
+    "status --write 只能把该项显示为 missing，不能建立 state/event provenance",
+    "external_publisher_required 状态看似知道下一步，但没有候选时无法进入受信队列"
+  ],
+  "conditions": [
+    "为新控制能力手工创建 WorkItem 文件",
+    "没有对应 recipe、candidate、candidate manifest 和 Supervisor materialization event",
+    "尝试用 status refresh 替代受信 materialization"
+  ],
+  "root_cause": "work-items 目录是受信执行队列，不是 proposal inbox。队列项必须绑定候选内容摘要、DAG/recipe、依赖 Evidence 与 materialization event；直接写文件只改变文件树，无法建立 state/event authority。",
+  "diagnosis": [
+    "doctor 同时核对 work-items 文件集合与 state.work_items，出现 missing 即说明物化链缺失",
+    "检查 work-item-proposals/recipes、candidates、candidate-manifests 是否存在同 ID 且 proposal_compiler check 为 current",
+    "使用 loop_supervisor inspect 确认状态为 auto_materialization_ready，而非通过 status --write 伪造队列状态"
+  ],
+  "fix": "把新项加入 initialization proposal DAG，编写 recipe，由 proposal_compiler 生成 create-only candidate 与 manifest；提交后由 Supervisor compiled-control-plane-v1 自动物化，随后正常 claim/verify/close。",
+  "prevention": {
+    "architecture_rule": "任何新增 WorkItem 都必须由受信物化路径建立 state/event provenance；禁止把直接写 work-items 或 status refresh 当成物化。",
+    "tests": [
+      "ios/harness/tests/test_loop_supervisor.py#test_auto_materialization_requires_compiler_provenance"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-GITHUB-GOLDEN-PUBLISHER-OWNER-001",
+    "until": "IOS-GITHUB-GOLDEN-PUBLISHER-OWNER-001"
+  },
+  "status": "mitigated",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T234951Z-ios-github-golden-publisher-owner-001-7f3b798f.json",
+    "ios/harness/evidence/runs/run-20260728T235214Z-ios-github-golden-publisher-owner-001-4318fb2e.json"
+  ]
+}
