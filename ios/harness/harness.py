@@ -44,6 +44,9 @@ DECISION_TRIGGER_GATES = {
     "architecture-proposal-change": "architecture-review",
     "oracle-difference": "oracle-adjudication",
 }
+CHECK_TIMEOUT_FLOORS = {
+    "harness-tests": 180,
+}
 KNOWLEDGE_CLAIM_ID = re.compile(r"^BKC-[A-Z][A-Z0-9-]*-[0-9]{3}$")
 KNOWLEDGE_DRIVER_ID = re.compile(r"^DRV-[A-Z][A-Z0-9-]*-[0-9]{3}$")
 KNOWLEDGE_LEDGER_ID = re.compile(r"^BKL-[A-Z][A-Z0-9-]*-[0-9]{3}$")
@@ -2547,7 +2550,7 @@ class Harness:
         return bytes(value)
 
     def run_check(self, check_id: str, item_id: str) -> Dict[str, Any]:
-        definition = self.config["checks"][check_id]
+        definition = self.effective_check_definition(check_id)
         argv = [str(part).replace("{work_item_id}", item_id) for part in definition["argv"]]
         if not argv or any(not part for part in argv):
             raise HarnessError(f"check {check_id} argv 无效")
@@ -2648,6 +2651,14 @@ class Harness:
             "stdout_tail": self.redact_output(stdout[-output_limit:]),
             "stderr_tail": self.redact_output(stderr[-output_limit:]),
         }
+
+    def effective_check_definition(self, check_id: str) -> Dict[str, Any]:
+        definition = dict(self.config["checks"][check_id])
+        floor = CHECK_TIMEOUT_FLOORS.get(check_id)
+        if floor is not None:
+            configured = int(definition.get("timeout_seconds", 300))
+            definition["timeout_seconds"] = max(configured, floor)
+        return definition
 
     def redact_output(self, value: bytes) -> str:
         text = value.decode("utf-8", errors="replace")

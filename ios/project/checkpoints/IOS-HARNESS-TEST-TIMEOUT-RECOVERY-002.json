@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-HARNESS-TEST-TIMEOUT-RECOVERY-002",
+  "summary": "已恢复全量 Harness 自测预算漂移。IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-004 的 claim 在 harness-tests 运行 60.114 秒、输出 102 个通过标记后被历史 60 秒定义误判为 BASELINE_RED；同一 HEAD 直接执行 167 项测试在 118.234 秒内全部通过。直接修改受保护 config 会使 CAP-BOOTSTRAP/CAP-CORE/CAP-RUNTIME-PORTS 的历史 Evidence 因 harness_config_sha256 失鲜，因此已回退。Harness 现在通过 CHECK_TIMEOUT_FLOORS 只为 harness-tests 计算 180 秒有界有效定义，其他 check 保留 config 值；Evidence 的 timeout_seconds 与 definition_sha256 均使用该有效定义，超过 floor 的显式值不会被缩短。新增定向回归通过，正式 Evidence 在旧 60 秒之后继续运行并完成 dependency-policy 与 168 项全量测试。",
+  "evidence": "ios/harness/evidence/runs/run-20260728T094310Z-ios-harness-test-timeout-recovery-002-02e016c3.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 34,
+      "to_revision": 35,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": [
+      "ADR-0004"
+    ]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项是 Harness 控制面可靠性修复，不消费或发布业务知识"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项不改变 Android/iOS 产品行为，只校准控制面自测的有效超时预算"
+  },
+  "pitfalls": {
+    "records": [
+      "ios/project/pitfalls/PIT-0032.json"
+    ],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "180 秒是基于 168 项当前套件和 118.234 秒实测的有界预算；测试继续增长时必须以新 Evidence 重新校准，不能无限扩张",
+    "历史 config 仍显示 60 秒，必须通过 effective_check_definition 读取真实执行定义；后续应在受保护配置版本迁移时合并两层策略",
+    "IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-004 已因旧基线超时进入 blocked，必须创建显式 recovers 工作项后才能继续 adb 修复"
+  ],
+  "next_actions": [
+    "为 IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-004 创建显式 recovery，基线使用新的 180 秒有效定义",
+    "重新 dispatch Android Oracle workflow 并跟踪 emulator、offline Oracle、双 attestation 到终态",
+    "持续记录全量测试数量与 duration_ms；只有真实全绿接近当前预算时才允许再次校准"
+  ],
+  "created_at": "2026-07-28T09:43:20Z"
+}

@@ -878,6 +878,41 @@ class HarnessTests(unittest.TestCase):
         self.assertEqual([10, 1.0], process.communicate_timeouts)
         self.assertIn("CLEANUP_ERROR:", result["stderr_tail"])
 
+    def test_harness_tests_use_bounded_effective_timeout_definition(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = HarnessFixture(Path(directory))
+            harness = fixture.initialize()
+            configured = {
+                "argv": ["python3", "-c", "print('full-suite')"],
+                "cwd": ".",
+                "timeout_seconds": 60,
+            }
+            harness.config["checks"]["harness-tests"] = configured
+
+            effective = harness.effective_check_definition("harness-tests")
+            self.assertEqual(180, effective["timeout_seconds"])
+            self.assertEqual(configured["argv"], effective["argv"])
+            self.assertEqual(configured["cwd"], effective["cwd"])
+            result = harness.run_check("harness-tests", "IOS-BOOT-001")
+            self.assertTrue(result["passed"], result)
+            self.assertEqual(180, result["timeout_seconds"])
+            self.assertEqual(
+                harness_module.sha256_json(effective),
+                result["definition_sha256"],
+            )
+
+            harness.config["checks"]["harness-tests"]["timeout_seconds"] = 240
+            self.assertEqual(
+                240,
+                harness.effective_check_definition("harness-tests")[
+                    "timeout_seconds"
+                ],
+            )
+            self.assertEqual(
+                10,
+                harness.effective_check_definition("noop")["timeout_seconds"],
+            )
+
     def test_run_check_normal_completion_has_no_cleanup_error(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = HarnessFixture(Path(directory))

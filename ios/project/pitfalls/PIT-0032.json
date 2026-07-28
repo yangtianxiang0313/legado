@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0032",
+  "revision": 1,
+  "title": "全量测试增长会让固定历史超时把健康基线判红",
+  "fingerprint": "harness-full-suite-duration-exceeds-static-timeout",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "claim 的 harness-tests 在 60.114 秒被标记 timed_out，stderr 已包含 102 个通过标记且无失败",
+    "同一 HEAD 直接运行 167 项测试耗时 118.234 秒并全部通过",
+    "普通产品恢复项在任何实现前进入 baseline_red，无法领取"
+  ],
+  "conditions": [
+    "全量测试数量和集成测试成本持续增长",
+    "check timeout 长期固定为早期套件的 60 秒",
+    "超时结果只表示未在预算内结束，不等同于测试断言失败"
+  ],
+  "root_cause": "控制面把 Harness 自测的历史固定超时当成永久性能合同，没有用真实全绿 duration 重新校准；同时 config 是受保护 freshness 输入，直接修改会级联使多个 Capability Evidence 失鲜。",
+  "diagnosis": [
+    "区分 timed_out、exit_code 非零和断言失败，读取结构化 baseline check",
+    "在同一 HEAD 无 Harness 超时包装执行完整 discover，记录测试数、总时长和结果",
+    "修改受保护 config 前先运行 doctor，检查 harness_config_sha256 freshness blast radius"
+  ],
+  "fix": "在 Harness 执行层为 harness-tests 建立 180 秒有界有效预算，Evidence timeout_seconds 与 definition_sha256 使用同一有效定义；保留受保护 config 与其他 check timeout 不变。",
+  "prevention": {
+    "architecture_rule": "全量控制面自测必须有基于真实全绿 duration 的有界预算；超时校准不得缩小测试集合、不得改写历史 Evidence freshness，也不得弱化超时后的 fail-closed 清理。",
+    "tests": [
+      "ios/harness/tests/test_harness.py#test_harness_tests_use_bounded_effective_timeout_definition"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-HARNESS-TIMEOUT-CLEANUP-001",
+    "until": "IOS-HARNESS-TEST-TIMEOUT-RECOVERY-002"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T094310Z-ios-harness-test-timeout-recovery-002-02e016c3.json"
+  ]
+}
