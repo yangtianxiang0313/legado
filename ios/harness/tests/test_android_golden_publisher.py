@@ -1,5 +1,7 @@
 import hashlib
 import importlib.util
+import json
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -36,6 +38,28 @@ class AndroidGoldenPublisherTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name)
+        self.publisher_root = self.root / "repository"
+        manifest = self.publisher_root / "ios/harness/goldens/manifest.json"
+        manifest.parent.mkdir(parents=True)
+        manifest.write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "oracle": {
+                        "android_git_commit": (
+                            "30bfdf70224ed3006f2777777ff414ebdb3a9eb3"
+                        ),
+                        "profile": publisher.PROFILE,
+                        "runner_digest": None,
+                    },
+                    "canonicalizer_sha256": None,
+                    "fixtures": {},
+                },
+                ensure_ascii=False,
+                separators=(",", ":"),
+            ),
+            encoding="utf-8",
+        )
         self.payload = ci_proposal._dump(
             {
                 "schema_version": 1,
@@ -192,8 +216,8 @@ class AndroidGoldenPublisherTests(unittest.TestCase):
 
     def test_prepare_rejects_every_repository_output_path(self):
         forbidden = (
-            REPOSITORY_ROOT
-            / ".harness-runtime/golden-publisher-forbidden"
+            self.publisher_root
+            / ".publisher-forbidden"
         )
         self.assertFalse(forbidden.exists())
         with self.assertRaisesRegex(
@@ -202,6 +226,21 @@ class AndroidGoldenPublisherTests(unittest.TestCase):
         ):
             self._prepare(forbidden)
         self.assertFalse(forbidden.exists())
+
+    def test_prepare_rejects_already_published_fixture(self):
+        live_manifest = (
+            REPOSITORY_ROOT / "ios/harness/goldens/manifest.json"
+        )
+        shutil.copyfile(
+            live_manifest,
+            self.publisher_root / "ios/harness/goldens/manifest.json",
+        )
+
+        with self.assertRaisesRegex(
+            publisher.GoldenPublisherError,
+            "GOLDEN_ALREADY_PUBLISHED",
+        ):
+            self._prepare(self.root / "published")
 
     def test_prepare_accepts_a_symlinked_gh_executable(self):
         linked = self.root / "linked-gh"
@@ -299,7 +338,7 @@ class AndroidGoldenPublisherTests(unittest.TestCase):
             ),
         ):
             return publisher.prepare(
-                REPOSITORY_ROOT,
+                self.publisher_root,
                 **arguments,
             )
 

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 35,
+  "revision": 36,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -38,7 +38,8 @@
       "ios/project/business-knowledge/**",
       "ios/project/work-item-proposals/recipes/**",
       "ios/project/work-item-proposals/candidates/**",
-      "ios/project/work-item-proposals/candidate-manifests/**"
+      "ios/project/work-item-proposals/candidate-manifests/**",
+      "ios/project/work-item-proposals/delivery-blueprints/**"
     ]
   },
   "depends_on": ["CAP-BOOTSTRAP"],
@@ -53,14 +54,14 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260728T094310Z-ios-harness-test-timeout-recovery-002-02e016c3.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260728T132544Z-ios-loop-demand-autonomy-recovery-002-968f70c0.json",
   "next_actions": [
     "BKP-INTEGRATIONS-001@4 与 DRV-INTEGRATION-PROFILES-001@4 在 Trusted Publisher promotion 前保持 proposal；只有 promotion/accept 决策才要求权威审查",
     "为 IntegrationKit/adapter、双 profile、权限最小化、备份迁移、依赖准入与可观测性问题建立独立裁决和 characterization/spike 工作项",
-    "把 reference runner 与 patch publisher 迁入 Agent 不可达的受保护服务，以 KMS/企业身份签名、OS/container 隔离、deny-by-default egress 和受保护 authority transition 替代本地 HMAC/用户权限",
     "由 Harness/Proposal Compiler 的 recovers 内容寻址合同维持恢复谱系，并用有界 Catalog self-heal 支持控制面中断续跑；下一步由 Trusted Publisher 提升 JSON Schema，并自动重写 recovery Claim supersedes 以关闭 PIT-0012",
-    "以 180 秒有界有效预算执行持续增长的全量 Harness 自测，并恢复 IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-004 的 adb 路径工作；下一阶段打通 Android Oracle、确定性 SourceLab 与 iOS Conformance 的首条真值纵向链路"
+    "以 bound-delivery-blueprint-v1 自动物化 SourceRuntime HTML/CSS 首条普通实现工作项，绑定 accepted Requirement、Capability owner、protected Golden receipt 与依赖证据",
+    "将单写者本地 Supervisor 迁移到 Agent 不可达的签名服务，并为并行 DAG 调度建立租约与冲突仲裁"
   ],
-  "updated_at": "2026-07-28T09:43:20Z",
-  "updated_by": "IOS-HARNESS-TEST-TIMEOUT-RECOVERY-002"
+  "updated_at": "2026-07-28T13:25:44Z",
+  "updated_by": "IOS-LOOP-DEMAND-AUTONOMY-RECOVERY-002"
 }

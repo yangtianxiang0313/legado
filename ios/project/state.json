@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "revision": 266,
+  "revision": 272,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-28T13:08:03Z",
-  "event_head": "86650be72b4b74d3d143760e5ecc7fb5ed3121ca26b67113c463f8c6df84986b",
+  "updated_at": "2026-07-28T13:29:53Z",
+  "event_head": "c516e1576a0d1cfbb21fc78502f185079cf5af9af60881ee342c2c305d8ba31f",
   "active_work_items": [],
-  "last_completed_work_item": "IOS-ANDROID-GOLDEN-PUBLISHER-001",
+  "last_completed_work_item": "IOS-LOOP-DEMAND-AUTONOMY-RECOVERY-002",
   "work_items": {
     "IOS-BOOT-001": {
       "status": "completed",
@@ -4447,7 +4447,62 @@
           "stdout_tail": "",
           "stderr_tail": "EE.F.................................F.........................................................................................................................................\n======================================================================\nERROR: test_prepare_accepts_a_symlinked_gh_executable (test_android_golden_publisher.AndroidGoldenPublisherTests)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_android_golden_publisher.py\", line 209, in test_prepare_accepts_a_symlinked_gh_executable\n    report = self._prepare(\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_android_golden_publisher.py\", line 301, in _prepare\n    return publisher.prepare(\n  File \"/Users/yangtianxiang/legado/ios/publisher/android_golden_publisher.py\", line 269, in prepare\n    raise GoldenPublisherError(\"GOLDEN_ALREADY_PUBLISHED\")\nandroid_golden_publisher.GoldenPublisherError: GOLDEN_ALREADY_PUBLISHED\n\n======================================================================\nERROR: test_prepare_is_deterministic_staging_only_and_fully_bound (test_android_golden_publisher.AndroidGoldenPublisherTests)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_android_golden_publisher.py\", line 118, in test_prepare_is_deterministic_staging_only_and_fully_bound\n    first = self._prepare(self.root / \"first\")\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_android_golden_publisher.py\", line 301, in _prepare\n    return publisher.prepare(\n  File \"/Users/yangtianxiang/legado/ios/publisher/android_golden_publisher.py\", line 269, in prepare\n    raise GoldenPublisherError(\"GOLDEN_ALREADY_PUBLISHED\")\nandroid_golden_publisher.GoldenPublisherError: GOLDEN_ALREADY_PUBLISHED\n\n======================================================================\nFAIL: test_prepare_rejects_every_repository_output_path (test_android_golden_publisher.AndroidGoldenPublisherTests)\n----------------------------------------------------------------------\nandroid_golden_publisher.GoldenPublisherError: GOLDEN_ALREADY_PUBLISHED\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_android_golden_publisher.py\", line 203, in test_prepare_rejects_every_repository_output_path\n    self._prepare(forbidden)\nAssertionError: \"OUTPUT_INSIDE_REPOSITORY\" does not match \"GOLDEN_ALREADY_PUBLISHED\"\n\n======================================================================\nFAIL: test_initialization_proposal_dag_contract (test_business_knowledge.BusinessKnowledgeTests)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_business_knowledge.py\", line 1206, in test_initialization_proposal_dag_contract\n    self.assertEqual(13, len(nodes))\nAssertionError: 13 != 14\n\n----------------------------------------------------------------------\nRan 175 tests in 48.360s\n\nFAILED (failures=2, errors=2)\n"
         }
-      ]
+      ],
+      "replacement": "IOS-LOOP-DEMAND-AUTONOMY-RECOVERY-002",
+      "replacement_bound_at": "2026-07-28T13:29:53Z"
+    },
+    "IOS-LOOP-DEMAND-AUTONOMY-RECOVERY-002": {
+      "status": "completed",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260728T132544Z-ios-loop-demand-autonomy-recovery-002-968f70c0.json",
+      "claimed_by": "codex-loop-engine",
+      "claimed_at": "2026-07-28T13:13:12Z",
+      "lease_expires_at": "2026-07-29T13:13:12Z",
+      "work_item_sha256": "6725e15026a6c8920c2310c6c430108b26e3a95fe41b5c58290851528628b1ff",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "ce9b56b85e1eb8003f5d514467006ce77b53b6f2",
+      "base_capability_revision": 35,
+      "base_capability_assurance_sha256": "6c08426cf2cc8f0277426284e00909a10444767bc01eeb84e0db43db8dcbb2ac",
+      "android_requirement_selection_sha256": null,
+      "business_knowledge_control_sha256": "49dd3ca2671ff39596835b451419375efd5638c47db3728aee8530efad039878",
+      "business_knowledge_authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 3,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "dependency-policy",
+          "argv": [
+            "python3",
+            "ios/harness/probes/dependency_contract.py",
+            "--root",
+            "."
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "eca96cb1b69567829ed8396386b0449da8c0d6e7295a00f1decfb60430ff1153",
+          "cwd": ".",
+          "started_at": "2026-07-28T13:13:11Z",
+          "duration_ms": 731,
+          "timeout_seconds": 90,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "17595a1d68cdc5b52c010f46dff48514afa3fa3cf0215cdea7ae8eff38677c0a",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_tail": "DEPENDENCY_CONTRACT: OK\n",
+          "stderr_tail": ""
+        }
+      ],
+      "last_evidence_sha256": "c1caaaea767821dd5e52bbd47698da64b66584dfd2002f51b7c093013f6ae410",
+      "verified_at": "2026-07-28T13:25:44Z",
+      "completed_at": "2026-07-28T13:29:53Z",
+      "final_tree_sha256": "b70d016cca3fcc139330805ad0316a1b9b6da7aebacb7b75595f066ecdae5689"
     }
   },
   "health": {
@@ -4489,7 +4544,8 @@
     "control_catalog_resume": "bounded_self_heal",
     "supervisor_run_journal": "local_replayable",
     "harness_tests_timeout": "calibrated",
-    "android_golden_publisher": "implemented_external_authority"
+    "android_golden_publisher": "implemented_external_authority",
+    "loop_demand_autonomy": "bound_delivery_blueprint_v1"
   },
   "risks": [
     {

@@ -41,7 +41,7 @@
       "queue_empty"
     ],
     "candidate_root": "ios/project/work-item-proposals/candidates",
-    "materialization": "compiled-control-plane-v1-or-explicit-recovery",
+    "materialization": "compiled-control-plane-v1-and-bound-delivery-blueprint-v1",
     "adapter_contract": {
       "launch": "argv-only-new-session-process-group",
       "timeout_cleanup": "sigterm-bounded-wait-sigkill",
@@ -54,6 +54,10 @@
   "auto_materialization": {
     "enabled": true,
     "policy": "compiled-control-plane-v1"
+  },
+  "delivery_materialization": {
+    "enabled": true,
+    "policy": "bound-delivery-blueprint-v1"
   },
   "agent_invocation": {
     "argv": [

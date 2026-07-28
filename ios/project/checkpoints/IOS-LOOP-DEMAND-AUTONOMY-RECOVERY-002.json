@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-LOOP-DEMAND-AUTONOMY-RECOVERY-002",
+  "summary": "已恢复 Golden 发布后的可重复基线，并建立 bound-delivery-blueprint-v1。Publisher 测试使用隔离的未发布 manifest，另以真实已发布 manifest 验证重复发布拒绝；初始化 DAG 改为验证唯一 ID、必需节点、依赖闭合和已完成外部前置，不再锁死节点数。Loop Supervisor 现在可优先自动物化唯一的类型化 Recovery candidate；队列为空时可从 HEAD 中的完整普通交付蓝图绑定 implementation_ready Requirement、Capability revision/owner、protected Android Golden release receipt、completed dependency Evidence/Checkpoint 和 HEAD，随后复用 claim、Supervisor verify、memory、close 生命周期。任何 readiness、owner、receipt、依赖、scope、优先级或 HEAD 漂移均 fail closed，且不授予 Requirement、Golden、ADR、Schema、CI 或 Approval 写权限。",
+  "evidence": "ios/harness/evidence/runs/run-20260728T132544Z-ios-loop-demand-autonomy-recovery-002-968f70c0.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 35,
+      "to_revision": 36,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": ["ADR-0002", "ADR-0004"]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null,
+    "none_reason": "本项修复并扩展 Loop 控制面，不生成产品 Requirement"
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项不消费、生成或发布业务知识"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null,
+    "none_reason": "本项只建立交付蓝图控制合同，真实 SourceRuntime 蓝图后续绑定现有 SourceLab 与 Golden"
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "旧 compiled-control-plane-v1 保持兼容；新增策略只处理显式普通交付蓝图"
+  },
+  "pitfalls": {
+    "records": ["ios/project/pitfalls/PIT-0037.json"],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "当前 Supervisor 仍是本地单写者协作控制面，与 Agent 共享用户权限，不能替代外部签名 authority",
+    "真实 SourceRuntime HTML/CSS 交付蓝图尚未创建和自动运行",
+    "并行 DAG、跨机器租约和冲突仲裁尚未实现"
+  ],
+  "next_actions": [
+    "创建并提交 SourceRuntime HTML/CSS 纵向 bound delivery blueprint",
+    "用 protected sl-html-basic-001 Golden 自动物化并推进 iOS first-divergence 实现",
+    "在该真实普通交付上验证失败恢复、结构化差分 Evidence 和记忆闭环"
+  ],
+  "created_at": "2026-07-28T13:25:44Z"
+}

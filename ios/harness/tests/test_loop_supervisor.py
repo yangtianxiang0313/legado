@@ -1,4 +1,5 @@
 import contextlib
+import hashlib
 import http.client
 import io
 import json
@@ -502,6 +503,259 @@ class MaterializationTests(unittest.TestCase):
                     r"owner=IOS-KNOWLEDGE-OLD-001 suggested_revision=3",
                 ):
                     supervisor.preflight_candidate(candidate_path)
+
+
+class DeliveryBlueprintTests(unittest.TestCase):
+    @staticmethod
+    def initialize_git(root):
+        subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+        subprocess.run(
+            ["git", "config", "user.name", "Delivery Blueprint Test"],
+            cwd=root,
+            check=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.email", "delivery@example.invalid"],
+            cwd=root,
+            check=True,
+        )
+        subprocess.run(["git", "add", "."], cwd=root, check=True)
+        subprocess.run(["git", "commit", "-qm", "delivery baseline"], cwd=root, check=True)
+
+    def prepare(self, root, *, readiness="implementation_ready", owner=True):
+        fixture = MaterializationFixture(root)
+        item_id = "IOS-DELIVERY-001"
+        requirement_id = "REQ-DELIVERY-001"
+        capability_id = "CAP-DELIVERY"
+        record = {
+            "schema_version": 1,
+            "id": requirement_id,
+            "revision": 1,
+            "status": "accepted",
+            "clauses": [{"id": "RC-01", "statement": "render html"}],
+            "readiness": {"state": readiness, "blockers": []},
+        }
+        record_relative = (
+            f"ios/project/requirements/accepted/{requirement_id}.json"
+        )
+        fixture.fixture.write_json(record_relative, record)
+        record_sha = hashlib.sha256(
+            (root / record_relative).read_bytes()
+        ).hexdigest()
+        fixture.fixture.write_json(
+            "ios/project/requirements/catalog.json",
+            {
+                "schema_version": 1,
+                "requirements": [
+                    {
+                        "id": requirement_id,
+                        "revision": 1,
+                        "status": "accepted",
+                        "readiness": readiness,
+                        "path": record_relative,
+                        "record_sha256": record_sha,
+                        "clauses": ["RC-01"],
+                    }
+                ],
+            },
+        )
+        fixture.fixture.write_json(
+            f"ios/project/capabilities/{capability_id}.json",
+            {
+                "schema_version": 1,
+                "id": capability_id,
+                "revision": 3,
+                "owners": {
+                    "targets": ["SourceRuntime"],
+                    "paths": (
+                        ["ios/Packages/LegadoKit/Sources/SourceRuntime/**"]
+                        if owner
+                        else ["ios/Packages/LegadoKit/Sources/Other/**"]
+                    ),
+                },
+                "active_decisions": ["ADR-0001"],
+            },
+        )
+        golden_relative = (
+            "ios/harness/goldens/android-legado-v1/fixture-001.json"
+        )
+        golden = b'{"result":"android"}'
+        golden_path = root / golden_relative
+        golden_path.parent.mkdir(parents=True, exist_ok=True)
+        golden_path.write_bytes(golden)
+        golden_sha = hashlib.sha256(golden).hexdigest()
+        receipt_relative = (
+            "ios/harness/goldens/releases/fixture-001-run.json"
+        )
+        fixture.fixture.write_json(
+            receipt_relative,
+            {
+                "authority": "protected_android_golden",
+                "authorization": "github_environment_review",
+                "fixture_id": "fixture-001",
+                "golden_path": golden_relative,
+                "golden_sha256": golden_sha,
+                "run_id": "42/1",
+                "source_digest": "a" * 40,
+                "proposal_sha256": "b" * 64,
+            },
+        )
+        fixture.fixture.write_json(
+            "ios/harness/goldens/manifest.json",
+            {
+                "schema_version": 1,
+                "fixtures": {
+                    "fixture-001": {
+                        "path": golden_relative,
+                        "golden_sha256": golden_sha,
+                        "release_receipt": receipt_relative,
+                        "run_id": "42/1",
+                        "source_digest": "a" * 40,
+                        "proposal_sha256": "b" * 64,
+                    }
+                },
+            },
+        )
+        item = fixture.fixture.item(item_id, capability_id, 80)
+        item["metadata"]["labels"] = ["product", "source-runtime"]
+        item["spec"]["requirements"] = {
+            "mode": "implementation",
+            "refs": [
+                {
+                    "id": requirement_id,
+                    "revision": 1,
+                    "clauses": ["RC-01"],
+                }
+            ],
+            "none_reason": None,
+        }
+        item["spec"]["acceptance"]["criteria"][0][
+            "requirement_clauses"
+        ] = [f"{requirement_id}#RC-01"]
+        item["spec"]["architecture_refs"] = ["ADR-0001"]
+        item["spec"]["completion_effects"] = {
+            "health": {"delivery": "verified"}
+        }
+        item["spec"]["knowledge"] = {
+            "contract_version": 1,
+            "mode": "consume",
+            "claim_refs": [{"id": "BKC-DELIVERY-001", "revision": 1}],
+            "driver_refs": [],
+            "coverage_refs": [
+                {
+                    "id": "BKL-DELIVERY-001",
+                    "revision": 1,
+                    "entries": ["BKE-DELIVERY-001"],
+                }
+            ],
+            "produces": [],
+            "expected_ledger_transitions": [],
+            "context_budget": {"max_claims": 10, "max_bytes": 8192},
+            "none_reason": None,
+        }
+        item["spec"]["acceptance"]["criteria"][0][
+            "knowledge_claims"
+        ] = [{"id": "BKC-DELIVERY-001", "revision": 1}]
+        item["spec"]["delivery_blueprint"] = {
+            "policy": loop_supervisor.DELIVERY_MATERIALIZATION_POLICY,
+            "capability_revision": 3,
+            "golden_fixtures": ["fixture-001"],
+        }
+        item["spec"]["scope"]["allow_write"] = [
+            "ios/Packages/LegadoKit/Sources/SourceRuntime/**",
+            "ios/Packages/LegadoKit/Tests/SourceRuntimeTests/**",
+            f"ios/project/capabilities/{capability_id}.json",
+            f"ios/project/checkpoints/{item_id}.json",
+            "ios/project/pitfalls/PIT-*.json",
+        ]
+        item["spec"]["scope"]["deny_write"] = [
+            ".github/**",
+            "ios/Packages/LegadoKit/Package.swift",
+            "ios/harness/goldens/**",
+            "ios/harness/schemas/**",
+            "ios/project/requirements/**",
+            "ios/project/approvals/**",
+            "ios/docs/**",
+        ]
+        blueprint_relative = (
+            f"{loop_supervisor.DELIVERY_BLUEPRINT_ROOT}/{item_id}.json"
+        )
+        fixture.fixture.write_json(blueprint_relative, item)
+        self.initialize_git(root)
+        return fixture, root / blueprint_relative
+
+    def test_bound_blueprint_materializes_with_provenance(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture, path = self.prepare(root)
+            supervisor = loop_supervisor.LoopSupervisor(fixture.harness)
+            with mock.patch.object(
+                fixture.harness,
+                "doctor",
+                return_value=([], []),
+            ):
+                candidate = supervisor._delivery_candidate(path)
+                self.assertEqual("IOS-DELIVERY-001", candidate.blueprint_id)
+                self.assertEqual(
+                    "protected_android_golden",
+                    json.loads(
+                        (
+                            root
+                            / "ios/harness/goldens/releases/fixture-001-run.json"
+                        ).read_text()
+                    )["authority"],
+                )
+                materialized = supervisor.auto_materialize_delivery(
+                    candidate.blueprint_id
+                )
+            self.assertEqual("IOS-DELIVERY-001", materialized)
+            event = fixture.harness.event_lines()[-1]
+            provenance = event["payload"]["provenance"]
+            self.assertEqual(
+                loop_supervisor.DELIVERY_MATERIALIZATION_POLICY,
+                provenance["policy"],
+            )
+            self.assertEqual(
+                "fixture-001",
+                provenance["goldens"][0]["fixture_id"],
+            )
+
+    def test_bound_blueprint_fails_closed_on_readiness_and_owner(self):
+        for readiness, owner, reason in (
+            (
+                "characterization_required",
+                True,
+                "DELIVERY_REQUIREMENT_NOT_READY",
+            ),
+            (
+                "implementation_ready",
+                False,
+                "DELIVERY_SCOPE_OUTSIDE_OWNER",
+            ),
+        ):
+            with self.subTest(reason=reason), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                fixture, path = self.prepare(
+                    root,
+                    readiness=readiness,
+                    owner=owner,
+                )
+                supervisor = loop_supervisor.LoopSupervisor(fixture.harness)
+                with mock.patch.object(
+                    fixture.harness,
+                    "doctor",
+                    return_value=([], []),
+                ), self.assertRaisesRegex(
+                    loop_supervisor.MaterializationConflict,
+                    reason,
+                ):
+                    supervisor._delivery_candidate(path)
+                self.assertFalse(
+                    (
+                        root
+                        / "ios/harness/work-items/IOS-DELIVERY-001.json"
+                    ).exists()
+                )
 
 
 class MaterializationUITests(unittest.TestCase):
