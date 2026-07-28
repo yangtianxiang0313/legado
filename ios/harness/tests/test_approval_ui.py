@@ -29,10 +29,42 @@ class FakeHarness:
     def __init__(self, root: Path, gates=None):
         self.root = root
         self.config = {"approvals_dir": "ios/project/approvals"}
-        self.gates = gates or ["architecture-review", "security-review"]
+        self.gates = (
+            list(gates)
+            if gates is not None
+            else ["architecture-review", "security-review"]
+        )
+        self.decisions = [
+            {
+                "gate": gate,
+                "trigger": "always",
+                "question": f"{gate} 应选择哪个方案？",
+                "why_human": "两个方案都满足机器约束，需要项目所有者取舍。",
+                "options": [
+                    {
+                        "id": "recommended",
+                        "label": "采用推荐方案",
+                        "consequence": "按当前推荐方向继续。",
+                        "reversible": True,
+                    },
+                    {
+                        "id": "alternative",
+                        "label": "采用备选方案",
+                        "consequence": "改用明确的备选方向。",
+                        "reversible": True,
+                    },
+                ],
+                "recommended_option": "recommended",
+            }
+            for gate in self.gates
+        ]
         self.item = {
             "metadata": {"id": ITEM_ID, "title": "测试人工审批"},
-            "spec": {"gates": list(self.gates)},
+            "spec": {
+                "gates": list(self.gates),
+                "gate_contract_version": 1,
+                "decision_gates": list(self.decisions),
+            },
         }
         evidence_relative = "ios/harness/evidence/runs/test-evidence.json"
         evidence_path = self.resolve(evidence_relative)
@@ -74,6 +106,12 @@ class FakeHarness:
     def required_close_gates(self, item_id, item, changed):
         return list(self.gates), []
 
+    def decision_gate_contracts(self, item):
+        return {
+            decision["gate"]: decision
+            for decision in self.decisions
+        }, []
+
     def candidate_snapshot(self, runtime, approval_paths):
         return self.subject, dict(self.subject_files)
 
@@ -88,10 +126,47 @@ class FakeHarness:
             path = self.resolve(
                 f"ios/project/approvals/{ITEM_ID}--{gate}.json"
             )
+            if not path.exists():
+                self._state["work_items"][ITEM_ID]["status"] = "awaiting_human"
+                return "awaiting_human"
             approval = json.loads(path.read_text(encoding="utf-8"))
             self.assert_approval(approval, gate)
         self._state["work_items"][ITEM_ID]["status"] = "completed"
         return "completed"
+
+    def approval_issues(
+        self,
+        item_id,
+        item,
+        tree_sha256,
+        gates,
+        *,
+        requested_at=None,
+        preexisting_fingerprints=None,
+        evidence_sha256=None,
+    ):
+        errors = []
+        contracts, _ = self.decision_gate_contracts(item)
+        for gate in gates:
+            path = self.resolve(
+                f"ios/project/approvals/{ITEM_ID}--{gate}.json"
+            )
+            if not path.exists():
+                errors.append(f"缺少人工批准：{gate}")
+                continue
+            approval = json.loads(path.read_text(encoding="utf-8"))
+            if approval.get("decision_contract_sha256") != approval_ui.sha256_json(
+                contracts[gate]
+            ):
+                errors.append(f"decision contract 摘要漂移：{gate}")
+            if approval.get("selected_option") not in {
+                "recommended",
+                "alternative",
+            }:
+                errors.append(f"decision selected_option 无效：{gate}")
+            if approval.get("evidence_sha256") != evidence_sha256:
+                errors.append(f"decision 未绑定当前 Evidence：{gate}")
+        return errors
 
     def assert_approval(self, approval, gate):
         if approval["work_item_id"] != ITEM_ID:
@@ -102,6 +177,15 @@ class FakeHarness:
             raise AssertionError("wrong work item hash")
         if approval["tree_sha256"] != self.subject:
             raise AssertionError("wrong subject")
+        decision = next(
+            value for value in self.decisions if value["gate"] == gate
+        )
+        if approval["decision_contract_sha256"] != approval_ui.sha256_json(
+            decision
+        ):
+            raise AssertionError("wrong decision contract")
+        if approval["selected_option"] not in {"recommended", "alternative"}:
+            raise AssertionError("wrong selected option")
 
 
 class ApprovalUITests(unittest.TestCase):
@@ -184,13 +268,17 @@ class ApprovalUITests(unittest.TestCase):
                 self.assertIn("frame-ancestors 'none'", headers["Content-Security-Policy"])
                 self.assertIn(session.snapshot.review_subject_sha256, text)
                 self.assertIn(session.snapshot.evidence_sha256, text)
+                self.assertIn("architecture-review 应选择哪个方案", text)
+                self.assertIn("采用推荐方案", text)
+                self.assertNotIn("批准全部", text)
+                self.assertNotIn("/api/approve", text)
                 self.assertFalse(
                     any(path.exists() for path in self.approval_paths(root, harness.gates))
                 )
             finally:
                 session.server.server_close()
 
-    def test_one_click_writes_all_gates_and_closes(self):
+    def test_each_decision_requires_a_separate_choice_before_close(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             harness, session = self.make_session(root)
@@ -219,8 +307,8 @@ class ApprovalUITests(unittest.TestCase):
             status, _, payload = self.request(
                 session,
                 "POST",
-                "/api/approve",
-                body="{}",
+                "/api/decide",
+                body='{"selected_option":"recommended"}',
                 headers=self.approval_headers(session),
                 start_handler=False,
             )
@@ -228,16 +316,38 @@ class ApprovalUITests(unittest.TestCase):
             worker.join(timeout=3)
             self.assertFalse(worker.is_alive())
             self.assertNotIn("error", result)
-            self.assertEqual("completed", result["outcome"])
+            self.assertEqual("human_decision_pending", result["outcome"])
             self.assertEqual(1, harness.close_calls)
 
-            for path in self.approval_paths(root, harness.gates):
-                approval = json.loads(path.read_text(encoding="utf-8"))
-                self.assertEqual(1, approval["schema_version"])
-                self.assertTrue(approval["reviewer"].startswith("local-user:"))
-                self.assertEqual("2026-07-24T03:00:00Z", approval["approved_at"])
-                self.assertEqual("2026-07-25T03:00:00Z", approval["expires_at"])
-                self.assertIsNone(approval["signature"])
+            paths = self.approval_paths(root, harness.gates)
+            self.assertTrue(paths[0].exists())
+            self.assertFalse(paths[1].exists())
+            approval = json.loads(paths[0].read_text(encoding="utf-8"))
+            self.assertEqual(1, approval["schema_version"])
+            self.assertEqual("recommended", approval["selected_option"])
+            self.assertTrue(approval["reviewer"].startswith("local-user:"))
+            self.assertEqual("2026-07-24T03:00:00Z", approval["presented_at"])
+            self.assertEqual("2026-07-24T03:00:00Z", approval["decided_at"])
+            self.assertEqual("2026-07-24T03:00:00Z", approval["approved_at"])
+            self.assertEqual("2026-07-25T03:00:00Z", approval["expires_at"])
+            self.assertIsNone(approval["signature"])
+
+            _, second = self.make_session(root, harness=harness)
+            try:
+                self.assertEqual("security-review", second.snapshot.active_gate)
+                status, _, payload = self.request(
+                    second,
+                    "POST",
+                    "/api/decide",
+                    body='{"selected_option":"alternative"}',
+                    headers=self.approval_headers(second),
+                )
+                self.assertEqual(200, status, payload)
+                self.assertEqual("completed", second.outcome)
+                self.assertEqual(2, harness.close_calls)
+                self.assertTrue(paths[1].exists())
+            finally:
+                second.server.server_close()
 
     def test_wrong_token_and_cross_origin_cannot_write(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -252,8 +362,8 @@ class ApprovalUITests(unittest.TestCase):
                 status, _, _ = self.request(
                     session,
                     "POST",
-                    "/api/approve",
-                    body="{}",
+                    "/api/decide",
+                    body='{"selected_option":"recommended"}',
                     headers=common,
                 )
                 self.assertEqual(403, status)
@@ -262,8 +372,8 @@ class ApprovalUITests(unittest.TestCase):
                 status, _, _ = self.request(
                     session,
                     "POST",
-                    "/api/approve",
-                    body="{}",
+                    "/api/decide",
+                    body='{"selected_option":"recommended"}',
                     headers=common,
                 )
                 self.assertEqual(403, status)
@@ -274,6 +384,52 @@ class ApprovalUITests(unittest.TestCase):
             finally:
                 session.server.server_close()
 
+    def test_missing_unknown_or_cross_gate_option_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            harness, session = self.make_session(root)
+            try:
+                status, _, _ = self.request(
+                    session,
+                    "POST",
+                    "/api/decide",
+                    body="{}",
+                    headers=self.approval_headers(session),
+                )
+                self.assertEqual(400, status)
+                status, _, _ = self.request(
+                    session,
+                    "POST",
+                    "/api/decide",
+                    body='{"selected_option":"security-review"}',
+                    headers=self.approval_headers(session),
+                )
+                self.assertEqual(403, status)
+                self.assertEqual(0, harness.close_calls)
+                self.assertFalse(
+                    any(
+                        path.exists()
+                        for path in self.approval_paths(root, harness.gates)
+                    )
+                )
+            finally:
+                session.server.server_close()
+
+    def test_legacy_unstructured_gate_has_no_local_bulk_fallback(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            harness = FakeHarness(root, gates=["architecture-review"])
+            harness.item["spec"].pop("gate_contract_version")
+            harness.item["spec"].pop("decision_gates")
+            harness._state["work_items"][ITEM_ID][
+                "work_item_sha256"
+            ] = approval_ui.sha256_json(harness.item)
+            with self.assertRaisesRegex(
+                approval_ui.ApprovalUIError,
+                "旧式批量 Approval 已禁用",
+            ):
+                approval_ui.LocalApprovalSession(harness, ITEM_ID)
+
     def test_invalid_host_fetch_site_and_large_body_fail_closed(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -282,8 +438,8 @@ class ApprovalUITests(unittest.TestCase):
                 status, _, _ = self.request(
                     session,
                     "POST",
-                    "/api/approve",
-                    body="{}",
+                    "/api/decide",
+                    body='{"selected_option":"recommended"}',
                     headers={
                         **self.approval_headers(session),
                         "Host": "attacker.invalid",
@@ -293,8 +449,8 @@ class ApprovalUITests(unittest.TestCase):
                 status, _, _ = self.request(
                     session,
                     "POST",
-                    "/api/approve",
-                    body="{}",
+                    "/api/decide",
+                    body='{"selected_option":"recommended"}',
                     headers={
                         **self.approval_headers(session),
                         "Sec-Fetch-Site": "cross-site",
@@ -304,7 +460,7 @@ class ApprovalUITests(unittest.TestCase):
                 status, _, _ = self.request(
                     session,
                     "POST",
-                    "/api/approve",
+                    "/api/decide",
                     body="x" * (approval_ui.MAX_REQUEST_BYTES + 1),
                     headers=self.approval_headers(session),
                 )
@@ -346,8 +502,8 @@ class ApprovalUITests(unittest.TestCase):
                 status, _, payload = self.request(
                     session,
                     "POST",
-                    "/api/approve",
-                    body="{}",
+                    "/api/decide",
+                    body='{"selected_option":"recommended"}',
                     headers=self.approval_headers(session),
                 )
                 self.assertEqual(409, status, payload)
@@ -364,8 +520,8 @@ class ApprovalUITests(unittest.TestCase):
                 status, _, payload = self.request(
                     session,
                     "POST",
-                    "/api/approve",
-                    body="{}",
+                    "/api/decide",
+                    body='{"selected_option":"recommended"}',
                     headers=self.approval_headers(session),
                 )
                 self.assertEqual(409, status, payload)
@@ -392,16 +548,16 @@ class ApprovalUITests(unittest.TestCase):
                 status, _, payload = self.request(
                     session,
                     "POST",
-                    "/api/approve",
-                    body="{}",
+                    "/api/decide",
+                    body='{"selected_option":"recommended"}',
                     headers=self.approval_headers(session),
                 )
                 self.assertEqual(200, status, payload)
                 status, _, payload = self.request(
                     session,
                     "POST",
-                    "/api/approve",
-                    body="{}",
+                    "/api/decide",
+                    body='{"selected_option":"recommended"}',
                     headers=self.approval_headers(session),
                 )
                 self.assertEqual(409, status, payload)
@@ -446,15 +602,15 @@ class ApprovalUITests(unittest.TestCase):
     def test_close_failure_keeps_decision_for_direct_recovery(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            harness = FakeHarness(root)
+            harness = FakeHarness(root, gates=["architecture-review"])
             harness.fail_close = True
             _, session = self.make_session(root, harness=harness)
             try:
                 status, _, payload = self.request(
                     session,
                     "POST",
-                    "/api/approve",
-                    body="{}",
+                    "/api/decide",
+                    body='{"selected_option":"recommended"}',
                     headers=self.approval_headers(session),
                 )
                 self.assertEqual(202, status, payload)
@@ -470,7 +626,8 @@ class ApprovalUITests(unittest.TestCase):
     def test_get_connection_cannot_starve_followup_approval(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            harness, session = self.make_session(root)
+            harness = FakeHarness(root, gates=["architecture-review"])
+            _, session = self.make_session(root, harness=harness)
             opened = threading.Event()
             result = {}
 
@@ -500,8 +657,8 @@ class ApprovalUITests(unittest.TestCase):
             status, _, payload = self.request(
                 session,
                 "POST",
-                "/api/approve",
-                body="{}",
+                "/api/decide",
+                body='{"selected_option":"recommended"}',
                 headers=self.approval_headers(session),
                 start_handler=False,
             )

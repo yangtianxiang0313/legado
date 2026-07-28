@@ -85,6 +85,10 @@ class LoopSupervisorInspectTests(unittest.TestCase):
             decision = supervisor.inspect()
             self.assertEqual(expected, decision.state)
             self.assertEqual(human, decision.requires_human)
+        self.assertEqual(
+            "HUMAN_DECISION_REQUIRED",
+            supervisor.inspect().reason_code,
+        )
 
     def test_inspect_distinguishes_dependency_terminal_and_empty(self):
         harness = InspectHarness()
@@ -182,6 +186,47 @@ class MaterializationTests(unittest.TestCase):
                 "SCOPE_UNSATISFIABLE",
             ):
                 supervisor.preflight_candidate(path)
+
+    def test_preflight_rejects_legacy_gate_and_accepts_structured_decision(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            path, item = fixture.candidate()
+            item["spec"]["gates"] = ["architecture-choice"]
+            fixture.fixture.write_json(str(path.relative_to(fixture.root)), item)
+            supervisor = loop_supervisor.LoopSupervisor(fixture.harness)
+            with self.assertRaisesRegex(
+                loop_supervisor.MaterializationConflict,
+                "LEGACY_HUMAN_GATE_REJECTED",
+            ):
+                supervisor.preflight_candidate(path)
+
+            item["spec"]["gate_contract_version"] = 1
+            item["spec"]["decision_gates"] = [
+                {
+                    "gate": "architecture-choice",
+                    "trigger": "always",
+                    "question": "采用哪个已验证的模块边界？",
+                    "why_human": "两个方案都通过机器检查，但产品演进成本不同。",
+                    "options": [
+                        {
+                            "id": "separate-package",
+                            "label": "独立 Package",
+                            "consequence": "获得更强替换边界，增加一个发布单元。",
+                            "reversible": True,
+                        },
+                        {
+                            "id": "existing-package",
+                            "label": "留在现有 Package",
+                            "consequence": "减少当前模块数，后续拆分成本更高。",
+                            "reversible": True,
+                        },
+                    ],
+                    "recommended_option": "separate-package",
+                }
+            ]
+            fixture.fixture.write_json(str(path.relative_to(fixture.root)), item)
+            preview = supervisor.preflight_candidate(path)
+            self.assertEqual(("architecture-choice",), preview.gates)
 
     def test_materialize_writes_work_item_event_state_and_status(self):
         with tempfile.TemporaryDirectory() as directory:

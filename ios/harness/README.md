@@ -74,6 +74,59 @@ adapter、真实 Harness 生命周期、Evidence/Capability/Checkpoint/Event 绑
 签名控制状态、真实 Integrations 扫描和发布晋级，仍必须由隔离、签名的外部
 Supervisor/CI 重验；这些属于下一阶段，不由本地 adapter 冒充。
 
+## Machine Gate、Human Decision 与 Authority Transition
+
+Harness 不再把 `risk` 标签、文件数量或“安全/架构 review”文案本身当成人工暂停理由：
+
+1. **Machine Gate**：required checks、scope、架构规则、安全策略、Evidence 和记忆事务
+   都可确定性重算，成功后自动通过，失败时给出结构化错误；
+2. **Human Decision**：只有多个方案都满足机器约束、但产品目标、兼容取舍或演进成本
+   无法由 AI 推导时才暂停。每次只问一个具体问题并要求选择一个互斥方案；
+3. **Authority Transition**：知识/Golden/Requirement/ADR/patch promotion 只能消费外部
+   受信签名 artifact，本地 decision record 不具备发布权限。
+
+新 candidate 的 `gates` 为空时无需人工步骤；非空时必须使用 v1 decision contract，
+否则 `loop_supervisor preflight` 以 `LEGACY_HUMAN_GATE_REJECTED` 终止：
+
+```json
+{
+  "gate_contract_version": 1,
+  "gates": ["architecture-choice"],
+  "decision_gates": [
+    {
+      "gate": "architecture-choice",
+      "trigger": "always",
+      "question": "采用哪个已验证的模块边界？",
+      "why_human": "两个方案都通过机器约束，但长期演进成本不同。",
+      "options": [
+        {
+          "id": "separate-package",
+          "label": "独立 Package",
+          "consequence": "替换边界更强，但增加一个模块。",
+          "reversible": true
+        },
+        {
+          "id": "existing-package",
+          "label": "留在现有 Package",
+          "consequence": "当前模块更少，后续拆分成本更高。",
+          "reversible": true
+        }
+      ],
+      "recommended_option": "separate-package"
+    }
+  ]
+}
+```
+
+`trigger` 可为 `always`、`product-scope-change`、`knowledge-proposal-change`、
+`architecture-proposal-change` 或 `oracle-difference`。动态变化若需要取舍却没有匹配
+contract，close 返回 `UNSTRUCTURED_DECISION_REQUIRED`，不会临时生成一个空泛的
+“批准全部”页面。Decision record 绑定当前 Work Item、tree、Evidence、contract hash
+和 `selected_option`；多个未决事项必须逐个选择，取消不会写入记录。
+
+历史已完成 Work Item/Approval 保持可读，但旧式非结构化 candidate 不能再物化，本地
+review UI 也不再提供批量批准兼容入口。
+
 ## Proposal Compiler
 
 `proposal_compiler.py` 把初始化规划连接到按钮物化，但刻意保留四层边界：

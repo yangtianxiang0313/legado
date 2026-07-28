@@ -34,6 +34,13 @@ TERMINAL_STATUSES = {"completed", "rejected", "exhausted", "cancelled", "superse
 ALL_STATUSES = ACTIVE_STATUSES | TERMINAL_STATUSES | {"ready", "blocked"}
 WORK_ITEM_ID = re.compile(r"^IOS-[A-Z][A-Z0-9-]*-[0-9]{3}$")
 CAPABILITY_ID = re.compile(r"^CAP-[A-Z0-9-]+$")
+DECISION_ID = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+DECISION_TRIGGER_GATES = {
+    "product-scope-change": "product-scope-review",
+    "knowledge-proposal-change": "knowledge-review",
+    "architecture-proposal-change": "architecture-review",
+    "oracle-difference": "oracle-adjudication",
+}
 KNOWLEDGE_CLAIM_ID = re.compile(r"^BKC-[A-Z][A-Z0-9-]*-[0-9]{3}$")
 KNOWLEDGE_DRIVER_ID = re.compile(r"^DRV-[A-Z][A-Z0-9-]*-[0-9]{3}$")
 KNOWLEDGE_LEDGER_ID = re.compile(r"^BKL-[A-Z][A-Z0-9-]*-[0-9]{3}$")
@@ -183,6 +190,121 @@ class Harness:
         except ValueError as error:
             raise HarnessError(f"路径越出仓库：{value}") from error
         return candidate
+
+    def decision_gate_contracts(
+        self,
+        item: Dict[str, Any],
+    ) -> Tuple[Dict[str, Dict[str, Any]], List[str]]:
+        """Validate and index the opt-in v1 human-decision contract."""
+
+        errors: List[str] = []
+        metadata = item.get("metadata", {})
+        item_id = (
+            str(metadata.get("id"))
+            if isinstance(metadata, dict)
+            else "<unknown-work-item>"
+        )
+        spec = item.get("spec", {})
+        if not isinstance(spec, dict):
+            return {}, [f"{item_id}: spec 必须是 object"]
+        gates = spec.get("gates", [])
+        if not isinstance(gates, list):
+            return {}, [f"{item_id}: gates 必须是数组"]
+        version = spec.get("gate_contract_version")
+        raw_contracts = spec.get("decision_gates")
+        if version is None and raw_contracts is None:
+            return {}, []
+        if version != 1:
+            errors.append(f"{item_id}: gate_contract_version 必须为 1")
+        if not isinstance(raw_contracts, list):
+            errors.append(f"{item_id}: decision_gates 必须是数组")
+            return {}, errors
+
+        contracts: Dict[str, Dict[str, Any]] = {}
+        required_contract_keys = {
+            "gate",
+            "trigger",
+            "question",
+            "why_human",
+            "options",
+            "recommended_option",
+        }
+        required_option_keys = {
+            "id",
+            "label",
+            "consequence",
+            "reversible",
+        }
+        for index, raw in enumerate(raw_contracts):
+            label = f"{item_id}: decision_gates[{index}]"
+            if not isinstance(raw, dict):
+                errors.append(f"{label} 必须是 object")
+                continue
+            if set(raw) != required_contract_keys:
+                errors.append(
+                    f"{label} 字段必须精确为 {sorted(required_contract_keys)}"
+                )
+                continue
+            gate = raw.get("gate")
+            if not isinstance(gate, str) or DECISION_ID.fullmatch(gate) is None:
+                errors.append(f"{label}.gate 无效")
+                continue
+            if gate in contracts:
+                errors.append(f"{item_id}: decision gate 重复：{gate}")
+                continue
+            trigger = raw.get("trigger")
+            allowed_triggers = {"always", *DECISION_TRIGGER_GATES}
+            if trigger not in allowed_triggers:
+                errors.append(f"{label}.trigger 无效：{trigger}")
+            expected_gate = DECISION_TRIGGER_GATES.get(str(trigger))
+            if expected_gate is not None and gate != expected_gate:
+                errors.append(
+                    f"{label}: trigger {trigger} 必须使用 gate {expected_gate}"
+                )
+            for field in ("question", "why_human"):
+                value = raw.get(field)
+                if not isinstance(value, str) or not value.strip():
+                    errors.append(f"{label}.{field} 不能为空")
+            options = raw.get("options")
+            option_ids: Set[str] = set()
+            if not isinstance(options, list) or not 2 <= len(options) <= 4:
+                errors.append(f"{label}.options 必须包含 2～4 个选项")
+                options = []
+            for option_index, option in enumerate(options):
+                option_label = f"{label}.options[{option_index}]"
+                if not isinstance(option, dict) or set(option) != required_option_keys:
+                    errors.append(
+                        f"{option_label} 字段必须精确为 {sorted(required_option_keys)}"
+                    )
+                    continue
+                option_id = option.get("id")
+                if (
+                    not isinstance(option_id, str)
+                    or DECISION_ID.fullmatch(option_id) is None
+                ):
+                    errors.append(f"{option_label}.id 无效")
+                elif option_id in option_ids:
+                    errors.append(f"{label} option id 重复：{option_id}")
+                else:
+                    option_ids.add(option_id)
+                for field in ("label", "consequence"):
+                    value = option.get(field)
+                    if not isinstance(value, str) or not value.strip():
+                        errors.append(f"{option_label}.{field} 不能为空")
+                if not isinstance(option.get("reversible"), bool):
+                    errors.append(f"{option_label}.reversible 必须是 boolean")
+            recommended = raw.get("recommended_option")
+            if not isinstance(recommended, str) or recommended not in option_ids:
+                errors.append(f"{label}.recommended_option 必须引用现有 option")
+            contracts[gate] = dict(raw)
+
+        if set(gates) != set(contracts):
+            errors.append(
+                f"{item_id}: gates 与 decision_gates 必须一一对应 "
+                f"gates={sorted(str(gate) for gate in gates)}, "
+                f"decisions={sorted(contracts)}"
+            )
+        return contracts, errors
 
     def relative(self, path: Path) -> str:
         return path.resolve().relative_to(self.root).as_posix()
@@ -1034,6 +1156,12 @@ class Harness:
         for gate in spec.get("gates", []):
             if not isinstance(gate, str) or re.fullmatch(r"[a-z0-9][a-z0-9-]*", gate) is None:
                 errors.append(f"{item_id}: gate ID 无效：{gate}")
+        if (
+            "gate_contract_version" in spec
+            or "decision_gates" in spec
+        ):
+            _, decision_errors = self.decision_gate_contracts(item)
+            errors.extend(decision_errors)
         if not isinstance(spec.get("budget"), dict) or not isinstance(spec.get("memory"), dict):
             errors.append(f"{item_id}: budget/memory 必须是 object")
         if not isinstance(spec.get("completion_effects", {}), dict):
@@ -3187,11 +3315,36 @@ class Harness:
         item: Dict[str, Any],
         changed_paths: Sequence[str],
     ) -> Tuple[List[str], List[str]]:
-        gates = set(item.get("spec", {}).get("gates", []))
+        spec = item.get("spec", {})
+        contracts, contract_errors = self.decision_gate_contracts(item)
+        structured = spec.get("gate_contract_version") == 1
+        gates = {
+            gate
+            for gate, contract in contracts.items()
+            if contract.get("trigger") == "always"
+        } if structured else set(spec.get("gates", []))
         errors: List[str] = []
+        errors.extend(contract_errors)
+
+        def require_decision(gate: str, trigger: str) -> None:
+            if not structured:
+                gates.add(gate)
+                return
+            contract = contracts.get(gate)
+            if contract is None or contract.get("trigger") not in {
+                trigger,
+                "always",
+            }:
+                errors.append(
+                    "UNSTRUCTURED_DECISION_REQUIRED: "
+                    f"{gate} 需要 trigger={trigger} 的 v1 decision contract"
+                )
+                return
+            gates.add(gate)
+
         expected_proposals = set(self.knowledge_proposal_paths(item))
         transitions = (
-            item.get("spec", {})
+            spec
             .get("knowledge", {})
             .get("expected_ledger_transitions", [])
         )
@@ -3202,15 +3355,21 @@ class Harness:
             for update in transition.get("entry_updates", [])
             if isinstance(update, dict)
         ):
-            gates.add("product-scope-review")
+            require_decision("product-scope-review", "product-scope-change")
         for relative in changed_paths:
             if relative in expected_proposals:
-                gates.add("knowledge-review")
+                require_decision(
+                    "knowledge-review",
+                    "knowledge-proposal-change",
+                )
                 if path_matches(
                     relative,
                     ["ios/project/business-knowledge/drivers/proposals/**"],
                 ):
-                    gates.add("architecture-review")
+                    require_decision(
+                        "architecture-review",
+                        "architecture-proposal-change",
+                    )
             if not path_matches(relative, ["ios/project/compatibility/COMP-*.json"]):
                 continue
             try:
@@ -3222,7 +3381,7 @@ class Harness:
                 continue
             if record.get("classification") != "intentional_difference" and record.get("decision") != "accept_difference":
                 continue
-            gates.add("oracle-adjudication")
+            require_decision("oracle-adjudication", "oracle-difference")
             record_id = record.get("id")
             decision_adr = record.get("decision_adr")
             matching_adr: Optional[Path] = None
@@ -3250,9 +3409,13 @@ class Harness:
         *,
         requested_at: Optional[str] = None,
         preexisting_fingerprints: Optional[Dict[str, str]] = None,
+        evidence_sha256: Optional[str] = None,
     ) -> List[str]:
         errors: List[str] = []
         work_item_hash = sha256_json(item)
+        contracts, contract_errors = self.decision_gate_contracts(item)
+        structured = item.get("spec", {}).get("gate_contract_version") == 1
+        errors.extend(contract_errors)
         request_time: Optional[dt.datetime] = None
         if requested_at is not None:
             try:
@@ -3282,9 +3445,33 @@ class Harness:
                 errors.append(f"approval 与工作项/gate 不匹配：{gate}")
             if approval.get("work_item_sha256") != work_item_hash or approval.get("tree_sha256") != tree_sha256:
                 errors.append(f"approval 未绑定当前 spec/tree：{gate}")
+            if structured:
+                contract = contracts.get(gate)
+                if contract is None:
+                    errors.append(f"decision contract 缺失：{gate}")
+                else:
+                    expected_contract_hash = sha256_json(contract)
+                    if (
+                        approval.get("decision_contract_sha256")
+                        != expected_contract_hash
+                    ):
+                        errors.append(f"decision contract 摘要漂移：{gate}")
+                    options = {
+                        option.get("id")
+                        for option in contract.get("options", [])
+                        if isinstance(option, dict)
+                    }
+                    if approval.get("selected_option") not in options:
+                        errors.append(f"decision selected_option 无效：{gate}")
+                if (
+                    not isinstance(evidence_sha256, str)
+                    or approval.get("evidence_sha256") != evidence_sha256
+                ):
+                    errors.append(f"decision 未绑定当前 Evidence：{gate}")
             reviewer = approval.get("reviewer")
             if not isinstance(reviewer, str) or not reviewer.strip() or reviewer.lower().startswith("ai"):
                 errors.append(f"approval reviewer 无效：{gate}")
+            approved: Optional[dt.datetime] = None
             try:
                 approved = dt.datetime.fromisoformat(
                     str(approval.get("approved_at")).replace("Z", "+00:00")
@@ -3295,6 +3482,43 @@ class Harness:
                     errors.append(f"approval 早于本次人工请求：{gate}")
             except (TypeError, ValueError):
                 errors.append(f"approval approved_at 无效：{gate}")
+            if structured:
+                presented: Optional[dt.datetime] = None
+                decided: Optional[dt.datetime] = None
+                try:
+                    presented = dt.datetime.fromisoformat(
+                        str(approval.get("presented_at")).replace("Z", "+00:00")
+                    )
+                    if presented.tzinfo is None:
+                        errors.append(f"decision presented_at 必须含时区：{gate}")
+                except (TypeError, ValueError):
+                    errors.append(f"decision presented_at 无效：{gate}")
+                try:
+                    decided = dt.datetime.fromisoformat(
+                        str(approval.get("decided_at")).replace("Z", "+00:00")
+                    )
+                    if decided.tzinfo is None:
+                        errors.append(f"decision decided_at 必须含时区：{gate}")
+                except (TypeError, ValueError):
+                    errors.append(f"decision decided_at 无效：{gate}")
+                if (
+                    presented is not None
+                    and decided is not None
+                    and decided < presented
+                ):
+                    errors.append(f"decision decided_at 早于 presented_at：{gate}")
+                if (
+                    approved is not None
+                    and decided is not None
+                    and approved != decided
+                ):
+                    errors.append(f"decision decided_at 与 approved_at 不一致：{gate}")
+                if (
+                    request_time is not None
+                    and presented is not None
+                    and presented < request_time
+                ):
+                    errors.append(f"decision presented_at 早于请求：{gate}")
             try:
                 expires = dt.datetime.fromisoformat(str(approval.get("expires_at")).replace("Z", "+00:00"))
                 if expires.tzinfo is None:
@@ -3354,6 +3578,21 @@ class Harness:
 
         current_changed = self.changed_since_claim(runtime)
         required_gates, dynamic_gate_errors = self.required_close_gates(item_id, item, current_changed)
+        architecture_kind = checkpoint.get("architecture_impact", {}).get("kind")
+        if architecture_kind == "changes_architecture":
+            contracts, _ = self.decision_gate_contracts(item)
+            architecture_decision = contracts.get("architecture-review")
+            if item["spec"].get("gate_contract_version") == 1:
+                if architecture_decision is None:
+                    dynamic_gate_errors.append(
+                        "UNSTRUCTURED_DECISION_REQUIRED: "
+                        "架构变化必须声明 architecture-review decision contract"
+                    )
+                elif "architecture-review" not in required_gates:
+                    required_gates.append("architecture-review")
+                    required_gates.sort()
+            elif "architecture-review" not in required_gates:
+                dynamic_gate_errors.append("架构变化工作项必须声明人工 gate")
         managed = self.managed_paths()
         memory_patterns = [
             f"ios/project/capabilities/{item['spec']['capability']}.json",
@@ -3412,10 +3651,8 @@ class Harness:
             preexisting_fingerprints=runtime.get(
                 "approval_request_existing_fingerprints"
             ),
+            evidence_sha256=runtime.get("last_evidence_sha256"),
         )
-        architecture_kind = checkpoint.get("architecture_impact", {}).get("kind")
-        if architecture_kind == "changes_architecture" and not item["spec"].get("gates"):
-            approval_errors.append("架构变化工作项必须声明人工 gate")
         if approval_errors:
             runtime["status"] = "awaiting_human"
             runtime["awaiting_human_reasons"] = approval_errors

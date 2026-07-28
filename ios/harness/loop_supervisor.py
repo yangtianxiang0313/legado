@@ -58,7 +58,7 @@ TERMINAL_RECOVERY_STATUSES = {"blocked", "rejected", "exhausted", "cancelled"}
 ACTIVE_DECISIONS = {
     "implementing": ("agent_required", False),
     "verified": ("memory_close_required", False),
-    "awaiting_human": ("human_review_required", True),
+    "awaiting_human": ("human_decision_required", True),
 }
 
 
@@ -400,6 +400,20 @@ class LoopSupervisor:
         validation = self.harness.validate_work_item(item, item_id)
         if validation:
             raise MaterializationConflict("Work Item 无效：" + "；".join(validation))
+        gates = item.get("spec", {}).get("gates", [])
+        if gates:
+            contracts, decision_errors = self.harness.decision_gate_contracts(item)
+            if (
+                item.get("spec", {}).get("gate_contract_version") != 1
+                or decision_errors
+                or set(gates) != set(contracts)
+            ):
+                details = "；".join(decision_errors) or "缺少 v1 decision contract"
+                raise MaterializationConflict(
+                    "LEGACY_HUMAN_GATE_REJECTED: "
+                    "新 candidate 的非空 gates 必须逐项声明结构化决策；"
+                    + details
+                )
 
         items = self.harness.work_items()
         state = self.harness.state()

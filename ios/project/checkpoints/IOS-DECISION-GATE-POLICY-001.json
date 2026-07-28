@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-DECISION-GATE-POLICY-001",
+  "summary": "把本地 Harness 从批量 Approval 改成结构化 Human Decision。新 candidate 的 gates 为空时完全自动；非空时必须声明 gate_contract_version=1，并为每个 Gate 给出 trigger、单一问题、why_human、2～4 个互斥选项、后果、可逆性和推荐项，否则 Loop Supervisor 以 LEGACY_HUMAN_GATE_REJECTED 拒绝物化。动态产品范围、知识/架构 proposal 或 intentional difference 需要取舍却缺合同，会以 UNSTRUCTURED_DECISION_REQUIRED fail closed。UI 删除 /api/approve 和“批准全部”入口，每个一次性会话只接受当前 Decision 的 selected_option；record 绑定 Work Item、tree、Evidence、decision contract、呈现/决定时间和 TTL。多个未决事项必须逐项选择，第一项后保持 awaiting_human，全部记录后才完成。机器 required checks 不转人工；知识、Golden、Requirement、ADR 和 patch promotion 仍是外部签名 authority transition。正式 Evidence 通过依赖策略、架构检查和 114 项 Harness 测试。",
+  "evidence": "ios/harness/evidence/runs/run-20260728T031151Z-ios-decision-gate-policy-001-d4d234f5.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 18,
+      "to_revision": 19,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": [
+      "ADR-0004"
+    ]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项不消费、生成或发布业务知识"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项只改变 AI/Harness 的人工暂停语义，不改变 Android 或 iOS 产品行为"
+  },
+  "pitfalls": {
+    "records": [
+      "ios/project/pitfalls/PIT-0018.json"
+    ],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "AI 仍可能通过问题措辞、选项划分或推荐项影响人的选择；合同保证选择可审计，不能保证决策质量",
+    "用户仍可快速点击推荐项，UI 无法证明其认真阅读；真正目标是只在结论会改变时打断，而不是用停留时间制造形式主义",
+    "本地 local-user identity 和 signature=null 不是强身份；跨机器或发布级决策必须由受保护 SSO/FIDO/KMS 服务重验",
+    "历史已物化的旧式 awaiting_human 工作项不再有批量兼容入口，需要显式 recovery/migration，不能静默覆盖旧 spec",
+    "受保护 JSON Schema 未在普通工作项中修改；decision contract 当前由 Harness 语义校验版本化，后续 Schema authority 迁移需单独受信变更",
+    "candidate 物化仍依赖本地确认按钮，尚未按风险、human decision 和 authority transition 自动分流"
+  ],
+  "next_actions": [
+    "建立 candidate 自动物化策略：低风险、gates=[]、无 authority output、签名 provenance 完整时由 Supervisor 自动进入队列",
+    "修复真实 Codex adapter 参数顺序并固化首次 turn/resume smoke",
+    "给 decision contract 增加来源证据和影响对象引用，减少 AI 通过措辞操纵推荐项",
+    "将本地 decision record 升级为受保护企业身份签名，仅用于真实项目取舍",
+    "实现与 Human Decision 分离的外部 Patch/Knowledge/Golden authority publisher"
+  ],
+  "created_at": "2026-07-28T03:11:51Z"
+}

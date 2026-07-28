@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0018",
+  "revision": 1,
+  "title": "没有具体取舍的批量 Gate 会退化为橡皮图章",
+  "fingerprint": "generic-batch-human-gate-becomes-rubber-stamp",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "页面展示大量文件摘要和 security-review/architecture-review 标签，但没有要求回答任何具体问题",
+    "一个“批准全部”按钮同时生成多份 Approval，点击者无需表达选择",
+    "高风险标签越多，打断越频繁，用户反而形成不阅读直接点击的习惯",
+    "本地点击被误认为安全、架构或发布结论，实际只证明按钮被触发"
+  ],
+  "conditions": [
+    "人工 Gate 仅由字符串名称表达，没有 question、互斥 options、后果和不可机器决定原因",
+    "机器检查、项目取舍和发布授权共用同一种 Approval 记录",
+    "多个 Gate 可以一次提交，UI 以完整文件列表代替最小决策上下文",
+    "新 candidate 可以声明任意非空 gates 而不提供可验证 decision contract"
+  ],
+  "root_cause": "控制面把“需要人工承担责任”误建模成“需要一次点击”，没有区分可重算的机器事实、必须由项目所有者取舍的决策和只能由外部受信主体执行的 authority transition。",
+  "diagnosis": [
+    "检查暂停页面是否提出一个明确问题，并要求从 2～4 个互斥方案中选择",
+    "检查每个选项是否声明后果和可逆性，Decision record 是否绑定 contract hash 与 selected_option",
+    "检查 required checks 是否仍能自动通过，而不是被 risk 标签转换成人工步骤",
+    "检查知识/Golden/Requirement/ADR/patch promotion 是否仍由外部签名 authority 执行"
+  ],
+  "fix": "Harness 新增 gate_contract_version=1 的结构化 decision_gates；Loop Supervisor 拒绝物化带旧式非空 gates 的新 candidate。动态取舍缺合同会返回 UNSTRUCTURED_DECISION_REQUIRED。UI 删除批量 approval endpoint 和“批准全部”按钮，每个会话只提交一个 selected_option；多项决策逐项记录，全部完成后才 close。gates=[] 的工作项在机器证据通过后自动关闭。",
+  "prevention": {
+    "architecture_rule": "人工暂停只能表示机器无法推导的具体项目取舍；每个暂停必须有单一问题、不可机器决定原因、互斥选项、后果、可逆性和推荐项。机器 Gate 不转人工，authority transition 不由本地点击执行。",
+    "tests": [
+      "ios/harness/tests/test_loop_supervisor.py#test_preflight_rejects_legacy_gate_and_accepts_structured_decision",
+      "ios/harness/tests/test_harness.py#test_decision_contract_validation_and_dynamic_gate_are_fail_closed",
+      "ios/harness/tests/test_approval_ui.py#test_each_decision_requires_a_separate_choice_before_close",
+      "ios/harness/tests/test_approval_ui.py#test_legacy_unstructured_gate_has_no_local_bulk_fallback",
+      "ios/harness/tests/test_approval_ui.py#test_missing_unknown_or_cross_gate_option_is_rejected"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-HARNESS-APPROVAL-UI-001",
+    "until": "IOS-DECISION-GATE-POLICY-001"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T031151Z-ios-decision-gate-policy-001-d4d234f5.json"
+  ]
+}

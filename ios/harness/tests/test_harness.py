@@ -849,6 +849,168 @@ class HarnessTests(unittest.TestCase):
             self.assertIn("oracle-adjudication", gates)
             self.assertTrue(any("COMP-0001" in error for error in errors), errors)
 
+    def test_decision_contract_validation_and_dynamic_gate_are_fail_closed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = HarnessFixture(root)
+            harness = fixture.initialize()
+            item = fixture.item("IOS-DECISION-001", "CAP-BOOT", 100)
+            item["spec"]["gates"] = ["oracle-adjudication"]
+            item["spec"]["gate_contract_version"] = 1
+            item["spec"]["decision_gates"] = [
+                {
+                    "gate": "oracle-adjudication",
+                    "trigger": "oracle-difference",
+                    "question": "是否接受这个有证据支持的平台差异？",
+                    "why_human": "两个平台行为都可实现，需要项目所有者决定兼容目标。",
+                    "options": [
+                        {
+                            "id": "accept-difference",
+                            "label": "接受差异",
+                            "consequence": "iOS 保持平台化行为并记录兼容差异。",
+                            "reversible": True,
+                        },
+                        {
+                            "id": "match-android",
+                            "label": "继续对齐 Android",
+                            "consequence": "增加实现成本以保持跨端一致。",
+                            "reversible": True,
+                        },
+                    ],
+                    "recommended_option": "accept-difference",
+                }
+            ]
+            contracts, errors = harness.decision_gate_contracts(item)
+            self.assertEqual([], errors)
+            self.assertEqual(
+                {"oracle-adjudication"},
+                set(contracts),
+            )
+
+            malformed = json.loads(json.dumps(item))
+            malformed["spec"]["decision_gates"][0]["recommended_option"] = "missing"
+            _, errors = harness.decision_gate_contracts(malformed)
+            self.assertTrue(
+                any("recommended_option" in error for error in errors),
+                errors,
+            )
+
+            item_without_decision = fixture.item(
+                "IOS-DECISION-002",
+                "CAP-BOOT",
+                100,
+            )
+            item_without_decision["spec"]["gate_contract_version"] = 1
+            item_without_decision["spec"]["decision_gates"] = []
+            fixture.write_json(
+                "ios/project/compatibility/COMP-0001.json",
+                {
+                    "classification": "intentional_difference",
+                    "decision": "accept_difference",
+                    "decision_adr": "ADR-0001",
+                    "id": "COMP-0001",
+                    "introduced_by": "IOS-DECISION-002",
+                },
+            )
+            gates, errors = harness.required_close_gates(
+                "IOS-DECISION-002",
+                item_without_decision,
+                ["ios/project/compatibility/COMP-0001.json"],
+            )
+            self.assertNotIn("oracle-adjudication", gates)
+            self.assertTrue(
+                any("UNSTRUCTURED_DECISION_REQUIRED" in error for error in errors),
+                errors,
+            )
+
+    def test_structured_decision_record_binds_contract_option_and_evidence(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = HarnessFixture(root)
+            harness = fixture.initialize()
+            item = harness.work_items()["IOS-BOOT-001"]
+            contract = {
+                "gate": "architecture-choice",
+                "trigger": "always",
+                "question": "采用哪个模块边界？",
+                "why_human": "两个方案都通过机器约束，需要项目方向取舍。",
+                "options": [
+                    {
+                        "id": "separate",
+                        "label": "独立模块",
+                        "consequence": "提高替换性并增加模块数。",
+                        "reversible": True,
+                    },
+                    {
+                        "id": "combined",
+                        "label": "合并模块",
+                        "consequence": "减少模块数并提高后续拆分成本。",
+                        "reversible": True,
+                    },
+                ],
+                "recommended_option": "separate",
+            }
+            item["spec"]["gates"] = ["architecture-choice"]
+            item["spec"]["gate_contract_version"] = 1
+            item["spec"]["decision_gates"] = [contract]
+            gate = "architecture-choice"
+            tree = "a" * 64
+            evidence = "b" * 64
+            fixture.write_json(
+                f"ios/project/approvals/IOS-BOOT-001--{gate}.json",
+                {
+                    "schema_version": 1,
+                    "work_item_id": "IOS-BOOT-001",
+                    "gate": gate,
+                    "work_item_sha256": harness_module.sha256_json(item),
+                    "tree_sha256": tree,
+                    "evidence_sha256": evidence,
+                    "decision_contract_sha256": harness_module.sha256_json(
+                        contract
+                    ),
+                    "selected_option": "separate",
+                    "presented_at": "2026-07-28T00:00:00Z",
+                    "decided_at": "2026-07-28T00:01:00Z",
+                    "reviewer": "local-user:test",
+                    "approved_at": "2026-07-28T00:01:00Z",
+                    "expires_at": "2099-07-29T00:01:00Z",
+                    "signature": None,
+                },
+            )
+            self.assertEqual(
+                [],
+                harness.approval_issues(
+                    "IOS-BOOT-001",
+                    item,
+                    tree,
+                    [gate],
+                    requested_at="2026-07-28T00:00:00Z",
+                    evidence_sha256=evidence,
+                ),
+            )
+            approval_path = (
+                root
+                / f"ios/project/approvals/IOS-BOOT-001--{gate}.json"
+            )
+            approval = json.loads(approval_path.read_text())
+            approval["selected_option"] = "not-an-option"
+            fixture.write_json(
+                f"ios/project/approvals/IOS-BOOT-001--{gate}.json",
+                approval,
+            )
+            errors = harness.approval_issues(
+                "IOS-BOOT-001",
+                item,
+                tree,
+                [gate],
+                requested_at="2026-07-28T00:00:00Z",
+                evidence_sha256=evidence,
+            )
+            self.assertTrue(
+                any("selected_option 无效" in error for error in errors),
+                errors,
+            )
+
     def test_claim_verify_and_close_memory_transaction(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
