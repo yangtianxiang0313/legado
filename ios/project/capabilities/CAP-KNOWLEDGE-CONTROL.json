@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 40,
+  "revision": 41,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -60,7 +60,7 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260728T141300Z-ios-business-knowledge-publisher-001-cacdea71.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260728T142556Z-ios-business-knowledge-publisher-yaml-002-ce56c6ea.json",
   "next_actions": [
     "BKP-INTEGRATIONS-001@4 与 DRV-INTEGRATION-PROFILES-001@4 在 Trusted Publisher promotion 前保持 proposal；只有 promotion/accept 决策才要求权威审查",
     "由 Harness/Proposal Compiler 的 recovers 内容寻址合同维持恢复谱系，并用有界 Catalog self-heal 支持控制面中断续跑；下一步由 Trusted Publisher 提升 JSON Schema，并自动重写 recovery Claim supersedes 以关闭 PIT-0012",
@@ -68,6 +68,6 @@
     "由受信 Requirement Publisher 根据 protected sl-html-basic-001 Golden 发布 REQ-ANDROID-SOURCE-PIPELINE-001 的 implementation_ready 新 revision",
     "生成并自动物化 IOS-SOURCE-RUNTIME-HTML-CSS-001 blueprint，执行 first-divergence 纵向交付"
   ],
-  "updated_at": "2026-07-28T14:13:10Z",
-  "updated_by": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-001"
+  "updated_at": "2026-07-28T14:26:00Z",
+  "updated_by": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-YAML-002"
 }

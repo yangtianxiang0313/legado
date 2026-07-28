@@ -227,22 +227,24 @@ jobs:
           git -C publisher commit \
             -m "chore(ios): publish HTML/CSS SourceRuntime knowledge"
           git -C publisher push origin "HEAD:refs/heads/${release_branch}"
+          printf -v pr_body '%s\n' \
+            "Environment-authorized Business Knowledge publication." \
+            "" \
+            "- Publisher run: ${GITHUB_RUN_ID}/${GITHUB_RUN_ATTEMPT}" \
+            "- Publisher source: ${SOURCE_COMMIT}" \
+            "- Packet proposal SHA-256: ${PACKET_PROPOSAL_SHA256}" \
+            "- Driver proposal SHA-256: ${DRIVER_PROPOSAL_SHA256}" \
+            "- Golden receipt SHA-256: ${GOLDEN_RECEIPT_SHA256}" \
+            "- Authority transition: proposal_only → protected_business_knowledge" \
+            "" \
+            "The atomic transaction removes the two promoted proposals and adds only the published Packet, resolved Driver, complete Coverage Ledger, immutable release receipt, and derived Catalog."
           pr_url="$(
             gh pr create \
               --repo "${GITHUB_REPOSITORY}" \
               --base "${TARGET_BRANCH}" \
               --head "${release_branch}" \
               --title "chore(ios): publish HTML/CSS SourceRuntime knowledge" \
-              --body "Environment-authorized Business Knowledge publication.
-
-- Publisher run: ${GITHUB_RUN_ID}/${GITHUB_RUN_ATTEMPT}
-- Publisher source: ${SOURCE_COMMIT}
-- Packet proposal SHA-256: ${PACKET_PROPOSAL_SHA256}
-- Driver proposal SHA-256: ${DRIVER_PROPOSAL_SHA256}
-- Golden receipt SHA-256: ${GOLDEN_RECEIPT_SHA256}
-- Authority transition: proposal_only → protected_business_knowledge
-
-The atomic transaction removes the two promoted proposals and adds only the published Packet, resolved Driver, complete Coverage Ledger, immutable release receipt, and derived Catalog."
+              --body "${pr_body}"
           )"
           printf 'Publisher PR: %s\n' "${pr_url}" \
             | tee -a "${GITHUB_STEP_SUMMARY}"

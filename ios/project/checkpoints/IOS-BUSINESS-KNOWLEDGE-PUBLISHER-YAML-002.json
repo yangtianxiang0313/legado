@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-YAML-002",
+  "summary": "已修复 Business Knowledge Publisher workflow 在真实 workflow_dispatch 时返回 HTTP 422 的语法错误。根因是 gh pr create 的多行双引号 body 退回 YAML 顶层；现在改为在 run block 内以 printf -v 生成 pr_body，并保持 Publisher 的 Environment、actor、HEAD、输入摘要、安装/删除白名单、doctor、Demand Plan 和 PR-only 边界不变。回归测试检查 PR body 不得逃逸 run block，actionlint v1.7.12 对最终 workflow 无诊断；完整 Harness 与 dependency checks 通过。另已通过最小 master PR 登记同 path/inputs 的无权限 bootstrap workflow，满足 GitHub 仅允许默认分支已登记 workflow_dispatch 的平台约束。",
+  "evidence": "ios/harness/evidence/runs/run-20260728T142556Z-ios-business-knowledge-publisher-yaml-002-ce56c6ea.json",
+  "external_evidence": {
+    "failed_dispatch": "HTTP 422 Workflow does not have workflow_dispatch trigger",
+    "default_branch_bootstrap_pr": "https://github.com/yangtianxiang0313/legado/pull/11",
+    "syntax_verifier": "actionlint v1.7.12",
+    "publisher_environment": "business-knowledge-publisher"
+  },
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 40,
+      "to_revision": 41,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": [
+      "ADR-0004"
+    ]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null,
+    "none_reason": "本项修复 Publisher workflow 语法，不修改产品 Requirement"
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项不消费、生成或发布业务知识"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null,
+    "none_reason": "本项只修复 GitHub workflow YAML"
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "Publisher 数据合同和产品兼容语义均未变化"
+  },
+  "pitfalls": {
+    "records": [
+      "ios/project/pitfalls/PIT-0042.json"
+    ],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "修复提交尚需合入目标分支后重新 dispatch",
+    "Environment deployment 需要留下真实 GitHub reviewer 身份记录",
+    "发布 PR 合并前 Demand Plan 仍保持 knowledge_authority_required"
+  ],
+  "next_actions": [
+    "合并 workflow YAML 修复到目标分支",
+    "重新 dispatch Business Knowledge Publisher 并批准 Environment deployment",
+    "审查并合并原子知识发布 PR",
+    "验证 Demand Compiler 进入 requirement_readiness_required"
+  ],
+  "created_at": "2026-07-28T14:26:00Z"
+}
