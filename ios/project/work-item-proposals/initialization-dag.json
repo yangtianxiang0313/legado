@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "InitializationWorkItemProposalDAG",
   "id": "WIPD-IOS-INITIALIZATION-001",
-  "revision": 3,
+  "revision": 4,
   "authority": "proposal_only",
   "status": "proposed",
   "created_by": "IOS-KNOWLEDGE-CONTROL-PLANE-001",
@@ -128,6 +128,14 @@
       "title": "恢复 Golden 发布后可重复基线并实现 Loop Demand Autonomy",
       "outputs": ["可重复 Publisher/DAG 基线", "bound-delivery-blueprint-v1", "普通交付项安全自动物化策略"],
       "gates": [], "constraint": "恢复项必须精确修复已发布 Golden 与可扩展 DAG 暴露的基线假设，并继续原蓝图绑定目标；不得删除测试、回退 Golden、改 accepted Requirement 或绕过恢复谱系"
+    },
+    {
+      "proposal_id": "IOS-ANDROID-POST-FORM-ORACLE-RECOVERY-002", "phase": 9, "class": "control_plane",
+      "recovers": "IOS-ANDROID-POST-FORM-ORACLE-001",
+      "depends_on": ["IOS-SOURCELAB-POST-FORM-001"], "knowledge_mode": "not_applicable",
+      "title": "恢复 candidate SourceLab 的 Android Oracle characterization",
+      "outputs": ["candidate scenario 受限复用合同", "POST Form Android structured candidate evidence", "Oracle 后续 settlement 缺口"],
+      "gates": [], "constraint": "只允许 requirements.mode=characterization 的 Android Oracle 消费已完成上游引入的 candidate scenario；不得把 candidate 当 reference、跳过真实 Android、修改 Fixture/Golden/Publisher/产品或获得发布权限"
     }
   ],
   "compiler_rules": [
