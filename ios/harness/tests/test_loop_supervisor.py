@@ -974,6 +974,152 @@ class MaterializationTests(unittest.TestCase):
                 ),
             )
 
+    def test_android_oracle_workflow_hardening_auto_scope_is_exact(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            item_id = "IOS-TEST-WORKFLOW-HARDENING-001"
+            item = fixture.fixture.item(
+                item_id,
+                "CAP-KNOWLEDGE-CONTROL",
+                100,
+            )
+            item["metadata"]["labels"] = [
+                "external-execution",
+                "workflow-hardening",
+                "android-oracle",
+                "corrective",
+            ]
+            item["spec"]["requirements"] = {
+                "mode": "control_plane",
+                "refs": [],
+                "none_reason": "test",
+            }
+            item["spec"]["knowledge"] = {
+                "mode": "not_applicable",
+            }
+            item["spec"]["scope"]["allow_write"] = [
+                ".github/workflows/android-oracle-attestation.yml",
+                "ios/harness/source-lab/tests/test_source_lab.py",
+                "ios/harness/oracle/README.md",
+                "ios/project/capabilities/CAP-CONFORMANCE.json",
+                f"ios/project/checkpoints/{item_id}.json",
+                "ios/project/pitfalls/PIT-*.json",
+            ]
+            item["spec"]["scope"]["deny_write"] = [
+                ".github/**",
+                "app/**",
+                "modules/**",
+                "ios/Packages/**",
+                "ios/publisher/**",
+                "ios/harness/goldens/**",
+                "ios/harness/oracle/android-runner/**",
+                "ios/project/requirements/**",
+                "ios/project/approvals/**",
+                "ios/project/work-item-proposals/**",
+                "ios/docs/**",
+            ]
+            supervisor = loop_supervisor.LoopSupervisor(
+                fixture.harness
+            )
+
+            self.assertEqual(
+                [],
+                supervisor
+                ._android_oracle_workflow_hardening_scope_issues(
+                    item
+                ),
+            )
+
+            for drift in (
+                ".github/workflows/change.yml",
+                "ios/project/checkpoints/IOS-OTHER-001.json",
+                "ios/publisher/android_golden_publisher.py",
+                "ios/harness/goldens/manifest.json",
+                "ios/Packages/LegadoKit/Package.swift",
+                "ios/Packages/**",
+            ):
+                with self.subTest(drift=drift):
+                    changed = json.loads(json.dumps(item))
+                    changed["spec"]["scope"]["allow_write"].append(
+                        drift
+                    )
+                    self.assertIn(
+                        "AUTO_ANDROID_ORACLE_WORKFLOW_SCOPE_ALLOW_INVALID",
+                        supervisor
+                        ._android_oracle_workflow_hardening_scope_issues(
+                            changed
+                        ),
+                    )
+
+            for field, value in (
+                ("gates", ["approval"]),
+                (
+                    "completion_effects",
+                    {"health": {}, "publisher": {}},
+                ),
+            ):
+                with self.subTest(field=field):
+                    changed = json.loads(json.dumps(item))
+                    changed["spec"][field] = value
+                    self.assertIn(
+                        "AUTO_ANDROID_ORACLE_WORKFLOW_AUTHORITY_INVALID",
+                        supervisor
+                        ._android_oracle_workflow_hardening_scope_issues(
+                            changed
+                        ),
+                    )
+
+    def test_workflow_hardening_requires_every_label_to_bypass_github(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            item = fixture.fixture.item(
+                "IOS-TEST-WORKFLOW-HARDENING-001",
+                "CAP-KNOWLEDGE-CONTROL",
+                100,
+            )
+            required = {
+                "external-execution",
+                "workflow-hardening",
+                "android-oracle",
+                "corrective",
+            }
+            item["spec"]["requirements"]["mode"] = "control_plane"
+            item["spec"]["knowledge"] = {
+                "mode": "not_applicable",
+            }
+            item["spec"]["scope"]["allow_write"] = [
+                ".github/workflows/android-oracle-attestation.yml",
+                "ios/harness/source-lab/tests/test_source_lab.py",
+                "ios/harness/oracle/README.md",
+                "ios/project/capabilities/CAP-CONFORMANCE.json",
+                (
+                    "ios/project/checkpoints/"
+                    "IOS-TEST-WORKFLOW-HARDENING-001.json"
+                ),
+                "ios/project/pitfalls/PIT-*.json",
+            ]
+            supervisor = loop_supervisor.LoopSupervisor(
+                fixture.harness
+            )
+            self.assertFalse(
+                supervisor._auto_scope_allowed(
+                    item["spec"]["scope"]["allow_write"][0]
+                )
+            )
+            for missing in required:
+                with self.subTest(missing=missing):
+                    changed = json.loads(json.dumps(item))
+                    changed["metadata"]["labels"] = sorted(
+                        required - {missing}
+                    )
+                    self.assertIn(
+                        "AUTO_ANDROID_ORACLE_WORKFLOW_AUTHORITY_INVALID",
+                        supervisor
+                        ._android_oracle_workflow_hardening_scope_issues(
+                            changed
+                        ),
+                    )
+
     def test_preflight_rejects_outside_symlink_and_incomplete_dependency(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = MaterializationFixture(Path(directory))
