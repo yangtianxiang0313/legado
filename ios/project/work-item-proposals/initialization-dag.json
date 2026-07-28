@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "InitializationWorkItemProposalDAG",
   "id": "WIPD-IOS-INITIALIZATION-001",
-  "revision": 18,
+  "revision": 19,
   "authority": "proposal_only",
   "status": "proposed",
   "created_by": "IOS-KNOWLEDGE-CONTROL-PLANE-001",
@@ -237,6 +237,13 @@
       "title": "建立 Android Oracle CI packager 的精确自动纠错边界",
       "outputs": ["exact ci_proposal corrective scope", "protected Oracle path denial", "packager repair eligibility"],
       "gates": [], "constraint": "只在 Loop Supervisor 中增加固定 Oracle CI packager 的最小自动纠错策略；精确允许 ci_proposal.py、对应测试/README 与记忆文件，禁止 Workflow、contract、trusted_import、runner、Golden、Publisher、SourceLab、产品和 wildcard"
+    },
+    {
+      "proposal_id": "IOS-GITHUB-ORACLE-PAYLOAD-CANONICALIZATION-001", "phase": 23, "class": "control_plane",
+      "depends_on": ["IOS-GITHUB-ORACLE-PACKAGER-SCOPE-001", "IOS-GITHUB-ORACLE-PUSH-TRIGGER-RECOVERY-002"], "knowledge_mode": "not_applicable",
+      "title": "修复真实 Android Oracle payload 的 canonical-v1 转换",
+      "outputs": ["canonicalized real Android payload", "raw provenance preservation", "real-shape regression coverage"],
+      "gates": [], "constraint": "只修复 ci_proposal.prepare 从 raw Android local-run 到 canonical-v1 payload 的转换，并增加真实形状回归；不得修改 canonicalizer policy、Workflow、contract、trusted_import、runner、Dispatcher、Golden、Publisher、SourceLab 或产品"
     }
   ],
   "compiler_rules": [
