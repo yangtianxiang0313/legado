@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-KNOWLEDGE-PROMOTION-CONTEXT-004",
+  "summary": "Harness doctor 现在能区分“上下文意外丢失”和“proposal 经受信 authority promotion 后被原子替换”。仅当 completed Work Item 的缺失 context 精确匹配 Packet/Driver proposal 路径，且其 Evidence dirty/file fingerprint 或 base commit 冻结了原始摘要，并存在唯一 protected_business_knowledge release receipt 绑定原 path/sha、完成态 producer、producer Evidence、published id/revision/status/path/sha、source commit 和 deletion 时，历史 context 才视为已提升。普通 context、未完成任务、无/多 receipt、producer 未声明 output、Evidence/摘要/identity/authority 漂移和 published 篡改全部 fail closed。该规则同时覆盖 proposal producer 和发布前读取该 proposal 的 completed consumer，解决真实 run 30369032111 在 Business Knowledge doctor 通过后被 Harness doctor 拒绝的问题。33 项 Harness targeted tests、8 项 Publisher tests、完整 Harness verify 与 dependency checks 通过。",
+  "evidence": "ios/harness/evidence/runs/run-20260728T144422Z-ios-knowledge-promotion-context-004-d855a2b2.json",
+  "external_evidence": {
+    "failed_publisher_run": "https://github.com/yangtianxiang0313/legado/actions/runs/30369032111",
+    "business_knowledge_doctor": "passed",
+    "harness_doctor_failure": "completed consumer context pointed to atomically promoted proposal",
+    "authority_mutation": "runner workspace only; no branch or PR created"
+  },
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 42,
+      "to_revision": 43,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": [
+      "ADR-0004"
+    ]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null,
+    "none_reason": "本项修复 Harness 历史上下文验证，不修改产品 Requirement"
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项不消费、生成或发布业务知识"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null,
+    "none_reason": "本项只修复 Harness 控制面"
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "仅增加受信 promotion receipt 的历史 lineage 验证，不改变产品兼容语义"
+  },
+  "pitfalls": {
+    "records": [
+      "ios/project/pitfalls/PIT-0044.json"
+    ],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "修复提交尚需合入目标分支并以新的精确 HEAD 重新 dispatch",
+    "真实 Publisher 的最终 Harness doctor、Demand Compiler 和 PR 创建仍需完成",
+    "Requirement readiness Publisher 尚未实现"
+  ],
+  "next_actions": [
+    "合并 promotion context lineage 修复到目标分支",
+    "使用新 HEAD 重新 dispatch Business Knowledge Publisher",
+    "审查并合并知识发布 PR，验证 requirement_readiness_required",
+    "建立 Requirement Readiness Publisher"
+  ],
+  "created_at": "2026-07-28T14:44:29Z"
+}

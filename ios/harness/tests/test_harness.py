@@ -399,6 +399,197 @@ class HarnessTests(unittest.TestCase):
             errors = harness.validate_references(items)
             self.assertTrue(any("工作项恢复成环" in error for error in errors), errors)
 
+    def test_promoted_knowledge_context_requires_exact_release_lineage(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = HarnessFixture(Path(directory))
+            harness = fixture.initialize()
+            item_id = "IOS-KNOWLEDGE-TEST-001"
+            packet_id = "BKP-TEST-DOMAIN-001"
+            proposal = (
+                "ios/project/business-knowledge/packets/proposals/"
+                f"{packet_id}/r0001.json"
+            )
+            published = (
+                "ios/project/business-knowledge/packets/published/"
+                f"{packet_id}/r0001.json"
+            )
+            producer = fixture.item(item_id, "CAP-BOOT", 80)
+            producer["spec"]["inputs"]["context_files"] = [proposal]
+            producer["spec"]["knowledge"] = {
+                "contract_version": 1,
+                "mode": "produce",
+                "claim_refs": [],
+                "driver_refs": [],
+                "coverage_refs": [],
+                "produces": [
+                    {
+                        "kind": "packet",
+                        "id": packet_id,
+                        "revision": 1,
+                    }
+                ],
+                "expected_ledger_transitions": [],
+                "context_budget": {
+                    "max_claims": 10,
+                    "max_bytes": 10000,
+                },
+                "none_reason": None,
+            }
+            fixture.write_json(
+                f"ios/harness/work-items/{item_id}.json",
+                producer,
+            )
+            items = harness.work_items()
+            state = harness.state()
+
+            proposal_sha = "a" * 64
+            evidence_relative = (
+                "ios/harness/evidence/runs/run-promoted-context.json"
+            )
+            evidence = {
+                "schema_version": 1,
+                "work_item_id": item_id,
+                "result": "passed",
+                "changes": {
+                    "file_fingerprints": {
+                        proposal: f"file:0o644:{proposal_sha}"
+                    }
+                },
+            }
+            fixture.write_json(evidence_relative, evidence)
+            evidence_sha = harness_module.sha256_bytes(
+                (fixture.root / evidence_relative).read_bytes()
+            )
+            state["work_items"][item_id] = {
+                "status": "completed",
+                "last_evidence": evidence_relative,
+                "last_evidence_sha256": evidence_sha,
+            }
+            fixture.write_json(
+                published,
+                {
+                    "schema_version": 1,
+                    "id": packet_id,
+                    "revision": 1,
+                    "status": "published",
+                    "created_by": item_id,
+                },
+            )
+            published_sha = harness_module.sha256_bytes(
+                (fixture.root / published).read_bytes()
+            )
+            receipt_relative = (
+                "ios/project/business-knowledge/releases/"
+                f"{packet_id}-r0001-123-1.json"
+            )
+            receipt = {
+                "schema_version": 1,
+                "kind": "business_knowledge_release",
+                "authority": "protected_business_knowledge",
+                "authorization": "github_environment_review",
+                "source_commit": "b" * 40,
+                "producer": {
+                    "work_item": item_id,
+                    "evidence": evidence_relative,
+                    "evidence_sha256": evidence_sha,
+                },
+                "inputs": {
+                    "packet_proposal": proposal,
+                    "packet_proposal_sha256": proposal_sha,
+                },
+                "bindings": {
+                    "packet": {
+                        "id": packet_id,
+                        "revision": 1,
+                    }
+                },
+                "outputs": {
+                    published: published_sha,
+                },
+                "deletions": [proposal],
+            }
+            fixture.write_json(receipt_relative, receipt)
+
+            errors = harness.validate_references(items, state)
+            self.assertFalse(
+                any(proposal in error for error in errors),
+                errors,
+            )
+
+            consumer_id = "IOS-KNOWLEDGE-CONSUMER-001"
+            consumer = fixture.item(consumer_id, "CAP-BOOT", 70)
+            consumer["spec"]["inputs"]["context_files"] = [proposal]
+            items[consumer_id] = consumer
+            consumer_evidence_relative = (
+                "ios/harness/evidence/runs/"
+                "run-promoted-context-consumer.json"
+            )
+            fixture.write_json(
+                consumer_evidence_relative,
+                {
+                    "schema_version": 1,
+                    "work_item_id": consumer_id,
+                    "result": "passed",
+                    "changes": {
+                        "file_fingerprints": {},
+                        "dirty_snapshot": {
+                            proposal: f"file:0o644:{proposal_sha}"
+                        },
+                    },
+                },
+            )
+            consumer_evidence_sha = harness_module.sha256_bytes(
+                (
+                    fixture.root / consumer_evidence_relative
+                ).read_bytes()
+            )
+            state["work_items"][consumer_id] = {
+                "status": "completed",
+                "last_evidence": consumer_evidence_relative,
+                "last_evidence_sha256": consumer_evidence_sha,
+            }
+            errors = harness.validate_references(items, state)
+            self.assertFalse(
+                any(proposal in error for error in errors),
+                errors,
+            )
+
+            published_path = fixture.root / published
+            original_published = published_path.read_bytes()
+            published_path.write_bytes(original_published + b" ")
+            errors = harness.validate_references(items, state)
+            self.assertTrue(
+                any("PROMOTED_CONTEXT_INVALID" in error for error in errors),
+                errors,
+            )
+            published_path.write_bytes(original_published)
+
+            duplicate = receipt.copy()
+            fixture.write_json(
+                "ios/project/business-knowledge/releases/duplicate.json",
+                duplicate,
+            )
+            errors = harness.validate_references(items, state)
+            self.assertTrue(
+                any(
+                    "PROMOTED_CONTEXT_INVALID receipt count=2" in error
+                    for error in errors
+                ),
+                errors,
+            )
+
+            (fixture.root / receipt_relative).unlink()
+            (
+                fixture.root
+                / "ios/project/business-knowledge/releases/duplicate.json"
+            ).unlink()
+            state["work_items"][item_id]["status"] = "ready"
+            errors = harness.validate_references(items, state)
+            self.assertTrue(
+                any("context file 不存在" in error for error in errors),
+                errors,
+            )
+
     def test_business_knowledge_is_frozen_and_written_to_evidence(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

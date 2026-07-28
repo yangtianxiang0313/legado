@@ -2,13 +2,13 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-28T14:33:30Z
+- 更新时间：2026-07-28T14:45:59Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
 - 下一个可领取工作项：无
-- 最近完成：IOS-BUSINESS-KNOWLEDGE-PUBLISHER-REMOTE-003
+- 最近完成：IOS-KNOWLEDGE-PROMOTION-CONTEXT-004
 
 ## 健康度
 
@@ -34,6 +34,7 @@
 | knowledge_control_plane | `proposal_batch_claim_refs_verified` |
 | knowledge_initialization_dag | `proposal_verified` |
 | knowledge_integrations | `candidate_verified` |
+| knowledge_promotion_context | `receipt_bound` |
 | knowledge_reader_lifecycle | `candidate_verified` |
 | knowledge_revision_tombstones | `v1_verified` |
 | knowledge_source_runtime | `candidate_verified` |
@@ -85,6 +86,7 @@
 | IOS-HARNESS-APPROVAL-UI-001 | 100 | `completed` | IOS-KNOWLEDGE-BOOK-DOMAIN-001 | 提供本地一键人工审批界面 |
 | IOS-HARNESS-TEST-TIMEOUT-RECOVERY-002 | 100 | `completed` | IOS-HARNESS-TIMEOUT-CLEANUP-001 | 校准全量 Harness 测试有效超时预算 |
 | IOS-HARNESS-TIMEOUT-CLEANUP-001 | 100 | `completed` | IOS-HARNESS-APPROVAL-UI-001 | 让 Harness 超时清理失败保留结构化 Evidence |
+| IOS-KNOWLEDGE-PROMOTION-CONTEXT-004 | 100 | `completed` | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-REMOTE-003 | 让 Harness 识别已提升知识 proposal 的历史上下文 |
 | IOS-KNOWLEDGE-SOURCE-RUNTIME-GOLDEN-002 | 100 | `completed` | IOS-ANDROID-GOLDEN-PUBLISHER-001, IOS-LOOP-DEMAND-COMPILER-003 | 从受保护 Android Golden 提炼 HTML/CSS 书源纵向知识 |
 | IOS-KNOWLEDGE-TOMBSTONE-PROTOCOL-001 | 100 | `completed` | IOS-KNOWLEDGE-CONTROL-PLANE-001, IOS-PROPOSAL-LIFECYCLE-RECOVERY-002, IOS-CODEX-AGENT-ADAPTER-COMPAT-002 | 建立失败知识产出 revision tombstone 协议 |
 | IOS-KNOWLEDGE-UI-TOPOLOGY-CONTINUATION-001 | 100 | `cancelled` | IOS-KNOWLEDGE-ANDROID-SURFACES-001, IOS-KNOWLEDGE-BOOK-DOMAIN-001, IOS-KNOWLEDGE-SOURCE-RUNTIME-001, IOS-KNOWLEDGE-READER-LIFECYCLE-001 | 续接并冻结 UI Topology 知识候选 |

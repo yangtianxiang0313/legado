@@ -1462,8 +1462,297 @@ class Harness:
                 )
         return errors, warnings
 
-    def validate_references(self, items: Dict[str, Dict[str, Any]]) -> List[str]:
+    def promoted_knowledge_context(
+        self,
+        item_id: str,
+        item: Dict[str, Any],
+        context: str,
+        state: Dict[str, Any],
+    ) -> Tuple[bool, Optional[str]]:
+        """Validate an immutable proposal context replaced by trusted promotion."""
+
+        proposal_match = re.fullmatch(
+            (
+                r"ios/project/business-knowledge/"
+                r"(packets|drivers)/proposals/"
+                r"((?:BKP|DRV)-[A-Z][A-Z0-9-]*-[0-9]{3})/"
+                r"r([0-9]{4})\.json"
+            ),
+            context,
+        )
+        if proposal_match is None:
+            return False, None
+        category, identifier, raw_revision = proposal_match.groups()
+        kind = "packet" if category == "packets" else "driver"
+        expected_prefix = "BKP-" if kind == "packet" else "DRV-"
+        if not identifier.startswith(expected_prefix):
+            return False, None
+        revision = int(raw_revision)
+
+        runtime = state.get("work_items", {}).get(item_id)
+        if (
+            not isinstance(runtime, dict)
+            or runtime.get("status") != "completed"
+        ):
+            return False, None
+        evidence_relative = runtime.get("last_evidence")
+        evidence_sha256 = runtime.get("last_evidence_sha256")
+        if (
+            not isinstance(evidence_relative, str)
+            or not isinstance(evidence_sha256, str)
+            or re.fullmatch(r"[0-9a-f]{64}", evidence_sha256) is None
+        ):
+            return (
+                False,
+                f"PROMOTED_CONTEXT_INVALID evidence binding：{context}",
+            )
+        evidence_path = self.resolve(evidence_relative)
+        if (
+            evidence_path.is_symlink()
+            or not evidence_path.is_file()
+            or sha256_bytes(evidence_path.read_bytes()) != evidence_sha256
+        ):
+            return (
+                False,
+                f"PROMOTED_CONTEXT_INVALID evidence artifact：{context}",
+            )
+        try:
+            evidence = load_json(evidence_path)
+        except HarnessError:
+            return (
+                False,
+                f"PROMOTED_CONTEXT_INVALID evidence JSON：{context}",
+            )
+        if not isinstance(evidence, dict):
+            return (
+                False,
+                f"PROMOTED_CONTEXT_INVALID evidence object：{context}",
+            )
+        changes = evidence.get("changes")
+        fingerprint = None
+        if isinstance(changes, dict):
+            for section in ("file_fingerprints", "dirty_snapshot"):
+                fingerprints = changes.get(section)
+                if (
+                    isinstance(fingerprints, dict)
+                    and isinstance(fingerprints.get(context), str)
+                ):
+                    fingerprint = fingerprints[context]
+                    break
+        fingerprint_match = re.fullmatch(
+            r"file:0o[0-7]+:([0-9a-f]{64})",
+            fingerprint if isinstance(fingerprint, str) else "",
+        )
+        if (
+            evidence.get("work_item_id") != item_id
+            or evidence.get("result") != "passed"
+        ):
+            return (
+                False,
+                f"PROMOTED_CONTEXT_INVALID consumer evidence：{context}",
+            )
+        if fingerprint_match is not None:
+            proposal_sha256 = fingerprint_match.group(1)
+        else:
+            base_commit = runtime.get("base_commit")
+            if (
+                not isinstance(base_commit, str)
+                or re.fullmatch(r"[0-9a-f]{40}", base_commit) is None
+            ):
+                return (
+                    False,
+                    f"PROMOTED_CONTEXT_INVALID frozen proposal：{context}",
+                )
+            historical = self.run_git(
+                ["show", f"{base_commit}:{context}"],
+                check=False,
+            )
+            if historical.returncode != 0:
+                return (
+                    False,
+                    f"PROMOTED_CONTEXT_INVALID frozen proposal：{context}",
+                )
+            proposal_sha256 = sha256_bytes(historical.stdout)
+
+        published_root = (
+            "ios/project/business-knowledge/packets/published"
+            if kind == "packet"
+            else "ios/project/business-knowledge/drivers/published"
+        )
+        published_relative = (
+            f"{published_root}/{identifier}/r{revision:04d}.json"
+        )
+        published_path = self.resolve(published_relative)
+        if published_path.is_symlink() or not published_path.is_file():
+            return (
+                False,
+                f"PROMOTED_CONTEXT_INVALID published artifact：{context}",
+            )
+        published_sha256 = sha256_bytes(published_path.read_bytes())
+        try:
+            published = load_json(published_path)
+        except HarnessError:
+            return (
+                False,
+                f"PROMOTED_CONTEXT_INVALID published JSON：{context}",
+            )
+        expected_status = "published" if kind == "packet" else {
+            "active",
+            "resolved",
+        }
+        status = published.get("status")
+        if (
+            published.get("id") != identifier
+            or published.get("revision") != revision
+            or (
+                status != expected_status
+                if isinstance(expected_status, str)
+                else status not in expected_status
+            )
+        ):
+            return (
+                False,
+                f"PROMOTED_CONTEXT_INVALID published identity：{context}",
+            )
+
+        proposal_key = (
+            "packet_proposal" if kind == "packet" else "driver_proposal"
+        )
+        proposal_sha_key = f"{proposal_key}_sha256"
+        releases = self.resolve(
+            "ios/project/business-knowledge/releases"
+        )
+        candidates: List[Tuple[Path, Dict[str, Any]]] = []
+        if releases.is_dir() and not releases.is_symlink():
+            for receipt_path in sorted(releases.glob("*.json")):
+                if receipt_path.is_symlink() or not receipt_path.is_file():
+                    continue
+                try:
+                    receipt = load_json(receipt_path)
+                except HarnessError:
+                    continue
+                inputs = receipt.get("inputs")
+                if (
+                    isinstance(inputs, dict)
+                    and inputs.get(proposal_key) == context
+                ):
+                    candidates.append((receipt_path, receipt))
+        if len(candidates) != 1:
+            return (
+                False,
+                f"PROMOTED_CONTEXT_INVALID receipt count={len(candidates)}：{context}",
+            )
+        _, receipt = candidates[0]
+        receipt_producer = receipt.get("producer")
+        receipt_inputs = receipt.get("inputs")
+        receipt_outputs = receipt.get("outputs")
+        receipt_binding = receipt.get("bindings", {}).get(kind)
+        producer_id = (
+            receipt_producer.get("work_item")
+            if isinstance(receipt_producer, dict)
+            else None
+        )
+        producer_runtime = (
+            state.get("work_items", {}).get(producer_id)
+            if isinstance(producer_id, str)
+            else None
+        )
+        producer_item_path = (
+            self.resolve(f"ios/harness/work-items/{producer_id}.json")
+            if isinstance(producer_id, str)
+            else None
+        )
+        producer_item: Any = None
+        if (
+            isinstance(producer_runtime, dict)
+            and producer_runtime.get("status") == "completed"
+            and isinstance(producer_item_path, Path)
+            and producer_item_path.is_file()
+            and not producer_item_path.is_symlink()
+        ):
+            try:
+                producer_item = load_json(producer_item_path)
+            except HarnessError:
+                producer_item = None
+        producer_outputs = (
+            producer_item.get("spec", {})
+            .get("knowledge", {})
+            .get("produces", [])
+            if isinstance(producer_item, dict)
+            else []
+        )
+        producer_declared = any(
+            isinstance(output, dict)
+            and output.get("kind") == kind
+            and output.get("id") == identifier
+            and output.get("revision") == revision
+            for output in producer_outputs
+        )
+        producer_evidence_relative = (
+            producer_runtime.get("last_evidence")
+            if isinstance(producer_runtime, dict)
+            else None
+        )
+        producer_evidence_sha256 = (
+            producer_runtime.get("last_evidence_sha256")
+            if isinstance(producer_runtime, dict)
+            else None
+        )
+        producer_evidence_path = (
+            self.resolve(producer_evidence_relative)
+            if isinstance(producer_evidence_relative, str)
+            else None
+        )
+        producer_evidence_valid = (
+            isinstance(producer_evidence_path, Path)
+            and producer_evidence_path.is_file()
+            and not producer_evidence_path.is_symlink()
+            and isinstance(producer_evidence_sha256, str)
+            and sha256_bytes(producer_evidence_path.read_bytes())
+            == producer_evidence_sha256
+        )
+        if (
+            receipt.get("kind") != "business_knowledge_release"
+            or receipt.get("authority") != "protected_business_knowledge"
+            or receipt.get("authorization")
+            != "github_environment_review"
+            or re.fullmatch(
+                r"[0-9a-f]{40}",
+                str(receipt.get("source_commit", "")),
+            )
+            is None
+            or not isinstance(receipt_producer, dict)
+            or not producer_declared
+            or not producer_evidence_valid
+            or published.get("created_by") != producer_id
+            or receipt_producer.get("evidence")
+            != producer_evidence_relative
+            or receipt_producer.get("evidence_sha256")
+            != producer_evidence_sha256
+            or not isinstance(receipt_inputs, dict)
+            or receipt_inputs.get(proposal_sha_key)
+            != proposal_sha256
+            or not isinstance(receipt_outputs, dict)
+            or receipt_outputs.get(published_relative)
+            != published_sha256
+            or context not in receipt.get("deletions", [])
+            or not isinstance(receipt_binding, dict)
+            or receipt_binding.get("id") != identifier
+            or receipt_binding.get("revision") != revision
+        ):
+            return (
+                False,
+                f"PROMOTED_CONTEXT_INVALID receipt binding：{context}",
+            )
+        return True, None
+
+    def validate_references(
+        self,
+        items: Dict[str, Dict[str, Any]],
+        state: Optional[Dict[str, Any]] = None,
+    ) -> List[str]:
         errors: List[str] = []
+        state = state if isinstance(state, dict) else self.state()
         architecture_text = self.resolve("ios/docs/architecture.md").read_text(encoding="utf-8")
         adr_dir = self.resolve("ios/docs/adr")
         adr_text = "\n".join(path.read_text(encoding="utf-8") for path in sorted(adr_dir.glob("[0-9][0-9][0-9][0-9]-*.md")))
@@ -1492,7 +1781,21 @@ class Harness:
             inputs = spec.get("inputs", {})
             for context in inputs.get("context_files", []):
                 if not self.resolve(context).exists():
-                    errors.append(f"{item_id}: context file 不存在：{context}")
+                    promoted, issue = self.promoted_knowledge_context(
+                        item_id,
+                        item,
+                        context,
+                        state,
+                    )
+                    if not promoted:
+                        errors.append(
+                            f"{item_id}: "
+                            + (
+                                issue
+                                if issue is not None
+                                else f"context file 不存在：{context}"
+                            )
+                        )
             capability_id = spec.get("capability")
             try:
                 capability = self.capability(capability_id)
@@ -1935,7 +2238,7 @@ class Harness:
             errors.append("没有工作项")
         for item_id, item in items.items():
             errors.extend(self.validate_work_item(item, item_id))
-        errors.extend(self.validate_references(items))
+        errors.extend(self.validate_references(items, state))
         errors.extend(self.memory_issues(items, state))
         if state.get("schema_version") != 1:
             errors.append("state.schema_version 必须为 1")
