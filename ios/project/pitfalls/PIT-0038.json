@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0038",
+  "revision": 1,
+  "title": "队列为空不代表交付需求已经耗尽",
+  "fingerprint": "queue-empty-hides-authority-prerequisites",
+  "capabilities": ["CAP-KNOWLEDGE-CONTROL", "CAP-RUNTIME-PORTS"],
+  "symptoms": [
+    "SourceRuntime 明确存在下一交付目标且 protected Android Golden 已发布，Supervisor 仍返回 queue_empty",
+    "产品实现蓝图无法创建，因为 SourceRuntime 知识仍是 proposal，Requirement readiness 仍引用已消失的 Golden blocker"
+  ],
+  "conditions": [
+    "Loop 只枚举已物化 Work Item、compiled candidate 和现有 delivery blueprint",
+    "交付目标仅存在于自然语言 next_actions，缺少结构化 Capability/Requirement/Knowledge/Golden selectors"
+  ],
+  "root_cause": "控制面没有把长期交付意图建模为一等输入，因此只能看见队列中的执行节点，看不见节点生成前的知识发布、需求成熟度与蓝图前置链。",
+  "diagnosis": [
+    "在 queue_empty 时对照 Capability next_actions、accepted Requirement readiness、Business Knowledge Catalog 与 Golden manifest",
+    "确认缺口属于普通实现、机器可验证 Authority Transition 还是 Human Decision",
+    "检查交付目标是否有 HEAD 中的结构化 Delivery Intent"
+  ],
+  "fix": "引入 structured-delivery-intent-v1 与 Demand Compiler。Intent 显式绑定目标 Work Item、Capability、Requirement、published Knowledge、protected Golden 和 blueprint；编译器按 knowledge authority、Requirement readiness、blueprint、delivery 的固定顺序输出最短链，Supervisor 只在不存在 Intent 时报告 queue_empty。",
+  "prevention": {
+    "architecture_rule": "队列状态只描述当前可执行节点；长期交付需求必须由内容寻址的 Delivery Intent 表达，并在 queue_empty 前完成需求编译。",
+    "tests": [
+      "ios/harness/tests/test_demand_compiler.py#test_compiles_shortest_authority_and_delivery_chain",
+      "ios/harness/tests/test_demand_compiler.py#test_receipt_tamper_and_uncommitted_intent_fail_closed",
+      "ios/harness/tests/test_loop_supervisor.py#test_inspect_surfaces_authority_demand_instead_of_queue_empty"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-LOOP-DEMAND-AUTONOMY-RECOVERY-002",
+    "until": "IOS-LOOP-DEMAND-COMPILER-003"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T134422Z-ios-loop-demand-compiler-003-7ad7e157.json"
+  ]
+}

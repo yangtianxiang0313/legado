@@ -242,6 +242,51 @@ class MaterializationFixture:
 
 
 class MaterializationTests(unittest.TestCase):
+    def test_inspect_surfaces_authority_demand_instead_of_queue_empty(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            state = fixture.harness.state()
+            for runtime in state["work_items"].values():
+                runtime["status"] = "superseded"
+            fixture.fixture.write_json("ios/project/state.json", state)
+            fixture.refresh_status()
+            plan = loop_supervisor.DemandPlan(
+                intent_id="DINT-SOURCE-RUNTIME-HTML-CSS-001",
+                priority=100,
+                target_work_item_id="IOS-SOURCE-RUNTIME-HTML-CSS-001",
+                state="knowledge_authority_required",
+                reason_code="KNOWLEDGE_AUTHORITY_REQUIRED",
+                authority_transition=True,
+                artifacts=(),
+                bindings={},
+            )
+            with mock.patch.object(
+                loop_supervisor.DemandCompiler,
+                "plans",
+                return_value=((plan,), ()),
+            ), mock.patch.object(
+                fixture.harness,
+                "doctor",
+                return_value=([], []),
+            ):
+                decision = loop_supervisor.LoopSupervisor(
+                    fixture.harness
+                ).inspect()
+            self.assertEqual(
+                "authority_transition_required",
+                decision.state,
+            )
+            self.assertEqual(
+                "KNOWLEDGE_AUTHORITY_REQUIRED",
+                decision.reason_code,
+            )
+            self.assertFalse(decision.requires_human)
+            self.assertTrue(decision.details["authority_transition"])
+            self.assertEqual(
+                "IOS-SOURCE-RUNTIME-HTML-CSS-001",
+                decision.work_item_id,
+            )
+
     def test_preflight_rejects_outside_symlink_and_incomplete_dependency(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = MaterializationFixture(Path(directory))

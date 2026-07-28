@@ -112,6 +112,16 @@ python3 ios/harness/loop_supervisor.py materialize-review \
   manifest、entitlement、migration、CI、ADR、Schema、Golden、Requirement 或 Approval；
 - 已存在受阻/终态任务时，若编译器提供唯一且内容寻址的 `recovers` 候选，Supervisor
   会先自动物化该 Recovery Work Item，不再把“已有恢复方案”误报成人工恢复决策；
+- 当队列、编译候选和交付蓝图都为空时，Supervisor 最后读取
+  `ios/project/delivery-intents/*.json`。`structured-delivery-intent-v1` 只接受 HEAD
+  中显式声明的目标 Work Item、Capability revision、Requirement revision/clauses、
+  published Packet/Driver、protected Golden selector 和 blueprint path，并按固定顺序
+  编译最短链：`knowledge_authority_required → requirement_readiness_required →
+  blueprint_required → delivery_ready`。因此“尚缺上游权威输入”不再被误报为
+  `queue_empty`；
+- Demand Plan 中的 `authority_transition=true` 不等于 Human Decision，也不授予普通
+  Agent 写 accepted/published/protected 路径的权限；它表示下一步应由受信 Publisher
+  消费已绑定的机器证据。只有产品取舍无法由证据推导时才 `requires_human=true`；
 - `materialize-review` 仅保留为自动策略无法覆盖时的显式恢复入口，不是正常推进 Gate；
 - CLI 没有非交互 `materialize` 或 `approve`，也不会更新 golden、发布知识或接受 ADR。
 
@@ -126,6 +136,15 @@ E2E。它足以在单机、单写者、真实 Human Decision 保留的前提下�
 后二者仍必须按下节暂停。跨机器无人值守、并行 DAG 调度、
 签名控制状态、真实 Integrations 扫描和发布晋级，仍必须由隔离、签名的外部
 Supervisor/CI 重验；这些属于下一阶段，不由本地 adapter 冒充。
+
+可单独查看当前需求链：
+
+```bash
+python3 -B ios/harness/demand_compiler.py --root . plan
+```
+
+输出中的 artifact path、revision 与 SHA-256 是后续 Publisher/blueprint 的输入绑定，
+不能用 Capability `next_actions` 文案、标题或测试结果替代。
 
 ## Machine Gate、Human Decision 与 Authority Transition
 

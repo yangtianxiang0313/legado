@@ -38,6 +38,7 @@ try:
         sha256_json,
     )
     from .harness import Harness, HarnessError, path_matches
+    from .demand_compiler import DemandCompiler, DemandPlan
     from .proposal_compiler import (
         COMPILER_VERSION,
         DAG_PATH,
@@ -59,6 +60,7 @@ except ImportError:
         sha256_json,
     )
     from harness import Harness, HarnessError, path_matches  # type: ignore
+    from demand_compiler import DemandCompiler, DemandPlan  # type: ignore
     from proposal_compiler import (  # type: ignore
         COMPILER_VERSION,
         DAG_PATH,
@@ -1047,6 +1049,61 @@ class LoopSupervisor:
             }
         return tied[0], None
 
+    def _demand_decision(
+        self,
+        warnings: Sequence[str],
+    ) -> Optional[LoopDecision]:
+        if not isinstance(self.harness, Harness):
+            return None
+        plans, blockers = DemandCompiler(self.harness.root).plans()
+        if blockers:
+            return LoopDecision(
+                state="demand_invalid",
+                reason_code="DELIVERY_INTENT_INVALID",
+                work_item_id=None,
+                requires_human=False,
+                blockers=blockers,
+                warnings=tuple(warnings),
+            )
+        if not plans:
+            return None
+        highest = plans[0].priority
+        tied = [plan for plan in plans if plan.priority == highest]
+        if len(tied) != 1:
+            return LoopDecision(
+                state="demand_blocked",
+                reason_code="DELIVERY_INTENT_PRIORITY_AMBIGUOUS",
+                work_item_id=None,
+                requires_human=False,
+                blockers=(
+                    {
+                        "priority": highest,
+                        "intent_ids": [plan.intent_id for plan in tied],
+                    },
+                ),
+                warnings=tuple(warnings),
+            )
+        plan = tied[0]
+        state_mapping = {
+            "knowledge_authority_required": "authority_transition_required",
+            "requirement_readiness_required": (
+                "authority_transition_required"
+            ),
+            "blueprint_required": "demand_materialization_required",
+            "delivery_ready": "demand_inconsistent",
+        }
+        return LoopDecision(
+            state=state_mapping[plan.state],
+            reason_code=plan.reason_code,
+            work_item_id=plan.target_work_item_id,
+            requires_human=False,
+            warnings=tuple(warnings),
+            details={
+                "authority_transition": plan.authority_transition,
+                "demand_plan": plan.to_dict(),
+            },
+        )
+
     def inspect(self) -> LoopDecision:
         errors, warnings = self.harness.doctor()
         if errors:
@@ -1349,6 +1406,9 @@ class LoopSupervisor:
             blocked_state = "delivery_materialization_blocked"
             blocked_reason = "DELIVERY_MATERIALIZATION_BLOCKED"
         else:
+            demand_decision = self._demand_decision(warnings)
+            if demand_decision is not None:
+                return demand_decision
             blocked_state = "queue_empty"
             blocked_reason = "NO_ELIGIBLE_COMPILED_CANDIDATE"
         return LoopDecision(
