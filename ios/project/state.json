@@ -1,16 +1,14 @@
 {
   "schema_version": 1,
-  "revision": 259,
+  "revision": 260,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-28T11:43:01Z",
-  "event_head": "7bea500037404328e929150071839f00021db3f5241e513e72e223d5a1d02bae",
-  "active_work_items": [
-    "IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-009"
-  ],
-  "last_completed_work_item": "IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-008",
+  "updated_at": "2026-07-28T11:55:17Z",
+  "event_head": "2877942997530f8727e5e121011b79a2b3561b557260dafa77e2f786b1aa4e12",
+  "active_work_items": [],
+  "last_completed_work_item": "IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-009",
   "work_items": {
     "IOS-BOOT-001": {
       "status": "completed",
@@ -4250,7 +4248,7 @@
       "final_tree_sha256": "e5066d2043927c3704e77f0391cada4937bdb353d1ea6b616e1435b9bd0de068"
     },
     "IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-009": {
-      "status": "verified",
+      "status": "completed",
       "attempt": 1,
       "last_evidence": "ios/harness/evidence/runs/run-20260728T114301Z-ios-android-oracle-attestation-recovery-009-a93dff93.json",
       "claimed_by": "codex-root",
@@ -4259,7 +4257,6 @@
       "work_item_sha256": "0e70f97711cebddbc7e9467e7a9442eb2cbc5f30eae0f058beb1336f4db3e1a2",
       "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
       "base_commit": "eb78dd968f2951512228b6aa7d83c5364d3d8db1",
-      "base_dirty_fingerprints": {},
       "base_capability_revision": 13,
       "base_capability_assurance_sha256": "b1d5a642fed3770f6a005218976f4672aeb74fd477f5c7cea1368c87fea2c2f5",
       "android_requirement_selection_sha256": "6cb1587d0631c4545b1740d0377a0497d38d9876e6a4eff359ef5c610fa4a169",
@@ -4303,11 +4300,9 @@
         }
       ],
       "last_evidence_sha256": "dba3fa7d67ce2dd2f85615d14421165b11828f27a6c6ca656791cc5f7a794140",
-      "verified_product_fingerprints": {
-        "ios/harness/oracle/trusted_import.py": "file:0o644:21427f1c01db272f473332f8e56a6fefab394c4f54c5252f738d57b92d36d428",
-        "ios/harness/tests/test_oracle_trusted_import.py": "file:0o644:43aa4e91049923797bef2eb77d2579a6850ed9242ba34ea01d2ab61ce454c059"
-      },
-      "verified_at": "2026-07-28T11:43:01Z"
+      "verified_at": "2026-07-28T11:43:01Z",
+      "completed_at": "2026-07-28T11:55:17Z",
+      "final_tree_sha256": "d78b5c6a06cd4039558ffa1321f2b417c9799d99320cf1dbf6a33c3006896c93"
     }
   },
   "health": {
@@ -4316,7 +4311,7 @@
     "android_intake": "fact_inventory_ready",
     "requirements": "catalog_ready_one_characterization_gap",
     "ios_build": "package_verified",
-    "android_oracle": "kvm_access_verified",
+    "android_oracle": "trusted_candidate_verified",
     "conformance": "scaffold_verified",
     "source_lab": "fixture_transport_integrated",
     "knowledge_control_plane": "proposal_batch_claim_refs_verified",

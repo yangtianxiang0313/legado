@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-CONFORMANCE",
-  "revision": 13,
+  "revision": 14,
   "title": "离线 Fixture 与双端执行 Envelope",
   "area": "conformance",
   "contract": "ios/docs/testing-and-conformance.md",
@@ -20,13 +20,11 @@
   "blockers": [],
   "required_evidence": ["android-intake-contract", "dependency-policy", "source-lab-contract", "source-lab-tests", "source-lab-smoke", "swift-package-tests", "architecture"],
   "freshness_inputs": ["baseline_sha256", "architecture_digest_sha256", "architecture_rules_sha256", "harness_config_sha256", "dependency_lock_sha256", "source_lab_control_sha256", "source_lab_selection_sha256", "android_intake_control_sha256", "android_requirement_selection_sha256"],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260728T112703Z-ios-android-oracle-attestation-recovery-008-4b273bf2.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260728T114301Z-ios-android-oracle-attestation-recovery-009-a93dff93.json",
   "next_actions": [
-    "让 trusted_import 的 provenance identity 精确匹配 GitHub 当前 SLSA v1：workflow path 无前导斜杠、builder id 为 signer workflow URI",
-    "对 run 30354845160 的双 archive/attestation 重新执行 trusted_import.py 并审查结构化 candidate-only 报告",
-    "由独立 Publisher 审查 Android portable mapping、workflow/source digest 与双 attestation 后原子发布首个受保护 Android golden",
+    "由独立 Publisher 审查 run 30355913470 的 Android portable mapping、workflow/source digest 与双 attestation 后原子发布首个受保护 Android golden",
     "Golden 发布后创建 SourceRuntime HTML/CSS 纵向实现工作项，令 iOS ConformanceCLI 产出相同 source_pipeline portable projection，并执行 first-divergence exact comparison"
   ],
-  "updated_at": "2026-07-28T11:39:51Z",
-  "updated_by": "IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-008"
+  "updated_at": "2026-07-28T11:54:40Z",
+  "updated_by": "IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-009"
 }

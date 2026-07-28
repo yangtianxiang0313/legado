@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0035",
+  "revision": 1,
+  "title": "模拟的 attestation provenance shape 会拒绝真实 GitHub 证明",
+  "fingerprint": "trusted-import-slsa-provenance-shape-drift",
+  "capabilities": ["CAP-CONFORMANCE"],
+  "symptoms": ["gh attestation verify 成功", "archive 与 bundle 摘要正确", "trusted_import 返回 ATTESTATION_PROVENANCE_IDENTITY_DRIFT"],
+  "conditions": ["单元测试把 workflow.path 模拟为带前导斜杠", "单元测试把 builder.id 模拟为通用 hosted-runner URI"],
+  "root_cause": "导入器的二次 identity 校验来自手写模拟而非真实 GitHub SLSA v1 报告；当前报告使用仓库相对 workflow path，并以完整 signer workflow URI 作为 builder id。",
+  "diagnosis": ["保留 gh attestation verify 的结构化 JSON", "逐字段比较 externalParameters.workflow、runDetails.builder 和 invocationId", "确认 CLI 仍启用 source-digest、signer-workflow 与 deny-self-hosted-runners"],
+  "fix": "workflow.path 精确绑定固定仓库相对路径，builder.id 精确绑定同一 repository/path@ref；新增 path、builder 与 invocation 三类反向漂移测试。run 30355913470 四件套已通过可信导入。",
+  "prevention": {"architecture_rule": "外部证明格式必须用真实只读样本校准，同时保留严格的 repository、path、ref、builder、run、source 与 runner identity 负向测试。", "tests": ["ios/harness/tests/test_oracle_trusted_import.py"], "lint": []},
+  "affected_versions": {"from": "IOS-ANDROID-ORACLE-ATTESTATION-001", "until": "IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-009"},
+  "status": "resolved",
+  "occurrences": 2,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": ["https://github.com/yangtianxiang0313/legado/actions/runs/30354845160", "https://github.com/yangtianxiang0313/legado/actions/runs/30355913470", "ios/harness/evidence/runs/run-20260728T114301Z-ios-android-oracle-attestation-recovery-009-a93dff93.json"]
+}
