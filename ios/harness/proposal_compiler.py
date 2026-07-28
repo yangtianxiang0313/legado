@@ -165,6 +165,22 @@ class ProposalCompiler:
                 matches.append(candidate_id)
         return matches
 
+    @staticmethod
+    def _explicit_recoveries(
+        item_id: str,
+        items: Mapping[str, Mapping[str, Any]],
+        state_items: Mapping[str, Mapping[str, Any]],
+    ) -> List[str]:
+        return sorted(
+            candidate_id
+            for candidate_id, candidate in items.items()
+            if candidate_id != item_id
+            and candidate.get("spec", {}).get("recovers") == item_id
+            and isinstance(state_items.get(candidate_id), Mapping)
+            and state_items.get(candidate_id, {}).get("status")
+            != "superseded"
+        )
+
     def resolve_dependency(
         self,
         item_id: str,
@@ -173,6 +189,7 @@ class ProposalCompiler:
     ) -> Mapping[str, Any]:
         chain: List[str] = []
         current = item_id
+        followed_explicit_recovery = False
         while True:
             if current in chain:
                 return {
@@ -198,7 +215,11 @@ class ProposalCompiler:
                     "reason_code": (
                         "DIRECT_COMPLETION"
                         if current == item_id
-                        else "EXPLICIT_REPLACEMENT"
+                        else (
+                            "EXPLICIT_RECOVERY_LINEAGE"
+                            if followed_explicit_recovery
+                            else "EXPLICIT_REPLACEMENT"
+                        )
                     ),
                     "resolved": current,
                     "chain": chain,
@@ -208,6 +229,23 @@ class ProposalCompiler:
                 current = replacement
                 continue
             if status in TERMINAL_STATUSES:
+                explicit = self._explicit_recoveries(
+                    current,
+                    items,
+                    state_items,
+                )
+                if len(explicit) == 1:
+                    followed_explicit_recovery = True
+                    current = explicit[0]
+                    continue
+                if len(explicit) > 1:
+                    return {
+                        "original": item_id,
+                        "status": "unresolved",
+                        "reason_code": "RECOVERY_AMBIGUOUS",
+                        "candidates": explicit,
+                        "chain": chain,
+                    }
                 matches = self._semantic_recoveries(current, items, state_items)
                 if len(matches) == 1:
                     chain.append(matches[0])

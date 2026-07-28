@@ -1766,6 +1766,81 @@ class HarnessTests(unittest.TestCase):
             self.assertEqual("failed", evidence["result"])
             self.assertTrue(any("INDEX_DIRTY" in error for error in evidence["policy_errors"]))
 
+    def test_completed_nested_recovery_binds_all_ancestors(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = HarnessFixture(root)
+            harness = fixture.initialize()
+            original = fixture.item(
+                "IOS-ORIGINAL-001",
+                "CAP-BOOT",
+                80,
+            )
+            first = fixture.item(
+                "IOS-RECOVERY-002",
+                "CAP-BOOT",
+                80,
+            )
+            first["spec"]["recovers"] = "IOS-ORIGINAL-001"
+            second = fixture.item(
+                "IOS-RECOVERY-003",
+                "CAP-BOOT",
+                80,
+            )
+            second["spec"]["recovers"] = "IOS-RECOVERY-002"
+            for item in (original, first, second):
+                fixture.write_json(
+                    "ios/harness/work-items/"
+                    + item["metadata"]["id"]
+                    + ".json",
+                    item,
+                )
+            state = harness.state()
+            state["work_items"].update(
+                {
+                    "IOS-ORIGINAL-001": {"status": "rejected"},
+                    "IOS-RECOVERY-002": {"status": "rejected"},
+                    "IOS-RECOVERY-003": {"status": "verified"},
+                }
+            )
+            runtime = {
+                "last_evidence": "evidence.json",
+                "last_evidence_sha256": "a" * 64,
+            }
+
+            harness.bind_recovery(
+                "IOS-RECOVERY-003",
+                second,
+                state,
+                runtime,
+            )
+
+            self.assertEqual(
+                "IOS-RECOVERY-002",
+                state["work_items"]["IOS-ORIGINAL-001"][
+                    "replacement"
+                ],
+            )
+            self.assertEqual(
+                "IOS-RECOVERY-003",
+                state["work_items"]["IOS-RECOVERY-002"][
+                    "replacement"
+                ],
+            )
+            recovery_events = [
+                event
+                for event in harness.event_lines()
+                if event.get("event") == "WorkItemRecoveryBound"
+            ]
+            self.assertEqual(2, len(recovery_events))
+            self.assertTrue(
+                all(
+                    event["payload"]["resolution"]
+                    == "IOS-RECOVERY-003"
+                    for event in recovery_events
+                )
+            )
+
     def test_verify_sees_both_sides_of_protected_rename(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

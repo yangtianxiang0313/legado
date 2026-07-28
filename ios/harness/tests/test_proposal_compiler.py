@@ -418,6 +418,55 @@ class ProposalCompilerTests(unittest.TestCase):
                     / f"{proposal_compiler.CANDIDATE_ROOT}/IOS-COMPILE-TARGET-001.json"
                 ).exists()
             )
+
+    def test_unbound_recovery_of_recovery_resolves_explicit_lineage(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = CompilerFixture(Path(directory))
+            original = fixture.item("IOS-ORIGINAL-001")
+            first = fixture.item("IOS-RECOVERY-002")
+            first["spec"]["recovers"] = "IOS-ORIGINAL-001"
+            second = fixture.item("IOS-RECOVERY-003")
+            second["spec"]["recovers"] = "IOS-RECOVERY-002"
+            for item in (original, first, second):
+                fixture.fixture.write_json(
+                    "ios/harness/work-items/"
+                    + item["metadata"]["id"]
+                    + ".json",
+                    item,
+                )
+            state = fixture.harness.state()
+            state["work_items"].update(
+                {
+                    "IOS-ORIGINAL-001": {"status": "rejected"},
+                    "IOS-RECOVERY-002": {"status": "rejected"},
+                    "IOS-RECOVERY-003": {"status": "completed"},
+                }
+            )
+            fixture.fixture.write_json(
+                "ios/project/state.json",
+                state,
+            )
+            compiler = fixture.compiler()
+
+            result = compiler.resolve_dependency(
+                "IOS-ORIGINAL-001",
+                compiler.harness.work_items(),
+                compiler.harness.state()["work_items"],
+            )
+
+            self.assertEqual("resolved", result["status"])
+            self.assertEqual(
+                "EXPLICIT_RECOVERY_LINEAGE",
+                result["reason_code"],
+            )
+            self.assertEqual(
+                [
+                    "IOS-ORIGINAL-001",
+                    "IOS-RECOVERY-002",
+                    "IOS-RECOVERY-003",
+                ],
+                result["chain"],
+            )
             self.assertFalse(
                 (
                     fixture.root

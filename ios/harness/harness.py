@@ -4191,20 +4191,64 @@ class Harness:
         predecessor_id = item.get("spec", {}).get("recovers")
         if not isinstance(predecessor_id, str):
             return
-        predecessor_runtime = state["work_items"][predecessor_id]
+        items = self.work_items()
+        bindings: List[Tuple[str, str]] = []
+        replacement_id = item_id
+        seen: Set[str] = {item_id}
+        while isinstance(predecessor_id, str) and predecessor_id:
+            if predecessor_id in seen:
+                raise HarnessError(
+                    "recovery lineage 在完成绑定时成环："
+                    + " -> ".join([*seen, predecessor_id])
+                )
+            seen.add(predecessor_id)
+            predecessor_runtime = state["work_items"].get(
+                predecessor_id
+            )
+            if not isinstance(predecessor_runtime, dict):
+                raise HarnessError(
+                    f"recovery lineage predecessor 不存在：{predecessor_id}"
+                )
+            existing = predecessor_runtime.get("replacement")
+            if existing not in {None, replacement_id}:
+                raise HarnessError(
+                    "recovery lineage predecessor 已绑定不同 replacement："
+                    f"{predecessor_id}->{existing}"
+                )
+            bindings.append((predecessor_id, replacement_id))
+            predecessor_item = items.get(predecessor_id, {})
+            ancestor = predecessor_item.get("spec", {}).get("recovers")
+            if (
+                predecessor_runtime.get("status")
+                not in RECOVERABLE_STATUSES
+                or not isinstance(ancestor, str)
+                or not ancestor
+            ):
+                break
+            replacement_id = predecessor_id
+            predecessor_id = ancestor
+
         bound_at = utc_now()
-        predecessor_runtime["replacement"] = item_id
-        predecessor_runtime["replacement_bound_at"] = bound_at
-        self.append_event(
-            "WorkItemRecoveryBound",
-            predecessor_id,
-            {
-                "replacement": item_id,
-                "recovery_work_item_sha256": sha256_json(item),
-                "evidence": runtime["last_evidence"],
-                "evidence_sha256": runtime.get("last_evidence_sha256"),
-            },
-        )
+        for predecessor_id, replacement_id in bindings:
+            predecessor_runtime = state["work_items"][predecessor_id]
+            predecessor_runtime["replacement"] = replacement_id
+            predecessor_runtime["replacement_bound_at"] = bound_at
+            replacement_item = items.get(replacement_id, item)
+            self.append_event(
+                "WorkItemRecoveryBound",
+                predecessor_id,
+                {
+                    "replacement": replacement_id,
+                    "resolution": item_id,
+                    "recovery_work_item_sha256": sha256_json(
+                        replacement_item
+                    ),
+                    "evidence": runtime["last_evidence"],
+                    "evidence_sha256": runtime.get(
+                        "last_evidence_sha256"
+                    ),
+                },
+            )
 
     def close(self, item_id: str) -> str:
         items = self.work_items()
