@@ -118,6 +118,16 @@ python3 ios/harness/loop_supervisor.py materialize-review \
   `.harness-runtime/github-oracle/<execution-id>.json`；该 journal 不是 receipt、
   Evidence 或发布权威。成功 run 仍须独立下载、双证明 trusted import 与 receipt
   settlement；
+- Receipt Settlement corrective 候选只有同时带
+  `external-execution`、`android-oracle`、`receipt-settlement`、`corrective`
+  四个标签，且为无 Gate 的 control-plane、Business Knowledge 与 SourceLab 均
+  `not_applicable` 时，才进入专用自动策略。其 `allow_write` 必须精确等于 receipt
+  settler/测试、Demand Compiler/测试、Loop Supervisor/测试、本 README、
+  CAP-KNOWLEDGE-CONTROL、当前 Work Item Checkpoint 与 PIT；缺项、重复、额外路径、
+  wildcard 或其他 Work Item Checkpoint 一律拒绝。Workflow、Oracle
+  contract/packager/trusted import/runner、Dispatcher、Golden、Publisher、Fixture、
+  SourceLab、Requirement、业务知识、Approval、产品、Package 与架构路径必须保持
+  deny；缺少任一专用标签的候选继续走普通自动策略，不获得这些额外写权限；
 - 显式启用 `supervisor-owned-verification-v1` 后，单次工作项按 Agent edit →
   Supervisor verify → Agent memory → Supervisor close 推进。Agent 不能通过直接调用
   `verify/close` 改变控制状态；Supervisor 在每个 Agent turn 后核对 event/status/

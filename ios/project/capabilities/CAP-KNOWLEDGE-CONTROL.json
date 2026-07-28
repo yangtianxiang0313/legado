@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 64,
+  "revision": 65,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -70,7 +70,7 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260728T223154Z-ios-github-oracle-receipt-owner-001-697a0c36.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260728T224510Z-ios-github-oracle-receipt-scope-001-03d7fc23.json",
   "next_actions": [
     "独立实现 github_oracle_receipt.py 与 fail-closed receipt settlement",
     "以隔离 fake gh 覆盖 run、artifact、双 attestation、trusted import 与 create-only receipt 边界",
@@ -78,6 +78,6 @@
     "下载并验证 evidence/proposal archive 与双 attestation bundle，再生成受信 receipt",
     "由独立 Publisher 审核并发布 scenario-aware protected Golden，随后续接 SourceRuntime POST Form iOS 验收"
   ],
-  "updated_at": "2026-07-28T22:31:54Z",
-  "updated_by": "IOS-GITHUB-ORACLE-RECEIPT-OWNER-001"
+  "updated_at": "2026-07-28T22:45:11Z",
+  "updated_by": "IOS-GITHUB-ORACLE-RECEIPT-SCOPE-001"
 }

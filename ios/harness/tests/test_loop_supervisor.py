@@ -1,6 +1,7 @@
 import contextlib
 import hashlib
 import http.client
+import inspect
 import io
 import json
 import os
@@ -1285,6 +1286,209 @@ class MaterializationTests(unittest.TestCase):
                     denial_drift
                 ),
             )
+
+    def test_github_oracle_receipt_settlement_auto_scope_is_exact(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            item_id = "IOS-TEST-GITHUB-ORACLE-RECEIPT-001"
+            item = fixture.fixture.item(
+                item_id,
+                "CAP-KNOWLEDGE-CONTROL",
+                100,
+            )
+            required_labels = {
+                "external-execution",
+                "android-oracle",
+                "receipt-settlement",
+                "corrective",
+            }
+            item["metadata"]["labels"] = sorted(required_labels)
+            item["spec"]["requirements"] = {
+                "mode": "control_plane",
+                "refs": [],
+                "none_reason": "test",
+            }
+            item["spec"]["knowledge"] = {
+                "mode": "not_applicable",
+            }
+            item["spec"]["source_lab"] = {
+                "mode": "not_applicable",
+            }
+            item["spec"]["scope"]["allow_write"] = [
+                "ios/harness/github_oracle_receipt.py",
+                "ios/harness/tests/test_github_oracle_receipt.py",
+                "ios/harness/demand_compiler.py",
+                "ios/harness/tests/test_demand_compiler.py",
+                "ios/harness/loop_supervisor.py",
+                "ios/harness/tests/test_loop_supervisor.py",
+                "ios/harness/README.md",
+                (
+                    "ios/project/capabilities/"
+                    "CAP-KNOWLEDGE-CONTROL.json"
+                ),
+                f"ios/project/checkpoints/{item_id}.json",
+                "ios/project/pitfalls/PIT-*.json",
+            ]
+            item["spec"]["scope"]["deny_write"] = [
+                ".github/**",
+                "app/**",
+                "modules/**",
+                "ios/Packages/**",
+                "ios/publisher/**",
+                "ios/harness/github_oracle_dispatcher.py",
+                "ios/harness/fixtures/**",
+                "ios/harness/source-lab/**",
+                "ios/harness/goldens/**",
+                "ios/harness/oracle/**",
+                "ios/project/baseline.json",
+                "ios/project/requirements/**",
+                "ios/project/business-knowledge/**",
+                "ios/project/approvals/**",
+                "ios/project/work-item-proposals/**",
+                "ios/docs/**",
+            ]
+            supervisor = loop_supervisor.LoopSupervisor(
+                fixture.harness
+            )
+
+            self.assertEqual(
+                [],
+                supervisor
+                ._github_oracle_receipt_settlement_scope_issues(item),
+            )
+
+            forbidden = (
+                ".github/workflows/android-oracle-attestation.yml",
+                "ios/harness/oracle/contract.py",
+                "ios/harness/oracle/ci_proposal.py",
+                "ios/harness/oracle/trusted_import.py",
+                "ios/harness/oracle/android-runner/orchestrator.py",
+                "ios/harness/github_oracle_dispatcher.py",
+                "ios/harness/goldens/manifest.json",
+                "ios/publisher/android_golden_publisher.py",
+                "ios/harness/source-lab/source_lab.py",
+                "ios/harness/fixtures/source-lab/new.json",
+                "ios/project/requirements/catalog.json",
+                "ios/project/business-knowledge/catalog.json",
+                "ios/project/approvals/decision.json",
+                "ios/project/baseline.json",
+                "ios/Packages/LegadoKit/Package.swift",
+                "app/new.kt",
+                "modules/new.kt",
+                "ios/docs/architecture.md",
+                "ios/project/checkpoints/IOS-OTHER-001.json",
+                "ios/**",
+            )
+            for drift in forbidden:
+                with self.subTest(drift=drift):
+                    changed = json.loads(json.dumps(item))
+                    changed["spec"]["scope"]["allow_write"].append(
+                        drift
+                    )
+                    self.assertIn(
+                        "AUTO_GITHUB_ORACLE_RECEIPT_SCOPE_ALLOW_INVALID",
+                        supervisor
+                        ._github_oracle_receipt_settlement_scope_issues(
+                            changed
+                        ),
+                    )
+
+            for missing in required_labels:
+                with self.subTest(missing_label=missing):
+                    changed = json.loads(json.dumps(item))
+                    changed["metadata"]["labels"] = sorted(
+                        required_labels - {missing}
+                    )
+                    self.assertIn(
+                        "AUTO_GITHUB_ORACLE_RECEIPT_AUTHORITY_INVALID",
+                        supervisor
+                        ._github_oracle_receipt_settlement_scope_issues(
+                            changed
+                        ),
+                    )
+
+            for field, value in (
+                ("gates", ["approval"]),
+                ("requirements", {"mode": "implementation"}),
+                ("knowledge", {"mode": "consume"}),
+                ("source_lab", {"mode": "consume"}),
+            ):
+                with self.subTest(field=field):
+                    changed = json.loads(json.dumps(item))
+                    changed["spec"][field] = value
+                    self.assertIn(
+                        "AUTO_GITHUB_ORACLE_RECEIPT_AUTHORITY_INVALID",
+                        supervisor
+                        ._github_oracle_receipt_settlement_scope_issues(
+                            changed
+                        ),
+                    )
+
+            for missing in tuple(
+                item["spec"]["scope"]["allow_write"]
+            ):
+                with self.subTest(missing_allow=missing):
+                    changed = json.loads(json.dumps(item))
+                    changed["spec"]["scope"]["allow_write"].remove(
+                        missing
+                    )
+                    self.assertIn(
+                        "AUTO_GITHUB_ORACLE_RECEIPT_SCOPE_ALLOW_INVALID",
+                        supervisor
+                        ._github_oracle_receipt_settlement_scope_issues(
+                            changed
+                        ),
+                    )
+
+            duplicate = json.loads(json.dumps(item))
+            duplicate["spec"]["scope"]["allow_write"].append(
+                "ios/harness/github_oracle_receipt.py"
+            )
+            self.assertIn(
+                "AUTO_GITHUB_ORACLE_RECEIPT_SCOPE_ALLOW_INVALID",
+                supervisor
+                ._github_oracle_receipt_settlement_scope_issues(
+                    duplicate
+                ),
+            )
+
+            denial_drift = json.loads(json.dumps(item))
+            denial_drift["spec"]["scope"]["deny_write"].remove(
+                "ios/harness/oracle/**"
+            )
+            self.assertIn(
+                "AUTO_GITHUB_ORACLE_RECEIPT_SCOPE_DENY_MISSING:"
+                "ios/harness/oracle/contract.py",
+                supervisor
+                ._github_oracle_receipt_settlement_scope_issues(
+                    denial_drift
+                ),
+            )
+
+    def test_receipt_settlement_requires_every_label_for_special_scope(self):
+        required = {
+            "external-execution",
+            "android-oracle",
+            "receipt-settlement",
+            "corrective",
+        }
+        source = inspect.getsource(
+            loop_supervisor.LoopSupervisor._auto_candidate
+        )
+        for missing in required:
+            with self.subTest(missing=missing):
+                remaining = required - {missing}
+                self.assertFalse(required.issubset(remaining))
+        self.assertIn("receipt_settlement", source)
+        self.assertIn(
+            "_github_oracle_receipt_settlement_scope_issues",
+            source,
+        )
+        self.assertFalse(
+            loop_supervisor.LoopSupervisor._auto_scope_allowed(
+                "ios/harness/github_oracle_receipt.py"
+            )
+        )
 
     def test_preflight_rejects_outside_symlink_and_incomplete_dependency(self):
         with tempfile.TemporaryDirectory() as directory:
