@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0057",
+  "revision": 1,
+  "title": "把 Android Oracle 的 candidate 输入误建模为 reference reuse 会阻断真值生成",
+  "fingerprint": "android-oracle-candidate-scenario-rejected-as-non-reference-reuse",
+  "capabilities": [
+    "CAP-CONFORMANCE"
+  ],
+  "symptoms": [
+    "SourceLab candidate 已由独立 Characterization WorkItem 完成并进入 manifest",
+    "冻结 Android Runner 已真实运行并产生 local_unverified structured candidate",
+    "正式 source-lab-contract 仍以“reuse 只能使用 reference scenario”拒绝 Oracle WorkItem",
+    "同一失败重复后 WorkItem exhausted，Loop 进入 terminal_recovery"
+  ],
+  "conditions": [
+    "场景生命周期为 candidate，尚未获得 Android Golden Publisher 的 reference 晋级",
+    "Android Oracle 必须先消费该场景才能生成晋级所需真值",
+    "SourceLab mode 只有 extend/reuse，而 reuse 验证器把状态硬编码为 reference"
+  ],
+  "root_cause": "SourceLab 把“是否修改场景”和“场景是否已经晋级”混成同一个 reuse 判断，缺少 candidate→Android characterization 的受限消费边，形成必须先有 Golden 才能生成 Golden 的循环依赖。",
+  "diagnosis": [
+    "检查失败是否发生在 source-lab-contract 而非 Android Runner 或 SourceLab smoke",
+    "确认场景 manifest status=candidate，case.provenance.introduced_by 对应 WorkItem 已 completed",
+    "确认 Oracle WorkItem 只输出 candidate，不允许写 Fixture、Golden、Publisher、Workflow 或产品",
+    "确认真实 Android local artifact 仍标记 local_unverified/candidate_only"
+  ],
+  "fix": "保留 source_lab.mode=reuse 的“不修改场景”语义，并增加严格 candidate characterization 分支：只允许 android-oracle/candidate-only、无 Gate、requirements.mode=characterization 的直接任务，或精确 recovers 它的同 Capability control recovery；必须唯一依赖已完成 introduced_by，覆盖 policy 满足且所有权威写路径被禁止。reference reuse 原规则不变。",
+  "prevention": {
+    "architecture_rule": "每种 SourceLab 生命周期必须显式覆盖 candidate 创建、Android characterization、受信 Golden 晋级、reference reuse 四个阶段；阶段边必须在首次新 behavior 端到端运行前由合约测试证明。",
+    "tests": [
+      "ios/harness/source-lab/tests/test_source_lab.py",
+      "ios/harness/tests/test_android_oracle_runner.py"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-ORACLE-DAG-COMPILER-001",
+    "until": "IOS-ANDROID-POST-FORM-ORACLE-RECOVERY-002"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T180850Z-ios-android-post-form-oracle-001-2be6b2f7.json",
+    "ios/harness/evidence/runs/run-20260728T181133Z-ios-android-post-form-oracle-001-d3d31f51.json"
+  ]
+}
