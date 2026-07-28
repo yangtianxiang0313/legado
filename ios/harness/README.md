@@ -102,6 +102,14 @@ python3 ios/harness/loop_supervisor.py materialize-review \
   `gates=[]` 且唯一依赖该 completion 的受信 proposal blueprint；它只能泛化既有
   GitHub Android Oracle workflow、`ci_proposal`/`trusted_import` 及测试，不能写
   Publisher、Golden、Fixture、Android/iOS 产品、Requirement 或架构；
+- 受信 proposal Work Item 完成后，Demand Compiler 同时解析 state `replacement`
+  与 Work Item `recovers`，只接受唯一、无环、同 Capability/场景且落到 completed
+  末端的谱系。结算精确绑定 blueprint/WorkItem/Evidence/Checkpoint、Requirement
+  与 SourceLab selection、scenario/manifest digest、共享 `verify_proposal`
+  authority 以及待执行 commit，输出 `trusted_oracle_execution_required`。
+  Supervisor 将其映射为 `external_execution_required` 并停止本地 drive；此时
+  receipt 必须仍为 `null`，后续需在 GitHub-hosted runner 执行固定 workflow，
+  下载双 attestation 后再由独立 receipt settlement/Golden Publisher 工作项处理；
 - 显式启用 `supervisor-owned-verification-v1` 后，单次工作项按 Agent edit →
   Supervisor verify → Agent memory → Supervisor close 推进。Agent 不能通过直接调用
   `verify/close` 改变控制状态；Supervisor 在每个 Agent turn 后核对 event/status/
@@ -155,7 +163,8 @@ python3 ios/harness/loop_supervisor.py materialize-review \
   则按 `migration_intake_ready → requirement_authority_required →
   characterization_blueprint_required → characterization_ready →
   oracle_blueprint_required → oracle_ready →
-  trusted_oracle_blueprint_required → trusted_oracle_ready` 推进，并要求
+  trusted_oracle_blueprint_required → trusted_oracle_ready →
+  trusted_oracle_execution_required` 推进，并要求
   completed WorkItem、Evidence、Checkpoint、Capability update、proposal digest、
   accepted Requirement record/catalog digest 与 characterization blueprint
   精确结算。因此“尚缺上游权威输入”或“下一条 Android 迁移切片已声明”都不会被

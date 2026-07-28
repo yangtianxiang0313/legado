@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import json
 import re
@@ -40,6 +41,12 @@ STATE_PATH = "ios/project/state.json"
 WORK_ITEM_ROOT = "ios/harness/work-items"
 CHECKPOINT_ROOT = "ios/project/checkpoints"
 EVIDENCE_ROOT = "ios/harness/evidence/runs"
+TRUSTED_ORACLE_WORKFLOW = (
+    ".github/workflows/android-oracle-attestation.yml"
+)
+ORACLE_CONTRACT_PATH = "ios/harness/oracle/contract.py"
+ORACLE_CI_PROPOSAL_PATH = "ios/harness/oracle/ci_proposal.py"
+ORACLE_TRUSTED_IMPORT_PATH = "ios/harness/oracle/trusted_import.py"
 POLICY = "structured-delivery-intent-v1"
 MIGRATION_POLICY = "source-anchored-android-migration-v1"
 INTENT_ID = re.compile(r"^DINT-[A-Z][A-Z0-9-]*-[0-9]{3}$")
@@ -944,6 +951,58 @@ class DemandCompiler:
                                         ]["sha256"],
                                     }
                                 )
+                                trusted_settlement = (
+                                    self._completed_trusted_oracle(
+                                        trusted,
+                                        blueprint_relative=(
+                                            trusted_relative
+                                        ),
+                                        blueprint_sha256=bindings[
+                                            "trusted_oracle_blueprint"
+                                        ]["sha256"],
+                                        requirement_selection_sha256=str(
+                                            bindings[
+                                                "characterization_settlement"
+                                            ][
+                                                "requirement_selection_sha256"
+                                            ]
+                                        ),
+                                        oracle_settlement=(
+                                            settlement_binding
+                                        ),
+                                    )
+                                )
+                                if trusted_settlement is not None:
+                                    artifacts.extend(
+                                        trusted_settlement["artifacts"]
+                                    )
+                                    bindings.update(
+                                        trusted_settlement["bindings"]
+                                    )
+                                    return DemandPlan(
+                                        intent_id=str(intent["id"]),
+                                        priority=int(intent["priority"]),
+                                        target_work_item_id=str(
+                                            trusted_settlement[
+                                                "resolved_work_item_id"
+                                            ]
+                                        ),
+                                        state=(
+                                            "trusted_oracle_"
+                                            "execution_required"
+                                        ),
+                                        reason_code=(
+                                            "TRUSTED_ORACLE_GITHUB_"
+                                            "EXECUTION_REQUIRED"
+                                        ),
+                                        authority_transition=False,
+                                        artifacts=tuple(artifacts),
+                                        bindings=bindings,
+                                        policy=MIGRATION_POLICY,
+                                        intent_kind=(
+                                            "android_migration"
+                                        ),
+                                    )
                             else:
                                 trusted = {}
                                 artifacts.append(
@@ -1500,6 +1559,431 @@ class DemandCompiler:
                     "from_revision": capability["revision"],
                     "to_revision": update["to_revision"],
                 }
+            },
+        }
+
+    @staticmethod
+    def _shared_contract_call(
+        path: Path,
+        function_name: str,
+    ) -> bool:
+        try:
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, SyntaxError):
+            return False
+        imports = [
+            node
+            for node in tree.body
+            if isinstance(node, ast.ImportFrom)
+            and node.module == "oracle.contract"
+            and any(
+                alias.name == "verify_proposal"
+                for alias in node.names
+            )
+        ]
+        functions = [
+            node
+            for node in tree.body
+            if isinstance(
+                node,
+                (ast.FunctionDef, ast.AsyncFunctionDef),
+            )
+            and node.name == function_name
+        ]
+        if len(imports) != 1 or len(functions) != 1:
+            return False
+        calls = [
+            node
+            for node in ast.walk(functions[0])
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "verify_proposal"
+        ]
+        return len(calls) == 1
+
+    @staticmethod
+    def _workflow_contract(path: Path) -> bool:
+        try:
+            payload = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            return False
+        return "ci_proposal.py" in payload and "finalize" in payload
+
+    def _trusted_recovery_chain(
+        self,
+        original_id: str,
+        state_items: Mapping[str, Any],
+        work_items: Mapping[str, Mapping[str, Any]],
+    ) -> Optional[List[str]]:
+        original_runtime = state_items.get(original_id)
+        if not isinstance(original_runtime, dict):
+            return None
+        chain = [original_id]
+        while True:
+            current_id = chain[-1]
+            runtime = state_items.get(current_id)
+            if not isinstance(runtime, dict):
+                raise DemandCompilerError(
+                    "TRUSTED_ORACLE_SETTLEMENT_INVALID"
+                )
+            if runtime.get("status") == "completed":
+                return chain
+            if runtime.get("status") not in {
+                "blocked",
+                "rejected",
+                "exhausted",
+                "cancelled",
+            }:
+                raise DemandCompilerError(
+                    "TRUSTED_ORACLE_SETTLEMENT_INVALID"
+                )
+            explicit = sorted(
+                item_id
+                for item_id, item in work_items.items()
+                if item.get("spec", {}).get("recovers")
+                == current_id
+            )
+            replacement = runtime.get("replacement")
+            candidates = set(explicit)
+            if isinstance(replacement, str) and replacement:
+                candidates.add(replacement)
+                if explicit and replacement not in explicit:
+                    raise DemandCompilerError(
+                        "TRUSTED_ORACLE_SETTLEMENT_INVALID"
+                    )
+            if len(candidates) != 1:
+                raise DemandCompilerError(
+                    "TRUSTED_ORACLE_SETTLEMENT_INVALID"
+                )
+            next_id = candidates.pop()
+            if next_id in chain:
+                raise DemandCompilerError(
+                    "TRUSTED_ORACLE_SETTLEMENT_INVALID"
+                )
+            next_item = work_items.get(next_id)
+            if (
+                not isinstance(next_item, dict)
+                or next_item.get("spec", {}).get("recovers")
+                != current_id
+            ):
+                raise DemandCompilerError(
+                    "TRUSTED_ORACLE_SETTLEMENT_INVALID"
+                )
+            chain.append(next_id)
+
+    def _completed_trusted_oracle(
+        self,
+        trusted: Mapping[str, Any],
+        *,
+        blueprint_relative: str,
+        blueprint_sha256: str,
+        requirement_selection_sha256: str,
+        oracle_settlement: Mapping[str, Any],
+    ) -> Optional[Mapping[str, Any]]:
+        invalid = "TRUSTED_ORACLE_SETTLEMENT_INVALID"
+        original_id = trusted.get("metadata", {}).get("id")
+        if not isinstance(original_id, str):
+            raise DemandCompilerError(invalid)
+        state_path = self.resolve(STATE_PATH)
+        if state_path.is_symlink() or not state_path.is_file():
+            return None
+        state = _load_object(state_path, "PROJECT_STATE")
+        state_items = state.get("work_items", {})
+        if not isinstance(state_items, dict):
+            raise DemandCompilerError(invalid)
+
+        work_item_root = self.resolve(WORK_ITEM_ROOT)
+        work_items: Dict[str, Mapping[str, Any]] = {}
+        try:
+            for path in sorted(work_item_root.glob("*.json")):
+                item = _load_object(path, "TRUSTED_ORACLE_WORK_ITEM")
+                item_id = item.get("metadata", {}).get("id")
+                if isinstance(item_id, str):
+                    work_items[item_id] = item
+            chain = self._trusted_recovery_chain(
+                original_id,
+                state_items,
+                work_items,
+            )
+        except DemandCompilerError as error:
+            raise DemandCompilerError(invalid) from error
+        if chain is None:
+            return None
+
+        chain_items = [work_items.get(item_id) for item_id in chain]
+        if any(not isinstance(item, dict) for item in chain_items):
+            raise DemandCompilerError(invalid)
+        typed_chain: List[Mapping[str, Any]] = [
+            item for item in chain_items if isinstance(item, dict)
+        ]
+        if typed_chain[0] != trusted:
+            raise DemandCompilerError(invalid)
+        original_spec = typed_chain[0].get("spec", {})
+        capability_id = original_spec.get("capability")
+        source_lab = original_spec.get("source_lab", {})
+        scenarios = source_lab.get("scenarios", [])
+        requirement_refs = original_spec.get(
+            "requirements", {}
+        ).get("refs")
+        if (
+            capability_id != "CAP-CONFORMANCE"
+            or not isinstance(requirement_refs, list)
+            or len(requirement_refs) != 1
+            or source_lab.get("mode") != "reuse"
+            or not isinstance(scenarios, list)
+            or len(scenarios) != 1
+        ):
+            raise DemandCompilerError(invalid)
+        scenario_id = scenarios[0]
+        for index, item in enumerate(typed_chain):
+            spec = item.get("spec", {})
+            runtime = state_items.get(chain[index], {})
+            if (
+                spec.get("capability") != capability_id
+                or spec.get("source_lab") != source_lab
+                or spec.get("gates") != []
+                or runtime.get("work_item_sha256")
+                != _sha256_json(item)
+                or (
+                    index
+                    and spec.get("recovers") != chain[index - 1]
+                )
+            ):
+                raise DemandCompilerError(invalid)
+
+        resolved_id = chain[-1]
+        resolved = typed_chain[-1]
+        runtime = state_items[resolved_id]
+        evidence_relative = runtime.get("last_evidence")
+        checkpoint_relative = (
+            f"{CHECKPOINT_ROOT}/{resolved_id}.json"
+        )
+        capability_relative = (
+            "ios/project/capabilities/CAP-CONFORMANCE.json"
+        )
+        authority_paths = (
+            ORACLE_CONTRACT_PATH,
+            ORACLE_CI_PROPOSAL_PATH,
+            ORACLE_TRUSTED_IMPORT_PATH,
+            TRUSTED_ORACLE_WORKFLOW,
+        )
+        chain_relatives = [
+            f"{WORK_ITEM_ROOT}/{item_id}.json"
+            for item_id in chain
+        ]
+        if (
+            not isinstance(evidence_relative, str)
+            or not evidence_relative.startswith(EVIDENCE_ROOT + "/")
+        ):
+            raise DemandCompilerError(invalid)
+        try:
+            evidence_path = self.resolve(evidence_relative)
+            checkpoint_path = self.resolve(checkpoint_relative)
+            capability_path = self.resolve(capability_relative)
+            manifest_path = self.resolve(SOURCE_LAB_MANIFEST)
+            evidence = _load_object(
+                evidence_path,
+                "TRUSTED_ORACLE_EVIDENCE",
+            )
+            checkpoint = _load_object(
+                checkpoint_path,
+                "TRUSTED_ORACLE_CHECKPOINT",
+            )
+            capability = _load_object(
+                capability_path,
+                "TRUSTED_ORACLE_CAPABILITY",
+            )
+            manifest = _load_object(
+                manifest_path,
+                "TRUSTED_ORACLE_MANIFEST",
+            )
+            self._head_regular(
+                (
+                    STATE_PATH,
+                    blueprint_relative,
+                    *chain_relatives,
+                    checkpoint_relative,
+                    evidence_relative,
+                    capability_relative,
+                    SOURCE_LAB_MANIFEST,
+                    *authority_paths,
+                )
+            )
+        except DemandCompilerError as error:
+            raise DemandCompilerError(invalid) from error
+
+        evidence_sha = _sha256(evidence_path.read_bytes())
+        inputs = evidence.get("inputs", {})
+        updates = checkpoint.get("capability_updates", [])
+        update = next(
+            (
+                value
+                for value in updates
+                if isinstance(value, dict)
+                and value.get("id") == capability_id
+            ),
+            None,
+        )
+        entries = [
+            value
+            for value in manifest.get("scenarios", [])
+            if isinstance(value, dict)
+            and value.get("id") == scenario_id
+        ]
+        checkpoint_source_lab = checkpoint.get("source_lab", {})
+        checkpoint_requirements = checkpoint.get("requirements", {})
+        recovery = checkpoint.get("recovery")
+        if (
+            evidence.get("work_item_id") != resolved_id
+            or evidence.get("work_item_sha256")
+            != _sha256_json(resolved)
+            or evidence.get("result") != "passed"
+            or runtime.get("last_evidence_sha256") != evidence_sha
+            or state_items.get(original_id, {}).get(
+                "android_requirement_selection_sha256"
+            )
+            != requirement_selection_sha256
+            or checkpoint.get("work_item_id") != resolved_id
+            or checkpoint.get("evidence") != evidence_relative
+            or not isinstance(update, dict)
+            or update.get("from_revision") != 18
+            or update.get("to_revision") != 19
+            or capability.get("id") != capability_id
+            or capability.get("revision") != 19
+            or checkpoint_source_lab.get("mode") != "reuse"
+            or checkpoint_source_lab.get("behaviors")
+            != source_lab.get("behaviors")
+            or checkpoint_source_lab.get("scenarios") != scenarios
+            or checkpoint_source_lab.get("selection_sha256")
+            != inputs.get("source_lab_selection_sha256")
+            or checkpoint_requirements.get("mode")
+            != resolved.get("spec", {}).get(
+                "requirements", {}
+            ).get("mode")
+            or checkpoint_requirements.get("refs")
+            != resolved.get("spec", {}).get(
+                "requirements", {}
+            ).get("refs")
+            or checkpoint_requirements.get("selection_sha256")
+            != inputs.get(
+                "android_requirement_selection_sha256"
+            )
+            or inputs.get("business_knowledge_control_sha256")
+            is None
+            or inputs.get("business_knowledge_authority_sha256")
+            is None
+            or (
+                len(chain) > 1
+                and (
+                    not isinstance(recovery, dict)
+                    or recovery.get("predecessor") != chain[-2]
+                )
+            )
+            or len(entries) != 1
+            or entries[0].get("status") != "candidate"
+            or not isinstance(entries[0].get("sha256"), str)
+            or oracle_settlement.get("scenario_id") != scenario_id
+            or oracle_settlement.get(
+                "requirement_selection_sha256"
+            )
+            != requirement_selection_sha256
+            or not self._shared_contract_call(
+                self.resolve(ORACLE_CI_PROPOSAL_PATH),
+                "finalize",
+            )
+            or not self._shared_contract_call(
+                self.resolve(ORACLE_TRUSTED_IMPORT_PATH),
+                "verify",
+            )
+            or not self._workflow_contract(
+                self.resolve(TRUSTED_ORACLE_WORKFLOW)
+            )
+        ):
+            raise DemandCompilerError(invalid)
+
+        source_result = self._git("rev-parse", "HEAD")
+        if source_result.returncode != 0:
+            raise DemandCompilerError(invalid)
+        source_digest = source_result.stdout.decode().strip()
+        if HEX40.fullmatch(source_digest) is None:
+            raise DemandCompilerError(invalid)
+        authority_digests = {
+            path: _sha256(self.resolve(path).read_bytes())
+            for path in authority_paths
+        }
+        return {
+            "resolved_work_item_id": resolved_id,
+            "artifacts": [
+                {
+                    "kind": "trusted_oracle_completion",
+                    "id": resolved_id,
+                    "original_id": original_id,
+                    "status": "completed",
+                    "recovery_chain": list(chain),
+                    "evidence": evidence_relative,
+                    "evidence_sha256": evidence_sha,
+                    "checkpoint": checkpoint_relative,
+                    "checkpoint_sha256": _sha256(
+                        checkpoint_path.read_bytes()
+                    ),
+                },
+                {
+                    "kind": "trusted_oracle_github_execution",
+                    "id": scenario_id,
+                    "status": "required",
+                    "workflow_path": TRUSTED_ORACLE_WORKFLOW,
+                    "source_digest": source_digest,
+                    "receipt": None,
+                },
+            ],
+            "bindings": {
+                "trusted_oracle_settlement": {
+                    "blueprint": blueprint_relative,
+                    "blueprint_sha256": blueprint_sha256,
+                    "blueprint_work_item_sha256": _sha256_json(
+                        trusted
+                    ),
+                    "original_work_item": chain_relatives[0],
+                    "original_work_item_sha256": _sha256_json(
+                        typed_chain[0]
+                    ),
+                    "resolved_work_item": chain_relatives[-1],
+                    "resolved_work_item_id": resolved_id,
+                    "resolved_work_item_sha256": _sha256_json(
+                        resolved
+                    ),
+                    "recovery_chain": list(chain),
+                    "evidence": evidence_relative,
+                    "evidence_sha256": evidence_sha,
+                    "checkpoint": checkpoint_relative,
+                    "checkpoint_sha256": _sha256(
+                        checkpoint_path.read_bytes()
+                    ),
+                    "capability": capability_id,
+                    "from_revision": 18,
+                    "to_revision": 19,
+                    "requirement_selection_sha256": (
+                        requirement_selection_sha256
+                    ),
+                    "source_lab_selection_sha256": (
+                        inputs["source_lab_selection_sha256"]
+                    ),
+                    "source_lab_manifest_sha256": _sha256(
+                        manifest_path.read_bytes()
+                    ),
+                    "scenario_id": scenario_id,
+                    "scenario_sha256": entries[0]["sha256"],
+                    "contract_authority_sha256": (
+                        _sha256_json(authority_digests)
+                    ),
+                    "contract_authority_files": authority_digests,
+                },
+                "trusted_oracle_execution": {
+                    "scenario_id": scenario_id,
+                    "workflow_path": TRUSTED_ORACLE_WORKFLOW,
+                    "source_digest": source_digest,
+                    "receipt": None,
+                },
             },
         }
 

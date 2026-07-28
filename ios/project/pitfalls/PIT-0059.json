@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0059",
+  "revision": 1,
+  "title": "只识别原 WorkItem 会让已由恢复项完成的需求被重复物化",
+  "fingerprint": "completed-recovery-lineage-reenters-original-materialization-stage",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "trusted proposal 原目标已经通过 001→RECOVERY-002→RECOVERY-003 完成，但 Demand Compiler 仍输出 trusted_oracle_ready",
+    "Supervisor 再次尝试物化 IOS-ANDROID-POST-FORM-ATTESTATION-001，并因 Work Item 已存在进入 demand_invalid",
+    "真实下一步应是 GitHub-hosted 执行，但控制面没有显式 external execution 状态",
+    "测试只覆盖直接完成或单层 replacement 时，恢复项未及时回填 predecessor replacement 的窗口会被漏掉"
+  ],
+  "conditions": [
+    "原蓝图目标以显式 recovers 创建多层恢复项",
+    "中间恢复项被拒绝，最终恢复项完成",
+    "旧状态中某一层尚无 replacement，但仓库中存在唯一显式 recovers 后继",
+    "需求编译器只检查原目标状态或只沿 runtime replacement"
+  ],
+  "root_cause": "需求链只有 materialization 判定，没有与之对称的 recovery-aware completion settlement；外部执行又未建模为独立终态边界，导致已完成能力重新落回物化分支。",
+  "diagnosis": [
+    "从 committed trusted blueprint 取得原目标，而不是从当前候选 ID 猜测完成项",
+    "同时检查 runtime replacement 与仓库内唯一显式 spec.recovers，拒绝缺链、歧义、成环和非恢复终态",
+    "核对完整谱系的 WorkItem hash、末端 Evidence/runtime hash、Checkpoint、Capability revision 与 Requirement/SourceLab selection",
+    "确认完成结算后 Supervisor 返回 external_execution_required，commands 为空且 receipt 为 null"
+  ],
+  "fix": "新增 trusted proposal completion settlement，解析直接完成与多层显式恢复谱系，精确绑定 blueprint、WorkItem、Evidence、Checkpoint、CAP-CONFORMANCE 18→19、selection、scenario/manifest digest 和共享 proposal authority；成功后输出 trusted_oracle_execution_required，由 Supervisor 映射为无需人工 gate 的 external_execution_required，并停止本地 Agent/materialize。",
+  "prevention": {
+    "architecture_rule": "每个自动物化阶段都必须有对称、可恢复、fail-closed 的完成结算；跨信任域动作必须建模为独立结构化状态，不能回落到上一阶段或由本地 loop 偷跑。",
+    "tests": [
+      "ios/harness/tests/test_demand_compiler.py",
+      "ios/harness/tests/test_loop_supervisor.py"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-003",
+    "until": "IOS-TRUSTED-ORACLE-SETTLEMENT-COMPILER-001"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T194704Z-ios-trusted-oracle-settlement-compiler-001-5274cee4.json"
+  ]
+}

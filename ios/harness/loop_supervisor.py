@@ -1831,6 +1831,9 @@ class LoopSupervisor:
             "trusted_oracle_ready": (
                 "trusted_oracle_materialization_ready"
             ),
+            "trusted_oracle_execution_required": (
+                "external_execution_required"
+            ),
         }
         if plan.state not in state_mapping:
             return LoopDecision(
@@ -1847,16 +1850,21 @@ class LoopSupervisor:
                 warnings=tuple(warnings),
                 details={"demand_plan": plan.to_dict()},
             )
+        details: Dict[str, Any] = {
+            "authority_transition": plan.authority_transition,
+            "demand_plan": plan.to_dict(),
+        }
+        if plan.state == "trusted_oracle_execution_required":
+            details["external_execution"] = dict(
+                plan.bindings.get("trusted_oracle_execution", {})
+            )
         return LoopDecision(
             state=state_mapping[plan.state],
             reason_code=plan.reason_code,
             work_item_id=plan.target_work_item_id,
             requires_human=False,
             warnings=tuple(warnings),
-            details={
-                "authority_transition": plan.authority_transition,
-                "demand_plan": plan.to_dict(),
-            },
+            details=details,
         )
 
     def inspect(self) -> LoopDecision:
@@ -3091,6 +3099,14 @@ class LoopSupervisor:
             config = json.loads(config_path.read_text(encoding="utf-8"))
         except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
             raise LoopSupervisorError(f"Supervisor config 无效：{error}") from error
+        initial_decision = self.inspect()
+        if initial_decision.state == "external_execution_required":
+            return {
+                "schema_version": SCHEMA_VERSION,
+                "outcome": initial_decision.reason_code.lower(),
+                "decision": initial_decision.to_dict(),
+                "transitions": [],
+            }
         invocation = config.get("agent_invocation")
         if not isinstance(invocation, dict):
             decision = self.inspect()

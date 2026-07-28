@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-TRUSTED-ORACLE-SETTLEMENT-COMPILER-001",
+  "summary": "已补齐 Android migration 第五段需求链：Demand Compiler 会从 committed trusted-oracle blueprint 取得原目标，同时沿 runtime replacement 与唯一显式 spec.recovers 解析直接完成或多层恢复谱系，并对缺链、歧义、成环、错误 Capability/SourceLab、非恢复终态和未完成末端 fail closed。结算精确绑定 blueprint/WorkItem hash、完整 recovery chain、resolved WorkItem、passed Evidence/runtime hash、Checkpoint、CAP-CONFORMANCE 18→19、Requirement/SourceLab selection、candidate scenario/manifest digest，以及 ci_proposal.finalize 和 trusted_import.verify 对共享 oracle.contract.verify_proposal 的 authority guard。完成后 Demand Plan 输出 trusted_oracle_execution_required，Supervisor 映射为 external_execution_required、requires_human=false、commands 为空且 receipt=null；本地 drive 不再重复物化，也不会调用 Agent、gh、Workflow、trusted import 或 Golden Publisher。正式 Evidence 通过依赖策略、完整 Harness tests 与 SourceLab contract。",
+  "evidence": "ios/harness/evidence/runs/run-20260728T194704Z-ios-trusted-oracle-settlement-compiler-001-5274cee4.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 55,
+      "to_revision": 56,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": [
+      "ADR-0002",
+      "ADR-0004"
+    ]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null,
+    "none_reason": "本项只建立 trusted proposal completion 到外部受信执行的需求结算边"
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项不消费、生成或发布业务知识"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null,
+    "none_reason": "本项只读取并结算已验证的 candidate SourceLab selection，不运行或修改场景"
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "当前只完成外部执行边界；尚未取得 GitHub-hosted receipt，也未发布 protected Golden"
+  },
+  "pitfalls": {
+    "records": [
+      "ios/project/pitfalls/PIT-0059.json"
+    ],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "sl-post-form-001 尚未在当前精确 source digest 的 GitHub-hosted Android baseline 上运行",
+    "尚未下载并验证 evidence/proposal archive 与双 attestation bundle",
+    "尚未实现 attestation receipt settlement 与独立 Android Golden Publisher",
+    "SourceLab 场景仍是 candidate；protected Golden 发布前不能作为 iOS compatibility reference",
+    "iOS SourceRuntime POST Form Package、结构化差分与模拟器 UI 验收尚未开始"
+  ],
+  "next_actions": [
+    "在精确 source digest 上触发 android-oracle-attestation workflow，scenario=sl-post-form-001",
+    "下载双 archive/attestation 并运行 trusted_import，保存结构化 candidate_only review report",
+    "新增 attestation receipt settlement，验证远端 run、source digest、scenario 与共享 proposal contract",
+    "自动物化独立 Android Golden Publisher，发布 protected Golden 并晋级 SourceLab reference",
+    "由 protected Golden 续接 SourceRuntime POST Form iOS Package、结构化差分与模拟器 UI 验收"
+  ],
+  "created_at": "2026-07-28T19:47:42Z"
+}

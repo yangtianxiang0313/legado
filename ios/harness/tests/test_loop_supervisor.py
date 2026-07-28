@@ -597,6 +597,61 @@ class MaterializationTests(unittest.TestCase):
                 decision.work_item_id,
             )
 
+    def test_trusted_oracle_settlement_maps_to_external_execution(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            plan = loop_supervisor.DemandPlan(
+                intent_id="MINT-SOURCE-REQUEST-POST-FORM-001",
+                priority=100,
+                target_work_item_id=(
+                    "IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-003"
+                ),
+                state="trusted_oracle_execution_required",
+                reason_code=(
+                    "TRUSTED_ORACLE_GITHUB_EXECUTION_REQUIRED"
+                ),
+                authority_transition=False,
+                artifacts=(
+                    {
+                        "kind": "trusted_oracle_github_execution",
+                        "status": "required",
+                        "receipt": None,
+                    },
+                ),
+                bindings={
+                    "trusted_oracle_execution": {
+                        "scenario_id": "sl-post-form-001",
+                        "workflow_path": (
+                            ".github/workflows/"
+                            "android-oracle-attestation.yml"
+                        ),
+                        "source_digest": "a" * 40,
+                        "receipt": None,
+                    }
+                },
+                policy=loop_supervisor.MIGRATION_MATERIALIZATION_POLICY,
+                intent_kind="android_migration",
+            )
+            supervisor = loop_supervisor.LoopSupervisor(
+                fixture.harness
+            )
+            with mock.patch.object(
+                loop_supervisor.DemandCompiler,
+                "plans",
+                return_value=((plan,), ()),
+            ):
+                decision = supervisor._demand_decision([])
+            self.assertEqual(
+                "external_execution_required",
+                decision.state,
+            )
+            self.assertFalse(decision.requires_human)
+            self.assertEqual((), decision.commands)
+            self.assertEqual(
+                plan.bindings["trusted_oracle_execution"],
+                decision.details["external_execution"],
+            )
+
     def test_trusted_oracle_materialization_recomputes_plan(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = MaterializationFixture(Path(directory))
@@ -1673,6 +1728,48 @@ class DriveTests(unittest.TestCase):
     def commit_all(root, message):
         subprocess.run(["git", "add", "."], cwd=root, check=True)
         subprocess.run(["git", "commit", "-qm", message], cwd=root, check=True)
+
+    def test_drive_stops_before_agent_for_external_execution(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            supervisor = loop_supervisor.LoopSupervisor(
+                fixture.harness
+            )
+            config = fixture.root / "supervisor.json"
+            config.write_text("{}\n")
+            decision = loop_supervisor.LoopDecision(
+                state="external_execution_required",
+                reason_code=(
+                    "TRUSTED_ORACLE_GITHUB_EXECUTION_REQUIRED"
+                ),
+                work_item_id=(
+                    "IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-003"
+                ),
+                requires_human=False,
+                details={
+                    "scenario_id": "sl-post-form-001",
+                    "receipt": None,
+                },
+            )
+            with mock.patch.object(
+                supervisor,
+                "inspect",
+                return_value=decision,
+            ), mock.patch.object(
+                supervisor,
+                "_invoke_agent_phase",
+            ) as invoke:
+                result = supervisor.drive(
+                    config_path=config,
+                    agent_id="test-agent",
+                    max_transitions=1,
+                )
+            self.assertEqual(
+                "trusted_oracle_github_execution_required",
+                result["outcome"],
+            )
+            self.assertEqual([], result["transitions"])
+            invoke.assert_not_called()
 
     @staticmethod
     def crash_drive(root, target, exit_code):
