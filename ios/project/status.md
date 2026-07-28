@@ -2,13 +2,13 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-28T23:22:26Z
+- 更新时间：2026-07-28T23:35:22Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
 - 下一个可领取工作项：无
-- 最近完成：IOS-GITHUB-ORACLE-RECEIPT-HARDENING-001
+- 最近完成：IOS-GITHUB-ORACLE-RECEIPT-GH-EXECUTABLE-001
 
 ## 健康度
 
@@ -37,6 +37,7 @@
 | github_oracle_external_execution | `branch_push_reconciled_v2` |
 | github_oracle_owner | `declared_v1` |
 | github_oracle_receipt_auto_scope | `exact_settlement_v1` |
+| github_oracle_receipt_gh_executable | `resolved_regular_v1` |
 | github_oracle_receipt_owner | `declared_v1` |
 | github_oracle_receipt_settlement | `audited_verified_candidate_v2` |
 | harness | `ready` |
@@ -136,6 +137,7 @@
 | IOS-GITHUB-ORACLE-PAYLOAD-CANONICALIZATION-001 | 100 | `completed` | IOS-GITHUB-ORACLE-PACKAGER-SCOPE-001, IOS-GITHUB-ORACLE-PUSH-TRIGGER-RECOVERY-002 | 修复真实 Android Oracle payload 的 canonical-v1 转换 |
 | IOS-GITHUB-ORACLE-PUSH-TRIGGER-001 | 100 | `exhausted` | IOS-GITHUB-ORACLE-WORKFLOW-SCOPE-001 | 以 create-only Oracle branch 建立服务端幂等 Workflow 触发 |
 | IOS-GITHUB-ORACLE-PUSH-TRIGGER-RECOVERY-002 | 100 | `completed` | IOS-GITHUB-ORACLE-WORKFLOW-SCOPE-001 | 恢复 create-only Oracle branch 的服务端幂等触发合同 |
+| IOS-GITHUB-ORACLE-RECEIPT-GH-EXECUTABLE-001 | 100 | `completed` | IOS-GITHUB-ORACLE-RECEIPT-HARDENING-001 | 兼容安全的 Homebrew gh 可执行路径 |
 | IOS-GITHUB-ORACLE-RECEIPT-HARDENING-001 | 100 | `completed` | IOS-GITHUB-ORACLE-RECEIPT-SETTLEMENT-001 | 强化 Oracle Receipt 的真实结算与消费合同 |
 | IOS-GITHUB-ORACLE-RECEIPT-OWNER-001 | 100 | `completed` | IOS-GITHUB-ORACLE-PAYLOAD-CANONICALIZATION-001 | 预声明 GitHub Oracle Receipt Settlement 所有权 |
 | IOS-GITHUB-ORACLE-RECEIPT-SCOPE-001 | 100 | `completed` | IOS-GITHUB-ORACLE-RECEIPT-OWNER-001 | 建立 GitHub Oracle Receipt Settlement 的精确自动实现边界 |

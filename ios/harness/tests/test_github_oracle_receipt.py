@@ -102,26 +102,114 @@ class ReceiptTests(unittest.TestCase):
                     with self.assertRaises(GitHubOracleReceiptError):
                         settler._download(destination, {"name": "candidate"})
 
-    def test_gh_must_be_regular_executable_not_symlink(self):
+    def test_gh_relative_symlink_resolves_once_and_calls_regular_target(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            executable = root / "real-gh"
+            cellar = root / "Cellar/gh/2.89.0/bin"
+            cellar.mkdir(parents=True)
+            executable = cellar / "gh"
             executable.write_text("#!/bin/sh\nexit 0\n")
             os.chmod(executable, 0o700)
-            link = root / "gh"
-            link.symlink_to(executable)
-            with self.assertRaisesRegex(
-                GitHubOracleReceiptError, "GH_EXECUTABLE_INVALID"
-            ):
-                GitHubOracleReceiptSettler(
-                    root,
-                    repository="owner/legado",
-                    scenario="sl-post-form-001",
-                    source_digest="a" * 40,
-                    run_id=123,
-                    attempt=2,
-                    gh=link,
+            entry = root / "bin"
+            entry.mkdir()
+            link = entry / "gh"
+            link.symlink_to("../Cellar/gh/2.89.0/bin/gh")
+            commands = []
+
+            def runner(argv, cwd):
+                commands.append(argv)
+                payload = [{
+                    "databaseId": 123,
+                    "attempt": 2,
+                    "status": "completed",
+                    "conclusion": "success",
+                    "url": "https://example.invalid/run/123",
+                    "headSha": "a" * 40,
+                    "headBranch": (
+                        "feature/oracle-sl-post-form-001-" + "a" * 40
+                    ),
+                    "event": "push",
+                }]
+                return subprocess.CompletedProcess(
+                    argv, 0, json.dumps(payload).encode(), b""
                 )
+
+            settler = GitHubOracleReceiptSettler(
+                root,
+                repository="owner/legado",
+                scenario="sl-post-form-001",
+                source_digest="a" * 40,
+                run_id=123,
+                attempt=2,
+                runner=runner,
+                gh=link,
+            )
+            replacement = cellar.parent.parent / "2.90.0/bin"
+            replacement.mkdir(parents=True)
+            replacement_gh = replacement / "gh"
+            replacement_gh.write_text("#!/bin/sh\nexit 0\n")
+            os.chmod(replacement_gh, 0o700)
+            link.unlink()
+            link.symlink_to("../Cellar/gh/2.90.0/bin/gh")
+
+            settler._verify_run()
+
+            self.assertEqual(executable.resolve(), settler.gh)
+            self.assertEqual(str(executable.resolve()), commands[0][0])
+            self.assertNotEqual(str(replacement_gh.resolve()), commands[0][0])
+
+    def test_gh_rejects_broken_and_cyclic_symlinks(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            broken = root / "broken-gh"
+            broken.symlink_to("missing-gh")
+            first = root / "first-gh"
+            second = root / "second-gh"
+            first.symlink_to(second.name)
+            second.symlink_to(first.name)
+            for candidate in (broken, first):
+                with self.subTest(candidate=candidate.name):
+                    with self.assertRaisesRegex(
+                        GitHubOracleReceiptError, "^GH_EXECUTABLE_INVALID$"
+                    ):
+                        GitHubOracleReceiptSettler(
+                            root,
+                            repository="owner/legado",
+                            scenario="sl-post-form-001",
+                            source_digest="a" * 40,
+                            run_id=123,
+                            attempt=2,
+                            gh=candidate,
+                        )
+
+    def test_gh_rejects_directory_fifo_and_non_executable_target(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            directory_target = root / "directory-gh"
+            directory_target.mkdir()
+            fifo_target = root / "fifo-gh"
+            os.mkfifo(fifo_target)
+            non_executable = root / "non-executable-gh"
+            non_executable.write_text("#!/bin/sh\nexit 0\n")
+            os.chmod(non_executable, 0o600)
+            for candidate in (
+                directory_target,
+                fifo_target,
+                non_executable,
+            ):
+                with self.subTest(candidate=candidate.name):
+                    with self.assertRaisesRegex(
+                        GitHubOracleReceiptError, "^GH_EXECUTABLE_INVALID$"
+                    ):
+                        GitHubOracleReceiptSettler(
+                            root,
+                            repository="owner/legado",
+                            scenario="sl-post-form-001",
+                            source_digest="a" * 40,
+                            run_id=123,
+                            attempt=2,
+                            gh=candidate,
+                        )
 
     def test_artifact_requires_workflow_run_provenance(self):
         with tempfile.TemporaryDirectory() as directory:

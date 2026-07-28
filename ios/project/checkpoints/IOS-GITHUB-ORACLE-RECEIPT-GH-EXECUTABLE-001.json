@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-GITHUB-ORACLE-RECEIPT-GH-EXECUTABLE-001",
+  "summary": "修复 GitHub Android Oracle Receipt Settler 对 Homebrew gh 入口 symlink 的误拒绝。Settler 现在允许入口为相对 symlink，但必须 resolve(strict=True) 到存在、无循环、普通且可执行的目标，并仅保存和调用该 resolved target；broken、cycle、目录、FIFO 与非可执行目标继续稳定返回 GH_EXECUTABLE_INVALID。回归测试使用临时版本目录，不依赖本机固定 Homebrew 版本，并证明入口后续被重定向也不会改变已固定命令目标。正式 Evidence 通过 dependency policy 与 271 项 Harness tests；本项未调用 gh、未访问网络、未生成 Receipt，也未修改 DemandCompiler、Supervisor、Dispatcher、Workflow、Oracle、Golden、Publisher、SourceLab、Requirement、业务知识 authority 或产品。",
+  "evidence": "ios/harness/evidence/runs/run-20260728T233241Z-ios-github-oracle-receipt-gh-executable-001-b074f9b5.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 67,
+      "to_revision": 68,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": [
+      "ADR-0002",
+      "ADR-0004"
+    ]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null,
+    "none_reason": "本项只修复 Receipt Settler 的本地 gh 可执行路径解析，不改变产品需求"
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项不消费、生成、发布或提升业务知识 authority"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null,
+    "none_reason": "本项只修复本地可执行路径解析，不运行、消费或修改 SourceLab"
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项不改变 Android Oracle 业务语义、Fixture、Golden、书源行为或 iOS 产品兼容行为"
+  },
+  "pitfalls": {
+    "records": [
+      "ios/project/pitfalls/PIT-0036.json"
+    ],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "真实 run 30403665320 尚未使用修复后的 Settler 重新结算，当前 Evidence 只证明本地控制面行为与回归",
+    "真实 provenance-bound artifact 与双 attestation 尚未由 Settler 完成 trusted import 并提交 create-only Receipt",
+    "verified-candidate Receipt 尚未由独立 Golden Publisher 审核并发布 scenario-aware protected Golden",
+    "SourceRuntime POST Form iOS 产品实现与差分验收仍待后续独立 Work Item"
+  ],
+  "next_actions": [
+    "使用修复后的独立 Receipt Settler 重新结算真实 sl-post-form-001 run 30403665320 与 provenance-bound exact artifact",
+    "验证双 attestation 与 trusted import 后提交 create-only verified-candidate Receipt",
+    "由独立 Publisher 审核 Receipt 与 candidate 并发布 scenario-aware protected Golden",
+    "基于已发布 Golden 续接 SourceRuntime POST Form iOS 实现与差分验收"
+  ],
+  "created_at": "2026-07-28T23:32:41Z"
+}

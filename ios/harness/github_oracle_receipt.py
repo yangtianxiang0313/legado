@@ -88,14 +88,12 @@ class GitHubOracleReceiptSettler:
             raise GitHubOracleReceiptError("GH_EXECUTABLE_INVALID")
         candidate_gh = Path(discovered_gh)
         try:
-            metadata = candidate_gh.lstat()
             resolved_gh = candidate_gh.resolve(strict=True)
             resolved_metadata = resolved_gh.stat()
         except (OSError, RuntimeError) as error:
             raise GitHubOracleReceiptError("GH_EXECUTABLE_INVALID") from error
         if (
-            stat.S_ISLNK(metadata.st_mode)
-            or not stat.S_ISREG(resolved_metadata.st_mode)
+            not stat.S_ISREG(resolved_metadata.st_mode)
             or not os.access(resolved_gh, os.X_OK)
         ):
             raise GitHubOracleReceiptError("GH_EXECUTABLE_INVALID")
