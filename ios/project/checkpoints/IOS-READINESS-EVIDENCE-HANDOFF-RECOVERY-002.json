@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-READINESS-EVIDENCE-HANDOFF-RECOVERY-002",
+  "summary": "首个真实 SourceRuntime 产品 WorkItem 完成后，历史 CAP-BOOTSTRAP/CAP-CORE 的 readiness freshness 豁免失效并使 Loop doctor_red。现将过渡证明拆成两段：实现未完成时由唯一受保护 Requirement readiness receipt 暂缓历史 enabler freshness；实现 completed 后，必须由同一目标 WorkItem 的 immutable passed Evidence、精确 Checkpoint、未变化 WorkItem spec 与相同 Requirement clauses/selection 接管。缺失、失败、篡改和错绑测试均保持 fail closed。完整 Harness tests 同时暴露 Requirement Publisher 测试只恢复知识 proposal、没有恢复 readiness promotion 前 Requirement/Catalog/Coverage；测试现从 promoted live authority 确定性构造完整 pre-state。原 IOS-READINESS-EVIDENCE-HANDOFF-001 因测试修复超出 scope 被正式 rejected，本项以 typed recovers 恢复。197 项完整 Harness tests 与 required checks 通过。",
+  "evidence": "ios/harness/evidence/runs/run-20260728T155529Z-ios-readiness-evidence-handoff-recovery-002-b0f1c0d5.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 46,
+      "to_revision": 47,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": ["ADR-0004"]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项不消费、生成或发布业务知识"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项只修复控制面 Evidence 生命周期与 Publisher 测试 pre-state，不改变产品兼容语义"
+  },
+  "pitfalls": {
+    "records": ["ios/project/pitfalls/PIT-0049.json"],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "doctor_red 且没有 active WorkItem 时，当前 Supervisor 仍不能自动物化这种控制面修复，需要 bounded recovery bootstrap",
+    "Requirement/Business Knowledge Catalog 被视为派生索引；其内容正确性依赖全局 Doctor 的确定性重建校验",
+    "SourceRuntime 的 conformance-targeted 仍只验证 FixtureTransport，尚未直接执行产品 pipeline 与 Android Golden 差分",
+    "只完成一轮产品闭环，连续第二轮需求选择与自动物化尚未实证"
+  ],
+  "next_actions": [
+    "升级 SourceRuntime ConformanceCLI 为真实 pipeline canonical projection 与 first-divergence",
+    "为 doctor_red 无 active 项增加严格分类的 corrective candidate 自动生成",
+    "选择第二个 Android 行为切片，验证连续两轮自治推进与知识沉淀"
+  ],
+  "created_at": "2026-07-28T15:55:29Z"
+}

@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0048",
+  "revision": 1,
+  "title": "受控 XML 清洗通过单个 HTML Golden 不等于浏览器级 HTML 兼容",
+  "fingerprint": "controlled-xml-html-parser-overclaimed-as-general-compatibility",
+  "capabilities": ["CAP-RUNTIME-PORTS"],
+  "symptoms": [
+    "受控 SourceLab fixture 全部通过，但真实站点的错误闭合、隐式节点或特殊实体解析失败",
+    "新 selector 或正文样本需要不断向清洗正则追加站点特例",
+    "团队把首个 Golden 通过误解为已经支持全部 HTML/CSS 书源"
+  ],
+  "conditions": [
+    "HTML backend 使用 XMLParser，并在解析前只清洗 doctype 与少数 void tags",
+    "测试样本主要是接近 XHTML 的确定性本地页面",
+    "Capability 或文档未显式限定兼容边界"
+  ],
+  "root_cause": "XML 与浏览器容错 HTML 的树构建规则不同；单个受控 Golden 只能证明该行为切片，不能证明通用解析兼容性。",
+  "diagnosis": [
+    "用 Android runner 固定失败页面并比较 document_creation 与 field_evaluation 的 first-divergence",
+    "检查失败来自树构建、selector、字段投影还是 URL 补全，禁止统一归因于规则失败",
+    "确认修复是否在 backend 内完成，而不是把书名、站点或固定 DOM 路径写进业务投影"
+  ],
+  "fix": "保持 HTML backend 为 SourceRuntime 内部可替换实现；先扩展非 XHTML Android Golden 矩阵，再评估引入经过依赖治理的 HTML parser，旧 Golden 必须持续回归。",
+  "prevention": {
+    "architecture_rule": "公开 SourceRuntime 模型不得泄漏具体 DOM/backend 类型；Capability 必须区分已验证 Golden 与未覆盖的规则/站点兼容范围。",
+    "tests": [
+      "ios/Packages/LegadoKit/Tests/SourceRuntimeTests/HTMLCSSSourceRuntimeTests.swift"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-SOURCE-RUNTIME-HTML-CSS-001",
+    "until": null
+  },
+  "status": "open",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T154037Z-ios-source-runtime-html-css-001-793d3e0f.json"
+  ]
+}

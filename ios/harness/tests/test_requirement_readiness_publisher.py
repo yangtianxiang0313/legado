@@ -63,6 +63,50 @@ class RequirementReadinessPublisherTests(unittest.TestCase):
             else:
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(source, target)
+        record_path = self.root / self.record
+        record = json.loads(record_path.read_text())
+        record["readiness"] = {
+            "state": "characterization_required",
+            "blockers": [
+                "缺少绑定 Android commit、runner 与 canonicalizer 的 protected golden",
+                "当前 SourceLab 只证明环境可复现，不证明 Android 业务输出",
+            ],
+            "next_action": (
+                "先生成 Android characterization 与 SourceLab/Oracle "
+                "前置 DAG，再创建产品实现工作项"
+            ),
+        }
+        record_path.write_text(
+            json.dumps(record, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        catalog_path = self.root / self.catalog
+        catalog = json.loads(catalog_path.read_text())
+        entry = next(
+            value
+            for value in catalog["requirements"]
+            if value["id"] == "REQ-ANDROID-SOURCE-PIPELINE-001"
+        )
+        entry["readiness"] = "characterization_required"
+        entry["record_sha256"] = publisher._json_digest(record)
+        catalog_path.write_text(
+            json.dumps(catalog, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        coverage_path = self.root / self.coverage
+        coverage = json.loads(coverage_path.read_text())
+        coverage["generated_from"]["requirement_catalog_sha256"] = (
+            publisher._json_digest(catalog)
+        )
+        coverage_path.write_text(
+            json.dumps(
+                coverage,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ),
+            encoding="utf-8",
+        )
         self._git("init", "-q")
         self._git("config", "user.name", "Requirement Publisher Tests")
         self._git("config", "user.email", "requirement@example.invalid")
