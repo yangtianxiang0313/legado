@@ -31,7 +31,6 @@
       ],
       "scope": {
         "allow_write": [
-          "ios/harness/source-lab/source_lab.py",
           "ios/harness/source-lab/tests/test_source_lab.py",
           "ios/harness/source-lab/README.md",
           "ios/project/capabilities/CAP-CONFORMANCE.json",
@@ -65,7 +64,7 @@
           "ios/project/baseline.json",
           "ios/docs/**"
         ],
-        "max_files_changed": 6,
+        "max_files_changed": 5,
         "max_changed_lines": 1400
       },
       "inputs": {

@@ -28,6 +28,19 @@ CONTROL_ROOT = Path("ios/harness/source-lab")
 SCENARIO_ID = re.compile(r"^sl-[a-z0-9-]+-[0-9]{3}$")
 FIXED_DATE = "Thu, 01 Jan 1970 00:00:00 GMT"
 ALLOWED_RESPONSE_HEADERS = {"content-type", "cache-control", "content-encoding", "location", "set-cookie"}
+CANDIDATE_CHARACTERIZATION_LABELS = {"android-oracle", "candidate-only"}
+CANDIDATE_CHARACTERIZATION_FORBIDDEN_WRITES = (
+    ".github/",
+    "app/",
+    "modules/",
+    "ios/Packages/",
+    "ios/publisher/",
+    "ios/harness/fixtures/",
+    "ios/harness/goldens/",
+    "ios/harness/source-lab/source_lab.py",
+    "ios/harness/source-lab/coverage-policy-v1.json",
+    "ios/harness/source-lab/manifest.json",
+)
 
 
 class SourceLabError(RuntimeError):
@@ -462,29 +475,52 @@ def validate_work_item_contract(root: Path, work_item_id: str, manifest: Dict[st
     if not behaviors or not scenarios or none_reason is not None:
         errors.append(f"{work_item_id}: SourceLab reuse/extend 必须声明 behavior/scenario，none_reason 为 null")
     indexed_scenarios = {entry.get("id"): entry for entry in manifest.get("scenarios", [])}
+    selected_statuses: Set[str] = set()
     for scenario_id in scenarios:
         entry = indexed_scenarios.get(scenario_id)
         if entry is None:
             errors.append(f"{work_item_id}: SourceLab scenario 未进入 manifest：{scenario_id}")
-        elif mode == "reuse" and entry.get("status") != "reference":
-            errors.append(f"{work_item_id}: reuse 只能使用 reference scenario：{scenario_id}")
+            continue
+        status = entry.get("status")
+        if isinstance(status, str):
+            selected_statuses.add(status)
+        if mode == "reuse" and status == "candidate":
+            errors.extend(
+                validate_candidate_characterization(
+                    root,
+                    work_item_id,
+                    item,
+                    scenario_id,
+                    behaviors,
+                )
+            )
+        elif mode == "reuse" and status != "reference":
+            errors.append(
+                f"{work_item_id}: reuse 只能使用 reference 或受限 "
+                f"Android characterization candidate scenario：{scenario_id}"
+            )
     coverage = manifest.get("coverage", {})
     if mode == "reuse":
-        policy = coverage_policy(root)
-        for behavior in behaviors:
-            covered = coverage.get(behavior, {})
-            rule = policy.get(behavior)
-            if rule is None:
-                errors.append(f"{work_item_id}: behavior 未登记 policy：{behavior}")
-                continue
-            minimum = rule.get("min_cases_per_role", 1)
-            for role in rule.get("required_roles", []):
-                cases = covered.get(role, [])
-                selected = [value for value in cases if value.split(":", 1)[0] in scenarios]
-                if len(selected) < minimum:
-                    errors.append(
-                        f"{work_item_id}: 所选 reference scenario 缺少 {behavior}/{role} 覆盖"
-                    )
+        if len(selected_statuses) > 1:
+            errors.append(
+                f"{work_item_id}: reuse 不得混用 reference 与 candidate scenario"
+            )
+        if selected_statuses == {"reference"}:
+            policy = coverage_policy(root)
+            for behavior in behaviors:
+                covered = coverage.get(behavior, {})
+                rule = policy.get(behavior)
+                if rule is None:
+                    errors.append(f"{work_item_id}: behavior 未登记 policy：{behavior}")
+                    continue
+                minimum = rule.get("min_cases_per_role", 1)
+                for role in rule.get("required_roles", []):
+                    cases = covered.get(role, [])
+                    selected = [value for value in cases if value.split(":", 1)[0] in scenarios]
+                    if len(selected) < minimum:
+                        errors.append(
+                            f"{work_item_id}: 所选 reference scenario 缺少 {behavior}/{role} 覆盖"
+                        )
     if mode == "extend":
         if "scenario-provenance-review" not in item.get("spec", {}).get("gates", []):
             errors.append(f"{work_item_id}: 扩展 SourceLab 必须声明 scenario-provenance-review gate")
@@ -515,6 +551,125 @@ def validate_work_item_contract(root: Path, work_item_id: str, manifest: Dict[st
             for role in rule.get("required_roles", []):
                 if counts.get(role, 0) < rule.get("min_cases_per_role", 1):
                     errors.append(f"{work_item_id}: candidate 未提供 {behavior}/{role} 覆盖")
+    return errors
+
+
+def validate_candidate_characterization(
+    root: Path,
+    work_item_id: str,
+    item: Dict[str, Any],
+    scenario_id: str,
+    behaviors: Sequence[str],
+) -> List[str]:
+    """Allow an Oracle to consume, but never promote, one candidate scenario."""
+
+    errors: List[str] = []
+    metadata = item.get("metadata", {})
+    spec = item.get("spec", {})
+    labels = set(metadata.get("labels", []))
+    requirements = spec.get("requirements", {})
+    allow_write = spec.get("scope", {}).get("allow_write", [])
+    if (
+        not CANDIDATE_CHARACTERIZATION_LABELS.issubset(labels)
+        or requirements.get("mode") != "characterization"
+        or spec.get("gates") != []
+    ):
+        errors.append(
+            f"{work_item_id}: candidate reuse 仅限无 Gate 的 "
+            "android-oracle/candidate-only characterization"
+        )
+
+    if not isinstance(allow_write, list) or any(
+        not isinstance(value, str) for value in allow_write
+    ):
+        errors.append(
+            f"{work_item_id}: candidate characterization allow_write 无效"
+        )
+    else:
+        forbidden = sorted(
+            value
+            for value in allow_write
+            if any(
+                value == prefix.rstrip("/") or value.startswith(prefix)
+                for prefix in CANDIDATE_CHARACTERIZATION_FORBIDDEN_WRITES
+            )
+        )
+        if forbidden:
+            errors.append(
+                f"{work_item_id}: candidate characterization 禁止写入："
+                + ", ".join(forbidden)
+            )
+
+    try:
+        _, case, _ = load_scenario(root, scenario_id)
+    except SourceLabError as error:
+        return [*errors, f"{work_item_id}: candidate scenario 无效：{error}"]
+    provenance = case.get("provenance", {})
+    introduced_by = provenance.get("introduced_by")
+    if not isinstance(introduced_by, str) or not introduced_by:
+        errors.append(
+            f"{work_item_id}: candidate scenario 缺少 introduced_by"
+        )
+        return errors
+
+    dependencies = spec.get("depends_on", [])
+    if dependencies != [introduced_by]:
+        errors.append(
+            f"{work_item_id}: candidate characterization 必须唯一依赖 "
+            f"introduced_by WorkItem：{introduced_by}"
+        )
+
+    try:
+        introducer = load_json(
+            root / "ios/harness/work-items" / f"{introduced_by}.json"
+        )
+        state = load_json(root / "ios/project/state.json")
+    except SourceLabError as error:
+        errors.append(
+            f"{work_item_id}: candidate provenance binding 无效：{error}"
+        )
+        return errors
+    introducer_source_lab = introducer.get("spec", {}).get("source_lab", {})
+    introducer_runtime = state.get("work_items", {}).get(introduced_by, {})
+    if (
+        introducer_source_lab.get("mode") != "extend"
+        or scenario_id not in introducer_source_lab.get("scenarios", [])
+        or introducer_runtime.get("status") != "completed"
+    ):
+        errors.append(
+            f"{work_item_id}: candidate introduced_by 尚未完成合法 extend："
+            f"{introduced_by}"
+        )
+
+    policy = coverage_policy(root)
+    candidate_coverage: Dict[str, Dict[str, int]] = {}
+    for coverage_entry in case.get("coverage", []):
+        if (
+            not isinstance(coverage_entry, dict)
+            or not isinstance(coverage_entry.get("behavior"), str)
+        ):
+            continue
+        counts: Dict[str, int] = {}
+        for role_case in coverage_entry.get("cases", []):
+            if (
+                isinstance(role_case, dict)
+                and isinstance(role_case.get("role"), str)
+            ):
+                role = role_case["role"]
+                counts[role] = counts.get(role, 0) + 1
+        candidate_coverage[coverage_entry["behavior"]] = counts
+    for behavior in behaviors:
+        rule = policy.get(behavior)
+        if rule is None:
+            errors.append(f"{work_item_id}: behavior 未登记 policy：{behavior}")
+            continue
+        counts = candidate_coverage.get(behavior, {})
+        for role in rule.get("required_roles", []):
+            if counts.get(role, 0) < rule.get("min_cases_per_role", 1):
+                errors.append(
+                    f"{work_item_id}: candidate scenario 缺少 "
+                    f"{behavior}/{role} 覆盖"
+                )
     return errors
 
 

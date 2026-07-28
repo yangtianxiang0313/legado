@@ -1,10 +1,12 @@
 import contextlib
+import copy
 import json
 import socket
 import sys
 import unittest
 import urllib.request
 from pathlib import Path
+from unittest import mock
 
 
 SOURCE_LAB_ROOT = Path(__file__).resolve().parents[1]
@@ -95,6 +97,88 @@ class SourceLabTests(unittest.TestCase):
             self.assertNotEqual(0, probe.connect_ex(address))
         finally:
             probe.close()
+
+    def test_android_oracle_can_characterize_completed_candidate(self):
+        manifest = source_lab.manifest_value(REPO_ROOT)
+        self.assertEqual(
+            [],
+            source_lab.validate_work_item_contract(
+                REPO_ROOT,
+                "IOS-ANDROID-POST-FORM-ORACLE-001",
+                manifest,
+            ),
+        )
+        self.assertEqual(
+            [],
+            source_lab.validate_work_item_contract(
+                REPO_ROOT,
+                "IOS-ANDROID-ORACLE-RUNNER-001",
+                manifest,
+            ),
+        )
+
+    def test_candidate_characterization_fails_closed_on_authority_drift(self):
+        item_id = "IOS-ANDROID-POST-FORM-ORACLE-001"
+        item_path = (
+            REPO_ROOT
+            / "ios/harness/work-items"
+            / f"{item_id}.json"
+        )
+        state_path = REPO_ROOT / "ios/project/state.json"
+        item = source_lab.load_json(item_path)
+        state = source_lab.load_json(state_path)
+        manifest = source_lab.manifest_value(REPO_ROOT)
+        original_load_json = source_lab.load_json
+
+        def validate(mutated_item, mutated_state):
+            def controlled_load_json(path):
+                if path == item_path:
+                    return mutated_item
+                if path == state_path:
+                    return mutated_state
+                return original_load_json(path)
+
+            with mock.patch.object(
+                source_lab,
+                "load_json",
+                side_effect=controlled_load_json,
+            ):
+                return source_lab.validate_work_item_contract(
+                    REPO_ROOT,
+                    item_id,
+                    manifest,
+                )
+
+        missing_label = copy.deepcopy(item)
+        missing_label["metadata"]["labels"].remove("candidate-only")
+        self.assertTrue(
+            any(
+                "candidate reuse 仅限" in value
+                for value in validate(missing_label, state)
+            )
+        )
+
+        fixture_write = copy.deepcopy(item)
+        fixture_write["spec"]["scope"]["allow_write"].append(
+            "ios/harness/fixtures/source-lab/sl-post-form-001/case.json"
+        )
+        self.assertTrue(
+            any(
+                "candidate characterization 禁止写入" in value
+                for value in validate(fixture_write, state)
+            )
+        )
+
+        incomplete_introducer = copy.deepcopy(state)
+        incomplete_introducer["work_items"][
+            "IOS-SOURCELAB-POST-FORM-001"
+        ]["status"] = "implementing"
+        self.assertTrue(
+            any(
+                "introduced_by 尚未完成合法 extend" in value
+                for value in validate(item, incomplete_introducer)
+            )
+        )
 
 
 if __name__ == "__main__":
