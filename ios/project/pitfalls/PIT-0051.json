@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0051",
+  "revision": 1,
+  "title": "书源验收只比较 HTTP 摘要会产生 SourceRuntime 假绿",
+  "fingerprint": "source-conformance-passes-without-executing-product-runtime",
+  "capabilities": ["CAP-CONFORMANCE", "CAP-RUNTIME-PORTS"],
+  "symptoms": [
+    "conformance-targeted 通过，但输出类型仍是 http_response_list",
+    "验收结果只有 response body hash，没有 search、详情、目录、正文结构化字段",
+    "SourceRuntime 规则解析或字段映射回归时，FixtureTransport 仍然可以全绿"
+  ],
+  "conditions": [
+    "SourceLab fixture 同时承担 transport 边界和产品 pipeline 样本",
+    "Conformance WorkItem runner 无条件调用通用 transport runner",
+    "Android Golden 已包含 portable_known_projection，但 iOS 未提取并比较该 lane"
+  ],
+  "root_cause": "验收层证明了测试网站可被确定性访问，却没有证明产品 SourceRuntime 消费书源规则后产生与 Android 相同的业务结果；transport 正确性被误当成 pipeline 正确性。",
+  "diagnosis": [
+    "检查 Conformance artifact 的 result.type 是否为 source_pipeline",
+    "检查 portable_known_projection 是否来自运行时结构化输出而非手写 expected",
+    "检查 expected/actual projection SHA-256 是否相同且 Golden path/digest/fixture identity 已绑定",
+    "故意修改隔离 Golden 的一个深层字段，确认返回稳定 first-divergence JSON Pointer"
+  ],
+  "fix": "source_lab_site 的 WorkItem conformance 必须从渲染书源构造真实 SourceRuntime，经 FixtureTransport 执行 Android 已观测 cases，输出 canonical portable projection，并与受保护 Golden exact compare；任何 identity、digest、projection 或字段差异均 fail closed。",
+  "prevention": {
+    "architecture_rule": "Transport lane 只证明离线边界；Product pipeline lane 必须执行真实运行时并比较结构化业务结果。两者不得互相替代。",
+    "tests": [
+      "ios/Packages/LegadoKit/Tests/ConformanceCLITests/ConformanceCLITests.swift"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-SOURCELAB-ENGINE-001",
+    "until": "IOS-SOURCE-RUNTIME-GOLDEN-CONFORMANCE-001"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T163210Z-ios-source-runtime-golden-conformance-001-739c1839.json"
+  ]
+}

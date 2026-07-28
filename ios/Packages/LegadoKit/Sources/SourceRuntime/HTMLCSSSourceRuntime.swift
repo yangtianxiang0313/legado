@@ -26,6 +26,26 @@ public struct SearchRules: Sendable, Equatable {
   public let lastChapter: HTMLCSSRule
   public let bookURL: HTMLCSSRule
   public let coverURL: HTMLCSSRule
+
+  public init(
+    list: String,
+    name: HTMLCSSRule,
+    author: HTMLCSSRule,
+    intro: HTMLCSSRule,
+    kind: HTMLCSSRule,
+    lastChapter: HTMLCSSRule,
+    bookURL: HTMLCSSRule,
+    coverURL: HTMLCSSRule
+  ) {
+    self.list = list
+    self.name = name
+    self.author = author
+    self.intro = intro
+    self.kind = kind
+    self.lastChapter = lastChapter
+    self.bookURL = bookURL
+    self.coverURL = coverURL
+  }
 }
 
 public struct BookInfoRules: Sendable, Equatable {
@@ -36,16 +56,44 @@ public struct BookInfoRules: Sendable, Equatable {
   public let lastChapter: HTMLCSSRule
   public let coverURL: HTMLCSSRule
   public let tocURL: HTMLCSSRule
+
+  public init(
+    name: HTMLCSSRule,
+    author: HTMLCSSRule,
+    intro: HTMLCSSRule,
+    kind: HTMLCSSRule,
+    lastChapter: HTMLCSSRule,
+    coverURL: HTMLCSSRule,
+    tocURL: HTMLCSSRule
+  ) {
+    self.name = name
+    self.author = author
+    self.intro = intro
+    self.kind = kind
+    self.lastChapter = lastChapter
+    self.coverURL = coverURL
+    self.tocURL = tocURL
+  }
 }
 
 public struct TOCRules: Sendable, Equatable {
   public let list: String
   public let name: HTMLCSSRule
   public let url: HTMLCSSRule
+
+  public init(list: String, name: HTMLCSSRule, url: HTMLCSSRule) {
+    self.list = list
+    self.name = name
+    self.url = url
+  }
 }
 
 public struct ContentRules: Sendable, Equatable {
   public let content: HTMLCSSRule
+
+  public init(content: HTMLCSSRule) {
+    self.content = content
+  }
 }
 
 public struct HTMLCSSSourceDefinition: Sendable, Equatable {

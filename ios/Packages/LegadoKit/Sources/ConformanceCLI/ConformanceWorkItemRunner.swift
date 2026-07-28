@@ -1,6 +1,7 @@
 import Foundation
 import LegadoCore
 import SourceRuntime
+import TestSupport
 
 public enum ConformanceWorkItemError: String, Error, Equatable, Sendable {
   case invalidWorkItemID = "invalid_work_item_id"
@@ -10,7 +11,26 @@ public enum ConformanceWorkItemError: String, Error, Equatable, Sendable {
   case fixtureNotIndexed = "fixture_not_indexed"
   case fixtureDigestMismatch = "fixture_digest_mismatch"
   case fixtureIdentityMismatch = "fixture_identity_mismatch"
+  case invalidGoldenManifest = "invalid_golden_manifest"
+  case goldenNotIndexed = "golden_not_indexed"
+  case goldenDigestMismatch = "golden_digest_mismatch"
+  case goldenIdentityMismatch = "golden_identity_mismatch"
+  case goldenProjectionMissing = "golden_projection_missing"
   case pathEscapesRepository = "path_escapes_repository"
+}
+
+public struct GoldenProjectionMismatch: Error, Equatable, Sendable, CustomStringConvertible {
+  public let fixtureID: String
+  public let difference: CanonicalDifference
+
+  public init(fixtureID: String, difference: CanonicalDifference) {
+    self.fixtureID = fixtureID
+    self.difference = difference
+  }
+
+  public var description: String {
+    "golden_projection_mismatch:\(fixtureID):\(difference.kind.rawValue):\(difference.jsonPointer)"
+  }
 }
 
 public enum ConformanceWorkItemRunner {
@@ -53,13 +73,31 @@ public enum ConformanceWorkItemRunner {
       guard try fixtureDigest(directory) == fixture.sha256 else {
         throw ConformanceWorkItemError.fixtureDigestMismatch
       }
-      let data = try await ConformanceRunner.run(fixtureDirectory: directory)
-      let artifact = try JSONValueCodec.decode(data)
+      let loaded = try FixtureLoader.loadForConformance(from: directory)
+      let data: Data
+      switch loaded {
+      case .transport(let loadedFixture)
+        where loadedFixture.definition.operation == .sourceLabSite:
+        data = try await SourcePipelineConformanceRunner.run(loadedFixture)
+      default:
+        data = try await ConformanceRunner.run(fixtureDirectory: directory)
+      }
+      var artifact = try JSONValueCodec.decode(data)
       guard
         case .object(let artifactRoot) = artifact,
         artifactRoot["fixture_id"] == .string(fixtureID)
       else {
         throw ConformanceWorkItemError.fixtureIdentityMismatch
+      }
+      if case .transport(let loadedFixture) = loaded,
+        loadedFixture.definition.operation == .sourceLabSite
+      {
+        artifact = try compareWithAndroidGolden(
+          artifact,
+          fixtureID: fixtureID,
+          fixtureSHA256: fixture.sha256,
+          repositoryRoot: root
+        )
       }
       artifacts.append(artifact)
     }
@@ -167,6 +205,93 @@ public enum ConformanceWorkItemRunner {
       ])
     }
     return try sha256(JSONValueCodec.encode(.array(inventory)))
+  }
+
+  private static func compareWithAndroidGolden(
+    _ artifact: JSONValue,
+    fixtureID: String,
+    fixtureSHA256: String,
+    repositoryRoot: URL
+  ) throws -> JSONValue {
+    let manifestURL = try resolve(
+      "ios/harness/goldens/manifest.json",
+      repositoryRoot: repositoryRoot
+    )
+    let manifest = try decodeJSON(at: manifestURL, mappedError: .invalidGoldenManifest)
+    guard
+      case .object(let manifestRoot) = manifest,
+      manifestRoot["schema_version"] == .number(JSONNumber(1)),
+      case .object(let oracle)? = manifestRoot["oracle"],
+      oracle["profile"] == .string("android-legado-v1"),
+      case .object(let fixtures)? = manifestRoot["fixtures"]
+    else {
+      throw ConformanceWorkItemError.invalidGoldenManifest
+    }
+    guard
+      case .object(let entry)? = fixtures[fixtureID],
+      case .string(let path)? = entry["path"],
+      case .string(let goldenSHA256)? = entry["golden_sha256"],
+      entry["fixture_sha256"] == .string(fixtureSHA256),
+      entry["operation"] == .string(FixtureOperation.sourceLabSite.rawValue),
+      path.hasPrefix("ios/harness/goldens/android-legado-v1/")
+    else {
+      throw ConformanceWorkItemError.goldenNotIndexed
+    }
+
+    let goldenURL = try resolve(path, repositoryRoot: repositoryRoot)
+    let goldenData: Data
+    do {
+      goldenData = try Data(contentsOf: goldenURL, options: [.mappedIfSafe])
+    } catch {
+      throw ConformanceWorkItemError.goldenDigestMismatch
+    }
+    guard sha256(goldenData) == goldenSHA256 else {
+      throw ConformanceWorkItemError.goldenDigestMismatch
+    }
+    let golden: JSONValue
+    do {
+      golden = try JSONValueCodec.decode(goldenData)
+    } catch {
+      throw ConformanceWorkItemError.goldenIdentityMismatch
+    }
+    guard
+      case .object(let goldenRoot) = golden,
+      goldenRoot["fixture_id"] == .string(fixtureID),
+      goldenRoot["operation"] == .string(FixtureOperation.sourceLabSite.rawValue),
+      case .object(let androidArtifact)? = goldenRoot["artifact"],
+      androidArtifact["fixture_id"] == .string(fixtureID),
+      case .object(var iosArtifact) = artifact,
+      iosArtifact["fixture_id"] == .string(fixtureID)
+    else {
+      throw ConformanceWorkItemError.goldenIdentityMismatch
+    }
+    let expected = try portableProjection(androidArtifact)
+    let actual = try portableProjection(iosArtifact)
+    switch CanonicalJSONComparator.compare(expected: expected, actual: actual) {
+    case .equal:
+      iosArtifact["golden_comparison"] = .object([
+        "status": .string("equal"),
+        "expected_pointer": .string("/artifact/result/value/portable_known_projection"),
+        "expected_sha256": .string(try sha256(JSONValueCodec.encode(expected))),
+        "actual_sha256": .string(try sha256(JSONValueCodec.encode(actual))),
+        "first_divergence": .null,
+      ])
+      return .object(iosArtifact)
+    case .different(let difference):
+      throw GoldenProjectionMismatch(fixtureID: fixtureID, difference: difference)
+    }
+  }
+
+  private static func portableProjection(_ artifact: [String: JSONValue]) throws -> JSONValue {
+    guard
+      case .object(let result)? = artifact["result"],
+      result["type"] == .string("source_pipeline"),
+      case .object(let value)? = result["value"],
+      let projection = value["portable_known_projection"]
+    else {
+      throw ConformanceWorkItemError.goldenProjectionMissing
+    }
+    return projection
   }
 
   private static func sha256(_ data: Data) -> String {
