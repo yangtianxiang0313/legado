@@ -141,7 +141,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 -B publisher/ios/harness/business-knowledge/business_knowledge.py doctor --root publisher
-          python3 -B publisher/ios/harness/harness.py --root publisher doctor
+          python3 -B publisher/ios/harness/harness.py --root publisher architecture
           python3 -B publisher/ios/harness/demand_compiler.py --root publisher plan \
             | tee "${RUNNER_TEMP}/demand-plan.json"
           jq -e '
