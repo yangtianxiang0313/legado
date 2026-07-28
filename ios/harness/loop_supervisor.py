@@ -2310,6 +2310,10 @@ class LoopSupervisor:
         ):
             allowed_root = ORACLE_BLUEPRINT_ROOT
         elif preview.source_relative.startswith(
+            TRUSTED_ORACLE_BLUEPRINT_ROOT + "/"
+        ):
+            allowed_root = TRUSTED_ORACLE_BLUEPRINT_ROOT
+        elif preview.source_relative.startswith(
             MIGRATION_BLUEPRINT_ROOT + "/"
         ):
             allowed_root = MIGRATION_BLUEPRINT_ROOT
@@ -2323,6 +2327,7 @@ class LoopSupervisor:
                 not in {
                     CHARACTERIZATION_BLUEPRINT_ROOT,
                     ORACLE_BLUEPRINT_ROOT,
+                    TRUSTED_ORACLE_BLUEPRINT_ROOT,
                 }
             ),
             policy_managed_gates=(

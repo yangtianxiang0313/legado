@@ -1052,6 +1052,48 @@ class MaterializationTests(unittest.TestCase):
                 (fixture.root / "ios/project/status.md").read_text(),
             )
 
+    def test_materialize_accepts_intent_named_trusted_oracle_blueprint(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            item = fixture.fixture.item(
+                "IOS-TEST-TRUSTED-ORACLE-001",
+                "CAP-BOOT",
+                80,
+            )
+            relative = (
+                loop_supervisor.TRUSTED_ORACLE_BLUEPRINT_ROOT
+                + "/MINT-TEST-TRUSTED-ORACLE-001.json"
+            )
+            fixture.fixture.write_json(relative, item)
+            path = fixture.root / relative
+            supervisor = loop_supervisor.LoopSupervisor(
+                fixture.harness
+            )
+            preview = supervisor.preflight_candidate(
+                path,
+                allowed_root=(
+                    loop_supervisor.TRUSTED_ORACLE_BLUEPRINT_ROOT
+                ),
+                require_filename_match=False,
+            )
+
+            item_id = supervisor.materialize(
+                preview,
+                reason="unit test",
+            )
+
+            self.assertEqual(
+                "IOS-TEST-TRUSTED-ORACLE-001",
+                item_id,
+            )
+            self.assertTrue(
+                (
+                    fixture.root
+                    / "ios/harness/work-items"
+                    / f"{item_id}.json"
+                ).is_file()
+            )
+
     def test_materialization_rolls_back_all_files_on_partial_failure(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = MaterializationFixture(Path(directory))
