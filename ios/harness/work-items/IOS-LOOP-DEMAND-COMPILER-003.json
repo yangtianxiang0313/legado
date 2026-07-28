@@ -1,0 +1,171 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-LOOP-DEMAND-COMPILER-003",
+    "title": "建立结构化 Delivery Intent 与 Loop Demand Compiler",
+    "priority": 100,
+    "risk": "high",
+    "labels": [
+      "phase-0",
+      "control-plane",
+      "loop-supervisor",
+      "demand-compiler",
+      "delivery-intent"
+    ]
+  },
+  "spec": {
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "intent": "修复 Loop 在没有 eligible blueprint 时错误报告 queue_empty 的断点。建立 HEAD 中的结构化 Delivery Intent，精确声明目标 Work Item、Capability、accepted Requirement revision/clauses、所需 published Business Knowledge、protected Golden 和预期 blueprint。Demand Compiler 只读取这些显式 selector 与受保护现状，输出确定性的最短前置链和稳定 reason code：knowledge_authority_required、requirement_readiness_required、blueprint_required、delivery_ready。它不得从自然语言 next_actions、标题、Android package 或测试结果发明需求，不得自行 publish/accept/promote/update Golden。Supervisor 在工作队列和自动物化候选均为空时消费 Demand Plan；存在机器可继续的控制项时报告具体 next artifact，存在 Human Decision/Authority Transition 时结构化暂停，真正没有 Intent 时才 queue_empty。本项以 SourceRuntime HTML/CSS 纵向目标作为首个真实 Intent，并用 protected sl-html-basic-001 揭示当前知识 proposal 与 Requirement readiness 的真实缺口。",
+    "depends_on": [
+      "IOS-LOOP-DEMAND-AUTONOMY-RECOVERY-002",
+      "IOS-ANDROID-GOLDEN-PUBLISHER-001"
+    ],
+    "scope": {
+      "allow_write": [
+        "ios/harness/demand_compiler.py",
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/tests/test_demand_compiler.py",
+        "ios/harness/tests/test_loop_supervisor.py",
+        "ios/harness/README.md",
+        "ios/project/delivery-intents/DINT-SOURCE-RUNTIME-HTML-CSS-001.json",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-LOOP-DEMAND-COMPILER-003.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        ".github/**",
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "ios/docs/**",
+        "ios/harness/goldens/**",
+        "ios/harness/schemas/**",
+        "ios/harness/business-knowledge/**",
+        "ios/harness/android-intake/**",
+        "ios/harness/source-lab/**",
+        "ios/harness/oracle/**",
+        "ios/project/android-intake/**",
+        "ios/project/business-knowledge/**",
+        "ios/project/requirements/**",
+        "ios/project/approvals/**",
+        "ios/project/baseline.json"
+      ],
+      "max_files_changed": 10,
+      "max_changed_lines": 2600
+    },
+    "inputs": {
+      "context_files": [
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/goldens/manifest.json",
+        "ios/harness/goldens/releases/sl-html-basic-001-30355913470-1.json",
+        "ios/project/requirements/catalog.json",
+        "ios/project/requirements/accepted/REQ-ANDROID-SOURCE-PIPELINE-001.json",
+        "ios/project/business-knowledge/catalog.json",
+        "ios/project/business-knowledge/packets/proposals/BKP-SOURCE-RUNTIME-001/r0001.json",
+        "ios/project/business-knowledge/drivers/proposals/DRV-SOURCE-RUNTIME-BOUNDARY-001/r0001.json",
+        "ios/project/capabilities/CAP-RUNTIME-PORTS.json"
+      ],
+      "android_source_anchors": [],
+      "fixtures": ["sl-html-basic-001"]
+    },
+    "architecture_refs": ["ARCH-014", "ARCH-017", "ADR-0002", "ADR-0004"],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "Delivery Intent 是 HEAD 中的完整普通 JSON，精确声明 intent ID、target Work Item、priority、Capability revision、Requirement revision/clauses、published Packet/Driver selectors、Golden fixtures 与 blueprint path；未知字段、重复 selector、ID/path 不一致均 fail closed。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "Demand Compiler 逐层绑定 Capability、Requirement Catalog/record、Business Knowledge Catalog 和 protected Golden release receipt，并输出每个 artifact 的状态、路径、revision 与 SHA-256；缺失、非普通文件、hash/authority/run/source/proposal 漂移均产生稳定 blocker。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "最短链顺序固定为 knowledge_authority_required → requirement_readiness_required → blueprint_required → delivery_ready；一个阶段未满足时不伪造后续完成，也不把 Authority Transition 降级为普通 Agent 写入。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-4",
+          "statement": "Supervisor 仅在无 active/ready/terminal recovery/compiled candidate/delivery candidate 时消费 Demand Plan；有 Intent 时不再返回 queue_empty，Authority Transition 返回 requires_human=false 但 details.authority_transition=true，表示需要受信执行器而非人工产品决策。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-5",
+          "statement": "SourceRuntime HTML/CSS Intent 绑定 REQ-ANDROID-SOURCE-PIPELINE-001@1 RC-01..04、BKP/DRV SourceRuntime@1、CAP-RUNTIME-PORTS@2 和 sl-html-basic-001；当前真实仓库输出 knowledge_authority_required，而不是 queue_empty 或 delivery_ready。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-6",
+          "statement": "README、Checkpoint、Pitfall 与 Capability 记录 Demand Compiler 信任边界、当前最短链、恢复方式和剩余外部权威风险。",
+          "verified_by": ["memory-close"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": ["dependency-policy", "harness-tests"]
+    },
+    "baseline_checks": ["dependency-policy", "harness-tests"],
+    "budget": {
+      "max_edit_verify_cycles": 4,
+      "max_full_test_runs": 4,
+      "max_targeted_test_runs": 20,
+      "max_infra_retries": 2,
+      "wall_clock_seconds": 14400
+    },
+    "gates": [],
+    "completion_effects": {
+      "health": {
+        "loop_demand_compiler": "structured_delivery_intent_v1"
+      }
+    },
+    "memory": {
+      "capability_state_required": true,
+      "checkpoint_required": true,
+      "pitfall_update_required": true
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "refs": [],
+      "none_reason": "本项建立需求编译控制面，不修改产品 Requirement"
+    },
+    "source_lab": {
+      "mode": "not_applicable",
+      "behaviors": [],
+      "scenarios": [],
+      "none_reason": "本项只读取 protected Golden selector，不执行或扩展 SourceLab"
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "not_applicable",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [],
+      "expected_ledger_transitions": [],
+      "context_budget": {
+        "max_claims": 20,
+        "max_bytes": 32768
+      },
+      "none_reason": "本项不消费、生成或发布业务知识"
+    },
+    "stop_on": [
+      "Intent selector 需要 AI 从自然语言猜测",
+      "需要普通 Agent 修改 accepted/published/protected artifact",
+      "受保护 Golden receipt 或 Requirement record 漂移",
+      "出现未建模 Human Decision 或 Authority Transition"
+    ]
+  }
+}
