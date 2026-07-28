@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0045",
+  "revision": 1,
+  "title": "受信事务必须先冻结为不可变提交再运行 HEAD 绑定验证",
+  "fingerprint": "trusted-transaction-verified-before-local-commit",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "Business Knowledge doctor 与 Harness doctor 均通过",
+    "Demand Compiler 对被发布事务合法改写的 Catalog 报 DEMAND_INPUT_HEAD_DRIFT",
+    "把本地脏 Catalog 特判为可信会削弱所有普通工作树的 fail-closed 语义"
+  ],
+  "conditions": [
+    "外部受信 Publisher 已把事务安装到 checkout 工作树",
+    "验证器要求所有控制输入与 HEAD 内容一致",
+    "workflow 在验证之后才创建 release commit"
+  ],
+  "root_cause": "验证对象的内容是完整且受限的，但尚未形成不可变 Git 身份。把 authority receipt 放进脏工作树并不能替代 HEAD 绑定，否则本地进程可以伪造同类 receipt。",
+  "diagnosis": [
+    "确认事务安装集合与删除集合已被 workflow 精确限制",
+    "确认失败只发生在 HEAD_DRIFT，且前置图校验已通过",
+    "检查 commit、verify、push 三个阶段的顺序；commit 必须早于 verify，push 必须晚于 verify"
+  ],
+  "fix": "先在 runner 本地创建只包含受限原子事务的 release commit并确认 clean，再连续运行三个验证器；全部通过后才 push 该同一 commit。",
+  "prevention": {
+    "architecture_rule": "任何依赖 Git HEAD 身份的受信验证都必须针对不可变本地 commit；本地 commit 可以先于验证，但任何外部 push、PR 或 authority 落库必须晚于全部验证。",
+    "tests": [
+      "ios/harness/tests/test_business_knowledge_publisher.py#test_workflow_is_environment_protected_pinned_and_pr_only",
+      "ios/harness/tests/test_demand_compiler.py#test_receipt_tamper_and_uncommitted_intent_fail_closed"
+    ],
+    "lint": [
+      "YAML parser",
+      "workflow step-order assertions"
+    ]
+  },
+  "affected_versions": {
+    "from": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-001",
+    "until": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-IMMUTABLE-005"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T145735Z-ios-business-knowledge-publisher-immutable-005-eb42a5b9.json",
+    "https://github.com/yangtianxiang0313/legado/actions/runs/30370211612"
+  ]
+}

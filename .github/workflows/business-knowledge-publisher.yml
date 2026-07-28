@@ -184,24 +184,7 @@ jobs:
           )"
           test "${actual}" = "${expected}"
 
-      - name: Independently verify the installed graph and next Loop state
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 -B publisher/ios/harness/business-knowledge/business_knowledge.py \
-            doctor --root publisher
-          python3 -B publisher/ios/harness/harness.py \
-            --root publisher doctor
-          python3 -B publisher/ios/harness/demand_compiler.py \
-            --root publisher plan \
-            | tee "${RUNNER_TEMP}/demand-plan.json"
-          jq -e '
-            .state == "requirement_readiness_required"
-            and .reason_code == "REQUIREMENT_READINESS_REQUIRED"
-            and .authority_transition == true
-          ' "${RUNNER_TEMP}/demand-plan.json"
-
-      - name: Commit release branch and create review PR
+      - name: Freeze staged authority transaction in a local commit
         shell: bash
         run: |
           set -euo pipefail
@@ -229,7 +212,37 @@ jobs:
             "${DRIVER_PROPOSAL}"
           git -C publisher commit \
             -m "chore(ios): publish HTML/CSS SourceRuntime knowledge"
-          git -C publisher push origin "HEAD:refs/heads/${release_branch}"
+          test -z "$(
+            git -C publisher status --porcelain=v1 --untracked-files=all
+          )"
+          printf 'RELEASE_BRANCH=%s\n' "${release_branch}" >>"${GITHUB_ENV}"
+
+      - name: Independently verify the installed graph and next Loop state
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B publisher/ios/harness/business-knowledge/business_knowledge.py \
+            doctor --root publisher
+          python3 -B publisher/ios/harness/harness.py \
+            --root publisher doctor
+          python3 -B publisher/ios/harness/demand_compiler.py \
+            --root publisher plan \
+            | tee "${RUNNER_TEMP}/demand-plan.json"
+          jq -e '
+            .state == "requirement_readiness_required"
+            and .reason_code == "REQUIREMENT_READINESS_REQUIRED"
+            and .authority_transition == true
+          ' "${RUNNER_TEMP}/demand-plan.json"
+
+      - name: Push verified release commit and create review PR
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C publisher branch --show-current)" = "${RELEASE_BRANCH}"
+          test -z "$(
+            git -C publisher status --porcelain=v1 --untracked-files=all
+          )"
+          git -C publisher push origin "HEAD:refs/heads/${RELEASE_BRANCH}"
           printf -v pr_body '%s\n' \
             "Environment-authorized Business Knowledge publication." \
             "" \
@@ -245,7 +258,7 @@ jobs:
             gh pr create \
               --repo "${GITHUB_REPOSITORY}" \
               --base "${TARGET_BRANCH}" \
-              --head "${release_branch}" \
+              --head "${RELEASE_BRANCH}" \
               --title "chore(ios): publish HTML/CSS SourceRuntime knowledge" \
               --body "${pr_body}"
           )"
