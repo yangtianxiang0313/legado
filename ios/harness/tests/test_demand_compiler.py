@@ -336,6 +336,241 @@ class DemandFixture:
         self.commit("settle delivery")
 
 
+class MigrationFixture:
+    intent_id = "MINT-TEST-MIGRATION-001"
+    target_id = "IOS-TEST-MIGRATION-001"
+    target_requirement_id = "REQ-TEST-MIGRATION-001"
+    proposal_id = "ARQ-TEST-MIGRATION"
+    capability_id = "CAP-TEST-MIGRATION"
+    control_capability_id = "CAP-KNOWLEDGE-CONTROL"
+    source_relative = "app/src/main/java/example/AnalyzeUrl.kt"
+
+    def __init__(self, root: Path):
+        self.root = root
+        subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+        subprocess.run(
+            ["git", "config", "user.name", "Migration Test"],
+            cwd=root,
+            check=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.email", "migration@example.invalid"],
+            cwd=root,
+            check=True,
+        )
+        source = root / self.source_relative
+        source.parent.mkdir(parents=True, exist_ok=True)
+        source.write_text("class AnalyzeUrl { fun post() = Unit }\n")
+        self.write_json(
+            demand_compiler.SOURCE_LAB_COVERAGE_POLICY,
+            {
+                "behaviors": [
+                    {
+                        "id": "transport.post-form",
+                        "status": "planned",
+                        "phase": 1,
+                    }
+                ]
+            },
+        )
+        self.write_json(
+            f"ios/project/capabilities/{self.capability_id}.json",
+            {"id": self.capability_id, "revision": 3},
+        )
+        self.write_json(
+            demand_compiler.REQUIREMENT_CATALOG,
+            {"requirements": []},
+        )
+        self.write_json(
+            (
+                f"{demand_compiler.MIGRATION_BLUEPRINT_ROOT}/"
+                f"{self.target_id}.json"
+            ),
+            {
+                "api_version": "legado.harness/v1",
+                "kind": "WorkItem",
+                "metadata": {"id": self.target_id},
+                "spec": {
+                    "requirements": {"mode": "control_plane"},
+                    "gates": [],
+                },
+            },
+        )
+        self.commit("android baseline")
+        self.baseline_commit = self.git("rev-parse", "HEAD")
+        self.source_blob = self.git(
+            "rev-parse",
+            f"HEAD:{self.source_relative}",
+        )
+        self.write_json(
+            demand_compiler.BASELINE_PATH,
+            {
+                "android_oracle": {
+                    "git_commit": self.baseline_commit,
+                }
+            },
+        )
+        self.intent_relative = (
+            f"{demand_compiler.MIGRATION_INTENT_ROOT}/"
+            f"{self.intent_id}.json"
+        )
+        self.write_json(self.intent_relative, self.intent())
+        self.commit("migration control")
+
+    def write_json(self, relative: str, value):
+        path = self.root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            json.dumps(value, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+
+    def git(self, *arguments: str) -> str:
+        return subprocess.run(
+            ["git", *arguments],
+            cwd=self.root,
+            check=True,
+            stdout=subprocess.PIPE,
+            text=True,
+        ).stdout.strip()
+
+    def commit(self, message: str):
+        subprocess.run(["git", "add", "."], cwd=self.root, check=True)
+        subprocess.run(
+            ["git", "commit", "-qm", message],
+            cwd=self.root,
+            check=True,
+        )
+
+    def intent(self):
+        return {
+            "schema_version": 1,
+            "kind": "AndroidMigrationIntent",
+            "id": self.intent_id,
+            "priority": 100,
+            "phase": 1,
+            "target_work_item_id": self.target_id,
+            "capability": {
+                "id": self.capability_id,
+                "revision": 3,
+            },
+            "android_baseline": {"commit": self.baseline_commit},
+            "source_anchors": [
+                {
+                    "path": self.source_relative,
+                    "git_blob": self.source_blob,
+                    "symbols": [
+                        "kotlin://example/AnalyzeUrl/post",
+                    ],
+                }
+            ],
+            "source_lab": {
+                "behavior": "transport.post-form",
+                "expected_status": "planned",
+            },
+            "requirement_proposal": {
+                "id": self.proposal_id,
+                "target_requirement_id": self.target_requirement_id,
+                "dedupe_key": (
+                    f"{self.capability_id}/transport.post-form/test"
+                ),
+                "path": (
+                    "ios/project/requirement-proposals/"
+                    f"{self.proposal_id}.json"
+                ),
+            },
+            "intake_blueprint": (
+                f"{demand_compiler.MIGRATION_BLUEPRINT_ROOT}/"
+                f"{self.target_id}.json"
+            ),
+        }
+
+    def compiler(self):
+        return demand_compiler.DemandCompiler(self.root)
+
+    def intent_path(self):
+        return self.root / self.intent_relative
+
+    def settle(self):
+        work_item = {
+            "metadata": {"id": self.target_id},
+            "spec": {
+                "capability": self.control_capability_id,
+                "requirements": {"mode": "control_plane"},
+                "gates": [],
+            },
+        }
+        work_item_relative = (
+            f"{demand_compiler.WORK_ITEM_ROOT}/{self.target_id}.json"
+        )
+        self.write_json(work_item_relative, work_item)
+        work_item_sha = demand_compiler._sha256_json(work_item)
+        evidence_relative = (
+            f"{demand_compiler.EVIDENCE_ROOT}/migration-settled.json"
+        )
+        self.write_json(
+            evidence_relative,
+            {
+                "work_item_id": self.target_id,
+                "work_item_sha256": work_item_sha,
+                "result": "passed",
+            },
+        )
+        evidence_sha = hashlib.sha256(
+            (self.root / evidence_relative).read_bytes()
+        ).hexdigest()
+        self.write_json(
+            f"{demand_compiler.CHECKPOINT_ROOT}/{self.target_id}.json",
+            {
+                "work_item_id": self.target_id,
+                "evidence": evidence_relative,
+                "capability_updates": [
+                    {
+                        "id": self.control_capability_id,
+                        "from_revision": 10,
+                        "to_revision": 11,
+                    }
+                ],
+            },
+        )
+        self.write_json(
+            (
+                "ios/project/capabilities/"
+                f"{self.control_capability_id}.json"
+            ),
+            {"id": self.control_capability_id, "revision": 11},
+        )
+        proposal = self.intent()["requirement_proposal"]
+        self.write_json(
+            proposal["path"],
+            {
+                "schema_version": 1,
+                "id": self.proposal_id,
+                "target_requirement_id": self.target_requirement_id,
+                "status": "proposed",
+                "dedupe_key": proposal["dedupe_key"],
+                "source_facts": ["AF-TEST"],
+                "unknowns": ["runner output"],
+                "source_lab_gap": ["transport.post-form"],
+                "auto_action": "create_characterization_dag",
+            },
+        )
+        self.write_json(
+            demand_compiler.STATE_PATH,
+            {
+                "work_items": {
+                    self.target_id: {
+                        "status": "completed",
+                        "work_item_sha256": work_item_sha,
+                        "last_evidence": evidence_relative,
+                        "last_evidence_sha256": evidence_sha,
+                    }
+                }
+            },
+        )
+        self.commit("settle migration")
+
+
 class DemandCompilerTests(unittest.TestCase):
     def test_compiles_shortest_authority_and_delivery_chain(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -481,6 +716,119 @@ class DemandCompilerTests(unittest.TestCase):
                 "DELIVERY_SETTLEMENT_INVALID",
             ):
                 fixture.compiler().compile(fixture.intent_path())
+
+    def test_compiles_source_anchored_migration_intake(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MigrationFixture(Path(directory))
+
+            plan = fixture.compiler().compile_migration(
+                fixture.intent_path()
+            )
+
+            self.assertEqual("migration_intake_ready", plan.state)
+            self.assertEqual(
+                demand_compiler.MIGRATION_POLICY,
+                plan.policy,
+            )
+            self.assertEqual("android_migration", plan.intent_kind)
+            self.assertEqual(
+                fixture.source_blob,
+                plan.bindings["sources"][0]["git_blob"],
+            )
+            self.assertEqual(
+                "transport.post-form",
+                plan.artifacts[0]["id"],
+            )
+
+    def test_migration_source_and_coverage_drift_fail_closed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MigrationFixture(Path(directory))
+            intent = fixture.intent()
+            intent["source_anchors"][0]["git_blob"] = "f" * 40
+            fixture.write_json(fixture.intent_relative, intent)
+            fixture.commit("wrong source blob")
+            with self.assertRaisesRegex(
+                demand_compiler.DemandCompilerError,
+                "MIGRATION_SOURCE_BLOB_DRIFT",
+            ):
+                fixture.compiler().compile_migration(
+                    fixture.intent_path()
+                )
+
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MigrationFixture(Path(directory))
+            fixture.write_json(
+                demand_compiler.SOURCE_LAB_COVERAGE_POLICY,
+                {
+                    "behaviors": [
+                        {
+                            "id": "transport.post-form",
+                            "status": "active",
+                            "phase": 1,
+                        }
+                    ]
+                },
+            )
+            fixture.commit("coverage drift")
+            with self.assertRaisesRegex(
+                demand_compiler.DemandCompilerError,
+                "MIGRATION_BEHAVIOR_BINDING_DRIFT",
+            ):
+                fixture.compiler().compile_migration(
+                    fixture.intent_path()
+                )
+
+    def test_migration_settlement_requires_exact_evidence_and_proposal(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MigrationFixture(Path(directory))
+            fixture.settle()
+
+            plan = fixture.compiler().compile_migration(
+                fixture.intent_path()
+            )
+
+            self.assertEqual("requirement_authority_required", plan.state)
+            self.assertTrue(plan.authority_transition)
+
+            proposal_path = (
+                fixture.root
+                / fixture.intent()["requirement_proposal"]["path"]
+            )
+            proposal = json.loads(proposal_path.read_text())
+            proposal["dedupe_key"] = "tampered"
+            fixture.write_json(
+                str(proposal_path.relative_to(fixture.root)),
+                proposal,
+            )
+            fixture.commit("tamper proposal")
+            with self.assertRaisesRegex(
+                demand_compiler.DemandCompilerError,
+                "MIGRATION_SETTLEMENT_INVALID",
+            ):
+                fixture.compiler().compile_migration(
+                    fixture.intent_path()
+                )
+
+    def test_plans_include_migration_and_invalid_items_block(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MigrationFixture(Path(directory))
+            plans, blockers = fixture.compiler().plans()
+            self.assertEqual([], list(blockers))
+            self.assertEqual([fixture.intent_id], [
+                plan.intent_id for plan in plans
+            ])
+
+            intent = fixture.intent()
+            intent["source_anchors"][0]["git_blob"] = "e" * 40
+            fixture.write_json(fixture.intent_relative, intent)
+            fixture.commit("invalidate migration")
+            plans, blockers = fixture.compiler().plans()
+            self.assertEqual([], list(plans))
+            self.assertEqual("android_migration", blockers[0]["intent_kind"])
+            self.assertIn(
+                "MIGRATION_SOURCE_BLOB_DRIFT",
+                blockers[0]["reason_code"],
+            )
 
 
 if __name__ == "__main__":

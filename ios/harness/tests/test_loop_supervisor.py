@@ -311,6 +311,122 @@ class MaterializationTests(unittest.TestCase):
                     )._demand_decision([])
                 )
 
+    def test_migration_demand_maps_to_automatic_materialization(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            plan = loop_supervisor.DemandPlan(
+                intent_id="MINT-SOURCE-REQUEST-POST-FORM-001",
+                priority=100,
+                target_work_item_id=(
+                    "IOS-ANDROID-REQUEST-OPTIONS-INTAKE-001"
+                ),
+                state="migration_intake_ready",
+                reason_code="MIGRATION_INTAKE_INPUTS_READY",
+                authority_transition=False,
+                artifacts=(),
+                bindings={"blueprint": {}, "requirement_proposal": {}},
+                policy=loop_supervisor.MIGRATION_MATERIALIZATION_POLICY,
+                intent_kind="android_migration",
+            )
+            supervisor = loop_supervisor.LoopSupervisor(fixture.harness)
+            with mock.patch.object(
+                loop_supervisor.DemandCompiler,
+                "plans",
+                return_value=((plan,), ()),
+            ), mock.patch.object(
+                supervisor,
+                "_migration_plan_preview",
+            ):
+                decision = supervisor._demand_decision([])
+
+            self.assertEqual(
+                "migration_materialization_ready",
+                decision.state,
+            )
+            self.assertEqual(
+                "MINT-SOURCE-REQUEST-POST-FORM-001",
+                decision.details["demand_plan"]["intent_id"],
+            )
+            self.assertFalse(decision.requires_human)
+
+    def test_migration_materialization_recomputes_selected_plan(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            supervisor = loop_supervisor.LoopSupervisor(fixture.harness)
+            plan = loop_supervisor.DemandPlan(
+                intent_id="MINT-TEST-MIGRATION-001",
+                priority=100,
+                target_work_item_id="IOS-TEST-MIGRATION-001",
+                state="migration_intake_ready",
+                reason_code="MIGRATION_INTAKE_INPUTS_READY",
+                authority_transition=False,
+                artifacts=(),
+                bindings={},
+                policy=loop_supervisor.MIGRATION_MATERIALIZATION_POLICY,
+                intent_kind="android_migration",
+            )
+            preview = mock.Mock(
+                spec=loop_supervisor.MaterializationPreview
+            )
+            with mock.patch.object(
+                loop_supervisor.DemandCompiler,
+                "plans",
+                return_value=((plan,), ()),
+            ), mock.patch.object(
+                supervisor,
+                "_migration_plan_preview",
+                return_value=preview,
+            ), mock.patch.object(
+                supervisor,
+                "materialize",
+                return_value=plan.target_work_item_id,
+            ) as materialize:
+                result = supervisor.auto_materialize_migration(
+                    plan.intent_id
+                )
+
+            self.assertEqual(plan.target_work_item_id, result)
+            materialize.assert_called_once_with(
+                preview,
+                reason=(
+                    "policy:"
+                    + loop_supervisor.MIGRATION_MATERIALIZATION_POLICY
+                ),
+                provenance=plan.to_dict(),
+            )
+
+    def test_migration_scope_rejects_product_and_authority_paths(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            item = fixture.fixture.item(
+                "IOS-TEST-MIGRATION-001",
+                "CAP-KNOWLEDGE-CONTROL",
+                100,
+            )
+            item["spec"]["scope"]["allow_write"] = [
+                "ios/Packages/LegadoKit/Sources/SourceRuntime/New.swift"
+            ]
+            issues = loop_supervisor.LoopSupervisor(
+                fixture.harness
+            )._migration_scope_issues(
+                item,
+                (
+                    "ios/project/requirement-proposals/"
+                    "ARQ-TEST-MIGRATION.json"
+                ),
+            )
+            self.assertIn(
+                "MIGRATION_SCOPE_FORBIDDEN:"
+                "ios/Packages/LegadoKit/Sources/SourceRuntime/New.swift",
+                issues,
+            )
+            self.assertTrue(
+                any(
+                    issue.startswith("MIGRATION_SCOPE_DENY_MISSING:")
+                    for issue in issues
+                )
+            )
+
     def test_preflight_rejects_outside_symlink_and_incomplete_dependency(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = MaterializationFixture(Path(directory))

@@ -14,20 +14,32 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 
 INTENT_ROOT = "ios/project/delivery-intents"
+MIGRATION_INTENT_ROOT = "ios/project/migration-intents"
 REQUIREMENT_CATALOG = "ios/project/requirements/catalog.json"
 KNOWLEDGE_CATALOG = "ios/project/business-knowledge/catalog.json"
 GOLDEN_MANIFEST = "ios/harness/goldens/manifest.json"
 DELIVERY_BLUEPRINT_ROOT = "ios/project/work-item-proposals/delivery-blueprints"
+MIGRATION_BLUEPRINT_ROOT = (
+    "ios/project/work-item-proposals/migration-blueprints"
+)
+BASELINE_PATH = "ios/project/baseline.json"
+SOURCE_LAB_COVERAGE_POLICY = (
+    "ios/harness/source-lab/coverage-policy-v1.json"
+)
 STATE_PATH = "ios/project/state.json"
 WORK_ITEM_ROOT = "ios/harness/work-items"
 CHECKPOINT_ROOT = "ios/project/checkpoints"
 EVIDENCE_ROOT = "ios/harness/evidence/runs"
 POLICY = "structured-delivery-intent-v1"
+MIGRATION_POLICY = "source-anchored-android-migration-v1"
 INTENT_ID = re.compile(r"^DINT-[A-Z][A-Z0-9-]*-[0-9]{3}$")
+MIGRATION_INTENT_ID = re.compile(r"^MINT-[A-Z][A-Z0-9-]*-[0-9]{3}$")
 WORK_ITEM_ID = re.compile(r"^IOS-[A-Z][A-Z0-9-]*-[0-9]{3}$")
 REQUIREMENT_ID = re.compile(r"^REQ-[A-Z0-9-]+$")
+REQUIREMENT_PROPOSAL_ID = re.compile(r"^ARQ-[A-Z][A-Z0-9-]*$")
 CAPABILITY_ID = re.compile(r"^CAP-[A-Z0-9-]+$")
 KNOWLEDGE_ID = re.compile(r"^(BKP|DRV)-[A-Z][A-Z0-9-]*-[0-9]{3}$")
+HEX40 = re.compile(r"^[0-9a-f]{40}$")
 
 
 class DemandCompilerError(RuntimeError):
@@ -70,11 +82,14 @@ class DemandPlan:
     authority_transition: bool
     artifacts: Tuple[Mapping[str, Any], ...]
     bindings: Mapping[str, Any]
+    policy: str = POLICY
+    intent_kind: str = "delivery"
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "schema_version": 1,
-            "policy": POLICY,
+            "policy": self.policy,
+            "intent_kind": self.intent_kind,
             "intent_id": self.intent_id,
             "priority": self.priority,
             "target_work_item_id": self.target_work_item_id,
@@ -272,6 +287,371 @@ class DemandCompiler:
         )
         if intent.get("blueprint") != expected_blueprint:
             raise DemandCompilerError("INTENT_BLUEPRINT_PATH_INVALID")
+
+    def _validate_migration_intent(
+        self,
+        intent: Mapping[str, Any],
+        relative: str,
+    ) -> None:
+        required = {
+            "schema_version",
+            "kind",
+            "id",
+            "priority",
+            "phase",
+            "target_work_item_id",
+            "capability",
+            "android_baseline",
+            "source_anchors",
+            "source_lab",
+            "requirement_proposal",
+            "intake_blueprint",
+        }
+        if set(intent) != required:
+            raise DemandCompilerError("MIGRATION_INTENT_FIELDS_INVALID")
+        intent_id = intent.get("id")
+        target = intent.get("target_work_item_id")
+        priority = intent.get("priority")
+        phase = intent.get("phase")
+        if (
+            intent.get("schema_version") != 1
+            or intent.get("kind") != "AndroidMigrationIntent"
+            or not isinstance(intent_id, str)
+            or MIGRATION_INTENT_ID.fullmatch(intent_id) is None
+            or relative
+            != f"{MIGRATION_INTENT_ROOT}/{intent_id}.json"
+            or not isinstance(target, str)
+            or WORK_ITEM_ID.fullmatch(target) is None
+            or not isinstance(priority, int)
+            or isinstance(priority, bool)
+            or not 0 <= priority <= 100
+            or not isinstance(phase, int)
+            or isinstance(phase, bool)
+            or not 1 <= phase <= 4
+        ):
+            raise DemandCompilerError("MIGRATION_INTENT_IDENTITY_INVALID")
+
+        capability = intent.get("capability")
+        if (
+            not isinstance(capability, dict)
+            or set(capability) != {"id", "revision"}
+        ):
+            raise DemandCompilerError("MIGRATION_CAPABILITY_INVALID")
+        self._selector(
+            capability,
+            label="MIGRATION_CAPABILITY",
+            identifier_pattern=CAPABILITY_ID,
+        )
+
+        baseline = intent.get("android_baseline")
+        if (
+            not isinstance(baseline, dict)
+            or set(baseline) != {"commit"}
+            or not isinstance(baseline.get("commit"), str)
+            or HEX40.fullmatch(baseline["commit"]) is None
+        ):
+            raise DemandCompilerError("MIGRATION_BASELINE_INVALID")
+
+        anchors = intent.get("source_anchors")
+        if not isinstance(anchors, list) or not anchors:
+            raise DemandCompilerError("MIGRATION_SOURCE_ANCHORS_INVALID")
+        paths = set()
+        for anchor in anchors:
+            if (
+                not isinstance(anchor, dict)
+                or set(anchor) != {"path", "git_blob", "symbols"}
+            ):
+                raise DemandCompilerError(
+                    "MIGRATION_SOURCE_ANCHORS_INVALID"
+                )
+            path = anchor.get("path")
+            blob = anchor.get("git_blob")
+            symbols = anchor.get("symbols")
+            components = (
+                path.split("/") if isinstance(path, str) else []
+            )
+            if (
+                not isinstance(path, str)
+                or not path.startswith("app/")
+                or "\\" in path
+                or "\0" in path
+                or any(value in {"", ".", ".."} for value in components)
+                or path in paths
+                or not isinstance(blob, str)
+                or HEX40.fullmatch(blob) is None
+                or not isinstance(symbols, list)
+                or not symbols
+                or len(symbols) != len(set(symbols))
+                or any(
+                    not isinstance(symbol, str)
+                    or not symbol.startswith("kotlin://")
+                    for symbol in symbols
+                )
+            ):
+                raise DemandCompilerError(
+                    "MIGRATION_SOURCE_ANCHORS_INVALID"
+                )
+            paths.add(path)
+
+        source_lab = intent.get("source_lab")
+        if (
+            not isinstance(source_lab, dict)
+            or set(source_lab) != {"behavior", "expected_status"}
+            or not isinstance(source_lab.get("behavior"), str)
+            or not source_lab["behavior"]
+            or source_lab.get("expected_status")
+            not in {"planned", "active"}
+        ):
+            raise DemandCompilerError("MIGRATION_SOURCE_LAB_INVALID")
+
+        proposal = intent.get("requirement_proposal")
+        if (
+            not isinstance(proposal, dict)
+            or set(proposal)
+            != {"id", "target_requirement_id", "dedupe_key", "path"}
+        ):
+            raise DemandCompilerError(
+                "MIGRATION_REQUIREMENT_PROPOSAL_INVALID"
+            )
+        proposal_id = proposal.get("id")
+        requirement_id = proposal.get("target_requirement_id")
+        proposal_path = proposal.get("path")
+        if (
+            not isinstance(proposal_id, str)
+            or REQUIREMENT_PROPOSAL_ID.fullmatch(proposal_id) is None
+            or not isinstance(requirement_id, str)
+            or REQUIREMENT_ID.fullmatch(requirement_id) is None
+            or not isinstance(proposal.get("dedupe_key"), str)
+            or not proposal["dedupe_key"]
+            or proposal_path
+            != f"ios/project/requirement-proposals/{proposal_id}.json"
+        ):
+            raise DemandCompilerError(
+                "MIGRATION_REQUIREMENT_PROPOSAL_INVALID"
+            )
+
+        expected_blueprint = (
+            f"{MIGRATION_BLUEPRINT_ROOT}/{target}.json"
+        )
+        if intent.get("intake_blueprint") != expected_blueprint:
+            raise DemandCompilerError(
+                "MIGRATION_BLUEPRINT_PATH_INVALID"
+            )
+
+    def _git_object(self, revision: str, path: str) -> str:
+        result = self._git("rev-parse", f"{revision}:{path}")
+        if result.returncode != 0:
+            raise DemandCompilerError(
+                f"MIGRATION_SOURCE_UNRESOLVED:{path}"
+            )
+        value = result.stdout.decode("utf-8").strip()
+        if HEX40.fullmatch(value) is None:
+            raise DemandCompilerError(
+                f"MIGRATION_SOURCE_UNRESOLVED:{path}"
+            )
+        return value
+
+    def compile_migration(self, intent_path: Path) -> DemandPlan:
+        try:
+            relative = intent_path.resolve().relative_to(
+                self.root
+            ).as_posix()
+        except ValueError as error:
+            raise DemandCompilerError(
+                "MIGRATION_INTENT_OUTSIDE_REPOSITORY"
+            ) from error
+        intent = _load_object(intent_path, "MIGRATION_INTENT")
+        self._validate_migration_intent(intent, relative)
+        blueprint_relative = str(intent["intake_blueprint"])
+        capability = intent["capability"]
+        capability_relative = (
+            f"ios/project/capabilities/{capability['id']}.json"
+        )
+        source_paths = tuple(
+            str(anchor["path"]) for anchor in intent["source_anchors"]
+        )
+        self._head_regular(
+            (
+                relative,
+                BASELINE_PATH,
+                SOURCE_LAB_COVERAGE_POLICY,
+                capability_relative,
+                blueprint_relative,
+                *source_paths,
+            )
+        )
+
+        baseline_path = self.resolve(BASELINE_PATH)
+        baseline = _load_object(baseline_path, "MIGRATION_BASELINE")
+        baseline_commit = baseline.get("android_oracle", {}).get(
+            "git_commit"
+        )
+        if baseline_commit != intent["android_baseline"]["commit"]:
+            raise DemandCompilerError("MIGRATION_BASELINE_DRIFT")
+
+        source_bindings = []
+        for anchor in intent["source_anchors"]:
+            path = str(anchor["path"])
+            expected = str(anchor["git_blob"])
+            if (
+                self._git_object(baseline_commit, path) != expected
+                or self._git_object("HEAD", path) != expected
+            ):
+                raise DemandCompilerError(
+                    f"MIGRATION_SOURCE_BLOB_DRIFT:{path}"
+                )
+            source_bindings.append(
+                {
+                    "path": path,
+                    "git_blob": expected,
+                    "symbols": list(anchor["symbols"]),
+                }
+            )
+
+        coverage_path = self.resolve(SOURCE_LAB_COVERAGE_POLICY)
+        coverage = _load_object(
+            coverage_path,
+            "MIGRATION_SOURCE_LAB_COVERAGE",
+        )
+        behavior_id = intent["source_lab"]["behavior"]
+        matching = [
+            value
+            for value in coverage.get("behaviors", [])
+            if isinstance(value, dict)
+            and value.get("id") == behavior_id
+        ]
+        if len(matching) != 1:
+            raise DemandCompilerError(
+                f"MIGRATION_BEHAVIOR_MISSING:{behavior_id}"
+            )
+        behavior = matching[0]
+        if (
+            behavior.get("status")
+            != intent["source_lab"]["expected_status"]
+            or not isinstance(behavior.get("phase"), int)
+            or behavior["phase"] > intent["phase"]
+        ):
+            raise DemandCompilerError(
+                f"MIGRATION_BEHAVIOR_BINDING_DRIFT:{behavior_id}"
+            )
+
+        capability_path = self.resolve(capability_relative)
+        capability_record = _load_object(
+            capability_path,
+            "MIGRATION_CAPABILITY",
+        )
+        if (
+            capability_record.get("id") != capability["id"]
+            or capability_record.get("revision")
+            != capability["revision"]
+        ):
+            raise DemandCompilerError(
+                "MIGRATION_CAPABILITY_BINDING_DRIFT"
+            )
+
+        blueprint_path = self.resolve(blueprint_relative)
+        blueprint = _load_object(
+            blueprint_path,
+            "MIGRATION_BLUEPRINT",
+        )
+        target = str(intent["target_work_item_id"])
+        spec = blueprint.get("spec", {})
+        if (
+            blueprint.get("api_version") != "legado.harness/v1"
+            or blueprint.get("kind") != "WorkItem"
+            or blueprint.get("metadata", {}).get("id") != target
+            or spec.get("requirements", {}).get("mode")
+            != "control_plane"
+            or spec.get("gates") != []
+        ):
+            raise DemandCompilerError(
+                "MIGRATION_BLUEPRINT_CONTRACT_INVALID"
+            )
+
+        settlement = self._completed_migration_intake(intent)
+        if settlement is not None:
+            accepted = self._accepted_migration_requirement(intent)
+            state = (
+                "characterization_planning_required"
+                if accepted is not None
+                else "requirement_authority_required"
+            )
+            reason = (
+                "MIGRATION_REQUIREMENT_ACCEPTED"
+                if accepted is not None
+                else "MIGRATION_REQUIREMENT_AUTHORITY_REQUIRED"
+            )
+            artifacts = list(settlement["artifacts"])
+            if accepted is not None:
+                artifacts.append(accepted)
+            return DemandPlan(
+                intent_id=str(intent["id"]),
+                priority=int(intent["priority"]),
+                target_work_item_id=target,
+                state=state,
+                reason_code=reason,
+                authority_transition=accepted is None,
+                artifacts=tuple(artifacts),
+                bindings=settlement["bindings"],
+                policy=MIGRATION_POLICY,
+                intent_kind="android_migration",
+            )
+
+        return DemandPlan(
+            intent_id=str(intent["id"]),
+            priority=int(intent["priority"]),
+            target_work_item_id=target,
+            state="migration_intake_ready",
+            reason_code="MIGRATION_INTAKE_INPUTS_READY",
+            authority_transition=False,
+            artifacts=(
+                {
+                    "kind": "source_lab_behavior",
+                    "id": behavior_id,
+                    "status": behavior["status"],
+                    "phase": behavior["phase"],
+                },
+                {
+                    "kind": "requirement_proposal",
+                    "id": intent["requirement_proposal"]["id"],
+                    "status": "missing",
+                    "path": intent["requirement_proposal"]["path"],
+                },
+                {
+                    "kind": "migration_blueprint",
+                    "id": target,
+                    "status": "committed",
+                    "path": blueprint_relative,
+                    "sha256": _sha256(blueprint_path.read_bytes()),
+                },
+            ),
+            bindings={
+                "android_baseline": {
+                    "commit": baseline_commit,
+                    "path": BASELINE_PATH,
+                    "sha256": _sha256(baseline_path.read_bytes()),
+                },
+                "sources": source_bindings,
+                "source_lab_coverage_sha256": _sha256(
+                    coverage_path.read_bytes()
+                ),
+                "capability": {
+                    **capability,
+                    "path": capability_relative,
+                    "sha256": _sha256(capability_path.read_bytes()),
+                },
+                "blueprint": {
+                    "path": blueprint_relative,
+                    "sha256": _sha256(blueprint_path.read_bytes()),
+                    "work_item_sha256": _sha256_json(blueprint),
+                },
+                "requirement_proposal": dict(
+                    intent["requirement_proposal"]
+                ),
+            },
+            policy=MIGRATION_POLICY,
+            intent_kind="android_migration",
+        )
 
     def compile(self, intent_path: Path) -> DemandPlan:
         try:
@@ -657,26 +1037,270 @@ class DemandCompiler:
             },
         }
 
+    def _completed_migration_intake(
+        self,
+        intent: Mapping[str, Any],
+    ) -> Optional[Mapping[str, Any]]:
+        state_path = self.resolve(STATE_PATH)
+        if not state_path.is_file() or state_path.is_symlink():
+            return None
+        state = _load_object(state_path, "PROJECT_STATE")
+        target = str(intent["target_work_item_id"])
+        runtime = state.get("work_items", {}).get(target)
+        if not isinstance(runtime, dict) or runtime.get("status") != "completed":
+            return None
+
+        work_item_relative = f"{WORK_ITEM_ROOT}/{target}.json"
+        checkpoint_relative = f"{CHECKPOINT_ROOT}/{target}.json"
+        evidence_relative = runtime.get("last_evidence")
+        proposal = intent["requirement_proposal"]
+        proposal_relative = str(proposal["path"])
+        if (
+            not isinstance(evidence_relative, str)
+            or not evidence_relative.startswith(EVIDENCE_ROOT + "/")
+        ):
+            raise DemandCompilerError("MIGRATION_SETTLEMENT_INVALID")
+        try:
+            work_item_path = self.resolve(work_item_relative)
+            checkpoint_path = self.resolve(checkpoint_relative)
+            evidence_path = self.resolve(evidence_relative)
+            proposal_path = self.resolve(proposal_relative)
+            work_item = _load_object(work_item_path, "MIGRATION_WORK_ITEM")
+            checkpoint = _load_object(
+                checkpoint_path,
+                "MIGRATION_CHECKPOINT",
+            )
+            evidence = _load_object(evidence_path, "MIGRATION_EVIDENCE")
+            proposal_record = _load_object(
+                proposal_path,
+                "MIGRATION_REQUIREMENT_PROPOSAL",
+            )
+            capability_id = work_item.get("spec", {}).get("capability")
+            if (
+                not isinstance(capability_id, str)
+                or CAPABILITY_ID.fullmatch(capability_id) is None
+            ):
+                raise DemandCompilerError(
+                    "MIGRATION_WORK_ITEM_CAPABILITY_INVALID"
+                )
+            capability_relative = (
+                f"ios/project/capabilities/{capability_id}.json"
+            )
+            capability_path = self.resolve(capability_relative)
+            capability_record = _load_object(
+                capability_path,
+                "MIGRATION_SETTLED_CAPABILITY",
+            )
+            self._head_regular(
+                (
+                    STATE_PATH,
+                    work_item_relative,
+                    checkpoint_relative,
+                    evidence_relative,
+                    proposal_relative,
+                    capability_relative,
+                )
+            )
+        except DemandCompilerError as error:
+            raise DemandCompilerError(
+                "MIGRATION_SETTLEMENT_INVALID"
+            ) from error
+
+        work_item_sha = _sha256_json(work_item)
+        evidence_sha = _sha256(evidence_path.read_bytes())
+        updates = checkpoint.get("capability_updates", [])
+        update = next(
+            (
+                value
+                for value in updates
+                if isinstance(value, dict)
+                and value.get("id") == capability_id
+            ),
+            None,
+        )
+        valid_update = (
+            isinstance(update, dict)
+            and isinstance(update.get("from_revision"), int)
+            and isinstance(update.get("to_revision"), int)
+            and update["to_revision"] > update["from_revision"]
+        )
+        valid_proposal = (
+            proposal_record.get("schema_version") == 1
+            and proposal_record.get("id") == proposal["id"]
+            and proposal_record.get("status") == "proposed"
+            and proposal_record.get("dedupe_key") == proposal["dedupe_key"]
+            and proposal_record.get("target_requirement_id")
+            == proposal["target_requirement_id"]
+            and proposal_record.get("auto_action")
+            == "create_characterization_dag"
+            and isinstance(proposal_record.get("source_facts"), list)
+            and bool(proposal_record["source_facts"])
+            and isinstance(proposal_record.get("unknowns"), list)
+            and isinstance(proposal_record.get("source_lab_gap"), list)
+        )
+        if (
+            work_item.get("metadata", {}).get("id") != target
+            or runtime.get("work_item_sha256") != work_item_sha
+            or work_item.get("spec", {}).get("requirements", {}).get("mode")
+            != "control_plane"
+            or work_item.get("spec", {}).get("gates") != []
+            or checkpoint.get("work_item_id") != target
+            or checkpoint.get("evidence") != evidence_relative
+            or not valid_update
+            or capability_record.get("id") != capability_id
+            or not isinstance(capability_record.get("revision"), int)
+            or capability_record["revision"] < update["to_revision"]
+            or evidence.get("work_item_id") != target
+            or evidence.get("work_item_sha256") != work_item_sha
+            or evidence.get("result") != "passed"
+            or runtime.get("last_evidence_sha256") != evidence_sha
+            or not valid_proposal
+        ):
+            raise DemandCompilerError("MIGRATION_SETTLEMENT_INVALID")
+        proposal_sha = _sha256(proposal_path.read_bytes())
+        return {
+            "artifacts": [
+                {
+                    "kind": "migration_intake_completion",
+                    "id": target,
+                    "status": "completed",
+                    "evidence": evidence_relative,
+                    "evidence_sha256": evidence_sha,
+                    "checkpoint": checkpoint_relative,
+                    "checkpoint_sha256": _sha256(
+                        checkpoint_path.read_bytes()
+                    ),
+                },
+                {
+                    "kind": "requirement_proposal",
+                    "id": proposal["id"],
+                    "status": "proposed",
+                    "path": proposal_relative,
+                    "sha256": proposal_sha,
+                },
+            ],
+            "bindings": {
+                "settlement": {
+                    "work_item": work_item_relative,
+                    "work_item_sha256": work_item_sha,
+                    "capability": capability_id,
+                    "from_revision": update["from_revision"],
+                    "to_revision": update["to_revision"],
+                },
+                "requirement_proposal": {
+                    **dict(proposal),
+                    "sha256": proposal_sha,
+                },
+            },
+        }
+
+    def _accepted_migration_requirement(
+        self,
+        intent: Mapping[str, Any],
+    ) -> Optional[Mapping[str, Any]]:
+        proposal = intent["requirement_proposal"]
+        requirement_id = str(proposal["target_requirement_id"])
+        catalog_path = self.resolve(REQUIREMENT_CATALOG)
+        try:
+            self._head_regular((REQUIREMENT_CATALOG,))
+            catalog = _load_object(
+                catalog_path,
+                "MIGRATION_REQUIREMENT_CATALOG",
+            )
+        except DemandCompilerError as error:
+            raise DemandCompilerError(
+                "MIGRATION_REQUIREMENT_AUTHORITY_INVALID"
+            ) from error
+        matching = [
+            entry
+            for entry in catalog.get("requirements", [])
+            if isinstance(entry, dict) and entry.get("id") == requirement_id
+        ]
+        if not matching:
+            return None
+        if len(matching) != 1:
+            raise DemandCompilerError(
+                "MIGRATION_REQUIREMENT_AUTHORITY_INVALID"
+            )
+        entry = matching[0]
+        record_relative = entry.get("path")
+        if (
+            entry.get("status") != "accepted"
+            or not isinstance(entry.get("revision"), int)
+            or not isinstance(record_relative, str)
+        ):
+            raise DemandCompilerError(
+                "MIGRATION_REQUIREMENT_AUTHORITY_INVALID"
+            )
+        try:
+            self._head_regular((record_relative,))
+            record_path = self.resolve(record_relative)
+            record = _load_object(
+                record_path,
+                "MIGRATION_REQUIREMENT_RECORD",
+            )
+        except DemandCompilerError as error:
+            raise DemandCompilerError(
+                "MIGRATION_REQUIREMENT_AUTHORITY_INVALID"
+            ) from error
+        record_sha = _sha256_json(record)
+        if (
+            entry.get("record_sha256") != record_sha
+            or record.get("id") != requirement_id
+            or record.get("revision") != entry["revision"]
+            or record.get("status") != "accepted"
+        ):
+            raise DemandCompilerError(
+                "MIGRATION_REQUIREMENT_AUTHORITY_INVALID"
+            )
+        return {
+            "kind": "requirement",
+            "id": requirement_id,
+            "revision": entry["revision"],
+            "status": "accepted",
+            "readiness": record.get("readiness", {}).get("state"),
+            "path": record_relative,
+            "sha256": record_sha,
+            "catalog_sha256": _sha256(catalog_path.read_bytes()),
+        }
+
     def plans(
         self,
     ) -> Tuple[Tuple[DemandPlan, ...], Tuple[Mapping[str, Any], ...]]:
-        intent_root = self.resolve(INTENT_ROOT)
-        if not intent_root.exists():
-            return (), ()
-        if intent_root.is_symlink() or not intent_root.is_dir():
-            return (), ({"reason_code": "INTENT_ROOT_INVALID"},)
         plans: List[DemandPlan] = []
         blockers: List[Mapping[str, Any]] = []
-        for path in sorted(intent_root.glob("*.json")):
-            try:
-                plans.append(self.compile(path))
-            except DemandCompilerError as error:
+        sources = (
+            (INTENT_ROOT, self.compile, "INTENT_ROOT_INVALID", "delivery"),
+            (
+                MIGRATION_INTENT_ROOT,
+                self.compile_migration,
+                "MIGRATION_INTENT_ROOT_INVALID",
+                "android_migration",
+            ),
+        )
+        for root_relative, compile_one, invalid_reason, intent_kind in sources:
+            intent_root = self.resolve(root_relative)
+            if not intent_root.exists():
+                continue
+            if intent_root.is_symlink() or not intent_root.is_dir():
                 blockers.append(
                     {
-                        "intent_id": path.stem,
-                        "reason_code": str(error),
+                        "intent_kind": intent_kind,
+                        "reason_code": invalid_reason,
                     }
                 )
+                continue
+            for path in sorted(intent_root.glob("*.json")):
+                try:
+                    plans.append(compile_one(path))
+                except DemandCompilerError as error:
+                    blockers.append(
+                        {
+                            "intent_kind": intent_kind,
+                            "intent_id": path.stem,
+                            "reason_code": str(error),
+                        }
+                    )
         return tuple(
             sorted(plans, key=lambda plan: (-plan.priority, plan.intent_id))
         ), tuple(blockers)

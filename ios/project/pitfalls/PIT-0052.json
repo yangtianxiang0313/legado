@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0052",
+  "revision": 1,
+  "title": "交付循环全绿不等于迁移循环能产生下一需求",
+  "fingerprint": "delivery-loop-completes-but-android-migration-demand-is-empty",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "已有 WorkItem 能自动 claim、verify、close，但首个 Delivery Intent 完成后 inspect 返回 queue_empty",
+    "Capability next_actions 或 Android 文件名看似包含下一步，却没有可校验、可排序的结构化需求输入",
+    "AI 只能靠上下文记忆或临时扫描选择下一功能，连续轮次容易漏项、漂移或重复"
+  ],
+  "conditions": [
+    "Android 源码已冻结，iOS 迁移仍有大量未覆盖行为",
+    "Demand Compiler 只消费已接受 Requirement 和已发布 Golden 的 Delivery Intent",
+    "需求 intake 与产品交付共用一个循环，但没有显式的迁移积压协议"
+  ],
+  "root_cause": "执行自动化只解决了“怎样完成已知任务”，没有解决“下一条任务从哪里来”。把自然语言 roadmap、Capability next_actions 或测试缺口当需求来源无法同时保证源码覆盖、确定性排序和 authority 边界。",
+  "diagnosis": [
+    "在所有 active/ready/candidate/delivery blueprint 为空时检查 Demand Plan 是否仍只有 delivery_completed",
+    "检查下一切片是否同时绑定 baseline commit、source blob/symbol、coverage behavior、Capability 与 proposal/blueprint identity",
+    "检查 intake 完成后是否有 WorkItem、Evidence、Checkpoint、Capability update 和 proposal digest 的结构化结算"
+  ],
+  "fix": "新增 source-anchored AndroidMigrationIntent 与独立 migration blueprint：显式迁移积压先自动物化 control-plane intake，产出知识和 Requirement proposal；Authority 接受后再进入 SourceLab characterization 与产品 Delivery。Compiler 与 Supervisor 每轮从 HEAD 重算绑定，禁止从标题、文件名、next_actions 或测试结果猜需求。",
+  "prevention": {
+    "architecture_rule": "Loop 成熟度必须分别证明执行闭环和需求产生闭环；任何 Android 迁移切片进入自动调度前都必须具有源码锚点、能力/覆盖绑定、完整 intake blueprint 和结算协议。",
+    "tests": [
+      "ios/harness/tests/test_demand_compiler.py",
+      "ios/harness/tests/test_loop_supervisor.py"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-LOOP-DEMAND-COMPILER-003",
+    "until": "IOS-ANDROID-MIGRATION-DEMAND-001"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T170025Z-ios-android-migration-demand-001-a0b6c6fe.json"
+  ]
+}

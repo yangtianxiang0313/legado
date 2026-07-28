@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "kind": "AndroidMigrationIntent",
+  "id": "MINT-SOURCE-REQUEST-POST-FORM-001",
+  "priority": 100,
+  "phase": 1,
+  "target_work_item_id": "IOS-ANDROID-REQUEST-OPTIONS-INTAKE-001",
+  "capability": {
+    "id": "CAP-RUNTIME-PORTS",
+    "revision": 3
+  },
+  "android_baseline": {
+    "commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3"
+  },
+  "source_anchors": [
+    {
+      "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+      "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da",
+      "symbols": [
+        "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/analyzeUrl",
+        "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/analyzeFields",
+        "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/getStrResponseAwait"
+      ]
+    }
+  ],
+  "source_lab": {
+    "behavior": "transport.post-form",
+    "expected_status": "planned"
+  },
+  "requirement_proposal": {
+    "id": "ARQ-SOURCE-REQUEST-POST-FORM",
+    "target_requirement_id": "REQ-ANDROID-SOURCE-REQUEST-OPTIONS-001",
+    "dedupe_key": "CAP-RUNTIME-PORTS/source.request.post-form/store_safe+full_compat",
+    "path": "ios/project/requirement-proposals/ARQ-SOURCE-REQUEST-POST-FORM.json"
+  },
+  "intake_blueprint": "ios/project/work-item-proposals/migration-blueprints/IOS-ANDROID-REQUEST-OPTIONS-INTAKE-001.json"
+}

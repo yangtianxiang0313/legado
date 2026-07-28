@@ -2,13 +2,13 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-28T16:33:09Z
+- 更新时间：2026-07-28T17:01:28Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
 - 下一个可领取工作项：无
-- 最近完成：IOS-SOURCE-RUNTIME-GOLDEN-CONFORMANCE-001
+- 最近完成：IOS-ANDROID-MIGRATION-DEMAND-001
 
 ## 健康度
 
@@ -49,6 +49,7 @@
 | loop_engine | `local_mature` |
 | loop_supervisor | `local_verified` |
 | loop_trusted_verification | `real_codex_verified` |
+| migration_demand | `source_anchored_v1` |
 | proposal_compiler | `local_verified` |
 | proposal_gate_policy | `authority_only` |
 | proposal_lifecycle_tests | `state_aware` |
@@ -73,6 +74,7 @@
 | ID | 优先级 | 状态 | 依赖 | 标题 |
 |---|---:|---|---|---|
 | IOS-ANDROID-GOLDEN-PUBLISHER-001 | 100 | `completed` | IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-009 | 建立独立 Android Golden Publisher |
+| IOS-ANDROID-MIGRATION-DEMAND-001 | 100 | `completed` | IOS-DELIVERY-INTENT-SETTLEMENT-001, IOS-SOURCE-RUNTIME-GOLDEN-CONFORMANCE-001 | 让 Loop 从 Android 迁移积压自动产生下一需求 |
 | IOS-ANDROID-ORACLE-ATTESTATION-001 | 100 | `completed` | IOS-ANDROID-ORACLE-RUNNER-001 | 建立 GitHub-hosted Android Oracle 双证明提案链 |
 | IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-002 | 100 | `completed` | IOS-ANDROID-ORACLE-ATTESTATION-001 | 恢复 GitHub workflow runner.temp 上下文 |
 | IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-003 | 100 | `completed` | IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-002 | 恢复 GitHub-hosted Android SDK tools 路径 |

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 48,
+  "revision": 49,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -45,7 +45,9 @@
       "ios/project/work-item-proposals/candidates/**",
       "ios/project/work-item-proposals/candidate-manifests/**",
       "ios/project/work-item-proposals/delivery-blueprints/**",
-      "ios/project/delivery-intents/**"
+      "ios/project/work-item-proposals/migration-blueprints/**",
+      "ios/project/delivery-intents/**",
+      "ios/project/migration-intents/**"
     ]
   },
   "depends_on": ["CAP-BOOTSTRAP"],
@@ -60,14 +62,14 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260728T161212Z-ios-delivery-intent-settlement-001-7f95fd32.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260728T170025Z-ios-android-migration-demand-001-a0b6c6fe.json",
   "next_actions": [
     "BKP-INTEGRATIONS-001@4 与 DRV-INTEGRATION-PROFILES-001@4 在 Trusted Publisher promotion 前保持 proposal；只有 promotion/accept 决策才要求权威审查",
     "由 Harness/Proposal Compiler 的 recovers 内容寻址合同维持恢复谱系，并用有界 Catalog self-heal 支持控制面中断续跑；下一步由 Trusted Publisher 提升 JSON Schema，并自动重写 recovery Claim supersedes 以关闭 PIT-0012",
-    "升级 ConformanceCLI，使 source_lab_site fixture 真正执行 SourceRuntime pipeline 并逐字段比较 protected Android Golden",
-    "让 Supervisor 对完成态 Evidence handoff 缺口自动生成 bounded corrective candidate，避免 doctor_red 时需要一次性 recovery bootstrap",
-    "从已发布业务地图选择下一个高价值 Android 行为切片，生成 Requirement/Knowledge/Blueprint 并验证连续第二轮自治推进"
+    "由 source-anchored Android Migration Intent 自动物化 IOS-ANDROID-REQUEST-OPTIONS-INTAKE-001，产出 POST form/request options 的知识与 Requirement proposal",
+    "Requirement proposal 结算后，由受信 authority 接受或驳回需求；接受后生成 SourceLab characterization 工作项与真实 Android runner Golden",
+    "将 migration intent 扩展为多条显式积压，验证稳定优先级、并列阻塞和连续第三轮推进"
   ],
-  "updated_at": "2026-07-28T16:12:13Z",
-  "updated_by": "IOS-DELIVERY-INTENT-SETTLEMENT-001"
+  "updated_at": "2026-07-28T17:00:25Z",
+  "updated_by": "IOS-ANDROID-MIGRATION-DEMAND-001"
 }

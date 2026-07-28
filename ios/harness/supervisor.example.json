@@ -59,6 +59,10 @@
     "enabled": true,
     "policy": "bound-delivery-blueprint-v1"
   },
+  "migration_materialization": {
+    "enabled": true,
+    "policy": "source-anchored-android-migration-v1"
+  },
   "agent_invocation": {
     "argv": [
       "<replace-with-agent-runner>",

@@ -38,7 +38,12 @@ try:
         sha256_json,
     )
     from .harness import Harness, HarnessError, path_matches
-    from .demand_compiler import DemandCompiler, DemandPlan
+    from .demand_compiler import (
+        MIGRATION_BLUEPRINT_ROOT,
+        MIGRATION_POLICY,
+        DemandCompiler,
+        DemandPlan,
+    )
     from .proposal_compiler import (
         COMPILER_VERSION,
         DAG_PATH,
@@ -60,7 +65,12 @@ except ImportError:
         sha256_json,
     )
     from harness import Harness, HarnessError, path_matches  # type: ignore
-    from demand_compiler import DemandCompiler, DemandPlan  # type: ignore
+    from demand_compiler import (  # type: ignore
+        MIGRATION_BLUEPRINT_ROOT,
+        MIGRATION_POLICY,
+        DemandCompiler,
+        DemandPlan,
+    )
     from proposal_compiler import (  # type: ignore
         COMPILER_VERSION,
         DAG_PATH,
@@ -77,6 +87,7 @@ CANDIDATE_ROOT = "ios/project/work-item-proposals/candidates"
 AUTO_MATERIALIZATION_POLICY = "compiled-control-plane-v1"
 DELIVERY_BLUEPRINT_ROOT = "ios/project/work-item-proposals/delivery-blueprints"
 DELIVERY_MATERIALIZATION_POLICY = "bound-delivery-blueprint-v1"
+MIGRATION_MATERIALIZATION_POLICY = MIGRATION_POLICY
 SUPERVISOR_VERIFICATION_POLICY = "supervisor-owned-verification-v1"
 BUSINESS_KNOWLEDGE_CATALOG_STALE = "Business Knowledge catalog 已过期"
 TERMINAL_RECOVERY_STATUSES = {"blocked", "rejected", "exhausted", "cancelled"}
@@ -726,6 +737,116 @@ class LoopSupervisor:
                 issues.append(f"DELIVERY_SCOPE_ALLOW_DENY_OVERLAP:{pattern}")
         return issues
 
+    def _migration_scope_issues(
+        self,
+        item: Mapping[str, Any],
+        proposal_path: str,
+    ) -> List[str]:
+        item_id = str(item.get("metadata", {}).get("id", ""))
+        spec = item.get("spec", {})
+        allow_write = spec.get("scope", {}).get("allow_write", [])
+        deny_write = spec.get("scope", {}).get("deny_write", [])
+        capability_id = str(spec.get("capability", ""))
+        allowed_exact = {
+            proposal_path,
+            f"ios/project/capabilities/{capability_id}.json",
+            f"ios/project/checkpoints/{item_id}.json",
+        }
+        allowed_prefixes = (
+            "ios/project/business-knowledge/packets/proposals/",
+            "ios/project/business-knowledge/drivers/proposals/",
+        )
+        issues: List[str] = []
+        for pattern in allow_write:
+            if not isinstance(pattern, str):
+                issues.append("MIGRATION_SCOPE_NON_STRING")
+                continue
+            if pattern in allowed_exact:
+                continue
+            if pattern == "ios/project/pitfalls/PIT-*.json":
+                continue
+            if pattern.startswith(allowed_prefixes) and not any(
+                token in pattern for token in "*?["
+            ):
+                continue
+            issues.append(f"MIGRATION_SCOPE_FORBIDDEN:{pattern}")
+        required_denials = (
+            ".github/workflows/change.yml",
+            "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+            "ios/Packages/LegadoKit/Package.swift",
+            "ios/harness/goldens/manifest.json",
+            "ios/harness/source-lab/coverage-policy-v1.json",
+            "ios/harness/schemas/work-item.schema.json",
+            "ios/project/requirements/catalog.json",
+            "ios/project/approvals/decision.json",
+            "ios/docs/architecture.md",
+        )
+        for path in required_denials:
+            if not path_matches(path, deny_write):
+                issues.append(f"MIGRATION_SCOPE_DENY_MISSING:{path}")
+        return issues
+
+    def _migration_plan_preview(
+        self,
+        plan: DemandPlan,
+    ) -> MaterializationPreview:
+        if (
+            plan.policy != MIGRATION_MATERIALIZATION_POLICY
+            or plan.intent_kind != "android_migration"
+            or plan.state != "migration_intake_ready"
+        ):
+            raise MaterializationConflict("MIGRATION_PLAN_STATE_INVALID")
+        blueprint = plan.bindings.get("blueprint", {})
+        proposal = plan.bindings.get("requirement_proposal", {})
+        blueprint_relative = blueprint.get("path")
+        proposal_path = proposal.get("path")
+        if (
+            not isinstance(blueprint_relative, str)
+            or not isinstance(proposal_path, str)
+        ):
+            raise MaterializationConflict(
+                "MIGRATION_PLAN_BINDING_INVALID"
+            )
+        blueprint_path = self.harness.resolve(blueprint_relative)
+        preview = self.preflight_candidate(
+            blueprint_path,
+            allowed_root=MIGRATION_BLUEPRINT_ROOT,
+        )
+        if (
+            preview.item_id != plan.target_work_item_id
+            or preview.work_item_sha256
+            != blueprint.get("work_item_sha256")
+            or preview.source_fingerprint != blueprint.get("sha256")
+        ):
+            raise MaterializationConflict(
+                "MIGRATION_MATERIALIZATION_BINDING_DRIFT"
+            )
+        try:
+            item = json.loads(blueprint_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise MaterializationConflict(
+                f"MIGRATION_BLUEPRINT_INVALID:{error}"
+            ) from error
+        metadata = item.get("metadata", {})
+        spec = item.get("spec", {})
+        if (
+            metadata.get("risk") == "critical"
+            or spec.get("gates") != []
+            or spec.get("requirements", {}).get("mode")
+            != "control_plane"
+            or spec.get("knowledge", {}).get("mode")
+            not in {"produce", "not_applicable"}
+            or set(spec.get("completion_effects", {})) - {"health"}
+            or spec.get("capability") != "CAP-KNOWLEDGE-CONTROL"
+        ):
+            raise MaterializationConflict(
+                "MIGRATION_BLUEPRINT_AUTHORITY_INVALID"
+            )
+        issues = self._migration_scope_issues(item, proposal_path)
+        if issues:
+            raise MaterializationConflict(";".join(issues))
+        return preview
+
     def _delivery_candidate(
         self,
         blueprint_path: Path,
@@ -1059,7 +1180,7 @@ class LoopSupervisor:
         if blockers:
             return LoopDecision(
                 state="demand_invalid",
-                reason_code="DELIVERY_INTENT_INVALID",
+                reason_code="DEMAND_INTENT_INVALID",
                 work_item_id=None,
                 requires_human=False,
                 blockers=blockers,
@@ -1075,7 +1196,7 @@ class LoopSupervisor:
         if len(tied) != 1:
             return LoopDecision(
                 state="demand_blocked",
-                reason_code="DELIVERY_INTENT_PRIORITY_AMBIGUOUS",
+                reason_code="DEMAND_PRIORITY_AMBIGUOUS",
                 work_item_id=None,
                 requires_human=False,
                 blockers=(
@@ -1087,6 +1208,24 @@ class LoopSupervisor:
                 warnings=tuple(warnings),
             )
         plan = tied[0]
+        if plan.state == "migration_intake_ready":
+            try:
+                self._migration_plan_preview(plan)
+            except (MaterializationConflict, HarnessError) as error:
+                return LoopDecision(
+                    state="demand_invalid",
+                    reason_code="MIGRATION_BLUEPRINT_INVALID",
+                    work_item_id=plan.target_work_item_id,
+                    requires_human=False,
+                    blockers=(
+                        {
+                            "intent_id": plan.intent_id,
+                            "reason_code": str(error),
+                        },
+                    ),
+                    warnings=tuple(warnings),
+                    details={"demand_plan": plan.to_dict()},
+                )
         state_mapping = {
             "knowledge_authority_required": "authority_transition_required",
             "requirement_readiness_required": (
@@ -1094,6 +1233,13 @@ class LoopSupervisor:
             ),
             "blueprint_required": "demand_materialization_required",
             "delivery_ready": "demand_inconsistent",
+            "migration_intake_ready": "migration_materialization_ready",
+            "requirement_authority_required": (
+                "authority_transition_required"
+            ),
+            "characterization_planning_required": (
+                "demand_materialization_required"
+            ),
         }
         return LoopDecision(
             state=state_mapping[plan.state],
@@ -1634,13 +1780,16 @@ class LoopSupervisor:
         reason: str,
         provenance: Optional[Mapping[str, Any]] = None,
     ) -> str:
-        allowed_root = (
-            DELIVERY_BLUEPRINT_ROOT
-            if preview.source_relative.startswith(
-                DELIVERY_BLUEPRINT_ROOT + "/"
-            )
-            else CANDIDATE_ROOT
-        )
+        if preview.source_relative.startswith(
+            DELIVERY_BLUEPRINT_ROOT + "/"
+        ):
+            allowed_root = DELIVERY_BLUEPRINT_ROOT
+        elif preview.source_relative.startswith(
+            MIGRATION_BLUEPRINT_ROOT + "/"
+        ):
+            allowed_root = MIGRATION_BLUEPRINT_ROOT
+        else:
+            allowed_root = CANDIDATE_ROOT
         current = self.preflight_candidate(
             self.harness.resolve(preview.source_relative),
             allowed_root=allowed_root,
@@ -1727,6 +1876,31 @@ class LoopSupervisor:
             preview,
             reason=f"policy:{DELIVERY_MATERIALIZATION_POLICY}",
             provenance=candidate.to_dict(),
+        )
+
+    def auto_materialize_migration(self, intent_id: str) -> str:
+        plans, blockers = DemandCompiler(self.harness.root).plans()
+        if blockers:
+            raise MaterializationConflict("MIGRATION_DEMAND_BLOCKED")
+        eligible = tuple(
+            plan
+            for plan in plans
+            if plan.state != "delivery_completed"
+        )
+        if not eligible:
+            raise MaterializationConflict("MIGRATION_DEMAND_MISSING")
+        highest = eligible[0].priority
+        tied = [plan for plan in eligible if plan.priority == highest]
+        if len(tied) != 1 or tied[0].intent_id != intent_id:
+            raise MaterializationConflict(
+                "MIGRATION_DEMAND_SELECTION_DRIFT"
+            )
+        plan = tied[0]
+        preview = self._migration_plan_preview(plan)
+        return self.materialize(
+            preview,
+            reason=f"policy:{MIGRATION_MATERIALIZATION_POLICY}",
+            provenance=plan.to_dict(),
         )
 
     @staticmethod
@@ -2104,6 +2278,23 @@ class LoopSupervisor:
                 "启用 delivery_materialization 时 policy 必须是 "
                 + DELIVERY_MATERIALIZATION_POLICY
             )
+        migration_config = config.get("migration_materialization", {})
+        if migration_config is None:
+            migration_config = {}
+        if not isinstance(migration_config, dict):
+            raise LoopSupervisorError(
+                "migration_materialization 必须是 object"
+            )
+        migration_enabled = migration_config.get("enabled") is True
+        migration_policy = migration_config.get("policy")
+        if (
+            migration_enabled
+            and migration_policy != MIGRATION_MATERIALIZATION_POLICY
+        ):
+            raise LoopSupervisorError(
+                "启用 migration_materialization 时 policy 必须是 "
+                + MIGRATION_MATERIALIZATION_POLICY
+            )
         verification_config = config.get("trusted_verification", {})
         if verification_config is None:
             verification_config = {}
@@ -2277,6 +2468,37 @@ class LoopSupervisor:
                         "kind": "delivery_materialization",
                         "work_item_id": materialized_id,
                         "policy": delivery_policy,
+                    }
+                )
+                before = self.inspect()
+            if before.state == "migration_materialization_ready":
+                if not migration_enabled:
+                    return {
+                        "schema_version": SCHEMA_VERSION,
+                        "outcome": "migration_materialization_disabled",
+                        "decision": before.to_dict(),
+                        "transitions": transitions,
+                    }
+                demand_plan = (
+                    before.details.get("demand_plan", {})
+                    if isinstance(before.details, dict)
+                    else {}
+                )
+                intent_id = demand_plan.get("intent_id")
+                if not isinstance(intent_id, str):
+                    raise LoopSupervisorError(
+                        "migration decision 缺少 intent_id"
+                    )
+                with self.harness.mutation_lock():
+                    materialized_id = self.auto_materialize_migration(
+                        intent_id
+                    )
+                transitions.append(
+                    {
+                        "kind": "migration_materialization",
+                        "work_item_id": materialized_id,
+                        "intent_id": intent_id,
+                        "policy": migration_policy,
                     }
                 )
                 before = self.inspect()

@@ -68,6 +68,13 @@ python3 ios/harness/loop_supervisor.py materialize-review \
   owner、受保护 Android Golden release receipt、completed dependency Evidence/
   Checkpoint 和当前 HEAD；唯一最高优先且 `gates=[]`、无 authority effect、scope 完全
   落在 owner/对应 Tests/Checkpoint/Pitfall 的普通实现项会自动进入既有生命周期；
+- 显式启用 `source-anchored-android-migration-v1` 后，Delivery 完成不会再次退回
+  `queue_empty`。Demand Compiler 会读取 `ios/project/migration-intents/*.json`，
+  逐项绑定冻结 baseline commit、Android source path/blob/symbol、SourceLab behavior
+  状态、Capability revision、Requirement proposal identity 与完整 intake blueprint。
+  唯一最高优先且所有绑定闭合的 `gates=[]` control-plane intake 会自动物化；它只能
+  产出知识与 Requirement proposal，不能接受 Requirement、发布 Golden、修改
+  SourceLab authority、Android 或 iOS 产品代码；
 - 显式启用 `supervisor-owned-verification-v1` 后，单次工作项按 Agent edit →
   Supervisor verify → Agent memory → Supervisor close 推进。Agent 不能通过直接调用
   `verify/close` 改变控制状态；Supervisor 在每个 Agent turn 后核对 event/status/
@@ -112,21 +119,25 @@ python3 ios/harness/loop_supervisor.py materialize-review \
   manifest、entitlement、migration、CI、ADR、Schema、Golden、Requirement 或 Approval；
 - 已存在受阻/终态任务时，若编译器提供唯一且内容寻址的 `recovers` 候选，Supervisor
   会先自动物化该 Recovery Work Item，不再把“已有恢复方案”误报成人工恢复决策；
-- 当队列、编译候选和交付蓝图都为空时，Supervisor 最后读取
-  `ios/project/delivery-intents/*.json`。`structured-delivery-intent-v1` 只接受 HEAD
+- 当队列、编译候选和交付蓝图都为空时，Supervisor 最后统一读取 Delivery Intent 与
+  Android Migration Intent。`structured-delivery-intent-v1` 只接受 HEAD
   中显式声明的目标 Work Item、Capability revision、Requirement revision/clauses、
   published Packet/Driver、protected Golden selector 和 blueprint path，并按固定顺序
   编译最短链：`knowledge_authority_required → requirement_readiness_required →
-  blueprint_required → delivery_ready`。因此“尚缺上游权威输入”不再被误报为
-  `queue_empty`；
+  blueprint_required → delivery_ready`。`source-anchored-android-migration-v1`
+  则按 `migration_intake_ready → requirement_authority_required →
+  characterization_planning_required` 推进，并要求 completed WorkItem、Evidence、
+  Checkpoint、Capability update 与 proposal digest 精确结算。因此“尚缺上游权威输入”
+  或“下一条 Android 迁移切片已声明”都不会被误报为 `queue_empty`；
 - Demand Plan 中的 `authority_transition=true` 不等于 Human Decision，也不授予普通
   Agent 写 accepted/published/protected 路径的权限；它表示下一步应由受信 Publisher
   消费已绑定的机器证据。只有产品取舍无法由证据推导时才 `requires_human=true`；
 - `materialize-review` 仅保留为自动策略无法覆盖时的显式恢复入口，不是正常推进 Gate；
 - CLI 没有非交互 `materialize` 或 `approve`，也不会更新 golden、发布知识或接受 ADR。
 
-本地 Loop Engine 的成熟边界是：确定性 inspect、控制面与普通交付策略物化、受限 argv
-adapter、真实 Harness 生命周期、Evidence/Capability/Checkpoint/Event 绑定，以及
+本地 Loop Engine 的成熟边界是：确定性 inspect、源码锚定迁移 intake、控制面与普通
+交付策略物化、受限 argv adapter、真实 Harness 生命周期、Evidence/Capability/
+Checkpoint/Event 绑定，以及
 进程树有界回收、Agent 后/verify 前与 memory 后/close 前的跨进程故障恢复均有自动化
 E2E。它足以在单机、单写者、真实 Human Decision 保留的前提下持续推进工作项。
 

@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "revision": 333,
+  "revision": 337,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-28T16:33:09Z",
-  "event_head": "915d3bed3b2dc334b172a00de227af33a1ef0b9f3324c241dc26ce155f3c536f",
+  "updated_at": "2026-07-28T17:01:28Z",
+  "event_head": "d89c639b4810486f8a37cdcf80d5f0e26c8b59ab1f5716e2e82075c1a94f8af5",
   "active_work_items": [],
-  "last_completed_work_item": "IOS-SOURCE-RUNTIME-GOLDEN-CONFORMANCE-001",
+  "last_completed_work_item": "IOS-ANDROID-MIGRATION-DEMAND-001",
   "work_items": {
     "IOS-BOOT-001": {
       "status": "completed",
@@ -5906,6 +5906,115 @@
       "verified_at": "2026-07-28T16:32:10Z",
       "completed_at": "2026-07-28T16:33:09Z",
       "final_tree_sha256": "f914d90320b1956b0c96c5d9faaf520a3e4195890416acad6cf2cb7f0ba94484"
+    },
+    "IOS-ANDROID-MIGRATION-DEMAND-001": {
+      "status": "completed",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260728T170025Z-ios-android-migration-demand-001-a0b6c6fe.json",
+      "claimed_by": "codex",
+      "claimed_at": "2026-07-28T16:50:20Z",
+      "lease_expires_at": "2026-07-29T16:50:20Z",
+      "work_item_sha256": "1a67e795129d5b4ae5bf55331d0265be9f76ec854e980c7b3da6028d175ffe57",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "2c819a6c7aeeec7a3f726cd3c9d0efa27c0b6dd9",
+      "base_capability_revision": 48,
+      "base_capability_assurance_sha256": "6c08426cf2cc8f0277426284e00909a10444767bc01eeb84e0db43db8dcbb2ac",
+      "android_requirement_selection_sha256": null,
+      "business_knowledge_control_sha256": "85228a4aa826bd1f9d6f22231a6e04fe622cec925714d4bdceacdca704186979",
+      "business_knowledge_authority_sha256": "9a898622fab665e380b0fdb7837d6aa24f938f5c87e4bc635c32fbdf4dfe81c8",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 1,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "android-intake-contract",
+          "argv": [
+            "python3",
+            "-B",
+            "ios/harness/android-intake/android_intake.py",
+            "doctor",
+            "--root",
+            ".",
+            "--work-item",
+            "IOS-ANDROID-MIGRATION-DEMAND-001"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "1bf88f85f3f416e092d2c3bf30c0b86ae55ad95e050f05321da60bed60f3d5f8",
+          "cwd": ".",
+          "started_at": "2026-07-28T16:48:50Z",
+          "duration_ms": 240,
+          "timeout_seconds": 90,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "84f6b9d590a230c755728f08a7cc4071122d7bd66d14c218c852a45cdc0a64fe",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_tail": "android-intake: OK\n",
+          "stderr_tail": ""
+        },
+        {
+          "id": "dependency-policy",
+          "argv": [
+            "python3",
+            "ios/harness/probes/dependency_contract.py",
+            "--root",
+            "."
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "eca96cb1b69567829ed8396386b0449da8c0d6e7295a00f1decfb60430ff1153",
+          "cwd": ".",
+          "started_at": "2026-07-28T16:48:50Z",
+          "duration_ms": 699,
+          "timeout_seconds": 90,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "17595a1d68cdc5b52c010f46dff48514afa3fa3cf0215cdea7ae8eff38677c0a",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_tail": "DEPENDENCY_CONTRACT: OK\n",
+          "stderr_tail": ""
+        },
+        {
+          "id": "harness-tests",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "244d512cbdd15fe0c5e35e6d9676510c943b19e9437987c24ac6e627a2e7ad94",
+          "cwd": ".",
+          "started_at": "2026-07-28T16:48:51Z",
+          "duration_ms": 88959,
+          "timeout_seconds": 180,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "5de158f5c2d92b06ae62731f336fbddb905eecd357cbdc96af877a0539351565",
+          "stdout_tail": "",
+          "stderr_tail": "........................................................................................................................................................................................................\n----------------------------------------------------------------------\nRan 200 tests in 88.549s\n\nOK\n"
+        }
+      ],
+      "last_evidence_sha256": "cb1a43c6fd85316d676d7c20b973327b82832d1314953cc9de840051bc92ddf1",
+      "verified_at": "2026-07-28T17:00:25Z",
+      "completed_at": "2026-07-28T17:01:28Z",
+      "final_tree_sha256": "ae8d9ca8d967be2ac47d3bdbe5b3bdf40029c2cbb8550608431e7aeeed3a60aa"
     }
   },
   "health": {
@@ -5961,7 +6070,8 @@
     "readiness_evidence_handoff": "completed_evidence_bound",
     "requirement_publisher_prestate": "state_independent",
     "delivery_intent_settlement": "completed_evidence_bound",
-    "source_runtime_golden_conformance": "android_exact_first_slice"
+    "source_runtime_golden_conformance": "android_exact_first_slice",
+    "migration_demand": "source_anchored_v1"
   },
   "risks": [
     {

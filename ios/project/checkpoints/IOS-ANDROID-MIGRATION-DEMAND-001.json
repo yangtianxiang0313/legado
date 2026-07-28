@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-ANDROID-MIGRATION-DEMAND-001",
+  "summary": "Loop Engine 已补齐 Android 源码驱动的需求来源。新增 AndroidMigrationIntent/v1 与 source-anchored-android-migration-v1：每条迁移积压显式绑定冻结 baseline commit、Android source path/blob/symbol、Phase、SourceLab behavior、目标 Capability、Requirement proposal identity 和完整 intake blueprint。Demand Compiler 将 Delivery 与 Migration Intent 合并为同一确定性优先队列，未提交输入、blob/coverage/capability 漂移、无效完成证明或优先级并列均 fail closed。Supervisor 输出 migration_materialization_ready，并只在显式策略启用、持 mutation lock 重新编译且 scope 无 authority/product 越权时自动物化 gates=[] intake。完成结算要求 committed WorkItem、passed Evidence、Checkpoint、Capability update 和 requirement proposal digest 四方一致。首个真实积压已绑定 AnalyzeUrl.kt blob 9ac49ded、transport.post-form 与 IOS-ANDROID-REQUEST-OPTIONS-INTAKE-001。9 项 Demand Compiler 测试、36 项 Supervisor 测试及 207 项完整 Harness tests 通过。",
+  "evidence": "ios/harness/evidence/runs/run-20260728T170025Z-ios-android-migration-demand-001-a0b6c6fe.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 48,
+      "to_revision": 49,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002",
+      "ADR-0004"
+    ]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项只建立需求来源控制面；业务知识由自动物化的 intake 工作项另行提取为 proposal"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项只改变 Loop 控制面，不改变 iOS 产品或书源兼容语义"
+  },
+  "pitfalls": {
+    "records": [
+      "ios/project/pitfalls/PIT-0052.json"
+    ],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "当前只物化了一条真实 Android Migration Intent；多切片并存、同优先并列和连续第三轮仍需真实仓库演练",
+    "Requirement 接受和 Golden 发布仍是受信 authority transition，Loop 不会自行越权完成",
+    "当前源码锚点以 blob 与 symbol identity 证明输入稳定，不证明 Android runtime 的全部动态语义；后续必须用真实 runner 结构化输出刻画",
+    "本地 Supervisor 与 Agent 共享用户权限；无人值守生产隔离、签名 journal 与独立 promotion 仍未完成"
+  ],
+  "next_actions": [
+    "在提交后的干净 HEAD 复算 Migration Demand 并自动物化 IOS-ANDROID-REQUEST-OPTIONS-INTAKE-001",
+    "完成 POST form/request options 源码知识与 Requirement proposal，验证结算进入 requirement_authority_required",
+    "由受信 authority 接受需求后生成本地网站场景和 Android runner 结构化 Golden，再驱动 iOS SourceRuntime 实现"
+  ],
+  "created_at": "2026-07-28T17:00:25Z"
+}
