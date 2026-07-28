@@ -2,12 +2,12 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-28T11:55:17Z
+- 更新时间：2026-07-28T12:09:29Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
-- 下一个可领取工作项：无
+- 下一个可领取工作项：IOS-ANDROID-GOLDEN-PUBLISHER-001
 - 最近完成：IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-009
 
 ## 健康度
@@ -57,6 +57,7 @@
 
 | ID | 优先级 | 状态 | 依赖 | 标题 |
 |---|---:|---|---|---|
+| IOS-ANDROID-GOLDEN-PUBLISHER-001 | 100 | `ready` | IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-009 | 建立独立 Android Golden Publisher |
 | IOS-ANDROID-ORACLE-ATTESTATION-001 | 100 | `completed` | IOS-ANDROID-ORACLE-RUNNER-001 | 建立 GitHub-hosted Android Oracle 双证明提案链 |
 | IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-002 | 100 | `completed` | IOS-ANDROID-ORACLE-ATTESTATION-001 | 恢复 GitHub workflow runner.temp 上下文 |
 | IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-003 | 100 | `completed` | IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-002 | 恢复 GitHub-hosted Android SDK tools 路径 |
