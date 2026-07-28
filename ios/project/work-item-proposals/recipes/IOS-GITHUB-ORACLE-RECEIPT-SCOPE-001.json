@@ -1,0 +1,207 @@
+{
+  "schema_version": 1,
+  "proposal_id": "IOS-GITHUB-ORACLE-RECEIPT-SCOPE-001",
+  "proposal_constraint": "只在 Loop Supervisor 增加固定 Receipt Settlement 的最小自动实现策略；精确允许 Settler、DemandCompiler/Supervisor 接线、对应测试/README 与记忆文件，禁止 Workflow、Oracle、Dispatcher、Golden、Publisher、SourceLab、产品和 wildcard",
+  "work_item": {
+    "api_version": "legado.harness/v1",
+    "kind": "WorkItem",
+    "metadata": {
+      "id": "IOS-GITHUB-ORACLE-RECEIPT-SCOPE-001",
+      "title": "建立 GitHub Oracle Receipt Settlement 的精确自动实现边界",
+      "priority": 100,
+      "risk": "high",
+      "labels": [
+        "phase-0",
+        "control-plane",
+        "loop-supervisor",
+        "external-execution",
+        "android-oracle",
+        "receipt-settlement",
+        "corrective",
+        "scope-policy"
+      ],
+      "annotations": {}
+    },
+    "spec": {
+      "capability": "CAP-KNOWLEDGE-CONTROL",
+      "intent": "在已登记 Receipt Settler 所有权后，建立唯一、精确、可自动物化的实现策略。只有 metadata 同时包含 external-execution、android-oracle、receipt-settlement、corrective，requirements=control_plane、knowledge=not_applicable、source_lab=not_applicable、gates=[]，且 allow_write 精确等于 github_oracle_receipt.py、test_github_oracle_receipt.py、demand_compiler.py、test_demand_compiler.py、loop_supervisor.py、test_loop_supervisor.py、Harness README、CAP-KNOWLEDGE-CONTROL、当前 Checkpoint 与 PIT 时，才允许自动物化。任何 Workflow、Oracle contract/ci_proposal/trusted_import/runner、Dispatcher、Golden、Publisher、SourceLab/Fixture、Requirement、业务知识、Approval、架构、产品、Package 或 wildcard 均 fail closed。正反例测试验证标签、scope、denial 与普通策略不变。本项只授权边界，不实现 settler、不访问网络、不生成 receipt。CAP-KNOWLEDGE-CONTROL revision 64→65。",
+      "depends_on": [
+        "IOS-GITHUB-ORACLE-RECEIPT-OWNER-001"
+      ],
+      "scope": {
+        "allow_write": [
+          "ios/harness/loop_supervisor.py",
+          "ios/harness/tests/test_loop_supervisor.py",
+          "ios/harness/README.md",
+          "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+          "ios/project/checkpoints/IOS-GITHUB-ORACLE-RECEIPT-SCOPE-001.json",
+          "ios/project/pitfalls/PIT-*.json"
+        ],
+        "deny_write": [
+          ".github/**",
+          "app/**",
+          "modules/**",
+          "build.gradle",
+          "settings.gradle",
+          "gradle/**",
+          "ios/Packages/**",
+          "ios/publisher/**",
+          "ios/harness/harness.py",
+          "ios/harness/github_oracle_dispatcher.py",
+          "ios/harness/github_oracle_receipt.py",
+          "ios/harness/proposal_compiler.py",
+          "ios/harness/demand_compiler.py",
+          "ios/harness/config.json",
+          "ios/harness/schemas/**",
+          "ios/harness/business-knowledge/**",
+          "ios/harness/android-intake/**",
+          "ios/harness/source-lab/**",
+          "ios/harness/fixtures/**",
+          "ios/harness/goldens/**",
+          "ios/harness/normalization/**",
+          "ios/harness/oracle/**",
+          "ios/project/external-execution-receipts/**",
+          "ios/project/android-intake/**",
+          "ios/project/requirements/**",
+          "ios/project/business-knowledge/**",
+          "ios/project/approvals/**",
+          "ios/project/work-item-proposals/**",
+          "ios/project/baseline.json",
+          "ios/docs/**"
+        ],
+        "max_files_changed": 6,
+        "max_changed_lines": 3000
+      },
+      "inputs": {
+        "context_files": [
+          "ios/harness/loop_supervisor.py",
+          "ios/harness/tests/test_loop_supervisor.py",
+          "ios/harness/demand_compiler.py",
+          "ios/harness/github_oracle_dispatcher.py",
+          "ios/harness/oracle/trusted_import.py",
+          "ios/harness/README.md",
+          "ios/project/checkpoints/IOS-GITHUB-ORACLE-RECEIPT-OWNER-001.json"
+        ],
+        "android_source_anchors": [],
+        "fixtures": []
+      },
+      "architecture_refs": [
+        "ARCH-014",
+        "ARCH-017",
+        "ADR-0002",
+        "ADR-0004"
+      ],
+      "acceptance": {
+        "criteria": [
+          {
+            "id": "AC-1",
+            "statement": "新增 Receipt Settlement scope validator，只有 external-execution、android-oracle、receipt-settlement、corrective 四标签齐全且控制面、无 Gate、无业务知识/SourceLab authority 时才进入专用策略。",
+            "verified_by": [
+              "harness-tests"
+            ],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          },
+          {
+            "id": "AC-2",
+            "statement": "专用 allow_write 必须精确等于 Receipt Settler、DemandCompiler/Supervisor 接线、四个对应测试、Harness README、CAP-KNOWLEDGE-CONTROL、当前 Checkpoint 与 PIT；缺失、额外路径、wildcard 或跨 WorkItem Checkpoint 均拒绝。",
+            "verified_by": [
+              "harness-tests"
+            ],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          },
+          {
+            "id": "AC-3",
+            "statement": "Workflow、Oracle contract/ci_proposal/trusted_import/runner、Dispatcher、Golden、Publisher、SourceLab、Fixture、Requirement、业务知识、Approval、产品、Package 与架构路径均有负例并 fail closed。",
+            "verified_by": [
+              "harness-tests",
+              "dependency-policy"
+            ],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          },
+          {
+            "id": "AC-4",
+            "statement": "普通 compiled control-plane、Workflow hardening、CI packager 与 trusted recovery 策略保持不变；候选选择仍要求 committed provenance、clean HEAD 与完整 WorkItem validator。",
+            "verified_by": [
+              "harness-tests"
+            ],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          },
+          {
+            "id": "AC-5",
+            "statement": "CAP-KNOWLEDGE-CONTROL revision 64→65 并绑定正式 Evidence/Checkpoint；本项不创建 Receipt Settler、不修改 DemandCompiler、Dispatcher、Workflow、Oracle 或任何外部状态。",
+            "verified_by": [
+              "dependency-policy",
+              "memory-close"
+            ],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          }
+        ],
+        "required_checks": [
+          "dependency-policy",
+          "harness-tests"
+        ]
+      },
+      "baseline_checks": [
+        "dependency-policy",
+        "harness-tests"
+      ],
+      "budget": {
+        "wall_clock_seconds": 14400,
+        "max_edit_verify_cycles": 5,
+        "max_targeted_test_runs": 24,
+        "max_full_test_runs": 4,
+        "max_infra_retries": 2
+      },
+      "gates": [],
+      "completion_effects": {
+        "health": {
+          "github_oracle_receipt_auto_scope": "exact_settlement_v1"
+        }
+      },
+      "memory": {
+        "adr": "not_required",
+        "capability_state_required": true,
+        "checkpoint_required": true,
+        "pitfall": "if_non_obvious_and_preventable"
+      },
+      "requirements": {
+        "mode": "control_plane",
+        "refs": [],
+        "none_reason": "本项只建立 GitHub Oracle Receipt Settlement 的自动实现权限边界"
+      },
+      "knowledge": {
+        "contract_version": 1,
+        "mode": "not_applicable",
+        "claim_refs": [],
+        "driver_refs": [],
+        "coverage_refs": [],
+        "produces": [],
+        "expected_ledger_transitions": [],
+        "context_budget": {
+          "max_claims": 12,
+          "max_bytes": 49152
+        },
+        "none_reason": "本项不消费、生成或发布业务知识"
+      },
+      "source_lab": {
+        "mode": "not_applicable",
+        "behaviors": [],
+        "scenarios": [],
+        "none_reason": "本项只建立控制面 scope，不消费或运行 SourceLab"
+      },
+      "stop_on": [
+        "doctor_red",
+        "scope_violation",
+        "authority_scope",
+        "same_failure_twice",
+        "budget_exhausted",
+        "human_decision_required"
+      ]
+    }
+  }
+}
