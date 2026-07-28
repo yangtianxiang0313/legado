@@ -1,0 +1,164 @@
+name: Requirement Readiness Publisher
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_commit:
+        required: true
+        type: string
+      requirement_record_sha256:
+        required: true
+        type: string
+      requirement_catalog_sha256:
+        required: true
+        type: string
+      golden_receipt_sha256:
+        required: true
+        type: string
+      knowledge_release_sha256:
+        required: true
+        type: string
+      coverage_ledger_sha256:
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: requirement-readiness-publisher
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: requirement-readiness-publisher
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TARGET_BRANCH: feature/ios-ai-harness-bootstrap
+      AUTHORIZED_ACTOR_ID: "35530717"
+      SOURCE_COMMIT: ${{ inputs.source_commit }}
+      REQUIREMENT_RECORD_SHA256: ${{ inputs.requirement_record_sha256 }}
+      REQUIREMENT_CATALOG_SHA256: ${{ inputs.requirement_catalog_sha256 }}
+      GOLDEN_RECEIPT_SHA256: ${{ inputs.golden_receipt_sha256 }}
+      KNOWLEDGE_RELEASE_SHA256: ${{ inputs.knowledge_release_sha256 }}
+      COVERAGE_LEDGER_SHA256: ${{ inputs.coverage_ledger_sha256 }}
+      REQUIREMENT_RECORD: ios/project/requirements/accepted/REQ-ANDROID-SOURCE-PIPELINE-001.json
+      REQUIREMENT_CATALOG: ios/project/requirements/catalog.json
+      GOLDEN_RECEIPT: ios/harness/goldens/releases/sl-html-basic-001-30355913470-1.json
+      KNOWLEDGE_RELEASE: ios/project/business-knowledge/releases/BKP-SOURCE-RUNTIME-HTML-CSS-001-r0001-30371606142-1.json
+      COVERAGE_LEDGER: ios/project/business-knowledge/coverage/BKL-SOURCE-RUNTIME-HTML-CSS-001.json
+    steps:
+      - name: Checkout exact publisher target
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          path: publisher
+          persist-credentials: true
+          ref: ${{ github.sha }}
+
+      - name: Validate identity and immutable inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_ACTOR_ID}" = "${AUTHORIZED_ACTOR_ID}"
+          test "${GITHUB_REF_NAME}" = "${TARGET_BRANCH}"
+          test "${GITHUB_SHA}" = "${SOURCE_COMMIT}"
+          test "$(git -C publisher rev-parse HEAD)" = "${SOURCE_COMMIT}"
+          test -z "$(git -C publisher status --porcelain=v1 --untracked-files=all)"
+          remote_target="$(git -C publisher ls-remote origin "refs/heads/${TARGET_BRANCH}" | cut -f1)"
+          test "${remote_target}" = "${SOURCE_COMMIT}"
+          for binding in \
+            "${REQUIREMENT_RECORD}:${REQUIREMENT_RECORD_SHA256}" \
+            "${REQUIREMENT_CATALOG}:${REQUIREMENT_CATALOG_SHA256}" \
+            "${GOLDEN_RECEIPT}:${GOLDEN_RECEIPT_SHA256}" \
+            "${KNOWLEDGE_RELEASE}:${KNOWLEDGE_RELEASE_SHA256}" \
+            "${COVERAGE_LEDGER}:${COVERAGE_LEDGER_SHA256}"
+          do
+            relative="${binding%%:*}"
+            digest="${binding#*:}"
+            test "${#digest}" -eq 64
+            test "$(shasum -a 256 "publisher/${relative}" | cut -d' ' -f1)" = "${digest}"
+          done
+          self_run="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}")"
+          test "$(jq -r '.event' <<<"${self_run}")" = "workflow_dispatch"
+          test "$(jq -r '.head_sha' <<<"${self_run}")" = "${SOURCE_COMMIT}"
+          test "$(jq -r '.actor.id' <<<"${self_run}")" = "${AUTHORIZED_ACTOR_ID}"
+          printf 'PUBLISHED_AT=%s\n' "$(jq -r '.created_at' <<<"${self_run}")" >>"${GITHUB_ENV}"
+
+      - name: Stage deterministic readiness transaction
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B publisher/ios/publisher/requirement_readiness_publisher.py prepare \
+            --root publisher \
+            --source-commit "${SOURCE_COMMIT}" \
+            --authorized-run-id "${GITHUB_RUN_ID}/${GITHUB_RUN_ATTEMPT}" \
+            --requirement-record "${REQUIREMENT_RECORD}" \
+            --requirement-record-sha256 "${REQUIREMENT_RECORD_SHA256}" \
+            --requirement-catalog "${REQUIREMENT_CATALOG}" \
+            --requirement-catalog-sha256 "${REQUIREMENT_CATALOG_SHA256}" \
+            --golden-receipt "${GOLDEN_RECEIPT}" \
+            --golden-receipt-sha256 "${GOLDEN_RECEIPT_SHA256}" \
+            --knowledge-release "${KNOWLEDGE_RELEASE}" \
+            --knowledge-release-sha256 "${KNOWLEDGE_RELEASE_SHA256}" \
+            --coverage-ledger "${COVERAGE_LEDGER}" \
+            --coverage-ledger-sha256 "${COVERAGE_LEDGER_SHA256}" \
+            --approved-by "github-actions[bot]:${GITHUB_ACTOR_ID}" \
+            --published-at "${PUBLISHED_AT}" \
+            --output-dir "${RUNNER_TEMP}/requirement-readiness"
+
+      - name: Install and freeze local release commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          transaction="${RUNNER_TEMP}/requirement-readiness/transaction.json"
+          test "$(jq -r '.authority' "${transaction}")" = "protected_requirement_readiness"
+          test "$(jq '.install | length' "${transaction}")" -eq 3
+          while IFS=$'\t' read -r relative digest
+          do
+            source="${RUNNER_TEMP}/requirement-readiness/${relative}"
+            test "$(shasum -a 256 "${source}" | cut -d' ' -f1)" = "${digest}"
+            install -D -m 0644 "${source}" "publisher/${relative}"
+          done < <(jq -r '.install[] | [.path, .sha256] | @tsv' "${transaction}")
+          release_branch="requirement/source-runtime-ready-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          test -z "$(git -C publisher ls-remote origin "refs/heads/${release_branch}")"
+          git -C publisher switch -c "${release_branch}"
+          git -C publisher config user.name "github-actions[bot]"
+          git -C publisher config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C publisher add ios/project/requirements
+          git -C publisher commit -m "chore(ios): publish SourceRuntime requirement readiness"
+          test -z "$(git -C publisher status --porcelain=v1 --untracked-files=all)"
+          printf 'RELEASE_BRANCH=%s\n' "${release_branch}" >>"${GITHUB_ENV}"
+
+      - name: Verify immutable next Loop state
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B publisher/ios/harness/business-knowledge/business_knowledge.py doctor --root publisher
+          python3 -B publisher/ios/harness/harness.py --root publisher doctor
+          python3 -B publisher/ios/harness/demand_compiler.py --root publisher plan \
+            | tee "${RUNNER_TEMP}/demand-plan.json"
+          jq -e '
+            .blockers == []
+            and (.plans | length) == 1
+            and .plans[0].target_work_item_id == "IOS-SOURCE-RUNTIME-HTML-CSS-001"
+            and .plans[0].state == "blueprint_required"
+            and .plans[0].reason_code == "DELIVERY_BLUEPRINT_REQUIRED"
+            and .plans[0].authority_transition == false
+          ' "${RUNNER_TEMP}/demand-plan.json"
+
+      - name: Push verified commit and create PR
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C publisher branch --show-current)" = "${RELEASE_BRANCH}"
+          git -C publisher push origin "HEAD:refs/heads/${RELEASE_BRANCH}"
+          gh pr create \
+            --repo "${GITHUB_REPOSITORY}" \
+            --base "${TARGET_BRANCH}" \
+            --head "${RELEASE_BRANCH}" \
+            --title "chore(ios): publish SourceRuntime requirement readiness" \
+            --body "Environment-authorized Requirement readiness transition. Publisher run: ${GITHUB_RUN_ID}/${GITHUB_RUN_ATTEMPT}; source: ${SOURCE_COMMIT}."

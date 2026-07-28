@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 45,
+  "revision": 46,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -60,14 +60,14 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260728T150357Z-ios-business-knowledge-publisher-plan-006-350ef6e0.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260728T151620Z-ios-requirement-readiness-publisher-recovery-002-e9431adb.json",
   "next_actions": [
     "BKP-INTEGRATIONS-001@4 与 DRV-INTEGRATION-PROFILES-001@4 在 Trusted Publisher promotion 前保持 proposal；只有 promotion/accept 决策才要求权威审查",
     "由 Harness/Proposal Compiler 的 recovers 内容寻址合同维持恢复谱系，并用有界 Catalog self-heal 支持控制面中断续跑；下一步由 Trusted Publisher 提升 JSON Schema，并自动重写 recovery Claim supersedes 以关闭 PIT-0012",
     "以 runner 本地不可变 commit 验证 business-knowledge-publisher 原子事务，三个验证器全部通过后再 push 同一 commit；将 Golden 精确表征的 BKP-SOURCE-RUNTIME-HTML-CSS-001@1 与 DRV-SOURCE-RUNTIME-HTML-CSS-001@1 提升为 published authority，并生成四条 Claim 的 Coverage",
-    "由受信 Requirement Publisher 根据 protected sl-html-basic-001 Golden 发布 REQ-ANDROID-SOURCE-PIPELINE-001 的 implementation_ready 新 revision",
+    "配置并实跑 requirement-readiness-publisher Environment，根据 protected Golden、published knowledge release 与 verified Coverage 把 REQ-ANDROID-SOURCE-PIPELINE-001@1 提升为 implementation_ready",
     "生成并自动物化 IOS-SOURCE-RUNTIME-HTML-CSS-001 blueprint，执行 first-divergence 纵向交付"
   ],
-  "updated_at": "2026-07-28T15:03:57Z",
-  "updated_by": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-PLAN-006"
+  "updated_at": "2026-07-28T15:16:20Z",
+  "updated_by": "IOS-REQUIREMENT-READINESS-PUBLISHER-RECOVERY-002"
 }

@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "revision": 308,
+  "revision": 314,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-28T15:04:27Z",
-  "event_head": "8634c941b66ec9734478a6e1185725385ff0b4a46f06f1b0b4f539ebff5dc896",
+  "updated_at": "2026-07-28T15:17:09Z",
+  "event_head": "a492c8b2381cb40e3884c48fdf607395b032a04b1babf31eeff3f2aa8476f54c",
   "active_work_items": [],
-  "last_completed_work_item": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-PLAN-006",
+  "last_completed_work_item": "IOS-REQUIREMENT-READINESS-PUBLISHER-RECOVERY-002",
   "work_items": {
     "IOS-BOOT-001": {
       "status": "completed",
@@ -5236,6 +5236,121 @@
       "verified_at": "2026-07-28T15:03:57Z",
       "completed_at": "2026-07-28T15:04:27Z",
       "final_tree_sha256": "5ebc3392be77d6cd5c242c64e156e8e4e773cde26a1c9bd1ee7f88691eee4fc6"
+    },
+    "IOS-REQUIREMENT-READINESS-PUBLISHER-001": {
+      "status": "blocked",
+      "attempt": 0,
+      "last_evidence": null,
+      "blocker": "baseline_red",
+      "baseline_checks": [
+        {
+          "id": "dependency-policy",
+          "argv": [
+            "python3",
+            "ios/harness/probes/dependency_contract.py",
+            "--root",
+            "."
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "eca96cb1b69567829ed8396386b0449da8c0d6e7295a00f1decfb60430ff1153",
+          "cwd": ".",
+          "started_at": "2026-07-28T15:08:05Z",
+          "duration_ms": 696,
+          "timeout_seconds": 90,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "17595a1d68cdc5b52c010f46dff48514afa3fa3cf0215cdea7ae8eff38677c0a",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_tail": "DEPENDENCY_CONTRACT: OK\n",
+          "stderr_tail": ""
+        },
+        {
+          "id": "harness-tests",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "244d512cbdd15fe0c5e35e6d9676510c943b19e9437987c24ac6e627a2e7ad94",
+          "cwd": ".",
+          "started_at": "2026-07-28T15:08:06Z",
+          "duration_ms": 76217,
+          "timeout_seconds": 180,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 1,
+          "passed": false,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "b4c92988a8e99484852db10b66717665e57f11594779666f078e04aa991cebcd",
+          "stdout_tail": "",
+          "stderr_tail": "rty_source_and_repository_output\n    self._prepare(forbidden)\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_business_knowledge_publisher.py\", line 108, in _prepare\n    \"packet_proposal_sha256\": self._sha(\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_business_knowledge_publisher.py\", line 101, in _sha\n    return hashlib.sha256(path.read_bytes()).hexdigest()\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py\", line 1249, in read_bytes\n    with self.open(mode='rb') as f:\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py\", line 1242, in open\n    return io.open(self, mode, buffering, encoding, errors, newline,\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py\", line 1110, in _opener\n    return self._accessor.open(self, flags, mode)\nFileNotFoundError: [Errno 2] No such file or directory: '/var/folders/zf/0x69nx7x0jg6nmpb75pgmr800000gp/T/tmpir3x6o_h/repository/ios/project/business-knowledge/packets/proposals/BKP-SOURCE-RUNTIME-HTML-CSS-001/r0001.json'\n\n======================================================================\nERROR: test_prepare_rejects_driver_claim_outside_packet (test_business_knowledge_publisher.BusinessKnowledgePublisherTests)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_business_knowledge_publisher.py\", line 269, in test_prepare_rejects_driver_claim_outside_packet\n    driver = json.loads(driver_path.read_text(encoding=\"utf-8\"))\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py\", line 1256, in read_text\n    with self.open(mode='r', encoding=encoding, errors=errors) as f:\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py\", line 1242, in open\n    return io.open(self, mode, buffering, encoding, errors, newline,\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py\", line 1110, in _opener\n    return self._accessor.open(self, flags, mode)\nFileNotFoundError: [Errno 2] No such file or directory: '/var/folders/zf/0x69nx7x0jg6nmpb75pgmr800000gp/T/tmpph9w8j1f/repository/ios/project/business-knowledge/drivers/proposals/DRV-SOURCE-RUNTIME-HTML-CSS-001/r0001.json'\n\n======================================================================\nERROR: test_prepare_rejects_existing_publication_target (test_business_knowledge_publisher.BusinessKnowledgePublisherTests)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_business_knowledge_publisher.py\", line 335, in test_prepare_rejects_existing_publication_target\n    self._prepare(self.base / \"existing\")\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_business_knowledge_publisher.py\", line 108, in _prepare\n    \"packet_proposal_sha256\": self._sha(\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_business_knowledge_publisher.py\", line 101, in _sha\n    return hashlib.sha256(path.read_bytes()).hexdigest()\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py\", line 1249, in read_bytes\n    with self.open(mode='rb') as f:\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py\", line 1242, in open\n    return io.open(self, mode, buffering, encoding, errors, newline,\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py\", line 1110, in _opener\n    return self._accessor.open(self, flags, mode)\nFileNotFoundError: [Errno 2] No such file or directory: '/var/folders/zf/0x69nx7x0jg6nmpb75pgmr800000gp/T/tmp1bb4olxz/repository/ios/project/business-knowledge/packets/proposals/BKP-SOURCE-RUNTIME-HTML-CSS-001/r0001.json'\n\n======================================================================\nERROR: test_prepare_rejects_golden_payload_drift (test_business_knowledge_publisher.BusinessKnowledgePublisherTests)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_business_knowledge_publisher.py\", line 265, in test_prepare_rejects_golden_payload_drift\n    self._prepare(self.base / \"golden-drift\")\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_business_knowledge_publisher.py\", line 108, in _prepare\n    \"packet_proposal_sha256\": self._sha(\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_business_knowledge_publisher.py\", line 101, in _sha\n    return hashlib.sha256(path.read_bytes()).hexdigest()\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py\", line 1249, in read_bytes\n    with self.open(mode='rb') as f:\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py\", line 1242, in open\n    return io.open(self, mode, buffering, encoding, errors, newline,\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py\", line 1110, in _opener\n    return self._accessor.open(self, flags, mode)\nFileNotFoundError: [Errno 2] No such file or directory: '/var/folders/zf/0x69nx7x0jg6nmpb75pgmr800000gp/T/tmpr_0srpbc/repository/ios/project/business-knowledge/packets/proposals/BKP-SOURCE-RUNTIME-HTML-CSS-001/r0001.json'\n\n----------------------------------------------------------------------\nRan 191 tests in 76.068s\n\nFAILED (errors=9)\n"
+        }
+      ],
+      "replacement": "IOS-REQUIREMENT-READINESS-PUBLISHER-RECOVERY-002",
+      "replacement_bound_at": "2026-07-28T15:17:09Z"
+    },
+    "IOS-REQUIREMENT-READINESS-PUBLISHER-RECOVERY-002": {
+      "status": "completed",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260728T151620Z-ios-requirement-readiness-publisher-recovery-002-e9431adb.json",
+      "claimed_by": "codex-root",
+      "claimed_at": "2026-07-28T15:10:25Z",
+      "lease_expires_at": "2026-07-29T15:10:25Z",
+      "work_item_sha256": "74f55e5573314b80a659cb0894d8c347b75d682ce4c3b318230901965ce37b58",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "654b2d2f7e5f2e1fb5c5941f6f77626244a59b02",
+      "base_capability_revision": 45,
+      "base_capability_assurance_sha256": "6c08426cf2cc8f0277426284e00909a10444767bc01eeb84e0db43db8dcbb2ac",
+      "android_requirement_selection_sha256": null,
+      "business_knowledge_control_sha256": "b921f3965df5086df523aec6c90c175ffc470273cf76d73d61ac24dc71ed0e4f",
+      "business_knowledge_authority_sha256": "9a898622fab665e380b0fdb7837d6aa24f938f5c87e4bc635c32fbdf4dfe81c8",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 1,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "dependency-policy",
+          "argv": [
+            "python3",
+            "ios/harness/probes/dependency_contract.py",
+            "--root",
+            "."
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "eca96cb1b69567829ed8396386b0449da8c0d6e7295a00f1decfb60430ff1153",
+          "cwd": ".",
+          "started_at": "2026-07-28T15:10:24Z",
+          "duration_ms": 687,
+          "timeout_seconds": 90,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "17595a1d68cdc5b52c010f46dff48514afa3fa3cf0215cdea7ae8eff38677c0a",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_tail": "DEPENDENCY_CONTRACT: OK\n",
+          "stderr_tail": ""
+        }
+      ],
+      "last_evidence_sha256": "d83ac8416a351053b8edc0833b2b6c5e455de8c3234ba186f8349c3052e07b4c",
+      "verified_at": "2026-07-28T15:16:20Z",
+      "completed_at": "2026-07-28T15:17:09Z",
+      "final_tree_sha256": "a742ef94bc78887a04e956c6efd4f7242e04db9ddb4cc4aa663898be6f3dbe6e"
     }
   },
   "health": {
@@ -5284,7 +5399,9 @@
     "business_knowledge_publisher": "checkout_remote_bound",
     "knowledge_promotion_context": "receipt_bound",
     "knowledge_publisher_verification": "immutable_commit_before_push",
-    "knowledge_publisher_demand_plan": "batch_envelope_bound"
+    "knowledge_publisher_demand_plan": "batch_envelope_bound",
+    "requirement_readiness_publisher": "implemented_external_authority",
+    "publisher_tests_after_promotion": "state_independent"
   },
   "risks": [
     {

@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0047",
+  "revision": 1,
+  "title": "Publisher 测试不能把 live authority 状态当作固定 fixture",
+  "fingerprint": "publisher-test-copies-promoted-live-repository",
+  "capabilities": ["CAP-KNOWLEDGE-CONTROL"],
+  "symptoms": [
+    "真实 promotion 成功后 proposal 被正确删除",
+    "Publisher 单测复制 live business-knowledge 目录后找不到 proposal",
+    "后续无关 Work Item 在 claim baseline 阶段被阻断"
+  ],
+  "conditions": [
+    "测试 fixture 直接复制仓库当前 authority 树",
+    "被测操作本身会把 proposal 原子替换为 published artifact",
+    "测试没有显式重建操作前状态"
+  ],
+  "root_cause": "测试把可演进的 live authority 状态误当作恒定输入，使成功状态迁移反过来破坏历史操作测试。",
+  "diagnosis": [
+    "检查失败路径是否已被合法 promotion 删除",
+    "区分生产重复发布拒绝与测试 fixture 缺失",
+    "确认 fixture 能从当前 published artifact 确定性恢复发布前语义"
+  ],
+  "fix": "测试在隔离仓库中从 published Packet/Driver 恢复 candidate/proposed 状态，删除对应 published/Coverage/release 并重算 Catalog，不修改 live repository。",
+  "prevention": {
+    "architecture_rule": "状态迁移测试必须自带或确定性构造 pre-state；live authority 只用于额外的 current-state 负向测试。",
+    "tests": [
+      "ios/harness/tests/test_business_knowledge_publisher.py",
+      "ios/harness/tests/test_requirement_readiness_publisher.py"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-001",
+    "until": "IOS-REQUIREMENT-READINESS-PUBLISHER-RECOVERY-002"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T151620Z-ios-requirement-readiness-publisher-recovery-002-e9431adb.json"
+  ]
+}

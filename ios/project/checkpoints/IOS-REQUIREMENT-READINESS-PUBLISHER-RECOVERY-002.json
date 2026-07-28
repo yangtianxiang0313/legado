@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-REQUIREMENT-READINESS-PUBLISHER-RECOVERY-002",
+  "summary": "真实 Business Knowledge promotion 删除 proposal 后，旧 Publisher tests 因复制 live authority 状态而 baseline_red；测试现从 published Packet/Driver 确定性重建隔离的发布前 candidate/proposed fixture，并移除 published outputs 后重算 Catalog，因此成功发布后仍可重复。新增 staging-only Requirement Readiness Publisher：精确绑定 source commit、Requirement/Catalog、protected sl-html-basic-001 Golden、protected Business Knowledge release 与 verified Coverage；只有四条 RC 全覆盖时才生成 implementation_ready Requirement、同步 Catalog 和不可变 receipt。Environment workflow 先冻结本地 commit，三个验证器证明 blueprint_required 后才 push PR。12 项定向测试、191 项完整 Harness tests、dependency policy 与 YAML 解析通过。",
+  "evidence": "ios/harness/evidence/runs/run-20260728T151620Z-ios-requirement-readiness-publisher-recovery-002-e9431adb.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 45,
+      "to_revision": 46,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": ["ADR-0004"]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null,
+    "none_reason": "本项实现外部 Requirement authority Publisher，不在本地提升 Requirement"
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项不生成知识，只在外部 Publisher 验证已发布知识"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null,
+    "none_reason": "本项不生成新 Golden"
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "控制面与测试 fixture 变化不修改产品兼容语义"
+  },
+  "pitfalls": {
+    "records": ["ios/project/pitfalls/PIT-0047.json"],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "新 workflow 尚需合入、在默认分支注册并配置独立 Environment",
+    "真实 Requirement readiness PR 尚未生成和合并",
+    "Delivery Blueprint 自动生成尚未开始"
+  ],
+  "next_actions": [
+    "合并 Publisher 实现并在默认分支注册 workflow",
+    "配置 requirement-readiness-publisher Environment 并实跑",
+    "合并 readiness PR，确认 Loop 进入 blueprint_required",
+    "自动生成并物化首个 SourceRuntime Delivery Blueprint"
+  ],
+  "created_at": "2026-07-28T15:16:20Z"
+}

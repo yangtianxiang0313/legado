@@ -2,13 +2,13 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-28T15:04:27Z
+- 更新时间：2026-07-28T15:17:09Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
 - 下一个可领取工作项：无
-- 最近完成：IOS-BUSINESS-KNOWLEDGE-PUBLISHER-PLAN-006
+- 最近完成：IOS-REQUIREMENT-READINESS-PUBLISHER-RECOVERY-002
 
 ## 健康度
 
@@ -51,7 +51,9 @@
 | proposal_compiler | `local_verified` |
 | proposal_gate_policy | `authority_only` |
 | proposal_lifecycle_tests | `state_aware` |
+| publisher_tests_after_promotion | `state_independent` |
 | recovery_compiler_binding | `content_addressed` |
+| requirement_readiness_publisher | `implemented_external_authority` |
 | requirements | `catalog_ready_one_characterization_gap` |
 | source_lab | `fixture_transport_integrated` |
 | supervisor_run_journal | `local_replayable` |
@@ -108,6 +110,8 @@
 | IOS-PROPOSAL-GATE-REPAIR-001 | 100 | `completed` | IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002, IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-004 | 移除 proposal 橡皮图章并允许受限修复 turn |
 | IOS-PROPOSAL-LIFECYCLE-RECOVERY-002 | 100 | `completed` | IOS-PROPOSAL-COMPILER-001, IOS-AUTO-MATERIALIZATION-POLICY-001 | 修复 proposal 测试对物化生命周期的自阻断 |
 | IOS-RECOVERY-COMPILER-BINDING-001 | 100 | `completed` | IOS-TYPED-RECOVERY-LINEAGE-001 | 将 typed recovery 绑定进编译与物化链路 |
+| IOS-REQUIREMENT-READINESS-PUBLISHER-001 | 100 | `blocked` | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-PLAN-006 | 建立受信 Requirement Readiness Publisher |
+| IOS-REQUIREMENT-READINESS-PUBLISHER-RECOVERY-002 | 100 | `completed` | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-PLAN-006 | 恢复发布后基线并建立 Requirement Readiness Publisher |
 | IOS-SUPERVISOR-OWNED-VERIFY-001 | 100 | `blocked` | IOS-CODEX-AGENT-ADAPTER-COMPAT-002, IOS-SWIFTPM-VERIFY-SANDBOX-001 | 将受信 verify 与 close 移出 Agent 沙箱 |
 | IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002 | 100 | `completed` | IOS-CODEX-AGENT-ADAPTER-COMPAT-002, IOS-SWIFTPM-VERIFY-SANDBOX-001, IOS-PROCESS-GROUP-REAP-001 | 恢复 Supervisor-owned verify 与 close |
 | IOS-SUPERVISOR-RUN-JOURNAL-001 | 100 | `completed` | IOS-CONTROL-CATALOG-RESUME-001 | 为 Loop Supervisor 增加可重放运行日志 |

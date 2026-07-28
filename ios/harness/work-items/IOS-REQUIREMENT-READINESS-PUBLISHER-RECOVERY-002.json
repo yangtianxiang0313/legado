@@ -1,0 +1,161 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-REQUIREMENT-READINESS-PUBLISHER-RECOVERY-002",
+    "title": "恢复发布后基线并建立 Requirement Readiness Publisher",
+    "priority": 100,
+    "risk": "critical",
+    "labels": [
+      "phase-0",
+      "control-plane",
+      "corrective",
+      "recovery",
+      "requirement",
+      "trusted-publisher"
+    ]
+  },
+  "spec": {
+    "recovers": "IOS-REQUIREMENT-READINESS-PUBLISHER-001",
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "intent": "恢复 IOS-REQUIREMENT-READINESS-PUBLISHER-001 因真实知识发布删除 proposal 后，旧 Business Knowledge Publisher 测试依赖 live proposal 而 baseline_red 的状态。测试必须在隔离 fixture 中重建发布前 proposal，不依赖 live authority 状态，并保留对 live 已发布状态拒绝重复发布的负向覆盖。在恢复基线后，完成 staging-only Requirement Readiness Publisher 与受信 Environment workflow：精确绑定 Requirement/Catalog、protected Golden、Business Knowledge release 与 Coverage；只有完整证据才能把 REQ-ANDROID-SOURCE-PIPELINE-001@1 提升为 implementation_ready，先本地 commit 验证 blueprint_required，后 push PR。",
+    "depends_on": [
+      "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-PLAN-006"
+    ],
+    "scope": {
+      "allow_write": [
+        "ios/publisher/requirement_readiness_publisher.py",
+        ".github/workflows/requirement-readiness-publisher.yml",
+        "ios/harness/tests/test_requirement_readiness_publisher.py",
+        "ios/harness/tests/test_business_knowledge_publisher.py",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-REQUIREMENT-READINESS-PUBLISHER-RECOVERY-002.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "ios/harness/demand_compiler.py",
+        "ios/harness/business-knowledge/**",
+        "ios/harness/goldens/**",
+        "ios/project/business-knowledge/**",
+        "ios/project/requirements/**",
+        "ios/project/approvals/**",
+        "ios/project/baseline.json",
+        "ios/docs/**"
+      ],
+      "max_files_changed": 7,
+      "max_changed_lines": 2200
+    },
+    "inputs": {
+      "context_files": [
+        "ios/harness/tests/test_business_knowledge_publisher.py",
+        "ios/project/requirements/accepted/REQ-ANDROID-SOURCE-PIPELINE-001.json",
+        "ios/project/requirements/catalog.json",
+        "ios/harness/goldens/releases/sl-html-basic-001-30355913470-1.json",
+        "ios/project/business-knowledge/releases/BKP-SOURCE-RUNTIME-HTML-CSS-001-r0001-30371606142-1.json",
+        "ios/project/business-knowledge/coverage/BKL-SOURCE-RUNTIME-HTML-CSS-001.json"
+      ],
+      "android_source_anchors": [],
+      "fixtures": [
+        "sl-html-basic-001"
+      ]
+    },
+    "architecture_refs": [
+      "ARCH-014",
+      "ADR-0004"
+    ],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "Business Knowledge Publisher tests 自带发布前 proposal fixture，真实 authority 已发布后仍可重复运行；重复发布继续 fail closed。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "Requirement Publisher 精确绑定 source commit、原 Requirement/Catalog、protected Golden、Business Knowledge release 与 Coverage 摘要。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "四条 RC 均被 verified Coverage 覆盖时才生成 implementation_ready Requirement、Catalog 与不可变 receipt，prepare 仅写外部 staging。",
+          "verified_by": ["harness-tests", "dependency-policy"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-4",
+          "statement": "Environment workflow 先冻结本地 commit，在三个验证器精确证明 blueprint_required 后才 push PR。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-5",
+          "statement": "Checkpoint、Capability 与 Pitfall 记录状态依赖测试、Requirement authority 与回滚风险。",
+          "verified_by": ["memory-close"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": ["dependency-policy", "harness-tests"]
+    },
+    "baseline_checks": ["dependency-policy"],
+    "budget": {
+      "wall_clock_seconds": 14400,
+      "max_edit_verify_cycles": 5,
+      "max_targeted_test_runs": 24,
+      "max_full_test_runs": 4,
+      "max_infra_retries": 3
+    },
+    "gates": [],
+    "completion_effects": {
+      "health": {
+        "requirement_readiness_publisher": "implemented_external_authority",
+        "publisher_tests_after_promotion": "state_independent"
+      }
+    },
+    "memory": {
+      "capability_state_required": true,
+      "checkpoint_required": true,
+      "pitfall_update_required": true,
+      "adr": "not_required"
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "refs": [],
+      "none_reason": "本项实现外部 Requirement authority Publisher，不在本地提升 Requirement"
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "not_applicable",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [],
+      "expected_ledger_transitions": [],
+      "context_budget": {"max_claims": 8, "max_bytes": 32768},
+      "none_reason": "本项不生成知识，只在外部 Publisher 验证已发布知识"
+    },
+    "source_lab": {
+      "mode": "not_applicable",
+      "behaviors": [],
+      "scenarios": [],
+      "none_reason": "本项不生成新 Golden"
+    },
+    "stop_on": [
+      "baseline_red",
+      "scope_violation",
+      "authority_escalation",
+      "same_failure_twice",
+      "budget_exhausted",
+      "human_decision_required"
+    ]
+  }
+}
