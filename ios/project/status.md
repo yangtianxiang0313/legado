@@ -2,12 +2,12 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-28T07:01:44Z
+- 更新时间：2026-07-28T07:07:59Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
-- 下一个可领取工作项：无
+- 下一个可领取工作项：IOS-ANDROID-ORACLE-ATTESTATION-001
 - 最近完成：IOS-ANDROID-ORACLE-RUNNER-001
 
 ## 健康度
@@ -56,6 +56,7 @@
 
 | ID | 优先级 | 状态 | 依赖 | 标题 |
 |---|---:|---|---|---|
+| IOS-ANDROID-ORACLE-ATTESTATION-001 | 100 | `ready` | IOS-ANDROID-ORACLE-RUNNER-001 | 建立 GitHub-hosted Android Oracle 双证明提案链 |
 | IOS-ANDROID-ORACLE-RUNNER-001 | 100 | `completed` | IOS-ORACLE-CONTROL-PLANE-001, IOS-SOURCELAB-ENGINE-001 | 建立冻结 Android WebBook 的 SourceLab Oracle Runner |
 | IOS-AUTO-MATERIALIZATION-POLICY-001 | 100 | `completed` | IOS-PROPOSAL-COMPILER-001, IOS-DECISION-GATE-POLICY-001, IOS-LOOP-SUPERVISOR-E2E-001 | 让无决策、无权威迁移的编译候选自动进入队列 |
 | IOS-BOOT-001 | 100 | `completed` | 无 | 建立 Swift Package 与首批模块骨架 |
