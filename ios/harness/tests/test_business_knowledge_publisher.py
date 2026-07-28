@@ -83,6 +83,61 @@ class BusinessKnowledgePublisherTests(unittest.TestCase):
             else:
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(source, destination)
+        self._restore_prepublication_knowledge_fixture()
+
+    def _restore_prepublication_knowledge_fixture(self):
+        packet_published = (
+            self.root
+            / "ios/project/business-knowledge/packets/published/"
+            "BKP-SOURCE-RUNTIME-HTML-CSS-001/r0001.json"
+        )
+        driver_published = (
+            self.root
+            / "ios/project/business-knowledge/drivers/published/"
+            "DRV-SOURCE-RUNTIME-HTML-CSS-001/r0001.json"
+        )
+        if not packet_published.exists():
+            return
+        packet = json.loads(packet_published.read_text(encoding="utf-8"))
+        driver = json.loads(driver_published.read_text(encoding="utf-8"))
+        packet["status"] = "candidate"
+        driver["status"] = "proposed"
+        driver["promotion"] = None
+        for relative, value in (
+            (self.packet_relative, packet),
+            (self.driver_relative, driver),
+        ):
+            path = self.root / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(
+                json.dumps(value, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8",
+            )
+        packet_published.unlink()
+        driver_published.unlink()
+        (
+            self.root
+            / "ios/project/business-knowledge/coverage/"
+            "BKL-SOURCE-RUNTIME-HTML-CSS-001.json"
+        ).unlink()
+        for release in (
+            self.root / "ios/project/business-knowledge/releases"
+        ).glob("BKP-SOURCE-RUNTIME-HTML-CSS-001-r0001-*.json"):
+            release.unlink()
+        control = publisher._business_module(self.root)
+        catalog = control.catalog_value(self.root)
+        (
+            self.root / "ios/project/business-knowledge/catalog.json"
+        ).write_text(
+            json.dumps(
+                catalog,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            + "\n",
+            encoding="utf-8",
+        )
 
     def _git(self, *arguments):
         result = subprocess.run(
