@@ -1,0 +1,212 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002",
+    "title": "恢复 Supervisor-owned verify 与 close",
+    "priority": 100,
+    "risk": "high",
+    "labels": [
+      "phase-0",
+      "control-plane",
+      "corrective",
+      "loop-engine",
+      "trusted-verification",
+      "agent-adapter",
+      "sandbox",
+      "recovery"
+    ]
+  },
+  "spec": {
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "intent": "在 IOS-PROCESS-GROUP-REAP-001 消除随机 baseline_red 后，恢复未启动实现的 IOS-SUPERVISOR-OWNED-VERIFY-001。把 Loop 职责拆成 Agent edit、Supervisor verify、Agent memory、Supervisor close 四个受控阶段。Agent 保持 workspace-write 最小权限，只生成 scope 内候选改动和通过 Evidence 后的记忆文件；外层 Supervisor 独立运行 required_checks、生成 Evidence、验证记忆事务并 close。保持显式配置启用和旧模式兼容，不扩大 Agent sandbox、网络或 authority 权限。",
+    "depends_on": [
+      "IOS-CODEX-AGENT-ADAPTER-COMPAT-002",
+      "IOS-SWIFTPM-VERIFY-SANDBOX-001",
+      "IOS-PROCESS-GROUP-REAP-001"
+    ],
+    "scope": {
+      "allow_write": [
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/codex_agent_adapter.py",
+        "ios/harness/tests/test_loop_supervisor.py",
+        "ios/harness/tests/test_codex_agent_adapter.py",
+        "ios/harness/codex-agent.example.json",
+        "ios/harness/README.md",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002.json",
+        "ios/project/pitfalls/PIT-0022.json"
+      ],
+      "deny_write": [
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "**/Package.swift",
+        "**/*.entitlements",
+        "**/Info.plist",
+        "ios/harness/harness.py",
+        "ios/harness/approval_ui.py",
+        "ios/harness/trusted_supervisor_reference.py",
+        "ios/harness/config.json",
+        "ios/harness/architecture-rules.json",
+        "ios/harness/dependency-policy.json",
+        "ios/harness/schemas/**",
+        "ios/harness/business-knowledge/**",
+        "ios/harness/android-intake/**",
+        "ios/harness/source-lab/**",
+        "ios/harness/oracle/**",
+        "ios/harness/goldens/**",
+        "ios/project/android-intake/**",
+        "ios/project/business-knowledge/**",
+        "ios/project/requirements/**",
+        "ios/project/requirement-proposals/**",
+        "ios/project/dependency-proposals/**",
+        "ios/project/work-item-proposals/**",
+        "ios/project/approvals/**",
+        "ios/project/baseline.json",
+        "ios/docs/**",
+        ".github/**"
+      ],
+      "max_files_changed": 9,
+      "max_changed_lines": 2600
+    },
+    "inputs": {
+      "context_files": [
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/codex_agent_adapter.py",
+        "ios/harness/tests/test_loop_supervisor.py",
+        "ios/harness/tests/test_codex_agent_adapter.py",
+        "ios/harness/codex-agent.example.json",
+        "ios/harness/README.md",
+        "ios/harness/work-items/IOS-SUPERVISOR-OWNED-VERIFY-001.json",
+        "ios/project/checkpoints/IOS-SWIFTPM-VERIFY-SANDBOX-001.json",
+        "ios/project/checkpoints/IOS-PROCESS-GROUP-REAP-001.json",
+        "ios/project/pitfalls/PIT-0022.json",
+        "ios/project/pitfalls/PIT-0023.json"
+      ],
+      "android_source_anchors": [],
+      "fixtures": []
+    },
+    "architecture_refs": [
+      "ARCH-018",
+      "ADR-0004"
+    ],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "显式 supervisor-owned-verification-v1 策略启用后，Agent 成功退出且状态仍为 implementing 时，Supervisor 在自身进程中调用 Harness.verify，并把 Evidence 路径、结果与失败分类作为结构化 transition 返回。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "verify 失败且仍可重试时，下一轮复用同一 Work Item/Codex task 并带上最新 Evidence；rejected/exhausted/blocked/awaiting_human 等状态按 Harness 状态停止，不由 Supervisor 篡改。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "verify 通过后，Supervisor 以 memory_close phase 再调用 Agent；Agent 只能写 Capability/Checkpoint/Pitfall 等已授权记忆文件，随后由 Supervisor 调用 close，close 失败结构化返回且不得伪装完成。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-4",
+          "statement": "Codex adapter prompt 根据 context 中受绑定 phase 明确禁止 Agent claim/verify/close：implementation 只改候选并可跑 targeted checks，memory_close 只做 passed Evidence 之后的记忆事务。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-5",
+          "statement": "E2E fake Agent 不调用 Harness.verify/close，仍由 Supervisor 完成 materialize→claim→edit→verify→memory→close→queue_empty；旧配置行为及 secret/output/process-group 约束保持。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-6",
+          "statement": "Checkpoint 记录原 baseline_red、process-group 修复和信任边界迁移，PIT-0022 在真实 Integrations recovery 通过前保持 mitigated，Capability 保持 partial。",
+          "verified_by": [
+            "memory-close"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": [
+        "dependency-policy",
+        "harness-tests"
+      ]
+    },
+    "baseline_checks": [
+      "harness-tests"
+    ],
+    "budget": {
+      "wall_clock_seconds": 7200,
+      "max_edit_verify_cycles": 3,
+      "max_targeted_test_runs": 10,
+      "max_full_test_runs": 3,
+      "max_infra_retries": 1
+    },
+    "gates": [],
+    "completion_effects": {
+      "health": {
+        "loop_trusted_verification": "supervisor_owned"
+      }
+    },
+    "memory": {
+      "adr": "not_required",
+      "capability_state_required": true,
+      "compatibility": "not_applicable",
+      "pitfall": "required"
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "refs": [],
+      "none_reason": "本项只改变 Loop 控制面职责，不改变产品需求"
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "not_applicable",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [],
+      "expected_ledger_transitions": [],
+      "context_budget": {
+        "max_claims": 20,
+        "max_bytes": 32768
+      },
+      "none_reason": "本项不消费、生成或发布业务知识"
+    },
+    "source_lab": {
+      "mode": "not_applicable",
+      "behaviors": [],
+      "scenarios": [],
+      "none_reason": "本项不执行书源或双端行为，只调整受信验证编排"
+    },
+    "stop_on": [
+      "baseline_red",
+      "scope_violation",
+      "authority_escalation",
+      "same_failure_twice",
+      "budget_exhausted",
+      "human_decision_required"
+    ]
+  }
+}
