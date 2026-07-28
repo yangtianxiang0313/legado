@@ -825,6 +825,84 @@ class MaterializationTests(unittest.TestCase):
                 supervisor._trusted_oracle_scope_issues(item),
             )
 
+    def test_trusted_oracle_recovery_auto_scope_is_exact(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            item_id = "IOS-TEST-TRUSTED-ORACLE-RECOVERY-002"
+            item = fixture.fixture.item(
+                item_id,
+                "CAP-CONFORMANCE",
+                100,
+            )
+            item["metadata"]["labels"] = [
+                "control-plane",
+                "android-oracle",
+                "trusted-proposal",
+                "candidate-only",
+                "attestation",
+                "github-actions",
+                "corrective",
+                "recovery",
+            ]
+            item["spec"]["recovers"] = (
+                "IOS-TEST-TRUSTED-ORACLE-001"
+            )
+            item["spec"]["requirements"] = {
+                "mode": "control_plane",
+                "refs": [],
+                "none_reason": "test",
+            }
+            item["spec"]["knowledge"] = {
+                "mode": "not_applicable",
+            }
+            item["spec"]["scope"]["allow_write"] = [
+                ".github/workflows/android-oracle-attestation.yml",
+                "ios/harness/oracle/contract.py",
+                "ios/harness/oracle/ci_proposal.py",
+                "ios/harness/oracle/trusted_import.py",
+                "ios/harness/oracle/README.md",
+                "ios/harness/tests/test_oracle_contract.py",
+                "ios/harness/tests/test_oracle_ci_proposal.py",
+                "ios/harness/tests/test_oracle_trusted_import.py",
+                "ios/project/capabilities/CAP-CONFORMANCE.json",
+                f"ios/project/checkpoints/{item_id}.json",
+                "ios/project/pitfalls/PIT-*.json",
+            ]
+            item["spec"]["scope"]["deny_write"] = [
+                "app/**",
+                "modules/**",
+                "ios/Packages/**",
+                "ios/publisher/**",
+                "ios/harness/fixtures/**",
+                "ios/harness/source-lab/**",
+                "ios/harness/goldens/**",
+                "ios/harness/oracle/android-runner/**",
+                "ios/project/requirements/**",
+                "ios/project/approvals/**",
+                "ios/project/work-item-proposals/**",
+                "ios/docs/**",
+            ]
+            supervisor = loop_supervisor.LoopSupervisor(
+                fixture.harness
+            )
+
+            self.assertEqual(
+                [],
+                supervisor._trusted_oracle_recovery_scope_issues(
+                    item
+                ),
+            )
+
+            item["spec"]["scope"]["allow_write"].append(
+                "ios/publisher/android_golden_publisher.py"
+            )
+            self.assertIn(
+                "AUTO_TRUSTED_ORACLE_RECOVERY_SCOPE_ALLOW_INVALID",
+                supervisor._trusted_oracle_recovery_scope_issues(
+                    item
+                ),
+            )
+
     def test_preflight_rejects_outside_symlink_and_incomplete_dependency(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = MaterializationFixture(Path(directory))
