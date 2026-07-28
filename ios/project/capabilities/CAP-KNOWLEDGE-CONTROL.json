@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 56,
+  "revision": 57,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -22,6 +22,7 @@
       "ios/harness/approval_ui.py",
       "ios/harness/codex_agent_adapter.py",
       "ios/harness/demand_compiler.py",
+      "ios/harness/github_oracle_dispatcher.py",
       "ios/harness/harness.py",
       "ios/harness/loop_supervisor.py",
       "ios/harness/proposal_compiler.py",
@@ -33,6 +34,7 @@
       "ios/harness/tests/test_codex_agent_adapter.py",
       "ios/harness/tests/test_business_knowledge_publisher.py",
       "ios/harness/tests/test_demand_compiler.py",
+      "ios/harness/tests/test_github_oracle_dispatcher.py",
       "ios/harness/tests/test_harness.py",
       "ios/harness/tests/test_proposal_compiler.py",
       "ios/harness/tests/test_run_journal.py",
@@ -65,7 +67,7 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260728T194704Z-ios-trusted-oracle-settlement-compiler-001-5274cee4.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260728T200056Z-ios-github-oracle-owner-001-992b8117.json",
   "next_actions": [
     "在精确 source digest 上触发 GitHub-hosted android-oracle-attestation workflow，scenario=sl-post-form-001",
     "下载 evidence/proposal archive 与双 attestation bundle，并由 trusted_import 生成结构化 candidate_only review report",
@@ -73,6 +75,6 @@
     "自动物化独立 Android Golden Publisher WorkItem，禁止 CI proposal 或 receipt settlement 直接发布 Golden",
     "protected Golden 发布后自动续接 SourceRuntime POST Form Package、结构化差分与 iOS UI 集成任务"
   ],
-  "updated_at": "2026-07-28T19:47:42Z",
-  "updated_by": "IOS-TRUSTED-ORACLE-SETTLEMENT-COMPILER-001"
+  "updated_at": "2026-07-28T20:01:10Z",
+  "updated_by": "IOS-GITHUB-ORACLE-OWNER-001"
 }

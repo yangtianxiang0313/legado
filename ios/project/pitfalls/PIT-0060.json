@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0060",
+  "revision": 1,
+  "title": "任务 allowlist 不能替代 Capability owner 对新控制面路径的授权",
+  "fingerprint": "new-control-module-allowed-by-work-item-but-absent-from-capability-owner",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "Dispatcher proposal 已声明新模块和测试路径，但 Supervisor 返回 AUTO_POLICY_SCOPE_DENIED",
+    "直接把路径加入 Capability 同时伪造 revision/updated_by 会被 doctor 拒绝",
+    "实现任务无法物化，而 Capability owner 又必须通过已登记 WorkItem 的记忆事务更新"
+  ],
+  "conditions": [
+    "架构新增独立控制面模块",
+    "Capability owners.paths 使用精确路径而非宽泛 wildcard",
+    "实现 WorkItem 的 allow_write 先于 owner 事务声明新路径"
+  ],
+  "root_cause": "把 WorkItem 的局部写入范围误当成架构所有权。自动策略要求 allow_write 同时落在 Capability owner 内；owner 本身又是受 Evidence/Checkpoint 约束的版本化状态，不能在提案阶段顺手修改。",
+  "diagnosis": [
+    "检查 AUTO_POLICY_SCOPE_DENIED 指向的路径是否存在于目标 Capability owners.paths",
+    "确认 Capability revision、latest_evidence 与 updated_by 是否仍绑定最后一个已完成 WorkItem",
+    "区分架构 owner 预声明任务与后续实现任务，避免循环授权"
+  ],
+  "fix": "新增独立 IOS-GITHUB-ORACLE-OWNER-001 前置 WorkItem，只在 CAP-KNOWLEDGE-CONTROL 中精确登记 dispatcher 与测试路径并完成 revision/Evidence/Checkpoint 事务；Dispatcher 实现任务依赖该项后再物化。",
+  "prevention": {
+    "architecture_rule": "任何新模块路径必须先由仅修改 Capability/Checkpoint 的 owner WorkItem 预声明；实现 WorkItem 不得同时以自己的 allowlist 为自己扩权。",
+    "tests": [
+      "ios/harness/tests/test_loop_supervisor.py",
+      "ios/harness/tests/test_harness.py"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-GITHUB-ORACLE-DISPATCHER-001-PROPOSAL",
+    "until": "IOS-GITHUB-ORACLE-OWNER-001"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T200056Z-ios-github-oracle-owner-001-992b8117.json"
+  ]
+}
