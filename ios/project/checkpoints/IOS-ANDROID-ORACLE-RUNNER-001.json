@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-ANDROID-ORACLE-RUNNER-001",
+  "summary": "首条 Android 业务真值 Runner 已建立并真实执行。Orchestrator 将内容寻址 instrumentation test 叠加到 baseline commit 30bfdf70224ed3006f2777777ff414ebdb3a9eb3 的临时 detached worktree，Android 产品路径相对 baseline 无变化；SourceLab 在宿主 127.0.0.1:随机端口运行，经显式 emulator serial 的同端口 adb reverse 提供给冻结 WebBook。search、book_info、chapters、content 共 8 个 case 两次完整运行得到完全相同的最终 artifact SHA-256 6a4c590a338ffb020af39c207e34533767e436bddd483783556c7f839e14451b，Runner digest 为 08cc5617697dbeefbc59fd698d65998765b67094bd26ca577a40677e5301a808。Android 原实现确认 search-empty 成功返回空数组，而 toc-empty 抛出 TocEmptyException；portable lane 将后者稳定映射为 field_evaluation/rule_failed，平台异常类型只保留在 android_characterization。输出为 0600 local_unverified/candidate_only 文件，不写 Golden、不含发布 authority。正式 Harness Evidence 通过 Android intake、Fixture、依赖、152 项 Harness、SourceLab contract/tests/smoke。",
+  "evidence": "ios/harness/evidence/runs/run-20260728T070027Z-ios-android-oracle-runner-001-15ba2498.json",
+  "capability_updates": [
+    {
+      "id": "CAP-CONFORMANCE",
+      "from_revision": 5,
+      "to_revision": 6,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": [
+      "ADR-0002",
+      "ADR-0004"
+    ]
+  },
+  "requirements": {
+    "mode": "enabler",
+    "refs": [
+      {
+        "id": "REQ-ANDROID-SOURCE-PIPELINE-001",
+        "revision": 1,
+        "clauses": [
+          "RC-01",
+          "RC-02",
+          "RC-03",
+          "RC-04"
+        ]
+      }
+    ],
+    "selection_sha256": "6cb1587d0631c4545b1740d0377a0497d38d9876e6a4eff359ef5c610fa4a169"
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项执行已接受 Android Fact/Requirement 的 characterization，不生成新的业务知识 Packet/Driver"
+  },
+  "source_lab": {
+    "mode": "reuse",
+    "behaviors": [
+      "transport.get-query",
+      "pipeline.search-html",
+      "pipeline.book-info-html",
+      "pipeline.toc-html",
+      "pipeline.content-html",
+      "url.relative-resolution",
+      "rule.css-selector"
+    ],
+    "scenarios": [
+      "sl-html-basic-001"
+    ],
+    "selection_sha256": "c11e45f946d1d9f32a02ed371ce759d34712cca3d35097b905b34da4f0e59585"
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项只产出 Android characterization，尚未运行 iOS 业务解析，因此没有可裁决的跨端差异"
+  },
+  "pitfalls": {
+    "records": [
+      "ios/project/pitfalls/PIT-0028.json"
+    ],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "local_unverified artifact 与 Agent 共享权限，不是受保护 Golden；Requirement readiness 仍为 characterization_required",
+    "field_evaluation/rule_failed 是 candidate Runner 对 TocEmptyException 的 portable 映射，必须在 Golden promotion 时审查并由受信 workflow 重现",
+    "当前只覆盖 HTML/CSS GET 场景，尚未覆盖 POST、Cookie、redirect、charset、JSONPath、Regex、JavaScript 与动态 Web",
+    "Gradle 依赖和 SDK 必须在 Oracle 执行前预置；Runner 本身坚持 --offline，尚未形成不可变 runner image"
+  ],
+  "next_actions": [
+    "在仓外受信 Android workflow 用相同 commit/tree、Runner digest 和 scenario 重跑，生成带 attestation 的 candidate-only Oracle proposal",
+    "由独立 Publisher 审核 Runner portable 映射并发布首个受保护 Android Golden",
+    "Golden 发布后实现 iOS HTML/CSS SourceRuntime 纵向链路，并用 ConformanceCLI 生成同结构 artifact",
+    "对两端执行 first-divergence exact comparison，修复 iOS 实现直到 shared channels 一致"
+  ],
+  "created_at": "2026-07-28T07:00:27Z"
+}

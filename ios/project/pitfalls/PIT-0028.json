@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0028",
+  "revision": 1,
+  "title": "Android 模拟器的 127.0.0.1 不是宿主 SourceLab",
+  "fingerprint": "android-emulator-loopback-does-not-reach-host-source-lab",
+  "capabilities": [
+    "CAP-CONFORMANCE"
+  ],
+  "symptoms": [
+    "SourceLab 在 macOS 127.0.0.1:随机端口正常响应，但 Android WebBook 请求连接失败",
+    "把宿主随机端口直接写入书源仍无法让设备访问宿主 loopback",
+    "使用 10.0.2.2 虽可访问宿主，却破坏 SourceLab 只允许 IPv4 loopback authority 的边界和 Host 精确校验"
+  ],
+  "conditions": [
+    "SourceLab server 绑定宿主 127.0.0.1:0",
+    "Android Oracle 在 emulator 中运行",
+    "书源 URL 使用设备进程看到的 127.0.0.1",
+    "没有建立本次 run-scoped adb reverse"
+  ],
+  "root_cause": "模拟器拥有独立网络命名空间，设备的 127.0.0.1 指向设备自身，不指向 macOS。SourceLab 又要求请求 Host 精确等于本次 server authority，因此不能用固定别名或宽泛代理绕过。",
+  "diagnosis": [
+    "确认 SourceLab 实际绑定的随机端口",
+    "检查 adb reverse --list 是否在指定 serial 上存在完全相同的 tcp:<port> 映射",
+    "确认渲染后的 BookSource origin 为 http://127.0.0.1:<同一端口>",
+    "确认 artifact 中所有 URL 已归一化回 http://sourcelab.test，未泄漏设备端口",
+    "确认任务结束后 reverse、debug/test package、server 和临时 worktree 均已清理"
+  ],
+  "fix": "Runner 只接受显式 emulator serial，在 SourceLab 绑定端口后执行 adb -s <serial> reverse tcp:<port> tcp:<port>，用同一设备 authority 渲染 BookSource。结束时只移除该精确映射。若设备预先安装同名 debug/test 包则运行前拒绝，避免覆盖开发者数据。",
+  "prevention": {
+    "architecture_rule": "Android Oracle 的网络 authority 必须由 run-scoped SourceLab 端口和显式 device serial 双重绑定；禁止 10.0.2.2、localhost 通配、外部 URL、常驻 reverse 或复用开发者已安装包。",
+    "tests": [
+      "ios/harness/tests/test_android_oracle_runner.py",
+      "ios/harness/source-lab/tests/test_source_lab.py"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-SOURCELAB-ENGINE-001",
+    "until": "IOS-ANDROID-ORACLE-RUNNER-001"
+  },
+  "status": "resolved",
+  "occurrences": 2,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T070027Z-ios-android-oracle-runner-001-15ba2498.json"
+  ]
+}

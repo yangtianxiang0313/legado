@@ -1,0 +1,282 @@
+import importlib.util
+import json
+import stat
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+from unittest import mock
+
+
+ROOT = Path(__file__).resolve().parents[3]
+RUNNER_PATH = (
+    ROOT
+    / "ios/harness/oracle/android-runner/orchestrator.py"
+)
+SPEC = importlib.util.spec_from_file_location(
+    "android_oracle_orchestrator",
+    RUNNER_PATH,
+)
+assert SPEC is not None and SPEC.loader is not None
+runner = importlib.util.module_from_spec(SPEC)
+sys.modules[SPEC.name] = runner
+SPEC.loader.exec_module(runner)
+
+
+def bindings():
+    return {
+        "android_git_commit": "a" * 40,
+        "android_git_tree": "b" * 40,
+        "runner_id": runner.RUNNER_VERSION,
+        "runner_digest": "c" * 64,
+        "fixture_sha256": "d" * 64,
+        "scenario_sha256": "e" * 64,
+        "source_template_sha256": "f" * 64,
+        "input_sha256": "1" * 64,
+        "case_sha256": "2" * 64,
+        "fixture_manifest_sha256": "3" * 64,
+        "source_lab_manifest_sha256": "4" * 64,
+        "canonicalizer_sha256": "5" * 64,
+    }
+
+
+def raw_artifact():
+    requests = []
+    cases = []
+    for index, (case_id, operation) in enumerate(runner.EXPECTED_CASES):
+        request = {
+            "method": "GET",
+            "url": f"{runner.LOGICAL_ORIGIN}/case-{index}",
+            "headers": [],
+            "body": None,
+            "timeout_ms": None,
+        }
+        requests.append(request)
+        cases.append(
+            {
+                "id": case_id,
+                "operation": operation,
+                "request": request,
+                "result": {"value": index},
+                "issue": None,
+            }
+        )
+    return {
+        "schema_version": 1,
+        "scenario_id": runner.SCENARIO_ID,
+        "device_origin": "http://127.0.0.1:49152",
+        "logical_origin": runner.LOGICAL_ORIGIN,
+        "request_plan": requests,
+        "cases": cases,
+    }
+
+
+class AndroidOracleRunnerTests(unittest.TestCase):
+    def test_doctor_binds_frozen_android_tree_and_exposes_no_authority(self):
+        report = runner.doctor(ROOT)
+        self.assertTrue(report["ok"])
+        self.assertEqual(
+            "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            report["android_git_commit"],
+        )
+        self.assertEqual(
+            "c81f5d383116e37c1eefee3eb86654514e82022b",
+            report["android_git_tree"],
+        )
+        self.assertEqual(["doctor", "run"], report["commands"])
+        for forbidden in (
+            "accept",
+            "publish",
+            "promote",
+            "record",
+            "update-golden",
+        ):
+            self.assertNotIn(forbidden, report["commands"])
+
+    def test_product_tree_drift_fails_before_runner_execution(self):
+        baseline = {
+            "android_oracle": {"git_commit": "a" * 40}
+        }
+        inventory = {
+            "android_git_commit": "a" * 40,
+            "android_tree": "b" * 40,
+        }
+        with (
+            mock.patch.object(
+                runner,
+                "_read_json",
+                side_effect=[baseline, inventory],
+            ),
+            mock.patch.object(
+                runner,
+                "_git",
+                side_effect=[b"b" * 40 + b"\n", b"app/src/main/X.kt\n", b""],
+            ),
+        ):
+            with self.assertRaisesRegex(
+                runner.AndroidOracleRunnerError,
+                "ANDROID_PRODUCT_TREE_DRIFT",
+            ):
+                runner.frozen_identity(ROOT)
+
+    def test_raw_android_cases_become_structured_execution_envelope(self):
+        artifact = runner.normalize_raw_artifact(
+            raw_artifact(),
+            bindings(),
+        )
+        self.assertEqual(1, artifact["schema_version"])
+        self.assertEqual(runner.SCENARIO_ID, artifact["fixture_id"])
+        self.assertEqual("android", artifact["engine"]["platform"])
+        self.assertEqual("source_pipeline", artifact["result"]["type"])
+        lanes = artifact["result"]["value"]
+        self.assertEqual(
+            {
+                "fixture_integrity",
+                "portable_known_projection",
+                "android_characterization",
+            },
+            set(lanes),
+        )
+        self.assertEqual(
+            len(runner.EXPECTED_CASES),
+            len(lanes["portable_known_projection"]["cases"]),
+        )
+        self.assertEqual(
+            len(runner.EXPECTED_CASES) * 8,
+            len(artifact["stages"]),
+        )
+        self.assertNotIn(
+            "127.0.0.1",
+            json.dumps(artifact, ensure_ascii=False),
+        )
+
+    def test_nominal_issue_external_request_and_device_origin_leak_fail_closed(self):
+        issue = raw_artifact()
+        issue["cases"][0]["issue"] = {
+            "code": "android_exception",
+            "exception_type": "java.lang.IllegalStateException",
+        }
+        issue["cases"][0]["result"] = None
+        with self.assertRaisesRegex(
+            runner.AndroidOracleRunnerError,
+            "ANDROID_CHARACTERIZATION_FAILED",
+        ):
+            runner.normalize_raw_artifact(issue, bindings())
+
+        external = raw_artifact()
+        external["request_plan"][0]["url"] = "https://example.com/"
+        with self.assertRaisesRegex(
+            runner.AndroidOracleRunnerError,
+            "RAW_REQUEST_INVALID",
+        ):
+            runner.normalize_raw_artifact(external, bindings())
+
+        leak = raw_artifact()
+        leak["cases"][0]["result"] = {
+            "url": "http://127.0.0.1:49152/private"
+        }
+        with self.assertRaisesRegex(
+            runner.AndroidOracleRunnerError,
+            "DEVICE_ORIGIN_LEAK",
+        ):
+            runner.normalize_raw_artifact(leak, bindings())
+
+    def test_boundary_exception_is_preserved_as_android_truth(self):
+        raw = raw_artifact()
+        boundary = next(
+            entry
+            for entry in raw["cases"]
+            if entry["id"] == "toc-empty"
+        )
+        boundary["result"] = None
+        boundary["issue"] = {
+            "code": "android_exception",
+            "exception_type": "io.legado.EmptyTocException",
+        }
+        artifact = runner.normalize_raw_artifact(raw, bindings())
+        self.assertEqual(
+            [
+                {
+                    "case_id": "toc-empty",
+                    "code": "rule_failed",
+                    "stage": "field_evaluation",
+                }
+            ],
+            artifact["issues"],
+        )
+        projected = artifact["result"]["value"][
+            "portable_known_projection"
+        ]["cases"]
+        toc_empty = next(
+            entry for entry in projected if entry["id"] == "toc-empty"
+        )
+        self.assertIsNone(toc_empty["result"])
+        self.assertEqual(
+            "rule_failed",
+            toc_empty["issue"]["code"],
+        )
+        self.assertNotIn(
+            "exception_type",
+            toc_empty["issue"],
+        )
+        self.assertEqual(
+            [
+                {
+                    "case_id": "toc-empty",
+                    "exception_type": "io.legado.EmptyTocException",
+                }
+            ],
+            artifact["result"]["value"][
+                "android_characterization"
+            ]["exceptions"],
+        )
+
+    def test_local_document_is_candidate_only_and_private(self):
+        artifact = runner.normalize_raw_artifact(
+            raw_artifact(),
+            bindings(),
+        )
+        document = runner.local_run_document(
+            artifact,
+            bindings(),
+            emulator_serial="emulator-5554",
+        )
+        self.assertEqual("local_unverified", document["authority"])
+        self.assertEqual("candidate_only", document["status"])
+        self.assertNotIn(
+            "emulator-5554",
+            json.dumps(document, ensure_ascii=False),
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "runtime/result.json"
+            runner._atomic_private_write(
+                path,
+                runner._canonical(document),
+            )
+            self.assertEqual(0o600, stat.S_IMODE(path.stat().st_mode))
+            self.assertEqual(
+                0o700,
+                stat.S_IMODE(path.parent.stat().st_mode),
+            )
+
+    def test_output_must_stay_in_ignored_runtime(self):
+        with self.assertRaisesRegex(
+            runner.AndroidOracleRunnerError,
+            "OUTPUT_OUTSIDE_RUNTIME",
+        ):
+            runner._output_path(
+                ROOT,
+                ROOT / "ios/harness/goldens/forbidden.json",
+            )
+        output = runner._output_path(
+            ROOT,
+            Path(".harness-runtime/android-oracle/result.json"),
+        )
+        self.assertEqual(
+            ROOT / ".harness-runtime/android-oracle/result.json",
+            output,
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()
