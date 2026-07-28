@@ -1,10 +1,12 @@
 import hashlib
+import json
 import os
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 HARNESS = Path(__file__).resolve().parents[1]
@@ -99,6 +101,111 @@ class ReceiptTests(unittest.TestCase):
                     settler = self._settler(root, runner)
                     with self.assertRaises(GitHubOracleReceiptError):
                         settler._download(destination, {"name": "candidate"})
+
+    def test_gh_must_be_regular_executable_not_symlink(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            executable = root / "real-gh"
+            executable.write_text("#!/bin/sh\nexit 0\n")
+            os.chmod(executable, 0o700)
+            link = root / "gh"
+            link.symlink_to(executable)
+            with self.assertRaisesRegex(
+                GitHubOracleReceiptError, "GH_EXECUTABLE_INVALID"
+            ):
+                GitHubOracleReceiptSettler(
+                    root,
+                    repository="owner/legado",
+                    scenario="sl-post-form-001",
+                    source_digest="a" * 40,
+                    run_id=123,
+                    attempt=2,
+                    gh=link,
+                )
+
+    def test_artifact_requires_workflow_run_provenance(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            expected_name = (
+                "android-oracle-candidate-sl-post-form-001-123-2"
+            )
+            artifact = {
+                "id": 9,
+                "name": expected_name,
+                "expired": False,
+                "size_in_bytes": 100,
+                "workflow_run": {
+                    "id": 123,
+                    "head_sha": "a" * 40,
+                    "head_branch": (
+                        "feature/oracle-sl-post-form-001-" + "a" * 40
+                    ),
+                },
+            }
+
+            def runner(argv, cwd):
+                return subprocess.CompletedProcess(
+                    argv,
+                    0,
+                    json.dumps({"artifacts": [artifact]}).encode(),
+                    b"secret must not escape",
+                )
+
+            settler = self._settler(root, runner)
+            self.assertEqual(artifact, settler._verify_artifact())
+            artifact["workflow_run"]["id"] = 122
+            with self.assertRaisesRegex(
+                GitHubOracleReceiptError, "GITHUB_ARTIFACT_INVALID"
+            ):
+                settler._verify_artifact()
+
+    def test_authority_fixture_listing_is_bidirectional(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            settler = self._settler(root, lambda argv, cwd: None)
+            fixture = "ios/harness/fixtures/source-lab/sl-post-form-001/a"
+            with mock.patch.object(
+                settler,
+                "_git",
+                side_effect=(fixture, fixture + "\nextra"),
+            ):
+                with self.assertRaisesRegex(
+                    GitHubOracleReceiptError, "AUTHORITY_TREE_INVALID"
+                ):
+                    settler._authority_paths("a" * 40)
+
+    def test_receipt_parent_rejects_symlink(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            outside = root / "outside"
+            outside.mkdir()
+            ios = root / "ios"
+            ios.mkdir()
+            (ios / "project").symlink_to(outside)
+            settler = self._settler(root, lambda argv, cwd: None)
+            with self.assertRaisesRegex(
+                GitHubOracleReceiptError, "RECEIPT_PATH_INVALID"
+            ):
+                settler._prepare_receipt_parent(
+                    root
+                    / "ios/project/external-execution-receipts"
+                )
+
+    def test_command_failure_does_not_disclose_stderr(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+
+            def runner(argv, cwd):
+                return subprocess.CompletedProcess(
+                    argv, 1, b"public", b"super-secret"
+                )
+
+            settler = self._settler(root, runner)
+            with self.assertRaisesRegex(
+                GitHubOracleReceiptError, "^STABLE_REASON$"
+            ) as caught:
+                settler._command(("false",), root, "STABLE_REASON")
+            self.assertNotIn("secret", str(caught.exception))
 
 
 if __name__ == "__main__":

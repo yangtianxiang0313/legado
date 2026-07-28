@@ -706,6 +706,44 @@ class MaterializationTests(unittest.TestCase):
                 decision.details["external_publisher"],
             )
 
+    def test_drive_external_publisher_does_not_invoke_agent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            supervisor = loop_supervisor.LoopSupervisor(fixture.harness)
+            decision = loop_supervisor.LoopDecision(
+                state="external_publisher_required",
+                reason_code="TRUSTED_ORACLE_GOLDEN_PUBLISHER_REQUIRED",
+                work_item_id="IOS-ANDROID-POST-FORM-ATTESTATION-001",
+                requires_human=False,
+            )
+            config = Path(directory) / "supervisor.json"
+            config.write_text(
+                json.dumps(
+                    {
+                        "agent_invocation": {
+                            "argv": ["must-not-run"],
+                            "timeout_seconds": 1,
+                        }
+                    }
+                )
+            )
+            with mock.patch.object(
+                supervisor, "inspect", return_value=decision
+            ), mock.patch.object(
+                supervisor, "_invoke_agent_phase"
+            ) as invoke:
+                result = supervisor.drive(
+                    config_path=config,
+                    agent_id="test-agent",
+                    max_transitions=1,
+                )
+            self.assertEqual(
+                "trusted_oracle_golden_publisher_required",
+                result["outcome"],
+            )
+            self.assertEqual([], result["transitions"])
+            invoke.assert_not_called()
+
     def test_trusted_oracle_materialization_recomputes_plan(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = MaterializationFixture(Path(directory))

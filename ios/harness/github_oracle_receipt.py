@@ -9,6 +9,7 @@ import json
 import os
 import re
 import shutil
+import stat
 import subprocess
 import tempfile
 from pathlib import Path
@@ -85,7 +86,20 @@ class GitHubOracleReceiptSettler:
         discovered_gh = shutil.which("gh") if gh is None else str(gh)
         if not discovered_gh:
             raise GitHubOracleReceiptError("GH_EXECUTABLE_INVALID")
-        self.gh = Path(discovered_gh).resolve()
+        candidate_gh = Path(discovered_gh)
+        try:
+            metadata = candidate_gh.lstat()
+            resolved_gh = candidate_gh.resolve(strict=True)
+            resolved_metadata = resolved_gh.stat()
+        except (OSError, RuntimeError) as error:
+            raise GitHubOracleReceiptError("GH_EXECUTABLE_INVALID") from error
+        if (
+            stat.S_ISLNK(metadata.st_mode)
+            or not stat.S_ISREG(resolved_metadata.st_mode)
+            or not os.access(resolved_gh, os.X_OK)
+        ):
+            raise GitHubOracleReceiptError("GH_EXECUTABLE_INVALID")
+        self.gh = resolved_gh
         self.now = now or (lambda: dt.datetime.now(dt.timezone.utc))
         self.max_file_bytes = max_file_bytes
 
@@ -99,11 +113,14 @@ class GitHubOracleReceiptSettler:
                  *, max_output: int = 16 * 1024 * 1024) -> bytes:
         try:
             result = self.runner(tuple(argv), cwd)
-        except (OSError, subprocess.TimeoutExpired) as error:
+        except (OSError, UnicodeError, subprocess.TimeoutExpired) as error:
             raise GitHubOracleReceiptError(reason) from error
-        stdout = result.stdout
+        stdout = result.stdout or b""
         if isinstance(stdout, str):
-            stdout = stdout.encode("utf-8")
+            try:
+                stdout = stdout.encode("utf-8")
+            except UnicodeError as error:
+                raise GitHubOracleReceiptError(reason) from error
         if result.returncode != 0 or len(stdout) > max_output:
             raise GitHubOracleReceiptError(reason)
         return stdout
@@ -166,6 +183,7 @@ class GitHubOracleReceiptSettler:
         if len(matches) != 1:
             raise GitHubOracleReceiptError("GITHUB_ARTIFACT_NOT_UNIQUE")
         artifact = matches[0]
+        provenance = artifact.get("workflow_run")
         if (artifact.get("expired") is not False
                 or isinstance(artifact.get("id"), bool)
                 or not isinstance(artifact.get("id"), int)
@@ -173,11 +191,15 @@ class GitHubOracleReceiptSettler:
                 or isinstance(artifact.get("size_in_bytes"), bool)
                 or not isinstance(artifact.get("size_in_bytes"), int)
                 or artifact["size_in_bytes"] < 1
-                or artifact["size_in_bytes"] > self.max_file_bytes * 5):
+                or artifact["size_in_bytes"] > self.max_file_bytes * 5
+                or not isinstance(provenance, dict)
+                or provenance.get("id") != self.run_id
+                or provenance.get("head_sha") != self.identity.source_digest
+                or provenance.get("head_branch") != self.identity.branch):
             raise GitHubOracleReceiptError("GITHUB_ARTIFACT_INVALID")
         return artifact
 
-    def _authority_paths(self) -> tuple[str, ...]:
+    def _authority_paths(self, source: str) -> tuple[str, ...]:
         request_ids = {
             "sl-html-basic-001": "IOS-ANDROID-ORACLE-ATTESTATION-001",
             "sl-post-form-001": "IOS-ANDROID-POST-FORM-ATTESTATION-001",
@@ -186,12 +208,16 @@ class GitHubOracleReceiptSettler:
         if request_id is None:
             raise GitHubOracleReceiptError("SCENARIO_SELECTOR_INVALID")
         fixture = f"ios/harness/fixtures/source-lab/{self.identity.scenario}"
-        files = self._git("ls-tree", "-r", "--name-only", "HEAD", "--", fixture)
-        fixture_files = tuple(x for x in files.splitlines() if x)
-        if not fixture_files:
+        current_files = tuple(x for x in self._git(
+            "ls-tree", "-r", "--name-only", "HEAD", "--", fixture
+        ).splitlines() if x)
+        source_files = tuple(x for x in self._git(
+            "ls-tree", "-r", "--name-only", source, "--", fixture
+        ).splitlines() if x)
+        if not current_files or current_files != source_files:
             raise GitHubOracleReceiptError("AUTHORITY_TREE_INVALID")
         return (*AUTHORITY_PATHS, f"ios/harness/work-items/{request_id}.json",
-                *fixture_files)
+                *current_files)
 
     def _verify_source(self) -> dict[str, str]:
         source = self.identity.source_digest
@@ -199,7 +225,7 @@ class GitHubOracleReceiptSettler:
             # merge-base --is-ancestor succeeds with empty stdout.
             raise GitHubOracleReceiptError("SOURCE_NOT_ANCESTOR")
         bindings: dict[str, str] = {}
-        for path in self._authority_paths():
+        for path in self._authority_paths(source):
             current = self._git("rev-parse", f"HEAD:{path}")
             historical = self._git("rev-parse", f"{source}:{path}")
             if current != historical or not HEX40.fullmatch(current):
@@ -214,15 +240,25 @@ class GitHubOracleReceiptSettler:
             "--dir", str(directory),
         ), self.root, "GITHUB_ARTIFACT_DOWNLOAD_FAILED", max_output=1024 * 1024)
         found: set[str] = set()
-        for entry in directory.iterdir():
-            if entry.is_symlink() or not entry.is_file():
-                raise GitHubOracleReceiptError("ARTIFACT_FILE_INVALID")
-            found.add(entry.name)
-            if entry.stat().st_size > self.max_file_bytes:
-                raise GitHubOracleReceiptError("ARTIFACT_FILE_TOO_LARGE")
+        try:
+            for entry in directory.iterdir():
+                metadata = entry.lstat()
+                if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISREG(
+                        metadata.st_mode):
+                    raise GitHubOracleReceiptError("ARTIFACT_FILE_INVALID")
+                found.add(entry.name)
+                if metadata.st_size > self.max_file_bytes:
+                    raise GitHubOracleReceiptError("ARTIFACT_FILE_TOO_LARGE")
+        except GitHubOracleReceiptError:
+            raise
+        except (OSError, UnicodeError) as error:
+            raise GitHubOracleReceiptError("ARTIFACT_IO_FAILED") from error
         if found != EXPECTED_FILES:
             raise GitHubOracleReceiptError("ARTIFACT_FILE_SET_INVALID")
-        sums = (directory / "SHA256SUMS").read_text(encoding="ascii")
+        try:
+            sums = (directory / "SHA256SUMS").read_text(encoding="ascii")
+        except (OSError, UnicodeError) as error:
+            raise GitHubOracleReceiptError("SHA256SUMS_INVALID") from error
         expected: dict[str, str] = {}
         for line in sums.splitlines():
             match = re.fullmatch(r"([0-9a-f]{64})  ([A-Za-z0-9._-]+)", line)
@@ -233,8 +269,11 @@ class GitHubOracleReceiptSettler:
             expected[match.group(2)] = match.group(1)
         if set(expected) != EXPECTED_FILES - {"SHA256SUMS"}:
             raise GitHubOracleReceiptError("SHA256SUMS_INVALID")
-        digests = {name: _sha((directory / name).read_bytes())
-                   for name in EXPECTED_FILES}
+        try:
+            digests = {name: _sha((directory / name).read_bytes())
+                       for name in EXPECTED_FILES}
+        except OSError as error:
+            raise GitHubOracleReceiptError("ARTIFACT_IO_FAILED") from error
         if any(digests[name] != digest for name, digest in expected.items()):
             raise GitHubOracleReceiptError("ARTIFACT_DIGEST_DRIFT")
         return digests
@@ -287,7 +326,10 @@ class GitHubOracleReceiptSettler:
             try:
                 report = self._trusted_import(worktree, artifact_dir)
             finally:
-                self._git("worktree", "remove", "--force", str(worktree))
+                try:
+                    self._git("worktree", "remove", "--force", str(worktree))
+                except GitHubOracleReceiptError as error:
+                    raise GitHubOracleReceiptError("CLEANUP_FAILED") from error
         report_sha = _sha(_canonical(report)[:-1])
         receipt = {
             "schema_version": 1,
@@ -312,23 +354,71 @@ class GitHubOracleReceiptSettler:
             self.identity.scenario, self.identity.source_digest,
             self.run_id, self.attempt)
         payload = _canonical(receipt)
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        if destination.exists():
-            if destination.is_symlink() or destination.read_bytes() != payload:
+        self._prepare_receipt_parent(destination.parent)
+        try:
+            exists = destination.exists() or destination.is_symlink()
+        except OSError as error:
+            raise GitHubOracleReceiptError("RECEIPT_IO_FAILED") from error
+        if exists:
+            try:
+                matches = (
+                    not destination.is_symlink()
+                    and destination.is_file()
+                    and destination.read_bytes() == payload
+                )
+            except OSError as error:
+                raise GitHubOracleReceiptError("RECEIPT_IO_FAILED") from error
+            if not matches:
                 raise GitHubOracleReceiptError("RECEIPT_CONFLICT")
             return receipt
         try:
             descriptor = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL,
                                  0o600)
         except FileExistsError:
-            if destination.read_bytes() != payload:
+            try:
+                matches = (
+                    not destination.is_symlink()
+                    and destination.is_file()
+                    and destination.read_bytes() == payload
+                )
+            except OSError as error:
+                raise GitHubOracleReceiptError("RECEIPT_IO_FAILED") from error
+            if not matches:
                 raise GitHubOracleReceiptError("RECEIPT_CONFLICT")
             return receipt
-        with os.fdopen(descriptor, "wb") as stream:
-            stream.write(payload)
-            stream.flush()
-            os.fsync(stream.fileno())
+        except OSError as error:
+            raise GitHubOracleReceiptError("RECEIPT_IO_FAILED") from error
+        try:
+            with os.fdopen(descriptor, "wb") as stream:
+                stream.write(payload)
+                stream.flush()
+                os.fsync(stream.fileno())
+        except OSError as error:
+            raise GitHubOracleReceiptError("RECEIPT_IO_FAILED") from error
         return receipt
+
+    def _prepare_receipt_parent(self, parent: Path) -> None:
+        try:
+            relative = parent.relative_to(self.root)
+        except ValueError as error:
+            raise GitHubOracleReceiptError("RECEIPT_PATH_INVALID") from error
+        cursor = self.root
+        try:
+            for component in relative.parts:
+                cursor = cursor / component
+                if cursor.exists() or cursor.is_symlink():
+                    if cursor.is_symlink() or not cursor.is_dir():
+                        raise GitHubOracleReceiptError(
+                            "RECEIPT_PATH_INVALID"
+                        )
+                else:
+                    cursor.mkdir(mode=0o700)
+            if parent.resolve(strict=True) != parent:
+                raise GitHubOracleReceiptError("RECEIPT_PATH_INVALID")
+        except GitHubOracleReceiptError:
+            raise
+        except (OSError, RuntimeError) as error:
+            raise GitHubOracleReceiptError("RECEIPT_PATH_INVALID") from error
 
 
 def main(argv: Sequence[str] | None = None) -> int:

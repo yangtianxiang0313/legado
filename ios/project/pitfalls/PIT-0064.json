@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0064",
+  "revision": 1,
+  "title": "语义 canonical digest 不能与 authority 原始字节 digest 混用",
+  "fingerprint": "semantic-canonical-digest-confused-with-raw-authority-digest",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "trusted import report 携带正确的 SourceLab manifest canonical JSON digest 00740e8d…，Receipt consumer 却与 manifest 原始文件 digest a3a879c0… 比较并拒绝真实成功 Run",
+    "单元测试使用自造摘要或只验证字段形状时全部通过，真实 artifact settlement 才暴露固定失败",
+    "仅枚举 current fixture 文件再逐项比较 blob 会遗漏 source 中存在但 current 已删除或改名的 authority"
+  ],
+  "conditions": [
+    "同一 JSON authority 同时存在语义摘要和原始文件或 Git object 摘要",
+    "生产者报告绑定 canonicalized JSON，而消费者 settlement 记录绑定仓库字节 authority",
+    "authority tree 校验只从 source/current 一侧生成路径集合"
+  ],
+  "root_cause": "控制面把两个不同证明域压成同一个 digest：canonical JSON digest 证明解析后的语义内容，raw file/Git object digest 证明仓库中的精确字节。二者即使源自同一 JSON 文件也通常不同；同时，单向路径枚举不能证明两棵 authority tree 的集合相等。",
+  "diagnosis": [
+    "对同一 JSON 分别计算 canonical dumps digest、原始文件 SHA-256 与 Git blob/object ID，并标注每个字段的证明域",
+    "从 trusted report 的生产代码追踪 source_lab_manifest_sha256 的 canonicalization 规则，不凭字段名猜测摘要算法",
+    "分别列出 source 与 current 的完整 fixture tree，先比较路径集合，再逐路径比较 Git object ID",
+    "用真实 trusted-import-report fixture 回归 00740e8d…，并明确断言它不等于 raw manifest digest"
+  ],
+  "fix": "DemandCompiler settlement binding 与 Receipt consumer 对 trusted report 使用 SourceLab manifest canonical JSON digest；authority_tree 继续保存并校验 manifest、request、Workflow、Oracle contract 与完整 fixture tree 的精确 Git object ID。Settler 和 consumer 都双向比较 source/current fixture listing，并继续要求 source 为 current HEAD 祖先。",
+  "prevention": {
+    "architecture_rule": "跨边界摘要字段必须声明并保持证明域：semantic canonical digest 只与相同 canonicalization 的结果比较，raw file/Git object digest 只用于字节 authority；目录 authority 必须双向比较完整 tree 集合后再比较内容。",
+    "tests": [
+      "ios/harness/tests/test_demand_compiler.py#test_real_trusted_report_uses_canonical_manifest_digest",
+      "ios/harness/tests/test_github_oracle_receipt.py#test_authority_fixture_listing_is_bidirectional",
+      "ios/harness/tests/test_demand_compiler.py#test_trusted_oracle_contract_authority_drift_fails_closed"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-GITHUB-ORACLE-RECEIPT-SETTLEMENT-001",
+    "until": "IOS-GITHUB-ORACLE-RECEIPT-HARDENING-001"
+  },
+  "status": "mitigated",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T231824Z-ios-github-oracle-receipt-hardening-001-6d1c39f2.json"
+  ]
+}

@@ -579,11 +579,20 @@ class DemandCompiler:
         fixture_listing = self._git(
             "ls-tree", "-r", "--name-only", "HEAD", "--", fixture_root
         )
+        source_fixture_listing = self._git(
+            "ls-tree", "-r", "--name-only", str(source), "--", fixture_root
+        )
+        current_fixture_files = fixture_listing.stdout.decode(
+            "utf-8"
+        ).splitlines()
+        source_fixture_files = source_fixture_listing.stdout.decode(
+            "utf-8"
+        ).splitlines()
         required_authority = {
             *settlement.get("contract_authority_files", {}).keys(),
             SOURCE_LAB_MANIFEST,
             f"{WORK_ITEM_ROOT}/{request_ids.get(scenario_id, '')}.json",
-            *fixture_listing.stdout.decode("utf-8").splitlines(),
+            *current_fixture_files,
         }
         ancestry = self._git("merge-base", "--is-ancestor", str(source), "HEAD")
         if (
@@ -596,6 +605,10 @@ class DemandCompiler:
             or not isinstance(source, str)
             or HEX40.fullmatch(source) is None
             or ancestry.returncode != 0
+            or fixture_listing.returncode != 0
+            or source_fixture_listing.returncode != 0
+            or not current_fixture_files
+            or current_fixture_files != source_fixture_files
             or receipt.get("branch")
             != f"feature/oracle-{scenario_id}-{source}"
             or relative
@@ -2144,8 +2157,8 @@ class DemandCompiler:
                     "source_lab_selection_sha256": (
                         inputs["source_lab_selection_sha256"]
                     ),
-                    "source_lab_manifest_sha256": _sha256(
-                        manifest_path.read_bytes()
+                    "source_lab_manifest_sha256": _sha256_json(
+                        _load_object(manifest_path, "SOURCE_LAB_MANIFEST")
                     ),
                     "scenario_id": scenario_id,
                     "scenario_sha256": entries[0]["sha256"],
@@ -2631,8 +2644,8 @@ class DemandCompiler:
                             "source_lab_selection_sha256"
                         ]
                     ),
-                    "source_lab_manifest_sha256": _sha256(
-                        manifest_path.read_bytes()
+                    "source_lab_manifest_sha256": _sha256_json(
+                        _load_object(manifest_path, "SOURCE_LAB_MANIFEST")
                     ),
                 }
             },
@@ -2915,8 +2928,8 @@ class DemandCompiler:
                             "source_lab_selection_sha256"
                         ]
                     ),
-                    "source_lab_manifest_sha256": _sha256(
-                        manifest_path.read_bytes()
+                    "source_lab_manifest_sha256": _sha256_json(
+                        _load_object(manifest_path, "SOURCE_LAB_MANIFEST")
                     ),
                     "scenario_id": scenario_id,
                     "scenario_sha256": entries[0]["sha256"],

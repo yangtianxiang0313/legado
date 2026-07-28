@@ -3383,6 +3383,13 @@ class LoopSupervisor:
         except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
             raise LoopSupervisorError(f"Supervisor config 无效：{error}") from error
         initial_decision = self.inspect()
+        if initial_decision.state == "external_publisher_required":
+            return {
+                "schema_version": SCHEMA_VERSION,
+                "outcome": initial_decision.reason_code.lower(),
+                "decision": initial_decision.to_dict(),
+                "transitions": [],
+            }
         if initial_decision.state == "external_execution_required":
             external_config = config.get("external_execution")
             github_config = (

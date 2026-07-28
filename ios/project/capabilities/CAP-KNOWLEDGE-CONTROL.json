@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 66,
+  "revision": 67,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -61,7 +61,7 @@
   "depends_on": ["CAP-BOOTSTRAP"],
   "active_decisions": ["ADR-0004"],
   "open_compatibility": [],
-  "open_pitfalls": ["PIT-0012", "PIT-0016", "PIT-0061", "PIT-0062"],
+  "open_pitfalls": ["PIT-0012", "PIT-0016", "PIT-0061", "PIT-0062", "PIT-0064"],
   "blockers": [],
   "required_evidence": ["harness-tests", "dependency-policy", "architecture"],
   "freshness_inputs": [
@@ -70,12 +70,12 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260728T230107Z-ios-github-oracle-receipt-settlement-001-8fa6a468.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260728T231824Z-ios-github-oracle-receipt-hardening-001-6d1c39f2.json",
   "next_actions": [
-    "在包含 canonicalization 修复的精确 source digest 上运行新的 sl-post-form-001 Oracle branch",
-    "使用独立 Receipt Settler 重新查询唯一成功 run 与 exact-name artifact，并生成 create-only verified-candidate receipt",
-    "由独立 Publisher 审核并发布 scenario-aware protected Golden，随后续接 SourceRuntime POST Form iOS 验收"
+    "在包含 canonicalization 修复与 Receipt hardening 的精确 source digest 上运行新的 sl-post-form-001 Oracle branch",
+    "使用独立 Receipt Settler 结算唯一成功 run 与 provenance-bound exact artifact，并提交 create-only verified-candidate Receipt",
+    "由独立 Publisher 审核 Receipt 与 candidate，发布 scenario-aware protected Golden 后续接 SourceRuntime POST Form iOS 验收"
   ],
-  "updated_at": "2026-07-28T23:01:07Z",
-  "updated_by": "IOS-GITHUB-ORACLE-RECEIPT-SETTLEMENT-001"
+  "updated_at": "2026-07-28T23:18:24Z",
+  "updated_by": "IOS-GITHUB-ORACLE-RECEIPT-HARDENING-001"
 }

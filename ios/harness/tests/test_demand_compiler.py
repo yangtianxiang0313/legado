@@ -13,6 +13,38 @@ sys.path.insert(0, str(HARNESS_ROOT))
 import demand_compiler  # noqa: E402
 
 
+class OracleReceiptDigestRegressionTests(unittest.TestCase):
+    def test_real_trusted_report_uses_canonical_manifest_digest(self):
+        root = HARNESS_ROOT.parents[1]
+        manifest = json.loads(
+            (root / "ios/harness/source-lab/manifest.json").read_text()
+        )
+        report = json.loads(
+            (
+                root
+                / ".harness-runtime/github-oracle/review-30403665320/"
+                "trusted-import-report.json"
+            ).read_text()
+        )
+        self.assertEqual(
+            "00740e8da677684213116bce8b62efd15"
+            "a5d3dabbccd9b51b51e210ee52c03f6",
+            demand_compiler._sha256_json(manifest),
+        )
+        self.assertEqual(
+            demand_compiler._sha256_json(manifest),
+            report["source_lab_manifest_sha256"],
+        )
+        self.assertNotEqual(
+            hashlib.sha256(
+                (
+                    root / "ios/harness/source-lab/manifest.json"
+                ).read_bytes()
+            ).hexdigest(),
+            report["source_lab_manifest_sha256"],
+        )
+
+
 class DemandFixture:
     intent_id = "DINT-TEST-DELIVERY-001"
     target_id = "IOS-TEST-DELIVERY-001"
