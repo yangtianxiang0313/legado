@@ -116,7 +116,7 @@ jobs:
           set -euo pipefail
           transaction="${RUNNER_TEMP}/requirement-readiness/transaction.json"
           test "$(jq -r '.authority' "${transaction}")" = "protected_requirement_readiness"
-          test "$(jq '.install | length' "${transaction}")" -eq 3
+          test "$(jq '.install | length' "${transaction}")" -eq 5
           while IFS=$'\t' read -r relative digest
           do
             source="${RUNNER_TEMP}/requirement-readiness/${relative}"
@@ -128,7 +128,10 @@ jobs:
           git -C publisher switch -c "${release_branch}"
           git -C publisher config user.name "github-actions[bot]"
           git -C publisher config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git -C publisher add ios/project/requirements
+          git -C publisher add \
+            ios/project/requirements \
+            ios/project/business-knowledge/catalog.json \
+            "${COVERAGE_LEDGER}"
           git -C publisher commit -m "chore(ios): publish SourceRuntime requirement readiness"
           test -z "$(git -C publisher status --porcelain=v1 --untracked-files=all)"
           printf 'RELEASE_BRANCH=%s\n' "${release_branch}" >>"${GITHUB_ENV}"
