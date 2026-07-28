@@ -1,10 +1,1 @@
-{
-  "schema_version": 1,
-  "oracle": {
-    "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-    "profile": "android-legado-v1",
-    "runner_digest": null
-  },
-  "canonicalizer_sha256": null,
-  "fixtures": {}
-}
+{"canonicalizer_sha256":"c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97","fixtures":{"sl-html-basic-001":{"evidence_archive_sha256":"1bcf18de8763c51638a588838a32f64d29d85c0908abc7c4043b829ee25d33c0","evidence_attestation_sha256":"51ad33927511b8dca69eba3a895b1a7867c5c80917585d3c112389c33e284b91","fixture_sha256":"9f87981be618e50dd4ff66ceb5a838aba6cc66ef3c1f9034cf889bb05515ee4e","golden_sha256":"cb003f3cbbab9ce263a35514708f92b1ee2e9fc5c4dca865c6214b6fd135110b","operation":"source_lab_site","path":"ios/harness/goldens/android-legado-v1/sl-html-basic-001.json","proposal_archive_sha256":"387b06441253b0b5cb04f12377767dff1680b63a50eb00757917fa6aae8176f2","proposal_attestation_sha256":"d3fd2e50b21402f66d7e520cdcf656122ee6d71469b23cf9d4cc33857ba5079f","proposal_sha256":"99705de805e5b3087bf9e6431c63a35e97902c3439307dbf99bd1327ea8e7234","release_receipt":"ios/harness/goldens/releases/sl-html-basic-001-30355913470-1.json","run_id":"30355913470/1","runner_image_digest":"sha256:63cbecbe8311601d9045e027bae18d8e076bfb7644eddbc66d6f50365058035e","source_digest":"d94cdbaafc8f825790d0d8a8011f842aebbafa8b"}},"oracle":{"android_git_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","profile":"android-legado-v1","runner_digest":"08cc5617697dbeefbc59fd698d65998765b67094bd26ca577a40677e5301a808","runner_image_digest":"sha256:63cbecbe8311601d9045e027bae18d8e076bfb7644eddbc66d6f50365058035e"},"schema_version":1}
