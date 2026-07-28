@@ -1,0 +1,214 @@
+{
+  "schema_version": 1,
+  "proposal_id": "IOS-GITHUB-ORACLE-PUSH-TRIGGER-RECOVERY-002",
+  "proposal_constraint": "只恢复固定 attestation workflow 的控制合同；沿用已实现的 branch selector 与 contract tests，但不得把测试场景错误声明为 SourceLab reference 消费，不得扩展权限、修改 Dispatcher、Oracle、Publisher、Golden 或产品",
+  "work_item": {
+    "api_version": "legado.harness/v1",
+    "kind": "WorkItem",
+    "metadata": {
+      "id": "IOS-GITHUB-ORACLE-PUSH-TRIGGER-RECOVERY-002",
+      "title": "恢复 create-only Oracle branch 的服务端幂等触发合同",
+      "priority": 100,
+      "risk": "high",
+      "labels": [
+        "phase-0",
+        "control-plane",
+        "external-execution",
+        "workflow-hardening",
+        "android-oracle",
+        "corrective",
+        "push-trigger",
+        "idempotency",
+        "recovery"
+      ]
+    },
+    "spec": {
+      "capability": "CAP-CONFORMANCE",
+      "intent": "恢复 exhausted 的 IOS-GITHUB-ORACLE-PUSH-TRIGGER-001。原项实现的 Workflow push selector 与正反例测试本身有效，但 WorkItem 错误声明 source_lab.mode=reuse，同时选择 reference HTML 与 candidate POST Form，SourceLab contract 因此按设计拒绝。恢复项把本任务准确建模为纯控制面修改：source_lab.mode=not_applicable，测试仍可使用两个场景名称验证 selector allowlist，但不声明消费其业务输入或 expected。保留 workflow_dispatch 兼容，push branch 必须精确采用 feature/oracle-<scenario>-<40位GITHUB_SHA>，Workflow 解析唯一 ORACLE_SCENARIO，后续 doctor、run、prepare、finalize 与 artifact name 统一消费该 selector；权限、runner、action pin、candidate_only authority 与 Oracle 语义不变。CAP-CONFORMANCE revision 20→21。",
+      "recovers": "IOS-GITHUB-ORACLE-PUSH-TRIGGER-001",
+      "depends_on": [
+        "IOS-GITHUB-ORACLE-WORKFLOW-SCOPE-001"
+      ],
+      "scope": {
+        "allow_write": [
+          ".github/workflows/android-oracle-attestation.yml",
+          "ios/harness/source-lab/tests/test_source_lab.py",
+          "ios/harness/oracle/README.md",
+          "ios/project/capabilities/CAP-CONFORMANCE.json",
+          "ios/project/checkpoints/IOS-GITHUB-ORACLE-PUSH-TRIGGER-RECOVERY-002.json",
+          "ios/project/pitfalls/PIT-*.json"
+        ],
+        "deny_write": [
+          ".github/workflows/change.yml",
+          "app/**",
+          "modules/**",
+          "build.gradle",
+          "settings.gradle",
+          "gradle/**",
+          "ios/Packages/**",
+          "ios/publisher/**",
+          "ios/harness/goldens/**",
+          "ios/harness/oracle/android-runner/**",
+          "ios/project/android-intake/**",
+          "ios/project/requirements/**",
+          "ios/project/business-knowledge/**",
+          "ios/project/approvals/**",
+          "ios/project/work-item-proposals/**",
+          "ios/project/baseline.json",
+          "ios/docs/**"
+        ],
+        "max_files_changed": 6,
+        "max_changed_lines": 2600
+      },
+      "inputs": {
+        "context_files": [
+          "ios/harness/work-items/IOS-GITHUB-ORACLE-PUSH-TRIGGER-001.json",
+          "ios/harness/evidence/runs/run-20260728T205221Z-ios-github-oracle-push-trigger-001-bea2e398.json",
+          "ios/harness/evidence/runs/run-20260728T205526Z-ios-github-oracle-push-trigger-001-7e26b529.json",
+          ".github/workflows/android-oracle-attestation.yml",
+          "ios/harness/source-lab/tests/test_source_lab.py",
+          "ios/harness/oracle/README.md",
+          "ios/project/pitfalls/PIT-0061.json",
+          "ios/project/checkpoints/IOS-GITHUB-ORACLE-WORKFLOW-SCOPE-001.json"
+        ],
+        "android_source_anchors": [],
+        "fixtures": []
+      },
+      "architecture_refs": [
+        "ARCH-014",
+        "ARCH-017",
+        "ADR-0002",
+        "ADR-0004"
+      ],
+      "acceptance": {
+        "criteria": [
+          {
+            "id": "AC-1",
+            "statement": "Workflow 保留 workflow_dispatch scenario choice，并新增仅匹配 feature/oracle-* 的 push；run-name 暴露 ref，permissions、GitHub-hosted runner、固定 action SHA、concurrency 与 candidate_only 产物权限不扩张。",
+            "verified_by": [
+              "source-lab-tests",
+              "source-lab-contract"
+            ],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          },
+          {
+            "id": "AC-2",
+            "statement": "第一个 selector step 对 workflow_dispatch 只接受显式 choice；对 push 要求 ref 精确等于 feature/oracle-<合法scenario>-<GITHUB_SHA>，拒绝错误前缀、缺 SHA、错误 SHA、路径字符和空 selector，并通过 GITHUB_ENV/GITHUB_OUTPUT 产生唯一 ORACLE_SCENARIO。",
+            "verified_by": [
+              "source-lab-tests"
+            ],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          },
+          {
+            "id": "AC-3",
+            "statement": "Validate、Orchestrator doctor/run、ci_proposal prepare/finalize 与 artifact name 全部消费同一个 selector step 输出；selector step 之后不再直接引用 inputs.scenario，HTML 与 POST Form 均保持 allowlist/digest 验证。",
+            "verified_by": [
+              "source-lab-tests",
+              "source-lab-contract",
+              "harness-tests"
+            ],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          },
+          {
+            "id": "AC-4",
+            "statement": "测试直接执行 selector resolver 的 manual/push 正反例，并静态断言 Workflow 不增加 secrets、contents write、pull-requests、Publisher、Golden、产品写入或非固定 action。",
+            "verified_by": [
+              "source-lab-tests",
+              "dependency-policy"
+            ],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          },
+          {
+            "id": "AC-5",
+            "statement": "SourceLab 合同将本恢复项识别为 not_applicable；测试场景名只用于验证 selector allowlist，不产生 reference/candidate 消费声明，不再重现原始错误建模。",
+            "verified_by": [
+              "source-lab-contract",
+              "harness-tests"
+            ],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          },
+          {
+            "id": "AC-6",
+            "statement": "CAP-CONFORMANCE revision 20→21 并绑定正式 Evidence/Checkpoint；原 exhausted WorkItem 与两次失败 Evidence 保持不可变并由 typed recovery replacement 消解。",
+            "verified_by": [
+              "dependency-policy",
+              "memory-close"
+            ],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          }
+        ],
+        "required_checks": [
+          "dependency-policy",
+          "harness-tests",
+          "source-lab-contract",
+          "source-lab-tests"
+        ]
+      },
+      "baseline_checks": [
+        "dependency-policy",
+        "harness-tests",
+        "source-lab-tests"
+      ],
+      "budget": {
+        "wall_clock_seconds": 14400,
+        "max_edit_verify_cycles": 5,
+        "max_targeted_test_runs": 20,
+        "max_full_test_runs": 4,
+        "max_infra_retries": 2
+      },
+      "gates": [],
+      "completion_effects": {
+        "health": {
+          "android_oracle_trigger": "create_only_branch_push_v1"
+        }
+      },
+      "memory": {
+        "adr": "not_required",
+        "capability_state_required": true,
+        "checkpoint_required": true,
+        "pitfall": "required"
+      },
+      "requirements": {
+        "mode": "control_plane",
+        "refs": [],
+        "none_reason": "本恢复项只修复现有受信 Android Oracle Workflow 的控制合同"
+      },
+      "knowledge": {
+        "contract_version": 1,
+        "mode": "not_applicable",
+        "claim_refs": [],
+        "driver_refs": [],
+        "coverage_refs": [],
+        "produces": [],
+        "expected_ledger_transitions": [],
+        "context_budget": {
+          "max_claims": 12,
+          "max_bytes": 49152
+        },
+        "none_reason": "本项不消费、生成或发布业务知识"
+      },
+      "source_lab": {
+        "mode": "not_applicable",
+        "behaviors": [],
+        "scenarios": [],
+        "none_reason": "本恢复项只修复 Workflow 控制合同；SourceLab tests 仍作为验证，但不声明消费 reference 或 candidate 场景"
+      },
+      "stop_on": [
+        "doctor_red",
+        "scope_violation",
+        "workflow_trigger_invalid",
+        "selector_drift",
+        "authority_scope",
+        "same_failure_twice",
+        "budget_exhausted",
+        "human_decision_required"
+      ]
+    }
+  }
+}

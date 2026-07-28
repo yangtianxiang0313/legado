@@ -1,0 +1,43 @@
+{
+  "authority": "proposal_only",
+  "candidate_sha256": "4679daa4518f986104017df9c441c2435953046b8f8d8fe10b14531c07b4cc9b",
+  "compiler_version": "proposal-compiler-v1",
+  "dag": {
+    "id": "WIPD-IOS-INITIALIZATION-001",
+    "revision": 15,
+    "sha256": "b248795b114e0b9d81c102d82b6229ee211c2bf429f96e57e8c3a9073dd57b44"
+  },
+  "dependencies": [
+    {
+      "chain": [
+        "IOS-GITHUB-ORACLE-WORKFLOW-SCOPE-001"
+      ],
+      "checkpoint": "ios/project/checkpoints/IOS-GITHUB-ORACLE-WORKFLOW-SCOPE-001.json",
+      "checkpoint_sha256": "cd9d32f8fce252294a8b6eabbec5bcbfb1ae2386ea4239d6f3c262721edbf645",
+      "evidence": "ios/harness/evidence/runs/run-20260728T204229Z-ios-github-oracle-workflow-scope-001-2c59015f.json",
+      "evidence_sha256": "2797abce8d0ee8b8f6af09d6f912a88941b0060bebe31bcb3599cfb67b5389b9",
+      "original": "IOS-GITHUB-ORACLE-WORKFLOW-SCOPE-001",
+      "reason_code": "DIRECT_COMPLETION",
+      "resolved": "IOS-GITHUB-ORACLE-WORKFLOW-SCOPE-001",
+      "work_item_sha256": "091262f2085bda54bd9cfc129c00768d4790d77b656f8e24089688a0bce27ae2"
+    }
+  ],
+  "node_sha256": "0aa6e5fff33f08ab2d1e4c1faa823c22cbac30dafcf79d921e59bbc24eb69ca8",
+  "proposal_id": "IOS-GITHUB-ORACLE-PUSH-TRIGGER-RECOVERY-002",
+  "queue_effect": "none",
+  "recipe_sha256": "e8c1f07bbf8722718c3aa42bf784e146cb303a050833743ff66140a91c1dce48",
+  "recovery": {
+    "capability": "CAP-CONFORMANCE",
+    "checkpoint": null,
+    "checkpoint_sha256": null,
+    "evidence": "ios/harness/evidence/runs/run-20260728T205526Z-ios-github-oracle-push-trigger-001-7e26b529.json",
+    "evidence_sha256": "8cd068a80d3b0e451c32067b13b2a5d3be2b777f0911bcadf05871a5b382750f",
+    "predecessor": "IOS-GITHUB-ORACLE-PUSH-TRIGGER-001",
+    "replacement": null,
+    "runtime_sha256": "4932ac0c4f790235491caade79a8ba634bce4d01d6e614faace468306281e5f0",
+    "status": "exhausted",
+    "work_item": "ios/harness/work-items/IOS-GITHUB-ORACLE-PUSH-TRIGGER-001.json",
+    "work_item_sha256": "646b2813d9b8abccfe1145bdd1e8461924aabcafb39bc2c9564efc5649084ddf"
+  },
+  "schema_version": 1
+}
