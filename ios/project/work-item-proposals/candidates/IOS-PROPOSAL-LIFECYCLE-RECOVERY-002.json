@@ -1,0 +1,196 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-PROPOSAL-LIFECYCLE-RECOVERY-002",
+    "title": "修复 proposal 测试对物化生命周期的自阻断",
+    "priority": 100,
+    "risk": "medium",
+    "labels": [
+      "phase-0",
+      "control-plane",
+      "automation",
+      "proposal-compiler",
+      "lifecycle",
+      "baseline-recovery"
+    ]
+  },
+  "spec": {
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "intent": "修复 repository-specific Integrations candidate 测试把 `recipe_ready` 当成永久状态的问题。该测试必须根据 Harness authority state 区分未物化、已物化、完成和终态阻断：未物化时重算 compiler/check/preflight；已物化后验证 Work Item 与冻结 candidate/manifest hash 相等；blocked 时验证 plan 精确返回 terminal_unresolved，而不是要求回到 recipe_ready。增加生命周期回归，证明 compiled candidate 自动物化后不会让下一次 claim 的 baseline 自己变红。保留 IOS-KNOWLEDGE-INTEGRATIONS-001 的真实 baseline_red 事实，不直接篡改或重开；完成本项后为其创建显式 revision recovery。",
+    "depends_on": [
+      "IOS-PROPOSAL-COMPILER-001",
+      "IOS-AUTO-MATERIALIZATION-POLICY-001"
+    ],
+    "scope": {
+      "allow_write": [
+        "ios/harness/tests/test_proposal_compiler.py",
+        "ios/harness/README.md",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-PROPOSAL-LIFECYCLE-RECOVERY-002.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "ios/harness/harness.py",
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/proposal_compiler.py",
+        "ios/harness/codex_agent_adapter.py",
+        "ios/harness/approval_ui.py",
+        "ios/harness/config.json",
+        "ios/harness/architecture-rules.json",
+        "ios/harness/dependency-policy.json",
+        "ios/harness/schemas/**",
+        "ios/harness/business-knowledge/**",
+        "ios/harness/android-intake/**",
+        "ios/harness/source-lab/**",
+        "ios/harness/goldens/**",
+        "ios/project/android-intake/**",
+        "ios/project/business-knowledge/**",
+        "ios/project/requirements/**",
+        "ios/project/work-item-proposals/**",
+        "ios/project/approvals/**",
+        "ios/project/baseline.json",
+        "ios/docs/**",
+        ".github/**"
+      ],
+      "max_files_changed": 5,
+      "max_changed_lines": 1000
+    },
+    "inputs": {
+      "context_files": [
+        "ios/harness/tests/test_proposal_compiler.py",
+        "ios/harness/proposal_compiler.py",
+        "ios/harness/loop_supervisor.py",
+        "ios/project/work-item-proposals/candidates/IOS-KNOWLEDGE-INTEGRATIONS-001.json",
+        "ios/project/work-item-proposals/candidate-manifests/IOS-KNOWLEDGE-INTEGRATIONS-001.json",
+        "ios/harness/work-items/IOS-KNOWLEDGE-INTEGRATIONS-001.json"
+      ],
+      "android_source_anchors": [],
+      "fixtures": []
+    },
+    "architecture_refs": [
+      "ARCH-014",
+      "ADR-0004"
+    ],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "仓库特定测试不再无条件断言 Integrations plan=recipe_ready；断言由当前 Harness lifecycle state 决定，且每个分支都有精确期望。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "未物化分支继续要求 compiler check=current 和 Loop Supervisor preflight 通过；测试不能因放宽生命周期而失去 provenance 验证。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "已物化/blocked/completed 分支验证 work-items/<id>.json 与 candidate 语义相等，manifest candidate_sha256 与 Work Item canonical hash 相等，并验证 plan 的 materialized/terminal_unresolved/completed 状态。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-4",
+          "statement": "临时 Git E2E 的 compiled candidate→inspect→auto materialize→claim→fake Agent 测试保持通过，证明修复不是跳过自动物化路径。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-5",
+          "statement": "全量 Harness baseline 在 IOS-KNOWLEDGE-INTEGRATIONS-001 已 blocked 的真实状态下通过；不删除 baseline_red event，不手改原 Work Item 回 ready。",
+          "verified_by": [
+            "harness-tests",
+            "memory-close"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-6",
+          "statement": "README 与 Pitfall 记录状态型测试必须覆盖生命周期而不是冻结一次性前置状态；后续 recovery 使用新 Work Item/revision，禁止重写失败历史。",
+          "verified_by": [
+            "memory-close"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": [
+        "dependency-policy",
+        "harness-tests"
+      ]
+    },
+    "baseline_checks": [
+      "dependency-policy"
+    ],
+    "budget": {
+      "wall_clock_seconds": 7200,
+      "max_edit_verify_cycles": 3,
+      "max_targeted_test_runs": 10,
+      "max_full_test_runs": 3,
+      "max_infra_retries": 1
+    },
+    "gates": [],
+    "completion_effects": {
+      "health": {
+        "proposal_lifecycle_tests": "state_aware"
+      }
+    },
+    "memory": {
+      "capability_state_required": true,
+      "checkpoint_required": true,
+      "pitfall_update_required": true
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "refs": [],
+      "none_reason": "本项只修复 iOS AI Harness 的 proposal 生命周期测试"
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "not_applicable",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [],
+      "expected_ledger_transitions": [],
+      "context_budget": {
+        "max_claims": 20,
+        "max_bytes": 32768
+      },
+      "none_reason": "本项不消费、生成或发布业务知识"
+    },
+    "source_lab": {
+      "mode": "not_applicable",
+      "behaviors": [],
+      "scenarios": [],
+      "none_reason": "本项不执行书源运行行为"
+    },
+    "stop_on": [
+      "baseline_red",
+      "required_check_failed",
+      "scope_violation",
+      "budget_exhausted",
+      "failed_history_rewritten",
+      "provenance_check_removed"
+    ]
+  }
+}

@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "revision": 147,
+  "revision": 148,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-28T03:38:59Z",
-  "event_head": "8ca289a5a78d37b25c4d32d236d7fd668500d52612d07a175a66e3787d5a0894",
+  "updated_at": "2026-07-28T03:40:33Z",
+  "event_head": "62f947bdba5a6debdffba0e3f9551b43a2a7fae062d8de0ea5a0c7a672cc159b",
   "active_work_items": [],
   "last_completed_work_item": "IOS-CODEX-AGENT-ADAPTER-COMPAT-002",
   "work_items": {
@@ -2459,6 +2459,11 @@
           "stderr_tail": ".........................................................................................................F.............\n======================================================================\nFAIL: test_current_integrations_candidate_is_bound_and_preflightable (test_proposal_compiler.ProposalCompilerTests)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_proposal_compiler.py\", line 318, in test_current_integrations_candidate_is_bound_and_preflightable\n    self.assertEqual(\nAssertionError: 'recipe_ready' != 'materialized'\n- recipe_ready\n+ materialized\n\n\n----------------------------------------------------------------------\nRan 119 tests in 34.228s\n\nFAILED (failures=1)\n"
         }
       ]
+    },
+    "IOS-PROPOSAL-LIFECYCLE-RECOVERY-002": {
+      "status": "ready",
+      "attempt": 0,
+      "last_evidence": null
     }
   },
   "health": {
