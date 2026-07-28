@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0025",
+  "revision": 1,
+  "title": "终态恢复不能依赖全局最近完成事件",
+  "fingerprint": "terminal-recovery-hidden-or-stuck-without-predecessor-lineage",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "已有 completed recovery 的 blocked Work Item 仍永久阻断 Loop",
+    "某个无关 Work Item 在失败之后完成，会让 rejected/exhausted/cancelled 项从 terminal_recovery 中消失",
+    "真实队列没有待办时 inspect 仍要求人工处理已经恢复的历史失败"
+  ],
+  "conditions": [
+    "blocked 状态被无条件视为未解决",
+    "rejected/exhausted/cancelled 是否解决由全局 latest completed sequence 判断",
+    "恢复任务与 predecessor 之间没有被逐项解析"
+  ],
+  "root_cause": "Loop 把时间先后误当成恢复因果：它既没有沿 knowledge output 或显式输入引用寻找 successor，也没有验证 successor 是否同 capability、已完成且唯一。因此会同时产生永久假阻塞和被无关事件掩盖的假放行。",
+  "diagnosis": [
+    "逐个列出 terminal status Work Item，而不是先找全局最后完成序号",
+    "对 knowledge producer 检查 ProposalCompiler semantic recovery 的 output revision 关系",
+    "对非知识项检查 recovery 标签、同 capability、completed 状态和 predecessor context_files 精确引用",
+    "多个候选必须报告 ambiguous，不能按 ID、标题或时间猜测"
+  ],
+  "fix": "LoopSupervisor 对每个 blocked/rejected/exhausted/cancelled predecessor 调用统一 terminal resolution：优先复用 knowledge semantic recovery；否则只接受唯一的 completed 显式 recovery successor，并要求其输入只引用这一个终态 predecessor，避免把汇总分析多个历史失败的 corrective 任务误认成 recovery。resolved 项不阻断队列，unresolved/ambiguous 项保留结构化 terminal_recovery 及原因。",
+  "prevention": {
+    "architecture_rule": "恢复是显式因果边，不是全局时间关系。任何 terminal failure 只有在其自身存在唯一、可验证的 recovery lineage 时才能被消解。",
+    "tests": [
+      "ios/harness/tests/test_loop_supervisor.py#test_inspect_distinguishes_dependency_terminal_and_empty"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-LOOP-SUPERVISOR-001",
+    "until": "IOS-TERMINAL-RECOVERY-RESOLUTION-001"
+  },
+  "status": "resolved",
+  "occurrences": 2,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T051015Z-ios-terminal-recovery-resolution-001-e3c29384.json"
+  ]
+}

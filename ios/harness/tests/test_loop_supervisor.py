@@ -28,6 +28,7 @@ from test_harness import HarnessFixture  # noqa: E402
 
 class InspectHarness:
     def __init__(self):
+        self.root = HARNESS_DIR.parents[1]
         self.errors = []
         self.warnings = []
         self.items = {
@@ -44,6 +45,9 @@ class InspectHarness:
         }
         self.events = []
         self.selected = "IOS-READY-001"
+
+    def resolve(self, value):
+        return self.root / value
 
     def doctor(self):
         return self.errors, self.warnings
@@ -115,9 +119,91 @@ class LoopSupervisorInspectTests(unittest.TestCase):
             {"sequence": 3, "event": "WorkItemCompleted", "work_item_id": "IOS-FIX-001"}
         )
         decision = supervisor.inspect()
+        self.assertEqual("terminal_recovery", decision.state)
+
+        harness.items["IOS-READY-001"]["spec"].update(
+            {
+                "capability": "CAP-TEST",
+                "inputs": {"context_files": []},
+            }
+        )
+        harness.items["IOS-FIX-001"] = {
+            "metadata": {
+                "priority": 1,
+                "labels": ["recovery"],
+            },
+            "spec": {
+                "capability": "CAP-TEST",
+                "depends_on": [],
+                "inputs": {
+                    "context_files": [
+                        "ios/harness/work-items/IOS-READY-001.json"
+                    ]
+                },
+            },
+        }
+        harness.state_value["work_items"]["IOS-FIX-001"] = {
+            "status": "completed"
+        }
+        decision = supervisor.inspect()
         self.assertEqual("queue_empty", decision.state)
         self.assertEqual("NO_ELIGIBLE_COMPILED_CANDIDATE", decision.reason_code)
 
+        harness.items["IOS-FIX-002"] = {
+            "metadata": {
+                "priority": 1,
+                "labels": ["recovery"],
+            },
+            "spec": {
+                "capability": "CAP-WRONG",
+                "depends_on": [],
+                "inputs": {
+                    "context_files": [
+                        "ios/harness/work-items/IOS-READY-001.json"
+                    ]
+                },
+            },
+        }
+        harness.state_value["work_items"]["IOS-FIX-002"] = {
+            "status": "completed"
+        }
+        self.assertEqual(
+            ["IOS-FIX-001"],
+            supervisor._explicit_recovery_candidates(
+                "IOS-READY-001",
+                harness.items,
+                harness.state_value["work_items"],
+            ),
+        )
+
+        harness.items["IOS-FIX-002"]["spec"]["capability"] = "CAP-TEST"
+        decision = supervisor.inspect()
+        self.assertEqual("terminal_recovery", decision.state)
+        self.assertEqual(
+            "EXPLICIT_RECOVERY_AMBIGUOUS",
+            decision.blockers[0]["resolution"]["reason_code"],
+        )
+
+        harness.items["IOS-FIX-002"]["spec"]["inputs"]["context_files"].append(
+            "ios/harness/work-items/IOS-OTHER-FAILURE.json"
+        )
+        harness.state_value["work_items"]["IOS-OTHER-FAILURE"] = {
+            "status": "rejected"
+        }
+        self.assertEqual(
+            ["IOS-FIX-001"],
+            supervisor._explicit_recovery_candidates(
+                "IOS-READY-001",
+                harness.items,
+                harness.state_value["work_items"],
+            ),
+        )
+
+        harness.items.pop("IOS-FIX-002")
+        harness.state_value["work_items"].pop("IOS-FIX-002")
+        harness.state_value["work_items"].pop("IOS-OTHER-FAILURE")
+        harness.items.pop("IOS-FIX-001")
+        harness.state_value["work_items"].pop("IOS-FIX-001")
         harness.state_value["work_items"]["IOS-READY-001"] = {
             "status": "blocked",
             "blocker": "baseline_red",

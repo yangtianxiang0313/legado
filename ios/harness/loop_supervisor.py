@@ -287,6 +287,89 @@ class LoopSupervisor:
         except OSError as error:
             raise MaterializationConflict(f"GIT_UNAVAILABLE: {error}") from error
 
+    @staticmethod
+    def _explicit_recovery_candidates(
+        predecessor_id: str,
+        items: Mapping[str, Mapping[str, Any]],
+        state_items: Mapping[str, Mapping[str, Any]],
+    ) -> List[str]:
+        predecessor = items.get(predecessor_id)
+        if not isinstance(predecessor, dict):
+            return []
+        capability = predecessor.get("spec", {}).get("capability")
+        predecessor_path = f"ios/harness/work-items/{predecessor_id}.json"
+        candidates: List[str] = []
+        for candidate_id, candidate in sorted(items.items()):
+            if candidate_id == predecessor_id or not isinstance(candidate, dict):
+                continue
+            if state_items.get(candidate_id, {}).get("status") != "completed":
+                continue
+            metadata = candidate.get("metadata", {})
+            labels = metadata.get("labels", []) if isinstance(metadata, dict) else []
+            spec = candidate.get("spec", {})
+            inputs = spec.get("inputs", {}) if isinstance(spec, dict) else {}
+            context_files = (
+                inputs.get("context_files", [])
+                if isinstance(inputs, dict)
+                else []
+            )
+            terminal_predecessors = {
+                existing_id
+                for existing_id, existing_runtime in state_items.items()
+                if isinstance(existing_runtime, dict)
+                and existing_runtime.get("status") in TERMINAL_RECOVERY_STATUSES
+                and f"ios/harness/work-items/{existing_id}.json" in context_files
+            }
+            if (
+                isinstance(labels, list)
+                and "recovery" in labels
+                and spec.get("capability") == capability
+                and isinstance(context_files, list)
+                and predecessor_path in context_files
+                and terminal_predecessors == {predecessor_id}
+            ):
+                candidates.append(candidate_id)
+        return candidates
+
+    def _terminal_resolution(
+        self,
+        item_id: str,
+        items: Mapping[str, Mapping[str, Any]],
+        state_items: Mapping[str, Mapping[str, Any]],
+    ) -> Mapping[str, Any]:
+        semantic = ProposalCompiler(self.harness).resolve_dependency(
+            item_id,
+            items,
+            state_items,
+        )
+        if semantic.get("status") == "resolved":
+            return semantic
+        explicit = self._explicit_recovery_candidates(
+            item_id,
+            items,
+            state_items,
+        )
+        if len(explicit) == 1:
+            return {
+                "original": item_id,
+                "status": "resolved",
+                "reason_code": "EXPLICIT_RECOVERY_INPUT",
+                "resolved": explicit[0],
+                "chain": [item_id, explicit[0]],
+            }
+        return {
+            "original": item_id,
+            "status": "unresolved",
+            "reason_code": (
+                "EXPLICIT_RECOVERY_AMBIGUOUS"
+                if len(explicit) > 1
+                else str(semantic.get("reason_code", "TERMINAL_WITHOUT_RECOVERY"))
+            ),
+            "candidates": explicit,
+            "semantic_resolution": semantic,
+            "chain": [item_id],
+        }
+
     def _clean_head(self) -> str:
         top = self._git("rev-parse", "--show-toplevel")
         if top.returncode != 0:
@@ -617,15 +700,25 @@ class LoopSupervisor:
                 blockers=tuple(dependency_blockers),
             )
 
-        blocked_items = [
-            {
-                "work_item_id": item_id,
-                "status": runtime.get("status"),
-                "blocker": runtime.get("blocker"),
-            }
-            for item_id, runtime in sorted(state_items.items())
-            if isinstance(runtime, dict) and runtime.get("status") == "blocked"
-        ]
+        blocked_items = []
+        for item_id, runtime in sorted(state_items.items()):
+            if not isinstance(runtime, dict) or runtime.get("status") != "blocked":
+                continue
+            resolution = self._terminal_resolution(
+                item_id,
+                items,
+                state_items,
+            )
+            if resolution.get("status") == "resolved":
+                continue
+            blocked_items.append(
+                {
+                    "work_item_id": item_id,
+                    "status": runtime.get("status"),
+                    "blocker": runtime.get("blocker"),
+                    "resolution": resolution,
+                }
+            )
         if blocked_items:
             return LoopDecision(
                 state="terminal_recovery",
@@ -635,31 +728,47 @@ class LoopSupervisor:
                 blockers=tuple(blocked_items),
             )
 
-        latest_completed_sequence = 0
-        terminal_events: List[Tuple[int, str, str]] = []
+        terminal_events: Dict[str, Tuple[int, str]] = {}
         for event in self.harness.event_lines():
             sequence = int(event.get("sequence", 0))
-            if event.get("event") == "WorkItemCompleted":
-                latest_completed_sequence = max(latest_completed_sequence, sequence)
             if event.get("event") in {
                 "WorkItemRejected",
                 "WorkItemExhausted",
                 "WorkItemCancelled",
             }:
-                terminal_events.append(
-                    (sequence, str(event.get("work_item_id")), str(event.get("event")))
+                terminal_events[str(event.get("work_item_id"))] = (
+                    sequence,
+                    str(event.get("event")),
                 )
-        unresolved = [
-            {
-                "sequence": sequence,
-                "work_item_id": item_id,
-                "terminal_event": event_name,
-                "status": state_items.get(item_id, {}).get("status"),
-            }
-            for sequence, item_id, event_name in terminal_events
-            if sequence > latest_completed_sequence
-            and state_items.get(item_id, {}).get("status") in TERMINAL_RECOVERY_STATUSES
-        ]
+        unresolved = []
+        for item_id, runtime in sorted(state_items.items()):
+            if (
+                not isinstance(runtime, dict)
+                or runtime.get("status") not in TERMINAL_RECOVERY_STATUSES
+                or runtime.get("status") == "blocked"
+            ):
+                continue
+            resolution = self._terminal_resolution(
+                item_id,
+                items,
+                state_items,
+            )
+            if resolution.get("status") == "resolved":
+                continue
+            sequence, event_name = terminal_events.get(
+                item_id,
+                (0, "TerminalState"),
+            )
+            unresolved.append(
+                {
+                    "sequence": sequence,
+                    "work_item_id": item_id,
+                    "terminal_event": event_name,
+                    "status": runtime.get("status"),
+                    "resolution": resolution,
+                }
+            )
+        unresolved.sort(key=lambda entry: (entry["sequence"], entry["work_item_id"]))
         if unresolved:
             latest = unresolved[-1]
             return LoopDecision(

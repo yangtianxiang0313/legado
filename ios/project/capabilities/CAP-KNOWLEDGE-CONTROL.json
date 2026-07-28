@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 28,
+  "revision": 29,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -51,14 +51,14 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260728T050221Z-ios-proposal-gate-repair-001-31e7578c.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260728T051015Z-ios-terminal-recovery-resolution-001-e3c29384.json",
   "next_actions": [
     "BKP-INTEGRATIONS-001@4 与 DRV-INTEGRATION-PROFILES-001@4 在 Trusted Publisher promotion 前保持 proposal；只有 promotion/accept 决策才要求权威审查",
     "为 IntegrationKit/adapter、双 profile、权限最小化、备份迁移、依赖准入与可观测性问题建立独立裁决和 characterization/spike 工作项",
     "把 reference runner 迁入 Agent 不可达的受保护服务，以 KMS/企业身份签名、OS/container 隔离、资源上限和 deny-by-default egress 替代本地 HMAC/用户权限",
     "实现独立 patch publisher，只消费已签名 verified artifact，并经受保护 authority transition 完成 promotion",
-    "为 recovery compiler 增加逐 Claim supersedes 自动生成，最终关闭 PIT-0012"
+    "保持终态恢复按 predecessor 谱系解析并为 recovery compiler 增加逐 Claim supersedes 自动生成；无唯一恢复时继续 fail-closed，最终关闭 PIT-0012"
   ],
-  "updated_at": "2026-07-28T05:02:21Z",
-  "updated_by": "IOS-PROPOSAL-GATE-REPAIR-001"
+  "updated_at": "2026-07-28T05:10:22Z",
+  "updated_by": "IOS-TERMINAL-RECOVERY-RESOLUTION-001"
 }
