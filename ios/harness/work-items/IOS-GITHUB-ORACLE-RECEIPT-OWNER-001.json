@@ -1,0 +1,159 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "annotations": {},
+    "id": "IOS-GITHUB-ORACLE-RECEIPT-OWNER-001",
+    "labels": [
+      "phase-0",
+      "control-plane",
+      "external-execution",
+      "android-oracle",
+      "receipt-settlement",
+      "ownership"
+    ],
+    "priority": 100,
+    "risk": "high",
+    "title": "预声明 GitHub Oracle Receipt Settlement 所有权"
+  },
+  "spec": {
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "CAP-KNOWLEDGE-CONTROL owners.paths 新增且仅新增 receipt settler、对应测试与 external-execution-receipts 目录三条精确 owner，不增加 broad harness/project wildcard。",
+          "verified_by": [
+            "dependency-policy",
+            "harness-tests"
+          ]
+        },
+        {
+          "id": "AC-2",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "Capability revision 63→64，latest_evidence/updated_by/updated_at 与正式 Evidence/Checkpoint 一致；既有 owners、状态、blocker 与 PIT 引用保持。",
+          "verified_by": [
+            "dependency-policy",
+            "memory-close"
+          ]
+        },
+        {
+          "id": "AC-3",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "本项不创建 owner 指向的文件/目录，不执行网络，不生成 receipt，不修改 Dispatcher、DemandCompiler、LoopSupervisor、Workflow、Oracle、Publisher、Golden 或产品。",
+          "verified_by": [
+            "dependency-policy",
+            "memory-close"
+          ]
+        }
+      ],
+      "required_checks": [
+        "dependency-policy",
+        "harness-tests"
+      ]
+    },
+    "architecture_refs": [
+      "ARCH-014",
+      "ARCH-017",
+      "ADR-0002",
+      "ADR-0004"
+    ],
+    "baseline_checks": [
+      "dependency-policy",
+      "harness-tests"
+    ],
+    "budget": {
+      "max_edit_verify_cycles": 3,
+      "max_full_test_runs": 3,
+      "max_infra_retries": 1,
+      "max_targeted_test_runs": 10,
+      "wall_clock_seconds": 7200
+    },
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "completion_effects": {
+      "health": {
+        "github_oracle_receipt_owner": "declared_v1"
+      }
+    },
+    "depends_on": [
+      "IOS-GITHUB-ORACLE-PAYLOAD-CANONICALIZATION-001"
+    ],
+    "gates": [],
+    "inputs": {
+      "android_source_anchors": [],
+      "context_files": [
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/harness/github_oracle_dispatcher.py",
+        "ios/harness/oracle/trusted_import.py",
+        "ios/project/checkpoints/IOS-GITHUB-ORACLE-DISPATCHER-HARDENING-001.json",
+        "ios/project/checkpoints/IOS-GITHUB-ORACLE-PAYLOAD-CANONICALIZATION-001.json"
+      ],
+      "fixtures": []
+    },
+    "intent": "在实现 Attestation Receipt Settlement 前先完成架构所有权事务。将 ios/harness/github_oracle_receipt.py、ios/harness/tests/test_github_oracle_receipt.py 与 ios/project/external-execution-receipts/** 精确加入 CAP-KNOWLEDGE-CONTROL owners.paths，并把 Capability revision 63→64，绑定正式 Evidence/Checkpoint。Receipt settler 独立于 GitHubOracleDispatcher：前者下载/验证 run、artifact、双 attestation 与 trusted import 并生成 create-only receipt；后者继续只负责 branch/run 对账。本项只预声明所有权，不创建代码、测试目录或 receipt，不修改 DemandCompiler/LoopSupervisor/Dispatcher/Workflow/Oracle/Golden/Publisher，不调用 gh 或网络。",
+    "knowledge": {
+      "claim_refs": [],
+      "context_budget": {
+        "max_bytes": 32768,
+        "max_claims": 8
+      },
+      "contract_version": 1,
+      "coverage_refs": [],
+      "driver_refs": [],
+      "expected_ledger_transitions": [],
+      "mode": "not_applicable",
+      "none_reason": "本项不消费、生成或发布业务知识",
+      "produces": []
+    },
+    "memory": {
+      "adr": "not_required",
+      "capability_state_required": true,
+      "checkpoint_required": true,
+      "pitfall": "if_non_obvious_and_preventable"
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "none_reason": "本项只登记 external receipt 控制面所有权",
+      "refs": []
+    },
+    "scope": {
+      "allow_write": [
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-GITHUB-ORACLE-RECEIPT-OWNER-001.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        ".github/**",
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "ios/publisher/**",
+        "ios/harness/**",
+        "ios/project/external-execution-receipts/**",
+        "ios/project/requirements/**",
+        "ios/project/business-knowledge/**",
+        "ios/project/approvals/**",
+        "ios/project/work-item-proposals/**",
+        "ios/docs/**"
+      ],
+      "max_changed_lines": 1200,
+      "max_files_changed": 3
+    },
+    "source_lab": {
+      "behaviors": [],
+      "mode": "not_applicable",
+      "none_reason": "本项只登记所有权",
+      "scenarios": []
+    },
+    "stop_on": [
+      "doctor_red",
+      "scope_violation",
+      "authority_scope",
+      "same_failure_twice",
+      "budget_exhausted"
+    ]
+  }
+}

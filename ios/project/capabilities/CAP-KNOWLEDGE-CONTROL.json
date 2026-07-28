@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 63,
+  "revision": 64,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -23,6 +23,7 @@
       "ios/harness/codex_agent_adapter.py",
       "ios/harness/demand_compiler.py",
       "ios/harness/github_oracle_dispatcher.py",
+      "ios/harness/github_oracle_receipt.py",
       "ios/harness/harness.py",
       "ios/harness/loop_supervisor.py",
       "ios/harness/proposal_compiler.py",
@@ -35,12 +36,14 @@
       "ios/harness/tests/test_business_knowledge_publisher.py",
       "ios/harness/tests/test_demand_compiler.py",
       "ios/harness/tests/test_github_oracle_dispatcher.py",
+      "ios/harness/tests/test_github_oracle_receipt.py",
       "ios/harness/tests/test_harness.py",
       "ios/harness/tests/test_proposal_compiler.py",
       "ios/harness/tests/test_run_journal.py",
       "ios/harness/tests/test_swiftpm_manifest.py",
       "ios/harness/tests/test_trusted_supervisor_reference.py",
       "ios/project/business-knowledge/**",
+      "ios/project/external-execution-receipts/**",
       "ios/publisher/business_knowledge_publisher.py",
       ".github/workflows/business-knowledge-publisher.yml",
       "ios/project/work-item-proposals/recipes/**",
@@ -67,14 +70,14 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260728T215503Z-ios-github-oracle-packager-scope-001-f47a3016.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260728T223154Z-ios-github-oracle-receipt-owner-001-697a0c36.json",
   "next_actions": [
-    "在 exact_corrective_v1 边界内物化并实现 ci_proposal.py 的 User-Agent header 大小写规范化纠错",
-    "对 GitHub run 30401218234 的 evidence/proposal archive 重跑 prepare/finalize，并保留双 attestation bundle",
-    "由 trusted_import 对修复后的 candidate-only archive 生成结构化 review report",
-    "新增 attestation receipt settlement，将远端 run、source digest、scenario 与共享 proposal contract 精确绑定",
-    "修复并独立运行 scenario-aware Android Golden Publisher，再续接 SourceRuntime POST Form Package 与 iOS 验收"
+    "独立实现 github_oracle_receipt.py 与 fail-closed receipt settlement",
+    "以隔离 fake gh 覆盖 run、artifact、双 attestation、trusted import 与 create-only receipt 边界",
+    "在包含 canonicalization 修复的精确 source digest 上运行新的 sl-post-form-001 Oracle branch",
+    "下载并验证 evidence/proposal archive 与双 attestation bundle，再生成受信 receipt",
+    "由独立 Publisher 审核并发布 scenario-aware protected Golden，随后续接 SourceRuntime POST Form iOS 验收"
   ],
-  "updated_at": "2026-07-28T21:55:03Z",
-  "updated_by": "IOS-GITHUB-ORACLE-PACKAGER-SCOPE-001"
+  "updated_at": "2026-07-28T22:31:54Z",
+  "updated_by": "IOS-GITHUB-ORACLE-RECEIPT-OWNER-001"
 }
