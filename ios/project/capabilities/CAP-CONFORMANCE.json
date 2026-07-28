@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-CONFORMANCE",
-  "revision": 6,
+  "revision": 7,
   "title": "离线 Fixture 与双端执行 Envelope",
   "area": "conformance",
   "contract": "ios/docs/testing-and-conformance.md",
@@ -20,14 +20,14 @@
   "blockers": [],
   "required_evidence": ["android-intake-contract", "dependency-policy", "source-lab-contract", "source-lab-tests", "source-lab-smoke", "swift-package-tests", "architecture"],
   "freshness_inputs": ["baseline_sha256", "architecture_digest_sha256", "architecture_rules_sha256", "harness_config_sha256", "dependency_lock_sha256", "source_lab_control_sha256", "source_lab_selection_sha256", "android_intake_control_sha256", "android_requirement_selection_sha256"],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260728T070027Z-ios-android-oracle-runner-001-15ba2498.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260728T072443Z-ios-android-oracle-attestation-001-337a4d19.json",
   "next_actions": [
-    "使用 IOS-ANDROID-ORACLE-RUNNER-001 已冻结的 Work Item、Runner digest 与 sl-html-basic-001 选择，在仓外受信 Android workflow 重跑并产出 attested candidate-only proposal/payload",
-    "由仓外 Supervisor 核验 attestation 后原子发布受保护 Android golden",
+    "推送包含 android-oracle-attestation.yml 的精确 source commit，并对该 ref 手工 dispatch GitHub-hosted workflow",
+    "下载指定 run 的双 archive/attestation artifact，在同一 source commit 上运行 trusted_import.py 并审查结构化 candidate-only 报告",
+    "由独立 Publisher 审查 Android portable mapping、workflow/source digest 与双 attestation 后原子发布首个受保护 Android golden",
     "Golden 发布后创建 SourceRuntime HTML/CSS 纵向实现工作项，令 iOS ConformanceCLI 产出相同 source_pipeline portable projection",
-    "执行 Android Golden 与 iOS artifact 的 first-divergence exact comparison，并据差异更新实现而不是修改 SourceLab expected",
-    "按行为分类扩展 POST/Cookie/redirect/charset 与 JSONPath/Regex/JavaScript 场景，各自先生成 Android characterization"
+    "执行 Android Golden 与 iOS artifact 的 first-divergence exact comparison，并据差异更新实现而不是修改 SourceLab expected"
   ],
-  "updated_at": "2026-07-28T07:00:27Z",
-  "updated_by": "IOS-ANDROID-ORACLE-RUNNER-001"
+  "updated_at": "2026-07-28T07:24:44Z",
+  "updated_by": "IOS-ANDROID-ORACLE-ATTESTATION-001"
 }

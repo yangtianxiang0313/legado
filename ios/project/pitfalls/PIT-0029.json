@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0029",
+  "revision": 1,
+  "title": "被签名 subject 不能内嵌自己的 attestation 哈希",
+  "fingerprint": "attested-proposal-self-referential-bundle-digest-cycle",
+  "capabilities": [
+    "CAP-CONFORMANCE"
+  ],
+  "symptoms": [
+    "proposal contract 要求 producer.attestation_sha256，但 attestation 只有 subject 完成后才能生成",
+    "先写占位哈希再签名会让最终 proposal bytes 与 attestation subject digest 不一致",
+    "先签 proposal 再回填 bundle digest 会改变 subject，自身哈希无法收敛"
+  ],
+  "conditions": [
+    "一个 artifact 同时想包含证明自身 bytes 的签名 bundle digest",
+    "签名系统把完整 artifact bytes 作为 subject",
+    "contract 没有区分执行证据证明和提案封装证明"
+  ],
+  "root_cause": "attestation bundle 是 subject digest 的函数；若 subject 又包含该 bundle 的 digest，就形成无固定点保证的自引用哈希。普通的先签后回填或先占位后签都会破坏至少一个绑定。",
+  "diagnosis": [
+    "列出每一步产生的 bytes、digest 与 attestation，画出依赖方向",
+    "检查是否存在 proposal bytes → attestation bundle → proposal 内字段 → proposal bytes 的闭环",
+    "分别验证执行 payload 与 proposal archive 的 attestation subject 是否为两个独立文件"
+  ],
+  "fix": "采用双阶段证明：先把 Android run、runner environment 与 canonical payload 打成确定性 evidence archive并签名；proposal 只引用 evidence attestation URL/raw bundle SHA-256，再把 proposal+payload 打成第二个确定性 archive并独立签名。Importer 同时验证两个 subject及其交叉绑定。",
+  "prevention": {
+    "architecture_rule": "任何签名 artifact 不得内嵌证明自身完整 bytes 的签名或签名哈希；需要内部 provenance 时必须先签独立 evidence subject，再由外层 subject 引用。",
+    "tests": [
+      "ios/harness/tests/test_oracle_ci_proposal.py",
+      "ios/harness/tests/test_oracle_trusted_import.py"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-ORACLE-CONTROL-PLANE-001",
+    "until": "IOS-ANDROID-ORACLE-ATTESTATION-001"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T072443Z-ios-android-oracle-attestation-001-337a4d19.json"
+  ]
+}

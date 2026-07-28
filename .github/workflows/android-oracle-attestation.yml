@@ -1,0 +1,234 @@
+name: Android Oracle Attestation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+concurrency:
+  group: android-oracle-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  characterize:
+    name: Frozen Android SourceLab characterization
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      AVD_NAME: legado-oracle-api35
+      AVD_SERIAL: emulator-5554
+      ANDROID_IMAGE: system-images;android-35;google_apis;x86_64
+      ORACLE_TEMP: ${{ runner.temp }}/legado-android-oracle
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Configure Gradle cache
+        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a
+
+      - name: Validate frozen controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          python3 -B ios/harness/oracle/android-runner/orchestrator.py \
+            doctor \
+            --root .
+          python3 -B ios/harness/oracle/cli.py \
+            doctor \
+            --root .
+
+      - name: Install pinned Android runtime inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          yes | sdkmanager --licenses >/dev/null
+          sdkmanager \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0" \
+            "emulator" \
+            "${ANDROID_IMAGE}"
+
+      - name: Prewarm exact Gradle dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          overlay="app/src/androidTest/java/io/legado/app/oracle"
+          cleanup() {
+            rm -f "${overlay}/LegadoOracleInstrumentedTest.kt"
+            rmdir "${overlay}" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+          mkdir -p "${overlay}"
+          cp \
+            ios/harness/oracle/android-runner/LegadoOracleInstrumentedTest.kt \
+            "${overlay}/LegadoOracleInstrumentedTest.kt"
+          ./gradlew \
+            :app:assembleAppDebug \
+            :app:assembleAppDebugAndroidTest \
+            --no-daemon
+          cleanup
+          trap - EXIT
+          test -z "$(
+            git status --porcelain=v1 --untracked-files=all -- \
+              app/src/main \
+              modules \
+              app/build.gradle \
+              build.gradle \
+              settings.gradle \
+              gradle \
+              gradle.properties
+          )"
+
+      - name: Boot dedicated emulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${ORACLE_TEMP}"
+          echo no | avdmanager create avd \
+            --force \
+            --name "${AVD_NAME}" \
+            --package "${ANDROID_IMAGE}"
+          "${ANDROID_HOME}/emulator/emulator" \
+            -avd "${AVD_NAME}" \
+            -port 5554 \
+            -no-window \
+            -no-audio \
+            -no-boot-anim \
+            -no-snapshot \
+            -wipe-data \
+            -gpu swiftshader_indirect \
+            >"${ORACLE_TEMP}/emulator.log" 2>&1 &
+          echo "$!" >"${ORACLE_TEMP}/emulator.pid"
+          adb -s "${AVD_SERIAL}" wait-for-device
+          ready=false
+          for _ in $(seq 1 120); do
+            if test "$(adb -s "${AVD_SERIAL}" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1"; then
+              ready=true
+              break
+            fi
+            sleep 2
+          done
+          test "${ready}" = true
+          adb -s "${AVD_SERIAL}" shell input keyevent 82
+
+      - name: Run frozen Android Oracle offline
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B ios/harness/oracle/android-runner/orchestrator.py \
+            run \
+            --root . \
+            --adb "${ANDROID_HOME}/platform-tools/adb" \
+            --serial "${AVD_SERIAL}" \
+            --output ".harness-runtime/android-oracle/ci-local-run.json"
+
+      - name: Prepare deterministic evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B ios/harness/oracle/ci_proposal.py \
+            environment \
+            --root . \
+            --output "${ORACLE_TEMP}/runner-environment.json" \
+            --image-os "${ImageOS}" \
+            --image-version "${ImageVersion}"
+          python3 -B ios/harness/oracle/ci_proposal.py \
+            prepare \
+            --root . \
+            --local-run ".harness-runtime/android-oracle/ci-local-run.json" \
+            --runner-environment "${ORACLE_TEMP}/runner-environment.json" \
+            --output-dir "${ORACLE_TEMP}/evidence" \
+            --repository "${GITHUB_REPOSITORY}" \
+            --workflow-ref "${GITHUB_WORKFLOW_REF}" \
+            --run-id "${GITHUB_RUN_ID}/${GITHUB_RUN_ATTEMPT}" \
+            --source-digest "${GITHUB_SHA}"
+
+      - name: Attest execution evidence
+        id: evidence_attestation
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6
+        with:
+          subject-path: ${{ runner.temp }}/legado-android-oracle/evidence/android-oracle-evidence.tar
+
+      - name: Prepare and validate candidate proposal
+        shell: bash
+        env:
+          EVIDENCE_ATTESTATION_URL: ${{ steps.evidence_attestation.outputs.attestation-url }}
+          EVIDENCE_ATTESTATION_BUNDLE: ${{ steps.evidence_attestation.outputs.bundle-path }}
+        run: |
+          set -euo pipefail
+          python3 -B ios/harness/oracle/ci_proposal.py \
+            finalize \
+            --root . \
+            --evidence-archive "${ORACLE_TEMP}/evidence/android-oracle-evidence.tar" \
+            --evidence-attestation-bundle "${EVIDENCE_ATTESTATION_BUNDLE}" \
+            --attestation-url "${EVIDENCE_ATTESTATION_URL}" \
+            --output-dir "${ORACLE_TEMP}/proposal"
+          python3 -B ios/harness/oracle/cli.py \
+            verify-proposal \
+            --root . \
+            --proposal "${ORACLE_TEMP}/proposal/proposal/proposal.json" \
+            --request-work-item IOS-ANDROID-ORACLE-ATTESTATION-001
+
+      - name: Attest candidate proposal
+        id: proposal_attestation
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6
+        with:
+          subject-path: ${{ runner.temp }}/legado-android-oracle/proposal/android-oracle-proposal.tar
+
+      - name: Assemble review artifact
+        shell: bash
+        env:
+          EVIDENCE_BUNDLE: ${{ steps.evidence_attestation.outputs.bundle-path }}
+          PROPOSAL_BUNDLE: ${{ steps.proposal_attestation.outputs.bundle-path }}
+        run: |
+          set -euo pipefail
+          install -d -m 0700 "${ORACLE_TEMP}/dist"
+          install -m 0600 \
+            "${ORACLE_TEMP}/evidence/android-oracle-evidence.tar" \
+            "${ORACLE_TEMP}/dist/android-oracle-evidence.tar"
+          install -m 0600 \
+            "${ORACLE_TEMP}/proposal/android-oracle-proposal.tar" \
+            "${ORACLE_TEMP}/dist/android-oracle-proposal.tar"
+          install -m 0600 \
+            "${EVIDENCE_BUNDLE}" \
+            "${ORACLE_TEMP}/dist/evidence-attestation.json"
+          install -m 0600 \
+            "${PROPOSAL_BUNDLE}" \
+            "${ORACLE_TEMP}/dist/proposal-attestation.json"
+          (
+            cd "${ORACLE_TEMP}/dist"
+            shasum -a 256 \
+              android-oracle-evidence.tar \
+              android-oracle-proposal.tar \
+              evidence-attestation.json \
+              proposal-attestation.json \
+              >SHA256SUMS
+          )
+
+      - name: Upload candidate-only review artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: android-oracle-candidate-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/legado-android-oracle/dist/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Stop dedicated emulator
+        if: always()
+        shell: bash
+        run: |
+          adb -s "${AVD_SERIAL}" emu kill >/dev/null 2>&1 || true

@@ -76,6 +76,65 @@ SourceLab scenario、source/input/case 与 canonicalizer digest。它不是 Gold
 不含 attestation 或发布权限。只有仓外受信 workflow 在相同输入上重跑、签名并生成
 `android_oracle_proposal` 后，独立 publisher 才能晋级受保护 Golden。
 
+## GitHub-hosted 双证明提案链
+
+`.github/workflows/android-oracle-attestation.yml` 只允许人工
+`workflow_dispatch`，在 `ubuntu-24.04` GitHub-hosted runner 上执行。它不读取
+repository secrets，不提交分支，不上传 APK，也不接触外部书站。官方 actions 均固定
+到完整 commit SHA；job 权限只有 `contents:read`、`id-token:write` 和
+`attestations:write`。
+
+CI 分为两个不可交换的证明阶段：
+
+1. 在线阶段只安装明确的 Android 35 system image，并把冻结 baseline 的 Gradle 依赖
+   预热进 cache；实际 Orchestrator 仍使用 `--offline`，网络面仍只有本次 SourceLab
+   loopback 与精确 `adb reverse`。
+2. `ci_proposal.py prepare` 把 Android local-run 转成 canonical-v1 payload，并生成
+   确定性的 `android-oracle-evidence.tar`。GitHub OIDC/Sigstore 先为这个 evidence
+   subject 生成 provenance attestation。
+3. `ci_proposal.py finalize` 才能生成 candidate proposal。proposal 内绑定上一步
+   attestation URL 和原始 bundle SHA-256，再由仓内 `verify-proposal` 复验。
+4. 确定性的 `android-oracle-proposal.tar` 作为第二个独立 subject 再生成 provenance
+   attestation。这样 proposal 不需要把“自己的签名哈希”嵌入自己，避免不可解的循环
+   哈希。
+
+workflow artifact 只包含以下 review inputs，保留 14 天：
+
+```text
+android-oracle-evidence.tar
+android-oracle-proposal.tar
+evidence-attestation.json
+proposal-attestation.json
+SHA256SUMS
+```
+
+下载指定 run 的 artifact 后，必须在与该 run 相同的 source commit 上执行：
+
+```text
+python3 -B ios/harness/oracle/trusted_import.py verify \
+  --root . \
+  --proposal-archive /absolute/review/android-oracle-proposal.tar \
+  --proposal-attestation-bundle /absolute/review/proposal-attestation.json \
+  --evidence-archive /absolute/review/android-oracle-evidence.tar \
+  --evidence-attestation-bundle /absolute/review/evidence-attestation.json \
+  --repository yangtianxiang0313/legado \
+  --gh /absolute/path/to/gh
+```
+
+Importer 会对两个 archive 分别执行 `gh attestation verify`，固定 repository、
+signer workflow、当前 `HEAD` source digest、SLSA provenance，并拒绝 self-hosted
+runner；之后才安全读取 tar、核对 evidence bundle、run identity、payload、Runner
+environment 和 proposal contract。成功结果仍是
+`candidate_only/verified_for_human_review`，下一 authority 明确为
+`independent_golden_publisher`。
+
+`ci_proposal.py` 只有 `environment`、`prepare`、`finalize`；
+`trusted_import.py` 只有 `verify`。两者均没有 `accept`、`publish`、`promote`、
+`record` 或 `update-golden`，也不会写 `ios/harness/goldens`。GitHub attestation
+只证明“哪个 workflow、在哪个 source commit 生成了哪些 bytes”，不证明业务结果应被
+接受；首个 Golden 仍需独立 Publisher 审查 Android portable mapping 后完成受保护
+晋级。
+
 The exact parser preserves arbitrary number tokens, rejects duplicate and
 canonically-equivalent object keys, non-finite values, invalid UTF-8, unpaired
 surrogates, excessive nesting, and oversized inputs. Object keys are preserved;
