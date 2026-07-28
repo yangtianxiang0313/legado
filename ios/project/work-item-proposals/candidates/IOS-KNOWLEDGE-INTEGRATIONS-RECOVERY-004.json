@@ -1,0 +1,245 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-004",
+    "title": "验证恢复 Integrations 知识 revision 4",
+    "priority": 90,
+    "risk": "high",
+    "labels": [
+      "phase-2",
+      "knowledge",
+      "integrations",
+      "permissions",
+      "dependency-proposal",
+      "architecture-driver",
+      "recovery",
+      "supervisor-verified"
+    ]
+  },
+  "spec": {
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "intent": "恢复 IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-003 已从冻结 Android 源码生成、但因旧 Agent-owned verifier 环境失败而未通过的 revision 3 proposal。本项不重新扫描全部 Android 源码；以 BKP-INTEGRATIONS-001@3 与 DRV-INTEGRATION-PROFILES-001@3 为语义输入，核对关键源码锚点后生产 revision 4。Packet 顶层 supersedes revision 3，每个复用 Claim 递增到 revision 2 并显式 supersedes 同 id revision 1；Driver 顶层 supersedes revision 3 并引用 revision 2 Claims。结果仍是 proposal，不接受依赖、entitlement、ADR、Requirement 或发布 authority。使用 supervisor-owned-verification-v1 完成真实 Agent edit、Supervisor verify、Agent memory、Supervisor close。",
+    "depends_on": [
+      "IOS-KNOWLEDGE-ANDROID-SURFACES-001",
+      "IOS-KNOWLEDGE-TOMBSTONE-PROTOCOL-001",
+      "IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002"
+    ],
+    "scope": {
+      "allow_write": [
+        "ios/project/business-knowledge/packets/proposals/BKP-INTEGRATIONS-001/r0004.json",
+        "ios/project/business-knowledge/drivers/proposals/DRV-INTEGRATION-PROFILES-001/r0004.json",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-004.json",
+        "ios/project/pitfalls/PIT-0022.json"
+      ],
+      "deny_write": [
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "**/Package.swift",
+        "**/*.entitlements",
+        "**/Info.plist",
+        "ios/harness/**",
+        "ios/project/android-intake/**",
+        "ios/project/business-knowledge/tombstones/**",
+        "ios/project/business-knowledge/packets/published/**",
+        "ios/project/business-knowledge/drivers/published/**",
+        "ios/project/business-knowledge/coverage/**",
+        "ios/project/business-knowledge/packets/proposals/BKP-ANDROID-SURFACES-001/**",
+        "ios/project/business-knowledge/packets/proposals/BKP-INTEGRATIONS-001/r0001.json",
+        "ios/project/business-knowledge/packets/proposals/BKP-INTEGRATIONS-001/r0002.json",
+        "ios/project/business-knowledge/packets/proposals/BKP-INTEGRATIONS-001/r0003.json",
+        "ios/project/business-knowledge/drivers/proposals/DRV-INTEGRATION-PROFILES-001/r0001.json",
+        "ios/project/business-knowledge/drivers/proposals/DRV-INTEGRATION-PROFILES-001/r0002.json",
+        "ios/project/business-knowledge/drivers/proposals/DRV-INTEGRATION-PROFILES-001/r0003.json",
+        "ios/project/requirements/**",
+        "ios/project/requirement-proposals/**",
+        "ios/project/dependency-proposals/**",
+        "ios/project/work-item-proposals/**",
+        "ios/project/baseline.json",
+        "ios/project/approvals/**",
+        "ios/docs/**"
+      ],
+      "max_files_changed": 5,
+      "max_changed_lines": 4800
+    },
+    "inputs": {
+      "context_files": [
+        "ios/docs/android-requirement-intake.md",
+        "ios/docs/business-knowledge-control-plane.md",
+        "ios/docs/architecture.md",
+        "ios/docs/dependencies.md",
+        "ios/project/android-intake/inventory-manifest.json",
+        "ios/project/business-knowledge/catalog.json",
+        "ios/project/business-knowledge/packets/proposals/BKP-ANDROID-SURFACES-001/r0001.json",
+        "ios/project/business-knowledge/packets/proposals/BKP-INTEGRATIONS-001/r0003.json",
+        "ios/project/business-knowledge/drivers/proposals/DRV-INTEGRATION-PROFILES-001/r0003.json",
+        "ios/harness/work-items/IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-003.json",
+        "ios/project/checkpoints/IOS-SWIFTPM-VERIFY-SANDBOX-001.json",
+        "ios/project/checkpoints/IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002.json",
+        "ios/project/pitfalls/PIT-0022.json"
+      ],
+      "android_source_anchors": [
+        "settings.gradle",
+        "build.gradle",
+        "app/build.gradle",
+        "app/src/main/AndroidManifest.xml",
+        "app/src/main/java/io/legado/app/help/config/AppConfig.kt",
+        "app/src/main/java/io/legado/app/api/HttpServer.kt",
+        "app/src/main/java/io/legado/app/lib/webdav/WebDav.kt",
+        "app/src/main/java/io/legado/app/help/storage/Backup.kt",
+        "app/src/main/java/io/legado/app/help/storage/ImportOldData.kt",
+        "app/src/main/java/io/legado/app/help/TTS.kt",
+        "app/src/main/java/io/legado/app/service/TTSReadAloudService.kt",
+        "app/src/main/java/io/legado/app/service/ExportBookService.kt",
+        "app/src/main/java/io/legado/app/help/http/OkHttpUtils.kt",
+        "app/src/main/java/io/legado/app/help/http/Cronet.kt"
+      ],
+      "fixtures": []
+    },
+    "architecture_refs": [
+      "ARCH-013",
+      "ARCH-014",
+      "ARCH-018",
+      "ADR-0001",
+      "ADR-0003",
+      "ADR-0004"
+    ],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "BKP-INTEGRATIONS-001@4 语义完整继承 revision 3 的 18 条 integration capability Claims，顶层 supersedes packet revision 3；每条 Claim 保持 id/semantic_key，递增为 revision 2 并 supersedes 同 id revision 1，不丢失源码证据、用户价值、数据边界、入口、失败面或证据等级。",
+          "verified_by": [
+            "android-intake-contract",
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "权限/发布、依赖、迁移和 characterization/spike 矩阵继续区分稳定业务需求、Android 当前实现、iOS capability/entitlement 候选、StoreSafe/FullCompat、三方库风险与未证事实；不得产生 Package、entitlement、依赖批准或 Requirement 变更。",
+          "verified_by": [
+            "android-intake-contract",
+            "dependency-policy"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "DRV-INTEGRATION-PROFILES-001@4 顶层 supersedes revision 3，保持 proposed，引用本批 revision 2 Claims，保留 IntegrationKit/adapter、能力注入、双 profile、依赖准入、权限最小化、迁移隔离、观测与测试策略问题，不生成 accepted ADR。",
+          "verified_by": [
+            "dependency-policy",
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-4",
+          "statement": "implementation phase 只创建 packet/driver revision 4，不调用 verify/close 或提前写 Capability/Checkpoint/Pitfall；Supervisor 在宿主运行 required checks 并生成 passed Evidence。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-5",
+          "statement": "memory_close phase 绑定 passed Evidence，更新 Capability、Checkpoint 和 PIT-0022 后停止；Checkpoint 记录 revision 1/2 tombstones、revision 3 verifier exhaustion、revision 4 supersedes、真实 Supervisor transition 与剩余决策，最终由 Supervisor close。",
+          "verified_by": [
+            "memory-close"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-6",
+          "statement": "PIT-0022 在真实 Codex v3 adapter 下完成 Agent edit→Supervisor verify→Agent memory→Supervisor close 后更新为 resolved；Capability 保持 partial，knowledge_integrations health 进入 candidate_verified。",
+          "verified_by": [
+            "memory-close"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": [
+        "android-intake-contract",
+        "dependency-policy",
+        "harness-tests"
+      ]
+    },
+    "baseline_checks": [
+      "android-intake-contract",
+      "harness-tests"
+    ],
+    "budget": {
+      "wall_clock_seconds": 7200,
+      "max_edit_verify_cycles": 3,
+      "max_targeted_test_runs": 6,
+      "max_full_test_runs": 2,
+      "max_infra_retries": 1
+    },
+    "gates": [],
+    "completion_effects": {
+      "health": {
+        "knowledge_integrations": "candidate_verified",
+        "loop_trusted_verification": "real_codex_verified"
+      }
+    },
+    "memory": {
+      "adr": "required_for_architecture_change",
+      "capability_state_required": true,
+      "compatibility": "not_applicable",
+      "pitfall": "required"
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "refs": [],
+      "none_reason": "本项只恢复 Integrations 业务知识与 Architecture Driver proposal，不接受依赖、权限或产品行为"
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "supersede",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [
+        {
+          "kind": "packet",
+          "id": "BKP-INTEGRATIONS-001",
+          "revision": 4
+        },
+        {
+          "kind": "driver",
+          "id": "DRV-INTEGRATION-PROFILES-001",
+          "revision": 4
+        }
+      ],
+      "expected_ledger_transitions": [],
+      "context_budget": {
+        "max_claims": 50,
+        "max_bytes": 98304
+      },
+      "none_reason": null
+    },
+    "source_lab": {
+      "mode": "not_applicable",
+      "behaviors": [],
+      "scenarios": [],
+      "none_reason": "本项只恢复 Android 集成知识候选，不执行书源、Android runner、模拟器或 Swift 产品"
+    },
+    "stop_on": [
+      "baseline_red",
+      "scope_violation",
+      "authority_escalation",
+      "knowledge_drift",
+      "same_failure_twice",
+      "budget_exhausted",
+      "human_decision_required"
+    ]
+  }
+}
