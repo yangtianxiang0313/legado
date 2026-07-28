@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "revision": 239,
+  "revision": 240,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-28T09:43:55Z",
-  "event_head": "f9cbcd69d26e1b024239e64cfef2c87d614f8370c74fd7cad8a557d3931fee0c",
+  "updated_at": "2026-07-28T09:45:14Z",
+  "event_head": "00cbd15d1e11fdf38c32d98c14da6a5e4941e5df5341b4f84b483bdd7ab1a121",
   "active_work_items": [],
   "last_completed_work_item": "IOS-HARNESS-TEST-TIMEOUT-RECOVERY-002",
   "work_items": {
@@ -3988,6 +3988,11 @@
       "verified_at": "2026-07-28T09:43:10Z",
       "completed_at": "2026-07-28T09:43:55Z",
       "final_tree_sha256": "fb068b123f0b1e938968a42fc942ad5d78fc16da989ef4528a6c255310882f04"
+    },
+    "IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-005": {
+      "status": "ready",
+      "attempt": 0,
+      "last_evidence": null
     }
   },
   "health": {
