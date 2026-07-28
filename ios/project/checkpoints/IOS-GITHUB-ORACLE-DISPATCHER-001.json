@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-GITHUB-ORACLE-DISPATCHER-001",
+  "summary": "已建立第一版受限 GitHub Android Oracle 外部执行适配层。GitHubOracleDispatcher 只消费 Demand Plan 绑定的固定 workflow、scenario、精确 source digest，以及显式 repository/remote 配置；从 canonical inputs 生成稳定 execution_id 和 create-only feature/oracle-<scenario>-<sha> branch。它验证 clean HEAD、remote repository 与 gh 身份，远端 branch 为空时非 force 创建、同 SHA 复用、冲突拒绝；只查询固定 workflow/branch/workflow_dispatch run，零个才 dispatch、一个复用、多个或 head 漂移 fail closed。非敏感状态原子写入 .harness-runtime journal，Supervisor 仅在显式启用外部 adapter 时调用它，且不经过普通 Agent。正式 Evidence 通过 245 项 Harness tests 与依赖策略。后验验收审计确认核心安全边界成立，但测试尚未逐项覆盖 dirty/remote/auth、所有 run 状态和 journal 回退；此外 workflow_dispatch 没有服务端可见 execution_id，发送失败存在安全但可能永久 pending 的歧义，因此真实运行前必须由独立 hardening WorkItem 闭合。",
+  "evidence": "ios/harness/evidence/runs/run-20260728T202133Z-ios-github-oracle-dispatcher-001-f4aa23e4.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 58,
+      "to_revision": 59,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": [
+      "ADR-0002",
+      "ADR-0004"
+    ]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null,
+    "none_reason": "本项只建立 GitHub Android Oracle 的受限外部执行适配层"
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项不消费、生成或发布业务知识"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null,
+    "none_reason": "本项只调度已绑定 scenario，不运行或修改 SourceLab"
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "尚未取得真实 GitHub run 或 trusted receipt，不声明书源兼容结果"
+  },
+  "pitfalls": {
+    "records": [
+      "ios/project/pitfalls/PIT-0061.json"
+    ],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "workflow_dispatch 尚无服务端可查询的 deterministic execution_id，发送失败可能永久 pending",
+    "验收测试尚未逐项覆盖 dirty tree、remote/auth 漂移、running/failed 与 journal identity/run 回退",
+    "当前 adapter 未下载 artifact、未调用 trusted_import，也不会生成受信 receipt",
+    "真实 Android Oracle Workflow 尚未在当前 source digest 上触发",
+    "POST Form Golden Publisher 仍硬编码 HTML 场景和旧 artifact 名"
+  ],
+  "next_actions": [
+    "新增 Dispatcher hardening WorkItem，为 Workflow 增加 dispatch_id/run-name 并补齐全部恢复边界测试",
+    "在真实 source digest 上由受限 adapter 触发并监控 sl-post-form-001",
+    "下载并验证双 archive/attestation，形成结构化 trusted receipt proposal",
+    "实现 receipt settlement 与 scenario-aware 独立 Golden Publisher"
+  ],
+  "created_at": "2026-07-28T20:22:30Z"
+}

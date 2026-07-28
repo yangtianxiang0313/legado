@@ -56,6 +56,7 @@ try:
         ProposalCompilerError,
     )
     from .run_journal import RunJournal, RunJournalError
+    from .github_oracle_dispatcher import GitHubOracleDispatcher, GitHubOracleError
 except ImportError:
     from approval_ui import (  # type: ignore
         LOOPBACK_HOST,
@@ -86,6 +87,10 @@ except ImportError:
         ProposalCompilerError,
     )
     from run_journal import RunJournal, RunJournalError  # type: ignore
+    from github_oracle_dispatcher import (  # type: ignore
+        GitHubOracleDispatcher,
+        GitHubOracleError,
+    )
 
 
 SCHEMA_VERSION = 1
@@ -3102,6 +3107,32 @@ class LoopSupervisor:
             raise LoopSupervisorError(f"Supervisor config 无效：{error}") from error
         initial_decision = self.inspect()
         if initial_decision.state == "external_execution_required":
+            external_config = config.get("external_execution")
+            github_config = (
+                external_config.get("github_oracle")
+                if isinstance(external_config, dict)
+                else None
+            )
+            if isinstance(github_config, dict) and github_config.get("enabled") is True:
+                binding = initial_decision.details.get("external_execution", {})
+                try:
+                    external_result = GitHubOracleDispatcher(
+                        self.harness.root,
+                        repository=github_config.get("repository"),
+                        workflow_path=binding.get("workflow_path"),
+                        scenario=binding.get("scenario_id"),
+                        source_digest=binding.get("source_digest"),
+                        remote=github_config.get("remote"),
+                    ).dispatch()
+                except GitHubOracleError as error:
+                    raise LoopSupervisorError(str(error)) from error
+                return {
+                    "schema_version": SCHEMA_VERSION,
+                    "outcome": external_result["outcome"],
+                    "decision": initial_decision.to_dict(),
+                    "external_execution": external_result,
+                    "transitions": [],
+                }
             return {
                 "schema_version": SCHEMA_VERSION,
                 "outcome": initial_decision.reason_code.lower(),

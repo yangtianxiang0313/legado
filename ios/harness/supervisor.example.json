@@ -79,6 +79,13 @@
     "enabled": true,
     "policy": "synthetic-source-provenance-v1"
   },
+  "external_execution": {
+    "github_oracle": {
+      "enabled": false,
+      "repository": "owner/legado",
+      "remote": "origin"
+    }
+  },
   "agent_invocation": {
     "argv": [
       "<replace-with-agent-runner>",

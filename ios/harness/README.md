@@ -110,6 +110,13 @@ python3 ios/harness/loop_supervisor.py materialize-review \
   Supervisor 将其映射为 `external_execution_required` 并停止本地 drive；此时
   receipt 必须仍为 `null`，后续需在 GitHub-hosted runner 执行固定 workflow，
   下载双 attestation 后再由独立 receipt settlement/Golden Publisher 工作项处理；
+- `external_execution.github_oracle` 只有在显式 `enabled=true` 时接管上述停止状态。
+  它校验 clean HEAD、绑定 commit、remote repository 与 `gh` 登录，使用稳定的
+  `feature/oracle-<scenario>-<sha>` create-only branch，并只查询固定 workflow、
+  branch 与 `workflow_dispatch` run。恢复状态写入
+  `.harness-runtime/github-oracle/<execution-id>.json`；该 journal 不是 receipt、
+  Evidence 或发布权威。成功 run 仍须独立下载、双证明 trusted import 与 receipt
+  settlement；
 - 显式启用 `supervisor-owned-verification-v1` 后，单次工作项按 Agent edit →
   Supervisor verify → Agent memory → Supervisor close 推进。Agent 不能通过直接调用
   `verify/close` 改变控制状态；Supervisor 在每个 Agent turn 后核对 event/status/

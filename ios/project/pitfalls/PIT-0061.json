@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0061",
+  "revision": 1,
+  "title": "没有服务端幂等键的 workflow_dispatch 存在不可消除的发送歧义",
+  "fingerprint": "workflow-dispatch-crash-window-without-server-visible-execution-id",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "本地在调用 gh workflow run 前写入 dispatched journal，以避免崩溃后重复触发",
+    "如果 gh 返回非零或进程在请求边界崩溃，无法判断 GitHub 是否已接受 dispatch",
+    "重试时只能保持 pending 并等待 run 出现；若请求确定未送达则会永久等待",
+    "仅依靠 source branch/head SHA 可以防重复，但不能区分同一 source/scenario 的并发 dispatch"
+  ],
+  "conditions": [
+    "GitHub workflow_dispatch API 不返回 run ID",
+    "Workflow 输入和 run-name 中没有确定性 execution_id",
+    "调用方要求 crash-safe、不可重复的自动重试"
+  ],
+  "root_cause": "把本地 write-ahead journal 当成服务端幂等协议。它能选择安全性，但无法同时保证活性；只有 GitHub run 可见的确定性 identity 才能在请求结果不明时完成对账。",
+  "diagnosis": [
+    "检查 Workflow 是否声明 dispatch_id 输入并把它放入 run-name 或受信产物",
+    "检查 Dispatcher 查询是否按 execution_id、workflow、branch、event 与 head SHA 唯一匹配",
+    "模拟 gh 返回错误但远端实际创建 run，以及返回错误且远端无 run 两种情况",
+    "确认多 run、identity 漂移和终态重写均 fail closed"
+  ],
+  "fix": "当前 Dispatcher 先采用 create-only deterministic branch 与 write-ahead journal，保证不会静默重复触发；下一独立 hardening WorkItem 将 execution_id 加入 Workflow 输入/run-name，并补齐失败歧义、延迟可见、状态与 journal 恢复测试后再运行真实远端。",
+  "prevention": {
+    "architecture_rule": "任何无返回资源 ID 的外部创建 API，都必须把客户端确定性 identity 写入服务端可查询字段；本地 journal 只能辅助恢复，不能作为唯一幂等证明。",
+    "tests": [
+      "ios/harness/tests/test_github_oracle_dispatcher.py",
+      "ios/harness/tests/test_loop_supervisor.py"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-GITHUB-ORACLE-DISPATCHER-001",
+    "until": null
+  },
+  "status": "open",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T202133Z-ios-github-oracle-dispatcher-001-f4aa23e4.json"
+  ]
+}
