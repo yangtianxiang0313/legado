@@ -309,31 +309,75 @@ class ProposalCompilerTests(unittest.TestCase):
         compiler = proposal_compiler.ProposalCompiler(
             harness_module.Harness(REPO_ROOT)
         )
+        proposal_id = "IOS-KNOWLEDGE-INTEGRATIONS-001"
         plan = compiler.plan()
         entries = {entry["proposal_id"]: entry for entry in plan["nodes"]}
         self.assertEqual(
             "IOS-KNOWLEDGE-UI-TOPOLOGY-RECOVERY-002",
             entries["IOS-KNOWLEDGE-UI-TOPOLOGY-001"]["resolved_work_item_id"],
         )
-        self.assertEqual(
-            "recipe_ready",
-            entries["IOS-KNOWLEDGE-INTEGRATIONS-001"]["status"],
-        )
-        self.assertEqual(
-            "current",
-            compiler.check("IOS-KNOWLEDGE-INTEGRATIONS-001")["status"],
-        )
-        preview = loop_supervisor.LoopSupervisor(
-            compiler.harness
-        ).preflight_candidate(
+        candidate_path = (
             REPO_ROOT
-            / f"{proposal_compiler.CANDIDATE_ROOT}/IOS-KNOWLEDGE-INTEGRATIONS-001.json"
+            / proposal_compiler.CANDIDATE_ROOT
+            / f"{proposal_id}.json"
         )
-        self.assertEqual("IOS-KNOWLEDGE-INTEGRATIONS-001", preview.item_id)
+        manifest_path = (
+            REPO_ROOT
+            / proposal_compiler.MANIFEST_ROOT
+            / f"{proposal_id}.json"
+        )
+        candidate = json.loads(candidate_path.read_text(encoding="utf-8"))
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         self.assertEqual(
-            (("packet", "BKP-INTEGRATIONS-001", 1), ("driver", "DRV-INTEGRATION-PROFILES-001", 1)),
-            preview.produces,
+            harness_module.sha256_json(candidate),
+            manifest["candidate_sha256"],
         )
+        self.assertEqual("proposal_only", manifest["authority"])
+
+        runtime = compiler.harness.state()["work_items"].get(proposal_id)
+        entry = entries[proposal_id]
+        if runtime is None:
+            self.assertEqual("recipe_ready", entry["status"])
+            self.assertEqual("current", compiler.check(proposal_id)["status"])
+            preview = loop_supervisor.LoopSupervisor(
+                compiler.harness
+            ).preflight_candidate(candidate_path)
+            self.assertEqual(proposal_id, preview.item_id)
+            self.assertEqual(
+                (
+                    ("packet", "BKP-INTEGRATIONS-001", 1),
+                    ("driver", "DRV-INTEGRATION-PROFILES-001", 1),
+                ),
+                preview.produces,
+            )
+        else:
+            materialized = json.loads(
+                (
+                    REPO_ROOT
+                    / "ios/harness/work-items"
+                    / f"{proposal_id}.json"
+                ).read_text(encoding="utf-8")
+            )
+            self.assertEqual(candidate, materialized)
+            status = runtime["status"]
+            if status == "completed":
+                self.assertEqual("completed", entry["status"])
+            elif status in proposal_compiler.TERMINAL_STATUSES:
+                resolution = compiler.resolve_dependency(
+                    proposal_id,
+                    compiler.harness.work_items(),
+                    compiler.harness.state()["work_items"],
+                )
+                self.assertEqual(
+                    (
+                        "completed"
+                        if resolution["status"] == "resolved"
+                        else "terminal_unresolved"
+                    ),
+                    entry["status"],
+                )
+            else:
+                self.assertEqual("materialized", entry["status"])
 
     def test_cli_exposes_no_authority_escalation_commands(self):
         help_text = proposal_compiler.build_parser().format_help().lower()

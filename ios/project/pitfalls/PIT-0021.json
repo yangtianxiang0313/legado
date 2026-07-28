@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0021",
+  "revision": 1,
+  "title": "一次性前置状态断言会让自动推进自阻断",
+  "fingerprint": "repository-test-freezes-pre-materialization-state",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "candidate 在自动物化前全量测试通过，物化后同一测试立即失败",
+    "失败断言要求 plan 永久等于 recipe_ready，实际已经合法进入 materialized",
+    "claim 的 baseline_red 发生在 Agent 启动前，业务实现完全没有机会运行",
+    "自动化每向前推进一次，测试就要求系统回到推进前状态"
+  ],
+  "conditions": [
+    "测试直接读取真实仓库状态，而不是隔离 fixture",
+    "测试断言的是工作流某一瞬间的状态，不是跨生命周期不变量",
+    "proposal 已物化、完成或阻断后，测试仍调用只适用于未物化阶段的 preflight/check",
+    "没有覆盖 absent、materialized、terminal 和 completed 分支"
+  ],
+  "root_cause": "测试把“当前迁移阶段的观测值”误当成“系统永久合同”。真正不变量是 candidate/manifest/Work Item/状态解析的一致性，而不是 proposal 永远停留在 recipe_ready。",
+  "diagnosis": [
+    "识别断言对象是跨生命周期不变量还是一次性工作流状态",
+    "根据 Harness state 是否存在 Work Item 选择 preflight 或 materialized binding 验证",
+    "终态通过 resolve_dependency 判断 unresolved/recovery，不要求重新变成 recipe_ready",
+    "在真实 materialize→claim 路径上重跑全量 baseline"
+  ],
+  "fix": "重构 Integrations repository-specific 测试：始终验证 candidate canonical hash 与 manifest；未物化时验证 compiler current 和 preflight；已物化时验证 Work Item 语义相等；terminal 时按 resolve_dependency 断言 terminal_unresolved 或 recovery completion；completed 时断言 completed。保留原 baseline_red 事件，使用独立 recovery Work Item 续接。",
+  "prevention": {
+    "architecture_rule": "读取真实控制状态的测试必须覆盖对象完整生命周期并断言不变量；任何只在迁移某一瞬间成立的状态都必须放入隔离 fixture，不能成为全量 baseline 的永久条件。",
+    "tests": [
+      "ios/harness/tests/test_proposal_compiler.py#test_current_integrations_candidate_is_bound_and_preflightable",
+      "ios/harness/tests/test_proposal_compiler.py#test_compiled_control_plane_candidate_auto_materializes_and_drives"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-PROPOSAL-COMPILER-001",
+    "until": "IOS-PROPOSAL-LIFECYCLE-RECOVERY-002"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T034326Z-ios-proposal-lifecycle-recovery-002-181c1263.json"
+  ]
+}

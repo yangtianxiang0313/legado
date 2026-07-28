@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "revision": 148,
+  "revision": 152,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-28T03:40:33Z",
-  "event_head": "62f947bdba5a6debdffba0e3f9551b43a2a7fae062d8de0ea5a0c7a672cc159b",
+  "updated_at": "2026-07-28T03:44:56Z",
+  "event_head": "556692755a1340c04cb9fe038fb3112ba00f257491dd0c2369cc419e5a52941e",
   "active_work_items": [],
-  "last_completed_work_item": "IOS-CODEX-AGENT-ADAPTER-COMPAT-002",
+  "last_completed_work_item": "IOS-PROPOSAL-LIFECYCLE-RECOVERY-002",
   "work_items": {
     "IOS-BOOT-001": {
       "status": "completed",
@@ -2461,9 +2461,57 @@
       ]
     },
     "IOS-PROPOSAL-LIFECYCLE-RECOVERY-002": {
-      "status": "ready",
-      "attempt": 0,
-      "last_evidence": null
+      "status": "completed",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260728T034326Z-ios-proposal-lifecycle-recovery-002-181c1263.json",
+      "claimed_by": "codex-root",
+      "claimed_at": "2026-07-28T03:40:44Z",
+      "lease_expires_at": "2026-07-29T03:40:44Z",
+      "work_item_sha256": "8442d7f82a17b16686a1969fe718cc63be1b95cce36c27671db0f2682ecb947b",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "c897358d43df4fecfdbaf18db789d03052035340",
+      "base_capability_revision": 21,
+      "base_capability_assurance_sha256": "6c08426cf2cc8f0277426284e00909a10444767bc01eeb84e0db43db8dcbb2ac",
+      "android_requirement_selection_sha256": null,
+      "business_knowledge_control_sha256": "fb246d84d9d17350c360facdd7a2e2ab441b651b3fcf4e94b6d4b626245597e5",
+      "business_knowledge_authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 2,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "dependency-policy",
+          "argv": [
+            "python3",
+            "ios/harness/probes/dependency_contract.py",
+            "--root",
+            "."
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "eca96cb1b69567829ed8396386b0449da8c0d6e7295a00f1decfb60430ff1153",
+          "cwd": ".",
+          "started_at": "2026-07-28T03:40:43Z",
+          "duration_ms": 1282,
+          "timeout_seconds": 90,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "17595a1d68cdc5b52c010f46dff48514afa3fa3cf0215cdea7ae8eff38677c0a",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_tail": "DEPENDENCY_CONTRACT: OK\n",
+          "stderr_tail": ""
+        }
+      ],
+      "last_evidence_sha256": "21b8c29f436eebf9b982d252dbe76dc671bf62daf8c8c874934df510744482b8",
+      "verified_at": "2026-07-28T03:43:27Z",
+      "completed_at": "2026-07-28T03:44:56Z",
+      "final_tree_sha256": "3652429a430081ff49602b65ed45e0dddd4e89f02d9e7c2237a8d694ccd16c94"
     }
   },
   "health": {
@@ -2490,7 +2538,8 @@
     "codex_agent_adapter": "cli_0_145_compatible_real_smoke_verified",
     "trusted_supervisor_reference": "local_verified",
     "human_gate_policy": "decision_only",
-    "auto_materialization_policy": "compiled_control_plane_v1"
+    "auto_materialization_policy": "compiled_control_plane_v1",
+    "proposal_lifecycle_tests": "state_aware"
   },
   "risks": [
     {
