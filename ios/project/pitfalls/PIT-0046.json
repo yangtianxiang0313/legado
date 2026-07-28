@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0046",
+  "revision": 1,
+  "title": "单项编译结果与批量计划信封不能混用 JSON 层级",
+  "fingerprint": "demand-plan-envelope-read-as-single-plan",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "Demand Compiler 打印唯一 requirement_readiness_required plan 且 blockers 为空",
+    "jq 最终输出 false，workflow 仍以 exit code 1 失败",
+    "断言访问根 .state、.reason_code、.authority_transition，但这些字段只存在于 plans 元素"
+  ],
+  "conditions": [
+    "调用 demand_compiler.py plan 批量入口",
+    "输出 schema 为 policy、plans、blockers 信封",
+    "消费者沿用 compile 单项对象的字段路径"
+  ],
+  "root_cause": "控制脚本没有区分 DemandPlan 单项结构与 plan CLI 的聚合信封结构，导致业务结果正确但验证器错误读取 JSON 层级。",
+  "diagnosis": [
+    "先保存并查看完整 demand-plan.json，而不是只看 jq 退出码",
+    "确认根对象包含 plans/blockers，计划字段位于 plans[n]",
+    "同时核对计划数量与 target_work_item_id，避免误验收另一个计划"
+  ],
+  "fix": "workflow 先验证 policy、空 blockers、plans 数组且长度为一，再对 plans[0] 精确校验目标、状态、原因码和 authority transition。",
+  "prevention": {
+    "architecture_rule": "跨进程 JSON 消费者必须绑定入口级 envelope schema；单项模型和批量信封即使复用字段，也不得复用未带层级的断言。",
+    "tests": [
+      "ios/harness/tests/test_business_knowledge_publisher.py#test_workflow_is_environment_protected_pinned_and_pr_only",
+      "ios/harness/tests/test_demand_compiler.py#test_compiles_shortest_authority_and_delivery_chain"
+    ],
+    "lint": [
+      "YAML parser",
+      "batch-envelope path assertions"
+    ]
+  },
+  "affected_versions": {
+    "from": "IOS-LOOP-DEMAND-COMPILER-003",
+    "until": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-PLAN-006"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T150357Z-ios-business-knowledge-publisher-plan-006-350ef6e0.json",
+    "https://github.com/yangtianxiang0313/legado/actions/runs/30371081921"
+  ]
+}

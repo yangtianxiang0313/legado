@@ -1,0 +1,174 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-PLAN-006",
+    "title": "校验 Demand Compiler 批量计划信封",
+    "priority": 100,
+    "risk": "high",
+    "labels": [
+      "phase-0",
+      "control-plane",
+      "corrective",
+      "business-knowledge",
+      "trusted-publisher",
+      "demand-plan"
+    ]
+  },
+  "spec": {
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "intent": "修复真实 Publisher run 30371081921 中 Business Knowledge doctor、Harness doctor 和 Demand Compiler 均成功，且 Demand Compiler 的唯一 plan 已输出 requirement_readiness_required 后，workflow 仍对批量输出根对象读取 .state 而失败的问题。断言必须验证 blockers 为空、plans 恰好一项，并从 .plans[0] 校验 state、reason_code、authority_transition 与目标 Work Item；不得只依赖命令退出码或宽松搜索字符串。",
+    "depends_on": [
+      "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-IMMUTABLE-005"
+    ],
+    "scope": {
+      "allow_write": [
+        ".github/workflows/business-knowledge-publisher.yml",
+        "ios/harness/tests/test_business_knowledge_publisher.py",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-BUSINESS-KNOWLEDGE-PUBLISHER-PLAN-006.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "ios/publisher/**",
+        "ios/harness/demand_compiler.py",
+        "ios/harness/business-knowledge/**",
+        "ios/harness/goldens/**",
+        "ios/project/business-knowledge/**",
+        "ios/project/requirements/**",
+        "ios/project/approvals/**",
+        "ios/project/baseline.json",
+        "ios/docs/**"
+      ],
+      "max_files_changed": 5,
+      "max_changed_lines": 300
+    },
+    "inputs": {
+      "context_files": [
+        ".github/workflows/business-knowledge-publisher.yml",
+        "ios/harness/tests/test_business_knowledge_publisher.py",
+        "ios/harness/demand_compiler.py",
+        "ios/project/checkpoints/IOS-BUSINESS-KNOWLEDGE-PUBLISHER-IMMUTABLE-005.json"
+      ],
+      "android_source_anchors": [],
+      "fixtures": []
+    },
+    "architecture_refs": [
+      "ARCH-014",
+      "ADR-0004"
+    ],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "workflow 对 Demand Compiler 的批量信封要求 blockers 为空且 plans 恰好一项。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "唯一 plan 必须精确匹配目标 Work Item、requirement_readiness_required、REQUIREMENT_READINESS_REQUIRED 和 authority_transition=true。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "错误层级、额外 plan、非空 blockers 或错误目标均 fail closed。",
+          "verified_by": [
+            "harness-tests",
+            "dependency-policy"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-4",
+          "statement": "真实 Publisher run 通过最终断言并创建只含知识 authority transaction 的发布 PR。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-5",
+          "statement": "Checkpoint、Capability 与 Pitfall 记录单计划与批量计划 JSON 合同的边界。",
+          "verified_by": [
+            "memory-close"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": [
+        "dependency-policy",
+        "harness-tests"
+      ]
+    },
+    "baseline_checks": [
+      "dependency-policy",
+      "harness-tests"
+    ],
+    "budget": {
+      "wall_clock_seconds": 10800,
+      "max_edit_verify_cycles": 4,
+      "max_targeted_test_runs": 18,
+      "max_full_test_runs": 4,
+      "max_infra_retries": 2
+    },
+    "gates": [],
+    "completion_effects": {
+      "health": {
+        "knowledge_publisher_demand_plan": "batch_envelope_bound"
+      }
+    },
+    "memory": {
+      "capability_state_required": true,
+      "checkpoint_required": true,
+      "pitfall_update_required": true,
+      "adr": "not_required"
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "refs": [],
+      "none_reason": "本项只修复 Publisher 对 Demand Compiler 输出合同的校验"
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "not_applicable",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [],
+      "expected_ledger_transitions": [],
+      "context_budget": {
+        "max_claims": 8,
+        "max_bytes": 32768
+      },
+      "none_reason": "本项不生成或提升业务知识，只修复 Publisher 输出断言"
+    },
+    "source_lab": {
+      "mode": "not_applicable",
+      "behaviors": [],
+      "scenarios": [],
+      "none_reason": "本项只修复控制面 workflow"
+    },
+    "stop_on": [
+      "baseline_red",
+      "scope_violation",
+      "authority_escalation",
+      "same_failure_twice",
+      "budget_exhausted",
+      "human_decision_required"
+    ]
+  }
+}
