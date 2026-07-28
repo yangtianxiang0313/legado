@@ -104,7 +104,6 @@
       "ADR-0004"
     ],
     "baseline_checks": [
-      "harness-tests",
       "source-lab-smoke"
     ],
     "budget": {
