@@ -62,6 +62,12 @@ python3 ios/harness/loop_supervisor.py materialize-review \
 - `drive` 只接受配置中的 argv 数组 Agent adapter；当显式启用
   `compiled-control-plane-v1` 时，可以先自动物化唯一的最高优先候选，再继续 claim 和
   Agent transition；
+- 显式启用 `bound-delivery-blueprint-v1` 后，队列为空时还会扫描 HEAD 中的完整
+  delivery blueprint。Supervisor 不生成需求或实现语义，只复核并绑定 accepted 且
+  `implementation_ready` 的 Requirement revision/clauses、Capability revision 与
+  owner、受保护 Android Golden release receipt、completed dependency Evidence/
+  Checkpoint 和当前 HEAD；唯一最高优先且 `gates=[]`、无 authority effect、scope 完全
+  落在 owner/对应 Tests/Checkpoint/Pitfall 的普通实现项会自动进入既有生命周期；
 - 显式启用 `supervisor-owned-verification-v1` 后，单次工作项按 Agent edit →
   Supervisor verify → Agent memory → Supervisor close 推进。Agent 不能通过直接调用
   `verify/close` 改变控制状态；Supervisor 在每个 Agent turn 后核对 event/status/
@@ -99,17 +105,25 @@ python3 ios/harness/loop_supervisor.py materialize-review \
   DAG、manifest 和依赖 provenance 都是 HEAD 中的普通文件，且 compiler 可重算、
   `gates=[]`、Requirement 为 `control_plane`、知识只产生 proposal、不修改产品、
   架构、配置、Schema、Golden、Approval 或 authority；
+- 普通产品交付同样不要求确认按钮。`bound-delivery-blueprint-v1` 的 blueprint 本身就是
+  完整 Work Item，必须由版本库明确声明 scope、AC、checks、budget、memory、SourceLab
+  和 stop conditions；readiness、Requirement record、Capability owner、Golden/
+  receipt、依赖证据、优先级或 HEAD 任一漂移都 fail closed。它不能修改 Package
+  manifest、entitlement、migration、CI、ADR、Schema、Golden、Requirement 或 Approval；
+- 已存在受阻/终态任务时，若编译器提供唯一且内容寻址的 `recovers` 候选，Supervisor
+  会先自动物化该 Recovery Work Item，不再把“已有恢复方案”误报成人工恢复决策；
 - `materialize-review` 仅保留为自动策略无法覆盖时的显式恢复入口，不是正常推进 Gate；
 - CLI 没有非交互 `materialize` 或 `approve`，也不会更新 golden、发布知识或接受 ADR。
 
-本地 Loop Engine 的成熟边界是：确定性 inspect、策略物化、受限 argv
+本地 Loop Engine 的成熟边界是：确定性 inspect、控制面与普通交付策略物化、受限 argv
 adapter、真实 Harness 生命周期、Evidence/Capability/Checkpoint/Event 绑定，以及
 进程树有界回收、Agent 后/verify 前与 memory 后/close 前的跨进程故障恢复均有自动化
 E2E。它足以在单机、单写者、真实 Human Decision 保留的前提下持续推进工作项。
 
 本地 run journal 只减少协作式 Agent 重复执行，不是生产权威 journal；它与 Agent
 共享用户权限，不能证明记录未被恶意重写。本地按钮产生的也仍是 `local_unverified`
-协作事实。跨机器无人值守、并行 DAG 调度、
+协作事实。取消普通执行确认不等于取消 Human Decision 或 Authority Transition；
+后二者仍必须按下节暂停。跨机器无人值守、并行 DAG 调度、
 签名控制状态、真实 Integrations 扫描和发布晋级，仍必须由隔离、签名的外部
 Supervisor/CI 重验；这些属于下一阶段，不由本地 adapter 冒充。
 

@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0037",
+  "revision": 1,
+  "title": "可扩展控制图与发布器测试不能依赖历史快照状态",
+  "fingerprint": "live-golden-and-fixed-dag-baseline-assumption",
+  "capabilities": ["CAP-KNOWLEDGE-CONTROL", "CAP-CONFORMANCE"],
+  "symptoms": [
+    "首份 protected Golden 发布后，Publisher 成功路径单测返回 GOLDEN_ALREADY_PUBLISHED",
+    "初始化 proposal DAG 合法增加节点后，测试因固定节点数失败",
+    "已有内容寻址 Recovery candidate 时 Supervisor 仍停在人工 terminal_recovery"
+  ],
+  "conditions": [
+    "测试直接读取 live repository Golden manifest 作为未发布前置状态",
+    "DAG 合同以节点总数代替唯一 ID、必需节点、依赖闭合与 authority/queue invariant",
+    "终态检查发生在 recovery candidate eligibility 之前"
+  ],
+  "root_cause": "测试和调度器把某一历史仓库快照当成永久合同，导致发布成功与控制图扩展反而破坏基线，并把可机器验证的恢复错误升级为人工决策。",
+  "diagnosis": [
+    "分别在空 manifest 与已发布 manifest 的隔离仓库运行 Publisher prepare",
+    "增加 DAG 节点并检查失败条件究竟来自固定计数还是拓扑不变量",
+    "对 blocked predecessor 枚举 recovers candidate 并核验其 compiler/provenance binding"
+  ],
+  "fix": "Publisher 成功测试使用隔离的未发布 manifest，并单独保留 live published 拒绝用例；DAG 测试验证唯一性、必需节点、内部拓扑和已完成外部依赖；Supervisor 在报告 terminal_recovery 前优先选择唯一 eligible typed recovery。普通交付改用 bound-delivery-blueprint-v1，绑定 Requirement、Capability、Golden receipt、依赖和 HEAD。",
+  "prevention": {
+    "architecture_rule": "可演进图结构只断言语义不变量；状态机测试必须显式构造前置状态；可确定性验证的 Recovery 不是 Human Decision。",
+    "tests": [
+      "ios/harness/tests/test_android_golden_publisher.py#test_prepare_rejects_already_published_fixture",
+      "ios/harness/tests/test_business_knowledge.py#test_initialization_proposal_dag_contract",
+      "ios/harness/tests/test_loop_supervisor.py#test_bound_blueprint_materializes_with_provenance",
+      "ios/harness/tests/test_loop_supervisor.py#test_bound_blueprint_fails_closed_on_readiness_and_owner"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-LOOP-DEMAND-AUTONOMY-001",
+    "until": "IOS-LOOP-DEMAND-AUTONOMY-RECOVERY-002"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T132544Z-ios-loop-demand-autonomy-recovery-002-968f70c0.json"
+  ]
+}

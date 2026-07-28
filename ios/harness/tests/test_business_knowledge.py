@@ -1202,13 +1202,33 @@ class BusinessKnowledgeTests(unittest.TestCase):
         )
         self.assertFalse(dag["materialization_policy"]["auto_materialize"])
         self.assertEqual("IOS-KNOWLEDGE-DAG-REPAIR-001", dag["repaired_by"])
+        proposal_ids = [node["proposal_id"] for node in dag["nodes"]]
+        self.assertEqual(len(proposal_ids), len(set(proposal_ids)))
         nodes = {node["proposal_id"]: node for node in dag["nodes"]}
-        self.assertEqual(13, len(nodes))
+        self.assertTrue(
+            {
+                "IOS-KNOWLEDGE-ANDROID-SURFACES-001",
+                "IOS-KNOWLEDGE-SOURCE-RUNTIME-001",
+                "IOS-KNOWLEDGE-REQUIREMENT-CANDIDATES-FOUNDATION-001",
+                "IOS-KNOWLEDGE-INIT-DAG-COMPILER-001",
+                "IOS-LOOP-DEMAND-AUTONOMY-001",
+                "IOS-LOOP-DEMAND-AUTONOMY-RECOVERY-002",
+            }.issubset(nodes)
+        )
+        state = knowledge.load_json(REPOSITORY_ROOT / "ios/project/state.json")
+        external = set(dag["external_prerequisites"]) | {
+            item_id
+            for item_id, runtime in state["work_items"].items()
+            if runtime["status"] == "completed"
+        }
         for node in nodes.values():
             for dependency in node["depends_on"]:
-                self.assertIn(dependency, nodes)
-                self.assertLess(nodes[dependency]["phase"], node["phase"])
-        state = knowledge.load_json(REPOSITORY_ROOT / "ios/project/state.json")
+                self.assertIn(dependency, set(nodes) | external)
+                if dependency in nodes:
+                    self.assertLess(
+                        nodes[dependency]["phase"],
+                        node["phase"],
+                    )
         self.assertTrue(
             all(
                 state["work_items"][item_id]["status"] == "completed"

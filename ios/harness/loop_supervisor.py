@@ -73,6 +73,8 @@ except ImportError:
 SCHEMA_VERSION = 1
 CANDIDATE_ROOT = "ios/project/work-item-proposals/candidates"
 AUTO_MATERIALIZATION_POLICY = "compiled-control-plane-v1"
+DELIVERY_BLUEPRINT_ROOT = "ios/project/work-item-proposals/delivery-blueprints"
+DELIVERY_MATERIALIZATION_POLICY = "bound-delivery-blueprint-v1"
 SUPERVISOR_VERIFICATION_POLICY = "supervisor-owned-verification-v1"
 BUSINESS_KNOWLEDGE_CATALOG_STALE = "Business Knowledge catalog 已过期"
 TERMINAL_RECOVERY_STATUSES = {"blocked", "rejected", "exhausted", "cancelled"}
@@ -128,6 +130,32 @@ AUTO_FORBIDDEN_SCOPE_EXACT = {
     "ios/harness/approval_ui.py",
     "ios/harness/codex_agent_adapter.py",
     "ios/harness/trusted_supervisor_reference.py",
+    "ios/harness/config.json",
+    "ios/harness/architecture-rules.json",
+    "ios/harness/dependency-policy.json",
+    "ios/project/baseline.json",
+    "ios/project/events.jsonl",
+    "ios/project/state.json",
+    "ios/project/status.md",
+}
+DELIVERY_FORBIDDEN_PREFIXES = (
+    ".github/",
+    "app/",
+    "modules/",
+    "ios/docs/",
+    "ios/harness/goldens/",
+    "ios/harness/schemas/",
+    "ios/harness/business-knowledge/",
+    "ios/harness/android-intake/",
+    "ios/harness/oracle/",
+    "ios/project/approvals/",
+    "ios/project/requirements/",
+    "ios/project/work-item-proposals/",
+)
+DELIVERY_FORBIDDEN_EXACT = {
+    "ios/Packages/LegadoKit/Package.swift",
+    "ios/harness/harness.py",
+    "ios/harness/loop_supervisor.py",
     "ios/harness/config.json",
     "ios/harness/architecture-rules.json",
     "ios/harness/dependency-policy.json",
@@ -241,6 +269,7 @@ class AutoMaterializationCandidate:
     manifest_relative: str
     candidate_sha256: str
     manifest_sha256: str
+    recovers: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -252,6 +281,65 @@ class AutoMaterializationCandidate:
             "manifest": self.manifest_relative,
             "candidate_sha256": self.candidate_sha256,
             "manifest_sha256": self.manifest_sha256,
+            "recovers": self.recovers,
+        }
+
+
+@dataclass(frozen=True)
+class DeliveryMaterializationCandidate:
+    blueprint_id: str
+    priority: int
+    head_commit: str
+    blueprint_relative: str
+    blueprint_sha256: str
+    work_item_sha256: str
+    requirement_bindings: Tuple[Tuple[str, int, str, str], ...]
+    capability_binding: Tuple[str, int, str]
+    golden_bindings: Tuple[Tuple[str, str, str], ...]
+    dependency_bindings: Tuple[Tuple[str, str, str], ...]
+
+    def to_dict(self) -> Dict[str, Any]:
+        capability_id, revision, digest = self.capability_binding
+        return {
+            "blueprint_id": self.blueprint_id,
+            "priority": self.priority,
+            "policy": DELIVERY_MATERIALIZATION_POLICY,
+            "head_commit": self.head_commit,
+            "blueprint": self.blueprint_relative,
+            "blueprint_sha256": self.blueprint_sha256,
+            "work_item_sha256": self.work_item_sha256,
+            "requirements": [
+                {
+                    "id": identifier,
+                    "revision": revision_value,
+                    "catalog_sha256": catalog_sha,
+                    "record_sha256": record_sha,
+                }
+                for identifier, revision_value, catalog_sha, record_sha
+                in self.requirement_bindings
+            ],
+            "capability": {
+                "id": capability_id,
+                "revision": revision,
+                "sha256": digest,
+            },
+            "goldens": [
+                {
+                    "fixture_id": fixture_id,
+                    "golden_sha256": golden_sha,
+                    "receipt_sha256": receipt_sha,
+                }
+                for fixture_id, golden_sha, receipt_sha in self.golden_bindings
+            ],
+            "dependencies": [
+                {
+                    "work_item_id": item_id,
+                    "evidence_sha256": evidence_sha,
+                    "checkpoint_sha256": checkpoint_sha,
+                }
+                for item_id, evidence_sha, checkpoint_sha
+                in self.dependency_bindings
+            ],
         }
 
 
@@ -501,6 +589,7 @@ class LoopSupervisor:
             manifest_relative=manifest_relative,
             candidate_sha256=preview.work_item_sha256,
             manifest_sha256=_sha256_bytes(manifest_path.read_bytes()),
+            recovers=preview.recovers,
         )
 
     def auto_materialization_candidates(
@@ -544,6 +633,386 @@ class LoopSupervisor:
         ), tuple(blockers)
 
     @staticmethod
+    def _static_pattern_prefix(pattern: str) -> str:
+        indexes = [
+            index
+            for token in ("*", "?", "[")
+            if (index := pattern.find(token)) >= 0
+        ]
+        return pattern[: min(indexes)] if indexes else pattern
+
+    @classmethod
+    def _pattern_within(cls, pattern: str, owner_pattern: str) -> bool:
+        if pattern in {"*", "**", "ios/*", "ios/**"}:
+            return False
+        owner_prefix = cls._static_pattern_prefix(owner_pattern)
+        pattern_prefix = cls._static_pattern_prefix(pattern)
+        if not owner_prefix or not pattern_prefix.startswith(owner_prefix):
+            return False
+        if not any(token in owner_pattern for token in "*?["):
+            return pattern == owner_pattern
+        return True
+
+    def _delivery_scope_issues(
+        self,
+        item: Mapping[str, Any],
+        capability: Mapping[str, Any],
+    ) -> List[str]:
+        item_id = str(item.get("metadata", {}).get("id", ""))
+        spec = item.get("spec", {})
+        scope = spec.get("scope", {})
+        allow_write = scope.get("allow_write", [])
+        deny_write = scope.get("deny_write", [])
+        owners = capability.get("owners", {})
+        owner_paths = owners.get("paths", []) if isinstance(owners, dict) else []
+        targets = owners.get("targets", []) if isinstance(owners, dict) else []
+        capability_id = str(capability.get("id", ""))
+        support_patterns = {
+            f"ios/project/capabilities/{capability_id}.json",
+            f"ios/project/checkpoints/{item_id}.json",
+            "ios/project/pitfalls/PIT-*.json",
+        }
+        support_patterns.update(
+            f"ios/Packages/LegadoKit/Tests/{target}Tests/**"
+            for target in targets
+            if isinstance(target, str) and target
+        )
+        issues: List[str] = []
+        for pattern in allow_write:
+            if not isinstance(pattern, str):
+                issues.append("DELIVERY_SCOPE_NON_STRING")
+                continue
+            if (
+                pattern in DELIVERY_FORBIDDEN_EXACT
+                or pattern.startswith(DELIVERY_FORBIDDEN_PREFIXES)
+                or "entitlement" in pattern.lower()
+                or "migration" in pattern.lower()
+            ):
+                issues.append(f"DELIVERY_SCOPE_FORBIDDEN:{pattern}")
+                continue
+            if any(
+                self._pattern_within(pattern, owner)
+                for owner in owner_paths
+                if isinstance(owner, str)
+            ):
+                continue
+            if any(
+                self._pattern_within(pattern, support)
+                for support in support_patterns
+            ):
+                continue
+            issues.append(f"DELIVERY_SCOPE_OUTSIDE_OWNER:{pattern}")
+        required_denials = (
+            ".github/workflows/change.yml",
+            "ios/Packages/LegadoKit/Package.swift",
+            "ios/harness/goldens/manifest.json",
+            "ios/harness/schemas/work-item.schema.json",
+            "ios/project/requirements/catalog.json",
+            "ios/project/approvals/decision.json",
+            "ios/docs/architecture.md",
+        )
+        for path in required_denials:
+            if not path_matches(path, deny_write):
+                issues.append(f"DELIVERY_SCOPE_DENY_MISSING:{path}")
+        for pattern in allow_write:
+            prefix = (
+                self._static_pattern_prefix(pattern)
+                if isinstance(pattern, str)
+                else ""
+            )
+            if prefix and path_matches(prefix.rstrip("/"), deny_write):
+                issues.append(f"DELIVERY_SCOPE_ALLOW_DENY_OVERLAP:{pattern}")
+        return issues
+
+    def _delivery_candidate(
+        self,
+        blueprint_path: Path,
+        *,
+        head_commit: Optional[str] = None,
+    ) -> DeliveryMaterializationCandidate:
+        head = head_commit or self._clean_head()
+        preview = self.preflight_candidate(
+            blueprint_path,
+            allowed_root=DELIVERY_BLUEPRINT_ROOT,
+        )
+        blueprint_relative = preview.source_relative
+        self._require_head_regular((blueprint_relative,))
+        try:
+            item = json.loads(blueprint_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise MaterializationConflict(
+                f"DELIVERY_BLUEPRINT_INVALID:{error}"
+            ) from error
+        metadata = item.get("metadata", {})
+        spec = item.get("spec", {})
+        binding = spec.get("delivery_blueprint")
+        if (
+            not isinstance(binding, dict)
+            or set(binding)
+            != {"policy", "capability_revision", "golden_fixtures"}
+            or binding.get("policy") != DELIVERY_MATERIALIZATION_POLICY
+        ):
+            raise MaterializationConflict("DELIVERY_BLUEPRINT_CONTRACT_INVALID")
+        if metadata.get("risk") == "critical" or spec.get("gates") != []:
+            raise MaterializationConflict("DELIVERY_DECISION_OR_RISK_REQUIRED")
+        if spec.get("requirements", {}).get("mode") != "implementation":
+            raise MaterializationConflict("DELIVERY_REQUIREMENT_MODE_INVALID")
+        if spec.get("knowledge", {}).get("mode") not in {
+            "not_applicable",
+            "consume",
+        }:
+            raise MaterializationConflict("DELIVERY_KNOWLEDGE_AUTHORITY_DENIED")
+        if set(spec.get("completion_effects", {})) - {"health"}:
+            raise MaterializationConflict("DELIVERY_AUTHORITY_EFFECT_DENIED")
+        priority = metadata.get("priority")
+        if not isinstance(priority, int):
+            raise MaterializationConflict("DELIVERY_PRIORITY_INVALID")
+
+        catalog_relative = "ios/project/requirements/catalog.json"
+        catalog_path = self.harness.resolve(catalog_relative)
+        self._require_head_regular((catalog_relative,))
+        try:
+            catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise MaterializationConflict(
+                f"DELIVERY_REQUIREMENT_CATALOG_INVALID:{error}"
+            ) from error
+        catalog_entries = {
+            (entry.get("id"), entry.get("revision")): entry
+            for entry in catalog.get("requirements", [])
+            if isinstance(entry, dict)
+        }
+        catalog_sha = _sha256_bytes(catalog_path.read_bytes())
+        requirement_bindings: List[Tuple[str, int, str, str]] = []
+        covered_clauses: Set[str] = set()
+        for criterion in spec.get("acceptance", {}).get("criteria", []):
+            if isinstance(criterion, dict):
+                covered_clauses.update(
+                    value
+                    for value in criterion.get("requirement_clauses", [])
+                    if isinstance(value, str)
+                )
+        for reference in spec.get("requirements", {}).get("refs", []):
+            identifier = reference["id"]
+            revision = reference["revision"]
+            entry = catalog_entries.get((identifier, revision))
+            if (
+                not isinstance(entry, dict)
+                or entry.get("status") != "accepted"
+                or entry.get("readiness") != "implementation_ready"
+                or not set(reference["clauses"]).issubset(
+                    set(entry.get("clauses", []))
+                )
+            ):
+                raise MaterializationConflict(
+                    f"DELIVERY_REQUIREMENT_NOT_READY:{identifier}@{revision}"
+                )
+            expected_coverage = {
+                f"{identifier}#{clause}" for clause in reference["clauses"]
+            }
+            if not expected_coverage.issubset(covered_clauses):
+                raise MaterializationConflict(
+                    f"DELIVERY_REQUIREMENT_ACCEPTANCE_GAP:{identifier}"
+                )
+            record_relative = entry.get("path")
+            if not isinstance(record_relative, str):
+                raise MaterializationConflict("DELIVERY_REQUIREMENT_PATH_INVALID")
+            self._require_head_regular((record_relative,))
+            record_path = self.harness.resolve(record_relative)
+            record_sha = _sha256_bytes(record_path.read_bytes())
+            if record_sha != entry.get("record_sha256"):
+                raise MaterializationConflict(
+                    f"DELIVERY_REQUIREMENT_RECORD_DRIFT:{identifier}"
+                )
+            record = json.loads(record_path.read_text(encoding="utf-8"))
+            if (
+                record.get("id") != identifier
+                or record.get("revision") != revision
+                or record.get("status") != "accepted"
+                or record.get("readiness", {}).get("state")
+                != "implementation_ready"
+            ):
+                raise MaterializationConflict(
+                    f"DELIVERY_REQUIREMENT_RECORD_INVALID:{identifier}"
+                )
+            requirement_bindings.append(
+                (identifier, revision, catalog_sha, record_sha)
+            )
+
+        capability_id = spec.get("capability")
+        capability_relative = (
+            f"ios/project/capabilities/{capability_id}.json"
+        )
+        self._require_head_regular((capability_relative,))
+        capability_path = self.harness.resolve(capability_relative)
+        capability_sha = _sha256_bytes(capability_path.read_bytes())
+        capability = json.loads(capability_path.read_text(encoding="utf-8"))
+        capability_revision = binding.get("capability_revision")
+        if (
+            capability.get("id") != capability_id
+            or not isinstance(capability_revision, int)
+            or capability.get("revision") != capability_revision
+        ):
+            raise MaterializationConflict("DELIVERY_CAPABILITY_BINDING_DRIFT")
+        active_decisions = set(capability.get("active_decisions", []))
+        unknown_decisions = [
+            reference
+            for reference in spec.get("architecture_refs", [])
+            if isinstance(reference, str)
+            and reference.startswith("ADR-")
+            and reference not in active_decisions
+        ]
+        if unknown_decisions:
+            raise MaterializationConflict(
+                "DELIVERY_ARCHITECTURE_DECISION_DRIFT:"
+                + ",".join(unknown_decisions)
+            )
+        scope_issues = self._delivery_scope_issues(item, capability)
+        if scope_issues:
+            raise MaterializationConflict(";".join(scope_issues))
+
+        manifest_relative = "ios/harness/goldens/manifest.json"
+        self._require_head_regular((manifest_relative,))
+        manifest_path = self.harness.resolve(manifest_relative)
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        fixture_ids = binding.get("golden_fixtures")
+        if (
+            not isinstance(fixture_ids, list)
+            or not fixture_ids
+            or len(fixture_ids) != len(set(fixture_ids))
+            or any(not isinstance(value, str) for value in fixture_ids)
+        ):
+            raise MaterializationConflict("DELIVERY_GOLDEN_SELECTOR_INVALID")
+        golden_bindings: List[Tuple[str, str, str]] = []
+        for fixture_id in fixture_ids:
+            entry = manifest.get("fixtures", {}).get(fixture_id)
+            if not isinstance(entry, dict):
+                raise MaterializationConflict(
+                    f"DELIVERY_GOLDEN_MISSING:{fixture_id}"
+                )
+            golden_relative = entry.get("path")
+            receipt_relative = entry.get("release_receipt")
+            if not isinstance(golden_relative, str) or not isinstance(
+                receipt_relative, str
+            ):
+                raise MaterializationConflict(
+                    f"DELIVERY_GOLDEN_BINDING_INVALID:{fixture_id}"
+                )
+            self._require_head_regular((golden_relative, receipt_relative))
+            golden_path = self.harness.resolve(golden_relative)
+            receipt_path = self.harness.resolve(receipt_relative)
+            golden_sha = _sha256_bytes(golden_path.read_bytes())
+            receipt_sha = _sha256_bytes(receipt_path.read_bytes())
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+            expected = {
+                "authority": "protected_android_golden",
+                "authorization": "github_environment_review",
+                "fixture_id": fixture_id,
+                "golden_path": golden_relative,
+                "golden_sha256": golden_sha,
+                "run_id": entry.get("run_id"),
+                "source_digest": entry.get("source_digest"),
+                "proposal_sha256": entry.get("proposal_sha256"),
+            }
+            if (
+                golden_sha != entry.get("golden_sha256")
+                or any(receipt.get(key) != value for key, value in expected.items())
+            ):
+                raise MaterializationConflict(
+                    f"DELIVERY_GOLDEN_RECEIPT_DRIFT:{fixture_id}"
+                )
+            golden_bindings.append((fixture_id, golden_sha, receipt_sha))
+
+        state_items = self.harness.state().get("work_items", {})
+        dependency_bindings: List[Tuple[str, str, str]] = []
+        for dependency in spec.get("depends_on", []):
+            runtime = state_items.get(dependency, {})
+            evidence_relative = runtime.get("last_evidence")
+            checkpoint_relative = (
+                f"ios/project/checkpoints/{dependency}.json"
+            )
+            if (
+                runtime.get("status") != "completed"
+                or not isinstance(evidence_relative, str)
+            ):
+                raise MaterializationConflict(
+                    f"DELIVERY_DEPENDENCY_INCOMPLETE:{dependency}"
+                )
+            self._require_head_regular(
+                (evidence_relative, checkpoint_relative)
+            )
+            dependency_bindings.append(
+                (
+                    dependency,
+                    _sha256_bytes(
+                        self.harness.resolve(evidence_relative).read_bytes()
+                    ),
+                    _sha256_bytes(
+                        self.harness.resolve(checkpoint_relative).read_bytes()
+                    ),
+                )
+            )
+        return DeliveryMaterializationCandidate(
+            blueprint_id=preview.item_id,
+            priority=priority,
+            head_commit=head,
+            blueprint_relative=blueprint_relative,
+            blueprint_sha256=_sha256_bytes(blueprint_path.read_bytes()),
+            work_item_sha256=preview.work_item_sha256,
+            requirement_bindings=tuple(requirement_bindings),
+            capability_binding=(
+                str(capability_id),
+                capability_revision,
+                capability_sha,
+            ),
+            golden_bindings=tuple(golden_bindings),
+            dependency_bindings=tuple(dependency_bindings),
+        )
+
+    def delivery_materialization_candidates(
+        self,
+    ) -> Tuple[
+        Tuple[DeliveryMaterializationCandidate, ...],
+        Tuple[Mapping[str, Any], ...],
+    ]:
+        if not isinstance(self.harness, Harness):
+            return (), ()
+        blueprint_root = self.harness.resolve(DELIVERY_BLUEPRINT_ROOT)
+        if not blueprint_root.exists():
+            return (), ()
+        if blueprint_root.is_symlink() or not blueprint_root.is_dir():
+            return (), ({"reason_code": "DELIVERY_BLUEPRINT_ROOT_INVALID"},)
+        try:
+            head = self._clean_head()
+        except MaterializationConflict as error:
+            return (), ({"reason_code": str(error)},)
+        existing = set(self.harness.work_items()) | set(
+            self.harness.state().get("work_items", {})
+        )
+        eligible: List[DeliveryMaterializationCandidate] = []
+        blockers: List[Mapping[str, Any]] = []
+        for path in sorted(blueprint_root.glob("*.json")):
+            if path.stem in existing:
+                continue
+            try:
+                eligible.append(
+                    self._delivery_candidate(path, head_commit=head)
+                )
+            except (MaterializationConflict, HarnessError) as error:
+                blockers.append(
+                    {
+                        "blueprint_id": path.stem,
+                        "reason_code": str(error),
+                    }
+                )
+        return tuple(
+            sorted(
+                eligible,
+                key=lambda value: (-value.priority, value.blueprint_id),
+            )
+        ), tuple(blockers)
+
+    @staticmethod
     def _select_auto_candidate(
         eligible: Sequence[AutoMaterializationCandidate],
     ) -> Tuple[Optional[AutoMaterializationCandidate], Optional[Mapping[str, Any]]]:
@@ -556,6 +1025,25 @@ class LoopSupervisor:
                 "reason_code": "AUTO_MATERIALIZATION_PRIORITY_AMBIGUOUS",
                 "priority": highest,
                 "proposal_ids": [value.proposal_id for value in tied],
+            }
+        return tied[0], None
+
+    @staticmethod
+    def _select_delivery_candidate(
+        eligible: Sequence[DeliveryMaterializationCandidate],
+    ) -> Tuple[
+        Optional[DeliveryMaterializationCandidate],
+        Optional[Mapping[str, Any]],
+    ]:
+        if not eligible:
+            return None, None
+        highest = eligible[0].priority
+        tied = [value for value in eligible if value.priority == highest]
+        if len(tied) != 1:
+            return None, {
+                "reason_code": "DELIVERY_MATERIALIZATION_PRIORITY_AMBIGUOUS",
+                "priority": highest,
+                "blueprint_ids": [value.blueprint_id for value in tied],
             }
         return tied[0], None
 
@@ -671,6 +1159,39 @@ class LoopSupervisor:
                 }
             )
         if blocked_items:
+            recovery_ids = {
+                str(entry["work_item_id"]) for entry in blocked_items
+            }
+            recovery_candidates, recovery_blockers = (
+                self.auto_materialization_candidates()
+            )
+            recovery_candidates = tuple(
+                candidate
+                for candidate in recovery_candidates
+                if candidate.recovers in recovery_ids
+            )
+            selected_recovery, recovery_ambiguity = (
+                self._select_auto_candidate(recovery_candidates)
+            )
+            if selected_recovery is not None:
+                return LoopDecision(
+                    state="auto_materialization_ready",
+                    reason_code="AUTO_RECOVERY_MATERIALIZATION_READY",
+                    work_item_id=selected_recovery.proposal_id,
+                    requires_human=False,
+                    details={
+                        "auto_materialization": selected_recovery.to_dict(),
+                        "recovery_for": selected_recovery.recovers,
+                    },
+                )
+            if recovery_ambiguity is not None:
+                return LoopDecision(
+                    state="auto_materialization_blocked",
+                    reason_code="AUTO_RECOVERY_MATERIALIZATION_AMBIGUOUS",
+                    work_item_id=None,
+                    requires_human=False,
+                    blockers=(recovery_ambiguity,),
+                )
             return LoopDecision(
                 state="terminal_recovery",
                 reason_code="BLOCKED_WORK_ITEM_REQUIRES_RESOLUTION",
@@ -722,6 +1243,34 @@ class LoopSupervisor:
         unresolved.sort(key=lambda entry: (entry["sequence"], entry["work_item_id"]))
         if unresolved:
             latest = unresolved[-1]
+            recovery_candidates, _ = self.auto_materialization_candidates()
+            recovery_candidates = tuple(
+                candidate
+                for candidate in recovery_candidates
+                if candidate.recovers == latest["work_item_id"]
+            )
+            selected_recovery, recovery_ambiguity = (
+                self._select_auto_candidate(recovery_candidates)
+            )
+            if selected_recovery is not None:
+                return LoopDecision(
+                    state="auto_materialization_ready",
+                    reason_code="AUTO_RECOVERY_MATERIALIZATION_READY",
+                    work_item_id=selected_recovery.proposal_id,
+                    requires_human=False,
+                    details={
+                        "auto_materialization": selected_recovery.to_dict(),
+                        "recovery_for": selected_recovery.recovers,
+                    },
+                )
+            if recovery_ambiguity is not None:
+                return LoopDecision(
+                    state="auto_materialization_blocked",
+                    reason_code="AUTO_RECOVERY_MATERIALIZATION_AMBIGUOUS",
+                    work_item_id=None,
+                    requires_human=False,
+                    blockers=(recovery_ambiguity,),
+                )
             return LoopDecision(
                 state="terminal_recovery",
                 reason_code="LATEST_ATTEMPT_REQUIRES_RECOVERY",
@@ -755,25 +1304,69 @@ class LoopSupervisor:
         blockers = list(auto_blockers)
         if ambiguity is not None:
             blockers.insert(0, ambiguity)
+        auto_has_blockers = bool(blockers)
+        eligible_delivery, delivery_blockers = (
+            self.delivery_materialization_candidates()
+        )
+        selected_delivery, delivery_ambiguity = (
+            self._select_delivery_candidate(eligible_delivery)
+        )
+        if selected_delivery is not None:
+            return LoopDecision(
+                state="delivery_materialization_ready",
+                reason_code="DELIVERY_MATERIALIZATION_READY",
+                work_item_id=selected_delivery.blueprint_id,
+                requires_human=False,
+                commands=(
+                    (
+                        sys.executable,
+                        "ios/harness/loop_supervisor.py",
+                        "drive",
+                        "--config",
+                        "ios/harness/supervisor.example.json",
+                        "--agent",
+                        "<agent-id>",
+                    ),
+                ),
+                warnings=tuple(warnings),
+                details={
+                    "delivery_materialization": selected_delivery.to_dict()
+                },
+            )
+        blockers.extend(delivery_blockers)
+        if delivery_ambiguity is not None:
+            blockers.insert(0, delivery_ambiguity)
+        delivery_has_blockers = bool(
+            delivery_blockers or delivery_ambiguity is not None
+        )
+        if auto_has_blockers and delivery_has_blockers:
+            blocked_state = "materialization_blocked"
+            blocked_reason = "MATERIALIZATION_BLOCKED"
+        elif auto_has_blockers:
+            blocked_state = "auto_materialization_blocked"
+            blocked_reason = "AUTO_MATERIALIZATION_BLOCKED"
+        elif delivery_has_blockers:
+            blocked_state = "delivery_materialization_blocked"
+            blocked_reason = "DELIVERY_MATERIALIZATION_BLOCKED"
+        else:
+            blocked_state = "queue_empty"
+            blocked_reason = "NO_ELIGIBLE_COMPILED_CANDIDATE"
         return LoopDecision(
-            state=(
-                "auto_materialization_blocked"
-                if blockers
-                else "queue_empty"
-            ),
-            reason_code=(
-                "AUTO_MATERIALIZATION_BLOCKED"
-                if blockers
-                else "NO_ELIGIBLE_COMPILED_CANDIDATE"
-            ),
+            state=blocked_state,
+            reason_code=blocked_reason,
             work_item_id=None,
             requires_human=False,
             blockers=tuple(blockers),
             warnings=tuple(warnings),
         )
 
-    def _candidate_path(self, raw_path: Path) -> Tuple[Path, str]:
-        candidate_root = self.harness.resolve(CANDIDATE_ROOT)
+    def _candidate_path(
+        self,
+        raw_path: Path,
+        *,
+        allowed_root: str = CANDIDATE_ROOT,
+    ) -> Tuple[Path, str]:
+        candidate_root = self.harness.resolve(allowed_root)
         if raw_path.is_absolute():
             candidate = raw_path.resolve()
         else:
@@ -782,7 +1375,7 @@ class LoopSupervisor:
             candidate.relative_to(candidate_root.resolve())
         except ValueError as error:
             raise MaterializationConflict(
-                f"candidate 必须位于 {CANDIDATE_ROOT}"
+                f"candidate 必须位于 {allowed_root}"
             ) from error
         if candidate.is_symlink() or not candidate.is_file():
             raise MaterializationConflict("candidate 必须是普通 JSON 文件，不能是 symlink")
@@ -818,11 +1411,19 @@ class LoopSupervisor:
                 result[key] = owner
         return result
 
-    def preflight_candidate(self, raw_path: Path) -> MaterializationPreview:
+    def preflight_candidate(
+        self,
+        raw_path: Path,
+        *,
+        allowed_root: str = CANDIDATE_ROOT,
+    ) -> MaterializationPreview:
         errors, _ = self.harness.doctor()
         if errors:
             raise MaterializationConflict("doctor 未通过：" + "；".join(errors))
-        candidate_path, relative = self._candidate_path(raw_path)
+        candidate_path, relative = self._candidate_path(
+            raw_path,
+            allowed_root=allowed_root,
+        )
         try:
             item = json.loads(candidate_path.read_text(encoding="utf-8"))
         except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
@@ -970,8 +1571,16 @@ class LoopSupervisor:
         reason: str,
         provenance: Optional[Mapping[str, Any]] = None,
     ) -> str:
+        allowed_root = (
+            DELIVERY_BLUEPRINT_ROOT
+            if preview.source_relative.startswith(
+                DELIVERY_BLUEPRINT_ROOT + "/"
+            )
+            else CANDIDATE_ROOT
+        )
         current = self.preflight_candidate(
-            self.harness.resolve(preview.source_relative)
+            self.harness.resolve(preview.source_relative),
+            allowed_root=allowed_root,
         )
         if current.binding() != preview.binding():
             raise MaterializationConflict("验收页打开后 candidate 或事件头发生变化")
@@ -1032,6 +1641,28 @@ class LoopSupervisor:
         return self.materialize(
             preview,
             reason=f"policy:{AUTO_MATERIALIZATION_POLICY}",
+            provenance=candidate.to_dict(),
+        )
+
+    def auto_materialize_delivery(self, blueprint_id: str) -> str:
+        blueprint_path = self.harness.resolve(
+            f"{DELIVERY_BLUEPRINT_ROOT}/{blueprint_id}.json"
+        )
+        candidate = self._delivery_candidate(blueprint_path)
+        preview = self.preflight_candidate(
+            blueprint_path,
+            allowed_root=DELIVERY_BLUEPRINT_ROOT,
+        )
+        if (
+            preview.work_item_sha256 != candidate.work_item_sha256
+            or preview.source_fingerprint != candidate.blueprint_sha256
+        ):
+            raise MaterializationConflict(
+                "DELIVERY_MATERIALIZATION_BINDING_DRIFT"
+            )
+        return self.materialize(
+            preview,
+            reason=f"policy:{DELIVERY_MATERIALIZATION_POLICY}",
             provenance=candidate.to_dict(),
         )
 
@@ -1393,6 +2024,23 @@ class LoopSupervisor:
                 "启用 auto_materialization 时 policy 必须是 "
                 + AUTO_MATERIALIZATION_POLICY
             )
+        delivery_config = config.get("delivery_materialization", {})
+        if delivery_config is None:
+            delivery_config = {}
+        if not isinstance(delivery_config, dict):
+            raise LoopSupervisorError(
+                "delivery_materialization 必须是 object"
+            )
+        delivery_enabled = delivery_config.get("enabled") is True
+        delivery_policy = delivery_config.get("policy")
+        if (
+            delivery_enabled
+            and delivery_policy != DELIVERY_MATERIALIZATION_POLICY
+        ):
+            raise LoopSupervisorError(
+                "启用 delivery_materialization 时 policy 必须是 "
+                + DELIVERY_MATERIALIZATION_POLICY
+            )
         verification_config = config.get("trusted_verification", {})
         if verification_config is None:
             verification_config = {}
@@ -1546,6 +2194,26 @@ class LoopSupervisor:
                         "kind": "auto_materialization",
                         "work_item_id": materialized_id,
                         "policy": auto_policy,
+                    }
+                )
+                before = self.inspect()
+            if before.state == "delivery_materialization_ready":
+                if not delivery_enabled:
+                    return {
+                        "schema_version": SCHEMA_VERSION,
+                        "outcome": "delivery_materialization_disabled",
+                        "decision": before.to_dict(),
+                        "transitions": transitions,
+                    }
+                item_id = before.work_item_id
+                assert item_id is not None
+                with self.harness.mutation_lock():
+                    materialized_id = self.auto_materialize_delivery(item_id)
+                transitions.append(
+                    {
+                        "kind": "delivery_materialization",
+                        "work_item_id": materialized_id,
+                        "policy": delivery_policy,
                     }
                 )
                 before = self.inspect()
