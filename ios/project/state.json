@@ -1,13 +1,15 @@
 {
   "schema_version": 1,
-  "revision": 230,
+  "revision": 232,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-28T09:15:07Z",
-  "event_head": "2a577fed829a4ad297642a0011fb6aa50e33b675d16313093cb75bca35c5014f",
-  "active_work_items": [],
+  "updated_at": "2026-07-28T09:18:05Z",
+  "event_head": "5b306a81919f3d9c78d55c0d945616959f823edd574d6977f2c4d4b68c37368c",
+  "active_work_items": [
+    "IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-003"
+  ],
   "last_completed_work_item": "IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-002",
   "work_items": {
     "IOS-BOOT-001": {
@@ -3788,9 +3790,92 @@
       "final_tree_sha256": "a1c7fa6f6332cf7b02474fc08b338b5bc654a9863644409aef7a26179e9336c0"
     },
     "IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-003": {
-      "status": "ready",
-      "attempt": 0,
-      "last_evidence": null
+      "status": "verified",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260728T091805Z-ios-android-oracle-attestation-recovery-003-0641757b.json",
+      "claimed_by": "codex-root",
+      "claimed_at": "2026-07-28T09:16:20Z",
+      "lease_expires_at": "2026-07-29T09:16:20Z",
+      "work_item_sha256": "7daf6a8bf6cc703daa6d4d0cba5cd4efd514a1f21534a28c1d6d198cf1397cd7",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "b70c40dfa2fe7e452c91aa6e4542c18ed89a09c0",
+      "base_dirty_fingerprints": {},
+      "base_capability_revision": 8,
+      "base_capability_assurance_sha256": "b1d5a642fed3770f6a005218976f4672aeb74fd477f5c7cea1368c87fea2c2f5",
+      "android_requirement_selection_sha256": "6cb1587d0631c4545b1740d0377a0497d38d9876e6a4eff359ef5c610fa4a169",
+      "business_knowledge_control_sha256": "d365aeebe99b650855f54da69a28059ce3a978f391c36a5ffc62d3c7e320fc4b",
+      "business_knowledge_authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 1,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "android-intake-contract",
+          "argv": [
+            "python3",
+            "-B",
+            "ios/harness/android-intake/android_intake.py",
+            "doctor",
+            "--root",
+            ".",
+            "--work-item",
+            "IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-003"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "1bf88f85f3f416e092d2c3bf30c0b86ae55ad95e050f05321da60bed60f3d5f8",
+          "cwd": ".",
+          "started_at": "2026-07-28T09:15:21Z",
+          "duration_ms": 342,
+          "timeout_seconds": 90,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "84f6b9d590a230c755728f08a7cc4071122d7bd66d14c218c852a45cdc0a64fe",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_tail": "android-intake: OK\n",
+          "stderr_tail": ""
+        },
+        {
+          "id": "harness-tests",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "307f335e883f02e96ad97ecbda4c210435c0b955e2bcb9e46db9dc7b0d02c285",
+          "cwd": ".",
+          "started_at": "2026-07-28T09:15:22Z",
+          "duration_ms": 57885,
+          "timeout_seconds": 60,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "0ee2fb0c3cb531007c572971c2c812dec8b4a95426e68ea51e29b2d11ee1e586",
+          "stdout_tail": "",
+          "stderr_tail": ".......................................................................................................................................................................\n----------------------------------------------------------------------\nRan 167 tests in 57.446s\n\nOK\n"
+        }
+      ],
+      "last_evidence_sha256": "3468bdda31150e3a6d39b422f1df2f54a01702a0e3e8959c8822e1e4c0290c12",
+      "verified_product_fingerprints": {
+        ".github/workflows/android-oracle-attestation.yml": "file:0o644:e40c20b90dd74af175d62c4323e17991b30a51d2cb78300e731b3d18be989bfa",
+        "ios/harness/tests/test_oracle_ci_proposal.py": "file:0o644:0311c6d1b9d5aefb9683517b58a591b27e01f47f0a985e74e92a759d00e94aec"
+      },
+      "verified_at": "2026-07-28T09:18:05Z"
     }
   },
   "health": {

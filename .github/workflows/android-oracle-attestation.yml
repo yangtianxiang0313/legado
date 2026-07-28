@@ -32,9 +32,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          sdkmanager="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
+          avdmanager="${ANDROID_HOME}/cmdline-tools/latest/bin/avdmanager"
+          test -x "${sdkmanager}"
+          test -x "${avdmanager}"
           printf 'ORACLE_TEMP=%s\n' \
             "${RUNNER_TEMP}/legado-android-oracle" \
             >>"${GITHUB_ENV}"
+          printf 'SDKMANAGER=%s\n' "${sdkmanager}" >>"${GITHUB_ENV}"
+          printf 'AVDMANAGER=%s\n' "${avdmanager}" >>"${GITHUB_ENV}"
 
       - name: Set up JDK 17
         uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9
@@ -61,8 +67,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          yes | sdkmanager --licenses >/dev/null
-          sdkmanager \
+          set +o pipefail
+          yes | "${SDKMANAGER}" --licenses >/dev/null
+          set -o pipefail
+          "${SDKMANAGER}" \
             "platform-tools" \
             "platforms;android-35" \
             "build-tools;35.0.0" \
@@ -105,7 +113,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "${ORACLE_TEMP}"
-          echo no | avdmanager create avd \
+          echo no | "${AVDMANAGER}" create avd \
             --force \
             --name "${AVD_NAME}" \
             --package "${ANDROID_IMAGE}"

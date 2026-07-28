@@ -221,6 +221,41 @@ class OracleCIProposalTests(unittest.TestCase):
             workflow.index(workspace_initialization),
             workflow.index("${ORACLE_TEMP}"),
         )
+        sdk_tools_initialization = (
+            '          sdkmanager="${ANDROID_HOME}/'
+            'cmdline-tools/latest/bin/sdkmanager"\n'
+            '          avdmanager="${ANDROID_HOME}/'
+            'cmdline-tools/latest/bin/avdmanager"\n'
+            '          test -x "${sdkmanager}"\n'
+            '          test -x "${avdmanager}"'
+        )
+        self.assertIn(sdk_tools_initialization, workflow)
+        self.assertIn(
+            'printf \'SDKMANAGER=%s\\n\' "${sdkmanager}" '
+            '>>"${GITHUB_ENV}"',
+            workflow,
+        )
+        self.assertIn(
+            'printf \'AVDMANAGER=%s\\n\' "${avdmanager}" '
+            '>>"${GITHUB_ENV}"',
+            workflow,
+        )
+        self.assertLess(
+            workflow.index(sdk_tools_initialization),
+            workflow.index('"${SDKMANAGER}" --licenses'),
+        )
+        self.assertLess(
+            workflow.index(sdk_tools_initialization),
+            workflow.index('"${AVDMANAGER}" create avd'),
+        )
+        self.assertNotIn("yes | sdkmanager --licenses", workflow)
+        self.assertNotIn("echo no | avdmanager create avd", workflow)
+        self.assertIn(
+            '"${SDKMANAGER}" \\\n'
+            '            "platform-tools"',
+            workflow,
+        )
+        self.assertIn("set +o pipefail", workflow)
         attest_action = (
             "actions/attest@"
             "f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6"
