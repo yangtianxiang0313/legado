@@ -129,3 +129,35 @@ commit；后续 transition 使用 `codex exec resume`。失败、JSONL 漂移、
 reason，应先在控制面之外修复/重新安装 CLI，再重跑 doctor。adapter 不修改全局
 安装。即使本地 CLI 可用，它仍与 Agent 共享用户权限；生产无人值守必须由隔离 runner
 提供一次性凭据、签名 journal、受信复验和独立 patch promotion。
+
+## Trusted Supervisor Reference
+
+`trusted_supervisor_reference.py` 把本地 cooperative loop 与生产边界之间最关键的
+事务做成可执行 reference：
+
+```bash
+python3 ios/harness/trusted_supervisor_reference.py \
+  --repo /absolute/repo \
+  --control-root /absolute/external/control \
+  --key-file /absolute/external/journal.key \
+  doctor --base <commit>
+
+python3 ios/harness/trusted_supervisor_reference.py \
+  --repo /absolute/repo \
+  --control-root /absolute/external/control \
+  --key-file /absolute/external/journal.key \
+  run-attempt --base <commit> --work-item <id> \
+  --config /absolute/external/attempt-config.json
+```
+
+control root、0600 HMAC key 和 attempt config 必须位于 repo 外。runner 从明确 base
+创建一次性 Agent worktree，以 secret-free argv 启动单 writer，冻结 tracked、
+untracked、rename、delete 和 binary 变化并执行 Work Item scope；随后从同一 base
+创建第二个干净 verifier worktree，重放 binary patch、核对 tree digest 并运行独立
+verifier。通过后只生成 0600 patch、签名 manifest 和签名 journal 终态。
+
+该 reference CLI 故意没有 promotion/merge/push/approval/publish 权限。HMAC 只证明
+“持有本地外部 key 的 reference 进程”生成了记录，不等同企业身份、KMS/HSM 或透明
+日志；git worktree 也不提供容器/VM、网络 deny、Keychain 或内核资源隔离。生产实现
+仍需把 key/journal/publisher 放到 Agent 不可达的服务，使用一次性凭据、受保护 Gate、
+deny-by-default egress、资源上限和独立 patch promotion。

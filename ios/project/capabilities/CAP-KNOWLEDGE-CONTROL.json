@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 17,
+  "revision": 18,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -23,9 +23,11 @@
       "ios/harness/codex_agent_adapter.py",
       "ios/harness/loop_supervisor.py",
       "ios/harness/proposal_compiler.py",
+      "ios/harness/trusted_supervisor_reference.py",
       "ios/harness/tests/test_loop_supervisor.py",
       "ios/harness/tests/test_codex_agent_adapter.py",
       "ios/harness/tests/test_proposal_compiler.py",
+      "ios/harness/tests/test_trusted_supervisor_reference.py",
       "ios/project/business-knowledge/**",
       "ios/project/work-item-proposals/recipes/**",
       "ios/project/work-item-proposals/candidates/**",
@@ -44,14 +46,14 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260727T035217Z-ios-codex-agent-adapter-001-86ffbaf3.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260727T040551Z-ios-trusted-supervisor-reference-001-e5b02901.json",
   "next_actions": [
-    "在仓库外修复 Codex CLI 原生 payload，直到 adapter doctor 返回 CODEX_EXECUTABLE_READY",
-    "按钮物化 IOS-KNOWLEDGE-INTEGRATIONS-001，并用真实 Codex adapter 完成首次 turn/resume/Gate 停靠",
-    "在外部受保护 Supervisor 实现签名 journal、OS 隔离、受信复验和 patch promotion，不信任本地身份与事件头",
+    "在仓库外修复 Codex CLI 原生 payload，随后按钮物化 IOS-KNOWLEDGE-INTEGRATIONS-001，并用真实 adapter 完成首次 turn/resume/Gate 停靠",
+    "把 reference runner 迁入 Agent 不可达的受保护服务，以 KMS/企业身份签名、OS/container 隔离、资源上限和 deny-by-default egress 替代本地 HMAC/用户权限",
+    "实现独立 patch publisher，只消费已签名 verified artifact，并经受保护 Gate 完成 promotion",
     "为 cancelled knowledge output 增加显式 abandoned/tombstone 协议和逐 Claim recovery compiler，最终关闭 PIT-0012",
     "五个知识域齐备后执行受信 Knowledge promotion、Coverage baseline 与 iOS Architecture Review Bundle"
   ],
-  "updated_at": "2026-07-27T03:52:17Z",
-  "updated_by": "IOS-CODEX-AGENT-ADAPTER-001"
+  "updated_at": "2026-07-27T04:05:51Z",
+  "updated_by": "IOS-TRUSTED-SUPERVISOR-REFERENCE-001"
 }

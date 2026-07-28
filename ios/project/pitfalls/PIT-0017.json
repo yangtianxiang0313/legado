@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0017",
+  "revision": 1,
+  "title": "在 Agent 工作树中执行验收会让候选代码参与自证",
+  "fingerprint": "agent-worktree-verification-is-not-a-trust-boundary",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "Agent 修改测试、Evidence、Harness 或运行环境后，同一工作树内的验收仍可能显示通过",
+    "验收读取的是继续变化的工作目录，无法证明被批准的候选与最终补丁是同一份内容",
+    "Agent 退出成功被误当成发布授权，缺少独立重放和不可变 artifact"
+  ],
+  "conditions": [
+    "实现、验收和发布共享同一个 worktree、用户权限或可写控制面",
+    "验收直接消费 Agent 生成的 Evidence、stdout 或工作目录状态",
+    "没有把 base commit、binary patch、candidate tree、verifier 定义和 journal head 绑定为签名事实"
+  ],
+  "root_cause": "代码生成者与验收者没有形成信任边界；在可被 Agent 改写的环境里运行测试只能提供开发反馈，不能提供候选身份、独立复验或发布授权。",
+  "diagnosis": [
+    "检查 verifier 是否从与 Agent 相同的明确 base commit 创建第二个全新 worktree",
+    "检查 verifier 是否只应用 Supervisor 冻结的 git binary patch，并重算 candidate tree/diff digest",
+    "检查成功 artifact 是否绑定签名 journal head、work item/spec/base/patch/tree 和 verifier 输出摘要"
+  ],
+  "fix": "trusted_supervisor_reference.py 在仓库外创建一次性 Agent worktree，冻结并检查完整 binary patch 后，再从同一 base 创建独立 verifier worktree重放；只有 scope 与 verifier 都通过才原子发布 patch/签名 manifest 并追加 AttemptVerified。CLI 不提供 promotion 或任何审批权限命令。",
+  "prevention": {
+    "architecture_rule": "任何可用于 Gate 或发布的验收必须由 Agent 不可写的 Supervisor 冻结候选，并在全新 verifier 环境从同一 base 重放；Agent 工作树中的测试结果只能作为非权威开发反馈。",
+    "tests": [
+      "ios/harness/tests/test_trusted_supervisor_reference.py#test_real_git_e2e_freezes_replays_verifies_and_signs",
+      "ios/harness/tests/test_trusted_supervisor_reference.py#test_agent_failure_and_verifier_failure_never_create_artifact",
+      "ios/harness/tests/test_trusted_supervisor_reference.py#test_journal_and_artifact_tampering_are_detected",
+      "ios/harness/tests/test_trusted_supervisor_reference.py#test_artifact_pair_rolls_back_on_atomic_publish_failure"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-LOOP-SUPERVISOR-E2E-001",
+    "until": "IOS-TRUSTED-SUPERVISOR-REFERENCE-001"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-27",
+  "last_seen": "2026-07-27",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260727T040551Z-ios-trusted-supervisor-reference-001-e5b02901.json"
+  ]
+}

@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "revision": 129,
+  "revision": 133,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-27T03:59:15Z",
-  "event_head": "9ae2d0331a138755050da21a2343e71ae97198d4ff89b5b70105f22a25c88a4b",
+  "updated_at": "2026-07-28T02:46:49Z",
+  "event_head": "31fcf8d1a13bed3f84179c40557fdb385e63f202a1b4a304382a09bba9dfb25c",
   "active_work_items": [],
-  "last_completed_work_item": "IOS-CODEX-AGENT-ADAPTER-001",
+  "last_completed_work_item": "IOS-TRUSTED-SUPERVISOR-REFERENCE-001",
   "work_items": {
     "IOS-BOOT-001": {
       "status": "completed",
@@ -2054,9 +2054,104 @@
       "final_tree_sha256": "9362f0b7a3faa6765dff6755da7bc7aa4fc0675d743399e012b5ac6d5532320b"
     },
     "IOS-TRUSTED-SUPERVISOR-REFERENCE-001": {
-      "status": "ready",
-      "attempt": 0,
-      "last_evidence": null
+      "status": "completed",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260727T040551Z-ios-trusted-supervisor-reference-001-e5b02901.json",
+      "claimed_by": "codex",
+      "claimed_at": "2026-07-27T04:00:01Z",
+      "lease_expires_at": "2026-07-28T04:00:01Z",
+      "work_item_sha256": "5297a078a86979011f4ca4d050ea990b0b6322f1d481678d92e25d1a2d217147",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "15f6b598d68af746ef5dd5b0c7fbbd7b21132846",
+      "base_capability_revision": 17,
+      "base_capability_assurance_sha256": "6c08426cf2cc8f0277426284e00909a10444767bc01eeb84e0db43db8dcbb2ac",
+      "android_requirement_selection_sha256": null,
+      "business_knowledge_control_sha256": "b2a30fd1b81cc1d82d528f05f54cd3188e40aa141fac3b94c3cd5c2b0ff7a9b5",
+      "business_knowledge_authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 1,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "dependency-policy",
+          "argv": [
+            "python3",
+            "ios/harness/probes/dependency_contract.py",
+            "--root",
+            "."
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "eca96cb1b69567829ed8396386b0449da8c0d6e7295a00f1decfb60430ff1153",
+          "cwd": ".",
+          "started_at": "2026-07-27T03:59:26Z",
+          "duration_ms": 1324,
+          "timeout_seconds": 90,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "17595a1d68cdc5b52c010f46dff48514afa3fa3cf0215cdea7ae8eff38677c0a",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_tail": "DEPENDENCY_CONTRACT: OK\n",
+          "stderr_tail": ""
+        },
+        {
+          "id": "harness-tests",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "307f335e883f02e96ad97ecbda4c210435c0b955e2bcb9e46db9dc7b0d02c285",
+          "cwd": ".",
+          "started_at": "2026-07-27T03:59:28Z",
+          "duration_ms": 32638,
+          "timeout_seconds": 60,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "6a853008898197e18578690240ea4eab70955b5aad362ddbec267efb1570687a",
+          "stdout_tail": "",
+          "stderr_tail": "....................................................................................................\n----------------------------------------------------------------------\nRan 100 tests in 32.485s\n\nOK\n"
+        }
+      ],
+      "last_evidence_sha256": "fd1dda41c37fb918c24a103b8f0169b3dd75bf521032da4b99df9bdc39724a46",
+      "verified_at": "2026-07-27T04:05:51Z",
+      "approval_requested_at": "2026-07-27T04:07:04Z",
+      "approval_request_existing_fingerprints": {
+        "ios/project/approvals/IOS-TRUSTED-SUPERVISOR-REFERENCE-001--architecture-review.json": "missing",
+        "ios/project/approvals/IOS-TRUSTED-SUPERVISOR-REFERENCE-001--security-review.json": "missing"
+      },
+      "awaiting_human_reasons": [
+        "缺少人工批准：architecture-review",
+        "缺少人工批准：security-review"
+      ],
+      "review_subject_sha256": "0454be979b47ec28c90fb38d3917a6b7ffc3b3feaf031c3c7f9da9132abe6ff6",
+      "review_subject_files": {
+        "ios/harness/README.md": "file:0o644:6d2bb4253e5ddda12e4cf5476c1422bfd3ccf56b24ca92ef2ad8886a704c9f7e",
+        "ios/harness/tests/test_trusted_supervisor_reference.py": "file:0o644:e6a890bfc5f1c50be52efac8b2608a767ffb0d119e5d4b6887a9db8cbfcd6afc",
+        "ios/harness/trusted-supervisor.example.json": "file:0o644:353103dfd43aeb755983750e4bedda1c62b75f471d63a382b527017e41a9051e",
+        "ios/harness/trusted_supervisor_reference.py": "file:0o644:c2941137a2861f90e954fc7273bb6f607aa38cdde6f4c25356b8ff693be4ff37",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json": "file:0o644:0cb6d1af18943d0688a22b4d3c6e00d4726ff84c874372ea28be5dbf2fa387bb",
+        "ios/project/checkpoints/IOS-TRUSTED-SUPERVISOR-REFERENCE-001.json": "file:0o644:5a4937487bf62b05d472e83890ef720c61e3ab96ec30dcb3380d0ad09e33c53a",
+        "ios/project/pitfalls/PIT-0017.json": "file:0o644:2fa650061672573ed88854eff7153bd300e5ffbfa3942bd787d44668afc7ba7d"
+      },
+      "completed_at": "2026-07-28T02:46:49Z",
+      "final_tree_sha256": "cfad39045619145784f7dd91b5ee070597b9279a721a855b9eb9f04754357ad3"
     }
   },
   "health": {
@@ -2080,7 +2175,8 @@
     "loop_supervisor": "local_verified",
     "loop_engine": "local_mature",
     "proposal_compiler": "local_verified",
-    "codex_agent_adapter": "local_verified"
+    "codex_agent_adapter": "local_verified",
+    "trusted_supervisor_reference": "local_verified"
   },
   "risks": [
     {
