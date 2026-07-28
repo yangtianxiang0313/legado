@@ -1,0 +1,30 @@
+{
+  "authority": "proposal_only",
+  "candidate_sha256": "5c9f624c6b720ee4644c3e4c1a4d583a4003b19b279a99a1e5f2369dabd21b5a",
+  "compiler_version": "proposal-compiler-v1",
+  "dag": {
+    "id": "WIPD-IOS-INITIALIZATION-001",
+    "revision": 8,
+    "sha256": "f384244ebf99fe2b31504479f545f7cc09684692af001da150bd951b3f5c5199"
+  },
+  "dependencies": [
+    {
+      "chain": [
+        "IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-003"
+      ],
+      "checkpoint": "ios/project/checkpoints/IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-003.json",
+      "checkpoint_sha256": "498c725825e8db22119f72cd99e2eb1af608e54d0718ced1eb676ef0b3b70ac1",
+      "evidence": "ios/harness/evidence/runs/run-20260728T192539Z-ios-android-post-form-attestation-recovery-003-2810b9da.json",
+      "evidence_sha256": "45f4e3a1adb9c6c70ae4d62ed492eae91f8978ffd12398f893127d9d26ada268",
+      "original": "IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-003",
+      "reason_code": "DIRECT_COMPLETION",
+      "resolved": "IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-003",
+      "work_item_sha256": "6bdb0806736438f5e2d6b3be340d97b688cf183a33b2d4f9c25200b0c1086fa4"
+    }
+  ],
+  "node_sha256": "3321cb4143f99050c24f261eab8fc60181ccb3735c2d4b43f7ece6e918aac259",
+  "proposal_id": "IOS-TRUSTED-ORACLE-SETTLEMENT-COMPILER-001",
+  "queue_effect": "none",
+  "recipe_sha256": "e6851723fdb318ba7bde58c59bdaa9d305d4d0961168600b590df83fc052a3ad",
+  "schema_version": 1
+}

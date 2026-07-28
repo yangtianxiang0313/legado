@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "InitializationWorkItemProposalDAG",
   "id": "WIPD-IOS-INITIALIZATION-001",
-  "revision": 7,
+  "revision": 8,
   "authority": "proposal_only",
   "status": "proposed",
   "created_by": "IOS-KNOWLEDGE-CONTROL-PLANE-001",
@@ -159,6 +159,13 @@
       "title": "完成 POST Form proposal 的共享 Oracle contract 恢复",
       "outputs": ["verified scenario-aware oracle proposal contract", "bounded attestation recovery lineage", "POST Form trusted proposal pipeline"],
       "gates": [], "constraint": "必须承接 002 的共享 contract 实现并在有界 SourceLab recovery chain 下通过完整验收；ci_proposal 与 trusted_import 均调用同一 verify_proposal，旧 HTML 与新 POST Form 均通过，禁止绕过、降级或扩大 Golden/Publisher/产品权限"
+    },
+    {
+      "proposal_id": "IOS-TRUSTED-ORACLE-SETTLEMENT-COMPILER-001", "phase": 12, "class": "control_plane",
+      "depends_on": ["IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-003"], "knowledge_mode": "not_applicable",
+      "title": "将受信 proposal 能力结算为 GitHub 执行阶段",
+      "outputs": ["trusted proposal recovery-aware settlement", "external execution required state", "GitHub attestation receipt contract boundary"],
+      "gates": [], "constraint": "必须结算 trusted blueprint 原目标及其显式 recovery lineage 的 WorkItem/Evidence/Checkpoint/Capability/Requirement/SourceLab/shared-contract 绑定；结算后只进入 GitHub-hosted execution required，不得重复物化、伪造远端回执、触发 workflow、发布 Golden 或修改产品"
     }
   ],
   "compiler_rules": [
