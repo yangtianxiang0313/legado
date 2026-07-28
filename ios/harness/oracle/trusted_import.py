@@ -194,13 +194,13 @@ def _validate_provenance_identity(
         f"{run_id.replace('/', '/attempts/', 1)}"
     )
     expected_ref = workflow_ref.split("@", 1)[1]
+    expected_builder = f"https://github.com/{workflow_ref}"
     if (
         workflow.get("repository") != f"https://github.com/{repository}"
-        or workflow.get("path") != f"/{WORKFLOW_PATH}"
+        or workflow.get("path") != WORKFLOW_PATH
         or workflow.get("ref") != expected_ref
         or invocation_id != expected_invocation
-        or builder_id
-        != "https://github.com/actions/runner/github-hosted"
+        or builder_id != expected_builder
     ):
         raise TrustedImportError("ATTESTATION_PROVENANCE_IDENTITY_DRIFT")
 

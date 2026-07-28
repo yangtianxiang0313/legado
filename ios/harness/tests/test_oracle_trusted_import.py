@@ -101,7 +101,7 @@ class OracleTrustedImportTests(unittest.TestCase):
                                             f"{self.repository}"
                                         ),
                                         "path": (
-                                            "/.github/workflows/"
+                                            ".github/workflows/"
                                             "android-oracle-attestation.yml"
                                         ),
                                         "ref": (
@@ -114,8 +114,8 @@ class OracleTrustedImportTests(unittest.TestCase):
                             "runDetails": {
                                 "builder": {
                                     "id": (
-                                        "https://github.com/actions/"
-                                        "runner/github-hosted"
+                                        "https://github.com/"
+                                        f"{self.workflow_ref}"
                                     )
                                 },
                                 "metadata": {
@@ -232,6 +232,34 @@ class OracleTrustedImportTests(unittest.TestCase):
         ):
             self._verify()
 
+    def test_import_rejects_provenance_workflow_path_drift(self):
+        report = copy.deepcopy(self.attestation_report)
+        report[0]["verificationResult"]["statement"]["predicate"][
+            "buildDefinition"
+        ]["externalParameters"]["workflow"]["path"] = (
+            "/.github/workflows/android-oracle-attestation.yml"
+        )
+        self._replace_attestation_report(report)
+        with self.assertRaisesRegex(
+            trusted_import.TrustedImportError,
+            "ATTESTATION_PROVENANCE_IDENTITY_DRIFT",
+        ):
+            self._verify()
+
+    def test_import_rejects_provenance_builder_identity_drift(self):
+        report = copy.deepcopy(self.attestation_report)
+        report[0]["verificationResult"]["statement"]["predicate"][
+            "runDetails"
+        ]["builder"]["id"] = (
+            "https://github.com/actions/runner/github-hosted"
+        )
+        self._replace_attestation_report(report)
+        with self.assertRaisesRegex(
+            trusted_import.TrustedImportError,
+            "ATTESTATION_PROVENANCE_IDENTITY_DRIFT",
+        ):
+            self._verify()
+
     def test_import_rejects_symlink_bundle(self):
         linked = self.root / "linked-attestation.json"
         linked.symlink_to(self.proposal_bundle)
@@ -270,6 +298,15 @@ class OracleTrustedImportTests(unittest.TestCase):
             repository=repository or self.repository,
             gh=self.gh,
         )
+
+    def _replace_attestation_report(self, report):
+        encoded = json.dumps(report, separators=(",", ":"))
+        self.gh.write_text(
+            "#!/bin/sh\n"
+            f"printf '%s\\n' '{encoded}'\n",
+            encoding="utf-8",
+        )
+        self.gh.chmod(0o700)
 
     @classmethod
     def _local_run(cls):
