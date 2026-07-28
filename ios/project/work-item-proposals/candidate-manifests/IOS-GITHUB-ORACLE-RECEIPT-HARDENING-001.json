@@ -1,0 +1,30 @@
+{
+  "authority": "proposal_only",
+  "candidate_sha256": "78b4424ea63cbf8eeabbafd7fd64e82f739fbd2ec138da8f10e1434795e8d4bd",
+  "compiler_version": "proposal-compiler-v1",
+  "dag": {
+    "id": "WIPD-IOS-INITIALIZATION-001",
+    "revision": 23,
+    "sha256": "85e329da4e8ae7730aa19b6ebb7f3dac54bf15c96115988f092b4ad27af0c7cd"
+  },
+  "dependencies": [
+    {
+      "chain": [
+        "IOS-GITHUB-ORACLE-RECEIPT-SETTLEMENT-001"
+      ],
+      "checkpoint": "ios/project/checkpoints/IOS-GITHUB-ORACLE-RECEIPT-SETTLEMENT-001.json",
+      "checkpoint_sha256": "bc30a5ecde50e3d5a7e8e5028edf09a7fc71b837363dded725f27ac5ff475d5d",
+      "evidence": "ios/harness/evidence/runs/run-20260728T230107Z-ios-github-oracle-receipt-settlement-001-8fa6a468.json",
+      "evidence_sha256": "acd1003bcb9b40150d0b7597fd359f0480ea29e80eb81e0c6b5bde00b6a7a3ec",
+      "original": "IOS-GITHUB-ORACLE-RECEIPT-SETTLEMENT-001",
+      "reason_code": "DIRECT_COMPLETION",
+      "resolved": "IOS-GITHUB-ORACLE-RECEIPT-SETTLEMENT-001",
+      "work_item_sha256": "b91760615f0f97f76f6d8304abc802dbdf6cb8a08db0b2a49ac358d45890d478"
+    }
+  ],
+  "node_sha256": "042da6deae610893ecf8b484688cdd0bf6c80546f2ce743d94e6ae8b7054f881",
+  "proposal_id": "IOS-GITHUB-ORACLE-RECEIPT-HARDENING-001",
+  "queue_effect": "none",
+  "recipe_sha256": "d0deb8fb24dc8fdc1e9325b3768e1abfe56267da743e31fe61b765753549eedf",
+  "schema_version": 1
+}

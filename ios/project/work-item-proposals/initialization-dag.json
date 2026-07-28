@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "InitializationWorkItemProposalDAG",
   "id": "WIPD-IOS-INITIALIZATION-001",
-  "revision": 22,
+  "revision": 23,
   "authority": "proposal_only",
   "status": "proposed",
   "created_by": "IOS-KNOWLEDGE-CONTROL-PLANE-001",
@@ -265,6 +265,13 @@
       "title": "实现 GitHub Oracle Attestation Receipt Settlement",
       "outputs": ["create-only verified candidate receipt", "historical source authority validation", "Golden Publisher demand state"],
       "gates": [], "constraint": "实现独立、create-only、历史源码可验证的 GitHub Oracle Receipt Settler，并让 DemandCompiler/Supervisor 只消费已提交且 authority 未漂移的 Receipt；不得信任 runtime journal、修改 Workflow/Oracle/Dispatcher/Golden/Publisher/产品或在 WorkItem 内访问网络和生成真实 Receipt"
+    },
+    {
+      "proposal_id": "IOS-GITHUB-ORACLE-RECEIPT-HARDENING-001", "phase": 27, "class": "control_plane",
+      "depends_on": ["IOS-GITHUB-ORACLE-RECEIPT-SETTLEMENT-001"], "knowledge_mode": "not_applicable",
+      "title": "强化 Oracle Receipt 的真实结算与消费合同",
+      "outputs": ["real-shape receipt regression", "canonical manifest binding", "audited external publisher transition"],
+      "gates": [], "constraint": "补齐 Receipt Settlement 的真实合同测试并修复 canonical manifest digest、完整 fixture tree、Run/Artifact provenance、create-only/symlink/error 边界；必须证明 DemandCompiler 能消费真实 Settler schema 且 drive 停在 external publisher，不得访问网络、生成真实 Receipt 或修改 Workflow/Oracle/Dispatcher/Golden/Publisher/产品"
     }
   ],
   "compiler_rules": [
