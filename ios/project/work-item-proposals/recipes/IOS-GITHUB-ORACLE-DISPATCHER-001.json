@@ -25,7 +25,7 @@
       "capability": "CAP-KNOWLEDGE-CONTROL",
       "intent": "把当前 external_execution_required 从只会停住的描述性状态演进为受限、可重放、可恢复的 GitHub Android Oracle 执行阶段。新增专用 GitHubOracleDispatcher，只接受 Demand Plan 已绑定的 repository、固定 android-oracle-attestation workflow、SourceLab scenario 与精确 source digest；从这些输入计算稳定 execution_id 和 feature/oracle-<scenario>-<sha> create-only branch。adapter 先验证 clean HEAD、remote repository 和 gh 身份，再检查远端分支为空或精确等于 source digest，禁止 force push；查询同 workflow/branch/event 的既有 run，零个才 dispatch，一个则复用，多个 fail closed。drive 只在显式配置 external_execution.github_oracle 后调用 adapter，不调用普通 Agent 或任意 shell，并把 dispatch/running/succeeded/failed 作为结构化结果写入 .harness-runtime create/update journal；inspect 保持离线、只读、确定性。此项不下载或信任 artifact，不生成 receipt，不调用 trusted_import，不触发 Golden Publisher，不修改 Workflow、Oracle producer/importer、Golden、产品或 Package。",
       "depends_on": [
-        "IOS-GITHUB-ORACLE-OWNER-001"
+        "IOS-GITHUB-ORACLE-AUTO-SCOPE-001"
       ],
       "scope": {
         "allow_write": [

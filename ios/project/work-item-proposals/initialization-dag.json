@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "InitializationWorkItemProposalDAG",
   "id": "WIPD-IOS-INITIALIZATION-001",
-  "revision": 10,
+  "revision": 11,
   "authority": "proposal_only",
   "status": "proposed",
   "created_by": "IOS-KNOWLEDGE-CONTROL-PLANE-001",
@@ -175,8 +175,15 @@
       "gates": [], "constraint": "只允许在 CAP-KNOWLEDGE-CONTROL 中预声明专用 dispatcher 与测试路径，必须先完成 Capability revision/Evidence/Checkpoint 事务；不得借所有权变更实现网络调用、触发 workflow、生成 receipt 或修改产品"
     },
     {
-      "proposal_id": "IOS-GITHUB-ORACLE-DISPATCHER-001", "phase": 14, "class": "control_plane",
+      "proposal_id": "IOS-GITHUB-ORACLE-AUTO-SCOPE-001", "phase": 14, "class": "control_plane",
       "depends_on": ["IOS-GITHUB-ORACLE-OWNER-001"], "knowledge_mode": "not_applicable",
+      "title": "授权自动策略物化精确 GitHub Oracle Dispatcher 路径",
+      "outputs": ["exact dispatcher auto-safe path", "arbitrary harness path denial regression", "dispatcher materialization eligibility"],
+      "gates": [], "constraint": "只允许把已登记 owner 的 github_oracle_dispatcher.py 精确加入自动控制面白名单；不得增加目录 wildcard、网络调用、Workflow/Publisher/Golden 权限或提前创建 dispatcher"
+    },
+    {
+      "proposal_id": "IOS-GITHUB-ORACLE-DISPATCHER-001", "phase": 15, "class": "control_plane",
+      "depends_on": ["IOS-GITHUB-ORACLE-AUTO-SCOPE-001"], "knowledge_mode": "not_applicable",
       "title": "建立可恢复的 GitHub Android Oracle 外部执行适配层",
       "outputs": ["deterministic external execution identity", "create-only exact source branch", "idempotent GitHub workflow dispatch and runtime journal"],
       "gates": [], "constraint": "只允许受限 GitHub Oracle adapter 消费 external_execution_required 的精确 repo/workflow/scenario/source binding；远端 source branch 必须 create-only 或已指向同一 SHA，dispatch 必须可重放且不得把普通 Agent、任意 shell、receipt、Golden 或 Publisher 权限混入本阶段"
