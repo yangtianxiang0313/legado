@@ -1065,6 +1065,9 @@ class LoopSupervisor:
                 blockers=blockers,
                 warnings=tuple(warnings),
             )
+        plans = tuple(
+            plan for plan in plans if plan.state != "delivery_completed"
+        )
         if not plans:
             return None
         highest = plans[0].priority

@@ -287,6 +287,30 @@ class MaterializationTests(unittest.TestCase):
                 decision.work_item_id,
             )
 
+    def test_completed_demand_is_not_rescheduled(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            completed = loop_supervisor.DemandPlan(
+                intent_id="DINT-COMPLETED-001",
+                priority=100,
+                target_work_item_id="IOS-COMPLETED-001",
+                state="delivery_completed",
+                reason_code="DELIVERY_EVIDENCE_SETTLED",
+                authority_transition=False,
+                artifacts=(),
+                bindings={"settlement": {}},
+            )
+            with mock.patch.object(
+                loop_supervisor.DemandCompiler,
+                "plans",
+                return_value=((completed,), ()),
+            ):
+                self.assertIsNone(
+                    loop_supervisor.LoopSupervisor(
+                        fixture.harness
+                    )._demand_decision([])
+                )
+
     def test_preflight_rejects_outside_symlink_and_incomplete_dependency(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = MaterializationFixture(Path(directory))

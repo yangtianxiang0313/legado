@@ -18,6 +18,10 @@ REQUIREMENT_CATALOG = "ios/project/requirements/catalog.json"
 KNOWLEDGE_CATALOG = "ios/project/business-knowledge/catalog.json"
 GOLDEN_MANIFEST = "ios/harness/goldens/manifest.json"
 DELIVERY_BLUEPRINT_ROOT = "ios/project/work-item-proposals/delivery-blueprints"
+STATE_PATH = "ios/project/state.json"
+WORK_ITEM_ROOT = "ios/harness/work-items"
+CHECKPOINT_ROOT = "ios/project/checkpoints"
+EVIDENCE_ROOT = "ios/harness/evidence/runs"
 POLICY = "structured-delivery-intent-v1"
 INTENT_ID = re.compile(r"^DINT-[A-Z][A-Z0-9-]*-[0-9]{3}$")
 WORK_ITEM_ID = re.compile(r"^IOS-[A-Z][A-Z0-9-]*-[0-9]{3}$")
@@ -276,9 +280,21 @@ class DemandCompiler:
             raise DemandCompilerError("INTENT_OUTSIDE_REPOSITORY") from error
         intent = _load_object(intent_path, "INTENT")
         self._validate_intent(intent, relative)
+        self._head_regular((relative,))
+        settlement = self._completed_delivery(intent)
+        if settlement is not None:
+            return DemandPlan(
+                intent_id=str(intent["id"]),
+                priority=int(intent["priority"]),
+                target_work_item_id=str(intent["target_work_item_id"]),
+                state="delivery_completed",
+                reason_code="DELIVERY_EVIDENCE_SETTLED",
+                authority_transition=False,
+                artifacts=tuple(settlement["artifacts"]),
+                bindings=settlement["bindings"],
+            )
         self._head_regular(
             (
-                relative,
                 REQUIREMENT_CATALOG,
                 KNOWLEDGE_CATALOG,
                 GOLDEN_MANIFEST,
@@ -518,6 +534,128 @@ class DemandCompiler:
             artifacts=tuple(artifacts),
             bindings=bindings,
         )
+
+    def _completed_delivery(
+        self,
+        intent: Mapping[str, Any],
+    ) -> Optional[Mapping[str, Any]]:
+        state_path = self.resolve(STATE_PATH)
+        if not state_path.is_file() or state_path.is_symlink():
+            return None
+        state = _load_object(state_path, "PROJECT_STATE")
+        target = str(intent["target_work_item_id"])
+        runtime = state.get("work_items", {}).get(target)
+        if not isinstance(runtime, dict) or runtime.get("status") != "completed":
+            return None
+
+        work_item_relative = f"{WORK_ITEM_ROOT}/{target}.json"
+        checkpoint_relative = f"{CHECKPOINT_ROOT}/{target}.json"
+        evidence_relative = runtime.get("last_evidence")
+        if (
+            not isinstance(evidence_relative, str)
+            or not evidence_relative.startswith(EVIDENCE_ROOT + "/")
+        ):
+            raise DemandCompilerError("DELIVERY_SETTLEMENT_INVALID")
+        capability = intent["capability"]
+        capability_relative = (
+            f"ios/project/capabilities/{capability['id']}.json"
+        )
+        try:
+            self._head_regular(
+                (
+                    STATE_PATH,
+                    work_item_relative,
+                    checkpoint_relative,
+                    evidence_relative,
+                    capability_relative,
+                )
+            )
+            work_item_path = self.resolve(work_item_relative)
+            checkpoint_path = self.resolve(checkpoint_relative)
+            evidence_path = self.resolve(evidence_relative)
+            capability_path = self.resolve(capability_relative)
+            work_item = _load_object(work_item_path, "SETTLED_WORK_ITEM")
+            checkpoint = _load_object(checkpoint_path, "SETTLED_CHECKPOINT")
+            evidence = _load_object(evidence_path, "SETTLED_EVIDENCE")
+            capability_record = _load_object(
+                capability_path,
+                "SETTLED_CAPABILITY",
+            )
+        except DemandCompilerError as error:
+            raise DemandCompilerError("DELIVERY_SETTLEMENT_INVALID") from error
+
+        work_item_sha = _sha256_json(work_item)
+        evidence_sha = _sha256(evidence_path.read_bytes())
+        spec = work_item.get("spec", {})
+        blueprint = spec.get("delivery_blueprint", {})
+        requirements = spec.get("requirements", {})
+        source_lab = spec.get("source_lab", {})
+        checkpoint_requirements = checkpoint.get("requirements", {})
+        checkpoint_source_lab = checkpoint.get("source_lab", {})
+        updates = checkpoint.get("capability_updates", [])
+        update = next(
+            (
+                value
+                for value in updates
+                if isinstance(value, dict)
+                and value.get("id") == capability["id"]
+            ),
+            None,
+        )
+        valid_update = (
+            isinstance(update, dict)
+            and update.get("from_revision") == capability["revision"]
+            and isinstance(update.get("to_revision"), int)
+            and update["to_revision"] > capability["revision"]
+        )
+        if (
+            work_item.get("metadata", {}).get("id") != target
+            or runtime.get("work_item_sha256") != work_item_sha
+            or blueprint.get("capability_revision") != capability["revision"]
+            or blueprint.get("golden_fixtures") != intent["golden_fixtures"]
+            or requirements.get("mode") != "implementation"
+            or requirements.get("refs") != intent["requirements"]
+            or source_lab.get("scenarios") != intent["golden_fixtures"]
+            or checkpoint.get("work_item_id") != target
+            or checkpoint.get("evidence") != evidence_relative
+            or checkpoint_requirements.get("mode") != "implementation"
+            or checkpoint_requirements.get("refs") != intent["requirements"]
+            or checkpoint_source_lab.get("scenarios")
+            != intent["golden_fixtures"]
+            or not valid_update
+            or capability_record.get("id") != capability["id"]
+            or not isinstance(capability_record.get("revision"), int)
+            or capability_record["revision"] < update["to_revision"]
+            or evidence.get("work_item_id") != target
+            or evidence.get("work_item_sha256") != work_item_sha
+            or evidence.get("result") != "passed"
+            or runtime.get("last_evidence_sha256") != evidence_sha
+        ):
+            raise DemandCompilerError("DELIVERY_SETTLEMENT_INVALID")
+        return {
+            "artifacts": [
+                {
+                    "kind": "delivery_completion",
+                    "id": target,
+                    "status": "completed",
+                    "evidence": evidence_relative,
+                    "evidence_sha256": evidence_sha,
+                    "checkpoint": checkpoint_relative,
+                    "checkpoint_sha256": _sha256(
+                        checkpoint_path.read_bytes()
+                    ),
+                }
+            ],
+            "bindings": {
+                "settlement": {
+                    "work_item": work_item_relative,
+                    "work_item_sha256": work_item_sha,
+                    "capability": capability["id"],
+                    "from_revision": capability["revision"],
+                    "to_revision": update["to_revision"],
+                }
+            },
+        }
 
     def plans(
         self,

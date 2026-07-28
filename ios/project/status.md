@@ -2,13 +2,13 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-28T15:56:14Z
+- 更新时间：2026-07-28T16:12:58Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
 - 下一个可领取工作项：无
-- 最近完成：IOS-READINESS-EVIDENCE-HANDOFF-RECOVERY-002
+- 最近完成：IOS-DELIVERY-INTENT-SETTLEMENT-001
 
 ## 健康度
 
@@ -24,6 +24,7 @@
 | codex_agent_adapter | `cli_0_145_compatible_real_smoke_verified` |
 | conformance | `scaffold_verified` |
 | control_catalog_resume | `bounded_self_heal` |
+| delivery_intent_settlement | `completed_evidence_bound` |
 | harness | `ready` |
 | harness_tests_timeout | `calibrated` |
 | harness_timeout_cleanup | `verified` |
@@ -92,6 +93,7 @@
 | IOS-CODEX-AGENT-ADAPTER-COMPAT-002 | 100 | `completed` | IOS-CODEX-AGENT-ADAPTER-001, IOS-AUTO-MATERIALIZATION-POLICY-001 | 对齐当前 Codex CLI 并固化真实 turn/resume smoke |
 | IOS-CONTROL-CATALOG-RESUME-001 | 100 | `completed` | IOS-RECOVERY-COMPILER-BINDING-001 | 恢复控制面变更后的 Supervisor 续跑 |
 | IOS-DECISION-GATE-POLICY-001 | 100 | `completed` | IOS-HARNESS-APPROVAL-UI-001, IOS-TRUSTED-SUPERVISOR-REFERENCE-001 | 将盲批 Gate 替换为结构化决策暂停 |
+| IOS-DELIVERY-INTENT-SETTLEMENT-001 | 100 | `completed` | IOS-SOURCE-RUNTIME-HTML-CSS-001, IOS-READINESS-EVIDENCE-HANDOFF-RECOVERY-002 | 让已完成 Delivery Intent 由 Evidence 结算并退出调度 |
 | IOS-HARNESS-APPROVAL-UI-001 | 100 | `completed` | IOS-KNOWLEDGE-BOOK-DOMAIN-001 | 提供本地一键人工审批界面 |
 | IOS-HARNESS-TEST-TIMEOUT-RECOVERY-002 | 100 | `completed` | IOS-HARNESS-TIMEOUT-CLEANUP-001 | 校准全量 Harness 测试有效超时预算 |
 | IOS-HARNESS-TIMEOUT-CLEANUP-001 | 100 | `completed` | IOS-HARNESS-APPROVAL-UI-001 | 让 Harness 超时清理失败保留结构化 Evidence |
