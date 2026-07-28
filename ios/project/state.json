@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "revision": 141,
+  "revision": 142,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-28T03:26:21Z",
-  "event_head": "35989c1efab8019e8d72cbef0037950e7344a6c4e60a58051e39d578c76fef94",
+  "updated_at": "2026-07-28T03:30:00Z",
+  "event_head": "260326dd3f66490d4468d7869949af8f3374950b843dc80550ab8c2659ec1ae2",
   "active_work_items": [],
   "last_completed_work_item": "IOS-AUTO-MATERIALIZATION-POLICY-001",
   "work_items": {
@@ -2314,6 +2314,11 @@
       "verified_at": "2026-07-28T03:25:18Z",
       "completed_at": "2026-07-28T03:26:21Z",
       "final_tree_sha256": "ef5c1685a9957e638cd9df5435bc947918cb9d3f78a1c0b4a57204873d45f23b"
+    },
+    "IOS-CODEX-AGENT-ADAPTER-COMPAT-002": {
+      "status": "ready",
+      "attempt": 0,
+      "last_evidence": null
     }
   },
   "health": {

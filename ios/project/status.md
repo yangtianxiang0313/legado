@@ -2,12 +2,12 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-28T03:26:21Z
+- 更新时间：2026-07-28T03:30:00Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
-- 下一个可领取工作项：无
+- 下一个可领取工作项：IOS-CODEX-AGENT-ADAPTER-COMPAT-002
 - 最近完成：IOS-AUTO-MATERIALIZATION-POLICY-001
 
 ## 健康度
@@ -46,6 +46,7 @@
 | IOS-AUTO-MATERIALIZATION-POLICY-001 | 100 | `completed` | IOS-PROPOSAL-COMPILER-001, IOS-DECISION-GATE-POLICY-001, IOS-LOOP-SUPERVISOR-E2E-001 | 让无决策、无权威迁移的编译候选自动进入队列 |
 | IOS-BOOT-001 | 100 | `completed` | 无 | 建立 Swift Package 与首批模块骨架 |
 | IOS-CODEX-AGENT-ADAPTER-001 | 100 | `completed` | IOS-LOOP-SUPERVISOR-E2E-001, IOS-PROPOSAL-COMPILER-001 | 接入可诊断、可续接的 Codex exec Agent adapter |
+| IOS-CODEX-AGENT-ADAPTER-COMPAT-002 | 100 | `ready` | IOS-CODEX-AGENT-ADAPTER-001, IOS-AUTO-MATERIALIZATION-POLICY-001 | 对齐当前 Codex CLI 并固化真实 turn/resume smoke |
 | IOS-DECISION-GATE-POLICY-001 | 100 | `completed` | IOS-HARNESS-APPROVAL-UI-001, IOS-TRUSTED-SUPERVISOR-REFERENCE-001 | 将盲批 Gate 替换为结构化决策暂停 |
 | IOS-HARNESS-APPROVAL-UI-001 | 100 | `completed` | IOS-KNOWLEDGE-BOOK-DOMAIN-001 | 提供本地一键人工审批界面 |
 | IOS-HARNESS-TIMEOUT-CLEANUP-001 | 100 | `completed` | IOS-HARNESS-APPROVAL-UI-001 | 让 Harness 超时清理失败保留结构化 Evidence |

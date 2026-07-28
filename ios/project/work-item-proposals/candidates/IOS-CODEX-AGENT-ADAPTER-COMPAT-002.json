@@ -1,0 +1,220 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-CODEX-AGENT-ADAPTER-COMPAT-002",
+    "title": "对齐当前 Codex CLI 并固化真实 turn/resume smoke",
+    "priority": 100,
+    "risk": "high",
+    "labels": [
+      "phase-0",
+      "control-plane",
+      "automation",
+      "codex",
+      "agent-adapter",
+      "cli-compatibility",
+      "real-smoke"
+    ]
+  },
+  "spec": {
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "intent": "修复 codex_agent_adapter 与 ChatGPT 内置 Codex CLI 0.145 的参数层级不兼容：sandbox、approval、cd 必须位于顶层，exec 与 exec resume 只接收各自支持的参数。提取单一 argv builder，精确测试首次 turn 和 resume 的顺序、禁止危险参数和 secret 最小化；增加只读、无项目写入的真实 smoke 命令，使用专用 CODEX_HOME 验证 thread.started→turn.started→turn.completed 和同一 thread resume，同时只输出事件计数、usage 与 digest。真实 smoke 不读取、复制或输出认证内容，认证准备保持在控制面之外。完成后更新示例、README、能力、Checkpoint 与兼容踩坑，使 Loop Supervisor 可以安全调用当前 Codex binary。",
+    "depends_on": [
+      "IOS-CODEX-AGENT-ADAPTER-001",
+      "IOS-AUTO-MATERIALIZATION-POLICY-001"
+    ],
+    "scope": {
+      "allow_write": [
+        "ios/harness/codex_agent_adapter.py",
+        "ios/harness/tests/test_codex_agent_adapter.py",
+        "ios/harness/codex-agent.example.json",
+        "ios/harness/README.md",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-CODEX-AGENT-ADAPTER-COMPAT-002.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "ios/harness/harness.py",
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/approval_ui.py",
+        "ios/harness/trusted_supervisor_reference.py",
+        "ios/harness/config.json",
+        "ios/harness/architecture-rules.json",
+        "ios/harness/dependency-policy.json",
+        "ios/harness/schemas/**",
+        "ios/harness/business-knowledge/**",
+        "ios/harness/android-intake/**",
+        "ios/harness/source-lab/**",
+        "ios/harness/oracle/**",
+        "ios/harness/goldens/**",
+        "ios/project/android-intake/**",
+        "ios/project/business-knowledge/**",
+        "ios/project/requirements/**",
+        "ios/project/work-item-proposals/**",
+        "ios/project/approvals/**",
+        "ios/project/baseline.json",
+        "ios/docs/**",
+        ".github/**"
+      ],
+      "max_files_changed": 7,
+      "max_changed_lines": 1800
+    },
+    "inputs": {
+      "context_files": [
+        "ios/harness/codex_agent_adapter.py",
+        "ios/harness/tests/test_codex_agent_adapter.py",
+        "ios/harness/codex-agent.example.json",
+        "ios/harness/README.md",
+        "ios/project/checkpoints/IOS-CODEX-AGENT-ADAPTER-001.json",
+        "ios/project/checkpoints/IOS-AUTO-MATERIALIZATION-POLICY-001.json"
+      ],
+      "android_source_anchors": [],
+      "fixtures": []
+    },
+    "architecture_refs": [
+      "ARCH-014",
+      "ADR-0004"
+    ],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "argv builder 对首次 turn 精确生成 `codex --sandbox <mode> --ask-for-approval never --cd <repo> exec --json --ignore-user-config -`；全局参数不得落在 exec 之后。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "resume 精确生成 `codex --sandbox <mode> --ask-for-approval never --cd <repo> exec resume --json --ignore-user-config <thread> -`，同一 thread 绑定 Work Item、Work Item hash 和 repo commit；参数顺序由单测冻结。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "adapter 只允许 read-only/workspace-write sandbox，approval 固定 never；拒绝 danger-full-access、bypass、yolo、full-auto，且不能通过 CLI 传任意额外 Codex 参数。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-4",
+          "statement": "doctor 除版本外还验证当前 CLI 的 exec 与 exec resume 帮助契约；参数布局缺失时返回稳定 unavailable reason，而不是等到已 claim 后才失败。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-5",
+          "statement": "新增真实只读 smoke：在临时 Git repo 中运行首次 turn 与同 thread resume，验证 JSONL 生命周期和 repo 无变化；结果不包含 prompt、agent message、stderr、认证或宿主 secret，只返回结构化摘要与 digest。",
+          "verified_by": [
+            "harness-tests",
+            "memory-close"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-6",
+          "statement": "fake CLI 测试继续覆盖 secret-free environment、0600 session、malformed/failed/output-limit/thread-drift fail closed，并断言首次/resume 的完整 argv。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-7",
+          "statement": "使用 `/Applications/ChatGPT.app/Contents/Resources/codex` 与控制面外准备的专用 CODEX_HOME 完成一次真实 first/resume smoke，记录 binary version/hash、事件计数、thread 绑定和 clean repo 结果，不归档认证文件。",
+          "verified_by": [
+            "memory-close"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-8",
+          "statement": "README/example 说明全局参数与子命令参数层级、专用 CODEX_HOME/认证边界、只读 smoke 用法，以及真实 Loop 仍由 Work Item scope、Supervisor timeout/process-group 和外部 trusted promotion 约束。",
+          "verified_by": [
+            "memory-close"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": [
+        "dependency-policy",
+        "harness-tests"
+      ]
+    },
+    "baseline_checks": [
+      "dependency-policy",
+      "harness-tests"
+    ],
+    "budget": {
+      "wall_clock_seconds": 10800,
+      "max_edit_verify_cycles": 3,
+      "max_targeted_test_runs": 14,
+      "max_full_test_runs": 3,
+      "max_infra_retries": 2
+    },
+    "gates": [],
+    "completion_effects": {
+      "health": {
+        "codex_agent_adapter": "cli_0_145_compatible_real_smoke_verified"
+      }
+    },
+    "memory": {
+      "capability_state_required": true,
+      "checkpoint_required": true,
+      "pitfall_update_required": true
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "refs": [],
+      "none_reason": "本项只修复 iOS AI Harness 的 Codex 执行适配层"
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "not_applicable",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [],
+      "expected_ledger_transitions": [],
+      "context_budget": {
+        "max_claims": 20,
+        "max_bytes": 32768
+      },
+      "none_reason": "本项不消费、生成或发布业务知识"
+    },
+    "source_lab": {
+      "mode": "not_applicable",
+      "behaviors": [],
+      "scenarios": [],
+      "none_reason": "本项不执行书源运行行为"
+    },
+    "stop_on": [
+      "baseline_red",
+      "required_check_failed",
+      "scope_violation",
+      "budget_exhausted",
+      "codex_cli_contract_mismatch",
+      "real_smoke_repo_mutation",
+      "secret_exposure",
+      "authority_change"
+    ]
+  }
+}
