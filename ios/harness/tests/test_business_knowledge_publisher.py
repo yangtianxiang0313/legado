@@ -376,7 +376,21 @@ class BusinessKnowledgePublisherTests(unittest.TestCase):
             workflow,
         )
         self.assertIn(
-            '.state == "requirement_readiness_required"',
+            '.plans[0].state == "requirement_readiness_required"',
+            workflow,
+        )
+        self.assertIn(".blockers == []", workflow)
+        self.assertIn("and (.plans | length) == 1", workflow)
+        self.assertIn(
+            '.plans[0].reason_code == "REQUIREMENT_READINESS_REQUIRED"',
+            workflow,
+        )
+        self.assertIn(
+            '.plans[0].authority_transition == true',
+            workflow,
+        )
+        self.assertNotIn(
+            '\n            .state == "requirement_readiness_required"',
             workflow,
         )
         freeze = workflow.index(

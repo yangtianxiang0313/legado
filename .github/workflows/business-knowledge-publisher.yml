@@ -229,9 +229,15 @@ jobs:
             --root publisher plan \
             | tee "${RUNNER_TEMP}/demand-plan.json"
           jq -e '
-            .state == "requirement_readiness_required"
-            and .reason_code == "REQUIREMENT_READINESS_REQUIRED"
-            and .authority_transition == true
+            .policy == "structured-delivery-intent-v1"
+            and .blockers == []
+            and (.plans | type) == "array"
+            and (.plans | length) == 1
+            and .plans[0].target_work_item_id
+              == "IOS-SOURCE-RUNTIME-HTML-CSS-001"
+            and .plans[0].state == "requirement_readiness_required"
+            and .plans[0].reason_code == "REQUIREMENT_READINESS_REQUIRED"
+            and .plans[0].authority_transition == true
           ' "${RUNNER_TEMP}/demand-plan.json"
 
       - name: Push verified release commit and create review PR
