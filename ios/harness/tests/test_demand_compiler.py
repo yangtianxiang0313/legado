@@ -246,6 +246,95 @@ class DemandFixture:
         )
         self.commit("add blueprint")
 
+    def settle_delivery(self):
+        self.publish_knowledge()
+        self.make_requirement_ready()
+        self.add_blueprint()
+        capability = {
+            "id": self.capability_id,
+            "revision": 3,
+        }
+        self.write_json(
+            f"ios/project/capabilities/{self.capability_id}.json",
+            capability,
+        )
+        work_item = {
+            "metadata": {"id": self.target_id},
+            "spec": {
+                "delivery_blueprint": {
+                    "capability_revision": 2,
+                    "golden_fixtures": [self.fixture_id],
+                },
+                "requirements": {
+                    "mode": "implementation",
+                    "refs": [
+                        {
+                            "id": self.requirement_id,
+                            "revision": 1,
+                            "clauses": ["RC-01"],
+                        }
+                    ],
+                },
+                "source_lab": {
+                    "scenarios": [self.fixture_id],
+                },
+            },
+        }
+        work_item_relative = (
+            f"{demand_compiler.WORK_ITEM_ROOT}/{self.target_id}.json"
+        )
+        self.write_json(work_item_relative, work_item)
+        work_item_sha = demand_compiler._sha256_json(work_item)
+        evidence_relative = (
+            f"{demand_compiler.EVIDENCE_ROOT}/run-settled.json"
+        )
+        self.write_json(
+            evidence_relative,
+            {
+                "work_item_id": self.target_id,
+                "work_item_sha256": work_item_sha,
+                "result": "passed",
+            },
+        )
+        evidence_sha = hashlib.sha256(
+            (self.root / evidence_relative).read_bytes()
+        ).hexdigest()
+        self.write_json(
+            f"{demand_compiler.CHECKPOINT_ROOT}/{self.target_id}.json",
+            {
+                "work_item_id": self.target_id,
+                "evidence": evidence_relative,
+                "capability_updates": [
+                    {
+                        "id": self.capability_id,
+                        "from_revision": 2,
+                        "to_revision": 3,
+                    }
+                ],
+                "requirements": {
+                    "mode": "implementation",
+                    "refs": work_item["spec"]["requirements"]["refs"],
+                },
+                "source_lab": {
+                    "scenarios": [self.fixture_id],
+                },
+            },
+        )
+        self.write_json(
+            demand_compiler.STATE_PATH,
+            {
+                "work_items": {
+                    self.target_id: {
+                        "status": "completed",
+                        "work_item_sha256": work_item_sha,
+                        "last_evidence": evidence_relative,
+                        "last_evidence_sha256": evidence_sha,
+                    }
+                }
+            },
+        )
+        self.commit("settle delivery")
+
 
 class DemandCompilerTests(unittest.TestCase):
     def test_compiles_shortest_authority_and_delivery_chain(self):
@@ -353,6 +442,43 @@ class DemandCompilerTests(unittest.TestCase):
             with self.assertRaisesRegex(
                 demand_compiler.DemandCompilerError,
                 "DELIVERY_BLUEPRINT_IDENTITY_INVALID",
+            ):
+                fixture.compiler().compile(fixture.intent_path())
+
+    def test_completed_delivery_is_evidence_settled_after_capability_revision(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = DemandFixture(Path(directory))
+            fixture.settle_delivery()
+
+            plan = fixture.compiler().compile(fixture.intent_path())
+
+            self.assertEqual("delivery_completed", plan.state)
+            self.assertEqual("DELIVERY_EVIDENCE_SETTLED", plan.reason_code)
+            self.assertEqual(
+                3,
+                plan.bindings["settlement"]["to_revision"],
+            )
+
+    def test_completed_delivery_with_tampered_checkpoint_fails_closed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = DemandFixture(Path(directory))
+            fixture.settle_delivery()
+            checkpoint = (
+                fixture.root
+                / demand_compiler.CHECKPOINT_ROOT
+                / f"{fixture.target_id}.json"
+            )
+            value = json.loads(checkpoint.read_text())
+            value["capability_updates"][0]["to_revision"] = 2
+            fixture.write_json(
+                str(checkpoint.relative_to(fixture.root)),
+                value,
+            )
+            fixture.commit("tamper settlement")
+
+            with self.assertRaisesRegex(
+                demand_compiler.DemandCompilerError,
+                "DELIVERY_SETTLEMENT_INVALID",
             ):
                 fixture.compiler().compile(fixture.intent_path())
 

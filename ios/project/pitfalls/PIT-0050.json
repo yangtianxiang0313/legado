@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0050",
+  "revision": 1,
+  "title": "Delivery Intent 完成后不能继续按创建时 Capability revision 重编译",
+  "fingerprint": "completed-delivery-intent-recompiled-against-evolved-capability",
+  "capabilities": ["CAP-KNOWLEDGE-CONTROL"],
+  "symptoms": [
+    "产品 WorkItem completed 且 Capability 正常升版后，Demand Compiler 报 CAPABILITY_BINDING_DRIFT",
+    "Loop 完成一次交付后无法进入下一需求或 queue_empty",
+    "已消费 Delivery Intent 被重复视为 delivery_ready"
+  ],
+  "conditions": [
+    "Intent 绑定交付开始时的 Capability revision",
+    "完成 WorkItem 按规则递增同一 Capability revision",
+    "编译器先校验当前 revision，未先识别完成结算"
+  ],
+  "root_cause": "Delivery Intent 只有待办状态，没有由完成 Evidence 驱动的结算状态；创建时 revision 被错误当成永久等于当前 revision。",
+  "diagnosis": [
+    "检查 target WorkItem 在 state 中是否 completed",
+    "核对 Checkpoint capability update 是否从 Intent revision 递增到完成 revision",
+    "核对 runtime、WorkItem、Evidence、Checkpoint、Requirement refs 与 Golden scenarios 是否同源"
+  ],
+  "fix": "completed target 进入独立 settlement 校验；证明完整输出 delivery_completed，Supervisor 保留可观察性但不调度。任何完成证明不完整均 DELIVERY_SETTLEMENT_INVALID。",
+  "prevention": {
+    "architecture_rule": "长生命周期 Intent 必须区分创建绑定、执行绑定和完成结算；历史 revision 由 Checkpoint update 连接到当前 Capability，而不是要求永久相等。",
+    "tests": [
+      "ios/harness/tests/test_demand_compiler.py",
+      "ios/harness/tests/test_loop_supervisor.py"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-LOOP-DEMAND-COMPILER-003",
+    "until": "IOS-DELIVERY-INTENT-SETTLEMENT-001"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T161212Z-ios-delivery-intent-settlement-001-7f95fd32.json"
+  ]
+}

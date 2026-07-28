@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-DELIVERY-INTENT-SETTLEMENT-001",
+  "summary": "首个 SourceRuntime 产品交付完成后，Delivery Intent 仍绑定 CAP-RUNTIME-PORTS@2，而 Capability 已由完成 WorkItem 提升到 revision 3；旧 Demand Compiler 在验证完成语义前先比较当前 Capability，导致 CAPABILITY_BINDING_DRIFT。现新增完成结算协议：target runtime 为 completed 时，编译器从 committed state、物化 WorkItem、immutable passed Evidence、Checkpoint 与 Capability update 验证同一 target、原 capability revision、递增完成 revision、Requirement refs 和 Golden scenarios。证明完整时输出可观察的 delivery_completed/DELIVERY_EVIDENCE_SETTLED；证明缺失或篡改时统一 fail closed 为 DELIVERY_SETTLEMENT_INVALID。Loop Supervisor 过滤已结算计划，不再重复调度；仅剩已结算 Intent 时进入 queue_empty。6 项定向测试、199 项完整 Harness tests 与正式 verify 通过。",
+  "evidence": "ios/harness/evidence/runs/run-20260728T161212Z-ios-delivery-intent-settlement-001-7f95fd32.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 47,
+      "to_revision": 48,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": ["ADR-0004"]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项不消费、生成或发布业务知识"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项只修复已完成 Delivery Intent 的控制面结算，不改变产品兼容语义"
+  },
+  "pitfalls": {
+    "records": ["ios/project/pitfalls/PIT-0050.json"],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "当前只实证一个 Delivery Intent 的完成结算；多 Intent 并存和后续 Capability 多次演进需要连续循环验证",
+    "结算依赖 state、WorkItem、Evidence 与 Checkpoint 均已提交；PR 合并前工作区会因 HEAD 绑定暂时不可结算",
+    "SourceRuntime conformance-targeted 尚未直接执行产品 pipeline 与 Android Golden 差分",
+    "queue_empty 只表示没有已声明的未结算 Intent，不表示 Android 全部能力已迁移"
+  ],
+  "next_actions": [
+    "在合并后的干净提交验证 Demand plan 输出 delivery_completed 且 Loop inspect 进入 queue_empty",
+    "升级 SourceRuntime ConformanceCLI 为真实 pipeline canonical projection 与 first-divergence",
+    "从 Android 业务地图选择第二个高价值切片，验证多 Intent 连续自治推进"
+  ],
+  "created_at": "2026-07-28T16:12:13Z"
+}

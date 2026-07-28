@@ -1,0 +1,130 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-DELIVERY-INTENT-SETTLEMENT-001",
+    "title": "让已完成 Delivery Intent 由 Evidence 结算并退出调度",
+    "priority": 100,
+    "risk": "high",
+    "labels": ["phase-0", "control-plane", "corrective", "loop-engine", "demand", "settlement"]
+  },
+  "spec": {
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "intent": "修复首个产品交付 completed 后 Delivery Intent 仍按旧 capability revision 重新编译并产生 CAPABILITY_BINDING_DRIFT。Demand Compiler 在看到目标 completed 时，必须验证 committed state、物化 WorkItem、immutable passed Evidence、Checkpoint、原 capability revision 到完成 revision 的 update、Requirement refs 和 Golden scenarios；全部成立才输出 delivery_completed/DELIVERY_EVIDENCE_SETTLED。Loop Supervisor 保留该计划的可观察性但将其从待调度集合过滤；没有新需求时进入 queue_empty。任何缺证、篡改、错绑或 revision 未递增均 fail closed 为 DELIVERY_SETTLEMENT_INVALID。",
+    "depends_on": [
+      "IOS-SOURCE-RUNTIME-HTML-CSS-001",
+      "IOS-READINESS-EVIDENCE-HANDOFF-RECOVERY-002"
+    ],
+    "scope": {
+      "allow_write": [
+        "ios/harness/demand_compiler.py",
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/tests/test_demand_compiler.py",
+        "ios/harness/tests/test_loop_supervisor.py",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-DELIVERY-INTENT-SETTLEMENT-001.json",
+        "ios/project/pitfalls/PIT-0050.json"
+      ],
+      "deny_write": [
+        "app/**", "modules/**", "ios/Packages/**", ".github/**",
+        "ios/harness/harness.py", "ios/harness/config.json", "ios/harness/schemas/**",
+        "ios/harness/business-knowledge/**", "ios/harness/android-intake/**",
+        "ios/harness/source-lab/**", "ios/harness/oracle/**", "ios/harness/goldens/**",
+        "ios/project/android-intake/**", "ios/project/business-knowledge/**",
+        "ios/project/requirements/**", "ios/project/approvals/**",
+        "ios/project/baseline.json", "ios/docs/**"
+      ],
+      "max_files_changed": 7,
+      "max_changed_lines": 1600
+    },
+    "inputs": {
+      "context_files": [
+        "ios/harness/demand_compiler.py",
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/tests/test_demand_compiler.py",
+        "ios/harness/tests/test_loop_supervisor.py",
+        "ios/project/delivery-intents/DINT-SOURCE-RUNTIME-HTML-CSS-001.json",
+        "ios/project/checkpoints/IOS-SOURCE-RUNTIME-HTML-CSS-001.json"
+      ],
+      "android_source_anchors": [],
+      "fixtures": []
+    },
+    "architecture_refs": ["ARCH-018", "ADR-0004"],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "completed 目标只有在 state、WorkItem、passed Evidence、Checkpoint、Capability revision update、Requirement 与 Golden 全部一致时编译为 delivery_completed。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "缺失、篡改、错绑或未递增 revision 的完成证明产生 DELIVERY_SETTLEMENT_INVALID，不回退为 delivery_ready 或跳过。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "Loop Supervisor 不调度 delivery_completed；仅有已结算 Intent 时进入 queue_empty，新增 Intent 仍可正常按优先级推进。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-4",
+          "statement": "真实仓库 Demand plan 可观察结算结果，Harness Doctor 绿色，Loop inspect 不再 CAPABILITY_BINDING_DRIFT。",
+          "verified_by": ["harness-tests", "memory-close"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": ["dependency-policy", "harness-tests"]
+    },
+    "baseline_checks": ["dependency-policy", "harness-tests"],
+    "budget": {
+      "wall_clock_seconds": 5400,
+      "max_edit_verify_cycles": 4,
+      "max_targeted_test_runs": 16,
+      "max_full_test_runs": 4,
+      "max_infra_retries": 1
+    },
+    "gates": [],
+    "completion_effects": {
+      "health": {
+        "delivery_intent_settlement": "completed_evidence_bound"
+      }
+    },
+    "memory": {
+      "adr": "not_required",
+      "capability_state_required": true,
+      "checkpoint_required": true,
+      "pitfall_update_required": true
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "refs": [],
+      "none_reason": "本项只修复 Delivery Intent 调度结算"
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "not_applicable",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [],
+      "expected_ledger_transitions": [],
+      "context_budget": {"max_claims": 8, "max_bytes": 32768},
+      "none_reason": "本项不消费、生成或发布业务知识"
+    },
+    "source_lab": {
+      "mode": "not_applicable",
+      "behaviors": [],
+      "scenarios": [],
+      "none_reason": "本项不执行书源行为"
+    },
+    "stop_on": ["scope_violation", "same_failure_twice", "budget_exhausted", "human_decision_required"]
+  }
+}
