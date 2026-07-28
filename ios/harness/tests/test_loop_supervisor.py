@@ -584,9 +584,7 @@ class DeliveryBlueprintTests(unittest.TestCase):
             f"ios/project/requirements/accepted/{requirement_id}.json"
         )
         fixture.fixture.write_json(record_relative, record)
-        record_sha = hashlib.sha256(
-            (root / record_relative).read_bytes()
-        ).hexdigest()
+        record_sha = loop_supervisor.sha256_json(record)
         fixture.fixture.write_json(
             "ios/project/requirements/catalog.json",
             {

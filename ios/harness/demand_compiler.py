@@ -34,6 +34,16 @@ def _sha256(payload: bytes) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+def _sha256_json(value: Any) -> str:
+    payload = json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return _sha256(payload)
+
+
 def _load_object(path: Path, reason: str) -> Dict[str, Any]:
     if path.is_symlink() or not path.is_file():
         raise DemandCompilerError(f"{reason}_NOT_REGULAR")
@@ -428,7 +438,7 @@ class DemandCompiler:
             self._head_regular((record_relative,))
             record_path = self.resolve(record_relative)
             record = _load_object(record_path, "REQUIREMENT_RECORD")
-            record_sha = _sha256(record_path.read_bytes())
+            record_sha = _sha256_json(record)
             if (
                 record_sha != entry.get("record_sha256")
                 or record.get("id") != key[0]

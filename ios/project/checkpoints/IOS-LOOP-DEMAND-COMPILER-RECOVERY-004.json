@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-LOOP-DEMAND-COMPILER-RECOVERY-004",
+  "summary": "已修复 Demand Compiler 与 bound-delivery-blueprint 的 Requirement record 摘要语义。Android Intake Catalog 的 record_sha256 使用 canonical JSON digest，而 Git HEAD binding 使用原始文件内容；现在两种绑定分别验证，不再把 pretty-printed accepted record 误报为漂移。测试覆盖 canonical digest 通过、语义篡改拒绝和 delivery blueprint 同合同。真实 DINT-SOURCE-RUNTIME-HTML-CSS-001 已在当前 HEAD 上成功编译为 KNOWLEDGE_AUTHORITY_REQUIRED，明确列出 BKP-SOURCE-RUNTIME-001@1 与 DRV-SOURCE-RUNTIME-BOUNDARY-001@1 为 proposal_only，并同时绑定 protected Golden、Requirement、Capability 与 Catalog 摘要。",
+  "evidence": "ios/harness/evidence/runs/run-20260728T134926Z-ios-loop-demand-compiler-recovery-004-b1b807ff.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 37,
+      "to_revision": 38,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": ["ADR-0002", "ADR-0004"]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null,
+    "none_reason": "本项修复需求编译摘要合同，不修改产品 Requirement"
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项不消费、生成或发布业务知识"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null,
+    "none_reason": "本项只修复控制面摘要，不执行 SourceLab"
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "修复对齐既有 Android Intake canonicalization，不改变 Catalog 或 Requirement 格式"
+  },
+  "pitfalls": {
+    "records": ["ios/project/pitfalls/PIT-0039.json"],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "SourceRuntime Business Knowledge 仍待受信发布",
+    "Requirement readiness 仍待受信新 revision",
+    "真实产品 blueprint 尚未生成"
+  ],
+  "next_actions": [
+    "建立 Business Knowledge Publisher 并消费当前 Demand Plan 的 proposal_only artifacts",
+    "发布 Requirement readiness 新 revision",
+    "继续同一 Intent 直到 delivery_ready"
+  ],
+  "created_at": "2026-07-28T13:49:26Z"
+}

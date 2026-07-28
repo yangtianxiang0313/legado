@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 37,
+  "revision": 38,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -57,7 +57,7 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260728T134422Z-ios-loop-demand-compiler-003-7ad7e157.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260728T134926Z-ios-loop-demand-compiler-recovery-004-b1b807ff.json",
   "next_actions": [
     "BKP-INTEGRATIONS-001@4 与 DRV-INTEGRATION-PROFILES-001@4 在 Trusted Publisher promotion 前保持 proposal；只有 promotion/accept 决策才要求权威审查",
     "由 Harness/Proposal Compiler 的 recovers 内容寻址合同维持恢复谱系，并用有界 Catalog self-heal 支持控制面中断续跑；下一步由 Trusted Publisher 提升 JSON Schema，并自动重写 recovery Claim supersedes 以关闭 PIT-0012",
@@ -65,6 +65,6 @@
     "由受信 Requirement Publisher 根据 protected sl-html-basic-001 Golden 发布 REQ-ANDROID-SOURCE-PIPELINE-001 的 implementation_ready 新 revision",
     "生成并自动物化 IOS-SOURCE-RUNTIME-HTML-CSS-001 blueprint，执行 first-divergence 纵向交付"
   ],
-  "updated_at": "2026-07-28T13:44:23Z",
-  "updated_by": "IOS-LOOP-DEMAND-COMPILER-003"
+  "updated_at": "2026-07-28T13:49:26Z",
+  "updated_by": "IOS-LOOP-DEMAND-COMPILER-RECOVERY-004"
 }

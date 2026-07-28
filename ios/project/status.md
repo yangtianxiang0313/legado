@@ -2,13 +2,13 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-28T13:45:23Z
+- 更新时间：2026-07-28T13:50:31Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
 - 下一个可领取工作项：无
-- 最近完成：IOS-LOOP-DEMAND-COMPILER-003
+- 最近完成：IOS-LOOP-DEMAND-COMPILER-RECOVERY-004
 
 ## 健康度
 
@@ -39,7 +39,7 @@
 | knowledge_ui_topology | `candidate_verified` |
 | local_approval_ui | `verified` |
 | loop_demand_autonomy | `bound_delivery_blueprint_v1` |
-| loop_demand_compiler | `structured_delivery_intent_v1` |
+| loop_demand_compiler | `canonical_requirement_binding_v1` |
 | loop_engine | `local_mature` |
 | loop_supervisor | `local_verified` |
 | loop_trusted_verification | `real_codex_verified` |
@@ -86,6 +86,7 @@
 | IOS-LOOP-DEMAND-AUTONOMY-001 | 100 | `blocked` | IOS-AUTO-MATERIALIZATION-POLICY-001, IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002, IOS-ANDROID-GOLDEN-PUBLISHER-001 | 让 Loop 从受控交付蓝图持续生成并自动推进普通工作项 |
 | IOS-LOOP-DEMAND-AUTONOMY-RECOVERY-002 | 100 | `completed` | IOS-AUTO-MATERIALIZATION-POLICY-001, IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002, IOS-ANDROID-GOLDEN-PUBLISHER-001 | 恢复 Golden 发布后可重复基线并实现 Loop Demand Autonomy |
 | IOS-LOOP-DEMAND-COMPILER-003 | 100 | `completed` | IOS-LOOP-DEMAND-AUTONOMY-RECOVERY-002, IOS-ANDROID-GOLDEN-PUBLISHER-001 | 建立结构化 Delivery Intent 与 Loop Demand Compiler |
+| IOS-LOOP-DEMAND-COMPILER-RECOVERY-004 | 100 | `completed` | IOS-LOOP-DEMAND-COMPILER-003 | 修复 Requirement 规范化摘要绑定 |
 | IOS-LOOP-SUPERVISOR-001 | 100 | `cancelled` | IOS-HARNESS-APPROVAL-UI-001, IOS-HARNESS-TIMEOUT-CLEANUP-001, IOS-KNOWLEDGE-UI-TOPOLOGY-RECOVERY-002 | 建立可执行 Loop Supervisor 与按钮化物化控制面 |
 | IOS-LOOP-SUPERVISOR-E2E-001 | 100 | `completed` | IOS-LOOP-SUPERVISOR-RECOVERY-002 | 完成 Loop Supervisor 自托管 E2E 与进程组回收 |
 | IOS-LOOP-SUPERVISOR-RECOVERY-002 | 100 | `completed` | IOS-HARNESS-APPROVAL-UI-001, IOS-HARNESS-TIMEOUT-CLEANUP-001, IOS-KNOWLEDGE-UI-TOPOLOGY-RECOVERY-002 | 恢复并验证 Loop Supervisor 控制面 |
