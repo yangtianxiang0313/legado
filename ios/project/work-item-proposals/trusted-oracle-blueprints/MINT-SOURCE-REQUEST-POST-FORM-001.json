@@ -1,0 +1,251 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-ANDROID-POST-FORM-ATTESTATION-001",
+    "title": "泛化并验证 POST Form Android Oracle 受信双证明链",
+    "priority": 100,
+    "risk": "high",
+    "labels": [
+      "phase-1",
+      "conformance",
+      "android-oracle",
+      "source-lab",
+      "post-form",
+      "attestation",
+      "github-actions",
+      "trusted-proposal",
+      "candidate-only"
+    ]
+  },
+  "spec": {
+    "capability": "CAP-CONFORMANCE",
+    "intent": "把已完成的 POST Form Android local candidate 接到现有 GitHub-hosted 双证明链。workflow、ci_proposal 与 trusted_import 必须接受显式且内容寻址的 SourceLab scenario selector，支持 sl-post-form-001，同时保持 sl-html-basic-001 兼容。GitHub workflow 只能形成 candidate-only evidence/proposal archive；trusted importer 必须验证 repository、workflow、source digest、github-hosted runner、双 attestation subject、scenario/manifest/runner/payload digest 后输出结构化 review report。本项只泛化和验证受信提案能力，不运行 Golden Publisher、不晋级 SourceLab reference、不修改 Android/iOS 产品或 Fixture。",
+    "depends_on": [
+      "IOS-ANDROID-POST-FORM-ORACLE-RECOVERY-002"
+    ],
+    "scope": {
+      "allow_write": [
+        ".github/workflows/android-oracle-attestation.yml",
+        "ios/harness/oracle/ci_proposal.py",
+        "ios/harness/oracle/trusted_import.py",
+        "ios/harness/oracle/README.md",
+        "ios/harness/tests/test_oracle_ci_proposal.py",
+        "ios/harness/tests/test_oracle_trusted_import.py",
+        "ios/project/capabilities/CAP-CONFORMANCE.json",
+        "ios/project/checkpoints/IOS-ANDROID-POST-FORM-ATTESTATION-001.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        "app/**",
+        "modules/**",
+        "build.gradle",
+        "settings.gradle",
+        "gradle/**",
+        "ios/Packages/**",
+        "ios/publisher/**",
+        "ios/harness/harness.py",
+        "ios/harness/config.json",
+        "ios/harness/schemas/**",
+        "ios/harness/android-intake/**",
+        "ios/harness/source-lab/**",
+        "ios/harness/fixtures/**",
+        "ios/harness/goldens/**",
+        "ios/harness/normalization/**",
+        "ios/harness/oracle/android-runner/**",
+        "ios/project/android-intake/**",
+        "ios/project/requirements/**",
+        "ios/project/business-knowledge/**",
+        "ios/project/approvals/**",
+        "ios/project/work-item-proposals/**",
+        "ios/project/baseline.json",
+        "ios/docs/**"
+      ],
+      "max_files_changed": 9,
+      "max_changed_lines": 3200
+    },
+    "inputs": {
+      "context_files": [
+        ".github/workflows/android-oracle-attestation.yml",
+        "ios/harness/oracle/ci_proposal.py",
+        "ios/harness/oracle/trusted_import.py",
+        "ios/harness/oracle/README.md",
+        "ios/harness/oracle/android-runner/orchestrator.py",
+        "ios/harness/tests/test_oracle_ci_proposal.py",
+        "ios/harness/tests/test_oracle_trusted_import.py",
+        "ios/harness/fixtures/source-lab/sl-post-form-001/case.json",
+        "ios/project/checkpoints/IOS-ANDROID-POST-FORM-ORACLE-RECOVERY-002.json"
+      ],
+      "android_source_anchors": [
+        "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+        "app/src/main/java/io/legado/app/model/webBook/WebBook.kt"
+      ],
+      "fixtures": [
+        "sl-post-form-001"
+      ]
+    },
+    "architecture_refs": [
+      "ARCH-008",
+      "ARCH-011",
+      "ARCH-014",
+      "ARCH-017",
+      "ADR-0002",
+      "ADR-0004"
+    ],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "workflow_dispatch 提供显式 scenario selector，默认值保持 sl-html-basic-001；selector 只能解析仓内 SourceLab manifest 中的场景，路径穿越、未知/retired 场景、输入与 manifest digest 漂移均 fail closed。",
+          "verified_by": [
+            "harness-tests",
+            "source-lab-contract"
+          ],
+          "requirement_clauses": [
+            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-01"
+          ],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "ci_proposal 的 evidence/proposal archive 与 canonical payload 显式绑定 scenario id、scenario digest、SourceLab manifest digest、Android baseline、runner digest 和输入 digest；sl-html-basic-001 与 sl-post-form-001 的打包均确定性且互不串用。",
+          "verified_by": [
+            "harness-tests",
+            "fixture-contract",
+            "android-intake-contract"
+          ],
+          "requirement_clauses": [
+            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-01"
+          ],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "trusted_import 在双 attestation、repository、signer workflow、source digest、github-hosted runner 与 archive 绑定之外，复算并核对 scenario selector 和全部 scenario/manifest/runner/payload digest；任何替换、遗漏或跨场景重放均拒绝。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [
+            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-01"
+          ],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-4",
+          "statement": "workflow 对 sl-post-form-001 调用现有真实 Android Orchestrator 的显式 --scenario 路径，保留冻结 commit/tree、专用 emulator、adb reverse、offline execution 和 loopback-only 网络边界；不从 Fixture 或 input.json 生成 Android expected。",
+          "verified_by": [
+            "harness-tests",
+            "source-lab-smoke",
+            "dependency-policy"
+          ],
+          "requirement_clauses": [
+            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-01"
+          ],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-5",
+          "statement": "本项没有 promote、publish、accept 或 update-golden 路径；输出仍是 candidate_only review report，不写 Golden、Publisher、Fixture、Requirement、Approval、SourceLab 控制、Android/iOS 产品或 Package。",
+          "verified_by": [
+            "dependency-policy",
+            "harness-tests",
+            "memory-close"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-6",
+          "statement": "测试覆盖两个合法场景、默认兼容、未知/retired/path traversal selector、manifest/scenario/input digest 漂移、跨场景 archive 重放、双 attestation 伪造与 importer 无仓内写入；README、Capability 与 Checkpoint 记录实际边界和下一步真实 GitHub run。",
+          "verified_by": [
+            "harness-tests",
+            "source-lab-tests",
+            "memory-close"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": [
+        "android-intake-contract",
+        "fixture-contract",
+        "dependency-policy",
+        "harness-tests",
+        "source-lab-contract",
+        "source-lab-tests",
+        "source-lab-smoke"
+      ]
+    },
+    "baseline_checks": [
+      "harness-tests",
+      "source-lab-smoke"
+    ],
+    "budget": {
+      "wall_clock_seconds": 14400,
+      "max_edit_verify_cycles": 4,
+      "max_targeted_test_runs": 20,
+      "max_full_test_runs": 4,
+      "max_infra_retries": 2
+    },
+    "gates": [],
+    "completion_effects": {
+      "health": {
+        "android_post_form_attestation": "trusted_proposal_pipeline_ready"
+      }
+    },
+    "memory": {
+      "adr": "not_required",
+      "capability_state_required": true,
+      "checkpoint_required": true,
+      "pitfall": "if_non_obvious_and_preventable"
+    },
+    "requirements": {
+      "mode": "characterization",
+      "refs": [
+        {
+          "id": "REQ-ANDROID-SOURCE-PIPELINE-001",
+          "revision": 1,
+          "clauses": [
+            "RC-01"
+          ]
+        }
+      ],
+      "none_reason": null
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "not_applicable",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [],
+      "expected_ledger_transitions": [],
+      "context_budget": {
+        "max_claims": 12,
+        "max_bytes": 49152
+      },
+      "none_reason": "本项泛化既有 Android characterization 的受信证明链，不生成或发布业务知识"
+    },
+    "source_lab": {
+      "mode": "reuse",
+      "behaviors": [
+        "transport.post-form"
+      ],
+      "scenarios": [
+        "sl-post-form-001"
+      ],
+      "none_reason": null
+    },
+    "stop_on": [
+      "baseline_red",
+      "scope_violation",
+      "network_escape",
+      "attestation_binding_drift",
+      "golden_mutation",
+      "protected_path_mutation",
+      "same_failure_twice",
+      "budget_exhausted",
+      "human_decision_required"
+    ]
+  }
+}
