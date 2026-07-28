@@ -1,0 +1,248 @@
+name: Business Knowledge Publisher
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_commit:
+        description: Exact protected publisher source commit
+        required: true
+        type: string
+      packet_proposal_sha256:
+        description: Exact raw SHA-256 of the Packet proposal
+        required: true
+        type: string
+      driver_proposal_sha256:
+        description: Exact raw SHA-256 of the Driver proposal
+        required: true
+        type: string
+      golden_receipt_sha256:
+        description: Exact raw SHA-256 of the protected Golden receipt
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: business-knowledge-publisher
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Verify evidence and propose published Business Knowledge
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: business-knowledge-publisher
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TARGET_BRANCH: feature/ios-ai-harness-bootstrap
+      AUTHORIZED_ACTOR_ID: "35530717"
+      SOURCE_COMMIT: ${{ inputs.source_commit }}
+      PACKET_PROPOSAL_SHA256: ${{ inputs.packet_proposal_sha256 }}
+      DRIVER_PROPOSAL_SHA256: ${{ inputs.driver_proposal_sha256 }}
+      GOLDEN_RECEIPT_SHA256: ${{ inputs.golden_receipt_sha256 }}
+      PACKET_PROPOSAL: ios/project/business-knowledge/packets/proposals/BKP-SOURCE-RUNTIME-HTML-CSS-001/r0001.json
+      DRIVER_PROPOSAL: ios/project/business-knowledge/drivers/proposals/DRV-SOURCE-RUNTIME-HTML-CSS-001/r0001.json
+      GOLDEN_RECEIPT: ios/harness/goldens/releases/sl-html-basic-001-30355913470-1.json
+    steps:
+      - name: Checkout exact publisher target
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          path: publisher
+          persist-credentials: true
+          ref: ${{ github.sha }}
+
+      - name: Validate publisher identity and immutable inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_ACTOR_ID}" = "${AUTHORIZED_ACTOR_ID}"
+          test "${GITHUB_REF_NAME}" = "${TARGET_BRANCH}"
+          test "${GITHUB_SHA}" = "${SOURCE_COMMIT}"
+          test "$(git -C publisher rev-parse HEAD)" = "${SOURCE_COMMIT}"
+          test -z "$(git -C publisher status --porcelain=v1 --untracked-files=all)"
+          for digest in \
+            "${PACKET_PROPOSAL_SHA256}" \
+            "${DRIVER_PROPOSAL_SHA256}" \
+            "${GOLDEN_RECEIPT_SHA256}"
+          do
+            test "${#digest}" -eq 64
+            test -z "$(printf '%s' "${digest}" | tr -d '0-9a-f')"
+          done
+          test "$(shasum -a 256 "publisher/${PACKET_PROPOSAL}" | cut -d' ' -f1)" = \
+            "${PACKET_PROPOSAL_SHA256}"
+          test "$(shasum -a 256 "publisher/${DRIVER_PROPOSAL}" | cut -d' ' -f1)" = \
+            "${DRIVER_PROPOSAL_SHA256}"
+          test "$(shasum -a 256 "publisher/${GOLDEN_RECEIPT}" | cut -d' ' -f1)" = \
+            "${GOLDEN_RECEIPT_SHA256}"
+          remote_target="$(
+            git ls-remote origin "refs/heads/${TARGET_BRANCH}" | cut -f1
+          )"
+          test "${remote_target}" = "${SOURCE_COMMIT}"
+
+          self_run="$(
+            gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          )"
+          test "$(jq -r '.event' <<<"${self_run}")" = "workflow_dispatch"
+          test "$(jq -r '.head_sha' <<<"${self_run}")" = "${SOURCE_COMMIT}"
+          test "$(jq -r '.actor.id' <<<"${self_run}")" = "${AUTHORIZED_ACTOR_ID}"
+          test "$(jq -r '.run_attempt' <<<"${self_run}")" = \
+            "${GITHUB_RUN_ATTEMPT}"
+          published_at="$(jq -r '.created_at' <<<"${self_run}")"
+          test -n "${published_at}"
+          printf 'PUBLISHED_AT=%s\n' "${published_at}" >>"${GITHUB_ENV}"
+
+      - name: Stage deterministic publication transaction
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B publisher/ios/publisher/business_knowledge_publisher.py \
+            prepare \
+            --root publisher \
+            --source-commit "${SOURCE_COMMIT}" \
+            --authorized-run-id "${GITHUB_RUN_ID}/${GITHUB_RUN_ATTEMPT}" \
+            --packet-proposal "${PACKET_PROPOSAL}" \
+            --packet-proposal-sha256 "${PACKET_PROPOSAL_SHA256}" \
+            --driver-proposal "${DRIVER_PROPOSAL}" \
+            --driver-proposal-sha256 "${DRIVER_PROPOSAL_SHA256}" \
+            --golden-receipt "${GOLDEN_RECEIPT}" \
+            --golden-receipt-sha256 "${GOLDEN_RECEIPT_SHA256}" \
+            --requirement-ref REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01 \
+            --requirement-ref REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-02 \
+            --requirement-ref REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-03 \
+            --requirement-ref REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-04 \
+            --target-work-item IOS-SOURCE-RUNTIME-HTML-CSS-001 \
+            --approved-by "github-actions[bot]:${GITHUB_ACTOR_ID}" \
+            --published-at "${PUBLISHED_AT}" \
+            --output-dir "${RUNNER_TEMP}/business-knowledge-release" \
+            | tee "${RUNNER_TEMP}/publisher-report.json"
+
+      - name: Install only the staged authority transaction
+        shell: bash
+        run: |
+          set -euo pipefail
+          transaction="${RUNNER_TEMP}/business-knowledge-release/transaction.json"
+          test "$(jq -r '.authority' "${transaction}")" = \
+            "protected_business_knowledge"
+          test "$(jq -r '.source_commit' "${transaction}")" = \
+            "${SOURCE_COMMIT}"
+          test "$(jq -r '.publisher_run_id' "${transaction}")" = \
+            "${GITHUB_RUN_ID}/${GITHUB_RUN_ATTEMPT}"
+          test "$(jq '.install | length' "${transaction}")" -eq 5
+          test "$(jq '.delete | length' "${transaction}")" -eq 2
+
+          while IFS=$'\t' read -r relative digest
+          do
+            case "${relative}" in
+              ios/project/business-knowledge/catalog.json|\
+              ios/project/business-knowledge/coverage/BKL-SOURCE-RUNTIME-HTML-CSS-001.json|\
+              ios/project/business-knowledge/packets/published/BKP-SOURCE-RUNTIME-HTML-CSS-001/r0001.json|\
+              ios/project/business-knowledge/drivers/published/DRV-SOURCE-RUNTIME-HTML-CSS-001/r0001.json|\
+              ios/project/business-knowledge/releases/BKP-SOURCE-RUNTIME-HTML-CSS-001-r0001-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.json)
+                ;;
+              *)
+                printf 'unexpected install path: %s\n' "${relative}" >&2
+                exit 1
+                ;;
+            esac
+            source_file="${RUNNER_TEMP}/business-knowledge-release/${relative}"
+            test "$(shasum -a 256 "${source_file}" | cut -d' ' -f1)" = \
+              "${digest}"
+            install -D -m 0644 "${source_file}" "publisher/${relative}"
+          done < <(
+            jq -r '.install[] | [.path, .sha256] | @tsv' "${transaction}"
+          )
+
+          actual_deletes="$(
+            jq -r '.delete[]' "${transaction}" | sort
+          )"
+          expected_deletes="$(
+            printf '%s\n' "${DRIVER_PROPOSAL}" "${PACKET_PROPOSAL}" | sort
+          )"
+          test "${actual_deletes}" = "${expected_deletes}"
+          test "$(shasum -a 256 "publisher/${PACKET_PROPOSAL}" | cut -d' ' -f1)" = \
+            "${PACKET_PROPOSAL_SHA256}"
+          test "$(shasum -a 256 "publisher/${DRIVER_PROPOSAL}" | cut -d' ' -f1)" = \
+            "${DRIVER_PROPOSAL_SHA256}"
+          rm "publisher/${PACKET_PROPOSAL}" "publisher/${DRIVER_PROPOSAL}"
+
+          actual="$(
+            git -C publisher status \
+              --porcelain=v1 \
+              --untracked-files=all \
+              | awk '{print $2}' \
+              | sort
+          )"
+          expected="$(
+            {
+              jq -r '.install[].path' "${transaction}"
+              jq -r '.delete[]' "${transaction}"
+            } | sort
+          )"
+          test "${actual}" = "${expected}"
+
+      - name: Independently verify the installed graph and next Loop state
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B publisher/ios/harness/business-knowledge/business_knowledge.py \
+            doctor --root publisher
+          python3 -B publisher/ios/harness/harness.py \
+            --root publisher doctor
+          python3 -B publisher/ios/harness/demand_compiler.py \
+            --root publisher plan \
+            | tee "${RUNNER_TEMP}/demand-plan.json"
+          jq -e '
+            .state == "requirement_readiness_required"
+            and .reason_code == "REQUIREMENT_READINESS_REQUIRED"
+            and .authority_transition == true
+          ' "${RUNNER_TEMP}/demand-plan.json"
+
+      - name: Commit release branch and create review PR
+        shell: bash
+        run: |
+          set -euo pipefail
+          remote_target="$(
+            git ls-remote origin "refs/heads/${TARGET_BRANCH}" | cut -f1
+          )"
+          test "${remote_target}" = "${SOURCE_COMMIT}"
+          release_branch="knowledge/source-runtime-html-css-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          test -z "$(
+            git ls-remote origin "refs/heads/${release_branch}"
+          )"
+          git -C publisher switch -c "${release_branch}"
+          git -C publisher config user.name "github-actions[bot]"
+          git -C publisher config \
+            user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C publisher add \
+            ios/project/business-knowledge/catalog.json \
+            ios/project/business-knowledge/coverage/BKL-SOURCE-RUNTIME-HTML-CSS-001.json \
+            ios/project/business-knowledge/packets/published/BKP-SOURCE-RUNTIME-HTML-CSS-001/r0001.json \
+            ios/project/business-knowledge/drivers/published/DRV-SOURCE-RUNTIME-HTML-CSS-001/r0001.json \
+            "ios/project/business-knowledge/releases/BKP-SOURCE-RUNTIME-HTML-CSS-001-r0001-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.json" \
+            "${PACKET_PROPOSAL}" \
+            "${DRIVER_PROPOSAL}"
+          git -C publisher commit \
+            -m "chore(ios): publish HTML/CSS SourceRuntime knowledge"
+          git -C publisher push origin "HEAD:refs/heads/${release_branch}"
+          pr_url="$(
+            gh pr create \
+              --repo "${GITHUB_REPOSITORY}" \
+              --base "${TARGET_BRANCH}" \
+              --head "${release_branch}" \
+              --title "chore(ios): publish HTML/CSS SourceRuntime knowledge" \
+              --body "Environment-authorized Business Knowledge publication.
+
+- Publisher run: ${GITHUB_RUN_ID}/${GITHUB_RUN_ATTEMPT}
+- Publisher source: ${SOURCE_COMMIT}
+- Packet proposal SHA-256: ${PACKET_PROPOSAL_SHA256}
+- Driver proposal SHA-256: ${DRIVER_PROPOSAL_SHA256}
+- Golden receipt SHA-256: ${GOLDEN_RECEIPT_SHA256}
+- Authority transition: proposal_only → protected_business_knowledge
+
+The atomic transaction removes the two promoted proposals and adds only the published Packet, resolved Driver, complete Coverage Ledger, immutable release receipt, and derived Catalog."
+          )"
+          printf 'Publisher PR: %s\n' "${pr_url}" \
+            | tee -a "${GITHUB_STEP_SUMMARY}"

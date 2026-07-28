@@ -7,7 +7,7 @@
   "control_sha256": "49dd3ca2671ff39596835b451419375efd5638c47db3728aee8530efad039878",
   "authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
   "coverage_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-  "proposal_sha256": "2f4226ae8c6e830a3b21d6dbeac9a2bfb35db1e70b1fa86063b7d61aef52cc5c",
+  "proposal_sha256": "31246a007a8d20fea7b6542a7ce72912156cc1cc440a99cd57e218a8333aeda5",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [],
   "architecture_drivers": [],
@@ -48,6 +48,12 @@
       "revision": 1,
       "path": "ios/project/business-knowledge/packets/proposals/BKP-SOURCE-RUNTIME-001/r0001.json",
       "sha256": "bf92b04d2a7d8d5ab451e27619510d9c51c435453af98067c641a9477e3a3ce5"
+    },
+    {
+      "id": "BKP-SOURCE-RUNTIME-HTML-CSS-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/packets/proposals/BKP-SOURCE-RUNTIME-HTML-CSS-001/r0001.json",
+      "sha256": "86f49cea5399786d981b30c7b482c2ca0450e8d9f516690789a670fda76e5848"
     },
     {
       "id": "BKP-UI-TOPOLOGY-001",
@@ -96,6 +102,12 @@
       "revision": 1,
       "path": "ios/project/business-knowledge/drivers/proposals/DRV-SOURCE-RUNTIME-BOUNDARY-001/r0001.json",
       "sha256": "073989c2c04983c8cff14f1db140c3e991c9fb46672d0ce675a40b9837e24b82"
+    },
+    {
+      "id": "DRV-SOURCE-RUNTIME-HTML-CSS-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/drivers/proposals/DRV-SOURCE-RUNTIME-HTML-CSS-001/r0001.json",
+      "sha256": "fae3fb3a755a291074b86d5e39e0a91f841618d35d56e03952e1f6e7c11f0fe1"
     },
     {
       "id": "DRV-UI-TOPOLOGY-001",
