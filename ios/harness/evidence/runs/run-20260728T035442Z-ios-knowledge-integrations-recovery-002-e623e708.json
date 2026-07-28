@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "run_id": "run-20260728T035442Z-ios-knowledge-integrations-recovery-002-e623e708",
+  "work_item_id": "IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-002",
+  "work_item_sha256": "0127ab89d148da88ce81e96826bee62bdb23167af9792150e055fa6c1bb29ad4",
+  "result": "failed",
+  "inputs": {
+    "base_commit": "5464006200c4dea85132d711eeaacbff6645a92f",
+    "head_commit": "5464006200c4dea85132d711eeaacbff6645a92f",
+    "snapshot_sha256": "47be38942d91e5d144e51866fab43e93f289e97d538d079be89b8ece47bef5f3",
+    "baseline_sha256": "eeeaf0017b79a2420faf73c686a110a2d0372b2da865e42aa8db360fd3015e93",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
+    "architecture_rules_sha256": "51ebc4cff5921643f95d8a045c21ea85cad046acb99ed56026f77bf842642fa5",
+    "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+    "golden_manifest_sha256": "bdfab4595035e6ce3706380b88bd0ebfdff6773b77055c05988c4aa2dd24e597",
+    "fixture_manifest_sha256": "7ea6c2f30f258a65bfeb67ebc8bc3c7d9e283875f31731b513b7380d5f2aff2c",
+    "dependency_lock_sha256": null,
+    "source_lab_control_sha256": "73282c8b72a7db793887290ad2bfff707c61ea8fe57a583ef9bd2e3c3c3b9f2d",
+    "android_intake_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122",
+    "business_knowledge_control_sha256": "fb246d84d9d17350c360facdd7a2e2ab441b651b3fcf4e94b6d4b626245597e5",
+    "business_knowledge_authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
+    "business_knowledge_coverage_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "business_knowledge_proposal_sha256": "6dfcba76a1c73795cf5024efca44801f2b90b665964456785ad27813ea05b003",
+    "android_requirement_selection_sha256": null,
+    "source_lab_selection_sha256": null,
+    "knowledge_selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "environment": {
+      "platform": "macOS-26.4.1-arm64-arm-64bit",
+      "python": "3.9.6",
+      "xcode": "Xcode 26.0\nBuild version 17A324",
+      "swift": "Apple Swift version 6.2 (swiftlang-6.2.0.19.9 clang-1700.3.19.1)\nTarget: arm64-apple-macosx26.0"
+    }
+  },
+  "changes": {
+    "paths": [],
+    "changed_lines_approximate": 0,
+    "file_fingerprints": {},
+    "dirty_snapshot": {
+      "ios/project/events.jsonl": "file:0o644:56fa423938ccefb5e5719e8d62f11ee4aefd273015da3149c461d64403cc6312",
+      "ios/project/state.json": "file:0o644:1c3ce5c84e536b84e6d4794b02bcb910ae088da54ab6ca930be14bb3e593f174",
+      "ios/project/status.md": "file:0o644:ddededff586cf7172fbffdd5bc61f3e4287cb24553a488a75e79f7454c568020"
+    },
+    "diff_sha256": "21dbd62d3e2e064169744f621da55515f958ca73717c9ac898670b3c682d916c"
+  },
+  "policy_errors": [
+    "KNOWLEDGE_OUTPUT_MISSING: ios/project/business-knowledge/drivers/proposals/DRV-INTEGRATION-PROFILES-001/r0002.json",
+    "KNOWLEDGE_OUTPUT_MISSING: ios/project/business-knowledge/packets/proposals/BKP-INTEGRATIONS-001/r0002.json",
+    "没有检测到工作项范围内的实现或记忆变化"
+  ],
+  "architecture_errors": [],
+  "architecture_warnings": [],
+  "checks": [],
+  "failure": {
+    "class": "KNOWLEDGE_OUTPUT_MISSING",
+    "message": "KNOWLEDGE_OUTPUT_MISSING: ios/project/business-knowledge/drivers/proposals/DRV-INTEGRATION-PROFILES-001/r0002.json",
+    "fingerprint": "565f8f2af93619fa1a654d4c428b5181653be51eff759db363746945c15146ca"
+  },
+  "started_at": "2026-07-28T03:54:41Z",
+  "finished_at": "2026-07-28T03:54:43Z",
+  "reproduction": "python3 ios/harness/harness.py verify IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-002"
+}
