@@ -116,7 +116,7 @@ class LoopSupervisorInspectTests(unittest.TestCase):
         )
         decision = supervisor.inspect()
         self.assertEqual("queue_empty", decision.state)
-        self.assertEqual("NO_MATERIALIZED_READY_WORK_ITEM", decision.reason_code)
+        self.assertEqual("NO_ELIGIBLE_COMPILED_CANDIDATE", decision.reason_code)
 
         harness.state_value["work_items"]["IOS-READY-001"] = {
             "status": "blocked",
@@ -125,6 +125,34 @@ class LoopSupervisorInspectTests(unittest.TestCase):
         decision = supervisor.inspect()
         self.assertEqual("terminal_recovery", decision.state)
         self.assertEqual("BLOCKED_WORK_ITEM_REQUIRES_RESOLUTION", decision.reason_code)
+
+    def test_auto_materialization_priority_tie_is_not_guessed(self):
+        first = loop_supervisor.AutoMaterializationCandidate(
+            proposal_id="IOS-AUTO-A-001",
+            priority=90,
+            head_commit="a" * 40,
+            candidate_relative="candidate-a",
+            manifest_relative="manifest-a",
+            candidate_sha256="b" * 64,
+            manifest_sha256="c" * 64,
+        )
+        second = loop_supervisor.AutoMaterializationCandidate(
+            proposal_id="IOS-AUTO-B-001",
+            priority=90,
+            head_commit="a" * 40,
+            candidate_relative="candidate-b",
+            manifest_relative="manifest-b",
+            candidate_sha256="d" * 64,
+            manifest_sha256="e" * 64,
+        )
+        selected, blocker = loop_supervisor.LoopSupervisor._select_auto_candidate(
+            [first, second]
+        )
+        self.assertIsNone(selected)
+        self.assertEqual(
+            "AUTO_MATERIALIZATION_PRIORITY_AMBIGUOUS",
+            blocker["reason_code"],
+        )
 
 
 class MaterializationFixture:
@@ -811,7 +839,7 @@ class DriveTests(unittest.TestCase):
                 max_transitions=2,
             )
             self.assertEqual(
-                "no_materialized_ready_work_item",
+                "no_eligible_compiled_candidate",
                 result["outcome"],
             )
             self.assertEqual("queue_empty", result["decision"]["state"])

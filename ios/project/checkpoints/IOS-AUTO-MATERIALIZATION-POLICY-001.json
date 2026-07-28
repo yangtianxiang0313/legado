@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-AUTO-MATERIALIZATION-POLICY-001",
+  "summary": "删除普通 candidate 的无信息量物化确认。Loop Supervisor 新增 compiled-control-plane-v1：只扫描 proposal compiler 生成且已提交的 manifest；要求 repo/index clean，candidate、recipe、DAG、manifest 与依赖 provenance 均为 HEAD 普通文件，compiler check 和 preflight 可重算，依赖 completed，gates=[]，Requirement=control_plane，knowledge 仅 not_applicable/produce，completion effect 只更新 health，scope 不触碰产品、架构、配置、Schema、CI、Golden、Approval 或 authority。inspect 对唯一最高优先候选返回 AUTO_MATERIALIZATION_READY；drive 仅在外部配置显式启用策略时持锁复算并原子物化，事件绑定 policy、HEAD、candidate/manifest hash，随后继续 claim 和 argv Agent。脏工作区、manifest 漂移、critical risk、Human Decision、supersede、authority scope 和优先级并列均结构化 fail closed。当前 IOS-KNOWLEDGE-INTEGRATIONS-001 已按同一通用规则判定 eligible。正式 Evidence 通过依赖策略和 117 项 Harness 测试。",
+  "evidence": "ios/harness/evidence/runs/run-20260728T032518Z-ios-auto-materialization-policy-001-539bfb34.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 19,
+      "to_revision": 20,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": [
+      "ADR-0004"
+    ]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项不消费、生成或发布业务知识"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项不改变 Android 或 iOS 产品行为"
+  },
+  "pitfalls": {
+    "records": [
+      "ios/project/pitfalls/PIT-0019.json"
+    ],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "本地 Git commit 只证明内容进入当前仓库历史，不等同受保护分支签名或独立审批；生产无人值守仍需 trusted supervisor 重验",
+    "自动物化之后的 Agent 仍运行在本地用户权限下；Work Item scope 是验收边界，不是 OS 强隔离",
+    "safe scope 是显式 allowlist，新增控制面路径默认被拒绝，需要单独演进策略，不能临时绕过",
+    "最高优先级并列不会由 AI 猜测；需要修正 proposal priority 或建立结构化调度决策",
+    "materialize-review 仍作为恢复入口存在，调用者可能继续滥用；正常 drive 和文档已不再推荐该路径"
+  ],
+  "next_actions": [
+    "修复 Codex adapter 顶层参数顺序并固化真实首次 turn/resume 集成测试",
+    "在干净提交上由 compiled-control-plane-v1 自动物化 IOS-KNOWLEDGE-INTEGRATIONS-001",
+    "实现受保护分支/KMS 签名的 trusted supervisor 与独立 patch publisher",
+    "把 materialize-review 恢复入口增加显式 reason 和审计策略，防止重新成为正常流程"
+  ],
+  "created_at": "2026-07-28T03:25:31Z"
+}

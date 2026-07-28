@@ -38,6 +38,14 @@ try:
         sha256_json,
     )
     from .harness import Harness, HarnessError, path_matches
+    from .proposal_compiler import (
+        COMPILER_VERSION,
+        DAG_PATH,
+        MANIFEST_ROOT,
+        RECIPE_ROOT,
+        ProposalCompiler,
+        ProposalCompilerError,
+    )
 except ImportError:
     from approval_ui import (  # type: ignore
         LOOPBACK_HOST,
@@ -50,15 +58,79 @@ except ImportError:
         sha256_json,
     )
     from harness import Harness, HarnessError, path_matches  # type: ignore
+    from proposal_compiler import (  # type: ignore
+        COMPILER_VERSION,
+        DAG_PATH,
+        MANIFEST_ROOT,
+        RECIPE_ROOT,
+        ProposalCompiler,
+        ProposalCompilerError,
+    )
 
 
 SCHEMA_VERSION = 1
 CANDIDATE_ROOT = "ios/project/work-item-proposals/candidates"
+AUTO_MATERIALIZATION_POLICY = "compiled-control-plane-v1"
 TERMINAL_RECOVERY_STATUSES = {"blocked", "rejected", "exhausted", "cancelled"}
 ACTIVE_DECISIONS = {
     "implementing": ("agent_required", False),
     "verified": ("memory_close_required", False),
     "awaiting_human": ("human_decision_required", True),
+}
+AUTO_SAFE_HARNESS_PATHS = {
+    "ios/harness/loop_supervisor.py",
+    "ios/harness/proposal_compiler.py",
+    "ios/harness/README.md",
+    "ios/harness/supervisor.example.json",
+}
+AUTO_SAFE_PREFIXES = (
+    "ios/harness/tests/",
+    "ios/project/capabilities/",
+    "ios/project/checkpoints/",
+    "ios/project/pitfalls/",
+)
+AUTO_SAFE_PROPOSAL_MARKERS = (
+    "/packets/proposals/",
+    "/drivers/proposals/",
+)
+AUTO_FORBIDDEN_LABELS = {
+    "acceptance",
+    "architecture-change",
+    "authority",
+    "ci",
+    "golden",
+    "product",
+    "promotion",
+    "release",
+}
+AUTO_FORBIDDEN_SCOPE_PREFIXES = (
+    ".github/",
+    "app/",
+    "modules/",
+    "ios/Packages/",
+    "ios/docs/",
+    "ios/project/approvals/",
+    "ios/project/requirements/",
+    "ios/project/work-item-proposals/",
+    "ios/harness/goldens/",
+    "ios/harness/schemas/",
+    "ios/harness/business-knowledge/",
+    "ios/harness/android-intake/",
+    "ios/harness/source-lab/",
+    "ios/harness/oracle/",
+)
+AUTO_FORBIDDEN_SCOPE_EXACT = {
+    "ios/harness/harness.py",
+    "ios/harness/approval_ui.py",
+    "ios/harness/codex_agent_adapter.py",
+    "ios/harness/trusted_supervisor_reference.py",
+    "ios/harness/config.json",
+    "ios/harness/architecture-rules.json",
+    "ios/harness/dependency-policy.json",
+    "ios/project/baseline.json",
+    "ios/project/events.jsonl",
+    "ios/project/state.json",
+    "ios/project/status.md",
 }
 
 
@@ -83,6 +155,7 @@ class LoopDecision:
     commands: Tuple[Tuple[str, ...], ...] = ()
     blockers: Tuple[Mapping[str, Any], ...] = ()
     warnings: Tuple[str, ...] = ()
+    details: Optional[Mapping[str, Any]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -94,6 +167,7 @@ class LoopDecision:
             "commands": [list(command) for command in self.commands],
             "blockers": [dict(blocker) for blocker in self.blockers],
             "warnings": list(self.warnings),
+            "details": dict(self.details) if self.details is not None else None,
         }
 
 
@@ -151,6 +225,29 @@ class MaterializationPreview:
         }
 
 
+@dataclass(frozen=True)
+class AutoMaterializationCandidate:
+    proposal_id: str
+    priority: int
+    head_commit: str
+    candidate_relative: str
+    manifest_relative: str
+    candidate_sha256: str
+    manifest_sha256: str
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "proposal_id": self.proposal_id,
+            "priority": self.priority,
+            "policy": AUTO_MATERIALIZATION_POLICY,
+            "head_commit": self.head_commit,
+            "candidate": self.candidate_relative,
+            "manifest": self.manifest_relative,
+            "candidate_sha256": self.candidate_sha256,
+            "manifest_sha256": self.manifest_sha256,
+        }
+
+
 def _sha256_bytes(payload: bytes) -> str:
     return hashlib.sha256(payload).hexdigest()
 
@@ -176,6 +273,256 @@ def _atomic_write_bytes(path: Path, payload: bytes, mode: int = 0o644) -> None:
 class LoopSupervisor:
     def __init__(self, harness: Harness):
         self.harness = harness
+
+    def _git(self, *arguments: str) -> subprocess.CompletedProcess[bytes]:
+        try:
+            return subprocess.run(
+                ["git", *arguments],
+                cwd=str(self.harness.root),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+        except OSError as error:
+            raise MaterializationConflict(f"GIT_UNAVAILABLE: {error}") from error
+
+    def _clean_head(self) -> str:
+        top = self._git("rev-parse", "--show-toplevel")
+        if top.returncode != 0:
+            raise MaterializationConflict("GIT_REPOSITORY_REQUIRED")
+        try:
+            top_path = Path(top.stdout.decode("utf-8").strip()).resolve()
+        except UnicodeDecodeError as error:
+            raise MaterializationConflict("GIT_ROOT_INVALID") from error
+        if top_path != self.harness.root.resolve():
+            raise MaterializationConflict("GIT_ROOT_MISMATCH")
+        head = self._git("rev-parse", "HEAD")
+        if head.returncode != 0:
+            raise MaterializationConflict("GIT_HEAD_REQUIRED")
+        status = self._git(
+            "status",
+            "--porcelain=v1",
+            "--untracked-files=all",
+            "--",
+            ".",
+            ":(exclude).harness-runtime/**",
+        )
+        if status.returncode != 0:
+            raise MaterializationConflict("GIT_STATUS_FAILED")
+        if status.stdout:
+            raise MaterializationConflict("GIT_WORKTREE_DIRTY")
+        return head.stdout.decode("ascii").strip()
+
+    def _require_head_regular(self, relatives: Sequence[str]) -> None:
+        for relative in relatives:
+            path = self.harness.resolve(relative)
+            if path.is_symlink() or not path.is_file():
+                raise MaterializationConflict(
+                    f"PROVENANCE_FILE_NOT_REGULAR: {relative}"
+                )
+            listing = self._git("ls-tree", "HEAD", "--", relative)
+            if listing.returncode != 0 or not listing.stdout:
+                raise MaterializationConflict(
+                    f"PROVENANCE_FILE_NOT_IN_HEAD: {relative}"
+                )
+            try:
+                mode = listing.stdout.decode("utf-8").split(None, 1)[0]
+            except (UnicodeDecodeError, IndexError) as error:
+                raise MaterializationConflict(
+                    f"PROVENANCE_HEAD_ENTRY_INVALID: {relative}"
+                ) from error
+            if mode not in {"100644", "100755"}:
+                raise MaterializationConflict(
+                    f"PROVENANCE_HEAD_ENTRY_NOT_REGULAR: {relative}"
+                )
+
+    @staticmethod
+    def _auto_scope_allowed(pattern: str) -> bool:
+        if pattern in {"*", "**", "ios/*", "ios/**"}:
+            return False
+        if pattern in AUTO_FORBIDDEN_SCOPE_EXACT:
+            return False
+        if pattern.startswith(AUTO_FORBIDDEN_SCOPE_PREFIXES):
+            return False
+        if pattern in AUTO_SAFE_HARNESS_PATHS:
+            return True
+        if pattern.startswith(AUTO_SAFE_PREFIXES):
+            return True
+        if pattern.startswith("ios/project/business-knowledge/") and any(
+            marker in pattern for marker in AUTO_SAFE_PROPOSAL_MARKERS
+        ):
+            return True
+        return False
+
+    def _auto_candidate(
+        self,
+        proposal_id: str,
+        *,
+        head_commit: Optional[str] = None,
+    ) -> AutoMaterializationCandidate:
+        head = head_commit or self._clean_head()
+        candidate_relative = f"{CANDIDATE_ROOT}/{proposal_id}.json"
+        manifest_relative = f"{MANIFEST_ROOT}/{proposal_id}.json"
+        recipe_relative = f"{RECIPE_ROOT}/{proposal_id}.json"
+        provenance_paths = [
+            candidate_relative,
+            manifest_relative,
+            recipe_relative,
+            DAG_PATH,
+        ]
+        manifest_path = self.harness.resolve(manifest_relative)
+        if manifest_path.is_symlink() or not manifest_path.is_file():
+            raise MaterializationConflict("PROVENANCE_MANIFEST_NOT_REGULAR")
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise MaterializationConflict(
+                f"PROVENANCE_MANIFEST_INVALID: {error}"
+            ) from error
+        if not isinstance(manifest, dict):
+            raise MaterializationConflict("PROVENANCE_MANIFEST_INVALID")
+        if (
+            manifest.get("schema_version") != 1
+            or manifest.get("compiler_version") != COMPILER_VERSION
+            or manifest.get("proposal_id") != proposal_id
+            or manifest.get("authority") != "proposal_only"
+            or manifest.get("queue_effect") != "none"
+        ):
+            raise MaterializationConflict("PROVENANCE_MANIFEST_CONTRACT_INVALID")
+        for dependency in manifest.get("dependencies", []):
+            if not isinstance(dependency, dict):
+                raise MaterializationConflict("PROVENANCE_DEPENDENCY_INVALID")
+            for key in ("checkpoint", "evidence"):
+                value = dependency.get(key)
+                if isinstance(value, str):
+                    provenance_paths.append(value)
+            resolved = dependency.get("resolved")
+            if isinstance(resolved, str):
+                provenance_paths.append(
+                    f"ios/harness/work-items/{resolved}.json"
+                )
+        self._require_head_regular(provenance_paths)
+
+        compiler_result = ProposalCompiler(self.harness).check(proposal_id)
+        if compiler_result.get("status") != "current":
+            reasons = ",".join(
+                str(reason) for reason in compiler_result.get("reasons", [])
+            )
+            raise MaterializationConflict(
+                f"PROPOSAL_COMPILER_STALE: {reasons or 'unknown'}"
+            )
+        preview = self.preflight_candidate(
+            self.harness.resolve(candidate_relative)
+        )
+        if preview.item_id != proposal_id:
+            raise MaterializationConflict("CANDIDATE_ID_MISMATCH")
+        if manifest.get("candidate_sha256") != preview.work_item_sha256:
+            raise MaterializationConflict("CANDIDATE_MANIFEST_HASH_MISMATCH")
+
+        item = json.loads(
+            self.harness.resolve(candidate_relative).read_text(encoding="utf-8")
+        )
+        metadata = item.get("metadata", {})
+        spec = item.get("spec", {})
+        risk = metadata.get("risk")
+        labels = set(metadata.get("labels", []))
+        if risk == "critical":
+            raise MaterializationConflict("AUTO_POLICY_CRITICAL_RISK")
+        forbidden_labels = sorted(labels.intersection(AUTO_FORBIDDEN_LABELS))
+        if forbidden_labels:
+            raise MaterializationConflict(
+                "AUTO_POLICY_AUTHORITY_LABEL: " + ",".join(forbidden_labels)
+            )
+        if spec.get("gates") != []:
+            raise MaterializationConflict("AUTO_POLICY_DECISION_REQUIRED")
+        requirements = spec.get("requirements", {})
+        if requirements.get("mode") != "control_plane":
+            raise MaterializationConflict("AUTO_POLICY_REQUIREMENT_MODE")
+        knowledge = spec.get("knowledge", {})
+        if knowledge.get("mode") not in {"not_applicable", "produce"}:
+            raise MaterializationConflict("AUTO_POLICY_KNOWLEDGE_AUTHORITY")
+        completion_effects = spec.get("completion_effects", {})
+        if set(completion_effects) - {"health"}:
+            raise MaterializationConflict("AUTO_POLICY_AUTHORITY_EFFECT")
+        allow_write = spec.get("scope", {}).get("allow_write", [])
+        rejected_scope = [
+            pattern
+            for pattern in allow_write
+            if not isinstance(pattern, str) or not self._auto_scope_allowed(pattern)
+        ]
+        if rejected_scope:
+            raise MaterializationConflict(
+                "AUTO_POLICY_SCOPE_DENIED: "
+                + ",".join(str(value) for value in rejected_scope)
+            )
+        priority = metadata.get("priority")
+        if not isinstance(priority, int):
+            raise MaterializationConflict("AUTO_POLICY_PRIORITY_INVALID")
+        return AutoMaterializationCandidate(
+            proposal_id=proposal_id,
+            priority=priority,
+            head_commit=head,
+            candidate_relative=candidate_relative,
+            manifest_relative=manifest_relative,
+            candidate_sha256=preview.work_item_sha256,
+            manifest_sha256=_sha256_bytes(manifest_path.read_bytes()),
+        )
+
+    def auto_materialization_candidates(
+        self,
+    ) -> Tuple[Tuple[AutoMaterializationCandidate, ...], Tuple[Mapping[str, Any], ...]]:
+        if not isinstance(self.harness, Harness):
+            return (), ()
+        manifest_root = self.harness.resolve(MANIFEST_ROOT)
+        if not manifest_root.exists():
+            return (), ()
+        if manifest_root.is_symlink() or not manifest_root.is_dir():
+            return (), ({"reason_code": "PROVENANCE_MANIFEST_ROOT_INVALID"},)
+        try:
+            head = self._clean_head()
+        except MaterializationConflict as error:
+            return (), ({"reason_code": str(error)},)
+        items = self.harness.work_items()
+        state_items = self.harness.state().get("work_items", {})
+        eligible: List[AutoMaterializationCandidate] = []
+        blockers: List[Mapping[str, Any]] = []
+        for manifest_path in sorted(manifest_root.glob("*.json")):
+            proposal_id = manifest_path.stem
+            if proposal_id in items or proposal_id in state_items:
+                continue
+            try:
+                eligible.append(
+                    self._auto_candidate(proposal_id, head_commit=head)
+                )
+            except (MaterializationConflict, ProposalCompilerError) as error:
+                blockers.append(
+                    {
+                        "proposal_id": proposal_id,
+                        "reason_code": str(error),
+                    }
+                )
+        return tuple(
+            sorted(
+                eligible,
+                key=lambda value: (-value.priority, value.proposal_id),
+            )
+        ), tuple(blockers)
+
+    @staticmethod
+    def _select_auto_candidate(
+        eligible: Sequence[AutoMaterializationCandidate],
+    ) -> Tuple[Optional[AutoMaterializationCandidate], Optional[Mapping[str, Any]]]:
+        if not eligible:
+            return None, None
+        highest = eligible[0].priority
+        tied = [value for value in eligible if value.priority == highest]
+        if len(tied) != 1:
+            return None, {
+                "reason_code": "AUTO_MATERIALIZATION_PRIORITY_AMBIGUOUS",
+                "priority": highest,
+                "proposal_ids": [value.proposal_id for value in tied],
+            }
+        return tied[0], None
 
     def inspect(self) -> LoopDecision:
         errors, warnings = self.harness.doctor()
@@ -322,19 +669,46 @@ class LoopSupervisor:
                 blockers=tuple(unresolved),
             )
 
-        return LoopDecision(
-            state="queue_empty",
-            reason_code="NO_MATERIALIZED_READY_WORK_ITEM",
-            work_item_id=None,
-            requires_human=True,
-            commands=(
-                (
-                    sys.executable,
-                    "ios/harness/loop_supervisor.py",
-                    "materialize-review",
-                    "<candidate.json>",
+        eligible, auto_blockers = self.auto_materialization_candidates()
+        selected_auto, ambiguity = self._select_auto_candidate(eligible)
+        if selected_auto is not None:
+            return LoopDecision(
+                state="auto_materialization_ready",
+                reason_code="AUTO_MATERIALIZATION_READY",
+                work_item_id=selected_auto.proposal_id,
+                requires_human=False,
+                commands=(
+                    (
+                        sys.executable,
+                        "ios/harness/loop_supervisor.py",
+                        "drive",
+                        "--config",
+                        "ios/harness/supervisor.example.json",
+                        "--agent",
+                        "<agent-id>",
+                    ),
                 ),
+                warnings=tuple(warnings),
+                details={"auto_materialization": selected_auto.to_dict()},
+            )
+        blockers = list(auto_blockers)
+        if ambiguity is not None:
+            blockers.insert(0, ambiguity)
+        return LoopDecision(
+            state=(
+                "auto_materialization_blocked"
+                if blockers
+                else "queue_empty"
             ),
+            reason_code=(
+                "AUTO_MATERIALIZATION_BLOCKED"
+                if blockers
+                else "NO_ELIGIBLE_COMPILED_CANDIDATE"
+            ),
+            work_item_id=None,
+            requires_human=False,
+            blockers=tuple(blockers),
+            warnings=tuple(warnings),
         )
 
     def _candidate_path(self, raw_path: Path) -> Tuple[Path, str]:
@@ -521,6 +895,7 @@ class LoopSupervisor:
         preview: MaterializationPreview,
         *,
         reason: str,
+        provenance: Optional[Mapping[str, Any]] = None,
     ) -> str:
         current = self.preflight_candidate(
             self.harness.resolve(preview.source_relative)
@@ -550,15 +925,18 @@ class LoopSupervisor:
                 "attempt": 0,
                 "last_evidence": None,
             }
+            event_payload: Dict[str, Any] = {
+                "authorized_by": local_reviewer(),
+                "initial_status": "ready",
+                "reason": reason,
+                "work_item_sha256": current.work_item_sha256,
+            }
+            if provenance is not None:
+                event_payload["provenance"] = dict(provenance)
             self.harness.append_event(
                 "WorkItemMaterialized",
                 current.item_id,
-                {
-                    "authorized_by": local_reviewer(),
-                    "initial_status": "ready",
-                    "reason": reason,
-                    "work_item_sha256": current.work_item_sha256,
-                },
+                event_payload,
             )
             self.harness.write_state(state, items)
         except Exception:
@@ -570,6 +948,19 @@ class LoopSupervisor:
                     _atomic_write_bytes(path, payload, mode)
             raise
         return current.item_id
+
+    def auto_materialize(self, proposal_id: str) -> str:
+        candidate = self._auto_candidate(proposal_id)
+        preview = self.preflight_candidate(
+            self.harness.resolve(candidate.candidate_relative)
+        )
+        if preview.work_item_sha256 != candidate.candidate_sha256:
+            raise MaterializationConflict("AUTO_MATERIALIZATION_BINDING_DRIFT")
+        return self.materialize(
+            preview,
+            reason=f"policy:{AUTO_MATERIALIZATION_POLICY}",
+            provenance=candidate.to_dict(),
+        )
 
     def drive(
         self,
@@ -605,10 +996,42 @@ class LoopSupervisor:
             raise LoopSupervisorError(
                 "agent_invocation 必须包含非空 argv 字符串数组和 1...86400 timeout_seconds"
             )
+        auto_config = config.get("auto_materialization", {})
+        if auto_config is None:
+            auto_config = {}
+        if not isinstance(auto_config, dict):
+            raise LoopSupervisorError("auto_materialization 必须是 object")
+        auto_enabled = auto_config.get("enabled") is True
+        auto_policy = auto_config.get("policy")
+        if auto_enabled and auto_policy != AUTO_MATERIALIZATION_POLICY:
+            raise LoopSupervisorError(
+                "启用 auto_materialization 时 policy 必须是 "
+                + AUTO_MATERIALIZATION_POLICY
+            )
 
         transitions: List[Dict[str, Any]] = []
         for _ in range(max_transitions):
             before = self.inspect()
+            if before.state == "auto_materialization_ready":
+                if not auto_enabled:
+                    return {
+                        "schema_version": SCHEMA_VERSION,
+                        "outcome": "auto_materialization_disabled",
+                        "decision": before.to_dict(),
+                        "transitions": transitions,
+                    }
+                item_id = before.work_item_id
+                assert item_id is not None
+                with self.harness.mutation_lock():
+                    materialized_id = self.auto_materialize(item_id)
+                transitions.append(
+                    {
+                        "kind": "auto_materialization",
+                        "work_item_id": materialized_id,
+                        "policy": auto_policy,
+                    }
+                )
+                before = self.inspect()
             if before.state not in {"ready", "implementing"}:
                 return {
                     "schema_version": SCHEMA_VERSION,

@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "run_id": "run-20260728T032518Z-ios-auto-materialization-policy-001-539bfb34",
+  "work_item_id": "IOS-AUTO-MATERIALIZATION-POLICY-001",
+  "work_item_sha256": "b891f27f8957d92f1ade487b60922dc87c47a2e02531a01518a4b5543f95abf8",
+  "result": "passed",
+  "inputs": {
+    "base_commit": "6f8fe14adee91080084daabed74e337165b821e1",
+    "head_commit": "6f8fe14adee91080084daabed74e337165b821e1",
+    "snapshot_sha256": "cf0428d3deff81bd75a5ac7ccaa206fb3d687915441f0a0c3e1d8785bb36ac78",
+    "baseline_sha256": "eeeaf0017b79a2420faf73c686a110a2d0372b2da865e42aa8db360fd3015e93",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
+    "architecture_rules_sha256": "51ebc4cff5921643f95d8a045c21ea85cad046acb99ed56026f77bf842642fa5",
+    "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+    "golden_manifest_sha256": "bdfab4595035e6ce3706380b88bd0ebfdff6773b77055c05988c4aa2dd24e597",
+    "fixture_manifest_sha256": "7ea6c2f30f258a65bfeb67ebc8bc3c7d9e283875f31731b513b7380d5f2aff2c",
+    "dependency_lock_sha256": null,
+    "source_lab_control_sha256": "73282c8b72a7db793887290ad2bfff707c61ea8fe57a583ef9bd2e3c3c3b9f2d",
+    "android_intake_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122",
+    "business_knowledge_control_sha256": "fb246d84d9d17350c360facdd7a2e2ab441b651b3fcf4e94b6d4b626245597e5",
+    "business_knowledge_authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
+    "business_knowledge_coverage_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "business_knowledge_proposal_sha256": "6dfcba76a1c73795cf5024efca44801f2b90b665964456785ad27813ea05b003",
+    "android_requirement_selection_sha256": null,
+    "source_lab_selection_sha256": null,
+    "knowledge_selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "environment": {
+      "platform": "macOS-26.4.1-arm64-arm-64bit",
+      "python": "3.9.6",
+      "xcode": "Xcode 26.0\nBuild version 17A324",
+      "swift": "Apple Swift version 6.2 (swiftlang-6.2.0.19.9 clang-1700.3.19.1)\nTarget: arm64-apple-macosx26.0"
+    }
+  },
+  "changes": {
+    "paths": [
+      "ios/harness/README.md",
+      "ios/harness/loop_supervisor.py",
+      "ios/harness/supervisor.example.json",
+      "ios/harness/tests/test_loop_supervisor.py",
+      "ios/harness/tests/test_proposal_compiler.py"
+    ],
+    "changed_lines_approximate": 699,
+    "file_fingerprints": {
+      "ios/harness/README.md": "file:0o644:75073a48a0f39f41153c6f1d36c6f48a2071663d53d5891c9b9fabcf01264243",
+      "ios/harness/loop_supervisor.py": "file:0o644:c1d3f54601c14a69ab98a94081efb9b042dc38d68e18218e843fcdd31ee958c8",
+      "ios/harness/supervisor.example.json": "file:0o644:80d3cd43f9e4c295ac0e6c0dc27654eefa8320addc0e297213aa62bbd0b40c4f",
+      "ios/harness/tests/test_loop_supervisor.py": "file:0o644:6eca07ed87beb0b6434d757ee7830dc6863480361221ffa3ba7e2122ed3f1f9a",
+      "ios/harness/tests/test_proposal_compiler.py": "file:0o644:386f0b3ebd1b6c9eb0ae6edafe53da74178225c14604daf9b5df72fb0aea0614"
+    },
+    "dirty_snapshot": {
+      "ios/harness/README.md": "file:0o644:75073a48a0f39f41153c6f1d36c6f48a2071663d53d5891c9b9fabcf01264243",
+      "ios/harness/loop_supervisor.py": "file:0o644:c1d3f54601c14a69ab98a94081efb9b042dc38d68e18218e843fcdd31ee958c8",
+      "ios/harness/supervisor.example.json": "file:0o644:80d3cd43f9e4c295ac0e6c0dc27654eefa8320addc0e297213aa62bbd0b40c4f",
+      "ios/harness/tests/test_loop_supervisor.py": "file:0o644:6eca07ed87beb0b6434d757ee7830dc6863480361221ffa3ba7e2122ed3f1f9a",
+      "ios/harness/tests/test_proposal_compiler.py": "file:0o644:386f0b3ebd1b6c9eb0ae6edafe53da74178225c14604daf9b5df72fb0aea0614",
+      "ios/project/events.jsonl": "file:0o644:e4f8cb745b08a905499d9f25d8f7cb2cffb982d5683cdd12a8be9963ba0805ed",
+      "ios/project/state.json": "file:0o644:7f63dc921cfb0e82f854ffd3a215044b2b026c91510bacf3e4fef3b0c5bea74b",
+      "ios/project/status.md": "file:0o644:b53aaf6c32b319beb2625ae1e759d4d14628545cc413467eb81ddb53f74fd12c"
+    },
+    "diff_sha256": "c8fb530867a32b354ff4944b68a4a9110401940459061297deeb105515e27232"
+  },
+  "policy_errors": [],
+  "architecture_errors": [],
+  "architecture_warnings": [],
+  "checks": [
+    {
+      "id": "dependency-policy",
+      "argv": [
+        "python3",
+        "ios/harness/probes/dependency_contract.py",
+        "--root",
+        "."
+      ],
+      "executable_path": "/usr/bin/python3",
+      "definition_sha256": "eca96cb1b69567829ed8396386b0449da8c0d6e7295a00f1decfb60430ff1153",
+      "cwd": ".",
+      "started_at": "2026-07-28T03:24:44Z",
+      "duration_ms": 237,
+      "timeout_seconds": 90,
+      "timed_out": false,
+      "process_leak": false,
+      "cleanup_error": null,
+      "exit_code": 0,
+      "passed": true,
+      "stdout_sha256": "17595a1d68cdc5b52c010f46dff48514afa3fa3cf0215cdea7ae8eff38677c0a",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_tail": "DEPENDENCY_CONTRACT: OK\n",
+      "stderr_tail": ""
+    },
+    {
+      "id": "harness-tests",
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "ios/harness/tests",
+        "-p",
+        "test_*.py"
+      ],
+      "executable_path": "/usr/bin/python3",
+      "definition_sha256": "307f335e883f02e96ad97ecbda4c210435c0b955e2bcb9e46db9dc7b0d02c285",
+      "cwd": ".",
+      "started_at": "2026-07-28T03:24:44Z",
+      "duration_ms": 33228,
+      "timeout_seconds": 60,
+      "timed_out": false,
+      "process_leak": false,
+      "cleanup_error": null,
+      "exit_code": 0,
+      "passed": true,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "f78bd60e42cfe6fe7dea55828ea8e26022da6d0e6b751473a6bcf9c1f89c10a6",
+      "stdout_tail": "",
+      "stderr_tail": ".....................................................................................................................\n----------------------------------------------------------------------\nRan 117 tests in 33.095s\n\nOK\n"
+    }
+  ],
+  "failure": null,
+  "started_at": "2026-07-28T03:24:43Z",
+  "finished_at": "2026-07-28T03:25:18Z",
+  "reproduction": "python3 ios/harness/harness.py verify IOS-AUTO-MATERIALIZATION-POLICY-001"
+}

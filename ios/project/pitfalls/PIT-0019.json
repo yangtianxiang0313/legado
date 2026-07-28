@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0019",
+  "revision": 1,
+  "title": "候选物化确认会成为第二种橡皮图章",
+  "fingerprint": "candidate-materialization-confirmation-becomes-rubber-stamp",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "candidate 已由编译器和 manifest 冻结，用户仍需为每个工作项点击一次“物化”",
+    "确认页没有方案选择，只重复展示机器已经能够校验的摘要",
+    "用户形成不阅读直接点击习惯，点击记录没有增加任何业务或安全信息",
+    "队列为空时 AI 无法连续推进，只能等待形式化确认"
+  ],
+  "conditions": [
+    "候选、recipe、DAG 和依赖 provenance 已提交且可确定性重算",
+    "Work Item 没有 Human Decision，也不产生 authority transition",
+    "物化按钮只决定是否把同一份已冻结 JSON 复制到执行队列",
+    "系统没有把 Git clean、manifest、scope 和 authority 边界编码为自动策略"
+  ],
+  "root_cause": "控制面把可由提交记录和确定性策略回答的“候选是否满足入队条件”错误建模为人工确认。人工没有新增取舍信息，按钮因此只能证明点击发生。",
+  "diagnosis": [
+    "检查确认动作是否要求用户在互斥方案之间选择；若没有，它不应是 Human Decision",
+    "检查 candidate、recipe、DAG、manifest 和依赖证据是否都在同一 HEAD 且可重算",
+    "检查 scope 是否只涉及控制面、知识 proposal、能力、checkpoint 和 pitfall",
+    "检查 Gate、knowledge supersede、critical risk、产品/架构/配置/Schema/Golden/Approval 路径是否 fail closed"
+  ],
+  "fix": "Loop Supervisor 增加 compiled-control-plane-v1：inspect 发现唯一最高优先的 eligible candidate 时返回 AUTO_MATERIALIZATION_READY，drive 只有在外部配置显式启用策略时，才在 mutation lock 内重新验证 Git clean、HEAD 普通文件、manifest hash、proposal compiler check、依赖、preflight、Gate、Requirement、knowledge、completion effect、label 和 scope，然后原子物化并继续 claim/Agent。普通候选不再弹确认；旧 materialize-review 仅保留为显式恢复入口。",
+  "prevention": {
+    "architecture_rule": "人工暂停只承载无法机器推导的具体取舍。已提交且可重算、无 Human Decision、无 authority transition 的 proposal 由固定 allowlist 策略入队；策略不满足时返回结构化 blocker，禁止退化为泛化确认。",
+    "tests": [
+      "ios/harness/tests/test_proposal_compiler.py#test_compiled_control_plane_candidate_auto_materializes_and_drives",
+      "ios/harness/tests/test_proposal_compiler.py#test_auto_materialization_fails_closed_for_dirty_or_authority_scope",
+      "ios/harness/tests/test_loop_supervisor.py#test_auto_materialization_priority_tie_is_not_guessed",
+      "ios/harness/tests/test_loop_supervisor.py#test_cli_has_review_but_no_noninteractive_materialize"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-PROPOSAL-COMPILER-001",
+    "until": "IOS-AUTO-MATERIALIZATION-POLICY-001"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T032518Z-ios-auto-materialization-policy-001-539bfb34.json"
+  ]
+}

@@ -1,4 +1,5 @@
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -83,6 +84,35 @@ class CompilerFixture:
         return proposal_compiler.ProposalCompiler(
             self.harness,
             self.dag_path,
+        )
+
+    def complete_base_queue(self):
+        state = self.harness.state()
+        for runtime in state["work_items"].values():
+            runtime["status"] = "superseded"
+        self.fixture.write_json("ios/project/state.json", state)
+        self.fixture.write_text(
+            "ios/project/status.md",
+            self.harness.render_status(state, self.harness.work_items()),
+        )
+
+    def initialize_git(self):
+        subprocess.run(["git", "init", "-q"], cwd=self.root, check=True)
+        subprocess.run(
+            ["git", "config", "user.name", "Auto Materialization Test"],
+            cwd=self.root,
+            check=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.email", "auto@example.invalid"],
+            cwd=self.root,
+            check=True,
+        )
+        subprocess.run(["git", "add", "."], cwd=self.root, check=True)
+        subprocess.run(
+            ["git", "commit", "-qm", "compiled candidate"],
+            cwd=self.root,
+            check=True,
         )
 
 
@@ -309,6 +339,153 @@ class ProposalCompilerTests(unittest.TestCase):
         help_text = proposal_compiler.build_parser().format_help().lower()
         for forbidden in ("materialize", "approve", "publish", "accept"):
             self.assertNotIn(forbidden, help_text)
+
+    def test_compiled_control_plane_candidate_auto_materializes_and_drives(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = CompilerFixture(Path(directory))
+            fixture.complete_base_queue()
+            fixture.dag()
+            recipe = fixture.recipe()
+            item = recipe["work_item"]
+            item["spec"]["scope"]["allow_write"] = [
+                "ios/project/checkpoints/IOS-COMPILE-TARGET-001.json",
+                "ios/project/capabilities/CAP-BOOT.json",
+            ]
+            fixture.fixture.write_json(
+                f"{proposal_compiler.RECIPE_ROOT}/IOS-COMPILE-TARGET-001.json",
+                recipe,
+            )
+            fixture.compiler().compile("IOS-COMPILE-TARGET-001")
+            fixture.fixture.write_json(
+                "supervisor.json",
+                {
+                    "auto_materialization": {
+                        "enabled": True,
+                        "policy": loop_supervisor.AUTO_MATERIALIZATION_POLICY,
+                    },
+                    "agent_invocation": {
+                        "argv": [
+                            sys.executable,
+                            "-c",
+                            "import os; assert os.environ['LEGADO_WORK_ITEM_ID']",
+                        ],
+                        "timeout_seconds": 10,
+                    },
+                },
+            )
+            fixture.fixture.write_json(
+                "disabled-supervisor.json",
+                {
+                    "auto_materialization": {
+                        "enabled": False,
+                        "policy": loop_supervisor.AUTO_MATERIALIZATION_POLICY,
+                    },
+                    "agent_invocation": {
+                        "argv": [sys.executable, "-c", "raise SystemExit(99)"],
+                        "timeout_seconds": 10,
+                    },
+                },
+            )
+            fixture.initialize_git()
+
+            supervisor = loop_supervisor.LoopSupervisor(fixture.harness)
+            decision = supervisor.inspect()
+            self.assertEqual("auto_materialization_ready", decision.state)
+            self.assertEqual("AUTO_MATERIALIZATION_READY", decision.reason_code)
+            self.assertFalse(decision.requires_human)
+            self.assertEqual("IOS-COMPILE-TARGET-001", decision.work_item_id)
+            disabled = supervisor.drive(
+                config_path=fixture.root / "disabled-supervisor.json",
+                agent_id="auto-agent",
+                max_transitions=1,
+            )
+            self.assertEqual("auto_materialization_disabled", disabled["outcome"])
+            self.assertNotIn(
+                "IOS-COMPILE-TARGET-001",
+                fixture.harness.state()["work_items"],
+            )
+
+            with mock.patch.object(
+                fixture.harness,
+                "business_knowledge_selection",
+                return_value=None,
+            ):
+                result = supervisor.drive(
+                    config_path=fixture.root / "supervisor.json",
+                    agent_id="auto-agent",
+                    max_transitions=1,
+                )
+            self.assertEqual("transition_budget_reached", result["outcome"])
+            self.assertEqual(
+                "auto_materialization",
+                result["transitions"][0]["kind"],
+            )
+            self.assertEqual(0, result["transitions"][1]["exit_code"])
+            runtime = fixture.harness.state()["work_items"][
+                "IOS-COMPILE-TARGET-001"
+            ]
+            self.assertEqual("implementing", runtime["status"])
+            events = [
+                event
+                for event in fixture.harness.event_lines()
+                if event.get("work_item_id") == "IOS-COMPILE-TARGET-001"
+            ]
+            self.assertEqual(
+                ["WorkItemMaterialized", "WorkItemClaimed"],
+                [event["event"] for event in events],
+            )
+            provenance = events[0]["payload"]["provenance"]
+            self.assertEqual(
+                loop_supervisor.AUTO_MATERIALIZATION_POLICY,
+                provenance["policy"],
+            )
+            self.assertEqual(
+                subprocess.run(
+                    ["git", "rev-parse", "HEAD"],
+                    cwd=fixture.root,
+                    check=True,
+                    stdout=subprocess.PIPE,
+                    text=True,
+                ).stdout.strip(),
+                provenance["head_commit"],
+            )
+
+    def test_auto_materialization_fails_closed_for_dirty_or_authority_scope(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = CompilerFixture(Path(directory))
+            fixture.complete_base_queue()
+            fixture.dag()
+            fixture.recipe()
+            fixture.compiler().compile("IOS-COMPILE-TARGET-001")
+            fixture.initialize_git()
+            (fixture.root / "untracked.txt").write_text("dirty\n", encoding="utf-8")
+            decision = loop_supervisor.LoopSupervisor(fixture.harness).inspect()
+            self.assertEqual("auto_materialization_blocked", decision.state)
+            self.assertEqual(
+                "GIT_WORKTREE_DIRTY",
+                decision.blockers[0]["reason_code"],
+            )
+
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = CompilerFixture(Path(directory))
+            fixture.complete_base_queue()
+            fixture.dag()
+            recipe = fixture.recipe()
+            recipe["work_item"]["spec"]["scope"]["allow_write"] = [
+                "ios/Packages/LegadoKit/Sources/LegadoCore/Product.swift"
+            ]
+            fixture.fixture.write_json(
+                f"{proposal_compiler.RECIPE_ROOT}/IOS-COMPILE-TARGET-001.json",
+                recipe,
+            )
+            fixture.compiler().compile("IOS-COMPILE-TARGET-001")
+            fixture.initialize_git()
+            decision = loop_supervisor.LoopSupervisor(fixture.harness).inspect()
+            self.assertEqual("auto_materialization_blocked", decision.state)
+            self.assertIn(
+                "AUTO_POLICY_SCOPE_DENIED",
+                decision.blockers[0]["reason_code"],
+            )
 
 
 if __name__ == "__main__":

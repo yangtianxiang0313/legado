@@ -41,7 +41,7 @@
       "queue_empty"
     ],
     "candidate_root": "ios/project/work-item-proposals/candidates",
-    "materialization": "human-click-only-local-unverified",
+    "materialization": "compiled-control-plane-v1-or-explicit-recovery",
     "adapter_contract": {
       "launch": "argv-only-new-session-process-group",
       "timeout_cleanup": "sigterm-bounded-wait-sigkill",
@@ -50,6 +50,10 @@
       "must_finish_harness_lifecycle": true
     },
     "local_maturity": "e2e-verified-single-writer"
+  },
+  "auto_materialization": {
+    "enabled": true,
+    "policy": "compiled-control-plane-v1"
   },
   "agent_invocation": {
     "argv": [

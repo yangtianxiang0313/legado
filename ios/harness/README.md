@@ -59,15 +59,21 @@ python3 ios/harness/loop_supervisor.py materialize-review \
 
 - `inspect` 输出互斥的结构化状态与稳定 reason code，不再把队列为空和已有活跃项合并；
 - `preflight` 是纯只读检查，能在 claim 前发现依赖、schema、显式 allow/deny/protected 冲突和永久知识 revision reservation；
-- `drive` 只接受配置中的 argv 数组 Agent adapter，达到 transition 上限或遇到红基线、人工 Gate、终态失败、无进展时立即停；
+- `drive` 只接受配置中的 argv 数组 Agent adapter；当显式启用
+  `compiled-control-plane-v1` 时，可以先自动物化唯一的最高优先候选，再继续 claim 和
+  Agent transition；
 - 每次 Agent 调用都在新的 session/process group 中启动；超时按 TERM → 有界等待 → KILL 回收完整进程树，并结构化返回 `timed_out`、`process_leak`、`cleanup_error`；
 - Supervisor 只向 adapter 传递显式环境白名单和临时 context 路径，结果只保留输出长度与 SHA-256，不回显 context、stdout/stderr 或宿主环境 secret；
-- `materialize-review` 只接受 `work-item-proposals/candidates` 下的普通 JSON，重新校验依赖、写范围、预算和永久知识产出 reservation 后打开一次性按钮；
+- 普通候选不再要求点击确认：自动策略要求 repo/index clean，candidate、recipe、
+  DAG、manifest 和依赖 provenance 都是 HEAD 中的普通文件，且 compiler 可重算、
+  `gates=[]`、Requirement 为 `control_plane`、知识只产生 proposal、不修改产品、
+  架构、配置、Schema、Golden、Approval 或 authority；
+- `materialize-review` 仅保留为自动策略无法覆盖时的显式恢复入口，不是正常推进 Gate；
 - CLI 没有非交互 `materialize` 或 `approve`，也不会更新 golden、发布知识或接受 ADR。
 
-本地 Loop Engine 的成熟边界是：确定性 inspect、按钮物化、受限 argv
+本地 Loop Engine 的成熟边界是：确定性 inspect、策略物化、受限 argv
 adapter、真实 Harness 生命周期、Evidence/Capability/Checkpoint/Event 绑定，以及
-进程树有界回收均有自动化 E2E。它足以在单机、单写者、人工 Gate 保留的前提下持续
+进程树有界回收均有自动化 E2E。它足以在单机、单写者、真实 Human Decision 保留的前提下持续
 推进工作项。
 
 本地按钮产生的仍是 `local_unverified` 协作事实。跨机器无人值守、并行 DAG 调度、
@@ -129,7 +135,7 @@ review UI 也不再提供批量批准兼容入口。
 
 ## Proposal Compiler
 
-`proposal_compiler.py` 把初始化规划连接到按钮物化，但刻意保留四层边界：
+`proposal_compiler.py` 把初始化规划连接到策略物化，但刻意保留四层边界：
 
 1. `initialization-dag.json` 只描述 proposal 拓扑、约束与受信 Gate，不包含可执行权限；
 2. `recipes/<proposal-id>.json` 由架构/业务分析写出完整 Work Item，编译器不会补写
@@ -137,7 +143,8 @@ review UI 也不再提供批量批准兼容入口。
 3. `candidates/<proposal-id>.json` 与 `candidate-manifests/<proposal-id>.json`
    是 create-only 输出，manifest 冻结 DAG、recipe、依赖 Work Item、Evidence、
    Checkpoint 和 recovery lineage 摘要；
-4. candidate 仍需 `loop_supervisor.py materialize-review` 的本地按钮才能进入队列。
+4. candidate 只有满足 `compiled-control-plane-v1` 才能由 `drive` 自动进入队列；
+   否则保持结构化 blocker，恢复按钮不会被自动调用。
 
 ```bash
 python3 ios/harness/proposal_compiler.py plan
@@ -151,6 +158,14 @@ python3 ios/harness/loop_supervisor.py preflight \
 `knowledge.produces` recovery。终态无恢复、replacement 成环、部分覆盖或多个恢复候选
 都会保持 blocker。该 CLI 不改变 Harness queue/state/event/status/work-items，也不提供
 物化、审批、发布或接受权威事实的命令。
+
+`compiled-control-plane-v1` 只授予“把已冻结 proposal 复制为本地 Work Item 并写入
+queue/event/state/status”的权限。它不授予 Agent 超出 Work Item scope 的写权限，
+不等同 Acceptance，也不允许知识发布、Golden 更新、ADR/Requirement 接受或 patch
+promotion。策略每次都在 mutation lock 内重新核对 HEAD、clean 状态、manifest hash、
+compiler check 和 preflight，不信任先前 `inspect` 的缓存结果。最高优先级并列、
+未提交变化、manifest 漂移、Human Decision、`supersede`、critical risk 或 authority
+scope 都会 fail closed，并给出稳定 blocker，不会退回一个“请确认”的橡皮图章。
 
 ## Codex exec Agent Adapter
 
