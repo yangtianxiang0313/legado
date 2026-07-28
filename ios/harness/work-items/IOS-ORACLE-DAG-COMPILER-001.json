@@ -1,0 +1,204 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-ORACLE-DAG-COMPILER-001",
+    "title": "把完成的 SourceLab Characterization 续接为 Android Oracle DAG",
+    "priority": 100,
+    "risk": "high",
+    "labels": [
+      "phase-0",
+      "control-plane",
+      "loop-engine",
+      "android-oracle",
+      "characterization"
+    ]
+  },
+  "spec": {
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "intent": "补齐 Android migration 的第三段需求链。Demand Compiler 在 Characterization WorkItem 已 completed 后，精确结算 WorkItem/Evidence/Checkpoint、Requirement selection、SourceLab selection、scenario manifest/digest 与 Capability revision；未提供 oracle blueprint 时输出 oracle_blueprint_required，完整 blueprint 闭合时输出 oracle_ready。Supervisor 只自动物化 requirements.mode=characterization、source_lab.mode=reuse、gates=[]、依赖已完成场景且仅允许写 Android Oracle runner/tests、CAP-CONFORMANCE、Checkpoint/Pitfall 的 WorkItem。首个 blueprint 生成 IOS-ANDROID-POST-FORM-ORACLE-001，负责复用并泛化现有 candidate-only runner；本项不运行 Android、不写 proposal/Golden/publisher/workflow 或产品代码。",
+    "depends_on": [
+      "IOS-SOURCELAB-POST-FORM-001"
+    ],
+    "scope": {
+      "allow_write": [
+        "ios/harness/demand_compiler.py",
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/tests/test_demand_compiler.py",
+        "ios/harness/tests/test_loop_supervisor.py",
+        "ios/harness/supervisor.example.json",
+        "ios/harness/README.md",
+        "ios/project/migration-intents/MINT-SOURCE-REQUEST-POST-FORM-001.json",
+        "ios/project/work-item-proposals/oracle-blueprints/**",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-ORACLE-DAG-COMPILER-001.json",
+        "ios/project/pitfalls/PIT-0056.json"
+      ],
+      "deny_write": [
+        ".github/**",
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "ios/publisher/**",
+        "ios/harness/config.json",
+        "ios/harness/schemas/**",
+        "ios/harness/android-intake/**",
+        "ios/harness/oracle/**",
+        "ios/harness/goldens/**",
+        "ios/harness/fixtures/source-lab/**",
+        "ios/harness/source-lab/manifest.json",
+        "ios/harness/source-lab/coverage-policy-v1.json",
+        "ios/project/android-intake/**",
+        "ios/project/requirements/**",
+        "ios/project/business-knowledge/**",
+        "ios/project/approvals/**",
+        "ios/project/baseline.json",
+        "ios/docs/architecture.md",
+        "ios/docs/adr/**"
+      ],
+      "max_files_changed": 15,
+      "max_changed_lines": 3200
+    },
+    "inputs": {
+      "context_files": [
+        "ios/harness/demand_compiler.py",
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/oracle/android-runner/orchestrator.py",
+        "ios/harness/oracle/android-runner/LegadoOracleInstrumentedTest.kt",
+        "ios/harness/fixtures/source-lab/sl-post-form-001/case.json",
+        "ios/project/checkpoints/IOS-SOURCELAB-POST-FORM-001.json",
+        "ios/project/migration-intents/MINT-SOURCE-REQUEST-POST-FORM-001.json",
+        "ios/project/requirements/accepted/REQ-ANDROID-SOURCE-PIPELINE-001.json"
+      ],
+      "android_source_anchors": [
+        "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+        "app/src/main/java/io/legado/app/model/webBook/WebBook.kt"
+      ],
+      "fixtures": [
+        "sl-post-form-001"
+      ]
+    },
+    "architecture_refs": [
+      "ARCH-014",
+      "ARCH-017",
+      "ADR-0002",
+      "ADR-0004"
+    ],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "Characterization settlement 必须绑定 completed WorkItem/spec、passed Evidence、Checkpoint、Requirement/source-lab selection、scenario candidate manifest/digest 与 Capability update；任一漂移 fail closed。",
+          "verified_by": [
+            "harness-tests",
+            "source-lab-contract"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "Demand Plan 按 oracle_blueprint_required→oracle_ready 推进；完成 Characterization 不再重复物化同一 WorkItem。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "Oracle blueprint 是完整 gates=[] WorkItem，只复用 sl-post-form-001 与 RC-01，写范围仅限 Oracle runner/tests、CAP-CONFORMANCE、Checkpoint/Pitfall，禁止 Android 产品、Fixture、Golden、Publisher、Workflow、Requirement、架构和权限写入。",
+          "verified_by": [
+            "harness-tests",
+            "dependency-policy"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-4",
+          "statement": "Supervisor inspect/drive 支持 oracle_materialization_ready 和 source-anchored-android-oracle-v1，在 mutation lock 内重算全部绑定并原子物化 IOS-ANDROID-POST-FORM-ORACLE-001。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-5",
+          "statement": "干净 HEAD 上真实 Loop 输出 oracle_materialization_ready；本项不提前执行 Android 或生成手写 expected。",
+          "verified_by": [
+            "harness-tests",
+            "memory-close"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": [
+        "android-intake-contract",
+        "dependency-policy",
+        "harness-tests",
+        "source-lab-contract",
+        "source-lab-tests"
+      ]
+    },
+    "baseline_checks": [
+      "dependency-policy",
+      "harness-tests",
+      "source-lab-tests"
+    ],
+    "budget": {
+      "wall_clock_seconds": 10800,
+      "max_edit_verify_cycles": 5,
+      "max_targeted_test_runs": 16,
+      "max_full_test_runs": 3,
+      "max_infra_retries": 2
+    },
+    "gates": [],
+    "completion_effects": {
+      "health": {
+        "oracle_dag_compiler": "source_anchored_v1"
+      }
+    },
+    "memory": {
+      "capability_state_required": true,
+      "checkpoint_required": true,
+      "pitfall_update_required": true,
+      "adr": "not_required"
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "refs": [],
+      "none_reason": "本项建立 Characterization 到 Android Oracle 的控制面，不执行产品行为"
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "not_applicable",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [],
+      "expected_ledger_transitions": [],
+      "context_budget": {
+        "max_claims": 12,
+        "max_bytes": 49152
+      },
+      "none_reason": "本项不消费、生成或发布业务知识"
+    },
+    "source_lab": {
+      "mode": "not_applicable",
+      "behaviors": [],
+      "scenarios": [],
+      "none_reason": "本项只生成 Oracle WorkItem blueprint，不修改场景"
+    },
+    "stop_on": [
+      "baseline_red",
+      "scope_violation",
+      "authority_escalation",
+      "same_failure_twice",
+      "budget_exhausted",
+      "human_decision_required"
+    ]
+  }
+}

@@ -340,6 +340,8 @@ class MigrationFixture:
     intent_id = "MINT-TEST-MIGRATION-001"
     target_id = "IOS-TEST-MIGRATION-001"
     characterization_id = "IOS-TEST-CHARACTERIZATION-001"
+    oracle_id = "IOS-TEST-ORACLE-001"
+    scenario_id = "sl-test-post-form-001"
     target_requirement_id = "REQ-TEST-MIGRATION-001"
     proposal_id = "ARQ-TEST-MIGRATION"
     capability_id = "CAP-TEST-MIGRATION"
@@ -493,6 +495,10 @@ class MigrationFixture:
                 f"{demand_compiler.CHARACTERIZATION_BLUEPRINT_ROOT}/"
                 f"{self.intent_id}.json"
             ),
+            "oracle_blueprint": (
+                f"{demand_compiler.ORACLE_BLUEPRINT_ROOT}/"
+                f"{self.intent_id}.json"
+            ),
         }
 
     def compiler(self):
@@ -629,6 +635,136 @@ class MigrationFixture:
                 },
             )
         self.commit("accept migration requirement")
+
+    def settle_characterization(self):
+        work_item = {
+            "api_version": "legado.harness/v1",
+            "kind": "WorkItem",
+            "metadata": {"id": self.characterization_id},
+            "spec": {
+                "capability": "CAP-CONFORMANCE",
+                "requirements": {
+                    "mode": "characterization",
+                    "refs": [self.intent()["requirement_binding"]],
+                },
+                "source_lab": {
+                    "mode": "extend",
+                    "behaviors": ["transport.post-form"],
+                    "scenarios": [self.scenario_id],
+                },
+                "gates": ["scenario-provenance-review"],
+            },
+        }
+        self.write_json(
+            self.intent()["characterization_blueprint"],
+            work_item,
+        )
+        work_item_relative = (
+            f"{demand_compiler.WORK_ITEM_ROOT}/"
+            f"{self.characterization_id}.json"
+        )
+        self.write_json(work_item_relative, work_item)
+        work_item_sha = demand_compiler._sha256_json(work_item)
+        evidence_relative = (
+            f"{demand_compiler.EVIDENCE_ROOT}/"
+            "characterization-settled.json"
+        )
+        evidence = {
+            "work_item_id": self.characterization_id,
+            "work_item_sha256": work_item_sha,
+            "result": "passed",
+            "inputs": {
+                "android_requirement_selection_sha256": "r" * 64,
+                "source_lab_selection_sha256": "s" * 64,
+            },
+        }
+        self.write_json(evidence_relative, evidence)
+        evidence_sha = hashlib.sha256(
+            (self.root / evidence_relative).read_bytes()
+        ).hexdigest()
+        checkpoint_relative = (
+            f"{demand_compiler.CHECKPOINT_ROOT}/"
+            f"{self.characterization_id}.json"
+        )
+        self.write_json(
+            checkpoint_relative,
+            {
+                "work_item_id": self.characterization_id,
+                "evidence": evidence_relative,
+                "capability_updates": [
+                    {
+                        "id": "CAP-CONFORMANCE",
+                        "from_revision": 4,
+                        "to_revision": 5,
+                    }
+                ],
+                "requirements": {
+                    **work_item["spec"]["requirements"],
+                    "selection_sha256": "r" * 64,
+                },
+                "source_lab": {
+                    **work_item["spec"]["source_lab"],
+                    "selection_sha256": "s" * 64,
+                },
+            },
+        )
+        self.write_json(
+            "ios/project/capabilities/CAP-CONFORMANCE.json",
+            {"id": "CAP-CONFORMANCE", "revision": 5},
+        )
+        self.write_json(
+            demand_compiler.SOURCE_LAB_MANIFEST,
+            {
+                "scenarios": [
+                    {
+                        "id": self.scenario_id,
+                        "status": "candidate",
+                        "path": (
+                            "ios/harness/fixtures/source-lab/"
+                            f"{self.scenario_id}"
+                        ),
+                        "sha256": "f" * 64,
+                    }
+                ]
+            },
+        )
+        state = json.loads(
+            (self.root / demand_compiler.STATE_PATH).read_text()
+        )
+        state["work_items"][self.characterization_id] = {
+            "status": "completed",
+            "work_item_sha256": work_item_sha,
+            "last_evidence": evidence_relative,
+            "last_evidence_sha256": evidence_sha,
+        }
+        self.write_json(demand_compiler.STATE_PATH, state)
+        self.commit("settle characterization")
+
+    def write_oracle_blueprint(self):
+        self.write_json(
+            self.intent()["oracle_blueprint"],
+            {
+                "api_version": "legado.harness/v1",
+                "kind": "WorkItem",
+                "metadata": {"id": self.oracle_id},
+                "spec": {
+                    "depends_on": [self.characterization_id],
+                    "requirements": {
+                        "mode": "characterization",
+                        "refs": [
+                            self.intent()["requirement_binding"]
+                        ],
+                    },
+                    "source_lab": {
+                        "mode": "reuse",
+                        "behaviors": ["transport.post-form"],
+                        "scenarios": [self.scenario_id],
+                    },
+                    "gates": [],
+                },
+            },
+        )
+        self.commit("add oracle blueprint")
 
 
 class DemandCompilerTests(unittest.TestCase):
@@ -899,6 +1035,43 @@ class DemandCompilerTests(unittest.TestCase):
                     artifact
                     for artifact in ready.artifacts
                     if artifact["kind"] == "requirement"
+                )["id"],
+            )
+
+    def test_completed_characterization_compiles_oracle_dag(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MigrationFixture(Path(directory))
+            fixture.settle()
+            fixture.accept_requirement(with_blueprint=True)
+            fixture.settle_characterization()
+
+            missing = fixture.compiler().compile_migration(
+                fixture.intent_path()
+            )
+            self.assertEqual(
+                "oracle_blueprint_required",
+                missing.state,
+            )
+            self.assertEqual(
+                fixture.characterization_id,
+                missing.target_work_item_id,
+            )
+
+            fixture.write_oracle_blueprint()
+            ready = fixture.compiler().compile_migration(
+                fixture.intent_path()
+            )
+            self.assertEqual("oracle_ready", ready.state)
+            self.assertEqual(
+                fixture.oracle_id,
+                ready.target_work_item_id,
+            )
+            self.assertEqual(
+                fixture.scenario_id,
+                next(
+                    artifact
+                    for artifact in ready.artifacts
+                    if artifact["kind"] == "source_lab_scenario"
                 )["id"],
             )
 

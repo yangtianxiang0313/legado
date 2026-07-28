@@ -25,10 +25,14 @@ MIGRATION_BLUEPRINT_ROOT = (
 CHARACTERIZATION_BLUEPRINT_ROOT = (
     "ios/project/work-item-proposals/characterization-blueprints"
 )
+ORACLE_BLUEPRINT_ROOT = (
+    "ios/project/work-item-proposals/oracle-blueprints"
+)
 BASELINE_PATH = "ios/project/baseline.json"
 SOURCE_LAB_COVERAGE_POLICY = (
     "ios/harness/source-lab/coverage-policy-v1.json"
 )
+SOURCE_LAB_MANIFEST = "ios/harness/source-lab/manifest.json"
 STATE_PATH = "ios/project/state.json"
 WORK_ITEM_ROOT = "ios/harness/work-items"
 CHECKPOINT_ROOT = "ios/project/checkpoints"
@@ -311,6 +315,7 @@ class DemandCompiler:
             "intake_blueprint",
             "requirement_binding",
             "characterization_blueprint",
+            "oracle_blueprint",
         }
         if set(intent) != required:
             raise DemandCompilerError("MIGRATION_INTENT_FIELDS_INVALID")
@@ -483,6 +488,13 @@ class DemandCompiler:
         ):
             raise DemandCompilerError(
                 "CHARACTERIZATION_BLUEPRINT_PATH_INVALID"
+            )
+        expected_oracle = (
+            f"{ORACLE_BLUEPRINT_ROOT}/{intent_id}.json"
+        )
+        if intent.get("oracle_blueprint") != expected_oracle:
+            raise DemandCompilerError(
+                "ORACLE_BLUEPRINT_PATH_INVALID"
             )
 
     def _git_object(self, revision: str, path: str) -> str:
@@ -700,6 +712,139 @@ class DemandCompiler:
                         "sha256": None,
                     }
                 )
+            if exists:
+                characterization_settlement = (
+                    self._completed_characterization(
+                        characterization
+                    )
+                )
+                if characterization_settlement is not None:
+                    artifacts.extend(
+                        characterization_settlement["artifacts"]
+                    )
+                    bindings.update(
+                        characterization_settlement["bindings"]
+                    )
+                    oracle_relative = str(
+                        intent["oracle_blueprint"]
+                    )
+                    oracle_path = self.resolve(oracle_relative)
+                    oracle_exists = (
+                        oracle_path.is_file()
+                        and not oracle_path.is_symlink()
+                    )
+                    if oracle_exists:
+                        self._head_regular((oracle_relative,))
+                        oracle = _load_object(
+                            oracle_path,
+                            "ORACLE_BLUEPRINT",
+                        )
+                        oracle_spec = oracle.get("spec", {})
+                        char_spec = characterization.get("spec", {})
+                        if (
+                            oracle.get("api_version")
+                            != "legado.harness/v1"
+                            or oracle.get("kind") != "WorkItem"
+                            or oracle_spec.get(
+                                "requirements", {}
+                            ).get("mode")
+                            != "characterization"
+                            or oracle_spec.get(
+                                "requirements", {}
+                            ).get("refs")
+                            != [dict(intent["requirement_binding"])]
+                            or oracle_spec.get(
+                                "source_lab", {}
+                            ).get("mode")
+                            != "reuse"
+                            or oracle_spec.get(
+                                "source_lab", {}
+                            ).get("scenarios")
+                            != char_spec.get(
+                                "source_lab", {}
+                            ).get("scenarios")
+                            or oracle_spec.get(
+                                "source_lab", {}
+                            ).get("behaviors")
+                            != char_spec.get(
+                                "source_lab", {}
+                            ).get("behaviors")
+                            or oracle_spec.get("depends_on")
+                            != [
+                                characterization.get(
+                                    "metadata", {}
+                                ).get("id")
+                            ]
+                            or oracle_spec.get("gates") != []
+                        ):
+                            raise DemandCompilerError(
+                                "ORACLE_BLUEPRINT_CONTRACT_INVALID"
+                            )
+                        bindings["oracle_blueprint"] = {
+                            "path": oracle_relative,
+                            "sha256": _sha256(
+                                oracle_path.read_bytes()
+                            ),
+                            "work_item_sha256": _sha256_json(
+                                oracle
+                            ),
+                        }
+                        artifacts.append(
+                            {
+                                "kind": "oracle_blueprint",
+                                "id": oracle.get(
+                                    "metadata", {}
+                                ).get("id"),
+                                "status": "committed",
+                                "path": oracle_relative,
+                                "sha256": bindings[
+                                    "oracle_blueprint"
+                                ]["sha256"],
+                            }
+                        )
+                    else:
+                        oracle = {}
+                        artifacts.append(
+                            {
+                                "kind": "oracle_blueprint",
+                                "id": None,
+                                "status": "missing",
+                                "path": oracle_relative,
+                                "sha256": None,
+                            }
+                        )
+                    return DemandPlan(
+                        intent_id=str(intent["id"]),
+                        priority=int(intent["priority"]),
+                        target_work_item_id=(
+                            str(
+                                oracle.get(
+                                    "metadata", {}
+                                ).get("id")
+                            )
+                            if oracle_exists
+                            else str(
+                                characterization.get(
+                                    "metadata", {}
+                                ).get("id")
+                            )
+                        ),
+                        state=(
+                            "oracle_ready"
+                            if oracle_exists
+                            else "oracle_blueprint_required"
+                        ),
+                        reason_code=(
+                            "ORACLE_INPUTS_READY"
+                            if oracle_exists
+                            else "ORACLE_BLUEPRINT_REQUIRED"
+                        ),
+                        authority_transition=False,
+                        artifacts=tuple(artifacts),
+                        bindings=bindings,
+                        policy=MIGRATION_POLICY,
+                        intent_kind="android_migration",
+                    )
             return DemandPlan(
                 intent_id=str(intent["id"]),
                 priority=int(intent["priority"]),
@@ -1409,6 +1554,209 @@ class DemandCompiler:
             "path": record_relative,
             "sha256": record_sha,
             "catalog_sha256": _sha256(catalog_path.read_bytes()),
+        }
+
+    def _completed_characterization(
+        self,
+        characterization: Mapping[str, Any],
+    ) -> Optional[Mapping[str, Any]]:
+        target = characterization.get("metadata", {}).get("id")
+        if not isinstance(target, str):
+            raise DemandCompilerError(
+                "CHARACTERIZATION_SETTLEMENT_INVALID"
+            )
+        state_path = self.resolve(STATE_PATH)
+        if not state_path.is_file() or state_path.is_symlink():
+            return None
+        state = _load_object(state_path, "PROJECT_STATE")
+        runtime = state.get("work_items", {}).get(target)
+        if (
+            not isinstance(runtime, dict)
+            or runtime.get("status") != "completed"
+        ):
+            return None
+        work_item_relative = f"{WORK_ITEM_ROOT}/{target}.json"
+        checkpoint_relative = f"{CHECKPOINT_ROOT}/{target}.json"
+        evidence_relative = runtime.get("last_evidence")
+        if (
+            not isinstance(evidence_relative, str)
+            or not evidence_relative.startswith(EVIDENCE_ROOT + "/")
+        ):
+            raise DemandCompilerError(
+                "CHARACTERIZATION_SETTLEMENT_INVALID"
+            )
+        try:
+            work_item_path = self.resolve(work_item_relative)
+            checkpoint_path = self.resolve(checkpoint_relative)
+            evidence_path = self.resolve(evidence_relative)
+            manifest_path = self.resolve(SOURCE_LAB_MANIFEST)
+            work_item = _load_object(
+                work_item_path,
+                "CHARACTERIZATION_WORK_ITEM",
+            )
+            checkpoint = _load_object(
+                checkpoint_path,
+                "CHARACTERIZATION_CHECKPOINT",
+            )
+            evidence = _load_object(
+                evidence_path,
+                "CHARACTERIZATION_EVIDENCE",
+            )
+            manifest = _load_object(
+                manifest_path,
+                "CHARACTERIZATION_SOURCE_LAB_MANIFEST",
+            )
+            capability_id = work_item.get("spec", {}).get(
+                "capability"
+            )
+            if not isinstance(capability_id, str):
+                raise DemandCompilerError(
+                    "CHARACTERIZATION_CAPABILITY_INVALID"
+                )
+            capability_relative = (
+                f"ios/project/capabilities/{capability_id}.json"
+            )
+            capability_path = self.resolve(capability_relative)
+            capability = _load_object(
+                capability_path,
+                "CHARACTERIZATION_CAPABILITY",
+            )
+            self._head_regular(
+                (
+                    STATE_PATH,
+                    work_item_relative,
+                    checkpoint_relative,
+                    evidence_relative,
+                    SOURCE_LAB_MANIFEST,
+                    capability_relative,
+                )
+            )
+        except DemandCompilerError as error:
+            raise DemandCompilerError(
+                "CHARACTERIZATION_SETTLEMENT_INVALID"
+            ) from error
+
+        work_item_sha = _sha256_json(work_item)
+        evidence_sha = _sha256(evidence_path.read_bytes())
+        spec = work_item.get("spec", {})
+        source_lab = spec.get("source_lab", {})
+        scenarios = source_lab.get("scenarios", [])
+        if not isinstance(scenarios, list) or len(scenarios) != 1:
+            raise DemandCompilerError(
+                "CHARACTERIZATION_SETTLEMENT_INVALID"
+            )
+        scenario_id = scenarios[0]
+        entries = [
+            value
+            for value in manifest.get("scenarios", [])
+            if isinstance(value, dict)
+            and value.get("id") == scenario_id
+        ]
+        updates = checkpoint.get("capability_updates", [])
+        update = next(
+            (
+                value
+                for value in updates
+                if isinstance(value, dict)
+                and value.get("id") == capability_id
+            ),
+            None,
+        )
+        evidence_inputs = evidence.get("inputs", {})
+        checkpoint_source_lab = checkpoint.get("source_lab", {})
+        checkpoint_requirements = checkpoint.get("requirements", {})
+        if (
+            work_item != characterization
+            or runtime.get("work_item_sha256") != work_item_sha
+            or checkpoint.get("work_item_id") != target
+            or checkpoint.get("evidence") != evidence_relative
+            or evidence.get("work_item_id") != target
+            or evidence.get("work_item_sha256") != work_item_sha
+            or evidence.get("result") != "passed"
+            or runtime.get("last_evidence_sha256") != evidence_sha
+            or checkpoint_source_lab.get("mode") != "extend"
+            or checkpoint_source_lab.get("behaviors")
+            != source_lab.get("behaviors")
+            or checkpoint_source_lab.get("scenarios") != scenarios
+            or not isinstance(
+                evidence_inputs.get("source_lab_selection_sha256"),
+                str,
+            )
+            or checkpoint_source_lab.get("selection_sha256")
+            != evidence_inputs.get("source_lab_selection_sha256")
+            or checkpoint_requirements.get("mode")
+            != spec.get("requirements", {}).get("mode")
+            or checkpoint_requirements.get("refs")
+            != spec.get("requirements", {}).get("refs")
+            or not isinstance(
+                evidence_inputs.get(
+                    "android_requirement_selection_sha256"
+                ),
+                str,
+            )
+            or checkpoint_requirements.get("selection_sha256")
+            != evidence_inputs.get(
+                "android_requirement_selection_sha256"
+            )
+            or not isinstance(update, dict)
+            or not isinstance(update.get("from_revision"), int)
+            or not isinstance(update.get("to_revision"), int)
+            or update["to_revision"] <= update["from_revision"]
+            or capability.get("id") != capability_id
+            or not isinstance(capability.get("revision"), int)
+            or capability["revision"] < update["to_revision"]
+            or len(entries) != 1
+            or entries[0].get("status") != "candidate"
+            or entries[0].get("path")
+            != f"ios/harness/fixtures/source-lab/{scenario_id}"
+            or not isinstance(entries[0].get("sha256"), str)
+        ):
+            raise DemandCompilerError(
+                "CHARACTERIZATION_SETTLEMENT_INVALID"
+            )
+        return {
+            "artifacts": [
+                {
+                    "kind": "characterization_completion",
+                    "id": target,
+                    "status": "completed",
+                    "evidence": evidence_relative,
+                    "evidence_sha256": evidence_sha,
+                    "checkpoint": checkpoint_relative,
+                    "checkpoint_sha256": _sha256(
+                        checkpoint_path.read_bytes()
+                    ),
+                },
+                {
+                    "kind": "source_lab_scenario",
+                    "id": scenario_id,
+                    "status": "candidate",
+                    "path": entries[0]["path"],
+                    "sha256": entries[0]["sha256"],
+                },
+            ],
+            "bindings": {
+                "characterization_settlement": {
+                    "work_item": work_item_relative,
+                    "work_item_sha256": work_item_sha,
+                    "capability": capability_id,
+                    "from_revision": update["from_revision"],
+                    "to_revision": update["to_revision"],
+                    "requirement_selection_sha256": (
+                        evidence_inputs[
+                            "android_requirement_selection_sha256"
+                        ]
+                    ),
+                    "source_lab_selection_sha256": (
+                        evidence_inputs[
+                            "source_lab_selection_sha256"
+                        ]
+                    ),
+                    "source_lab_manifest_sha256": _sha256(
+                        manifest_path.read_bytes()
+                    ),
+                }
+            },
         }
 
     def plans(

@@ -2,13 +2,13 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-28T17:48:34Z
+- 更新时间：2026-07-28T17:58:59Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
 - 下一个可领取工作项：无
-- 最近完成：IOS-SOURCELAB-POST-FORM-001
+- 最近完成：IOS-ORACLE-DAG-COMPILER-001
 
 ## 健康度
 
@@ -52,6 +52,7 @@
 | loop_supervisor | `local_verified` |
 | loop_trusted_verification | `real_codex_verified` |
 | migration_demand | `source_anchored_v1` |
+| oracle_dag_compiler | `source_anchored_v1` |
 | proposal_compiler | `local_verified` |
 | proposal_gate_policy | `authority_only` |
 | proposal_lifecycle_tests | `state_aware` |
@@ -122,6 +123,7 @@
 | IOS-LOOP-SUPERVISOR-E2E-001 | 100 | `completed` | IOS-LOOP-SUPERVISOR-RECOVERY-002 | 完成 Loop Supervisor 自托管 E2E 与进程组回收 |
 | IOS-LOOP-SUPERVISOR-RECOVERY-002 | 100 | `completed` | IOS-HARNESS-APPROVAL-UI-001, IOS-HARNESS-TIMEOUT-CLEANUP-001, IOS-KNOWLEDGE-UI-TOPOLOGY-RECOVERY-002 | 恢复并验证 Loop Supervisor 控制面 |
 | IOS-MATERIALIZATION-CATALOG-REFRESH-001 | 100 | `cancelled` | IOS-RECOVERY-COMPILER-BINDING-001 | 将知识 Catalog 刷新纳入物化原子事务 |
+| IOS-ORACLE-DAG-COMPILER-001 | 100 | `completed` | IOS-SOURCELAB-POST-FORM-001 | 把完成的 SourceLab Characterization 续接为 Android Oracle DAG |
 | IOS-PROCESS-GROUP-REAP-001 | 100 | `completed` | IOS-CODEX-AGENT-ADAPTER-COMPAT-002, IOS-SWIFTPM-VERIFY-SANDBOX-001 | 稳定受信 Supervisor 进程组回收判定 |
 | IOS-PROPOSAL-COMPILER-001 | 100 | `completed` | IOS-KNOWLEDGE-DAG-REPAIR-001, IOS-LOOP-SUPERVISOR-E2E-001 | 建立 initialization DAG 到不可变候选的编译器 |
 | IOS-PROPOSAL-GATE-REPAIR-001 | 100 | `completed` | IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002, IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-004 | 移除 proposal 橡皮图章并允许受限修复 turn |

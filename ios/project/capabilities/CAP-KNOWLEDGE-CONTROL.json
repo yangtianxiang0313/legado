@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 53,
+  "revision": 54,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -47,6 +47,7 @@
       "ios/project/work-item-proposals/delivery-blueprints/**",
       "ios/project/work-item-proposals/migration-blueprints/**",
       "ios/project/work-item-proposals/characterization-blueprints/**",
+      "ios/project/work-item-proposals/oracle-blueprints/**",
       "ios/project/delivery-intents/**",
       "ios/project/migration-intents/**"
     ]
@@ -63,7 +64,7 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260728T174356Z-ios-characterization-policy-gate-003-a68a4796.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260728T175823Z-ios-oracle-dag-compiler-001-c58b7b09.json",
   "next_actions": [
     "BKP-INTEGRATIONS-001@4 与 DRV-INTEGRATION-PROFILES-001@4 在 Trusted Publisher promotion 前保持 proposal；只有 promotion/accept 决策才要求权威审查",
     "由 Harness/Proposal Compiler 的 recovers 内容寻址合同维持恢复谱系，并用有界 Catalog self-heal 支持控制面中断续跑；下一步由 Trusted Publisher 提升 JSON Schema，并自动重写 recovery Claim supersedes 以关闭 PIT-0012",
@@ -71,6 +72,6 @@
     "在场景候选通过 synthetic-source-provenance-v1 来源裁决后，生成独立 Android Oracle WorkItem、结构化 expected 与 protected Golden",
     "将 migration intent 扩展为多条显式积压，验证稳定优先级、并列阻塞和连续第三轮推进"
   ],
-  "updated_at": "2026-07-28T17:44:02Z",
-  "updated_by": "IOS-CHARACTERIZATION-POLICY-GATE-003"
+  "updated_at": "2026-07-28T17:58:27Z",
+  "updated_by": "IOS-ORACLE-DAG-COMPILER-001"
 }

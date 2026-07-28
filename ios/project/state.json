@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "revision": 363,
+  "revision": 367,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-28T17:48:34Z",
-  "event_head": "df99e753e29dba2ead15d4febad8fa56f84cb491c4c0d240b355bd6c91684a9d",
+  "updated_at": "2026-07-28T17:58:59Z",
+  "event_head": "ce8a31f881098225b87c9d04dea47ed00d4b3c8a0eb35a4960eb9f20fba9cc56",
   "active_work_items": [],
-  "last_completed_work_item": "IOS-SOURCELAB-POST-FORM-001",
+  "last_completed_work_item": "IOS-ORACLE-DAG-COMPILER-001",
   "work_items": {
     "IOS-BOOT-001": {
       "status": "completed",
@@ -6642,6 +6642,116 @@
       },
       "completed_at": "2026-07-28T17:48:34Z",
       "final_tree_sha256": "043768f88d849a36f50e8a318e66b261d08fef9ce9c2bc9a183d72a565ae257e"
+    },
+    "IOS-ORACLE-DAG-COMPILER-001": {
+      "status": "completed",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260728T175823Z-ios-oracle-dag-compiler-001-c58b7b09.json",
+      "claimed_by": "codex",
+      "claimed_at": "2026-07-28T17:51:45Z",
+      "lease_expires_at": "2026-07-29T17:51:45Z",
+      "work_item_sha256": "67d2559803f332445753a6f42f21f4cd20403ae52975edbaeaa1fecbd81006ae",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "68a6b6e2f5da18ef522622e4a4aaf915f534a4fa",
+      "base_capability_revision": 53,
+      "base_capability_assurance_sha256": "6c08426cf2cc8f0277426284e00909a10444767bc01eeb84e0db43db8dcbb2ac",
+      "android_requirement_selection_sha256": null,
+      "business_knowledge_control_sha256": "85228a4aa826bd1f9d6f22231a6e04fe622cec925714d4bdceacdca704186979",
+      "business_knowledge_authority_sha256": "9a898622fab665e380b0fdb7837d6aa24f938f5c87e4bc635c32fbdf4dfe81c8",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 1,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "dependency-policy",
+          "argv": [
+            "python3",
+            "ios/harness/probes/dependency_contract.py",
+            "--root",
+            "."
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "eca96cb1b69567829ed8396386b0449da8c0d6e7295a00f1decfb60430ff1153",
+          "cwd": ".",
+          "started_at": "2026-07-28T17:50:14Z",
+          "duration_ms": 704,
+          "timeout_seconds": 90,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "17595a1d68cdc5b52c010f46dff48514afa3fa3cf0215cdea7ae8eff38677c0a",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_tail": "DEPENDENCY_CONTRACT: OK\n",
+          "stderr_tail": ""
+        },
+        {
+          "id": "harness-tests",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "244d512cbdd15fe0c5e35e6d9676510c943b19e9437987c24ac6e627a2e7ad94",
+          "cwd": ".",
+          "started_at": "2026-07-28T17:50:14Z",
+          "duration_ms": 85657,
+          "timeout_seconds": 180,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "9768d1a616740952ee29619aaf035343b76044d4be9301062bedde5ca981215b",
+          "stdout_tail": "",
+          "stderr_tail": "......................................................................................................................................................................................................................\n----------------------------------------------------------------------\nRan 214 tests in 85.506s\n\nOK\n"
+        },
+        {
+          "id": "source-lab-tests",
+          "argv": [
+            "python3",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/source-lab/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "498f03c140d9706195758eacdad80cbd00dde75eef3b2d53f86a242c1aa10eb8",
+          "cwd": ".",
+          "started_at": "2026-07-28T17:51:40Z",
+          "duration_ms": 4241,
+          "timeout_seconds": 60,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "4410d173267ba3ff34343205616a4bb8d022420ba42fb5b73a6571d35678efe6",
+          "stdout_tail": "",
+          "stderr_tail": ".........\n----------------------------------------------------------------------\nRan 9 tests in 4.127s\n\nOK\n"
+        }
+      ],
+      "last_evidence_sha256": "515bbc9c482fc401a4323cfb620d646e7a4ed0778d5e8067d3575630437329ea",
+      "verified_at": "2026-07-28T17:58:23Z",
+      "completed_at": "2026-07-28T17:58:59Z",
+      "final_tree_sha256": "9f50ebe08b320e56280a5f3f5c93667727a5d72f6229fd7b52d0540115b775eb"
     }
   },
   "health": {
@@ -6703,7 +6813,8 @@
     "characterization_dag_compiler": "source_anchored_v1",
     "characterization_blueprint_path_binding": "intent_keyed_verified",
     "synthetic_provenance_gate": "policy_managed",
-    "source_lab_post_form": "candidate_verified"
+    "source_lab_post_form": "candidate_verified",
+    "oracle_dag_compiler": "source_anchored_v1"
   },
   "risks": [
     {

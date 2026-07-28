@@ -87,6 +87,13 @@ python3 ios/harness/loop_supervisor.py materialize-review \
   `external_network=deny`、无额外动态 Gate 且已通过 Harness verify 的
   `scenario-provenance-review`。`sanitized_capture`、来源缺失、既有 reference
   修改、scope 越权或任何其他裁决仍 fail closed；
+- 显式启用 `source-anchored-android-oracle-v1` 后，已完成 Characterization 会按
+  WorkItem/Evidence/Checkpoint、Requirement/SourceLab selection、scenario manifest
+  与 Capability revision 结算，不再重复物化场景任务。Supervisor 只物化
+  `requirements.mode=characterization`、`source_lab.mode=reuse`、`gates=[]` 且仅能
+  写 Android Oracle runner/tests、CAP-CONFORMANCE、Checkpoint/Pitfall 的 blueprint；
+  Android 产品、Fixture、Golden、Publisher、Workflow、Requirement 和架构路径必须
+  deny；
 - 显式启用 `supervisor-owned-verification-v1` 后，单次工作项按 Agent edit →
   Supervisor verify → Agent memory → Supervisor close 推进。Agent 不能通过直接调用
   `verify/close` 改变控制状态；Supervisor 在每个 Agent turn 后核对 event/status/
@@ -138,7 +145,8 @@ python3 ios/harness/loop_supervisor.py materialize-review \
   编译最短链：`knowledge_authority_required → requirement_readiness_required →
   blueprint_required → delivery_ready`。`source-anchored-android-migration-v1`
   则按 `migration_intake_ready → requirement_authority_required →
-  characterization_blueprint_required → characterization_ready` 推进，并要求
+  characterization_blueprint_required → characterization_ready →
+  oracle_blueprint_required → oracle_ready` 推进，并要求
   completed WorkItem、Evidence、Checkpoint、Capability update、proposal digest、
   accepted Requirement record/catalog digest 与 characterization blueprint
   精确结算。因此“尚缺上游权威输入”或“下一条 Android 迁移切片已声明”都不会被

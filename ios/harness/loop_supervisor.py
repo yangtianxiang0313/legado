@@ -42,6 +42,7 @@ try:
         CHARACTERIZATION_BLUEPRINT_ROOT,
         MIGRATION_BLUEPRINT_ROOT,
         MIGRATION_POLICY,
+        ORACLE_BLUEPRINT_ROOT,
         DemandCompiler,
         DemandPlan,
     )
@@ -70,6 +71,7 @@ except ImportError:
         CHARACTERIZATION_BLUEPRINT_ROOT,
         MIGRATION_BLUEPRINT_ROOT,
         MIGRATION_POLICY,
+        ORACLE_BLUEPRINT_ROOT,
         DemandCompiler,
         DemandPlan,
     )
@@ -94,6 +96,7 @@ CHARACTERIZATION_MATERIALIZATION_POLICY = (
     "source-anchored-characterization-v1"
 )
 SYNTHETIC_PROVENANCE_POLICY = "synthetic-source-provenance-v1"
+ORACLE_MATERIALIZATION_POLICY = "source-anchored-android-oracle-v1"
 SUPERVISOR_VERIFICATION_POLICY = "supervisor-owned-verification-v1"
 BUSINESS_KNOWLEDGE_CATALOG_STALE = "Business Knowledge catalog 已过期"
 TERMINAL_RECOVERY_STATUSES = {"blocked", "rejected", "exhausted", "cancelled"}
@@ -980,6 +983,137 @@ class LoopSupervisor:
             raise MaterializationConflict(";".join(issues))
         return preview
 
+    def _oracle_scope_issues(
+        self,
+        item: Mapping[str, Any],
+    ) -> List[str]:
+        item_id = str(item.get("metadata", {}).get("id", ""))
+        capability_id = str(
+            item.get("spec", {}).get("capability", "")
+        )
+        scope = item.get("spec", {}).get("scope", {})
+        allow_write = scope.get("allow_write", [])
+        deny_write = scope.get("deny_write", [])
+        expected_allow = {
+            "ios/harness/oracle/android-runner/**",
+            "ios/harness/oracle/README.md",
+            "ios/harness/tests/test_android_oracle_runner.py",
+            f"ios/project/capabilities/{capability_id}.json",
+            f"ios/project/checkpoints/{item_id}.json",
+            "ios/project/pitfalls/PIT-*.json",
+        }
+        issues: List[str] = []
+        if (
+            not isinstance(allow_write, list)
+            or any(not isinstance(value, str) for value in allow_write)
+            or set(allow_write) != expected_allow
+        ):
+            issues.append("ORACLE_SCOPE_ALLOW_INVALID")
+        required_denials = (
+            ".github/workflows/change.yml",
+            "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+            "modules/book/src/main/java/example.kt",
+            "ios/Packages/LegadoKit/Package.swift",
+            "ios/publisher/android_golden_publisher.py",
+            "ios/harness/fixtures/source-lab/sl-post-form-001/case.json",
+            "ios/harness/goldens/manifest.json",
+            "ios/harness/oracle/ci_proposal.py",
+            "ios/harness/oracle/trusted_import.py",
+            "ios/project/requirements/catalog.json",
+            "ios/project/approvals/decision.json",
+            "ios/project/work-item-proposals/candidate.json",
+            "ios/docs/architecture.md",
+        )
+        for path in required_denials:
+            if not path_matches(path, deny_write):
+                issues.append(f"ORACLE_SCOPE_DENY_MISSING:{path}")
+        return issues
+
+    def _oracle_plan_preview(
+        self,
+        plan: DemandPlan,
+    ) -> MaterializationPreview:
+        if (
+            plan.policy != MIGRATION_MATERIALIZATION_POLICY
+            or plan.intent_kind != "android_migration"
+            or plan.state != "oracle_ready"
+        ):
+            raise MaterializationConflict("ORACLE_PLAN_STATE_INVALID")
+        binding = plan.bindings.get("oracle_blueprint", {})
+        relative = binding.get("path")
+        if not isinstance(relative, str):
+            raise MaterializationConflict(
+                "ORACLE_PLAN_BINDING_INVALID"
+            )
+        path = self.harness.resolve(relative)
+        preview = self.preflight_candidate(
+            path,
+            allowed_root=ORACLE_BLUEPRINT_ROOT,
+            require_filename_match=False,
+        )
+        if (
+            preview.item_id != plan.target_work_item_id
+            or preview.work_item_sha256
+            != binding.get("work_item_sha256")
+            or preview.source_fingerprint != binding.get("sha256")
+        ):
+            raise MaterializationConflict(
+                "ORACLE_MATERIALIZATION_BINDING_DRIFT"
+            )
+        try:
+            item = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise MaterializationConflict(
+                f"ORACLE_BLUEPRINT_INVALID:{error}"
+            ) from error
+        metadata = item.get("metadata", {})
+        spec = item.get("spec", {})
+        source_lab = spec.get("source_lab", {})
+        accepted = [
+            artifact
+            for artifact in plan.artifacts
+            if artifact.get("kind") == "requirement"
+            and artifact.get("status") == "accepted"
+        ]
+        scenarios = [
+            artifact
+            for artifact in plan.artifacts
+            if artifact.get("kind") == "source_lab_scenario"
+            and artifact.get("status") == "candidate"
+        ]
+        expected_refs = [
+            {
+                "id": value.get("id"),
+                "revision": value.get("revision"),
+                "clauses": value.get("clauses"),
+            }
+            for value in accepted
+        ]
+        if (
+            metadata.get("risk") == "critical"
+            or spec.get("gates") != []
+            or spec.get("requirements", {}).get("mode")
+            != "characterization"
+            or len(expected_refs) != 1
+            or spec.get("requirements", {}).get("refs")
+            != expected_refs
+            or source_lab.get("mode") != "reuse"
+            or len(scenarios) != 1
+            or source_lab.get("scenarios")
+            != [scenarios[0].get("id")]
+            or not isinstance(source_lab.get("behaviors"), list)
+            or not source_lab.get("behaviors")
+            or set(spec.get("completion_effects", {})) - {"health"}
+            or spec.get("capability") != "CAP-CONFORMANCE"
+        ):
+            raise MaterializationConflict(
+                "ORACLE_BLUEPRINT_AUTHORITY_INVALID"
+            )
+        issues = self._oracle_scope_issues(item)
+        if issues:
+            raise MaterializationConflict(";".join(issues))
+        return preview
+
     def _delivery_candidate(
         self,
         blueprint_path: Path,
@@ -1377,6 +1511,24 @@ class LoopSupervisor:
                     warnings=tuple(warnings),
                     details={"demand_plan": plan.to_dict()},
                 )
+        if plan.state == "oracle_ready":
+            try:
+                self._oracle_plan_preview(plan)
+            except (MaterializationConflict, HarnessError) as error:
+                return LoopDecision(
+                    state="demand_invalid",
+                    reason_code="ORACLE_BLUEPRINT_INVALID",
+                    work_item_id=plan.target_work_item_id,
+                    requires_human=False,
+                    blockers=(
+                        {
+                            "intent_id": plan.intent_id,
+                            "reason_code": str(error),
+                        },
+                    ),
+                    warnings=tuple(warnings),
+                    details={"demand_plan": plan.to_dict()},
+                )
         state_mapping = {
             "knowledge_authority_required": "authority_transition_required",
             "requirement_readiness_required": (
@@ -1394,6 +1546,10 @@ class LoopSupervisor:
             "characterization_ready": (
                 "characterization_materialization_ready"
             ),
+            "oracle_blueprint_required": (
+                "demand_materialization_required"
+            ),
+            "oracle_ready": "oracle_materialization_ready",
         }
         if plan.state not in state_mapping:
             return LoopDecision(
@@ -1967,6 +2123,10 @@ class LoopSupervisor:
         ):
             allowed_root = CHARACTERIZATION_BLUEPRINT_ROOT
         elif preview.source_relative.startswith(
+            ORACLE_BLUEPRINT_ROOT + "/"
+        ):
+            allowed_root = ORACLE_BLUEPRINT_ROOT
+        elif preview.source_relative.startswith(
             MIGRATION_BLUEPRINT_ROOT + "/"
         ):
             allowed_root = MIGRATION_BLUEPRINT_ROOT
@@ -1976,7 +2136,11 @@ class LoopSupervisor:
             self.harness.resolve(preview.source_relative),
             allowed_root=allowed_root,
             require_filename_match=(
-                allowed_root != CHARACTERIZATION_BLUEPRINT_ROOT
+                allowed_root
+                not in {
+                    CHARACTERIZATION_BLUEPRINT_ROOT,
+                    ORACLE_BLUEPRINT_ROOT,
+                }
             ),
             policy_managed_gates=(
                 ("scenario-provenance-review",)
@@ -2122,6 +2286,31 @@ class LoopSupervisor:
         return self.materialize(
             preview,
             reason=f"policy:{CHARACTERIZATION_MATERIALIZATION_POLICY}",
+            provenance=plan.to_dict(),
+        )
+
+    def auto_materialize_oracle(self, intent_id: str) -> str:
+        plans, blockers = DemandCompiler(self.harness.root).plans()
+        if blockers:
+            raise MaterializationConflict("ORACLE_DEMAND_BLOCKED")
+        eligible = tuple(
+            plan
+            for plan in plans
+            if plan.state != "delivery_completed"
+        )
+        if not eligible:
+            raise MaterializationConflict("ORACLE_DEMAND_MISSING")
+        highest = eligible[0].priority
+        tied = [plan for plan in eligible if plan.priority == highest]
+        if len(tied) != 1 or tied[0].intent_id != intent_id:
+            raise MaterializationConflict(
+                "ORACLE_DEMAND_SELECTION_DRIFT"
+            )
+        plan = tied[0]
+        preview = self._oracle_plan_preview(plan)
+        return self.materialize(
+            preview,
+            reason=f"policy:{ORACLE_MATERIALIZATION_POLICY}",
             provenance=plan.to_dict(),
         )
 
@@ -2671,6 +2860,23 @@ class LoopSupervisor:
                 "启用 characterization_materialization 时 policy 必须是 "
                 + CHARACTERIZATION_MATERIALIZATION_POLICY
             )
+        oracle_config = config.get("oracle_materialization", {})
+        if oracle_config is None:
+            oracle_config = {}
+        if not isinstance(oracle_config, dict):
+            raise LoopSupervisorError(
+                "oracle_materialization 必须是 object"
+            )
+        oracle_enabled = oracle_config.get("enabled") is True
+        oracle_policy = oracle_config.get("policy")
+        if (
+            oracle_enabled
+            and oracle_policy != ORACLE_MATERIALIZATION_POLICY
+        ):
+            raise LoopSupervisorError(
+                "启用 oracle_materialization 时 policy 必须是 "
+                + ORACLE_MATERIALIZATION_POLICY
+            )
         synthetic_config = config.get("synthetic_provenance", {})
         if synthetic_config is None:
             synthetic_config = {}
@@ -2927,6 +3133,37 @@ class LoopSupervisor:
                         "work_item_id": materialized_id,
                         "intent_id": intent_id,
                         "policy": characterization_policy,
+                    }
+                )
+                before = self.inspect()
+            if before.state == "oracle_materialization_ready":
+                if not oracle_enabled:
+                    return {
+                        "schema_version": SCHEMA_VERSION,
+                        "outcome": "oracle_materialization_disabled",
+                        "decision": before.to_dict(),
+                        "transitions": transitions,
+                    }
+                demand_plan = (
+                    before.details.get("demand_plan", {})
+                    if isinstance(before.details, dict)
+                    else {}
+                )
+                intent_id = demand_plan.get("intent_id")
+                if not isinstance(intent_id, str):
+                    raise LoopSupervisorError(
+                        "oracle decision 缺少 intent_id"
+                    )
+                with self.harness.mutation_lock():
+                    materialized_id = self.auto_materialize_oracle(
+                        intent_id
+                    )
+                transitions.append(
+                    {
+                        "kind": "oracle_materialization",
+                        "work_item_id": materialized_id,
+                        "intent_id": intent_id,
+                        "policy": oracle_policy,
                     }
                 )
                 before = self.inspect()

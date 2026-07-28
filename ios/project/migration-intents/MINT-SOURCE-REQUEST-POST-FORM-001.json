@@ -41,5 +41,6 @@
       "RC-01"
     ]
   },
-  "characterization_blueprint": "ios/project/work-item-proposals/characterization-blueprints/MINT-SOURCE-REQUEST-POST-FORM-001.json"
+  "characterization_blueprint": "ios/project/work-item-proposals/characterization-blueprints/MINT-SOURCE-REQUEST-POST-FORM-001.json",
+  "oracle_blueprint": "ios/project/work-item-proposals/oracle-blueprints/MINT-SOURCE-REQUEST-POST-FORM-001.json"
 }
