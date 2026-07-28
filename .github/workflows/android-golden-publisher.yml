@@ -1,8 +1,5 @@
 name: Android Golden Publisher
 
-# GitHub only accepts workflow_dispatch when this path exists on the default
-# branch. Authorized releases must select the protected iOS integration branch,
-# whose version of this workflow contains the real publisher implementation.
 on:
   workflow_dispatch:
     inputs:
@@ -25,18 +22,226 @@ on:
         type: string
 
 permissions:
-  contents: read
+  actions: read
+  attestations: read
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: android-golden-publisher
+  cancel-in-progress: false
 
 jobs:
-  reject-default-branch:
-    name: Select the protected iOS integration branch
+  publish:
+    name: Verify candidate and propose protected Android Golden
     runs-on: ubuntu-24.04
-    timeout-minutes: 1
+    timeout-minutes: 15
+    environment: android-golden-publisher
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TARGET_BRANCH: feature/ios-ai-harness-bootstrap
+      AUTHORIZED_ACTOR_ID: "35530717"
+      ORACLE_RUN_ID: ${{ inputs.oracle_run_id }}
+      ORACLE_RUN_ATTEMPT: ${{ inputs.oracle_run_attempt }}
+      ORACLE_SOURCE_DIGEST: ${{ inputs.oracle_source_digest }}
+      PROPOSAL_SHA256: ${{ inputs.proposal_sha256 }}
     steps:
-      - name: Reject default-branch publication
+      - name: Checkout exact protected publisher target
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          path: publisher
+          persist-credentials: true
+          ref: feature/ios-ai-harness-bootstrap
+
+      - name: Checkout exact Oracle source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          path: source
+          persist-credentials: false
+          ref: ${{ inputs.oracle_source_digest }}
+
+      - name: Validate authorization and Oracle run
         shell: bash
         run: |
-          printf '%s\n' \
-            'Android Golden publication is disabled on master.' \
-            'Dispatch this workflow from feature/ios-ai-harness-bootstrap.'
-          exit 1
+          set -euo pipefail
+          test "${GITHUB_ACTOR_ID}" = "${AUTHORIZED_ACTOR_ID}"
+          test "${GITHUB_REF_NAME}" = "master"
+
+          publisher_sha="$(git -C publisher rev-parse HEAD)"
+          remote_target="$(
+            git -C publisher ls-remote origin \
+              "refs/heads/${TARGET_BRANCH}" \
+              | cut -f1
+          )"
+          test "${publisher_sha}" = "${remote_target}"
+          test "$(git -C source rev-parse HEAD)" = \
+            "${ORACLE_SOURCE_DIGEST}"
+          test "${ORACLE_RUN_ID}" -gt 0
+          test "${ORACLE_RUN_ATTEMPT}" -gt 0
+          test "${#ORACLE_SOURCE_DIGEST}" -eq 40
+          test "${#PROPOSAL_SHA256}" -eq 64
+          test -z "$(printf '%s' "${ORACLE_SOURCE_DIGEST}" | tr -d '0-9a-f')"
+          test -z "$(printf '%s' "${PROPOSAL_SHA256}" | tr -d '0-9a-f')"
+          printf 'PUBLISHER_SHA=%s\n' "${publisher_sha}" >>"${GITHUB_ENV}"
+
+          run_json="$(
+            gh api \
+              "repos/${GITHUB_REPOSITORY}/actions/runs/${ORACLE_RUN_ID}"
+          )"
+          test "$(jq -r '.path' <<<"${run_json}")" = \
+            ".github/workflows/android-oracle-attestation.yml"
+          test "$(jq -r '.event' <<<"${run_json}")" = "workflow_dispatch"
+          test "$(jq -r '.status' <<<"${run_json}")" = "completed"
+          test "$(jq -r '.conclusion' <<<"${run_json}")" = "success"
+          test "$(jq -r '.head_sha' <<<"${run_json}")" = \
+            "${ORACLE_SOURCE_DIGEST}"
+          test "$(jq -r '.head_branch' <<<"${run_json}")" = \
+            "${TARGET_BRANCH}"
+          test "$(jq -r '.run_attempt' <<<"${run_json}")" = \
+            "${ORACLE_RUN_ATTEMPT}"
+
+          artifact_name="android-oracle-candidate-${ORACLE_RUN_ID}-${ORACLE_RUN_ATTEMPT}"
+          artifact_json="$(
+            gh api \
+              "repos/${GITHUB_REPOSITORY}/actions/runs/${ORACLE_RUN_ID}/artifacts"
+          )"
+          test "$(jq '.total_count' <<<"${artifact_json}")" -eq 1
+          test "$(jq -r '.artifacts[0].name' <<<"${artifact_json}")" = \
+            "${artifact_name}"
+          test "$(jq -r '.artifacts[0].expired' <<<"${artifact_json}")" = \
+            "false"
+          printf 'ARTIFACT_NAME=%s\n' "${artifact_name}" >>"${GITHUB_ENV}"
+
+      - name: Download exact candidate review artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          install -d -m 0700 "${RUNNER_TEMP}/review"
+          gh run download "${ORACLE_RUN_ID}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --name "${ARTIFACT_NAME}" \
+            --dir "${RUNNER_TEMP}/review"
+          (
+            cd "${RUNNER_TEMP}/review"
+            shasum -a 256 -c SHA256SUMS
+          )
+
+      - name: Verify and stage atomic Golden release
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B publisher/ios/publisher/android_golden_publisher.py \
+            prepare \
+            --root source \
+            --proposal-archive \
+              "${RUNNER_TEMP}/review/android-oracle-proposal.tar" \
+            --proposal-attestation-bundle \
+              "${RUNNER_TEMP}/review/proposal-attestation.json" \
+            --evidence-archive \
+              "${RUNNER_TEMP}/review/android-oracle-evidence.tar" \
+            --evidence-attestation-bundle \
+              "${RUNNER_TEMP}/review/evidence-attestation.json" \
+            --repository "${GITHUB_REPOSITORY}" \
+            --gh "$(command -v gh)" \
+            --authorized-run-id \
+              "${ORACLE_RUN_ID}/${ORACLE_RUN_ATTEMPT}" \
+            --authorized-source-digest "${ORACLE_SOURCE_DIGEST}" \
+            --authorized-proposal-sha256 "${PROPOSAL_SHA256}" \
+            --output-dir "${RUNNER_TEMP}/golden-release" \
+            | tee "${RUNNER_TEMP}/publisher-report.json"
+
+      - name: Install only the staged Golden transaction
+        shell: bash
+        run: |
+          set -euo pipefail
+          remote_target="$(
+            git -C publisher ls-remote origin \
+              "refs/heads/${TARGET_BRANCH}" \
+              | cut -f1
+          )"
+          test "${remote_target}" = "${PUBLISHER_SHA}"
+          test "$(
+            jq -r '.fixtures["sl-html-basic-001"] // empty' \
+              publisher/ios/harness/goldens/manifest.json
+          )" = ""
+
+          golden_root="publisher/ios/harness/goldens"
+          install -d -m 0755 \
+            "${golden_root}/android-legado-v1" \
+            "${golden_root}/releases"
+          install -m 0644 \
+            "${RUNNER_TEMP}/golden-release/manifest.json" \
+            "${golden_root}/manifest.json"
+          install -m 0644 \
+            "${RUNNER_TEMP}/golden-release/android-legado-v1/sl-html-basic-001.json" \
+            "${golden_root}/android-legado-v1/sl-html-basic-001.json"
+          install -m 0644 \
+            "${RUNNER_TEMP}/golden-release/releases/sl-html-basic-001-${ORACLE_RUN_ID}-${ORACLE_RUN_ATTEMPT}.json" \
+            "${golden_root}/releases/sl-html-basic-001-${ORACLE_RUN_ID}-${ORACLE_RUN_ATTEMPT}.json"
+
+          actual="$(
+            git -C publisher status \
+              --porcelain=v1 \
+              --untracked-files=all \
+              | awk '{print $2}' \
+              | sort
+          )"
+          expected="$(
+            printf '%s\n' \
+              ios/harness/goldens/android-legado-v1/sl-html-basic-001.json \
+              ios/harness/goldens/manifest.json \
+              ios/harness/goldens/releases/sl-html-basic-001-${ORACLE_RUN_ID}-${ORACLE_RUN_ATTEMPT}.json \
+              | sort
+          )"
+          test "${actual}" = "${expected}"
+          python3 -B publisher/ios/harness/harness.py \
+            --root publisher \
+            doctor
+
+      - name: Commit release branch and create review PR
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_branch="golden/android-oracle-${ORACLE_RUN_ID}-${ORACLE_RUN_ATTEMPT}"
+          test -z "$(
+            git -C publisher ls-remote origin \
+              "refs/heads/${release_branch}"
+          )"
+          git -C publisher switch -c "${release_branch}"
+          git -C publisher config \
+            user.name "github-actions[bot]"
+          git -C publisher config \
+            user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C publisher add \
+            ios/harness/goldens/manifest.json \
+            ios/harness/goldens/android-legado-v1/sl-html-basic-001.json \
+            "ios/harness/goldens/releases/sl-html-basic-001-${ORACLE_RUN_ID}-${ORACLE_RUN_ATTEMPT}.json"
+          git -C publisher commit \
+            -m "chore(ios): publish Android golden ${ORACLE_RUN_ID}/${ORACLE_RUN_ATTEMPT}"
+          git -C publisher push \
+            origin \
+            "HEAD:refs/heads/${release_branch}"
+          pr_url="$(
+            gh pr create \
+              --repo "${GITHUB_REPOSITORY}" \
+              --base "${TARGET_BRANCH}" \
+              --head "${release_branch}" \
+              --title "chore(ios): publish Android golden ${ORACLE_RUN_ID}/${ORACLE_RUN_ATTEMPT}" \
+              --body "$(
+                printf '%s\n' \
+                  'Environment-authorized Android Golden publication.' \
+                  '' \
+                  "- Oracle run: ${ORACLE_RUN_ID}/${ORACLE_RUN_ATTEMPT}" \
+                  "- Oracle source: ${ORACLE_SOURCE_DIGEST}" \
+                  "- Proposal SHA-256: ${PROPOSAL_SHA256}" \
+                  "- Dispatcher workflow commit: ${GITHUB_SHA}" \
+                  "- Publisher code commit: ${PUBLISHER_SHA}" \
+                  '- Authority transition: candidate_only → protected_android_golden' \
+                  '' \
+                  'Only the manifest, canonical payload and immutable release receipt are changed.'
+              )"
+          )"
+          printf 'Publisher PR: %s\n' "${pr_url}" \
+            | tee -a "${GITHUB_STEP_SUMMARY}"
