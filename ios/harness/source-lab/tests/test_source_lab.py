@@ -243,6 +243,101 @@ class SourceLabTests(unittest.TestCase):
                 )
             )
 
+    def test_attestation_can_follow_completed_candidate_oracle(self):
+        item_id = "IOS-TEST-POST-FORM-ATTESTATION-001"
+        item_path = (
+            REPO_ROOT
+            / "ios/harness/work-items"
+            / f"{item_id}.json"
+        )
+        dependency_id = "IOS-ANDROID-POST-FORM-ORACLE-RECOVERY-002"
+        dependency = source_lab.load_json(
+            REPO_ROOT
+            / "ios/harness/work-items"
+            / f"{dependency_id}.json"
+        )
+        item = copy.deepcopy(dependency)
+        item["metadata"]["id"] = item_id
+        item["metadata"]["labels"].extend(
+            ["attestation", "github-actions"]
+        )
+        item["spec"]["depends_on"] = [dependency_id]
+        item["spec"]["recovers"] = None
+        item["spec"]["requirements"] = {
+            "mode": "characterization",
+            "refs": [
+                {
+                    "id": "REQ-ANDROID-SOURCE-PIPELINE-001",
+                    "revision": 1,
+                    "clauses": ["RC-01"],
+                }
+            ],
+            "none_reason": None,
+        }
+        item["spec"]["scope"]["allow_write"] = [
+            ".github/workflows/android-oracle-attestation.yml",
+            "ios/harness/oracle/ci_proposal.py",
+            "ios/harness/oracle/trusted_import.py",
+        ]
+        state_path = REPO_ROOT / "ios/project/state.json"
+        state = source_lab.load_json(state_path)
+        manifest = source_lab.manifest_value(REPO_ROOT)
+        original_load_json = source_lab.load_json
+
+        def validate(mutated_item, mutated_state):
+            def controlled_load_json(path):
+                if path == item_path:
+                    return mutated_item
+                if path == state_path:
+                    return mutated_state
+                return original_load_json(path)
+
+            with mock.patch.object(
+                source_lab,
+                "load_json",
+                side_effect=controlled_load_json,
+            ):
+                return source_lab.validate_work_item_contract(
+                    REPO_ROOT,
+                    item_id,
+                    manifest,
+                )
+
+        self.assertEqual([], validate(item, state))
+
+        incomplete = copy.deepcopy(state)
+        incomplete["work_items"][dependency_id][
+            "status"
+        ] = "implementing"
+        self.assertTrue(
+            any(
+                "已完成且证据通过" in value
+                for value in validate(item, incomplete)
+            )
+        )
+
+        wrong_dependency = copy.deepcopy(item)
+        wrong_dependency["spec"]["depends_on"] = [
+            "IOS-SOURCELAB-POST-FORM-001"
+        ]
+        self.assertTrue(
+            any(
+                "已完成且证据通过" in value
+                for value in validate(wrong_dependency, state)
+            )
+        )
+
+        unsafe_workflow = copy.deepcopy(item)
+        unsafe_workflow["spec"]["scope"]["allow_write"].append(
+            ".github/workflows/unrelated.yml"
+        )
+        self.assertTrue(
+            any(
+                "candidate characterization 禁止写入" in value
+                for value in validate(unsafe_workflow, state)
+            )
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

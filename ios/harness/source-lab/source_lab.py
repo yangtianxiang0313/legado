@@ -29,6 +29,10 @@ SCENARIO_ID = re.compile(r"^sl-[a-z0-9-]+-[0-9]{3}$")
 FIXED_DATE = "Thu, 01 Jan 1970 00:00:00 GMT"
 ALLOWED_RESPONSE_HEADERS = {"content-type", "cache-control", "content-encoding", "location", "set-cookie"}
 CANDIDATE_CHARACTERIZATION_LABELS = {"android-oracle", "candidate-only"}
+CANDIDATE_ATTESTATION_LABELS = {"attestation", "github-actions"}
+CANDIDATE_ATTESTATION_ALLOWED_WRITES = {
+    ".github/workflows/android-oracle-attestation.yml",
+}
 CANDIDATE_CHARACTERIZATION_FORBIDDEN_WRITES = (
     ".github/",
     "app/",
@@ -578,6 +582,10 @@ def validate_candidate_characterization(
         and isinstance(recovers, str)
         and bool(recovers)
     )
+    is_attestation_followup = (
+        is_direct_characterization
+        and CANDIDATE_ATTESTATION_LABELS.issubset(labels)
+    )
     if (
         not CANDIDATE_CHARACTERIZATION_LABELS.issubset(labels)
         or not (is_direct_characterization or is_control_recovery)
@@ -602,6 +610,10 @@ def validate_candidate_characterization(
                 value == prefix.rstrip("/") or value.startswith(prefix)
                 for prefix in CANDIDATE_CHARACTERIZATION_FORBIDDEN_WRITES
             )
+            and not (
+                is_attestation_followup
+                and value in CANDIDATE_ATTESTATION_ALLOWED_WRITES
+            )
         )
         if forbidden:
             errors.append(
@@ -622,7 +634,7 @@ def validate_candidate_characterization(
         return errors
 
     dependencies = spec.get("depends_on", [])
-    if dependencies != [introduced_by]:
+    if not is_attestation_followup and dependencies != [introduced_by]:
         errors.append(
             f"{work_item_id}: candidate characterization 必须唯一依赖 "
             f"introduced_by WorkItem：{introduced_by}"
@@ -649,6 +661,90 @@ def validate_candidate_characterization(
             f"{work_item_id}: candidate introduced_by 尚未完成合法 extend："
             f"{introduced_by}"
         )
+
+    if is_attestation_followup:
+        if (
+            not isinstance(dependencies, list)
+            or len(dependencies) != 1
+            or not isinstance(dependencies[0], str)
+        ):
+            errors.append(
+                f"{work_item_id}: candidate attestation 必须唯一依赖"
+                "已完成 Android Oracle"
+            )
+        else:
+            dependency_id = dependencies[0]
+            dependency_path = (
+                root
+                / "ios/harness/work-items"
+                / f"{dependency_id}.json"
+            )
+            dependency_runtime = state.get("work_items", {}).get(
+                dependency_id,
+                {},
+            )
+            try:
+                dependency = load_json(dependency_path)
+            except SourceLabError as error:
+                errors.append(
+                    f"{work_item_id}: candidate attestation "
+                    f"Oracle 依赖无效：{error}"
+                )
+            else:
+                dependency_spec = dependency.get("spec", {})
+                dependency_labels = set(
+                    dependency.get("metadata", {}).get("labels", [])
+                )
+                dependency_requirements_mode = dependency_spec.get(
+                    "requirements",
+                    {},
+                ).get("mode")
+                dependency_source_lab = dependency_spec.get(
+                    "source_lab",
+                    {},
+                )
+                dependency_evidence_path = dependency_runtime.get(
+                    "last_evidence"
+                )
+                dependency_evidence = None
+                dependency_evidence_sha256 = None
+                if isinstance(dependency_evidence_path, str):
+                    evidence_path = root / dependency_evidence_path
+                    try:
+                        dependency_evidence = load_json(evidence_path)
+                        dependency_evidence_sha256 = sha256_bytes(
+                            evidence_path.read_bytes()
+                        )
+                    except (OSError, SourceLabError):
+                        dependency_evidence = None
+                if (
+                    dependency_spec.get("capability")
+                    != spec.get("capability")
+                    or not CANDIDATE_CHARACTERIZATION_LABELS.issubset(
+                        dependency_labels
+                    )
+                    or dependency_requirements_mode
+                    not in {"characterization", "control_plane"}
+                    or dependency_source_lab.get("mode") != "reuse"
+                    or dependency_source_lab.get("scenarios")
+                    != [scenario_id]
+                    or dependency_source_lab.get("behaviors")
+                    != list(behaviors)
+                    or dependency_runtime.get("status") != "completed"
+                    or dependency_runtime.get("work_item_sha256")
+                    != sha256_bytes(canonical_bytes(dependency))
+                    or not isinstance(dependency_evidence, dict)
+                    or dependency_evidence.get("work_item_id")
+                    != dependency_id
+                    or dependency_evidence.get("result") != "passed"
+                    or dependency_runtime.get("last_evidence_sha256")
+                    != dependency_evidence_sha256
+                ):
+                    errors.append(
+                        f"{work_item_id}: candidate attestation "
+                        "必须沿已完成且证据通过的同 Capability "
+                        "Android Oracle 谱系复用场景"
+                    )
 
     if is_control_recovery:
         predecessor_path = (
