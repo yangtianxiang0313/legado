@@ -586,6 +586,10 @@ def validate_candidate_characterization(
         is_direct_characterization
         and CANDIDATE_ATTESTATION_LABELS.issubset(labels)
     )
+    is_attestation_recovery = (
+        is_control_recovery
+        and CANDIDATE_ATTESTATION_LABELS.issubset(labels)
+    )
     if (
         not CANDIDATE_CHARACTERIZATION_LABELS.issubset(labels)
         or not (is_direct_characterization or is_control_recovery)
@@ -611,7 +615,7 @@ def validate_candidate_characterization(
                 for prefix in CANDIDATE_CHARACTERIZATION_FORBIDDEN_WRITES
             )
             and not (
-                is_attestation_followup
+                (is_attestation_followup or is_attestation_recovery)
                 and value in CANDIDATE_ATTESTATION_ALLOWED_WRITES
             )
         )
@@ -747,42 +751,85 @@ def validate_candidate_characterization(
                     )
 
     if is_control_recovery:
-        predecessor_path = (
-            root / "ios/harness/work-items" / f"{recovers}.json"
-        )
-        try:
-            predecessor = load_json(predecessor_path)
-        except SourceLabError as error:
-            errors.append(
-                f"{work_item_id}: candidate recovery predecessor 无效：{error}"
+        cursor = recovers
+        seen: Set[str] = {work_item_id}
+        terminal_statuses = {
+            "blocked",
+            "rejected",
+            "exhausted",
+            "cancelled",
+        }
+        chain_valid = False
+        while isinstance(cursor, str) and cursor:
+            if cursor in seen or len(seen) > 16:
+                errors.append(
+                    f"{work_item_id}: control recovery chain 成环或过深"
+                )
+                break
+            seen.add(cursor)
+            predecessor_path = (
+                root / "ios/harness/work-items" / f"{cursor}.json"
             )
-        else:
+            try:
+                predecessor = load_json(predecessor_path)
+            except SourceLabError as error:
+                errors.append(
+                    f"{work_item_id}: candidate recovery predecessor "
+                    f"无效：{error}"
+                )
+                break
             predecessor_spec = predecessor.get("spec", {})
             predecessor_labels = set(
                 predecessor.get("metadata", {}).get("labels", [])
             )
             predecessor_runtime = state.get("work_items", {}).get(
-                recovers,
+                cursor,
                 {},
             )
             if (
                 predecessor_spec.get("capability") != spec.get("capability")
-                or predecessor_spec.get("requirements", {}).get("mode")
-                != "characterization"
                 or predecessor_spec.get("source_lab", {}).get("mode")
                 != "reuse"
                 or predecessor_spec.get("source_lab", {}).get("scenarios")
                 != [scenario_id]
+                or predecessor_spec.get("source_lab", {}).get("behaviors")
+                != list(behaviors)
                 or not CANDIDATE_CHARACTERIZATION_LABELS.issubset(
                     predecessor_labels
                 )
                 or predecessor_runtime.get("status")
-                not in {"blocked", "rejected", "exhausted", "cancelled"}
+                not in terminal_statuses
             ):
                 errors.append(
                     f"{work_item_id}: control recovery 未精确承接 "
-                    f"candidate characterization：{recovers}"
+                    f"candidate characterization：{cursor}"
                 )
+                break
+            predecessor_mode = predecessor_spec.get(
+                "requirements",
+                {},
+            ).get("mode")
+            if predecessor_mode == "characterization":
+                chain_valid = True
+                break
+            next_predecessor = predecessor_spec.get("recovers")
+            if (
+                predecessor_mode != "control_plane"
+                or not isinstance(next_predecessor, str)
+                or not next_predecessor
+            ):
+                errors.append(
+                    f"{work_item_id}: control recovery chain 未终止于 "
+                    "candidate characterization"
+                )
+                break
+            cursor = next_predecessor
+        if not chain_valid and not any(
+            "control recovery" in error for error in errors
+        ):
+            errors.append(
+                f"{work_item_id}: control recovery chain 未解析"
+            )
 
     policy = coverage_policy(root)
     candidate_coverage: Dict[str, Dict[str, int]] = {}

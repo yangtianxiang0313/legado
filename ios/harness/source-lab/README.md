@@ -22,11 +22,14 @@ Android Oracle characterization：它可以消费一个 `candidate`，但必须�
 Fixture、SourceLab 控制文件、Golden、Publisher、Workflow 或产品代码。这个例外只赋予
 “运行并生成 local candidate”的权限，不会把场景变成 reference，也不带发布权限。
 若原 characterization 进入可恢复终态，同 Capability 的 `control_plane` recovery
-可以复用该例外，但必须用 `recovers` 精确绑定原工作项，且原工作项仍需满足上述全部条件。
+可以复用该例外，但必须用 `recovers` 精确绑定原工作项。连续 recovery 会沿最多 16 层、
+无环、同 Capability、同场景/behavior 且每层均为可恢复终态的谱系解析，最终必须终止于
+原 `requirements.mode=characterization` 工作项。
 后续 GitHub 受信提案可以在同样无 Gate、无发布权限的边界内复用 candidate，但必须额外带
 `attestation` 与 `github-actions` 标签，并唯一依赖一个同 Capability、同场景/behavior、
 状态为 `completed` 且 Evidence 为 `passed` 的 Android Oracle（含其 typed recovery
 resolution）。这条边只额外允许固定的
 `.github/workflows/android-oracle-attestation.yml`，用于重新运行和形成
 candidate-only 双证明；其他 Workflow 仍被拒绝，也不允许回退到 `introduced_by`、
-修改场景或获得 Golden/Publisher 权限。
+修改场景或获得 Golden/Publisher 权限。上述固定 Workflow 例外会沿合法 attestation
+control recovery chain 继承，其他 `.github/**` 路径不会继承。

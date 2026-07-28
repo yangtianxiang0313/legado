@@ -338,6 +338,78 @@ class SourceLabTests(unittest.TestCase):
             )
         )
 
+    def test_attestation_control_recovery_chain_is_bounded(self):
+        predecessor_id = (
+            "IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-002"
+        )
+        recovery_id = (
+            "IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-TEST"
+        )
+        recovery_path = (
+            REPO_ROOT
+            / "ios/harness/work-items"
+            / f"{recovery_id}.json"
+        )
+        predecessor = source_lab.load_json(
+            REPO_ROOT
+            / "ios/harness/work-items"
+            / f"{predecessor_id}.json"
+        )
+        recovery = copy.deepcopy(predecessor)
+        recovery["metadata"]["id"] = recovery_id
+        recovery["spec"]["recovers"] = predecessor_id
+        recovery["spec"]["scope"]["allow_write"] = [
+            ".github/workflows/android-oracle-attestation.yml",
+            "ios/harness/oracle/contract.py",
+        ]
+        state_path = REPO_ROOT / "ios/project/state.json"
+        state = source_lab.load_json(state_path)
+        manifest = source_lab.manifest_value(REPO_ROOT)
+        original_load_json = source_lab.load_json
+
+        def validate(mutated_item, mutated_state):
+            def controlled_load_json(path):
+                if path == recovery_path:
+                    return mutated_item
+                if path == state_path:
+                    return mutated_state
+                return original_load_json(path)
+
+            with mock.patch.object(
+                source_lab,
+                "load_json",
+                side_effect=controlled_load_json,
+            ):
+                return source_lab.validate_work_item_contract(
+                    REPO_ROOT,
+                    recovery_id,
+                    manifest,
+                )
+
+        self.assertEqual([], validate(recovery, state))
+
+        unsafe_workflow = copy.deepcopy(recovery)
+        unsafe_workflow["spec"]["scope"]["allow_write"].append(
+            ".github/workflows/unrelated.yml"
+        )
+        self.assertTrue(
+            any(
+                "candidate characterization 禁止写入" in value
+                for value in validate(unsafe_workflow, state)
+            )
+        )
+
+        active_predecessor = copy.deepcopy(state)
+        active_predecessor["work_items"][predecessor_id][
+            "status"
+        ] = "implementing"
+        self.assertTrue(
+            any(
+                "control recovery 未精确承接" in value
+                for value in validate(recovery, active_predecessor)
+            )
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
