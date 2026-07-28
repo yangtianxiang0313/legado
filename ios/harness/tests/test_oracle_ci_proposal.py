@@ -262,6 +262,25 @@ class OracleCIProposalTests(unittest.TestCase):
         self.assertNotIn("echo no | avdmanager create avd", workflow)
         self.assertNotIn("\n          adb -s", workflow)
         self.assertNotIn("$(adb -s", workflow)
+        self.assertNotIn("wait-for-device", workflow)
+        self.assertIn("for _ in $(seq 1 120); do", workflow)
+        self.assertIn(
+            'kill -0 "$(cat "${ORACLE_TEMP}/emulator.pid")"',
+            workflow,
+        )
+        self.assertIn(
+            '"${ADB}" -s "${AVD_SERIAL}" get-state',
+            workflow,
+        )
+        self.assertIn(
+            "Android emulator did not boot within 240 seconds",
+            workflow,
+        )
+        self.assertIn('"${ADB}" devices -l || true', workflow)
+        self.assertIn(
+            'tail -n 200 "${ORACLE_TEMP}/emulator.log" || true',
+            workflow,
+        )
         self.assertIn(
             '"${SDKMANAGER}" \\\n'
             '            "platform-tools"',

@@ -131,16 +131,25 @@ jobs:
             -gpu swiftshader_indirect \
             >"${ORACLE_TEMP}/emulator.log" 2>&1 &
           echo "$!" >"${ORACLE_TEMP}/emulator.pid"
-          "${ADB}" -s "${AVD_SERIAL}" wait-for-device
           ready=false
           for _ in $(seq 1 120); do
-            if test "$("${ADB}" -s "${AVD_SERIAL}" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1"; then
+            if ! kill -0 "$(cat "${ORACLE_TEMP}/emulator.pid")" 2>/dev/null; then
+              break
+            fi
+            adb_state="$("${ADB}" -s "${AVD_SERIAL}" get-state 2>/dev/null || true)"
+            if test "${adb_state}" = "device" && \
+              test "$("${ADB}" -s "${AVD_SERIAL}" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1"; then
               ready=true
               break
             fi
             sleep 2
           done
-          test "${ready}" = true
+          if test "${ready}" != true; then
+            echo "::error::Android emulator did not boot within 240 seconds"
+            "${ADB}" devices -l || true
+            tail -n 200 "${ORACLE_TEMP}/emulator.log" || true
+            exit 1
+          fi
           "${ADB}" -s "${AVD_SERIAL}" shell input keyevent 82
 
       - name: Run frozen Android Oracle offline
