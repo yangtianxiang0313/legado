@@ -2385,11 +2385,18 @@ class Harness:
             "ios/project/business-knowledge/drivers/published/**",
         ]
         coverage_root = ["ios/project/business-knowledge/coverage/**"]
+        tombstone_root = ["ios/project/business-knowledge/tombstones/**"]
         expected_proposals = set(self.knowledge_proposal_paths(item))
+        control_upgrade = self.business_knowledge_control_upgrade(item)
         for path in product_changes:
             if path_matches(path, ["ios/harness/business-knowledge/**"]):
-                if not self.business_knowledge_control_upgrade(item):
+                if not control_upgrade:
                     errors.append(f"KNOWLEDGE_CONTROL_MUTATION: {path}")
+            elif path_matches(path, tombstone_root):
+                if not control_upgrade:
+                    errors.append(
+                        f"AUTHORITY_ESCALATION: 普通工作项不得创建 knowledge tombstone：{path}"
+                    )
             elif path_matches(path, published_roots):
                 errors.append(f"AUTHORITY_ESCALATION: 普通工作项不得修改 published 知识：{path}")
             elif path_matches(path, coverage_root):

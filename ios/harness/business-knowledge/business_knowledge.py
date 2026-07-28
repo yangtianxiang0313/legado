@@ -24,6 +24,7 @@ CLAIM_ID = re.compile(r"^BKC-[A-Z][A-Z0-9-]*-[0-9]{3}$")
 DRIVER_ID = re.compile(r"^DRV-[A-Z][A-Z0-9-]*-[0-9]{3}$")
 LEDGER_ID = re.compile(r"^BKL-[A-Z][A-Z0-9-]*-[0-9]{3}$")
 ENTRY_ID = re.compile(r"^BKE-[A-Z][A-Z0-9-]*-[0-9]{3}$")
+TERMINAL_PRODUCER_STATUSES = {"blocked", "rejected", "exhausted", "cancelled"}
 
 
 class KnowledgeError(RuntimeError):
@@ -274,10 +275,175 @@ def _proposal_owner(
     return declared[0], []
 
 
+def _tombstone_issues(
+    root: Path,
+    entries: Sequence[Dict[str, Any]],
+    producers: Dict[Tuple[str, str, int], Tuple[str, ...]],
+) -> Tuple[List[Dict[str, Any]], List[str]]:
+    errors: List[str] = []
+    valid: List[Dict[str, Any]] = []
+    if not entries:
+        return valid, errors
+    schema = _schema(root, "knowledge-revision-tombstone.schema.json")
+    try:
+        state = load_json(root / "ios/project/state.json")
+    except KnowledgeError as error:
+        return [], [str(error)]
+    state_items = state.get("work_items", {}) if isinstance(state, dict) else {}
+    events: List[Dict[str, Any]] = []
+    events_path = root / "ios/project/events.jsonl"
+    if events_path.is_file():
+        for line_number, line in enumerate(
+            events_path.read_text(encoding="utf-8").splitlines(),
+            1,
+        ):
+            if not line.strip():
+                continue
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                errors.append(
+                    f"tombstone event lineage JSON 无效："
+                    f"{relative(root, events_path)}:{line_number}"
+                )
+                continue
+            if isinstance(event, dict):
+                events.append(event)
+    seen: set[Tuple[str, str, int]] = set()
+    for entry in entries:
+        error_count = len(errors)
+        record = entry["record"]
+        schema_errors = validate_schema(record, schema)
+        errors.extend(f"{entry['path']}: {error}" for error in schema_errors)
+        if schema_errors:
+            continue
+        kind = record["knowledge_kind"]
+        identifier = record["id"]
+        revision = record["revision"]
+        key = (kind, identifier, revision)
+        if key in seen:
+            errors.append(
+                f"Knowledge tombstone 重复：{kind} {identifier}@{revision}"
+            )
+            continue
+        seen.add(key)
+        pattern = PACKET_ID if kind == "packet" else DRIVER_ID
+        plural = "packets" if kind == "packet" else "drivers"
+        path = Path(entry["path"])
+        expected = (
+            Path("ios/project/business-knowledge/tombstones")
+            / plural
+            / identifier
+            / f"r{revision:04d}.json"
+        )
+        if pattern.fullmatch(identifier) is None or path != expected:
+            errors.append(
+                f"{entry['path']}: tombstone knowledge_kind/ID/revision 与路径不一致"
+            )
+        declared = producers.get(key, ())
+        producer = record["producer_work_item"]
+        if declared != (producer,):
+            errors.append(
+                f"{entry['path']}: tombstone producer 不匹配 reservation "
+                f"{kind} {identifier}@{revision} -> {declared}"
+            )
+        runtime = (
+            state_items.get(producer, {})
+            if isinstance(state_items, dict)
+            else {}
+        )
+        terminal_status = record["producer_terminal_status"]
+        if (
+            not isinstance(runtime, dict)
+            or runtime.get("status") != terminal_status
+            or terminal_status not in TERMINAL_PRODUCER_STATUSES
+        ):
+            errors.append(
+                f"{entry['path']}: producer 不是声明的终态 "
+                f"{producer} status={runtime.get('status') if isinstance(runtime, dict) else None}"
+            )
+        expected_reason = (
+            runtime.get("blocker")
+            or runtime.get("rejected_reason")
+            or runtime.get("exhausted_reason")
+            or runtime.get("cancelled_reason")
+        ) if isinstance(runtime, dict) else None
+        if isinstance(expected_reason, dict):
+            expected_reason = expected_reason.get("class") or expected_reason.get(
+                "message"
+            )
+        if record["reason_code"] != expected_reason:
+            errors.append(
+                f"{entry['path']}: tombstone reason_code 与 producer state 不一致"
+            )
+        expected_evidence = (
+            runtime.get("last_evidence") if isinstance(runtime, dict) else None
+        )
+        if record["evidence"] != expected_evidence:
+            errors.append(
+                f"{entry['path']}: tombstone evidence 与 producer state 不一致"
+            )
+        if isinstance(expected_evidence, str) and not (
+            root / expected_evidence
+        ).is_file():
+            errors.append(f"{entry['path']}: tombstone evidence 不存在")
+        event_names = {
+            "blocked": {"WorkItemBaselineRed", "WorkItemLeaseExpired"},
+            "rejected": {"WorkItemRejected"},
+            "exhausted": {"WorkItemExhausted"},
+            "cancelled": {"WorkItemCancelled"},
+        }[terminal_status]
+        if not any(
+            event.get("work_item_id") == producer
+            and event.get("event") in event_names
+            for event in events
+        ):
+            errors.append(
+                f"{entry['path']}: producer 缺少匹配的 terminal event lineage"
+            )
+        creator_path = (
+            root
+            / "ios/harness/work-items"
+            / f"{record['created_by']}.json"
+        )
+        try:
+            creator = load_json(creator_path)
+        except KnowledgeError as error:
+            errors.append(str(error))
+            creator = {}
+        labels = creator.get("metadata", {}).get("labels", []) if isinstance(
+            creator, dict
+        ) else []
+        if not isinstance(labels, list) or not {
+            "control-plane",
+            "corrective",
+        }.issubset(set(labels)):
+            errors.append(
+                f"{entry['path']}: tombstone created_by 必须是 corrective control-plane Work Item"
+            )
+        proposal_root = (
+            "ios/project/business-knowledge/packets"
+            if kind == "packet"
+            else "ios/project/business-knowledge/drivers"
+        )
+        artifact_paths = (
+            root / proposal_root / "proposals" / identifier / f"r{revision:04d}.json",
+            root / proposal_root / "published" / identifier / f"r{revision:04d}.json",
+        )
+        if any(path.exists() for path in artifact_paths):
+            errors.append(
+                f"{entry['path']}: tombstone 对应的物理 knowledge artifact 已存在"
+            )
+        if len(errors) == error_count:
+            valid.append(entry)
+    return valid, errors
+
+
 def _revision_issues(
     records: Sequence[Dict[str, Any]],
     identifier_pattern: re.Pattern[str],
     kind: str,
+    tombstones: Sequence[Dict[str, Any]] = (),
 ) -> List[str]:
     errors: List[str] = []
     grouped: Dict[str, Dict[int, Dict[str, Any]]] = {}
@@ -293,11 +459,20 @@ def _revision_issues(
         if revision in revisions:
             errors.append(f"{kind} revision 重复：{identifier}@{revision}")
         revisions[revision] = entry
-    for identifier, revisions in grouped.items():
-        ordered = sorted(revisions)
+    abandoned: Dict[str, set[int]] = {}
+    expected_kind = "packet" if kind == "Packet" else "driver"
+    for entry in tombstones:
+        record = entry["record"]
+        if record.get("knowledge_kind") == expected_kind:
+            abandoned.setdefault(str(record.get("id")), set()).add(
+                int(record.get("revision"))
+            )
+    for identifier in sorted(set(grouped) | set(abandoned)):
+        revisions = grouped.get(identifier, {})
+        ordered = sorted(set(revisions) | abandoned.get(identifier, set()))
         if ordered != list(range(1, max(ordered) + 1)):
             errors.append(f"{kind} revision 不连续：{identifier} -> {ordered}")
-        for revision in ordered:
+        for revision in sorted(revisions):
             supersedes = revisions[revision]["record"].get("supersedes")
             expected = None if revision == 1 else {"id": identifier, "revision": revision - 1}
             if supersedes != expected:
@@ -381,6 +556,11 @@ def _graph(root: Path) -> Tuple[Dict[str, Any], List[str]]:
         "drivers_published": _records(root, directories["published_drivers"], "r*.json"),
         "drivers_proposals": _records(root, directories["driver_proposals"], "r*.json"),
         "ledgers": _records(root, directories["coverage"], "BKL-*.json"),
+        "tombstones": _records(
+            root,
+            "ios/project/business-knowledge/tombstones",
+            "r*.json",
+        ),
     }
     errors: List[str] = []
     baseline = load_json(root / "ios/project/baseline.json")
@@ -407,11 +587,32 @@ def _graph(root: Path) -> Tuple[Dict[str, Any], List[str]]:
     ledger_schema = _schema(root, "coverage-ledger.schema.json")
     all_packets = data["packets_published"] + data["packets_proposals"]
     all_drivers = data["drivers_published"] + data["drivers_proposals"]
-    errors.extend(_revision_issues(all_packets, PACKET_ID, "Packet"))
-    errors.extend(_revision_issues(all_drivers, DRIVER_ID, "Driver"))
-    errors.extend(_claim_revision_issues(all_packets))
     proposal_producers, proposal_producer_errors = _proposal_producers(root)
     errors.extend(proposal_producer_errors)
+    valid_tombstones, tombstone_errors = _tombstone_issues(
+        root,
+        data["tombstones"],
+        proposal_producers,
+    )
+    errors.extend(tombstone_errors)
+    errors.extend(
+        _revision_issues(
+            all_packets,
+            PACKET_ID,
+            "Packet",
+            valid_tombstones,
+        )
+    )
+    errors.extend(
+        _revision_issues(
+            all_drivers,
+            DRIVER_ID,
+            "Driver",
+            valid_tombstones,
+        )
+    )
+    errors.extend(_claim_revision_issues(all_packets))
+    data["valid_tombstones"] = valid_tombstones
     proposal_owner_by_path: Dict[str, str] = {}
     proposal_claims_by_owner: Dict[str, Dict[Tuple[str, int], Dict[str, Any]]] = {}
     proposal_claim_owner_by_key: Dict[Tuple[str, int], str] = {}
@@ -827,6 +1028,27 @@ def catalog_value(root: Path) -> Dict[str, Any]:
         for entry in sorted(data["ledgers"], key=lambda value: value["record"]["id"])
     ]
     proposal_records = data["packets_proposals"] + data["drivers_proposals"]
+    tombstones = [
+        {
+            "knowledge_kind": entry["record"]["knowledge_kind"],
+            "id": entry["record"]["id"],
+            "revision": entry["record"]["revision"],
+            "producer_work_item": entry["record"]["producer_work_item"],
+            "producer_terminal_status": entry["record"][
+                "producer_terminal_status"
+            ],
+            "path": entry["path"],
+            "record_sha256": entry["sha256"],
+        }
+        for entry in sorted(
+            data["valid_tombstones"],
+            key=lambda value: (
+                value["record"]["knowledge_kind"],
+                value["record"]["id"],
+                value["record"]["revision"],
+            ),
+        )
+    ]
     return {
         "schema_version": 1,
         "contract_version": data["policy"]["contract_version"],
@@ -837,10 +1059,12 @@ def catalog_value(root: Path) -> Dict[str, Any]:
         "authority_sha256": data["authority_sha256"],
         "coverage_sha256": sha256_json(_record_manifest(data["ledgers"])),
         "proposal_sha256": sha256_json(_record_manifest(proposal_records)),
+        "tombstone_sha256": sha256_json(tombstones),
         "packets": packets,
         "architecture_drivers": drivers,
         "coverage_ledgers": ledgers,
         "proposals": _record_manifest(proposal_records),
+        "tombstones": tombstones,
     }
 
 

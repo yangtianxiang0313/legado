@@ -159,6 +159,12 @@ python3 ios/harness/loop_supervisor.py preflight \
 都会保持 blocker。该 CLI 不改变 Harness queue/state/event/status/work-items，也不提供
 物化、审批、发布或接受权威事实的命令。
 
+知识 producer 终态退出但未写 artifact 时，reservation 不复用。独立 corrective
+Work Item 可写 `business-knowledge/tombstones/**`，绑定原 producer 的 output、
+terminal state、reason、Evidence 和 event lineage。Business Knowledge doctor 以
+“物理 artifact + 有效 tombstone”检查 revision 连续性；tombstone 不提供 Claim、
+Driver、Coverage 或 published authority，后续 recovery 必须使用下一 revision。
+
 `compiled-control-plane-v1` 只授予“把已冻结 proposal 复制为本地 Work Item 并写入
 queue/event/state/status”的权限。它不授予 Agent 超出 Work Item scope 的写权限，
 不等同 Acceptance，也不允许知识发布、Golden 更新、ADR/Requirement 接受或 patch

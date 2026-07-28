@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "PIT-0012",
-  "revision": 2,
+  "revision": 3,
   "title": "取消的知识生产工作项仍永久占有 proposal revision",
   "fingerprint": "cancelled-knowledge-producer-reserves-output-revision",
   "capabilities": [
@@ -10,7 +10,8 @@
   "symptoms": [
     "续接工作项复用 cancelled 工作项已声明的 Packet/Driver revision 时，Business Knowledge doctor 报 proposal 生产声明不唯一",
     "只提升 Packet/Driver 顶层 revision、但复用内部 Claim revision 时，doctor 报 proposal claim 归属批次不唯一",
-    "Harness next 只显示队列可领取，无法在 materialize 前解释输出 reservation 冲突或生成合法恢复方案"
+    "Harness next 只显示队列可领取，无法在 materialize 前解释输出 reservation 冲突或生成合法恢复方案",
+    "失败 producer 没有物理 revision 时，后续合法 revision 会被 Business Knowledge 的连续性检查拒绝"
   ],
   "conditions": [
     "知识生产工作项已 materialize 并声明 knowledge.produces，随后在 verify 前因 spec/AC 设计矛盾被取消",
@@ -23,12 +24,14 @@
     "同时检查 Packet 内每个 Claim 的 producer、连续 revision 与 supersedes，而不是只看 Packet 文件名",
     "在 materialize 前 dry-run Business Knowledge graph，并把 reservation 冲突作为结构化 stop reason 输出"
   ],
-  "fix": "本次由可信 Supervisor 保留 cancelled r0002 归属，物化结构性 r0002 lineage carrier，再由恢复项生成并验证 r0003。Loop Supervisor materialization preflight 现会扫描所有终态与非终态 Work Item 的永久 knowledge.produces reservation，拒绝复用并返回 owner 与 suggested_revision；按钮页在写入前重复校验。显式 output-abandoned tombstone 与自动生成逐 Claim supersedes 的 recovery compiler 仍待后续增强。",
+  "fix": "Loop Supervisor materialization preflight 扫描所有终态与非终态 Work Item 的永久 knowledge.produces reservation，拒绝复用并返回 owner/suggested_revision。Business Knowledge v1 tombstone 协议现允许独立 corrective Work Item 为“终态 producer 已声明但未生成物理 artifact”的 revision 写显式 abandoned 记录；doctor 验证 producer/state/reason/Evidence/event/no-artifact，revision 连续性使用物理 artifact 与 tombstone 并集，Catalog 单独摘要 tombstone，selection 不把它当知识。逐 Claim supersedes recovery compiler 仍待增强。",
   "prevention": {
     "architecture_rule": "任何知识恢复或续接工作项在 materialize 前必须解析永久 proposal reservation；不得复用已由任何终态工作项声明的 kind/id/revision，也不得只提升 Packet/Driver 而遗漏 Claim 和内部引用 revision。",
     "tests": [
       "ios/harness/tests/test_loop_supervisor.py#test_cancelled_producer_keeps_permanent_output_reservation",
-      "ios/harness/tests/test_loop_supervisor.py#test_candidate_drift_and_event_head_drift_fail_closed"
+      "ios/harness/tests/test_loop_supervisor.py#test_candidate_drift_and_event_head_drift_fail_closed",
+      "ios/harness/tests/test_business_knowledge.py#test_terminal_reservations_use_explicit_tombstones_for_revision_continuity",
+      "ios/harness/tests/test_harness.py#test_knowledge_tombstone_scope_requires_corrective_control_plane"
     ],
     "lint": []
   },
@@ -37,12 +40,13 @@
     "until": null
   },
   "status": "mitigated",
-  "occurrences": 2,
+  "occurrences": 3,
   "first_seen": "2026-07-27",
-  "last_seen": "2026-07-27",
+  "last_seen": "2026-07-28",
   "evidence": [
     "ios/project/events.jsonl#sequence-102",
     "ios/harness/work-items/IOS-KNOWLEDGE-UI-TOPOLOGY-CONTINUATION-001.json",
-    "ios/harness/evidence/runs/run-20260727T024920Z-ios-knowledge-ui-topology-recovery-002-5505077f.json"
+    "ios/harness/evidence/runs/run-20260727T024920Z-ios-knowledge-ui-topology-recovery-002-5505077f.json",
+    "ios/harness/evidence/runs/run-20260728T040333Z-ios-knowledge-tombstone-protocol-001-cda9fac5.json"
   ]
 }

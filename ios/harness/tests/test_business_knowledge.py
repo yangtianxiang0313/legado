@@ -268,6 +268,191 @@ class BusinessKnowledgeTests(unittest.TestCase):
             },
         }
 
+    @staticmethod
+    def producer_work_item(
+        item_id: str,
+        kind: str,
+        identifier: str,
+        revision: int,
+    ) -> dict[str, object]:
+        return {
+            "metadata": {
+                "id": item_id,
+                "labels": ["knowledge"],
+            },
+            "spec": {
+                "knowledge": {
+                    "mode": "produce" if revision == 1 else "supersede",
+                    "produces": [
+                        {
+                            "kind": kind,
+                            "id": identifier,
+                            "revision": revision,
+                        }
+                    ],
+                }
+            },
+        }
+
+    @staticmethod
+    def tombstone(
+        *,
+        producer: str,
+        revision: int,
+        terminal_status: str,
+        reason_code: str,
+        evidence: str | None,
+    ) -> dict[str, object]:
+        return {
+            "schema_version": 1,
+            "kind": "KnowledgeRevisionTombstone",
+            "knowledge_kind": "packet",
+            "id": PACKET_ID,
+            "revision": revision,
+            "status": "abandoned",
+            "producer_work_item": producer,
+            "producer_terminal_status": terminal_status,
+            "reason_code": reason_code,
+            "evidence": evidence,
+            "created_by": "IOS-TEST-TOMBSTONE-001",
+            "created_at": "2026-07-28T00:00:00Z",
+        }
+
+    def test_terminal_reservations_use_explicit_tombstones_for_revision_continuity(
+        self,
+    ):
+        first = "IOS-TEST-PRODUCER-001"
+        second = "IOS-TEST-PRODUCER-002"
+        third = "IOS-TEST-PRODUCER-003"
+        creator = "IOS-TEST-TOMBSTONE-001"
+        for item_id, revision in ((first, 1), (second, 2), (third, 3)):
+            write_json(
+                self.root / f"ios/harness/work-items/{item_id}.json",
+                self.producer_work_item(
+                    item_id,
+                    "packet",
+                    PACKET_ID,
+                    revision,
+                ),
+            )
+        write_json(
+            self.root / f"ios/harness/work-items/{creator}.json",
+            {
+                "metadata": {
+                    "id": creator,
+                    "labels": ["control-plane", "corrective"],
+                },
+                "spec": {
+                    "knowledge": {
+                        "mode": "not_applicable",
+                        "produces": [],
+                    }
+                },
+            },
+        )
+        evidence = "ios/harness/evidence/runs/second.json"
+        write_json(self.root / evidence, {"result": "failed"})
+        write_json(
+            self.root / "ios/project/state.json",
+            {
+                "work_items": {
+                    first: {
+                        "status": "blocked",
+                        "blocker": "baseline_red",
+                        "last_evidence": None,
+                    },
+                    second: {
+                        "status": "exhausted",
+                        "exhausted_reason": "same_failure_twice",
+                        "last_evidence": evidence,
+                    },
+                    third: {"status": "ready", "last_evidence": None},
+                    creator: {"status": "implementing", "last_evidence": None},
+                }
+            },
+        )
+        events_path = self.root / "ios/project/events.jsonl"
+        events_path.parent.mkdir(parents=True, exist_ok=True)
+        events_path.write_text(
+            "\n".join(
+                json.dumps(value)
+                for value in (
+                    {
+                        "event": "WorkItemBaselineRed",
+                        "work_item_id": first,
+                    },
+                    {
+                        "event": "WorkItemExhausted",
+                        "work_item_id": second,
+                    },
+                )
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        first_path = (
+            self.root
+            / f"ios/project/business-knowledge/tombstones/packets/{PACKET_ID}/r0001.json"
+        )
+        second_path = (
+            self.root
+            / f"ios/project/business-knowledge/tombstones/packets/{PACKET_ID}/r0002.json"
+        )
+        write_json(
+            first_path,
+            self.tombstone(
+                producer=first,
+                revision=1,
+                terminal_status="blocked",
+                reason_code="baseline_red",
+                evidence=None,
+            ),
+        )
+        write_json(
+            second_path,
+            self.tombstone(
+                producer=second,
+                revision=2,
+                terminal_status="exhausted",
+                reason_code="same_failure_twice",
+                evidence=evidence,
+            ),
+        )
+
+        packet = self.packet(status="candidate")
+        packet.update(
+            {
+                "revision": 3,
+                "supersedes": {"id": PACKET_ID, "revision": 2},
+                "created_by": third,
+            }
+        )
+        write_json(
+            self.root
+            / f"ios/project/business-knowledge/packets/proposals/{PACKET_ID}/r0003.json",
+            packet,
+        )
+        self.assertEqual([], knowledge.doctor(self.root, check_catalog=False))
+        catalog = knowledge.catalog_value(self.root)
+        self.assertEqual(2, len(catalog["tombstones"]))
+        self.assertEqual(1, len(catalog["proposals"]))
+        self.assertNotEqual(
+            catalog["tombstone_sha256"],
+            knowledge.sha256_json([]),
+        )
+
+        state = json.loads(
+            (self.root / "ios/project/state.json").read_text(encoding="utf-8")
+        )
+        state["work_items"][first]["status"] = "implementing"
+        write_json(self.root / "ios/project/state.json", state)
+        self.assertTrue(
+            any(
+                "producer 不是声明的终态" in error
+                for error in knowledge.doctor(self.root, check_catalog=False)
+            )
+        )
+
     def write_producer(
         self,
         item_id: str,

@@ -353,6 +353,39 @@ class HarnessTests(unittest.TestCase):
             with self.assertRaisesRegex(harness_module.HarnessError, "KNOWLEDGE_DRIFT"):
                 harness.verify("IOS-BOOT-001")
 
+    def test_knowledge_tombstone_scope_requires_corrective_control_plane(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = HarnessFixture(Path(directory))
+            harness = fixture.initialize()
+            item = fixture.item("IOS-TOMBSTONE-001", "CAP-BOOT", 100)
+            item["spec"]["knowledge"] = {
+                "contract_version": 1,
+                "mode": "not_applicable",
+                "claim_refs": [],
+                "driver_refs": [],
+                "coverage_refs": [],
+                "produces": [],
+                "expected_ledger_transitions": [],
+                "context_budget": {"max_claims": 20, "max_bytes": 32768},
+                "none_reason": "control-plane tombstone protocol",
+            }
+            item["spec"]["acceptance"]["criteria"][0]["knowledge_claims"] = []
+            path = (
+                "ios/project/business-knowledge/tombstones/packets/"
+                "BKP-TEST-DOMAIN-001/r0001.json"
+            )
+            item["metadata"]["labels"] = ["control-plane", "corrective"]
+            self.assertEqual(
+                [],
+                harness.knowledge_scope_issues(item, [path]),
+            )
+
+            item["metadata"]["labels"] = ["knowledge"]
+            errors = harness.knowledge_scope_issues(item, [path])
+            self.assertTrue(
+                any("AUTHORITY_ESCALATION" in error for error in errors)
+            )
+
     def test_doctor_does_not_reselect_terminal_knowledge_revision(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

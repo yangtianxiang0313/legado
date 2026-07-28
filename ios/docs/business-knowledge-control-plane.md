@@ -111,6 +111,25 @@ Android 模块划分只能作为来源线索，不能直接成为 Driver 的结�
 或伪造 `created_by` 都会失败。candidate Claim 与 proposed Driver 仍不能被
 `knowledge.consume` 或 implementation 选择。
 
+### 失败 reservation 与 Tombstone
+
+`knowledge.produces` 随 Work Item 物化后形成永久 revision reservation。即使 producer
+在写出 proposal 前进入 `blocked/rejected/exhausted/cancelled`，该 revision 也不能
+被另一个任务复用，否则失败重试会改写 lineage。
+
+终态 producer 没有物理 Packet/Driver 时，由独立的
+`control-plane + corrective` Work Item 在
+`tombstones/{packets|drivers}/<id>/rNNNN.json` 创建
+`KnowledgeRevisionTombstone`。它只记录被保留的 kind/id/revision、原 producer、
+真实 terminal status/reason/Evidence，以及创建 tombstone 的纠错任务和时间。
+
+Tombstone 不是空 Packet/Driver：它没有 Claim、forces、promotion 或 published 状态，
+不进入 selection、Coverage 或 Knowledge Authority。doctor 只有在原 Work Item 精确
+声明 output、状态与 terminal event 一致、物理 proposal/published artifact 均不存在
+时才接受。revision 连续性使用“物理 artifact + 有效 tombstone”的并集；后续恢复必须
+产生下一 revision 并 supersede tombstoned predecessor。Catalog 用独立 `tombstones`
+和 `tombstone_sha256` 暴露 lineage，不把 tombstone 混入 `proposals`。
+
 ## 4. 候选与发布隔离
 
 物理目录就是 authority 边界：
@@ -123,6 +142,9 @@ ios/project/business-knowledge/
 ├── drivers/
 │   ├── proposals/             # proposed，仅供审查
 │   └── published/             # active/resolved，Work Item 可消费
+├── tombstones/                # 终态 producer 的失败 revision reservation
+│   ├── packets/
+│   └── drivers/
 ├── coverage/                  # current Ledger
 └── catalog.json               # Harness 确定性生成
 ```
@@ -152,6 +174,7 @@ published Claim；它不能从其他候选批次取数。此规则只让 Packet 
 | `authority_sha256` | Android baseline、Fact Inventory control、policy、published Packet/Driver revision 与内容 | Coverage 进度、proposal |
 | `coverage_sha256` | 全部 current Ledger revision 与内容 | proposal |
 | `proposal_sha256` | candidate Packet 与 proposed Driver | published authority |
+| `tombstone_sha256` | 终态 producer 遗留的失败 revision reservation | Claim、Driver、published authority |
 | `knowledge_selection_sha256` | 当前 Work Item 实际展开的 Claim 上下文 | 未选择的 Claim |
 | `coverage_selection_sha256` | 当前 Work Item 显式选择的 Ledger entry 及其 Ledger revision | 其他 Ledger 中未选择的 entry；同一 Ledger 是并发冲突边界 |
 | `architecture_driver_selection_sha256` | 当前 Work Item 选择的 Driver 上下文与 resolution | 未选择的 Driver |
