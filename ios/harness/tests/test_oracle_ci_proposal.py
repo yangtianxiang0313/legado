@@ -320,6 +320,35 @@ class OracleCIProposalTests(unittest.TestCase):
             'grep -Fqx -- "${AVD_NAME}"',
             workflow,
         )
+        kvm_access_step = (
+            "      - name: Enable KVM access for Android emulator"
+        )
+        kvm_rule = (
+            'KERNEL=="kvm", GROUP="kvm", MODE="0666", '
+            'OPTIONS+="static_node=kvm"'
+        )
+        self.assertIn(kvm_access_step, workflow)
+        self.assertIn(kvm_rule, workflow)
+        self.assertIn(
+            "sudo udevadm control --reload-rules",
+            workflow,
+        )
+        self.assertIn(
+            "sudo udevadm trigger --name-match=kvm",
+            workflow,
+        )
+        self.assertIn("test -e /dev/kvm", workflow)
+        self.assertIn("test -r /dev/kvm", workflow)
+        self.assertIn("test -w /dev/kvm", workflow)
+        self.assertIn("ls -l /dev/kvm || true", workflow)
+        self.assertLess(
+            workflow.index(kvm_access_step),
+            workflow.index("      - name: Prewarm exact Gradle dependencies"),
+        )
+        self.assertLess(
+            workflow.index(kvm_access_step),
+            workflow.index(emulator_launch),
+        )
         self.assertLess(
             workflow.index(avd_ini_validation),
             workflow.index(emulator_launch),
