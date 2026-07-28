@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "revision": 137,
+  "revision": 138,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-28T03:13:16Z",
-  "event_head": "b3067d2d877c0e4c8cd965298ecd9213bc01a21f68aec8e7a949bc361a7f0286",
+  "updated_at": "2026-07-28T03:17:39Z",
+  "event_head": "d90f018f2cffd1af644b2c8ab9e86870829bbf8f6060dd6e0bedae4ff4a61a8c",
   "active_work_items": [],
   "last_completed_work_item": "IOS-DECISION-GATE-POLICY-001",
   "work_items": {
@@ -2233,6 +2233,11 @@
       "verified_at": "2026-07-28T03:11:51Z",
       "completed_at": "2026-07-28T03:13:16Z",
       "final_tree_sha256": "bb25b2ed37032d2dbcac1218b68d3c1940ad2e95f9b82a1ea3ca486fb8a62c43"
+    },
+    "IOS-AUTO-MATERIALIZATION-POLICY-001": {
+      "status": "ready",
+      "attempt": 0,
+      "last_evidence": null
     }
   },
   "health": {
