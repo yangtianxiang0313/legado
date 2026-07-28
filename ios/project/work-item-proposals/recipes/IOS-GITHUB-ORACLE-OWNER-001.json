@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "proposal_id": "IOS-GITHUB-ORACLE-OWNER-001",
+  "proposal_constraint": "只允许在 CAP-KNOWLEDGE-CONTROL 中预声明专用 dispatcher 与测试路径，必须先完成 Capability revision/Evidence/Checkpoint 事务；不得借所有权变更实现网络调用、触发 workflow、生成 receipt 或修改产品",
+  "work_item": {
+    "api_version": "legado.harness/v1",
+    "kind": "WorkItem",
+    "metadata": {
+      "id": "IOS-GITHUB-ORACLE-OWNER-001",
+      "title": "预声明 GitHub Oracle 外部适配层的 Capability 所有权",
+      "priority": 100,
+      "risk": "medium",
+      "labels": [
+        "phase-0",
+        "control-plane",
+        "architecture",
+        "capability-owner",
+        "external-execution",
+        "github-actions"
+      ]
+    },
+    "spec": {
+      "capability": "CAP-KNOWLEDGE-CONTROL",
+      "intent": "在实现 GitHub Oracle Dispatcher 前先完成架构所有权事务。将 ios/harness/github_oracle_dispatcher.py 与 ios/harness/tests/test_github_oracle_dispatcher.py 精确加入 CAP-KNOWLEDGE-CONTROL owners.paths，并把 Capability revision 56 提升到 57，绑定本 WorkItem 的正式 Evidence 与 Checkpoint。此项只预声明控制面归属，不创建 dispatcher 文件、不修改 Supervisor、不执行网络、不触发 Workflow、不产生 receipt 或 Golden。后续 Dispatcher WorkItem 必须依赖本项，自动物化策略才能在 owner 闭合后合法授权新文件。",
+      "depends_on": [
+        "IOS-TRUSTED-ORACLE-SETTLEMENT-COMPILER-001"
+      ],
+      "scope": {
+        "allow_write": [
+          "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+          "ios/project/checkpoints/IOS-GITHUB-ORACLE-OWNER-001.json",
+          "ios/project/pitfalls/PIT-*.json"
+        ],
+        "deny_write": [
+          ".github/**",
+          "app/**",
+          "modules/**",
+          "build.gradle",
+          "settings.gradle",
+          "gradle/**",
+          "ios/Packages/**",
+          "ios/publisher/**",
+          "ios/harness/**",
+          "ios/project/android-intake/**",
+          "ios/project/requirements/**",
+          "ios/project/business-knowledge/**",
+          "ios/project/approvals/**",
+          "ios/project/work-item-proposals/**",
+          "ios/project/baseline.json",
+          "ios/docs/**"
+        ],
+        "max_files_changed": 3,
+        "max_changed_lines": 900
+      },
+      "inputs": {
+        "context_files": [
+          "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+          "ios/project/checkpoints/IOS-TRUSTED-ORACLE-SETTLEMENT-COMPILER-001.json",
+          "ios/project/work-item-proposals/recipes/IOS-GITHUB-ORACLE-DISPATCHER-001.json"
+        ],
+        "android_source_anchors": [],
+        "fixtures": []
+      },
+      "architecture_refs": [
+        "ARCH-014",
+        "ARCH-017",
+        "ADR-0004"
+      ],
+      "acceptance": {
+        "criteria": [
+          {
+            "id": "AC-1",
+            "statement": "CAP-KNOWLEDGE-CONTROL owners.paths 精确新增 ios/harness/github_oracle_dispatcher.py 与 ios/harness/tests/test_github_oracle_dispatcher.py，不增加 wildcard、Workflow、Publisher、Golden、产品或其他权限。",
+            "verified_by": [
+              "harness-tests",
+              "dependency-policy"
+            ],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          },
+          {
+            "id": "AC-2",
+            "statement": "Capability revision 从 56 精确提升到 57，latest_evidence、updated_by、updated_at 与本 WorkItem 正式 Evidence/Checkpoint 一致；doctor 可重算通过。",
+            "verified_by": [
+              "harness-tests",
+              "memory-close"
+            ],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          },
+          {
+            "id": "AC-3",
+            "statement": "本项不创建 dispatcher/test，不修改 LoopSupervisor、DemandCompiler、Harness、Workflow、Oracle、Publisher、receipt、Golden、Fixture、Requirement、SourceLab、产品或 Package；Checkpoint 明确这是后续实现的架构前置事务。",
+            "verified_by": [
+              "dependency-policy",
+              "memory-close"
+            ],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          }
+        ],
+        "required_checks": [
+          "dependency-policy",
+          "harness-tests"
+        ]
+      },
+      "baseline_checks": [
+        "dependency-policy",
+        "harness-tests"
+      ],
+      "budget": {
+        "wall_clock_seconds": 7200,
+        "max_edit_verify_cycles": 3,
+        "max_targeted_test_runs": 8,
+        "max_full_test_runs": 3,
+        "max_infra_retries": 1
+      },
+      "gates": [],
+      "completion_effects": {
+        "health": {
+          "github_oracle_owner": "declared_v1"
+        }
+      },
+      "memory": {
+        "adr": "not_required",
+        "capability_state_required": true,
+        "checkpoint_required": true,
+        "pitfall": "required"
+      },
+      "requirements": {
+        "mode": "control_plane",
+        "refs": [],
+        "none_reason": "本项只预声明外部执行适配层的 Capability owner"
+      },
+      "knowledge": {
+        "contract_version": 1,
+        "mode": "not_applicable",
+        "claim_refs": [],
+        "driver_refs": [],
+        "coverage_refs": [],
+        "produces": [],
+        "expected_ledger_transitions": [],
+        "context_budget": {
+          "max_claims": 8,
+          "max_bytes": 32768
+        },
+        "none_reason": "本项不消费、生成或发布业务知识"
+      },
+      "source_lab": {
+        "mode": "not_applicable",
+        "behaviors": [],
+        "scenarios": [],
+        "none_reason": "本项只更新控制面 owner，不运行或修改 SourceLab"
+      },
+      "stop_on": [
+        "doctor_red",
+        "scope_violation",
+        "owner_scope_expansion",
+        "same_failure_twice",
+        "budget_exhausted",
+        "human_decision_required"
+      ]
+    }
+  }
+}
