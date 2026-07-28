@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0034",
+  "revision": 1,
+  "title": "hosted Runner 存在 KVM 设备不等于当前用户可用",
+  "fingerprint": "github-hosted-runner-kvm-device-permission-denied",
+  "capabilities": ["CAP-CONFORMANCE"],
+  "symptoms": ["AVD 可发现且 emulator 进程启动后立即退出", "adb devices 为空", "emulator.log 报 x86_64 emulation currently requires hardware acceleration"],
+  "conditions": ["GitHub ubuntu-24.04 hosted Runner 使用 x86_64 Android system image", "/dev/kvm 存在但 runner 用户不在 kvm group 或没有读写权限"],
+  "root_cause": "流程只验证 Android SDK 与 AVD，没有在启动 emulator 前验证当前 Runner 用户对 /dev/kvm 的实际访问权。",
+  "diagnosis": ["检查 test -e/-r/-w /dev/kvm", "记录 ls -l /dev/kvm 与 id", "检查 emulator.log 的 ProbeKVM 与 acceleration status"],
+  "fix": "在昂贵构建前安装临时 kvm udev 规则并 reload/trigger，随后验证当前用户可读写；run 30354845160 已证明 emulator 完整开机。",
+  "prevention": {"architecture_rule": "需要硬件加速的 CI 运行时必须在昂贵构建前显式验证设备访问权，不能只验证设备节点存在。", "tests": ["ios/harness/tests/test_oracle_ci_proposal.py"], "lint": []},
+  "affected_versions": {"from": "IOS-ANDROID-ORACLE-ATTESTATION-001", "until": "IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-008"},
+  "status": "resolved",
+  "occurrences": 2,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": ["https://github.com/yangtianxiang0313/legado/actions/runs/30354183324", "https://github.com/yangtianxiang0313/legado/actions/runs/30354845160", "ios/harness/evidence/runs/run-20260728T112703Z-ios-android-oracle-attestation-recovery-008-4b273bf2.json"]
+}
