@@ -1,0 +1,30 @@
+{
+  "authority": "proposal_only",
+  "candidate_sha256": "6ff4ea701f1a7d68508ea5f1545bead9253fb28424ebd6173b5b50ac3715c33d",
+  "compiler_version": "proposal-compiler-v1",
+  "dag": {
+    "id": "WIPD-IOS-INITIALIZATION-001",
+    "revision": 11,
+    "sha256": "c591d7be32f08523ca8cd6d9a9a5829ddf41f559ede739747524369d7b1ab181"
+  },
+  "dependencies": [
+    {
+      "chain": [
+        "IOS-GITHUB-ORACLE-AUTO-SCOPE-001"
+      ],
+      "checkpoint": "ios/project/checkpoints/IOS-GITHUB-ORACLE-AUTO-SCOPE-001.json",
+      "checkpoint_sha256": "add747a17e7becff3c3bd517bc19982f30f44acad2c7cb52154ea6c84c841259",
+      "evidence": "ios/harness/evidence/runs/run-20260728T200946Z-ios-github-oracle-auto-scope-001-23d9da01.json",
+      "evidence_sha256": "cfcf81f1c12d79cf16563f5cf3b0e87129bb6118d7e5a3ecd9d325588ad421de",
+      "original": "IOS-GITHUB-ORACLE-AUTO-SCOPE-001",
+      "reason_code": "DIRECT_COMPLETION",
+      "resolved": "IOS-GITHUB-ORACLE-AUTO-SCOPE-001",
+      "work_item_sha256": "23106585598cec3901b96d19b76bc2c23c4a4ac07302788c2d8d87b9d2bc6d00"
+    }
+  ],
+  "node_sha256": "9dc4dbaa1fffabb0ebfb78c1f7d482570650936aaf2609c6b15750b84361bc30",
+  "proposal_id": "IOS-GITHUB-ORACLE-DISPATCHER-001",
+  "queue_effect": "none",
+  "recipe_sha256": "88a974e8c7c10242eac3529bc0b05dfed421f8718422254fb4dbc1c9256f5ae5",
+  "schema_version": 1
+}
