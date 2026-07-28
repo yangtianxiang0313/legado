@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "InitializationWorkItemProposalDAG",
   "id": "WIPD-IOS-INITIALIZATION-001",
-  "revision": 12,
+  "revision": 13,
   "authority": "proposal_only",
   "status": "proposed",
   "created_by": "IOS-KNOWLEDGE-CONTROL-PLANE-001",
@@ -194,6 +194,13 @@
       "title": "预声明 Android Oracle Workflow 的 Conformance 所有权",
       "outputs": ["exact attestation workflow owner", "conformance authority boundary", "push-trigger hardening prerequisite"],
       "gates": [], "constraint": "只允许在 CAP-CONFORMANCE 中登记固定 android-oracle-attestation workflow 路径并完成版本化记忆事务；不得修改 Workflow 内容、Dispatcher、Oracle、Publisher、Golden 或产品"
+    },
+    {
+      "proposal_id": "IOS-GITHUB-ORACLE-WORKFLOW-SCOPE-001", "phase": 17, "class": "control_plane",
+      "depends_on": ["IOS-GITHUB-ORACLE-WORKFLOW-OWNER-001"], "knowledge_mode": "not_applicable",
+      "title": "建立固定 Android Oracle Workflow 的受限自动修改策略",
+      "outputs": ["exact workflow hardening policy", "publisher/golden denial", "push-trigger WorkItem eligibility"],
+      "gates": [], "constraint": "只允许带固定语义标签的 hardening WorkItem 修改唯一 attestation workflow、对应 SourceLab 测试与记忆文件；任何其他 .github、Publisher、Golden、产品或宽泛 scope 均 fail closed"
     }
   ],
   "compiler_rules": [

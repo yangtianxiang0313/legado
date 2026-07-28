@@ -1,0 +1,30 @@
+{
+  "authority": "proposal_only",
+  "candidate_sha256": "0b2556700abee48c69ebfba6b787db7eadf73eb0c931efd34c32b364c24459ef",
+  "compiler_version": "proposal-compiler-v1",
+  "dag": {
+    "id": "WIPD-IOS-INITIALIZATION-001",
+    "revision": 13,
+    "sha256": "cf7e571a5dcd60b5d7b9f5d2fe2a6f83addc0b2f99a4bc6917af048e7b5c15a9"
+  },
+  "dependencies": [
+    {
+      "chain": [
+        "IOS-GITHUB-ORACLE-WORKFLOW-OWNER-001"
+      ],
+      "checkpoint": "ios/project/checkpoints/IOS-GITHUB-ORACLE-WORKFLOW-OWNER-001.json",
+      "checkpoint_sha256": "b09c5c67c8be3d84e3b3e276ff6bd0bc81bd27eb4f26729b8f6bf0bfc38e5cae",
+      "evidence": "ios/harness/evidence/runs/run-20260728T203237Z-ios-github-oracle-workflow-owner-001-9da23828.json",
+      "evidence_sha256": "ebb862cad7a33d9a3676e78b845a39202b4c8a5e58e43750c8752e61326aa7c9",
+      "original": "IOS-GITHUB-ORACLE-WORKFLOW-OWNER-001",
+      "reason_code": "DIRECT_COMPLETION",
+      "resolved": "IOS-GITHUB-ORACLE-WORKFLOW-OWNER-001",
+      "work_item_sha256": "65bdf2d7a2379615bd07298ce34a3fb61cc71efaa72c48b36d7a90492ff722f4"
+    }
+  ],
+  "node_sha256": "23d0e1a884660dfb8e7bfb67cd87baead56833a51318a8adc5972128c7a84ddf",
+  "proposal_id": "IOS-GITHUB-ORACLE-WORKFLOW-SCOPE-001",
+  "queue_effect": "none",
+  "recipe_sha256": "154a583096bee52c33b8318e2dd24c92f0281e65ce5b4a9af0e6e26370f3f38e",
+  "schema_version": 1
+}
