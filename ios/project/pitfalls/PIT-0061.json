@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "PIT-0061",
-  "revision": 4,
+  "revision": 5,
   "title": "没有服务端幂等键的 workflow_dispatch 存在不可消除的发送歧义",
   "fingerprint": "workflow-dispatch-crash-window-without-server-visible-execution-id",
   "capabilities": [
@@ -26,7 +26,7 @@
     "模拟 gh 返回错误但远端实际创建 run，以及返回错误且远端无 run 两种情况",
     "确认多 run、identity 漂移和终态重写均 fail closed"
   ],
-  "fix": "固定 attestation workflow 已支持 feature/oracle-<allowlisted-scenario>-<40位GITHUB_SHA> 的 create-only branch push，并保留显式 workflow_dispatch 兼容入口。第一个 selector step fail closed 地解析唯一场景，后续 doctor、run、prepare、finalize 与 candidate-only artifact 全部消费同一输出；权限、GitHub-hosted runner、固定 action SHA 与 Golden/Publisher 边界不变。该服务端创建事实已具备，但 Dispatcher 尚未切换到 branch/run 对账，因此发送歧义只完成控制面缓解，尚未完全消除。",
+  "fix": "固定 attestation workflow 支持 feature/oracle-<allowlisted-scenario>-<40位GITHUB_SHA> push，Dispatcher 已删除 gh workflow run 创建调用。远端 branch 的首次非 force create-only push 是唯一服务端创建事实；既有 branch 仅在精确指向 source digest 时复用，冲突拒绝。Dispatcher 只查询固定 repository/workflow/branch/event=push 的最多两个 run，并按 headSha/headBranch/event 唯一绑定；零 run 依据本次是否创建 branch 返回 dispatched 或 pending，一个合法 run 单调映射状态，多 run、响应漂移及 journal 回退全部失败关闭。由此消除了 workflow_dispatch 请求边界的双重创建与恢复歧义；真实 GitHub-hosted run、artifact、双 attestation 和 receipt 仍属于后续独立验证与结算阶段。",
   "prevention": {
     "architecture_rule": "任何无返回资源 ID 的外部创建 API，都必须把客户端确定性 identity 写入服务端可查询字段；本地 journal 只能辅助恢复，不能作为唯一幂等证明。",
     "tests": [
@@ -49,6 +49,7 @@
     "ios/harness/evidence/runs/run-20260728T202133Z-ios-github-oracle-dispatcher-001-f4aa23e4.json",
     "ios/harness/evidence/runs/run-20260728T203237Z-ios-github-oracle-workflow-owner-001-9da23828.json",
     "ios/harness/evidence/runs/run-20260728T204229Z-ios-github-oracle-workflow-scope-001-2c59015f.json",
-    "ios/harness/evidence/runs/run-20260728T210432Z-ios-github-oracle-push-trigger-recovery-002-8a2364b3.json"
+    "ios/harness/evidence/runs/run-20260728T210432Z-ios-github-oracle-push-trigger-recovery-002-8a2364b3.json",
+    "ios/harness/evidence/runs/run-20260728T211633Z-ios-github-oracle-dispatcher-hardening-001-2839cb49.json"
   ]
 }

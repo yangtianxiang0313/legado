@@ -20,6 +20,10 @@ REPOSITORY = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 SCENARIO = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")
 REMOTE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 STATUS_ORDER = {"queued": 0, "in_progress": 1, "completed": 2}
+RUN_FIELDS = {
+    "databaseId", "attempt", "status", "conclusion", "url",
+    "headSha", "headBranch", "event",
+}
 
 class GitHubOracleError(RuntimeError):
     pass
@@ -118,7 +122,7 @@ class GitHubOracleDispatcher:
         self._command(["gh", "auth", "status", "--hostname", "github.com"],
                       "GITHUB_AUTH_REQUIRED")
 
-    def _ensure_branch(self) -> None:
+    def _ensure_branch(self) -> bool:
         ref = "refs/heads/" + self.identity.branch
         output = self._command(
             ["git", "ls-remote", "--heads", self.identity.remote, ref],
@@ -127,28 +131,53 @@ class GitHubOracleDispatcher:
             self._command(["git", "push", self.identity.remote,
                            f"{self.identity.source_digest}:{ref}"],
                           "REMOTE_BRANCH_CREATE_FAILED")
+            return True
         elif len(output.splitlines()) != 1 or output.split() != \
                 [self.identity.source_digest, ref]:
             raise GitHubOracleError("REMOTE_BRANCH_CONFLICT")
+        return False
 
     def _runs(self) -> list[Mapping[str, Any]]:
         raw = self._command([
             "gh", "run", "list", "--repo", self.identity.repository,
             "--workflow", self.identity.workflow_path, "--branch",
-            self.identity.branch, "--event", "workflow_dispatch", "--limit", "2",
-            "--json", "databaseId,attempt,status,conclusion,url,headSha,headBranch",
+            self.identity.branch, "--event", "push", "--limit", "2",
+            "--json",
+            "databaseId,attempt,status,conclusion,url,headSha,headBranch,event",
         ], "GITHUB_RUN_LOOKUP_FAILED")
         try:
             runs = json.loads(raw)
         except json.JSONDecodeError as error:
             raise GitHubOracleError("GITHUB_RUN_RESPONSE_INVALID") from error
-        if not isinstance(runs, list) or any(not isinstance(x, dict) for x in runs):
+        if not isinstance(runs, list) or any(
+                not isinstance(x, dict) or set(x) != RUN_FIELDS for x in runs):
             raise GitHubOracleError("GITHUB_RUN_RESPONSE_INVALID")
         if len(runs) > 1:
             raise GitHubOracleError("DUPLICATE_REMOTE_RUN")
-        if runs and (runs[0].get("headSha") != self.identity.source_digest or
-                     runs[0].get("headBranch") != self.identity.branch):
-            raise GitHubOracleError("GITHUB_RUN_BINDING_DRIFT")
+        if runs:
+            run = runs[0]
+            if (run["headSha"] != self.identity.source_digest or
+                    run["headBranch"] != self.identity.branch or
+                    run["event"] != "push"):
+                raise GitHubOracleError("GITHUB_RUN_BINDING_DRIFT")
+            if (
+                isinstance(run["databaseId"], bool)
+                or not isinstance(run["databaseId"], int)
+                or run["databaseId"] < 1
+                or isinstance(run["attempt"], bool)
+                or not isinstance(run["attempt"], int)
+                or run["attempt"] < 1
+                or run["status"] not in STATUS_ORDER
+                or not isinstance(run["conclusion"], str)
+                or not isinstance(run["url"], str)
+                or not run["url"]
+                or not isinstance(run["headSha"], str)
+                or not isinstance(run["headBranch"], str)
+                or not isinstance(run["event"], str)
+                or (run["status"] == "completed" and not run["conclusion"])
+                or (run["status"] != "completed" and run["conclusion"])
+            ):
+                raise GitHubOracleError("GITHUB_RUN_RESPONSE_INVALID")
         return runs
 
     def _read_journal(self) -> Mapping[str, Any] | None:
@@ -158,8 +187,48 @@ class GitHubOracleDispatcher:
             value = json.loads(self.journal_path.read_text())
         except (OSError, UnicodeError, json.JSONDecodeError) as error:
             raise GitHubOracleError("GITHUB_ORACLE_JOURNAL_INVALID") from error
-        if not isinstance(value, dict) or value.get("binding") != self.identity.binding():
+        if not isinstance(value, dict):
+            raise GitHubOracleError("GITHUB_ORACLE_JOURNAL_INVALID")
+        if value.get("binding") != self.identity.binding():
             raise GitHubOracleError("GITHUB_ORACLE_JOURNAL_IDENTITY_MISMATCH")
+        if (
+            set(value) != {
+                "schema_version", "binding", "outcome", "run",
+                "created_at", "updated_at",
+            }
+            or value["schema_version"] != 1
+            or value["outcome"] not in {
+                "dispatched", "pending", "running", "succeeded", "failed",
+            }
+            or not isinstance(value["created_at"], str)
+            or not isinstance(value["updated_at"], str)
+        ):
+            raise GitHubOracleError("GITHUB_ORACLE_JOURNAL_INVALID")
+        run = value["run"]
+        if run is not None and (
+            not isinstance(run, dict)
+            or set(run) != {"id", "attempt", "status", "conclusion", "url"}
+            or isinstance(run["id"], bool)
+            or not isinstance(run["id"], int)
+            or run["id"] < 1
+            or isinstance(run["attempt"], bool)
+            or not isinstance(run["attempt"], int)
+            or run["attempt"] < 1
+            or run["status"] not in STATUS_ORDER
+            or not isinstance(run["conclusion"], str)
+            or not isinstance(run["url"], str)
+            or not run["url"]
+            or (run["status"] == "completed" and not run["conclusion"])
+            or (run["status"] != "completed" and run["conclusion"])
+        ):
+            raise GitHubOracleError("GITHUB_ORACLE_JOURNAL_INVALID")
+        expected_outcome = (
+            "dispatched" if run is None and value["outcome"] == "dispatched"
+            else "pending" if run is None
+            else self._outcome(run)
+        )
+        if value["outcome"] != expected_outcome:
+            raise GitHubOracleError("GITHUB_ORACLE_JOURNAL_INVALID")
         return value
 
     def _write_journal(self, run: Mapping[str, Any] | None,
@@ -169,13 +238,6 @@ class GitHubOracleDispatcher:
             "id": run.get("databaseId"), "attempt": run.get("attempt"),
             "status": run.get("status"), "conclusion": run.get("conclusion"),
             "url": run.get("url")}
-        if current is not None and not isinstance(current["id"], int):
-            raise GitHubOracleError("GITHUB_RUN_RESPONSE_INVALID")
-        if current is not None and (
-            not isinstance(current["attempt"], int) or current["attempt"] < 1
-            or current["status"] not in STATUS_ORDER
-        ):
-            raise GitHubOracleError("GITHUB_RUN_RESPONSE_INVALID")
         if previous and previous.get("run") is not None:
             old = previous["run"]
             if current is None or old.get("id") != current.get("id"):
@@ -215,24 +277,11 @@ class GitHubOracleDispatcher:
 
     def dispatch(self) -> dict[str, Any]:
         self._preflight()
-        self._ensure_branch()
+        created = self._ensure_branch()
         runs = self._runs()
         if not runs:
-            previous = self._read_journal()
-            if previous is None:
-                # Persist the ambiguity boundary before the network mutation.
-                # A crash may leave a pending dispatch, but can never cause a
-                # second workflow_dispatch for the same stable identity.
-                record = self._write_journal(None, "dispatched")
-                self._command([
-                    "gh", "workflow", "run", self.identity.workflow_path,
-                    "--repo", self.identity.repository, "--ref", self.identity.branch,
-                    "--field", "scenario=" + self.identity.scenario,
-                ], "GITHUB_WORKFLOW_DISPATCH_FAILED")
-                outcome = "dispatched"
-            else:
-                outcome = "pending"
-                record = self._write_journal(None, outcome)
+            outcome = "dispatched" if created else "pending"
+            record = self._write_journal(None, outcome)
         else:
             outcome = self._outcome(runs[0])
             record = self._write_journal(runs[0], outcome)

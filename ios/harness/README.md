@@ -113,7 +113,8 @@ python3 ios/harness/loop_supervisor.py materialize-review \
 - `external_execution.github_oracle` 只有在显式 `enabled=true` 时接管上述停止状态。
   它校验 clean HEAD、绑定 commit、remote repository 与 `gh` 登录，使用稳定的
   `feature/oracle-<scenario>-<sha>` create-only branch，并只查询固定 workflow、
-  branch 与 `workflow_dispatch` run。恢复状态写入
+  branch 与 `event=push` run；create-only push 是唯一服务端创建动作，零 run
+  按本次是否创建 branch 分别返回 `dispatched` 或 `pending`。恢复状态写入
   `.harness-runtime/github-oracle/<execution-id>.json`；该 journal 不是 receipt、
   Evidence 或发布权威。成功 run 仍须独立下载、双证明 trusted import 与 receipt
   settlement；

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 60,
+  "revision": 61,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -67,14 +67,13 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260728T204229Z-ios-github-oracle-workflow-scope-001-2c59015f.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260728T211633Z-ios-github-oracle-dispatcher-hardening-001-2839cb49.json",
   "next_actions": [
-    "为 Android Oracle Workflow 增加 deterministic dispatch identity，并补齐 dirty/remote/auth、run 状态与 journal 恢复测试",
     "使用受限 Dispatcher 在精确 source digest 上触发 GitHub-hosted android-oracle-attestation workflow，scenario=sl-post-form-001",
     "下载 evidence/proposal archive 与双 attestation bundle，并由 trusted_import 生成结构化 candidate_only review report",
     "新增 attestation receipt settlement，将远端 run、source digest、scenario 与共享 proposal contract 精确绑定",
     "修复并独立运行 scenario-aware Android Golden Publisher，再续接 SourceRuntime POST Form Package 与 iOS 验收"
   ],
-  "updated_at": "2026-07-28T20:42:47Z",
-  "updated_by": "IOS-GITHUB-ORACLE-WORKFLOW-SCOPE-001"
+  "updated_at": "2026-07-28T21:16:33Z",
+  "updated_by": "IOS-GITHUB-ORACLE-DISPATCHER-HARDENING-001"
 }

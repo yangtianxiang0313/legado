@@ -1,0 +1,235 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-GITHUB-ORACLE-DISPATCHER-HARDENING-001",
+    "labels": [
+      "phase-0",
+      "control-plane",
+      "loop-supervisor",
+      "external-execution",
+      "github-actions",
+      "android-oracle",
+      "idempotency",
+      "recovery",
+      "corrective"
+    ],
+    "priority": 100,
+    "risk": "high",
+    "title": "以 branch push/run 对账闭合 GitHub Oracle 幂等恢复"
+  },
+  "spec": {
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "_ensure_branch 返回本次是否创建；不存在时只执行一次非 force create-only push，既有分支必须精确指向 source digest，否则 fail closed。Dispatcher 代码和测试均不得再出现 gh workflow run 创建调用。",
+          "verified_by": [
+            "harness-tests",
+            "dependency-policy"
+          ]
+        },
+        {
+          "id": "AC-2",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "远端查询固定 repository/workflow/branch/event=push，最多读取两个结果用于唯一性判定；run 必须精确绑定 headSha/headBranch/event，响应字段类型与状态合法，多 run、绑定漂移或无效 JSON 全部失败关闭。",
+          "verified_by": [
+            "harness-tests"
+          ]
+        },
+        {
+          "id": "AC-3",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "本次新建 branch 且 run 尚不可见返回 dispatched；重试发现既有 branch 且 run 尚不可见返回 pending；两条路径都只写本地 journal，不产生第二次网络创建动作。run 可见后映射 queued→pending、in_progress→running、completed success→succeeded、其他 completed conclusion→failed。",
+          "verified_by": [
+            "harness-tests"
+          ]
+        },
+        {
+          "id": "AC-4",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "runtime journal 继续原子写入且只含非敏感 binding/run 状态；identity 不一致、run 消失/换 ID、attempt 回退、status 回退、completed 终态重写均拒绝。首次 dispatched/pending 在 run 延迟可见后可单调升级。",
+          "verified_by": [
+            "harness-tests"
+          ]
+        },
+        {
+          "id": "AC-5",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "preflight 覆盖 dirty tree、HEAD mismatch、remote 缺失/仓库漂移与 gh auth 失败；错误只返回稳定错误码，不泄露命令 stdout/stderr、token 或环境秘密。",
+          "verified_by": [
+            "harness-tests"
+          ]
+        },
+        {
+          "id": "AC-6",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "LoopSupervisor 仅在 external_execution_required 且显式 enabled 时调用 Dispatcher；external adapter 路径不 materialize、不 claim、不调用普通 Agent。未配置时保持原有只读停止语义，结构化结果保留 execution_id/branch/journal/run。",
+          "verified_by": [
+            "harness-tests"
+          ]
+        },
+        {
+          "id": "AC-7",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "隔离 fake runner 覆盖首次 push、崩溃后 branch 复用、branch 冲突、零/一/多 run、queued/in_progress/success/failure、response drift、journal 恢复与 Supervisor no-Agent；实现和测试不访问真实 GitHub。",
+          "verified_by": [
+            "harness-tests"
+          ]
+        },
+        {
+          "id": "AC-8",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "CAP-KNOWLEDGE-CONTROL revision 60→61 并绑定正式 Evidence/Checkpoint；PIT-0061 记录架构歧义已由唯一服务端 branch 创建事实消除，但真实 GitHub run、artifact 与 receipt 仍由后续独立阶段验证。",
+          "verified_by": [
+            "dependency-policy",
+            "memory-close"
+          ]
+        }
+      ],
+      "required_checks": [
+        "dependency-policy",
+        "harness-tests"
+      ]
+    },
+    "architecture_refs": [
+      "ARCH-014",
+      "ARCH-017",
+      "ADR-0002",
+      "ADR-0004"
+    ],
+    "baseline_checks": [
+      "dependency-policy",
+      "harness-tests"
+    ],
+    "budget": {
+      "max_edit_verify_cycles": 5,
+      "max_full_test_runs": 4,
+      "max_infra_retries": 2,
+      "max_targeted_test_runs": 28,
+      "wall_clock_seconds": 14400
+    },
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "completion_effects": {
+      "health": {
+        "github_oracle_external_execution": "branch_push_reconciled_v2"
+      }
+    },
+    "depends_on": [
+      "IOS-GITHUB-ORACLE-DISPATCHER-001",
+      "IOS-GITHUB-ORACLE-PUSH-TRIGGER-RECOVERY-002"
+    ],
+    "gates": [],
+    "inputs": {
+      "android_source_anchors": [],
+      "context_files": [
+        "ios/harness/github_oracle_dispatcher.py",
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/tests/test_github_oracle_dispatcher.py",
+        "ios/harness/tests/test_loop_supervisor.py",
+        "ios/harness/supervisor.example.json",
+        "ios/harness/README.md",
+        ".github/workflows/android-oracle-attestation.yml",
+        "ios/project/checkpoints/IOS-GITHUB-ORACLE-DISPATCHER-001.json",
+        "ios/project/checkpoints/IOS-GITHUB-ORACLE-PUSH-TRIGGER-RECOVERY-002.json",
+        "ios/project/pitfalls/PIT-0061.json"
+      ],
+      "fixtures": []
+    },
+    "intent": "在 IOS-GITHUB-ORACLE-PUSH-TRIGGER-RECOVERY-002 已使固定 Workflow 支持 deterministic branch push 后，消除 PIT-0061 剩余的 workflow_dispatch 发送歧义。GitHubOracleDispatcher 不再调用 gh workflow run；远端 feature/oracle-<scenario>-<source-sha> branch 的首次 create-only push 是唯一服务端创建动作，既有同 SHA branch 只复用，冲突拒绝。adapter 查询固定 workflow、branch 与 event=push 的唯一 run：本次创建 branch 且 run 尚未可见返回 dispatched，既有 branch 且 run 尚未可见返回 pending，一个精确绑定 run 映射 queued/in_progress/completed，多个或任何绑定漂移 fail closed。崩溃发生在 push 返回前后均可通过远端 branch/run 恢复，不会产生第二次 push 或第二种触发。强化 journal 的 identity、run id/attempt/status/terminal 单调性以及 response schema；补齐 clean HEAD、remote、auth、branch、零/一/多 run、状态、journal 和 Supervisor 不调用 Agent 的隔离测试。CAP-KNOWLEDGE-CONTROL revision 60→61。本项不修改 Workflow、Oracle producer/importer、receipt、Publisher、Golden、SourceLab、产品或 Package。",
+    "knowledge": {
+      "claim_refs": [],
+      "context_budget": {
+        "max_bytes": 65536,
+        "max_claims": 16
+      },
+      "contract_version": 1,
+      "coverage_refs": [],
+      "driver_refs": [],
+      "expected_ledger_transitions": [],
+      "mode": "not_applicable",
+      "none_reason": "本项不消费、生成或发布业务知识",
+      "produces": []
+    },
+    "memory": {
+      "adr": "not_required",
+      "capability_state_required": true,
+      "checkpoint_required": true,
+      "pitfall": "required"
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "none_reason": "本项只强化 GitHub Android Oracle 的外部执行适配层",
+      "refs": []
+    },
+    "scope": {
+      "allow_write": [
+        "ios/harness/github_oracle_dispatcher.py",
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/tests/test_github_oracle_dispatcher.py",
+        "ios/harness/tests/test_loop_supervisor.py",
+        "ios/harness/README.md",
+        "ios/harness/supervisor.example.json",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-GITHUB-ORACLE-DISPATCHER-HARDENING-001.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        ".github/**",
+        "app/**",
+        "modules/**",
+        "build.gradle",
+        "settings.gradle",
+        "gradle/**",
+        "ios/Packages/**",
+        "ios/publisher/**",
+        "ios/harness/harness.py",
+        "ios/harness/proposal_compiler.py",
+        "ios/harness/demand_compiler.py",
+        "ios/harness/config.json",
+        "ios/harness/schemas/**",
+        "ios/harness/android-intake/**",
+        "ios/harness/source-lab/**",
+        "ios/harness/fixtures/**",
+        "ios/harness/goldens/**",
+        "ios/harness/normalization/**",
+        "ios/harness/oracle/**",
+        "ios/project/android-intake/**",
+        "ios/project/requirements/**",
+        "ios/project/business-knowledge/**",
+        "ios/project/approvals/**",
+        "ios/project/work-item-proposals/**",
+        "ios/project/baseline.json",
+        "ios/docs/**"
+      ],
+      "max_changed_lines": 5200,
+      "max_files_changed": 9
+    },
+    "source_lab": {
+      "behaviors": [],
+      "mode": "not_applicable",
+      "none_reason": "本项只对账已绑定 scenario 的外部执行，不运行或修改 SourceLab",
+      "scenarios": []
+    },
+    "stop_on": [
+      "doctor_red",
+      "scope_violation",
+      "external_execution_binding_invalid",
+      "remote_branch_conflict",
+      "duplicate_remote_run",
+      "authority_scope",
+      "same_failure_twice",
+      "budget_exhausted",
+      "human_decision_required"
+    ]
+  }
+}

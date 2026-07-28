@@ -2,13 +2,13 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-28T21:06:02Z
+- 更新时间：2026-07-28T21:19:47Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
 - 下一个可领取工作项：无
-- 最近完成：IOS-GITHUB-ORACLE-PUSH-TRIGGER-RECOVERY-002
+- 最近完成：IOS-GITHUB-ORACLE-DISPATCHER-HARDENING-001
 
 ## 健康度
 
@@ -33,7 +33,7 @@
 | control_catalog_resume | `bounded_self_heal` |
 | delivery_intent_settlement | `completed_evidence_bound` |
 | github_oracle_auto_scope | `exact_path_authorized_v1` |
-| github_oracle_external_execution | `idempotent_dispatcher_v1` |
+| github_oracle_external_execution | `branch_push_reconciled_v2` |
 | github_oracle_owner | `declared_v1` |
 | harness | `ready` |
 | harness_tests_timeout | `calibrated` |
@@ -125,6 +125,7 @@
 | IOS-DELIVERY-INTENT-SETTLEMENT-001 | 100 | `completed` | IOS-SOURCE-RUNTIME-HTML-CSS-001, IOS-READINESS-EVIDENCE-HANDOFF-RECOVERY-002 | 让已完成 Delivery Intent 由 Evidence 结算并退出调度 |
 | IOS-GITHUB-ORACLE-AUTO-SCOPE-001 | 100 | `completed` | IOS-GITHUB-ORACLE-OWNER-001 | 授权自动策略物化精确 GitHub Oracle Dispatcher 路径 |
 | IOS-GITHUB-ORACLE-DISPATCHER-001 | 100 | `completed` | IOS-GITHUB-ORACLE-AUTO-SCOPE-001 | 建立可恢复的 GitHub Android Oracle 外部执行适配层 |
+| IOS-GITHUB-ORACLE-DISPATCHER-HARDENING-001 | 100 | `completed` | IOS-GITHUB-ORACLE-DISPATCHER-001, IOS-GITHUB-ORACLE-PUSH-TRIGGER-RECOVERY-002 | 以 branch push/run 对账闭合 GitHub Oracle 幂等恢复 |
 | IOS-GITHUB-ORACLE-OWNER-001 | 100 | `completed` | IOS-TRUSTED-ORACLE-SETTLEMENT-COMPILER-001 | 预声明 GitHub Oracle 外部适配层的 Capability 所有权 |
 | IOS-GITHUB-ORACLE-PUSH-TRIGGER-001 | 100 | `exhausted` | IOS-GITHUB-ORACLE-WORKFLOW-SCOPE-001 | 以 create-only Oracle branch 建立服务端幂等 Workflow 触发 |
 | IOS-GITHUB-ORACLE-PUSH-TRIGGER-RECOVERY-002 | 100 | `completed` | IOS-GITHUB-ORACLE-WORKFLOW-SCOPE-001 | 恢复 create-only Oracle branch 的服务端幂等触发合同 |

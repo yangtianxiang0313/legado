@@ -1933,6 +1933,57 @@ class DriveTests(unittest.TestCase):
             self.assertEqual([], result["transitions"])
             invoke.assert_not_called()
 
+    def test_explicit_external_execution_uses_dispatcher_and_never_agent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            supervisor = loop_supervisor.LoopSupervisor(fixture.harness)
+            config = fixture.root / "supervisor.json"
+            config.write_text(json.dumps({
+                "external_execution": {
+                    "github_oracle": {
+                        "enabled": True,
+                        "repository": "owner/legado",
+                        "remote": "origin",
+                    }
+                }
+            }))
+            binding = {
+                "workflow_path": (
+                    ".github/workflows/android-oracle-attestation.yml"
+                ),
+                "scenario_id": "sl-post-form-001",
+                "source_digest": "a" * 40,
+            }
+            decision = loop_supervisor.LoopDecision(
+                state="external_execution_required",
+                reason_code="TRUSTED_ORACLE_GITHUB_EXECUTION_REQUIRED",
+                work_item_id="IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-003",
+                requires_human=False,
+                details={"external_execution": binding},
+            )
+            dispatched = {
+                "schema_version": 1, "outcome": "pending",
+                "execution_id": "execution", "branch": "feature/oracle-test",
+                "journal": ".harness-runtime/github-oracle/execution.json",
+                "run": None,
+            }
+            with mock.patch.object(supervisor, "inspect",
+                                   return_value=decision), \
+                    mock.patch.object(supervisor, "_invoke_agent_phase") as invoke, \
+                    mock.patch.object(
+                        loop_supervisor.GitHubOracleDispatcher,
+                        "dispatch", return_value=dispatched,
+                    ) as dispatch:
+                result = supervisor.drive(
+                    config_path=config, agent_id="test-agent",
+                    max_transitions=1,
+                )
+            self.assertEqual("pending", result["outcome"])
+            self.assertEqual(dispatched, result["external_execution"])
+            self.assertEqual([], result["transitions"])
+            dispatch.assert_called_once_with()
+            invoke.assert_not_called()
+
     @staticmethod
     def crash_drive(root, target, exit_code):
         source = textwrap.dedent(
