@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "InitializationWorkItemProposalDAG",
   "id": "WIPD-IOS-INITIALIZATION-001",
-  "revision": 13,
+  "revision": 14,
   "authority": "proposal_only",
   "status": "proposed",
   "created_by": "IOS-KNOWLEDGE-CONTROL-PLANE-001",
@@ -201,6 +201,13 @@
       "title": "建立固定 Android Oracle Workflow 的受限自动修改策略",
       "outputs": ["exact workflow hardening policy", "publisher/golden denial", "push-trigger WorkItem eligibility"],
       "gates": [], "constraint": "只允许带固定语义标签的 hardening WorkItem 修改唯一 attestation workflow、对应 SourceLab 测试与记忆文件；任何其他 .github、Publisher、Golden、产品或宽泛 scope 均 fail closed"
+    },
+    {
+      "proposal_id": "IOS-GITHUB-ORACLE-PUSH-TRIGGER-001", "phase": 18, "class": "control_plane",
+      "depends_on": ["IOS-GITHUB-ORACLE-WORKFLOW-SCOPE-001"], "knowledge_mode": "not_applicable",
+      "title": "以 create-only Oracle branch 建立服务端幂等 Workflow 触发",
+      "outputs": ["push-triggered Android Oracle workflow", "branch-bound scenario selector", "manual dispatch compatibility"],
+      "gates": [], "constraint": "只修改固定 attestation workflow、对应 contract 测试与文档；push 必须从 feature/oracle-<scenario>-<exact-sha> 解析并验证 selector，保留手动 dispatch 兼容，不得扩展权限、修改 Oracle 语义、Publisher、Golden 或产品"
     }
   ],
   "compiler_rules": [
