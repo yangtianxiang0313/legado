@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "revision": 463,
+  "revision": 464,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-28T23:35:22Z",
-  "event_head": "5c3d528d779f998ef6635a9ed3c5b42e3bcd68d95a77b97d226d8b818c4a64df",
+  "updated_at": "2026-07-28T23:45:18Z",
+  "event_head": "25447a0646e41b4fa1fb1cdf800bffd3e155f324c5f06de2f264d2e9761665d0",
   "active_work_items": [],
   "last_completed_work_item": "IOS-GITHUB-ORACLE-RECEIPT-GH-EXECUTABLE-001",
   "work_items": {
@@ -8676,6 +8676,11 @@
       "verified_at": "2026-07-28T23:32:41Z",
       "completed_at": "2026-07-28T23:35:22Z",
       "final_tree_sha256": "df4ae5f1f0cbe2504a44d0d08e8b0b1dc1e5fe016ae78bb98e8c407aa319cf7b"
+    },
+    "IOS-GITHUB-GOLDEN-PUBLISHER-OWNER-001": {
+      "status": "ready",
+      "attempt": 0,
+      "last_evidence": null
     }
   },
   "health": {
