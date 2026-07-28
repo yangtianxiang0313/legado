@@ -1,16 +1,14 @@
 {
   "schema_version": 1,
-  "revision": 228,
+  "revision": 229,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-28T09:08:58Z",
-  "event_head": "701d7f4c5356d83be8de7906b88d76b998ca85d4df9ed5012f9f0d6493b10943",
-  "active_work_items": [
-    "IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-002"
-  ],
-  "last_completed_work_item": "IOS-ANDROID-ORACLE-ATTESTATION-001",
+  "updated_at": "2026-07-28T09:12:28Z",
+  "event_head": "9d487380536d3764e8fbca27f4e73b117df7f369431561cb9fd899ca9e0c792a",
+  "active_work_items": [],
+  "last_completed_work_item": "IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-002",
   "work_items": {
     "IOS-BOOT-001": {
       "status": "completed",
@@ -3705,7 +3703,7 @@
       "final_tree_sha256": "03c3842cd6a8459c47e5480260907e3951d06ff6d54c0056116acf6d6ef17e85"
     },
     "IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-002": {
-      "status": "verified",
+      "status": "completed",
       "attempt": 1,
       "last_evidence": "ios/harness/evidence/runs/run-20260728T090858Z-ios-android-oracle-attestation-recovery-002-71e4bda0.json",
       "claimed_by": "codex-root",
@@ -3714,7 +3712,6 @@
       "work_item_sha256": "90bf977c8db158efb8da2066988cd464f937c145e0b384ea14360947f5f33669",
       "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
       "base_commit": "6c1ba62fb28cc65530fd30649a665121c7b50606",
-      "base_dirty_fingerprints": {},
       "base_capability_revision": 7,
       "base_capability_assurance_sha256": "b1d5a642fed3770f6a005218976f4672aeb74fd477f5c7cea1368c87fea2c2f5",
       "android_requirement_selection_sha256": "6cb1587d0631c4545b1740d0377a0497d38d9876e6a4eff359ef5c610fa4a169",
@@ -3786,11 +3783,9 @@
         }
       ],
       "last_evidence_sha256": "79b335201e0d42568fabc3d6d4fb9a472193db45fe5e3f77e501909d2c630d81",
-      "verified_product_fingerprints": {
-        ".github/workflows/android-oracle-attestation.yml": "file:0o644:63e6b6ade609a4d7a25cc37aaff94f2286efd9f651996483f15b3d4cc7535325",
-        "ios/harness/tests/test_oracle_ci_proposal.py": "file:0o644:feb4cbac2291c9ff5bff18041c1ec1d2a65dc4f9ccda14a54b1d07b34c6428d0"
-      },
-      "verified_at": "2026-07-28T09:08:58Z"
+      "verified_at": "2026-07-28T09:08:58Z",
+      "completed_at": "2026-07-28T09:12:28Z",
+      "final_tree_sha256": "a1c7fa6f6332cf7b02474fc08b338b5bc654a9863644409aef7a26179e9336c0"
     }
   },
   "health": {
@@ -3799,7 +3794,7 @@
     "android_intake": "fact_inventory_ready",
     "requirements": "catalog_ready_one_characterization_gap",
     "ios_build": "package_verified",
-    "android_oracle": "attested_proposal_pipeline_ready",
+    "android_oracle": "attestation_workflow_dispatchable",
     "conformance": "scaffold_verified",
     "source_lab": "fixture_transport_integrated",
     "knowledge_control_plane": "proposal_batch_claim_refs_verified",

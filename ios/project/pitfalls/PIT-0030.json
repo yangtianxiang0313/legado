@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0030",
+  "revision": 1,
+  "title": "GitHub Actions context 的可用层级不是全局一致的",
+  "fingerprint": "github-actions-runner-context-used-in-job-env",
+  "capabilities": [
+    "CAP-CONFORMANCE"
+  ],
+  "symptoms": [
+    "gh workflow run 返回 HTTP 422，而不是创建排队中的 workflow run",
+    "错误定位到 workflow job 级 env 中的 runner.temp 表达式",
+    "GitHub 报 Unrecognized named-value: 'runner'，没有分配 Runner 或执行任何 step"
+  ],
+  "conditions": [
+    "workflow 在 job 级 env 求值时引用 runner context",
+    "同一个 runner.temp 表达式在 step 的 with/path 等位置本来合法",
+    "本地文本检查只验证了 action pin 与权限，没有区分表达式所在 YAML 层级"
+  ],
+  "root_cause": "GitHub Actions context 的可用性取决于 workflow 语法层级；runner context 在 job 级 env 求值时不可用，不能因为它在 step 级字段合法就推断可全局使用。",
+  "diagnosis": [
+    "先区分 GitHub 拒绝解析、Runner 分配失败和 Runner 内命令失败三类阶段",
+    "读取 422 的行列与表达式文本，定位 context 所在 YAML 层级",
+    "重新 dispatch 后确认出现 workflow_dispatch run、Job 和 Initialize step"
+  ],
+  "fix": "删除 job 级 ORACLE_TEMP 的 runner.temp 表达式；checkout 后由 shell 从 Runner 环境变量 RUNNER_TEMP 计算路径并写入 GITHUB_ENV，后续 step 再消费 ORACLE_TEMP。step 级 attestation subject-path 继续使用合法的 runner.temp。",
+  "prevention": {
+    "architecture_rule": "GitHub Actions expression context 必须按 YAML 层级验证；跨 step 环境值优先在 Runner 已分配后的初始化 step 中由受信任环境变量写入 GITHUB_ENV。",
+    "tests": [
+      "ios/harness/tests/test_oracle_ci_proposal.py"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-ANDROID-ORACLE-ATTESTATION-001",
+    "until": "IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-002"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T090858Z-ios-android-oracle-attestation-recovery-002-71e4bda0.json",
+    "https://github.com/yangtianxiang0313/legado/actions/runs/30345425140"
+  ]
+}
