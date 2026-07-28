@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "PIT-0031",
-  "revision": 1,
+  "revision": 2,
   "title": "逐行修 PATH 会串行暴露下一个裸 Android 工具",
   "fingerprint": "hosted-runner-partial-android-tool-path-binding",
   "capabilities": [
@@ -23,7 +23,7 @@
     "将真实 run 的失败 step 与首个裸调用逐一对应",
     "确认已显式绑定的工具通过后，再检查后续 step 和 always cleanup 中是否仍有裸调用"
   ],
-  "fix": "已显式绑定 sdkmanager 与 avdmanager；后续恢复项必须把 Boot/Stop 的全部 adb 调用统一绑定到 ANDROID_HOME/platform-tools/adb，并增加全 workflow 裸 Android 工具审计。",
+  "fix": "已在初始化 step 显式绑定 sdkmanager、avdmanager 与 adb；Boot、Oracle 和 always cleanup 全部使用环境别名，emulator 继续使用 ANDROID_HOME 显式路径。回归测试审计全 workflow 的 Android SDK executable，不再保留裸工具调用。",
   "prevention": {
     "architecture_rule": "GitHub-hosted Android workflow 必须由初始化 step 验证并导出每个 SDK executable；业务与 cleanup step 不得依赖 Runner PATH 隐式发现 Android 工具。",
     "tests": [
@@ -33,15 +33,18 @@
   },
   "affected_versions": {
     "from": "IOS-ANDROID-ORACLE-ATTESTATION-001",
-    "until": null
+    "until": "IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-005"
   },
-  "status": "mitigated",
+  "status": "resolved",
   "occurrences": 2,
   "first_seen": "2026-07-28",
   "last_seen": "2026-07-28",
   "evidence": [
     "https://github.com/yangtianxiang0313/legado/actions/runs/30345425140",
     "https://github.com/yangtianxiang0313/legado/actions/runs/30346029275",
+    "https://github.com/yangtianxiang0313/legado/actions/runs/30348879617",
     "ios/harness/evidence/runs/run-20260728T091805Z-ios-android-oracle-attestation-recovery-003-0641757b.json"
+    ,
+    "ios/harness/evidence/runs/run-20260728T095843Z-ios-android-oracle-attestation-recovery-005-eec7c83f.json"
   ]
 }

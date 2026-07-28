@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-005",
+  "summary": "已通过显式 recovery 谱系取代在 claim 前因旧 harness-tests 超时而 blocked 的 IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-004。workflow 初始化现在从 ANDROID_HOME/platform-tools/adb 绑定并验证 ADB，Boot 的 wait-for-device、boot property、解锁、Oracle 参数和 always cleanup 均使用该显式路径；sdkmanager、avdmanager 与 emulator 也全部显式绑定。回归测试覆盖完整 Android executable inventory。正式 Harness 第一次 verify 遭遇一次 180 秒基础设施抖动并保留 failed Evidence，随后同一检查 78.030 秒通过、第二次正式 verify 通过。commit bb1ad49 的 run 30348879617 通过 SDK 安装和 5 分钟 Gradle 构建，Boot 不再 exit 127；但无界 adb wait-for-device 持续约 9 分钟，超过后续 4 分钟 boot property 上限，run 被主动取消以避免耗尽 60 分钟 Job。",
+  "evidence": "ios/harness/evidence/runs/run-20260728T095843Z-ios-android-oracle-attestation-recovery-005-eec7c83f.json",
+  "capability_updates": [
+    {
+      "id": "CAP-CONFORMANCE",
+      "from_revision": 9,
+      "to_revision": 10,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": ["ADR-0002", "ADR-0004"]
+  },
+  "requirements": {
+    "mode": "enabler",
+    "refs": [
+      {
+        "id": "REQ-ANDROID-SOURCE-PIPELINE-001",
+        "revision": 1,
+        "clauses": ["RC-01", "RC-02", "RC-03", "RC-04"]
+      }
+    ],
+    "selection_sha256": "6cb1587d0631c4545b1740d0377a0497d38d9876e6a4eff359ef5c610fa4a169"
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项只恢复 adb 路径工作并审计 Android executable，不生成业务知识"
+  },
+  "source_lab": {
+    "mode": "reuse",
+    "behaviors": ["transport.get-query", "pipeline.search-html", "pipeline.book-info-html", "pipeline.toc-html", "pipeline.content-html", "url.relative-resolution", "rule.css-selector"],
+    "scenarios": ["sl-html-basic-001"],
+    "selection_sha256": "c11e45f946d1d9f32a02ed371ce759d34712cca3d35097b905b34da4f0e59585"
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "Android Oracle 尚未执行，不产生跨端行为差异"
+  },
+  "pitfalls": {
+    "records": ["ios/project/pitfalls/PIT-0031.json"],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "adb wait-for-device 没有独立超时，emulator 子进程异常时 Boot step 会卡到 60 分钟 Job 总上限",
+    "emulator.log 当前只留在 Runner 临时目录，Boot 失败或取消后没有诊断 artifact",
+    "Android Oracle 与双 attestation 尚未执行，Requirement readiness 仍为 characterization_required"
+  ],
+  "next_actions": [
+    "自动物化有界 emulator boot 诊断恢复项，增加 wait-for-device 上限、adb devices 与 emulator.log 输出/上传",
+    "重新 dispatch 并依据真实启动诊断修复 emulator 环境",
+    "成功后运行 trusted_import.py verify，再交由独立 Publisher 审核 Golden"
+  ],
+  "created_at": "2026-07-28T10:13:19Z"
+}

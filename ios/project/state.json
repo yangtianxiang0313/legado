@@ -1,16 +1,14 @@
 {
   "schema_version": 1,
-  "revision": 243,
+  "revision": 244,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-28T09:58:43Z",
-  "event_head": "72ac461b46f7f63d27d345111d12b7a4060e0c1b8fe8ab353b43a7fd090afcdf",
-  "active_work_items": [
-    "IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-005"
-  ],
-  "last_completed_work_item": "IOS-HARNESS-TEST-TIMEOUT-RECOVERY-002",
+  "updated_at": "2026-07-28T10:13:56Z",
+  "event_head": "d064e69ce86733460e06d9f690fb14335e854fedd977349523a33982b2802f2b",
+  "active_work_items": [],
+  "last_completed_work_item": "IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-005",
   "work_items": {
     "IOS-BOOT-001": {
       "status": "completed",
@@ -3936,7 +3934,9 @@
           "stdout_tail": "",
           "stderr_tail": "......................................................................................................................................................................\nCLEANUP_ERROR: sigkill_permission_denied\n"
         }
-      ]
+      ],
+      "replacement": "IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-005",
+      "replacement_bound_at": "2026-07-28T10:13:56Z"
     },
     "IOS-HARNESS-TEST-TIMEOUT-RECOVERY-002": {
       "status": "completed",
@@ -3992,7 +3992,7 @@
       "final_tree_sha256": "fb068b123f0b1e938968a42fc942ad5d78fc16da989ef4528a6c255310882f04"
     },
     "IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-005": {
-      "status": "verified",
+      "status": "completed",
       "attempt": 1,
       "last_evidence": "ios/harness/evidence/runs/run-20260728T095843Z-ios-android-oracle-attestation-recovery-005-eec7c83f.json",
       "claimed_by": "codex-root",
@@ -4001,7 +4001,6 @@
       "work_item_sha256": "aba0ccc34346c1616782c713a975de271003465655395541c0baa0435b3ab0bf",
       "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
       "base_commit": "cb373617fe3ba974fc2e7a5ac6c72b4d1a1a5868",
-      "base_dirty_fingerprints": {},
       "base_capability_revision": 9,
       "base_capability_assurance_sha256": "b1d5a642fed3770f6a005218976f4672aeb74fd477f5c7cea1368c87fea2c2f5",
       "android_requirement_selection_sha256": "6cb1587d0631c4545b1740d0377a0497d38d9876e6a4eff359ef5c610fa4a169",
@@ -4073,11 +4072,9 @@
         }
       ],
       "last_evidence_sha256": "54bd205e9bd0036c18d0b1a16802b028c18dd5d4288ed39ffd85fe66c3fc7935",
-      "verified_product_fingerprints": {
-        ".github/workflows/android-oracle-attestation.yml": "file:0o644:70c22ba28ecad802e1153521b941998058b2f958728a042c70253612be082890",
-        "ios/harness/tests/test_oracle_ci_proposal.py": "file:0o644:1a31c94bf0a327ecfe2b59b1bfd3ed386f1f3fdf33f1a5ce0ccba8493fed9809"
-      },
-      "verified_at": "2026-07-28T09:58:43Z"
+      "verified_at": "2026-07-28T09:58:43Z",
+      "completed_at": "2026-07-28T10:13:56Z",
+      "final_tree_sha256": "4412c94ca898a1be9b974e2a11a16cb94379e7a054b113896f8c3fa5d536eb1b"
     }
   },
   "health": {
@@ -4086,7 +4083,7 @@
     "android_intake": "fact_inventory_ready",
     "requirements": "catalog_ready_one_characterization_gap",
     "ios_build": "package_verified",
-    "android_oracle": "github_sdk_tools_resolved",
+    "android_oracle": "github_android_tools_resolved",
     "conformance": "scaffold_verified",
     "source_lab": "fixture_transport_integrated",
     "knowledge_control_plane": "proposal_batch_claim_refs_verified",
