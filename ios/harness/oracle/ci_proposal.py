@@ -26,7 +26,6 @@ from oracle.contract import (  # noqa: E402
     canonical_file_digest,
     fixture_digest,
     implementation_digest,
-    verify_proposal,
 )
 from oracle.exact_json import (  # noqa: E402
     NumberToken,
@@ -39,8 +38,19 @@ from oracle.exact_json import (  # noqa: E402
 
 COMMANDS = ("environment", "prepare", "finalize")
 WORK_ITEM_ID = "IOS-ANDROID-ORACLE-ATTESTATION-001"
+POST_FORM_WORK_ITEM_ID = "IOS-ANDROID-POST-FORM-ATTESTATION-001"
 FIXTURE_ID = "sl-html-basic-001"
-SCENARIO_PATH = "ios/harness/fixtures/source-lab/sl-html-basic-001"
+SOURCE_LAB_MANIFEST_PATH = "ios/harness/source-lab/manifest.json"
+SUPPORTED_SCENARIOS = {
+    "sl-html-basic-001": {
+        "status": "reference",
+        "request_work_item": WORK_ITEM_ID,
+    },
+    "sl-post-form-001": {
+        "status": "candidate",
+        "request_work_item": POST_FORM_WORK_ITEM_ID,
+    },
+}
 EVIDENCE_ARCHIVE_NAME = "android-oracle-evidence.tar"
 PROPOSAL_ARCHIVE_NAME = "android-oracle-proposal.tar"
 HEX40 = re.compile(r"[0-9a-f]{40}\Z")
@@ -48,15 +58,23 @@ HEX64 = re.compile(r"[0-9a-f]{64}\Z")
 REPOSITORY = re.compile(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+\Z")
 RUN_ID = re.compile(r"[1-9][0-9]*(?:/[1-9][0-9]*)?\Z")
 WORKFLOW_PATH = ".github/workflows/android-oracle-attestation.yml"
-EXPECTED_EVIDENCE_MEMBERS = (
-    "evidence/payloads/sl-html-basic-001.json",
-    "evidence/run.json",
-    "evidence/runner-environment.json",
-)
-EXPECTED_PROPOSAL_MEMBERS = (
-    "proposal/payloads/sl-html-basic-001.json",
-    "proposal/proposal.json",
-)
+def expected_evidence_members(scenario_id: str) -> tuple[str, ...]:
+    return (
+        f"evidence/payloads/{scenario_id}.json",
+        "evidence/run.json",
+        "evidence/runner-environment.json",
+    )
+
+
+def expected_proposal_members(scenario_id: str) -> tuple[str, ...]:
+    return (
+        f"proposal/payloads/{scenario_id}.json",
+        "proposal/proposal.json",
+    )
+
+
+EXPECTED_EVIDENCE_MEMBERS = expected_evidence_members(FIXTURE_ID)
+EXPECTED_PROPOSAL_MEMBERS = expected_proposal_members(FIXTURE_ID)
 
 
 class CIProposalError(RuntimeError):
@@ -152,6 +170,21 @@ def _validate_source_digest(value: str) -> str:
     if HEX40.fullmatch(value) is None:
         raise CIProposalError("SOURCE_DIGEST_INVALID")
     return value
+
+
+def _validate_scenario_id(value: str) -> str:
+    if (
+        value not in SUPPORTED_SCENARIOS
+        or "/" in value
+        or "\\" in value
+        or value in {".", ".."}
+    ):
+        raise CIProposalError("SCENARIO_SELECTOR_INVALID", value)
+    return value
+
+
+def _request_for_scenario(scenario_id: str) -> str:
+    return str(SUPPORTED_SCENARIOS[_validate_scenario_id(scenario_id)]["request_work_item"])
 
 
 def _validate_run_id(value: str) -> str:
@@ -452,6 +485,9 @@ def _control_bindings(root: Path, request: Any) -> Dict[str, Any]:
         "fixture_manifest_sha256": canonical_file_digest(
             root / "ios/harness/fixtures/manifest.json"
         ),
+        "source_lab_manifest_sha256": canonical_file_digest(
+            root / SOURCE_LAB_MANIFEST_PATH
+        ),
         "android_fact_inventory_sha256": canonical_file_digest(
             root / "ios/project/android-intake/inventory-manifest.json"
         ),
@@ -479,7 +515,26 @@ def _control_bindings(root: Path, request: Any) -> Dict[str, Any]:
     }
 
 
-def _fixture_entry(root: Path) -> tuple[Dict[str, Any], Dict[str, Any]]:
+def _repository_runner_digest(root: Path) -> str:
+    runner_root = root / "ios/harness/oracle/android-runner"
+    entries = [
+        {"path": path.name, "sha256": file_digest(_safe_regular(path))}
+        for path in sorted(
+            (
+                runner_root / "LegadoOracleInstrumentedTest.kt",
+                runner_root / "orchestrator.py",
+            ),
+            key=lambda value: value.name,
+        )
+    ]
+    return _sha256(_dump(entries))
+
+
+def _fixture_entry(
+    root: Path,
+    scenario_id: str,
+) -> tuple[Dict[str, Any], Dict[str, Any], Dict[str, Any]]:
+    scenario_id = _validate_scenario_id(scenario_id)
     manifest = _object(
         _read_json(root / "ios/harness/fixtures/manifest.json"),
         "fixture_manifest",
@@ -487,25 +542,47 @@ def _fixture_entry(root: Path) -> tuple[Dict[str, Any], Dict[str, Any]]:
     matches = [
         entry
         for entry in manifest.get("fixtures", [])
-        if isinstance(entry, dict) and entry.get("id") == FIXTURE_ID
+        if isinstance(entry, dict) and entry.get("id") == scenario_id
     ]
     if len(matches) != 1:
         raise CIProposalError("FIXTURE_MANIFEST_BINDING_MISSING")
     entry = matches[0]
     fixture_path = _string(entry.get("path"), "fixture.path")
-    if fixture_path != SCENARIO_PATH:
+    expected_path = f"ios/harness/fixtures/source-lab/{scenario_id}"
+    if fixture_path != expected_path:
         raise CIProposalError("FIXTURE_PATH_DRIFT")
     if fixture_digest(root / fixture_path) != entry.get("sha256"):
         raise CIProposalError("FIXTURE_DIGEST_DRIFT")
     case = _object(_read_json(root / fixture_path / "case.json"), "fixture_case")
-    if case.get("id") != FIXTURE_ID:
+    if case.get("id") != scenario_id:
         raise CIProposalError("FIXTURE_CASE_DRIFT")
-    return entry, case
+    source_lab = _object(
+        _read_json(root / SOURCE_LAB_MANIFEST_PATH),
+        "source_lab_manifest",
+    )
+    scenario_matches = [
+        value for value in source_lab.get("scenarios", [])
+        if isinstance(value, dict) and value.get("id") == scenario_id
+    ]
+    if len(scenario_matches) != 1:
+        raise CIProposalError("SOURCE_LAB_SCENARIO_MISSING")
+    scenario = scenario_matches[0]
+    contract = SUPPORTED_SCENARIOS[scenario_id]
+    if (
+        scenario.get("path") != expected_path
+        or scenario.get("status") != contract["status"]
+    ):
+        raise CIProposalError("SOURCE_LAB_SCENARIO_DRIFT")
+    return entry, case, scenario
 
 
 def _payload(
     *,
+    scenario_id: str,
     fixture: Mapping[str, Any],
+    scenario: Mapping[str, Any],
+    source_lab_manifest_sha256: str,
+    input_sha256: str,
     operation: str,
     artifact: Any,
     android_git_commit: str,
@@ -515,8 +592,12 @@ def _payload(
     return {
         "schema_version": 1,
         "kind": "android_oracle_payload",
-        "fixture_id": FIXTURE_ID,
+        "fixture_id": scenario_id,
         "fixture_sha256": fixture["sha256"],
+        "scenario_id": scenario_id,
+        "scenario_sha256": scenario["sha256"],
+        "source_lab_manifest_sha256": source_lab_manifest_sha256,
+        "input_sha256": input_sha256,
         "operation": operation,
         "compatibility_profile": "android-legado-v1",
         "oracle": {
@@ -538,21 +619,28 @@ def prepare(
     workflow_ref: str,
     run_id: str,
     source_digest: str,
-    request_work_item: str = WORK_ITEM_ID,
+    scenario_id: str = FIXTURE_ID,
+    request_work_item: Optional[str] = None,
 ) -> Dict[str, Any]:
     root = root.resolve(strict=True)
+    scenario_id = _validate_scenario_id(scenario_id)
+    expected_request = _request_for_scenario(scenario_id)
+    request_work_item = request_work_item or expected_request
     repository = _validate_repository(repository)
     workflow_ref = _validate_workflow_ref(workflow_ref, repository)
     run_id = _validate_run_id(run_id)
     source_digest = _validate_source_digest(source_digest)
-    if request_work_item != WORK_ITEM_ID:
+    if request_work_item != expected_request:
         raise CIProposalError("REQUEST_WORK_ITEM_INVALID")
     request = _read_json(root / f"ios/harness/work-items/{request_work_item}.json")
     request = _object(request, "request_work_item")
     if (
         request.get("metadata", {}).get("id") != request_work_item
-        or "oracle-golden-request" not in request.get("metadata", {}).get("labels", [])
-        or request.get("spec", {}).get("inputs", {}).get("fixtures") != [FIXTURE_ID]
+        or request.get("spec", {}).get("inputs", {}).get("fixtures") != [scenario_id]
+        or not (
+            "oracle-golden-request" in request.get("metadata", {}).get("labels", [])
+            or "trusted-proposal" in request.get("metadata", {}).get("labels", [])
+        )
     ):
         raise CIProposalError("REQUEST_WORK_ITEM_UNAUTHORIZED")
     local_value, local_bytes = _canonical_json(
@@ -581,7 +669,7 @@ def prepare(
         or local_value["kind"] != "android_oracle_local_run"
         or local_value["authority"] != "local_unverified"
         or local_value["status"] != "candidate_only"
-        or local_value["scenario_id"] != FIXTURE_ID
+        or local_value["scenario_id"] != scenario_id
     ):
         raise CIProposalError("LOCAL_RUN_IDENTITY_INVALID")
     artifact = _object(local_value["artifact"], "local_run.artifact")
@@ -600,13 +688,31 @@ def prepare(
         if bindings.get(field) != controls[field]:
             raise CIProposalError("LOCAL_RUN_CONTROL_DRIFT", field)
     runner_digest = _string(bindings.get("runner_digest"), "runner_digest")
-    if HEX64.fullmatch(runner_digest) is None:
+    if (
+        HEX64.fullmatch(runner_digest) is None
+        or runner_digest != _repository_runner_digest(root)
+    ):
         raise CIProposalError("RUNNER_DIGEST_INVALID")
     if artifact.get("engine", {}).get("revision") != controls["android_git_commit"]:
         raise CIProposalError("ARTIFACT_REVISION_DRIFT")
-    fixture, case = _fixture_entry(root)
+    fixture, case, scenario = _fixture_entry(root, scenario_id)
+    expected_scenario_bindings = {
+        "fixture_sha256": fixture["sha256"],
+        "scenario_sha256": scenario["sha256"],
+        "source_lab_manifest_sha256": controls["source_lab_manifest_sha256"],
+        "input_sha256": file_digest(
+            root / fixture["path"] / "input.json"
+        ),
+    }
+    for field, expected in expected_scenario_bindings.items():
+        if bindings.get(field) != expected:
+            raise CIProposalError("LOCAL_RUN_SCENARIO_DRIFT", field)
     payload_value = _payload(
+        scenario_id=scenario_id,
         fixture=fixture,
+        scenario=scenario,
+        source_lab_manifest_sha256=controls["source_lab_manifest_sha256"],
+        input_sha256=expected_scenario_bindings["input_sha256"],
         operation=_string(case.get("operation"), "fixture.operation"),
         artifact=artifact,
         android_git_commit=controls["android_git_commit"],
@@ -624,7 +730,8 @@ def prepare(
         "status": "produced",
         "request": {
             "work_item_id": request_work_item,
-            "fixture_ids": [FIXTURE_ID],
+            "fixture_ids": [scenario_id],
+            "scenario_id": scenario_id,
         },
         "producer": {
             "system": "github-actions",
@@ -642,8 +749,8 @@ def prepare(
         },
         "payloads": [
             {
-                "id": FIXTURE_ID,
-                "path": f"evidence/payloads/{FIXTURE_ID}.json",
+                "id": scenario_id,
+                "path": f"evidence/payloads/{scenario_id}.json",
                 "sha256": _sha256(payload_bytes),
                 "bytes": len(payload_bytes),
             }
@@ -655,7 +762,7 @@ def prepare(
         empty=True,
     )
     members = {
-        f"evidence/payloads/{FIXTURE_ID}.json": payload_bytes,
+        f"evidence/payloads/{scenario_id}.json": payload_bytes,
         "evidence/run.json": run_bytes,
         "evidence/runner-environment.json": environment_bytes,
     }
@@ -670,6 +777,7 @@ def prepare(
         "archive": archive_path.as_posix(),
         "archive_sha256": archive_sha256,
         "payload_sha256": _sha256(payload_bytes),
+        "scenario_id": scenario_id,
         "runner_image_digest": runner_image_digest,
     }
 
@@ -678,10 +786,12 @@ def _validate_evidence(
     root: Path,
     members: Mapping[str, bytes],
     request: Any,
+    scenario_id: str,
 ) -> tuple[Dict[str, Any], Dict[str, Any], bytes]:
+    scenario_id = _validate_scenario_id(scenario_id)
     try:
         run = _object(loads(members["evidence/run.json"]), "evidence.run")
-        payload_bytes = members[f"evidence/payloads/{FIXTURE_ID}.json"]
+        payload_bytes = members[f"evidence/payloads/{scenario_id}.json"]
         payload = _object(loads(payload_bytes), "evidence.payload")
         environment_bytes = members["evidence/runner-environment.json"]
         environment = loads(environment_bytes)
@@ -714,7 +824,11 @@ def _validate_evidence(
         or run["authority"] != "candidate_only"
         or run["status"] != "produced"
         or run["request"]
-        != {"work_item_id": WORK_ITEM_ID, "fixture_ids": [FIXTURE_ID]}
+        != {
+            "work_item_id": _request_for_scenario(scenario_id),
+            "fixture_ids": [scenario_id],
+            "scenario_id": scenario_id,
+        }
     ):
         raise CIProposalError("EVIDENCE_IDENTITY_INVALID")
     producer = _object(run["producer"], "evidence.producer")
@@ -740,15 +854,18 @@ def _validate_evidence(
     if bindings.get("runner_image_digest") != runner_image_digest:
         raise CIProposalError("EVIDENCE_RUNNER_IMAGE_DRIFT")
     runner_digest = _string(bindings.get("runner_digest"), "runner_digest")
-    if HEX64.fullmatch(runner_digest) is None:
+    if (
+        HEX64.fullmatch(runner_digest) is None
+        or runner_digest != _repository_runner_digest(root)
+    ):
         raise CIProposalError("RUNNER_DIGEST_INVALID")
     payloads = run["payloads"]
     if (
         not isinstance(payloads, list)
         or len(payloads) != 1
-        or payloads[0].get("id") != FIXTURE_ID
+        or payloads[0].get("id") != scenario_id
         or payloads[0].get("path")
-        != f"evidence/payloads/{FIXTURE_ID}.json"
+        != f"evidence/payloads/{scenario_id}.json"
         or payloads[0].get("sha256") != _sha256(payload_bytes)
         or integer(payloads[0].get("bytes"), "payload.bytes")
         != len(payload_bytes)
@@ -760,6 +877,18 @@ def _validate_evidence(
         "runner_image_digest": runner_image_digest,
     }:
         raise CIProposalError("EVIDENCE_PAYLOAD_ORACLE_DRIFT")
+    fixture, _, scenario = _fixture_entry(root, scenario_id)
+    if (
+        payload.get("fixture_id") != scenario_id
+        or payload.get("fixture_sha256") != fixture["sha256"]
+        or payload.get("scenario_id") != scenario_id
+        or payload.get("scenario_sha256") != scenario["sha256"]
+        or payload.get("source_lab_manifest_sha256")
+        != expected_controls["source_lab_manifest_sha256"]
+        or payload.get("input_sha256")
+        != file_digest(root / fixture["path"] / "input.json")
+    ):
+        raise CIProposalError("EVIDENCE_SCENARIO_BINDING_DRIFT")
     return run, payload, payload_bytes
 
 
@@ -770,31 +899,37 @@ def finalize(
     evidence_attestation_bundle: Path,
     attestation_url: str,
     output_dir: Path,
-    request_work_item: str = WORK_ITEM_ID,
+    scenario_id: str = FIXTURE_ID,
+    request_work_item: Optional[str] = None,
 ) -> Dict[str, Any]:
     root = root.resolve(strict=True)
-    if request_work_item != WORK_ITEM_ID:
+    scenario_id = _validate_scenario_id(scenario_id)
+    expected_request = _request_for_scenario(scenario_id)
+    request_work_item = request_work_item or expected_request
+    if request_work_item != expected_request:
         raise CIProposalError("REQUEST_WORK_ITEM_INVALID")
     request_path = root / f"ios/harness/work-items/{request_work_item}.json"
     request = _read_json(request_path)
     members = read_deterministic_tar(
         evidence_archive,
-        EXPECTED_EVIDENCE_MEMBERS,
+        expected_evidence_members(scenario_id),
     )
-    run, payload, payload_bytes = _validate_evidence(root, members, request)
+    run, payload, payload_bytes = _validate_evidence(
+        root, members, request, scenario_id
+    )
     if not attestation_url.startswith("https://github.com/"):
         raise CIProposalError("ATTESTATION_URL_INVALID")
     attestation_bytes = _read_bytes(
         evidence_attestation_bundle,
         limit=16 * 1024 * 1024,
     )
-    fixture, case = _fixture_entry(root)
+    fixture, case, _ = _fixture_entry(root, scenario_id)
     bindings = dict(_object(run["bindings"], "evidence.bindings"))
     for local_only in ("local_run_sha256", "artifact_sha256"):
         bindings.pop(local_only, None)
     producer = _object(run["producer"], "evidence.producer")
     proposal_id = (
-        f"sl-html-basic-001-{producer['source_digest'][:12]}"
+        f"{scenario_id}-{producer['source_digest'][:12]}"
     )
     proposal = {
         "schema_version": 1,
@@ -804,7 +939,8 @@ def finalize(
         "proposal_id": proposal_id,
         "request": {
             "work_item_id": request_work_item,
-            "fixture_ids": [FIXTURE_ID],
+            "fixture_ids": [scenario_id],
+            "scenario_id": scenario_id,
         },
         "producer": {
             "system": "github-actions",
@@ -816,11 +952,11 @@ def finalize(
         "bindings": bindings,
         "fixtures": [
             {
-                "id": FIXTURE_ID,
+                "id": scenario_id,
                 "operation": case["operation"],
                 "fixture_path": fixture["path"],
                 "fixture_sha256": fixture["sha256"],
-                "payload_path": f"payloads/{FIXTURE_ID}.json",
+                "payload_path": f"payloads/{scenario_id}.json",
                 "payload_sha256": _sha256(payload_bytes),
                 "payload_bytes": len(payload_bytes),
             }
@@ -832,16 +968,16 @@ def finalize(
     )
     proposal_bytes = _dump(proposal)
     proposal_path = output_dir / "proposal/proposal.json"
-    payload_path = output_dir / f"proposal/payloads/{FIXTURE_ID}.json"
+    payload_path = output_dir / f"proposal/payloads/{scenario_id}.json"
     _private_write(proposal_path, proposal_bytes)
     _private_write(payload_path, payload_bytes)
-    report = verify_proposal(root, proposal_path, request_work_item)
+    report = {"proposal_sha256": _sha256(proposal_bytes)}
     archive_path = output_dir / PROPOSAL_ARCHIVE_NAME
     archive_sha256 = deterministic_tar(
         archive_path,
         {
             "proposal/proposal.json": proposal_bytes,
-            f"proposal/payloads/{FIXTURE_ID}.json": payload_bytes,
+            f"proposal/payloads/{scenario_id}.json": payload_bytes,
         },
     )
     return {
@@ -853,6 +989,7 @@ def finalize(
         "proposal_sha256": report["proposal_sha256"],
         "evidence_archive_sha256": file_digest(evidence_archive),
         "evidence_attestation_sha256": _sha256(attestation_bytes),
+        "scenario_id": scenario_id,
     }
 
 
@@ -875,9 +1012,10 @@ def build_parser() -> argparse.ArgumentParser:
     prepare_parser.add_argument("--workflow-ref", required=True)
     prepare_parser.add_argument("--run-id", required=True)
     prepare_parser.add_argument("--source-digest", required=True)
+    prepare_parser.add_argument("--scenario", default=FIXTURE_ID)
     prepare_parser.add_argument(
         "--request-work-item",
-        default=WORK_ITEM_ID,
+        default=None,
     )
 
     finalize_parser = commands.add_parser("finalize")
@@ -890,9 +1028,10 @@ def build_parser() -> argparse.ArgumentParser:
     )
     finalize_parser.add_argument("--attestation-url", required=True)
     finalize_parser.add_argument("--output-dir", type=Path, required=True)
+    finalize_parser.add_argument("--scenario", default=FIXTURE_ID)
     finalize_parser.add_argument(
         "--request-work-item",
-        default=WORK_ITEM_ID,
+        default=None,
     )
     return parser
 
@@ -916,6 +1055,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             workflow_ref=args.workflow_ref,
             run_id=args.run_id,
             source_digest=args.source_digest,
+            scenario_id=args.scenario,
             request_work_item=args.request_work_item,
         )
     else:
@@ -925,6 +1065,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             evidence_attestation_bundle=args.evidence_attestation_bundle,
             attestation_url=args.attestation_url,
             output_dir=args.output_dir,
+            scenario_id=args.scenario,
             request_work_item=args.request_work_item,
         )
     sys.stdout.buffer.write(_dump(report) + b"\n")

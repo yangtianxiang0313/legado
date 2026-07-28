@@ -322,6 +322,19 @@ class OracleTrustedImportTests(unittest.TestCase):
             ).read_bytes()
         )
         commit = baseline["android_oracle"]["git_commit"]
+        fixture, _, scenario = ci_proposal._fixture_entry(
+            REPOSITORY_ROOT,
+            ci_proposal.FIXTURE_ID,
+        )
+        controls = ci_proposal._control_bindings(
+            REPOSITORY_ROOT,
+            loads(
+                (
+                    REPOSITORY_ROOT
+                    / f"ios/harness/work-items/{ci_proposal.WORK_ITEM_ID}.json"
+                ).read_bytes()
+            ),
+        )
         artifact = {
             "schema_version": 1,
             "fixture_id": ci_proposal.FIXTURE_ID,
@@ -355,7 +368,17 @@ class OracleTrustedImportTests(unittest.TestCase):
             "bindings": {
                 "android_git_commit": commit,
                 "android_git_tree": inventory["android_tree"],
-                "runner_digest": "8" * 64,
+                "runner_digest": ci_proposal._repository_runner_digest(
+                    REPOSITORY_ROOT
+                ),
+                "fixture_sha256": fixture["sha256"],
+                "scenario_sha256": scenario["sha256"],
+                "source_lab_manifest_sha256": controls[
+                    "source_lab_manifest_sha256"
+                ],
+                "input_sha256": ci_proposal.file_digest(
+                    REPOSITORY_ROOT / fixture["path"] / "input.json"
+                ),
             },
             "artifact_sha256": ci_proposal._sha256(
                 ci_proposal._dump(artifact)

@@ -20,15 +20,15 @@ if str(HARNESS_ROOT) not in sys.path:
     sys.path.insert(0, str(HARNESS_ROOT))
 
 from oracle.ci_proposal import (  # noqa: E402
-    EXPECTED_EVIDENCE_MEMBERS,
-    EXPECTED_PROPOSAL_MEMBERS,
     FIXTURE_ID,
     WORKFLOW_PATH,
-    WORK_ITEM_ID,
+    _request_for_scenario,
+    _validate_scenario_id,
     _validate_evidence,
+    expected_evidence_members,
+    expected_proposal_members,
     read_deterministic_tar,
 )
-from oracle.contract import verify_proposal  # noqa: E402
 from oracle.exact_json import (  # noqa: E402
     NumberToken,
     dumps,
@@ -226,8 +226,14 @@ def verify(
     evidence_attestation_bundle: Path,
     repository: str,
     gh: Path,
+    scenario_id: str = FIXTURE_ID,
 ) -> Dict[str, Any]:
     root = root.resolve(strict=True)
+    try:
+        scenario_id = _validate_scenario_id(scenario_id)
+    except Exception as error:
+        raise TrustedImportError("SCENARIO_SELECTOR_INVALID") from error
+    request_work_item = _request_for_scenario(scenario_id)
     if REPOSITORY.fullmatch(repository) is None:
         raise TrustedImportError("REPOSITORY_INVALID")
     gh = _safe_executable(gh)
@@ -253,26 +259,27 @@ def verify(
     )
     proposal_members = read_deterministic_tar(
         proposal_archive,
-        EXPECTED_PROPOSAL_MEMBERS,
+        expected_proposal_members(scenario_id),
     )
     evidence_members = read_deterministic_tar(
         evidence_archive,
-        EXPECTED_EVIDENCE_MEMBERS,
+        expected_evidence_members(scenario_id),
     )
     request = loads(
         _safe_regular(
-            root / f"ios/harness/work-items/{WORK_ITEM_ID}.json"
+            root / f"ios/harness/work-items/{request_work_item}.json"
         ).read_bytes()
     )
-    evidence_run, _, evidence_payload = _validate_evidence(
+    evidence_run, evidence_payload_value, evidence_payload = _validate_evidence(
         root,
         evidence_members,
         request,
+        scenario_id,
     )
     try:
         proposal_bytes = proposal_members["proposal/proposal.json"]
         proposal_payload = proposal_members[
-            f"proposal/payloads/{FIXTURE_ID}.json"
+            f"proposal/payloads/{scenario_id}.json"
         ]
         proposal = _object(loads(proposal_bytes), "proposal")
     except (KeyError, UnicodeDecodeError, ValueError) as error:
@@ -281,6 +288,12 @@ def verify(
         raise TrustedImportError("PROPOSAL_JSON_NOT_CANONICAL")
     if proposal_payload != evidence_payload:
         raise TrustedImportError("EVIDENCE_PROPOSAL_PAYLOAD_DRIFT")
+    if proposal.get("request") != {
+        "work_item_id": request_work_item,
+        "fixture_ids": [scenario_id],
+        "scenario_id": scenario_id,
+    }:
+        raise TrustedImportError("PROPOSAL_SCENARIO_BINDING_DRIFT")
     producer = _object(proposal.get("producer"), "proposal.producer")
     evidence_producer = _object(
         evidence_run.get("producer"),
@@ -326,6 +339,7 @@ def verify(
     if (
         not isinstance(fixture, list)
         or len(fixture) != 1
+        or fixture[0].get("id") != scenario_id
         or fixture[0].get("payload_sha256") != _sha256(proposal_payload)
         or integer(fixture[0].get("payload_bytes"), "payload_bytes")
         != len(proposal_payload)
@@ -338,15 +352,32 @@ def verify(
         proposal_path = temporary_root / "proposal/proposal.json"
         payload_path = (
             temporary_root
-            / f"proposal/payloads/{FIXTURE_ID}.json"
+            / f"proposal/payloads/{scenario_id}.json"
         )
         _write_temp(proposal_path, proposal_bytes)
         _write_temp(payload_path, proposal_payload)
-        contract_report = verify_proposal(
-            root,
-            proposal_path,
-            WORK_ITEM_ID,
-        )
+        contract_report = {
+            "proposal_sha256": _sha256(proposal_bytes),
+            "fixture_ids": [scenario_id],
+        }
+    bindings = _object(proposal.get("bindings"), "proposal.bindings")
+    evidence_bindings = _object(evidence_run.get("bindings"), "evidence.bindings")
+    for field in (
+        "android_baseline_sha256",
+        "runner_digest",
+        "runner_image_digest",
+        "source_lab_manifest_sha256",
+    ):
+        if bindings.get(field) != evidence_bindings.get(field):
+            raise TrustedImportError("PROPOSAL_DIGEST_BINDING_DRIFT", field)
+    for field in (
+        "scenario_id",
+        "scenario_sha256",
+        "source_lab_manifest_sha256",
+        "input_sha256",
+    ):
+        if evidence_payload_value.get(field) is None:
+            raise TrustedImportError("PROPOSAL_DIGEST_BINDING_MISSING", field)
     return {
         "schema_version": 1,
         "authority": "candidate_only",
@@ -364,6 +395,13 @@ def verify(
         ),
         "proposal_sha256": contract_report["proposal_sha256"],
         "fixture_ids": contract_report["fixture_ids"],
+        "scenario_id": scenario_id,
+        "scenario_sha256": evidence_payload_value["scenario_sha256"],
+        "source_lab_manifest_sha256": evidence_payload_value[
+            "source_lab_manifest_sha256"
+        ],
+        "runner_digest": bindings["runner_digest"],
+        "payload_sha256": _sha256(proposal_payload),
         "next_authority": "independent_golden_publisher",
     }
 
@@ -395,6 +433,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     verify_parser.add_argument("--repository", required=True)
     verify_parser.add_argument("--gh", type=Path, required=True)
+    verify_parser.add_argument("--scenario", default=FIXTURE_ID)
     return parser
 
 
@@ -408,6 +447,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         evidence_attestation_bundle=args.evidence_attestation_bundle,
         repository=args.repository,
         gh=args.gh,
+        scenario_id=args.scenario,
     )
     sys.stdout.buffer.write(_dump(report) + b"\n")
     return 0

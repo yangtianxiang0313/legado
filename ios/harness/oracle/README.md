@@ -105,6 +105,13 @@ repository secrets，不提交分支，不上传 APK，也不接触外部书站�
 到完整 commit SHA；job 权限只有 `contents:read`、`id-token:write` 和
 `attestations:write`。
 
+dispatch 的 `scenario` 是显式 choice，默认保持 `sl-html-basic-001`，并支持
+`sl-post-form-001`。packager 不把 selector 当路径使用：它按仓内 SourceLab manifest
+解析 allowlist，并核对场景状态、路径、scenario digest、完整 SourceLab manifest
+digest 与 `input.json` digest。unknown、retired、路径穿越、digest 漂移或跨场景
+archive 重放都会失败关闭。Orchestrator 的 `doctor` 和 `run` 均收到同一个显式
+`--scenario`。
+
 CI 分为两个不可交换的证明阶段：
 
 1. 在线阶段只安装明确的 Android 35 system image，并把冻结 baseline 的 Gradle 依赖
@@ -114,7 +121,8 @@ CI 分为两个不可交换的证明阶段：
    确定性的 `android-oracle-evidence.tar`。GitHub OIDC/Sigstore 先为这个 evidence
    subject 生成 provenance attestation。
 3. `ci_proposal.py finalize` 才能生成 candidate proposal。proposal 内绑定上一步
-   attestation URL 和原始 bundle SHA-256，再由仓内 `verify-proposal` 复验。
+   attestation URL、原始 bundle SHA-256、scenario/source/input/manifest digest、
+   Android baseline、Runner 与 canonical payload。
 4. 确定性的 `android-oracle-proposal.tar` 作为第二个独立 subject 再生成 provenance
    attestation。这样 proposal 不需要把“自己的签名哈希”嵌入自己，避免不可解的循环
    哈希。
@@ -139,6 +147,7 @@ python3 -B ios/harness/oracle/trusted_import.py verify \
   --evidence-archive /absolute/review/android-oracle-evidence.tar \
   --evidence-attestation-bundle /absolute/review/evidence-attestation.json \
   --repository yangtianxiang0313/legado \
+  --scenario sl-post-form-001 \
   --gh /absolute/path/to/gh
 ```
 
@@ -148,6 +157,8 @@ runner；之后才安全读取 tar、核对 evidence bundle、run identity、pay
 environment 和 proposal contract。成功结果仍是
 `candidate_only/verified_for_human_review`，下一 authority 明确为
 `independent_golden_publisher`。
+Importer 要求调用者重述 scenario selector，并从仓内 manifest 复算同一组 digest；
+因此 HTML evidence 不能作为 POST proposal 重放，反之亦然。
 
 `ci_proposal.py` 只有 `environment`、`prepare`、`finalize`；
 `trusted_import.py` 只有 `verify`。两者均没有 `accept`、`publish`、`promote`、

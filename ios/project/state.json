@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "revision": 380,
+  "revision": 384,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-28T18:41:35Z",
-  "event_head": "6f6c9b8f44e8d9789408488a2b167f0e1560211c1839c80387d4bf4246e1c4bd",
+  "updated_at": "2026-07-28T19:02:49Z",
+  "event_head": "69690c8cf116b634e8fe2b73912a980095c14de4fc2b17e7da1398d2fa4f6285",
   "active_work_items": [],
   "last_completed_work_item": "IOS-ORACLE-SETTLEMENT-COMPILER-001",
   "work_items": {
@@ -7011,6 +7011,101 @@
       "verified_at": "2026-07-28T18:39:51Z",
       "completed_at": "2026-07-28T18:41:35Z",
       "final_tree_sha256": "7a95ba5d1d9e90ded94ac2be46bbb3dbc9a19c6bba0276956098ffae4654f3bb"
+    },
+    "IOS-ANDROID-POST-FORM-ATTESTATION-001": {
+      "status": "rejected",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260728T190038Z-ios-android-post-form-attestation-001-b9c9f493.json",
+      "claimed_by": "codex",
+      "claimed_at": "2026-07-28T18:52:45Z",
+      "lease_expires_at": "2026-07-29T18:52:45Z",
+      "work_item_sha256": "2dea6f124df61b6c4c9d565658c1d368e39b20b2530be76ab4c223ac097a3087",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "eb49de9d9ca113cfab4df26aa825f78d42fe8350",
+      "base_dirty_fingerprints": {
+        "ios/harness/work-items/IOS-ANDROID-POST-FORM-ATTESTATION-001.json": "file:0o644:01d978063db9ae88f4e870d4df2c513ac14c940f3ce5dcecc0c774a9168d28f8",
+        "ios/project/events.jsonl": "file:0o644:170cb1dc8a7e35079ab3d7a593518e1a9fbef510f71c799cb33aa1b9b3bf2d0d",
+        "ios/project/state.json": "file:0o644:3b43b981d75f75f9772e8105f7f22be59ece5d06468ec1915262b1ba0adf22dc",
+        "ios/project/status.md": "file:0o644:b1d8a25746c0862f76b771b7f5671054c9fdc559e76bcd552f36ca766ab786bb"
+      },
+      "base_capability_revision": 18,
+      "base_capability_assurance_sha256": "b1d5a642fed3770f6a005218976f4672aeb74fd477f5c7cea1368c87fea2c2f5",
+      "android_requirement_selection_sha256": "73f854c3eaab694dfe8f7d61a38d765c55828934a90f6e380236b65a9af5bbba",
+      "business_knowledge_control_sha256": "85228a4aa826bd1f9d6f22231a6e04fe622cec925714d4bdceacdca704186979",
+      "business_knowledge_authority_sha256": "9a898622fab665e380b0fdb7837d6aa24f938f5c87e4bc635c32fbdf4dfe81c8",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 1,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "harness-tests",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "244d512cbdd15fe0c5e35e6d9676510c943b19e9437987c24ac6e627a2e7ad94",
+          "cwd": ".",
+          "started_at": "2026-07-28T18:51:06Z",
+          "duration_ms": 98368,
+          "timeout_seconds": 180,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "87a5cdb5d1aef504025cce0adb757a6e879aff405b8ea236b2e6dddb26adb0b8",
+          "stdout_tail": "",
+          "stderr_tail": ".................................................................................................................................................................................................................................\n----------------------------------------------------------------------\nRan 225 tests in 98.243s\n\nOK\n"
+        },
+        {
+          "id": "source-lab-smoke",
+          "argv": [
+            "python3",
+            "-B",
+            "ios/harness/source-lab/source_lab.py",
+            "verify-site",
+            "--root",
+            ".",
+            "--scenario",
+            "sl-html-basic-001"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "2646335889ccb4cf3f05c0aa803657f08e2ceca419727e1b892b839e0a21f03d",
+          "cwd": ".",
+          "started_at": "2026-07-28T18:52:44Z",
+          "duration_ms": 646,
+          "timeout_seconds": 30,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "a69275f319f0244a9c9f46260fe6b5f6d8e50437ee04e0d6acbdd1474237b98c",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_tail": "{\"logical_origin\": \"http://sourcelab.test\", \"route_count\": 12, \"scenario\": \"sl-html-basic-001\", \"schema_version\": 1, \"source_sha256\": \"b1441ef5d67bfdfaeef364d59e61770343d2f9e4550028cf47105a19a22ad64c\", \"transcript_sha256\": \"68e326678641cd38ccdf9e73c9a0ba91c83597e06b9a5ee8af71730b0a29bdbf\"}\n",
+          "stderr_tail": ""
+        }
+      ],
+      "last_evidence_sha256": "47e6efbd9d706e036ddfaa3643c66d111d3e4f0071c9fe0d5c82ced4706868a4",
+      "verified_product_fingerprints": null,
+      "verified_at": "2026-07-28T19:00:38Z",
+      "rejected_reason": {
+        "reason_code": "POST_VERIFY_AUTHORITY_AUDIT_FAILED",
+        "message": "新增 POST Form proposal 绕过仓内 oracle.contract.verify_proposal；补充真实 contract 测试后复现 proposal.request fields mismatch，必须通过 typed recovery 扩展共享 contract，禁止以仅计算 SHA 替代。",
+        "invalidated_evidence": "ios/harness/evidence/runs/run-20260728T190038Z-ios-android-post-form-attestation-001-b9c9f493.json"
+      }
     }
   },
   "health": {

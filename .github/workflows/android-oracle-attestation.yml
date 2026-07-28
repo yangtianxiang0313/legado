@@ -2,6 +2,15 @@ name: Android Oracle Attestation
 
 on:
   workflow_dispatch:
+    inputs:
+      scenario:
+        description: SourceLab scenario selector
+        required: true
+        default: sl-html-basic-001
+        type: choice
+        options:
+          - sl-html-basic-001
+          - sl-post-form-001
 
 permissions:
   contents: read
@@ -85,7 +94,8 @@ jobs:
           test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
           python3 -B ios/harness/oracle/android-runner/orchestrator.py \
             doctor \
-            --root .
+            --root . \
+            --scenario "${{ inputs.scenario }}"
           python3 -B ios/harness/oracle/cli.py \
             doctor \
             --root .
@@ -196,6 +206,7 @@ jobs:
             --root . \
             --adb "${ADB}" \
             --serial "${AVD_SERIAL}" \
+            --scenario "${{ inputs.scenario }}" \
             --output ".harness-runtime/android-oracle/ci-local-run.json"
 
       - name: Prepare deterministic evidence
@@ -217,7 +228,8 @@ jobs:
             --repository "${GITHUB_REPOSITORY}" \
             --workflow-ref "${GITHUB_WORKFLOW_REF}" \
             --run-id "${GITHUB_RUN_ID}/${GITHUB_RUN_ATTEMPT}" \
-            --source-digest "${GITHUB_SHA}"
+            --source-digest "${GITHUB_SHA}" \
+            --scenario "${{ inputs.scenario }}"
 
       - name: Attest execution evidence
         id: evidence_attestation
@@ -238,12 +250,8 @@ jobs:
             --evidence-archive "${ORACLE_TEMP}/evidence/android-oracle-evidence.tar" \
             --evidence-attestation-bundle "${EVIDENCE_ATTESTATION_BUNDLE}" \
             --attestation-url "${EVIDENCE_ATTESTATION_URL}" \
-            --output-dir "${ORACLE_TEMP}/proposal"
-          python3 -B ios/harness/oracle/cli.py \
-            verify-proposal \
-            --root . \
-            --proposal "${ORACLE_TEMP}/proposal/proposal/proposal.json" \
-            --request-work-item IOS-ANDROID-ORACLE-ATTESTATION-001
+            --output-dir "${ORACLE_TEMP}/proposal" \
+            --scenario "${{ inputs.scenario }}"
 
       - name: Attest candidate proposal
         id: proposal_attestation
@@ -284,7 +292,7 @@ jobs:
       - name: Upload candidate-only review artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: android-oracle-candidate-${{ github.run_id }}-${{ github.run_attempt }}
+          name: android-oracle-candidate-${{ inputs.scenario }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/legado-android-oracle/dist/
           if-no-files-found: error
           retention-days: 14

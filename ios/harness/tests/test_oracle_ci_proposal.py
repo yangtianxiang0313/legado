@@ -13,6 +13,7 @@ REPOSITORY_ROOT = HARNESS_ROOT.parents[1]
 sys.path.insert(0, str(HARNESS_ROOT))
 
 from oracle import ci_proposal  # noqa: E402
+from oracle.contract import verify_proposal  # noqa: E402
 from oracle.exact_json import dumps, loads  # noqa: E402
 
 
@@ -77,6 +78,68 @@ class OracleCIProposalTests(unittest.TestCase):
             proposal["producer"]["attestation_uri"],
         )
 
+    def test_both_manifest_scenarios_package_without_cross_replay(self):
+        scenario = "sl-post-form-001"
+        self.local_run.write_bytes(
+            ci_proposal._dump(self._local_run(scenario)) + b"\n"
+        )
+        first = self._prepare_finalize("post-first", scenario)
+        second = self._prepare_finalize("post-second", scenario)
+        self.assertEqual(
+            first["prepare"]["archive_sha256"],
+            second["prepare"]["archive_sha256"],
+        )
+        members = ci_proposal.read_deterministic_tar(
+            Path(first["finalize"]["archive"]),
+            ci_proposal.expected_proposal_members(scenario),
+        )
+        proposal = loads(members["proposal/proposal.json"])
+        self.assertEqual(scenario, proposal["request"]["scenario_id"])
+        with self.assertRaises(ci_proposal.CIProposalError):
+            ci_proposal.finalize(
+                REPOSITORY_ROOT,
+                evidence_archive=Path(first["prepare"]["archive"]),
+                evidence_attestation_bundle=self.bundle,
+                attestation_url=(
+                    "https://github.com/"
+                    "yangtianxiang0313/legado/attestations/1"
+                ),
+                output_dir=self.root / "cross-replay",
+                scenario_id=ci_proposal.FIXTURE_ID,
+            )
+
+    def test_post_form_proposal_still_passes_repository_contract(self):
+        scenario = "sl-post-form-001"
+        self.local_run.write_bytes(
+            ci_proposal._dump(self._local_run(scenario)) + b"\n"
+        )
+        result = self._prepare_finalize("post-contract", scenario)
+        proposal_path = (
+            Path(result["finalize"]["archive"]).parent
+            / "proposal"
+            / "proposal.json"
+        )
+
+        report = verify_proposal(
+            REPOSITORY_ROOT,
+            proposal_path,
+            ci_proposal.POST_FORM_WORK_ITEM_ID,
+        )
+
+        self.assertEqual(
+            ci_proposal.POST_FORM_WORK_ITEM_ID,
+            report["request_work_item"],
+        )
+        self.assertEqual([scenario], report["fixture_ids"])
+
+    def test_selector_rejects_unknown_and_path_traversal(self):
+        for selector in ("sl-retired-001", "../sl-post-form-001"):
+            with self.subTest(selector=selector), self.assertRaisesRegex(
+                ci_proposal.CIProposalError,
+                "SCENARIO_SELECTOR_INVALID",
+            ):
+                self._prepare("invalid", selector)
+
     def test_prepare_rejects_artifact_digest_tampering(self):
         value = loads(self.local_run.read_bytes())
         value["artifact"]["issues"] = [{"code": "tampered"}]
@@ -86,6 +149,21 @@ class OracleCIProposalTests(unittest.TestCase):
             "LOCAL_RUN_ARTIFACT_DIGEST_DRIFT",
         ):
             self._prepare("tampered")
+
+    def test_prepare_rejects_scenario_and_input_digest_drift(self):
+        for field in (
+            "scenario_sha256",
+            "source_lab_manifest_sha256",
+            "input_sha256",
+        ):
+            value = self._local_run()
+            value["bindings"][field] = "0" * 64
+            self.local_run.write_bytes(ci_proposal._dump(value) + b"\n")
+            with self.subTest(field=field), self.assertRaisesRegex(
+                ci_proposal.CIProposalError,
+                "LOCAL_RUN_SCENARIO_DRIFT",
+            ):
+                self._prepare(f"drift-{field}")
 
     def test_prepare_rejects_untrusted_runner_environment(self):
         value = loads(self.environment.read_bytes())
@@ -397,7 +475,7 @@ class OracleCIProposalTests(unittest.TestCase):
         ):
             self.assertNotIn(forbidden, ci_proposal.COMMANDS)
 
-    def _prepare(self, label):
+    def _prepare(self, label, scenario=ci_proposal.FIXTURE_ID):
         return ci_proposal.prepare(
             REPOSITORY_ROOT,
             local_run=self.local_run,
@@ -407,10 +485,11 @@ class OracleCIProposalTests(unittest.TestCase):
             workflow_ref=self.workflow_ref,
             run_id="123/1",
             source_digest=self.source_digest,
+            scenario_id=scenario,
         )
 
-    def _prepare_finalize(self, label):
-        prepared = self._prepare(label)
+    def _prepare_finalize(self, label, scenario=ci_proposal.FIXTURE_ID):
+        prepared = self._prepare(label, scenario)
         finalized = ci_proposal.finalize(
             REPOSITORY_ROOT,
             evidence_archive=Path(prepared["archive"]),
@@ -420,10 +499,11 @@ class OracleCIProposalTests(unittest.TestCase):
                 "yangtianxiang0313/legado/attestations/1"
             ),
             output_dir=self.root / f"{label}-proposal",
+            scenario_id=scenario,
         )
         return {"prepare": prepared, "finalize": finalized}
 
-    def _local_run(self):
+    def _local_run(self, scenario_id=ci_proposal.FIXTURE_ID):
         baseline = loads(
             (
                 REPOSITORY_ROOT / "ios/project/baseline.json"
@@ -436,9 +516,23 @@ class OracleCIProposalTests(unittest.TestCase):
             ).read_bytes()
         )
         commit = baseline["android_oracle"]["git_commit"]
+        fixture, _, scenario = ci_proposal._fixture_entry(
+            REPOSITORY_ROOT,
+            scenario_id,
+        )
+        request_id = ci_proposal._request_for_scenario(scenario_id)
+        controls = ci_proposal._control_bindings(
+            REPOSITORY_ROOT,
+            loads(
+                (
+                    REPOSITORY_ROOT
+                    / f"ios/harness/work-items/{request_id}.json"
+                ).read_bytes()
+            ),
+        )
         artifact = {
             "schema_version": 1,
-            "fixture_id": ci_proposal.FIXTURE_ID,
+            "fixture_id": scenario_id,
             "engine": {
                 "platform": "android",
                 "revision": commit,
@@ -467,12 +561,22 @@ class OracleCIProposalTests(unittest.TestCase):
             "kind": "android_oracle_local_run",
             "authority": "local_unverified",
             "status": "candidate_only",
-            "scenario_id": ci_proposal.FIXTURE_ID,
+            "scenario_id": scenario_id,
             "emulator": {"serial_sha256": "e" * 64},
             "bindings": {
                 "android_git_commit": commit,
                 "android_git_tree": inventory["android_tree"],
-                "runner_digest": "8" * 64,
+                "runner_digest": ci_proposal._repository_runner_digest(
+                    REPOSITORY_ROOT
+                ),
+                "fixture_sha256": fixture["sha256"],
+                "scenario_sha256": scenario["sha256"],
+                "source_lab_manifest_sha256": controls[
+                    "source_lab_manifest_sha256"
+                ],
+                "input_sha256": ci_proposal.file_digest(
+                    REPOSITORY_ROOT / fixture["path"] / "input.json"
+                ),
             },
             "artifact_sha256": artifact_sha256,
             "artifact": artifact,

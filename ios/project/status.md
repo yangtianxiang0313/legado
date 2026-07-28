@@ -2,7 +2,7 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-28T18:41:35Z
+- 更新时间：2026-07-28T19:02:49Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
@@ -94,6 +94,7 @@
 | IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-008 | 100 | `completed` | IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-007 | 建立 hosted Runner 的 KVM 访问合同 |
 | IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-009 | 100 | `completed` | IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-008 | 对齐 GitHub 当前 SLSA provenance 身份 |
 | IOS-ANDROID-ORACLE-RUNNER-001 | 100 | `completed` | IOS-ORACLE-CONTROL-PLANE-001, IOS-SOURCELAB-ENGINE-001 | 建立冻结 Android WebBook 的 SourceLab Oracle Runner |
+| IOS-ANDROID-POST-FORM-ATTESTATION-001 | 100 | `rejected` | IOS-ANDROID-POST-FORM-ORACLE-RECOVERY-002 | 泛化并验证 POST Form Android Oracle 受信双证明链 |
 | IOS-ANDROID-POST-FORM-ORACLE-001 | 100 | `exhausted` | IOS-SOURCELAB-POST-FORM-001 | 用冻结 Android 运行 POST Form 书源并生成结构化真值候选 |
 | IOS-ANDROID-POST-FORM-ORACLE-RECOVERY-002 | 100 | `completed` | IOS-SOURCELAB-POST-FORM-001 | 恢复 candidate SourceLab 的 Android Oracle characterization |
 | IOS-ANDROID-REQUEST-OPTIONS-INTAKE-001 | 100 | `completed` | IOS-ANDROID-MIGRATION-DEMAND-001 | 提取 AnalyzeUrl POST Form 与请求选项迁移合同 |
