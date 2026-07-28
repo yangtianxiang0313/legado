@@ -69,6 +69,14 @@ python3 ios/harness/loop_supervisor.py materialize-review \
 - required checks 在 Supervisor 宿主进程中运行，不继承 Codex workspace-write 对
   loopback、SwiftPM 二级 sandbox 或 iOS Simulator 的限制；验证失败仍由 Harness
   决定 implementing/rejected/exhausted，下一轮 Agent 读取最新 Evidence 后修复；
+- 未发布 Packet/Driver proposal 只写候选区，不提升 published/accepted authority，
+  因此默认不触发人工 `knowledge-review`/`architecture-review`。项目确实需要候选期
+  方向决策时，必须在 Work Item 中显式声明对应 v1 decision contract；publish、
+  promotion、product disposition 和 oracle adjudication 仍保持强 Gate；
+- 单一 active knowledge producer 若暂时让全局知识图变红，Supervisor 只在错误全部
+  属于 Business Knowledge、状态为 implementing、现有 diff 仍满足 scope 时提供
+  repair implementation turn，并把 Doctor errors 绑定进 0600 context。其他 Doctor
+  red、越权 diff、多 active 或控制状态变化仍立即停止；
 - 每次 Agent 调用都在新的 session/process group 中启动；超时按 TERM → 有界等待 → KILL 回收完整进程树，并结构化返回 `timed_out`、`process_leak`、`cleanup_error`；
 - Supervisor 只向 adapter 传递显式环境白名单和临时 context 路径，结果只保留输出长度与 SHA-256，不回显 context、stdout/stderr 或宿主环境 secret；
 - 普通候选不再要求点击确认：自动策略要求 repo/index clean，candidate、recipe、

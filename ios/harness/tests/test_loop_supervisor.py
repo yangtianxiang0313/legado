@@ -819,6 +819,188 @@ class DriveTests(unittest.TestCase):
                 ],
             )
 
+    def test_scoped_knowledge_doctor_red_gets_repair_turn_before_verify(self):
+        class RepairHarness:
+            item_id = "IOS-REPAIR-001"
+
+            def __init__(self, root):
+                self.root = root
+                self.marker = root / "candidate.valid"
+                self.evidence = root / "evidence.json"
+                self.item = {
+                    "metadata": {"id": self.item_id, "priority": 100},
+                    "spec": {
+                        "capability": "CAP-REPAIR",
+                        "depends_on": [],
+                        "inputs": {
+                            "context_files": ["contract.json"],
+                            "android_source_anchors": [],
+                        },
+                        "knowledge": {
+                            "produces": [
+                                {
+                                    "kind": "packet",
+                                    "id": "BKP-REPAIR-001",
+                                    "revision": 1,
+                                }
+                            ]
+                        },
+                    },
+                }
+                self.state_value = {
+                    "event_head": "event-head",
+                    "active_work_items": [self.item_id],
+                    "work_items": {
+                        self.item_id: {
+                            "status": "implementing",
+                            "attempt": 1,
+                            "verify_cycles": 0,
+                            "last_evidence": None,
+                            "last_evidence_sha256": None,
+                        }
+                    },
+                }
+
+            def doctor(self):
+                if self.marker.exists():
+                    return [], []
+                return ["Business Knowledge control 无效：bad proposal graph"], []
+
+            def state(self):
+                return self.state_value
+
+            def work_items(self):
+                return {self.item_id: self.item}
+
+            def event_lines(self):
+                return []
+
+            def changed_since_claim(self, runtime):
+                return ["candidate.invalid"]
+
+            def scope_issues(self, item, runtime, changed):
+                return [], [], 1
+
+            def context_packet(self, item_id):
+                raise harness_module.HarnessError("knowledge graph unavailable")
+
+            def capability(self, capability_id):
+                return {"id": capability_id, "revision": 1}
+
+            def mutation_lock(self):
+                return contextlib.nullcontext()
+
+            def verify(self, item_id):
+                self.evidence.write_text(
+                    json.dumps(
+                        {
+                            "result": "passed",
+                            "failure": None,
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+                runtime = self.state_value["work_items"][item_id]
+                runtime["status"] = "verified"
+                runtime["verify_cycles"] = 1
+                runtime["last_evidence"] = "evidence.json"
+                return self.evidence
+
+            def relative(self, path):
+                return path.relative_to(self.root).as_posix()
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            harness = RepairHarness(root)
+            agent_source = textwrap.dedent(
+                """
+                import json
+                import os
+                from pathlib import Path
+
+                context = json.loads(
+                    Path(os.environ["LEGADO_CONTEXT_PATH"]).read_text(encoding="utf-8")
+                )
+                assert context["repair_context"]["reason_code"] == (
+                    "ACTIVE_KNOWLEDGE_CANDIDATE_INVALID"
+                )
+                assert context["supervisor_control"]["repair"]["doctor_errors"]
+                Path("candidate.valid").write_text("fixed\\n", encoding="utf-8")
+                """
+            )
+            config = root / "supervisor.json"
+            config.write_text(
+                json.dumps(
+                    {
+                        "agent_invocation": {
+                            "argv": [sys.executable, "-c", agent_source],
+                            "timeout_seconds": 10,
+                        },
+                        "trusted_verification": {
+                            "enabled": True,
+                            "policy": (
+                                loop_supervisor.SUPERVISOR_VERIFICATION_POLICY
+                            ),
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            result = loop_supervisor.LoopSupervisor(harness).drive(
+                config_path=config,
+                agent_id="repair-agent",
+                max_transitions=2,
+            )
+            self.assertEqual("transition_budget_reached", result["outcome"])
+            self.assertEqual("verified", result["decision"]["state"])
+            self.assertTrue(result["transitions"][0]["repair"])
+            self.assertEqual(
+                ["agent", "supervisor_verification"],
+                [transition["kind"] for transition in result["transitions"]],
+            )
+            self.assertTrue(harness.marker.exists())
+
+    def test_pre_evidence_verification_error_is_structured(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = MaterializationFixture(root)
+            fixture.fixture.write_json(
+                "supervisor.json",
+                {
+                    "agent_invocation": {
+                        "argv": [sys.executable, "-c", "pass"],
+                        "timeout_seconds": 10,
+                    },
+                    "trusted_verification": {
+                        "enabled": True,
+                        "policy": loop_supervisor.SUPERVISOR_VERIFICATION_POLICY,
+                    },
+                },
+            )
+            self.initialize_git(root)
+            supervisor = loop_supervisor.LoopSupervisor(fixture.harness)
+            with mock.patch.object(
+                fixture.harness,
+                "verify",
+                side_effect=harness_module.HarnessError(
+                    "Business Knowledge graph unavailable"
+                ),
+            ):
+                result = supervisor.drive(
+                    config_path=root / "supervisor.json",
+                    agent_id="verification-error-agent",
+                    max_transitions=1,
+                )
+            self.assertEqual("supervisor_verification_error", result["outcome"])
+            self.assertEqual(
+                "error_before_evidence",
+                result["transitions"][1]["result"],
+            )
+            self.assertIn(
+                "Business Knowledge graph unavailable",
+                result["transitions"][1]["error"],
+            )
+
     def test_real_harness_e2e_materialize_drive_verify_close_and_empty(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

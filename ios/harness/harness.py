@@ -3350,6 +3350,17 @@ class Harness:
                 return
             gates.add(gate)
 
+        def trigger_declared_decision(gate: str, trigger: str) -> None:
+            """Proposal-only changes are reviewable, but not authority gates by default."""
+            if not structured:
+                return
+            contract = contracts.get(gate)
+            if contract is not None and contract.get("trigger") in {
+                trigger,
+                "always",
+            }:
+                gates.add(gate)
+
         expected_proposals = set(self.knowledge_proposal_paths(item))
         transitions = (
             spec
@@ -3366,7 +3377,7 @@ class Harness:
             require_decision("product-scope-review", "product-scope-change")
         for relative in changed_paths:
             if relative in expected_proposals:
-                require_decision(
+                trigger_declared_decision(
                     "knowledge-review",
                     "knowledge-proposal-change",
                 )
@@ -3374,7 +3385,7 @@ class Harness:
                     relative,
                     ["ios/project/business-knowledge/drivers/proposals/**"],
                 ):
-                    require_decision(
+                    trigger_declared_decision(
                         "architecture-review",
                         "architecture-proposal-change",
                     )

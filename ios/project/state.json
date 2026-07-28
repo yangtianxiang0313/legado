@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "revision": 186,
+  "revision": 189,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-28T04:58:06Z",
-  "event_head": "a8eb5d8c9cba958ade1d813dbd41c39b5e6f2fd30663be39312624f3c9392146",
+  "updated_at": "2026-07-28T05:03:44Z",
+  "event_head": "807c650175a6d93be0f164ee16ad24835e730db6c08075b748a5d7dcdb39557e",
   "active_work_items": [],
-  "last_completed_work_item": "IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-004",
+  "last_completed_work_item": "IOS-PROPOSAL-GATE-REPAIR-001",
   "work_items": {
     "IOS-BOOT-001": {
       "status": "completed",
@@ -3074,9 +3074,61 @@
       "final_tree_sha256": "c98b7c0e58fd978f5c34457f860b9efac4d78b9807567c9b56335ff5b64e0572"
     },
     "IOS-PROPOSAL-GATE-REPAIR-001": {
-      "status": "ready",
-      "attempt": 0,
-      "last_evidence": null
+      "status": "completed",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260728T050221Z-ios-proposal-gate-repair-001-31e7578c.json",
+      "claimed_by": "root-codex",
+      "claimed_at": "2026-07-28T04:58:50Z",
+      "lease_expires_at": "2026-07-29T04:58:50Z",
+      "work_item_sha256": "bd937f8a080699bc52e4e3576f6012e282627c824adeadb546d8a8c18ff67943",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "4e3b188845e9213933a15ec88be8b73920eb453e",
+      "base_capability_revision": 27,
+      "base_capability_assurance_sha256": "6c08426cf2cc8f0277426284e00909a10444767bc01eeb84e0db43db8dcbb2ac",
+      "android_requirement_selection_sha256": null,
+      "business_knowledge_control_sha256": "3b0b4452d52db635b5f6b8d7c414e3219a84f2b28d23944f484b0bf94ef80099",
+      "business_knowledge_authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 1,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "harness-tests",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "307f335e883f02e96ad97ecbda4c210435c0b955e2bcb9e46db9dc7b0d02c285",
+          "cwd": ".",
+          "started_at": "2026-07-28T04:58:14Z",
+          "duration_ms": 35849,
+          "timeout_seconds": 60,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "78fd03da05971b4a3229e908b3eb512cc36c764cdacdf4be7071e61a120bb614",
+          "stdout_tail": "",
+          "stderr_tail": "...............................................................................................................................\n----------------------------------------------------------------------\nRan 127 tests in 35.699s\n\nOK\n"
+        }
+      ],
+      "last_evidence_sha256": "603fa9aacc69fca96d016387a2a7eaa279121dcd198d9ef4c86f6fd5479f5407",
+      "verified_at": "2026-07-28T05:02:22Z",
+      "completed_at": "2026-07-28T05:03:44Z",
+      "final_tree_sha256": "b0224d550d5239e915dac93453f94adcfdedb5f41c5dbb15b19d1e4a8f9a6bb8"
     }
   },
   "health": {
@@ -3109,7 +3161,9 @@
     "swiftpm_manifest_verification": "sandbox_isolated",
     "trusted_process_cleanup": "bounded_stable",
     "loop_trusted_verification": "real_codex_verified",
-    "knowledge_integrations": "candidate_verified"
+    "knowledge_integrations": "candidate_verified",
+    "proposal_gate_policy": "authority_only",
+    "active_candidate_repair": "bounded"
   },
   "risks": [
     {

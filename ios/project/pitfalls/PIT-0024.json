@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0024",
+  "revision": 1,
+  "title": "候选 proposal 与活跃错误不能被 Gate 和 Doctor 共同锁死",
+  "fingerprint": "proposal-review-gate-and-global-doctor-create-repair-deadlock",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "通过全部验收的 proposal-only Work Item 在 Supervisor close 时进入 awaiting_human",
+    "Work Item 未声明 v1 decision contract，当前审批 UI 又拒绝旧式 Gate，形成不可解状态",
+    "活跃 knowledge producer 写出暂时无效的 Claim 图后，全局 Doctor red 使 drive 无法再次调用同一 Agent 修复",
+    "Harness.verify 在 Evidence 创建前抛出 Business Knowledge 错误，Loop 进程直接异常退出"
+  ],
+  "conditions": [
+    "required_close_gates 把任何 Packet/Driver proposal 路径变化都当成强制 review",
+    "proposal 尚未 publish、accept、promote，也未改变 product disposition 或 oracle authority",
+    "全局 Doctor 在 active implementing Work Item 之前执行，并将候选图错误视为不可恢复的仓库错误",
+    "Supervisor 没有 pre-Evidence HarnessError transition 或最小 repair context"
+  ],
+  "root_cause": "控制面混淆了候选沉淀与权威决策，并把 Doctor 的 fail-closed 规则应用到了唯一能够修复该错误的活跃 Agent 入口。结果是没有信息增量的人工 Gate 与没有恢复通道的全局校验互相加强，形成自动化死锁。",
+  "diagnosis": [
+    "判断变化是否只位于 packets/drivers proposals，还是发生了 publish/accept/promotion/product disposition",
+    "检查 Work Item 是否显式声明与 proposal trigger 匹配的 v1 decision contract",
+    "检查 Doctor red 时是否恰有一个 active implementing knowledge producer",
+    "验证当前 changed paths 是否仍通过 scope_issues，错误是否全部来自 Business Knowledge control/selection",
+    "区分 verify 已生成 failed Evidence 与 Evidence 前抛出的 HarnessError"
+  ],
+  "fix": "普通未发布 proposal 变化默认不再触发 knowledge-review/architecture-review；只有显式 v1 decision contract 才在候选期触发，权威变化仍强 Gate。Supervisor 对唯一 active implementing knowledge producer 提供受限 repair turn：仅接受 Business Knowledge Doctor 错误和 scope 合法 diff，使用绑定 Work Item/runtime/read order/error 的最小 0600 context，Agent turn 前后校验 control binding；Doctor 恢复后才 verify。Evidence 前 HarnessError 现在作为 supervisor_verification error transition 返回。",
+  "prevention": {
+    "architecture_rule": "Gate 只保护不可由机器决定的权威变化；proposal 存储不是 acceptance。Doctor fail-closed 必须为当前 scope 内可修复的中间态保留有界恢复通道，且该通道不能放宽任何非目标错误或控制状态写入。",
+    "tests": [
+      "ios/harness/tests/test_harness.py#test_proposal_changes_only_gate_when_structured_review_is_declared",
+      "ios/harness/tests/test_harness.py#test_intentional_difference_requires_dedicated_adjudication",
+      "ios/harness/tests/test_loop_supervisor.py#test_scoped_knowledge_doctor_red_gets_repair_turn_before_verify",
+      "ios/harness/tests/test_loop_supervisor.py#test_pre_evidence_verification_error_is_structured",
+      "ios/harness/tests/test_loop_supervisor.py#test_supervisor_rejects_agent_control_plane_mutation"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-KNOWLEDGE-CONTROL-PLANE-001",
+    "until": "IOS-PROPOSAL-GATE-REPAIR-001"
+  },
+  "status": "resolved",
+  "occurrences": 2,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T045220Z-ios-knowledge-integrations-recovery-004-3d38b389.json",
+    "ios/harness/evidence/runs/run-20260728T050221Z-ios-proposal-gate-repair-001-31e7578c.json"
+  ]
+}

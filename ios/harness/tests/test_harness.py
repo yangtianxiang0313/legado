@@ -956,6 +956,78 @@ class HarnessTests(unittest.TestCase):
                 errors,
             )
 
+    def test_proposal_changes_only_gate_when_structured_review_is_declared(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = HarnessFixture(root)
+            harness = fixture.initialize()
+            item = fixture.item("IOS-PROPOSAL-001", "CAP-BOOT", 100)
+            item["spec"]["knowledge"] = {
+                "contract_version": 1,
+                "mode": "supersede",
+                "claim_refs": [],
+                "driver_refs": [],
+                "coverage_refs": [],
+                "produces": [
+                    {"kind": "packet", "id": "BKP-PROPOSAL-001", "revision": 1},
+                    {"kind": "driver", "id": "DRV-PROPOSAL-001", "revision": 1},
+                ],
+                "expected_ledger_transitions": [],
+                "context_budget": {"max_claims": 10, "max_bytes": 4096},
+                "none_reason": None,
+            }
+            proposal_paths = harness.knowledge_proposal_paths(item)
+            gates, errors = harness.required_close_gates(
+                "IOS-PROPOSAL-001",
+                item,
+                proposal_paths,
+            )
+            self.assertEqual([], gates)
+            self.assertEqual([], errors)
+
+            item["spec"]["gates"] = [
+                "knowledge-review",
+                "architecture-review",
+            ]
+            item["spec"]["gate_contract_version"] = 1
+            item["spec"]["decision_gates"] = [
+                {
+                    "gate": gate,
+                    "trigger": trigger,
+                    "question": f"是否审查 {gate}？",
+                    "why_human": "项目所有者显式要求在候选阶段做方向判断。",
+                    "options": [
+                        {
+                            "id": "accept",
+                            "label": "接受候选",
+                            "consequence": "允许候选继续停留在 proposal。",
+                            "reversible": True,
+                        },
+                        {
+                            "id": "revise",
+                            "label": "继续修改",
+                            "consequence": "保持工作项未完成并继续修订。",
+                            "reversible": True,
+                        },
+                    ],
+                    "recommended_option": "accept",
+                }
+                for gate, trigger in (
+                    ("knowledge-review", "knowledge-proposal-change"),
+                    ("architecture-review", "architecture-proposal-change"),
+                )
+            ]
+            gates, errors = harness.required_close_gates(
+                "IOS-PROPOSAL-001",
+                item,
+                proposal_paths,
+            )
+            self.assertEqual(
+                ["architecture-review", "knowledge-review"],
+                gates,
+            )
+            self.assertEqual([], errors)
+
     def test_structured_decision_record_binds_contract_option_and_evidence(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

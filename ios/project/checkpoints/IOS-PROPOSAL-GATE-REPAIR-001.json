@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-PROPOSAL-GATE-REPAIR-001",
+  "summary": "移除未发布 proposal 的橡皮图章 Gate，并为活跃知识候选提供有界修复通道。required_close_gates 不再因为 Packet/Driver proposal 路径变化自动要求 knowledge-review/architecture-review；Work Item 显式声明 trigger 匹配的 v1 decision contract 时仍触发，product disposition、oracle difference、publish/accept/promotion 等 authority 边界不变。Loop 在单一 active implementing knowledge producer、全部 blocker 属于 Business Knowledge control/selection、当前 diff 通过 scope_issues 时允许 repair implementation turn；正常 context 不可构造时生成绑定 Work Item hash、runtime、capability、required read order 和 Doctor errors 的最小 0600 context，Agent 前后校验 control binding，Doctor 恢复后才 verify。Harness.verify 在 Evidence 前抛出的错误现在成为 supervisor_verification error transition。正式 Evidence 通过 dependency policy 与 130 项 Harness 测试。Integrations Recovery 004 的两个 control-policy approval 仅是旧规则迁移桥，明确不代表 proposal 内容、架构或依赖被接受。",
+  "evidence": "ios/harness/evidence/runs/run-20260728T050221Z-ios-proposal-gate-repair-001-31e7578c.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 27,
+      "to_revision": 28,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": [
+      "ADR-0004"
+    ]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项不消费、生成或发布业务知识"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项只改变 Gate 与 Loop repair 控制策略"
+  },
+  "pitfalls": {
+    "records": [
+      "ios/project/pitfalls/PIT-0024.json"
+    ],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "repair context 是最小降级包，不包含完整 Business Knowledge selection；Agent 只能用于恢复图一致性，不能借此做新需求或 authority 变更",
+    "本地 Agent 与 Supervisor 仍共享文件权限；control binding 是检测机制，生产环境仍需隔离 state/event/Evidence 写权限",
+    "历史 control-policy approval 文件保留审计谱系，但不应被任何消费者解释为 proposal 内容接受",
+    "显式 proposal review contract 仍会要求真实结构化决策，这是预期行为"
+  ],
+  "next_actions": [
+    "为 repair context 增加稳定 JSON schema 与错误数量/字节预算",
+    "实现逐 Claim revision/supersedes/depends_on 自动重写，减少进入 repair turn 的概率",
+    "将 publish/accept/promotion 迁入签名 Trusted Publisher 并保持强 Gate",
+    "把 state/event/Evidence 移出 Agent 可写工作树"
+  ],
+  "created_at": "2026-07-28T05:02:21Z"
+}

@@ -24,7 +24,7 @@ import webbrowser
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Set, Tuple
 
 try:
     from .approval_ui import (
@@ -983,8 +983,36 @@ class LoopSupervisor:
         policy: Optional[str],
         argv_template: Sequence[str],
         timeout_seconds: int,
+        repair_errors: Optional[Sequence[str]] = None,
     ) -> Dict[str, Any]:
-        context = self.harness.context_packet(item_id)
+        try:
+            context = self.harness.context_packet(item_id)
+        except HarnessError:
+            if not repair_errors:
+                raise
+            item = self.harness.work_items()[item_id]
+            inputs = item.get("spec", {}).get("inputs", {})
+            read_order = [
+                f"ios/harness/work-items/{item_id}.json",
+                *inputs.get("context_files", []),
+                *inputs.get("android_source_anchors", []),
+            ]
+            context = {
+                "schema_version": SCHEMA_VERSION,
+                "work_item": item,
+                "work_item_sha256": sha256_json(item),
+                "runtime": self.harness.state()
+                .get("work_items", {})
+                .get(item_id, {}),
+                "capability": self.harness.capability(
+                    item.get("spec", {}).get("capability")
+                ),
+                "required_read_order": list(dict.fromkeys(read_order)),
+                "repair_context": {
+                    "reason_code": "ACTIVE_KNOWLEDGE_CANDIDATE_INVALID",
+                    "doctor_errors": list(repair_errors),
+                },
+            }
         if policy is not None:
             runtime = self.harness.state().get("work_items", {}).get(item_id, {})
             context["supervisor_control"] = {
@@ -993,6 +1021,11 @@ class LoopSupervisor:
                 "latest_evidence": runtime.get("last_evidence"),
                 "verify_cycles": runtime.get("verify_cycles", 0),
             }
+            if repair_errors:
+                context["supervisor_control"]["repair"] = {
+                    "reason_code": "ACTIVE_KNOWLEDGE_CANDIDATE_INVALID",
+                    "doctor_errors": list(repair_errors),
+                }
         descriptor, raw_context = tempfile.mkstemp(
             prefix=f"legado-{item_id.lower()}-",
             suffix=".json",
@@ -1064,6 +1097,49 @@ class LoopSupervisor:
             return "agent_failed"
         return None
 
+    def _repairable_knowledge_item(
+        self,
+        decision: LoopDecision,
+    ) -> Optional[Tuple[str, Tuple[str, ...]]]:
+        if decision.state != "doctor_red":
+            return None
+        messages = tuple(
+            str(blocker.get("message"))
+            for blocker in decision.blockers
+            if isinstance(blocker, dict) and blocker.get("message")
+        )
+        if not messages or any(
+            "Business Knowledge control" not in message
+            and "Business Knowledge selection" not in message
+            for message in messages
+        ):
+            return None
+        state = self.harness.state()
+        active = state.get("active_work_items", [])
+        if not isinstance(active, list) or len(active) != 1:
+            return None
+        item_id = active[0]
+        runtime = state.get("work_items", {}).get(item_id, {})
+        items = self.harness.work_items()
+        item = items.get(item_id)
+        if (
+            not isinstance(item_id, str)
+            or not isinstance(runtime, dict)
+            or runtime.get("status") != "implementing"
+            or not isinstance(item, dict)
+            or not item.get("spec", {}).get("knowledge", {}).get("produces")
+        ):
+            return None
+        changed = self.harness.changed_since_claim(runtime)
+        policy_errors, _, _ = self.harness.scope_issues(
+            item,
+            runtime,
+            changed,
+        )
+        if policy_errors:
+            return None
+        return item_id, messages
+
     def drive(
         self,
         *,
@@ -1127,8 +1203,51 @@ class LoopSupervisor:
             )
 
         transitions: List[Dict[str, Any]] = []
+        repaired_items: Set[str] = set()
         for _ in range(max_transitions):
             before = self.inspect()
+            if trusted_verification and before.state == "doctor_red":
+                repair = self._repairable_knowledge_item(before)
+                if repair is None:
+                    return {
+                        "schema_version": SCHEMA_VERSION,
+                        "outcome": before.reason_code.lower(),
+                        "decision": before.to_dict(),
+                        "transitions": transitions,
+                    }
+                item_id, repair_errors = repair
+                control_before = self._control_binding(
+                    self.harness.state(), item_id
+                )
+                transition = self._invoke_agent_phase(
+                    item_id=item_id,
+                    phase="implementation",
+                    policy=str(verification_policy),
+                    argv_template=argv_template,
+                    timeout_seconds=timeout_seconds,
+                    repair_errors=repair_errors,
+                )
+                transition["repair"] = True
+                transitions.append(transition)
+                failure_outcome = self._agent_failure_outcome(transition)
+                if failure_outcome is not None:
+                    return {
+                        "schema_version": SCHEMA_VERSION,
+                        "outcome": failure_outcome,
+                        "decision": self.inspect().to_dict(),
+                        "transitions": transitions,
+                    }
+                if self._control_binding(self.harness.state(), item_id) != control_before:
+                    return {
+                        "schema_version": SCHEMA_VERSION,
+                        "outcome": "agent_control_plane_mutation",
+                        "decision": self.inspect().to_dict(),
+                        "transitions": transitions,
+                    }
+                after_repair = self.inspect()
+                if after_repair.state == "implementing":
+                    repaired_items.add(item_id)
+                continue
             if before.state == "auto_materialization_ready":
                 if not auto_enabled:
                     return {
@@ -1160,37 +1279,59 @@ class LoopSupervisor:
                 if before.state == "implementing":
                     item_id = before.work_item_id
                     assert item_id is not None
-                    control_before = self._control_binding(
-                        self.harness.state(), item_id
-                    )
-                    transition = self._invoke_agent_phase(
-                        item_id=item_id,
-                        phase="implementation",
-                        policy=str(verification_policy),
-                        argv_template=argv_template,
-                        timeout_seconds=timeout_seconds,
-                    )
-                    transitions.append(transition)
-                    failure_outcome = self._agent_failure_outcome(transition)
-                    if failure_outcome is not None:
+                    if item_id in repaired_items:
+                        repaired_items.remove(item_id)
+                    else:
+                        control_before = self._control_binding(
+                            self.harness.state(), item_id
+                        )
+                        transition = self._invoke_agent_phase(
+                            item_id=item_id,
+                            phase="implementation",
+                            policy=str(verification_policy),
+                            argv_template=argv_template,
+                            timeout_seconds=timeout_seconds,
+                        )
+                        transitions.append(transition)
+                        failure_outcome = self._agent_failure_outcome(transition)
+                        if failure_outcome is not None:
+                            return {
+                                "schema_version": SCHEMA_VERSION,
+                                "outcome": failure_outcome,
+                                "decision": self.inspect().to_dict(),
+                                "transitions": transitions,
+                            }
+                        control_after = self._control_binding(
+                            self.harness.state(), item_id
+                        )
+                        if control_after != control_before:
+                            return {
+                                "schema_version": SCHEMA_VERSION,
+                                "outcome": "agent_control_plane_mutation",
+                                "decision": self.inspect().to_dict(),
+                                "transitions": transitions,
+                            }
+                    try:
+                        with self.harness.mutation_lock():
+                            evidence_path = self.harness.verify(item_id)
+                    except HarnessError as error:
+                        transitions.append(
+                            {
+                                "kind": "supervisor_verification",
+                                "work_item_id": item_id,
+                                "result": "error_before_evidence",
+                                "error": str(error),
+                            }
+                        )
+                        after_error = self.inspect()
+                        if self._repairable_knowledge_item(after_error) is not None:
+                            continue
                         return {
                             "schema_version": SCHEMA_VERSION,
-                            "outcome": failure_outcome,
-                            "decision": self.inspect().to_dict(),
+                            "outcome": "supervisor_verification_error",
+                            "decision": after_error.to_dict(),
                             "transitions": transitions,
                         }
-                    control_after = self._control_binding(
-                        self.harness.state(), item_id
-                    )
-                    if control_after != control_before:
-                        return {
-                            "schema_version": SCHEMA_VERSION,
-                            "outcome": "agent_control_plane_mutation",
-                            "decision": self.inspect().to_dict(),
-                            "transitions": transitions,
-                        }
-                    with self.harness.mutation_lock():
-                        evidence_path = self.harness.verify(item_id)
                     evidence = json.loads(
                         evidence_path.read_text(encoding="utf-8")
                     )
