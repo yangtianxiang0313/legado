@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-SUPERVISOR-RUN-JOURNAL-001",
+  "summary": "Loop Supervisor 已具备本地、非权威的跨进程 Agent phase 恢复点。RunJournal 在忽略版本控制的固定目录中以 0700/0600 权限和原子替换维护有界 hash chain，只记录受控标识与 digest。implementation 或 memory_close Agent 成功退出且控制绑定不变后写入 completion；新 Supervisor 只有在 Work Item、attempt、phase、Work Item digest、HEAD、控制绑定和候选 snapshot 全部一致时才跳过重复 Agent，随后仍执行 Harness verify/close。缺失、旧 attempt、候选或控制漂移、截断、宽权限、symlink 和篡改均不授予 replay。verify/close 正常返回错误时追加 phase invalidation，避免失败结果被永久重放。四个独立进程故障场景与底层权限/哈希/敏感数据测试通过，完整 Harness 共 145 项测试通过。",
+  "evidence": "ios/harness/evidence/runs/run-20260728T062414Z-ios-supervisor-run-journal-001-8a19cf3d.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 33,
+      "to_revision": 34,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": [
+      "ADR-0004"
+    ]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项不消费、生成或发布 Android 业务知识"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项只增强本地 Supervisor 恢复，不改变 Android/iOS 产品语义"
+  },
+  "pitfalls": {
+    "records": [
+      "ios/project/pitfalls/PIT-0027.json"
+    ],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "RunJournal 与 Agent 共享本机用户权限，只能减少协作式重复执行，不能防御恶意改写",
+    "Journal 不持有 lease、签名或 promotion authority，跨机器恢复仍需外部 Trusted Supervisor",
+    "Agent 自身在退出前产生的非幂等外部副作用不受本地候选 snapshot 保护"
+  ],
+  "next_actions": [
+    "在 Agent 不可达的外部控制面实现签名权威 journal、lease 与 patch promotion",
+    "打通 Android Oracle、确定性 SourceLab 和 iOS Conformance 的首条结构化真值纵向链路",
+    "后续按真实书源行为分类扩展 SourceLab，而不是按站点数量堆积 TDD case"
+  ],
+  "created_at": "2026-07-28T06:24:14Z"
+}

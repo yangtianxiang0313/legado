@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0027",
+  "revision": 1,
+  "title": "Agent 完成与 Supervisor 消费之间崩溃会重复执行副作用",
+  "fingerprint": "agent-phase-completed-before-supervisor-consumption-crash-repeats-turn",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "Supervisor 进程死在 implementation Agent 成功退出之后、Harness verify 之前，重启会再次调用 implementation",
+    "Supervisor 进程死在 memory_close Agent 成功退出之后、Harness close 之前，重启会再次写 Capability、Checkpoint 或 Pitfall",
+    "仓内 state/event 能恢复业务状态，但无法证明上一个 Agent phase 是否已成功退出"
+  ],
+  "conditions": [
+    "使用 supervisor-owned-verification-v1",
+    "Agent phase 已返回成功且没有修改 Harness 控制绑定",
+    "Supervisor 尚未执行或完成对应 verify/close",
+    "Supervisor 进程被终止并以新进程续跑同一 Work Item attempt"
+  ],
+  "root_cause": "state/event/Evidence 是业务状态 authority，但旧 Supervisor 没有记录 Agent phase 的本地消费进度。仅凭 implementing/verified 无法区分“尚未调用 Agent”和“Agent 已完成但进程在下一步前崩溃”，因此恢复逻辑只能保守重复 Agent。",
+  "diagnosis": [
+    "确认 Work Item ID、attempt、phase 与 Git HEAD 是否仍相同",
+    "计算当前 event/runtime control binding digest 和排除 managed paths 后的候选 snapshot digest",
+    "检查本地 journal 的 sequence、previous hash、record hash、文件权限与完整 schema",
+    "只有最新 phase completion 与当前全部绑定完全一致，才能把它归类为消费前崩溃"
+  ],
+  "fix": "新增固定在 .harness-runtime/loop-runs 的本地内容寻址 journal。Agent 成功退出且控制绑定不变后，以 0600 原子文件记录 Work Item、attempt、phase、HEAD、Work Item digest、控制绑定 digest 和候选 snapshot digest。新 Supervisor 全量匹配后只跳过重复 Agent，verify/close 仍由 Harness 执行。verify/close 若正常返回错误则追加 AgentPhaseInvalidated，避免把业务失败误判为崩溃恢复点。",
+  "prevention": {
+    "architecture_rule": "本地恢复日志只能授予重复 Agent turn 的跳过权，不能修改 Harness state、伪造 Evidence、绕过 verify/close 或承担发布 authority；共享用户权限下的日志不是安全信任锚。",
+    "tests": [
+      "ios/harness/tests/test_run_journal.py",
+      "ios/harness/tests/test_loop_supervisor.py#test_process_crash_after_journal_replays_without_duplicate_agent",
+      "ios/harness/tests/test_loop_supervisor.py#test_process_crash_before_journal_reinvokes_agent",
+      "ios/harness/tests/test_loop_supervisor.py#test_tampered_crash_journal_never_skips_agent",
+      "ios/harness/tests/test_loop_supervisor.py#test_process_crash_after_memory_journal_resumes_directly_at_close"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-SUPERVISOR-OWNED-VERIFY-001",
+    "until": "IOS-SUPERVISOR-RUN-JOURNAL-001"
+  },
+  "status": "resolved",
+  "occurrences": 4,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T062414Z-ios-supervisor-run-journal-001-8a19cf3d.json"
+  ]
+}

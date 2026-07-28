@@ -86,6 +86,15 @@ python3 ios/harness/loop_supervisor.py materialize-review \
   error、越权路径、刷新失败或控制状态变化都结构化停止；
 - 每次 Agent 调用都在新的 session/process group 中启动；超时按 TERM → 有界等待 → KILL 回收完整进程树，并结构化返回 `timed_out`、`process_leak`、`cleanup_error`；
 - Supervisor 只向 adapter 传递显式环境白名单和临时 context 路径，结果只保留输出长度与 SHA-256，不回显 context、stdout/stderr 或宿主环境 secret；
+- trusted verification 使用忽略版本控制的
+  `.harness-runtime/loop-runs/<work-item>--attempt-<n>.json` 保存本地可重放完成点。
+  文件固定 0600、目录固定 0700，以原子替换写入有界 sequence/previous hash 链；记录只含
+  Work Item、attempt、phase、HEAD、控制绑定和候选快照 digest，不含 prompt、context、
+  stdout/stderr、环境或凭据。新 Supervisor 只有在所有绑定完全一致时才可跳过重复
+  `implementation`/`memory_close` Agent turn，随后仍由 Harness `verify/close` 裁决；
+  缺失、旧 attempt、候选/控制漂移、截断、权限异常或篡改均不授予跳过权限。若
+  `verify/close` 已返回错误，Supervisor 追加 phase invalidation，防止失败结果被当成
+  “进程中断”无限重放；
 - 普通候选不再要求点击确认：自动策略要求 repo/index clean，candidate、recipe、
   DAG、manifest 和依赖 provenance 都是 HEAD 中的普通文件，且 compiler 可重算、
   `gates=[]`、Requirement 为 `control_plane`、知识只产生 proposal、不修改产品、
@@ -95,10 +104,12 @@ python3 ios/harness/loop_supervisor.py materialize-review \
 
 本地 Loop Engine 的成熟边界是：确定性 inspect、策略物化、受限 argv
 adapter、真实 Harness 生命周期、Evidence/Capability/Checkpoint/Event 绑定，以及
-进程树有界回收均有自动化 E2E。它足以在单机、单写者、真实 Human Decision 保留的前提下持续
-推进工作项。
+进程树有界回收、Agent 后/verify 前与 memory 后/close 前的跨进程故障恢复均有自动化
+E2E。它足以在单机、单写者、真实 Human Decision 保留的前提下持续推进工作项。
 
-本地按钮产生的仍是 `local_unverified` 协作事实。跨机器无人值守、并行 DAG 调度、
+本地 run journal 只减少协作式 Agent 重复执行，不是生产权威 journal；它与 Agent
+共享用户权限，不能证明记录未被恶意重写。本地按钮产生的也仍是 `local_unverified`
+协作事实。跨机器无人值守、并行 DAG 调度、
 签名控制状态、真实 Integrations 扫描和发布晋级，仍必须由隔离、签名的外部
 Supervisor/CI 重验；这些属于下一阶段，不由本地 adapter 冒充。
 

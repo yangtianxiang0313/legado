@@ -46,6 +46,7 @@ try:
         ProposalCompiler,
         ProposalCompilerError,
     )
+    from .run_journal import RunJournal, RunJournalError
 except ImportError:
     from approval_ui import (  # type: ignore
         LOOPBACK_HOST,
@@ -66,6 +67,7 @@ except ImportError:
         ProposalCompiler,
         ProposalCompilerError,
     )
+    from run_journal import RunJournal, RunJournalError  # type: ignore
 
 
 SCHEMA_VERSION = 1
@@ -1045,6 +1047,89 @@ class LoopSupervisor:
             runtime.get("last_evidence_sha256"),
         )
 
+    def _journal_binding(self, item_id: str, phase: str) -> Dict[str, Any]:
+        state = self.harness.state()
+        runtime = state.get("work_items", {}).get(item_id, {})
+        attempt = runtime.get("attempt")
+        if not isinstance(attempt, int) or isinstance(attempt, bool):
+            raise RunJournalError("JOURNAL_ATTEMPT_INVALID")
+        candidate_sha256, _ = self.harness.candidate_snapshot(runtime)
+        item = self.harness.work_items().get(item_id)
+        if item is None:
+            raise RunJournalError("JOURNAL_WORK_ITEM_MISSING")
+        return {
+            "work_item_id": item_id,
+            "attempt": attempt,
+            "phase": phase,
+            "work_item_sha256": sha256_json(item),
+            "head_commit": self.harness.git_head(),
+            "control_binding_sha256": sha256_json(
+                list(self._control_binding(state, item_id))
+            ),
+            "candidate_snapshot_sha256": candidate_sha256,
+        }
+
+    def _journal_replay(
+        self,
+        journal: RunJournal,
+        *,
+        item_id: str,
+        phase: str,
+    ) -> Dict[str, Any]:
+        try:
+            return journal.inspect_completion(
+                **self._journal_binding(item_id, phase)
+            )
+        except (HarnessError, RunJournalError, OSError):
+            return {
+                "status": "invalid",
+                "reason_code": "JOURNAL_INSPECTION_FAILED",
+            }
+
+    def _journal_record_completion(
+        self,
+        journal: RunJournal,
+        *,
+        item_id: str,
+        phase: str,
+    ) -> Dict[str, Any]:
+        try:
+            return journal.append_completion(
+                **self._journal_binding(item_id, phase)
+            )
+        except (HarnessError, RunJournalError, OSError) as error:
+            reason_code = (
+                error.reason_code
+                if isinstance(error, RunJournalError)
+                else "JOURNAL_RECORD_FAILED"
+            )
+            return {
+                "status": "unavailable",
+                "reason_code": reason_code,
+            }
+
+    def _journal_invalidate_completion(
+        self,
+        journal: RunJournal,
+        *,
+        item_id: str,
+        phase: str,
+    ) -> Dict[str, Any]:
+        try:
+            return journal.invalidate_completion(
+                **self._journal_binding(item_id, phase)
+            )
+        except (HarnessError, RunJournalError, OSError) as error:
+            reason_code = (
+                error.reason_code
+                if isinstance(error, RunJournalError)
+                else "JOURNAL_INVALIDATION_FAILED"
+            )
+            return {
+                "status": "unavailable",
+                "reason_code": reason_code,
+            }
+
     def _invoke_agent_phase(
         self,
         *,
@@ -1323,6 +1408,9 @@ class LoopSupervisor:
                 "启用 trusted_verification 时 policy 必须是 "
                 + SUPERVISOR_VERIFICATION_POLICY
             )
+        run_journal = (
+            RunJournal(self.harness.root) if trusted_verification else None
+        )
 
         transitions: List[Dict[str, Any]] = []
         repaired_items: Set[str] = set()
@@ -1475,47 +1563,86 @@ class LoopSupervisor:
                     if item_id in repaired_items:
                         repaired_items.remove(item_id)
                     else:
-                        control_before = self._control_binding(
-                            self.harness.state(), item_id
+                        replay = (
+                            self._journal_replay(
+                                run_journal,
+                                item_id=item_id,
+                                phase="implementation",
+                            )
+                            if run_journal is not None
+                            else {"status": "missing"}
                         )
-                        transition = self._invoke_agent_phase(
-                            item_id=item_id,
-                            phase="implementation",
-                            policy=str(verification_policy),
-                            argv_template=argv_template,
-                            timeout_seconds=timeout_seconds,
-                        )
-                        transitions.append(transition)
-                        failure_outcome = self._agent_failure_outcome(transition)
-                        if failure_outcome is not None:
-                            return {
-                                "schema_version": SCHEMA_VERSION,
-                                "outcome": failure_outcome,
-                                "decision": self.inspect().to_dict(),
-                                "transitions": transitions,
-                            }
-                        control_after = self._control_binding(
-                            self.harness.state(), item_id
-                        )
-                        if control_after != control_before:
-                            return {
-                                "schema_version": SCHEMA_VERSION,
-                                "outcome": "agent_control_plane_mutation",
-                                "decision": self.inspect().to_dict(),
-                                "transitions": transitions,
-                            }
+                        if replay.get("status") == "match":
+                            transitions.append(
+                                {
+                                    "kind": "supervisor_replay",
+                                    "work_item_id": item_id,
+                                    "phase": "implementation",
+                                    "result": "agent_turn_skipped",
+                                    "reason_code": replay["reason_code"],
+                                    "sequence": replay["sequence"],
+                                    "record_sha256": replay["record_sha256"],
+                                }
+                            )
+                        else:
+                            control_before = self._control_binding(
+                                self.harness.state(), item_id
+                            )
+                            transition = self._invoke_agent_phase(
+                                item_id=item_id,
+                                phase="implementation",
+                                policy=str(verification_policy),
+                                argv_template=argv_template,
+                                timeout_seconds=timeout_seconds,
+                            )
+                            if replay.get("status") in {"invalid", "stale"}:
+                                transition["journal_replay"] = replay
+                            transitions.append(transition)
+                            failure_outcome = self._agent_failure_outcome(transition)
+                            if failure_outcome is not None:
+                                return {
+                                    "schema_version": SCHEMA_VERSION,
+                                    "outcome": failure_outcome,
+                                    "decision": self.inspect().to_dict(),
+                                    "transitions": transitions,
+                                }
+                            control_after = self._control_binding(
+                                self.harness.state(), item_id
+                            )
+                            if control_after != control_before:
+                                return {
+                                    "schema_version": SCHEMA_VERSION,
+                                    "outcome": "agent_control_plane_mutation",
+                                    "decision": self.inspect().to_dict(),
+                                    "transitions": transitions,
+                                }
+                            if run_journal is not None:
+                                transition["run_journal"] = (
+                                    self._journal_record_completion(
+                                        run_journal,
+                                        item_id=item_id,
+                                        phase="implementation",
+                                    )
+                                )
                     try:
                         with self.harness.mutation_lock():
                             evidence_path = self.harness.verify(item_id)
                     except HarnessError as error:
-                        transitions.append(
-                            {
-                                "kind": "supervisor_verification",
-                                "work_item_id": item_id,
-                                "result": "error_before_evidence",
-                                "error": str(error),
-                            }
-                        )
+                        verification_transition = {
+                            "kind": "supervisor_verification",
+                            "work_item_id": item_id,
+                            "result": "error_before_evidence",
+                            "error": str(error),
+                        }
+                        if run_journal is not None:
+                            verification_transition["run_journal"] = (
+                                self._journal_invalidate_completion(
+                                    run_journal,
+                                    item_id=item_id,
+                                    phase="implementation",
+                                )
+                            )
+                        transitions.append(verification_transition)
                         after_error = self.inspect()
                         if self._repairable_knowledge_item(after_error) is not None:
                             continue
@@ -1552,47 +1679,86 @@ class LoopSupervisor:
                 if before.state == "verified":
                     item_id = before.work_item_id
                     assert item_id is not None
-                    control_before = self._control_binding(
-                        self.harness.state(), item_id
+                    replay = (
+                        self._journal_replay(
+                            run_journal,
+                            item_id=item_id,
+                            phase="memory_close",
+                        )
+                        if run_journal is not None
+                        else {"status": "missing"}
                     )
-                    transition = self._invoke_agent_phase(
-                        item_id=item_id,
-                        phase="memory_close",
-                        policy=str(verification_policy),
-                        argv_template=argv_template,
-                        timeout_seconds=timeout_seconds,
-                    )
-                    transitions.append(transition)
-                    failure_outcome = self._agent_failure_outcome(transition)
-                    if failure_outcome is not None:
-                        return {
-                            "schema_version": SCHEMA_VERSION,
-                            "outcome": failure_outcome,
-                            "decision": self.inspect().to_dict(),
-                            "transitions": transitions,
-                        }
-                    control_after = self._control_binding(
-                        self.harness.state(), item_id
-                    )
-                    if control_after != control_before:
-                        return {
-                            "schema_version": SCHEMA_VERSION,
-                            "outcome": "agent_control_plane_mutation",
-                            "decision": self.inspect().to_dict(),
-                            "transitions": transitions,
-                        }
+                    if replay.get("status") == "match":
+                        transitions.append(
+                            {
+                                "kind": "supervisor_replay",
+                                "work_item_id": item_id,
+                                "phase": "memory_close",
+                                "result": "agent_turn_skipped",
+                                "reason_code": replay["reason_code"],
+                                "sequence": replay["sequence"],
+                                "record_sha256": replay["record_sha256"],
+                            }
+                        )
+                    else:
+                        control_before = self._control_binding(
+                            self.harness.state(), item_id
+                        )
+                        transition = self._invoke_agent_phase(
+                            item_id=item_id,
+                            phase="memory_close",
+                            policy=str(verification_policy),
+                            argv_template=argv_template,
+                            timeout_seconds=timeout_seconds,
+                        )
+                        if replay.get("status") in {"invalid", "stale"}:
+                            transition["journal_replay"] = replay
+                        transitions.append(transition)
+                        failure_outcome = self._agent_failure_outcome(transition)
+                        if failure_outcome is not None:
+                            return {
+                                "schema_version": SCHEMA_VERSION,
+                                "outcome": failure_outcome,
+                                "decision": self.inspect().to_dict(),
+                                "transitions": transitions,
+                            }
+                        control_after = self._control_binding(
+                            self.harness.state(), item_id
+                        )
+                        if control_after != control_before:
+                            return {
+                                "schema_version": SCHEMA_VERSION,
+                                "outcome": "agent_control_plane_mutation",
+                                "decision": self.inspect().to_dict(),
+                                "transitions": transitions,
+                            }
+                        if run_journal is not None:
+                            transition["run_journal"] = (
+                                self._journal_record_completion(
+                                    run_journal,
+                                    item_id=item_id,
+                                    phase="memory_close",
+                                )
+                            )
                     try:
                         with self.harness.mutation_lock():
                             close_outcome = self.harness.close(item_id)
                     except HarnessError as error:
-                        transitions.append(
-                            {
-                                "kind": "supervisor_close",
-                                "work_item_id": item_id,
-                                "result": "failed",
-                                "error": str(error),
-                            }
-                        )
+                        close_transition = {
+                            "kind": "supervisor_close",
+                            "work_item_id": item_id,
+                            "result": "failed",
+                            "error": str(error),
+                        }
+                        if run_journal is not None:
+                            close_transition["run_journal"] = (
+                                self._journal_invalidate_completion(
+                                    run_journal,
+                                    item_id=item_id,
+                                    phase="memory_close",
+                                )
+                            )
+                        transitions.append(close_transition)
                         return {
                             "schema_version": SCHEMA_VERSION,
                             "outcome": "supervisor_close_failed",

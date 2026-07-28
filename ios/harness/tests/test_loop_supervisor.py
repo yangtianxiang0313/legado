@@ -220,6 +220,7 @@ class MaterializationFixture:
         self.root = root
         self.fixture = HarnessFixture(root)
         self.harness = self.fixture.initialize()
+        self.fixture.write_text(".gitignore", ".harness-runtime/\n")
         self.candidate_root = root / loop_supervisor.CANDIDATE_ROOT
 
     def candidate(self, item_id: str = "IOS-CANDIDATE-001"):
@@ -646,6 +647,47 @@ class DriveTests(unittest.TestCase):
         subprocess.run(["git", "commit", "-qm", message], cwd=root, check=True)
 
     @staticmethod
+    def crash_drive(root, target, exit_code):
+        source = textwrap.dedent(
+            f"""
+            import os
+            import sys
+            from pathlib import Path
+
+            sys.path.insert(0, {str(HARNESS_DIR)!r})
+            from harness import Harness
+            from loop_supervisor import LoopSupervisor
+
+            root = Path({str(root)!r})
+            harness = Harness(root)
+            supervisor = LoopSupervisor(harness)
+            target = {target!r}
+            if target == "verify":
+                harness.verify = lambda item_id: os._exit({exit_code})
+            elif target == "close":
+                harness.close = lambda item_id: os._exit({exit_code})
+            elif target == "journal_record":
+                supervisor._journal_record_completion = (
+                    lambda *args, **kwargs: os._exit({exit_code})
+                )
+            else:
+                raise AssertionError(target)
+            supervisor.drive(
+                config_path=root / "supervisor.json",
+                agent_id="crash-injection-agent",
+                max_transitions=1,
+            )
+            """
+        )
+        return subprocess.run(
+            [sys.executable, "-c", source],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+    @staticmethod
     def process_exists(pid):
         try:
             os.kill(pid, 0)
@@ -806,6 +848,348 @@ class DriveTests(unittest.TestCase):
             self.assertEqual(
                 "sigterm_permission_denied;sigkill_permission_denied",
                 transition["cleanup_error"],
+            )
+
+    def test_process_crash_after_journal_replays_without_duplicate_agent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = MaterializationFixture(root)
+            count_path = root / ".harness-runtime/agent-count.txt"
+            agent_source = textwrap.dedent(
+                """
+                from pathlib import Path
+
+                path = Path(".harness-runtime/agent-count.txt")
+                path.parent.mkdir(parents=True, exist_ok=True)
+                with path.open("a", encoding="utf-8") as handle:
+                    handle.write("implementation\\n")
+                Path("ios/implementation.txt").write_text(
+                    "implemented\\n",
+                    encoding="utf-8",
+                )
+                """
+            )
+            fixture.fixture.write_json(
+                "supervisor.json",
+                {
+                    "agent_invocation": {
+                        "argv": [sys.executable, "-c", agent_source],
+                        "timeout_seconds": 10,
+                    },
+                    "trusted_verification": {
+                        "enabled": True,
+                        "policy": loop_supervisor.SUPERVISOR_VERIFICATION_POLICY,
+                    },
+                },
+            )
+            self.initialize_git(root)
+
+            crashed = self.crash_drive(root, "verify", 86)
+            self.assertEqual(86, crashed.returncode, crashed.stderr)
+            self.assertEqual(
+                "implementing",
+                fixture.harness.state()["work_items"]["IOS-BOOT-001"][
+                    "status"
+                ],
+            )
+            self.assertEqual(
+                ["implementation"],
+                count_path.read_text(encoding="utf-8").splitlines(),
+            )
+
+            resumed = loop_supervisor.LoopSupervisor(fixture.harness).drive(
+                config_path=root / "supervisor.json",
+                agent_id="fresh-supervisor",
+                max_transitions=1,
+            )
+            self.assertEqual("transition_budget_reached", resumed["outcome"])
+            self.assertEqual("verified", resumed["decision"]["state"], resumed)
+            self.assertEqual(
+                ["supervisor_replay", "supervisor_verification"],
+                [transition["kind"] for transition in resumed["transitions"]],
+            )
+            self.assertEqual(
+                ["implementation"],
+                count_path.read_text(encoding="utf-8").splitlines(),
+            )
+
+    def test_process_crash_before_journal_reinvokes_agent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = MaterializationFixture(root)
+            count_path = root / ".harness-runtime/agent-count.txt"
+            agent_source = textwrap.dedent(
+                """
+                from pathlib import Path
+
+                path = Path(".harness-runtime/agent-count.txt")
+                path.parent.mkdir(parents=True, exist_ok=True)
+                with path.open("a", encoding="utf-8") as handle:
+                    handle.write("implementation\\n")
+                Path("ios/implementation.txt").write_text(
+                    "implemented\\n",
+                    encoding="utf-8",
+                )
+                """
+            )
+            fixture.fixture.write_json(
+                "supervisor.json",
+                {
+                    "agent_invocation": {
+                        "argv": [sys.executable, "-c", agent_source],
+                        "timeout_seconds": 10,
+                    },
+                    "trusted_verification": {
+                        "enabled": True,
+                        "policy": loop_supervisor.SUPERVISOR_VERIFICATION_POLICY,
+                    },
+                },
+            )
+            self.initialize_git(root)
+
+            crashed = self.crash_drive(root, "journal_record", 87)
+            self.assertEqual(87, crashed.returncode, crashed.stderr)
+            resumed = loop_supervisor.LoopSupervisor(fixture.harness).drive(
+                config_path=root / "supervisor.json",
+                agent_id="fresh-supervisor",
+                max_transitions=1,
+            )
+            self.assertEqual("transition_budget_reached", resumed["outcome"])
+            self.assertEqual("verified", resumed["decision"]["state"], resumed)
+            self.assertEqual(
+                ["agent", "supervisor_verification"],
+                [transition["kind"] for transition in resumed["transitions"]],
+            )
+            self.assertEqual(
+                ["implementation", "implementation"],
+                count_path.read_text(encoding="utf-8").splitlines(),
+            )
+
+    def test_tampered_crash_journal_never_skips_agent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = MaterializationFixture(root)
+            count_path = root / ".harness-runtime/agent-count.txt"
+            agent_source = textwrap.dedent(
+                """
+                from pathlib import Path
+
+                path = Path(".harness-runtime/agent-count.txt")
+                path.parent.mkdir(parents=True, exist_ok=True)
+                with path.open("a", encoding="utf-8") as handle:
+                    handle.write("implementation\\n")
+                Path("ios/implementation.txt").write_text(
+                    "implemented\\n",
+                    encoding="utf-8",
+                )
+                """
+            )
+            fixture.fixture.write_json(
+                "supervisor.json",
+                {
+                    "agent_invocation": {
+                        "argv": [sys.executable, "-c", agent_source],
+                        "timeout_seconds": 10,
+                    },
+                    "trusted_verification": {
+                        "enabled": True,
+                        "policy": loop_supervisor.SUPERVISOR_VERIFICATION_POLICY,
+                    },
+                },
+            )
+            self.initialize_git(root)
+            crashed = self.crash_drive(root, "verify", 89)
+            self.assertEqual(89, crashed.returncode, crashed.stderr)
+            journal_path = (
+                root
+                / ".harness-runtime/loop-runs"
+                / "ios-boot-001--attempt-1.json"
+            )
+            document = json.loads(journal_path.read_text(encoding="utf-8"))
+            document["records"][0]["head_commit"] = "e" * 40
+            journal_path.write_text(
+                json.dumps(document) + "\n",
+                encoding="utf-8",
+            )
+
+            resumed = loop_supervisor.LoopSupervisor(fixture.harness).drive(
+                config_path=root / "supervisor.json",
+                agent_id="fresh-supervisor",
+                max_transitions=1,
+            )
+            self.assertEqual("agent", resumed["transitions"][0]["kind"])
+            self.assertEqual(
+                "invalid",
+                resumed["transitions"][0]["journal_replay"]["status"],
+            )
+            self.assertEqual(
+                ["implementation", "implementation"],
+                count_path.read_text(encoding="utf-8").splitlines(),
+            )
+
+    def test_process_crash_after_memory_journal_resumes_directly_at_close(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = MaterializationFixture(root)
+            memory_count = root / ".harness-runtime/memory-count.txt"
+            agent_source = textwrap.dedent(
+                f"""
+                import json
+                import os
+                from pathlib import Path
+
+                root = Path({str(root)!r})
+                context = json.loads(
+                    Path(os.environ["LEGADO_CONTEXT_PATH"]).read_text(
+                        encoding="utf-8"
+                    )
+                )
+                control = context["supervisor_control"]
+                item_id = context["work_item"]["metadata"]["id"]
+                if control["phase"] == "implementation":
+                    (root / "ios/implementation.txt").write_text(
+                        "implemented\\n",
+                        encoding="utf-8",
+                    )
+                elif control["phase"] == "memory_close":
+                    count = root / ".harness-runtime/memory-count.txt"
+                    count.parent.mkdir(parents=True, exist_ok=True)
+                    with count.open("a", encoding="utf-8") as handle:
+                        handle.write("memory\\n")
+                    evidence_relative = control["latest_evidence"]
+                    capability_path = (
+                        root / "ios/project/capabilities/CAP-BOOT.json"
+                    )
+                    capability = json.loads(
+                        capability_path.read_text(encoding="utf-8")
+                    )
+                    capability.update({{
+                        "revision": 2,
+                        "declared_status": "verified",
+                        "latest_evidence": evidence_relative,
+                        "updated_by": item_id,
+                    }})
+                    capability_path.write_text(
+                        json.dumps(
+                            capability,
+                            ensure_ascii=False,
+                            indent=2,
+                        ) + "\\n",
+                        encoding="utf-8",
+                    )
+                    checkpoint = {{
+                        "schema_version": 1,
+                        "work_item_id": item_id,
+                        "summary": "memory crash replay",
+                        "evidence": evidence_relative,
+                        "capability_updates": [
+                            {{
+                                "id": "CAP-BOOT",
+                                "from_revision": 1,
+                                "to_revision": 2,
+                            }}
+                        ],
+                        "architecture_impact": {{
+                            "kind": "implements_existing",
+                            "adr_refs": ["ADR-0001"],
+                        }},
+                        "requirements": {{
+                            "mode": "control_plane",
+                            "refs": [],
+                            "selection_sha256": None,
+                        }},
+                        "source_lab": {{
+                            "mode": "not_applicable",
+                            "behaviors": [],
+                            "scenarios": [],
+                            "selection_sha256": None,
+                        }},
+                        "compatibility": {{
+                            "records": [],
+                            "none_reason": "unit test",
+                        }},
+                        "pitfalls": {{
+                            "records": [],
+                            "none_reason": "unit test",
+                        }},
+                        "remaining_risks": [],
+                        "next_actions": [],
+                        "created_at": "2026-01-01T00:00:00Z",
+                    }}
+                    checkpoint_path = (
+                        root
+                        / "ios/project/checkpoints"
+                        / f"{{item_id}}.json"
+                    )
+                    checkpoint_path.parent.mkdir(
+                        parents=True,
+                        exist_ok=True,
+                    )
+                    checkpoint_path.write_text(
+                        json.dumps(
+                            checkpoint,
+                            ensure_ascii=False,
+                            indent=2,
+                        ) + "\\n",
+                        encoding="utf-8",
+                    )
+                else:
+                    raise AssertionError(control)
+                """
+            )
+            fixture.fixture.write_json(
+                "supervisor.json",
+                {
+                    "agent_invocation": {
+                        "argv": [sys.executable, "-c", agent_source],
+                        "timeout_seconds": 10,
+                    },
+                    "trusted_verification": {
+                        "enabled": True,
+                        "policy": loop_supervisor.SUPERVISOR_VERIFICATION_POLICY,
+                    },
+                },
+            )
+            self.initialize_git(root)
+            supervisor = loop_supervisor.LoopSupervisor(fixture.harness)
+            verified = supervisor.drive(
+                config_path=root / "supervisor.json",
+                agent_id="first-supervisor",
+                max_transitions=1,
+            )
+            self.assertEqual("verified", verified["decision"]["state"])
+
+            crashed = self.crash_drive(root, "close", 88)
+            self.assertEqual(88, crashed.returncode, crashed.stderr)
+            self.assertEqual(
+                "verified",
+                fixture.harness.state()["work_items"]["IOS-BOOT-001"][
+                    "status"
+                ],
+            )
+            self.assertEqual(
+                ["memory"],
+                memory_count.read_text(encoding="utf-8").splitlines(),
+            )
+
+            resumed = loop_supervisor.LoopSupervisor(fixture.harness).drive(
+                config_path=root / "supervisor.json",
+                agent_id="fresh-supervisor",
+                max_transitions=1,
+            )
+            self.assertEqual(
+                ["supervisor_replay", "supervisor_close"],
+                [transition["kind"] for transition in resumed["transitions"]],
+            )
+            self.assertEqual(
+                "completed",
+                fixture.harness.state()["work_items"]["IOS-BOOT-001"][
+                    "status"
+                ],
+            )
+            self.assertEqual(
+                ["memory"],
+                memory_count.read_text(encoding="utf-8").splitlines(),
             )
 
     def test_supervisor_verification_retries_and_close_failure_is_structured(self):

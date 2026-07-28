@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 33,
+  "revision": 34,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -24,6 +24,7 @@
       "ios/harness/harness.py",
       "ios/harness/loop_supervisor.py",
       "ios/harness/proposal_compiler.py",
+      "ios/harness/run_journal.py",
       "ios/harness/swiftpm_manifest.py",
       "ios/harness/trusted_supervisor_reference.py",
       "ios/harness/tests/test_loop_supervisor.py",
@@ -31,6 +32,7 @@
       "ios/harness/tests/test_codex_agent_adapter.py",
       "ios/harness/tests/test_harness.py",
       "ios/harness/tests/test_proposal_compiler.py",
+      "ios/harness/tests/test_run_journal.py",
       "ios/harness/tests/test_swiftpm_manifest.py",
       "ios/harness/tests/test_trusted_supervisor_reference.py",
       "ios/project/business-knowledge/**",
@@ -51,14 +53,14 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260728T054753Z-ios-control-catalog-resume-001-5b523ba4.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260728T062414Z-ios-supervisor-run-journal-001-8a19cf3d.json",
   "next_actions": [
     "BKP-INTEGRATIONS-001@4 与 DRV-INTEGRATION-PROFILES-001@4 在 Trusted Publisher promotion 前保持 proposal；只有 promotion/accept 决策才要求权威审查",
     "为 IntegrationKit/adapter、双 profile、权限最小化、备份迁移、依赖准入与可观测性问题建立独立裁决和 characterization/spike 工作项",
-    "把 reference runner 迁入 Agent 不可达的受保护服务，以 KMS/企业身份签名、OS/container 隔离、资源上限和 deny-by-default egress 替代本地 HMAC/用户权限",
-    "实现独立 patch publisher，只消费已签名 verified artifact，并经受保护 authority transition 完成 promotion",
-    "由 Harness/Proposal Compiler 的 recovers 内容寻址合同维持恢复谱系，并用有界 Catalog self-heal 支持控制面中断续跑；下一步由 Trusted Publisher 提升 JSON Schema，并自动重写 recovery Claim supersedes 以关闭 PIT-0012"
+    "把 reference runner 与 patch publisher 迁入 Agent 不可达的受保护服务，以 KMS/企业身份签名、OS/container 隔离、deny-by-default egress 和受保护 authority transition 替代本地 HMAC/用户权限",
+    "由 Harness/Proposal Compiler 的 recovers 内容寻址合同维持恢复谱系，并用有界 Catalog self-heal 支持控制面中断续跑；下一步由 Trusted Publisher 提升 JSON Schema，并自动重写 recovery Claim supersedes 以关闭 PIT-0012",
+    "以本地可重放 run journal 避免 Supervisor 崩溃后重复 Agent turn；下一阶段打通 Android Oracle、确定性 SourceLab 与 iOS Conformance 的首条真值纵向链路"
   ],
-  "updated_at": "2026-07-28T05:48:00Z",
-  "updated_by": "IOS-CONTROL-CATALOG-RESUME-001"
+  "updated_at": "2026-07-28T06:24:14Z",
+  "updated_by": "IOS-SUPERVISOR-RUN-JOURNAL-001"
 }
