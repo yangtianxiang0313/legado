@@ -75,6 +75,18 @@ python3 ios/harness/loop_supervisor.py materialize-review \
   唯一最高优先且所有绑定闭合的 `gates=[]` control-plane intake 会自动物化；它只能
   产出知识与 Requirement proposal，不能接受 Requirement、发布 Golden、修改
   SourceLab authority、Android 或 iOS 产品代码；
+- 显式启用 `source-anchored-characterization-v1` 后，已完成 intake 且已存在
+  accepted Requirement 的迁移项会继续绑定精确 revision/clauses 和完整
+  characterization blueprint。Supervisor 只物化
+  `requirements.mode=characterization`、`source_lab.mode=extend`、单一场景，
+  且写范围精确限制在该 candidate 场景、CAP-CONFORMANCE、Checkpoint/Pitfall 的
+  Work Item；SourceLab manifest/policy、Golden、Oracle、Android、Package、产品、
+  Requirement、Approval 和架构路径必须显式 deny；
+- `synthetic-source-provenance-v1` 不是通用审批绕过。它只处理由当前 Work Item
+  新建、`provenance.kind=synthetic`、`source_refs` 覆盖全部 Android 源码锚点、
+  `external_network=deny`、无额外动态 Gate 且已通过 Harness verify 的
+  `scenario-provenance-review`。`sanitized_capture`、来源缺失、既有 reference
+  修改、scope 越权或任何其他裁决仍 fail closed；
 - 显式启用 `supervisor-owned-verification-v1` 后，单次工作项按 Agent edit →
   Supervisor verify → Agent memory → Supervisor close 推进。Agent 不能通过直接调用
   `verify/close` 改变控制状态；Supervisor 在每个 Agent turn 后核对 event/status/
@@ -126,9 +138,11 @@ python3 ios/harness/loop_supervisor.py materialize-review \
   编译最短链：`knowledge_authority_required → requirement_readiness_required →
   blueprint_required → delivery_ready`。`source-anchored-android-migration-v1`
   则按 `migration_intake_ready → requirement_authority_required →
-  characterization_planning_required` 推进，并要求 completed WorkItem、Evidence、
-  Checkpoint、Capability update 与 proposal digest 精确结算。因此“尚缺上游权威输入”
-  或“下一条 Android 迁移切片已声明”都不会被误报为 `queue_empty`；
+  characterization_blueprint_required → characterization_ready` 推进，并要求
+  completed WorkItem、Evidence、Checkpoint、Capability update、proposal digest、
+  accepted Requirement record/catalog digest 与 characterization blueprint
+  精确结算。因此“尚缺上游权威输入”或“下一条 Android 迁移切片已声明”都不会被
+  误报为 `queue_empty`；
 - Demand Plan 中的 `authority_transition=true` 不等于 Human Decision，也不授予普通
   Agent 写 accepted/published/protected 路径的权限；它表示下一步应由受信 Publisher
   消费已绑定的机器证据。只有产品取舍无法由证据推导时才 `requires_human=true`；

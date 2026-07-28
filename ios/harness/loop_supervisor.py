@@ -39,6 +39,7 @@ try:
     )
     from .harness import Harness, HarnessError, path_matches
     from .demand_compiler import (
+        CHARACTERIZATION_BLUEPRINT_ROOT,
         MIGRATION_BLUEPRINT_ROOT,
         MIGRATION_POLICY,
         DemandCompiler,
@@ -66,6 +67,7 @@ except ImportError:
     )
     from harness import Harness, HarnessError, path_matches  # type: ignore
     from demand_compiler import (  # type: ignore
+        CHARACTERIZATION_BLUEPRINT_ROOT,
         MIGRATION_BLUEPRINT_ROOT,
         MIGRATION_POLICY,
         DemandCompiler,
@@ -88,6 +90,10 @@ AUTO_MATERIALIZATION_POLICY = "compiled-control-plane-v1"
 DELIVERY_BLUEPRINT_ROOT = "ios/project/work-item-proposals/delivery-blueprints"
 DELIVERY_MATERIALIZATION_POLICY = "bound-delivery-blueprint-v1"
 MIGRATION_MATERIALIZATION_POLICY = MIGRATION_POLICY
+CHARACTERIZATION_MATERIALIZATION_POLICY = (
+    "source-anchored-characterization-v1"
+)
+SYNTHETIC_PROVENANCE_POLICY = "synthetic-source-provenance-v1"
 SUPERVISOR_VERIFICATION_POLICY = "supervisor-owned-verification-v1"
 BUSINESS_KNOWLEDGE_CATALOG_STALE = "Business Knowledge catalog 已过期"
 TERMINAL_RECOVERY_STATUSES = {"blocked", "rejected", "exhausted", "cancelled"}
@@ -847,6 +853,131 @@ class LoopSupervisor:
             raise MaterializationConflict(";".join(issues))
         return preview
 
+    def _characterization_scope_issues(
+        self,
+        item: Mapping[str, Any],
+    ) -> List[str]:
+        item_id = str(item.get("metadata", {}).get("id", ""))
+        spec = item.get("spec", {})
+        source_lab = spec.get("source_lab", {})
+        scenarios = source_lab.get("scenarios", [])
+        scenario = scenarios[0] if len(scenarios) == 1 else ""
+        capability_id = str(spec.get("capability", ""))
+        allow_write = spec.get("scope", {}).get("allow_write", [])
+        deny_write = spec.get("scope", {}).get("deny_write", [])
+        expected_allow = {
+            f"ios/harness/fixtures/source-lab/{scenario}/**",
+            f"ios/project/capabilities/{capability_id}.json",
+            f"ios/project/checkpoints/{item_id}.json",
+            "ios/project/pitfalls/PIT-*.json",
+        }
+        issues: List[str] = []
+        if (
+            not isinstance(allow_write, list)
+            or any(not isinstance(value, str) for value in allow_write)
+            or set(allow_write) != expected_allow
+        ):
+            issues.append("CHARACTERIZATION_SCOPE_ALLOW_INVALID")
+        required_denials = (
+            ".github/workflows/change.yml",
+            "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+            "modules/book/src/main/java/example.kt",
+            "ios/Packages/LegadoKit/Package.swift",
+            "ios/harness/source-lab/source_lab.py",
+            "ios/harness/source-lab/manifest.json",
+            "ios/harness/source-lab/coverage-policy-v1.json",
+            "ios/harness/oracle/android_runner.py",
+            "ios/harness/goldens/manifest.json",
+            "ios/project/requirements/catalog.json",
+            "ios/project/approvals/decision.json",
+            "ios/project/work-item-proposals/candidate.json",
+            "ios/docs/architecture.md",
+        )
+        for path in required_denials:
+            if not path_matches(path, deny_write):
+                issues.append(
+                    f"CHARACTERIZATION_SCOPE_DENY_MISSING:{path}"
+                )
+        return issues
+
+    def _characterization_plan_preview(
+        self,
+        plan: DemandPlan,
+    ) -> MaterializationPreview:
+        if (
+            plan.policy != MIGRATION_MATERIALIZATION_POLICY
+            or plan.intent_kind != "android_migration"
+            or plan.state != "characterization_ready"
+        ):
+            raise MaterializationConflict(
+                "CHARACTERIZATION_PLAN_STATE_INVALID"
+            )
+        binding = plan.bindings.get("characterization_blueprint", {})
+        relative = binding.get("path")
+        if not isinstance(relative, str):
+            raise MaterializationConflict(
+                "CHARACTERIZATION_PLAN_BINDING_INVALID"
+            )
+        path = self.harness.resolve(relative)
+        preview = self.preflight_candidate(
+            path,
+            allowed_root=CHARACTERIZATION_BLUEPRINT_ROOT,
+        )
+        if (
+            preview.item_id != plan.target_work_item_id
+            or preview.work_item_sha256
+            != binding.get("work_item_sha256")
+            or preview.source_fingerprint != binding.get("sha256")
+        ):
+            raise MaterializationConflict(
+                "CHARACTERIZATION_MATERIALIZATION_BINDING_DRIFT"
+            )
+        try:
+            item = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise MaterializationConflict(
+                f"CHARACTERIZATION_BLUEPRINT_INVALID:{error}"
+            ) from error
+        metadata = item.get("metadata", {})
+        spec = item.get("spec", {})
+        source_lab = spec.get("source_lab", {})
+        requirements = spec.get("requirements", {})
+        accepted = [
+            artifact
+            for artifact in plan.artifacts
+            if artifact.get("kind") == "requirement"
+            and artifact.get("status") == "accepted"
+        ]
+        expected_refs = [
+            {
+                "id": value.get("id"),
+                "revision": value.get("revision"),
+                "clauses": value.get("clauses"),
+            }
+            for value in accepted
+        ]
+        if (
+            metadata.get("risk") == "critical"
+            or spec.get("gates") != ["scenario-provenance-review"]
+            or requirements.get("mode") != "characterization"
+            or len(expected_refs) != 1
+            or requirements.get("refs") != expected_refs
+            or source_lab.get("mode") != "extend"
+            or not isinstance(source_lab.get("behaviors"), list)
+            or not source_lab.get("behaviors")
+            or not isinstance(source_lab.get("scenarios"), list)
+            or len(source_lab.get("scenarios")) != 1
+            or set(spec.get("completion_effects", {})) - {"health"}
+            or spec.get("capability") != "CAP-CONFORMANCE"
+        ):
+            raise MaterializationConflict(
+                "CHARACTERIZATION_BLUEPRINT_AUTHORITY_INVALID"
+            )
+        issues = self._characterization_scope_issues(item)
+        if issues:
+            raise MaterializationConflict(";".join(issues))
+        return preview
+
     def _delivery_candidate(
         self,
         blueprint_path: Path,
@@ -1226,6 +1357,24 @@ class LoopSupervisor:
                     warnings=tuple(warnings),
                     details={"demand_plan": plan.to_dict()},
                 )
+        if plan.state == "characterization_ready":
+            try:
+                self._characterization_plan_preview(plan)
+            except (MaterializationConflict, HarnessError) as error:
+                return LoopDecision(
+                    state="demand_invalid",
+                    reason_code="CHARACTERIZATION_BLUEPRINT_INVALID",
+                    work_item_id=plan.target_work_item_id,
+                    requires_human=False,
+                    blockers=(
+                        {
+                            "intent_id": plan.intent_id,
+                            "reason_code": str(error),
+                        },
+                    ),
+                    warnings=tuple(warnings),
+                    details={"demand_plan": plan.to_dict()},
+                )
         state_mapping = {
             "knowledge_authority_required": "authority_transition_required",
             "requirement_readiness_required": (
@@ -1237,10 +1386,28 @@ class LoopSupervisor:
             "requirement_authority_required": (
                 "authority_transition_required"
             ),
-            "characterization_planning_required": (
+            "characterization_blueprint_required": (
                 "demand_materialization_required"
             ),
+            "characterization_ready": (
+                "characterization_materialization_ready"
+            ),
         }
+        if plan.state not in state_mapping:
+            return LoopDecision(
+                state="demand_invalid",
+                reason_code="DEMAND_STATE_UNSUPPORTED",
+                work_item_id=plan.target_work_item_id,
+                requires_human=False,
+                blockers=(
+                    {
+                        "intent_id": plan.intent_id,
+                        "state": plan.state,
+                    },
+                ),
+                warnings=tuple(warnings),
+                details={"demand_plan": plan.to_dict()},
+            )
         return LoopDecision(
             state=state_mapping[plan.state],
             reason_code=plan.reason_code,
@@ -1785,6 +1952,10 @@ class LoopSupervisor:
         ):
             allowed_root = DELIVERY_BLUEPRINT_ROOT
         elif preview.source_relative.startswith(
+            CHARACTERIZATION_BLUEPRINT_ROOT + "/"
+        ):
+            allowed_root = CHARACTERIZATION_BLUEPRINT_ROOT
+        elif preview.source_relative.startswith(
             MIGRATION_BLUEPRINT_ROOT + "/"
         ):
             allowed_root = MIGRATION_BLUEPRINT_ROOT
@@ -1900,6 +2071,38 @@ class LoopSupervisor:
         return self.materialize(
             preview,
             reason=f"policy:{MIGRATION_MATERIALIZATION_POLICY}",
+            provenance=plan.to_dict(),
+        )
+
+    def auto_materialize_characterization(
+        self,
+        intent_id: str,
+    ) -> str:
+        plans, blockers = DemandCompiler(self.harness.root).plans()
+        if blockers:
+            raise MaterializationConflict(
+                "CHARACTERIZATION_DEMAND_BLOCKED"
+            )
+        eligible = tuple(
+            plan
+            for plan in plans
+            if plan.state != "delivery_completed"
+        )
+        if not eligible:
+            raise MaterializationConflict(
+                "CHARACTERIZATION_DEMAND_MISSING"
+            )
+        highest = eligible[0].priority
+        tied = [plan for plan in eligible if plan.priority == highest]
+        if len(tied) != 1 or tied[0].intent_id != intent_id:
+            raise MaterializationConflict(
+                "CHARACTERIZATION_DEMAND_SELECTION_DRIFT"
+            )
+        plan = tied[0]
+        preview = self._characterization_plan_preview(plan)
+        return self.materialize(
+            preview,
+            reason=f"policy:{CHARACTERIZATION_MATERIALIZATION_POLICY}",
             provenance=plan.to_dict(),
         )
 
@@ -2215,6 +2418,138 @@ class LoopSupervisor:
             return None
         return item_id, messages
 
+    def _synthetic_provenance_ready(
+        self,
+        item_id: str,
+    ) -> Tuple[bool, str]:
+        items = self.harness.work_items()
+        item = items.get(item_id)
+        state = self.harness.state()
+        runtime = state.get("work_items", {}).get(item_id, {})
+        if (
+            not isinstance(item, dict)
+            or not isinstance(runtime, dict)
+            or runtime.get("status") != "awaiting_human"
+            or item.get("spec", {}).get("gates")
+            != ["scenario-provenance-review"]
+            or runtime.get("awaiting_human_reasons")
+            != ["缺少人工批准：scenario-provenance-review"]
+            or not isinstance(runtime.get("review_subject_sha256"), str)
+            or not isinstance(runtime.get("approval_requested_at"), str)
+        ):
+            return False, "SYNTHETIC_PROVENANCE_STATE_INVALID"
+        spec = item.get("spec", {})
+        source_lab = spec.get("source_lab", {})
+        scenarios = source_lab.get("scenarios", [])
+        if (
+            source_lab.get("mode") != "extend"
+            or len(scenarios) != 1
+            or self._characterization_scope_issues(item)
+        ):
+            return False, "SYNTHETIC_PROVENANCE_CONTRACT_INVALID"
+        scenario = scenarios[0]
+        case_relative = (
+            f"ios/harness/fixtures/source-lab/{scenario}/case.json"
+        )
+        try:
+            case = json.loads(
+                self.harness.resolve(case_relative).read_text(
+                    encoding="utf-8"
+                )
+            )
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            return False, "SYNTHETIC_PROVENANCE_CASE_INVALID"
+        provenance = case.get("provenance", {})
+        anchors = set(
+            value
+            for value in spec.get("inputs", {}).get(
+                "android_source_anchors", []
+            )
+            if isinstance(value, str)
+        )
+        source_refs = provenance.get("source_refs", [])
+        if (
+            case.get("id") != scenario
+            or case.get("status") != "candidate"
+            or case.get("operation") != "source_lab_site"
+            or case.get("transport", {}).get("external_network") != "deny"
+            or case.get("determinism", {}).get("network_allowed") is not False
+            or provenance.get("kind") != "synthetic"
+            or provenance.get("introduced_by") != item_id
+            or not anchors
+            or not anchors.issubset(set(source_refs))
+        ):
+            return False, "SYNTHETIC_PROVENANCE_BINDING_INVALID"
+        changed = self.harness.changed_since_claim(runtime)
+        policy_errors, _, _ = self.harness.scope_issues(
+            item,
+            runtime,
+            changed,
+        )
+        if policy_errors:
+            return False, "SYNTHETIC_PROVENANCE_SCOPE_INVALID"
+        allowed_prefix = (
+            f"ios/harness/fixtures/source-lab/{scenario}/"
+        )
+        allowed_memory = (
+            f"ios/project/capabilities/{spec.get('capability')}.json",
+            f"ios/project/checkpoints/{item_id}.json",
+            "ios/project/pitfalls/",
+        )
+        for relative in changed:
+            if (
+                relative.startswith(allowed_prefix)
+                or relative == allowed_memory[0]
+                or relative == allowed_memory[1]
+                or relative.startswith(allowed_memory[2])
+                or path_matches(relative, self.harness.managed_paths())
+            ):
+                continue
+            return False, "SYNTHETIC_PROVENANCE_CHANGED_PATH_INVALID"
+        return True, "SYNTHETIC_PROVENANCE_POLICY_MATCH"
+
+    def _auto_accept_synthetic_provenance(
+        self,
+        item_id: str,
+    ) -> str:
+        eligible, reason = self._synthetic_provenance_ready(item_id)
+        if not eligible:
+            raise MaterializationConflict(reason)
+        items = self.harness.work_items()
+        item = items[item_id]
+        runtime = self.harness.state()["work_items"][item_id]
+        now = dt.datetime.now(dt.timezone.utc)
+        approval = {
+            "schema_version": SCHEMA_VERSION,
+            "work_item_id": item_id,
+            "gate": "scenario-provenance-review",
+            "work_item_sha256": sha256_json(item),
+            "tree_sha256": runtime["review_subject_sha256"],
+            "reviewer": (
+                "trusted-policy:"
+                + SYNTHETIC_PROVENANCE_POLICY
+            ),
+            "approved_at": now.isoformat().replace("+00:00", "Z"),
+            "expires_at": (
+                now + dt.timedelta(minutes=15)
+            ).isoformat().replace("+00:00", "Z"),
+            "signature": None,
+        }
+        approval_path = (
+            self.harness.resolve(self.harness.config["approvals_dir"])
+            / f"{item_id}--scenario-provenance-review.json"
+        )
+        _atomic_write_bytes(
+            approval_path,
+            canonical_bytes(approval) + b"\n",
+        )
+        result = self.harness.close(item_id)
+        if result != "completed":
+            raise MaterializationConflict(
+                "SYNTHETIC_PROVENANCE_CLOSE_INCOMPLETE"
+            )
+        return result
+
     def drive(
         self,
         *,
@@ -2294,6 +2629,45 @@ class LoopSupervisor:
             raise LoopSupervisorError(
                 "启用 migration_materialization 时 policy 必须是 "
                 + MIGRATION_MATERIALIZATION_POLICY
+            )
+        characterization_config = config.get(
+            "characterization_materialization", {}
+        )
+        if characterization_config is None:
+            characterization_config = {}
+        if not isinstance(characterization_config, dict):
+            raise LoopSupervisorError(
+                "characterization_materialization 必须是 object"
+            )
+        characterization_enabled = (
+            characterization_config.get("enabled") is True
+        )
+        characterization_policy = characterization_config.get("policy")
+        if (
+            characterization_enabled
+            and characterization_policy
+            != CHARACTERIZATION_MATERIALIZATION_POLICY
+        ):
+            raise LoopSupervisorError(
+                "启用 characterization_materialization 时 policy 必须是 "
+                + CHARACTERIZATION_MATERIALIZATION_POLICY
+            )
+        synthetic_config = config.get("synthetic_provenance", {})
+        if synthetic_config is None:
+            synthetic_config = {}
+        if not isinstance(synthetic_config, dict):
+            raise LoopSupervisorError(
+                "synthetic_provenance 必须是 object"
+            )
+        synthetic_enabled = synthetic_config.get("enabled") is True
+        synthetic_policy = synthetic_config.get("policy")
+        if (
+            synthetic_enabled
+            and synthetic_policy != SYNTHETIC_PROVENANCE_POLICY
+        ):
+            raise LoopSupervisorError(
+                "启用 synthetic_provenance 时 policy 必须是 "
+                + SYNTHETIC_PROVENANCE_POLICY
             )
         verification_config = config.get("trusted_verification", {})
         if verification_config is None:
@@ -2502,6 +2876,73 @@ class LoopSupervisor:
                     }
                 )
                 before = self.inspect()
+            if before.state == "characterization_materialization_ready":
+                if not characterization_enabled:
+                    return {
+                        "schema_version": SCHEMA_VERSION,
+                        "outcome": (
+                            "characterization_materialization_disabled"
+                        ),
+                        "decision": before.to_dict(),
+                        "transitions": transitions,
+                    }
+                demand_plan = (
+                    before.details.get("demand_plan", {})
+                    if isinstance(before.details, dict)
+                    else {}
+                )
+                intent_id = demand_plan.get("intent_id")
+                if not isinstance(intent_id, str):
+                    raise LoopSupervisorError(
+                        "characterization decision 缺少 intent_id"
+                    )
+                with self.harness.mutation_lock():
+                    materialized_id = (
+                        self.auto_materialize_characterization(
+                            intent_id
+                        )
+                    )
+                transitions.append(
+                    {
+                        "kind": "characterization_materialization",
+                        "work_item_id": materialized_id,
+                        "intent_id": intent_id,
+                        "policy": characterization_policy,
+                    }
+                )
+                before = self.inspect()
+            if before.state == "awaiting_human" and synthetic_enabled:
+                item_id = before.work_item_id
+                assert item_id is not None
+                eligible, reason = self._synthetic_provenance_ready(
+                    item_id
+                )
+                if eligible:
+                    with self.harness.mutation_lock():
+                        result = (
+                            self._auto_accept_synthetic_provenance(
+                                item_id
+                            )
+                        )
+                    transitions.append(
+                        {
+                            "kind": "synthetic_provenance_decision",
+                            "work_item_id": item_id,
+                            "result": result,
+                            "policy": synthetic_policy,
+                        }
+                    )
+                    before = self.inspect()
+                else:
+                    transitions.append(
+                        {
+                            "kind": "synthetic_provenance_decision",
+                            "work_item_id": item_id,
+                            "result": "not_eligible",
+                            "reason_code": reason,
+                            "policy": synthetic_policy,
+                        }
+                    )
             if trusted_verification:
                 if before.state == "ready":
                     item_id = before.work_item_id

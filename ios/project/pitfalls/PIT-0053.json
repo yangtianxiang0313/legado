@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0053",
+  "revision": 1,
+  "title": "新增 Requirement 映射会让全部业务知识源码选择摘要失效",
+  "fingerprint": "requirement-fact-mapping-change-invalidates-business-knowledge-control-digest",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "为一个已有源码行为新建 Requirement 时，需要修改 Android intake Fact 的 maps_to",
+    "Fact 映射策略的 control digest 随之变化，历史 Business Knowledge Packet 的 inventory_control_sha256 全部过期",
+    "局部书源行为扩展被误建模成全量业务知识重发布与 Requirement authority 迁移"
+  ],
+  "conditions": [
+    "新发现的行为已落在既有 accepted Requirement clause 的语义范围内",
+    "业务知识候选绑定 Android intake inventory/control digest",
+    "实现者按功能名称而不是 Requirement clause 语义边界判断是否创建新需求"
+  ],
+  "root_cause": "Requirement 是稳定业务义务，不应按每个实现分支或测试切片增殖。POST form 属于 REQ-ANDROID-SOURCE-PIPELINE-001#RC-01 的新 characterization evidence；若为它创建新 Requirement 并改写 Fact maps_to，就把局部证据扩展误变成控制面全量迁移。",
+  "diagnosis": [
+    "先检查目标行为是否已被 accepted Requirement 的 statement、proof_kind 与入口范围覆盖",
+    "在修改 Android intake policy 前计算其 control digest 对现有 Packet/Driver/Coverage 的影响",
+    "区分新增业务义务、补充源码知识、增加 SourceLab 场景和补充 Android Golden 四种变化"
+  ],
+  "fix": "取消 IOS-REQUIREMENT-INTAKE-PUBLISHER-001，复用 REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01。Migration Intent 精确绑定既有 revision/clauses，并由 Demand Compiler 生成受限 characterization blueprint；只有既有 Requirement 确实不覆盖新业务义务时才进入受信 Requirement publisher。",
+  "prevention": {
+    "architecture_rule": "任何 Android 迁移切片创建新 Requirement 前必须先执行 clause-level semantic reuse 检查和 Fact mapping control digest impact analysis；能够作为既有 clause 的新 characterization/coverage evidence 时禁止修改 maps_to。",
+    "tests": [
+      "ios/harness/tests/test_demand_compiler.py",
+      "ios/harness/tests/test_loop_supervisor.py"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-ANDROID-REQUEST-OPTIONS-INTAKE-001",
+    "until": "IOS-CHARACTERIZATION-DAG-COMPILER-001"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T173132Z-ios-characterization-dag-compiler-001-1684f072.json"
+  ]
+}

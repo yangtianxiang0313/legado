@@ -63,6 +63,14 @@
     "enabled": true,
     "policy": "source-anchored-android-migration-v1"
   },
+  "characterization_materialization": {
+    "enabled": true,
+    "policy": "source-anchored-characterization-v1"
+  },
+  "synthetic_provenance": {
+    "enabled": true,
+    "policy": "synthetic-source-provenance-v1"
+  },
   "agent_invocation": {
     "argv": [
       "<replace-with-agent-runner>",

@@ -395,6 +395,91 @@ class MaterializationTests(unittest.TestCase):
                 provenance=plan.to_dict(),
             )
 
+    def test_characterization_demand_maps_to_automatic_materialization(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            plan = loop_supervisor.DemandPlan(
+                intent_id="MINT-SOURCE-REQUEST-POST-FORM-001",
+                priority=100,
+                target_work_item_id="IOS-SOURCELAB-POST-FORM-001",
+                state="characterization_ready",
+                reason_code="CHARACTERIZATION_INPUTS_READY",
+                authority_transition=False,
+                artifacts=(),
+                bindings={"characterization_blueprint": {}},
+                policy=loop_supervisor.MIGRATION_MATERIALIZATION_POLICY,
+                intent_kind="android_migration",
+            )
+            supervisor = loop_supervisor.LoopSupervisor(fixture.harness)
+            with mock.patch.object(
+                loop_supervisor.DemandCompiler,
+                "plans",
+                return_value=((plan,), ()),
+            ), mock.patch.object(
+                supervisor,
+                "_characterization_plan_preview",
+            ):
+                decision = supervisor._demand_decision([])
+
+            self.assertEqual(
+                "characterization_materialization_ready",
+                decision.state,
+            )
+            self.assertEqual(
+                "IOS-SOURCELAB-POST-FORM-001",
+                decision.work_item_id,
+            )
+            self.assertFalse(decision.requires_human)
+
+    def test_characterization_materialization_recomputes_selected_plan(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            supervisor = loop_supervisor.LoopSupervisor(fixture.harness)
+            plan = loop_supervisor.DemandPlan(
+                intent_id="MINT-TEST-CHARACTERIZATION-001",
+                priority=100,
+                target_work_item_id="IOS-TEST-CHARACTERIZATION-001",
+                state="characterization_ready",
+                reason_code="CHARACTERIZATION_INPUTS_READY",
+                authority_transition=False,
+                artifacts=(),
+                bindings={},
+                policy=loop_supervisor.MIGRATION_MATERIALIZATION_POLICY,
+                intent_kind="android_migration",
+            )
+            preview = mock.Mock(
+                spec=loop_supervisor.MaterializationPreview
+            )
+            with mock.patch.object(
+                loop_supervisor.DemandCompiler,
+                "plans",
+                return_value=((plan,), ()),
+            ), mock.patch.object(
+                supervisor,
+                "_characterization_plan_preview",
+                return_value=preview,
+            ), mock.patch.object(
+                supervisor,
+                "materialize",
+                return_value=plan.target_work_item_id,
+            ) as materialize:
+                result = (
+                    supervisor.auto_materialize_characterization(
+                        plan.intent_id
+                    )
+                )
+
+            self.assertEqual(plan.target_work_item_id, result)
+            materialize.assert_called_once_with(
+                preview,
+                reason=(
+                    "policy:"
+                    + loop_supervisor
+                    .CHARACTERIZATION_MATERIALIZATION_POLICY
+                ),
+                provenance=plan.to_dict(),
+            )
+
     def test_migration_scope_rejects_product_and_authority_paths(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = MaterializationFixture(Path(directory))
@@ -425,6 +510,54 @@ class MaterializationTests(unittest.TestCase):
                     issue.startswith("MIGRATION_SCOPE_DENY_MISSING:")
                     for issue in issues
                 )
+            )
+
+    def test_characterization_scope_is_exact_and_authority_denied(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            item = fixture.fixture.item(
+                "IOS-TEST-CHARACTERIZATION-001",
+                "CAP-CONFORMANCE",
+                100,
+            )
+            item["spec"]["source_lab"] = {
+                "mode": "extend",
+                "behaviors": ["transport.post-form"],
+                "scenarios": ["sl-post-form-001"],
+            }
+            item["spec"]["scope"]["allow_write"] = [
+                "ios/harness/fixtures/source-lab/sl-post-form-001/**",
+                "ios/project/capabilities/CAP-CONFORMANCE.json",
+                (
+                    "ios/project/checkpoints/"
+                    "IOS-TEST-CHARACTERIZATION-001.json"
+                ),
+                "ios/project/pitfalls/PIT-*.json",
+            ]
+            item["spec"]["scope"]["deny_write"] = [
+                ".github/**",
+                "app/**",
+                "modules/**",
+                "ios/Packages/**",
+                "ios/harness/source-lab/**",
+                "ios/harness/oracle/**",
+                "ios/harness/goldens/**",
+                "ios/project/requirements/**",
+                "ios/project/approvals/**",
+                "ios/project/work-item-proposals/**",
+                "ios/docs/**",
+            ]
+            supervisor = loop_supervisor.LoopSupervisor(fixture.harness)
+            self.assertEqual(
+                [],
+                supervisor._characterization_scope_issues(item),
+            )
+            item["spec"]["scope"]["allow_write"].append(
+                "ios/Packages/LegadoKit/Sources/New.swift"
+            )
+            self.assertIn(
+                "CHARACTERIZATION_SCOPE_ALLOW_INVALID",
+                supervisor._characterization_scope_issues(item),
             )
 
     def test_preflight_rejects_outside_symlink_and_incomplete_dependency(self):

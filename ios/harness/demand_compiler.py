@@ -22,6 +22,9 @@ DELIVERY_BLUEPRINT_ROOT = "ios/project/work-item-proposals/delivery-blueprints"
 MIGRATION_BLUEPRINT_ROOT = (
     "ios/project/work-item-proposals/migration-blueprints"
 )
+CHARACTERIZATION_BLUEPRINT_ROOT = (
+    "ios/project/work-item-proposals/characterization-blueprints"
+)
 BASELINE_PATH = "ios/project/baseline.json"
 SOURCE_LAB_COVERAGE_POLICY = (
     "ios/harness/source-lab/coverage-policy-v1.json"
@@ -306,6 +309,8 @@ class DemandCompiler:
             "source_lab",
             "requirement_proposal",
             "intake_blueprint",
+            "requirement_binding",
+            "characterization_blueprint",
         }
         if set(intent) != required:
             raise DemandCompilerError("MIGRATION_INTENT_FIELDS_INVALID")
@@ -430,12 +435,54 @@ class DemandCompiler:
                 "MIGRATION_REQUIREMENT_PROPOSAL_INVALID"
             )
 
+        requirement = intent.get("requirement_binding")
+        if (
+            not isinstance(requirement, dict)
+            or set(requirement) != {"id", "revision", "clauses"}
+        ):
+            raise DemandCompilerError(
+                "MIGRATION_REQUIREMENT_BINDING_INVALID"
+            )
+        bound_requirement_id = requirement.get("id")
+        bound_revision = requirement.get("revision")
+        bound_clauses = requirement.get("clauses")
+        if (
+            not isinstance(bound_requirement_id, str)
+            or REQUIREMENT_ID.fullmatch(bound_requirement_id) is None
+            or bound_requirement_id != requirement_id
+            or not isinstance(bound_revision, int)
+            or isinstance(bound_revision, bool)
+            or bound_revision < 1
+            or not isinstance(bound_clauses, list)
+            or not bound_clauses
+            or len(bound_clauses) != len(set(bound_clauses))
+            or any(
+                not isinstance(clause, str)
+                or re.fullmatch(r"RC-[0-9]{2}", clause) is None
+                for clause in bound_clauses
+            )
+        ):
+            raise DemandCompilerError(
+                "MIGRATION_REQUIREMENT_BINDING_INVALID"
+            )
+
         expected_blueprint = (
             f"{MIGRATION_BLUEPRINT_ROOT}/{target}.json"
         )
         if intent.get("intake_blueprint") != expected_blueprint:
             raise DemandCompilerError(
                 "MIGRATION_BLUEPRINT_PATH_INVALID"
+            )
+        expected_characterization = (
+            f"{CHARACTERIZATION_BLUEPRINT_ROOT}/"
+            f"{intent_id}.json"
+        )
+        if (
+            intent.get("characterization_blueprint")
+            != expected_characterization
+        ):
+            raise DemandCompilerError(
+                "CHARACTERIZATION_BLUEPRINT_PATH_INVALID"
             )
 
     def _git_object(self, revision: str, path: str) -> str:
@@ -571,28 +618,113 @@ class DemandCompiler:
         settlement = self._completed_migration_intake(intent)
         if settlement is not None:
             accepted = self._accepted_migration_requirement(intent)
-            state = (
-                "characterization_planning_required"
-                if accepted is not None
-                else "requirement_authority_required"
-            )
-            reason = (
-                "MIGRATION_REQUIREMENT_ACCEPTED"
-                if accepted is not None
-                else "MIGRATION_REQUIREMENT_AUTHORITY_REQUIRED"
-            )
             artifacts = list(settlement["artifacts"])
-            if accepted is not None:
-                artifacts.append(accepted)
+            bindings = dict(settlement["bindings"])
+            if accepted is None:
+                return DemandPlan(
+                    intent_id=str(intent["id"]),
+                    priority=int(intent["priority"]),
+                    target_work_item_id=target,
+                    state="requirement_authority_required",
+                    reason_code=(
+                        "MIGRATION_REQUIREMENT_AUTHORITY_REQUIRED"
+                    ),
+                    authority_transition=True,
+                    artifacts=tuple(artifacts),
+                    bindings=bindings,
+                    policy=MIGRATION_POLICY,
+                    intent_kind="android_migration",
+                )
+            artifacts.append(accepted)
+            characterization_relative = str(
+                intent["characterization_blueprint"]
+            )
+            characterization_path = self.resolve(
+                characterization_relative
+            )
+            exists = (
+                characterization_path.is_file()
+                and not characterization_path.is_symlink()
+            )
+            if exists:
+                self._head_regular((characterization_relative,))
+                characterization = _load_object(
+                    characterization_path,
+                    "CHARACTERIZATION_BLUEPRINT",
+                )
+                spec = characterization.get("spec", {})
+                expected_ref = dict(intent["requirement_binding"])
+                if (
+                    characterization.get("api_version")
+                    != "legado.harness/v1"
+                    or characterization.get("kind") != "WorkItem"
+                    or spec.get("requirements", {}).get("mode")
+                    != "characterization"
+                    or spec.get("requirements", {}).get("refs")
+                    != [expected_ref]
+                    or spec.get("source_lab", {}).get("mode")
+                    != "extend"
+                ):
+                    raise DemandCompilerError(
+                        "CHARACTERIZATION_BLUEPRINT_CONTRACT_INVALID"
+                    )
+                bindings["characterization_blueprint"] = {
+                    "path": characterization_relative,
+                    "sha256": _sha256(
+                        characterization_path.read_bytes()
+                    ),
+                    "work_item_sha256": _sha256_json(
+                        characterization
+                    ),
+                }
+                artifacts.append(
+                    {
+                        "kind": "characterization_blueprint",
+                        "id": characterization.get(
+                            "metadata", {}
+                        ).get("id"),
+                        "status": "committed",
+                        "path": characterization_relative,
+                        "sha256": bindings[
+                            "characterization_blueprint"
+                        ]["sha256"],
+                    }
+                )
+            else:
+                artifacts.append(
+                    {
+                        "kind": "characterization_blueprint",
+                        "id": None,
+                        "status": "missing",
+                        "path": characterization_relative,
+                        "sha256": None,
+                    }
+                )
             return DemandPlan(
                 intent_id=str(intent["id"]),
                 priority=int(intent["priority"]),
-                target_work_item_id=target,
-                state=state,
-                reason_code=reason,
-                authority_transition=accepted is None,
+                target_work_item_id=(
+                    str(
+                        characterization.get(
+                            "metadata", {}
+                        ).get("id")
+                    )
+                    if exists
+                    else target
+                ),
+                state=(
+                    "characterization_ready"
+                    if exists
+                    else "characterization_blueprint_required"
+                ),
+                reason_code=(
+                    "CHARACTERIZATION_INPUTS_READY"
+                    if exists
+                    else "CHARACTERIZATION_BLUEPRINT_REQUIRED"
+                ),
+                authority_transition=False,
                 artifacts=tuple(artifacts),
-                bindings=settlement["bindings"],
+                bindings=bindings,
                 policy=MIGRATION_POLICY,
                 intent_kind="android_migration",
             )
@@ -1198,8 +1330,10 @@ class DemandCompiler:
         self,
         intent: Mapping[str, Any],
     ) -> Optional[Mapping[str, Any]]:
-        proposal = intent["requirement_proposal"]
-        requirement_id = str(proposal["target_requirement_id"])
+        requirement = intent["requirement_binding"]
+        requirement_id = str(requirement["id"])
+        requirement_revision = int(requirement["revision"])
+        requirement_clauses = list(requirement["clauses"])
         catalog_path = self.resolve(REQUIREMENT_CATALOG)
         try:
             self._head_regular((REQUIREMENT_CATALOG,))
@@ -1214,7 +1348,9 @@ class DemandCompiler:
         matching = [
             entry
             for entry in catalog.get("requirements", [])
-            if isinstance(entry, dict) and entry.get("id") == requirement_id
+            if isinstance(entry, dict)
+            and entry.get("id") == requirement_id
+            and entry.get("revision") == requirement_revision
         ]
         if not matching:
             return None
@@ -1226,7 +1362,10 @@ class DemandCompiler:
         record_relative = entry.get("path")
         if (
             entry.get("status") != "accepted"
-            or not isinstance(entry.get("revision"), int)
+            or entry.get("revision") != requirement_revision
+            or not set(requirement_clauses).issubset(
+                set(entry.get("clauses", []))
+            )
             or not isinstance(record_relative, str)
         ):
             raise DemandCompilerError(
@@ -1247,8 +1386,15 @@ class DemandCompiler:
         if (
             entry.get("record_sha256") != record_sha
             or record.get("id") != requirement_id
-            or record.get("revision") != entry["revision"]
+            or record.get("revision") != requirement_revision
             or record.get("status") != "accepted"
+            or not set(requirement_clauses).issubset(
+                {
+                    clause.get("id")
+                    for clause in record.get("clauses", [])
+                    if isinstance(clause, dict)
+                }
+            )
         ):
             raise DemandCompilerError(
                 "MIGRATION_REQUIREMENT_AUTHORITY_INVALID"
@@ -1256,7 +1402,8 @@ class DemandCompiler:
         return {
             "kind": "requirement",
             "id": requirement_id,
-            "revision": entry["revision"],
+            "revision": requirement_revision,
+            "clauses": requirement_clauses,
             "status": "accepted",
             "readiness": record.get("readiness", {}).get("state"),
             "path": record_relative,

@@ -339,6 +339,7 @@ class DemandFixture:
 class MigrationFixture:
     intent_id = "MINT-TEST-MIGRATION-001"
     target_id = "IOS-TEST-MIGRATION-001"
+    characterization_id = "IOS-TEST-CHARACTERIZATION-001"
     target_requirement_id = "REQ-TEST-MIGRATION-001"
     proposal_id = "ARQ-TEST-MIGRATION"
     capability_id = "CAP-TEST-MIGRATION"
@@ -479,9 +480,18 @@ class MigrationFixture:
                     f"{self.proposal_id}.json"
                 ),
             },
+            "requirement_binding": {
+                "id": self.target_requirement_id,
+                "revision": 1,
+                "clauses": ["RC-01"],
+            },
             "intake_blueprint": (
                 f"{demand_compiler.MIGRATION_BLUEPRINT_ROOT}/"
                 f"{self.target_id}.json"
+            ),
+            "characterization_blueprint": (
+                f"{demand_compiler.CHARACTERIZATION_BLUEPRINT_ROOT}/"
+                f"{self.intent_id}.json"
             ),
         }
 
@@ -569,6 +579,56 @@ class MigrationFixture:
             },
         )
         self.commit("settle migration")
+
+    def accept_requirement(self, *, with_blueprint: bool):
+        record_relative = (
+            "ios/project/requirements/accepted/"
+            f"{self.target_requirement_id}.json"
+        )
+        record = {
+            "id": self.target_requirement_id,
+            "revision": 1,
+            "status": "accepted",
+            "clauses": [{"id": "RC-01"}],
+            "readiness": {"state": "implementation_ready"},
+        }
+        self.write_json(record_relative, record)
+        self.write_json(
+            demand_compiler.REQUIREMENT_CATALOG,
+            {
+                "requirements": [
+                    {
+                        "id": self.target_requirement_id,
+                        "revision": 1,
+                        "status": "accepted",
+                        "clauses": ["RC-01"],
+                        "path": record_relative,
+                        "record_sha256": (
+                            demand_compiler._sha256_json(record)
+                        ),
+                    }
+                ]
+            },
+        )
+        if with_blueprint:
+            self.write_json(
+                self.intent()["characterization_blueprint"],
+                {
+                    "api_version": "legado.harness/v1",
+                    "kind": "WorkItem",
+                    "metadata": {"id": self.characterization_id},
+                    "spec": {
+                        "requirements": {
+                            "mode": "characterization",
+                            "refs": [
+                                self.intent()["requirement_binding"]
+                            ],
+                        },
+                        "source_lab": {"mode": "extend"},
+                    },
+                },
+            )
+        self.commit("accept migration requirement")
 
 
 class DemandCompilerTests(unittest.TestCase):
@@ -804,6 +864,57 @@ class DemandCompilerTests(unittest.TestCase):
             with self.assertRaisesRegex(
                 demand_compiler.DemandCompilerError,
                 "MIGRATION_SETTLEMENT_INVALID",
+            ):
+                fixture.compiler().compile_migration(
+                    fixture.intent_path()
+                )
+
+    def test_migration_reuses_accepted_requirement_for_characterization(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MigrationFixture(Path(directory))
+            fixture.settle()
+            fixture.accept_requirement(with_blueprint=False)
+
+            missing = fixture.compiler().compile_migration(
+                fixture.intent_path()
+            )
+            self.assertEqual(
+                "characterization_blueprint_required",
+                missing.state,
+            )
+            self.assertEqual(fixture.target_id, missing.target_work_item_id)
+
+            fixture.accept_requirement(with_blueprint=True)
+            ready = fixture.compiler().compile_migration(
+                fixture.intent_path()
+            )
+            self.assertEqual("characterization_ready", ready.state)
+            self.assertEqual(
+                fixture.characterization_id,
+                ready.target_work_item_id,
+            )
+            self.assertEqual(
+                "REQ-TEST-MIGRATION-001",
+                next(
+                    artifact
+                    for artifact in ready.artifacts
+                    if artifact["kind"] == "requirement"
+                )["id"],
+            )
+
+    def test_migration_requirement_clause_drift_fails_closed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MigrationFixture(Path(directory))
+            fixture.settle()
+            fixture.accept_requirement(with_blueprint=True)
+            intent = fixture.intent()
+            intent["requirement_binding"]["clauses"] = ["RC-02"]
+            fixture.write_json(fixture.intent_relative, intent)
+            fixture.commit("drift requirement clause")
+
+            with self.assertRaisesRegex(
+                demand_compiler.DemandCompilerError,
+                "MIGRATION_REQUIREMENT_AUTHORITY_INVALID",
             ):
                 fixture.compiler().compile_migration(
                     fixture.intent_path()
