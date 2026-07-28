@@ -1,0 +1,155 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-READINESS-EVIDENCE-HANDOFF-RECOVERY-002",
+    "title": "恢复 readiness Evidence 交接并隔离 Publisher 发布前状态",
+    "priority": 100,
+    "risk": "high",
+    "labels": [
+      "phase-0",
+      "control-plane",
+      "corrective",
+      "recovery",
+      "loop-engine",
+      "requirement",
+      "evidence"
+    ]
+  },
+  "spec": {
+    "recovers": "IOS-READINESS-EVIDENCE-HANDOFF-001",
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "intent": "恢复 IOS-READINESS-EVIDENCE-HANDOFF-001 因完整 Harness tests 暴露 Requirement Publisher 测试仍复制 live implementation_ready Requirement/Coverage 而发生的 scope rejection。完成两条绑定修复：其一，Requirement readiness release 在目标实现未完成时暂缓历史 enabler freshness；目标 completed 后，只有 immutable passed Evidence、精确 Checkpoint、相同 Requirement clauses/selection 才能接管。其二，Publisher 测试从当前 promoted authority 确定性恢复原 characterization_required Requirement、Catalog 与 Coverage 输入，不依赖 live promotion 状态。accepted Requirement 与 Coverage 保持字节绑定；Requirement/Business Knowledge Catalog 作为派生索引不因格式化差异误判权威漂移。",
+    "depends_on": [
+      "IOS-SOURCE-RUNTIME-HTML-CSS-001",
+      "IOS-REQUIREMENT-READINESS-PUBLISHER-RECOVERY-002"
+    ],
+    "scope": {
+      "allow_write": [
+        "ios/harness/harness.py",
+        "ios/harness/tests/test_harness.py",
+        "ios/harness/tests/test_requirement_readiness_publisher.py",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-READINESS-EVIDENCE-HANDOFF-RECOVERY-002.json",
+        "ios/project/pitfalls/PIT-0049.json"
+      ],
+      "deny_write": [
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        ".github/**",
+        "ios/harness/config.json",
+        "ios/harness/schemas/**",
+        "ios/harness/business-knowledge/**",
+        "ios/harness/android-intake/**",
+        "ios/harness/source-lab/**",
+        "ios/harness/oracle/**",
+        "ios/harness/goldens/**",
+        "ios/project/android-intake/**",
+        "ios/project/business-knowledge/**",
+        "ios/project/requirements/**",
+        "ios/project/approvals/**",
+        "ios/project/baseline.json",
+        "ios/docs/**"
+      ],
+      "max_files_changed": 6,
+      "max_changed_lines": 1400
+    },
+    "inputs": {
+      "context_files": [
+        "ios/harness/harness.py",
+        "ios/harness/tests/test_harness.py",
+        "ios/harness/tests/test_requirement_readiness_publisher.py",
+        "ios/project/requirements/releases/REQ-ANDROID-SOURCE-PIPELINE-001-r0001-30373296947-1.json",
+        "ios/project/checkpoints/IOS-SOURCE-RUNTIME-HTML-CSS-001.json",
+        "ios/harness/evidence/runs/run-20260728T155125Z-ios-readiness-evidence-handoff-001-daff512b.json"
+      ],
+      "android_source_anchors": [],
+      "fixtures": []
+    },
+    "architecture_refs": ["ARCH-018", "ADR-0004"],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "未完成目标由唯一受保护 readiness receipt 暂缓 freshness；completed 目标仅由 passed immutable Evidence、Checkpoint 与相同 Requirement selection 接管。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "目标 completed 但 Evidence 缺失/失败/篡改、Checkpoint 错绑或 clauses/selection 不一致时继续 fail closed。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "Publisher 测试确定性恢复 readiness promotion 前的 Requirement、Catalog 与 Coverage，真实 authority 已提升后仍可重复，且重复/漂移负向断言保持。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-4",
+          "statement": "完整 Harness tests、Doctor 与 Loop inspect 恢复绿色；Checkpoint、Capability、Pitfall 记录首个产品闭环暴露的状态交接与测试 pre-state 缺口。",
+          "verified_by": ["harness-tests", "memory-close"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": ["dependency-policy", "harness-tests"]
+    },
+    "baseline_checks": ["dependency-policy"],
+    "budget": {
+      "wall_clock_seconds": 5400,
+      "max_edit_verify_cycles": 4,
+      "max_targeted_test_runs": 20,
+      "max_full_test_runs": 4,
+      "max_infra_retries": 1
+    },
+    "gates": [],
+    "completion_effects": {
+      "health": {
+        "readiness_evidence_handoff": "completed_evidence_bound",
+        "requirement_publisher_prestate": "state_independent"
+      }
+    },
+    "memory": {
+      "adr": "not_required",
+      "capability_state_required": true,
+      "checkpoint_required": true,
+      "pitfall_update_required": true
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "refs": [],
+      "none_reason": "本项只修复 Requirement Evidence 与 Publisher 测试控制面"
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "not_applicable",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [],
+      "expected_ledger_transitions": [],
+      "context_budget": {"max_claims": 8, "max_bytes": 32768},
+      "none_reason": "本项不消费、生成或发布业务知识"
+    },
+    "source_lab": {
+      "mode": "not_applicable",
+      "behaviors": [],
+      "scenarios": [],
+      "none_reason": "本项不执行书源行为"
+    },
+    "stop_on": [
+      "scope_violation",
+      "authority_escalation",
+      "same_failure_twice",
+      "budget_exhausted",
+      "human_decision_required"
+    ]
+  }
+}

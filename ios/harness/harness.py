@@ -560,6 +560,18 @@ class Harness:
                 clauses = set(binding.get("clauses", []))
                 target = binding.get("target_work_item")
                 outputs = receipt.get("outputs", {})
+                target_status = (
+                    state.get("work_items", {}).get(target, {}).get("status")
+                    if isinstance(target, str)
+                    else None
+                )
+                target_accepts_transition = target_status != "completed" or (
+                    self.completed_readiness_target_proves_handoff(
+                        target,
+                        clauses,
+                        state,
+                    )
+                )
                 if (
                     receipt.get("kind") == "requirement_readiness_release"
                     and receipt.get("authority")
@@ -571,16 +583,17 @@ class Harness:
                     and clauses
                     and clauses.issubset(selected)
                     and isinstance(target, str)
-                    and state.get("work_items", {}).get(target, {}).get("status")
-                    != "completed"
+                    and target_accepts_transition
                     and isinstance(outputs, dict)
                     and outputs
                     and all(
                         isinstance(relative, str)
                         and isinstance(digest, str)
                         and (
-                            relative
-                            == "ios/project/business-knowledge/catalog.json"
+                            relative in {
+                                "ios/project/business-knowledge/catalog.json",
+                                "ios/project/requirements/catalog.json",
+                            }
                             or (
                                 self.resolve(relative).is_file()
                                 and not self.resolve(relative).is_symlink()
@@ -595,6 +608,82 @@ class Harness:
                 ):
                     matches.append(path)
         return len(matches) == 1
+
+    def completed_readiness_target_proves_handoff(
+        self,
+        target: str,
+        release_clauses: Set[str],
+        state: Dict[str, Any],
+    ) -> bool:
+        runtime = state.get("work_items", {}).get(target)
+        item = self.work_items().get(target)
+        if (
+            not isinstance(runtime, dict)
+            or runtime.get("status") != "completed"
+            or not isinstance(item, dict)
+            or runtime.get("work_item_sha256") != sha256_json(item)
+        ):
+            return False
+        requirements = item.get("spec", {}).get("requirements", {})
+        selected = {
+            f"{reference['id']}@{reference['revision']}#{clause}"
+            for reference in requirements.get("refs", [])
+            if isinstance(reference, dict)
+            and isinstance(reference.get("id"), str)
+            and isinstance(reference.get("revision"), int)
+            for clause in reference.get("clauses", [])
+            if isinstance(clause, str)
+        }
+        if requirements.get("mode") != "implementation" or selected != release_clauses:
+            return False
+
+        evidence_relative = runtime.get("last_evidence")
+        evidence_sha256 = runtime.get("last_evidence_sha256")
+        evidence_root = self.config.get("evidence_dir")
+        if (
+            not isinstance(evidence_relative, str)
+            or not isinstance(evidence_root, str)
+            or not evidence_relative.startswith(evidence_root.rstrip("/") + "/")
+            or not isinstance(evidence_sha256, str)
+        ):
+            return False
+        evidence_path = self.resolve(evidence_relative)
+        if (
+            not evidence_path.is_file()
+            or evidence_path.is_symlink()
+            or sha256_bytes(evidence_path.read_bytes()) != evidence_sha256
+        ):
+            return False
+        try:
+            evidence = load_json(evidence_path)
+        except HarnessError:
+            return False
+        selection = runtime.get("android_requirement_selection_sha256")
+        if (
+            evidence.get("work_item_id") != target
+            or evidence.get("result") != "passed"
+            or evidence.get("inputs", {}).get(
+                "android_requirement_selection_sha256"
+            )
+            != selection
+        ):
+            return False
+
+        checkpoint_path = (
+            self.resolve(self.config["checkpoints_dir"]) / f"{target}.json"
+        )
+        try:
+            checkpoint = load_json(checkpoint_path)
+        except HarnessError:
+            return False
+        checkpoint_requirements = checkpoint.get("requirements", {})
+        return (
+            checkpoint.get("work_item_id") == target
+            and checkpoint.get("evidence") == evidence_relative
+            and checkpoint_requirements.get("mode") == "implementation"
+            and checkpoint_requirements.get("refs") == requirements.get("refs")
+            and checkpoint_requirements.get("selection_sha256") == selection
+        )
 
     @property
     def business_knowledge_script_path(self) -> Path:

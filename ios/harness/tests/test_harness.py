@@ -263,6 +263,238 @@ class HarnessTests(unittest.TestCase):
         subprocess.run(["git", "add", "."], cwd=str(root), check=True)
         subprocess.run(["git", "commit", "-qm", "baseline"], cwd=str(root), check=True)
 
+    def test_completed_readiness_target_hands_freshness_to_immutable_evidence(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = HarnessFixture(root)
+            harness = fixture.initialize()
+            clauses = ["REQ-TEST-001@1#RC-01"]
+            historical = fixture.item("IOS-BOOT-001", "CAP-BOOT", 100)
+            historical["spec"]["requirements"] = {
+                "mode": "enabler",
+                "refs": [
+                    {
+                        "id": "REQ-TEST-001",
+                        "revision": 1,
+                        "clauses": ["RC-01"],
+                    }
+                ],
+                "none_reason": None,
+            }
+            target_id = "IOS-TARGET-001"
+            target = fixture.item(target_id, "CAP-CORE", 80)
+            target["spec"]["requirements"] = {
+                "mode": "implementation",
+                "refs": [
+                    {
+                        "id": "REQ-TEST-001",
+                        "revision": 1,
+                        "clauses": ["RC-01"],
+                    }
+                ],
+                "none_reason": None,
+            }
+            fixture.write_json("ios/harness/work-items/IOS-BOOT-001.json", historical)
+            fixture.write_json(f"ios/harness/work-items/{target_id}.json", target)
+
+            authority_path = "ios/project/requirements/accepted/REQ-TEST-001.json"
+            fixture.write_json(authority_path, {"id": "REQ-TEST-001", "revision": 1})
+            authority_digest = harness_module.sha256_bytes(
+                (root / authority_path).read_bytes()
+            )
+            fixture.write_json(
+                "ios/project/requirements/releases/REQ-TEST-001-r0001-1.json",
+                {
+                    "kind": "requirement_readiness_release",
+                    "authority": "protected_requirement_readiness",
+                    "authorization": "github_environment_review",
+                    "binding": {
+                        "from": "characterization_required",
+                        "to": "implementation_ready",
+                        "clauses": clauses,
+                        "target_work_item": target_id,
+                    },
+                    "outputs": {
+                        authority_path: authority_digest,
+                        "ios/project/requirements/catalog.json": "f" * 64,
+                    },
+                },
+            )
+            fixture.write_text(
+                "ios/project/requirements/catalog.json",
+                '{"schema_version":1}\n',
+            )
+            state = harness.state()
+            state["work_items"][target_id] = {
+                "status": "implementing",
+                "work_item_sha256": harness_module.sha256_json(target),
+            }
+            fixture.write_json("ios/project/state.json", state)
+            harness = harness_module.Harness(root)
+            self.assertTrue(
+                harness.readiness_transition_defers_enabler_freshness(
+                    historical,
+                    state,
+                )
+            )
+
+            selection = "a" * 64
+            evidence_relative = "ios/harness/evidence/runs/run-target.json"
+            fixture.write_json(
+                evidence_relative,
+                {
+                    "work_item_id": target_id,
+                    "result": "passed",
+                    "inputs": {
+                        "android_requirement_selection_sha256": selection,
+                    },
+                },
+            )
+            evidence_digest = harness_module.sha256_bytes(
+                (root / evidence_relative).read_bytes()
+            )
+            state["work_items"][target_id].update(
+                {
+                    "status": "completed",
+                    "last_evidence": evidence_relative,
+                    "last_evidence_sha256": evidence_digest,
+                    "android_requirement_selection_sha256": selection,
+                }
+            )
+            fixture.write_json(
+                f"ios/project/checkpoints/{target_id}.json",
+                {
+                    "work_item_id": target_id,
+                    "evidence": evidence_relative,
+                    "requirements": {
+                        "mode": "implementation",
+                        "refs": target["spec"]["requirements"]["refs"],
+                        "selection_sha256": selection,
+                    },
+                },
+            )
+            self.assertTrue(
+                harness.readiness_transition_defers_enabler_freshness(
+                    historical,
+                    state,
+                )
+            )
+
+            fixture.write_text(
+                "ios/project/requirements/catalog.json",
+                '{\n  "schema_version": 1\n}\n',
+            )
+            self.assertTrue(
+                harness.readiness_transition_defers_enabler_freshness(
+                    historical,
+                    state,
+                )
+            )
+            fixture.write_json(authority_path, {"tampered": True})
+            self.assertFalse(
+                harness.readiness_transition_defers_enabler_freshness(
+                    historical,
+                    state,
+                )
+            )
+
+    def test_completed_readiness_target_rejects_missing_or_tampered_handoff(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = HarnessFixture(root)
+            harness = fixture.initialize()
+            target_id = "IOS-TARGET-001"
+            target = fixture.item(target_id, "CAP-CORE", 80)
+            target["spec"]["requirements"] = {
+                "mode": "implementation",
+                "refs": [
+                    {
+                        "id": "REQ-TEST-001",
+                        "revision": 1,
+                        "clauses": ["RC-01"],
+                    }
+                ],
+                "none_reason": None,
+            }
+            fixture.write_json(f"ios/harness/work-items/{target_id}.json", target)
+            evidence_relative = "ios/harness/evidence/runs/run-target.json"
+            fixture.write_json(
+                evidence_relative,
+                {
+                    "work_item_id": target_id,
+                    "result": "passed",
+                    "inputs": {
+                        "android_requirement_selection_sha256": "a" * 64,
+                    },
+                },
+            )
+            evidence_digest = harness_module.sha256_bytes(
+                (root / evidence_relative).read_bytes()
+            )
+            state = harness.state()
+            state["work_items"][target_id] = {
+                "status": "completed",
+                "work_item_sha256": harness_module.sha256_json(target),
+                "last_evidence": evidence_relative,
+                "last_evidence_sha256": evidence_digest,
+                "android_requirement_selection_sha256": "a" * 64,
+            }
+            harness = harness_module.Harness(root)
+            self.assertFalse(
+                harness.completed_readiness_target_proves_handoff(
+                    target_id,
+                    {"REQ-TEST-001@1#RC-01"},
+                    state,
+                )
+            )
+
+            fixture.write_json(
+                f"ios/project/checkpoints/{target_id}.json",
+                {
+                    "work_item_id": target_id,
+                    "evidence": evidence_relative,
+                    "requirements": {
+                        "mode": "implementation",
+                        "refs": target["spec"]["requirements"]["refs"],
+                        "selection_sha256": "b" * 64,
+                    },
+                },
+            )
+            self.assertFalse(
+                harness.completed_readiness_target_proves_handoff(
+                    target_id,
+                    {"REQ-TEST-001@1#RC-01"},
+                    state,
+                )
+            )
+            fixture.write_json(
+                f"ios/project/checkpoints/{target_id}.json",
+                {
+                    "work_item_id": target_id,
+                    "evidence": evidence_relative,
+                    "requirements": {
+                        "mode": "implementation",
+                        "refs": target["spec"]["requirements"]["refs"],
+                        "selection_sha256": "a" * 64,
+                    },
+                },
+            )
+            self.assertTrue(
+                harness.completed_readiness_target_proves_handoff(
+                    target_id,
+                    {"REQ-TEST-001@1#RC-01"},
+                    state,
+                )
+            )
+            fixture.write_text(evidence_relative, '{"tampered":true}\n')
+            self.assertFalse(
+                harness.completed_readiness_target_proves_handoff(
+                    target_id,
+                    {"REQ-TEST-001@1#RC-01"},
+                    state,
+                )
+            )
+
     @staticmethod
     def enable_business_knowledge(fixture: HarnessFixture):
         root = fixture.root

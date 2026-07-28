@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0049",
+  "revision": 1,
+  "title": "状态提升完成后必须由实现 Evidence 接管，测试必须恢复完整 pre-state",
+  "fingerprint": "authority-transition-without-completed-evidence-handoff-or-complete-test-prestate",
+  "capabilities": ["CAP-KNOWLEDGE-CONTROL"],
+  "symptoms": [
+    "目标实现 completed 后，历史 enabler Capability 立即因 Requirement selection 变化变 stale",
+    "Publisher 在真实 promotion 前测试通过，promotion 后同一测试从 live authority 复制状态并失败",
+    "Loop 在完成产品工作后反而进入 doctor_red"
+  ],
+  "conditions": [
+    "readiness 豁免以目标 status != completed 作为唯一结束条件",
+    "没有验证 completed 目标的 passed Evidence、Checkpoint 与 Requirement selection 是否能接管",
+    "状态迁移测试只重建 proposal，却继续复制已提升的 Requirement、Catalog 或 Coverage"
+  ],
+  "root_cause": "控制面只建模了 authority transition 的开始和未完成阶段，没有建模完成实现 Evidence 的证明交接；测试也把多文件原子 pre-state 错误简化为单文件恢复。",
+  "diagnosis": [
+    "按 receipt binding 找到 target_work_item，并检查 completed runtime 的 last Evidence 与 Checkpoint",
+    "比较 WorkItem spec、release clauses、runtime/evidence/checkpoint selection 是否完全一致",
+    "列出 Publisher 原子事务的全部 inputs/outputs，确认测试 fixture 是否恢复每个输入的发布前版本"
+  ],
+  "fix": "未完成阶段继续要求唯一受保护 readiness receipt；completed 阶段要求 immutable passed Evidence、精确 Checkpoint、相同 spec/clauses/selection。Publisher 测试从 live promoted authority 确定性恢复完整 Requirement/Catalog/Coverage pre-state。",
+  "prevention": {
+    "architecture_rule": "任何跨状态 freshness 豁免必须定义开始证明、结束证明和失败闭合条件；原子 Publisher 测试必须构造完整 transaction pre-state。",
+    "tests": [
+      "ios/harness/tests/test_harness.py",
+      "ios/harness/tests/test_requirement_readiness_publisher.py"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-REQUIREMENT-READINESS-PUBLISHER-RECOVERY-002",
+    "until": "IOS-READINESS-EVIDENCE-HANDOFF-RECOVERY-002"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T155125Z-ios-readiness-evidence-handoff-001-daff512b.json",
+    "ios/harness/evidence/runs/run-20260728T155529Z-ios-readiness-evidence-handoff-recovery-002-b0f1c0d5.json"
+  ]
+}

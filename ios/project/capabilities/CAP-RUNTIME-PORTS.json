@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "id": "CAP-RUNTIME-PORTS",
-  "revision": 2,
-  "title": "确定性 HTTP 请求响应与传输端口",
+  "revision": 3,
+  "title": "确定性 HTTP 端口与 HTML/CSS 书源首个纵向切片",
   "area": "source-runtime",
   "contract": "ios/docs/architecture.md",
   "requirement_refs": [
@@ -14,12 +14,16 @@
   "depends_on": ["CAP-BOOTSTRAP", "CAP-CORE"],
   "active_decisions": ["ADR-0001", "ADR-0002"],
   "open_compatibility": [],
-  "open_pitfalls": [],
+  "open_pitfalls": ["PIT-0048"],
   "blockers": [],
   "required_evidence": ["android-intake-contract", "dependency-policy", "swift-package-tests", "architecture"],
   "freshness_inputs": ["baseline_sha256", "architecture_digest_sha256", "architecture_rules_sha256", "harness_config_sha256", "dependency_lock_sha256", "android_intake_control_sha256", "android_requirement_selection_sha256"],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260722T100716Z-ios-runtime-ports-001-ebad144b.json",
-  "next_actions": ["推进 IOS-CONFORMANCE-001，建立 FixtureTransport 与 canonical execution envelope 骨架"],
-  "updated_at": "2026-07-22T10:07:34Z",
-  "updated_by": "IOS-RUNTIME-PORTS-001"
+  "latest_evidence": "ios/harness/evidence/runs/run-20260728T154037Z-ios-source-runtime-html-css-001-793d3e0f.json",
+  "next_actions": [
+    "把 HTMLDocument 抽象为可替换 backend，并用更多非 XHTML、错误闭合与混合节点 Golden 驱动兼容扩展",
+    "扩展 CSS selector、JSONPath、XPath、JS 与 WebView 规则能力，每种能力都先绑定 Android characterization",
+    "让 ConformanceCLI 直接执行 SourceRuntime pipeline 并逐字段比较 protected Android Golden，而不只验证 FixtureTransport"
+  ],
+  "updated_at": "2026-07-28T15:40:38Z",
+  "updated_by": "IOS-SOURCE-RUNTIME-HTML-CSS-001"
 }

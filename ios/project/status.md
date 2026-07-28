@@ -2,13 +2,13 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-28T15:17:09Z
+- 更新时间：2026-07-28T15:56:14Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
 - 下一个可领取工作项：无
-- 最近完成：IOS-REQUIREMENT-READINESS-PUBLISHER-RECOVERY-002
+- 最近完成：IOS-READINESS-EVIDENCE-HANDOFF-RECOVERY-002
 
 ## 健康度
 
@@ -52,10 +52,13 @@
 | proposal_gate_policy | `authority_only` |
 | proposal_lifecycle_tests | `state_aware` |
 | publisher_tests_after_promotion | `state_independent` |
+| readiness_evidence_handoff | `completed_evidence_bound` |
 | recovery_compiler_binding | `content_addressed` |
+| requirement_publisher_prestate | `state_independent` |
 | requirement_readiness_publisher | `implemented_external_authority` |
 | requirements | `catalog_ready_one_characterization_gap` |
 | source_lab | `fixture_transport_integrated` |
+| source_runtime_html_css | `golden_verified_first_slice` |
 | supervisor_run_journal | `local_replayable` |
 | swiftpm_manifest_verification | `sandbox_isolated` |
 | terminal_recovery_lineage | `typed_runtime_replacement` |
@@ -109,9 +112,12 @@
 | IOS-PROPOSAL-COMPILER-001 | 100 | `completed` | IOS-KNOWLEDGE-DAG-REPAIR-001, IOS-LOOP-SUPERVISOR-E2E-001 | 建立 initialization DAG 到不可变候选的编译器 |
 | IOS-PROPOSAL-GATE-REPAIR-001 | 100 | `completed` | IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002, IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-004 | 移除 proposal 橡皮图章并允许受限修复 turn |
 | IOS-PROPOSAL-LIFECYCLE-RECOVERY-002 | 100 | `completed` | IOS-PROPOSAL-COMPILER-001, IOS-AUTO-MATERIALIZATION-POLICY-001 | 修复 proposal 测试对物化生命周期的自阻断 |
+| IOS-READINESS-EVIDENCE-HANDOFF-001 | 100 | `rejected` | IOS-SOURCE-RUNTIME-HTML-CSS-001, IOS-REQUIREMENT-READINESS-PUBLISHER-RECOVERY-002 | 闭合 Requirement readiness 到完成实现 Evidence 的新鲜度交接 |
+| IOS-READINESS-EVIDENCE-HANDOFF-RECOVERY-002 | 100 | `completed` | IOS-SOURCE-RUNTIME-HTML-CSS-001, IOS-REQUIREMENT-READINESS-PUBLISHER-RECOVERY-002 | 恢复 readiness Evidence 交接并隔离 Publisher 发布前状态 |
 | IOS-RECOVERY-COMPILER-BINDING-001 | 100 | `completed` | IOS-TYPED-RECOVERY-LINEAGE-001 | 将 typed recovery 绑定进编译与物化链路 |
 | IOS-REQUIREMENT-READINESS-PUBLISHER-001 | 100 | `blocked` | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-PLAN-006 | 建立受信 Requirement Readiness Publisher |
 | IOS-REQUIREMENT-READINESS-PUBLISHER-RECOVERY-002 | 100 | `completed` | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-PLAN-006 | 恢复发布后基线并建立 Requirement Readiness Publisher |
+| IOS-SOURCE-RUNTIME-HTML-CSS-001 | 100 | `completed` | IOS-RUNTIME-PORTS-001, IOS-SOURCELAB-ENGINE-001, IOS-KNOWLEDGE-SOURCE-RUNTIME-GOLDEN-002, IOS-REQUIREMENT-READINESS-PUBLISHER-RECOVERY-002 | 实现 Android Golden 对齐的 HTML/CSS SourceRuntime 纵向能力 |
 | IOS-SUPERVISOR-OWNED-VERIFY-001 | 100 | `blocked` | IOS-CODEX-AGENT-ADAPTER-COMPAT-002, IOS-SWIFTPM-VERIFY-SANDBOX-001 | 将受信 verify 与 close 移出 Agent 沙箱 |
 | IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002 | 100 | `completed` | IOS-CODEX-AGENT-ADAPTER-COMPAT-002, IOS-SWIFTPM-VERIFY-SANDBOX-001, IOS-PROCESS-GROUP-REAP-001 | 恢复 Supervisor-owned verify 与 close |
 | IOS-SUPERVISOR-RUN-JOURNAL-001 | 100 | `completed` | IOS-CONTROL-CATALOG-RESUME-001 | 为 Loop Supervisor 增加可重放运行日志 |
