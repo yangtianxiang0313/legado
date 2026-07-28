@@ -2,13 +2,13 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-28T05:14:08Z
+- 更新时间：2026-07-28T05:16:24Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
-- 下一个可领取工作项：IOS-TERMINAL-RECOVERY-RESOLUTION-002
-- 最近完成：IOS-TERMINAL-RECOVERY-RESOLUTION-001
+- 下一个可领取工作项：无
+- 最近完成：IOS-TERMINAL-RECOVERY-RESOLUTION-002
 
 ## 健康度
 
@@ -44,7 +44,7 @@
 | requirements | `catalog_ready_one_characterization_gap` |
 | source_lab | `fixture_transport_integrated` |
 | swiftpm_manifest_verification | `sandbox_isolated` |
-| terminal_recovery_resolution | `lineage_aware` |
+| terminal_recovery_resolution | `single_terminal_predecessor` |
 | trusted_process_cleanup | `bounded_stable` |
 | trusted_supervisor_reference | `local_verified` |
 
@@ -73,7 +73,7 @@
 | IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002 | 100 | `completed` | IOS-CODEX-AGENT-ADAPTER-COMPAT-002, IOS-SWIFTPM-VERIFY-SANDBOX-001, IOS-PROCESS-GROUP-REAP-001 | 恢复 Supervisor-owned verify 与 close |
 | IOS-SWIFTPM-VERIFY-SANDBOX-001 | 100 | `completed` | IOS-CODEX-AGENT-ADAPTER-COMPAT-002, IOS-KNOWLEDGE-TOMBSTONE-PROTOCOL-001 | 隔离 SwiftPM manifest 验证沙箱与缓存 |
 | IOS-TERMINAL-RECOVERY-RESOLUTION-001 | 100 | `completed` | IOS-PROPOSAL-GATE-REPAIR-001, IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-004, IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002 | 按恢复谱系消解历史终态 blocker |
-| IOS-TERMINAL-RECOVERY-RESOLUTION-002 | 100 | `ready` | IOS-TERMINAL-RECOVERY-RESOLUTION-001 | 收紧显式恢复关系并补齐最终证据 |
+| IOS-TERMINAL-RECOVERY-RESOLUTION-002 | 100 | `completed` | IOS-TERMINAL-RECOVERY-RESOLUTION-001 | 收紧显式恢复关系并补齐最终证据 |
 | IOS-TRUSTED-SUPERVISOR-REFERENCE-001 | 100 | `completed` | IOS-LOOP-SUPERVISOR-E2E-001, IOS-CODEX-AGENT-ADAPTER-001 | 建立仓库外签名 journal 与隔离复验 reference runner |
 | IOS-KNOWLEDGE-PROPOSAL-BATCH-REFS-REPAIR-001 | 96 | `completed` | IOS-KNOWLEDGE-ANDROID-SURFACES-001 | 闭合同批知识候选引用契约 |
 | IOS-KNOWLEDGE-DAG-REPAIR-001 | 95 | `completed` | IOS-KNOWLEDGE-CONTROL-PLANE-001 | 修复初始化 DAG 验收缺口并收紧知识演进门禁 |

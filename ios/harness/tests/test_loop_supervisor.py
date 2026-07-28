@@ -177,6 +177,30 @@ class LoopSupervisorInspectTests(unittest.TestCase):
         )
 
         harness.items["IOS-FIX-002"]["spec"]["capability"] = "CAP-TEST"
+        harness.items["IOS-FIX-002"]["spec"]["inputs"]["context_files"] = []
+        self.assertEqual(
+            ["IOS-FIX-001"],
+            supervisor._explicit_recovery_candidates(
+                "IOS-READY-001",
+                harness.items,
+                harness.state_value["work_items"],
+            ),
+        )
+
+        harness.items["IOS-FIX-002"]["spec"]["inputs"]["context_files"] = [
+            "ios/harness/work-items/IOS-READY-001.json"
+        ]
+        harness.state_value["work_items"]["IOS-FIX-002"]["status"] = "implementing"
+        self.assertEqual(
+            ["IOS-FIX-001"],
+            supervisor._explicit_recovery_candidates(
+                "IOS-READY-001",
+                harness.items,
+                harness.state_value["work_items"],
+            ),
+        )
+
+        harness.state_value["work_items"]["IOS-FIX-002"]["status"] = "completed"
         decision = supervisor.inspect()
         self.assertEqual("terminal_recovery", decision.state)
         self.assertEqual(

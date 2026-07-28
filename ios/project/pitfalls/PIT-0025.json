@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "PIT-0025",
-  "revision": 1,
+  "revision": 2,
   "title": "终态恢复不能依赖全局最近完成事件",
   "fingerprint": "terminal-recovery-hidden-or-stuck-without-predecessor-lineage",
   "capabilities": [
@@ -41,6 +41,7 @@
   "first_seen": "2026-07-28",
   "last_seen": "2026-07-28",
   "evidence": [
-    "ios/harness/evidence/runs/run-20260728T051015Z-ios-terminal-recovery-resolution-001-e3c29384.json"
+    "ios/harness/evidence/runs/run-20260728T051015Z-ios-terminal-recovery-resolution-001-e3c29384.json",
+    "ios/harness/evidence/runs/run-20260728T051556Z-ios-terminal-recovery-resolution-002-eaa18f8f.json"
   ]
 }
