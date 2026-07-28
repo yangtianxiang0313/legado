@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "revision": 208,
+  "revision": 209,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-28T05:41:56Z",
-  "event_head": "c9876faa1214ac31a532682932894e5b22ec4f6d57728bb69e63b9f6bfb94420",
+  "updated_at": "2026-07-28T05:43:17Z",
+  "event_head": "a48fdbd7a5fb4683d3f01059a1797a645677e38637145a06d7ecb77e53603d71",
   "active_work_items": [],
   "last_completed_work_item": "IOS-RECOVERY-COMPILER-BINDING-001",
   "work_items": {
@@ -3415,6 +3415,11 @@
       ],
       "cancelled_at": "2026-07-28T05:41:56Z",
       "cancelled_reason": "invalidated_assumption: catalog drift is caused by active harness.py control digest changes, not Work Item materialization"
+    },
+    "IOS-CONTROL-CATALOG-RESUME-001": {
+      "status": "ready",
+      "attempt": 0,
+      "last_evidence": null
     }
   },
   "health": {
