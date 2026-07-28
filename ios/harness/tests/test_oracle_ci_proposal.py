@@ -207,6 +207,32 @@ class OracleCIProposalTests(unittest.TestCase):
             "actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
             workflow,
         )
+        job_environment = workflow.split(
+            "    env:\n", 1
+        )[1].split("    steps:\n", 1)[0]
+        self.assertNotIn("${{ runner.", job_environment)
+        workspace_initialization = (
+            "          printf 'ORACLE_TEMP=%s\\n' \\\n"
+            '            "${RUNNER_TEMP}/legado-android-oracle" \\\n'
+            '            >>"${GITHUB_ENV}"'
+        )
+        self.assertIn(workspace_initialization, workflow)
+        self.assertLess(
+            workflow.index(workspace_initialization),
+            workflow.index("${ORACLE_TEMP}"),
+        )
+        attest_action = (
+            "actions/attest@"
+            "f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6"
+        )
+        self.assertEqual(2, workflow.count(attest_action))
+        self.assertEqual(
+            2,
+            workflow.count(
+                "subject-path: ${{ runner.temp }}/"
+                "legado-android-oracle/"
+            ),
+        )
         for forbidden in (
             "publish",
             "promote",
