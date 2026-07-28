@@ -669,6 +669,43 @@ class MaterializationTests(unittest.TestCase):
                 decision.details["external_execution"],
             )
 
+    def test_verified_oracle_receipt_maps_to_external_publisher(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            binding = {
+                "scenario_id": "sl-post-form-001",
+                "receipt": (
+                    "ios/project/external-execution-receipts/receipt.json"
+                ),
+                "next_authority": "independent_golden_publisher",
+            }
+            plan = loop_supervisor.DemandPlan(
+                intent_id="MINT-SOURCE-REQUEST-POST-FORM-001",
+                priority=100,
+                target_work_item_id="IOS-ANDROID-POST-FORM-ATTESTATION-001",
+                state="trusted_oracle_golden_publisher_required",
+                reason_code="TRUSTED_ORACLE_GOLDEN_PUBLISHER_REQUIRED",
+                authority_transition=False,
+                artifacts=(),
+                bindings={"trusted_oracle_execution": binding},
+                policy=loop_supervisor.MIGRATION_MATERIALIZATION_POLICY,
+                intent_kind="android_migration",
+            )
+            supervisor = loop_supervisor.LoopSupervisor(fixture.harness)
+            with mock.patch.object(
+                loop_supervisor.DemandCompiler,
+                "plans",
+                return_value=((plan,), ()),
+            ):
+                decision = supervisor._demand_decision([])
+            self.assertEqual("external_publisher_required", decision.state)
+            self.assertFalse(decision.requires_human)
+            self.assertEqual((), decision.commands)
+            self.assertEqual(
+                binding,
+                decision.details["external_publisher"],
+            )
+
     def test_trusted_oracle_materialization_recomputes_plan(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = MaterializationFixture(Path(directory))

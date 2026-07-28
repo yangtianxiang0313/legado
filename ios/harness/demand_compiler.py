@@ -47,6 +47,7 @@ TRUSTED_ORACLE_WORKFLOW = (
 ORACLE_CONTRACT_PATH = "ios/harness/oracle/contract.py"
 ORACLE_CI_PROPOSAL_PATH = "ios/harness/oracle/ci_proposal.py"
 ORACLE_TRUSTED_IMPORT_PATH = "ios/harness/oracle/trusted_import.py"
+EXTERNAL_RECEIPT_ROOT = "ios/project/external-execution-receipts"
 POLICY = "structured-delivery-intent-v1"
 MIGRATION_POLICY = "source-anchored-android-migration-v1"
 INTENT_ID = re.compile(r"^DINT-[A-Z][A-Z0-9-]*-[0-9]{3}$")
@@ -520,6 +521,163 @@ class DemandCompiler:
             )
         return value
 
+    def _github_oracle_receipt(
+        self,
+        *,
+        scenario_id: str,
+        settlement: Mapping[str, Any],
+    ) -> Optional[Mapping[str, Any]]:
+        listing = self._git(
+            "ls-tree", "-r", "--name-only", "HEAD", "--",
+            EXTERNAL_RECEIPT_ROOT,
+        )
+        if listing.returncode != 0:
+            raise DemandCompilerError("GITHUB_ORACLE_RECEIPT_INVALID")
+        paths = [
+            value
+            for value in listing.stdout.decode("utf-8").splitlines()
+            if value.endswith(".json")
+        ]
+        matches: List[Tuple[str, Dict[str, Any]]] = []
+        for relative in paths:
+            try:
+                receipt = _load_object(
+                    self.resolve(relative),
+                    "GITHUB_ORACLE_RECEIPT",
+                )
+                self._head_regular((relative,))
+            except DemandCompilerError as error:
+                raise DemandCompilerError(
+                    "GITHUB_ORACLE_RECEIPT_INVALID"
+                ) from error
+            if receipt.get("scenario_id") == scenario_id:
+                matches.append((relative, receipt))
+        if not matches:
+            return None
+        if len(matches) != 1:
+            raise DemandCompilerError("GITHUB_ORACLE_RECEIPT_DUPLICATE")
+        relative, receipt = matches[0]
+        exact = {
+            "schema_version", "authority", "next_authority", "repository",
+            "workflow_path", "scenario_id", "source_digest", "branch", "run",
+            "artifact", "files", "trusted_report", "trusted_report_sha256",
+            "authority_tree",
+        }
+        source = receipt.get("source_digest")
+        report = receipt.get("trusted_report")
+        run = receipt.get("run")
+        artifact = receipt.get("artifact")
+        files = receipt.get("files")
+        authority = receipt.get("authority_tree")
+        request_ids = {
+            "sl-html-basic-001": "IOS-ANDROID-ORACLE-ATTESTATION-001",
+            "sl-post-form-001": "IOS-ANDROID-POST-FORM-ATTESTATION-001",
+        }
+        fixture_root = (
+            f"ios/harness/fixtures/source-lab/{scenario_id}"
+        )
+        fixture_listing = self._git(
+            "ls-tree", "-r", "--name-only", "HEAD", "--", fixture_root
+        )
+        required_authority = {
+            *settlement.get("contract_authority_files", {}).keys(),
+            SOURCE_LAB_MANIFEST,
+            f"{WORK_ITEM_ROOT}/{request_ids.get(scenario_id, '')}.json",
+            *fixture_listing.stdout.decode("utf-8").splitlines(),
+        }
+        ancestry = self._git("merge-base", "--is-ancestor", str(source), "HEAD")
+        if (
+            set(receipt) != exact
+            or receipt.get("schema_version") != 1
+            or receipt.get("authority") != "verified_candidate"
+            or receipt.get("next_authority")
+            != "independent_golden_publisher"
+            or receipt.get("workflow_path") != TRUSTED_ORACLE_WORKFLOW
+            or not isinstance(source, str)
+            or HEX40.fullmatch(source) is None
+            or ancestry.returncode != 0
+            or receipt.get("branch")
+            != f"feature/oracle-{scenario_id}-{source}"
+            or relative
+            != (
+                f"{EXTERNAL_RECEIPT_ROOT}/android-oracle-{scenario_id}-"
+                f"{source}-{run.get('id') if isinstance(run, dict) else ''}-"
+                f"{run.get('attempt') if isinstance(run, dict) else ''}.json"
+            )
+            or not isinstance(run, dict)
+            or set(run) != {"id", "attempt", "url", "event"}
+            or isinstance(run.get("id"), bool)
+            or not isinstance(run.get("id"), int)
+            or run["id"] < 1
+            or isinstance(run.get("attempt"), bool)
+            or not isinstance(run.get("attempt"), int)
+            or run["attempt"] < 1
+            or run.get("event") != "push"
+            or not isinstance(run.get("url"), str)
+            or not run["url"]
+            or not isinstance(artifact, dict)
+            or set(artifact) != {"id", "name", "sha256sums_sha256"}
+            or isinstance(artifact.get("id"), bool)
+            or not isinstance(artifact.get("id"), int)
+            or artifact["id"] < 1
+            or not isinstance(artifact.get("sha256sums_sha256"), str)
+            or re.fullmatch(
+                r"[0-9a-f]{64}", artifact["sha256sums_sha256"]
+            ) is None
+            or artifact.get("name")
+            != (
+                f"android-oracle-candidate-{scenario_id}-"
+                f"{run['id']}-{run['attempt']}"
+            )
+            or not isinstance(authority, dict)
+            or set(authority) != required_authority
+            or not isinstance(files, dict)
+            or set(files) != {
+                "android-oracle-evidence.tar",
+                "android-oracle-proposal.tar",
+                "evidence-attestation.json",
+                "proposal-attestation.json",
+            }
+            or any(
+                not isinstance(value, str)
+                or re.fullmatch(r"[0-9a-f]{64}", value) is None
+                for value in files.values()
+            )
+            or not isinstance(report, dict)
+            or report.get("authority") != "candidate_only"
+            or report.get("status") != "verified_for_human_review"
+            or report.get("next_authority")
+            != "independent_golden_publisher"
+            or report.get("repository") != receipt.get("repository")
+            or report.get("source_digest") != source
+            or report.get("scenario_id") != scenario_id
+            or report.get("fixture_ids") != [scenario_id]
+            or report.get("proposal_archive_sha256")
+            != files.get("android-oracle-proposal.tar")
+            or report.get("evidence_archive_sha256")
+            != files.get("android-oracle-evidence.tar")
+            or receipt.get("trusted_report_sha256")
+            != _sha256_json(report)
+            or report.get("scenario_sha256")
+            != settlement.get("scenario_sha256")
+            or report.get("source_lab_manifest_sha256")
+            != settlement.get("source_lab_manifest_sha256")
+        ):
+            raise DemandCompilerError("GITHUB_ORACLE_RECEIPT_INVALID")
+        for path, expected in authority.items():
+            if (
+                not isinstance(path, str)
+                or not isinstance(expected, str)
+                or HEX40.fullmatch(expected) is None
+                or self._git_object("HEAD", path) != expected
+                or self._git_object(source, path) != expected
+            ):
+                raise DemandCompilerError("GITHUB_ORACLE_AUTHORITY_DRIFT")
+        result = dict(receipt)
+        result["path"] = relative
+        result["sha256"] = _sha256(self.resolve(relative).read_bytes())
+        return result
+
     def compile_migration(self, intent_path: Path) -> DemandPlan:
         try:
             relative = intent_path.resolve().relative_to(
@@ -979,6 +1137,12 @@ class DemandCompiler:
                                     bindings.update(
                                         trusted_settlement["bindings"]
                                     )
+                                    receipt_ready = (
+                                        bindings[
+                                            "trusted_oracle_execution"
+                                        ].get("receipt")
+                                        is not None
+                                    )
                                     return DemandPlan(
                                         intent_id=str(intent["id"]),
                                         priority=int(intent["priority"]),
@@ -988,11 +1152,17 @@ class DemandCompiler:
                                             ]
                                         ),
                                         state=(
-                                            "trusted_oracle_"
+                                            "trusted_oracle_golden_"
+                                            "publisher_required"
+                                            if receipt_ready
+                                            else "trusted_oracle_"
                                             "execution_required"
                                         ),
                                         reason_code=(
-                                            "TRUSTED_ORACLE_GITHUB_"
+                                            "TRUSTED_ORACLE_GOLDEN_"
+                                            "PUBLISHER_REQUIRED"
+                                            if receipt_ready
+                                            else "TRUSTED_ORACLE_GITHUB_"
                                             "EXECUTION_REQUIRED"
                                         ),
                                         authority_transition=False,
@@ -1914,7 +2084,7 @@ class DemandCompiler:
             path: _sha256(self.resolve(path).read_bytes())
             for path in authority_paths
         }
-        return {
+        result = {
             "resolved_work_item_id": resolved_id,
             "artifacts": [
                 {
@@ -1992,6 +2162,36 @@ class DemandCompiler:
                 },
             },
         }
+        receipt = self._github_oracle_receipt(
+            scenario_id=scenario_id,
+            settlement=result["bindings"]["trusted_oracle_settlement"],
+        )
+        if receipt is not None:
+            result["artifacts"][1] = {
+                "kind": "trusted_oracle_github_execution",
+                "id": scenario_id,
+                "status": "verified_candidate",
+                "workflow_path": TRUSTED_ORACLE_WORKFLOW,
+                "source_digest": receipt["source_digest"],
+                "receipt": receipt["path"],
+                "receipt_sha256": receipt["sha256"],
+            }
+            result["bindings"]["trusted_oracle_execution"] = {
+                "scenario_id": scenario_id,
+                "workflow_path": TRUSTED_ORACLE_WORKFLOW,
+                "source_digest": receipt["source_digest"],
+                "receipt": receipt["path"],
+                "receipt_sha256": receipt["sha256"],
+                "repository": receipt["repository"],
+                "run": receipt["run"],
+                "artifact": receipt["artifact"],
+                "trusted_report": receipt["trusted_report"],
+                "trusted_report_sha256": receipt[
+                    "trusted_report_sha256"
+                ],
+                "next_authority": "independent_golden_publisher",
+            }
+        return result
 
     def _completed_migration_intake(
         self,

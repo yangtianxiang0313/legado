@@ -2110,6 +2110,9 @@ class LoopSupervisor:
             "trusted_oracle_execution_required": (
                 "external_execution_required"
             ),
+            "trusted_oracle_golden_publisher_required": (
+                "external_publisher_required"
+            ),
         }
         if plan.state not in state_mapping:
             return LoopDecision(
@@ -2132,6 +2135,10 @@ class LoopSupervisor:
         }
         if plan.state == "trusted_oracle_execution_required":
             details["external_execution"] = dict(
+                plan.bindings.get("trusted_oracle_execution", {})
+            )
+        if plan.state == "trusted_oracle_golden_publisher_required":
+            details["external_publisher"] = dict(
                 plan.bindings.get("trusted_oracle_execution", {})
             )
         return LoopDecision(

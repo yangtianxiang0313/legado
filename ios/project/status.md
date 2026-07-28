@@ -2,13 +2,13 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-28T22:46:36Z
+- 更新时间：2026-07-28T23:04:33Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
 - 下一个可领取工作项：无
-- 最近完成：IOS-GITHUB-ORACLE-RECEIPT-SCOPE-001
+- 最近完成：IOS-GITHUB-ORACLE-RECEIPT-SETTLEMENT-001
 
 ## 健康度
 
@@ -38,6 +38,7 @@
 | github_oracle_owner | `declared_v1` |
 | github_oracle_receipt_auto_scope | `exact_settlement_v1` |
 | github_oracle_receipt_owner | `declared_v1` |
+| github_oracle_receipt_settlement | `verified_candidate_v1` |
 | harness | `ready` |
 | harness_tests_timeout | `calibrated` |
 | harness_timeout_cleanup | `verified` |
@@ -137,6 +138,7 @@
 | IOS-GITHUB-ORACLE-PUSH-TRIGGER-RECOVERY-002 | 100 | `completed` | IOS-GITHUB-ORACLE-WORKFLOW-SCOPE-001 | 恢复 create-only Oracle branch 的服务端幂等触发合同 |
 | IOS-GITHUB-ORACLE-RECEIPT-OWNER-001 | 100 | `completed` | IOS-GITHUB-ORACLE-PAYLOAD-CANONICALIZATION-001 | 预声明 GitHub Oracle Receipt Settlement 所有权 |
 | IOS-GITHUB-ORACLE-RECEIPT-SCOPE-001 | 100 | `completed` | IOS-GITHUB-ORACLE-RECEIPT-OWNER-001 | 建立 GitHub Oracle Receipt Settlement 的精确自动实现边界 |
+| IOS-GITHUB-ORACLE-RECEIPT-SETTLEMENT-001 | 100 | `completed` | IOS-GITHUB-ORACLE-RECEIPT-SCOPE-001, IOS-GITHUB-ORACLE-DISPATCHER-HARDENING-001, IOS-GITHUB-ORACLE-PAYLOAD-CANONICALIZATION-001 | 实现 GitHub Oracle Attestation Receipt Settlement |
 | IOS-GITHUB-ORACLE-WORKFLOW-OWNER-001 | 100 | `completed` | IOS-GITHUB-ORACLE-DISPATCHER-001 | 预声明 Android Oracle Workflow 的 Conformance 所有权 |
 | IOS-GITHUB-ORACLE-WORKFLOW-SCOPE-001 | 100 | `completed` | IOS-GITHUB-ORACLE-WORKFLOW-OWNER-001 | 建立固定 Android Oracle Workflow 的受限自动修改策略 |
 | IOS-HARNESS-APPROVAL-UI-001 | 100 | `completed` | IOS-KNOWLEDGE-BOOK-DOMAIN-001 | 提供本地一键人工审批界面 |

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 65,
+  "revision": 66,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -70,14 +70,12 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260728T224510Z-ios-github-oracle-receipt-scope-001-03d7fc23.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260728T230107Z-ios-github-oracle-receipt-settlement-001-8fa6a468.json",
   "next_actions": [
-    "独立实现 github_oracle_receipt.py 与 fail-closed receipt settlement",
-    "以隔离 fake gh 覆盖 run、artifact、双 attestation、trusted import 与 create-only receipt 边界",
     "在包含 canonicalization 修复的精确 source digest 上运行新的 sl-post-form-001 Oracle branch",
-    "下载并验证 evidence/proposal archive 与双 attestation bundle，再生成受信 receipt",
+    "使用独立 Receipt Settler 重新查询唯一成功 run 与 exact-name artifact，并生成 create-only verified-candidate receipt",
     "由独立 Publisher 审核并发布 scenario-aware protected Golden，随后续接 SourceRuntime POST Form iOS 验收"
   ],
-  "updated_at": "2026-07-28T22:45:11Z",
-  "updated_by": "IOS-GITHUB-ORACLE-RECEIPT-SCOPE-001"
+  "updated_at": "2026-07-28T23:01:07Z",
+  "updated_by": "IOS-GITHUB-ORACLE-RECEIPT-SETTLEMENT-001"
 }
