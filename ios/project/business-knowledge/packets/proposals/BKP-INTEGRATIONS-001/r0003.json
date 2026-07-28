@@ -1,0 +1,542 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-INTEGRATIONS-001",
+  "revision": 3,
+  "status": "candidate",
+  "semantic_key": "integrations.external-capabilities-and-release-profiles",
+  "title": "外部集成、权限、依赖、迁移与发布约束候选",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "external-entry",
+      "remote-service",
+      "backup-migration",
+      "platform-capabilities",
+      "dependency-governance"
+    ],
+    "capability_refs": [
+      "CAP-KNOWLEDGE-CONTROL"
+    ],
+    "subject_keys": [
+      "integration.entry",
+      "integration.remote",
+      "integration.backup",
+      "integration.permissions",
+      "integration.dependencies",
+      "integration.profiles"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-INTEGRATION-EXTERNAL-ENTRY-001",
+      "revision": 1,
+      "semantic_key": "integration.entry.url-share",
+      "kind": "composite_static_fact",
+      "topic": "外部 URL 与分享入口",
+      "statement": "能力矩阵：用户价值是从浏览器、文件或其他应用导入内容并分享阅读对象；数据边界包含外部 URL、文本、文件 URI 与解析后的项目自有 DTO；Android manifest 静态声明多个 VIEW/SEND 入口及 SharedReceiverActivity。失败面包括恶意 URI、超大输入、错误类型、重复导入与安全作用域失效。证据仅为冻结源码静态声明，iOS 应以显式 URL/document/share adapter 候选承接，不能据此自动申请 entitlement；StoreSafe 与 FullCompat 都需最小输入白名单和用户确认。",
+      "subject_keys": ["integration.entry", "integration.permissions"],
+      "depends_on": [],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "6fe06e28cb01cf1336dd664f1b845ceed5d23f36",
+            "path": "app/src/main/AndroidManifest.xml",
+            "symbol_id": "xml://manifest/application/activity[SharedReceiverActivity]"
+          }
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-INTEGRATION-REMOTE-SERVICE-001",
+      "revision": 1,
+      "semantic_key": "integration.remote.http-websocket-management",
+      "kind": "runtime_behavior",
+      "topic": "HTTP、WebSocket 与远程管理",
+      "statement": "能力矩阵：用户价值是由局域网浏览器管理书架、书源和文件并观察任务；边界是受认证的命令/事件 DTO、上传文件与脱敏状态，不是数据库或 Android service 类型。Android 使用 NanoHTTPD/NanoWSD 并存在 HTTP/WebSocket server。失败面包括弱认证、局域网暴露、路径穿越、上传耗尽、连接泄漏、并发写入和后台终止。源码只能证明实现入口与库选择；路由、认证、并发、断线恢复及 iOS 前后台可行性必须 characterization/spike。StoreSafe 默认关闭入站服务，FullCompat 也需人工决定本地网络披露与发布风险。",
+      "subject_keys": ["integration.remote", "integration.profiles"],
+      "depends_on": [],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "ef9e48f5ef156c181a77f42c9ec2637c0bdb5491",
+            "path": "app/src/main/java/io/legado/app/web/HttpServer.kt",
+            "symbol_id": "kotlin://io.legado.app.web/HttpServer"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "22b07da214e076c8d9c4766dd9db9e8be5b5f000",
+            "path": "app/build.gradle",
+            "symbol_id": "gradle://app/dependencies/nanohttpd"
+          }
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-INTEGRATION-WEBDAV-001",
+      "revision": 1,
+      "semantic_key": "integration.backup.webdav",
+      "kind": "runtime_behavior",
+      "topic": "WebDAV 备份与恢复",
+      "statement": "能力矩阵：用户价值是跨设备保存、列举、下载和恢复备份；边界为凭据隔离的 WebDAV transport、远端路径、ETag/时间元数据与不透明备份 envelope。Android WebDav 实现证明协议适配存在。失败面包括服务器方法差异、证书/认证、重定向、配额、并发覆盖、半上传和过期列表。WebDAV 服务器兼容矩阵、冲突规则和原子性没有由静态源码证明，必须多服务器 spike 与 Android characterization；任何 profile 都不得把凭据写入 trace。",
+      "subject_keys": ["integration.backup", "integration.remote"],
+      "depends_on": [],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "d9f3770b5869be291da07906366a3f617a6fab51",
+            "path": "app/src/main/java/io/legado/app/lib/webdav/WebDav.kt",
+            "symbol_id": "kotlin://io.legado.app.lib.webdav/WebDav"
+          }
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-INTEGRATION-BACKUP-ENVELOPE-001",
+      "revision": 1,
+      "semantic_key": "integration.backup.envelope",
+      "kind": "candidate_invariant",
+      "topic": "备份 envelope 与恢复事务",
+      "statement": "迁移候选合同必须把 envelope 格式版本、应用/数据库来源版本、内容清单、完整性、可选加密参数和未知字段保存策略显式化；恢复先验证再分阶段导入，记录逐域结果并支持失败后安全重试，不能直接打开 Android SQLite。Android Backup 只能证明当前归档生产路径。历史输入兼容矩阵、密钥错误、截断包、未知字段、部分恢复、跨设备传输、冲突合并与回滚 expected 均需 characterization 和人工裁决。",
+      "subject_keys": ["integration.backup", "integration.profiles"],
+      "depends_on": [{"id": "BKC-INTEGRATION-WEBDAV-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "5ae9d10e32c099e0a4f76ee77518f8bc88f85a14",
+            "path": "app/src/main/java/io/legado/app/help/storage/Backup.kt",
+            "symbol_id": "kotlin://io.legado.app.help.storage/Backup"
+          }
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "human_decision"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-INTEGRATION-LEGACY-IMPORT-001",
+      "revision": 1,
+      "semantic_key": "integration.backup.legacy-import",
+      "kind": "runtime_behavior",
+      "topic": "历史数据迁移",
+      "statement": "能力矩阵：用户价值是把旧版本数据迁入当前模型；边界应由 LegacyImportCodec 接收只读输入并输出版本化中间 DTO，隔离当前 repository。Android ImportOldData 证明存在旧数据导入代码，不证明所有历史版本。失败面包括编码、缺表/字段、重复实体、身份冲突、未知字段、孤儿引用、空间不足和中断。需以真实匿名历史样本建立版本×数据域×失败模式 characterization，定义 partial/rollback/report 行为。",
+      "subject_keys": ["integration.backup"],
+      "depends_on": [{"id": "BKC-INTEGRATION-BACKUP-ENVELOPE-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "5689c84e5aee7f3a577e7f985d965a259bfa90b9",
+            "path": "app/src/main/java/io/legado/app/help/storage/ImportOldData.kt",
+            "symbol_id": "kotlin://io.legado.app.help.storage/ImportOldData"
+          }
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-INTEGRATION-IMPORT-EXPORT-001",
+      "revision": 1,
+      "semantic_key": "integration.transfer.import-export",
+      "kind": "runtime_behavior",
+      "topic": "用户发起的导入导出",
+      "statement": "能力矩阵：用户价值是导出书籍/配置并从文件恢复或分享；边界是用户选择的 security-scoped document、流式 codec 和显式结果清单。Android ExportBookService 及 manifest 服务声明证明存在后台导出。失败面包括权限撤销、目标覆盖、文件名注入、存储不足、取消、后台终止和部分文件。iOS 必须用 document picker/share sheet 与原子临时文件候选，后台延续能力和格式 expected 需 spike/characterization。",
+      "subject_keys": ["integration.entry", "integration.backup", "integration.permissions"],
+      "depends_on": [],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "2cb9734ded3b8b2b54dd8527e484597ba6f2c3b6",
+            "path": "app/src/main/java/io/legado/app/service/ExportBookService.kt",
+            "symbol_id": "kotlin://io.legado.app.service/ExportBookService"
+          }
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-INTEGRATION-STORAGE-PERMISSIONS-001",
+      "revision": 1,
+      "semantic_key": "integration.permissions.storage",
+      "kind": "risk_or_anomaly",
+      "topic": "存储访问与发布矩阵",
+      "statement": "权限矩阵：Android 声明 MANAGE_EXTERNAL_STORAGE、READ/WRITE_EXTERNAL_STORAGE，属于 Android 文件模型；稳定业务需求仅是用户选择导入、导出、备份和本地书文件。iOS 候选是 document picker、security-scoped URL、应用容器与必要时 bookmark，而非从 manifest 映射 entitlement。StoreSafe 禁止任意文件系统扫描；FullCompat 是否保存长期外部访问需人工决定。隐私/App Store 风险包括过宽访问、用途不透明和后台持有；最小化原则是按用户动作、单文件/目录、可撤销授权。",
+      "subject_keys": ["integration.permissions", "integration.profiles"],
+      "depends_on": [{"id": "BKC-INTEGRATION-IMPORT-EXPORT-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "6fe06e28cb01cf1336dd664f1b845ceed5d23f36",
+            "path": "app/src/main/AndroidManifest.xml",
+            "symbol_id": "xml://manifest/uses-permission[storage]"
+          }
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "human_decision"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-INTEGRATION-NETWORK-PERMISSIONS-001",
+      "revision": 1,
+      "semantic_key": "integration.permissions.network",
+      "kind": "risk_or_anomaly",
+      "topic": "网络、局域网与发布矩阵",
+      "statement": "权限矩阵：Android INTERNET、ACCESS_NETWORK_STATE、ACCESS_WIFI_STATE 支撑出站请求和局域网状态；稳定业务需求是按书源访问远端内容、WebDAV 与可选本地管理。iOS 出站 URLSession 通常不由 Android permission 推导 entitlement；本地网络发现/监听、明文传输例外和后台网络分别是待确认 capability/Info 配置候选。StoreSafe 默认无入站监听且网络域最小化；FullCompat 的局域网服务需用途披露、隐私审查和 App Store 人工裁决。",
+      "subject_keys": ["integration.permissions", "integration.remote", "integration.profiles"],
+      "depends_on": [{"id": "BKC-INTEGRATION-REMOTE-SERVICE-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "6fe06e28cb01cf1336dd664f1b845ceed5d23f36",
+            "path": "app/src/main/AndroidManifest.xml",
+            "symbol_id": "xml://manifest/uses-permission[network]"
+          }
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "human_decision"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-INTEGRATION-TTS-001",
+      "revision": 1,
+      "semantic_key": "integration.system.text-to-speech",
+      "kind": "runtime_behavior",
+      "topic": "系统朗读",
+      "statement": "能力矩阵：用户价值是连续朗读章节并响应暂停、进度与音频焦点；数据边界为净化文本、语音参数和阅读位置，不泄漏 Android TTS 对象。Android TTS helper 与 TTSReadAloudService 证明系统朗读和 service 路径存在。失败面包括语音缺失、初始化失败、音频中断、超长文本、后台终止和进度漂移。iOS 候选为 AVSpeechSynthesizer adapter；锁屏/后台音频、远程控制和章节推进 expected 需 characterization 与 profile/entitlement 人工决定。",
+      "subject_keys": ["integration.permissions", "integration.profiles"],
+      "depends_on": [],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "3165bb3e80eff5db2f9e7d23a2b7f19e64c24054",
+            "path": "app/src/main/java/io/legado/app/help/TTS.kt",
+            "symbol_id": "kotlin://io.legado.app.help/TTS"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "2b2f5b096a5805d0b12dc38014144536f6d3333d",
+            "path": "app/src/main/java/io/legado/app/service/TTSReadAloudService.kt",
+            "symbol_id": "kotlin://io.legado.app.service/TTSReadAloudService"
+          }
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-INTEGRATION-BACKGROUND-NOTIFICATION-001",
+      "revision": 1,
+      "semantic_key": "integration.permissions.background-notification",
+      "kind": "risk_or_anomaly",
+      "topic": "通知、前台服务与后台执行",
+      "statement": "权限矩阵：Android 声明 POST_NOTIFICATIONS、WAKE_LOCK、FOREGROUND_SERVICE、MEDIA_PLAYBACK、DATA_SYNC 和忽略电池优化请求，并注册服务；稳定业务需求是让用户看见长任务/朗读状态、可取消且在平台允许时延续。iOS 候选必须按任务拆分为通知授权、音频后台模式、BGTask 或短期 background execution，不能一对一映射。StoreSafe/FullCompat 都须按需授权；常驻、静默或无用户价值的后台行为存在显著隐私与审核风险。",
+      "subject_keys": ["integration.permissions", "integration.profiles"],
+      "depends_on": [{"id": "BKC-INTEGRATION-TTS-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "6fe06e28cb01cf1336dd664f1b845ceed5d23f36",
+            "path": "app/src/main/AndroidManifest.xml",
+            "symbol_id": "xml://manifest/uses-permission[foreground-and-notification]"
+          }
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "human_decision"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-INTEGRATION-DYNAMIC-CAPABILITIES-001",
+      "revision": 1,
+      "semantic_key": "integration.profiles.dynamic-capabilities",
+      "kind": "risk_or_anomaly",
+      "topic": "可选动态能力与发布边界",
+      "statement": "Android manifest 的 REQUEST_INSTALL_PACKAGES 及构建中的 Rhino/WebKit/Cronet 等实现选择表明存在安装、脚本、动态页面或替代网络栈相关表面，但不自动形成 iOS 产品需求。StoreSafe 必须遵守 ARCH-013，不链接任意脚本或动态规则页面 Target；FullCompat 也只能通过显式 RuntimePolicy 和独立 adapter 注入。代码下载/执行、私有 API、替代引擎、审核披露和企业分发边界均需人工决策，不能由依赖存在性证明运行行为。",
+      "subject_keys": ["integration.profiles", "integration.dependencies"],
+      "depends_on": [],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "6fe06e28cb01cf1336dd664f1b845ceed5d23f36",
+            "path": "app/src/main/AndroidManifest.xml",
+            "symbol_id": "xml://manifest/uses-permission[REQUEST_INSTALL_PACKAGES]"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "22b07da214e076c8d9c4766dd9db9e8be5b5f000",
+            "path": "app/build.gradle",
+            "symbol_id": "gradle://app/dependencies/dynamic-runtime"
+          }
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "human_decision"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-INTEGRATION-NETWORK-STACK-001",
+      "revision": 1,
+      "semantic_key": "integration.dependencies.network-stack",
+      "kind": "business_inference",
+      "topic": "网络栈依赖候选",
+      "statement": "依赖清单：业务能力是 HTTP(S)、Cookie、重定向、上传下载、WebSocket 与可取消并发；协议边界应是项目自有 Sendable request/response/stream。Android 当前使用 OkHttp 且可走 Cronet。iOS 标准库 URLSession/Network.framework 应先 spike；候选三方库不得预先批准。评估必须记录许可证、维护活跃度、二进制体积、隐私清单、TLS/代理语义和 Swift 6 Sendable 风险，并用重定向、Cookie、流式传输、取消、代理和错误映射 spike 决策；本 Claim 不授权 Package 变更。",
+      "subject_keys": ["integration.dependencies", "integration.remote"],
+      "depends_on": [],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "b4ead2bb5a02cebe9e5bf7e42fbced5f67785485",
+            "path": "app/src/main/java/io/legado/app/help/http/OkHttpUtils.kt",
+            "symbol_id": "kotlin://io.legado.app.help.http/OkHttpUtils"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "4881589cd79854bf10c2369b8ec8b3d0963c74f1",
+            "path": "app/src/main/java/io/legado/app/help/http/Cronet.kt",
+            "symbol_id": "kotlin://io.legado.app.help.http/Cronet"
+          }
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-INTEGRATION-ARCHIVE-CODEC-001",
+      "revision": 1,
+      "semantic_key": "integration.dependencies.archive-codec",
+      "kind": "business_inference",
+      "topic": "归档、加密与迁移依赖候选",
+      "statement": "依赖清单：业务能力是安全打包、解包、完整性和可选加密；协议边界是 ArchiveCodec/CryptoEnvelope，不暴露第三方 archive 类型。Android 构建包含 libarchive 与 Hutool crypto，属于当前库选择。iOS 先评估 Foundation/Compression/CryptoKit 可行性，再比较候选 ZIP 库。许可证、维护、格式覆盖、体积、隐私、zip-slip/zip-bomb、密码/KDF 兼容与并发取消风险必须形成 spike；没有任何依赖批准或 Package 变更。",
+      "subject_keys": ["integration.dependencies", "integration.backup"],
+      "depends_on": [{"id": "BKC-INTEGRATION-BACKUP-ENVELOPE-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "22b07da214e076c8d9c4766dd9db9e8be5b5f000",
+            "path": "app/build.gradle",
+            "symbol_id": "gradle://app/dependencies/archive-and-crypto"
+          }
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-INTEGRATION-WEBDAV-DEPENDENCY-001",
+      "revision": 1,
+      "semantic_key": "integration.dependencies.webdav",
+      "kind": "business_inference",
+      "topic": "WebDAV adapter 依赖候选",
+      "statement": "依赖清单：业务能力是 WebDAV 方法、认证、目录、条件请求与流式文件传输；协议边界是 WebDAVTransport。Android 当前实现建立在其 HTTP 栈上，不构成 iOS 库批准。iOS 应先用 URLSession 实现最小方法集 spike，再在确有协议缺口时比较三方库；评估许可证、维护、体积、隐私、认证挑战、重定向、XML 解析、并发和取消。以多服务器矩阵验证，不修改 Package。",
+      "subject_keys": ["integration.dependencies", "integration.backup"],
+      "depends_on": [{"id": "BKC-INTEGRATION-WEBDAV-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "d9f3770b5869be291da07906366a3f617a6fab51",
+            "path": "app/src/main/java/io/legado/app/lib/webdav/WebDav.kt",
+            "symbol_id": "kotlin://io.legado.app.lib.webdav/WebDav"
+          }
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-INTEGRATION-CAPABILITY-INJECTION-001",
+      "revision": 1,
+      "semantic_key": "integration.architecture.capability-injection",
+      "kind": "candidate_invariant",
+      "topic": "IntegrationKit 与能力注入",
+      "statement": "稳定业务能力应通过消费方定义的 ports 注入：ExternalEntryHandling、RemoteManaging、BackupTransport、ArchiveCodec、LegacyImporting、SpeechSynthesizing、BackgroundScheduling 与 CapabilityPolicy；平台 adapter 隔离 URLSession、Network、AVFoundation、document APIs 和三方类型，Live 实现只在 composition root 组装。StoreSafe/FullCompat 使用不同链接闭包和 policy，而不是散布平台检查。该边界是待 ADR 的 architecture driver 输入，不是已接受架构变更。",
+      "subject_keys": ["integration.dependencies", "integration.profiles"],
+      "depends_on": [
+        {"id": "BKC-INTEGRATION-NETWORK-STACK-001", "revision": 1},
+        {"id": "BKC-INTEGRATION-ARCHIVE-CODEC-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "22b07da214e076c8d9c4766dd9db9e8be5b5f000",
+            "path": "app/build.gradle",
+            "symbol_id": "gradle://app/dependencies"
+          }
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "human_decision"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-INTEGRATION-OBSERVABILITY-001",
+      "revision": 1,
+      "semantic_key": "integration.architecture.observability",
+      "kind": "candidate_invariant",
+      "topic": "观测、隐私与恢复验证",
+      "statement": "每次外部入口、远程命令、备份、恢复、迁移、导出和朗读会话候选应有 TraceID、稳定 stage、取消/重试分类和脱敏摘要；不得记录凭据、Cookie、原文、文件内容或密钥。测试分层为纯 codec/port fixture、受控网络集成、多服务器 WebDAV、Android 历史格式 characterization、iOS 后台/权限设备 spike 和 profile 链接闭包检查。静态源码不能提供这些 expected；在运行证据建立前保持候选。",
+      "subject_keys": ["integration.backup", "integration.remote", "integration.profiles"],
+      "depends_on": [
+        {"id": "BKC-INTEGRATION-BACKUP-ENVELOPE-001", "revision": 1},
+        {"id": "BKC-INTEGRATION-REMOTE-SERVICE-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "5ae9d10e32c099e0a4f76ee77518f8bc88f85a14",
+            "path": "app/src/main/java/io/legado/app/help/storage/Backup.kt",
+            "symbol_id": "kotlin://io.legado.app.help.storage/Backup"
+          }
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-INTEGRATION-PROFILE-MATRIX-001",
+      "revision": 1,
+      "semantic_key": "integration.profiles.release-matrix",
+      "kind": "open_question",
+      "topic": "StoreSafe 与 FullCompat 发布矩阵",
+      "statement": "发布矩阵候选：StoreSafe 保留用户发起的外部导入/导出、出站网络、WebDAV client 和系统朗读候选，但默认排除入站远程服务、任意脚本/动态规则页面、安装包与过宽文件访问；FullCompat 可评估受策略约束的额外 adapter，但不豁免隐私、最小权限、平台后台限制或 App Store 审核。每项 capability/entitlement/Info 配置、用途文案、隐私清单、分发渠道与降级 UX 都需独立人工裁决，Android manifest 不提供答案。",
+      "subject_keys": ["integration.profiles", "integration.permissions"],
+      "depends_on": [
+        {"id": "BKC-INTEGRATION-STORAGE-PERMISSIONS-001", "revision": 1},
+        {"id": "BKC-INTEGRATION-NETWORK-PERMISSIONS-001", "revision": 1},
+        {"id": "BKC-INTEGRATION-DYNAMIC-CAPABILITIES-001", "revision": 1}
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "6fe06e28cb01cf1336dd664f1b845ceed5d23f36",
+            "path": "app/src/main/AndroidManifest.xml",
+            "symbol_id": "xml://manifest"
+          }
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "human_decision"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-INTEGRATION-CROSS-DOMAIN-001",
+      "revision": 1,
+      "semantic_key": "integration.architecture.cross-domain",
+      "kind": "business_inference",
+      "topic": "与 Source、Reader、UI 的关系",
+      "statement": "集成边界只输送项目自有 DTO 和命令：Source Runtime 消费统一 HTTP/WebDAV 无关 transport policy，不拥有远程管理 UI；Reader 提供可持久化进度与净化朗读文本，不拥有系统 TTS；UI 发起权限、文档选择、分享、任务取消和降级提示，不直接使用平台 I/O。备份/迁移通过 AppUseCases 编排 repository snapshots。具体 Target 拆分、事务与状态机仍是 driver/ADR 问题。",
+      "subject_keys": ["integration.dependencies", "integration.profiles"],
+      "depends_on": [{"id": "BKC-INTEGRATION-CAPABILITY-INJECTION-001", "revision": 1}],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "2773f69c7ed150cde068533d4b2a39cacd0ffb33",
+            "path": "app/src/main/java/io/legado/app/help/config/AppConfig.kt",
+            "symbol_id": "kotlin://io.legado.app.help.config/AppConfig"
+          }
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "human_decision"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    }
+  ],
+  "supersedes": {
+    "id": "BKP-INTEGRATIONS-001",
+    "revision": 2
+  },
+  "created_by": "IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-003"
+}
