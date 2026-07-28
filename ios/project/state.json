@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "revision": 209,
+  "revision": 212,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-28T05:43:17Z",
-  "event_head": "a48fdbd7a5fb4683d3f01059a1797a645677e38637145a06d7ecb77e53603d71",
+  "updated_at": "2026-07-28T05:48:40Z",
+  "event_head": "80296fa4ad9157d22142ba38c5929bb73f7ca8cfd9fa9ac9347a81ec118c09f1",
   "active_work_items": [],
-  "last_completed_work_item": "IOS-RECOVERY-COMPILER-BINDING-001",
+  "last_completed_work_item": "IOS-CONTROL-CATALOG-RESUME-001",
   "work_items": {
     "IOS-BOOT-001": {
       "status": "completed",
@@ -3414,12 +3414,66 @@
         }
       ],
       "cancelled_at": "2026-07-28T05:41:56Z",
-      "cancelled_reason": "invalidated_assumption: catalog drift is caused by active harness.py control digest changes, not Work Item materialization"
+      "cancelled_reason": "invalidated_assumption: catalog drift is caused by active harness.py control digest changes, not Work Item materialization",
+      "replacement": "IOS-CONTROL-CATALOG-RESUME-001",
+      "replacement_bound_at": "2026-07-28T05:48:40Z"
     },
     "IOS-CONTROL-CATALOG-RESUME-001": {
-      "status": "ready",
-      "attempt": 0,
-      "last_evidence": null
+      "status": "completed",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260728T054753Z-ios-control-catalog-resume-001-5b523ba4.json",
+      "claimed_by": "root-codex",
+      "claimed_at": "2026-07-28T05:44:08Z",
+      "lease_expires_at": "2026-07-29T05:44:08Z",
+      "work_item_sha256": "265d4bc05c39d622461d07cfcc1c5cbfa4cacd4b5ee5cc2f305389d539f41d8f",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "ef75726465f4d94c612fcf05bf5c91642705e4be",
+      "base_capability_revision": 32,
+      "base_capability_assurance_sha256": "6c08426cf2cc8f0277426284e00909a10444767bc01eeb84e0db43db8dcbb2ac",
+      "android_requirement_selection_sha256": null,
+      "business_knowledge_control_sha256": "d365aeebe99b650855f54da69a28059ce3a978f391c36a5ffc62d3c7e320fc4b",
+      "business_knowledge_authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 1,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "harness-tests",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "307f335e883f02e96ad97ecbda4c210435c0b955e2bcb9e46db9dc7b0d02c285",
+          "cwd": ".",
+          "started_at": "2026-07-28T05:43:28Z",
+          "duration_ms": 40515,
+          "timeout_seconds": 60,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "c29ed59ca0a255b1c2c96bb287a62043adf08cd5114b9b6e33b4e6fcab093fbc",
+          "stdout_tail": "",
+          "stderr_tail": "......................................................................................................................................\n----------------------------------------------------------------------\nRan 134 tests in 40.390s\n\nOK\n"
+        }
+      ],
+      "last_evidence_sha256": "6cd6388526b6fb619ebdf42f8b1ef2752cb0a8787e150d8c16a9d01e674b73fd",
+      "verified_at": "2026-07-28T05:47:53Z",
+      "completed_at": "2026-07-28T05:48:40Z",
+      "final_tree_sha256": "6898abedc3802717fd23af6526a78066dd05709706c80b301b94ea5ae2ba04f3"
     }
   },
   "health": {
@@ -3457,7 +3511,8 @@
     "active_candidate_repair": "bounded",
     "terminal_recovery_resolution": "single_terminal_predecessor",
     "terminal_recovery_lineage": "typed_runtime_replacement",
-    "recovery_compiler_binding": "content_addressed"
+    "recovery_compiler_binding": "content_addressed",
+    "control_catalog_resume": "bounded_self_heal"
   },
   "risks": [
     {

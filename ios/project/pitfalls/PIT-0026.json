@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0026",
+  "revision": 1,
+  "title": "控制面候选修改后中断会被派生 Catalog 阻断续跑",
+  "fingerprint": "active-control-edit-makes-derived-catalog-stale-before-resumed-verify",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "合法 control-plane Work Item 修改 harness.py 后，重新运行 Supervisor inspect 返回 doctor_red",
+    "Business Knowledge control 与多个 selection 同时报 Catalog 已过期",
+    "手工 refresh Catalog 后原 Work Item 可以正常 verify",
+    "最初误以为 materialize 新 Work Item 导致 Catalog stale"
+  ],
+  "conditions": [
+    "active Work Item 为 implementing 且满足 business_knowledge_control_upgrade",
+    "候选改动命中 harness.py 或 ios/harness/business-knowledge 下的 control digest 输入",
+    "Supervisor 在 Agent edit 后、同轮 Harness.verify 自刷新前中断或被重新启动",
+    "下一次 drive 先执行全局 Doctor"
+  ],
+  "root_cause": "Business Knowledge Catalog 是包含 control_sha256 的派生缓存。Harness.verify 会在受信路径内刷新它，但恢复后的 drive 先运行 Doctor，因此在 verify 获得刷新机会前被派生缓存漂移挡住。materialize 不改变 control digest；把 refresh 加入 materialize 是错误修复位置。",
+  "diagnosis": [
+    "先用故障注入分别测试纯 materialize 与 harness.py 候选修改，确认哪一步改变 control_sha256",
+    "检查是否恰有一个 active implementing Work Item",
+    "验证 Work Item 是否满足 business_knowledge_control_upgrade",
+    "验证 changed paths 非空、通过 scope_issues 且确实命中 control digest 输入",
+    "要求每条 Doctor error 都包含精确的 Business Knowledge catalog stale，不能混入 graph/selection 实质错误"
+  ],
+  "fix": "Supervisor 在严格前置条件下将 Catalog stale 识别为可重建派生缓存：在 mutation lock 中刷新，记录前后 SHA，不回显内容；核对 event/runtime control binding 不变并重跑 Doctor。恢复后标记原 Work Item 已完成 implementation turn，在同一 drive 直接进入 Supervisor verify。刷新失败、控制变化或 Doctor 未恢复均结构化停止。",
+  "prevention": {
+    "architecture_rule": "派生缓存不能阻断其受信重建入口，但自愈只能针对可证明的 cache-only drift。任何 authority、graph、scope 或控制状态变化都不得借 refresh 路径放行。",
+    "tests": [
+      "ios/harness/tests/test_loop_supervisor.py#test_active_control_catalog_stale_resumes_without_repeating_agent"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-KNOWLEDGE-CONTROL-PLANE-001",
+    "until": "IOS-CONTROL-CATALOG-RESUME-001"
+  },
+  "status": "resolved",
+  "occurrences": 5,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T054753Z-ios-control-catalog-resume-001-5b523ba4.json"
+  ]
+}

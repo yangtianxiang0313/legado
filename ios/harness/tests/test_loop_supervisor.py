@@ -1078,6 +1078,237 @@ class DriveTests(unittest.TestCase):
             )
             self.assertTrue(harness.marker.exists())
 
+    def test_active_control_catalog_stale_resumes_without_repeating_agent(self):
+        class ControlCatalogHarness:
+            item_id = "IOS-CONTROL-RESUME-001"
+
+            def __init__(self, root):
+                self.root = root
+                self.root.mkdir(parents=True, exist_ok=True)
+                self.catalog = root / "catalog.json"
+                self.catalog.write_text('{"stale":true}\n', encoding="utf-8")
+                self.business_knowledge_catalog_path = self.catalog
+                self.refreshed = False
+                self.verify_calls = 0
+                self.item = {
+                    "metadata": {
+                        "id": self.item_id,
+                        "priority": 100,
+                        "labels": ["control-plane", "corrective"],
+                    },
+                    "spec": {
+                        "capability": "CAP-CONTROL",
+                        "depends_on": [],
+                        "requirements": {"mode": "control_plane"},
+                        "knowledge": {
+                            "mode": "not_applicable",
+                            "produces": [],
+                        },
+                    },
+                }
+                self.state_value = {
+                    "event_head": "event-head",
+                    "active_work_items": [self.item_id],
+                    "work_items": {
+                        self.item_id: {
+                            "status": "implementing",
+                            "attempt": 1,
+                            "verify_cycles": 0,
+                            "last_evidence": None,
+                            "last_evidence_sha256": None,
+                        }
+                    },
+                }
+                self.evidence = root / "evidence.json"
+                self.extra_error = None
+                self.changed = ["ios/harness/harness.py"]
+                self.policy_errors = []
+
+            def business_knowledge_enabled(self):
+                return True
+
+            def doctor(self):
+                if self.refreshed:
+                    return [], []
+                errors = [
+                    "Business Knowledge control 无效："
+                    + loop_supervisor.BUSINESS_KNOWLEDGE_CATALOG_STALE,
+                    "IOS-CONTROL-RESUME-001: Business Knowledge selection 无效："
+                    + loop_supervisor.BUSINESS_KNOWLEDGE_CATALOG_STALE,
+                ]
+                if self.extra_error is not None:
+                    errors.append(self.extra_error)
+                return errors, []
+
+            def state(self):
+                return self.state_value
+
+            def work_items(self):
+                return {self.item_id: self.item}
+
+            def changed_since_claim(self, runtime):
+                return list(self.changed)
+
+            def scope_issues(self, item, runtime, changed):
+                return list(self.policy_errors), [], len(changed)
+
+            def mutation_lock(self):
+                return contextlib.nullcontext()
+
+            def refresh_business_knowledge_catalog(self):
+                self.catalog.write_text(
+                    '{"stale":false}\n',
+                    encoding="utf-8",
+                )
+                self.refreshed = True
+
+            def verify(self, item_id):
+                self.verify_calls += 1
+                self.evidence.write_text(
+                    json.dumps({"result": "passed", "failure": None}),
+                    encoding="utf-8",
+                )
+                runtime = self.state_value["work_items"][item_id]
+                runtime["status"] = "verified"
+                runtime["verify_cycles"] = 1
+                runtime["last_evidence"] = "evidence.json"
+                return self.evidence
+
+            def relative(self, path):
+                return path.relative_to(self.root).as_posix()
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            harness = ControlCatalogHarness(root)
+            config = root / "supervisor.json"
+            config.write_text(
+                json.dumps(
+                    {
+                        "agent_invocation": {
+                            "argv": [
+                                sys.executable,
+                                "-c",
+                                "raise SystemExit(99)",
+                            ],
+                            "timeout_seconds": 10,
+                        },
+                        "trusted_verification": {
+                            "enabled": True,
+                            "policy": (
+                                loop_supervisor.SUPERVISOR_VERIFICATION_POLICY
+                            ),
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            supervisor = loop_supervisor.LoopSupervisor(harness)
+            result = supervisor.drive(
+                config_path=config,
+                agent_id="must-not-run",
+                max_transitions=1,
+            )
+            self.assertEqual("transition_budget_reached", result["outcome"])
+            self.assertEqual("verified", result["decision"]["state"])
+            self.assertEqual(1, harness.verify_calls)
+            self.assertEqual(
+                [
+                    "supervisor_catalog_refresh",
+                    "supervisor_verification",
+                ],
+                [transition["kind"] for transition in result["transitions"]],
+            )
+            refresh = result["transitions"][0]
+            self.assertEqual("refreshed", refresh["result"])
+            self.assertNotEqual(
+                refresh["catalog_before_sha256"],
+                refresh["catalog_after_sha256"],
+            )
+
+            blocked = ControlCatalogHarness(root / "blocked")
+            blocked.extra_error = "Business Knowledge 图无效：claim cycle"
+            self.assertIsNone(
+                loop_supervisor.LoopSupervisor(
+                    blocked
+                )._refreshable_control_catalog(
+                    loop_supervisor.LoopSupervisor(blocked).inspect()
+                )
+            )
+            blocked.extra_error = None
+            blocked.changed = ["ios/harness/loop_supervisor.py"]
+            self.assertIsNone(
+                loop_supervisor.LoopSupervisor(
+                    blocked
+                )._refreshable_control_catalog(
+                    loop_supervisor.LoopSupervisor(blocked).inspect()
+                )
+            )
+            blocked.changed = ["ios/harness/harness.py"]
+            blocked.policy_errors = ["scope denied"]
+            self.assertIsNone(
+                loop_supervisor.LoopSupervisor(
+                    blocked
+                )._refreshable_control_catalog(
+                    loop_supervisor.LoopSupervisor(blocked).inspect()
+                )
+            )
+
+            failed = ControlCatalogHarness(root / "failed")
+
+            def fail_refresh():
+                raise harness_module.HarnessError("catalog refresh failed")
+
+            failed.refresh_business_knowledge_catalog = fail_refresh
+            failure = loop_supervisor.LoopSupervisor(failed).drive(
+                config_path=config,
+                agent_id="must-not-run",
+                max_transitions=1,
+            )
+            self.assertEqual(
+                "supervisor_catalog_refresh_failed",
+                failure["outcome"],
+            )
+
+            mutated = ControlCatalogHarness(root / "mutated")
+
+            def mutate_control():
+                mutated.catalog.write_text(
+                    '{"stale":false}\n',
+                    encoding="utf-8",
+                )
+                mutated.refreshed = True
+                mutated.state_value["event_head"] = "changed-event-head"
+
+            mutated.refresh_business_knowledge_catalog = mutate_control
+            mutation = loop_supervisor.LoopSupervisor(mutated).drive(
+                config_path=config,
+                agent_id="must-not-run",
+                max_transitions=1,
+            )
+            self.assertEqual(
+                "supervisor_catalog_control_mutation",
+                mutation["outcome"],
+            )
+
+            unrecovered = ControlCatalogHarness(root / "unrecovered")
+
+            def leave_doctor_red():
+                unrecovered.catalog.write_text(
+                    '{"stale":false}\n',
+                    encoding="utf-8",
+                )
+
+            unrecovered.refresh_business_knowledge_catalog = leave_doctor_red
+            not_recovered = loop_supervisor.LoopSupervisor(unrecovered).drive(
+                config_path=config,
+                agent_id="must-not-run",
+                max_transitions=1,
+            )
+            self.assertEqual(
+                "supervisor_catalog_refresh_not_recovered",
+                not_recovered["outcome"],
+            )
+
     def test_pre_evidence_verification_error_is_structured(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

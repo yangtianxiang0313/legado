@@ -77,6 +77,13 @@ python3 ios/harness/loop_supervisor.py materialize-review \
   属于 Business Knowledge、状态为 implementing、现有 diff 仍满足 scope 时提供
   repair implementation turn，并把 Doctor errors 绑定进 0600 context。其他 Doctor
   red、越权 diff、多 active 或控制状态变化仍立即停止；
+- 合法 control-plane upgrade 修改 `harness.py` 或 Business Knowledge control 文件后，
+  若 Supervisor 在同轮 verify 前中断，下一次 drive 只在单一 active implementing、
+  `business_knowledge_control_upgrade`、非空 scope 合法 control diff，且每条 Doctor
+  error 都精确归因于 Catalog stale 时，由 Supervisor 在 mutation lock 中刷新派生
+  Catalog。刷新前后 event/runtime binding 必须不变，Doctor 必须恢复；随后复用原
+  Work Item/attempt，跳过重复 Agent edit 并直接 verify。任何 graph 错误、其他 Doctor
+  error、越权路径、刷新失败或控制状态变化都结构化停止；
 - 每次 Agent 调用都在新的 session/process group 中启动；超时按 TERM → 有界等待 → KILL 回收完整进程树，并结构化返回 `timed_out`、`process_leak`、`cleanup_error`；
 - Supervisor 只向 adapter 传递显式环境白名单和临时 context 路径，结果只保留输出长度与 SHA-256，不回显 context、stdout/stderr 或宿主环境 secret；
 - 普通候选不再要求点击确认：自动策略要求 repo/index clean，candidate、recipe、

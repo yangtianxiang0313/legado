@@ -72,6 +72,7 @@ SCHEMA_VERSION = 1
 CANDIDATE_ROOT = "ios/project/work-item-proposals/candidates"
 AUTO_MATERIALIZATION_POLICY = "compiled-control-plane-v1"
 SUPERVISOR_VERIFICATION_POLICY = "supervisor-owned-verification-v1"
+BUSINESS_KNOWLEDGE_CATALOG_STALE = "Business Knowledge catalog 已过期"
 TERMINAL_RECOVERY_STATUSES = {"blocked", "rejected", "exhausted", "cancelled"}
 ACTIVE_DECISIONS = {
     "implementing": ("agent_required", False),
@@ -1209,6 +1210,58 @@ class LoopSupervisor:
             return None
         return item_id, messages
 
+    def _refreshable_control_catalog(
+        self,
+        decision: LoopDecision,
+    ) -> Optional[Tuple[str, Tuple[str, ...]]]:
+        enabled = getattr(self.harness, "business_knowledge_enabled", None)
+        if (
+            decision.state != "doctor_red"
+            or not callable(enabled)
+            or not enabled()
+        ):
+            return None
+        messages = tuple(
+            str(blocker.get("message"))
+            for blocker in decision.blockers
+            if isinstance(blocker, dict) and blocker.get("message")
+        )
+        if not messages or any(
+            BUSINESS_KNOWLEDGE_CATALOG_STALE not in message
+            for message in messages
+        ):
+            return None
+        state = self.harness.state()
+        active = state.get("active_work_items", [])
+        if not isinstance(active, list) or len(active) != 1:
+            return None
+        item_id = active[0]
+        runtime = state.get("work_items", {}).get(item_id, {})
+        item = self.harness.work_items().get(item_id)
+        if (
+            not isinstance(item_id, str)
+            or not isinstance(runtime, dict)
+            or runtime.get("status") != "implementing"
+            or not isinstance(item, dict)
+            or not Harness.business_knowledge_control_upgrade(item)
+        ):
+            return None
+        changed = self.harness.changed_since_claim(runtime)
+        if not changed or not any(
+            path == "ios/harness/harness.py"
+            or path.startswith("ios/harness/business-knowledge/")
+            for path in changed
+        ):
+            return None
+        policy_errors, _, _ = self.harness.scope_issues(
+            item,
+            runtime,
+            changed,
+        )
+        if policy_errors:
+            return None
+        return item_id, messages
+
     def drive(
         self,
         *,
@@ -1276,47 +1329,118 @@ class LoopSupervisor:
         for _ in range(max_transitions):
             before = self.inspect()
             if trusted_verification and before.state == "doctor_red":
-                repair = self._repairable_knowledge_item(before)
-                if repair is None:
-                    return {
-                        "schema_version": SCHEMA_VERSION,
-                        "outcome": before.reason_code.lower(),
-                        "decision": before.to_dict(),
-                        "transitions": transitions,
-                    }
-                item_id, repair_errors = repair
-                control_before = self._control_binding(
-                    self.harness.state(), item_id
-                )
-                transition = self._invoke_agent_phase(
-                    item_id=item_id,
-                    phase="implementation",
-                    policy=str(verification_policy),
-                    argv_template=argv_template,
-                    timeout_seconds=timeout_seconds,
-                    repair_errors=repair_errors,
-                )
-                transition["repair"] = True
-                transitions.append(transition)
-                failure_outcome = self._agent_failure_outcome(transition)
-                if failure_outcome is not None:
-                    return {
-                        "schema_version": SCHEMA_VERSION,
-                        "outcome": failure_outcome,
-                        "decision": self.inspect().to_dict(),
-                        "transitions": transitions,
-                    }
-                if self._control_binding(self.harness.state(), item_id) != control_before:
-                    return {
-                        "schema_version": SCHEMA_VERSION,
-                        "outcome": "agent_control_plane_mutation",
-                        "decision": self.inspect().to_dict(),
-                        "transitions": transitions,
-                    }
-                after_repair = self.inspect()
-                if after_repair.state == "implementing":
+                catalog_resume = self._refreshable_control_catalog(before)
+                if catalog_resume is not None:
+                    item_id, catalog_errors = catalog_resume
+                    control_before = self._control_binding(
+                        self.harness.state(),
+                        item_id,
+                    )
+                    catalog_path = self.harness.business_knowledge_catalog_path
+                    catalog_before = (
+                        _sha256_bytes(catalog_path.read_bytes())
+                        if catalog_path.is_file()
+                        else "missing"
+                    )
+                    try:
+                        with self.harness.mutation_lock():
+                            self.harness.refresh_business_knowledge_catalog()
+                    except (HarnessError, OSError) as error:
+                        transitions.append(
+                            {
+                                "kind": "supervisor_catalog_refresh",
+                                "work_item_id": item_id,
+                                "result": "failed",
+                                "error": str(error),
+                                "catalog_before_sha256": catalog_before,
+                            }
+                        )
+                        return {
+                            "schema_version": SCHEMA_VERSION,
+                            "outcome": "supervisor_catalog_refresh_failed",
+                            "decision": self.inspect().to_dict(),
+                            "transitions": transitions,
+                        }
+                    catalog_after = (
+                        _sha256_bytes(catalog_path.read_bytes())
+                        if catalog_path.is_file()
+                        else "missing"
+                    )
+                    control_after = self._control_binding(
+                        self.harness.state(),
+                        item_id,
+                    )
+                    transitions.append(
+                        {
+                            "kind": "supervisor_catalog_refresh",
+                            "work_item_id": item_id,
+                            "result": "refreshed",
+                            "reason_code": "ACTIVE_CONTROL_CATALOG_STALE",
+                            "doctor_error_count": len(catalog_errors),
+                            "catalog_before_sha256": catalog_before,
+                            "catalog_after_sha256": catalog_after,
+                        }
+                    )
+                    if control_after != control_before:
+                        return {
+                            "schema_version": SCHEMA_VERSION,
+                            "outcome": "supervisor_catalog_control_mutation",
+                            "decision": self.inspect().to_dict(),
+                            "transitions": transitions,
+                        }
+                    before = self.inspect()
+                    if before.state != "implementing":
+                        return {
+                            "schema_version": SCHEMA_VERSION,
+                            "outcome": (
+                                "supervisor_catalog_refresh_not_recovered"
+                            ),
+                            "decision": before.to_dict(),
+                            "transitions": transitions,
+                        }
                     repaired_items.add(item_id)
-                continue
+                else:
+                    repair = self._repairable_knowledge_item(before)
+                    if repair is None:
+                        return {
+                            "schema_version": SCHEMA_VERSION,
+                            "outcome": before.reason_code.lower(),
+                            "decision": before.to_dict(),
+                            "transitions": transitions,
+                        }
+                    item_id, repair_errors = repair
+                    control_before = self._control_binding(
+                        self.harness.state(), item_id
+                    )
+                    transition = self._invoke_agent_phase(
+                        item_id=item_id,
+                        phase="implementation",
+                        policy=str(verification_policy),
+                        argv_template=argv_template,
+                        timeout_seconds=timeout_seconds,
+                        repair_errors=repair_errors,
+                    )
+                    transition["repair"] = True
+                    transitions.append(transition)
+                    failure_outcome = self._agent_failure_outcome(transition)
+                    if failure_outcome is not None:
+                        return {
+                            "schema_version": SCHEMA_VERSION,
+                            "outcome": failure_outcome,
+                            "decision": self.inspect().to_dict(),
+                            "transitions": transitions,
+                        }
+                    if self._control_binding(self.harness.state(), item_id) != control_before:
+                        return {
+                            "schema_version": SCHEMA_VERSION,
+                            "outcome": "agent_control_plane_mutation",
+                            "decision": self.inspect().to_dict(),
+                            "transitions": transitions,
+                        }
+                    after_repair = self.inspect()
+                    if after_repair.state == "implementing":
+                        repaired_items.add(item_id)
+                    continue
             if before.state == "auto_materialization_ready":
                 if not auto_enabled:
                     return {
