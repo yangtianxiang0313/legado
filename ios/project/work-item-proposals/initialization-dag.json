@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "InitializationWorkItemProposalDAG",
   "id": "WIPD-IOS-INITIALIZATION-001",
-  "revision": 24,
+  "revision": 25,
   "authority": "proposal_only",
   "status": "proposed",
   "created_by": "IOS-KNOWLEDGE-CONTROL-PLANE-001",
@@ -279,6 +279,13 @@
       "title": "兼容安全的 Homebrew gh 可执行路径",
       "outputs": ["resolved executable target", "Homebrew symlink compatibility", "broken/non-regular denial"],
       "gates": [], "constraint": "修复 Receipt Settler 对 Homebrew gh symlink 的过度拒绝：允许解析后目标为可执行普通文件的安全 symlink，继续拒绝 broken/cycle/non-regular/non-executable；只修改 Settler、测试/README 与记忆，不访问网络、不生成 Receipt或修改其他 authority"
+    },
+    {
+      "proposal_id": "IOS-GITHUB-GOLDEN-PUBLISHER-OWNER-001", "phase": 29, "class": "control_plane",
+      "depends_on": ["IOS-GITHUB-ORACLE-RECEIPT-SETTLEMENT-001"], "knowledge_mode": "not_applicable",
+      "title": "预声明无人工 Gate Golden Publisher 所有权",
+      "outputs": ["exact golden workflow owner", "publisher test owner", "golden tree owner", "fixture contract owner"],
+      "gates": [], "constraint": "只在 CAP-CONFORMANCE 精确登记 Golden Publisher workflow、publisher test、Golden 树与 fixture contract probe 所有权；不得修改 owner 指向内容、Loop、Package、产品或执行外部发布"
     }
   ],
   "compiler_rules": [

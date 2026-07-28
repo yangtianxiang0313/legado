@@ -1,0 +1,158 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "annotations": {},
+    "id": "IOS-GITHUB-GOLDEN-PUBLISHER-OWNER-001",
+    "labels": [
+      "phase-0",
+      "control-plane",
+      "external-execution",
+      "android-oracle",
+      "golden-publisher-owner",
+      "ownership"
+    ],
+    "priority": 100,
+    "risk": "high",
+    "title": "预声明无人工 Gate Golden Publisher 所有权"
+  },
+  "spec": {
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "CAP-CONFORMANCE owners.paths 精确拥有 Golden Publisher workflow、publisher test、Golden 树和 fixture contract probe，不扩大到其他 GitHub workflow 或 Harness 控制面。",
+          "verified_by": [
+            "dependency-policy",
+            "harness-tests"
+          ]
+        },
+        {
+          "id": "AC-2",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "Capability revision 22→23，Evidence 与 Checkpoint 绑定本次 owner 事务；既有 owner、状态、PIT 与产品边界保持。",
+          "verified_by": [
+            "dependency-policy",
+            "memory-close"
+          ]
+        },
+        {
+          "id": "AC-3",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "本项只登记所有权，不修改 workflow、publisher、Golden、probe、Harness、Package 或产品，不执行外部发布。",
+          "verified_by": [
+            "memory-close"
+          ]
+        }
+      ],
+      "required_checks": [
+        "dependency-policy",
+        "harness-tests"
+      ]
+    },
+    "architecture_refs": [
+      "ARCH-014",
+      "ARCH-017",
+      "ADR-0002",
+      "ADR-0004"
+    ],
+    "baseline_checks": [
+      "dependency-policy",
+      "harness-tests"
+    ],
+    "budget": {
+      "max_edit_verify_cycles": 3,
+      "max_full_test_runs": 3,
+      "max_infra_retries": 1,
+      "max_targeted_test_runs": 10,
+      "wall_clock_seconds": 7200
+    },
+    "capability": "CAP-CONFORMANCE",
+    "completion_effects": {
+      "health": {
+        "github_golden_publisher_owner": "declared_v1"
+      }
+    },
+    "depends_on": [
+      "IOS-GITHUB-ORACLE-RECEIPT-SETTLEMENT-001"
+    ],
+    "gates": [],
+    "inputs": {
+      "android_source_anchors": [],
+      "context_files": [
+        "ios/project/capabilities/CAP-CONFORMANCE.json",
+        ".github/workflows/android-golden-publisher.yml",
+        "ios/publisher/android_golden_publisher.py",
+        "ios/harness/goldens/manifest.json",
+        "ios/project/external-execution-receipts/android-oracle-sl-post-form-001-faa7252c34dac546b65c618a52826e6fd42258c5-30403665320-1.json"
+      ],
+      "fixtures": []
+    },
+    "intent": "在把旧的人工 Environment/PR Golden Publisher 改造为 create-only branch push 自动发布之前，先建立精确架构所有权。CAP-CONFORMANCE 新增 .github/workflows/android-golden-publisher.yml、ios/harness/tests/test_android_golden_publisher.py、ios/harness/goldens/** 与 ios/harness/probes/fixture_contract.py 四条 owner；不拥有其他 workflow、Loop Supervisor、Dispatcher、Package 或产品。本项只修改 Capability 与项目记忆，不修改 owner 指向文件，不运行网络，不发布 Golden。CAP-CONFORMANCE revision 22→23。",
+    "knowledge": {
+      "claim_refs": [],
+      "context_budget": {
+        "max_bytes": 32768,
+        "max_claims": 8
+      },
+      "contract_version": 1,
+      "coverage_refs": [],
+      "driver_refs": [],
+      "expected_ledger_transitions": [],
+      "mode": "not_applicable",
+      "none_reason": "本项只登记 Golden Publisher 架构所有权",
+      "produces": []
+    },
+    "memory": {
+      "adr": "not_required",
+      "capability_state_required": true,
+      "checkpoint_required": true,
+      "pitfall": "if_non_obvious_and_preventable"
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "none_reason": "本项只登记外部 Golden 发布边界",
+      "refs": []
+    },
+    "scope": {
+      "allow_write": [
+        "ios/project/capabilities/CAP-CONFORMANCE.json",
+        "ios/project/checkpoints/IOS-GITHUB-GOLDEN-PUBLISHER-OWNER-001.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        ".github/**",
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "ios/publisher/**",
+        "ios/harness/**",
+        "ios/project/external-execution-receipts/**",
+        "ios/project/requirements/**",
+        "ios/project/business-knowledge/**",
+        "ios/project/approvals/**",
+        "ios/project/work-item-proposals/**",
+        "ios/docs/**"
+      ],
+      "max_changed_lines": 1200,
+      "max_files_changed": 3
+    },
+    "source_lab": {
+      "behaviors": [],
+      "mode": "not_applicable",
+      "none_reason": "本项只登记所有权",
+      "scenarios": []
+    },
+    "stop_on": [
+      "doctor_red",
+      "scope_violation",
+      "authority_scope",
+      "same_failure_twice",
+      "budget_exhausted"
+    ]
+  }
+}
