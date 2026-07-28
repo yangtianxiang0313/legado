@@ -93,6 +93,51 @@ class TrustedFixture:
 
 
 class TrustedSupervisorReferenceTests(unittest.TestCase):
+    def test_process_group_exit_wait_is_bounded_and_distinguishes_settle_from_leak(self):
+        with (
+            mock.patch.object(
+                trusted,
+                "_process_group_exists",
+                side_effect=[True, True, False],
+            ),
+            mock.patch.object(
+                trusted.time,
+                "monotonic",
+                side_effect=[10.0, 10.0, 10.01],
+            ),
+            mock.patch.object(trusted.time, "sleep") as sleep,
+        ):
+            self.assertTrue(
+                trusted._wait_for_process_group_exit(
+                    123,
+                    timeout_seconds=1.0,
+                    poll_seconds=0.01,
+                )
+            )
+            self.assertEqual(2, sleep.call_count)
+
+        with (
+            mock.patch.object(
+                trusted,
+                "_process_group_exists",
+                side_effect=[True, True],
+            ),
+            mock.patch.object(
+                trusted.time,
+                "monotonic",
+                side_effect=[20.0, 20.0, 21.0],
+            ),
+            mock.patch.object(trusted.time, "sleep") as sleep,
+        ):
+            self.assertFalse(
+                trusted._wait_for_process_group_exit(
+                    456,
+                    timeout_seconds=1.0,
+                    poll_seconds=0.01,
+                )
+            )
+            sleep.assert_called_once_with(0.01)
+
     def test_real_git_e2e_freezes_replays_verifies_and_signs(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = TrustedFixture(Path(directory))

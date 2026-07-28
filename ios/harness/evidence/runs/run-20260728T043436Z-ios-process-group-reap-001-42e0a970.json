@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "run_id": "run-20260728T043436Z-ios-process-group-reap-001-42e0a970",
+  "work_item_id": "IOS-PROCESS-GROUP-REAP-001",
+  "work_item_sha256": "4dadd54497a820a004d1f7807f0fc6e4c25c9877e5ee9e733bf9398e04725306",
+  "result": "passed",
+  "inputs": {
+    "base_commit": "ff5b35fd5cd6c4c3b1a59b87b923fc2ee80a98cc",
+    "head_commit": "ff5b35fd5cd6c4c3b1a59b87b923fc2ee80a98cc",
+    "snapshot_sha256": "e08cd28c17fe480b72be9f84a04e9d5e4477181b62f5f5b6fecd7b67cefb4489",
+    "baseline_sha256": "eeeaf0017b79a2420faf73c686a110a2d0372b2da865e42aa8db360fd3015e93",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
+    "architecture_rules_sha256": "51ebc4cff5921643f95d8a045c21ea85cad046acb99ed56026f77bf842642fa5",
+    "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+    "golden_manifest_sha256": "bdfab4595035e6ce3706380b88bd0ebfdff6773b77055c05988c4aa2dd24e597",
+    "fixture_manifest_sha256": "7ea6c2f30f258a65bfeb67ebc8bc3c7d9e283875f31731b513b7380d5f2aff2c",
+    "dependency_lock_sha256": null,
+    "source_lab_control_sha256": "73282c8b72a7db793887290ad2bfff707c61ea8fe57a583ef9bd2e3c3c3b9f2d",
+    "android_intake_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122",
+    "business_knowledge_control_sha256": "3b0b4452d52db635b5f6b8d7c414e3219a84f2b28d23944f484b0bf94ef80099",
+    "business_knowledge_authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
+    "business_knowledge_coverage_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "business_knowledge_proposal_sha256": "a5ea7f3b23dea440693dce8270125b08356ff0e61ce6036e4844121dbeeeeebd",
+    "android_requirement_selection_sha256": null,
+    "source_lab_selection_sha256": null,
+    "knowledge_selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "environment": {
+      "platform": "macOS-26.4.1-arm64-arm-64bit",
+      "python": "3.9.6",
+      "xcode": "Xcode 26.0\nBuild version 17A324",
+      "swift": "Apple Swift version 6.2 (swiftlang-6.2.0.19.9 clang-1700.3.19.1)\nTarget: arm64-apple-macosx26.0"
+    }
+  },
+  "changes": {
+    "paths": [
+      "ios/harness/tests/test_trusted_supervisor_reference.py",
+      "ios/harness/trusted_supervisor_reference.py"
+    ],
+    "changed_lines_approximate": 63,
+    "file_fingerprints": {
+      "ios/harness/tests/test_trusted_supervisor_reference.py": "file:0o644:5f6ed4ac853e6ade514ee3f0e0e127dd634c50d6f5a6cb1b1c3eea7452f53287",
+      "ios/harness/trusted_supervisor_reference.py": "file:0o644:2ba6f8f37a413c167debe16d81ec49d966845fde3798cc951e56c705e216584d"
+    },
+    "dirty_snapshot": {
+      "ios/harness/tests/test_trusted_supervisor_reference.py": "file:0o644:5f6ed4ac853e6ade514ee3f0e0e127dd634c50d6f5a6cb1b1c3eea7452f53287",
+      "ios/harness/trusted_supervisor_reference.py": "file:0o644:2ba6f8f37a413c167debe16d81ec49d966845fde3798cc951e56c705e216584d",
+      "ios/project/events.jsonl": "file:0o644:08366d4aa8df9126b702f05ff3979ee9838608829a68a3b322463a442a5e089d",
+      "ios/project/state.json": "file:0o644:bd6fbbbb78780f902a581858ffa22d54ca9152b100b6bacb79eb0da5c8e353fa",
+      "ios/project/status.md": "file:0o644:a57349b8872eb24ee77e0f07b3000bb010f2e49dedaa0f0962ad9a5de4fe5ec1"
+    },
+    "diff_sha256": "9f7e892cdf0958a9052c94835090747c9927b53fc2d5e4e845f70ee1349be835"
+  },
+  "policy_errors": [],
+  "architecture_errors": [],
+  "architecture_warnings": [],
+  "checks": [
+    {
+      "id": "dependency-policy",
+      "argv": [
+        "python3",
+        "ios/harness/probes/dependency_contract.py",
+        "--root",
+        "."
+      ],
+      "executable_path": "/usr/bin/python3",
+      "definition_sha256": "eca96cb1b69567829ed8396386b0449da8c0d6e7295a00f1decfb60430ff1153",
+      "cwd": ".",
+      "started_at": "2026-07-28T04:34:00Z",
+      "duration_ms": 726,
+      "timeout_seconds": 90,
+      "timed_out": false,
+      "process_leak": false,
+      "cleanup_error": null,
+      "exit_code": 0,
+      "passed": true,
+      "stdout_sha256": "17595a1d68cdc5b52c010f46dff48514afa3fa3cf0215cdea7ae8eff38677c0a",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_tail": "DEPENDENCY_CONTRACT: OK\n",
+      "stderr_tail": ""
+    },
+    {
+      "id": "harness-tests",
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "ios/harness/tests",
+        "-p",
+        "test_*.py"
+      ],
+      "executable_path": "/usr/bin/python3",
+      "definition_sha256": "307f335e883f02e96ad97ecbda4c210435c0b955e2bcb9e46db9dc7b0d02c285",
+      "cwd": ".",
+      "started_at": "2026-07-28T04:34:01Z",
+      "duration_ms": 34540,
+      "timeout_seconds": 60,
+      "timed_out": false,
+      "process_leak": false,
+      "cleanup_error": null,
+      "exit_code": 0,
+      "passed": true,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "270da4d3a72c639282fe1c60ae7488781fe8a6b858a9c920838d974215fed8c6",
+      "stdout_tail": "",
+      "stderr_tail": "............................................................................................................................\n----------------------------------------------------------------------\nRan 124 tests in 34.391s\n\nOK\n"
+    }
+  ],
+  "failure": null,
+  "started_at": "2026-07-28T04:33:59Z",
+  "finished_at": "2026-07-28T04:34:37Z",
+  "reproduction": "python3 ios/harness/harness.py verify IOS-PROCESS-GROUP-REAP-001"
+}

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 24,
+  "revision": 25,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -51,7 +51,7 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260728T042625Z-ios-swiftpm-verify-sandbox-001-e696ad44.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260728T043436Z-ios-process-group-reap-001-42e0a970.json",
   "next_actions": [
     "把 verify/close 从受限 Agent 移到外层 Supervisor，避免 loopback、模拟器和其他受信检查受 Agent sandbox 权限影响",
     "创建 IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-004，基于已生成 revision 3 proposal 生产并验证 revision 4",
@@ -59,6 +59,6 @@
     "实现独立 patch publisher，只消费已签名 verified artifact，并经受保护 authority transition 完成 promotion",
     "为 recovery compiler 增加逐 Claim supersedes 自动生成，最终关闭 PIT-0012"
   ],
-  "updated_at": "2026-07-28T04:26:26Z",
-  "updated_by": "IOS-SWIFTPM-VERIFY-SANDBOX-001"
+  "updated_at": "2026-07-28T04:34:37Z",
+  "updated_by": "IOS-PROCESS-GROUP-REAP-001"
 }

@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "revision": 173,
+  "revision": 176,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-28T04:32:38Z",
-  "event_head": "f594e83f4c2da6113ca93ce1d13079c98009d11f1a58b03b055c169238dd76a6",
+  "updated_at": "2026-07-28T04:35:32Z",
+  "event_head": "96e9d66132e6ed96f4f8196511837b8f9fcdd978a4d39045532697f4430b8bca",
   "active_work_items": [],
-  "last_completed_work_item": "IOS-SWIFTPM-VERIFY-SANDBOX-001",
+  "last_completed_work_item": "IOS-PROCESS-GROUP-REAP-001",
   "work_items": {
     "IOS-BOOT-001": {
       "status": "completed",
@@ -2858,9 +2858,61 @@
       ]
     },
     "IOS-PROCESS-GROUP-REAP-001": {
-      "status": "ready",
-      "attempt": 0,
-      "last_evidence": null
+      "status": "completed",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260728T043436Z-ios-process-group-reap-001-42e0a970.json",
+      "claimed_by": "root-codex",
+      "claimed_at": "2026-07-28T04:33:20Z",
+      "lease_expires_at": "2026-07-29T04:33:20Z",
+      "work_item_sha256": "4dadd54497a820a004d1f7807f0fc6e4c25c9877e5ee9e733bf9398e04725306",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "ff5b35fd5cd6c4c3b1a59b87b923fc2ee80a98cc",
+      "base_capability_revision": 24,
+      "base_capability_assurance_sha256": "6c08426cf2cc8f0277426284e00909a10444767bc01eeb84e0db43db8dcbb2ac",
+      "android_requirement_selection_sha256": null,
+      "business_knowledge_control_sha256": "3b0b4452d52db635b5f6b8d7c414e3219a84f2b28d23944f484b0bf94ef80099",
+      "business_knowledge_authority_sha256": "c9f97afd8db1fe049041d3cf739bd778e07dc39fa056061b5d7ee45a3330ef75",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 1,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "harness-tests",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "307f335e883f02e96ad97ecbda4c210435c0b955e2bcb9e46db9dc7b0d02c285",
+          "cwd": ".",
+          "started_at": "2026-07-28T04:32:44Z",
+          "duration_ms": 35382,
+          "timeout_seconds": 60,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "a5215964037507487737d85035dcc427f5f5000e4689cfc97c898ea44802d881",
+          "stdout_tail": "",
+          "stderr_tail": "...........................................................................................................................\n----------------------------------------------------------------------\nRan 123 tests in 35.263s\n\nOK\n"
+        }
+      ],
+      "last_evidence_sha256": "cf30b5b34f30ee01e645d1467c534c475c30ac6a1e0cdfc8a7f35ca1d7d93cdb",
+      "verified_at": "2026-07-28T04:34:37Z",
+      "completed_at": "2026-07-28T04:35:32Z",
+      "final_tree_sha256": "b59604579c25a1fbac0c2aa2559637c0a8a9a3ca795c40892d5658558d71ebc3"
     }
   },
   "health": {
@@ -2890,7 +2942,8 @@
     "auto_materialization_policy": "compiled_control_plane_v1",
     "proposal_lifecycle_tests": "state_aware",
     "knowledge_revision_tombstones": "v1_verified",
-    "swiftpm_manifest_verification": "sandbox_isolated"
+    "swiftpm_manifest_verification": "sandbox_isolated",
+    "trusted_process_cleanup": "bounded_stable"
   },
   "risks": [
     {

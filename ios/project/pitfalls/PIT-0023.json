@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0023",
+  "revision": 1,
+  "title": "进程组刚收到终止信号时不能立即判定永久泄漏",
+  "fingerprint": "process-group-reap-window-misclassified-as-leak",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "同一份 clean Harness baseline 大多数时候通过，偶发 test_timeout_reclaims_child_and_grandchild 失败",
+    "失败只表现为 process_leak=true，随后外部轮询又发现所有 PID 已消失",
+    "业务 Work Item 在 Agent 启动前被 baseline_red 阻断",
+    "立即重跑全量测试通常恢复绿色"
+  ],
+  "conditions": [
+    "父进程 timeout 后对完整进程组发送 TERM/KILL",
+    "communicate 已回收直接子进程，但操作系统尚未完成子孙进程组条目清理",
+    "实现紧接着只调用一次 killpg(pid, 0) 并把 true 当成永久泄漏",
+    "机器负载或调度延迟扩大了信号送达与进程表清理之间的窗口"
+  ],
+  "root_cause": "进程安全合同要求有界回收并确认无残留，但旧 reference runner 把“清理完成后的瞬时 OS settle 窗口”与“超过期限仍存在的真实进程泄漏”合并成一次即时布尔探测，导致非确定性 baseline。",
+  "diagnosis": [
+    "对比 run 结果中的 timed_out、cleanup_error、process_leak，而不是只看测试失败",
+    "在失败后短周期检查原进程组/PID 是否自行消失",
+    "使用 mock clock/process-group 探测分别复现先存在后消失和持续存在",
+    "连续运行真实 parent-child-grandchild timeout 场景验证稳定性"
+  ],
+  "fix": "trusted_supervisor_reference 增加 _wait_for_process_group_exit：以 monotonic deadline 和短轮询提供 1 秒有界 settle 窗口，期限内消失返回清理成功，期限后仍存在才标记 process_leak。确定性测试覆盖 settle 与真实 leak，真实三代进程测试连续 5 次通过。",
+  "prevention": {
+    "architecture_rule": "进程回收状态必须以有界 deadline 判定；不得在刚发出 TERM/KILL 后用单次存在性探测认定泄漏，也不得用整套测试重跑掩盖 teardown flake。",
+    "tests": [
+      "ios/harness/tests/test_trusted_supervisor_reference.py#test_process_group_exit_wait_is_bounded_and_distinguishes_settle_from_leak",
+      "ios/harness/tests/test_trusted_supervisor_reference.py#test_timeout_reclaims_child_and_grandchild"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-TRUSTED-SUPERVISOR-REFERENCE-001",
+    "until": "IOS-PROCESS-GROUP-REAP-001"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T043436Z-ios-process-group-reap-001-42e0a970.json"
+  ]
+}

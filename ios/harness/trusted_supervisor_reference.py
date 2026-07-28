@@ -206,6 +206,22 @@ def _process_group_exists(pid: int) -> bool:
         return True
 
 
+def _wait_for_process_group_exit(
+    pid: int,
+    *,
+    timeout_seconds: float = 1.0,
+    poll_seconds: float = 0.01,
+) -> bool:
+    """Allow a signalled process group a bounded OS reaping window."""
+    deadline = time.monotonic() + timeout_seconds
+    while _process_group_exists(pid):
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return False
+        time.sleep(min(poll_seconds, remaining))
+    return True
+
+
 def _run_argv(
     argv: Sequence[str],
     cwd: Path,
@@ -249,7 +265,7 @@ def _run_argv(
                 stdout = error.output or b""
                 stderr = error.stderr or b""
                 cleanup_error = cleanup_error or "communicate_timeout"
-    leak = _process_group_exists(process.pid)
+    leak = not _wait_for_process_group_exit(process.pid)
     return {
         "exit_code": process.returncode,
         "timed_out": timed_out,
