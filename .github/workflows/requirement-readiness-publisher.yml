@@ -1,0 +1,32 @@
+name: Requirement Readiness Publisher
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_commit:
+        required: true
+        type: string
+      requirement_record_sha256:
+        required: true
+        type: string
+      requirement_catalog_sha256:
+        required: true
+        type: string
+      golden_receipt_sha256:
+        required: true
+        type: string
+      knowledge_release_sha256:
+        required: true
+        type: string
+      coverage_ledger_sha256:
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  registration-only:
+    if: ${{ false }}
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo "The protected implementation runs only from the integration branch."
