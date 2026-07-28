@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0041",
+  "revision": 1,
+  "title": "知识发布是 authority 移动而不是 proposal 复制",
+  "fingerprint": "published-and-proposal-same-revision-duplicate",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "把 candidate Packet/Driver 复制到 published 后，Business Knowledge doctor 报同 ID/revision 重复",
+    "proposal 与 published 同时存在时，revision 连续性、Claim owner 和 Driver 引用出现二义性",
+    "Coverage 和 Catalog 已生成，但安装后的最终图仍无法通过 doctor"
+  ],
+  "conditions": [
+    "Publisher 只把转换后的记录写入 published 目录",
+    "原 proposal 没有在同一事务中精确删除",
+    "Catalog 根据最终物理目录重建，而不是相信发布前缓存"
+  ],
+  "root_cause": "proposal 与 published 是同一个不可变 revision 的两个互斥 authority 状态，不是允许并存的副本。把发布实现成 copy 会让同一 ID/revision 出现两个物理真相。",
+  "diagnosis": [
+    "枚举 packets/drivers 的 proposals 与 published 路径并按 ID/revision 分组",
+    "检查 transaction 是否同时声明 published install 与原 proposal delete",
+    "在隔离 verifier tree 安装完整事务后重建 Catalog 并运行 Business Knowledge doctor"
+  ],
+  "fix": "Business Knowledge Publisher 把两个 proposal deletion 纳入内容寻址事务；先验证原始摘要，再删除精确 proposal、安装 published Packet/Driver/Coverage，最后从最终图派生 Catalog。workflow 对七个变更路径做白名单核对。",
+  "prevention": {
+    "architecture_rule": "知识 promotion 必须是 create published + create/update Coverage + rebuild Catalog + delete exact proposal 的单一原子事务；任一部分缺失都不得创建 PR。",
+    "tests": [
+      "ios/harness/tests/test_business_knowledge_publisher.py#test_prepare_is_deterministic_staging_only_and_complete",
+      "ios/harness/tests/test_business_knowledge_publisher.py#test_prepare_rejects_existing_publication_target",
+      "ios/harness/tests/test_business_knowledge_publisher.py#test_workflow_is_environment_protected_pinned_and_pr_only"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-001",
+    "until": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-001"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T141300Z-ios-business-knowledge-publisher-001-cacdea71.json"
+  ]
+}

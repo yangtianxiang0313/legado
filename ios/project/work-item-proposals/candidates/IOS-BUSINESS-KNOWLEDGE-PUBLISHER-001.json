@@ -1,0 +1,236 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-001",
+    "title": "建立受信 Business Knowledge Publisher",
+    "priority": 100,
+    "risk": "critical",
+    "labels": [
+      "phase-0",
+      "control-plane",
+      "business-knowledge",
+      "publisher",
+      "github-actions",
+      "authority-boundary"
+    ]
+  },
+  "spec": {
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "intent": "建立 staging-only Business Knowledge Publisher 与受 GitHub Environment 保护的 workflow，把精确绑定的 Packet/Driver proposal、protected Android Golden release、Requirement Catalog 与 architecture digest 原子转换为 published Packet、resolved Driver、完整 Coverage Ledger、release receipt 和派生 Catalog。Publisher 必须逐条重算 runtime evidence 的 Golden artifact SHA、JSON Pointer projection、observed canonical SHA、Android commit、runner 和 canonicalizer，验证 proposal producer 已完成且 Driver 只引用同批 Claim；输出只能位于仓外新目录。workflow 固定集成分支、actor、Environment、输入摘要和目标 HEAD，只能删除已提升的两个 proposal、安装发布事务、运行 doctor、推专用分支并创建 PR，不得直接推目标分支、修改 Requirement/Golden/ADR/产品或要求普通执行确认。",
+    "depends_on": [
+      "IOS-ANDROID-GOLDEN-PUBLISHER-001",
+      "IOS-KNOWLEDGE-SOURCE-RUNTIME-GOLDEN-002"
+    ],
+    "scope": {
+      "allow_write": [
+        ".github/workflows/business-knowledge-publisher.yml",
+        "ios/publisher/business_knowledge_publisher.py",
+        "ios/publisher/README.md",
+        "ios/harness/tests/test_business_knowledge_publisher.py",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-BUSINESS-KNOWLEDGE-PUBLISHER-001.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "ios/harness/business-knowledge/**",
+        "ios/harness/goldens/**",
+        "ios/harness/normalization/**",
+        "ios/harness/oracle/**",
+        "ios/harness/source-lab/**",
+        "ios/project/android-intake/**",
+        "ios/project/business-knowledge/packets/proposals/**",
+        "ios/project/business-knowledge/drivers/proposals/**",
+        "ios/project/business-knowledge/packets/published/**",
+        "ios/project/business-knowledge/drivers/published/**",
+        "ios/project/business-knowledge/coverage/**",
+        "ios/project/business-knowledge/releases/**",
+        "ios/project/requirements/**",
+        "ios/project/approvals/**",
+        "ios/project/baseline.json",
+        "ios/docs/**"
+      ],
+      "max_files_changed": 7,
+      "max_changed_lines": 2800
+    },
+    "inputs": {
+      "context_files": [
+        ".github/workflows/android-golden-publisher.yml",
+        "ios/publisher/android_golden_publisher.py",
+        "ios/harness/business-knowledge/business_knowledge.py",
+        "ios/harness/business-knowledge/policy-v1.json",
+        "ios/project/business-knowledge/packets/proposals/BKP-SOURCE-RUNTIME-HTML-CSS-001/r0001.json",
+        "ios/project/business-knowledge/drivers/proposals/DRV-SOURCE-RUNTIME-HTML-CSS-001/r0001.json",
+        "ios/harness/goldens/manifest.json",
+        "ios/harness/goldens/releases/sl-html-basic-001-30355913470-1.json",
+        "ios/project/delivery-intents/DINT-SOURCE-RUNTIME-HTML-CSS-001.json"
+      ],
+      "android_source_anchors": [],
+      "fixtures": [
+        "sl-html-basic-001"
+      ]
+    },
+    "architecture_refs": [
+      "ARCH-014",
+      "ARCH-017",
+      "ADR-0001",
+      "ADR-0002",
+      "ADR-0004"
+    ],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "staging-only Publisher 拒绝仓内/既有/symlink 输出目录，校验 proposal 原始摘要、schema/status/producer/HEAD、Golden manifest 与 release receipt authority，并逐条重算 JSON Pointer 和 canonical observed digest。",
+          "verified_by": [
+            "harness-tests",
+            "dependency-policy"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "Publisher 将 Packet status 改为 published，将 Driver 改为 resolved 并写入 Environment/run promotion；Coverage 对每条 current Claim 恰有一个 covered entry，绑定新 authority、Requirement Catalog 与 architecture digest。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [
+            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-01",
+            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-02",
+            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-03",
+            "REQ-ANDROID-SOURCE-PIPELINE-001#RC-04"
+          ],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "输出事务包含两个 published artifact、Coverage、release receipt、派生 Catalog 和两个精确 proposal deletion；在隔离 verifier tree 安装后 Business Knowledge doctor 与 Harness doctor 必须通过，输出对相同输入确定性一致。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-4",
+          "statement": "workflow 仅 workflow_dispatch，固定 business-knowledge-publisher Environment、actor 与 feature/ios-ai-harness-bootstrap；权限仅 contents:write/pull-requests:write，只能从目标 HEAD 创建唯一发布分支和 PR，不直接推目标分支。",
+          "verified_by": [
+            "harness-tests",
+            "dependency-policy"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-5",
+          "statement": "workflow 在写入前验证 remote target、proposal/Golden 输入摘要和发布事务；写入后限制 git diff 为声明的 install/delete 集合并重跑 Business Knowledge doctor、Harness doctor 与 Demand Compiler。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-6",
+          "statement": "本工作项只实现 Publisher，不在本地发布知识；README、Checkpoint、Capability 与 Pitfall 记录权限边界、外部 Environment、回滚和剩余 Requirement Publisher 风险。",
+          "verified_by": [
+            "memory-close"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": [
+        "android-intake-contract",
+        "dependency-policy",
+        "harness-tests",
+        "source-lab-contract",
+        "source-lab-tests",
+        "source-lab-smoke"
+      ]
+    },
+    "baseline_checks": [
+      "dependency-policy",
+      "harness-tests"
+    ],
+    "budget": {
+      "wall_clock_seconds": 21600,
+      "max_edit_verify_cycles": 5,
+      "max_targeted_test_runs": 24,
+      "max_full_test_runs": 5,
+      "max_infra_retries": 3
+    },
+    "gates": [],
+    "completion_effects": {
+      "health": {
+        "business_knowledge_publisher": "implemented_external_authority"
+      }
+    },
+    "memory": {
+      "capability_state_required": true,
+      "checkpoint_required": true,
+      "pitfall_update_required": true,
+      "adr": "not_required"
+    },
+    "requirements": {
+      "mode": "enabler",
+      "refs": [
+        {
+          "id": "REQ-ANDROID-SOURCE-PIPELINE-001",
+          "revision": 1,
+          "clauses": [
+            "RC-01",
+            "RC-02",
+            "RC-03",
+            "RC-04"
+          ]
+        }
+      ],
+      "none_reason": null
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "not_applicable",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [],
+      "expected_ledger_transitions": [],
+      "context_budget": {
+        "max_claims": 8,
+        "max_bytes": 32768
+      },
+      "none_reason": "本项实现外部发布权限边界，不由普通 Work Item 消费或提升业务知识"
+    },
+    "source_lab": {
+      "mode": "reuse",
+      "behaviors": [
+        "transport.get-query",
+        "pipeline.search-html",
+        "pipeline.book-info-html",
+        "pipeline.toc-html",
+        "pipeline.content-html",
+        "url.relative-resolution",
+        "rule.css-selector"
+      ],
+      "scenarios": [
+        "sl-html-basic-001"
+      ],
+      "none_reason": null
+    },
+    "stop_on": [
+      "baseline_red",
+      "scope_violation",
+      "authority_escalation",
+      "published_knowledge_mutation",
+      "golden_mutation",
+      "same_failure_twice",
+      "budget_exhausted",
+      "human_decision_required"
+    ]
+  }
+}

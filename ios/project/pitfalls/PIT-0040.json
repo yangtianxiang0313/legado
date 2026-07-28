@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0040",
+  "revision": 1,
+  "title": "不能用窄 Golden 为广域知识包背书",
+  "fingerprint": "narrow-golden-broad-knowledge-promotion",
+  "capabilities": [
+    "CAP-CONFORMANCE",
+    "CAP-KNOWLEDGE-CONTROL",
+    "CAP-RUNTIME-PORTS"
+  ],
+  "symptoms": [
+    "一份 HTML/CSS Golden 已通过，但待发布 Packet 同时声称 JS、WebView、Cookie、限流、XPath 或真实网络语义已验证",
+    "Demand Plan 长期停在 knowledge_authority_required，或者 Publisher 只能通过跳过未覆盖 Claim 才能发布",
+    "Claim 只引用整个 Golden 文件，无法指出哪段结构化输出证明该结论"
+  ],
+  "conditions": [
+    "源码扫描先产生了覆盖整个 SourceRuntime 的广域候选知识",
+    "后续 Android characterization 只实现首个 HTML/CSS 纵向切片",
+    "Publisher 按 Packet 粒度提升，但没有要求每条 runtime_verified Claim 绑定精确投影"
+  ],
+  "root_cause": "把业务知识扫描范围、首个实现范围和运行证据覆盖范围误认为同一边界。Golden 只能证明其实际执行和规范化的投影，不能替未运行分支提供 authority。",
+  "diagnosis": [
+    "逐条枚举待发布 Claim 的 runtime_evidence 与 projection_pointer",
+    "重算 artifact_sha256、pointer 指向值的 canonical SHA-256、runner 与 canonicalizer 绑定",
+    "比较 Claim statement 与投影内容，确认没有超出案例、规则 backend、网络边界和 profile"
+  ],
+  "fix": "保留广域 SourceRuntime Packet 为后续知识候选，新增 BKP-SOURCE-RUNTIME-HTML-CSS-001@1 窄包；四条 Claim 分别绑定完整流水线投影、RequestPlan、空目录错误与正文投影，并让 Delivery Intent 只选择该窄包。",
+  "prevention": {
+    "architecture_rule": "runtime_verified Claim 必须绑定最小可解释的 Golden JSON Pointer 与 canonical observed digest；Publisher 必须逐条重算，证据范围小于 statement 时 fail closed。",
+    "tests": [
+      "ios/harness/tests/test_demand_compiler.py#test_compiles_shortest_authority_and_delivery_chain",
+      "ios/harness/tests/test_android_golden_publisher.py"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-KNOWLEDGE-SOURCE-RUNTIME-001",
+    "until": "IOS-KNOWLEDGE-SOURCE-RUNTIME-GOLDEN-002"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T140156Z-ios-knowledge-source-runtime-golden-002-d744de11.json"
+  ]
+}
