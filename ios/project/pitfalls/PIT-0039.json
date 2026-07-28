@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0039",
+  "revision": 1,
+  "title": "Catalog 语义摘要不能用格式敏感的文件摘要验证",
+  "fingerprint": "canonical-json-vs-file-byte-digest",
+  "capabilities": ["CAP-KNOWLEDGE-CONTROL"],
+  "symptoms": [
+    "Demand Compiler 在真实 HEAD 上把未变化的 accepted Requirement 报告为 REQUIREMENT_RECORD_DRIFT",
+    "临时测试使用紧凑/自生成 JSON 时通过，pretty-printed 真实记录失败"
+  ],
+  "conditions": [
+    "Catalog 的 record_sha256 由 canonical JSON 计算",
+    "消费者错误地对 JSON 文件原始字节计算 SHA-256",
+    "测试 fixture 同时生成 Catalog 和记录，意外使用了同一种错误算法"
+  ],
+  "root_cause": "把两种不同绑定混为一谈：Git HEAD/文件摘要绑定精确字节与格式，Catalog record_sha256 绑定 JSON 语义。二者都需要，但不能互相替代。",
+  "diagnosis": [
+    "比较 shasum 文件摘要、sha256_json 规范化摘要与 Catalog record_sha256",
+    "确认 ensure_ascii=false、sort_keys=true、separators=(',', ':') 与 Android Intake 完全一致",
+    "用语义不变的格式化文件和语义变化但 Catalog 未更新的文件分别测试"
+  ],
+  "fix": "Demand Compiler 与 bound-delivery-blueprint 使用 canonical JSON SHA-256 校验 Catalog record_sha256，同时继续通过 git ls-tree/git show 绑定 HEAD 原始文件；测试 fixture 也使用生产 canonical 算法。",
+  "prevention": {
+    "architecture_rule": "每个摘要字段必须声明绑定层次：原始 artifact、canonical document 或派生 selection；消费者必须复用生产者的同一 canonicalization 合同。",
+    "tests": [
+      "ios/harness/tests/test_demand_compiler.py#test_compiles_shortest_authority_and_delivery_chain",
+      "ios/harness/tests/test_demand_compiler.py#test_receipt_tamper_and_uncommitted_intent_fail_closed",
+      "ios/harness/tests/test_loop_supervisor.py#test_bound_blueprint_materializes_with_provenance"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-LOOP-DEMAND-COMPILER-003",
+    "until": "IOS-LOOP-DEMAND-COMPILER-RECOVERY-004"
+  },
+  "status": "resolved",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T134926Z-ios-loop-demand-compiler-recovery-004-b1b807ff.json"
+  ]
+}

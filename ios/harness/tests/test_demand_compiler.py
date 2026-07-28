@@ -166,7 +166,7 @@ class DemandFixture:
             f"{self.requirement_id}.json"
         )
         self.write_json(relative, self.requirement_record)
-        digest = hashlib.sha256((self.root / relative).read_bytes()).hexdigest()
+        digest = demand_compiler._sha256_json(self.requirement_record)
         self.write_json(
             demand_compiler.REQUIREMENT_CATALOG,
             {
@@ -293,6 +293,21 @@ class DemandCompilerTests(unittest.TestCase):
             with self.assertRaisesRegex(
                 demand_compiler.DemandCompilerError,
                 "GOLDEN_RECEIPT_DRIFT",
+            ):
+                fixture.compiler().compile(fixture.intent_path())
+
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = DemandFixture(Path(directory))
+            fixture.requirement_record["status"] = "superseded"
+            relative = (
+                "ios/project/requirements/accepted/"
+                f"{fixture.requirement_id}.json"
+            )
+            fixture.write_json(relative, fixture.requirement_record)
+            fixture.commit("semantic requirement drift")
+            with self.assertRaisesRegex(
+                demand_compiler.DemandCompilerError,
+                "REQUIREMENT_RECORD_DRIFT",
             ):
                 fixture.compiler().compile(fixture.intent_path())
 

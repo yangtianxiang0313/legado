@@ -1,0 +1,140 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-LOOP-DEMAND-COMPILER-RECOVERY-004",
+    "title": "修复 Requirement 规范化摘要绑定",
+    "priority": 100,
+    "risk": "medium",
+    "labels": ["phase-0", "control-plane", "corrective", "recovery", "demand-compiler"]
+  },
+  "spec": {
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "intent": "恢复 IOS-LOOP-DEMAND-COMPILER-003 在真实 HEAD 上暴露的 Requirement record 摘要误判。Android Intake Catalog 的 record_sha256 明确定义为 canonical JSON digest，而 Demand Compiler 与 bound-delivery-blueprint 错误使用文件原始字节 SHA-256；格式化等价的 accepted record 因此被误报 REQUIREMENT_RECORD_DRIFT。统一使用 ensure_ascii=false、sort_keys=true、紧凑 separators 的 canonical JSON SHA-256，同时继续单独绑定 HEAD 文件原始内容；测试必须覆盖 pretty JSON 与 canonical catalog digest 可接受、语义篡改拒绝，并证明真实 SourceRuntime Intent 进入 KNOWLEDGE_AUTHORITY_REQUIRED。",
+    "depends_on": ["IOS-LOOP-DEMAND-COMPILER-003"],
+    "scope": {
+      "allow_write": [
+        "ios/harness/demand_compiler.py",
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/tests/test_demand_compiler.py",
+        "ios/harness/tests/test_loop_supervisor.py",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-LOOP-DEMAND-COMPILER-RECOVERY-004.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        ".github/**",
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "ios/docs/**",
+        "ios/harness/goldens/**",
+        "ios/harness/schemas/**",
+        "ios/harness/business-knowledge/**",
+        "ios/harness/android-intake/**",
+        "ios/harness/source-lab/**",
+        "ios/harness/oracle/**",
+        "ios/project/business-knowledge/**",
+        "ios/project/requirements/**",
+        "ios/project/delivery-intents/**",
+        "ios/project/approvals/**",
+        "ios/project/baseline.json"
+      ],
+      "max_files_changed": 7,
+      "max_changed_lines": 700
+    },
+    "inputs": {
+      "context_files": [
+        "ios/harness/work-items/IOS-LOOP-DEMAND-COMPILER-003.json",
+        "ios/harness/demand_compiler.py",
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/android-intake/android_intake.py",
+        "ios/project/requirements/catalog.json",
+        "ios/project/requirements/accepted/REQ-ANDROID-SOURCE-PIPELINE-001.json",
+        "ios/project/delivery-intents/DINT-SOURCE-RUNTIME-HTML-CSS-001.json"
+      ],
+      "android_source_anchors": [],
+      "fixtures": ["sl-html-basic-001"]
+    },
+    "architecture_refs": ["ARCH-014", "ARCH-017", "ADR-0002", "ADR-0004"],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "Demand Compiler 与 bound-delivery-blueprint 使用与 Android Intake 完全相同的 canonical JSON SHA-256 校验 Requirement record_sha256；HEAD 原始文件绑定仍独立保留。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "pretty-printed Requirement record 与 canonical catalog digest 匹配时通过，任意语义字段变化且 catalog 未更新时稳定返回 REQUIREMENT_RECORD_DRIFT。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "真实 DINT-SOURCE-RUNTIME-HTML-CSS-001 在干净 HEAD 上输出 KNOWLEDGE_AUTHORITY_REQUIRED，artifact 明确显示 SourceRuntime Packet/Driver 为 proposal_only，Supervisor 不再 queue_empty。",
+          "verified_by": ["harness-tests"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-4",
+          "statement": "Checkpoint/Pitfall 记录文件摘要、规范化 JSON 摘要与 HEAD binding 的不同语义。",
+          "verified_by": ["memory-close"],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": ["dependency-policy", "harness-tests"]
+    },
+    "baseline_checks": ["dependency-policy"],
+    "budget": {
+      "max_edit_verify_cycles": 3,
+      "max_full_test_runs": 3,
+      "max_targeted_test_runs": 12,
+      "max_infra_retries": 2,
+      "wall_clock_seconds": 7200
+    },
+    "gates": [],
+    "completion_effects": {
+      "health": {
+        "loop_demand_compiler": "canonical_requirement_binding_v1"
+      }
+    },
+    "memory": {
+      "capability_state_required": true,
+      "checkpoint_required": true,
+      "pitfall_update_required": true
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "refs": [],
+      "none_reason": "本项修复需求编译摘要合同，不修改产品 Requirement"
+    },
+    "source_lab": {
+      "mode": "not_applicable",
+      "behaviors": [],
+      "scenarios": [],
+      "none_reason": "本项只修复控制面摘要，不执行 SourceLab"
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "not_applicable",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [],
+      "expected_ledger_transitions": [],
+      "context_budget": {"max_claims": 10, "max_bytes": 16384},
+      "none_reason": "本项不消费、生成或发布业务知识"
+    },
+    "stop_on": [
+      "需要修改 accepted Requirement 或 Catalog",
+      "canonical 算法与 Android Intake 不一致",
+      "修复会放宽 Golden、Knowledge 或 Requirement authority"
+    ]
+  }
+}

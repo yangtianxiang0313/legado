@@ -821,12 +821,12 @@ class LoopSupervisor:
                 raise MaterializationConflict("DELIVERY_REQUIREMENT_PATH_INVALID")
             self._require_head_regular((record_relative,))
             record_path = self.harness.resolve(record_relative)
-            record_sha = _sha256_bytes(record_path.read_bytes())
+            record = json.loads(record_path.read_text(encoding="utf-8"))
+            record_sha = sha256_json(record)
             if record_sha != entry.get("record_sha256"):
                 raise MaterializationConflict(
                     f"DELIVERY_REQUIREMENT_RECORD_DRIFT:{identifier}"
                 )
-            record = json.loads(record_path.read_text(encoding="utf-8"))
             if (
                 record.get("id") != identifier
                 or record.get("revision") != revision
