@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "InitializationWorkItemProposalDAG",
   "id": "WIPD-IOS-INITIALIZATION-001",
-  "revision": 6,
+  "revision": 7,
   "authority": "proposal_only",
   "status": "proposed",
   "created_by": "IOS-KNOWLEDGE-CONTROL-PLANE-001",
@@ -151,6 +151,14 @@
       "title": "恢复 POST Form proposal 的共享 Oracle contract 验证",
       "outputs": ["scenario-aware oracle proposal contract", "legacy HTML proposal compatibility", "POST Form candidate-only trusted import"],
       "gates": [], "constraint": "必须恢复 ci_proposal finalize、workflow 与 trusted_import 对共享 oracle.contract.verify_proposal 的调用，并用向后兼容的精确 schema 绑定 scenario/manifest/input；不得以本地 SHA 或 importer 私有校验替代共享 contract，不得发布 Golden、修改 Fixture/产品或获得 Publisher 权限"
+    },
+    {
+      "proposal_id": "IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-003", "phase": 11, "class": "control_plane",
+      "recovers": "IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-002",
+      "depends_on": ["IOS-SOURCELAB-POST-FORM-001"], "knowledge_mode": "not_applicable",
+      "title": "完成 POST Form proposal 的共享 Oracle contract 恢复",
+      "outputs": ["verified scenario-aware oracle proposal contract", "bounded attestation recovery lineage", "POST Form trusted proposal pipeline"],
+      "gates": [], "constraint": "必须承接 002 的共享 contract 实现并在有界 SourceLab recovery chain 下通过完整验收；ci_proposal 与 trusted_import 均调用同一 verify_proposal，旧 HTML 与新 POST Form 均通过，禁止绕过、降级或扩大 Golden/Publisher/产品权限"
     }
   ],
   "compiler_rules": [

@@ -1,0 +1,43 @@
+{
+  "authority": "proposal_only",
+  "candidate_sha256": "e156a9028c12ae98e14fd852b82924ad23de2cd51ac24090ab1be4a35d5f0371",
+  "compiler_version": "proposal-compiler-v1",
+  "dag": {
+    "id": "WIPD-IOS-INITIALIZATION-001",
+    "revision": 7,
+    "sha256": "dddbaca7c41365a78e4e1e61707690ec72d0e3ee01c4182297214a5151b8c1b9"
+  },
+  "dependencies": [
+    {
+      "chain": [
+        "IOS-SOURCELAB-POST-FORM-001"
+      ],
+      "checkpoint": "ios/project/checkpoints/IOS-SOURCELAB-POST-FORM-001.json",
+      "checkpoint_sha256": "f06b328c46fc46918ea5faffa29b29f4e9360b29037830784a9a31033f572bb6",
+      "evidence": "ios/harness/evidence/runs/run-20260728T174753Z-ios-sourcelab-post-form-001-23fcaaa0.json",
+      "evidence_sha256": "9c42c195f466a395081d317730a5ef11a40a8441eefc764ebccd961e339f69c7",
+      "original": "IOS-SOURCELAB-POST-FORM-001",
+      "reason_code": "DIRECT_COMPLETION",
+      "resolved": "IOS-SOURCELAB-POST-FORM-001",
+      "work_item_sha256": "0e0c27f36253a98417168db638c3441b4af660fe8a24f4a28700e027f084986b"
+    }
+  ],
+  "node_sha256": "d2f07490ef3770808775996897ec54ef0f40435f4f12e1ea8b20576d20c8ce1f",
+  "proposal_id": "IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-003",
+  "queue_effect": "none",
+  "recipe_sha256": "49127c7fac47cfccd9e38069e2ff4aae1ee4bd0c682d5ffac322d015b2387115",
+  "recovery": {
+    "capability": "CAP-CONFORMANCE",
+    "checkpoint": null,
+    "checkpoint_sha256": null,
+    "evidence": "ios/harness/evidence/runs/run-20260728T191635Z-ios-android-post-form-attestation-recovery-002-fe4a815d.json",
+    "evidence_sha256": "4d0bd42cb1036cb756f5e8fc35db42cd7a5251726ad8bf3646c29a1f15b4be3e",
+    "predecessor": "IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-002",
+    "replacement": null,
+    "runtime_sha256": "ad6801c85673567065c500e0ef99130bddff55d22d00553106cb46102d6c0611",
+    "status": "rejected",
+    "work_item": "ios/harness/work-items/IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-002.json",
+    "work_item_sha256": "225adea50732fffbec07370b0db969b6cc5e5db88a6b2d54cce05b8ee475226d"
+  },
+  "schema_version": 1
+}
