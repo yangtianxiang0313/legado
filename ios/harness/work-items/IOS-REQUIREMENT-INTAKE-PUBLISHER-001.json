@@ -1,0 +1,213 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-REQUIREMENT-INTAKE-PUBLISHER-001",
+    "title": "建立 Android 迁移候选的受信 Requirement Intake Publisher",
+    "priority": 100,
+    "risk": "high",
+    "labels": [
+      "phase-0",
+      "control-plane",
+      "requirement",
+      "publisher",
+      "android-migration",
+      "authority-boundary"
+    ]
+  },
+  "spec": {
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "intent": "补齐 Loop 从 requirement_authority_required 到 accepted/characterization_required 的受信转换。实现通用 Requirement Intake Publisher：普通 AI 仍只能写 proposal；外部 GitHub Actions publisher 在干净、精确 source commit 上复算 AndroidMigrationIntent、completed intake WorkItem/Evidence/Checkpoint/Capability/proposal digest、Android baseline/source blob、Fact/Claim 引用和 SourceLab gap。只有 android_observed、L2/L3、全部 clause 以 android_oracle 证明、readiness=characterization_required、无 human_adjudication/architecture_decision/产品差异的候选可按 policy_auto 接受；Publisher 原子生成 accepted Requirement、Android fact mapping policy、派生 inventory/catalog 与不可变 release receipt。任何未知字段、语义缺口被写成 implementation_ready、proposal/claim/source/HEAD 漂移、重复 semantic key/fact mapping、actor/run/branch 不匹配均 fail closed。本项还把 POST form proposal 扩充为完整可发布合同，并证明发布后的 Demand Plan 进入 characterization_planning_required；不创建场景、Golden、iOS 实现或自动合并。",
+    "depends_on": [
+      "IOS-ANDROID-REQUEST-OPTIONS-INTAKE-001"
+    ],
+    "scope": {
+      "allow_write": [
+        "ios/publisher/requirement_intake_publisher.py",
+        "ios/harness/tests/test_requirement_intake_publisher.py",
+        ".github/workflows/requirement-intake-publisher.yml",
+        "ios/project/requirement-proposals/ARQ-SOURCE-REQUEST-POST-FORM.json",
+        "ios/harness/README.md",
+        "ios/publisher/README.md",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-REQUIREMENT-INTAKE-PUBLISHER-001.json",
+        "ios/project/pitfalls/PIT-0053.json"
+      ],
+      "deny_write": [
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "ios/harness/harness.py",
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/demand_compiler.py",
+        "ios/harness/android-intake/**",
+        "ios/harness/source-lab/**",
+        "ios/harness/oracle/**",
+        "ios/harness/goldens/**",
+        "ios/harness/schemas/**",
+        "ios/project/android-intake/**",
+        "ios/project/requirements/accepted/**",
+        "ios/project/requirements/catalog.json",
+        "ios/project/business-knowledge/**",
+        "ios/project/approvals/**",
+        "ios/project/baseline.json",
+        "ios/docs/architecture.md",
+        "ios/docs/adr/**"
+      ],
+      "max_files_changed": 9,
+      "max_changed_lines": 3000
+    },
+    "inputs": {
+      "context_files": [
+        "ios/docs/android-requirement-intake.md",
+        "ios/docs/business-knowledge-control-plane.md",
+        "ios/publisher/requirement_readiness_publisher.py",
+        ".github/workflows/requirement-readiness-publisher.yml",
+        "ios/harness/demand_compiler.py",
+        "ios/harness/android-intake/android_intake.py",
+        "ios/harness/android-intake/policy-v1.json",
+        "ios/project/migration-intents/MINT-SOURCE-REQUEST-POST-FORM-001.json",
+        "ios/project/requirement-proposals/ARQ-SOURCE-REQUEST-POST-FORM.json",
+        "ios/project/checkpoints/IOS-ANDROID-REQUEST-OPTIONS-INTAKE-001.json",
+        "ios/project/business-knowledge/packets/proposals/BKP-SOURCE-REQUEST-OPTIONS-001/r0001.json"
+      ],
+      "android_source_anchors": [
+        "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+        "app/src/main/java/io/legado/app/model/webBook/WebBook.kt"
+      ],
+      "fixtures": []
+    },
+    "architecture_refs": [
+      "ARCH-014",
+      "ARCH-017",
+      "ADR-0001",
+      "ADR-0002",
+      "ADR-0004"
+    ],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "Publisher 只接受 schema 完整的 Android-observed L2/L3 proposal：target Requirement/semantic key/title/capabilities/facts/claims/profiles/clauses/readiness 唯一，全部 clause proof_kind=android_oracle、SourceLab behavior 非空，readiness 固定 characterization_required；L1、L4、human_adjudication、architecture_decision、implementation_ready 或未知字段拒绝。",
+          "verified_by": [
+            "harness-tests",
+            "android-intake-contract"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "Publisher 在干净精确 HEAD 上复算唯一 Migration Demand，并验证 completed intake settlement、proposal path/digest/identity、baseline/source blob、Fact inventory、同批 Claim source anchors 和 SourceLab planned/active behavior；任一绑定漂移不生成 transaction。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "prepare 只在 repo 外 create-only 输出 accepted Requirement、追加 fact maps_to 后的 policy、派生 inventory/catalog/business catalog（若需要）与不可变 authority receipt；原仓库保持 byte-for-byte 不变，已有 target/semantic key/release 或输出目录非空 fail closed。",
+          "verified_by": [
+            "harness-tests",
+            "dependency-policy"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-4",
+          "statement": "accepted record 使用 admission=policy_auto、support_state=active_untested、evidence_level=L2/L3，并保持 characterization_required 与 proposal unknowns/source_lab_gap；不得声称 implementation_ready、Golden verified 或 iOS 已实现。",
+          "verified_by": [
+            "harness-tests",
+            "android-intake-contract"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-5",
+          "statement": "GitHub workflow 绑定 workflow_dispatch actor、source commit、远端目标分支和 proposal digest，在受信 environment 中安装 transaction、运行 Android intake/Business Knowledge/Demand Compiler 验证，并只推独立 release branch/PR；没有 push-to-target、merge、Golden、Approval 或产品写权限。",
+          "verified_by": [
+            "harness-tests",
+            "dependency-policy"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-6",
+          "statement": "POST form proposal 包含发布所需完整合同；隔离发布结果的 Demand Plan 精确进入 characterization_planning_required/MIGRATION_REQUIREMENT_ACCEPTED，证明 authority transition 可接入下一阶段 DAG，而不在本项篡改 protected Requirement。",
+          "verified_by": [
+            "harness-tests",
+            "memory-close"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": [
+        "android-intake-contract",
+        "dependency-policy",
+        "harness-tests"
+      ]
+    },
+    "baseline_checks": [
+      "android-intake-contract",
+      "dependency-policy",
+      "harness-tests"
+    ],
+    "budget": {
+      "wall_clock_seconds": 10800,
+      "max_edit_verify_cycles": 5,
+      "max_targeted_test_runs": 20,
+      "max_full_test_runs": 3,
+      "max_infra_retries": 2
+    },
+    "gates": [],
+    "completion_effects": {
+      "health": {
+        "requirement_intake_publisher": "external_authority_ready"
+      }
+    },
+    "memory": {
+      "capability_state_required": true,
+      "checkpoint_required": true,
+      "pitfall_update_required": true,
+      "adr": "not_required"
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "refs": [],
+      "none_reason": "本项只建立受信 Requirement authority transaction，不接受产品行为或实现 Requirement"
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "not_applicable",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [],
+      "expected_ledger_transitions": [],
+      "context_budget": {
+        "max_claims": 12,
+        "max_bytes": 49152
+      },
+      "none_reason": "本项验证既有 proposal Claim 的 source anchors，但不生成、发布或消费产品知识"
+    },
+    "source_lab": {
+      "mode": "not_applicable",
+      "behaviors": [],
+      "scenarios": [],
+      "none_reason": "本项只读取 proposal 的 SourceLab gap，不创建或提升场景"
+    },
+    "stop_on": [
+      "baseline_red",
+      "scope_violation",
+      "authority_escalation",
+      "same_failure_twice",
+      "budget_exhausted",
+      "human_decision_required"
+    ]
+  }
+}

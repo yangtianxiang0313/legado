@@ -4,6 +4,75 @@
   "target_requirement_id": "REQ-ANDROID-SOURCE-REQUEST-OPTIONS-001",
   "status": "proposed",
   "dedupe_key": "CAP-RUNTIME-PORTS/source.request.post-form/store_safe+full_compat",
+  "semantic_key": "source.request.post-form-options",
+  "title": "对齐 Android AnalyzeUrl 的 POST Form 与请求选项行为",
+  "android_fact_refs": [
+    "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+  ],
+  "source_claim_refs": [
+    {
+      "id": "BKC-SR-POST-FORM-SELECTION-001",
+      "revision": 1
+    },
+    {
+      "id": "BKC-SR-POST-BODY-DISPATCH-001",
+      "revision": 1
+    },
+    {
+      "id": "BKC-SR-POST-FIELD-ENCODING-001",
+      "revision": 1
+    },
+    {
+      "id": "BKC-SR-REQUEST-HEADER-COOKIE-RETRY-001",
+      "revision": 1
+    },
+    {
+      "id": "BKC-SR-RESPONSE-XML-NORMALIZATION-001",
+      "revision": 1
+    }
+  ],
+  "capability_refs": [
+    "CAP-RUNTIME-PORTS",
+    "CAP-CONFORMANCE"
+  ],
+  "profiles": [
+    "store_safe",
+    "full_compat"
+  ],
+  "clauses": [
+    {
+      "id": "RC-01",
+      "statement": "当书源 URL option 声明 POST 时，运行时必须按 Android 可观察结果区分 form 字段、显式 Content-Type raw body 与 JSON body，并输出可逐字段比较的 RequestPlan。",
+      "proof_kind": "android_oracle",
+      "required_checks": [
+        "source-lab-contract",
+        "conformance-targeted"
+      ],
+      "source_lab_behaviors": [
+        "transport.post-form"
+      ]
+    },
+    {
+      "id": "RC-02",
+      "statement": "请求字段编码、headers/Cookie 合并、charset、retry 与响应解码必须由同一固定 Android baseline 对本地确定性站点产生的结构化结果定义；iOS 的具体 HTTP client 可以不同。",
+      "proof_kind": "android_oracle",
+      "required_checks": [
+        "source-lab-contract",
+        "conformance-targeted"
+      ],
+      "source_lab_behaviors": [
+        "transport.post-form"
+      ]
+    }
+  ],
+  "readiness": {
+    "state": "characterization_required",
+    "blockers": [
+      "缺少 transport.post-form nominal/boundary SourceLab reference scenario",
+      "缺少固定 Android runner 的结构化 RequestPlan/response Golden"
+    ],
+    "next_action": "生成 POST form 本地站点场景并由固定 Android runner 发布 canonical Golden"
+  },
   "source_facts": [
     "BKC-SR-POST-FORM-SELECTION-001@1",
     "BKC-SR-POST-BODY-DISPATCH-001@1",
@@ -11,7 +80,7 @@
     "BKC-SR-REQUEST-HEADER-COOKIE-RETRY-001@1",
     "BKC-SR-RESPONSE-XML-NORMALIZATION-001@1"
   ],
-  "evidence_level": "L1",
+  "evidence_level": "L2",
   "observable_intent": "书源 URL option 声明 POST 时，运行时应按 Android 的分支规则确定 form、raw Content-Type body 或 JSON body，合并 headers/Cookie/retry，并以结构化 RequestPlan 和响应结果对齐；iOS 的具体 HTTP 实现可以不同。",
   "unknowns": [
     "form 字段重复 key、顺序、空 key/value、加号与混合预编码文本的精确语义",

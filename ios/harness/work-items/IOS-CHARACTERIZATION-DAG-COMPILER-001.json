@@ -1,0 +1,219 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-CHARACTERIZATION-DAG-COMPILER-001",
+    "title": "把已接受 Requirement 的迁移缺口编译为无人工 Gate 的 Characterization DAG",
+    "priority": 100,
+    "risk": "high",
+    "labels": [
+      "phase-0",
+      "control-plane",
+      "loop-engine",
+      "characterization",
+      "source-lab",
+      "android-oracle",
+      "recovery"
+    ]
+  },
+  "spec": {
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "intent": "纠正 IOS-REQUIREMENT-INTAKE-PUBLISHER-001 的需求建模错误：POST form 是已接受 REQ-ANDROID-SOURCE-PIPELINE-001#RC-01 的新 evidence/coverage 切片，不应创建新 Requirement 并修改 Fact maps_to，从而使所有 Business Knowledge inventory control digest 失效。扩展 AndroidMigrationIntent，使 proposal 精确绑定既有 accepted Requirement revision/clauses 与 characterization blueprint；Demand Compiler 在 intake settlement 与 Requirement binding 均闭合后输出 characterization_materialization_ready。Supervisor 只自动物化 requirements.mode=characterization、仅写 synthetic SourceLab candidate/Capability/Checkpoint/Pitfall 的完整 blueprint。现有 SourceLab extend 继续声明 scenario-provenance-review，但 Supervisor 仅在 provenance.kind=synthetic、source_refs 覆盖 WorkItem Android anchors、candidate introduced_by 精确匹配、external_network=deny 且无 Golden/产品写权限时按 synthetic-source-provenance-v1 自动裁决；sanitized_capture 或来源不闭合仍停下。首个 blueprint 生成 IOS-SOURCELAB-POST-FORM-001，后续再由独立 Oracle WorkItem 生成 Android 真值。本项不创建场景、Golden 或产品实现。",
+    "recovers": "IOS-REQUIREMENT-INTAKE-PUBLISHER-001",
+    "depends_on": [
+      "IOS-ANDROID-REQUEST-OPTIONS-INTAKE-001"
+    ],
+    "scope": {
+      "allow_write": [
+        "ios/harness/demand_compiler.py",
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/tests/test_demand_compiler.py",
+        "ios/harness/tests/test_loop_supervisor.py",
+        "ios/harness/supervisor.example.json",
+        "ios/harness/README.md",
+        "ios/project/migration-intents/MINT-SOURCE-REQUEST-POST-FORM-001.json",
+        "ios/project/requirement-proposals/ARQ-SOURCE-REQUEST-POST-FORM.json",
+        "ios/project/work-item-proposals/characterization-blueprints/**",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-CHARACTERIZATION-DAG-COMPILER-001.json",
+        "ios/project/pitfalls/PIT-0053.json"
+      ],
+      "deny_write": [
+        ".github/**",
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "ios/publisher/**",
+        "ios/harness/config.json",
+        "ios/harness/schemas/**",
+        "ios/harness/android-intake/**",
+        "ios/harness/oracle/**",
+        "ios/harness/goldens/**",
+        "ios/harness/fixtures/source-lab/**",
+        "ios/harness/source-lab/manifest.json",
+        "ios/harness/source-lab/coverage-policy-v1.json",
+        "ios/project/android-intake/**",
+        "ios/project/requirements/**",
+        "ios/project/business-knowledge/**",
+        "ios/project/approvals/**",
+        "ios/project/baseline.json",
+        "ios/docs/architecture.md",
+        "ios/docs/adr/**"
+      ],
+      "max_files_changed": 16,
+      "max_changed_lines": 3800
+    },
+    "inputs": {
+      "context_files": [
+        "ios/docs/android-requirement-intake.md",
+        "ios/docs/source-lab.md",
+        "ios/harness/demand_compiler.py",
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/harness.py",
+        "ios/harness/source-lab/source_lab.py",
+        "ios/harness/source-lab/coverage-policy-v1.json",
+        "ios/project/migration-intents/MINT-SOURCE-REQUEST-POST-FORM-001.json",
+        "ios/project/requirement-proposals/ARQ-SOURCE-REQUEST-POST-FORM.json",
+        "ios/project/requirements/accepted/REQ-ANDROID-SOURCE-PIPELINE-001.json",
+        "ios/project/checkpoints/IOS-ANDROID-REQUEST-OPTIONS-INTAKE-001.json"
+      ],
+      "android_source_anchors": [
+        "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+        "app/src/main/java/io/legado/app/model/webBook/WebBook.kt"
+      ],
+      "fixtures": []
+    },
+    "architecture_refs": [
+      "ARCH-014",
+      "ARCH-017",
+      "ADR-0001",
+      "ADR-0002",
+      "ADR-0004"
+    ],
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "statement": "Migration Intent/proposal 精确绑定 REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01；Demand Compiler 验证 accepted record/catalog digest、clause、readiness、proposal settlement、source blob 与 SourceLab behavior，错 ID/revision/clause/digest 均 fail closed。",
+          "verified_by": [
+            "harness-tests",
+            "android-intake-contract"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-2",
+          "statement": "accepted Requirement 与 committed characterization blueprint 闭合时，Demand Plan 输出 characterization_materialization_ready；blueprint 缺失时输出 characterization_blueprint_required，不把已有 Requirement 当作 POST 已验证或 implementation_ready 新能力。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-3",
+          "statement": "characterization blueprint 是完整 WorkItem，requirements.mode=characterization 且只引用 RC-01，source_lab.mode=extend，只声明 scenario-provenance-review，唯一写范围为 sl-post-form-001 candidate 目录、CAP-CONFORMANCE、Checkpoint 与 Pitfall；禁止 manifest/policy/Golden/Oracle/Android/Package/产品/架构/权限写入。",
+          "verified_by": [
+            "harness-tests",
+            "dependency-policy"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-4",
+          "statement": "Supervisor 仅对 synthetic、introduced_by 当前 WorkItem、source_refs 覆盖 Android anchors、external_network=deny 且 scope 无 authority/product 写入的 candidate 自动提交 scenario-provenance-review=accepted；sanitized_capture、来源缺失、已有 reference 修改或 scope 越权仍等待真实 review/fail closed。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-5",
+          "statement": "Supervisor inspect/drive 支持 characterization_materialization_ready 与显式 source-anchored-characterization-v1 policy，在 mutation lock 内复算 plan/blueprint/Requirement/Scope binding 后原子物化；配置关闭、并列、HEAD drift 或 race 不写控制状态。",
+          "verified_by": [
+            "harness-tests"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        },
+        {
+          "id": "AC-6",
+          "statement": "干净 HEAD 上真实 POST form Migration Intent 不再停在 authority_transition_required，而是自动物化 IOS-SOURCELAB-POST-FORM-001 为 ready；本项不提前生成场景或 Android expected。",
+          "verified_by": [
+            "harness-tests",
+            "memory-close"
+          ],
+          "requirement_clauses": [],
+          "knowledge_claims": []
+        }
+      ],
+      "required_checks": [
+        "android-intake-contract",
+        "dependency-policy",
+        "harness-tests",
+        "source-lab-tests"
+      ]
+    },
+    "baseline_checks": [
+      "android-intake-contract",
+      "dependency-policy",
+      "harness-tests",
+      "source-lab-tests"
+    ],
+    "budget": {
+      "wall_clock_seconds": 14400,
+      "max_edit_verify_cycles": 6,
+      "max_targeted_test_runs": 24,
+      "max_full_test_runs": 4,
+      "max_infra_retries": 2
+    },
+    "gates": [],
+    "completion_effects": {
+      "health": {
+        "characterization_dag_compiler": "source_anchored_v1"
+      }
+    },
+    "memory": {
+      "capability_state_required": true,
+      "checkpoint_required": true,
+      "pitfall_update_required": true,
+      "adr": "not_required"
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "refs": [],
+      "none_reason": "本项建立已接受 Requirement 到 characterization WorkItem 的控制面，不执行产品行为"
+    },
+    "knowledge": {
+      "contract_version": 1,
+      "mode": "not_applicable",
+      "claim_refs": [],
+      "driver_refs": [],
+      "coverage_refs": [],
+      "produces": [],
+      "expected_ledger_transitions": [],
+      "context_budget": {
+        "max_claims": 12,
+        "max_bytes": 49152
+      },
+      "none_reason": "本项只复用既有源码 Claim 选择 characterization，不生成或发布业务知识"
+    },
+    "source_lab": {
+      "mode": "not_applicable",
+      "behaviors": [],
+      "scenarios": [],
+      "none_reason": "本项只生成 SourceLab WorkItem blueprint，不创建或提升场景"
+    },
+    "stop_on": [
+      "baseline_red",
+      "scope_violation",
+      "authority_escalation",
+      "same_failure_twice",
+      "budget_exhausted",
+      "human_decision_required"
+    ]
+  }
+}
