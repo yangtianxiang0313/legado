@@ -1495,11 +1495,107 @@ class DemandCompilerTests(unittest.TestCase):
                         settlement["recovery_chain"],
                     )
                     self.assertEqual(
+                        {
+                            "from_revision": 18,
+                            "to_revision": 19,
+                            "current_capability_revision": 19,
+                        },
+                        {
+                            key: settlement[key]
+                            for key in (
+                                "from_revision",
+                                "to_revision",
+                                "current_capability_revision",
+                            )
+                        },
+                    )
+                    self.assertEqual(
                         None,
                         execution.bindings[
                             "trusted_oracle_execution"
                         ]["receipt"],
                     )
+
+    def test_trusted_oracle_live_capability_revision_is_monotonic(self):
+        for revision in (19, 20, 21, 42):
+            with self.subTest(revision=revision):
+                with tempfile.TemporaryDirectory() as directory:
+                    fixture = MigrationFixture(Path(directory))
+                    fixture.settle()
+                    fixture.accept_requirement(with_blueprint=True)
+                    fixture.settle_characterization()
+                    fixture.write_oracle_blueprint()
+                    fixture.settle_oracle(recovery=False)
+                    fixture.write_trusted_oracle_blueprint(
+                        depends_on=fixture.oracle_id
+                    )
+                    fixture.settle_trusted_oracle(recovery=False)
+                    fixture.write_json(
+                        "ios/project/capabilities/"
+                        "CAP-CONFORMANCE.json",
+                        {
+                            "id": "CAP-CONFORMANCE",
+                            "revision": revision,
+                        },
+                    )
+                    if revision != 19:
+                        fixture.commit("advance live capability")
+
+                    plan = fixture.compiler().compile_migration(
+                        fixture.intent_path()
+                    )
+                    settlement = plan.bindings[
+                        "trusted_oracle_settlement"
+                    ]
+                    self.assertEqual(
+                        "trusted_oracle_execution_required",
+                        plan.state,
+                    )
+                    self.assertEqual(18, settlement["from_revision"])
+                    self.assertEqual(19, settlement["to_revision"])
+                    self.assertEqual(
+                        revision,
+                        settlement["current_capability_revision"],
+                    )
+
+    def test_trusted_oracle_invalid_live_capability_fails_closed(self):
+        invalid_capabilities = (
+            {"id": "CAP-CONFORMANCE", "revision": 18},
+            {"id": "CAP-CONFORMANCE"},
+            {"id": "CAP-CONFORMANCE", "revision": True},
+            {"id": "CAP-CONFORMANCE", "revision": "21"},
+            {"id": "CAP-OTHER", "revision": 21},
+        )
+        for capability in invalid_capabilities:
+            with self.subTest(capability=capability):
+                with tempfile.TemporaryDirectory() as directory:
+                    fixture = MigrationFixture(Path(directory))
+                    fixture.settle()
+                    fixture.accept_requirement(with_blueprint=True)
+                    fixture.settle_characterization()
+                    fixture.write_oracle_blueprint()
+                    fixture.settle_oracle(recovery=False)
+                    fixture.write_trusted_oracle_blueprint(
+                        depends_on=fixture.oracle_id
+                    )
+                    fixture.settle_trusted_oracle(recovery=False)
+                    fixture.write_json(
+                        "ios/project/capabilities/"
+                        "CAP-CONFORMANCE.json",
+                        capability,
+                    )
+                    fixture.commit("invalidate live capability")
+
+                    with self.assertRaisesRegex(
+                        demand_compiler.DemandCompilerError,
+                        (
+                            "(TRUSTED_ORACLE|CHARACTERIZATION)_"
+                            "SETTLEMENT_INVALID"
+                        ),
+                    ):
+                        fixture.compiler().compile_migration(
+                            fixture.intent_path()
+                        )
 
     def test_oracle_recovery_chain_drift_fails_closed(self):
         with tempfile.TemporaryDirectory() as directory:

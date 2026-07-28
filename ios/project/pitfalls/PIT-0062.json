@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0062",
+  "revision": 1,
+  "title": "不可变历史结算不能依赖 live aggregate 的精确 revision",
+  "fingerprint": "historical-settlement-requires-exact-live-aggregate-revision",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "已通过 Evidence 与 Checkpoint 固定的 trusted Oracle 18→19 历史结算，在 CAP-CONFORMANCE 合法推进到 20、21 或更高 revision 后被误报 TRUSTED_ORACLE_SETTLEMENT_INVALID",
+    "Demand Plan 无法恢复 trusted_oracle_execution_required，因而 Supervisor 不能继续映射 external_execution_required"
+  ],
+  "conditions": [
+    "历史 Checkpoint 精确记录 capability update from_revision=18/to_revision=19",
+    "后续独立控制面工作项合法单调提升同一 Capability 的 live revision",
+    "结算器把 live aggregate revision 与历史 to_revision 做相等比较"
+  ],
+  "root_cause": "实现混淆了不可变历史事实与可演进当前快照：Evidence/Checkpoint 中的历史 transition 必须精确验证，而同 ID live Capability 只需证明未回退到历史 settlement 以下。精确相等会让后续合法单调演进反向使既有 Evidence 失效。",
+  "diagnosis": [
+    "分别读取历史 Checkpoint capability update 和 live Capability，确认 ID、from/to revision 与 current revision",
+    "若历史 transition 与 Evidence/runtime/recovery binding 均未漂移，但 current revision 大于历史 to_revision，检查结算器是否错误使用相等比较",
+    "同时验证 current revision 不是 bool、是正整数且不低于历史 to_revision；低版本、错误 ID 和错误类型必须继续失败关闭"
+  ],
+  "fix": "trusted Oracle settlement 保留对 resolved WorkItem、recovery chain、passed Evidence/runtime hash、Checkpoint 和历史 CAP-CONFORMANCE 18→19 transition 的精确验证；live CAP-CONFORMANCE 改为同 ID、非 bool 正整数且 revision >= 历史 to_revision，并在 binding 中单独记录 current_capability_revision。",
+  "prevention": {
+    "architecture_rule": "任何基于历史 Evidence/Checkpoint 的结算都必须区分 immutable transition 与 live aggregate：历史绑定精确匹配，live 单调版本只验证 identity、类型和下界，不得要求永久等于历史 to_revision。",
+    "tests": [
+      "ios/harness/tests/test_demand_compiler.py#test_completed_oracle_compiles_trusted_proposal_dag",
+      "ios/harness/tests/test_demand_compiler.py#test_trusted_oracle_live_capability_revision_is_monotonic",
+      "ios/harness/tests/test_demand_compiler.py#test_trusted_oracle_invalid_live_capability_fails_closed",
+      "ios/harness/tests/test_loop_supervisor.py#test_trusted_oracle_settlement_maps_to_external_execution"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-TRUSTED-ORACLE-SETTLEMENT-COMPILER-001",
+    "until": "IOS-TRUSTED-ORACLE-SETTLEMENT-ROBUSTNESS-001"
+  },
+  "status": "mitigated",
+  "occurrences": 1,
+  "first_seen": "2026-07-28",
+  "last_seen": "2026-07-28",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260728T213019Z-ios-trusted-oracle-settlement-robustness-001-44b2dc99.json"
+  ]
+}

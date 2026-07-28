@@ -1833,6 +1833,7 @@ class DemandCompiler:
         checkpoint_source_lab = checkpoint.get("source_lab", {})
         checkpoint_requirements = checkpoint.get("requirements", {})
         recovery = checkpoint.get("recovery")
+        current_capability_revision = capability.get("revision")
         if (
             evidence.get("work_item_id") != resolved_id
             or evidence.get("work_item_sha256")
@@ -1849,7 +1850,9 @@ class DemandCompiler:
             or update.get("from_revision") != 18
             or update.get("to_revision") != 19
             or capability.get("id") != capability_id
-            or capability.get("revision") != 19
+            or not isinstance(current_capability_revision, int)
+            or isinstance(current_capability_revision, bool)
+            or current_capability_revision < update["to_revision"]
             or checkpoint_source_lab.get("mode") != "reuse"
             or checkpoint_source_lab.get("behaviors")
             != source_lab.get("behaviors")
@@ -1962,6 +1965,9 @@ class DemandCompiler:
                     "capability": capability_id,
                     "from_revision": 18,
                     "to_revision": 19,
+                    "current_capability_revision": (
+                        current_capability_revision
+                    ),
                     "requirement_selection_sha256": (
                         requirement_selection_sha256
                     ),

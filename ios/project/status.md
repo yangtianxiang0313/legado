@@ -2,13 +2,13 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-28T21:19:47Z
+- 更新时间：2026-07-28T21:33:23Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
 - 下一个可领取工作项：无
-- 最近完成：IOS-GITHUB-ORACLE-DISPATCHER-HARDENING-001
+- 最近完成：IOS-TRUSTED-ORACLE-SETTLEMENT-ROBUSTNESS-001
 
 ## 健康度
 
@@ -82,7 +82,7 @@
 | synthetic_provenance_gate | `policy_managed` |
 | terminal_recovery_lineage | `typed_runtime_replacement` |
 | terminal_recovery_resolution | `single_terminal_predecessor` |
-| trusted_oracle_settlement | `github_execution_required_v1` |
+| trusted_oracle_settlement | `monotonic_capability_revision_v2` |
 | trusted_process_cleanup | `bounded_stable` |
 | trusted_supervisor_reference | `local_verified` |
 
@@ -169,6 +169,7 @@
 | IOS-TERMINAL-RECOVERY-RESOLUTION-001 | 100 | `completed` | IOS-PROPOSAL-GATE-REPAIR-001, IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-004, IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002 | 按恢复谱系消解历史终态 blocker |
 | IOS-TERMINAL-RECOVERY-RESOLUTION-002 | 100 | `completed` | IOS-TERMINAL-RECOVERY-RESOLUTION-001 | 收紧显式恢复关系并补齐最终证据 |
 | IOS-TRUSTED-ORACLE-SETTLEMENT-COMPILER-001 | 100 | `completed` | IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-003 | 将受信 proposal 能力结算为 GitHub 执行阶段 |
+| IOS-TRUSTED-ORACLE-SETTLEMENT-ROBUSTNESS-001 | 100 | `completed` | IOS-TRUSTED-ORACLE-SETTLEMENT-COMPILER-001, IOS-GITHUB-ORACLE-DISPATCHER-HARDENING-001 | 让 trusted Oracle 历史结算兼容 Capability 单调演进 |
 | IOS-TRUSTED-SUPERVISOR-REFERENCE-001 | 100 | `completed` | IOS-LOOP-SUPERVISOR-E2E-001, IOS-CODEX-AGENT-ADAPTER-001 | 建立仓库外签名 journal 与隔离复验 reference runner |
 | IOS-TYPED-RECOVERY-LINEAGE-001 | 100 | `completed` | IOS-TERMINAL-RECOVERY-RESOLUTION-002, IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002 | 将恢复谱系升级为强类型控制边 |
 | IOS-KNOWLEDGE-PROPOSAL-BATCH-REFS-REPAIR-001 | 96 | `completed` | IOS-KNOWLEDGE-ANDROID-SURFACES-001 | 闭合同批知识候选引用契约 |

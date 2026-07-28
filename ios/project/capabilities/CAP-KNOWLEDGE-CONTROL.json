@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 61,
+  "revision": 62,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -58,7 +58,7 @@
   "depends_on": ["CAP-BOOTSTRAP"],
   "active_decisions": ["ADR-0004"],
   "open_compatibility": [],
-  "open_pitfalls": ["PIT-0012", "PIT-0016", "PIT-0061"],
+  "open_pitfalls": ["PIT-0012", "PIT-0016", "PIT-0061", "PIT-0062"],
   "blockers": [],
   "required_evidence": ["harness-tests", "dependency-policy", "architecture"],
   "freshness_inputs": [
@@ -67,13 +67,13 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260728T211633Z-ios-github-oracle-dispatcher-hardening-001-2839cb49.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260728T213019Z-ios-trusted-oracle-settlement-robustness-001-44b2dc99.json",
   "next_actions": [
     "使用受限 Dispatcher 在精确 source digest 上触发 GitHub-hosted android-oracle-attestation workflow，scenario=sl-post-form-001",
     "下载 evidence/proposal archive 与双 attestation bundle，并由 trusted_import 生成结构化 candidate_only review report",
     "新增 attestation receipt settlement，将远端 run、source digest、scenario 与共享 proposal contract 精确绑定",
     "修复并独立运行 scenario-aware Android Golden Publisher，再续接 SourceRuntime POST Form Package 与 iOS 验收"
   ],
-  "updated_at": "2026-07-28T21:16:33Z",
-  "updated_by": "IOS-GITHUB-ORACLE-DISPATCHER-HARDENING-001"
+  "updated_at": "2026-07-28T21:30:19Z",
+  "updated_by": "IOS-TRUSTED-ORACLE-SETTLEMENT-ROBUSTNESS-001"
 }
