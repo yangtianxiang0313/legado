@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "revision": 376,
+  "revision": 380,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-28T18:27:37Z",
-  "event_head": "84d66a9b576887269760c4a7afa51cdd82dfb2a3265fb992b17c2ae25b316aa7",
+  "updated_at": "2026-07-28T18:41:35Z",
+  "event_head": "6f6c9b8f44e8d9789408488a2b167f0e1560211c1839c80387d4bf4246e1c4bd",
   "active_work_items": [],
-  "last_completed_work_item": "IOS-ANDROID-POST-FORM-ORACLE-RECOVERY-002",
+  "last_completed_work_item": "IOS-ORACLE-SETTLEMENT-COMPILER-001",
   "work_items": {
     "IOS-BOOT-001": {
       "status": "completed",
@@ -6930,6 +6930,87 @@
       "verified_at": "2026-07-28T18:26:26Z",
       "completed_at": "2026-07-28T18:27:37Z",
       "final_tree_sha256": "af8b3b4f292c4dc1c4162b4387c40d31336f0092baec2a7ef0a19de39335fa13"
+    },
+    "IOS-ORACLE-SETTLEMENT-COMPILER-001": {
+      "status": "completed",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260728T183951Z-ios-oracle-settlement-compiler-001-c5974023.json",
+      "claimed_by": "codex",
+      "claimed_at": "2026-07-28T18:32:10Z",
+      "lease_expires_at": "2026-07-29T18:32:10Z",
+      "work_item_sha256": "1d5bd4e7fae3db171f971680c3ea4f69a41f8a336676d82a4f1cc31b0b4dfd8e",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "194e79e34fdf13d2a7159a598b58686e95af7340",
+      "base_capability_revision": 54,
+      "base_capability_assurance_sha256": "6c08426cf2cc8f0277426284e00909a10444767bc01eeb84e0db43db8dcbb2ac",
+      "android_requirement_selection_sha256": null,
+      "business_knowledge_control_sha256": "85228a4aa826bd1f9d6f22231a6e04fe622cec925714d4bdceacdca704186979",
+      "business_knowledge_authority_sha256": "9a898622fab665e380b0fdb7837d6aa24f938f5c87e4bc635c32fbdf4dfe81c8",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 1,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "dependency-policy",
+          "argv": [
+            "python3",
+            "ios/harness/probes/dependency_contract.py",
+            "--root",
+            "."
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "eca96cb1b69567829ed8396386b0449da8c0d6e7295a00f1decfb60430ff1153",
+          "cwd": ".",
+          "started_at": "2026-07-28T18:30:28Z",
+          "duration_ms": 694,
+          "timeout_seconds": 90,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "17595a1d68cdc5b52c010f46dff48514afa3fa3cf0215cdea7ae8eff38677c0a",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_tail": "DEPENDENCY_CONTRACT: OK\n",
+          "stderr_tail": ""
+        },
+        {
+          "id": "harness-tests",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "244d512cbdd15fe0c5e35e6d9676510c943b19e9437987c24ac6e627a2e7ad94",
+          "cwd": ".",
+          "started_at": "2026-07-28T18:30:29Z",
+          "duration_ms": 100306,
+          "timeout_seconds": 180,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "b026b1481f7d1504aec57e79da6d83b6bfe1ff990a6bf4c004879c75715250e9",
+          "stdout_tail": "",
+          "stderr_tail": "...........................................................................................................................................................................................................................\n----------------------------------------------------------------------\nRan 219 tests in 100.028s\n\nOK\n"
+        }
+      ],
+      "last_evidence_sha256": "1e0666ddb2e6db8da1d079dd1637d1feaa0f26da5f6e88918fe9c75c9860acd1",
+      "verified_at": "2026-07-28T18:39:51Z",
+      "completed_at": "2026-07-28T18:41:35Z",
+      "final_tree_sha256": "7a95ba5d1d9e90ded94ac2be46bbb3dbc9a19c6bba0276956098ffae4654f3bb"
     }
   },
   "health": {
@@ -6994,7 +7075,8 @@
     "source_lab_post_form": "candidate_verified",
     "oracle_dag_compiler": "source_anchored_v1",
     "android_post_form_oracle": "candidate_verified",
-    "source_lab_candidate_characterization": "typed_reuse_v1"
+    "source_lab_candidate_characterization": "typed_reuse_v1",
+    "oracle_settlement_compiler": "recovery_aware_trusted_proposal_v1"
   },
   "risks": [
     {

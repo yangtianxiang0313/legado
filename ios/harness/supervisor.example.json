@@ -71,6 +71,10 @@
     "enabled": true,
     "policy": "source-anchored-android-oracle-v1"
   },
+  "trusted_oracle_materialization": {
+    "enabled": true,
+    "policy": "source-anchored-trusted-android-oracle-v1"
+  },
   "synthetic_provenance": {
     "enabled": true,
     "policy": "synthetic-source-provenance-v1"

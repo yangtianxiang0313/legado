@@ -28,6 +28,9 @@ CHARACTERIZATION_BLUEPRINT_ROOT = (
 ORACLE_BLUEPRINT_ROOT = (
     "ios/project/work-item-proposals/oracle-blueprints"
 )
+TRUSTED_ORACLE_BLUEPRINT_ROOT = (
+    "ios/project/work-item-proposals/trusted-oracle-blueprints"
+)
 BASELINE_PATH = "ios/project/baseline.json"
 SOURCE_LAB_COVERAGE_POLICY = (
     "ios/harness/source-lab/coverage-policy-v1.json"
@@ -813,6 +816,192 @@ class DemandCompiler:
                                 "sha256": None,
                             }
                         )
+                    if oracle_exists:
+                        oracle_settlement = self._completed_oracle(
+                            oracle,
+                            requirement_selection_sha256=str(
+                                bindings[
+                                    "characterization_settlement"
+                                ][
+                                    "requirement_selection_sha256"
+                                ]
+                            ),
+                        )
+                        if oracle_settlement is not None:
+                            artifacts.extend(
+                                oracle_settlement["artifacts"]
+                            )
+                            bindings.update(
+                                oracle_settlement["bindings"]
+                            )
+                            trusted_relative = (
+                                f"{TRUSTED_ORACLE_BLUEPRINT_ROOT}/"
+                                f"{intent['id']}.json"
+                            )
+                            trusted_path = self.resolve(
+                                trusted_relative
+                            )
+                            trusted_exists = (
+                                trusted_path.is_file()
+                                and not trusted_path.is_symlink()
+                            )
+                            if trusted_exists:
+                                self._head_regular(
+                                    (trusted_relative,)
+                                )
+                                trusted = _load_object(
+                                    trusted_path,
+                                    "TRUSTED_ORACLE_BLUEPRINT",
+                                )
+                                trusted_spec = trusted.get(
+                                    "spec",
+                                    {},
+                                )
+                                settlement_binding = (
+                                    oracle_settlement[
+                                        "bindings"
+                                    ]["oracle_settlement"]
+                                )
+                                if (
+                                    trusted.get("api_version")
+                                    != "legado.harness/v1"
+                                    or trusted.get("kind")
+                                    != "WorkItem"
+                                    or trusted_spec.get(
+                                        "requirements",
+                                        {},
+                                    ).get("mode")
+                                    != "characterization"
+                                    or trusted_spec.get(
+                                        "requirements",
+                                        {},
+                                    ).get("refs")
+                                    != [
+                                        dict(
+                                            intent[
+                                                "requirement_binding"
+                                            ]
+                                        )
+                                    ]
+                                    or trusted_spec.get(
+                                        "source_lab",
+                                        {},
+                                    ).get("mode")
+                                    != "reuse"
+                                    or trusted_spec.get(
+                                        "source_lab",
+                                        {},
+                                    ).get("scenarios")
+                                    != oracle_spec.get(
+                                        "source_lab",
+                                        {},
+                                    ).get("scenarios")
+                                    or trusted_spec.get(
+                                        "source_lab",
+                                        {},
+                                    ).get("behaviors")
+                                    != oracle_spec.get(
+                                        "source_lab",
+                                        {},
+                                    ).get("behaviors")
+                                    or trusted_spec.get("depends_on")
+                                    != [
+                                        settlement_binding[
+                                            "resolved_work_item_id"
+                                        ]
+                                    ]
+                                    or trusted_spec.get("gates")
+                                    != []
+                                ):
+                                    raise DemandCompilerError(
+                                        "TRUSTED_ORACLE_BLUEPRINT_"
+                                        "CONTRACT_INVALID"
+                                    )
+                                bindings[
+                                    "trusted_oracle_blueprint"
+                                ] = {
+                                    "path": trusted_relative,
+                                    "sha256": _sha256(
+                                        trusted_path.read_bytes()
+                                    ),
+                                    "work_item_sha256": (
+                                        _sha256_json(trusted)
+                                    ),
+                                }
+                                artifacts.append(
+                                    {
+                                        "kind": (
+                                            "trusted_oracle_blueprint"
+                                        ),
+                                        "id": trusted.get(
+                                            "metadata",
+                                            {},
+                                        ).get("id"),
+                                        "status": "committed",
+                                        "path": trusted_relative,
+                                        "sha256": bindings[
+                                            "trusted_oracle_blueprint"
+                                        ]["sha256"],
+                                    }
+                                )
+                            else:
+                                trusted = {}
+                                artifacts.append(
+                                    {
+                                        "kind": (
+                                            "trusted_oracle_blueprint"
+                                        ),
+                                        "id": None,
+                                        "status": "missing",
+                                        "path": trusted_relative,
+                                        "sha256": None,
+                                    }
+                                )
+                            return DemandPlan(
+                                intent_id=str(intent["id"]),
+                                priority=int(intent["priority"]),
+                                target_work_item_id=(
+                                    str(
+                                        trusted.get(
+                                            "metadata",
+                                            {},
+                                        ).get("id")
+                                    )
+                                    if trusted_exists
+                                    else str(
+                                        oracle_settlement[
+                                            "bindings"
+                                        ][
+                                            "oracle_settlement"
+                                        ][
+                                            "resolved_work_item_id"
+                                        ]
+                                    )
+                                ),
+                                state=(
+                                    "trusted_oracle_ready"
+                                    if trusted_exists
+                                    else (
+                                        "trusted_oracle_"
+                                        "blueprint_required"
+                                    )
+                                ),
+                                reason_code=(
+                                    "TRUSTED_ORACLE_INPUTS_READY"
+                                    if trusted_exists
+                                    else (
+                                        "TRUSTED_ORACLE_"
+                                        "BLUEPRINT_REQUIRED"
+                                    )
+                                ),
+                                authority_transition=False,
+                                artifacts=tuple(artifacts),
+                                bindings=bindings,
+                                policy=MIGRATION_POLICY,
+                                intent_kind=(
+                                    "android_migration"
+                                ),
+                            )
                     return DemandPlan(
                         intent_id=str(intent["id"]),
                         priority=int(intent["priority"]),
@@ -1755,6 +1944,292 @@ class DemandCompiler:
                     "source_lab_manifest_sha256": _sha256(
                         manifest_path.read_bytes()
                     ),
+                }
+            },
+        }
+
+    def _completed_oracle(
+        self,
+        oracle: Mapping[str, Any],
+        *,
+        requirement_selection_sha256: str,
+    ) -> Optional[Mapping[str, Any]]:
+        original_id = oracle.get("metadata", {}).get("id")
+        if (
+            not isinstance(original_id, str)
+            or not requirement_selection_sha256
+        ):
+            raise DemandCompilerError("ORACLE_SETTLEMENT_INVALID")
+        state_path = self.resolve(STATE_PATH)
+        if not state_path.is_file() or state_path.is_symlink():
+            return None
+        state = _load_object(state_path, "PROJECT_STATE")
+        state_items = state.get("work_items", {})
+        original_runtime = state_items.get(original_id)
+        if not isinstance(original_runtime, dict):
+            return None
+
+        chain = [original_id]
+        current_id = original_id
+        current_runtime = original_runtime
+        while current_runtime.get("status") != "completed":
+            replacement = current_runtime.get("replacement")
+            if not isinstance(replacement, str) or not replacement:
+                return None
+            if replacement in chain:
+                raise DemandCompilerError(
+                    "ORACLE_SETTLEMENT_RECOVERY_CYCLE"
+                )
+            replacement_runtime = state_items.get(replacement)
+            if not isinstance(replacement_runtime, dict):
+                raise DemandCompilerError(
+                    "ORACLE_SETTLEMENT_RECOVERY_INVALID"
+                )
+            chain.append(replacement)
+            current_id = replacement
+            current_runtime = replacement_runtime
+        resolved_id = current_id
+        evidence_relative = current_runtime.get("last_evidence")
+        if (
+            not isinstance(evidence_relative, str)
+            or not evidence_relative.startswith(EVIDENCE_ROOT + "/")
+        ):
+            raise DemandCompilerError("ORACLE_SETTLEMENT_INVALID")
+
+        chain_relatives = [
+            f"{WORK_ITEM_ROOT}/{value}.json" for value in chain
+        ]
+        checkpoint_relative = (
+            f"{CHECKPOINT_ROOT}/{resolved_id}.json"
+        )
+        try:
+            chain_items = [
+                _load_object(
+                    self.resolve(relative),
+                    "ORACLE_SETTLEMENT_WORK_ITEM",
+                )
+                for relative in chain_relatives
+            ]
+            checkpoint_path = self.resolve(checkpoint_relative)
+            evidence_path = self.resolve(evidence_relative)
+            manifest_path = self.resolve(SOURCE_LAB_MANIFEST)
+            checkpoint = _load_object(
+                checkpoint_path,
+                "ORACLE_SETTLEMENT_CHECKPOINT",
+            )
+            evidence = _load_object(
+                evidence_path,
+                "ORACLE_SETTLEMENT_EVIDENCE",
+            )
+            manifest = _load_object(
+                manifest_path,
+                "ORACLE_SETTLEMENT_SOURCE_LAB_MANIFEST",
+            )
+            capability_id = chain_items[-1].get("spec", {}).get(
+                "capability"
+            )
+            if not isinstance(capability_id, str):
+                raise DemandCompilerError(
+                    "ORACLE_SETTLEMENT_CAPABILITY_INVALID"
+                )
+            capability_relative = (
+                f"ios/project/capabilities/{capability_id}.json"
+            )
+            capability_path = self.resolve(capability_relative)
+            capability = _load_object(
+                capability_path,
+                "ORACLE_SETTLEMENT_CAPABILITY",
+            )
+            self._head_regular(
+                (
+                    STATE_PATH,
+                    *chain_relatives,
+                    checkpoint_relative,
+                    evidence_relative,
+                    SOURCE_LAB_MANIFEST,
+                    capability_relative,
+                )
+            )
+        except DemandCompilerError as error:
+            raise DemandCompilerError(
+                "ORACLE_SETTLEMENT_INVALID"
+            ) from error
+
+        if chain_items[0] != oracle:
+            raise DemandCompilerError("ORACLE_SETTLEMENT_INVALID")
+        original_spec = chain_items[0].get("spec", {})
+        original_capability = original_spec.get("capability")
+        for index, recovery in enumerate(chain_items[1:], start=1):
+            recovery_spec = recovery.get("spec", {})
+            if (
+                recovery_spec.get("recovers") != chain[index - 1]
+                or recovery_spec.get("capability")
+                != original_capability
+                or state_items.get(chain[index - 1], {}).get(
+                    "replacement"
+                )
+                != chain[index]
+            ):
+                raise DemandCompilerError(
+                    "ORACLE_SETTLEMENT_RECOVERY_INVALID"
+                )
+
+        resolved = chain_items[-1]
+        resolved_spec = resolved.get("spec", {})
+        resolved_work_item_sha = _sha256_json(resolved)
+        evidence_sha = _sha256(evidence_path.read_bytes())
+        checkpoint_source_lab = checkpoint.get("source_lab", {})
+        source_lab = original_spec.get("source_lab", {})
+        scenarios = source_lab.get("scenarios", [])
+        if not isinstance(scenarios, list) or len(scenarios) != 1:
+            raise DemandCompilerError("ORACLE_SETTLEMENT_INVALID")
+        scenario_id = scenarios[0]
+        entries = [
+            value
+            for value in manifest.get("scenarios", [])
+            if isinstance(value, dict)
+            and value.get("id") == scenario_id
+        ]
+        updates = checkpoint.get("capability_updates", [])
+        update = next(
+            (
+                value
+                for value in updates
+                if isinstance(value, dict)
+                and value.get("id") == original_capability
+            ),
+            None,
+        )
+        evidence_inputs = evidence.get("inputs", {})
+        checkpoint_requirements = checkpoint.get("requirements", {})
+        direct = resolved_id == original_id
+        recovery_record = checkpoint.get("recovery")
+        if (
+            original_spec.get("requirements", {}).get("mode")
+            != "characterization"
+            or source_lab.get("mode") != "reuse"
+            or original_runtime.get(
+                "android_requirement_selection_sha256"
+            )
+            != requirement_selection_sha256
+            or current_runtime.get("work_item_sha256")
+            != resolved_work_item_sha
+            or checkpoint.get("work_item_id") != resolved_id
+            or checkpoint.get("evidence") != evidence_relative
+            or evidence.get("work_item_id") != resolved_id
+            or evidence.get("work_item_sha256")
+            != resolved_work_item_sha
+            or evidence.get("result") != "passed"
+            or current_runtime.get("last_evidence_sha256")
+            != evidence_sha
+            or checkpoint_source_lab.get("mode") != "reuse"
+            or checkpoint_source_lab.get("behaviors")
+            != source_lab.get("behaviors")
+            or checkpoint_source_lab.get("scenarios") != scenarios
+            or not isinstance(
+                evidence_inputs.get("source_lab_selection_sha256"),
+                str,
+            )
+            or checkpoint_source_lab.get("selection_sha256")
+            != evidence_inputs.get("source_lab_selection_sha256")
+            or not isinstance(update, dict)
+            or update.get("id") != original_capability
+            or not isinstance(update.get("from_revision"), int)
+            or not isinstance(update.get("to_revision"), int)
+            or update["to_revision"] <= update["from_revision"]
+            or capability.get("id") != original_capability
+            or not isinstance(capability.get("revision"), int)
+            or capability["revision"] < update["to_revision"]
+            or len(entries) != 1
+            or entries[0].get("status") != "candidate"
+            or entries[0].get("path")
+            != f"ios/harness/fixtures/source-lab/{scenario_id}"
+            or not isinstance(entries[0].get("sha256"), str)
+            or (
+                direct
+                and (
+                    checkpoint_requirements.get("mode")
+                    != "characterization"
+                    or checkpoint_requirements.get("refs")
+                    != original_spec.get("requirements", {}).get(
+                        "refs"
+                    )
+                    or checkpoint_requirements.get(
+                        "selection_sha256"
+                    )
+                    != requirement_selection_sha256
+                    or evidence_inputs.get(
+                        "android_requirement_selection_sha256"
+                    )
+                    != requirement_selection_sha256
+                )
+            )
+            or (
+                not direct
+                and (
+                    resolved_spec.get("requirements", {}).get(
+                        "mode"
+                    )
+                    != "control_plane"
+                    or checkpoint_requirements.get("mode")
+                    != "control_plane"
+                    or checkpoint_requirements.get("refs") != []
+                    or checkpoint_requirements.get(
+                        "selection_sha256"
+                    )
+                    is not None
+                    or not isinstance(recovery_record, dict)
+                    or recovery_record.get("predecessor")
+                    != chain[-2]
+                )
+            )
+        ):
+            raise DemandCompilerError("ORACLE_SETTLEMENT_INVALID")
+
+        return {
+            "artifacts": [
+                {
+                    "kind": "oracle_completion",
+                    "id": resolved_id,
+                    "original_id": original_id,
+                    "status": "completed",
+                    "recovery_chain": list(chain),
+                    "evidence": evidence_relative,
+                    "evidence_sha256": evidence_sha,
+                    "checkpoint": checkpoint_relative,
+                    "checkpoint_sha256": _sha256(
+                        checkpoint_path.read_bytes()
+                    ),
+                }
+            ],
+            "bindings": {
+                "oracle_settlement": {
+                    "original_work_item": chain_relatives[0],
+                    "original_work_item_sha256": _sha256_json(
+                        chain_items[0]
+                    ),
+                    "resolved_work_item": chain_relatives[-1],
+                    "resolved_work_item_id": resolved_id,
+                    "resolved_work_item_sha256": (
+                        resolved_work_item_sha
+                    ),
+                    "recovery_chain": list(chain),
+                    "capability": original_capability,
+                    "from_revision": update["from_revision"],
+                    "to_revision": update["to_revision"],
+                    "requirement_selection_sha256": (
+                        requirement_selection_sha256
+                    ),
+                    "source_lab_selection_sha256": (
+                        evidence_inputs[
+                            "source_lab_selection_sha256"
+                        ]
+                    ),
+                    "source_lab_manifest_sha256": _sha256(
+                        manifest_path.read_bytes()
+                    ),
+                    "scenario_id": scenario_id,
+                    "scenario_sha256": entries[0]["sha256"],
                 }
             },
         }

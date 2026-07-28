@@ -561,6 +561,92 @@ class MaterializationTests(unittest.TestCase):
                 provenance=plan.to_dict(),
             )
 
+    def test_trusted_oracle_demand_maps_to_automatic_materialization(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            plan = loop_supervisor.DemandPlan(
+                intent_id="MINT-SOURCE-REQUEST-POST-FORM-001",
+                priority=100,
+                target_work_item_id=(
+                    "IOS-ANDROID-POST-FORM-ATTESTATION-001"
+                ),
+                state="trusted_oracle_ready",
+                reason_code="TRUSTED_ORACLE_INPUTS_READY",
+                authority_transition=False,
+                artifacts=(),
+                bindings={"trusted_oracle_blueprint": {}},
+                policy=loop_supervisor.MIGRATION_MATERIALIZATION_POLICY,
+                intent_kind="android_migration",
+            )
+            supervisor = loop_supervisor.LoopSupervisor(fixture.harness)
+            with mock.patch.object(
+                loop_supervisor.DemandCompiler,
+                "plans",
+                return_value=((plan,), ()),
+            ), mock.patch.object(
+                supervisor,
+                "_trusted_oracle_plan_preview",
+            ):
+                decision = supervisor._demand_decision([])
+            self.assertEqual(
+                "trusted_oracle_materialization_ready",
+                decision.state,
+            )
+            self.assertEqual(
+                plan.target_work_item_id,
+                decision.work_item_id,
+            )
+
+    def test_trusted_oracle_materialization_recomputes_plan(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            supervisor = loop_supervisor.LoopSupervisor(fixture.harness)
+            plan = loop_supervisor.DemandPlan(
+                intent_id="MINT-TEST-TRUSTED-ORACLE-001",
+                priority=100,
+                target_work_item_id=(
+                    "IOS-TEST-TRUSTED-ORACLE-001"
+                ),
+                state="trusted_oracle_ready",
+                reason_code="TRUSTED_ORACLE_INPUTS_READY",
+                authority_transition=False,
+                artifacts=(),
+                bindings={},
+                policy=loop_supervisor.MIGRATION_MATERIALIZATION_POLICY,
+                intent_kind="android_migration",
+            )
+            preview = mock.Mock(
+                spec=loop_supervisor.MaterializationPreview
+            )
+            with mock.patch.object(
+                loop_supervisor.DemandCompiler,
+                "plans",
+                return_value=((plan,), ()),
+            ), mock.patch.object(
+                supervisor,
+                "_trusted_oracle_plan_preview",
+                return_value=preview,
+            ), mock.patch.object(
+                supervisor,
+                "materialize",
+                return_value=plan.target_work_item_id,
+            ) as materialize:
+                result = (
+                    supervisor.auto_materialize_trusted_oracle(
+                        plan.intent_id
+                    )
+                )
+            self.assertEqual(plan.target_work_item_id, result)
+            materialize.assert_called_once_with(
+                preview,
+                reason=(
+                    "policy:"
+                    + loop_supervisor
+                    .TRUSTED_ORACLE_MATERIALIZATION_POLICY
+                ),
+                provenance=plan.to_dict(),
+            )
+
     def test_migration_scope_rejects_product_and_authority_paths(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = MaterializationFixture(Path(directory))
@@ -683,6 +769,60 @@ class MaterializationTests(unittest.TestCase):
             self.assertIn(
                 "ORACLE_SCOPE_ALLOW_INVALID",
                 supervisor._oracle_scope_issues(item),
+            )
+
+    def test_trusted_oracle_scope_is_exact_and_publisher_denied(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            item = fixture.fixture.item(
+                "IOS-TEST-TRUSTED-ORACLE-001",
+                "CAP-CONFORMANCE",
+                100,
+            )
+            item["spec"]["scope"]["allow_write"] = [
+                (
+                    ".github/workflows/"
+                    "android-oracle-attestation.yml"
+                ),
+                "ios/harness/oracle/ci_proposal.py",
+                "ios/harness/oracle/trusted_import.py",
+                "ios/harness/oracle/README.md",
+                "ios/harness/tests/test_oracle_ci_proposal.py",
+                "ios/harness/tests/test_oracle_trusted_import.py",
+                "ios/project/capabilities/CAP-CONFORMANCE.json",
+                (
+                    "ios/project/checkpoints/"
+                    "IOS-TEST-TRUSTED-ORACLE-001.json"
+                ),
+                "ios/project/pitfalls/PIT-*.json",
+            ]
+            item["spec"]["scope"]["deny_write"] = [
+                "app/**",
+                "modules/**",
+                "ios/Packages/**",
+                "ios/publisher/**",
+                "ios/harness/fixtures/**",
+                "ios/harness/source-lab/**",
+                "ios/harness/goldens/**",
+                "ios/harness/oracle/android-runner/**",
+                "ios/project/requirements/**",
+                "ios/project/approvals/**",
+                "ios/project/work-item-proposals/**",
+                "ios/docs/**",
+            ]
+            supervisor = loop_supervisor.LoopSupervisor(
+                fixture.harness
+            )
+            self.assertEqual(
+                [],
+                supervisor._trusted_oracle_scope_issues(item),
+            )
+            item["spec"]["scope"]["allow_write"].append(
+                "ios/publisher/android_golden_publisher.py"
+            )
+            self.assertIn(
+                "TRUSTED_ORACLE_SCOPE_ALLOW_INVALID",
+                supervisor._trusted_oracle_scope_issues(item),
             )
 
     def test_preflight_rejects_outside_symlink_and_incomplete_dependency(self):

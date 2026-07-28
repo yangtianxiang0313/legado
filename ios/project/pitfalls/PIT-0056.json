@@ -1,16 +1,18 @@
 {
   "schema_version": 1,
   "id": "PIT-0056",
-  "revision": 1,
-  "title": "只物化 Characterization 不结算完成态会让 Loop 重复调度",
+  "revision": 2,
+  "title": "DAG 只有物化边而没有完成结算边会让 Loop 重复调度",
   "fingerprint": "completed-characterization-remains-materialization-ready-without-settlement-transition",
   "capabilities": [
-    "CAP-KNOWLEDGE-CONTROL"
+    "CAP-KNOWLEDGE-CONTROL",
+    "CAP-CONFORMANCE"
   ],
   "symptoms": [
     "SourceLab 场景 WorkItem 已 completed，Demand Plan 仍输出 characterization_ready",
     "Supervisor 再次 preflight 同一 blueprint，因 WorkItem 已存在而返回 demand_invalid",
-    "Loop 无法继续产生 Android Oracle 任务，只能依赖人工记住下一步"
+    "Oracle 通过 typed recovery completed 后，Demand Plan 仍输出 oracle_ready 并碰撞原 WorkItem",
+    "Loop 无法继续产生 Android Oracle 或受信 proposal 任务，只能依赖人工记住下一步"
   ],
   "conditions": [
     "需求链把 intake 与 Characterization 都建模为可物化 blueprint",
@@ -23,7 +25,7 @@
     "检查完成事务是否同时绑定 WorkItem SHA、Evidence SHA、Checkpoint、Requirement/SourceLab selection 与场景 manifest digest",
     "检查下一 blueprint 是否把完成节点声明为唯一 depends_on，并缩小写权限"
   ],
-  "fix": "新增 Characterization settlement：精确验证 completed WorkItem、passed Evidence、Checkpoint、Requirement/source-lab selection、candidate scenario manifest/digest 和 Capability update；结算后按 oracle_blueprint_required→oracle_ready 生成独立 Android Oracle WorkItem，并由 source-anchored-android-oracle-v1 自动物化。",
+  "fix": "为每个自动物化阶段增加对称 settlement。Characterization settlement 结算场景后生成 Android Oracle；Oracle settlement 解析原任务或显式 recovery chain 的唯一 completed resolution，精确验证 WorkItem、passed Evidence、Checkpoint、Requirement/source-lab selection、candidate scenario manifest/digest 与 Capability update，再按 trusted_oracle_blueprint_required→trusted_oracle_ready 生成独立受信 proposal WorkItem。",
   "prevention": {
     "architecture_rule": "Loop DAG 的每一条自动物化边都必须配套一个内容寻址 settlement；状态机测试必须覆盖未物化、进行中、完成、证据漂移和下一 blueprint 五种状态。",
     "tests": [
@@ -34,13 +36,15 @@
   },
   "affected_versions": {
     "from": "IOS-CHARACTERIZATION-DAG-COMPILER-001",
-    "until": "IOS-ORACLE-DAG-COMPILER-001"
+    "until": "IOS-ORACLE-SETTLEMENT-COMPILER-001"
   },
   "status": "resolved",
-  "occurrences": 1,
+  "occurrences": 2,
   "first_seen": "2026-07-28",
   "last_seen": "2026-07-28",
   "evidence": [
-    "ios/harness/evidence/runs/run-20260728T175823Z-ios-oracle-dag-compiler-001-c58b7b09.json"
+    "ios/harness/evidence/runs/run-20260728T175823Z-ios-oracle-dag-compiler-001-c58b7b09.json",
+    "ios/harness/evidence/runs/run-20260728T182626Z-ios-android-post-form-oracle-recovery-002-f9fe295f.json",
+    "ios/harness/evidence/runs/run-20260728T183951Z-ios-oracle-settlement-compiler-001-c5974023.json"
   ]
 }

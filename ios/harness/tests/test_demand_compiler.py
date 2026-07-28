@@ -341,6 +341,8 @@ class MigrationFixture:
     target_id = "IOS-TEST-MIGRATION-001"
     characterization_id = "IOS-TEST-CHARACTERIZATION-001"
     oracle_id = "IOS-TEST-ORACLE-001"
+    oracle_recovery_id = "IOS-TEST-ORACLE-RECOVERY-002"
+    trusted_oracle_id = "IOS-TEST-TRUSTED-ORACLE-001"
     scenario_id = "sl-test-post-form-001"
     target_requirement_id = "REQ-TEST-MIGRATION-001"
     proposal_id = "ARQ-TEST-MIGRATION"
@@ -748,6 +750,7 @@ class MigrationFixture:
                 "kind": "WorkItem",
                 "metadata": {"id": self.oracle_id},
                 "spec": {
+                    "capability": "CAP-CONFORMANCE",
                     "depends_on": [self.characterization_id],
                     "requirements": {
                         "mode": "characterization",
@@ -765,6 +768,165 @@ class MigrationFixture:
             },
         )
         self.commit("add oracle blueprint")
+
+    def settle_oracle(self, *, recovery: bool):
+        oracle_relative = self.intent()["oracle_blueprint"]
+        oracle = json.loads(
+            (self.root / oracle_relative).read_text()
+        )
+        original_relative = (
+            f"{demand_compiler.WORK_ITEM_ROOT}/{self.oracle_id}.json"
+        )
+        self.write_json(original_relative, oracle)
+        original_sha = demand_compiler._sha256_json(oracle)
+        state = json.loads(
+            (self.root / demand_compiler.STATE_PATH).read_text()
+        )
+
+        if recovery:
+            resolved_id = self.oracle_recovery_id
+            resolved = {
+                "api_version": "legado.harness/v1",
+                "kind": "WorkItem",
+                "metadata": {"id": resolved_id},
+                "spec": {
+                    "capability": "CAP-CONFORMANCE",
+                    "recovers": self.oracle_id,
+                    "depends_on": [self.characterization_id],
+                    "requirements": {
+                        "mode": "control_plane",
+                        "refs": [],
+                        "none_reason": "test recovery",
+                    },
+                    "source_lab": oracle["spec"]["source_lab"],
+                    "gates": [],
+                },
+            }
+            self.write_json(
+                (
+                    f"{demand_compiler.WORK_ITEM_ROOT}/"
+                    f"{resolved_id}.json"
+                ),
+                resolved,
+            )
+            state["work_items"][self.oracle_id] = {
+                "status": "exhausted",
+                "work_item_sha256": original_sha,
+                "android_requirement_selection_sha256": "r" * 64,
+                "replacement": resolved_id,
+            }
+            checkpoint_requirements = {
+                "mode": "control_plane",
+                "refs": [],
+                "selection_sha256": None,
+            }
+            evidence_requirement_selection = None
+        else:
+            resolved_id = self.oracle_id
+            resolved = oracle
+            checkpoint_requirements = {
+                **oracle["spec"]["requirements"],
+                "selection_sha256": "r" * 64,
+            }
+            evidence_requirement_selection = "r" * 64
+
+        resolved_sha = demand_compiler._sha256_json(resolved)
+        evidence_relative = (
+            f"{demand_compiler.EVIDENCE_ROOT}/"
+            f"oracle-{resolved_id.lower()}-settled.json"
+        )
+        evidence = {
+            "work_item_id": resolved_id,
+            "work_item_sha256": resolved_sha,
+            "result": "passed",
+            "inputs": {
+                "android_requirement_selection_sha256": (
+                    evidence_requirement_selection
+                ),
+                "source_lab_selection_sha256": "t" * 64,
+            },
+        }
+        self.write_json(evidence_relative, evidence)
+        evidence_sha = hashlib.sha256(
+            (self.root / evidence_relative).read_bytes()
+        ).hexdigest()
+        checkpoint = {
+            "work_item_id": resolved_id,
+            "evidence": evidence_relative,
+            "capability_updates": [
+                {
+                    "id": "CAP-CONFORMANCE",
+                    "from_revision": 5,
+                    "to_revision": 6,
+                }
+            ],
+            "requirements": checkpoint_requirements,
+            "source_lab": {
+                **oracle["spec"]["source_lab"],
+                "selection_sha256": "t" * 64,
+            },
+        }
+        if recovery:
+            checkpoint["recovery"] = {
+                "predecessor": self.oracle_id,
+            }
+        self.write_json(
+            (
+                f"{demand_compiler.CHECKPOINT_ROOT}/"
+                f"{resolved_id}.json"
+            ),
+            checkpoint,
+        )
+        self.write_json(
+            "ios/project/capabilities/CAP-CONFORMANCE.json",
+            {"id": "CAP-CONFORMANCE", "revision": 6},
+        )
+        state["work_items"][resolved_id] = {
+            "status": "completed",
+            "work_item_sha256": resolved_sha,
+            "last_evidence": evidence_relative,
+            "last_evidence_sha256": evidence_sha,
+            "android_requirement_selection_sha256": (
+                "r" * 64 if not recovery else None
+            ),
+        }
+        if not recovery:
+            state["work_items"][self.oracle_id][
+                "android_requirement_selection_sha256"
+            ] = "r" * 64
+        self.write_json(demand_compiler.STATE_PATH, state)
+        self.commit("settle oracle")
+
+    def write_trusted_oracle_blueprint(self, *, depends_on: str):
+        relative = (
+            f"{demand_compiler.TRUSTED_ORACLE_BLUEPRINT_ROOT}/"
+            f"{self.intent_id}.json"
+        )
+        self.write_json(
+            relative,
+            {
+                "api_version": "legado.harness/v1",
+                "kind": "WorkItem",
+                "metadata": {"id": self.trusted_oracle_id},
+                "spec": {
+                    "capability": "CAP-CONFORMANCE",
+                    "depends_on": [depends_on],
+                    "requirements": {
+                        "mode": "characterization",
+                        "refs": [
+                            self.intent()["requirement_binding"]
+                        ],
+                    },
+                    "source_lab": {
+                        "mode": "reuse",
+                        "behaviors": ["transport.post-form"],
+                        "scenarios": [self.scenario_id],
+                    },
+                    "gates": [],
+                },
+            },
+        )
+        self.commit("add trusted oracle blueprint")
 
 
 class DemandCompilerTests(unittest.TestCase):
@@ -1074,6 +1236,91 @@ class DemandCompilerTests(unittest.TestCase):
                     if artifact["kind"] == "source_lab_scenario"
                 )["id"],
             )
+
+    def test_completed_oracle_compiles_trusted_proposal_dag(self):
+        for recovery in (False, True):
+            with self.subTest(recovery=recovery):
+                with tempfile.TemporaryDirectory() as directory:
+                    fixture = MigrationFixture(Path(directory))
+                    fixture.settle()
+                    fixture.accept_requirement(with_blueprint=True)
+                    fixture.settle_characterization()
+                    fixture.write_oracle_blueprint()
+                    fixture.settle_oracle(recovery=recovery)
+
+                    missing = fixture.compiler().compile_migration(
+                        fixture.intent_path()
+                    )
+                    self.assertEqual(
+                        "trusted_oracle_blueprint_required",
+                        missing.state,
+                    )
+                    expected_dependency = (
+                        fixture.oracle_recovery_id
+                        if recovery
+                        else fixture.oracle_id
+                    )
+                    self.assertEqual(
+                        expected_dependency,
+                        missing.target_work_item_id,
+                    )
+                    settlement = missing.bindings[
+                        "oracle_settlement"
+                    ]
+                    self.assertEqual(
+                        expected_dependency,
+                        settlement["resolved_work_item_id"],
+                    )
+                    self.assertEqual(
+                        (
+                            [
+                                fixture.oracle_id,
+                                fixture.oracle_recovery_id,
+                            ]
+                            if recovery
+                            else [fixture.oracle_id]
+                        ),
+                        settlement["recovery_chain"],
+                    )
+
+                    fixture.write_trusted_oracle_blueprint(
+                        depends_on=expected_dependency
+                    )
+                    ready = fixture.compiler().compile_migration(
+                        fixture.intent_path()
+                    )
+                    self.assertEqual(
+                        "trusted_oracle_ready",
+                        ready.state,
+                    )
+                    self.assertEqual(
+                        fixture.trusted_oracle_id,
+                        ready.target_work_item_id,
+                    )
+
+    def test_oracle_recovery_chain_drift_fails_closed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MigrationFixture(Path(directory))
+            fixture.settle()
+            fixture.accept_requirement(with_blueprint=True)
+            fixture.settle_characterization()
+            fixture.write_oracle_blueprint()
+            fixture.settle_oracle(recovery=True)
+            state_path = fixture.root / demand_compiler.STATE_PATH
+            state = json.loads(state_path.read_text())
+            state["work_items"][fixture.oracle_id][
+                "replacement"
+            ] = fixture.oracle_id
+            fixture.write_json(demand_compiler.STATE_PATH, state)
+            fixture.commit("cycle oracle recovery")
+
+            with self.assertRaisesRegex(
+                demand_compiler.DemandCompilerError,
+                "ORACLE_SETTLEMENT_RECOVERY_CYCLE",
+            ):
+                fixture.compiler().compile_migration(
+                    fixture.intent_path()
+                )
 
     def test_migration_requirement_clause_drift_fails_closed(self):
         with tempfile.TemporaryDirectory() as directory:
