@@ -1,0 +1,154 @@
+{
+  "schema_version": 1,
+  "run_id": "run-20260728T205221Z-ios-github-oracle-push-trigger-001-bea2e398",
+  "work_item_id": "IOS-GITHUB-ORACLE-PUSH-TRIGGER-001",
+  "work_item_sha256": "6f45aff43c4bde0230f18459b7f9ac07a302474055285ecd5ed1872329364660",
+  "result": "failed",
+  "inputs": {
+    "base_commit": "3f3ff65a39123f8fae46b490ec7b692c2e6472f7",
+    "head_commit": "3f3ff65a39123f8fae46b490ec7b692c2e6472f7",
+    "snapshot_sha256": "fe1f705c960ebc88d59384d987d6f8d74ce9da11252ddd0f925d718cba53df01",
+    "baseline_sha256": "eeeaf0017b79a2420faf73c686a110a2d0372b2da865e42aa8db360fd3015e93",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
+    "architecture_rules_sha256": "51ebc4cff5921643f95d8a045c21ea85cad046acb99ed56026f77bf842642fa5",
+    "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+    "golden_manifest_sha256": "13364dacf63643ebc9a0c48ca50d4937da85610a8975191ec1b86d8b80621f57",
+    "fixture_manifest_sha256": "76b8ba91dfca774e1fd548280a927dd383b7efadabed81704dcba408b6874243",
+    "dependency_lock_sha256": null,
+    "source_lab_control_sha256": "b5fd8fcef4a0587a25f9e5941c2cd6e0ca9f8ef33358a36552bb320e223564b7",
+    "android_intake_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122",
+    "business_knowledge_control_sha256": "fe12e0037e5105f470f6a4f7c774ec66041d2051f856f8590b9d71b7990d2fee",
+    "business_knowledge_authority_sha256": "9a898622fab665e380b0fdb7837d6aa24f938f5c87e4bc635c32fbdf4dfe81c8",
+    "business_knowledge_coverage_sha256": "8cd21f8c89530ad6b94a2a6f35c5f671b052ec180f93a365f0c9c0cfa4357961",
+    "business_knowledge_proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
+    "android_requirement_selection_sha256": null,
+    "source_lab_selection_sha256": "446a365c4126b6e36c43c6ad117184922ed83edd2abefce8357049def66de568",
+    "knowledge_selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "environment": {
+      "platform": "macOS-26.4.1-arm64-arm-64bit",
+      "python": "3.9.6",
+      "xcode": "Xcode 26.0\nBuild version 17A324",
+      "swift": "Apple Swift version 6.2 (swiftlang-6.2.0.19.9 clang-1700.3.19.1)\nTarget: arm64-apple-macosx26.0"
+    }
+  },
+  "changes": {
+    "paths": [
+      ".github/workflows/android-oracle-attestation.yml",
+      "ios/harness/oracle/README.md",
+      "ios/harness/source-lab/tests/test_source_lab.py"
+    ],
+    "changed_lines_approximate": 208,
+    "file_fingerprints": {
+      ".github/workflows/android-oracle-attestation.yml": "file:0o644:7c1cb5ffe7d967036d752bb2a641a0efe5b4162c9d975e95902347cf81485f15",
+      "ios/harness/oracle/README.md": "file:0o644:94dc7b4957e36eb331fcf7f3d498d391844c46dc616fa0b027d8439346953438",
+      "ios/harness/source-lab/tests/test_source_lab.py": "file:0o644:671a94e3cb325088860852708cbcf7e73407f8563967ba07035f0d1c80f5da9a"
+    },
+    "dirty_snapshot": {
+      ".github/workflows/android-oracle-attestation.yml": "file:0o644:7c1cb5ffe7d967036d752bb2a641a0efe5b4162c9d975e95902347cf81485f15",
+      "ios/harness/oracle/README.md": "file:0o644:94dc7b4957e36eb331fcf7f3d498d391844c46dc616fa0b027d8439346953438",
+      "ios/harness/source-lab/manifest.json": "file:0o644:f43ebe1b8f0327d90f9076794d0b828bed3fa61a1ba723425bd06ad87f7b3a3a",
+      "ios/harness/source-lab/tests/test_source_lab.py": "file:0o644:671a94e3cb325088860852708cbcf7e73407f8563967ba07035f0d1c80f5da9a",
+      "ios/harness/work-items/IOS-GITHUB-ORACLE-PUSH-TRIGGER-001.json": "file:0o644:646b2813d9b8abccfe1145bdd1e8461924aabcafb39bc2c9564efc5649084ddf",
+      "ios/project/events.jsonl": "file:0o644:20f5488a961733defceeaa4fc3de6c4752b17e380e4091e2e4499c0b629c3d2d",
+      "ios/project/state.json": "file:0o644:0a5f51e5ab3a82d993dbcea85e06354ea571cde6e2d641885b54e7f9b754c37a",
+      "ios/project/status.md": "file:0o644:83d5daf4f77438c9f9a7a82eb5617a631996d3353042784cb79045ae5e342d3f"
+    },
+    "diff_sha256": "26c0909cd185145ecb200c5ad716fab8314977d5e3d19c404c62adc514d183b2"
+  },
+  "policy_errors": [],
+  "architecture_errors": [],
+  "architecture_warnings": [],
+  "checks": [
+    {
+      "id": "dependency-policy",
+      "argv": [
+        "python3",
+        "ios/harness/probes/dependency_contract.py",
+        "--root",
+        "."
+      ],
+      "executable_path": "/usr/bin/python3",
+      "definition_sha256": "eca96cb1b69567829ed8396386b0449da8c0d6e7295a00f1decfb60430ff1153",
+      "cwd": ".",
+      "started_at": "2026-07-28T20:50:23Z",
+      "duration_ms": 761,
+      "timeout_seconds": 90,
+      "timed_out": false,
+      "process_leak": false,
+      "cleanup_error": null,
+      "exit_code": 0,
+      "passed": true,
+      "stdout_sha256": "17595a1d68cdc5b52c010f46dff48514afa3fa3cf0215cdea7ae8eff38677c0a",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_tail": "DEPENDENCY_CONTRACT: OK\n",
+      "stderr_tail": ""
+    },
+    {
+      "id": "harness-tests",
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "ios/harness/tests",
+        "-p",
+        "test_*.py"
+      ],
+      "executable_path": "/usr/bin/python3",
+      "definition_sha256": "244d512cbdd15fe0c5e35e6d9676510c943b19e9437987c24ac6e627a2e7ad94",
+      "cwd": ".",
+      "started_at": "2026-07-28T20:50:24Z",
+      "duration_ms": 115712,
+      "timeout_seconds": 180,
+      "timed_out": false,
+      "process_leak": false,
+      "cleanup_error": null,
+      "exit_code": 0,
+      "passed": true,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "641be7d719a079b07aa6b695a793afa57c67d2d8d4eea263ec5f2de39e533f28",
+      "stdout_tail": "",
+      "stderr_tail": ".......................................................................................................................................................................................................................................................\n----------------------------------------------------------------------\nRan 247 tests in 115.566s\n\nOK\n"
+    },
+    {
+      "id": "source-lab-contract",
+      "argv": [
+        "python3",
+        "-B",
+        "ios/harness/source-lab/source_lab.py",
+        "doctor",
+        "--root",
+        ".",
+        "--work-item",
+        "IOS-GITHUB-ORACLE-PUSH-TRIGGER-001"
+      ],
+      "executable_path": "/usr/bin/python3",
+      "definition_sha256": "71bcede40081f323017d77517ee0b54f354b4eb19c9c345d67d9302ead4c6643",
+      "cwd": ".",
+      "started_at": "2026-07-28T20:52:20Z",
+      "duration_ms": 123,
+      "timeout_seconds": 60,
+      "timed_out": false,
+      "process_leak": false,
+      "cleanup_error": null,
+      "exit_code": 1,
+      "passed": false,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "c7a31b02bac585a00ea53a9b86936bbc35170303c9c27cc87f39c1a18195fd90",
+      "stdout_tail": "",
+      "stderr_tail": "SOURCE_LAB: IOS-GITHUB-ORACLE-PUSH-TRIGGER-001: candidate reuse 仅限无 Gate 的 android-oracle/candidate-only characterization 或其 control recovery\nSOURCE_LAB: IOS-GITHUB-ORACLE-PUSH-TRIGGER-001: candidate characterization 禁止写入：.github/workflows/android-oracle-attestation.yml\nSOURCE_LAB: IOS-GITHUB-ORACLE-PUSH-TRIGGER-001: candidate characterization 必须唯一依赖 introduced_by WorkItem：IOS-SOURCELAB-POST-FORM-001\nSOURCE_LAB: IOS-GITHUB-ORACLE-PUSH-TRIGGER-001: behavior 未登记 policy：transport.get-html\nSOURCE_LAB: IOS-GITHUB-ORACLE-PUSH-TRIGGER-001: reuse 不得混用 reference 与 candidate scenario\n"
+    }
+  ],
+  "failure": {
+    "class": "CHECK_FAILED",
+    "check_id": "source-lab-contract",
+    "message": "SOURCE_LAB: IOS-GITHUB-ORACLE-PUSH-TRIGGER-001: candidate reuse 仅限无 Gate 的 android-oracle/candidate-only characterization 或其 control recovery SOURCE_LAB: IOS-GITHUB-ORACLE-PUSH-TRIGGER-001: candidate characterization 禁止写入：.github/workflows/android-oracle-attestation.yml SOURCE_LAB: IOS-GITHUB-ORACLE-PUSH-TRIGGER-001: candidate characterization 必须唯一依赖 introduced_by WorkItem：IOS-SOURCELAB-POST-FORM-001 SOURCE_LAB: IOS-GITHUB-ORACLE-PUSH-TRIGGER-001: behavior 未登记 policy：transport.get-html SOURCE_LAB: IOS-GITHUB-ORACLE-PUSH-TRIGGER-001: reuse 不得混用 reference 与 candidate scenario",
+    "fingerprint": "343279aa997d9daf92d7c01b556c11c7bfe8c7293cd0db130fbb72f3c893c233"
+  },
+  "started_at": "2026-07-28T20:50:22Z",
+  "finished_at": "2026-07-28T20:52:21Z",
+  "reproduction": "python3 ios/harness/harness.py verify IOS-GITHUB-ORACLE-PUSH-TRIGGER-001"
+}

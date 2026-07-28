@@ -99,8 +99,13 @@ HTML 推导 iOS expected。
 
 ## GitHub-hosted 双证明提案链
 
-`.github/workflows/android-oracle-attestation.yml` 只允许人工
-`workflow_dispatch`，在 `ubuntu-24.04` GitHub-hosted runner 上执行。它不读取
+`.github/workflows/android-oracle-attestation.yml` 保留显式 scenario choice 的人工
+`workflow_dispatch`，并接受 `feature/oracle-*` branch push，在 `ubuntu-24.04`
+GitHub-hosted runner 上执行。push ref 必须精确为
+`feature/oracle-<allowlisted-scenario>-<40位GITHUB_SHA>`；Workflow 的第一个 step
+按 event、ref 与 source SHA fail closed 地解析唯一 `ORACLE_SCENARIO`，之后 doctor、
+run、prepare、finalize 与 artifact name 只消费该 selector 输出。create-only branch
+因此成为 GitHub 服务端可查询的创建事实，run-name 同时暴露完整 ref。它不读取
 repository secrets，不提交分支，不上传 APK，也不接触外部书站。官方 actions 均固定
 到完整 commit SHA；job 权限只有 `contents:read`、`id-token:write` 和
 `attestations:write`。

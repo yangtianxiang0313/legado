@@ -1,8 +1,12 @@
 import contextlib
 import copy
 import json
+import os
 import socket
+import subprocess
 import sys
+import tempfile
+import textwrap
 import unittest
 import urllib.request
 from pathlib import Path
@@ -18,6 +22,143 @@ import source_lab  # noqa: E402
 
 class SourceLabTests(unittest.TestCase):
     scenario = "sl-html-basic-001"
+
+    def oracle_workflow(self):
+        return (
+            REPO_ROOT
+            / ".github/workflows/android-oracle-attestation.yml"
+        ).read_text()
+
+    def oracle_selector_script(self):
+        workflow = self.oracle_workflow()
+        marker = "      - name: Resolve trusted Oracle scenario\n"
+        block = workflow.split(marker, 1)[1].split(
+            "\n      - name:", 1
+        )[0]
+        script = block.split("        run: |\n", 1)[1]
+        return textwrap.dedent(script)
+
+    def run_oracle_selector(
+        self,
+        *,
+        event,
+        ref,
+        sha="0123456789abcdef0123456789abcdef01234567",
+        scenario="",
+    ):
+        with tempfile.TemporaryDirectory() as directory:
+            env_file = Path(directory) / "env"
+            output_file = Path(directory) / "output"
+            environment = os.environ.copy()
+            environment.update(
+                {
+                    "GITHUB_EVENT_NAME": event,
+                    "GITHUB_REF": ref,
+                    "GITHUB_SHA": sha,
+                    "DISPATCH_SCENARIO": scenario,
+                    "GITHUB_ENV": str(env_file),
+                    "GITHUB_OUTPUT": str(output_file),
+                }
+            )
+            result = subprocess.run(
+                ["bash", "-c", self.oracle_selector_script()],
+                cwd=REPO_ROOT,
+                env=environment,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            return (
+                result,
+                env_file.read_text() if env_file.exists() else "",
+                output_file.read_text() if output_file.exists() else "",
+            )
+
+    def test_oracle_workflow_selector_accepts_manual_and_exact_push(self):
+        sha = "0123456789abcdef0123456789abcdef01234567"
+        for scenario in ("sl-html-basic-001", "sl-post-form-001"):
+            with self.subTest(event="workflow_dispatch", scenario=scenario):
+                result, env_value, output_value = self.run_oracle_selector(
+                    event="workflow_dispatch",
+                    ref="refs/heads/main",
+                    scenario=scenario,
+                )
+                self.assertEqual(0, result.returncode, result.stderr)
+                self.assertEqual(
+                    f"ORACLE_SCENARIO={scenario}\n", env_value
+                )
+                self.assertEqual(f"scenario={scenario}\n", output_value)
+            with self.subTest(event="push", scenario=scenario):
+                result, env_value, output_value = self.run_oracle_selector(
+                    event="push",
+                    ref=f"refs/heads/feature/oracle-{scenario}-{sha}",
+                    sha=sha,
+                )
+                self.assertEqual(0, result.returncode, result.stderr)
+                self.assertEqual(
+                    f"ORACLE_SCENARIO={scenario}\n", env_value
+                )
+                self.assertEqual(f"scenario={scenario}\n", output_value)
+
+    def test_oracle_workflow_selector_rejects_untrusted_sources(self):
+        sha = "0123456789abcdef0123456789abcdef01234567"
+        invalid = (
+            ("workflow_dispatch", "refs/heads/main", "", ""),
+            ("workflow_dispatch", "refs/heads/main", sha, "unknown"),
+            ("push", f"refs/heads/oracle-sl-html-basic-001-{sha}", sha, ""),
+            ("push", "refs/heads/feature/oracle-sl-html-basic-001", sha, ""),
+            (
+                "push",
+                "refs/heads/feature/oracle-sl-html-basic-001-"
+                + ("f" * 40),
+                sha,
+                "",
+            ),
+            (
+                "push",
+                f"refs/heads/feature/oracle-path/sl-html-basic-001-{sha}",
+                sha,
+                "",
+            ),
+            ("pull_request", "refs/pull/1/merge", sha, ""),
+        )
+        for event, ref, source_sha, scenario in invalid:
+            with self.subTest(event=event, ref=ref, scenario=scenario):
+                result, env_value, output_value = self.run_oracle_selector(
+                    event=event,
+                    ref=ref,
+                    sha=source_sha,
+                    scenario=scenario,
+                )
+                self.assertNotEqual(0, result.returncode)
+                self.assertEqual("", env_value)
+                self.assertEqual("", output_value)
+
+    def test_oracle_workflow_keeps_candidate_only_authority(self):
+        workflow = self.oracle_workflow()
+        selector_output = "${{ steps.selector.outputs.scenario }}"
+        after_selector = workflow.split(
+            "      - name: Checkout exact source", 1
+        )[1]
+        self.assertNotIn("inputs.scenario", after_selector)
+        self.assertEqual(5, workflow.count(selector_output))
+        self.assertIn("run-name:", workflow)
+        self.assertIn("${{ github.ref }}", workflow)
+        self.assertIn("  push:\n    branches:\n      - feature/oracle-*\n", workflow)
+        self.assertIn("  contents: read\n", workflow)
+        self.assertNotIn("contents: write", workflow)
+        self.assertNotIn("pull-requests:", workflow)
+        self.assertNotIn("secrets:", workflow)
+        self.assertNotIn("self-hosted", workflow)
+        self.assertNotIn("Publisher", workflow)
+        self.assertNotIn("goldens", workflow.lower())
+        for uses in (
+            line.split("uses:", 1)[1].strip()
+            for line in workflow.splitlines()
+            if "uses:" in line
+        ):
+            self.assertRegex(uses, r"^[^@\s]+@[0-9a-f]{40}$")
 
     def test_builds_android_book_source_for_logical_origin(self):
         source = source_lab.build_source(REPO_ROOT, self.scenario, source_lab.LOGICAL_ORIGIN)
