@@ -1,0 +1,30 @@
+{
+  "authority": "proposal_only",
+  "candidate_sha256": "0917be299d71c80a15effd7794b953318be74b18092938dddeb8ef156f4be223",
+  "compiler_version": "proposal-compiler-v1",
+  "dag": {
+    "id": "WIPD-IOS-INITIALIZATION-001",
+    "revision": 18,
+    "sha256": "a86f85a19294a6cf6596bef5667603842d4dae8214b7449e587ce28bdf761adb"
+  },
+  "dependencies": [
+    {
+      "chain": [
+        "IOS-TRUSTED-ORACLE-SETTLEMENT-ROBUSTNESS-001"
+      ],
+      "checkpoint": "ios/project/checkpoints/IOS-TRUSTED-ORACLE-SETTLEMENT-ROBUSTNESS-001.json",
+      "checkpoint_sha256": "ee4bc416a24894ed7c2193afb55dbd6386f07c09364b28d749fe99ea1ec5138a",
+      "evidence": "ios/harness/evidence/runs/run-20260728T213019Z-ios-trusted-oracle-settlement-robustness-001-44b2dc99.json",
+      "evidence_sha256": "09747a95fc5ca8baec9a40ac420004b6ac1bccb42cb4aca919511de5c46beab4",
+      "original": "IOS-TRUSTED-ORACLE-SETTLEMENT-ROBUSTNESS-001",
+      "reason_code": "DIRECT_COMPLETION",
+      "resolved": "IOS-TRUSTED-ORACLE-SETTLEMENT-ROBUSTNESS-001",
+      "work_item_sha256": "8e2ae30ea6c19ace21dcc0f114d99598bac378306c5ed29d62110bc9130a3032"
+    }
+  ],
+  "node_sha256": "c2a57db909643be31eee3f99417979a67128147349d1bff75a3bd33b72f7611f",
+  "proposal_id": "IOS-GITHUB-ORACLE-PACKAGER-SCOPE-001",
+  "queue_effect": "none",
+  "recipe_sha256": "fdd97ef8a890be1b15bf1df0fb600392cb3a3771f6b55742b91657a6e6683f7a",
+  "schema_version": 1
+}
