@@ -1,1 +1,1 @@
-{"active_task":"IOS-SOURCE-RUNTIME-RATE-LIMIT-001","attempt":0,"last_completed":{"at":"2026-07-29T07:28:58Z","sequence":36,"task_id":"IOS-CHARACTERIZE-SOURCE-SESSION-RATE-LIMIT-SHARED-STATE-001"},"schema_version":2,"status":"running","verification":null}
+{"active_task":null,"attempt":0,"last_completed":{"at":"2026-07-29T07:34:23Z","sequence":39,"task_id":"IOS-SOURCE-RUNTIME-RATE-LIMIT-001"},"schema_version":2,"status":"idle","verification":null}
