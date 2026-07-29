@@ -357,6 +357,16 @@
       "title": "恢复 Manifest v2 基线并完成受保护 Golden 续接",
       "outputs": ["per-fixture publisher control binding", "strict v1-v2 Golden consumer", "migration terminal continuation"],
       "gates": [], "constraint": "恢复原 Golden consumer 目标并修复真实基线：Business Knowledge Publisher 必须按目标 fixture 读取场景 controls 且 legacy 回退严格；DemandCompiler 必须交叉验证 Receipt/Manifest/release/trusted report 后终结 migration，Supervisor 自动续接；不得修改任何 authority 输入、Golden、Workflow、Android Publisher、Oracle、SourceLab、Package 或产品"
+    },
+    {
+      "proposal_id": "IOS-KNOWLEDGE-SOURCE-RUNTIME-POST-FORM-001", "phase": 40, "class": "control_plane",
+      "depends_on": ["IOS-GOLDEN-CONSUMER-CONTINUATION-RECOVERY-002"], "knowledge_mode": "produce",
+      "title": "从受保护 POST Form Golden 收敛可发布业务知识",
+      "outputs": [
+        {"kind": "packet", "id": "BKP-SOURCE-RUNTIME-POST-FORM-001", "revision": 1},
+        {"kind": "driver", "id": "DRV-SOURCE-RUNTIME-POST-FORM-001", "revision": 1}
+      ],
+      "gates": [], "constraint": "只生成由 sl-post-form-001 真实 Golden 直接证明的 POST selection 与 field encoding Packet/Driver proposal；每条 Claim 绑定精确 JSON Pointer/canonical digest/source/runner，不得把未覆盖的 raw body、JSON/XML、Cookie/retry 声明为 verified，不得发布 Catalog/Coverage、修改 Requirement、Golden、架构或产品"
     }
   ],
   "compiler_rules": [

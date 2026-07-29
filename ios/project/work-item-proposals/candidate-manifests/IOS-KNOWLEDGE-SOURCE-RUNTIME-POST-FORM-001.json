@@ -1,0 +1,30 @@
+{
+  "authority": "proposal_only",
+  "candidate_sha256": "f39d4f0d4bbb610fab312447baeff2dbfc95ff99d2f618579327cf288883d4f2",
+  "compiler_version": "proposal-compiler-v1",
+  "dag": {
+    "id": "WIPD-IOS-INITIALIZATION-001",
+    "revision": 30,
+    "sha256": "af2fcce697f24e4b3ba8723f17216845cb174916310bbca41d689d51e62b50b9"
+  },
+  "dependencies": [
+    {
+      "chain": [
+        "IOS-GOLDEN-CONSUMER-CONTINUATION-RECOVERY-002"
+      ],
+      "checkpoint": "ios/project/checkpoints/IOS-GOLDEN-CONSUMER-CONTINUATION-RECOVERY-002.json",
+      "checkpoint_sha256": "16c319b37489cd4673229282dcabc8162c7fa462b6478b84558710ae3ba183c8",
+      "evidence": "ios/harness/evidence/runs/run-20260729T015050Z-ios-golden-consumer-continuation-recovery-002-7047cca2.json",
+      "evidence_sha256": "d03bb10436e1943d6ecea4d31df9abcc8d1755481f97fb769cc46d39b4bb4107",
+      "original": "IOS-GOLDEN-CONSUMER-CONTINUATION-RECOVERY-002",
+      "reason_code": "DIRECT_COMPLETION",
+      "resolved": "IOS-GOLDEN-CONSUMER-CONTINUATION-RECOVERY-002",
+      "work_item_sha256": "4baf5a0a9de4b76366657e9b447e3f5d6f570cc4d05a45db872edb9ba6a54144"
+    }
+  ],
+  "node_sha256": "08887eeda8e3cc5432ce8190643f6d7ff5f9cd5feba6f5dce87bc1843d821e1a",
+  "proposal_id": "IOS-KNOWLEDGE-SOURCE-RUNTIME-POST-FORM-001",
+  "queue_effect": "none",
+  "recipe_sha256": "b95ca741b7f4eeb1cece393e94521b7f22fd4b5552b52c9ede34810bc7695def",
+  "schema_version": 1
+}
