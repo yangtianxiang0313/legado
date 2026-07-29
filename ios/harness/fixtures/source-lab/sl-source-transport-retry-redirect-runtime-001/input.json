@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "retry-default-single-failure",
+      "operation": "retry_redirect",
+      "arguments": {
+        "mode": "analyze_url",
+        "retry": 0
+      },
+      "request": {
+        "method": "GET",
+        "target": "/retry/default-failure"
+      }
+    },
+    {
+      "id": "retry-two-repeated-failure",
+      "operation": "retry_redirect",
+      "arguments": {
+        "mode": "analyze_url",
+        "retry": 2
+      },
+      "request": {
+        "method": "GET",
+        "target": "/retry/repeated-failure"
+      }
+    },
+    {
+      "id": "redirect-success-observation",
+      "operation": "retry_redirect",
+      "arguments": {
+        "mode": "analyze_url",
+        "retry": 2,
+        "invoke_redirect_check": true
+      },
+      "request": {
+        "method": "GET",
+        "target": "/retry/redirect-success-start"
+      }
+    },
+    {
+      "id": "redirect-failure-chain-retried",
+      "operation": "retry_redirect",
+      "arguments": {
+        "mode": "analyze_url",
+        "retry": 1,
+        "invoke_redirect_check": true
+      },
+      "request": {
+        "method": "GET",
+        "target": "/retry/redirect-failure-start"
+      }
+    },
+    {
+      "id": "helper-eventual-success",
+      "operation": "retry_redirect",
+      "arguments": {
+        "mode": "helper_status_sequence",
+        "retry": 2,
+        "status_sequence": [500, 503, 200]
+      },
+      "request": {
+        "method": "GET",
+        "target": "/retry/helper-eventual-success"
+      }
+    },
+    {
+      "id": "helper-network-exception-no-retry",
+      "operation": "retry_redirect",
+      "arguments": {
+        "mode": "helper_network_exception",
+        "retry": 2
+      },
+      "request": {
+        "method": "GET",
+        "target": "/retry/helper-network-exception"
+      }
+    },
+    {
+      "id": "helper-cancellation-propagates",
+      "operation": "retry_redirect",
+      "arguments": {
+        "mode": "helper_cancellation",
+        "retry": 2
+      },
+      "request": {
+        "method": "GET",
+        "target": "/retry/helper-cancellation"
+      }
+    },
+    {
+      "id": "negative-retry-empty-range",
+      "operation": "retry_redirect",
+      "arguments": {
+        "mode": "helper_status_sequence",
+        "retry": -1,
+        "status_sequence": [200]
+      },
+      "request": {
+        "method": "GET",
+        "target": "/retry/helper-negative"
+      }
+    }
+  ]
+}

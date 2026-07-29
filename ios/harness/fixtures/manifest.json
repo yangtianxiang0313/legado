@@ -72,6 +72,11 @@
       "id": "sl-source-transport-response-decoding-runtime-001",
       "path": "ios/harness/fixtures/source-lab/sl-source-transport-response-decoding-runtime-001",
       "sha256": "d6939003ee84cd0d8ba642bbaa6be503b378d24c75d81d0cbb2586367b564744"
+    },
+    {
+      "id": "sl-source-transport-retry-redirect-runtime-001",
+      "path": "ios/harness/fixtures/source-lab/sl-source-transport-retry-redirect-runtime-001",
+      "sha256": "b8d6f8e5c03b732268b7cca918874d540616ee71c81b85a93f62322f00586626"
     }
   ]
 }

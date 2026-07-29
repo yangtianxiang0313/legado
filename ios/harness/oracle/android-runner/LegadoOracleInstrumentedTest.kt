@@ -9,19 +9,33 @@ import io.legado.app.data.entities.BookSource
 import io.legado.app.data.entities.SearchBook
 import io.legado.app.exception.ConcurrentException
 import io.legado.app.help.http.CookieStore
+import io.legado.app.help.http.StrResponse
+import io.legado.app.help.http.newCallResponse
 import io.legado.app.model.analyzeRule.AnalyzeUrl
 import io.legado.app.model.webBook.WebBook
 import io.legado.app.utils.GSON
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import java.io.IOException
 import java.lang.reflect.InvocationTargetException
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import okhttp3.OkHttpClient
+import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.ResponseBody.Companion.toResponseBody
 import okio.Buffer
 
 @RunWith(AndroidJUnit4::class)
@@ -71,6 +85,8 @@ class LegadoOracleInstrumentedTest {
                 runTransportDispatchCases()
             "sl-source-transport-response-decoding-runtime-001" ->
                 runResponseDecodingCases()
+            "sl-source-transport-retry-redirect-runtime-001" ->
+                runRetryRedirectCases()
             else -> {
                 runCase("search-hit", "search", searchRequest("星河")) {
                     searchProjection(WebBook.searchBookAwait(source, "星河"))
@@ -253,6 +269,265 @@ class LegadoOracleInstrumentedTest {
                     .put("status_code", response.code())
                     .put("is_successful", response.isSuccessful())
             }
+        }
+    }
+
+    private suspend fun runRetryRedirectCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            require(value.getString("operation") == "retry_redirect") {
+                "Retry redirect scenario only accepts retry_redirect stimuli"
+            }
+            val id = value.getString("id")
+            val record = JSONObject()
+                .put("id", id)
+                .put("operation", "retry_redirect")
+            try {
+                val (request, result) = when (
+                    value.getJSONObject("arguments").getString("mode")
+                ) {
+                    "analyze_url" -> retryAnalyzeProjection(value)
+                    "helper_status_sequence" ->
+                        helperStatusSequenceProjection(value)
+                    "helper_network_exception" ->
+                        helperNetworkExceptionProjection(value)
+                    "helper_cancellation" ->
+                        helperCancellationProjection(value)
+                    else -> error("Unsupported retry redirect mode")
+                }
+                requestPlan.put(request)
+                record
+                    .put("request", request)
+                    .put("result", result)
+                    .put("issue", JSONObject.NULL)
+            } catch (error: Throwable) {
+                val request = retryFallbackRequest(value)
+                requestPlan.put(request)
+                record
+                    .put("request", request)
+                    .put("result", JSONObject.NULL)
+                    .put(
+                        "issue",
+                        JSONObject()
+                            .put("code", "android_exception")
+                            .put("exception_type", error.javaClass.name)
+                    )
+            }
+            cases.put(record)
+        }
+    }
+
+    private suspend fun retryAnalyzeProjection(
+        value: JSONObject
+    ): Pair<JSONObject, JSONObject> {
+        val arguments = value.getJSONObject("arguments")
+        val retry = arguments.getInt("retry")
+        val target = value.getJSONObject("request").getString("target")
+        val option = JSONObject().put("retry", retry)
+        val analyze = AnalyzeUrl(
+            mUrl = "$deviceOrigin$target,$option",
+            baseUrl = source.bookSourceUrl,
+            source = source,
+            headerMapF = source.getHeaderMap(true)
+        )
+        val response = analyze.getStrResponseAwait(useWebView = false)
+        val redirectObserved =
+            response.raw.priorResponse?.isRedirect == true
+        var redirectCheckCompleted = false
+        if (arguments.optBoolean("invoke_redirect_check", false)) {
+            reflectedCheckRedirect(response)
+            redirectCheckCompleted = true
+        }
+        return Pair(
+            analyzedRequest(analyze),
+            JSONObject()
+                .put("configured_retry", reflectedInt(analyze, "retry"))
+                .put("status_code", response.code())
+                .put("is_successful", response.isSuccessful())
+                .put("body", nullable(response.body))
+                .put("final_url", logical(response.url))
+                .put("redirect_observed", redirectObserved)
+                .put("redirect_check_completed", redirectCheckCompleted)
+        )
+    }
+
+    private suspend fun helperStatusSequenceProjection(
+        value: JSONObject
+    ): Pair<JSONObject, JSONObject> {
+        val arguments = value.getJSONObject("arguments")
+        val retry = arguments.getInt("retry")
+        val rawStatuses = arguments.getJSONArray("status_sequence")
+        val statuses = buildList {
+            for (index in 0 until rawStatuses.length()) {
+                add(rawStatuses.getInt(index))
+            }
+        }
+        val attempts = mutableListOf<Int>()
+        val fingerprints = mutableListOf<String>()
+        val identities = mutableSetOf<Int>()
+        val client = OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                val request = chain.request()
+                val status = statuses[minOf(attempts.size, statuses.lastIndex)]
+                attempts.add(status)
+                fingerprints.add(requestFingerprint(request))
+                identities.add(System.identityHashCode(request))
+                Response.Builder()
+                    .request(request)
+                    .protocol(Protocol.HTTP_1_1)
+                    .code(status)
+                    .message("status-$status")
+                    .body(
+                        "status-$status".toResponseBody(
+                            "text/plain; charset=utf-8".toMediaType()
+                        )
+                    )
+                    .build()
+            }
+            .build()
+        val target = helperURL(value)
+        val outcome = runCatching {
+            client.newCallResponse(retry) {
+                url(target)
+                addHeader("X-Source", "retry-redirect")
+            }
+        }
+        val response = outcome.getOrNull()
+        val result = JSONObject()
+            .put("configured_retry", retry)
+            .put("attempt_count", attempts.size)
+            .put("observed_statuses", JSONArray(attempts))
+            .put("final_status", response?.code ?: JSONObject.NULL)
+            .put("is_successful", response?.isSuccessful ?: false)
+            .put(
+                "request_fingerprints_identical",
+                fingerprints.distinct().size <= 1
+            )
+            .put("request_instance_count", identities.size)
+            .put(
+                "exception_type",
+                nullable(outcome.exceptionOrNull()?.javaClass?.name)
+            )
+        response?.close()
+        return Pair(helperRequest(value), result)
+    }
+
+    private suspend fun helperNetworkExceptionProjection(
+        value: JSONObject
+    ): Pair<JSONObject, JSONObject> {
+        val arguments = value.getJSONObject("arguments")
+        val retry = arguments.getInt("retry")
+        val attempts = AtomicInteger()
+        val client = OkHttpClient.Builder()
+            .addInterceptor {
+                attempts.incrementAndGet()
+                throw IOException("source-lab-network-failure")
+            }
+            .build()
+        val outcome = runCatching {
+            client.newCallResponse(retry) {
+                url(helperURL(value))
+                addHeader("X-Source", "retry-redirect")
+            }
+        }
+        return Pair(
+            helperRequest(value),
+            JSONObject()
+                .put("configured_retry", retry)
+                .put("attempt_count", attempts.get())
+                .put(
+                    "exception_type",
+                    nullable(outcome.exceptionOrNull()?.javaClass?.name)
+                )
+                .put("response_received", outcome.getOrNull() != null)
+        )
+    }
+
+    private suspend fun helperCancellationProjection(
+        value: JSONObject
+    ): Pair<JSONObject, JSONObject> = coroutineScope {
+        val arguments = value.getJSONObject("arguments")
+        val retry = arguments.getInt("retry")
+        val attempts = AtomicInteger()
+        val callCancelled = AtomicBoolean(false)
+        val started = CompletableDeferred<Unit>()
+        val client = OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                attempts.incrementAndGet()
+                started.complete(Unit)
+                while (!chain.call().isCanceled()) {
+                    Thread.sleep(1)
+                }
+                callCancelled.set(chain.call().isCanceled())
+                throw IOException("cancelled")
+            }
+            .build()
+        val call = async {
+            client.newCallResponse(retry) {
+                url(helperURL(value))
+                addHeader("X-Source", "retry-redirect")
+            }
+        }
+        withTimeout(2_000) { started.await() }
+        call.cancel()
+        val error = try {
+            call.await()
+            null
+        } catch (value: Throwable) {
+            value
+        }
+        withTimeout(2_000) {
+            while (!callCancelled.get()) {
+                delay(1)
+            }
+        }
+        Pair(
+            helperRequest(value),
+            JSONObject()
+                .put("configured_retry", retry)
+                .put("attempt_count", attempts.get())
+                .put("call_cancelled", callCancelled.get())
+                .put("cancellation_propagated", error is CancellationException)
+                .put("response_received", error == null)
+        )
+    }
+
+    private fun helperRequest(value: JSONObject): JSONObject =
+        request(helperURL(value)).put(
+            "headers",
+            controlledHeaders(
+                listOf("X-Source" to "retry-redirect")
+            )
+        )
+
+    private fun helperURL(value: JSONObject): String =
+        deviceOrigin + value.getJSONObject("request").getString("target")
+
+    private fun requestFingerprint(request: Request): String =
+        request.method + "\u0000" + request.url + "\u0000" + request.headers
+
+    private fun retryFallbackRequest(value: JSONObject): JSONObject {
+        val target = value.getJSONObject("request").getString("target")
+        return request(deviceOrigin + target).put(
+            "headers",
+            controlledHeaders(
+                listOf("X-Source" to "retry-redirect")
+            )
+        )
+    }
+
+    private fun reflectedCheckRedirect(response: StrResponse) {
+        val method = WebBook::class.java.getDeclaredMethod(
+            "checkRedirect",
+            BookSource::class.java,
+            StrResponse::class.java
+        )
+        method.isAccessible = true
+        try {
+            method.invoke(WebBook, source, response)
+        } catch (error: InvocationTargetException) {
+            throw error.targetException
         }
     }
 

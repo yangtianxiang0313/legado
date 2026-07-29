@@ -1,0 +1,224 @@
+{
+  "schema_version": 1,
+  "kind": "source_lab_scenario",
+  "id": "sl-source-transport-retry-redirect-runtime-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "source_lab_site",
+  "capabilities": [
+    "CAP-RUNTIME-PORTS",
+    "CAP-CONFORMANCE"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": "source.template.json",
+  "input": "input.json",
+  "transport": {
+    "mode": "fixture_and_loopback",
+    "external_network": "deny",
+    "responses": [
+      {
+        "id": "retry-default-single-failure",
+        "match": {
+          "method": "GET",
+          "path": "/retry/default-failure",
+          "query": {}
+        },
+        "respond": {
+          "status": 503,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/default-failure.txt"
+        }
+      },
+      {
+        "id": "retry-two-repeated-failure",
+        "match": {
+          "method": "GET",
+          "path": "/retry/repeated-failure",
+          "query": {}
+        },
+        "respond": {
+          "status": 503,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/repeated-failure.txt"
+        }
+      },
+      {
+        "id": "redirect-success-start",
+        "match": {
+          "method": "GET",
+          "path": "/retry/redirect-success-start",
+          "query": {}
+        },
+        "respond": {
+          "status": 302,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8",
+            "location": "/retry/redirect-success-final"
+          },
+          "body_file": "responses/redirect-start.txt"
+        }
+      },
+      {
+        "id": "redirect-success-final",
+        "match": {
+          "method": "GET",
+          "path": "/retry/redirect-success-final",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/redirect-success.txt"
+        }
+      },
+      {
+        "id": "redirect-failure-start",
+        "match": {
+          "method": "GET",
+          "path": "/retry/redirect-failure-start",
+          "query": {}
+        },
+        "respond": {
+          "status": 302,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8",
+            "location": "/retry/redirect-failure-final"
+          },
+          "body_file": "responses/redirect-start.txt"
+        }
+      },
+      {
+        "id": "redirect-failure-final",
+        "match": {
+          "method": "GET",
+          "path": "/retry/redirect-failure-final",
+          "query": {}
+        },
+        "respond": {
+          "status": 503,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/redirect-failure.txt"
+        }
+      }
+    ]
+  },
+  "coverage": [
+    {
+      "behavior": "transport.retry-redirect",
+      "cases": [
+        {
+          "id": "retry-default-single-failure",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "UrlOption.getRetry default and OkHttpClient.newCallResponse initial attempt"
+          ]
+        },
+        {
+          "id": "retry-two-repeated-failure",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "OkHttpClient.newCallResponse executes initial request plus retry count and returns the last non-successful response"
+          ]
+        },
+        {
+          "id": "redirect-success-observation",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "OkHttp follows redirect and WebBook.checkRedirect observes priorResponse without rejecting the final URL"
+          ]
+        },
+        {
+          "id": "redirect-failure-chain-retried",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "A non-successful redirect target causes the complete request chain to be retried"
+          ]
+        },
+        {
+          "id": "helper-eventual-success",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "OkHttpClient.newCallResponse stops at the first successful response and reuses the constructed Request"
+          ]
+        },
+        {
+          "id": "helper-network-exception-no-retry",
+          "role": "denied",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "Call.await propagates IOException before the response-status retry loop can continue"
+          ]
+        },
+        {
+          "id": "helper-cancellation-propagates",
+          "role": "denied",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "Call.await invokeOnCancellation cancels the active OkHttp Call and does not start another attempt"
+          ]
+        },
+        {
+          "id": "negative-retry-empty-range",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "A negative retry creates an empty 0..retry range and the null response assertion fails"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "2026-01-01T00:00:00Z",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 23,
+    "network_allowed": false,
+    "logical_origin": "http://sourcelab.test"
+  },
+  "limits": {
+    "timeout_ms": 2000,
+    "max_response_bytes": 1048576,
+    "max_request_body_bytes": 0,
+    "max_requests": 32,
+    "max_concurrency": 2
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+      "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
+      "app/src/main/java/io/legado/app/help/http/OkHttpUtils.kt"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-SOURCE-TRANSPORT-RETRY-REDIRECT-RUNTIME-001"
+  }
+}

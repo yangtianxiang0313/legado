@@ -1,0 +1,35 @@
+{
+  "bookSourceUrl": "${SOURCE_LAB_ORIGIN}",
+  "bookSourceName": "SourceLab 重试重定向测试源",
+  "bookSourceGroup": "SourceLab",
+  "bookSourceType": 0,
+  "enabled": true,
+  "enabledExplore": false,
+  "enabledCookieJar": false,
+  "header": "{\"X-Source\":\"retry-redirect\"}",
+  "searchUrl": "${SOURCE_LAB_ORIGIN}/retry/default-failure",
+  "ruleSearch": {
+    "bookList": "@CSS:.book-item",
+    "name": "@CSS:.book-name@text",
+    "author": "@CSS:.book-author@text",
+    "bookUrl": "@CSS:a.book-link@href"
+  },
+  "ruleBookInfo": {
+    "name": "@CSS:h1.book-name@text",
+    "author": "@CSS:.book-author@text",
+    "tocUrl": "@CSS:a.toc-link@href"
+  },
+  "ruleToc": {
+    "chapterList": "@CSS:#chapter-list > li.chapter",
+    "chapterName": "@CSS:a@text",
+    "chapterUrl": "@CSS:a@href"
+  },
+  "ruleContent": {
+    "title": "@CSS:h1.chapter-title@text",
+    "content": "@CSS:#chapter-content@html"
+  },
+  "x-source-lab": {
+    "scenario": "sl-source-transport-retry-redirect-runtime-001",
+    "logicalOrigin": "http://sourcelab.test"
+  }
+}

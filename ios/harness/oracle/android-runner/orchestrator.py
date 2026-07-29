@@ -184,6 +184,29 @@ SCENARIO_CONTRACTS = {
             "redirect-final-url",
         }),
     },
+    "sl-source-transport-retry-redirect-runtime-001": {
+        "status": "candidate",
+        "expected_cases": (
+            ("retry-default-single-failure", "retry_redirect"),
+            ("retry-two-repeated-failure", "retry_redirect"),
+            ("redirect-success-observation", "retry_redirect"),
+            ("redirect-failure-chain-retried", "retry_redirect"),
+            ("helper-eventual-success", "retry_redirect"),
+            ("helper-network-exception-no-retry", "retry_redirect"),
+            ("helper-cancellation-propagates", "retry_redirect"),
+            ("negative-retry-empty-range", "retry_redirect"),
+        ),
+        "nominal_cases": frozenset({
+            "retry-default-single-failure",
+            "retry-two-repeated-failure",
+            "redirect-success-observation",
+            "redirect-failure-chain-retried",
+            "helper-eventual-success",
+            "helper-network-exception-no-retry",
+            "helper-cancellation-propagates",
+            "negative-retry-empty-range",
+        }),
+    },
 }
 ROUTE_OBSERVATION_SCENARIOS = {
     "sl-source-request-header-cookie-retry-layering-001": (
@@ -210,6 +233,14 @@ ROUTE_OBSERVATION_SCENARIOS = {
         "redirect-final-url",
         "redirect-final-target",
         "redirect-loop-denied",
+    ),
+    "sl-source-transport-retry-redirect-runtime-001": (
+        "retry-default-single-failure",
+        "retry-two-repeated-failure",
+        "redirect-success-start",
+        "redirect-success-final",
+        "redirect-failure-start",
+        "redirect-failure-final",
     ),
 }
 ANDROID_PRODUCT_PATHS = (
@@ -277,9 +308,13 @@ def _run(
             Path(argv[0]).name,
         ) from error
     if check and result.returncode != 0:
+        stderr = result.stderr.decode("utf-8", errors="replace").strip()
+        detail = f"{Path(argv[0]).name}:{result.returncode}"
+        if stderr:
+            detail += ":" + stderr[-8_192:]
         raise AndroidOracleRunnerError(
             "COMMAND_FAILED",
-            f"{Path(argv[0]).name}:{result.returncode}",
+            detail,
         )
     return result
 
