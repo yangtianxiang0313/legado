@@ -27,13 +27,17 @@ import sys
 
 sys.path.insert(0, str(HARNESS_ROOT))
 from oracle import ci_proposal, exact_json  # noqa: E402
-from oracle.contract import fixture_digest  # noqa: E402
 
 
 class AndroidGoldenPublisherTests(unittest.TestCase):
     repository = "yangtianxiang0313/legado"
-    run_id = "30355913470/1"
-    source_digest = "d94cdbaafc8f825790d0d8a8011f842aebbafa8b"
+    scenario = "sl-post-form-001"
+    run_id = "30403665320/1"
+    source_digest = "faa7252c34dac546b65c618a52826e6fd42258c5"
+    android_commit = "30bfdf70224ed3006f2777777ff414ebdb3a9eb3"
+    canonicalizer = (
+        "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+    )
 
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
@@ -41,19 +45,41 @@ class AndroidGoldenPublisherTests(unittest.TestCase):
         self.publisher_root = self.root / "repository"
         manifest = self.publisher_root / "ios/harness/goldens/manifest.json"
         manifest.parent.mkdir(parents=True)
+        self.legacy_entry = {
+            "path": (
+                "ios/harness/goldens/android-legado-v1/"
+                "sl-html-basic-001.json"
+            ),
+            "fixture_sha256": "1" * 64,
+            "golden_sha256": "2" * 64,
+            "operation": "source_lab_site",
+            "proposal_sha256": "3" * 64,
+            "proposal_archive_sha256": "4" * 64,
+            "evidence_archive_sha256": "5" * 64,
+            "proposal_attestation_sha256": "6" * 64,
+            "evidence_attestation_sha256": "7" * 64,
+            "source_digest": "d" * 40,
+            "run_id": "30355913470/1",
+            "runner_image_digest": "sha256:" + "8" * 64,
+            "release_receipt": (
+                "ios/harness/goldens/releases/"
+                "sl-html-basic-001-30355913470-1.json"
+            ),
+        }
         manifest.write_text(
             json.dumps(
                 {
                     "schema_version": 1,
                     "oracle": {
-                        "android_git_commit": (
-                            "30bfdf70224ed3006f2777777ff414ebdb3a9eb3"
-                        ),
+                        "android_git_commit": self.android_commit,
                         "profile": publisher.PROFILE,
-                        "runner_digest": None,
+                        "runner_digest": "9" * 64,
+                        "runner_image_digest": "sha256:" + "8" * 64,
                     },
-                    "canonicalizer_sha256": None,
-                    "fixtures": {},
+                    "canonicalizer_sha256": self.canonicalizer,
+                    "fixtures": {
+                        "sl-html-basic-001": self.legacy_entry,
+                    },
                 },
                 ensure_ascii=False,
                 separators=(",", ":"),
@@ -63,14 +89,13 @@ class AndroidGoldenPublisherTests(unittest.TestCase):
         self.payload = ci_proposal._dump(
             {
                 "schema_version": 1,
-                "fixture_id": publisher.FIXTURE_ID,
-                "result": {"title": "本地书源样例"},
+                "fixture_id": self.scenario,
+                "scenario_id": self.scenario,
+                "result": {
+                    "method": "POST",
+                    "body": "keyword=%E6%98%9F%E6%B2%B3",
+                },
             }
-        )
-        fixture_path = (
-            REPOSITORY_ROOT
-            / "ios/harness/fixtures/source-lab"
-            / publisher.FIXTURE_ID
         )
         self.proposal = {
             "schema_version": 1,
@@ -80,22 +105,20 @@ class AndroidGoldenPublisherTests(unittest.TestCase):
             },
             "bindings": {
                 "compatibility_profile": publisher.PROFILE,
-                "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-                "runner_digest": "8" * 64,
-                "runner_image_digest": "sha256:" + "9" * 64,
-                "canonicalizer_config_sha256": "a" * 64,
+                "android_git_commit": self.android_commit,
+                "runner_digest": "a" * 64,
+                "runner_image_digest": "sha256:" + "b" * 64,
+                "canonicalizer_config_sha256": self.canonicalizer,
             },
             "fixtures": [
                 {
-                    "id": publisher.FIXTURE_ID,
+                    "id": self.scenario,
                     "fixture_path": (
                         "ios/harness/fixtures/source-lab/"
-                        f"{publisher.FIXTURE_ID}"
+                        f"{self.scenario}"
                     ),
-                    "fixture_sha256": fixture_digest(fixture_path),
-                    "payload_path": (
-                        f"payloads/{publisher.FIXTURE_ID}.json"
-                    ),
+                    "fixture_sha256": "c" * 64,
+                    "payload_path": f"payloads/{self.scenario}.json",
                     "payload_sha256": self._sha256(self.payload),
                     "operation": "source_lab_site",
                 }
@@ -107,10 +130,7 @@ class AndroidGoldenPublisherTests(unittest.TestCase):
         ci_proposal.deterministic_tar(
             self.proposal_archive,
             {
-                (
-                    "proposal/payloads/"
-                    f"{publisher.FIXTURE_ID}.json"
-                ): self.payload,
+                f"proposal/payloads/{self.scenario}.json": self.payload,
                 "proposal/proposal.json": self.proposal_bytes,
             },
         )
@@ -118,10 +138,7 @@ class AndroidGoldenPublisherTests(unittest.TestCase):
         ci_proposal.deterministic_tar(
             self.evidence_archive,
             {
-                (
-                    "evidence/payloads/"
-                    f"{publisher.FIXTURE_ID}.json"
-                ): self.payload,
+                f"evidence/payloads/{self.scenario}.json": self.payload,
                 "evidence/run.json": b"{}",
                 "evidence/runner-environment.json": b"{}",
             },
@@ -137,61 +154,102 @@ class AndroidGoldenPublisherTests(unittest.TestCase):
     def tearDown(self):
         self.temporary.cleanup()
 
-    def test_prepare_is_deterministic_staging_only_and_fully_bound(self):
+    def test_prepare_is_deterministic_scenario_aware_and_migrates_v1(self):
         before = self._repository_status()
         first = self._prepare(self.root / "first")
         second = self._prepare(self.root / "second")
-        after = self._repository_status()
-        self.assertEqual(before, after)
+        self.assertEqual(before, self._repository_status())
         self.assertEqual(first, second)
+        self.assertEqual(
+            self._files(self.root / "first"),
+            self._files(self.root / "second"),
+        )
 
-        first_files = self._files(self.root / "first")
-        second_files = self._files(self.root / "second")
-        self.assertEqual(first_files, second_files)
+        files = self._files(self.root / "first")
         self.assertEqual(
             self.payload,
-            first_files[
-                f"android-legado-v1/{publisher.FIXTURE_ID}.json"
-            ],
+            files[f"{publisher.PROFILE}/{self.scenario}.json"],
         )
-        manifest = exact_json.loads(first_files["manifest.json"])
-        entry = manifest["fixtures"][publisher.FIXTURE_ID]
-        self.assertEqual(self.run_id, entry["run_id"])
+        manifest = exact_json.loads(files["manifest.json"])
+        self.assertEqual("2", manifest["schema_version"].token)
+        self.assertNotIn("runner_digest", manifest["oracle"])
+        legacy = manifest["fixtures"]["sl-html-basic-001"]
+        self.assertEqual("9" * 64, legacy["runner_digest"])
         self.assertEqual(
-            self.source_digest,
-            entry["source_digest"],
+            "github_environment_review",
+            legacy["authorization"],
+        )
+        entry = manifest["fixtures"][self.scenario]
+        self.assertEqual("a" * 64, entry["runner_digest"])
+        self.assertEqual(
+            publisher.AUTHORIZATION,
+            entry["authorization"],
         )
         self.assertEqual(
-            self.proposal_sha256,
-            entry["proposal_sha256"],
-        )
-        self.assertEqual(
-            "sha256:" + "9" * 64,
-            entry["runner_image_digest"],
+            self.canonicalizer,
+            entry["canonicalizer_sha256"],
         )
         receipt = exact_json.loads(
-            first_files[
+            files[
                 "releases/"
-                f"{publisher.FIXTURE_ID}-30355913470-1.json"
+                f"{self.scenario}-30403665320-1.json"
             ]
         )
+        self.assertEqual("2", receipt["schema_version"].token)
         self.assertEqual(
             "protected_android_golden",
             receipt["authority"],
         )
         self.assertEqual(
-            "github_environment_review",
+            publisher.AUTHORIZATION,
             receipt["authorization"],
         )
+        self.assertEqual("a" * 64, receipt["controls"]["runner_digest"])
+
+    def test_prepare_passes_scenario_to_trusted_import_and_members(self):
+        fake_verify = mock.Mock(
+            return_value=self._trusted_report()
+        )
+        fake_trusted_import = SimpleNamespace(verify=fake_verify)
+        oracle_root = self.root / "historical-oracle-source"
+        oracle_root.mkdir()
+        with mock.patch.object(
+            publisher,
+            "_oracle_modules",
+            return_value=(
+                ci_proposal,
+                fake_trusted_import,
+                exact_json,
+            ),
+        ):
+            publisher.prepare(
+                self.publisher_root,
+                oracle_root=oracle_root,
+                scenario_id=self.scenario,
+                proposal_archive=self.proposal_archive,
+                proposal_attestation_bundle=self.proposal_bundle,
+                evidence_archive=self.evidence_archive,
+                evidence_attestation_bundle=self.evidence_bundle,
+                repository=self.repository,
+                gh=self.gh,
+                authorized_run_id=self.run_id,
+                authorized_source_digest=self.source_digest,
+                authorized_proposal_sha256=self.proposal_sha256,
+                output_dir=self.root / "scenario",
+            )
         self.assertEqual(
-            "candidate_only",
-            receipt["previous_authority"],
+            self.scenario,
+            fake_verify.call_args.kwargs["scenario_id"],
+        )
+        self.assertEqual(
+            oracle_root.resolve(),
+            fake_verify.call_args.args[0],
         )
 
-    def test_prepare_rejects_authorization_binding_drift(self):
+    def test_prepare_rejects_authorization_and_fixture_drift(self):
         cases = (
             {
-                "authorized_run_id": "30355913471/1",
+                "authorized_run_id": "30403665321/1",
                 "reason": "PROPOSAL_AUTHORIZATION_DRIFT",
             },
             {
@@ -202,24 +260,25 @@ class AndroidGoldenPublisherTests(unittest.TestCase):
                 "authorized_proposal_sha256": "f" * 64,
                 "reason": "TRUSTED_IMPORT_BINDING_DRIFT",
             },
+            {
+                "scenario_id": "sl-other-001",
+                "reason": "TRUSTED_IMPORT_BINDING_DRIFT",
+            },
         )
         for index, case in enumerate(cases):
-            reason = case.pop("reason")
+            values = dict(case)
+            reason = values.pop("reason")
             with self.subTest(reason=reason), self.assertRaisesRegex(
                 publisher.GoldenPublisherError,
                 reason,
             ):
                 self._prepare(
                     self.root / f"drift-{index}",
-                    **case,
+                    **values,
                 )
 
-    def test_prepare_rejects_every_repository_output_path(self):
-        forbidden = (
-            self.publisher_root
-            / ".publisher-forbidden"
-        )
-        self.assertFalse(forbidden.exists())
+    def test_prepare_rejects_repository_output_and_baseline_drift(self):
+        forbidden = self.publisher_root / ".publisher-forbidden"
         with self.assertRaisesRegex(
             publisher.GoldenPublisherError,
             "OUTPUT_INSIDE_REPOSITORY",
@@ -227,20 +286,42 @@ class AndroidGoldenPublisherTests(unittest.TestCase):
             self._prepare(forbidden)
         self.assertFalse(forbidden.exists())
 
-    def test_prepare_rejects_already_published_fixture(self):
-        live_manifest = (
-            REPOSITORY_ROOT / "ios/harness/goldens/manifest.json"
-        )
-        shutil.copyfile(
-            live_manifest,
-            self.publisher_root / "ios/harness/goldens/manifest.json",
-        )
-
+        self.proposal["bindings"][
+            "canonicalizer_config_sha256"
+        ] = "e" * 64
+        self._refresh_proposal()
         with self.assertRaisesRegex(
             publisher.GoldenPublisherError,
-            "GOLDEN_ALREADY_PUBLISHED",
+            "EXISTING_GOLDEN_BASELINE_DRIFT",
         ):
-            self._prepare(self.root / "published")
+            self._prepare(self.root / "baseline-drift")
+
+    def test_prepare_is_idempotent_only_for_exact_published_bytes(self):
+        output = self.root / "initial"
+        first = self._prepare(output)
+        self._install(output)
+        replay_output = self.root / "replay"
+        replay = self._prepare(replay_output)
+        self.assertEqual("already_published", replay["status"])
+        self.assertEqual([], replay["files"])
+        self.assertFalse(replay_output.exists())
+        self.assertEqual(
+            first["manifest_sha256"],
+            replay["manifest_sha256"],
+        )
+
+        golden = (
+            self.publisher_root
+            / "ios/harness/goldens"
+            / publisher.PROFILE
+            / f"{self.scenario}.json"
+        )
+        golden.write_bytes(b"conflict")
+        with self.assertRaisesRegex(
+            publisher.GoldenPublisherError,
+            "GOLDEN_ALREADY_PUBLISHED_CONFLICT",
+        ):
+            self._prepare(self.root / "conflict")
 
     def test_prepare_accepts_a_symlinked_gh_executable(self):
         linked = self.root / "linked-gh"
@@ -254,68 +335,56 @@ class AndroidGoldenPublisherTests(unittest.TestCase):
             report["status"],
         )
 
-    def test_workflow_is_manual_protected_pinned_and_pr_only(self):
+    def test_workflow_is_push_only_scenario_bound_and_has_no_gate(self):
         workflow = (
             REPOSITORY_ROOT
             / ".github/workflows/android-golden-publisher.yml"
         ).read_text(encoding="utf-8")
-        self.assertIn("workflow_dispatch:", workflow)
-        self.assertIn(
-            "environment: android-golden-publisher",
-            workflow,
-        )
+        self.assertIn("push:", workflow)
+        self.assertIn("feature/golden-**", workflow)
+        self.assertNotIn("workflow_dispatch:", workflow)
+        self.assertNotIn("environment:", workflow)
+        self.assertNotIn("pull-requests:", workflow)
+        self.assertNotIn("gh pr create", workflow)
         self.assertIn("actions: read", workflow)
         self.assertIn("attestations: read", workflow)
         self.assertIn("contents: write", workflow)
-        self.assertIn("pull-requests: write", workflow)
-        self.assertNotIn("pull_request_target", workflow)
-        self.assertNotIn("secrets.", workflow)
-        self.assertNotIn("permissions: write-all", workflow)
+        self.assertIn("--scenario", workflow)
+        self.assertIn("--root publisher", workflow)
+        self.assertIn("--oracle-root source", workflow)
+        self.assertIn("verified_candidate", workflow)
+        self.assertIn("golden/result-", workflow)
+        self.assertIn("publisher-result.json", workflow)
+        self.assertIn(
+            "android-golden-result-",
+            workflow,
+        )
         self.assertIn(
             "actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
             workflow,
         )
         self.assertIn(
-            "TARGET_BRANCH: feature/ios-ai-harness-bootstrap",
-            workflow,
-        )
-        self.assertIn(
-            'AUTHORIZED_ACTOR_ID: "35530717"',
-            workflow,
-        )
-        self.assertIn(
-            "android_golden_publisher.py",
-            workflow,
-        )
-        self.assertIn(
-            'gh run download "${ORACLE_RUN_ID}"',
-            workflow,
-        )
-        self.assertIn(
-            "shasum -a 256 -c SHA256SUMS",
-            workflow,
-        )
-        self.assertIn(
-            'gh pr create \\\n',
-            workflow,
-        )
-        self.assertNotIn(
-            'git -C publisher push origin "${TARGET_BRANCH}"',
+            "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
             workflow,
         )
 
-    def _prepare(self, output_dir, **overrides):
-        trusted_report = {
+    def _trusted_report(self):
+        return {
             "authority": "candidate_only",
             "status": "verified_for_human_review",
             "next_authority": "independent_golden_publisher",
             "source_digest": self.source_digest,
             "proposal_sha256": self.proposal_sha256,
+            "scenario_id": self.scenario,
+            "fixture_ids": [self.scenario],
         }
+
+    def _prepare(self, output_dir, **overrides):
         fake_trusted_import = SimpleNamespace(
-            verify=mock.Mock(return_value=trusted_report)
+            verify=mock.Mock(return_value=self._trusted_report())
         )
         arguments = {
+            "scenario_id": self.scenario,
             "proposal_archive": self.proposal_archive,
             "proposal_attestation_bundle": self.proposal_bundle,
             "evidence_archive": self.evidence_archive,
@@ -341,6 +410,31 @@ class AndroidGoldenPublisherTests(unittest.TestCase):
                 self.publisher_root,
                 **arguments,
             )
+
+    def _refresh_proposal(self):
+        self.proposal_bytes = ci_proposal._dump(self.proposal)
+        self.proposal_sha256 = self._sha256(self.proposal_bytes)
+        self.proposal_archive.unlink()
+        ci_proposal.deterministic_tar(
+            self.proposal_archive,
+            {
+                f"proposal/payloads/{self.scenario}.json": self.payload,
+                "proposal/proposal.json": self.proposal_bytes,
+            },
+        )
+
+    def _install(self, output):
+        golden_root = self.publisher_root / "ios/harness/goldens"
+        for path in output.rglob("*"):
+            if path.is_file():
+                relative = path.relative_to(output)
+                destination = (
+                    golden_root / relative
+                    if relative.as_posix() != "manifest.json"
+                    else golden_root / "manifest.json"
+                )
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(path, destination)
 
     @staticmethod
     def _sha256(payload):

@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "run_id": "run-20260729T002056Z-ios-github-golden-publisher-automation-001-28d6507d",
+  "work_item_id": "IOS-GITHUB-GOLDEN-PUBLISHER-AUTOMATION-001",
+  "work_item_sha256": "abaa3283f49cf78167c69f8583d1dc222ac9eb2e0bf75bb54aeb7e1bb6c54069",
+  "result": "passed",
+  "inputs": {
+    "base_commit": "2a23570f4d48eaedf5b21605caf8377786bc3cb1",
+    "head_commit": "2a23570f4d48eaedf5b21605caf8377786bc3cb1",
+    "snapshot_sha256": "6fe821d36a919da9c2ce79dd62b3c141827c5611ea08bd0c94d250a78706334d",
+    "baseline_sha256": "eeeaf0017b79a2420faf73c686a110a2d0372b2da865e42aa8db360fd3015e93",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
+    "architecture_rules_sha256": "51ebc4cff5921643f95d8a045c21ea85cad046acb99ed56026f77bf842642fa5",
+    "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+    "golden_manifest_sha256": "13364dacf63643ebc9a0c48ca50d4937da85610a8975191ec1b86d8b80621f57",
+    "fixture_manifest_sha256": "76b8ba91dfca774e1fd548280a927dd383b7efadabed81704dcba408b6874243",
+    "dependency_lock_sha256": null,
+    "source_lab_control_sha256": "07735447b310c1cbaeb361851520bde93087b801a13995078674ed03564cb2fa",
+    "android_intake_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122",
+    "business_knowledge_control_sha256": "fe12e0037e5105f470f6a4f7c774ec66041d2051f856f8590b9d71b7990d2fee",
+    "business_knowledge_authority_sha256": "9a898622fab665e380b0fdb7837d6aa24f938f5c87e4bc635c32fbdf4dfe81c8",
+    "business_knowledge_coverage_sha256": "8cd21f8c89530ad6b94a2a6f35c5f671b052ec180f93a365f0c9c0cfa4357961",
+    "business_knowledge_proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
+    "android_requirement_selection_sha256": null,
+    "source_lab_selection_sha256": null,
+    "knowledge_selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "environment": {
+      "platform": "macOS-26.4.1-arm64-arm-64bit",
+      "python": "3.9.6",
+      "xcode": "Xcode 26.0\nBuild version 17A324",
+      "swift": "Apple Swift version 6.2 (swiftlang-6.2.0.19.9 clang-1700.3.19.1)\nTarget: arm64-apple-macosx26.0"
+    }
+  },
+  "changes": {
+    "paths": [
+      ".github/workflows/android-golden-publisher.yml",
+      "ios/harness/tests/test_android_golden_publisher.py",
+      "ios/publisher/README.md",
+      "ios/publisher/android_golden_publisher.py"
+    ],
+    "changed_lines_approximate": 1079,
+    "file_fingerprints": {
+      ".github/workflows/android-golden-publisher.yml": "file:0o644:fff2d174af641cd9adc0ff373c915b07ebd8d7c1e0278c95c58cc477f797bc5f",
+      "ios/harness/tests/test_android_golden_publisher.py": "file:0o644:6dc5c8ec6dab9bd2d71624b83b84eee4bbe293a9b5ab0bf5fcd8450448e566b4",
+      "ios/publisher/README.md": "file:0o644:a57b475ec6509c83c324c78b6fe3aabcf9d6e7de127699788867c1a1925e556c",
+      "ios/publisher/android_golden_publisher.py": "file:0o644:82931406165ffa3dcdfa334adec1c75557af1a6fa6e956619ab1e36374092e14"
+    },
+    "dirty_snapshot": {
+      ".github/workflows/android-golden-publisher.yml": "file:0o644:fff2d174af641cd9adc0ff373c915b07ebd8d7c1e0278c95c58cc477f797bc5f",
+      "ios/harness/tests/test_android_golden_publisher.py": "file:0o644:6dc5c8ec6dab9bd2d71624b83b84eee4bbe293a9b5ab0bf5fcd8450448e566b4",
+      "ios/project/events.jsonl": "file:0o644:0dacca784c28c40be6501745e43239482abd9ed28bfbc711ed12329e81f11949",
+      "ios/project/state.json": "file:0o644:26551afc94cf607a3804cbbacbef330e9789cecc5b9efc1f1954432d946a1fd4",
+      "ios/project/status.md": "file:0o644:36c7c4a7906cfa22a043f5037e8adbb38fe87dcc72ed0ad6d08fb2225a928b4f",
+      "ios/publisher/README.md": "file:0o644:a57b475ec6509c83c324c78b6fe3aabcf9d6e7de127699788867c1a1925e556c",
+      "ios/publisher/android_golden_publisher.py": "file:0o644:82931406165ffa3dcdfa334adec1c75557af1a6fa6e956619ab1e36374092e14"
+    },
+    "diff_sha256": "3a184c1b57c425edfd9e0293b8b61fd459dc7aa5db1aab5e597172f2ba1982a5"
+  },
+  "policy_errors": [],
+  "architecture_errors": [],
+  "architecture_warnings": [],
+  "checks": [
+    {
+      "id": "dependency-policy",
+      "argv": [
+        "python3",
+        "ios/harness/probes/dependency_contract.py",
+        "--root",
+        "."
+      ],
+      "executable_path": "/usr/bin/python3",
+      "definition_sha256": "eca96cb1b69567829ed8396386b0449da8c0d6e7295a00f1decfb60430ff1153",
+      "cwd": ".",
+      "started_at": "2026-07-29T00:18:38Z",
+      "duration_ms": 693,
+      "timeout_seconds": 90,
+      "timed_out": false,
+      "process_leak": false,
+      "cleanup_error": null,
+      "exit_code": 0,
+      "passed": true,
+      "stdout_sha256": "17595a1d68cdc5b52c010f46dff48514afa3fa3cf0215cdea7ae8eff38677c0a",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_tail": "DEPENDENCY_CONTRACT: OK\n",
+      "stderr_tail": ""
+    },
+    {
+      "id": "harness-tests",
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "ios/harness/tests",
+        "-p",
+        "test_*.py"
+      ],
+      "executable_path": "/usr/bin/python3",
+      "definition_sha256": "244d512cbdd15fe0c5e35e6d9676510c943b19e9437987c24ac6e627a2e7ad94",
+      "cwd": ".",
+      "started_at": "2026-07-29T00:18:39Z",
+      "duration_ms": 136539,
+      "timeout_seconds": 180,
+      "timed_out": false,
+      "process_leak": false,
+      "cleanup_error": null,
+      "exit_code": 0,
+      "passed": true,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "18324db5499a6d4fb1e9d43795ca8cbce9e7f6b70a277f9549d250a1ef51d474",
+      "stdout_tail": "",
+      "stderr_tail": ".................................................................................................................................................................................................................................................................................\n----------------------------------------------------------------------\nRan 273 tests in 136.356s\n\nOK\n"
+    }
+  ],
+  "failure": null,
+  "started_at": "2026-07-29T00:18:37Z",
+  "finished_at": "2026-07-29T00:20:57Z",
+  "reproduction": "python3 ios/harness/harness.py verify IOS-GITHUB-GOLDEN-PUBLISHER-AUTOMATION-001"
+}

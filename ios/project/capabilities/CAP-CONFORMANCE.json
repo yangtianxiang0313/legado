@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-CONFORMANCE",
-  "revision": 23,
+  "revision": 24,
   "title": "离线 Fixture 与双端执行 Envelope",
   "area": "conformance",
   "contract": "ios/docs/testing-and-conformance.md",
@@ -16,16 +16,16 @@
   "depends_on": ["CAP-BOOTSTRAP", "CAP-CORE"],
   "active_decisions": ["ADR-0002", "ADR-0004"],
   "open_compatibility": [],
-  "open_pitfalls": ["PIT-0003", "PIT-0006", "PIT-0061", "PIT-0063", "PIT-0065"],
+  "open_pitfalls": ["PIT-0003", "PIT-0006", "PIT-0061", "PIT-0063", "PIT-0065", "PIT-0066"],
   "blockers": [],
   "required_evidence": ["android-intake-contract", "dependency-policy", "source-lab-contract", "source-lab-tests", "source-lab-smoke", "swift-package-tests", "architecture"],
   "freshness_inputs": ["baseline_sha256", "architecture_digest_sha256", "architecture_rules_sha256", "harness_config_sha256", "dependency_lock_sha256", "source_lab_control_sha256", "source_lab_selection_sha256", "android_intake_control_sha256", "android_requirement_selection_sha256"],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260728T235214Z-ios-github-golden-publisher-owner-001-4318fb2e.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260729T002056Z-ios-github-golden-publisher-automation-001-28d6507d.json",
   "next_actions": [
-    "登记 GitHub Golden Publisher Dispatcher 与结果回收控制面的精确 owner",
-    "将 Publisher 改为 scenario-aware、per-fixture control binding 与 create-only branch push，无 Environment/PR/人工 Gate",
-    "验证外部结果 commit 与 workflow artifact 后快进本地分支，并续接 SourceRuntime Package 与模拟器 UI 验收"
+    "实现并接线 GitHubGoldenPublisherDispatcher，验证 result artifact/commit 后受限 fast-forward",
+    "在当前 request SHA 上创建 sl-post-form-001 Golden request branch，运行真实 Publisher workflow",
+    "发布并回收 protected Golden 后续接 SourceRuntime Package 与模拟器 UI 验收"
   ],
-  "updated_at": "2026-07-28T23:52:14Z",
-  "updated_by": "IOS-GITHUB-GOLDEN-PUBLISHER-OWNER-001"
+  "updated_at": "2026-07-29T00:20:56Z",
+  "updated_by": "IOS-GITHUB-GOLDEN-PUBLISHER-AUTOMATION-001"
 }

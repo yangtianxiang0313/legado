@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stage a verified Android Oracle candidate for an external Golden publisher."""
+"""Stage an attested Android Oracle candidate as a deterministic Golden release."""
 
 from __future__ import annotations
 
@@ -11,17 +11,18 @@ import re
 import sys
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Mapping, Tuple
 
 
 COMMANDS = ("prepare",)
-FIXTURE_ID = "sl-html-basic-001"
 PROFILE = "android-legado-v1"
-PUBLISHER_ID = "github-actions-environment:android-golden-publisher"
+PUBLISHER_ID = "github-actions:android-golden-publisher-v2"
+AUTHORIZATION = "github_actions_push_v2"
 HEX40 = re.compile(r"[0-9a-f]{40}\Z")
 HEX64 = re.compile(r"[0-9a-f]{64}\Z")
 RUN_ID = re.compile(r"[1-9][0-9]*/[1-9][0-9]*\Z")
 REPOSITORY = re.compile(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+\Z")
+SCENARIO = re.compile(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\Z")
 
 
 class GoldenPublisherError(RuntimeError):
@@ -93,7 +94,7 @@ def _external_empty_directory(root: Path, path: Path) -> Path:
             "OUTPUT_INSIDE_REPOSITORY",
             candidate.as_posix(),
         )
-    if candidate.exists():
+    if candidate.exists() or candidate.is_symlink():
         raise GoldenPublisherError(
             "OUTPUT_ALREADY_EXISTS",
             candidate.as_posix(),
@@ -138,8 +139,7 @@ def _oracle_modules(root: Path) -> Tuple[Any, Any, Any]:
     if harness_text not in sys.path:
         sys.path.insert(0, harness_text)
     try:
-        from oracle import ci_proposal, trusted_import
-        from oracle import exact_json
+        from oracle import ci_proposal, exact_json, trusted_import
     except ImportError as error:
         raise GoldenPublisherError("ORACLE_IMPORT_FAILED") from error
     return ci_proposal, trusted_import, exact_json
@@ -157,9 +157,107 @@ def _string(value: Any, label: str) -> str:
     return value
 
 
+def _scenario(value: str) -> str:
+    if not isinstance(value, str) or SCENARIO.fullmatch(value) is None:
+        raise GoldenPublisherError("SCENARIO_SELECTOR_INVALID")
+    return value
+
+
+def _migrate_manifest(
+    manifest: Mapping[str, Any],
+) -> tuple[Dict[str, Any], Dict[str, Any]]:
+    schema_node = manifest.get("schema_version")
+    schema_version = str(
+        getattr(schema_node, "token", schema_node or "")
+    )
+    if schema_version not in {"1", "2"}:
+        raise GoldenPublisherError("GOLDEN_MANIFEST_SCHEMA_INVALID")
+    oracle = _object(manifest.get("oracle"), "golden manifest oracle")
+    fixtures = _object(
+        manifest.get("fixtures"),
+        "golden manifest fixtures",
+    )
+    android_commit = _string(
+        oracle.get("android_git_commit"),
+        "golden manifest oracle android_git_commit",
+    )
+    profile = _string(
+        oracle.get("profile"),
+        "golden manifest oracle profile",
+    )
+    canonicalizer = _string(
+        manifest.get("canonicalizer_sha256"),
+        "golden manifest canonicalizer_sha256",
+    )
+    if (
+        HEX40.fullmatch(android_commit) is None
+        or HEX64.fullmatch(canonicalizer) is None
+    ):
+        raise GoldenPublisherError("GOLDEN_MANIFEST_CONTROL_INVALID")
+    migrated: Dict[str, Any] = {}
+    for fixture_id in sorted(fixtures):
+        entry = dict(_object(fixtures[fixture_id], fixture_id))
+        if schema_version == "1":
+            entry.setdefault("android_git_commit", android_commit)
+            entry.setdefault("profile", profile)
+            entry.setdefault(
+                "runner_digest",
+                oracle.get("runner_digest"),
+            )
+            entry.setdefault(
+                "runner_image_digest",
+                oracle.get("runner_image_digest"),
+            )
+            entry.setdefault(
+                "canonicalizer_sha256",
+                canonicalizer,
+            )
+            entry.setdefault(
+                "authorization",
+                "github_environment_review",
+            )
+        required = {
+            "android_git_commit": HEX40,
+            "runner_digest": HEX64,
+            "canonicalizer_sha256": HEX64,
+        }
+        if any(
+            pattern.fullmatch(str(entry.get(field, ""))) is None
+            for field, pattern in required.items()
+        ):
+            raise GoldenPublisherError(
+                "GOLDEN_MANIFEST_FIXTURE_CONTROL_INVALID",
+                fixture_id,
+            )
+        for field in (
+            "profile",
+            "runner_image_digest",
+            "authorization",
+        ):
+            _string(entry.get(field), f"{fixture_id}.{field}")
+        if (
+            entry["android_git_commit"] != android_commit
+            or entry["profile"] != profile
+            or entry["canonicalizer_sha256"] != canonicalizer
+        ):
+            raise GoldenPublisherError(
+                "GOLDEN_MANIFEST_BASELINE_DRIFT",
+                fixture_id,
+            )
+        migrated[fixture_id] = entry
+    controls = {
+        "android_git_commit": android_commit,
+        "profile": profile,
+        "canonicalizer_sha256": canonicalizer,
+    }
+    return migrated, controls
+
+
 def prepare(
     root: Path,
     *,
+    oracle_root: Path | None = None,
+    scenario_id: str,
     proposal_archive: Path,
     proposal_attestation_bundle: Path,
     evidence_archive: Path,
@@ -172,6 +270,12 @@ def prepare(
     output_dir: Path,
 ) -> Dict[str, Any]:
     root = root.resolve(strict=True)
+    oracle_root = (
+        root
+        if oracle_root is None
+        else oracle_root.resolve(strict=True)
+    )
+    scenario_id = _scenario(scenario_id)
     if REPOSITORY.fullmatch(repository) is None:
         raise GoldenPublisherError("REPOSITORY_INVALID")
     if RUN_ID.fullmatch(authorized_run_id) is None:
@@ -189,16 +293,19 @@ def prepare(
     evidence_attestation_bundle = _safe_regular(
         evidence_attestation_bundle
     )
-    ci_proposal, trusted_import, exact_json = _oracle_modules(root)
+    ci_proposal, trusted_import, exact_json = _oracle_modules(
+        oracle_root
+    )
 
     trusted_report = trusted_import.verify(
-        root,
+        oracle_root,
         proposal_archive=proposal_archive,
         proposal_attestation_bundle=proposal_attestation_bundle,
         evidence_archive=evidence_archive,
         evidence_attestation_bundle=evidence_attestation_bundle,
         repository=repository,
         gh=gh,
+        scenario_id=scenario_id,
     )
     if (
         trusted_report.get("authority") != "candidate_only"
@@ -209,20 +316,22 @@ def prepare(
         != authorized_source_digest
         or trusted_report.get("proposal_sha256")
         != authorized_proposal_sha256
+        or trusted_report.get("scenario_id") != scenario_id
+        or trusted_report.get("fixture_ids") != [scenario_id]
     ):
         raise GoldenPublisherError("TRUSTED_IMPORT_BINDING_DRIFT")
 
     proposal_members = ci_proposal.read_deterministic_tar(
         proposal_archive,
-        ci_proposal.EXPECTED_PROPOSAL_MEMBERS,
+        ci_proposal.expected_proposal_members(scenario_id),
     )
     evidence_members = ci_proposal.read_deterministic_tar(
         evidence_archive,
-        ci_proposal.EXPECTED_EVIDENCE_MEMBERS,
+        ci_proposal.expected_evidence_members(scenario_id),
     )
     proposal_bytes = proposal_members["proposal/proposal.json"]
-    payload_name = f"proposal/payloads/{FIXTURE_ID}.json"
-    evidence_payload_name = f"evidence/payloads/{FIXTURE_ID}.json"
+    payload_name = f"proposal/payloads/{scenario_id}.json"
+    evidence_payload_name = f"evidence/payloads/{scenario_id}.json"
     payload_bytes = proposal_members[payload_name]
     if payload_bytes != evidence_members[evidence_payload_name]:
         raise GoldenPublisherError("EVIDENCE_PROPOSAL_PAYLOAD_DRIFT")
@@ -240,7 +349,8 @@ def prepare(
         or producer.get("run_id") != authorized_run_id
         or not isinstance(fixtures, list)
         or len(fixtures) != 1
-        or fixtures[0].get("id") != FIXTURE_ID
+        or not isinstance(fixtures[0], dict)
+        or fixtures[0].get("id") != scenario_id
         or fixtures[0].get("payload_sha256") != _sha256(payload_bytes)
         or trusted_report.get("proposal_sha256")
         != _sha256(proposal_bytes)
@@ -250,9 +360,9 @@ def prepare(
     if (
         bindings.get("compatibility_profile") != PROFILE
         or fixture.get("fixture_path")
-        != "ios/harness/fixtures/source-lab/sl-html-basic-001"
+        != f"ios/harness/fixtures/source-lab/{scenario_id}"
         or fixture.get("payload_path")
-        != f"payloads/{FIXTURE_ID}.json"
+        != f"payloads/{scenario_id}.json"
     ):
         raise GoldenPublisherError("GOLDEN_FIXTURE_BINDING_DRIFT")
 
@@ -261,29 +371,20 @@ def prepare(
         exact_json.loads(_safe_regular(manifest_path).read_bytes()),
         "golden manifest",
     )
-    current_fixtures = _object(
-        current_manifest.get("fixtures"),
-        "golden manifest fixtures",
-    )
-    if FIXTURE_ID in current_fixtures:
-        raise GoldenPublisherError("GOLDEN_ALREADY_PUBLISHED")
-    if current_fixtures:
-        current_oracle = _object(
-            current_manifest.get("oracle"),
-            "golden manifest oracle",
-        )
-        if (
-            current_oracle.get("android_git_commit")
-            != bindings.get("android_git_commit")
-            or current_oracle.get("profile") != PROFILE
-            or current_oracle.get("runner_digest")
-            != bindings.get("runner_digest")
-            or current_manifest.get("canonicalizer_sha256")
-            != bindings.get("canonicalizer_config_sha256")
-        ):
-            raise GoldenPublisherError(
-                "EXISTING_GOLDEN_CONTROL_DRIFT"
-            )
+    current_fixtures, controls = _migrate_manifest(current_manifest)
+    expected_controls = {
+        "android_git_commit": _string(
+            bindings.get("android_git_commit"),
+            "android_git_commit",
+        ),
+        "profile": PROFILE,
+        "canonicalizer_sha256": _string(
+            bindings.get("canonicalizer_config_sha256"),
+            "canonicalizer_config_sha256",
+        ),
+    }
+    if controls != expected_controls:
+        raise GoldenPublisherError("EXISTING_GOLDEN_BASELINE_DRIFT")
 
     proposal_archive_sha256 = _sha256(proposal_archive.read_bytes())
     evidence_archive_sha256 = _sha256(evidence_archive.read_bytes())
@@ -294,12 +395,10 @@ def prepare(
         evidence_attestation_bundle.read_bytes()
     )
     golden_sha256 = _sha256(payload_bytes)
-    golden_relative = (
-        f"android-legado-v1/{FIXTURE_ID}.json"
-    )
+    golden_relative = f"{PROFILE}/{scenario_id}.json"
     release_relative = (
         "releases/"
-        f"{FIXTURE_ID}-{authorized_run_id.replace('/', '-')}.json"
+        f"{scenario_id}-{authorized_run_id.replace('/', '-')}.json"
     )
     published_entry = {
         "path": f"ios/harness/goldens/{golden_relative}",
@@ -316,49 +415,31 @@ def prepare(
         "evidence_attestation_sha256": evidence_attestation_sha256,
         "source_digest": authorized_source_digest,
         "run_id": authorized_run_id,
+        "android_git_commit": expected_controls["android_git_commit"],
+        "profile": PROFILE,
+        "runner_digest": _string(
+            bindings.get("runner_digest"),
+            "runner_digest",
+        ),
         "runner_image_digest": _string(
             bindings.get("runner_image_digest"),
             "runner_image_digest",
         ),
+        "canonicalizer_sha256": expected_controls[
+            "canonicalizer_sha256"
+        ],
+        "authorization": AUTHORIZATION,
         "release_receipt": (
             f"ios/harness/goldens/{release_relative}"
         ),
     }
-    next_fixtures = dict(current_fixtures)
-    next_fixtures[FIXTURE_ID] = published_entry
-    manifest = {
-        "schema_version": 1,
-        "oracle": {
-            "android_git_commit": _string(
-                bindings.get("android_git_commit"),
-                "android_git_commit",
-            ),
-            "profile": PROFILE,
-            "runner_digest": _string(
-                bindings.get("runner_digest"),
-                "runner_digest",
-            ),
-            "runner_image_digest": _string(
-                bindings.get("runner_image_digest"),
-                "runner_image_digest",
-            ),
-        },
-        "canonicalizer_sha256": _string(
-            bindings.get("canonicalizer_config_sha256"),
-            "canonicalizer_config_sha256",
-        ),
-        "fixtures": {
-            key: next_fixtures[key]
-            for key in sorted(next_fixtures)
-        },
-    }
     receipt = {
-        "schema_version": 1,
+        "schema_version": 2,
         "kind": "android_golden_release",
         "authority": "protected_android_golden",
         "publisher": PUBLISHER_ID,
         "repository": repository,
-        "fixture_id": FIXTURE_ID,
+        "fixture_id": scenario_id,
         "run_id": authorized_run_id,
         "source_digest": authorized_source_digest,
         "proposal_sha256": authorized_proposal_sha256,
@@ -371,20 +452,84 @@ def prepare(
             f"ios/harness/goldens/{golden_relative}"
         ),
         "previous_authority": "candidate_only",
-        "authorization": "github_environment_review",
+        "authorization": AUTHORIZATION,
+        "controls": {
+            "android_git_commit": expected_controls[
+                "android_git_commit"
+            ],
+            "profile": PROFILE,
+            "runner_digest": published_entry["runner_digest"],
+            "runner_image_digest": published_entry[
+                "runner_image_digest"
+            ],
+            "canonicalizer_sha256": expected_controls[
+                "canonicalizer_sha256"
+            ],
+        },
     }
-
-    output = _external_empty_directory(root, output_dir)
+    manifest = {
+        "schema_version": 2,
+        "oracle": {
+            "android_git_commit": expected_controls[
+                "android_git_commit"
+            ],
+            "profile": PROFILE,
+        },
+        "canonicalizer_sha256": expected_controls[
+            "canonicalizer_sha256"
+        ],
+        "fixtures": {
+            key: (
+                published_entry
+                if key == scenario_id
+                else current_fixtures[key]
+            )
+            for key in sorted({*current_fixtures, scenario_id})
+        },
+    }
     manifest_bytes = _canonical_bytes(exact_json, manifest)
     receipt_bytes = _canonical_bytes(exact_json, receipt)
+
+    existing = current_fixtures.get(scenario_id)
+    if existing is not None:
+        golden_path = root / published_entry["path"]
+        receipt_path = root / published_entry["release_receipt"]
+        try:
+            exact_replay = (
+                existing == published_entry
+                and _safe_regular(golden_path).read_bytes()
+                == payload_bytes
+                and _safe_regular(receipt_path).read_bytes()
+                == receipt_bytes
+                and _safe_regular(manifest_path).read_bytes()
+                == manifest_bytes
+            )
+        except GoldenPublisherError:
+            exact_replay = False
+        if not exact_replay:
+            raise GoldenPublisherError("GOLDEN_ALREADY_PUBLISHED_CONFLICT")
+        return {
+            "schema_version": 2,
+            "status": "already_published",
+            "authority": "protected_android_golden",
+            "fixture_id": scenario_id,
+            "run_id": authorized_run_id,
+            "source_digest": authorized_source_digest,
+            "golden_sha256": golden_sha256,
+            "manifest_sha256": _sha256(manifest_bytes),
+            "release_receipt_sha256": _sha256(receipt_bytes),
+            "files": [],
+        }
+
+    output = _external_empty_directory(root, output_dir)
     _private_write(output / "manifest.json", manifest_bytes)
     _private_write(output / golden_relative, payload_bytes)
     _private_write(output / release_relative, receipt_bytes)
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "status": "staged_for_external_publisher",
         "authority": "protected_android_golden",
-        "fixture_id": FIXTURE_ID,
+        "fixture_id": scenario_id,
         "run_id": authorized_run_id,
         "source_digest": authorized_source_digest,
         "golden_sha256": golden_sha256,
@@ -405,6 +550,12 @@ def main(argv: Any = None) -> int:
     subparsers = parser.add_subparsers(dest="command", required=True)
     prepare_parser = subparsers.add_parser("prepare")
     prepare_parser.add_argument("--root", type=Path, required=True)
+    prepare_parser.add_argument(
+        "--oracle-root",
+        type=Path,
+        required=True,
+    )
+    prepare_parser.add_argument("--scenario", required=True)
     prepare_parser.add_argument(
         "--proposal-archive",
         type=Path,
@@ -445,6 +596,8 @@ def main(argv: Any = None) -> int:
     try:
         report = prepare(
             args.root,
+            oracle_root=args.oracle_root,
+            scenario_id=args.scenario,
             proposal_archive=args.proposal_archive,
             proposal_attestation_bundle=(
                 args.proposal_attestation_bundle
@@ -468,7 +621,7 @@ def main(argv: Any = None) -> int:
         print(
             json.dumps(
                 {
-                    "schema_version": 1,
+                    "schema_version": 2,
                     "ok": False,
                     "reason_code": error.reason_code,
                     "detail": error.detail,

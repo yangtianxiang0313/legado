@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0066",
+  "revision": 1,
+  "title": "历史 Oracle 验证根不能同时作为当前 Golden Manifest 发布基底",
+  "fingerprint": "historical-oracle-root-used-as-current-golden-manifest-base",
+  "capabilities": ["CAP-CONFORMANCE"],
+  "symptoms": [
+    "Publisher 在较早 Oracle source commit 上验证 attestation，同时从该 commit 读取旧 Golden Manifest",
+    "若 Oracle 执行后已有其他 fixture 发布，新事务会从旧 Manifest 生成结果并静默丢失期间新增 entry",
+    "单场景测试和首个 Golden 发布均通过，只有并发或后续场景发布才出现覆盖"
+  ],
+  "conditions": [
+    "attestation 必须在 artifact 对应 historical source 上验证",
+    "Publisher request SHA 晚于 Oracle source，且期间 Golden Manifest 已演进",
+    "同一个 --root 同时承担 Oracle authority root 和 publication base root"
+  ],
+  "root_cause": "历史 source 是验证 Oracle contract/fixture/attestation 的 authority，但发布事务必须以当前 request SHA 的受保护 Manifest 为基底。把两个根合并会让时间正确的验证读取时间错误的聚合状态。",
+  "diagnosis": [
+    "分别记录 Oracle source SHA、Publisher request SHA 与 Manifest blob SHA",
+    "确认 trusted_import 从 historical oracle_root 加载，而 manifest_path 从 current publisher root 加载",
+    "用 schema v1 legacy entry + 新 scenario 回归，断言旧 entry 被保留并迁移到 schema v2"
+  ],
+  "fix": "Publisher API 分离 root 与 oracle_root：trusted_import/ci_proposal 模块来自 historical oracle_root；当前 Manifest、幂等已发布文件与输出目录边界来自 request SHA 的 root。Workflow checkout publisher/source 两棵树并显式传入两者。",
+  "prevention": {
+    "architecture_rule": "跨时间发布流程必须分离 historical verification root 与 current aggregate state root；任何聚合 Manifest 更新只能基于 create-only request SHA。",
+    "tests": [
+      "ios/harness/tests/test_android_golden_publisher.py#test_prepare_passes_scenario_to_trusted_import_and_members",
+      "ios/harness/tests/test_android_golden_publisher.py#test_prepare_is_deterministic_scenario_aware_and_migrates_v1"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-ANDROID-GOLDEN-PUBLISHER-001",
+    "until": "IOS-GITHUB-GOLDEN-PUBLISHER-AUTOMATION-001"
+  },
+  "status": "mitigated",
+  "occurrences": 1,
+  "first_seen": "2026-07-29",
+  "last_seen": "2026-07-29",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260729T002056Z-ios-github-golden-publisher-automation-001-28d6507d.json"
+  ]
+}
