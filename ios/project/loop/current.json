@@ -1,1 +1,1 @@
-{"active_task":null,"attempt":0,"last_completed":{"at":"2026-07-29T07:59:44Z","sequence":42,"task_id":"IOS-UI-BOOTSTRAP-001"},"schema_version":2,"status":"idle","verification":null}
+{"active_task":"IOS-CHARACTERIZE-SOURCE-TRANSPORT-REQUEST-DISPATCH-CONTRACT-001","attempt":0,"last_completed":{"at":"2026-07-29T07:59:44Z","sequence":42,"task_id":"IOS-UI-BOOTSTRAP-001"},"schema_version":2,"status":"running","verification":null}
