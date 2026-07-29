@@ -1,0 +1,192 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "annotations": {},
+    "id": "IOS-GOLDEN-CONSUMER-CONTINUATION-001",
+    "labels": [
+      "phase-0",
+      "control-plane",
+      "demand-compiler",
+      "golden-consumer",
+      "continuation",
+      "corrective"
+    ],
+    "priority": 100,
+    "risk": "high",
+    "title": "消费受保护 Golden 并续接迁移需求"
+  },
+  "spec": {
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "共享 validator 对 legacy release v1 与 GitHub push release v2 分别执行精确 schema/authorization/publisher 校验；v2 还必须绑定 repository、android commit、profile、canonicalizer、runner 与 runner image controls，不接受未知版本或混合字段。",
+          "verified_by": [
+            "harness-tests"
+          ]
+        },
+        {
+          "id": "AC-2",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "AndroidMigrationIntent 只有在 Manifest entry、Golden、release 与 committed verified-candidate Receipt/trusted report 的 scenario、source、proposal、run、archive/attestation 摘要完全一致时才进入 migration_completed；无发布结果时保持 publisher required，任一漂移稳定 fail closed。",
+          "verified_by": [
+            "harness-tests"
+          ]
+        },
+        {
+          "id": "AC-3",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "LoopSupervisor 把 migration_completed 视为终态需求而非 unsupported state；真实 POST Form migration 不再重复返回 external_publisher_required，并可继续评估后续 Delivery Intent。",
+          "verified_by": [
+            "harness-tests"
+          ]
+        },
+        {
+          "id": "AC-4",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "Delivery Demand 与 bound-delivery materialization 复用同一严格 release 版本语义，既有 HTML/CSS v1 Golden 继续有效，新的 v2 Golden 可安全消费；记录实际断点、修复与下一续接状态。",
+          "verified_by": [
+            "harness-tests",
+            "dependency-policy",
+            "memory-close"
+          ]
+        }
+      ],
+      "required_checks": [
+        "dependency-policy",
+        "harness-tests"
+      ]
+    },
+    "architecture_refs": [
+      "ARCH-014",
+      "ARCH-017",
+      "ADR-0002",
+      "ADR-0004"
+    ],
+    "baseline_checks": [
+      "dependency-policy",
+      "harness-tests"
+    ],
+    "budget": {
+      "max_edit_verify_cycles": 6,
+      "max_full_test_runs": 5,
+      "max_infra_retries": 2,
+      "max_targeted_test_runs": 32,
+      "wall_clock_seconds": 18000
+    },
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "completion_effects": {
+      "health": {
+        "protected_golden_consumption": "migration_continuation_v2"
+      }
+    },
+    "depends_on": [
+      "IOS-GITHUB-GOLDEN-DISPATCHER-001",
+      "IOS-HARNESS-RUNTIME-CONTEXT-REPRO-001"
+    ],
+    "gates": [],
+    "inputs": {
+      "android_source_anchors": [],
+      "context_files": [
+        "ios/harness/demand_compiler.py",
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/goldens/manifest.json",
+        "ios/harness/goldens/releases/sl-post-form-001-30403665320-1.json",
+        "ios/project/external-execution-receipts/android-oracle-sl-post-form-001-faa7252c34dac546b65c618a52826e6fd42258c5-30403665320-1.json",
+        "ios/project/migration-intents/MINT-SOURCE-REQUEST-POST-FORM-001.json",
+        "ios/project/checkpoints/IOS-GITHUB-GOLDEN-DISPATCHER-001.json"
+      ],
+      "fixtures": [
+        "sl-post-form-001"
+      ]
+    },
+    "intent": "修复真实 Golden 发布成功后的状态机断点。当前 MINT-SOURCE-REQUEST-POST-FORM-001 已拥有 committed verified-candidate Receipt 与 Manifest v2/protected release v2，但 compile_migration 在 Receipt 存在时无条件返回 trusted_oracle_golden_publisher_required，导致 Dispatcher settlement 后仍重复要求发布。实现一个共享、严格的 protected Golden validator：v1 release 继续要求 github_environment_review；v2 release 必须要求 github_actions_push_v2、固定 publisher、repository、controls，并与 Manifest、Golden、trusted execution Receipt/report 的 scenario、source、proposal、run 和全部摘要交叉一致。验证通过后 migration 进入独立 terminal state，Supervisor 排除该终态并继续选择下一条需求；无 Golden、未提交、schema/authorization/control/report/receipt 任一漂移均 fail closed 或保持 publisher required，不得把候选结果直接提升为产品真值。",
+    "knowledge": {
+      "claim_refs": [],
+      "context_budget": {
+        "max_bytes": 65536,
+        "max_claims": 8
+      },
+      "contract_version": 1,
+      "coverage_refs": [],
+      "driver_refs": [],
+      "expected_ledger_transitions": [],
+      "mode": "not_applicable",
+      "none_reason": "本项不发布或修改业务知识",
+      "produces": []
+    },
+    "memory": {
+      "adr": "not_required",
+      "capability_state_required": true,
+      "checkpoint_required": true,
+      "pitfall": "required"
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "none_reason": "本项只修复需求状态机与受保护证据消费，不改变产品需求",
+      "refs": []
+    },
+    "scope": {
+      "allow_write": [
+        "ios/harness/demand_compiler.py",
+        "ios/harness/loop_supervisor.py",
+        "ios/harness/tests/test_demand_compiler.py",
+        "ios/harness/tests/test_loop_supervisor.py",
+        "ios/harness/README.md",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-GOLDEN-CONSUMER-CONTINUATION-001.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        ".github/**",
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "ios/publisher/**",
+        "ios/harness/harness.py",
+        "ios/harness/github_golden_publisher.py",
+        "ios/harness/github_oracle_dispatcher.py",
+        "ios/harness/github_oracle_receipt.py",
+        "ios/harness/proposal_compiler.py",
+        "ios/harness/config.json",
+        "ios/harness/supervisor.example.json",
+        "ios/harness/schemas/**",
+        "ios/harness/goldens/**",
+        "ios/harness/oracle/**",
+        "ios/harness/source-lab/**",
+        "ios/harness/work-items/**",
+        "ios/project/state.json",
+        "ios/project/events.jsonl",
+        "ios/project/status.md",
+        "ios/project/business-knowledge/**",
+        "ios/project/delivery-intents/**",
+        "ios/project/migration-intents/**",
+        "ios/project/requirements/**",
+        "ios/project/approvals/**",
+        "ios/project/work-item-proposals/**",
+        "ios/docs/**"
+      ],
+      "max_changed_lines": 2200,
+      "max_files_changed": 8
+    },
+    "source_lab": {
+      "behaviors": [],
+      "mode": "not_applicable",
+      "none_reason": "本项只读取既有 Golden/Receipt，不修改 SourceLab",
+      "scenarios": []
+    },
+    "stop_on": [
+      "doctor_red",
+      "scope_violation",
+      "authority_scope",
+      "same_failure_twice",
+      "budget_exhausted"
+    ]
+  }
+}
