@@ -43,6 +43,19 @@ public enum MinimalTaskConformanceRunner {
       "ios/harness/fixtures/source-lab/\(fixtureID)",
       root: root
     )
+    if fixtureID == SourceDynamicWebConformanceRunner.fixtureID {
+      let run = try await SourceDynamicWebConformanceRunner.run(
+        fixtureDirectory: fixtureDirectory
+      )
+      return try finish(
+        taskID: taskID,
+        fixtureID: fixtureID,
+        goldenPath: goldenPath,
+        actualArtifact: run.artifact,
+        canonicalPlans: run.requestPlan,
+        root: root
+      )
+    }
     if fixtureID == SourceCookieSessionConformanceRunner.fixtureID {
       let run = try await SourceCookieSessionConformanceRunner.run(
         fixtureDirectory: fixtureDirectory
