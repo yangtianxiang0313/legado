@@ -7,16 +7,19 @@ import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
 import io.legado.app.data.entities.BookSource
 import io.legado.app.data.entities.Bookmark
+import io.legado.app.data.entities.ReadRecord
 import io.legado.app.data.entities.SearchBook
 import io.legado.app.data.appDb
 import io.legado.app.exception.ConcurrentException
 import io.legado.app.help.CacheManager
 import io.legado.app.help.book.BookHelp
+import io.legado.app.help.config.AppConfig
 import io.legado.app.help.http.CookieManager
 import io.legado.app.help.http.CookieStore
 import io.legado.app.help.http.StrResponse
 import io.legado.app.help.http.newCallResponse
 import io.legado.app.model.CacheBook
+import io.legado.app.model.ReadBook
 import io.legado.app.model.analyzeRule.AnalyzeRule
 import io.legado.app.model.analyzeRule.AnalyzeUrl
 import io.legado.app.model.analyzeRule.RuleData
@@ -102,6 +105,8 @@ class LegadoOracleInstrumentedTest {
         when (scenarioId) {
             "rl-reader-bookmark-search-runtime-risk-001" ->
                 runBookmarkRuntimeCases()
+            "rl-reader-history-read-record-runtime-risk-001" ->
+                runReadRecordRuntimeCases()
             "sl-post-form-001" -> runPostFormCases()
             "sl-source-response-xml-declaration-normalization-001" ->
                 runXmlResponseCases()
@@ -317,6 +322,325 @@ class LegadoOracleInstrumentedTest {
             .put("chapter_name", value.chapterName)
             .put("book_text", value.bookText)
             .put("content", value.content)
+
+    private suspend fun runReadRecordRuntimeCases() {
+        val values = input.getJSONArray("cases")
+        val supported = setOf(
+            "read_record_query",
+            "read_record_reset",
+            "read_record_session_write",
+            "read_record_pause_boundary",
+            "read_record_disabled",
+            "read_record_insert_conflict"
+        )
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            val operation = value.getString("operation")
+            require(operation in supported) {
+                "Unsupported read-record runtime operation: $operation"
+            }
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", operation)
+                .put("arguments", JSONObject(arguments.toString()))
+            runCase(
+                value.getString("id"),
+                operation,
+                stimulus
+            ) {
+                readRecordRuntimeProjection(operation, arguments)
+            }
+        }
+    }
+
+    private fun readRecordRuntimeProjection(
+        operation: String,
+        arguments: JSONObject
+    ): JSONObject {
+        clearReadRecords()
+        return try {
+            when (operation) {
+                "read_record_query" ->
+                    readRecordQueryProjection(arguments)
+                "read_record_reset" ->
+                    readRecordResetProjection(arguments)
+                "read_record_session_write" ->
+                    readRecordSessionWriteProjection(arguments)
+                "read_record_pause_boundary" ->
+                    readRecordPauseProjection(arguments)
+                "read_record_disabled" ->
+                    readRecordDisabledProjection(arguments)
+                "read_record_insert_conflict" ->
+                    readRecordConflictProjection(arguments)
+                else -> error("Unsupported read-record runtime operation")
+            }
+        } finally {
+            drainReadBookExecutor()
+            ReadBook.book = null
+            clearReadRecords()
+        }
+    }
+
+    private fun readRecordQueryProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        seedReadRecords(arguments)
+        val bookName = arguments.getString("book_name")
+        val deviceIds = arguments.getJSONArray("device_ids")
+        return JSONObject()
+            .put(
+                "all_device_read_time",
+                appDb.readRecordDao.getReadTime(bookName)
+                    ?: JSONObject.NULL
+            )
+            .put("all_books_read_time", appDb.readRecordDao.allTime)
+            .put(
+                "per_device",
+                JSONArray().apply {
+                    for (index in 0 until deviceIds.length()) {
+                        val deviceId = deviceIds.getString(index)
+                        put(
+                            JSONObject()
+                                .put("device_id", deviceId)
+                                .put(
+                                    "read_time",
+                                    appDb.readRecordDao.getReadTime(
+                                        deviceId,
+                                        bookName
+                                    ) ?: JSONObject.NULL
+                                )
+                        )
+                    }
+                }
+            )
+    }
+
+    private fun readRecordResetProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        seedReadRecords(arguments)
+        val bookName = arguments.getString("book_name")
+        val aggregate = requireNotNull(
+            appDb.readRecordDao.getReadTime(bookName)
+        )
+        ReadBook.resetData(readRecordBook(bookName, "reset"))
+        val session = currentSessionReadRecord()
+        return JSONObject()
+            .put("aggregate_before_reset", aggregate)
+            .put("session_device_id", session.deviceId)
+            .put("session_book_name", session.bookName)
+            .put("session_read_time", session.readTime)
+            .put(
+                "session_uses_all_device_total",
+                session.readTime == aggregate
+            )
+    }
+
+    private fun readRecordSessionWriteProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        seedReadRecords(arguments)
+        val bookName = arguments.getString("book_name")
+        val aggregateBefore = requireNotNull(
+            appDb.readRecordDao.getReadTime(bookName)
+        )
+        val foreignRowsBefore = readRecordRows()
+            .filter { it.bookName == bookName && it.deviceId.isNotEmpty() }
+        val foreignTotal = foreignRowsBefore.sumOf { it.readTime }
+        val previousEnabled = AppConfig.enableReadRecord
+        return try {
+            AppConfig.enableReadRecord = true
+            ReadBook.resetData(readRecordBook(bookName, "session-write"))
+            ReadBook.readStartTime = System.currentTimeMillis()
+            ReadBook.upReadTime()
+            drainReadBookExecutor()
+            val empty = requireNotNull(
+                readRecordRows().firstOrNull {
+                    it.bookName == bookName && it.deviceId.isEmpty()
+                }
+            )
+            val foreignRowsAfter = readRecordRows()
+                .filter {
+                    it.bookName == bookName && it.deviceId.isNotEmpty()
+                }
+            val aggregateAfter = requireNotNull(
+                appDb.readRecordDao.getReadTime(bookName)
+            )
+            JSONObject()
+                .put("aggregate_before", aggregateBefore)
+                .put("foreign_device_total", foreignTotal)
+                .put("inserted_device_id", empty.deviceId)
+                .put(
+                    "inserted_at_least_aggregate_before",
+                    empty.readTime >= aggregateBefore
+                )
+                .put(
+                    "session_delta_nonnegative",
+                    empty.readTime - aggregateBefore >= 0
+                )
+                .put(
+                    "foreign_rows_preserved",
+                    readRecordRowsEqual(
+                        foreignRowsBefore,
+                        foreignRowsAfter
+                    )
+                )
+                .put(
+                    "aggregate_after_minus_empty_row",
+                    aggregateAfter - empty.readTime
+                )
+                .put(
+                    "foreign_time_counted_twice",
+                    aggregateAfter >= aggregateBefore + foreignTotal
+                )
+        } finally {
+            AppConfig.enableReadRecord = previousEnabled
+        }
+    }
+
+    private fun readRecordPauseProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        seedReadRecords(arguments)
+        val bookName = arguments.getString("book_name")
+        ReadBook.resetData(readRecordBook(bookName, "pause"))
+        val session = currentSessionReadRecord()
+        val fixedStart = arguments.getLong("read_start_time")
+        ReadBook.readStartTime = fixedStart
+        val before = readRecordRows()
+        ReadBook.saveRead()
+        drainReadBookExecutor()
+        val after = readRecordRows()
+        val persistedEmpty = requireNotNull(
+            after.firstOrNull {
+                it.bookName == bookName && it.deviceId.isEmpty()
+            }
+        )
+        return JSONObject()
+            .put(
+                "database_rows_unchanged",
+                readRecordRowsEqual(before, after)
+            )
+            .put(
+                "read_start_time_unchanged",
+                ReadBook.readStartTime == fixedStart
+            )
+            .put("session_in_memory_read_time", session.readTime)
+            .put(
+                "persisted_empty_device_read_time",
+                persistedEmpty.readTime
+            )
+            .put(
+                "save_read_settled_session_time",
+                session.readTime != currentSessionReadRecord().readTime ||
+                    !readRecordRowsEqual(before, after)
+            )
+    }
+
+    private fun readRecordDisabledProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        seedReadRecords(arguments)
+        val bookName = arguments.getString("book_name")
+        ReadBook.resetData(readRecordBook(bookName, "disabled"))
+        val fixedStart = arguments.getLong("read_start_time")
+        val previousEnabled = AppConfig.enableReadRecord
+        return try {
+            AppConfig.enableReadRecord = false
+            ReadBook.readStartTime = fixedStart
+            ReadBook.upReadTime()
+            drainReadBookExecutor()
+            JSONObject()
+                .put("persisted_row_count", readRecordRows().size)
+                .put(
+                    "read_start_time_unchanged",
+                    ReadBook.readStartTime == fixedStart
+                )
+                .put(
+                    "session_read_time",
+                    currentSessionReadRecord().readTime
+                )
+        } finally {
+            AppConfig.enableReadRecord = previousEnabled
+        }
+    }
+
+    private fun readRecordConflictProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        seedReadRecords(arguments)
+        val bookName = arguments.getString("book_name")
+        val rows = readRecordRows().filter { it.bookName == bookName }
+        return JSONObject()
+            .put("row_count", rows.size)
+            .put("aggregate_read_time", appDb.readRecordDao.getReadTime(bookName))
+            .put(
+                "rows",
+                JSONArray().apply {
+                    rows.forEach { put(readRecordProjection(it)) }
+                }
+            )
+    }
+
+    private fun seedReadRecords(arguments: JSONObject) {
+        val rows = arguments.getJSONArray("rows")
+        for (index in 0 until rows.length()) {
+            appDb.readRecordDao.insert(
+                readRecord(rows.getJSONObject(index))
+            )
+        }
+    }
+
+    private fun clearReadRecords() {
+        appDb.readRecordDao.clear()
+    }
+
+    private fun drainReadBookExecutor() {
+        ReadBook.executor.submit {}.get(5, TimeUnit.SECONDS)
+    }
+
+    private fun readRecordRows(): List<ReadRecord> =
+        appDb.readRecordDao.all.sortedWith(
+            compareBy<ReadRecord> { it.bookName }
+                .thenBy { it.deviceId }
+        )
+
+    private fun readRecordRowsEqual(
+        left: List<ReadRecord>,
+        right: List<ReadRecord>
+    ): Boolean =
+        left.map(::readRecordProjection).map(JSONObject::toString) ==
+            right.map(::readRecordProjection).map(JSONObject::toString)
+
+    private fun currentSessionReadRecord(): ReadRecord {
+        val field = ReadBook::class.java.getDeclaredField("readRecord")
+        field.isAccessible = true
+        return field.get(ReadBook) as ReadRecord
+    }
+
+    private fun readRecordBook(
+        bookName: String,
+        suffix: String
+    ): Book = Book(
+        bookUrl = "/android-runtime/read-record/$suffix.txt",
+        originName = "RuntimeLab",
+        name = bookName,
+        author = "RuntimeLab"
+    )
+
+    private fun readRecord(value: JSONObject): ReadRecord = ReadRecord(
+        deviceId = value.getString("deviceId"),
+        bookName = value.getString("bookName"),
+        readTime = value.getLong("readTime"),
+        lastRead = value.getLong("lastRead")
+    )
+
+    private fun readRecordProjection(value: ReadRecord): JSONObject =
+        JSONObject()
+            .put("device_id", value.deviceId)
+            .put("book_name", value.bookName)
+            .put("read_time", value.readTime)
+            .put("last_read", value.lastRead)
 
     private suspend fun runPostFormCases() {
         val values = input.getJSONArray("cases")

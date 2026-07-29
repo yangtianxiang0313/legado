@@ -172,6 +172,78 @@
       "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
     },
     {
+      "fact_id": "AF-READ-RECORD-CONSTRUCTOR",
+      "fact_key": "reader.history.read-record-schema",
+      "category": "data_contract",
+      "evidence_level": "L1",
+      "support_state": "declaration_only",
+      "extractor": "kotlin_primary_constructor",
+      "path": "app/src/main/java/io/legado/app/data/entities/ReadRecord.kt",
+      "symbol": "ReadRecord",
+      "symbol_id": "kotlin://io.legado.app.data.entities.ReadRecord/primary-constructor",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-READ-RECORD-AGGREGATE-QUERY",
+      "fact_key": "reader.history.aggregate-read-time-query",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_room_query",
+      "path": "app/src/main/java/io/legado/app/data/dao/ReadRecordDao.kt",
+      "symbol": "getReadTime",
+      "symbol_id": "kotlin://io.legado.app.data.dao.ReadRecordDao/getReadTime(bookName)",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-READ-BOOK-RESET-DATA",
+      "fact_key": "reader.history.reset-session-baseline",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+      "symbol": "resetData",
+      "symbol_id": "kotlin://io.legado.app.model.ReadBook/resetData",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-READ-BOOK-UP-READ-TIME",
+      "fact_key": "reader.history.settle-session-time",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+      "symbol": "upReadTime",
+      "symbol_id": "kotlin://io.legado.app.model.ReadBook/upReadTime",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-READ-BOOK-SAVE-READ",
+      "fact_key": "reader.history.save-progress-without-settlement",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+      "symbol": "saveRead",
+      "symbol_id": "kotlin://io.legado.app.model.ReadBook/saveRead",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-READ-ACTIVITY-ON-PAUSE",
+      "fact_key": "reader.lifecycle.pause",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt",
+      "symbol": "onPause",
+      "symbol_id": "kotlin://io.legado.app.ui.book.read.ReadBookActivity/onPause",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
       "fact_id": "AF-ANALYZE-RULE-GET-STRING",
       "fact_key": "source.rule.get-string",
       "category": "production_entrypoint",

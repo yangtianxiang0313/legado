@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "all-device-aggregate-query",
+      "operation": "read_record_query",
+      "arguments": {
+        "book_name": "星河纪事",
+        "device_ids": ["", "device-a", "device-b", "missing"],
+        "rows": [
+          {"deviceId": "", "bookName": "星河纪事", "readTime": 30, "lastRead": 1001},
+          {"deviceId": "device-a", "bookName": "星河纪事", "readTime": 120, "lastRead": 1002},
+          {"deviceId": "device-b", "bookName": "星河纪事", "readTime": 80, "lastRead": 1003},
+          {"deviceId": "device-a", "bookName": "另一部书", "readTime": 999, "lastRead": 1004}
+        ]
+      }
+    },
+    {
+      "id": "reset-loads-all-device-total",
+      "operation": "read_record_reset",
+      "arguments": {
+        "book_name": "星河纪事",
+        "rows": [
+          {"deviceId": "", "bookName": "星河纪事", "readTime": 30, "lastRead": 2001},
+          {"deviceId": "device-a", "bookName": "星河纪事", "readTime": 120, "lastRead": 2002},
+          {"deviceId": "device-b", "bookName": "星河纪事", "readTime": 80, "lastRead": 2003}
+        ]
+      }
+    },
+    {
+      "id": "empty-device-write-recounts-foreign",
+      "operation": "read_record_session_write",
+      "arguments": {
+        "book_name": "星河纪事",
+        "rows": [
+          {"deviceId": "", "bookName": "星河纪事", "readTime": 30, "lastRead": 3001},
+          {"deviceId": "device-a", "bookName": "星河纪事", "readTime": 120, "lastRead": 3002},
+          {"deviceId": "device-b", "bookName": "星河纪事", "readTime": 80, "lastRead": 3003}
+        ]
+      }
+    },
+    {
+      "id": "pause-save-leaves-tail-unsettled",
+      "operation": "read_record_pause_boundary",
+      "arguments": {
+        "book_name": "星河纪事",
+        "read_start_time": 123456789,
+        "rows": [
+          {"deviceId": "", "bookName": "星河纪事", "readTime": 30, "lastRead": 4001},
+          {"deviceId": "device-a", "bookName": "星河纪事", "readTime": 70, "lastRead": 4002}
+        ]
+      }
+    },
+    {
+      "id": "disabled-recording-preserves-session-start",
+      "operation": "read_record_disabled",
+      "arguments": {
+        "book_name": "星河纪事",
+        "read_start_time": 424242,
+        "rows": []
+      }
+    },
+    {
+      "id": "composite-key-replace-isolated-by-device",
+      "operation": "read_record_insert_conflict",
+      "arguments": {
+        "book_name": "星河纪事",
+        "device_ids": ["", "device-a", "device-b"],
+        "rows": [
+          {"deviceId": "", "bookName": "星河纪事", "readTime": 30, "lastRead": 5001},
+          {"deviceId": "device-a", "bookName": "星河纪事", "readTime": 10, "lastRead": 5002},
+          {"deviceId": "device-b", "bookName": "星河纪事", "readTime": 20, "lastRead": 5003},
+          {"deviceId": "", "bookName": "星河纪事", "readTime": 40, "lastRead": 5004},
+          {"deviceId": "device-a", "bookName": "星河纪事", "readTime": 15, "lastRead": 5005}
+        ]
+      }
+    }
+  ]
+}

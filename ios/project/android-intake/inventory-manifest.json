@@ -2,8 +2,8 @@
   "schema_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
   "android_tree": "c81f5d383116e37c1eefee3eb86654514e82022b",
-  "control_sha256": "4d105d3cf23af0a5b9b57448264fe90f19f7edbbcfb78a80e1ac2ad548c25c6c",
-  "policy_sha256": "847c3973b5dc0ad629007c94bff63813c0a88f1a91417d46641b2830cd69317a",
+  "control_sha256": "307b6a8700e2d9303387591da2c486cf6e0a657b25618ae2bdec4cf4f876762c",
+  "policy_sha256": "347adddda5365db4a6664622c306003ba9f32d5dbb147296e0fc6d7b60332a47",
   "facts": [
     {
       "id": "AF-ANALYZE-RULE-GET-STRING",
@@ -540,6 +540,170 @@
       "revision_sha256": "bb0fa40fcd034a9984f17e7fd9b4548d23139a74743eb82ef1800fc6b5073405",
       "maps_to": [
         "REQ-ANDROID-BOOKSOURCE-SCHEMA-001"
+      ]
+    },
+    {
+      "id": "AF-READ-ACTIVITY-ON-PAUSE",
+      "fact_key": "reader.lifecycle.pause",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.ui.book.read.ReadBookActivity/onPause",
+      "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt",
+      "git_blob": "b116c77fa2d48c9d1a1013e60a92236f71bea1bc",
+      "source_sha256": "ed783c597f6d76dda3c8b9c8788310a385a0bba16ed31441fad4bfac21a22334",
+      "start_line": 322,
+      "end_line": 333,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "onPause",
+        "signature": "fun onPause()",
+        "body_semantic_sha256": "e7370a9f4bc33205f4c12e03fefefe81c71a93fc259dc8b929c71e881fd7f051"
+      },
+      "revision_sha256": "afc6894fef46e05b916d9476c91c84b20db94b493457cb1f0df52c03298147a0",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-READ-BOOK-RESET-DATA",
+      "fact_key": "reader.history.reset-session-baseline",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.ReadBook/resetData",
+      "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+      "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d",
+      "source_sha256": "c6fa38c435f0075555e61bc397a6ef81baadd7a5c434e79d424f3d0e1abfef12",
+      "start_line": 90,
+      "end_line": 109,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "resetData",
+        "signature": "fun resetData(book: Book)",
+        "body_semantic_sha256": "563fe87cc7d2b758358c97e5fe1b4e55559674cdc5ee6cfee8d66bcf99304562"
+      },
+      "revision_sha256": "71cb776f8966882bf7a37e2a75094c9972ecebafa393de56ed03a094e892aefa",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-READ-BOOK-SAVE-READ",
+      "fact_key": "reader.history.save-progress-without-settlement",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.ReadBook/saveRead",
+      "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+      "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d",
+      "source_sha256": "c6fa38c435f0075555e61bc397a6ef81baadd7a5c434e79d424f3d0e1abfef12",
+      "start_line": 630,
+      "end_line": 648,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "saveRead",
+        "signature": "fun saveRead(pageChanged: Boolean = false)",
+        "body_semantic_sha256": "149c1fcb9bd3a8196b30ca1ca3c4eb399f3c4a4122ddc5e8d23905a047feed5f"
+      },
+      "revision_sha256": "e2cf510cd44c6777d41065be5a56fb906a95d0ff26a16308dda8f854763879d6",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-READ-BOOK-UP-READ-TIME",
+      "fact_key": "reader.history.settle-session-time",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.ReadBook/upReadTime",
+      "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+      "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d",
+      "source_sha256": "c6fa38c435f0075555e61bc397a6ef81baadd7a5c434e79d424f3d0e1abfef12",
+      "start_line": 182,
+      "end_line": 192,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "upReadTime",
+        "signature": "fun upReadTime()",
+        "body_semantic_sha256": "e5a59502fb647a0c03963bd21d8bba9ec388b07240711921a5c9893be6cc623e"
+      },
+      "revision_sha256": "97abbc3dfd09a3105d91f55f03883103adf20e54c2baf8da86e3d0a0b70d96de",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-READ-RECORD-AGGREGATE-QUERY",
+      "fact_key": "reader.history.aggregate-read-time-query",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_room_query",
+      "symbol_id": "kotlin://io.legado.app.data.dao.ReadRecordDao/getReadTime(bookName)",
+      "path": "app/src/main/java/io/legado/app/data/dao/ReadRecordDao.kt",
+      "git_blob": "2846fe844b7dcfd3d5ddd568d08b54cd891a5afb",
+      "source_sha256": "8d7758c6b2248b62466b830b99c27b75aa5ad2ab83578dd9df232d6948dcfb54",
+      "start_line": 35,
+      "end_line": 36,
+      "payload": {
+        "kind": "kotlin_room_query",
+        "symbol": "getReadTime",
+        "signature": "fun getReadTime(bookName: String): Long?",
+        "sql": "select sum(readTime) from readRecord where bookName = :bookName"
+      },
+      "revision_sha256": "a291fc6fbc5ae6b7d4358f4681d4a297a2742cce7388e5484a2fca6db460551d",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-READ-RECORD-CONSTRUCTOR",
+      "fact_key": "reader.history.read-record-schema",
+      "category": "data_contract",
+      "evidence_level": "L1",
+      "support_state": "declaration_only",
+      "extractor": "kotlin_primary_constructor",
+      "symbol_id": "kotlin://io.legado.app.data.entities.ReadRecord/primary-constructor",
+      "path": "app/src/main/java/io/legado/app/data/entities/ReadRecord.kt",
+      "git_blob": "c1638ac313e3d71997e9830383e3d604a8c3ec2f",
+      "source_sha256": "4b30bbb754481523ffdba8676ccf1168751d84c005b5e0e8cb41f5fe25954106",
+      "start_line": 7,
+      "end_line": 14,
+      "payload": {
+        "kind": "kotlin_primary_constructor",
+        "symbol": "ReadRecord",
+        "properties": [
+          {
+            "name": "deviceId",
+            "type": "String",
+            "default": "\"\""
+          },
+          {
+            "name": "bookName",
+            "type": "String",
+            "default": "\"\""
+          },
+          {
+            "name": "readTime",
+            "type": "Long",
+            "default": "0L"
+          },
+          {
+            "name": "lastRead",
+            "type": "Long",
+            "default": "System.currentTimeMillis()"
+          }
+        ]
+      },
+      "revision_sha256": "e71a48f0f13f66185bd5a1f9f528b4e750a2a71457a16d861ac83294aec9a45d",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
       ]
     },
     {

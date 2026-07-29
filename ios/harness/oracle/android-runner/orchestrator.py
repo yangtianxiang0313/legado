@@ -480,6 +480,46 @@ SCENARIO_CONTRACTS = {
             "time-primary-key-replace",
         }),
     },
+    "rl-reader-history-read-record-runtime-risk-001": {
+        "status": "candidate",
+        "fixture_kind": "android_runtime_scenario",
+        "result_type": "reader_runtime",
+        "stage_names": (
+            "fixture_setup",
+            "database_write",
+            "read_session_action",
+            "room_query",
+            "result_mapping",
+        ),
+        "expected_cases": (
+            ("all-device-aggregate-query", "read_record_query"),
+            ("reset-loads-all-device-total", "read_record_reset"),
+            (
+                "empty-device-write-recounts-foreign",
+                "read_record_session_write",
+            ),
+            (
+                "pause-save-leaves-tail-unsettled",
+                "read_record_pause_boundary",
+            ),
+            (
+                "disabled-recording-preserves-session-start",
+                "read_record_disabled",
+            ),
+            (
+                "composite-key-replace-isolated-by-device",
+                "read_record_insert_conflict",
+            ),
+        ),
+        "nominal_cases": frozenset({
+            "all-device-aggregate-query",
+            "reset-loads-all-device-total",
+            "empty-device-write-recounts-foreign",
+            "pause-save-leaves-tail-unsettled",
+            "disabled-recording-preserves-session-start",
+            "composite-key-replace-isolated-by-device",
+        }),
+    },
 }
 ROUTE_OBSERVATION_SCENARIOS = {
     "sl-source-request-header-cookie-retry-layering-001": (

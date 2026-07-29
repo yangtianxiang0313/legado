@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "kind": "android_runtime_scenario",
+  "id": "rl-reader-history-read-record-runtime-risk-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "android_runtime",
+  "capabilities": ["android.room", "reader.history"],
+  "compatibility_profile": "android-legado-v1",
+  "source": null,
+  "input": "input.json",
+  "transport": {
+    "mode": "none",
+    "external_network": "deny",
+    "responses": []
+  },
+  "coverage": [
+    {
+      "behavior": "reader.read-record-runtime-risk",
+      "cases": [
+        {
+          "id": "all-device-aggregate-query",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-READ-RECORD-CONSTRUCTOR",
+            "AF-READ-RECORD-AGGREGATE-QUERY"
+          ],
+          "branch_refs": [
+            "ReadRecordDao.getReadTime(bookName): sum(readTime) across every deviceId"
+          ]
+        },
+        {
+          "id": "reset-loads-all-device-total",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-READ-BOOK-RESET-DATA",
+            "AF-READ-RECORD-AGGREGATE-QUERY"
+          ],
+          "branch_refs": [
+            "ReadBook.resetData: private empty-device ReadRecord receives the all-device aggregate"
+          ]
+        },
+        {
+          "id": "empty-device-write-recounts-foreign",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-READ-BOOK-RESET-DATA",
+            "AF-READ-BOOK-UP-READ-TIME",
+            "AF-READ-RECORD-CONSTRUCTOR"
+          ],
+          "branch_refs": [
+            "ReadBook.upReadTime: aggregate baseline is inserted under ReadRecord default deviceId"
+          ]
+        },
+        {
+          "id": "pause-save-leaves-tail-unsettled",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-READ-ACTIVITY-ON-PAUSE",
+            "AF-READ-BOOK-SAVE-READ",
+            "AF-READ-BOOK-UP-READ-TIME"
+          ],
+          "branch_refs": [
+            "ReadBookActivity.onPause calls saveRead without upReadTime"
+          ]
+        },
+        {
+          "id": "disabled-recording-preserves-session-start",
+          "role": "denied",
+          "android_fact_refs": ["AF-READ-BOOK-UP-READ-TIME"],
+          "branch_refs": [
+            "ReadBook.upReadTime returns before advancing readStartTime when enableReadRecord is false"
+          ]
+        },
+        {
+          "id": "composite-key-replace-isolated-by-device",
+          "role": "nominal",
+          "android_fact_refs": ["AF-READ-RECORD-CONSTRUCTOR"],
+          "branch_refs": [
+            "ReadRecord primary key (deviceId, bookName) with INSERT REPLACE"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "fixture_and_relational_projection",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 0,
+    "network_allowed": false,
+    "logical_origin": null,
+    "database_reset_per_case": true
+  },
+  "limits": {"timeout_ms": 5000},
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/data/entities/ReadRecord.kt",
+      "app/src/main/java/io/legado/app/data/dao/ReadRecordDao.kt#getReadTime",
+      "app/src/main/java/io/legado/app/model/ReadBook.kt#resetData",
+      "app/src/main/java/io/legado/app/model/ReadBook.kt#upReadTime",
+      "app/src/main/java/io/legado/app/model/ReadBook.kt#saveRead",
+      "app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt#onPause"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-READER-HISTORY-READ-RECORD-RUNTIME-RISK-001"
+  }
+}

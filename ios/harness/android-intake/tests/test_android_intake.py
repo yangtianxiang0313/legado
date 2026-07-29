@@ -18,7 +18,7 @@ class AndroidIntakeTests(unittest.TestCase):
         self.assertEqual(first, second)
         baseline = json.loads((REPO_ROOT / "ios/project/baseline.json").read_text(encoding="utf-8"))
         self.assertEqual(baseline["android_oracle"]["git_commit"], first["android_git_commit"])
-        self.assertEqual(16, len(first["facts"]))
+        self.assertEqual(22, len(first["facts"]))
 
     def test_book_source_fact_is_data_contract_not_runtime_proof(self):
         inventory = android_intake.inventory_value(REPO_ROOT)
@@ -72,6 +72,34 @@ class AndroidIntakeTests(unittest.TestCase):
         self.assertEqual(
             "getStringList",
             facts["AF-ANALYZE-RULE-GET-STRING-LIST"]["payload"]["symbol"],
+        )
+
+    def test_read_record_runtime_risk_has_source_anchors(self):
+        inventory = android_intake.inventory_value(REPO_ROOT)
+        facts = {entry["id"]: entry for entry in inventory["facts"]}
+        self.assertEqual(
+            "select sum(readTime) from readRecord where bookName = :bookName",
+            facts["AF-READ-RECORD-AGGREGATE-QUERY"]["payload"]["sql"],
+        )
+        self.assertEqual(
+            ["deviceId", "bookName", "readTime", "lastRead"],
+            [
+                value["name"]
+                for value in
+                facts["AF-READ-RECORD-CONSTRUCTOR"]["payload"]["properties"]
+            ],
+        )
+        self.assertEqual(
+            "resetData",
+            facts["AF-READ-BOOK-RESET-DATA"]["payload"]["symbol"],
+        )
+        self.assertEqual(
+            "upReadTime",
+            facts["AF-READ-BOOK-UP-READ-TIME"]["payload"]["symbol"],
+        )
+        self.assertEqual(
+            "onPause",
+            facts["AF-READ-ACTIVITY-ON-PAUSE"]["payload"]["symbol"],
         )
 
 if __name__ == "__main__":
