@@ -2,12 +2,12 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-29T00:30:04Z
+- 更新时间：2026-07-29T00:31:28Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
-- 下一个可领取工作项：无
+- 下一个可领取工作项：IOS-GITHUB-GOLDEN-DISPATCHER-001
 - 最近完成：IOS-GITHUB-GOLDEN-DISPATCHER-SCOPE-001
 
 ## 健康度
@@ -133,6 +133,7 @@
 | IOS-CONTROL-CATALOG-RESUME-001 | 100 | `completed` | IOS-RECOVERY-COMPILER-BINDING-001 | 恢复控制面变更后的 Supervisor 续跑 |
 | IOS-DECISION-GATE-POLICY-001 | 100 | `completed` | IOS-HARNESS-APPROVAL-UI-001, IOS-TRUSTED-SUPERVISOR-REFERENCE-001 | 将盲批 Gate 替换为结构化决策暂停 |
 | IOS-DELIVERY-INTENT-SETTLEMENT-001 | 100 | `completed` | IOS-SOURCE-RUNTIME-HTML-CSS-001, IOS-READINESS-EVIDENCE-HANDOFF-RECOVERY-002 | 让已完成 Delivery Intent 由 Evidence 结算并退出调度 |
+| IOS-GITHUB-GOLDEN-DISPATCHER-001 | 100 | `ready` | IOS-GITHUB-GOLDEN-DISPATCHER-SCOPE-001 | 实现 Golden 外部执行与结果回收 |
 | IOS-GITHUB-GOLDEN-DISPATCHER-OWNER-001 | 100 | `completed` | IOS-GITHUB-GOLDEN-PUBLISHER-OWNER-001 | 预声明 Golden Dispatcher 与结果回收所有权 |
 | IOS-GITHUB-GOLDEN-DISPATCHER-SCOPE-001 | 100 | `completed` | IOS-GITHUB-GOLDEN-PUBLISHER-AUTOMATION-001 | 建立 Golden Dispatcher 精确自动实现边界 |
 | IOS-GITHUB-GOLDEN-PUBLISHER-AUTOMATION-001 | 100 | `completed` | IOS-GITHUB-GOLDEN-PUBLISHER-SCOPE-001 | 实现无人工 Gate 的场景化 Golden Publisher |
