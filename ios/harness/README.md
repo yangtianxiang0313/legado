@@ -131,6 +131,14 @@ python3 ios/harness/loop_supervisor.py materialize-review \
   立即重新 inspect 并返回 continuation decision；普通 Agent 不参与外部发布或
   结果回收。恢复 journal 位于 `.harness-runtime/github-golden/`，只记录单调
   运行状态，不作为 Golden authority；
+- Harness runtime-context reproducibility corrective 只有同时带
+  `control-plane`、`harness-runtime-context`、`reproducibility`、
+  `corrective` 四标签，且为无 Gate 的 control-plane、Business Knowledge 与
+  SourceLab 均 `not_applicable` 时，才进入专用自动策略。其 `allow_write` 必须
+  精确等于 `harness.py`/`test_harness.py`、本 README、CAP-KNOWLEDGE-CONTROL、
+  当前 WorkItem Checkpoint 与 PIT；历史 WorkItem/State、Workflow、Golden、
+  Publisher、Dispatcher、Oracle、Package、产品、Requirement、proposal 与
+  wildcard 均保持 deny。缺少任一标签的候选不会获得 Harness core 写权限；
 - Receipt Settlement corrective 候选只有同时带
   `external-execution`、`android-oracle`、`receipt-settlement`、`corrective`
   四个标签，且为无 Gate 的 control-plane、Business Knowledge 与 SourceLab 均

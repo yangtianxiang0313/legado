@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-HARNESS-RUNTIME-CONTEXT-SCOPE-001",
+  "summary": "已建立终态 Runtime Context 可复现修复的精确自动边界。只有 control-plane、harness-runtime-context、reproducibility、corrective 四标签齐全，且无 Gate、control-plane、Business Knowledge/SourceLab 均 not_applicable，才允许下一项修改 harness.py、test_harness.py、README 与记忆文件。历史 WorkItem/State、Workflow、Golden、Publisher、Dispatcher、Oracle、Package、产品、Requirement、proposal 和 wildcard 全部 fail closed。CAP-KNOWLEDGE-CONTROL revision 72→73。正式 Evidence 通过依赖策略与全量 Harness tests；本项未修改 Harness reference validation、未访问 GitHub、未重跑外部发布。",
+  "evidence": "ios/harness/evidence/runs/run-20260729T010052Z-ios-harness-runtime-context-scope-001-bd3e4391.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 72,
+      "to_revision": 73,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": ["ADR-0002", "ADR-0004"]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null,
+    "none_reason": "本项只建立 Harness runtime context 精确修复边界"
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项只建立 Harness corrective 自动物化范围"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null,
+    "none_reason": "本项只建立控制面自动范围"
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项不改变书源、解析语义或产品运行时"
+  },
+  "pitfalls": {
+    "records": [],
+    "none_reason": "本项只收窄自动权限；真实 clean-checkout 失败将在实现项沉淀"
+  },
+  "remaining_risks": [
+    "Harness reference validation 根因尚未修复",
+    "真实 Golden workflow 首次运行仍停在 clean-checkout doctor"
+  ],
+  "next_actions": [
+    "物化 IOS-HARNESS-RUNTIME-CONTEXT-REPRO-001",
+    "修复并验证终态 runtime context clean-checkout 语义",
+    "以新 request SHA 重跑真实 Golden publication"
+  ],
+  "created_at": "2026-07-29T01:01:01Z"
+}

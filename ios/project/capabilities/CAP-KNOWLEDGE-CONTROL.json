@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 72,
+  "revision": 73,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -72,12 +72,13 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260729T004757Z-ios-github-golden-dispatcher-001-c934d502.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260729T010052Z-ios-harness-runtime-context-scope-001-bd3e4391.json",
   "next_actions": [
-    "运行真实 sl-post-form-001 Golden workflow 并由 Dispatcher 自动回收结果",
+    "物化并修复终态 WorkItem ignored runtime context 的 clean-checkout 可复现性",
+    "重新运行真实 sl-post-form-001 Golden workflow 并由 Dispatcher 自动回收结果",
     "用受保护 POST Form Golden 自动续接 SourceRuntime Package 结构化验收",
     "在 iOS Simulator 完成 UI 结构与多级导航验收"
   ],
-  "updated_at": "2026-07-29T00:48:03Z",
-  "updated_by": "IOS-GITHUB-GOLDEN-DISPATCHER-001"
+  "updated_at": "2026-07-29T01:01:01Z",
+  "updated_by": "IOS-HARNESS-RUNTIME-CONTEXT-SCOPE-001"
 }

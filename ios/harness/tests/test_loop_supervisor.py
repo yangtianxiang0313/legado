@@ -1732,6 +1732,122 @@ class MaterializationTests(unittest.TestCase):
                 ),
             )
 
+    def test_harness_runtime_context_auto_scope_is_exact(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            item_id = "IOS-TEST-RUNTIME-CONTEXT-001"
+            item = fixture.fixture.item(
+                item_id,
+                "CAP-KNOWLEDGE-CONTROL",
+                100,
+            )
+            required_labels = {
+                "control-plane",
+                "harness-runtime-context",
+                "reproducibility",
+                "corrective",
+            }
+            item["metadata"]["labels"] = sorted(required_labels)
+            item["spec"]["requirements"] = {
+                "mode": "control_plane",
+                "refs": [],
+                "none_reason": "test",
+            }
+            item["spec"]["knowledge"] = {
+                "mode": "not_applicable",
+            }
+            item["spec"]["source_lab"] = {
+                "mode": "not_applicable",
+                "behaviors": [],
+                "scenarios": [],
+                "none_reason": "test",
+            }
+            item["spec"]["scope"]["allow_write"] = [
+                "ios/harness/harness.py",
+                "ios/harness/tests/test_harness.py",
+                "ios/harness/README.md",
+                "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+                f"ios/project/checkpoints/{item_id}.json",
+                "ios/project/pitfalls/PIT-*.json",
+            ]
+            item["spec"]["scope"]["deny_write"] = [
+                ".github/**",
+                "app/**",
+                "modules/**",
+                "ios/Packages/**",
+                "ios/publisher/**",
+                "ios/harness/loop_supervisor.py",
+                "ios/harness/demand_compiler.py",
+                "ios/harness/github_golden_publisher.py",
+                "ios/harness/github_oracle_dispatcher.py",
+                "ios/harness/github_oracle_receipt.py",
+                "ios/harness/goldens/**",
+                "ios/harness/oracle/**",
+                "ios/harness/source-lab/**",
+                "ios/harness/work-items/**",
+                "ios/project/state.json",
+                "ios/project/events.jsonl",
+                "ios/project/status.md",
+                "ios/project/requirements/**",
+                "ios/project/approvals/**",
+                "ios/project/work-item-proposals/**",
+                "ios/docs/**",
+            ]
+            supervisor = loop_supervisor.LoopSupervisor(
+                fixture.harness
+            )
+            self.assertEqual(
+                [],
+                supervisor._harness_runtime_context_scope_issues(item),
+            )
+            for drift in (
+                ".github/workflows/android-golden-publisher.yml",
+                "ios/harness/loop_supervisor.py",
+                "ios/harness/github_golden_publisher.py",
+                "ios/harness/goldens/manifest.json",
+                "ios/harness/work-items/IOS-OLD-001.json",
+                "ios/project/state.json",
+                "ios/project/requirements/catalog.json",
+                "ios/project/work-item-proposals/candidate.json",
+                "ios/Packages/LegadoKit/Package.swift",
+                "app/new.kt",
+                "modules/new.kt",
+                "ios/docs/architecture.md",
+                "ios/**",
+            ):
+                with self.subTest(drift=drift):
+                    changed = json.loads(json.dumps(item))
+                    changed["spec"]["scope"]["allow_write"].append(
+                        drift
+                    )
+                    self.assertIn(
+                        "AUTO_HARNESS_RUNTIME_CONTEXT_SCOPE_ALLOW_INVALID",
+                        supervisor
+                        ._harness_runtime_context_scope_issues(changed),
+                    )
+            for missing in required_labels:
+                with self.subTest(missing=missing):
+                    changed = json.loads(json.dumps(item))
+                    changed["metadata"]["labels"] = sorted(
+                        required_labels - {missing}
+                    )
+                    self.assertIn(
+                        "AUTO_HARNESS_RUNTIME_CONTEXT_AUTHORITY_INVALID",
+                        supervisor
+                        ._harness_runtime_context_scope_issues(changed),
+                    )
+            denial_drift = json.loads(json.dumps(item))
+            denial_drift["spec"]["scope"]["deny_write"] = []
+            self.assertTrue(
+                all(
+                    issue.startswith(
+                        "AUTO_HARNESS_RUNTIME_CONTEXT_SCOPE_DENY_MISSING:"
+                    )
+                    for issue in supervisor
+                    ._harness_runtime_context_scope_issues(denial_drift)
+                )
+            )
+
     def test_github_oracle_receipt_settlement_auto_scope_is_exact(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = MaterializationFixture(Path(directory))
