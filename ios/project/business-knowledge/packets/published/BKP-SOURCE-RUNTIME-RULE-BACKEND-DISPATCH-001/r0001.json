@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-SOURCE-RUNTIME-RULE-BACKEND-DISPATCH-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "source.rule-backend-dispatch-golden",
+  "title": "受保护 Android Golden 验证的规则后端分派语义",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "30cac916034a71f4ce34aa11388c0c3d578c78ccd937f888e48b556b01d72172"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "source.execution"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-RUNTIME-PORTS"
+    ],
+    "subject_keys": [
+      "source.rule",
+      "source.document",
+      "source.script"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-SR-RULE-BACKEND-DISPATCH-001",
+      "revision": 2,
+      "semantic_key": "source.rule.backend-dispatch-runtime",
+      "kind": "runtime_behavior",
+      "topic": "规则后端选择、状态与解析器缓存",
+      "statement": "在 sl-source-rule-backend-dispatch-runtime-001 的固定输入下，Android AnalyzeRule 对 HTML 内容把无前缀规则、@CSS: 规则和 @@ 转义后的规则归入默认 JSoup/CSS 后端，把 @XPath: 与以 // 开头的规则归入 XPath 后端，均得到解码后的 Alpha & Beta。JSON 内容会让无前缀 items[0].name 自动进入 JSONPath；以 $ 开头和显式 @Json: 规则也进入 JSONPath，显式前缀在执行前被移除，列表选择保持 Alpha、Beta 顺序。<js>...</js> 与 @js: 均进入 JavaScript 后端并消费当前 result。以冒号激活 all-in-one 正则后，regex mode 保留在同一个 AnalyzeRule 实例中，后续不带冒号的规则仍按正则执行并返回完整匹配及捕获组。JSoup、XPath 和 JSONPath 解析器对同一当前 content 复用同一实例，setContent 更换内容后替换缓存；对外来 mContent 的一次读取不污染也不替换当前 content 的 JSoup 缓存。Rhino NativeObject 走直接键读取并得到 native-value，即使规则的字符串形态投影看似 JSON，也不经过字符串后端。setContent(null) 被 AssertionError 拒绝。本结论只冻结上述 8 个场景观测到的分派顺序、实例状态和缓存边界，不外推到完整规则组合语法、全部 CSS/XPath/JSONPath 方言、JavaScript 沙箱与安全策略、并发访问、缓存淘汰策略或任意 Rhino 原型行为。",
+      "subject_keys": [
+        "source.rule",
+        "source.document",
+        "source.script"
+      ],
+      "depends_on": [],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "7bb96778bbf33c5277867cd8a1e8db6ea19090df",
+            "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt",
+            "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeRule"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/sl-source-rule-backend-dispatch-runtime-001.json",
+            "artifact_sha256": "dc392720a70440cbfb537431eba0fbea3b78c74da414178ef3fe72e014c8b138",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "8da8a339a68b114d3f42d40cae0b534139c3063c1ee47dfdbe1aa792465c17a6",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "c8481d91391a37df113d9d6f9885be80c74ac5b517317853541f5a23f16f86a2",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-SR-RULE-BACKEND-DISPATCH-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-SOURCE-RULE-BACKEND-DISPATCH-RUNTIME-001"
+}

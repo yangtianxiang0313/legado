@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-SOURCE-RUNTIME-RULE-BACKEND-DISPATCH-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "source.execution.rule-backend-dispatch",
+  "title": "用独立规则执行内核承载后端分派、实例状态与解析器缓存",
+  "claim_refs": [
+    {
+      "id": "BKC-SR-RULE-BACKEND-DISPATCH-001",
+      "revision": 2
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "SourceRuntime 必须按显式前缀、规则签名、内容形态和现有实例 mode 的确定性优先级选择后端，并逐字段对齐受保护 Android Golden；UI 层不得重新解释规则。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "modularity",
+      "scenario": "CSS、XPath、JSONPath、Regex 和 JavaScript 通过 SourceRuntime 内部协议与适配器接入，规则分派核心不依赖 SwiftUI、WebKit 页面生命周期或具体三方库 API，后续替换实现不改变上层用例。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "state_management",
+      "scenario": "all-in-one 正则的粘滞 mode 属于单个规则求值器实例状态，不能放入全局单例；新求值器必须从干净状态开始，同一流水线的后续规则才复用状态。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "cache_correctness",
+      "scenario": "HTML、XPath 和 JSON 解析器缓存由求值上下文持有并绑定当前 content 身份；setContent 必须统一失效，临时外来内容求值不得污染当前内容缓存。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "boundary_semantics",
+      "scenario": "原生对象直接键读取必须先于字符串后端执行；缺失 content 必须被明确拒绝，并由 conformance 适配器映射为稳定结构化结果，而不是把平台异常类型泄漏给业务调用方。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "portability",
+      "scenario": "本切片只实现 Golden 已验证的语法表面；完整规则组合、脚本安全、并发策略和各后端方言必须由后续 Android 真源任务继续扩张，不得从当前样例猜测补齐。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "如何把显式前缀、规则签名、内容推断和粘滞 mode 编排成可审计的分派状态机，同时让每个后端保持可替换？",
+    "如何让解析器缓存与当前 content 生命周期严格绑定，并允许外来内容临时求值而不污染同一会话的缓存？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002"
+    ],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-SOURCE-RULE-BACKEND-DISPATCH-RUNTIME-001",
+      "IOS-SOURCE-RUNTIME-RULE-BACKEND-DISPATCH-001"
+    ]
+  },
+  "supersedes": null,
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30451680870/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "created_by": "IOS-CHARACTERIZE-SOURCE-RULE-BACKEND-DISPATCH-RUNTIME-001"
+}
