@@ -35,6 +35,12 @@ ANDROID_CHARACTERIZATION_REQUIREMENT_ID = (
     "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
 )
 ANDROID_CHARACTERIZATION_REQUIREMENT_CLAUSE = "RC-01"
+NON_RUNTIME_CLAIM_KINDS = frozenset(
+    {
+        "business_inference",
+        "composite_static_fact",
+    }
+)
 
 
 class LoopError(RuntimeError):
@@ -265,6 +271,55 @@ def satisfied_dependency_claim_refs(root: Path) -> set[tuple[str, int]]:
     return result
 
 
+def current_published_claim_revisions(root: Path) -> dict[str, int]:
+    """Return the latest published revision for each current claim ID.
+
+    Proposal packets are an append-only intake history. Once a newer revision
+    of a claim is published, an older proposal must not re-enter the runtime
+    queue merely because its original characterization event is absent.
+    """
+    result: dict[str, int] = {}
+    for _, packet in latest_json_revisions(
+        root,
+        "ios/project/business-knowledge/packets/published",
+    ):
+        if packet.get("status") != "published":
+            continue
+        for claim in packet.get("claims", []):
+            if not isinstance(claim, dict):
+                continue
+            identifier = claim.get("id")
+            revision = claim.get("revision")
+            if (
+                isinstance(identifier, str)
+                and isinstance(revision, int)
+                and not isinstance(revision, bool)
+            ):
+                result[identifier] = max(
+                    revision,
+                    result.get(identifier, 0),
+                )
+    return result
+
+
+def is_android_runtime_claim(claim: Mapping[str, Any]) -> bool:
+    """Whether Android execution can legitimately decide this claim.
+
+    Android runtime evidence can characterize behavior, risks, invariants and
+    open runtime questions. It cannot approve an iOS business inference or
+    turn a static declaration into runtime truth. Those claims must be
+    resolved through static evidence or an explicit human/ADR decision.
+    """
+    support = claim.get("support")
+    return (
+        isinstance(support, dict)
+        and support.get("runtime_requirement")
+        == "android_characterization"
+        and support.get("state") == "candidate_source_anchored"
+        and claim.get("kind") not in NON_RUNTIME_CLAIM_KINDS
+    )
+
+
 def relative_jsons(root: Path, relative: str) -> Iterable[tuple[str, Mapping[str, Any]]]:
     directory = root / relative
     if not directory.exists():
@@ -337,7 +392,7 @@ def driver_for(
         if isinstance(value, dict)
     }
     candidates = []
-    for path, driver in relative_jsons(
+    for path, driver in latest_json_revisions(
         root,
         "ios/project/business-knowledge/drivers/published",
     ):
@@ -667,6 +722,7 @@ def pending_characterizations(root: Path) -> list[Mapping[str, Any]]:
     completed = completed_task_ids(root)
     characterized = characterized_claim_refs(root)
     satisfied_dependencies = satisfied_dependency_claim_refs(root)
+    published_revisions = current_published_claim_revisions(root)
     candidates: list[tuple[int, int, str, Mapping[str, Any]]] = []
     for packet_path, packet in latest_json_revisions(
         root,
@@ -684,10 +740,8 @@ def pending_characterizations(root: Path) -> list[Mapping[str, Any]]:
                 not isinstance(claim_id, str)
                 or not isinstance(revision, int)
                 or isinstance(revision, bool)
-                or not isinstance(support, dict)
-                or support.get("runtime_requirement")
-                != "android_characterization"
-                or support.get("state") != "candidate_source_anchored"
+                or not is_android_runtime_claim(claim)
+                or published_revisions.get(claim_id, 0) >= revision
                 or (claim_id, revision) in characterized
             ):
                 continue

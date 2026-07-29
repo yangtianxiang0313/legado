@@ -35,7 +35,7 @@
       "product_disposition": {
         "kind": "architecture_driver",
         "refs": [
-          "DRV-INTEGRATION-WEBDAV-RUNTIME-001@2"
+          "DRV-INTEGRATION-WEBDAV-RUNTIME-001@3"
         ],
         "reason": "ADR-0008 已冻结 IntegrationKit/WebDAVFoundation 边界、凭据隔离、兼容分层与 Foundation-only 首版依赖决策；尚无 accepted 产品 Requirement，因此不创建 Swift Target 或实现任务",
         "review_after": null

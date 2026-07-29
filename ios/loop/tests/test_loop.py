@@ -489,6 +489,142 @@ class MinimalLoopTests(unittest.TestCase):
             )
             self.assertEqual("Revision 2", task["title"])
 
+    def test_business_inference_never_becomes_android_runtime_task(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.write(
+                root,
+                "ios/project/requirements/accepted/"
+                "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001.json",
+                {
+                    "id": "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001",
+                    "revision": 1,
+                    "status": "accepted",
+                    "origin": {
+                        "kind": "ios_product_decision",
+                        "baseline_commit": "a" * 40,
+                        "admission": "policy_auto",
+                    },
+                    "clauses": [{"id": "RC-01"}],
+                },
+            )
+            self.write(
+                root,
+                "ios/project/business-knowledge/packets/proposals/"
+                "BKP-DEPENDENCY-001/r0001.json",
+                {
+                    "id": "BKP-DEPENDENCY-001",
+                    "revision": 1,
+                    "status": "candidate",
+                    "baseline": {"android_commit": "a" * 40},
+                    "claims": [
+                        {
+                            "id": "BKC-DEPENDENCY-001",
+                            "revision": 1,
+                            "kind": "business_inference",
+                            "semantic_key": "integration.dependencies.client",
+                            "subject_keys": ["integration.dependencies"],
+                            "depends_on": [],
+                            "support": {
+                                "state": "candidate_source_anchored",
+                                "runtime_requirement": (
+                                    "android_characterization"
+                                ),
+                                "source_anchors": [
+                                    {"path": "AndroidClient.kt"}
+                                ],
+                            },
+                        }
+                    ],
+                },
+            )
+
+            self.assertIsNone(loop.next_task(root))
+
+    def test_newer_published_claim_suppresses_historical_candidate(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.write(
+                root,
+                "ios/project/requirements/accepted/"
+                "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001.json",
+                {
+                    "id": "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001",
+                    "revision": 1,
+                    "status": "accepted",
+                    "origin": {
+                        "kind": "ios_product_decision",
+                        "baseline_commit": "a" * 40,
+                        "admission": "policy_auto",
+                    },
+                    "clauses": [{"id": "RC-01"}],
+                },
+            )
+            claim = {
+                "id": "BKC-WEBDAV-DEPENDENCY-001",
+                "revision": 2,
+                "kind": "runtime_behavior",
+                "semantic_key": "integration.dependencies.webdav",
+                "subject_keys": ["integration.dependencies"],
+                "depends_on": [],
+                "support": {
+                    "state": "candidate_source_anchored",
+                    "runtime_requirement": "android_characterization",
+                    "source_anchors": [{"path": "WebDav.kt"}],
+                },
+            }
+            self.write(
+                root,
+                "ios/project/business-knowledge/packets/proposals/"
+                "BKP-WEBDAV-CANDIDATE-001/r0001.json",
+                {
+                    "id": "BKP-WEBDAV-CANDIDATE-001",
+                    "revision": 1,
+                    "status": "candidate",
+                    "baseline": {"android_commit": "a" * 40},
+                    "claims": [claim],
+                },
+            )
+            self.write(
+                root,
+                "ios/project/business-knowledge/packets/published/"
+                "BKP-WEBDAV-DECISION-001/r0001.json",
+                {
+                    "id": "BKP-WEBDAV-DECISION-001",
+                    "revision": 1,
+                    "status": "published",
+                    "claims": [
+                        {
+                            "id": "BKC-WEBDAV-DEPENDENCY-001",
+                            "revision": 3,
+                        }
+                    ],
+                },
+            )
+
+            self.assertIsNone(loop.next_task(root))
+
+    def test_driver_for_uses_current_published_revision(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            claim_ref = {"id": "BKC-RUNTIME-001", "revision": 1}
+            for revision in (1, 2):
+                self.write(
+                    root,
+                    "ios/project/business-knowledge/drivers/published/"
+                    f"DRV-RUNTIME-001/r{revision:04d}.json",
+                    {
+                        "id": "DRV-RUNTIME-001",
+                        "revision": revision,
+                        "claim_refs": [claim_ref],
+                    },
+                )
+
+            selected = loop.driver_for(root, [claim_ref])
+
+            self.assertIsNotNone(selected)
+            self.assertEqual(2, selected[1]["revision"])
+
     def test_static_source_claim_unlocks_runtime_characterization(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

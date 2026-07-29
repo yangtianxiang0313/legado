@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-INTEGRATION-WEBDAV-DEPENDENCY-DECISION-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "integration.webdav-dependency-decision",
+  "title": "WebDAV iOS 依赖与适配边界决策",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "dependency-governance",
+      "integration.backup",
+      "integration.remote"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE"
+    ],
+    "subject_keys": [
+      "integration.backup",
+      "integration.dependencies"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-INTEGRATION-WEBDAV-DEPENDENCY-001",
+      "revision": 3,
+      "semantic_key": "integration.dependencies.webdav",
+      "kind": "business_inference",
+      "topic": "WebDAV adapter 首版依赖决策",
+      "statement": "Android WebDav 所依赖的 HTTP 栈只证明 Android 实现事实，不批准任何 iOS 三方库。ADR-0008 已决定首版由 WebDAVFoundation 使用 Foundation URLSession 与 XMLParser 实现受保护 Golden 所需的最小 WebDAV 方法集，不引入 WebDAV 三方依赖；IntegrationKit 仅暴露项目自有 Sendable 值、端口、请求计划与错误。只有真实服务器矩阵证明 Foundation 存在明确协议缺口时，才能用新 ADR 比较候选库的许可证、维护、二进制体积、隐私清单、认证与重定向行为、Swift 6 并发和类型隔离。本结论是 iOS 架构决策，不能再次派生为 Android runtime characterization。",
+      "subject_keys": [
+        "integration.backup",
+        "integration.dependencies"
+      ],
+      "depends_on": [
+        {
+          "id": "BKC-INTEGRATION-WEBDAV-001",
+          "revision": 3
+        }
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "d9f3770b5869be291da07906366a3f617a6fab51",
+            "path": "app/src/main/java/io/legado/app/lib/webdav/WebDav.kt",
+            "symbol_id": "kotlin://io.legado.app.lib.webdav.WebDav"
+          }
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "human_decision"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-INTEGRATION-WEBDAV-DEPENDENCY-001",
+        "revision": 2
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-INTEGRATION-WEBDAV-ARCHITECTURE-001"
+}

@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgeCoverageLedger",
+  "id": "BKL-INTEGRATION-WEBDAV-DEPENDENCY-DECISION-001",
+  "revision": 1,
+  "status": "current",
+  "packet_refs": [
+    {
+      "id": "BKP-INTEGRATION-WEBDAV-DEPENDENCY-DECISION-001",
+      "revision": 1,
+      "sha256": "2864533797a0e317db0f879841baf337f9b28ccb9c6f7e5964d139cb4a9f8103"
+    }
+  ],
+  "generated_from": {
+    "knowledge_authority_sha256": "4e65144d660d0ef2c65494a80b93317f1cade3f3588db983d541cbb53296e092",
+    "requirement_catalog_sha256": "5ba3fdd568c8006f03d42a959788014946a47bea3225a082e709d0e114fa489b",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "entries": [
+    {
+      "id": "BKE-INTEGRATION-WEBDAV-DEPENDENCY-DECISION-001",
+      "claim_ref": {
+        "id": "BKC-INTEGRATION-WEBDAV-DEPENDENCY-001",
+        "revision": 3
+      },
+      "validation": {
+        "required": "human_decision",
+        "state": "verified",
+        "evidence_refs": [
+          "ios/docs/adr/0008-integrationkit-webdav-boundary.md",
+          "DRV-INTEGRATION-WEBDAV-RUNTIME-001@3"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "architecture_driver",
+        "refs": [
+          "DRV-INTEGRATION-WEBDAV-RUNTIME-001@3"
+        ],
+        "reason": "ADR-0008 已将 Android HTTP 栈事实与 iOS 依赖批准分离，并决定 Foundation-only 首版实现；任何 WebDAV 三方库必须由真实协议缺口和新 ADR 单独批准",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "not_ready",
+        "requirement_refs": [],
+        "work_item_refs": [],
+        "capability_refs": [
+          "CAP-CONFORMANCE"
+        ],
+        "evidence_refs": [
+          "ios/docs/adr/0008-integrationkit-webdav-boundary.md"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    }
+  ],
+  "updated_by": "IOS-INTEGRATION-WEBDAV-ARCHITECTURE-001",
+  "updated_at": "2026-07-29T19:14:00Z"
+}
