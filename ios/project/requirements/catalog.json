@@ -19,6 +19,20 @@
       ]
     },
     {
+      "id": "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001",
+      "revision": 1,
+      "status": "accepted",
+      "semantic_key": "android-migration.source-anchored-characterization",
+      "origin_kind": "ios_product_decision",
+      "readiness": "implementation_ready",
+      "path": "ios/project/requirements/accepted/REQ-ANDROID-MIGRATION-CHARACTERIZATION-001.json",
+      "record_sha256": "b3454e3a41277beba6d18e7c006291edbb524d05184a61156c044b0755db9d81",
+      "fact_selection_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "clauses": [
+        "RC-01"
+      ]
+    },
+    {
       "id": "REQ-ANDROID-SOURCE-PIPELINE-001",
       "revision": 1,
       "status": "accepted",

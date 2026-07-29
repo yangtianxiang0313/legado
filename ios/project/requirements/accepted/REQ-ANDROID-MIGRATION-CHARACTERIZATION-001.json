@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "id": "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001",
+  "revision": 1,
+  "status": "accepted",
+  "semantic_key": "android-migration.source-anchored-characterization",
+  "title": "持续刻画冻结 Android 真源中的迁移候选",
+  "origin": {
+    "kind": "ios_product_decision",
+    "baseline_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "fact_refs": [],
+    "decision_refs": [
+      "ADR-0001",
+      "ADR-0002",
+      "ADR-0005",
+      "ADR-0007"
+    ],
+    "admission": "policy_auto"
+  },
+  "classification": {
+    "kind": "portable_parity_behavior",
+    "profiles": [
+      "store_safe",
+      "full_compat"
+    ],
+    "support_state": "active_untested",
+    "evidence_level": "L2"
+  },
+  "capability_refs": [
+    "CAP-KNOWLEDGE-CONTROL",
+    "CAP-CONFORMANCE"
+  ],
+  "clauses": [
+    {
+      "id": "RC-01",
+      "statement": "冻结 Android 基线中的 candidate_source_anchored 运行时 Claim 在依赖闭合后必须自动进入真实 Android characterization；只有受保护 Golden、发布后的业务知识和 Coverage 才能驱动 iOS Delivery，有限测试不得替代源码语义。",
+      "proof_kind": "architecture_decision",
+      "required_checks": [
+        "source-lab-contract",
+        "oracle-contract-tests",
+        "android-golden-contract",
+        "business-knowledge-contract"
+      ],
+      "source_lab_behaviors": []
+    }
+  ],
+  "readiness": {
+    "state": "implementation_ready",
+    "blockers": [],
+    "next_action": "由 Minimal Loop v2 按依赖与范围顺序持续选择尚未刻画的 Android 真源候选"
+  },
+  "supersedes": null
+}

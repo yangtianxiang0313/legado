@@ -31,6 +31,10 @@ CONTROL_PATHS = {
     CURRENT_PATH.as_posix(),
     EVENTS_PATH.as_posix(),
 }
+ANDROID_CHARACTERIZATION_REQUIREMENT_ID = (
+    "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+)
+ANDROID_CHARACTERIZATION_REQUIREMENT_CLAUSE = "RC-01"
 
 
 class LoopError(RuntimeError):
@@ -462,7 +466,7 @@ def requirement_refs_for_claim(
             continue
         matches.append((path, binding))
     if not matches:
-        return []
+        return automatic_characterization_requirement_refs(root, packet)
     _, binding = sorted(matches, key=lambda value: value[0])[0]
     identifier = binding.get("id")
     revision = binding.get("revision")
@@ -479,6 +483,56 @@ def requirement_refs_for_claim(
     return [
         f"{identifier}@{revision}#{clause}"
         for clause in sorted(set(clauses))
+    ]
+
+
+def automatic_characterization_requirement_refs(
+    root: Path,
+    packet: Mapping[str, Any],
+) -> list[str]:
+    """Return the accepted project charter for an unclaimed Android candidate.
+
+    A per-slice AndroidMigrationIntent remains the more specific authority. The
+    charter is only a fail-closed fallback that keeps source-anchored runtime
+    claims moving when no intent overlaps their frozen source paths.
+    """
+    path = (
+        root
+        / "ios/project/requirements/accepted"
+        / f"{ANDROID_CHARACTERIZATION_REQUIREMENT_ID}.json"
+    )
+    if not path.is_file():
+        return []
+    requirement = read_json(path)
+    origin = requirement.get("origin")
+    packet_baseline = packet.get("baseline")
+    clauses = requirement.get("clauses")
+    if (
+        requirement.get("id") != ANDROID_CHARACTERIZATION_REQUIREMENT_ID
+        or requirement.get("status") != "accepted"
+        or not isinstance(requirement.get("revision"), int)
+        or isinstance(requirement.get("revision"), bool)
+        or not isinstance(origin, dict)
+        or origin.get("kind") != "ios_product_decision"
+        or origin.get("admission") != "policy_auto"
+        or not isinstance(packet_baseline, dict)
+        or origin.get("baseline_commit")
+        != packet_baseline.get("android_commit")
+        or not isinstance(clauses, list)
+        or ANDROID_CHARACTERIZATION_REQUIREMENT_CLAUSE
+        not in {
+            clause.get("id")
+            for clause in clauses
+            if isinstance(clause, dict)
+        }
+    ):
+        return []
+    return [
+        (
+            f"{ANDROID_CHARACTERIZATION_REQUIREMENT_ID}"
+            f"@{requirement['revision']}"
+            f"#{ANDROID_CHARACTERIZATION_REQUIREMENT_CLAUSE}"
+        )
     ]
 
 

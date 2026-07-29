@@ -55,7 +55,14 @@ Planner 有两条纯派生入口：
    source path/blob/symbol 和 Architecture Driver；
 5. 每次只生成一个 `task.json`，不生成候选或中间 Recipe。
 
-业务知识不完整时该 Claim 不进入可执行队列；不得由 AI 猜测或扩大任务。
+逐切片 `AndroidMigrationIntent` 是更具体的 Requirement authority；若某个已满足依赖
+的源码锚定 runtime Claim 尚无匹配 Intent，则由项目级已接受迁移章程
+`REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01` 续接。章程只授权真实 Android
+刻画，不授权跳过 Golden 直接实现产品。业务知识不完整、Android baseline 漂移或章程
+无效时该 Claim 不进入可执行队列；不得由 AI 猜测或扩大任务。
+
+`queue_empty` 只表示不存在已规划 Delivery、可刻画 Candidate 或恢复节点，不能把
+“没有逐切片 Intent”误报为 Android 真源已经迁移完成。
 
 ## 验证
 

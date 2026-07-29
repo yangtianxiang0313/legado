@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0072",
+  "revision": 1,
+  "title": "可执行队列为空不等于 Android 真源候选耗尽",
+  "fingerprint": "queue-empty-while-source-anchored-candidates-lack-slice-intent",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL",
+    "CAP-CONFORMANCE"
+  ],
+  "symptoms": [
+    "Loop 完成一个 Characterization 和对应 Delivery 后返回 queue_empty",
+    "业务知识 proposals 中仍存在依赖已闭合的 candidate_source_anchored 运行时 Claim",
+    "新增逐切片 AndroidMigrationIntent 后同一个 Claim 又能正常进入队列"
+  ],
+  "conditions": [
+    "Planner 把逐切片 AndroidMigrationIntent 当成所有 Characterization 的唯一 Requirement authority",
+    "首个 Intent 的 source_anchors 只覆盖部分 Android 源码路径",
+    "queue_empty 只统计过滤后的可执行节点，没有报告被 Intent 覆盖条件隐藏的候选"
+  ],
+  "root_cause": "候选发现与任务续接之间存在未显式建模的 Intent 覆盖过滤；队列状态被错误解释为迁移完成状态。",
+  "diagnosis": [
+    "分别统计 Android runtime candidates、already_characterized、dependency_blocked、no_matching_migration_intent 和 pending",
+    "检查 requirement_refs_for_claim 是否因 source path 不与任何 Intent 相交而返回空数组",
+    "不得仅根据 loop.py next 的空结果宣布 Android 迁移完成"
+  ],
+  "fix": "增加项目级 accepted migration characterization Requirement。逐切片 Intent 优先；没有匹配 Intent 时，只有同一 Android baseline、依赖闭合的源码锚定 runtime Claim 才能使用 policy_auto 章程继续进入 Characterization。",
+  "prevention": {
+    "architecture_rule": "queue_empty 只能表示不存在已规划 Delivery、可刻画 Android Candidate 和可恢复节点；逐切片控制记录缺失不得静默隐藏已授权的真源候选。",
+    "tests": [
+      "ios/loop/tests/test_loop.py#test_project_charter_continues_unclaimed_android_candidate",
+      "ios/loop/tests/test_loop.py#test_project_charter_fails_closed_on_android_baseline_drift"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "ADR-0005",
+    "until": "ADR-0007"
+  },
+  "status": "mitigated",
+  "occurrences": 1,
+  "first_seen": "2026-07-29",
+  "last_seen": "2026-07-29",
+  "evidence": [
+    "ios/project/business-knowledge/packets/proposals",
+    "ios/project/migration-intents/MINT-SOURCE-REQUEST-POST-FORM-001.json",
+    "ios/project/loop/events.jsonl"
+  ]
+}

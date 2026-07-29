@@ -488,6 +488,112 @@ class MinimalLoopTests(unittest.TestCase):
                 task["source"]["knowledge"]["candidate_claim"]["id"],
             )
 
+    def test_project_charter_continues_unclaimed_android_candidate(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.write(
+                root,
+                "ios/project/requirements/accepted/"
+                "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001.json",
+                {
+                    "id": "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001",
+                    "revision": 1,
+                    "status": "accepted",
+                    "origin": {
+                        "kind": "ios_product_decision",
+                        "baseline_commit": "a" * 40,
+                        "admission": "policy_auto",
+                    },
+                    "clauses": [{"id": "RC-01"}],
+                },
+            )
+            self.write(
+                root,
+                "ios/project/business-knowledge/packets/proposals/"
+                "BKP-UNCLAIMED-001/r0001.json",
+                {
+                    "id": "BKP-UNCLAIMED-001",
+                    "revision": 1,
+                    "status": "candidate",
+                    "baseline": {"android_commit": "a" * 40},
+                    "claims": [
+                        {
+                            "id": "BKC-UNCLAIMED-RUNTIME-001",
+                            "revision": 1,
+                            "semantic_key": "source.rule.unclaimed-runtime",
+                            "subject_keys": ["source.rule"],
+                            "depends_on": [],
+                            "support": {
+                                "state": "candidate_source_anchored",
+                                "runtime_requirement": "android_characterization",
+                                "source_anchors": [
+                                    {"path": "AnalyzeRule.kt"}
+                                ],
+                            },
+                        }
+                    ],
+                },
+            )
+
+            task = loop.next_task(root)
+
+            self.assertIsNotNone(task)
+            self.assertEqual("characterization", task["kind"])
+            self.assertEqual(
+                ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"],
+                task["requirements"],
+            )
+            loop.validate_task(root, task)
+
+    def test_project_charter_fails_closed_on_android_baseline_drift(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.write(
+                root,
+                "ios/project/requirements/accepted/"
+                "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001.json",
+                {
+                    "id": "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001",
+                    "revision": 1,
+                    "status": "accepted",
+                    "origin": {
+                        "kind": "ios_product_decision",
+                        "baseline_commit": "b" * 40,
+                        "admission": "policy_auto",
+                    },
+                    "clauses": [{"id": "RC-01"}],
+                },
+            )
+            self.write(
+                root,
+                "ios/project/business-knowledge/packets/proposals/"
+                "BKP-UNCLAIMED-001/r0001.json",
+                {
+                    "id": "BKP-UNCLAIMED-001",
+                    "revision": 1,
+                    "status": "candidate",
+                    "baseline": {"android_commit": "a" * 40},
+                    "claims": [
+                        {
+                            "id": "BKC-UNCLAIMED-RUNTIME-001",
+                            "revision": 1,
+                            "semantic_key": "source.rule.unclaimed-runtime",
+                            "subject_keys": ["source.rule"],
+                            "depends_on": [],
+                            "support": {
+                                "state": "candidate_source_anchored",
+                                "runtime_requirement": "android_characterization",
+                                "source_anchors": [
+                                    {"path": "AnalyzeRule.kt"}
+                                ],
+                            },
+                        }
+                    ],
+                },
+            )
+
+            self.assertIsNone(loop.next_task(root))
+
     def test_human_decision_claim_does_not_unlock_characterization(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
