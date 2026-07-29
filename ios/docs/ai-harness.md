@@ -1,4 +1,8 @@
-# AI Harness 自动推进协议
+# AI Harness 自动推进协议（旧版，只读迁移资料）
+
+> 当前执行协议已经切换到
+> [`minimal-loop-v2.md`](minimal-loop-v2.md)。本文件描述的 Candidate、Recipe、
+> WorkItem、Recovery、Evidence、Checkpoint 和人工 Gate 不得再用于新任务。
 
 ## 1. 设计目标
 

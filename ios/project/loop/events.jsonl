@@ -1,0 +1,1 @@
+{"at":"2026-07-29T03:40:00Z","details":{"completed_task_ids":["IOS-SOURCE-RUNTIME-HTML-CSS-001"],"legacy_head":"dff04334426fc0580e3de1acdd8472e096f37113","note":"Minimal Loop v2 接管后，旧 Candidate/Recipe/WorkItem/Recovery 状态只读等待迁移。"},"event":"legacy_history_imported","schema_version":2,"sequence":1,"task_id":null}
