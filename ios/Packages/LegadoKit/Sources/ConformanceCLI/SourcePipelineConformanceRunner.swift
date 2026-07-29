@@ -29,11 +29,17 @@ struct SourceURLTemplateInput: Equatable, Sendable {
   let basePath: String?
 }
 
+struct SourceRateLimitInput: Equatable, Sendable {
+  let mode: String
+  let concurrentRate: String
+}
+
 struct SourcePipelineInput: Equatable, Sendable {
   var searchKeywords: [String: String] = [:]
   var requestOptions: [String: SourceRequestOptionInput] = [:]
   var fieldEncodings: [String: SourceFieldEncodingInput] = [:]
   var urlTemplates: [String: SourceURLTemplateInput] = [:]
+  var rateLimits: [String: SourceRateLimitInput] = [:]
 }
 
 public enum SourcePipelineConformanceRunner {
@@ -63,6 +69,9 @@ public enum SourcePipelineConformanceRunner {
     var requestPlan: [HTTPRequestEnvelope] = []
     var cases: [JSONValue] = []
     var routeRequestCounts: [JSONValue] = []
+    let rateLimiter = SourceRateLimiter(
+      clock: SourceConformanceFixedClock(milliseconds: 1_000_000)
+    )
     let plans = try compiledPlans(
       fixture,
       input: input
@@ -99,6 +108,20 @@ public enum SourcePipelineConformanceRunner {
           fieldEncodingCase(
             requestCase,
             input: stimulus
+          )
+        )
+        continue
+      }
+      if requestCase.operation == .rateLimitState {
+        guard let stimulus = input.rateLimits[requestCase.id] else {
+          throw SourcePipelineConformanceError.inputRouteMismatch
+        }
+        requestPlan.append(HTTPRequestEnvelope(request: request))
+        cases.append(
+          try await rateLimitCase(
+            requestCase,
+            input: stimulus,
+            limiter: rateLimiter
           )
         )
         continue
@@ -354,6 +377,15 @@ public enum SourcePipelineConformanceRunner {
           fixture,
           input: stimulus
         ).plan
+      case .rateLimitState:
+        guard input.rateLimits[requestCase.id] != nil else {
+          throw SourcePipelineConformanceError.inputRouteMismatch
+        }
+        plan = SourceRequestPlan(
+          request: requestCase.request,
+          body: nil,
+          formFields: []
+        )
       default:
         throw SourcePipelineConformanceError.unsupportedOperation
       }
@@ -504,6 +536,138 @@ public enum SourcePipelineConformanceRunner {
         ]),
       ])
     }
+  }
+
+  private static func rateLimitCase(
+    _ requestCase: FixtureRequestCase,
+    input: SourceRateLimitInput,
+    limiter: SourceRateLimiter
+  ) async throws -> JSONValue {
+    let id = requestCase.id
+    let result: JSONValue
+
+    switch input.mode {
+    case "disabled":
+      let start = await limiter.start(
+        sourceKey: id,
+        concurrentRate: input.concurrentRate
+      )
+      result = .object([
+        "active": .bool(start.isActive),
+        "rate": .string(input.concurrentRate),
+      ])
+
+    case "interval_shared":
+      let first = await limiter.start(
+        sourceKey: id,
+        concurrentRate: input.concurrentRate
+      )
+      let second = await limiter.start(
+        sourceKey: id,
+        concurrentRate: input.concurrentRate
+      )
+      guard
+        let firstPermit = first.permit,
+        let frequency = second.state?.frequency
+      else {
+        throw SourcePipelineConformanceError.invalidSourceDefinition
+      }
+      await limiter.finish(firstPermit)
+      let afterEnd = await limiter.start(
+        sourceKey: id,
+        concurrentRate: input.concurrentRate
+      )
+      result = .object([
+        "first_allowed": .bool(first.isAllowed),
+        "second_same_key_denied": .bool(
+          !second.isAllowed && second.waitMilliseconds > 0
+        ),
+        "after_end_still_denied": .bool(
+          !afterEnd.isAllowed && afterEnd.waitMilliseconds > 0
+        ),
+        "record_mode": .string(SourceRateLimitMode.minimumInterval.rawValue),
+        "frequency_on_denial": .number(JSONNumber(Int64(frequency))),
+      ])
+
+    case "window_boundary":
+      var allowed = 0
+      var deniedWait: Int64 = 0
+      var frequency = 0
+      for _ in 0..<4 {
+        let start = await limiter.start(
+          sourceKey: id,
+          concurrentRate: input.concurrentRate
+        )
+        if start.isAllowed {
+          allowed += 1
+        } else {
+          deniedWait = start.waitMilliseconds
+        }
+        frequency = start.state?.frequency ?? frequency
+      }
+      result = .object([
+        "allowed_before_denial": .number(JSONNumber(Int64(allowed))),
+        "denied_wait_positive": .bool(deniedWait > 0),
+        "record_mode": .string(SourceRateLimitMode.countPerWindow.rawValue),
+        "frequency_on_denial": .number(JSONNumber(Int64(frequency))),
+      ])
+
+    case "distinct_keys":
+      let first = await limiter.start(
+        sourceKey: "\(id)-a",
+        concurrentRate: input.concurrentRate
+      )
+      let second = await limiter.start(
+        sourceKey: "\(id)-b",
+        concurrentRate: input.concurrentRate
+      )
+      result = .object([
+        "both_allowed": .bool(first.isAllowed && second.isAllowed),
+        "records_are_distinct": .bool(
+          first.state?.sourceKey != second.state?.sourceKey
+        ),
+      ])
+
+    case "invalid_degrades":
+      let first = await limiter.start(
+        sourceKey: id,
+        concurrentRate: input.concurrentRate
+      )
+      let second = await limiter.start(
+        sourceKey: id,
+        concurrentRate: input.concurrentRate
+      )
+      guard
+        let firstState = first.state,
+        let secondState = second.state
+      else {
+        throw SourcePipelineConformanceError.invalidSourceDefinition
+      }
+      result = .object([
+        "both_allowed": .bool(first.isAllowed && second.isAllowed),
+        "same_record": .bool(
+          firstState.sourceKey == secondState.sourceKey
+            && firstState.startedAtMilliseconds
+              == secondState.startedAtMilliseconds
+        ),
+        "is_count_window": .bool(
+          firstState.mode == .countPerWindow
+        ),
+        "frequency_after_second": .number(
+          JSONNumber(Int64(secondState.frequency))
+        ),
+      ])
+
+    default:
+      throw SourcePipelineConformanceError.invalidSourceDefinition
+    }
+
+    return .object([
+      "id": .string(id),
+      "operation": .string(requestCase.operation.rawValue),
+      "result": result,
+      "issue": .null,
+    ])
   }
 
   private static func requestPreparation(
@@ -702,5 +866,13 @@ public enum SourcePipelineConformanceRunner {
 
   private static func optional(_ value: String?) -> JSONValue {
     value.map(JSONValue.string) ?? .null
+  }
+}
+
+private struct SourceConformanceFixedClock: SourceRateLimitClock {
+  let milliseconds: Int64
+
+  func nowMilliseconds() -> Int64 {
+    milliseconds
   }
 }

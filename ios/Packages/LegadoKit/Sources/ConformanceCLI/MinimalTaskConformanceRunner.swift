@@ -340,6 +340,20 @@ public enum MinimalTaskConformanceRunner {
         else {
           throw MinimalTaskConformanceError.invalidFixture
         }
+      } else if operation == FixtureOperation.rateLimitState.rawValue {
+        guard
+          case .string(let mode)? = arguments["mode"],
+          case .string(let concurrentRate)? = arguments["concurrent_rate"],
+          result.rateLimits.updateValue(
+            SourceRateLimitInput(
+              mode: mode,
+              concurrentRate: concurrentRate
+            ),
+            forKey: id
+          ) == nil
+        else {
+          throw MinimalTaskConformanceError.invalidFixture
+        }
       }
     }
     return result
@@ -371,9 +385,12 @@ public enum MinimalTaskConformanceRunner {
             }
           ),
           "body": plan.body.map(JSONValue.string) ?? .null,
-          "timeout_ms": plan.request.timeout.map {
-            .number(JSONNumber(Int64($0.milliseconds)))
-          } ?? .null,
+          "timeout_ms":
+            requestCase.operation == .rateLimitState
+            ? .null
+            : plan.request.timeout.map {
+              .number(JSONNumber(Int64($0.milliseconds)))
+            } ?? .null,
         ]
         if requestCase.operation == .search {
           value["body_base64"] =

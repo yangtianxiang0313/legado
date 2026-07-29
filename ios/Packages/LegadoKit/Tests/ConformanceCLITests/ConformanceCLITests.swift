@@ -282,6 +282,62 @@ final class ConformanceCLITests: XCTestCase {
     XCTAssertTrue(text.contains(#""query_string":"term=星河""#))
   }
 
+  func testMinimalTaskRunnerMatchesRateLimitAndroidGolden() async throws {
+    let temporaryRoot = FileManager.default.temporaryDirectory
+      .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryRoot) }
+    let fixtureID = "sl-source-session-rate-limit-shared-state-001"
+    let fixturePath = "ios/harness/fixtures/source-lab/\(fixtureID)"
+    let goldenPath = "ios/harness/goldens/android-legado-v1/\(fixtureID).json"
+    let taskPath = "ios/project/loop/task.json"
+    for relative in [fixturePath, goldenPath, taskPath] {
+      try FileManager.default.createDirectory(
+        at:
+          temporaryRoot
+          .appendingPathComponent(relative)
+          .deletingLastPathComponent(),
+        withIntermediateDirectories: true
+      )
+    }
+    try FileManager.default.copyItem(
+      at: repositoryRoot.appendingPathComponent(fixturePath),
+      to: temporaryRoot.appendingPathComponent(fixturePath)
+    )
+    try FileManager.default.copyItem(
+      at: repositoryRoot.appendingPathComponent(goldenPath),
+      to: temporaryRoot.appendingPathComponent(goldenPath)
+    )
+    let task = try JSONSerialization.data(
+      withJSONObject: [
+        "schema_version": 2,
+        "id": "IOS-SOURCE-RUNTIME-RATE-LIMIT-001",
+        "source": [
+          "fixture_id": fixtureID,
+          "android_golden": goldenPath,
+        ],
+      ],
+      options: [.sortedKeys]
+    )
+    try task.write(to: temporaryRoot.appendingPathComponent(taskPath))
+
+    let first = try await MinimalTaskConformanceRunner.run(
+      taskPath: taskPath,
+      repositoryRoot: temporaryRoot
+    )
+    let second = try await MinimalTaskConformanceRunner.run(
+      taskPath: taskPath,
+      repositoryRoot: temporaryRoot
+    )
+    let text = String(decoding: first.data, as: UTF8.self)
+
+    XCTAssertTrue(first.passed)
+    XCTAssertEqual(first.data, second.data)
+    XCTAssertTrue(text.contains(#""first_divergence":null"#))
+    XCTAssertTrue(text.contains(#""allowed_before_denial":3"#))
+    XCTAssertTrue(text.contains(#""after_end_still_denied":true"#))
+    XCTAssertTrue(text.contains(#""is_count_window":true"#))
+  }
+
   func testRunnerProducesIdenticalCanonicalBytesWithoutRawBodyOrDynamicFields() async throws {
     let fixture = offlineFixture
 
