@@ -99,6 +99,19 @@ public enum MinimalTaskConformanceRunner {
         root: root
       )
     }
+    if fixtureID == SourceDOMSelectorConformanceRunner.fixtureID {
+      let run = try SourceDOMSelectorConformanceRunner.run(
+        fixtureDirectory: fixtureDirectory
+      )
+      return try finish(
+        taskID: taskID,
+        fixtureID: fixtureID,
+        goldenPath: goldenPath,
+        actualArtifact: run.artifact,
+        canonicalPlans: run.requestPlan,
+        root: root
+      )
+    }
     if fixtureID == SourceRuleVariableScopeConformanceRunner.fixtureID {
       let run = try await SourceRuleVariableScopeConformanceRunner.run(
         fixtureDirectory: fixtureDirectory
