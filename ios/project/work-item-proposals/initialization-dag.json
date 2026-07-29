@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "InitializationWorkItemProposalDAG",
   "id": "WIPD-IOS-INITIALIZATION-001",
-  "revision": 27,
+  "revision": 28,
   "authority": "proposal_only",
   "status": "proposed",
   "created_by": "IOS-KNOWLEDGE-CONTROL-PLANE-001",
@@ -300,6 +300,13 @@
       "title": "建立 Golden Publisher 精确自动实现边界",
       "outputs": ["exact publisher workflow scope", "current Golden denial", "product and oracle denial"],
       "gates": [], "constraint": "只在 Loop Supervisor 增加固定 Golden Publisher 的最小自动实现策略；允许固定 workflow、staging-only publisher、对应测试/README 与记忆，禁止其他 workflow、当前 Golden、Oracle、Dispatcher、Package、产品和 wildcard"
+    },
+    {
+      "proposal_id": "IOS-GITHUB-GOLDEN-PUBLISHER-AUTOMATION-001", "phase": 32, "class": "control_plane",
+      "depends_on": ["IOS-GITHUB-GOLDEN-PUBLISHER-SCOPE-001"], "knowledge_mode": "not_applicable",
+      "title": "实现无人工 Gate 的场景化 Golden Publisher",
+      "outputs": ["scenario-aware staging publisher", "manifest v2 per-fixture controls", "create-only push workflow", "result artifact contract"],
+      "gates": [], "constraint": "只修改固定 Golden workflow、staging-only publisher 与对应测试/README/记忆；不得在本项修改当前 Golden、调用 GitHub、修改 Oracle/Receipt/Dispatcher/Package/产品"
     }
   ],
   "compiler_rules": [
