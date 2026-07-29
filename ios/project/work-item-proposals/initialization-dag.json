@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "InitializationWorkItemProposalDAG",
   "id": "WIPD-IOS-INITIALIZATION-001",
-  "revision": 26,
+  "revision": 27,
   "authority": "proposal_only",
   "status": "proposed",
   "created_by": "IOS-KNOWLEDGE-CONTROL-PLANE-001",
@@ -293,6 +293,13 @@
       "title": "预声明 Golden Dispatcher 与结果回收所有权",
       "outputs": ["golden dispatcher owner", "golden dispatcher test owner"],
       "gates": [], "constraint": "只在 CAP-KNOWLEDGE-CONTROL 精确登记独立 Golden Dispatcher 与测试所有权；不得创建代码、修改 Publisher/Workflow/Golden、执行网络或回收结果"
+    },
+    {
+      "proposal_id": "IOS-GITHUB-GOLDEN-PUBLISHER-SCOPE-001", "phase": 31, "class": "control_plane",
+      "depends_on": ["IOS-GITHUB-GOLDEN-DISPATCHER-OWNER-001"], "knowledge_mode": "not_applicable",
+      "title": "建立 Golden Publisher 精确自动实现边界",
+      "outputs": ["exact publisher workflow scope", "current Golden denial", "product and oracle denial"],
+      "gates": [], "constraint": "只在 Loop Supervisor 增加固定 Golden Publisher 的最小自动实现策略；允许固定 workflow、staging-only publisher、对应测试/README 与记忆，禁止其他 workflow、当前 Golden、Oracle、Dispatcher、Package、产品和 wildcard"
     }
   ],
   "compiler_rules": [

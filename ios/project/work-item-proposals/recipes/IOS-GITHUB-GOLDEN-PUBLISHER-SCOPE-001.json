@@ -1,0 +1,149 @@
+{
+  "schema_version": 1,
+  "proposal_id": "IOS-GITHUB-GOLDEN-PUBLISHER-SCOPE-001",
+  "proposal_constraint": "只在 Loop Supervisor 增加固定 Golden Publisher 的最小自动实现策略；允许固定 workflow、staging-only publisher、对应测试/README 与记忆，禁止其他 workflow、当前 Golden、Oracle、Dispatcher、Package、产品和 wildcard",
+  "work_item": {
+    "api_version": "legado.harness/v1",
+    "kind": "WorkItem",
+    "metadata": {
+      "annotations": {},
+      "id": "IOS-GITHUB-GOLDEN-PUBLISHER-SCOPE-001",
+      "labels": ["phase-0", "control-plane", "external-execution", "android-oracle", "golden-publisher-scope", "corrective"],
+      "priority": 100,
+      "risk": "high",
+      "title": "建立 Golden Publisher 精确自动实现边界"
+    },
+    "spec": {
+      "acceptance": {
+        "criteria": [
+          {
+            "id": "AC-1",
+            "knowledge_claims": [],
+            "requirement_clauses": [],
+            "statement": "Loop Supervisor 仅对同时带 external-execution/android-oracle/golden-publisher/corrective 标签的 WorkItem 启用 exact allow-set；缺任一标签均回到通用策略并拒绝敏感路径。",
+            "verified_by": ["harness-tests"]
+          },
+          {
+            "id": "AC-2",
+            "knowledge_claims": [],
+            "requirement_clauses": [],
+            "statement": "exact allow-set 只含固定 Golden workflow、staging-only publisher、publisher README/test、CAP-CONFORMANCE、当前 Checkpoint 与 PIT wildcard。",
+            "verified_by": ["harness-tests", "dependency-policy"]
+          },
+          {
+            "id": "AC-3",
+            "knowledge_claims": [],
+            "requirement_clauses": [],
+            "statement": "其他 workflow、当前 goldens/**、Oracle/Receipt/Dispatcher、Harness core、SourceLab、Package、产品、Requirement 与 broad wildcard 均有 fail-closed 回归。",
+            "verified_by": ["harness-tests", "dependency-policy"]
+          },
+          {
+            "id": "AC-4",
+            "knowledge_claims": [],
+            "requirement_clauses": [],
+            "statement": "CAP-KNOWLEDGE-CONTROL revision 69→70，Checkpoint 记录策略边界；本项不修改 Publisher/Workflow/Golden、不访问 GitHub。",
+            "verified_by": ["memory-close"]
+          }
+        ],
+        "required_checks": ["dependency-policy", "harness-tests"]
+      },
+      "architecture_refs": ["ARCH-014", "ARCH-017", "ADR-0002", "ADR-0004"],
+      "baseline_checks": ["dependency-policy", "harness-tests"],
+      "budget": {
+        "max_edit_verify_cycles": 4,
+        "max_full_test_runs": 4,
+        "max_infra_retries": 1,
+        "max_targeted_test_runs": 18,
+        "wall_clock_seconds": 10800
+      },
+      "capability": "CAP-KNOWLEDGE-CONTROL",
+      "completion_effects": {"health": {"github_golden_publisher_auto_scope": "exact_paths_v1"}},
+      "depends_on": ["IOS-GITHUB-GOLDEN-DISPATCHER-OWNER-001"],
+      "gates": [],
+      "inputs": {
+        "android_source_anchors": [],
+        "context_files": [
+          "ios/harness/loop_supervisor.py",
+          "ios/harness/tests/test_loop_supervisor.py",
+          "ios/harness/work-items/IOS-GITHUB-ORACLE-WORKFLOW-SCOPE-001.json",
+          "ios/project/checkpoints/IOS-GITHUB-GOLDEN-DISPATCHER-OWNER-001.json",
+          "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+          "ios/project/capabilities/CAP-CONFORMANCE.json"
+        ],
+        "fixtures": []
+      },
+      "intent": "为 scenario-aware、无人工 Gate 的 Golden Publisher 实现建立最小自动策略特例。Loop Supervisor 只在标签 external-execution/android-oracle/golden-publisher/corrective 全部存在时接受精确 allow_write 集合：.github/workflows/android-golden-publisher.yml、ios/publisher/android_golden_publisher.py、ios/publisher/README.md、ios/harness/tests/test_android_golden_publisher.py、ios/project/capabilities/CAP-CONFORMANCE.json、当前 Checkpoint 与 PIT wildcard。必须显式拒绝其他 .github、ios/harness/goldens/**、Oracle、Receipt、GitHub Dispatcher、Harness core、SourceLab、Package、产品、Requirement、approval/proposal 和 wildcard。策略项本身只修改 Supervisor/test/README/CAP-KNOWLEDGE-CONTROL/Checkpoint/PIT，不修改 Publisher/Workflow/Golden，不访问网络。revision 69→70。",
+      "knowledge": {
+        "claim_refs": [],
+        "context_budget": {"max_bytes": 40960, "max_claims": 10},
+        "contract_version": 1,
+        "coverage_refs": [],
+        "driver_refs": [],
+        "expected_ledger_transitions": [],
+        "mode": "not_applicable",
+        "none_reason": "本项只建立自动物化范围策略",
+        "produces": []
+      },
+      "memory": {
+        "adr": "not_required",
+        "capability_state_required": true,
+        "checkpoint_required": true,
+        "pitfall": "if_non_obvious_and_preventable"
+      },
+      "requirements": {
+        "mode": "control_plane",
+        "none_reason": "本项只收窄 Golden Publisher 自动实现边界",
+        "refs": []
+      },
+      "scope": {
+        "allow_write": [
+          "ios/harness/loop_supervisor.py",
+          "ios/harness/tests/test_loop_supervisor.py",
+          "ios/harness/README.md",
+          "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+          "ios/project/checkpoints/IOS-GITHUB-GOLDEN-PUBLISHER-SCOPE-001.json",
+          "ios/project/pitfalls/PIT-*.json"
+        ],
+        "deny_write": [
+          ".github/**",
+          "app/**",
+          "modules/**",
+          "ios/Packages/**",
+          "ios/publisher/**",
+          "ios/harness/harness.py",
+          "ios/harness/demand_compiler.py",
+          "ios/harness/github_golden_publisher.py",
+          "ios/harness/github_oracle_dispatcher.py",
+          "ios/harness/github_oracle_receipt.py",
+          "ios/harness/proposal_compiler.py",
+          "ios/harness/config.json",
+          "ios/harness/schemas/**",
+          "ios/harness/business-knowledge/**",
+          "ios/harness/android-intake/**",
+          "ios/harness/source-lab/**",
+          "ios/harness/fixtures/**",
+          "ios/harness/goldens/**",
+          "ios/harness/normalization/**",
+          "ios/harness/oracle/**",
+          "ios/project/external-execution-receipts/**",
+          "ios/project/android-intake/**",
+          "ios/project/requirements/**",
+          "ios/project/business-knowledge/**",
+          "ios/project/approvals/**",
+          "ios/project/work-item-proposals/**",
+          "ios/project/baseline.json",
+          "ios/docs/**"
+        ],
+        "max_changed_lines": 2400,
+        "max_files_changed": 8
+      },
+      "source_lab": {
+        "behaviors": [],
+        "mode": "not_applicable",
+        "none_reason": "本项只建立控制策略，不运行 SourceLab",
+        "scenarios": []
+      },
+      "stop_on": ["doctor_red", "scope_violation", "authority_scope", "same_failure_twice", "budget_exhausted"]
+    }
+  }
+}
