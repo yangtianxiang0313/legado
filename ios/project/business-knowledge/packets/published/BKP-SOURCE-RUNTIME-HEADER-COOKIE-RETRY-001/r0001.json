@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-SOURCE-RUNTIME-HEADER-COOKIE-RETRY-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "source.runtime-header-cookie-retry-golden",
+  "title": "受保护 Android Golden 验证的 Header、Cookie 与 retry 分层语义",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "source.execution"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-RUNTIME-PORTS"
+    ],
+    "subject_keys": [
+      "source.request",
+      "source.session",
+      "source.transport"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-SR-REQUEST-HEADER-COOKIE-RETRY-001",
+      "revision": 2,
+      "semantic_key": "source.request.header-cookie-retry-layering",
+      "kind": "runtime_behavior",
+      "topic": "Header、Cookie 与 retry 的分层处理",
+      "statement": "在 sl-source-request-header-cookie-retry-layering-001 的固定输入下，Android 先继承书源 Header，再由 URL option 对完全相同的 key 覆盖；X-Case 与 x-case 被保留为两个 map entry，并在最终网络请求中并存。请求前 AnalyzeUrl.setCookie 先把持久 Cookie 与显式 Cookie 合并为 persisted=stored; shared=option; explicit=option，并加入仅供内部拦截器识别的 CookieJar=1；随后 HTTP 拦截器移除 CookieJar，再次以持久 Cookie 合并网络请求，最终 wire Cookie 为 persisted=stored; shared=stored; explicit=option。retry=2 对持续 503 的路由产生 3 次请求；retry 缺失时解析值为 0，并产生 1 次请求。本结论不外推到非法或负 retry、成功后的提前停止、网络异常分类、POST body 重放、重定向、Cookie 超长淘汰或其他 Header/Cookie 输入。",
+      "subject_keys": [
+        "source.request",
+        "source.session",
+        "source.transport"
+      ],
+      "depends_on": [],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da",
+            "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+            "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/setCookie"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "b4ead2bb5a02cebe9e5bf7e42fbced5f67785485",
+            "path": "app/src/main/java/io/legado/app/help/http/OkHttpUtils.kt",
+            "symbol_id": "kotlin://io.legado.app.help.http/newCallResponse"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "fbd720ca3df874038f6d8e232a671958e5217632",
+            "path": "app/src/main/java/io/legado/app/help/http/CookieManager.kt",
+            "symbol_id": "kotlin://io.legado.app.help.http.CookieManager/loadRequest"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/sl-source-request-header-cookie-retry-layering-001.json",
+            "artifact_sha256": "050f27d62bf141da0c4c433dd9e07b05724867aa474bc7e67fd1350ce53466b4",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "3f8b64601a66cd0134cc858d7ff88546e3f43eb0fa1659736e0e188928696db7",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "43f163cfd63ce3b107d6fedf9535258c26ae3a7a3f4a72cb16593dd603851012",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-SR-REQUEST-HEADER-COOKIE-RETRY-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-SOURCE-REQUEST-HEADER-COOKIE-RETRY-LAYERING-001"
+}

@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-SOURCE-RUNTIME-HEADER-COOKIE-RETRY-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "source.execution.header-cookie-retry-layering",
+  "title": "在独立 SourceRuntime 中显式建模请求构造、会话注入与 retry 执行",
+  "claim_refs": [
+    {
+      "id": "BKC-SR-REQUEST-HEADER-COOKIE-RETRY-001",
+      "revision": 2
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "iOS 必须区分 URL option 构造后的 Header、会话 Cookie 注入后的 Header 与真正 wire Header，不能用一次字典 merge 冒充 Android 全链路。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "isolation",
+      "scenario": "Header/Cookie/retry 语义属于独立 SourceRuntime 与 Transport 端口，不得进入 SwiftUI、Domain Model 或具体书源页面。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "security",
+      "scenario": "CookieJar 等内部控制标记只能存在于 Transport 适配边界，必须在网络发送前移除。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "observability",
+      "scenario": "验收必须同时输出构造 Header、解析后 Header、wire Header、retry 值与按路由请求次数。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "evolvability",
+      "scenario": "非法 retry、异常重试、POST 重放和重定向应由后续 Android characterization 独立扩展，当前实现不得猜测。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "如何让 RequestPlan 保持纯值，同时在 Transport 层表达会话 Cookie 二次注入与内部控制标记移除？",
+    "如何把 retry 的最大尝试次数和实际 attempt trace 暴露给结构化验收，而不绑定 URLSession 的具体错误类型？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002"
+    ],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-SOURCE-REQUEST-HEADER-COOKIE-RETRY-LAYERING-001",
+      "IOS-SOURCE-RUNTIME-HEADER-COOKIE-RETRY-001"
+    ]
+  },
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30424718444/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-SOURCE-REQUEST-HEADER-COOKIE-RETRY-LAYERING-001"
+}
