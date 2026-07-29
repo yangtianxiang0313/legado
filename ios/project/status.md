@@ -2,12 +2,12 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-29T01:33:19Z
+- 更新时间：2026-07-29T01:36:06Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
-- 下一个可领取工作项：无
+- 下一个可领取工作项：IOS-GOLDEN-CONSUMER-CONTINUATION-RECOVERY-002
 - 最近完成：IOS-GOLDEN-CONSUMER-BASELINE-SCOPE-001
 
 ## 健康度
@@ -161,6 +161,7 @@
 | IOS-GITHUB-ORACLE-WORKFLOW-SCOPE-001 | 100 | `completed` | IOS-GITHUB-ORACLE-WORKFLOW-OWNER-001 | 建立固定 Android Oracle Workflow 的受限自动修改策略 |
 | IOS-GOLDEN-CONSUMER-BASELINE-SCOPE-001 | 100 | `completed` | IOS-GITHUB-GOLDEN-DISPATCHER-001 | 建立 Manifest v2 消费恢复的精确自动边界 |
 | IOS-GOLDEN-CONSUMER-CONTINUATION-001 | 100 | `blocked` | IOS-GITHUB-GOLDEN-DISPATCHER-001, IOS-HARNESS-RUNTIME-CONTEXT-REPRO-001 | 消费受保护 Golden 并续接迁移需求 |
+| IOS-GOLDEN-CONSUMER-CONTINUATION-RECOVERY-002 | 100 | `ready` | IOS-GOLDEN-CONSUMER-BASELINE-SCOPE-001, IOS-GITHUB-GOLDEN-DISPATCHER-001 | 恢复 Manifest v2 基线并完成受保护 Golden 续接 |
 | IOS-HARNESS-APPROVAL-UI-001 | 100 | `completed` | IOS-KNOWLEDGE-BOOK-DOMAIN-001 | 提供本地一键人工审批界面 |
 | IOS-HARNESS-RUNTIME-CONTEXT-REPRO-001 | 100 | `completed` | IOS-HARNESS-RUNTIME-CONTEXT-SCOPE-001 | 让终态 WorkItem Runtime Context 在干净 Checkout 可复现 |
 | IOS-HARNESS-RUNTIME-CONTEXT-SCOPE-001 | 100 | `completed` | IOS-GITHUB-GOLDEN-DISPATCHER-001 | 建立终态 Runtime Context 可复现修复边界 |
