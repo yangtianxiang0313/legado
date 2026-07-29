@@ -6,7 +6,7 @@
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
   "authority_sha256": "96600bdac94261fa24a34f79da265c1caf752b1a8f0ce8402279cde6d1ebd42d",
-  "coverage_sha256": "7b891a570d11143ad5d3ae9a896b9562e99d721b584653b8277d89e596eb34c1",
+  "coverage_sha256": "95eb151b69066c7ef5fbe495697b31f346937f75b8e36810e1f069c0f14ef5ad",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -530,7 +530,7 @@
       "id": "BKL-INTEGRATION-BACKUP-WEBDAV-RUNTIME-001",
       "revision": 1,
       "path": "ios/project/business-knowledge/coverage/BKL-INTEGRATION-BACKUP-WEBDAV-RUNTIME-001.json",
-      "record_sha256": "c59239550c0e522babf635b92ba2a0650dc1214d4cebdcd4b29bd4edb82e2515",
+      "record_sha256": "ac75f03dcb27a37d2b5cd89f4983cdad280c3fc766636560d9bd95cd97267344",
       "entry_ids": [
         "BKE-INTEGRATION-BACKUP-WEBDAV-RUNTIME-001"
       ]

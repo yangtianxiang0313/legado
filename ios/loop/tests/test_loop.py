@@ -699,13 +699,241 @@ class MinimalLoopTests(unittest.TestCase):
             "ios/harness/tests/test_oracle_control.py",
             task["scope"]["allowed_paths"],
         )
-        with self.assertRaisesRegex(
-            loop.LoopError,
-            "OWNER_NOT_MAPPED",
-        ):
-            loop.owner_contract(
-                "IOS-INTEGRATION-KIT-WEBDAV-001"
+        architecture = loop.owner_contract(
+            "IOS-INTEGRATION-WEBDAV-ARCHITECTURE-001"
+        )
+        self.assertEqual(
+            "ArchitectureControl",
+            architecture["owner"],
+        )
+        self.assertEqual(
+            "ADR-0008",
+            architecture["decision_contract"]["id"],
+        )
+        with self.assertRaisesRegex(loop.LoopError, "OWNER_NOT_MAPPED"):
+            loop.owner_contract("IOS-INTEGRATION-WEBDAV-RUNTIME-001")
+
+    def test_unresolved_integration_driver_derives_architecture_task(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            requirement = (
+                "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
             )
+            self.write(
+                root,
+                "ios/project/requirements/accepted/"
+                f"{requirement}.json",
+                {"id": requirement},
+            )
+            golden_path = (
+                "ios/harness/goldens/android-legado-v1/"
+                "il-integration-backup-webdav-001.json"
+            )
+            self.write(
+                root,
+                golden_path,
+                {
+                    "fixture_id": "il-integration-backup-webdav-001",
+                    "oracle": {"android_git_commit": "a" * 40},
+                },
+            )
+            claim_ref = {
+                "id": "BKC-INTEGRATION-WEBDAV-001",
+                "revision": 3,
+            }
+            self.write(
+                root,
+                "ios/project/business-knowledge/packets/published/"
+                "BKP-INTEGRATION-WEBDAV-001/r0001.json",
+                {
+                    "claims": [
+                        {
+                            **claim_ref,
+                            "support": {
+                                "source_anchors": [
+                                    {
+                                        "android_commit": "a" * 40,
+                                        "path": "WebDav.kt",
+                                        "symbol_id": "WebDav",
+                                        "git_blob": "b" * 40,
+                                    }
+                                ]
+                            },
+                        }
+                    ]
+                },
+            )
+            self.write(
+                root,
+                "ios/project/business-knowledge/drivers/published/"
+                "DRV-INTEGRATION-WEBDAV-RUNTIME-001/r0001.json",
+                {
+                    "id": "DRV-INTEGRATION-WEBDAV-RUNTIME-001",
+                    "revision": 1,
+                    "status": "active",
+                    "title": "WebDAV 架构决策",
+                    "claim_refs": [claim_ref],
+                    "resolution": {
+                        "state": "requires_adr",
+                        "adr_refs": [],
+                        "work_item_refs": [],
+                    },
+                },
+            )
+            self.write(
+                root,
+                "ios/project/business-knowledge/coverage/"
+                "BKL-INTEGRATION-WEBDAV.json",
+                {
+                    "status": "current",
+                    "packet_refs": [
+                        {
+                            "id": "BKP-INTEGRATION-WEBDAV-001",
+                            "revision": 1,
+                        }
+                    ],
+                    "entries": [
+                        {
+                            "claim_ref": claim_ref,
+                            "validation": {
+                                "evidence_refs": [golden_path]
+                            },
+                            "product_disposition": {
+                                "kind": "architecture_driver",
+                                "refs": [
+                                    "DRV-INTEGRATION-WEBDAV-RUNTIME-001@1"
+                                ],
+                            },
+                            "delivery": {
+                                "state": "planned",
+                                "requirement_refs": [
+                                    f"{requirement}@1#RC-01"
+                                ],
+                                "work_item_refs": [
+                                    (
+                                        "IOS-INTEGRATION-WEBDAV-"
+                                        "ARCHITECTURE-001"
+                                    )
+                                ],
+                            },
+                        }
+                    ],
+                },
+            )
+
+            task = loop.next_task(root)
+
+            self.assertEqual(
+                "IOS-INTEGRATION-WEBDAV-ARCHITECTURE-001",
+                task["id"],
+            )
+            self.assertEqual(
+                "ArchitectureControl",
+                task["architecture"]["owner"],
+            )
+            self.assertEqual(
+                "ADR-0008",
+                task["source"]["architecture_decision"]["id"],
+            )
+            self.assertEqual(
+                "architecture_decision",
+                task["acceptance"]["structured_output"]["mode"],
+            )
+            self.assertNotIn(
+                "ios/Packages/LegadoKit/Package.swift",
+                task["scope"]["allowed_paths"],
+            )
+            loop.validate_task(root, task)
+            decision = task["source"]["architecture_decision"]
+            adr_path = root / decision["path"]
+            adr_path.parent.mkdir(parents=True, exist_ok=True)
+            sections = "\n".join(
+                f"## {value}\n内容"
+                for value in (
+                    "Context",
+                    "Decision",
+                    "Alternatives",
+                    "Consequences",
+                    "Architecture / Capability Impact",
+                    "Compatibility / Data Migration",
+                    "Validation",
+                    "Rollback",
+                    "Human Review",
+                )
+            )
+            adr_path.write_text(
+                "---\nid: ADR-0008\nstatus: accepted\n---\n"
+                "首版不引入 WebDAV 三方库，使用 URLSession 和 XMLParser。\n"
+                f"{sections}\n",
+                encoding="utf-8",
+            )
+            architecture_path = root / "ios/docs/architecture.md"
+            architecture_path.parent.mkdir(parents=True, exist_ok=True)
+            architecture_path.write_text(
+                "ADR-0008 `IntegrationKit` `WebDAVFoundation` "
+                "`AppUseCases`\n",
+                encoding="utf-8",
+            )
+            self.write(
+                root,
+                "ios/harness/architecture-rules.json",
+                {
+                    "known_project_modules": list(
+                        decision["required_targets"]
+                    ),
+                    "targets": {
+                        key: {"dependencies": value}
+                        for key, value in decision[
+                            "required_targets"
+                        ].items()
+                    },
+                },
+            )
+            self.write(
+                root,
+                "ios/project/business-knowledge/drivers/published/"
+                "DRV-INTEGRATION-WEBDAV-RUNTIME-001/r0002.json",
+                {
+                    "id": "DRV-INTEGRATION-WEBDAV-RUNTIME-001",
+                    "revision": 2,
+                    "status": "resolved",
+                    "resolution": {
+                        "state": "resolved",
+                        "adr_refs": ["ADR-0008"],
+                    },
+                    "supersedes": {
+                        "id": "DRV-INTEGRATION-WEBDAV-RUNTIME-001",
+                        "revision": 1,
+                    },
+                },
+            )
+            self.write(
+                root,
+                "ios/project/business-knowledge/coverage/"
+                "BKL-INTEGRATION-WEBDAV.json",
+                {
+                    "entries": [
+                        {
+                            "claim_ref": claim_ref,
+                            "product_disposition": {
+                                "refs": [
+                                    "DRV-INTEGRATION-WEBDAV-RUNTIME-001@2"
+                                ]
+                            },
+                            "delivery": {"state": "not_ready"},
+                        }
+                    ]
+                },
+            )
+
+            failures, observed = loop.validate_architecture_decision(
+                root,
+                task,
+                task["acceptance"]["structured_output"],
+            )
+
+            self.assertEqual([], failures)
+            self.assertIsNotNone(observed)
 
     def test_project_charter_fails_closed_on_android_baseline_drift(self):
         with tempfile.TemporaryDirectory() as directory:

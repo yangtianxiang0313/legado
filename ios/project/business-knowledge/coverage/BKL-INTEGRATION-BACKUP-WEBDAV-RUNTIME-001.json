@@ -42,7 +42,9 @@
       },
       "delivery": {
         "state": "planned",
-        "requirement_refs": [],
+        "requirement_refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
         "work_item_refs": [
           "IOS-INTEGRATION-WEBDAV-ARCHITECTURE-001"
         ],

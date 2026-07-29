@@ -394,6 +394,58 @@ def source_anchors_for_claims(
 
 
 def owner_contract(target: str) -> Mapping[str, Any]:
+    if target == "IOS-INTEGRATION-WEBDAV-ARCHITECTURE-001":
+        return {
+            "owner": "ArchitectureControl",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/docs/adr/0008-integrationkit-webdav-boundary.md",
+                "ios/docs/architecture.md",
+                "ios/harness/architecture-rules.json",
+                "ios/project/business-knowledge/catalog.json",
+                (
+                    "ios/project/business-knowledge/coverage/"
+                    "BKL-INTEGRATION-BACKUP-WEBDAV-RUNTIME-001.json"
+                ),
+                (
+                    "ios/project/business-knowledge/drivers/published/"
+                    "DRV-INTEGRATION-WEBDAV-RUNTIME-001/**"
+                ),
+            ],
+            "decision_contract": {
+                "id": "ADR-0008",
+                "path": (
+                    "ios/docs/adr/"
+                    "0008-integrationkit-webdav-boundary.md"
+                ),
+                "initial_driver": {
+                    "id": "DRV-INTEGRATION-WEBDAV-RUNTIME-001",
+                    "revision": 1,
+                },
+                "required_targets": {
+                    "IntegrationKit": ["LegadoCore"],
+                    "WebDAVFoundation": [
+                        "LegadoCore",
+                        "IntegrationKit",
+                    ],
+                    "AppUseCases": [
+                        "LegadoCore",
+                        "LibraryDomain",
+                        "SourceRuntime",
+                        "ReaderCore",
+                        "IntegrationKit",
+                    ],
+                },
+                "third_party_policy": "foundation_only_initially",
+            },
+        }
     if target == "IOS-UI-BOOTSTRAP-001":
         return {
             "owner": "AppShell",
@@ -845,6 +897,127 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "path": driver_path,
         }
         title = str(driver.get("title") or target)
+    if architecture["owner"] == "ArchitectureControl":
+        decision = architecture.get("decision_contract")
+        if (
+            not isinstance(decision, dict)
+            or not isinstance(driver_ref, dict)
+            or driver_ref.get("id")
+            != decision.get("initial_driver", {}).get("id")
+            or driver_ref.get("revision")
+            != decision.get("initial_driver", {}).get("revision")
+            or not isinstance(driver, dict)
+            or driver.get("status") != "active"
+            or driver.get("resolution", {}).get("state") != "requires_adr"
+            or not golden_path
+            or not fixture_id
+        ):
+            raise LoopError("ARCHITECTURE_DECISION_SOURCE_INVALID")
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "id": target,
+            "kind": "delivery",
+            "title": title,
+            "status": "ready",
+            "priority": 100,
+            "goal": (
+                "依据受保护 Android Golden 和 active Architecture Driver，"
+                "先物化 IntegrationKit/WebDAV 的 Target、依赖边、凭据隔离、"
+                "兼容差异与三方库决策；本任务不实现产品代码。"
+            ),
+            "source": {
+                "android_baseline": {
+                    "android_commit": read_json(root / golden_path)
+                    .get("oracle", {})
+                    .get("android_git_commit")
+                },
+                "anchors": source_anchors_for_claims(root, claim_refs),
+                "fixture_id": fixture_id,
+                "android_golden": golden_path,
+                "knowledge": {
+                    "coverage": delivery["ledger_path"],
+                    "packets": ledger.get("packet_refs", []),
+                    "driver": driver_ref,
+                    "claims": claim_refs,
+                },
+                "architecture_decision": decision,
+            },
+            "requirements": requirement_refs,
+            "architecture": {
+                "owner": architecture["owner"],
+                "refs": architecture["architecture_refs"],
+                "rule": (
+                    "先接受 ADR 并更新机器可读依赖矩阵，再允许创建产品 "
+                    "Target 或引入依赖；凭据值不得进入业务数据与任何证据。"
+                ),
+            },
+            "scope": {
+                "allowed_paths": architecture["allowed_paths"],
+                "forbidden": [
+                    "ios/Packages/LegadoKit/Package.swift",
+                    "ios/Packages/LegadoKit/Sources/**",
+                    "accepted Requirement",
+                    "产品实现",
+                    "三方依赖代码",
+                ],
+            },
+            "acceptance": {
+                "commands": [
+                    {
+                        "id": "dependency-contract",
+                        "argv": [
+                            "python3",
+                            "-B",
+                            "ios/harness/probes/dependency_contract.py",
+                            "--root",
+                            ".",
+                        ],
+                        "timeout_seconds": 120,
+                    },
+                    {
+                        "id": "business-knowledge-contract",
+                        "argv": [
+                            "python3",
+                            "-B",
+                            (
+                                "ios/harness/business-knowledge/"
+                                "business_knowledge.py"
+                            ),
+                            "doctor",
+                            "--root",
+                            ".",
+                        ],
+                        "timeout_seconds": 120,
+                    },
+                ],
+                "structured_output": {
+                    "mode": "architecture_decision",
+                    "fixture_id": decision["id"],
+                    "expected": decision["path"],
+                    "required_fields": [
+                        "decision",
+                        "driver",
+                        "dependency_contract",
+                        "first_divergence",
+                    ],
+                    "expected_values": {
+                        "task_id": target,
+                        "fixture_id": decision["id"],
+                        "status": "equal",
+                        "first_divergence": None,
+                    },
+                },
+            },
+            "knowledge_updates": {
+                "required_on_completion": [
+                    "summary",
+                    "current_status",
+                    "architecture_change",
+                    "pitfalls",
+                    "next_step",
+                ]
+            },
+        }
     if architecture["owner"] == "AppShell":
         expected_path = (
             "ios/harness/ui/expected/ui-bootstrap-roots-v1.json"
@@ -1527,7 +1700,11 @@ def validate_task(root: Path, task: Mapping[str, Any]) -> None:
         or not commands
         or not isinstance(structured, dict)
         or structured.get("mode")
-        not in {"command_json", "android_golden"}
+        not in {
+            "command_json",
+            "android_golden",
+            "architecture_decision",
+        }
         or not isinstance(structured.get("fixture_id"), str)
         or not isinstance(structured.get("expected"), str)
         or not isinstance(structured.get("required_fields"), list)
@@ -1553,8 +1730,14 @@ def validate_task(root: Path, task: Mapping[str, Any]) -> None:
         or len(set(command_ids)) != len(command_ids)
     ):
         raise LoopError("TASK_ACCEPTANCE_INVALID")
+    architecture_owner = task.get("architecture", {}).get("owner")
     if (
         task["kind"] == "delivery"
+        and architecture_owner == "ArchitectureControl"
+        and structured["mode"] != "architecture_decision"
+    ) or (
+        task["kind"] == "delivery"
+        and architecture_owner != "ArchitectureControl"
         and structured["mode"] != "command_json"
     ) or (
         task["kind"] == "characterization"
@@ -1870,6 +2053,186 @@ def validate_android_golden(
     return sorted(set(failures)), golden_sha256
 
 
+def validate_architecture_decision(
+    root: Path,
+    task: Mapping[str, Any],
+    contract: Mapping[str, Any],
+) -> tuple[list[str], str | None]:
+    failures: list[str] = []
+    decision = task.get("source", {}).get("architecture_decision", {})
+    decision_id = decision.get("id")
+    expected_path = decision.get("path")
+    initial_driver = decision.get("initial_driver", {})
+    required_targets = decision.get("required_targets", {})
+    if (
+        decision_id != contract.get("fixture_id")
+        or expected_path != contract.get("expected")
+        or not isinstance(initial_driver, dict)
+        or not isinstance(required_targets, dict)
+        or not required_targets
+    ):
+        return ["architecture_contract_invalid"], None
+
+    adr_path = root / str(expected_path)
+    try:
+        adr_payload = adr_path.read_bytes()
+        adr_text = adr_payload.decode("utf-8")
+    except (OSError, UnicodeError):
+        return ["adr_invalid_or_missing"], None
+    frontmatter_match = re.match(
+        r"\A---\n(?P<body>.*?)\n---\n",
+        adr_text,
+        re.DOTALL,
+    )
+    metadata = {}
+    if frontmatter_match:
+        metadata = {
+            key.strip(): value.strip()
+            for line in frontmatter_match.group("body").splitlines()
+            for key, separator, value in [line.partition(":")]
+            if separator
+        }
+    if metadata.get("id") != decision_id:
+        failures.append("mismatch:adr.id")
+    if metadata.get("status") != "accepted":
+        failures.append("mismatch:adr.status")
+    for section in (
+        "Context",
+        "Decision",
+        "Alternatives",
+        "Consequences",
+        "Architecture / Capability Impact",
+        "Compatibility / Data Migration",
+        "Validation",
+        "Rollback",
+        "Human Review",
+    ):
+        if f"## {section}" not in adr_text:
+            failures.append(f"missing:adr.section.{section}")
+    if decision.get("third_party_policy") == "foundation_only_initially":
+        for marker in (
+            "首版不引入 WebDAV 三方库",
+            "URLSession",
+            "XMLParser",
+        ):
+            if marker not in adr_text:
+                failures.append(f"missing:adr.dependency.{marker}")
+    try:
+        architecture_text = (
+            root / "ios/docs/architecture.md"
+        ).read_text(encoding="utf-8")
+    except (OSError, UnicodeError):
+        architecture_text = ""
+    if str(decision_id) not in architecture_text:
+        failures.append("missing:architecture.adr")
+
+    driver_id = initial_driver.get("id")
+    initial_revision = initial_driver.get("revision")
+    drivers = []
+    if isinstance(driver_id, str):
+        for path in sorted(
+            (
+                root
+                / "ios/project/business-knowledge/drivers/published"
+                / driver_id
+            ).glob("r*.json")
+        ):
+            try:
+                value = read_json(path)
+            except LoopError:
+                continue
+            if value.get("id") == driver_id and isinstance(
+                value.get("revision"), int
+            ):
+                drivers.append((value["revision"], value))
+    driver = max(drivers, default=(0, {}), key=lambda value: value[0])[1]
+    driver_revision = driver.get("revision")
+    if (
+        not isinstance(initial_revision, int)
+        or not isinstance(driver_revision, int)
+        or driver_revision <= initial_revision
+        or driver.get("status") != "resolved"
+        or driver.get("resolution", {}).get("state") != "resolved"
+        or decision_id
+        not in driver.get("resolution", {}).get("adr_refs", [])
+        or driver.get("supersedes") != initial_driver
+    ):
+        failures.append("driver_not_resolved")
+
+    knowledge = task.get("source", {}).get("knowledge", {})
+    claim_refs = knowledge.get("claims", [])
+    coverage_path = knowledge.get("coverage")
+    wanted_claims = {
+        (value.get("id"), value.get("revision"))
+        for value in claim_refs
+        if isinstance(value, dict)
+    }
+    entries = []
+    if isinstance(coverage_path, str):
+        try:
+            ledger = read_json(root / coverage_path)
+            entries = [
+                value
+                for value in ledger.get("entries", [])
+                if isinstance(value, dict)
+                and isinstance(value.get("claim_ref"), dict)
+                and (
+                    value["claim_ref"].get("id"),
+                    value["claim_ref"].get("revision"),
+                )
+                in wanted_claims
+            ]
+        except LoopError:
+            entries = []
+    if len(entries) != 1:
+        failures.append("coverage_binding_invalid")
+    else:
+        entry = entries[0]
+        disposition = entry.get("product_disposition", {})
+        delivery = entry.get("delivery", {})
+        expected_driver = f"{driver_id}@{driver_revision}"
+        if expected_driver not in disposition.get("refs", []):
+            failures.append("coverage_driver_stale")
+        if delivery.get("state") == "planned":
+            if (
+                task.get("id") in delivery.get("work_item_refs", [])
+                or not delivery.get("work_item_refs")
+                or not delivery.get("requirement_refs")
+            ):
+                failures.append("product_delivery_not_authorized")
+        elif delivery.get("state") != "not_ready":
+            failures.append("coverage_delivery_invalid")
+
+    try:
+        rules = read_json(root / "ios/harness/architecture-rules.json")
+    except LoopError:
+        rules = {}
+    known_modules = rules.get("known_project_modules", [])
+    target_rules = rules.get("targets", {})
+    observed_targets = {}
+    for target, dependencies in required_targets.items():
+        target_rule = (
+            target_rules.get(target)
+            if isinstance(target_rules, dict)
+            else None
+        )
+        if (
+            target not in known_modules
+            or not isinstance(target_rule, dict)
+            or target_rule.get("dependencies") != dependencies
+            or f"`{target}`" not in architecture_text
+        ):
+            failures.append(f"dependency_mismatch:{target}")
+        else:
+            observed_targets[target] = dependencies
+    projection = {
+        "decision": {"id": decision_id, "status": metadata.get("status")},
+        "driver": {"id": driver_id, "revision": driver_revision},
+        "dependency_contract": observed_targets,
+    }
+    return sorted(set(failures)), digest(canonical(projection))
+
+
 def validate_structured_output(
     root: Path,
     task: Mapping[str, Any],
@@ -1885,6 +2248,12 @@ def validate_structured_output(
     elif mode == "android_golden":
         failures, observed_sha256 = validate_android_golden(
             root,
+            contract,
+        )
+    elif mode == "architecture_decision":
+        failures, observed_sha256 = validate_architecture_decision(
+            root,
+            task,
             contract,
         )
     else:
