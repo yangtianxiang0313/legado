@@ -5,11 +5,24 @@
   "inventory_control_sha256": "30cac916034a71f4ce34aa11388c0c3d578c78ccd937f888e48b556b01d72172",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "2650c73201d222f7ebf2efc95863ebda0de23ae9d24b67cc5672dddd59b75d26",
-  "coverage_sha256": "0e004677b90c4a91cc671c78e8a9ac6fe4cad0067f34e477f7c48c2dd36fc999",
+  "authority_sha256": "69cddef05c2b65c828d1c7aaa7efb7844bf221af21930f50e11dd887de8ccbca",
+  "coverage_sha256": "c6d3b203b92a559109da46bf3ac8cd22425c22964f865843ae7f2598a3d6a55d",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
+    {
+      "id": "BKP-SOURCE-RUNTIME-FIELD-ENCODING-001",
+      "revision": 1,
+      "semantic_key": "source.runtime-field-encoding-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-SOURCE-RUNTIME-FIELD-ENCODING-001/r0001.json",
+      "record_sha256": "4fe1ba212581cdedae4f6387e7182f5069a33f4dbb25fab0260e1ed1be9dcfff",
+      "claim_refs": [
+        {
+          "id": "BKC-SR-REQUEST-FIELD-ENCODING-001",
+          "revision": 2
+        }
+      ]
+    },
     {
       "id": "BKP-SOURCE-RUNTIME-HEADER-COOKIE-RETRY-001",
       "revision": 1,
@@ -81,6 +94,14 @@
   ],
   "architecture_drivers": [
     {
+      "id": "DRV-SOURCE-RUNTIME-FIELD-ENCODING-001",
+      "revision": 1,
+      "semantic_key": "source.execution.field-encoding",
+      "path": "ios/project/business-knowledge/drivers/published/DRV-SOURCE-RUNTIME-FIELD-ENCODING-001/r0001.json",
+      "record_sha256": "62375f77751598b2809097422e7528f5fd131f5deb372148a7c58d72d8775102",
+      "resolution_state": "resolved"
+    },
+    {
       "id": "DRV-SOURCE-RUNTIME-HEADER-COOKIE-RETRY-001",
       "revision": 1,
       "semantic_key": "source.execution.header-cookie-retry-layering",
@@ -114,6 +135,15 @@
     }
   ],
   "coverage_ledgers": [
+    {
+      "id": "BKL-SOURCE-RUNTIME-FIELD-ENCODING-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-SOURCE-RUNTIME-FIELD-ENCODING-001.json",
+      "record_sha256": "e5d3841591d1176bc914e7f7c3ef39206347e13394cb12ca9aa016ea4079098d",
+      "entry_ids": [
+        "BKE-SR-REQUEST-FIELD-ENCODING-001"
+      ]
+    },
     {
       "id": "BKL-SOURCE-RUNTIME-HEADER-COOKIE-RETRY-001",
       "revision": 1,

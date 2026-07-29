@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-SOURCE-RUNTIME-FIELD-ENCODING-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "source.execution.field-encoding",
+  "title": "在独立 SourceRuntime 中显式建模字段解析与 charset 编码",
+  "claim_refs": [
+    {
+      "id": "BKC-SR-REQUEST-FIELD-ENCODING-001",
+      "revision": 2
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "GET query 与 form body 的字段顺序、重复键覆盖、已有编码保留、UTF-8、GBK 和 escape 必须与 Android 真值逐字段一致。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "determinism",
+      "scenario": "字段编译必须产生稳定有序的 RequestPlan，不能依赖 Swift Dictionary 枚举顺序或具体网络客户端的二次编码。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "isolation",
+      "scenario": "charset 与 form encoding 属于 SourceRuntime，请求传输层只消费已编译结果，UI 和 Domain 不解释编码规则。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "safety",
+      "scenario": "未支持 charset 必须显式失败，不能静默回退 UTF-8 或使用设备默认编码。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "如何用有序字段值类型表达首次位置、最后值覆盖，同时复用 GET query 与 POST form 编译？",
+    "GBK 与 escape 如何通过显式编码端口实现，并让 unsupported charset 保持稳定错误？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002"
+    ],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-SOURCE-REQUEST-FIELD-ENCODING-RUNTIME-001",
+      "IOS-SOURCE-RUNTIME-FIELD-ENCODING-001"
+    ]
+  },
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30426199008/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-SOURCE-REQUEST-FIELD-ENCODING-RUNTIME-001"
+}

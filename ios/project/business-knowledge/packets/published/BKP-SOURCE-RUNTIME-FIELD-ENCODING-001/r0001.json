@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-SOURCE-RUNTIME-FIELD-ENCODING-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "source.runtime-field-encoding-golden",
+  "title": "受保护 Android Golden 验证的查询与表单字段编码语义",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "source.execution"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-RUNTIME-PORTS"
+    ],
+    "subject_keys": [
+      "source.request"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-SR-REQUEST-FIELD-ENCODING-001",
+      "revision": 2,
+      "semantic_key": "source.request.field-encoding-runtime",
+      "kind": "runtime_behavior",
+      "topic": "查询与表单字段编码",
+      "statement": "在 sl-source-request-field-encoding-runtime-001 的固定输入下，Android AnalyzeUrl.analyzeFields 按 & 分段并按首个 = 分隔；无 value 的 flag 与 empty= 都得到空字符串。未声明 charset 时，未编码中文按 UTF-8 form encoding 转为 %E6%98%9F%E6%B2%B3，已有同值 %XX 编码保持不变；重复 dup 保留首次插入位置但值更新为 second。charset=GBK 时星河编码为 %D0%C7%BA%D3、空格为 +；charset=escape 时星 河+% 编码为 %u661f%20%u6cb3%2b%25；不支持的 charset 抛出 java.io.UnsupportedEncodingException。本结论不外推到空 key、分号分隔、非字符串输入、URL option 脚本求值、JSON/XML raw body、具体网络客户端重组或其他 charset。",
+      "subject_keys": [
+        "source.request"
+      ],
+      "depends_on": [],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da",
+            "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+            "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/analyzeFields"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/sl-source-request-field-encoding-runtime-001.json",
+            "artifact_sha256": "17d12ea01cecdaa604c09472d5273e32a56dc82d6f4d338c9aefcf2e5ebc85b3",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "863a0237bfa187791e9c97cdff6a58f105e13e3a8778d342a93613af0f0921b9",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "6e63b215716a45d7e7e05ae43fd357f2d97d1477c40317f49551bde5767ce2d2",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-SR-REQUEST-FIELD-ENCODING-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-SOURCE-REQUEST-FIELD-ENCODING-RUNTIME-001"
+}
