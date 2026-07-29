@@ -744,6 +744,165 @@ class MaterializationTests(unittest.TestCase):
             self.assertEqual([], result["transitions"])
             invoke.assert_not_called()
 
+    def test_enabled_external_publisher_dispatches_and_never_invokes_agent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            supervisor = loop_supervisor.LoopSupervisor(fixture.harness)
+            config = Path(directory) / "supervisor.json"
+            config.write_text(
+                json.dumps(
+                    {
+                        "external_execution": {
+                            "github_golden": {
+                                "enabled": True,
+                                "repository": "owner/legado",
+                                "remote": "origin",
+                            }
+                        }
+                    }
+                )
+            )
+            binding = {
+                "scenario_id": "sl-post-form-001",
+                "receipt": (
+                    "ios/project/external-execution-receipts/"
+                    "android-oracle-sl-post-form-001-a.json"
+                ),
+                "receipt_sha256": "b" * 64,
+            }
+            decision = loop_supervisor.LoopDecision(
+                state="external_publisher_required",
+                reason_code=(
+                    "TRUSTED_ORACLE_GOLDEN_PUBLISHER_REQUIRED"
+                ),
+                work_item_id="IOS-ANDROID-POST-FORM-ATTESTATION-001",
+                requires_human=False,
+                details={"external_publisher": binding},
+            )
+            dispatched = {
+                "schema_version": 1,
+                "outcome": "pending",
+                "execution_id": "execution",
+                "request_branch": "feature/golden-test",
+                "result_branch": "golden/result-test",
+                "journal": (
+                    ".harness-runtime/github-golden/execution.json"
+                ),
+                "run": None,
+                "result_commit": None,
+            }
+            with mock.patch.object(
+                supervisor, "inspect", return_value=decision
+            ), mock.patch.object(
+                supervisor, "_invoke_agent_phase"
+            ) as invoke, mock.patch.object(
+                fixture.harness,
+                "git_head",
+                return_value="a" * 40,
+            ), mock.patch.object(
+                loop_supervisor.GitHubGoldenPublisherDispatcher,
+                "dispatch",
+                return_value=dispatched,
+            ) as dispatch:
+                result = supervisor.drive(
+                    config_path=config,
+                    agent_id="test-agent",
+                    max_transitions=1,
+                )
+            self.assertEqual("pending", result["outcome"])
+            self.assertEqual(
+                dispatched, result["external_publisher"]
+            )
+            self.assertNotIn("continuation_decision", result)
+            dispatch.assert_called_once_with()
+            invoke.assert_not_called()
+
+    def test_settled_external_publisher_reinspects_without_agent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            supervisor = loop_supervisor.LoopSupervisor(fixture.harness)
+            config = Path(directory) / "supervisor.json"
+            config.write_text(
+                json.dumps(
+                    {
+                        "external_execution": {
+                            "github_golden": {
+                                "enabled": True,
+                                "repository": "owner/legado",
+                                "remote": "origin",
+                            }
+                        }
+                    }
+                )
+            )
+            binding = {
+                "scenario_id": "sl-post-form-001",
+                "receipt": (
+                    "ios/project/external-execution-receipts/"
+                    "android-oracle-sl-post-form-001-a.json"
+                ),
+                "receipt_sha256": "b" * 64,
+            }
+            decision = loop_supervisor.LoopDecision(
+                state="external_publisher_required",
+                reason_code=(
+                    "TRUSTED_ORACLE_GOLDEN_PUBLISHER_REQUIRED"
+                ),
+                work_item_id="IOS-ANDROID-POST-FORM-ATTESTATION-001",
+                requires_human=False,
+                details={"external_publisher": binding},
+            )
+            continuation = loop_supervisor.LoopDecision(
+                state="migration_materialization_ready",
+                reason_code="MIGRATION_INPUTS_READY",
+                work_item_id="IOS-NEXT-001",
+                requires_human=False,
+            )
+            dispatched = {
+                "schema_version": 1,
+                "outcome": "settled",
+                "execution_id": "execution",
+                "request_branch": "feature/golden-test",
+                "result_branch": "golden/result-test",
+                "journal": (
+                    ".harness-runtime/github-golden/execution.json"
+                ),
+                "run": {
+                    "id": 1,
+                    "attempt": 1,
+                    "status": "completed",
+                    "conclusion": "success",
+                    "url": "https://example.invalid/1",
+                },
+                "result_commit": "c" * 40,
+            }
+            with mock.patch.object(
+                supervisor,
+                "inspect",
+                side_effect=(decision, continuation),
+            ), mock.patch.object(
+                supervisor, "_invoke_agent_phase"
+            ) as invoke, mock.patch.object(
+                fixture.harness,
+                "git_head",
+                return_value="a" * 40,
+            ), mock.patch.object(
+                loop_supervisor.GitHubGoldenPublisherDispatcher,
+                "dispatch",
+                return_value=dispatched,
+            ):
+                result = supervisor.drive(
+                    config_path=config,
+                    agent_id="test-agent",
+                    max_transitions=1,
+                )
+            self.assertEqual("settled", result["outcome"])
+            self.assertEqual(
+                continuation.to_dict(),
+                result["continuation_decision"],
+            )
+            invoke.assert_not_called()
+
     def test_trusted_oracle_materialization_recomputes_plan(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = MaterializationFixture(Path(directory))

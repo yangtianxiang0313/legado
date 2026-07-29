@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0067",
+  "revision": 1,
+  "title": "settled journal 不能替代远端 Golden 结果权威",
+  "fingerprint": "golden-settled-journal-used-as-publication-authority",
+  "capabilities": ["CAP-KNOWLEDGE-CONTROL"],
+  "symptoms": [
+    "本地 journal 标记 settled 后，重复执行直接返回成功，不再查询 GitHub Run、Artifact 或 result ref",
+    "远端结果分支被重写、Artifact 过期或本地 HEAD 漂移时，Loop 仍可能把历史缓存当作当前发布事实",
+    "首次执行测试通过，但崩溃恢复与重复 drive 缺少独立权威复验"
+  ],
+  "conditions": [
+    "外部发布已经完成过一次并留下 ignored runtime journal",
+    "Supervisor 或人工再次调用同一 execution identity",
+    "恢复逻辑仅检查 journal outcome，而没有重新绑定远端 Run、Artifact、commit 与本地 HEAD"
+  ],
+  "root_cause": "运行 journal 只能提供可恢复进度，既未受 GitHub authority 保护，也不携带足以独立证明 Golden 内容的完整证据。把 terminal 状态当作权威会跨越控制边界。",
+  "diagnosis": [
+    "删除或修改 .harness-runtime/github-golden journal，确认不会改变可接受的 Golden authority",
+    "对 settled replay 记录 gh run/artifact、ls-remote、fetch 和 commit verifier 调用",
+    "分别篡改本地 HEAD、远端 result ref 与 publisher-result，确认恢复路径稳定 fail closed"
+  ],
+  "fix": "settled replay 只用 journal 定位预期 execution/result，不信任其结论；重新检查 clean worktree、HEAD、remote repository、committed Receipt、create-only request ref、唯一成功 Run、唯一未过期 Artifact、canonical report、远端 result ref、单父精确三文件 commit 及 Manifest/release controls，全部通过后才幂等返回 settled。",
+  "prevention": {
+    "architecture_rule": "所有 ignored runtime journal 只能缓存进度；任何外部 authority 结论在恢复时都必须从受保护远端对象和内容摘要重新推导。",
+    "tests": [
+      "ios/harness/tests/test_github_golden_publisher.py#test_success_verifies_remote_artifact_commit_and_fast_forwards",
+      "ios/harness/tests/test_github_golden_publisher.py#test_request_branch_run_uniqueness_and_journal_are_monotonic"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-GITHUB-GOLDEN-DISPATCHER-001",
+    "until": "IOS-GITHUB-GOLDEN-DISPATCHER-001"
+  },
+  "status": "mitigated",
+  "occurrences": 1,
+  "first_seen": "2026-07-29",
+  "last_seen": "2026-07-29",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260729T004757Z-ios-github-golden-dispatcher-001-c934d502.json"
+  ]
+}

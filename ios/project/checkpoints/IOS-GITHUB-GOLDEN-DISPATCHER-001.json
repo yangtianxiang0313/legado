@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-GITHUB-GOLDEN-DISPATCHER-001",
+  "summary": "已实现无人工 Gate 的 GitHub Golden Dispatcher 与 Supervisor 自动续接。Dispatcher identity 精确绑定 repository、固定 workflow、scenario、当前 request SHA、committed verified-candidate Receipt 路径/摘要及 remote；以 create-only request branch 触发唯一 push Run，并用单调 ignored journal 恢复进度。成功 Run 必须重新验证服务端 provenance、唯一未过期 result artifact、SHA256SUMS 与 canonical report，再 fetch create-only result ref；结果 commit 必须是 request SHA 的唯一子提交且只改变 Manifest、场景 Golden 和 run-bound release receipt。三文件摘要、Manifest schema v2 entry、protected_android_golden release、github_actions_push_v2 与全部 controls 交叉一致后才允许 ff-only。settled replay 仍从远端权威重新推导，不信任 runtime journal。Supervisor 在 github_golden enabled 时自动调度，settled 后重新 inspect，不调用普通 Agent。正式 Evidence 通过依赖策略与全量 Harness tests；本项测试仅使用本地临时 Git/裸远端和 fake GitHub API，未访问真实 GitHub、未创建真实分支、未修改当前 Golden。",
+  "evidence": "ios/harness/evidence/runs/run-20260729T004757Z-ios-github-golden-dispatcher-001-c934d502.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 71,
+      "to_revision": 72,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": ["ADR-0002", "ADR-0004"]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null,
+    "none_reason": "本项只实现外部 Golden 结果回收控制面"
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项只实现 Golden 外部执行适配层"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null,
+    "none_reason": "本项只实现外部执行适配层"
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项不改变书源、解析语义或 iOS 运行时兼容行为"
+  },
+  "pitfalls": {
+    "records": ["ios/project/pitfalls/PIT-0067.json"],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "真实 GitHub Golden workflow 与当前仓库权限尚需首次端到端运行验证",
+    "受保护 POST Form Golden 合并后仍需继续验证 SourceRuntime Package 与 iOS Simulator UI"
+  ],
+  "next_actions": [
+    "提交并运行真实 sl-post-form-001 Golden publication",
+    "由 Dispatcher 验证并 fast-forward 远端结果提交",
+    "继续 SourceRuntime 结构化真源验收与 iOS Simulator UI 验收"
+  ],
+  "created_at": "2026-07-29T00:48:03Z"
+}

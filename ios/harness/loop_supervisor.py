@@ -57,6 +57,11 @@ try:
     )
     from .run_journal import RunJournal, RunJournalError
     from .github_oracle_dispatcher import GitHubOracleDispatcher, GitHubOracleError
+    from .github_golden_publisher import (
+        WORKFLOW_PATH as GOLDEN_PUBLISHER_WORKFLOW_PATH,
+        GitHubGoldenPublisherDispatcher,
+        GitHubGoldenPublisherError,
+    )
 except ImportError:
     from approval_ui import (  # type: ignore
         LOOPBACK_HOST,
@@ -90,6 +95,11 @@ except ImportError:
     from github_oracle_dispatcher import (  # type: ignore
         GitHubOracleDispatcher,
         GitHubOracleError,
+    )
+    from github_golden_publisher import (  # type: ignore
+        WORKFLOW_PATH as GOLDEN_PUBLISHER_WORKFLOW_PATH,
+        GitHubGoldenPublisherDispatcher,
+        GitHubGoldenPublisherError,
     )
 
 
@@ -3583,6 +3593,49 @@ class LoopSupervisor:
             raise LoopSupervisorError(f"Supervisor config 无效：{error}") from error
         initial_decision = self.inspect()
         if initial_decision.state == "external_publisher_required":
+            external_config = config.get("external_execution")
+            github_config = (
+                external_config.get("github_golden")
+                if isinstance(external_config, dict)
+                else None
+            )
+            if (
+                isinstance(github_config, dict)
+                and github_config.get("enabled") is True
+            ):
+                decision_details = (
+                    initial_decision.details
+                    if isinstance(initial_decision.details, Mapping)
+                    else {}
+                )
+                binding = decision_details.get(
+                    "external_publisher", {}
+                )
+                try:
+                    external_result = GitHubGoldenPublisherDispatcher(
+                        self.harness.root,
+                        repository=github_config.get("repository"),
+                        workflow_path=GOLDEN_PUBLISHER_WORKFLOW_PATH,
+                        scenario=binding.get("scenario_id"),
+                        request_sha=self.harness.git_head(),
+                        receipt_path=binding.get("receipt"),
+                        receipt_sha256=binding.get("receipt_sha256"),
+                        remote=github_config.get("remote"),
+                    ).dispatch()
+                except GitHubGoldenPublisherError as error:
+                    raise LoopSupervisorError(str(error)) from error
+                result = {
+                    "schema_version": SCHEMA_VERSION,
+                    "outcome": external_result["outcome"],
+                    "decision": initial_decision.to_dict(),
+                    "external_publisher": external_result,
+                    "transitions": [],
+                }
+                if external_result["outcome"] == "settled":
+                    result["continuation_decision"] = (
+                        self.inspect().to_dict()
+                    )
+                return result
             return {
                 "schema_version": SCHEMA_VERSION,
                 "outcome": initial_decision.reason_code.lower(),

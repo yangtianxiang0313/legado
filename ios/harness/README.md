@@ -118,6 +118,19 @@ python3 ios/harness/loop_supervisor.py materialize-review \
   `.harness-runtime/github-oracle/<execution-id>.json`；该 journal 不是 receipt、
   Evidence 或发布权威。成功 run 仍须独立下载、双证明 trusted import 与 receipt
   settlement；
+- committed verified-candidate Receipt 出现后，Supervisor 将需求映射为
+  `external_publisher_required`。显式启用 `external_execution.github_golden` 时，
+  Golden Dispatcher 以当前 clean HEAD、固定 Publisher workflow、scenario、
+  Receipt 路径/摘要、repository 与 remote 形成稳定 identity，create-only 推送
+  `feature/golden-<scenario>-<request-sha>`，只接受该分支唯一的 `push` Run。
+  成功 Run 必须提供唯一、未过期且 run-bound 的 `android-golden-result-*`
+  artifact；Dispatcher 精确验证 `SHA256SUMS`/report、远端 result ref、单父结果
+  commit、仅 Manifest/场景 Golden/run-bound release receipt 三文件的 delta，
+  以及 Manifest v2、`protected_android_golden`、`github_actions_push_v2` 和
+  controls 的交叉绑定，最后才允许 `git merge --ff-only`。成功后 Supervisor
+  立即重新 inspect 并返回 continuation decision；普通 Agent 不参与外部发布或
+  结果回收。恢复 journal 位于 `.harness-runtime/github-golden/`，只记录单调
+  运行状态，不作为 Golden authority；
 - Receipt Settlement corrective 候选只有同时带
   `external-execution`、`android-oracle`、`receipt-settlement`、`corrective`
   四个标签，且为无 Gate 的 control-plane、Business Knowledge 与 SourceLab 均

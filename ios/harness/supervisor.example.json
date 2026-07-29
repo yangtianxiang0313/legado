@@ -19,7 +19,7 @@
     "trusted_reverify": true,
     "signed_human_gates": true,
     "atomic_code_test_memory_commit": true,
-    "automatic_golden_update": false
+    "automatic_golden_update": true
   },
   "local_loop_driver": {
     "command": [
@@ -83,6 +83,11 @@
     "github_oracle": {
       "enabled": false,
       "repository": "owner/legado",
+      "remote": "origin"
+    },
+    "github_golden": {
+      "enabled": true,
+      "repository": "yangtianxiang0313/legado",
       "remote": "origin"
     }
   },
