@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgeCoverageLedger",
+  "id": "BKL-INTEGRATION-BACKUP-WEBDAV-RUNTIME-001",
+  "revision": 1,
+  "status": "current",
+  "packet_refs": [
+    {
+      "id": "BKP-INTEGRATION-BACKUP-WEBDAV-RUNTIME-001",
+      "revision": 1,
+      "sha256": "d48e4fb811a194ce37ac3e2b8b175e64e052587c3346be5552023325eff7dafb"
+    }
+  ],
+  "generated_from": {
+    "knowledge_authority_sha256": "96600bdac94261fa24a34f79da265c1caf752b1a8f0ce8402279cde6d1ebd42d",
+    "requirement_catalog_sha256": "dfaac701bf1b8559e417425ec79b103f10ae2fb7a82723635e75cf5242a81b05",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "entries": [
+    {
+      "id": "BKE-INTEGRATION-BACKUP-WEBDAV-RUNTIME-001",
+      "claim_ref": {
+        "id": "BKC-INTEGRATION-WEBDAV-001",
+        "revision": 3
+      },
+      "validation": {
+        "required": "android_runtime",
+        "state": "verified",
+        "evidence_refs": [
+          "ios/harness/goldens/releases/il-integration-backup-webdav-001-30480600229-1.json",
+          "ios/harness/goldens/android-legado-v1/il-integration-backup-webdav-001.json#/artifact/result/value"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "architecture_driver",
+        "refs": [
+          "DRV-INTEGRATION-WEBDAV-RUNTIME-001@1"
+        ],
+        "reason": "Android 真源语义已冻结，但 IntegrationKit target、依赖边、凭据端口、兼容差异和三方库选择仍需 ADR；characterization 不直接授权产品实现",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "planned",
+        "requirement_refs": [],
+        "work_item_refs": [
+          "IOS-INTEGRATION-WEBDAV-ARCHITECTURE-001"
+        ],
+        "capability_refs": [
+          "CAP-CONFORMANCE"
+        ],
+        "evidence_refs": [
+          "ios/harness/goldens/releases/il-integration-backup-webdav-001-30480600229-1.json"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    }
+  ],
+  "updated_by": "IOS-CHARACTERIZE-INTEGRATION-BACKUP-WEBDAV-001",
+  "updated_at": "2026-07-29T18:53:14Z"
+}

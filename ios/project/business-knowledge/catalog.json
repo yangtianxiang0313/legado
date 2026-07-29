@@ -2,11 +2,11 @@
   "schema_version": 1,
   "contract_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-  "inventory_control_sha256": "3fec21baa59aefe12d9bf4a55e9af1b4a57ef155eaaf883da17abed80d74f0a5",
+  "inventory_control_sha256": "81c4ee6deb8ba5d879d8c0575cc142b7a8699487ee881a71016faf489a9c889b",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "a7415a2f2de50325d401de9ae56dfba77d5e3aac774aa49e0143a1d4b6a48bf9",
-  "coverage_sha256": "689ea2fa579c6504f5e3b2689cef4be25500c1a9dfa92c96cbb44a76f42b96af",
+  "authority_sha256": "96600bdac94261fa24a34f79da265c1caf752b1a8f0ce8402279cde6d1ebd42d",
+  "coverage_sha256": "7b891a570d11143ad5d3ae9a896b9562e99d721b584653b8277d89e596eb34c1",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -20,6 +20,19 @@
         {
           "id": "BKC-BOOK-CACHE-RUNTIME-001",
           "revision": 2
+        }
+      ]
+    },
+    {
+      "id": "BKP-INTEGRATION-BACKUP-WEBDAV-RUNTIME-001",
+      "revision": 1,
+      "semantic_key": "integration.backup.webdav-runtime-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-INTEGRATION-BACKUP-WEBDAV-RUNTIME-001/r0001.json",
+      "record_sha256": "d48e4fb811a194ce37ac3e2b8b175e64e052587c3346be5552023325eff7dafb",
+      "claim_refs": [
+        {
+          "id": "BKC-INTEGRATION-WEBDAV-001",
+          "revision": 3
         }
       ]
     },
@@ -327,6 +340,14 @@
       "resolution_state": "resolved"
     },
     {
+      "id": "DRV-INTEGRATION-WEBDAV-RUNTIME-001",
+      "revision": 1,
+      "semantic_key": "integration.backup.webdav-runtime-boundary",
+      "path": "ios/project/business-knowledge/drivers/published/DRV-INTEGRATION-WEBDAV-RUNTIME-001/r0001.json",
+      "record_sha256": "26de07340680c7c12d351a5a5772b0d730c1069dee1fe4b627cd20d1ba56ec33",
+      "resolution_state": "requires_adr"
+    },
+    {
       "id": "DRV-READER-BOOKMARK-SEARCH-RUNTIME-001",
       "revision": 1,
       "semantic_key": "reader.bookmark.search-compatibility-boundary",
@@ -503,6 +524,15 @@
       "record_sha256": "0a282edb9e5003757a0dfde63fed77ff4e4049c7c753d1d0f644bf18d52fee66",
       "entry_ids": [
         "BKE-CONTENT-CACHE-QUEUE-COMPLETION-001"
+      ]
+    },
+    {
+      "id": "BKL-INTEGRATION-BACKUP-WEBDAV-RUNTIME-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-INTEGRATION-BACKUP-WEBDAV-RUNTIME-001.json",
+      "record_sha256": "c59239550c0e522babf635b92ba2a0650dc1214d4cebdcd4b29bd4edb82e2515",
+      "entry_ids": [
+        "BKE-INTEGRATION-BACKUP-WEBDAV-RUNTIME-001"
       ]
     },
     {

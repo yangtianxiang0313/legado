@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-INTEGRATION-BACKUP-WEBDAV-RUNTIME-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "integration.backup.webdav-runtime-golden",
+  "title": "受保护 Android Golden 验证的 WebDAV 协议适配语义",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "81c4ee6deb8ba5d879d8c0575cc142b7a8699487ee881a71016faf489a9c889b"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "integration.backup",
+      "integration.remote"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE"
+    ],
+    "subject_keys": [
+      "integration.backup",
+      "integration.remote"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-INTEGRATION-WEBDAV-001",
+      "revision": 3,
+      "semantic_key": "integration.backup.webdav",
+      "kind": "runtime_behavior",
+      "topic": "WebDAV 备份与恢复",
+      "statement": "在 il-integration-backup-webdav-001 的 12 个固定场景中，Android WebDav 对同 host 请求附加 Authorization，并以 PROPFIND Depth=0 实现 check、exists 与文件元数据查询，以 Depth=1 实现目录列举；makeAsDir 先用 PROPFIND 探测，不存在时再发 MKCOL；下载使用 GET，上传使用 PUT 且保持 21 字节请求体和 application/octet-stream，删除使用 DELETE。check 只把 HTTP 401 判为 false，405 仍为 true；exists 对 207 为 true、404 为 false；404 探测后 MKCOL 成功使 makeAsDir 返回 true。目录响应按 DAV XML 解析 displayName、urlName、size、contentType、resourceType、lastModify 与 isDir，URL 编码的空格会还原；本场景中带尾斜杠的当前目录项没有被 listFiles 过滤，三个 response 均进入结果，缺失或不可解析时间回落为 0。下载字节逐字节保留，上传的实际请求方法、媒体类型、长度和 SHA-256 已由 IntegrationLab 观察证明。ObjectNotFound 风格的 500 响应在当前响应 message 非空路径中表现为 WebDavException，而不是 ObjectNotFoundException。两个删除场景都返回 false：其中 404 是失败边界；名为 delete-success 的 204 响应实际携带 1 字节换行体，违反 204 无响应体约束并被 OkHttp 当成协议错误，因此该结果不能外推为合法无 body 204 的删除语义。Golden 只保留 Basic 认证方案，不保留凭据值。此结论不外推到合法无 body 204 删除、TLS 与证书挑战、重定向、Digest/Bearer 认证、ETag、锁、配额、并发覆盖、原子上传、真实服务器兼容矩阵或备份 envelope 格式。",
+      "subject_keys": [
+        "integration.backup",
+        "integration.remote"
+      ],
+      "depends_on": [],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [
+          {
+            "id": "AF-WEBDAV-CHECK",
+            "revision_sha256": "c7550853da14978b280db1300fab0a13dddaaba16916a95f0809de7a8181074c"
+          },
+          {
+            "id": "AF-WEBDAV-EXISTS",
+            "revision_sha256": "2ebcbe3871ac39361a1601a41d7e2392643a79c0daa58c3eabbf8a1ad4d6158b"
+          },
+          {
+            "id": "AF-WEBDAV-MAKE-DIR",
+            "revision_sha256": "088cb3d47e08f5479b491317f0a42100b0fc0c0b2326ff7a32e0d91633159360"
+          },
+          {
+            "id": "AF-WEBDAV-LIST-FILES",
+            "revision_sha256": "4ccab6e065914b32681b3b402ecef678b6df998251d4e4e68dcb3d8242beca26"
+          },
+          {
+            "id": "AF-WEBDAV-GET-FILE",
+            "revision_sha256": "ba84d27ae11f4acf5fe967887e188f04fa388adc446afe90e40f68fb560ee676"
+          },
+          {
+            "id": "AF-WEBDAV-DOWNLOAD",
+            "revision_sha256": "aefe77fc9108aee4e53f89f29091209f71c095ebfbcf62c0dffcf8f024f612dd"
+          },
+          {
+            "id": "AF-WEBDAV-UPLOAD",
+            "revision_sha256": "9a0214c241caaf936d5a0a653f134c7f80c9321a4c3c7dfb016b1da99f1b40e4"
+          },
+          {
+            "id": "AF-WEBDAV-DELETE",
+            "revision_sha256": "346fa569a1cacfd871f0dc52ddbc66a772d4d0041fd863d163eac309a69064d3"
+          }
+        ],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "d9f3770b5869be291da07906366a3f617a6fab51",
+            "path": "app/src/main/java/io/legado/app/lib/webdav/WebDav.kt",
+            "symbol_id": "kotlin://io.legado.app.lib.webdav.WebDav"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "8ff3776aace080211d0c1db8c24c60cd8148e720",
+            "path": "app/src/main/java/io/legado/app/lib/webdav/WebDavFile.kt",
+            "symbol_id": "kotlin://io.legado.app.lib.webdav.WebDavFile"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/il-integration-backup-webdav-001.json",
+            "artifact_sha256": "e8326aa545c10d32c37f36fcbab10d80bdee99ebffc227015d7853a369e4ec8c",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "7d604a04073034aaf5917e9cd61411af92ebb05549dff803d918ad7d872763f1",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "780dace1f84a9df88e66f3e73bcfcb6fd83d21bb42965c2fc3739b8e92ac291b",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-INTEGRATION-WEBDAV-001",
+        "revision": 2
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-INTEGRATION-BACKUP-WEBDAV-001"
+}

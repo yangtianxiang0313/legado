@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-INTEGRATION-WEBDAV-RUNTIME-001",
+  "revision": 1,
+  "status": "active",
+  "semantic_key": "integration.backup.webdav-runtime-boundary",
+  "title": "以凭据隔离的 IntegrationKit 端口承载 WebDAV 协议适配",
+  "claim_refs": [
+    {
+      "id": "BKC-INTEGRATION-WEBDAV-001",
+      "revision": 3
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "modularity",
+      "scenario": "WebDAV 请求编排、DAV XML 元数据解析、远端路径模型和错误归一化属于独立 IntegrationKit 边界；备份业务只依赖端口和值类型，UI、LibraryDomain 与 SourceRuntime 不得依赖 URLSession、OkHttp 或任何 WebDAV 三方库类型。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "credential_isolation",
+      "scenario": "用户名、密码、Authorization 值和认证挑战必须通过凭据提供端口按请求注入，不得进入 fixture、Golden、业务 DTO、持久日志、结构化 trace 或错误正文；可观察层最多记录认证方案。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "check、exists、PROPFIND/MKCOL/GET/PUT/DELETE 编排、路径编码、DAV XML 元数据与错误阶段必须以受保护 Android Golden 为来源；当前目录自项、ObjectNotFound 降级和非法 204 body 等 Android/夹具现象必须显式标注，不能未经产品决策默认为应复制行为。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "determinism",
+      "scenario": "IntegrationLab 必须继续提供仅绑定 loopback、无公网依赖、请求预算受限且凭据脱敏的协议重放；每次能力扩张都同时扩张结构化请求观察和 Android Oracle。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "dependency_governance",
+      "scenario": "本次 characterization 不授权新 Swift Package target、产品依赖边或三方库；是否直接使用 Foundation URLSession/XMLParser、引入 WebDAV 库或拆分独立 Package，必须在安全性、可替换性、体积、维护状态和 Golden 可对齐性评估后由 ADR 决定。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "scope_control",
+      "scenario": "合法无 body 204 删除、TLS/证书、重定向、非 Basic 认证、ETag、锁、配额、并发覆盖、原子上传、真实服务器矩阵和备份 envelope 均保持未验证，不得从当前 12 个场景推定。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "IntegrationKit 应是 LegadoKit 内的独立 target 还是可单独发布的 Swift Package，允许哪些上游依赖、向哪些产品层暴露端口？",
+    "首版 transport 应直接基于 Foundation URLSession/XMLParser，还是采用经过安全与维护审计的 WebDAV 三方库；替换点和类型泄漏边界如何定义？",
+    "凭据由 Keychain-backed provider、运行时 session 还是 profile repository 提供，如何保证日志、Golden、错误和备份 envelope 全链路不泄漏？",
+    "Android 的 check 宽松判定、目录自项与 ObjectNotFound 降级哪些属于必须兼容，哪些应由 iOS 产品语义修正并记录差异？",
+    "如何补充协议合法的无 body 204 删除场景，并区分服务端业务失败与 HTTP 协议违规？"
+  ],
+  "resolution": {
+    "state": "requires_adr",
+    "adr_refs": [],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-INTEGRATION-BACKUP-WEBDAV-001"
+    ]
+  },
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30481555204/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-INTEGRATION-BACKUP-WEBDAV-001"
+}
