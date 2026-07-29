@@ -82,9 +82,11 @@ flowchart LR
   U --> D["LibraryDomain / LegadoCore"]
   U --> S["SourceRuntime"]
   U --> R["ReaderCore"]
+  U --> I["IntegrationKit"]
   S --> RF["RuleRuntime / SourceFormat"]
   DB["DatabaseGRDB"] --> U
   NET["NetworkFoundation"] --> S
+  DAV["WebDAVFoundation"] --> I
   HTML["HTMLSwiftSoup / XPathKanna"] --> RF
   JS["ScriptJavaScriptCore"] --> S
   WEB["WebRuntimeWebKit"] --> S
@@ -106,7 +108,8 @@ flowchart LR
 | `RuleRuntime` | 规则 parser/AST、CSS/XPath/JSONPath/Regex/JS 编排与 ports | Core |
 | `SourceRuntime` | 搜索、发现、详情、目录、正文流水线与策略 | Core、Domain、SourceFormat、RuleRuntime |
 | `ReaderCore` | 正文归一化、语义锚点、分页、预取策略 | Core、Domain |
-| `AppUseCases` | 书架、搜索、加书、换源、进度与 Repository ports | Core、Domain、SourceRuntime、ReaderCore |
+| `IntegrationKit` | WebDAV 等外部集成的稳定值、请求计划、错误阶段与消费方 ports；不含 live I/O 或 secret | Core |
+| `AppUseCases` | 书架、搜索、加书、换源、进度、备份编排与 Repository ports | Core、Domain、SourceRuntime、ReaderCore、IntegrationKit |
 | `TestSupport` | Fixture、fake、固定 Clock/UUID 和 Trace matcher；不得 import XCTest/Testing | API Target |
 | `ConformanceCLI` | macOS 离线 runner；只注入 FixtureTransport，不链接真实网络实现 | Core、Runtime、TestSupport、规则 adapters |
 
@@ -116,6 +119,7 @@ flowchart LR
 |---|---|
 | `DatabaseGRDB` | Record、SQL、migration、Repository 实现 |
 | `NetworkFoundation` | URLSession、编码、Cookie、限流、HTTPTransport 实现 |
+| `WebDAVFoundation` | URLSession/XMLParser WebDAV live adapter 与 Keychain-backed 凭据解析；对外只暴露 IntegrationKit 值 |
 | `HTMLSwiftSoup` | HTML5 DOM 与 CSS 后端 |
 | `XPathKanna` | XML 与 XPath 1.0 后端 |
 | `ScriptJavaScriptCore` | JavaScriptCore backend、兼容 prelude 和白名单 bridge |
@@ -125,6 +129,13 @@ flowchart LR
 | `ImageNuke` | 图片请求合并、解码、降采样、缓存和预取 |
 
 三方类型必须在适配器内终止。对外只允许项目自有、不可变、`Sendable` 的值类型。
+
+WebDAV 的具体边界由 [ADR-0008](adr/0008-integrationkit-webdav-boundary.md) 固定：
+首版不引入 WebDAV 三方库，`IntegrationKit` 只依赖 `LegadoCore`，
+`WebDAVFoundation` 只依赖 `LegadoCore` 与 `IntegrationKit`，`AppUseCases`
+单向消费 `IntegrationKit`。凭据持久层只保存不透明引用，secret 仅在 live adapter
+请求前解析；不得进入业务 DTO、trace、fixture、Golden 或错误正文。新增 Target 与
+profile product closure 仍须由绑定 accepted Requirement 的后续产品 Task 物化。
 
 ### 3.3 UI 与组装
 

@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-INTEGRATION-WEBDAV-RUNTIME-001",
+  "revision": 2,
+  "status": "resolved",
+  "semantic_key": "integration.backup.webdav-runtime-boundary",
+  "title": "以凭据隔离的 IntegrationKit 端口承载 WebDAV 协议适配",
+  "claim_refs": [
+    {
+      "id": "BKC-INTEGRATION-WEBDAV-001",
+      "revision": 3
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "modularity",
+      "scenario": "WebDAV 请求计划、DAV 元数据和值错误属于只依赖 LegadoCore 的 IntegrationKit；URLSession、XMLParser、Security 与 live secret 终止于 WebDAVFoundation，AppUseCases 只单向消费 IntegrationKit。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "credential_isolation",
+      "scenario": "持久配置只保存 CredentialReference；用户名、密码、Authorization 值与认证挑战由 live adapter 即时处理，不得进入 DTO、fixture、Golden、日志、trace 或错误正文。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "Android Golden 是 compatibility projection 的来源；check 宽松判定、目录自项、ObjectNotFound 降级与非法 204 body 必须显式标为兼容事实，不自动成为产品安全语义。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "dependency_governance",
+      "scenario": "首版使用 Foundation URLSession/XMLParser，不引入 WebDAV 三方库；只有真实服务器矩阵证明协议缺口后，才以新 ADR 审核许可证、维护、体积、隐私、认证、重定向和 Swift 6 并发。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "determinism",
+      "scenario": "IntegrationLab 与 Android Oracle 继续共同扩张；合法无 body 204 必须新增版本化场景，旧 Golden 不得原地改写。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "产品实现绑定哪个 accepted Requirement，首个切片只覆盖协议内核还是同时包含 WebDAVFoundation live adapter？",
+    "合法 204、重定向认证剥离、TLS、取消与真实服务器矩阵分别在哪个后续切片验收？",
+    "StoreSafe 与 FullCompat 的 product closure 在何时纳入 IntegrationKit/WebDAVFoundation？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0008"
+    ],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-INTEGRATION-BACKUP-WEBDAV-001",
+      "IOS-INTEGRATION-WEBDAV-ARCHITECTURE-001"
+    ]
+  },
+  "promotion": {
+    "approval_ref": "ADR-0008",
+    "approved_by": "loop-v2:architecture-decision-contract"
+  },
+  "supersedes": {
+    "id": "DRV-INTEGRATION-WEBDAV-RUNTIME-001",
+    "revision": 1
+  },
+  "created_by": "IOS-INTEGRATION-WEBDAV-ARCHITECTURE-001"
+}

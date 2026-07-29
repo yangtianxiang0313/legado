@@ -5,8 +5,8 @@
   "inventory_control_sha256": "81c4ee6deb8ba5d879d8c0575cc142b7a8699487ee881a71016faf489a9c889b",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "96600bdac94261fa24a34f79da265c1caf752b1a8f0ce8402279cde6d1ebd42d",
-  "coverage_sha256": "95eb151b69066c7ef5fbe495697b31f346937f75b8e36810e1f069c0f14ef5ad",
+  "authority_sha256": "188a5e28b9960e95787d1e019f45e77d2d5b847d86fca8d8f97a3d5f03cdee24",
+  "coverage_sha256": "0b05abd48935057daf177a810b567eb6602e79e89af22e6d1f6e527b3c5a6bae",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -341,11 +341,11 @@
     },
     {
       "id": "DRV-INTEGRATION-WEBDAV-RUNTIME-001",
-      "revision": 1,
+      "revision": 2,
       "semantic_key": "integration.backup.webdav-runtime-boundary",
-      "path": "ios/project/business-knowledge/drivers/published/DRV-INTEGRATION-WEBDAV-RUNTIME-001/r0001.json",
-      "record_sha256": "26de07340680c7c12d351a5a5772b0d730c1069dee1fe4b627cd20d1ba56ec33",
-      "resolution_state": "requires_adr"
+      "path": "ios/project/business-knowledge/drivers/published/DRV-INTEGRATION-WEBDAV-RUNTIME-001/r0002.json",
+      "record_sha256": "1f83610f1c583471de8730ad05023a919daa88ce2c3595efb19fdb48df5cce94",
+      "resolution_state": "resolved"
     },
     {
       "id": "DRV-READER-BOOKMARK-SEARCH-RUNTIME-001",
@@ -530,7 +530,7 @@
       "id": "BKL-INTEGRATION-BACKUP-WEBDAV-RUNTIME-001",
       "revision": 1,
       "path": "ios/project/business-knowledge/coverage/BKL-INTEGRATION-BACKUP-WEBDAV-RUNTIME-001.json",
-      "record_sha256": "ac75f03dcb27a37d2b5cd89f4983cdad280c3fc766636560d9bd95cd97267344",
+      "record_sha256": "66a6054518189074b3dccdb13e7e452e9731854cdcd23053083527a61f847572",
       "entry_ids": [
         "BKE-INTEGRATION-BACKUP-WEBDAV-RUNTIME-001"
       ]

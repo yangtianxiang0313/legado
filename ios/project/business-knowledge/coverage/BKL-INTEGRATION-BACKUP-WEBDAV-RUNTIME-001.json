@@ -12,7 +12,7 @@
     }
   ],
   "generated_from": {
-    "knowledge_authority_sha256": "96600bdac94261fa24a34f79da265c1caf752b1a8f0ce8402279cde6d1ebd42d",
+    "knowledge_authority_sha256": "188a5e28b9960e95787d1e019f45e77d2d5b847d86fca8d8f97a3d5f03cdee24",
     "requirement_catalog_sha256": "dfaac701bf1b8559e417425ec79b103f10ae2fb7a82723635e75cf5242a81b05",
     "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
   },
@@ -35,19 +35,15 @@
       "product_disposition": {
         "kind": "architecture_driver",
         "refs": [
-          "DRV-INTEGRATION-WEBDAV-RUNTIME-001@1"
+          "DRV-INTEGRATION-WEBDAV-RUNTIME-001@2"
         ],
-        "reason": "Android 真源语义已冻结，但 IntegrationKit target、依赖边、凭据端口、兼容差异和三方库选择仍需 ADR；characterization 不直接授权产品实现",
+        "reason": "ADR-0008 已冻结 IntegrationKit/WebDAVFoundation 边界、凭据隔离、兼容分层与 Foundation-only 首版依赖决策；尚无 accepted 产品 Requirement，因此不创建 Swift Target 或实现任务",
         "review_after": null
       },
       "delivery": {
-        "state": "planned",
-        "requirement_refs": [
-          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
-        ],
-        "work_item_refs": [
-          "IOS-INTEGRATION-WEBDAV-ARCHITECTURE-001"
-        ],
+        "state": "not_ready",
+        "requirement_refs": [],
+        "work_item_refs": [],
         "capability_refs": [
           "CAP-CONFORMANCE"
         ],
@@ -61,6 +57,6 @@
       }
     }
   ],
-  "updated_by": "IOS-CHARACTERIZE-INTEGRATION-BACKUP-WEBDAV-001",
-  "updated_at": "2026-07-29T18:53:14Z"
+  "updated_by": "IOS-INTEGRATION-WEBDAV-ARCHITECTURE-001",
+  "updated_at": "2026-07-29T19:13:00Z"
 }
