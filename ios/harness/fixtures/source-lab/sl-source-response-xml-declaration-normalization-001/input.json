@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "xml-missing-declaration",
+      "operation": "raw_response",
+      "arguments": {},
+      "request": {
+        "method": "GET",
+        "target": "/xml/missing-declaration"
+      }
+    },
+    {
+      "id": "xml-existing-declaration",
+      "operation": "raw_response",
+      "arguments": {},
+      "request": {
+        "method": "GET",
+        "target": "/xml/existing-declaration"
+      }
+    },
+    {
+      "id": "non-xml-content-type",
+      "operation": "raw_response",
+      "arguments": {},
+      "request": {
+        "method": "GET",
+        "target": "/xml/non-xml-content-type"
+      }
+    }
+  ]
+}

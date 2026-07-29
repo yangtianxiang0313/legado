@@ -9,10 +9,7 @@ on:
         description: SourceLab scenario selector
         required: true
         default: sl-html-basic-001
-        type: choice
-        options:
-          - sl-html-basic-001
-          - sl-post-form-001
+        type: string
   push:
     branches:
       - feature/oracle-*
@@ -36,6 +33,12 @@ jobs:
       AVD_SERIAL: emulator-5554
       ANDROID_IMAGE: system-images;android-35;google_apis;x86_64
     steps:
+      - name: Checkout exact source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
       - name: Resolve trusted Oracle scenario
         id: selector
         shell: bash
@@ -43,51 +46,14 @@ jobs:
           DISPATCH_SCENARIO: ${{ inputs.scenario }}
         run: |
           set -euo pipefail
-          scenario=
-          case "${GITHUB_EVENT_NAME}" in
-            workflow_dispatch)
-              case "${DISPATCH_SCENARIO}" in
-                sl-html-basic-001|sl-post-form-001)
-                  scenario="${DISPATCH_SCENARIO}"
-                  ;;
-                *)
-                  echo "::error::Invalid workflow_dispatch scenario"
-                  exit 1
-                  ;;
-              esac
-              ;;
-            push)
-              if [[ ! "${GITHUB_SHA}" =~ ^[0-9a-f]{40}$ ]]; then
-                echo "::error::Push GITHUB_SHA must be exactly 40 lowercase hex characters"
-                exit 1
-              fi
-              case "${GITHUB_REF}" in
-                "refs/heads/feature/oracle-sl-html-basic-001-${GITHUB_SHA}")
-                  scenario=sl-html-basic-001
-                  ;;
-                "refs/heads/feature/oracle-sl-post-form-001-${GITHUB_SHA}")
-                  scenario=sl-post-form-001
-                  ;;
-                *)
-                  echo "::error::Push ref is not bound to an allowed scenario and GITHUB_SHA"
-                  exit 1
-                  ;;
-              esac
-              ;;
-            *)
-              echo "::error::Unsupported workflow event"
-              exit 1
-              ;;
-          esac
-          test -n "${scenario}"
-          printf 'ORACLE_SCENARIO=%s\n' "${scenario}" >>"${GITHUB_ENV}"
-          printf 'scenario=%s\n' "${scenario}" >>"${GITHUB_OUTPUT}"
-
-      - name: Checkout exact source
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with:
-          fetch-depth: 0
-          persist-credentials: false
+          python3 -B ios/harness/oracle/scenario_selector.py \
+            --root . \
+            --event "${GITHUB_EVENT_NAME}" \
+            --ref "${GITHUB_REF}" \
+            --sha "${GITHUB_SHA}" \
+            --dispatch-scenario "${DISPATCH_SCENARIO}" \
+            --github-env "${GITHUB_ENV}" \
+            --github-output "${GITHUB_OUTPUT}"
 
       - name: Initialize Oracle workspace
         shell: bash

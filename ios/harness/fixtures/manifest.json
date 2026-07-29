@@ -37,6 +37,11 @@
       "id": "sl-post-form-001",
       "path": "ios/harness/fixtures/source-lab/sl-post-form-001",
       "sha256": "09b93767bf463cb0f658488b9c6e4243a6b163796cd860559851f4d65018ad23"
+    },
+    {
+      "id": "sl-source-response-xml-declaration-normalization-001",
+      "path": "ios/harness/fixtures/source-lab/sl-source-response-xml-declaration-normalization-001",
+      "sha256": "3201a955c3f355b123b8306f9ca2174fa0f971ac2ce7ac7471bd0569ce25a010"
     }
   ]
 }

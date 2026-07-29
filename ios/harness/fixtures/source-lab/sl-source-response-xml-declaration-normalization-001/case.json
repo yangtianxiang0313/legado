@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "kind": "source_lab_scenario",
+  "id": "sl-source-response-xml-declaration-normalization-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "source_lab_site",
+  "capabilities": [
+    "CAP-RUNTIME-PORTS",
+    "CAP-CONFORMANCE"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": "source.template.json",
+  "input": "input.json",
+  "transport": {
+    "mode": "fixture_and_loopback",
+    "external_network": "deny",
+    "responses": [
+      {
+        "id": "xml-missing-declaration",
+        "match": {
+          "method": "GET",
+          "path": "/xml/missing-declaration",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "application/xml; charset=utf-8"
+          },
+          "body_file": "responses/missing-declaration.xml"
+        }
+      },
+      {
+        "id": "xml-existing-declaration",
+        "match": {
+          "method": "GET",
+          "path": "/xml/existing-declaration",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/xml; charset=utf-8"
+          },
+          "body_file": "responses/existing-declaration.xml"
+        }
+      },
+      {
+        "id": "non-xml-content-type",
+        "match": {
+          "method": "GET",
+          "path": "/xml/non-xml-content-type",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/non-xml-content-type.txt"
+        }
+      }
+    ]
+  },
+  "coverage": [
+    {
+      "behavior": "decode.xml-declaration",
+      "cases": [
+        {
+          "id": "xml-missing-declaration",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl.getStrResponseAwait XML content-type and missing declaration branch"
+          ]
+        },
+        {
+          "id": "xml-existing-declaration",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl.getStrResponseAwait case-insensitive existing XML declaration branch"
+          ]
+        },
+        {
+          "id": "non-xml-content-type",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl.getStrResponseAwait non-XML content-type branch"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "2026-01-01T00:00:00Z",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 13,
+    "network_allowed": false,
+    "logical_origin": "http://sourcelab.test"
+  },
+  "limits": {
+    "timeout_ms": 1000,
+    "max_response_bytes": 1048576,
+    "max_request_body_bytes": 0,
+    "max_requests": 16,
+    "max_concurrency": 2
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-SOURCE-RESPONSE-XML-DECLARATION-NORMALIZATION-001"
+  }
+}

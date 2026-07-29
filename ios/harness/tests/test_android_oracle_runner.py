@@ -128,6 +128,55 @@ def post_raw_artifact():
     }
 
 
+def xml_raw_artifact():
+    scenario = "sl-source-response-xml-declaration-normalization-001"
+    values = (
+        (
+            "xml-missing-declaration",
+            "<?xml version=\"1.0\"?><feed><title>星河</title></feed>\n",
+        ),
+        (
+            "xml-existing-declaration",
+            "  <?XML version=\"1.0\"?><feed><title>既有声明</title></feed>\n",
+        ),
+        (
+            "non-xml-content-type",
+            "<feed><title>文本响应</title></feed>\n",
+        ),
+    )
+    requests = []
+    cases = []
+    for case_id, body in values:
+        request = {
+            "method": "GET",
+            "url": f"{runner.LOGICAL_ORIGIN}/xml/{case_id}",
+            "headers": [],
+            "body": None,
+            "timeout_ms": None,
+        }
+        requests.append(request)
+        cases.append(
+            {
+                "id": case_id,
+                "operation": "raw_response",
+                "request": request,
+                "result": {
+                    "body": body,
+                    "final_url": request["url"],
+                },
+                "issue": None,
+            }
+        )
+    return {
+        "schema_version": 1,
+        "scenario_id": scenario,
+        "device_origin": "http://127.0.0.1:49152",
+        "logical_origin": runner.LOGICAL_ORIGIN,
+        "request_plan": requests,
+        "cases": cases,
+    }
+
+
 class AndroidOracleRunnerTests(unittest.TestCase):
     def test_doctor_binds_frozen_android_tree_and_exposes_no_authority(self):
         report = runner.doctor(ROOT)
@@ -151,6 +200,14 @@ class AndroidOracleRunnerTests(unittest.TestCase):
             self.assertNotIn(forbidden, report["commands"])
         post = runner.doctor(ROOT, "sl-post-form-001")
         self.assertEqual("sl-post-form-001", post["scenario_id"])
+        xml = runner.doctor(
+            ROOT,
+            "sl-source-response-xml-declaration-normalization-001",
+        )
+        self.assertEqual(
+            "sl-source-response-xml-declaration-normalization-001",
+            xml["scenario_id"],
+        )
 
     def test_product_tree_drift_fails_before_runner_execution(self):
         baseline = {
@@ -253,6 +310,27 @@ class AndroidOracleRunnerTests(unittest.TestCase):
                 bindings(),
                 "sl-post-form-001",
             )
+
+    def test_xml_response_characterization_preserves_android_bodies(self):
+        scenario = "sl-source-response-xml-declaration-normalization-001"
+        artifact = runner.normalize_raw_artifact(
+            xml_raw_artifact(),
+            bindings(),
+            scenario,
+        )
+        cases = artifact["result"]["value"][
+            "portable_known_projection"
+        ]["cases"]
+        self.assertEqual(
+            "<?xml version=\"1.0\"?><feed><title>星河</title></feed>\n",
+            cases[0]["result"]["body"],
+        )
+        self.assertTrue(
+            cases[1]["result"]["body"].startswith("  <?XML")
+        )
+        self.assertTrue(
+            cases[2]["result"]["body"].startswith("<feed>")
+        )
 
     def test_nominal_issue_external_request_and_device_origin_leak_fail_closed(self):
         issue = raw_artifact()

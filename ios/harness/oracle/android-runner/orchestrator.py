@@ -73,6 +73,15 @@ SCENARIO_CONTRACTS = {
         ),
         "nominal_cases": frozenset({"post-form-nominal"}),
     },
+    "sl-source-response-xml-declaration-normalization-001": {
+        "status": "candidate",
+        "expected_cases": (
+            ("xml-missing-declaration", "raw_response"),
+            ("xml-existing-declaration", "raw_response"),
+            ("non-xml-content-type", "raw_response"),
+        ),
+        "nominal_cases": frozenset({"xml-missing-declaration"}),
+    },
 }
 ANDROID_PRODUCT_PATHS = (
     "app/src/main",

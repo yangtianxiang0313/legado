@@ -73,7 +73,19 @@ class SourceLabTests(unittest.TestCase):
 
     def test_oracle_workflow_selector_accepts_manual_and_exact_push(self):
         sha = "0123456789abcdef0123456789abcdef01234567"
-        for scenario in ("sl-html-basic-001", "sl-post-form-001"):
+        registry = json.loads(
+            (
+                REPO_ROOT / "ios/harness/oracle/request-registry.json"
+            ).read_text(encoding="utf-8")
+        )
+        scenarios = [
+            request["scenario_id"] for request in registry["requests"]
+        ]
+        self.assertIn(
+            "sl-source-response-xml-declaration-normalization-001",
+            scenarios,
+        )
+        for scenario in scenarios:
             with self.subTest(event="workflow_dispatch", scenario=scenario):
                 result, env_value, output_value = self.run_oracle_selector(
                     event="workflow_dispatch",
@@ -148,8 +160,8 @@ class SourceLabTests(unittest.TestCase):
         workflow = self.oracle_workflow()
         selector_output = "${{ steps.selector.outputs.scenario }}"
         after_selector = workflow.split(
-            "      - name: Checkout exact source", 1
-        )[1]
+            "      - name: Resolve trusted Oracle scenario", 1
+        )[1].split("\n      - name:", 1)[1]
         self.assertNotIn("inputs.scenario", after_selector)
         self.assertEqual(5, workflow.count(selector_output))
         self.assertIn("run-name:", workflow)
@@ -162,6 +174,16 @@ class SourceLabTests(unittest.TestCase):
         self.assertNotIn("self-hosted", workflow)
         self.assertNotIn("Publisher", workflow)
         self.assertNotIn("goldens", workflow.lower())
+        self.assertIn(
+            "python3 -B ios/harness/oracle/scenario_selector.py",
+            workflow,
+        )
+        self.assertLess(
+            workflow.index("      - name: Checkout exact source"),
+            workflow.index(
+                "      - name: Resolve trusted Oracle scenario"
+            ),
+        )
         for uses in (
             line.split("uses:", 1)[1].strip()
             for line in workflow.splitlines()

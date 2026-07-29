@@ -14,6 +14,13 @@
       "fixture_ids": ["sl-post-form-001"],
       "authority": "android_oracle_candidate_only",
       "status": "candidate"
+    },
+    {
+      "id": "IOS-ANDROID-XML-NORMALIZATION-ATTESTATION-001",
+      "scenario_id": "sl-source-response-xml-declaration-normalization-001",
+      "fixture_ids": ["sl-source-response-xml-declaration-normalization-001"],
+      "authority": "android_oracle_candidate_only",
+      "status": "candidate"
     }
   ]
 }

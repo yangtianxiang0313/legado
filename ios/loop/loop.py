@@ -659,10 +659,15 @@ def build_characterization_task(
         "scope": {
             "allowed_paths": [
                 f"ios/harness/fixtures/source-lab/{fixture_id}/**",
+                "ios/harness/fixtures/manifest.json",
                 "ios/harness/source-lab/manifest.json",
                 "ios/harness/source-lab/coverage-policy-v1.json",
                 "ios/harness/oracle/request-registry.json",
+                "ios/harness/oracle/scenario_selector.py",
                 "ios/harness/oracle/android-runner/**",
+                "ios/harness/tests/test_android_oracle_runner.py",
+                "ios/harness/source-lab/tests/test_source_lab.py",
+                ".github/workflows/android-oracle-attestation.yml",
                 golden_path,
                 "ios/harness/goldens/manifest.json",
                 "ios/harness/goldens/releases/**",

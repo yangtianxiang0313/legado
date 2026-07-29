@@ -47,93 +47,96 @@ class LegadoOracleInstrumentedTest {
         }
         source.enabledCookieJar = false
 
-        if (scenarioId == "sl-post-form-001") {
-            runPostFormCases()
-        } else {
-        runCase("search-hit", "search", searchRequest("星河")) {
-            searchProjection(WebBook.searchBookAwait(source, "星河"))
-        }
-        runCase("search-empty", "search", searchRequest("不存在")) {
-            searchProjection(WebBook.searchBookAwait(source, "不存在"))
-        }
-        runCase(
-            "book-detail",
-            "book_info",
-            request("$deviceOrigin/books/star-river/index.html")
-        ) {
-            bookProjection(
-                WebBook.getBookInfoAwait(
-                    source,
-                    Book(
+        when (scenarioId) {
+            "sl-post-form-001" -> runPostFormCases()
+            "sl-source-response-xml-declaration-normalization-001" ->
+                runXmlResponseCases()
+            else -> {
+                runCase("search-hit", "search", searchRequest("星河")) {
+                    searchProjection(WebBook.searchBookAwait(source, "星河"))
+                }
+                runCase("search-empty", "search", searchRequest("不存在")) {
+                    searchProjection(WebBook.searchBookAwait(source, "不存在"))
+                }
+                runCase(
+                    "book-detail",
+                    "book_info",
+                    request("$deviceOrigin/books/star-river/index.html")
+                ) {
+                    bookProjection(
+                        WebBook.getBookInfoAwait(
+                            source,
+                            Book(
+                                bookUrl = "$deviceOrigin/books/star-river/index.html",
+                                origin = source.bookSourceUrl,
+                                originName = source.bookSourceName
+                            )
+                        )
+                    )
+                }
+                runCase(
+                    "book-detail-missing-cover",
+                    "book_info",
+                    request("$deviceOrigin/books/no-cover/index.html")
+                ) {
+                    bookProjection(
+                        WebBook.getBookInfoAwait(
+                            source,
+                            Book(
+                                bookUrl = "$deviceOrigin/books/no-cover/index.html",
+                                origin = source.bookSourceUrl,
+                                originName = source.bookSourceName
+                            )
+                        )
+                    )
+                }
+                runCase(
+                    "toc",
+                    "chapters",
+                    request("$deviceOrigin/books/star-river/toc.html")
+                ) {
+                    val book = Book(
                         bookUrl = "$deviceOrigin/books/star-river/index.html",
+                        tocUrl = "$deviceOrigin/books/star-river/toc.html",
                         origin = source.bookSourceUrl,
-                        originName = source.bookSourceName
+                        originName = source.bookSourceName,
+                        name = "星河纪事"
                     )
-                )
-            )
-        }
-        runCase(
-            "book-detail-missing-cover",
-            "book_info",
-            request("$deviceOrigin/books/no-cover/index.html")
-        ) {
-            bookProjection(
-                WebBook.getBookInfoAwait(
-                    source,
-                    Book(
+                    chapterProjection(
+                        WebBook.getChapterListAwait(source, book).getOrThrow()
+                    )
+                }
+                runCase(
+                    "toc-empty",
+                    "chapters",
+                    request("$deviceOrigin/books/no-cover/toc.html")
+                ) {
+                    val book = Book(
                         bookUrl = "$deviceOrigin/books/no-cover/index.html",
+                        tocUrl = "$deviceOrigin/books/no-cover/toc.html",
                         origin = source.bookSourceUrl,
-                        originName = source.bookSourceName
+                        originName = source.bookSourceName,
+                        name = "无封面之书"
                     )
-                )
-            )
-        }
-        runCase(
-            "toc",
-            "chapters",
-            request("$deviceOrigin/books/star-river/toc.html")
-        ) {
-            val book = Book(
-                bookUrl = "$deviceOrigin/books/star-river/index.html",
-                tocUrl = "$deviceOrigin/books/star-river/toc.html",
-                origin = source.bookSourceUrl,
-                originName = source.bookSourceName,
-                name = "星河纪事"
-            )
-            chapterProjection(
-                WebBook.getChapterListAwait(source, book).getOrThrow()
-            )
-        }
-        runCase(
-            "toc-empty",
-            "chapters",
-            request("$deviceOrigin/books/no-cover/toc.html")
-        ) {
-            val book = Book(
-                bookUrl = "$deviceOrigin/books/no-cover/index.html",
-                tocUrl = "$deviceOrigin/books/no-cover/toc.html",
-                origin = source.bookSourceUrl,
-                originName = source.bookSourceName,
-                name = "无封面之书"
-            )
-            chapterProjection(
-                WebBook.getChapterListAwait(source, book).getOrThrow()
-            )
-        }
-        runCase(
-            "chapter",
-            "content",
-            request("$deviceOrigin/books/star-river/chapter-1.html")
-        ) {
-            contentProjection("chapter-1.html", 0)
-        }
-        runCase(
-            "chapter-second",
-            "content",
-            request("$deviceOrigin/books/star-river/chapter-2.html")
-        ) {
-            contentProjection("chapter-2.html", 1)
-        }
+                    chapterProjection(
+                        WebBook.getChapterListAwait(source, book).getOrThrow()
+                    )
+                }
+                runCase(
+                    "chapter",
+                    "content",
+                    request("$deviceOrigin/books/star-river/chapter-1.html")
+                ) {
+                    contentProjection("chapter-1.html", 0)
+                }
+                runCase(
+                    "chapter-second",
+                    "content",
+                    request("$deviceOrigin/books/star-river/chapter-2.html")
+                ) {
+                    contentProjection("chapter-2.html", 1)
+                }
+            }
         }
 
         val raw = JSONObject()
@@ -165,6 +168,37 @@ class LegadoOracleInstrumentedTest {
                 searchProjection(
                     WebBook.searchBookAwait(source, keyword)
                 )
+            }
+        }
+    }
+
+    private suspend fun runXmlResponseCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            require(value.getString("operation") == "raw_response") {
+                "XML response scenario only accepts raw_response stimuli"
+            }
+            val target = value
+                .getJSONObject("request")
+                .getString("target")
+            val analyze = AnalyzeUrl(
+                mUrl = "$deviceOrigin$target",
+                baseUrl = source.bookSourceUrl,
+                source = source,
+                headerMapF = source.getHeaderMap(true)
+            )
+            runCase(
+                value.getString("id"),
+                "raw_response",
+                request(analyze.url)
+            ) {
+                val response = analyze.getStrResponseAwait(
+                    useWebView = false
+                )
+                JSONObject()
+                    .put("body", nullable(response.body))
+                    .put("final_url", logical(response.url))
             }
         }
     }
