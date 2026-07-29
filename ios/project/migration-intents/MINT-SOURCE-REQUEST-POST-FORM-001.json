@@ -33,14 +33,11 @@
     "dedupe_key": "CAP-RUNTIME-PORTS/source.request.post-form/store_safe+full_compat",
     "path": "ios/project/requirement-proposals/ARQ-SOURCE-REQUEST-POST-FORM.json"
   },
-  "intake_blueprint": "ios/project/work-item-proposals/migration-blueprints/IOS-ANDROID-REQUEST-OPTIONS-INTAKE-001.json",
   "requirement_binding": {
     "id": "REQ-ANDROID-SOURCE-PIPELINE-001",
     "revision": 1,
     "clauses": [
       "RC-01"
     ]
-  },
-  "characterization_blueprint": "ios/project/work-item-proposals/characterization-blueprints/MINT-SOURCE-REQUEST-POST-FORM-001.json",
-  "oracle_blueprint": "ios/project/work-item-proposals/oracle-blueprints/MINT-SOURCE-REQUEST-POST-FORM-001.json"
+  }
 }

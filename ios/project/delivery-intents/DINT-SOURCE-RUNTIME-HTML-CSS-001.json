@@ -29,6 +29,5 @@
       }
     ]
   },
-  "golden_fixtures": ["sl-html-basic-001"],
-  "blueprint": "ios/project/work-item-proposals/delivery-blueprints/IOS-SOURCE-RUNTIME-HTML-CSS-001.json"
+  "golden_fixtures": ["sl-html-basic-001"]
 }
