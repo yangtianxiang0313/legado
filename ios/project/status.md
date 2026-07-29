@@ -1,253 +1,27 @@
-# iOS 项目当前状态
+# iOS 当前状态
 
-> 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
+更新时间：2026-07-29
 
-- 更新时间：2026-07-29T03:05:05Z
-- 当前阶段：`phase-0-control-plane-and-bootstrap`
-- 架构版本：`1.0`
-- 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
-- 活跃工作项：无
-- 下一个可领取工作项：无
-- 最近完成：IOS-BUSINESS-KNOWLEDGE-PUBLICATION-DIGEST-RECOVERY-002
+当前阶段：Phase 1，声明式书源最小纵切。
 
-## 健康度
+已具备：
 
-| 维度 | 状态 |
-|---|---|
-| active_candidate_repair | `bounded` |
-| android_golden_publisher | `scenario_aware_push_v2` |
-| android_intake | `fact_inventory_ready` |
-| android_oracle | `trusted_candidate_verified` |
-| android_oracle_ci_payload | `canonical_v1_conversion_verified` |
-| android_oracle_trigger | `create_only_branch_push_v1` |
-| android_oracle_workflow_owner | `declared_v1` |
-| android_oracle_workflow_scope | `exact_hardening_policy_v1` |
-| android_post_form_attestation | `shared_contract_verified` |
-| android_post_form_oracle | `candidate_verified` |
-| architecture | `designed` |
-| auto_materialization_policy | `compiled_control_plane_v1` |
-| business_knowledge_dispatcher | `result_verified_ff_v1` |
-| business_knowledge_publication_demand | `source_bound_v1` |
-| business_knowledge_publisher | `scenario_aware_push_v2` |
-| business_knowledge_publisher_auto_scope | `exact_paths_v1` |
-| characterization_blueprint_path_binding | `intent_keyed_verified` |
-| characterization_dag_compiler | `source_anchored_v1` |
-| codex_agent_adapter | `cli_0_145_compatible_real_smoke_verified` |
-| conformance | `scaffold_verified` |
-| control_catalog_resume | `bounded_self_heal` |
-| delivery_intent_settlement | `completed_evidence_bound` |
-| github_golden_dispatcher | `result_verified_ff_v1` |
-| github_golden_dispatcher_auto_scope | `exact_paths_v1` |
-| github_golden_dispatcher_owner | `declared_v1` |
-| github_golden_publisher_auto_scope | `exact_paths_v1` |
-| github_golden_publisher_owner | `declared_v1` |
-| github_oracle_auto_scope | `exact_path_authorized_v1` |
-| github_oracle_external_execution | `branch_push_reconciled_v2` |
-| github_oracle_owner | `declared_v1` |
-| github_oracle_receipt_auto_scope | `exact_settlement_v1` |
-| github_oracle_receipt_gh_executable | `resolved_regular_v1` |
-| github_oracle_receipt_owner | `declared_v1` |
-| github_oracle_receipt_settlement | `audited_verified_candidate_v2` |
-| golden_consumer_recovery_scope | `exact_v1` |
-| harness | `ready` |
-| harness_runtime_context_auto_scope | `exact_paths_v1` |
-| harness_terminal_runtime_context | `clean_checkout_reproducible_v1` |
-| harness_tests_timeout | `calibrated` |
-| harness_timeout_cleanup | `verified` |
-| human_gate_policy | `decision_only` |
-| ios_build | `package_verified` |
-| knowledge_android_surfaces | `candidate_verified` |
-| knowledge_book_domain | `candidate_verified` |
-| knowledge_control_plane | `proposal_batch_claim_refs_verified` |
-| knowledge_initialization_dag | `proposal_verified` |
-| knowledge_integrations | `candidate_verified` |
-| knowledge_promotion_context | `receipt_bound` |
-| knowledge_publication_digest_recovery | `typed_verified_v1` |
-| knowledge_publication_input_digest | `git_blob_bytes_v1` |
-| knowledge_publisher_demand_plan | `batch_envelope_bound` |
-| knowledge_publisher_verification | `immutable_commit_before_push` |
-| knowledge_reader_lifecycle | `candidate_verified` |
-| knowledge_revision_tombstones | `v1_verified` |
-| knowledge_source_runtime | `candidate_verified` |
-| knowledge_source_runtime_html_css | `golden_characterized_candidate` |
-| knowledge_ui_topology | `candidate_verified` |
-| local_approval_ui | `verified` |
-| loop_demand_autonomy | `bound_delivery_blueprint_v1` |
-| loop_demand_compiler | `canonical_requirement_binding_v1` |
-| loop_engine | `local_mature` |
-| loop_external_publisher | `automatic_v1` |
-| loop_supervisor | `local_verified` |
-| loop_trusted_verification | `real_codex_verified` |
-| migration_demand | `source_anchored_v1` |
-| oracle_ci_packager_auto_scope | `exact_corrective_v1` |
-| oracle_dag_compiler | `source_anchored_v1` |
-| oracle_settlement_compiler | `recovery_aware_trusted_proposal_v1` |
-| proposal_compiler | `local_verified` |
-| proposal_gate_policy | `authority_only` |
-| proposal_lifecycle_tests | `state_aware` |
-| protected_golden_consumption | `migration_continuation_v2_recovered` |
-| publisher_tests_after_promotion | `state_independent` |
-| readiness_evidence_handoff | `completed_evidence_bound` |
-| recovery_compiler_binding | `content_addressed` |
-| requirement_publisher_prestate | `state_independent` |
-| requirement_readiness_publisher | `implemented_external_authority` |
-| requirements | `catalog_ready_one_characterization_gap` |
-| source_lab | `fixture_transport_integrated` |
-| source_lab_candidate_characterization | `typed_reuse_v1` |
-| source_lab_post_form | `candidate_verified` |
-| source_request_options_intake | `proposal_ready` |
-| source_runtime_golden_conformance | `android_exact_first_slice` |
-| source_runtime_html_css | `golden_verified_first_slice` |
-| source_runtime_post_form_knowledge | `runtime_verified_proposal_ready` |
-| supervisor_run_journal | `local_replayable` |
-| swiftpm_manifest_verification | `sandbox_isolated` |
-| synthetic_provenance_gate | `policy_managed` |
-| terminal_recovery_lineage | `typed_runtime_replacement` |
-| terminal_recovery_resolution | `single_terminal_predecessor` |
-| trusted_oracle_settlement | `monotonic_capability_revision_v2` |
-| trusted_process_cleanup | `bounded_stable` |
-| trusted_supervisor_reference | `local_verified` |
+- 已批准的 iOS 分层架构与 Swift Package 边界；
+- Android Fact Inventory、Requirement Catalog 和 Business Knowledge；
+- SourceLab 本地书站、离线 FixtureTransport 和真实 Android Golden 发布链；
+- SourceFormat 无损 round-trip；
+- HTML/CSS 的 search、book info、toc、content 纵向解析；
+- GET 与 POST Form 的确定性 RequestPlan；
+- `android_expected / ios_actual / canonical_request_plan / first_divergence`
+  结构化验收；
+- Minimal Loop v2 的 `next/start/verify/complete/doctor`。
 
-## 工作队列
+当前 Loop：空闲；最近完成 `IOS-SOURCE-RUNTIME-POST-FORM-001`。
 
-| ID | 优先级 | 状态 | 依赖 | 标题 |
-|---|---:|---|---|---|
-| IOS-ANDROID-GOLDEN-PUBLISHER-001 | 100 | `completed` | IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-009 | 建立独立 Android Golden Publisher |
-| IOS-ANDROID-MIGRATION-DEMAND-001 | 100 | `completed` | IOS-DELIVERY-INTENT-SETTLEMENT-001, IOS-SOURCE-RUNTIME-GOLDEN-CONFORMANCE-001 | 让 Loop 从 Android 迁移积压自动产生下一需求 |
-| IOS-ANDROID-ORACLE-ATTESTATION-001 | 100 | `completed` | IOS-ANDROID-ORACLE-RUNNER-001 | 建立 GitHub-hosted Android Oracle 双证明提案链 |
-| IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-002 | 100 | `completed` | IOS-ANDROID-ORACLE-ATTESTATION-001 | 恢复 GitHub workflow runner.temp 上下文 |
-| IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-003 | 100 | `completed` | IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-002 | 恢复 GitHub-hosted Android SDK tools 路径 |
-| IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-004 | 100 | `blocked` | IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-003 | 恢复 GitHub-hosted adb 显式路径 |
-| IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-005 | 100 | `completed` | IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-003, IOS-HARNESS-TEST-TIMEOUT-RECOVERY-002 | 恢复被基线超时阻断的 adb 显式路径 |
-| IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-006 | 100 | `completed` | IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-005 | 建立有界 emulator 启动诊断 |
-| IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-007 | 100 | `completed` | IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-006 | 绑定并验证 hosted Runner 的 AVD home |
-| IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-008 | 100 | `completed` | IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-007 | 建立 hosted Runner 的 KVM 访问合同 |
-| IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-009 | 100 | `completed` | IOS-ANDROID-ORACLE-ATTESTATION-RECOVERY-008 | 对齐 GitHub 当前 SLSA provenance 身份 |
-| IOS-ANDROID-ORACLE-RUNNER-001 | 100 | `completed` | IOS-ORACLE-CONTROL-PLANE-001, IOS-SOURCELAB-ENGINE-001 | 建立冻结 Android WebBook 的 SourceLab Oracle Runner |
-| IOS-ANDROID-POST-FORM-ATTESTATION-001 | 100 | `rejected` | IOS-ANDROID-POST-FORM-ORACLE-RECOVERY-002 | 泛化并验证 POST Form Android Oracle 受信双证明链 |
-| IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-002 | 100 | `rejected` | IOS-SOURCELAB-POST-FORM-001 | 恢复 POST Form proposal 的共享 Oracle contract 验证 |
-| IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-003 | 100 | `completed` | IOS-SOURCELAB-POST-FORM-001 | 完成 POST Form proposal 的共享 Oracle contract 恢复 |
-| IOS-ANDROID-POST-FORM-ORACLE-001 | 100 | `exhausted` | IOS-SOURCELAB-POST-FORM-001 | 用冻结 Android 运行 POST Form 书源并生成结构化真值候选 |
-| IOS-ANDROID-POST-FORM-ORACLE-RECOVERY-002 | 100 | `completed` | IOS-SOURCELAB-POST-FORM-001 | 恢复 candidate SourceLab 的 Android Oracle characterization |
-| IOS-ANDROID-REQUEST-OPTIONS-INTAKE-001 | 100 | `completed` | IOS-ANDROID-MIGRATION-DEMAND-001 | 提取 AnalyzeUrl POST Form 与请求选项迁移合同 |
-| IOS-AUTO-MATERIALIZATION-POLICY-001 | 100 | `completed` | IOS-PROPOSAL-COMPILER-001, IOS-DECISION-GATE-POLICY-001, IOS-LOOP-SUPERVISOR-E2E-001 | 让无决策、无权威迁移的编译候选自动进入队列 |
-| IOS-BOOT-001 | 100 | `completed` | 无 | 建立 Swift Package 与首批模块骨架 |
-| IOS-BUSINESS-KNOWLEDGE-PUBLICATION-DIGEST-001 | 100 | `rejected` | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTOMATION-001 | 统一知识发布输入的 Git 字节摘要语义 |
-| IOS-BUSINESS-KNOWLEDGE-PUBLICATION-DIGEST-RECOVERY-002 | 100 | `completed` | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTOMATION-001 | 恢复知识发布 Git 字节摘要绑定 |
-| IOS-BUSINESS-KNOWLEDGE-PUBLISHER-001 | 100 | `completed` | IOS-ANDROID-GOLDEN-PUBLISHER-001, IOS-KNOWLEDGE-SOURCE-RUNTIME-GOLDEN-002 | 建立受信 Business Knowledge Publisher |
-| IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTO-SCOPE-001 | 100 | `completed` | IOS-KNOWLEDGE-SOURCE-RUNTIME-POST-FORM-001 | 建立无人工 Gate 的业务知识发布精确自动边界 |
-| IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTOMATION-001 | 100 | `completed` | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTO-SCOPE-001 | 实现无人工 Gate 的场景化业务知识发布与续接 |
-| IOS-BUSINESS-KNOWLEDGE-PUBLISHER-IMMUTABLE-005 | 100 | `completed` | IOS-KNOWLEDGE-PROMOTION-CONTEXT-004 | 让发布后的 Loop 验证运行在不可变提交上 |
-| IOS-BUSINESS-KNOWLEDGE-PUBLISHER-PLAN-006 | 100 | `completed` | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-IMMUTABLE-005 | 校验 Demand Compiler 批量计划信封 |
-| IOS-BUSINESS-KNOWLEDGE-PUBLISHER-REMOTE-003 | 100 | `completed` | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-YAML-002 | 修复 Publisher checkout remote 绑定 |
-| IOS-BUSINESS-KNOWLEDGE-PUBLISHER-YAML-002 | 100 | `completed` | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-001 | 修复 Business Knowledge Publisher workflow YAML |
-| IOS-CHARACTERIZATION-BLUEPRINT-PATH-002 | 100 | `completed` | IOS-CHARACTERIZATION-DAG-COMPILER-001 | 修复 Characterization 蓝图路径与 WorkItem ID 的错误耦合 |
-| IOS-CHARACTERIZATION-DAG-COMPILER-001 | 100 | `completed` | IOS-ANDROID-REQUEST-OPTIONS-INTAKE-001 | 把已接受 Requirement 的迁移缺口编译为无人工 Gate 的 Characterization DAG |
-| IOS-CHARACTERIZATION-POLICY-GATE-003 | 100 | `completed` | IOS-CHARACTERIZATION-BLUEPRINT-PATH-002 | 将 synthetic SourceLab 来源确认建模为策略托管 Gate |
-| IOS-CODEX-AGENT-ADAPTER-001 | 100 | `completed` | IOS-LOOP-SUPERVISOR-E2E-001, IOS-PROPOSAL-COMPILER-001 | 接入可诊断、可续接的 Codex exec Agent adapter |
-| IOS-CODEX-AGENT-ADAPTER-COMPAT-002 | 100 | `completed` | IOS-CODEX-AGENT-ADAPTER-001, IOS-AUTO-MATERIALIZATION-POLICY-001 | 对齐当前 Codex CLI 并固化真实 turn/resume smoke |
-| IOS-CONTROL-CATALOG-RESUME-001 | 100 | `completed` | IOS-RECOVERY-COMPILER-BINDING-001 | 恢复控制面变更后的 Supervisor 续跑 |
-| IOS-DECISION-GATE-POLICY-001 | 100 | `completed` | IOS-HARNESS-APPROVAL-UI-001, IOS-TRUSTED-SUPERVISOR-REFERENCE-001 | 将盲批 Gate 替换为结构化决策暂停 |
-| IOS-DELIVERY-INTENT-SETTLEMENT-001 | 100 | `completed` | IOS-SOURCE-RUNTIME-HTML-CSS-001, IOS-READINESS-EVIDENCE-HANDOFF-RECOVERY-002 | 让已完成 Delivery Intent 由 Evidence 结算并退出调度 |
-| IOS-GITHUB-GOLDEN-DISPATCHER-001 | 100 | `completed` | IOS-GITHUB-GOLDEN-DISPATCHER-SCOPE-001 | 实现 Golden 外部执行与结果回收 |
-| IOS-GITHUB-GOLDEN-DISPATCHER-OWNER-001 | 100 | `completed` | IOS-GITHUB-GOLDEN-PUBLISHER-OWNER-001 | 预声明 Golden Dispatcher 与结果回收所有权 |
-| IOS-GITHUB-GOLDEN-DISPATCHER-SCOPE-001 | 100 | `completed` | IOS-GITHUB-GOLDEN-PUBLISHER-AUTOMATION-001 | 建立 Golden Dispatcher 精确自动实现边界 |
-| IOS-GITHUB-GOLDEN-PUBLISHER-AUTOMATION-001 | 100 | `completed` | IOS-GITHUB-GOLDEN-PUBLISHER-SCOPE-001 | 实现无人工 Gate 的场景化 Golden Publisher |
-| IOS-GITHUB-GOLDEN-PUBLISHER-OWNER-001 | 100 | `completed` | IOS-GITHUB-ORACLE-RECEIPT-SETTLEMENT-001 | 预声明无人工 Gate Golden Publisher 所有权 |
-| IOS-GITHUB-GOLDEN-PUBLISHER-SCOPE-001 | 100 | `completed` | IOS-GITHUB-GOLDEN-DISPATCHER-OWNER-001 | 建立 Golden Publisher 精确自动实现边界 |
-| IOS-GITHUB-ORACLE-AUTO-SCOPE-001 | 100 | `completed` | IOS-GITHUB-ORACLE-OWNER-001 | 授权自动策略物化精确 GitHub Oracle Dispatcher 路径 |
-| IOS-GITHUB-ORACLE-DISPATCHER-001 | 100 | `completed` | IOS-GITHUB-ORACLE-AUTO-SCOPE-001 | 建立可恢复的 GitHub Android Oracle 外部执行适配层 |
-| IOS-GITHUB-ORACLE-DISPATCHER-HARDENING-001 | 100 | `completed` | IOS-GITHUB-ORACLE-DISPATCHER-001, IOS-GITHUB-ORACLE-PUSH-TRIGGER-RECOVERY-002 | 以 branch push/run 对账闭合 GitHub Oracle 幂等恢复 |
-| IOS-GITHUB-ORACLE-OWNER-001 | 100 | `completed` | IOS-TRUSTED-ORACLE-SETTLEMENT-COMPILER-001 | 预声明 GitHub Oracle 外部适配层的 Capability 所有权 |
-| IOS-GITHUB-ORACLE-PACKAGER-SCOPE-001 | 100 | `completed` | IOS-TRUSTED-ORACLE-SETTLEMENT-ROBUSTNESS-001 | 建立 Android Oracle CI packager 的精确自动纠错边界 |
-| IOS-GITHUB-ORACLE-PAYLOAD-CANONICALIZATION-001 | 100 | `completed` | IOS-GITHUB-ORACLE-PACKAGER-SCOPE-001, IOS-GITHUB-ORACLE-PUSH-TRIGGER-RECOVERY-002 | 修复真实 Android Oracle payload 的 canonical-v1 转换 |
-| IOS-GITHUB-ORACLE-PUSH-TRIGGER-001 | 100 | `exhausted` | IOS-GITHUB-ORACLE-WORKFLOW-SCOPE-001 | 以 create-only Oracle branch 建立服务端幂等 Workflow 触发 |
-| IOS-GITHUB-ORACLE-PUSH-TRIGGER-RECOVERY-002 | 100 | `completed` | IOS-GITHUB-ORACLE-WORKFLOW-SCOPE-001 | 恢复 create-only Oracle branch 的服务端幂等触发合同 |
-| IOS-GITHUB-ORACLE-RECEIPT-GH-EXECUTABLE-001 | 100 | `completed` | IOS-GITHUB-ORACLE-RECEIPT-HARDENING-001 | 兼容安全的 Homebrew gh 可执行路径 |
-| IOS-GITHUB-ORACLE-RECEIPT-HARDENING-001 | 100 | `completed` | IOS-GITHUB-ORACLE-RECEIPT-SETTLEMENT-001 | 强化 Oracle Receipt 的真实结算与消费合同 |
-| IOS-GITHUB-ORACLE-RECEIPT-OWNER-001 | 100 | `completed` | IOS-GITHUB-ORACLE-PAYLOAD-CANONICALIZATION-001 | 预声明 GitHub Oracle Receipt Settlement 所有权 |
-| IOS-GITHUB-ORACLE-RECEIPT-SCOPE-001 | 100 | `completed` | IOS-GITHUB-ORACLE-RECEIPT-OWNER-001 | 建立 GitHub Oracle Receipt Settlement 的精确自动实现边界 |
-| IOS-GITHUB-ORACLE-RECEIPT-SETTLEMENT-001 | 100 | `completed` | IOS-GITHUB-ORACLE-RECEIPT-SCOPE-001, IOS-GITHUB-ORACLE-DISPATCHER-HARDENING-001, IOS-GITHUB-ORACLE-PAYLOAD-CANONICALIZATION-001 | 实现 GitHub Oracle Attestation Receipt Settlement |
-| IOS-GITHUB-ORACLE-WORKFLOW-OWNER-001 | 100 | `completed` | IOS-GITHUB-ORACLE-DISPATCHER-001 | 预声明 Android Oracle Workflow 的 Conformance 所有权 |
-| IOS-GITHUB-ORACLE-WORKFLOW-SCOPE-001 | 100 | `completed` | IOS-GITHUB-ORACLE-WORKFLOW-OWNER-001 | 建立固定 Android Oracle Workflow 的受限自动修改策略 |
-| IOS-GOLDEN-CONSUMER-BASELINE-SCOPE-001 | 100 | `completed` | IOS-GITHUB-GOLDEN-DISPATCHER-001 | 建立 Manifest v2 消费恢复的精确自动边界 |
-| IOS-GOLDEN-CONSUMER-CONTINUATION-001 | 100 | `blocked` | IOS-GITHUB-GOLDEN-DISPATCHER-001, IOS-HARNESS-RUNTIME-CONTEXT-REPRO-001 | 消费受保护 Golden 并续接迁移需求 |
-| IOS-GOLDEN-CONSUMER-CONTINUATION-RECOVERY-002 | 100 | `completed` | IOS-GOLDEN-CONSUMER-BASELINE-SCOPE-001, IOS-GITHUB-GOLDEN-DISPATCHER-001 | 恢复 Manifest v2 基线并完成受保护 Golden 续接 |
-| IOS-HARNESS-APPROVAL-UI-001 | 100 | `completed` | IOS-KNOWLEDGE-BOOK-DOMAIN-001 | 提供本地一键人工审批界面 |
-| IOS-HARNESS-RUNTIME-CONTEXT-REPRO-001 | 100 | `completed` | IOS-HARNESS-RUNTIME-CONTEXT-SCOPE-001 | 让终态 WorkItem Runtime Context 在干净 Checkout 可复现 |
-| IOS-HARNESS-RUNTIME-CONTEXT-SCOPE-001 | 100 | `completed` | IOS-GITHUB-GOLDEN-DISPATCHER-001 | 建立终态 Runtime Context 可复现修复边界 |
-| IOS-HARNESS-TEST-TIMEOUT-RECOVERY-002 | 100 | `completed` | IOS-HARNESS-TIMEOUT-CLEANUP-001 | 校准全量 Harness 测试有效超时预算 |
-| IOS-HARNESS-TIMEOUT-CLEANUP-001 | 100 | `completed` | IOS-HARNESS-APPROVAL-UI-001 | 让 Harness 超时清理失败保留结构化 Evidence |
-| IOS-KNOWLEDGE-PROMOTION-CONTEXT-004 | 100 | `completed` | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-REMOTE-003 | 让 Harness 识别已提升知识 proposal 的历史上下文 |
-| IOS-KNOWLEDGE-SOURCE-RUNTIME-GOLDEN-002 | 100 | `completed` | IOS-ANDROID-GOLDEN-PUBLISHER-001, IOS-LOOP-DEMAND-COMPILER-003 | 从受保护 Android Golden 提炼 HTML/CSS 书源纵向知识 |
-| IOS-KNOWLEDGE-SOURCE-RUNTIME-POST-FORM-001 | 100 | `completed` | IOS-GOLDEN-CONSUMER-CONTINUATION-RECOVERY-002 | 从受保护 POST Form Golden 收敛可发布业务知识 |
-| IOS-KNOWLEDGE-TOMBSTONE-PROTOCOL-001 | 100 | `completed` | IOS-KNOWLEDGE-CONTROL-PLANE-001, IOS-PROPOSAL-LIFECYCLE-RECOVERY-002, IOS-CODEX-AGENT-ADAPTER-COMPAT-002 | 建立失败知识产出 revision tombstone 协议 |
-| IOS-KNOWLEDGE-UI-TOPOLOGY-CONTINUATION-001 | 100 | `cancelled` | IOS-KNOWLEDGE-ANDROID-SURFACES-001, IOS-KNOWLEDGE-BOOK-DOMAIN-001, IOS-KNOWLEDGE-SOURCE-RUNTIME-001, IOS-KNOWLEDGE-READER-LIFECYCLE-001 | 续接并冻结 UI Topology 知识候选 |
-| IOS-KNOWLEDGE-UI-TOPOLOGY-RECOVERY-002 | 100 | `completed` | IOS-KNOWLEDGE-ANDROID-SURFACES-001, IOS-KNOWLEDGE-BOOK-DOMAIN-001, IOS-KNOWLEDGE-SOURCE-RUNTIME-001, IOS-KNOWLEDGE-READER-LIFECYCLE-001 | 按知识 revision 规则恢复 UI Topology 候选 |
-| IOS-LOOP-DEMAND-AUTONOMY-001 | 100 | `blocked` | IOS-AUTO-MATERIALIZATION-POLICY-001, IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002, IOS-ANDROID-GOLDEN-PUBLISHER-001 | 让 Loop 从受控交付蓝图持续生成并自动推进普通工作项 |
-| IOS-LOOP-DEMAND-AUTONOMY-RECOVERY-002 | 100 | `completed` | IOS-AUTO-MATERIALIZATION-POLICY-001, IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002, IOS-ANDROID-GOLDEN-PUBLISHER-001 | 恢复 Golden 发布后可重复基线并实现 Loop Demand Autonomy |
-| IOS-LOOP-DEMAND-COMPILER-003 | 100 | `completed` | IOS-LOOP-DEMAND-AUTONOMY-RECOVERY-002, IOS-ANDROID-GOLDEN-PUBLISHER-001 | 建立结构化 Delivery Intent 与 Loop Demand Compiler |
-| IOS-LOOP-DEMAND-COMPILER-RECOVERY-004 | 100 | `completed` | IOS-LOOP-DEMAND-COMPILER-003 | 修复 Requirement 规范化摘要绑定 |
-| IOS-LOOP-SUPERVISOR-001 | 100 | `cancelled` | IOS-HARNESS-APPROVAL-UI-001, IOS-HARNESS-TIMEOUT-CLEANUP-001, IOS-KNOWLEDGE-UI-TOPOLOGY-RECOVERY-002 | 建立可执行 Loop Supervisor 与按钮化物化控制面 |
-| IOS-LOOP-SUPERVISOR-E2E-001 | 100 | `completed` | IOS-LOOP-SUPERVISOR-RECOVERY-002 | 完成 Loop Supervisor 自托管 E2E 与进程组回收 |
-| IOS-LOOP-SUPERVISOR-RECOVERY-002 | 100 | `completed` | IOS-HARNESS-APPROVAL-UI-001, IOS-HARNESS-TIMEOUT-CLEANUP-001, IOS-KNOWLEDGE-UI-TOPOLOGY-RECOVERY-002 | 恢复并验证 Loop Supervisor 控制面 |
-| IOS-MATERIALIZATION-CATALOG-REFRESH-001 | 100 | `cancelled` | IOS-RECOVERY-COMPILER-BINDING-001 | 将知识 Catalog 刷新纳入物化原子事务 |
-| IOS-ORACLE-DAG-COMPILER-001 | 100 | `completed` | IOS-SOURCELAB-POST-FORM-001 | 把完成的 SourceLab Characterization 续接为 Android Oracle DAG |
-| IOS-ORACLE-SETTLEMENT-COMPILER-001 | 100 | `completed` | IOS-ANDROID-POST-FORM-ORACLE-RECOVERY-002 | 将完成的 Android Oracle 结算为受信 proposal DAG |
-| IOS-PROCESS-GROUP-REAP-001 | 100 | `completed` | IOS-CODEX-AGENT-ADAPTER-COMPAT-002, IOS-SWIFTPM-VERIFY-SANDBOX-001 | 稳定受信 Supervisor 进程组回收判定 |
-| IOS-PROPOSAL-COMPILER-001 | 100 | `completed` | IOS-KNOWLEDGE-DAG-REPAIR-001, IOS-LOOP-SUPERVISOR-E2E-001 | 建立 initialization DAG 到不可变候选的编译器 |
-| IOS-PROPOSAL-GATE-REPAIR-001 | 100 | `completed` | IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002, IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-004 | 移除 proposal 橡皮图章并允许受限修复 turn |
-| IOS-PROPOSAL-LIFECYCLE-RECOVERY-002 | 100 | `completed` | IOS-PROPOSAL-COMPILER-001, IOS-AUTO-MATERIALIZATION-POLICY-001 | 修复 proposal 测试对物化生命周期的自阻断 |
-| IOS-READINESS-EVIDENCE-HANDOFF-001 | 100 | `rejected` | IOS-SOURCE-RUNTIME-HTML-CSS-001, IOS-REQUIREMENT-READINESS-PUBLISHER-RECOVERY-002 | 闭合 Requirement readiness 到完成实现 Evidence 的新鲜度交接 |
-| IOS-READINESS-EVIDENCE-HANDOFF-RECOVERY-002 | 100 | `completed` | IOS-SOURCE-RUNTIME-HTML-CSS-001, IOS-REQUIREMENT-READINESS-PUBLISHER-RECOVERY-002 | 恢复 readiness Evidence 交接并隔离 Publisher 发布前状态 |
-| IOS-RECOVERY-COMPILER-BINDING-001 | 100 | `completed` | IOS-TYPED-RECOVERY-LINEAGE-001 | 将 typed recovery 绑定进编译与物化链路 |
-| IOS-REQUIREMENT-INTAKE-PUBLISHER-001 | 100 | `cancelled` | IOS-ANDROID-REQUEST-OPTIONS-INTAKE-001 | 建立 Android 迁移候选的受信 Requirement Intake Publisher |
-| IOS-REQUIREMENT-READINESS-PUBLISHER-001 | 100 | `blocked` | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-PLAN-006 | 建立受信 Requirement Readiness Publisher |
-| IOS-REQUIREMENT-READINESS-PUBLISHER-RECOVERY-002 | 100 | `completed` | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-PLAN-006 | 恢复发布后基线并建立 Requirement Readiness Publisher |
-| IOS-SOURCE-RUNTIME-GOLDEN-CONFORMANCE-001 | 100 | `completed` | IOS-SOURCE-RUNTIME-HTML-CSS-001, IOS-DELIVERY-INTENT-SETTLEMENT-001 | 让 iOS SourceRuntime 与 Android Golden 做真实结构化验收 |
-| IOS-SOURCE-RUNTIME-HTML-CSS-001 | 100 | `completed` | IOS-RUNTIME-PORTS-001, IOS-SOURCELAB-ENGINE-001, IOS-KNOWLEDGE-SOURCE-RUNTIME-GOLDEN-002, IOS-REQUIREMENT-READINESS-PUBLISHER-RECOVERY-002 | 实现 Android Golden 对齐的 HTML/CSS SourceRuntime 纵向能力 |
-| IOS-SOURCELAB-POST-FORM-001 | 100 | `completed` | IOS-CHARACTERIZATION-DAG-COMPILER-001 | 构建 POST Form 确定性本地书源场景 |
-| IOS-SUPERVISOR-OWNED-VERIFY-001 | 100 | `blocked` | IOS-CODEX-AGENT-ADAPTER-COMPAT-002, IOS-SWIFTPM-VERIFY-SANDBOX-001 | 将受信 verify 与 close 移出 Agent 沙箱 |
-| IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002 | 100 | `completed` | IOS-CODEX-AGENT-ADAPTER-COMPAT-002, IOS-SWIFTPM-VERIFY-SANDBOX-001, IOS-PROCESS-GROUP-REAP-001 | 恢复 Supervisor-owned verify 与 close |
-| IOS-SUPERVISOR-RUN-JOURNAL-001 | 100 | `completed` | IOS-CONTROL-CATALOG-RESUME-001 | 为 Loop Supervisor 增加可重放运行日志 |
-| IOS-SWIFTPM-VERIFY-SANDBOX-001 | 100 | `completed` | IOS-CODEX-AGENT-ADAPTER-COMPAT-002, IOS-KNOWLEDGE-TOMBSTONE-PROTOCOL-001 | 隔离 SwiftPM manifest 验证沙箱与缓存 |
-| IOS-TERMINAL-RECOVERY-RESOLUTION-001 | 100 | `completed` | IOS-PROPOSAL-GATE-REPAIR-001, IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-004, IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002 | 按恢复谱系消解历史终态 blocker |
-| IOS-TERMINAL-RECOVERY-RESOLUTION-002 | 100 | `completed` | IOS-TERMINAL-RECOVERY-RESOLUTION-001 | 收紧显式恢复关系并补齐最终证据 |
-| IOS-TRUSTED-ORACLE-SETTLEMENT-COMPILER-001 | 100 | `completed` | IOS-ANDROID-POST-FORM-ATTESTATION-RECOVERY-003 | 将受信 proposal 能力结算为 GitHub 执行阶段 |
-| IOS-TRUSTED-ORACLE-SETTLEMENT-ROBUSTNESS-001 | 100 | `completed` | IOS-TRUSTED-ORACLE-SETTLEMENT-COMPILER-001, IOS-GITHUB-ORACLE-DISPATCHER-HARDENING-001 | 让 trusted Oracle 历史结算兼容 Capability 单调演进 |
-| IOS-TRUSTED-SUPERVISOR-REFERENCE-001 | 100 | `completed` | IOS-LOOP-SUPERVISOR-E2E-001, IOS-CODEX-AGENT-ADAPTER-001 | 建立仓库外签名 journal 与隔离复验 reference runner |
-| IOS-TYPED-RECOVERY-LINEAGE-001 | 100 | `completed` | IOS-TERMINAL-RECOVERY-RESOLUTION-002, IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002 | 将恢复谱系升级为强类型控制边 |
-| IOS-KNOWLEDGE-PROPOSAL-BATCH-REFS-REPAIR-001 | 96 | `completed` | IOS-KNOWLEDGE-ANDROID-SURFACES-001 | 闭合同批知识候选引用契约 |
-| IOS-KNOWLEDGE-DAG-REPAIR-001 | 95 | `completed` | IOS-KNOWLEDGE-CONTROL-PLANE-001 | 修复初始化 DAG 验收缺口并收紧知识演进门禁 |
-| IOS-KNOWLEDGE-LEDGER-GATE-REPAIR-001 | 95 | `completed` | IOS-KNOWLEDGE-DAG-REPAIR-001 | 闭合知识台账选择与人工审批门禁 |
-| IOS-KNOWLEDGE-SELECTION-ROBUSTNESS-001 | 95 | `completed` | IOS-KNOWLEDGE-LEDGER-GATE-REPAIR-001 | 加固知识条目选择合并与异常输入处理 |
-| IOS-CORE-001 | 90 | `completed` | IOS-BOOT-001 | 实现稳定 ID、JSONValue、Clock、Trace 和错误基础 |
-| IOS-KNOWLEDGE-ANDROID-SURFACES-001 | 90 | `completed` | IOS-KNOWLEDGE-SELECTION-ROBUSTNESS-001 | 提取 Android 业务表面与领域索引 |
-| IOS-KNOWLEDGE-BOOK-DOMAIN-001 | 90 | `completed` | IOS-KNOWLEDGE-ANDROID-SURFACES-001, IOS-KNOWLEDGE-PROPOSAL-BATCH-REFS-REPAIR-001 | 提取 Book、Shelf 与 Progress 领域知识 |
-| IOS-KNOWLEDGE-CONTROL-PLANE-001 | 90 | `completed` | IOS-ORACLE-CONTROL-PLANE-001 | 建立业务知识与架构驱动控制面 |
-| IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-002 | 90 | `exhausted` | IOS-KNOWLEDGE-ANDROID-SURFACES-001, IOS-PROPOSAL-LIFECYCLE-RECOVERY-002, IOS-CODEX-AGENT-ADAPTER-COMPAT-002 | 恢复外部集成、权限、依赖与发布约束知识 |
-| IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-003 | 90 | `exhausted` | IOS-KNOWLEDGE-ANDROID-SURFACES-001, IOS-KNOWLEDGE-TOMBSTONE-PROTOCOL-001, IOS-CODEX-AGENT-ADAPTER-COMPAT-002 | 恢复外部集成、权限、依赖与发布约束知识 revision 3 |
-| IOS-KNOWLEDGE-INTEGRATIONS-RECOVERY-004 | 90 | `completed` | IOS-KNOWLEDGE-ANDROID-SURFACES-001, IOS-KNOWLEDGE-TOMBSTONE-PROTOCOL-001, IOS-SUPERVISOR-OWNED-VERIFY-RECOVERY-002 | 验证恢复 Integrations 知识 revision 4 |
-| IOS-KNOWLEDGE-SOURCE-RUNTIME-001 | 89 | `completed` | IOS-KNOWLEDGE-ANDROID-SURFACES-001, IOS-KNOWLEDGE-PROPOSAL-BATCH-REFS-REPAIR-001 | 提取书源格式、规则与执行流水线知识 |
-| IOS-KNOWLEDGE-READER-LIFECYCLE-001 | 88 | `completed` | IOS-KNOWLEDGE-ANDROID-SURFACES-001, IOS-KNOWLEDGE-BOOK-DOMAIN-001, IOS-KNOWLEDGE-SOURCE-RUNTIME-001 | 提取阅读会话、正文、进度与预取知识 |
-| IOS-KNOWLEDGE-UI-TOPOLOGY-001 | 87 | `exhausted` | IOS-KNOWLEDGE-ANDROID-SURFACES-001, IOS-KNOWLEDGE-BOOK-DOMAIN-001, IOS-KNOWLEDGE-SOURCE-RUNTIME-001, IOS-KNOWLEDGE-READER-LIFECYCLE-001 | 提取页面结构、导航图与多级菜单知识 |
-| IOS-KNOWLEDGE-INTEGRATIONS-001 | 86 | `blocked` | IOS-KNOWLEDGE-ANDROID-SURFACES-001 | 外部集成、权限、依赖与发布约束知识 |
-| IOS-RUNTIME-PORTS-001 | 85 | `completed` | IOS-BOOT-001, IOS-CORE-001 | 定义确定性 HTTP 请求响应与 Transport port |
-| IOS-CONFORMANCE-001 | 80 | `completed` | IOS-BOOT-001, IOS-CORE-001, IOS-RUNTIME-PORTS-001 | 建立离线 Fixture 与 canonical execution envelope 骨架 |
-| IOS-SOURCELAB-ENGINE-001 | 75 | `completed` | IOS-CONFORMANCE-001 | 将 SourceLab 场景接入 FixtureTransport 与 ConformanceCLI |
-| IOS-SOURCE-FORMAT-001 | 70 | `completed` | IOS-BOOT-001, IOS-CORE-001, IOS-CONFORMANCE-001, IOS-SOURCELAB-ENGINE-001 | 实现 BookSource 最小无损 JSON round-trip |
-| IOS-SOURCE-FORMAT-FIXTURES-001 | 69 | `completed` | IOS-SOURCE-FORMAT-001, IOS-SOURCELAB-ENGINE-001 | 建立 BookSource 双轨一致性 fixture 与 iOS 执行骨架 |
-| IOS-ORACLE-CONTROL-PLANE-001 | 68 | `completed` | IOS-SOURCE-FORMAT-FIXTURES-001 | 建立只读 Android Oracle golden proposal 控制合同 |
-| IOS-SOURCE-FORMAT-CONFORMANCE-001 | 65 | `superseded` | IOS-SOURCE-FORMAT-001, IOS-SOURCELAB-ENGINE-001 | 接入 BookSource Android golden 差分 |
+下一条产品主线：从 `AnalyzeUrl` 源码和已有 Source Request 知识中选择一个未覆盖的
+独立请求切片（raw/JSON/XML、header/cookie/retry 之一），先获得真实 Android Golden，
+再扩展 SourceRuntime。Phase 1 的非 JS 单源链路稳定后，进入本地书架、阅读器和
+iOS Simulator UI 验收。
 
-## 风险
-
-- `RISK-DISTRIBUTION-001`：App Store 动态代码政策与 GPLv3 分发义务需在外部发布前完成法律评估
-
-## 常用命令
-
-```bash
-python3 ios/harness/harness.py doctor
-python3 ios/harness/harness.py next
-python3 ios/harness/harness.py context <WORK_ITEM_ID>
-```
+v1 的 WorkItem、Evidence、Checkpoint、proposal projection、Gate 和大状态文件只作为
+Git 历史迁移材料；新任务不得继续写入。

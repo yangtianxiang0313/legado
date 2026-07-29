@@ -2,18 +2,19 @@
 
 路线按“可验证的纵向能力”推进，不按页面数量推进。每一阶段必须先有离线 fixture 和机器验收，再接 UI。
 
-## Phase 0：控制面与骨架
+## Phase 0：架构、验收与骨架（已完成）
 
-- 架构、Harness、项目记忆和人工门禁；
-- Android Fact Inventory、Requirement Catalog、clause→Work Item 编译与 drift 门禁；
+- 架构、Minimal Loop v2 和项目记忆；
+- Android Fact Inventory、Requirement Catalog 与 Business Knowledge；
 - LegadoKit Swift Package、Swift 6 strict concurrency；
 - Core ID/JSON/Clock/Trace/Error；
 - Conformance envelope 和 FixtureTransport 骨架。
 - SourceLab 本地书站、书源构建器、正反场景覆盖策略与无 socket/loopback 双通道。
 
-退出条件：`Android intake doctor + Harness doctor + architecture + swift test + SourceLab selftest` 全绿，AI 能从 accepted Requirement 完成一个 work item 的 claim/verify/checkpoint/close 闭环。
+退出条件：`Android intake + Business Knowledge + Loop doctor + swift test + SourceLab`
+全绿，AI 能从 published knowledge 派生并完成一个 Task。
 
-## Phase 1：声明式书源最小纵切
+## Phase 1：声明式书源最小纵切（进行中）
 
 - BookSource JSON round-trip 和 unknown fields；
 - URL 模板、GET/POST、header/body、charset；
@@ -55,6 +56,6 @@
 - 1 个工作项只改变 1 个可验证行为；
 - 运行行为未达到 L4 时只生成 characterization/SourceLab/Oracle 前置 DAG，不生成产品实现项；
 - 典型上限 8 个文件、500 行、3 次 edit/verify；
-- 先增加 failing fixture/contract，再实现；golden 必须由独立人工流程产生；
+- 先增加 fixture/contract，再实现；golden 必须由独立 Android runner 产生；
 - Target/依赖/协议/迁移/capability 变化不能混在普通能力任务中；
 - UI 任务引用已 verified 的 UseCase，不在 View 内补业务兼容逻辑。

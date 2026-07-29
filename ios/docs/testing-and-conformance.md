@@ -12,7 +12,7 @@
 | T5 | 固定模拟器 XCUITest、snapshot、重启恢复 | Feature/Reader PR |
 | T6 | live probe、性能、fuzz、恶意 ZIP/HTML、长稳 | nightly/release |
 
-Harness 根据修改路径选择测试；AI 不能自行减少 required checks。
+Minimal Loop 根据 Task 固定验收；AI 不能自行减少 required checks。
 
 ## 2. 同源 Fixture，双端 Runner
 
@@ -51,16 +51,17 @@ SourceLab 复用这些响应构建本地网站，但 T2/T3 仍必须走 FixtureT
 
 初期允许 instrumentation runner 直接调用 `AnalyzeUrl / AnalyzeRule / WebBook`，通过 FixtureTransport 截断真实网络；后续再提取 JVM CLI。日常 PR 读取冻结、签名 manifest 中的 Android golden；nightly 或独立 golden proposal workflow 才重跑 Android oracle。
 
-Android 是兼容基准，不是产品正确性的绝对定义。发现 Android bug 时创建 `oracle-adjudication` 工作项，由人决定保持兼容还是记录 intentional difference。
+Android 是兼容基准，不是产品正确性的绝对定义。发现 Android bug 时记录 COMP/ADR，
+明确选择保持兼容还是形成 iOS intentional difference。
 
 ## 4. Golden 防篡改
 
-- 普通工作项始终 deny `ios/harness/goldens/**`、fixture manifest、normalizer、schema 和 gate policy。
-- 产品 Harness 不提供 record/update 命令。
-- 更新由独立 workflow 运行指定 Android commit，生成 proposal PR，不自动合并。
+- 普通产品 Task 始终禁止修改 `ios/harness/goldens/**`。
+- Minimal Loop 不提供 record/update golden 命令。
+- 更新由独立 workflow 运行指定 Android commit，生成 create-only、内容寻址结果。
 - manifest 绑定 fixture hash、golden hash、oracle commit、runner image 和 canonicalizer hash。
-- 变更任一输入后，旧 Evidence 和 golden 立即 stale。
-- snapshot reference 使用同一门禁。
+- 变更任一语义输入后，旧 verification 和 golden 立即 stale。
+- snapshot reference 只能由 Simulator 验收任务更新。
 - 产品代码出现 fixture ID、expected JSON 常量或 test-only 分支时直接失败。
 
 ## 5. 确定性与失败分类
@@ -81,14 +82,16 @@ INFRASTRUCTURE        BUDGET_EXCEEDED     HUMAN_DECISION_REQUIRED
 
 失败指纹由分类、check ID、fixture ID、stage、JSON Pointer 和归一化消息计算。相同指纹连续两次、基线红、越界、golden 修改、预算耗尽或需要扩大授权时必须停止，而不是继续随机尝试。
 
-## 6. Evidence 新鲜度
+## 6. 验证新鲜度
 
-Evidence 必须绑定 work-item hash、base/head/tree、diff hash、源码、契约、Android baseline、fixture、normalizer、依赖锁、工具链和架构摘要。架构摘要覆盖规范文档、依赖策略、架构规则与 accepted ADR。验证成功但任一输入变化后，Harness 将该能力的有效状态判为 stale；声明字段不会掩盖过期证据。
+Loop verification 绑定 Task、base/head、实际修改路径、workspace SHA-256、Android baseline、
+fixture/golden 和固定命令输出摘要。验证后代码变化必须重新执行；完成事件只引用最后一次
+匹配 workspace 的 verification。
 
 - unit/conformance：输入 digest 变化即失效；
 - live probe：24～72 小时；
 - performance：30 天或硬件/工具链变化；
 - App Store policy：每季度及提交前复核；
-- release Evidence：永久保留 manifest。
+- release 验证：永久保留 manifest。
 
 完整 xcresult、trace、截图和 DOM dump 放 CI artifact/object storage；Git 只保存脱敏摘要、URI 和 SHA-256。

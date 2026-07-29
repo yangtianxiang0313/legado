@@ -19,7 +19,7 @@ AI 推进控制面采用
 2. 不可信书源、脚本、网络和归档有明确能力边界；
 3. Swift 6 并发安全，UI 不承担解析和 I/O；
 4. 核心不依赖具体数据库、网络、DOM、脚本或 UI 框架；
-5. 每项能力都能由 Harness 独立验收与追溯。
+5. 每项能力都能由 Minimal Loop 独立验收与追溯。
 
 非目标：逐类翻译 Activity/ViewModel、直接打开 Android SQLite、第一版覆盖全部 EPUB/JS/WebView 边角、让 AI 自行改变架构或参考答案。
 
@@ -42,20 +42,23 @@ AI 推进控制面采用
 | ARCH-011 | 每次书源操作必须产生 TraceID，并记录明确的 SourceStage。 |
 | ARCH-012 | 书源 JSON round-trip 必须保留未知字段。 |
 | ARCH-013 | StoreSafe 产物不得链接任意脚本或动态页面执行 Target。 |
-| ARCH-014 | Golden、normalizer 和阈值只能经人工审核更新。 |
+| ARCH-014 | Golden 只能由独立 Android runner 发布；iOS 实现者不能修改 expected。 |
 | ARCH-015 | Database Record、传输 DTO、Domain Model 必须分离。 |
 | ARCH-016 | Android schema 71 不是 iOS schema 版本；跨端数据只走显式 Codec。 |
-| ARCH-017 | 产品 Work Item 必须绑定已发布 Requirement revision/clause；Android Fact 或 selection 漂移后旧 Evidence 失效。 |
+| ARCH-017 | 产品 Task 必须绑定已发布 Requirement revision/clause、源码锚点和所需 Golden；输入漂移后必须重新验证。 |
 | ARCH-018 | Android 源码声明只产生 Fact；未达到所需证据等级的行为不得直接进入 iOS 实现队列。 |
 
 ## 2.1 Android 需求摄取层
 
-Android baseline 是兼容事实源，Requirement Catalog 是产品范围源，Work Item 是一次交付载体；三者不能合并。受控 extractor 从固定 commit 提取字段/入口等 Fact，AI 只能据此生成候选。静态数据合同可在 L1 进入实现，运行语义必须经 SourceLab 刺激与 Android Oracle 达到 L4 后才进入产品实现。
+Android baseline 是兼容事实源，Requirement Catalog 是产品范围源，Minimal Loop Task
+是一次交付载体；三者不能合并。受控 extractor 从固定 commit 提取字段/入口等 Fact。
+静态数据合同可在 L1 进入实现，运行语义必须经 SourceLab 刺激与 Android Oracle 达到
+L4 后才进入产品实现。
 
 ```text
 Android commit → Fact Inventory → Requirement Candidate
 → scope/evidence decision → Accepted Requirement
-→ characterization/enabler/implementation/verification Work Item DAG
+→ Business Knowledge / Coverage → Minimal Loop Task
 ```
 
 完整契约、证据等级、去重与 baseline 升级规则见 `android-requirement-intake.md`。

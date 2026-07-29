@@ -6,7 +6,7 @@ date: 2026-07-22
 scope: [ai-harness, project-memory]
 capabilities: [CAP-BOOTSTRAP, CAP-CONFORMANCE]
 supersedes: []
-superseded_by: null
+superseded_by: ADR-0005
 deciders: [project-owner-request]
 ---
 
