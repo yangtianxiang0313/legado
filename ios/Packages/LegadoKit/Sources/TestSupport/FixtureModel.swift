@@ -1586,3 +1586,175 @@ public enum ReaderPrefetchFixtureProjection {
     .number(JSONNumber(Int64(value)))
   }
 }
+
+public enum ReaderTOCRemapFixtureProjectionError:
+  Error, Sendable
+{
+  case invalidFixture
+}
+
+public struct ReaderTOCRemapFixtureProjectionRun: Sendable {
+  public let artifact: JSONValue
+  public let requestPlan: JSONValue
+
+  public init(artifact: JSONValue, requestPlan: JSONValue) {
+    self.artifact = artifact
+    self.requestPlan = requestPlan
+  }
+}
+
+public enum ReaderTOCRemapFixtureProjection {
+  public static let fixtureID =
+    "rl-reader-progress-toc-remap-001"
+
+  public static func run(
+    caseData: Data,
+    inputData: Data
+  ) throws -> ReaderTOCRemapFixtureProjectionRun {
+    let caseDocument: JSONValue
+    let inputDocument: JSONValue
+    do {
+      caseDocument = try JSONValueCodec.decode(caseData)
+      inputDocument = try JSONValueCodec.decode(inputData)
+    } catch {
+      throw ReaderTOCRemapFixtureProjectionError.invalidFixture
+    }
+    guard
+      case .object(let caseRoot) = caseDocument,
+      caseRoot["id"] == .string(fixtureID),
+      caseRoot["kind"] == .string("android_runtime_scenario"),
+      caseRoot["operation"] == .string("android_runtime"),
+      case .object(let inputRoot) = inputDocument,
+      case .array(let inputCases)? = inputRoot["cases"]
+    else {
+      throw ReaderTOCRemapFixtureProjectionError.invalidFixture
+    }
+
+    var identifiers: Set<String> = []
+    var plans: [JSONValue] = []
+    var cases: [JSONValue] = []
+    for value in inputCases {
+      guard
+        case .object(let inputCase) = value,
+        case .string(let id)? = inputCase["id"],
+        identifiers.insert(id).inserted,
+        case .string(let operation)? = inputCase["operation"],
+        operation == "reader_progress_toc_remap",
+        case .object(let arguments)? = inputCase["arguments"]
+      else {
+        throw ReaderTOCRemapFixtureProjectionError.invalidFixture
+      }
+      plans.append(
+        .object([
+          "operation": .string(operation),
+          "arguments": .object(arguments),
+        ])
+      )
+      cases.append(
+        .object([
+          "id": .string(id),
+          "operation": .string(operation),
+          "result": try result(arguments),
+          "issue": .null,
+        ])
+      )
+    }
+
+    let requestPlan = JSONValue.array(plans)
+    return ReaderTOCRemapFixtureProjectionRun(
+      artifact: .object([
+        "schema_version": number(1),
+        "fixture_id": .string(fixtureID),
+        "engine": .object([
+          "platform": .string("ios"),
+          "revision": .string("reader-toc-remap-policy-v1"),
+          "compatibility_profile": .string("android-legado-v1"),
+        ]),
+        "request_plan": requestPlan,
+        "decode": .null,
+        "stages": .array([]),
+        "result": .object([
+          "type": .string("reader_runtime"),
+          "value": .object([
+            "portable_known_projection": .object([
+              "cases": .array(cases)
+            ])
+          ]),
+        ]),
+        "issues": .array([]),
+      ]),
+      requestPlan: requestPlan
+    )
+  }
+
+  private static func result(
+    _ arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    let oldTitle: String?
+    switch arguments["old_title"] {
+    case .string(let value):
+      oldTitle = value
+    case .null:
+      oldTitle = nil
+    default:
+      throw ReaderTOCRemapFixtureProjectionError.invalidFixture
+    }
+    guard case .array(let titleValues)? = arguments["new_titles"] else {
+      throw ReaderTOCRemapFixtureProjectionError.invalidFixture
+    }
+    let titles = try titleValues.map { value in
+      guard case .string(let title) = value else {
+        throw ReaderTOCRemapFixtureProjectionError.invalidFixture
+      }
+      return title
+    }
+    let remap: ReaderTOCRemapResult
+    do {
+      remap = try AndroidReaderTOCRemapPolicy.remap(
+        ReaderTOCRemapInput(
+          oldChapterIndex: try integer(
+            "old_index",
+            in: arguments
+          ),
+          oldChapterTitle: oldTitle,
+          oldChapterListSize: try integer(
+            "old_list_size",
+            in: arguments
+          ),
+          newChapterTitles: titles
+        )
+      )
+    } catch {
+      throw ReaderTOCRemapFixtureProjectionError.invalidFixture
+    }
+    return .object([
+      "new_chapter_count": number(remap.newChapterCount),
+      "selected_index": number(remap.selectedIndex),
+      "selected_index_in_bounds": .bool(
+        remap.selectedIndexInBounds
+      ),
+      "selected_title": nullable(remap.selectedTitle),
+    ])
+  }
+
+  private static func integer(
+    _ key: String,
+    in arguments: [String: JSONValue]
+  ) throws -> Int {
+    guard
+      case .number(let number)? = arguments[key],
+      let integer = Int(number.rawToken)
+    else {
+      throw ReaderTOCRemapFixtureProjectionError.invalidFixture
+    }
+    return integer
+  }
+
+  private static func nullable(_ value: String?) -> JSONValue {
+    value.map(JSONValue.string) ?? .null
+  }
+
+  private static func number(_ value: Int) -> JSONValue {
+    .number(JSONNumber(Int64(value)))
+  }
+}

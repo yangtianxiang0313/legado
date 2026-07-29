@@ -1096,6 +1096,108 @@ final class ReaderCoreTests: XCTestCase {
     XCTAssertTrue(text.contains(#""task_identity_changed":true"#))
   }
 
+  func testTOCRemapProjectionContainsAllElevenGoldenCases() throws {
+    let text = try tocRemapProjectionText()
+
+    XCTAssertTrue(
+      text.contains(
+        #""id":"old-index-zero-short-circuits-empty-toc""#
+      )
+    )
+    XCTAssertTrue(
+      text.contains(#""id":"empty-new-toc-preserves-old-index""#)
+    )
+    XCTAssertTrue(
+      text.contains(#""id":"cleaned-title-finds-inserted-chapter""#)
+    )
+    XCTAssertTrue(
+      text.contains(#""id":"duplicate-cleaned-title-selects-first""#)
+    )
+    XCTAssertTrue(
+      text.contains(#""id":"chapter-number-exact-match-recovers""#)
+    )
+    XCTAssertTrue(
+      text.contains(
+        #""id":"nearest-number-without-exact-match-falls-back""#
+      )
+    )
+    XCTAssertTrue(
+      text.contains(
+        #""id":"fallback-clamps-high-index-to-new-last""#
+      )
+    )
+    XCTAssertTrue(
+      text.contains(
+        #""id":"old-size-ratio-expands-search-to-index-zero""#
+      )
+    )
+    XCTAssertTrue(
+      text.contains(
+        #""id":"old-size-ratio-excludes-early-title""#
+      )
+    )
+    XCTAssertTrue(
+      text.contains(
+        #""id":"jaccard-exactly-point-nine-six-falls-back""#
+      )
+    )
+    XCTAssertTrue(
+      text.contains(
+        #""id":"jaccard-above-point-nine-six-selects-title""#
+      )
+    )
+  }
+
+  func testTOCRemapProjectionPreservesEmptyAndFallbackResults() throws {
+    let text = try tocRemapProjectionText()
+
+    XCTAssertTrue(
+      text.contains(
+        #""new_chapter_count":0,"selected_index":7,"selected_index_in_bounds":false,"selected_title":null"#
+      )
+    )
+    XCTAssertTrue(
+      text.contains(
+        #""new_chapter_count":3,"selected_index":2,"selected_index_in_bounds":true,"selected_title":"终篇 新月""#
+      )
+    )
+    XCTAssertTrue(
+      text.contains(
+        #""new_chapter_count":30,"selected_index":20,"selected_index_in_bounds":true,"selected_title":"占位20""#
+      )
+    )
+  }
+
+  func testTOCRemapProjectionPreservesStrictMatchingRules() throws {
+    let text = try tocRemapProjectionText()
+
+    XCTAssertTrue(
+      text.contains(
+        #""new_chapter_count":7,"selected_index":5,"selected_index_in_bounds":true,"selected_title":"第4章 星河归途""#
+      )
+    )
+    XCTAssertTrue(
+      text.contains(
+        #""new_chapter_count":15,"selected_index":7,"selected_index_in_bounds":true,"selected_title":"第十章 重逢""#
+      )
+    )
+    XCTAssertTrue(
+      text.contains(
+        #""new_chapter_count":8,"selected_index":6,"selected_index_in_bounds":true,"selected_title":"第42回 陌路""#
+      )
+    )
+    XCTAssertTrue(
+      text.contains(
+        #""new_chapter_count":4,"selected_index":1,"selected_index_in_bounds":true,"selected_title":"fallback""#
+      )
+    )
+    XCTAssertTrue(
+      text.contains(
+        #""new_chapter_count":4,"selected_index":3,"selected_index_in_bounds":true,"selected_title":"abcdefghijklmnopqrstuvwxyz""#
+      )
+    )
+  }
+
   private func projectionText() throws -> String {
     let fixture = repositoryRoot.appendingPathComponent(
       "ios/harness/fixtures/runtime-lab/"
@@ -1163,6 +1265,26 @@ final class ReaderCoreTests: XCTestCase {
       isDirectory: true
     )
     let run = try ReaderPrefetchFixtureProjection.run(
+      caseData: Data(
+        contentsOf: fixture.appendingPathComponent("case.json")
+      ),
+      inputData: Data(
+        contentsOf: fixture.appendingPathComponent("input.json")
+      )
+    )
+    return String(
+      decoding: try JSONValueCodec.encode(run.artifact),
+      as: UTF8.self
+    )
+  }
+
+  private func tocRemapProjectionText() throws -> String {
+    let fixture = repositoryRoot.appendingPathComponent(
+      "ios/harness/fixtures/runtime-lab/"
+        + ReaderTOCRemapFixtureProjection.fixtureID,
+      isDirectory: true
+    )
+    let run = try ReaderTOCRemapFixtureProjection.run(
       caseData: Data(
         contentsOf: fixture.appendingPathComponent("case.json")
       ),
