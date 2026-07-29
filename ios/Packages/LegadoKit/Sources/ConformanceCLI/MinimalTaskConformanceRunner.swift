@@ -43,6 +43,19 @@ public enum MinimalTaskConformanceRunner {
       "ios/harness/fixtures/source-lab/\(fixtureID)",
       root: root
     )
+    if fixtureID == SourceTransportDispatchConformanceRunner.fixtureID {
+      let run = try await SourceTransportDispatchConformanceRunner.run(
+        fixtureDirectory: fixtureDirectory
+      )
+      return try finish(
+        taskID: taskID,
+        fixtureID: fixtureID,
+        goldenPath: goldenPath,
+        actualArtifact: run.artifact,
+        canonicalPlans: run.requestPlan,
+        root: root
+      )
+    }
     let loaded = try loadFixtureForTask(from: fixtureDirectory)
     guard loaded.definition.id == fixtureID else {
       throw MinimalTaskConformanceError.invalidFixture
@@ -60,6 +73,28 @@ public enum MinimalTaskConformanceRunner {
         input: input
       )
     )
+    let canonicalPlans = try requestPlanValue(
+      loaded.requestCases,
+      plans: plans
+    )
+    return try finish(
+      taskID: taskID,
+      fixtureID: fixtureID,
+      goldenPath: goldenPath,
+      actualArtifact: actualArtifact,
+      canonicalPlans: canonicalPlans,
+      root: root
+    )
+  }
+
+  private static func finish(
+    taskID: String,
+    fixtureID: String,
+    goldenPath: String,
+    actualArtifact: JSONValue,
+    canonicalPlans: JSONValue,
+    root: URL
+  ) throws -> MinimalTaskConformanceRun {
     let golden = try json(
       at: resolve(goldenPath, root: root),
       error: .invalidGolden
@@ -74,10 +109,6 @@ public enum MinimalTaskConformanceRunner {
     else {
       throw MinimalTaskConformanceError.invalidGolden
     }
-    let canonicalPlans = try requestPlanValue(
-      loaded.requestCases,
-      plans: plans
-    )
     let androidExpected = try comparisonValue(
       artifact: androidArtifact,
       requestPlan: androidArtifact["request_plan"]

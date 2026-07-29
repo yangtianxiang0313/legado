@@ -14,6 +14,7 @@ public enum FixtureOperation: String, Codable, Sendable {
   case fieldEncoding = "field_encoding"
   case urlTemplateCompilation = "url_template_compilation"
   case rateLimitState = "rate_limit_state"
+  case transportDispatch = "transport_dispatch"
   case rule
 }
 
