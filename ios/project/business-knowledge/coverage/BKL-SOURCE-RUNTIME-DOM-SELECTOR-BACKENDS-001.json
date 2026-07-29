@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgeCoverageLedger",
+  "id": "BKL-SOURCE-RUNTIME-DOM-SELECTOR-BACKENDS-001",
+  "revision": 1,
+  "status": "current",
+  "packet_refs": [
+    {
+      "id": "BKP-SOURCE-RUNTIME-DOM-SELECTOR-BACKENDS-001",
+      "revision": 1,
+      "sha256": "00aab08f9f1c65b6943312419ce183436048695d23dbe1e4309a7c11710b3043"
+    }
+  ],
+  "generated_from": {
+    "knowledge_authority_sha256": "1e685b2caf1f754e819fcec6596c95820cb7d7d41e70f592c16db2d8bf69016f",
+    "requirement_catalog_sha256": "68f439823f2cf64da62669a6dfe1a97ee7338d6f296151d9e3200b9b159cfb21",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "entries": [
+    {
+      "id": "BKE-SR-DOM-SELECTOR-BACKENDS-001",
+      "claim_ref": {
+        "id": "BKC-SR-CSS-BACKEND-001",
+        "revision": 2
+      },
+      "validation": {
+        "required": "android_runtime",
+        "state": "verified",
+        "evidence_refs": [
+          "ios/harness/goldens/releases/sl-source-rule-dom-selector-backends-001-30466700063-1.json",
+          "ios/harness/goldens/android-legado-v1/sl-source-rule-dom-selector-backends-001.json#/artifact/result/value"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "covered_by_requirement",
+        "refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "reason": "受保护 Android Golden 已冻结 10 个场景中的 CSS/XPath DOM 选择、节点转换、容错、URL 和失败边界，交由独立 SourceRuntime DOM 规则内核实现",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "planned",
+        "requirement_refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "work_item_refs": [
+          "IOS-SOURCE-RUNTIME-DOM-SELECTOR-BACKENDS-001"
+        ],
+        "capability_refs": [
+          "CAP-CONFORMANCE",
+          "CAP-RUNTIME-PORTS"
+        ],
+        "evidence_refs": [
+          "ios/harness/goldens/releases/sl-source-rule-dom-selector-backends-001-30466700063-1.json"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    }
+  ],
+  "updated_by": "IOS-CHARACTERIZE-SOURCE-RULE-DOM-SELECTOR-BACKENDS-001",
+  "updated_at": "2026-07-29T15:52:33Z"
+}

@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-SOURCE-RUNTIME-DOM-SELECTOR-BACKENDS-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "source.dom-selector-backends-golden",
+  "title": "受保护 Android Golden 验证的 CSS 与 XPath DOM 选择语义",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "4d105d3cf23af0a5b9b57448264fe90f19f7edbbcfb78a80e1ac2ad548c25c6c"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "source.execution"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-RUNTIME-PORTS"
+    ],
+    "subject_keys": [
+      "source.rule",
+      "source.document"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-SR-CSS-BACKEND-001",
+      "revision": 2,
+      "semantic_key": "source.rule.dom-selector-backends",
+      "kind": "runtime_behavior",
+      "topic": "CSS 与 XPath DOM 选择、节点转换、容错和失败边界",
+      "statement": "在 sl-source-rule-dom-selector-backends-001 的 10 个固定场景中，Android JSoup 后端把 @text 归一为空白折叠后的后代文本，把 @ownText 限定为直接文本，把 @textNodes 的直接文本片段以换行连接；@html 返回移除 script/style 后的所选元素 outer HTML，@all 保留它们，属性值会解码 HTML entity。自定义 children 与索引规则支持正负索引、区间、排除和 -1:0 反转；CSS 的 && 按左后右拼接，|| 取首个非空结果，%% 按索引交错。URL 消费器基于 redirectUrl 解析相对、根路径和协议相对地址并按首次出现去重；缺失选择器的列表 URL 结果为空，但单值 URL 结果回退到 baseUrl。缺失 CSS 选择返回空字符串、空列表或零元素；同一畸形规则在字符串/列表入口抛 StringIndexOutOfBoundsException，在元素入口抛 SelectorParseException。XPath 后端对文本节点与属性节点分别产出字符串列表，并由单值入口以换行连接；元素查询保留元素 outer HTML，属性节点是非 element 值，而文本节点在 JXNode 投影中表现为 tag=JX_TEXT 的 element。td/tr 片段会被补成可查询表格结构，未闭合 li 的 HTML 会容错为两个节点。当前库不接受本场景中的顶层 string、normalize-space、count、local-name 或 namespace-uri 表达式并抛 XpathSyntaxErrorException；带未注册 namespace 前缀的查询则返回空结果。缺失 XPath 返回空字符串、空列表和零节点，畸形表达式在三类消费者中均抛 XpathSyntaxErrorException。本结论只冻结这 10 个场景，不外推到完整 CSS/XPath 方言、任意 HTML 修复算法、未观测 namespace 注册方式、节点身份、DOM 修改、字符集或并发求值。",
+      "subject_keys": [
+        "source.rule",
+        "source.document"
+      ],
+      "depends_on": [
+        {
+          "id": "BKC-SR-RULE-BACKEND-DISPATCH-001",
+          "revision": 2
+        },
+        {
+          "id": "BKC-SR-RULE-COMBINATION-COERCION-001",
+          "revision": 2
+        }
+      ],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [
+          {
+            "id": "AF-ANALYZE-RULE-GET-STRING",
+            "revision_sha256": "a7976dbfc4aec15b3de5395e852a7d705c6648ce3df6dd24314a3af62e61650f"
+          },
+          {
+            "id": "AF-ANALYZE-RULE-GET-STRING-LIST",
+            "revision_sha256": "fb7aa8c348c0ad505fd631728337c6cb098dea4b9ba3482ee68acc32c49be8bc"
+          }
+        ],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "1ef7db8d36bf1cfcaf46a16121c76fe5fea9609c",
+            "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByJSoup.kt",
+            "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeByJSoup"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "b0d52cf3ac39cf0a43576acf2a5d223f73670d7d",
+            "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByXPath.kt",
+            "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeByXPath"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/sl-source-rule-dom-selector-backends-001.json",
+            "artifact_sha256": "a4d1abc9d4516e0cad5fe27809d5177448c54959bf27a0b3c1c517e8a6d541bc",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "97a9bf1b0601bc7914c1b7ae7723885871407c3d6dba0bab3e0211fb305569a5",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "d0f536e36c2bf9781d92fa4e21263ee613b077dee247397eeaafdb7d6bc57e1d",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-SR-CSS-BACKEND-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-SOURCE-RULE-DOM-SELECTOR-BACKENDS-001"
+}

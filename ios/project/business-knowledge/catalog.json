@@ -2,11 +2,11 @@
   "schema_version": 1,
   "contract_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-  "inventory_control_sha256": "1d3d35af7146d8f92d885be6005fbadfdfda9d52b9f4aa741953d41819c591cc",
+  "inventory_control_sha256": "4d105d3cf23af0a5b9b57448264fe90f19f7edbbcfb78a80e1ac2ad548c25c6c",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "1e685b2caf1f754e819fcec6596c95820cb7d7d41e70f592c16db2d8bf69016f",
-  "coverage_sha256": "4a0334ca92ac176a5a02aab0e5c2f0f7ceb5c1c4b2af63f4a662bb0f2e963883",
+  "authority_sha256": "11c855790a82a12bac070cc83a7c9665fc77d7345370f6dff3085267325f7441",
+  "coverage_sha256": "c974c87a5b32a4f5f69e07b5465d8aab10461056c131c0a3c3c6e98c50fb1322",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -45,6 +45,19 @@
       "claim_refs": [
         {
           "id": "BKC-SR-COOKIE-LAYERS-001",
+          "revision": 2
+        }
+      ]
+    },
+    {
+      "id": "BKP-SOURCE-RUNTIME-DOM-SELECTOR-BACKENDS-001",
+      "revision": 1,
+      "semantic_key": "source.dom-selector-backends-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-SOURCE-RUNTIME-DOM-SELECTOR-BACKENDS-001/r0001.json",
+      "record_sha256": "00aab08f9f1c65b6943312419ce183436048695d23dbe1e4309a7c11710b3043",
+      "claim_refs": [
+        {
+          "id": "BKC-SR-CSS-BACKEND-001",
           "revision": 2
         }
       ]
@@ -291,6 +304,14 @@
       "resolution_state": "resolved"
     },
     {
+      "id": "DRV-SOURCE-RUNTIME-DOM-SELECTOR-BACKENDS-001",
+      "revision": 1,
+      "semantic_key": "source.execution.dom-selector-backends",
+      "path": "ios/project/business-knowledge/drivers/published/DRV-SOURCE-RUNTIME-DOM-SELECTOR-BACKENDS-001/r0001.json",
+      "record_sha256": "91389b44ab0aaa99ea4216f9fbdb4ea3da7d3d66c007406c16e657e5921f6f1c",
+      "resolution_state": "resolved"
+    },
+    {
       "id": "DRV-SOURCE-RUNTIME-DYNAMIC-WEB-001",
       "revision": 1,
       "semantic_key": "source.execution.dynamic-web",
@@ -437,6 +458,15 @@
       "record_sha256": "80667bdc92158a1b3e62f90e97c46b1700f1fb3bece9bbf49221d40a86ab0859",
       "entry_ids": [
         "BKE-SR-COOKIE-SESSION-001"
+      ]
+    },
+    {
+      "id": "BKL-SOURCE-RUNTIME-DOM-SELECTOR-BACKENDS-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-SOURCE-RUNTIME-DOM-SELECTOR-BACKENDS-001.json",
+      "record_sha256": "c25e19c02eaaaa2c06e78dc26332c88f273707a8db73969f35992f51eaa16515",
+      "entry_ids": [
+        "BKE-SR-DOM-SELECTOR-BACKENDS-001"
       ]
     },
     {

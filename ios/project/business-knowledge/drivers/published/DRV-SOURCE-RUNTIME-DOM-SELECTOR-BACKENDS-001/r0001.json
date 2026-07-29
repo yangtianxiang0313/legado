@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-SOURCE-RUNTIME-DOM-SELECTOR-BACKENDS-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "source.execution.dom-selector-backends",
+  "title": "用独立 DOM 规则内核承载 CSS 与 XPath 兼容语义",
+  "claim_refs": [
+    {
+      "id": "BKC-SR-CSS-BACKEND-001",
+      "revision": 2
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "SourceRuntime 必须逐字段复现受保护 Android Golden 中的文本、HTML、属性、索引、children、组合、URL、XPath 节点与失败结果；测试不得从 iOS 实现反向生成 expected。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "modularity",
+      "scenario": "DOM 解析、选择与节点转换属于独立 SourceRuntime 内核；UI、Domain、持久化、书源页面和 SourceLab 不得重新实现 CSS/XPath 解释。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "portability",
+      "scenario": "Android 的 JSoup/JXDocument 是语义来源而不是 iOS 依赖指令；iOS 可以自研或引入受控解析器，但公共端口必须隐藏库类型并保持替换能力。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "determinism",
+      "scenario": "节点顺序、索引筛选、交错、属性去重、URL 解析和 HTML 投影必须是确定性纯逻辑，不得依赖网络、WebView、locale 或共享可变状态。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "error_semantics",
+      "scenario": "产品接口应使用稳定 SourceRuntime 错误表达 unsupported、malformed 和 empty；Conformance 边界可映射 Android 异常类别，但不得向产品调用方泄漏 Java 类名。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "scope_control",
+      "scenario": "本切片只实现 Golden 已验证的 10 个场景；完整 CSS/XPath 方言、通用 HTML5 修复和 namespace 注册必须由后续 Android 真源任务扩张，禁止凭库能力越界宣称兼容。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "如何定义 Sendable 且不泄漏具体解析库类型的 DOM 节点和值模型，同时保留 element、text 与 attribute 的 Android 可观察差异？",
+    "如何在独立 SourceRuntime 内协调 CSS 选择、自定义索引、三种组合操作与字符串/列表/元素消费者，而不把兼容逻辑复制到调用层？",
+    "在不引入未经批准依赖的前提下，现有 HTMLDocument 应扩展到什么边界，哪些未覆盖语法必须明确返回 unsupported？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002"
+    ],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-SOURCE-RULE-DOM-SELECTOR-BACKENDS-001",
+      "IOS-SOURCE-RUNTIME-DOM-SELECTOR-BACKENDS-001"
+    ]
+  },
+  "supersedes": null,
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30467713467/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "created_by": "IOS-CHARACTERIZE-SOURCE-RULE-DOM-SELECTOR-BACKENDS-001"
+}
