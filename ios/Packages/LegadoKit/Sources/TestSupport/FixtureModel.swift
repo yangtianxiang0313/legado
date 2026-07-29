@@ -1279,3 +1279,310 @@ public enum ReaderProgressFixtureProjection {
     .number(JSONNumber(Int64(value)))
   }
 }
+
+public enum ReaderPrefetchFixtureProjectionError: Error, Sendable {
+  case invalidFixture
+}
+
+public struct ReaderPrefetchFixtureProjectionRun: Sendable {
+  public let artifact: JSONValue
+  public let requestPlan: JSONValue
+
+  public init(artifact: JSONValue, requestPlan: JSONValue) {
+    self.artifact = artifact
+    self.requestPlan = requestPlan
+  }
+}
+
+public enum ReaderPrefetchFixtureProjection {
+  public static let fixtureID =
+    "rl-reader-cache-prefetch-policy-001"
+
+  private struct ParsedInput {
+    let policy: ReaderPrefetchPolicyInput
+    let cachedIndices: Set<Int>
+    let failures: [ReaderPrefetchFailure]
+  }
+
+  public static func run(
+    caseData: Data,
+    inputData: Data
+  ) throws -> ReaderPrefetchFixtureProjectionRun {
+    let caseDocument: JSONValue
+    let inputDocument: JSONValue
+    do {
+      caseDocument = try JSONValueCodec.decode(caseData)
+      inputDocument = try JSONValueCodec.decode(inputData)
+    } catch {
+      throw ReaderPrefetchFixtureProjectionError.invalidFixture
+    }
+    guard
+      case .object(let caseRoot) = caseDocument,
+      caseRoot["id"] == .string(fixtureID),
+      caseRoot["kind"] == .string("android_runtime_scenario"),
+      caseRoot["operation"] == .string("android_runtime"),
+      case .object(let inputRoot) = inputDocument,
+      case .array(let inputCases)? = inputRoot["cases"]
+    else {
+      throw ReaderPrefetchFixtureProjectionError.invalidFixture
+    }
+
+    var identifiers: Set<String> = []
+    var plans: [JSONValue] = []
+    var cases: [JSONValue] = []
+    for value in inputCases {
+      guard
+        case .object(let inputCase) = value,
+        case .string(let id)? = inputCase["id"],
+        identifiers.insert(id).inserted,
+        case .string(let operation)? = inputCase["operation"],
+        operation == "reader_prefetch_policy",
+        case .object(let arguments)? = inputCase["arguments"]
+      else {
+        throw ReaderPrefetchFixtureProjectionError.invalidFixture
+      }
+      plans.append(
+        .object([
+          "operation": .string(operation),
+          "arguments": .object(arguments),
+        ])
+      )
+      cases.append(
+        .object([
+          "id": .string(id),
+          "operation": .string(operation),
+          "result": try result(arguments),
+          "issue": .null,
+        ])
+      )
+    }
+
+    let requestPlan = JSONValue.array(plans)
+    return ReaderPrefetchFixtureProjectionRun(
+      artifact: .object([
+        "schema_version": number(1),
+        "fixture_id": .string(fixtureID),
+        "engine": .object([
+          "platform": .string("ios"),
+          "revision": .string("reader-prefetch-policy-v1"),
+          "compatibility_profile": .string("android-legado-v1"),
+        ]),
+        "request_plan": requestPlan,
+        "decode": .null,
+        "stages": .array([]),
+        "result": .object([
+          "type": .string("reader_runtime"),
+          "value": .object([
+            "portable_known_projection": .object([
+              "cases": .array(cases)
+            ])
+          ]),
+        ]),
+        "issues": .array([]),
+      ]),
+      requestPlan: requestPlan
+    )
+  }
+
+  private static func result(
+    _ arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    guard case .string(let mode)? = arguments["mode"] else {
+      throw ReaderPrefetchFixtureProjectionError.invalidFixture
+    }
+    let parsed = try parse(arguments)
+    switch mode {
+    case "settled":
+      return try settled(parsed)
+    case "observe_workers":
+      return observeWorkers(parsed)
+    case "replace_job":
+      return try replaceJob(arguments, parsed: parsed)
+    default:
+      throw ReaderPrefetchFixtureProjectionError.invalidFixture
+    }
+  }
+
+  private static func settled(
+    _ parsed: ParsedInput
+  ) throws -> JSONValue {
+    let plan = AndroidReaderPrefetchPolicy.plan(for: parsed.policy)
+    let commandIndices = Set(
+      plan.commands.map(\.chapterIndex)
+    )
+    guard commandIndices.isSubset(of: parsed.cachedIndices) else {
+      throw ReaderPrefetchFixtureProjectionError.invalidFixture
+    }
+    let downloaded = parsed.policy.completedChapterIndices
+      .union(commandIndices)
+      .sorted()
+    return .object([
+      "downloaded_indices": numbers(downloaded),
+      "failure_counts": failureValues(parsed.failures),
+      "loading_indices": .array([]),
+      "task_completed": .bool(plan.taskCreated),
+      "task_created": .bool(plan.taskCreated),
+    ])
+  }
+
+  private static func observeWorkers(
+    _ parsed: ParsedInput
+  ) -> JSONValue {
+    let plan = AndroidReaderPrefetchPolicy.plan(for: parsed.policy)
+    return .object([
+      "child_job_count": number(plan.workerCount),
+      "directions_started": .bool(plan.workerCount == 2),
+      "initial_loading_indices": numbers(
+        plan.initialChapterIndices
+      ),
+      "task_created": .bool(plan.taskCreated),
+    ])
+  }
+
+  private static func replaceJob(
+    _ arguments: [String: JSONValue],
+    parsed: ParsedInput
+  ) throws -> JSONValue {
+    let replacementChapter = try integer(
+      "replacement_current_chapter",
+      in: arguments
+    )
+    var state = ReaderPrefetchGenerationState()
+    let first = state.replace(using: parsed.policy)
+    let replacementInput = ReaderPrefetchPolicyInput(
+      isLocalBook: parsed.policy.isLocalBook,
+      chapterCount: parsed.policy.chapterCount,
+      currentChapterIndex: replacementChapter,
+      configuredCount: parsed.policy.configuredCount,
+      completedChapterIndices:
+        parsed.policy.completedChapterIndices,
+      failures: parsed.policy.failures
+    )
+    let second = state.replace(using: replacementInput)
+    let firstGeneration = first.replacement
+    let replacement = second.replacement
+    return .object([
+      "first_task_cancelled": .bool(
+        second.cancelled?.id == firstGeneration?.id
+      ),
+      "replacement_current_chapter": number(
+        replacement?.currentChapterIndex ?? -1
+      ),
+      "replacement_task_created": .bool(replacement != nil),
+      "task_identity_changed": .bool(
+        firstGeneration?.id != replacement?.id
+      ),
+    ])
+  }
+
+  private static func parse(
+    _ arguments: [String: JSONValue]
+  ) throws -> ParsedInput {
+    guard
+      case .bool(let localBook)? = arguments["local_book"]
+    else {
+      throw ReaderPrefetchFixtureProjectionError.invalidFixture
+    }
+    let cached = Set(
+      try integerArray("cached_indices", in: arguments)
+    )
+    let completed = Set(
+      try integerArray(
+        "pre_downloaded_indices",
+        in: arguments
+      )
+    )
+    let failures = try failureCounts(arguments)
+    return ParsedInput(
+      policy: ReaderPrefetchPolicyInput(
+        isLocalBook: localBook,
+        chapterCount: try integer(
+          "chapter_size",
+          in: arguments
+        ),
+        currentChapterIndex: try integer(
+          "current_chapter",
+          in: arguments
+        ),
+        configuredCount: try integer(
+          "pre_download_num",
+          in: arguments
+        ),
+        completedChapterIndices: completed,
+        failures: failures
+      ),
+      cachedIndices: cached,
+      failures: failures
+    )
+  }
+
+  private static func failureCounts(
+    _ arguments: [String: JSONValue]
+  ) throws -> [ReaderPrefetchFailure] {
+    guard case .array(let values)? = arguments["failure_counts"] else {
+      throw ReaderPrefetchFixtureProjectionError.invalidFixture
+    }
+    return try values.map { value in
+      guard case .object(let failure) = value else {
+        throw ReaderPrefetchFixtureProjectionError.invalidFixture
+      }
+      return ReaderPrefetchFailure(
+        chapterIndex: try integer("index", in: failure),
+        count: try integer("count", in: failure)
+      )
+    }
+  }
+
+  private static func failureValues(
+    _ failures: [ReaderPrefetchFailure]
+  ) -> JSONValue {
+    .array(
+      failures.sorted {
+        $0.chapterIndex < $1.chapterIndex
+      }.map { failure in
+        .object([
+          "count": number(failure.count),
+          "index": number(failure.chapterIndex),
+        ])
+      }
+    )
+  }
+
+  private static func integerArray(
+    _ key: String,
+    in arguments: [String: JSONValue]
+  ) throws -> [Int] {
+    guard case .array(let values)? = arguments[key] else {
+      throw ReaderPrefetchFixtureProjectionError.invalidFixture
+    }
+    return try values.map(integer)
+  }
+
+  private static func integer(
+    _ key: String,
+    in arguments: [String: JSONValue]
+  ) throws -> Int {
+    guard let value = arguments[key] else {
+      throw ReaderPrefetchFixtureProjectionError.invalidFixture
+    }
+    return try integer(value)
+  }
+
+  private static func integer(_ value: JSONValue) throws -> Int {
+    guard
+      case .number(let number) = value,
+      let integer = Int(number.rawToken)
+    else {
+      throw ReaderPrefetchFixtureProjectionError.invalidFixture
+    }
+    return integer
+  }
+
+  private static func numbers(_ values: [Int]) -> JSONValue {
+    .array(values.map(number))
+  }
+
+  private static func number(_ value: Int) -> JSONValue {
+    .number(JSONNumber(Int64(value)))
+  }
+}

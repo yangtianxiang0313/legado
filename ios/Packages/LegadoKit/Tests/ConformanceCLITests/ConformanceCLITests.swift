@@ -1036,6 +1036,66 @@ final class ReaderCoreTests: XCTestCase {
     XCTAssertTrue(result.contains(#""persisted_char_position":777"#))
   }
 
+  func testPrefetchProjectionContainsAllEightGoldenCases() throws {
+    let text = try prefetchProjectionText()
+
+    XCTAssertTrue(text.contains(#""id":"local-book-does-not-create-task""#))
+    XCTAssertTrue(
+      text.contains(
+        #""id":"configuration-below-two-disables-prefetch""#
+      )
+    )
+    XCTAssertTrue(
+      text.contains(
+        #""id":"minimum-enabled-prefetches-both-directions""#
+      )
+    )
+    XCTAssertTrue(
+      text.contains(
+        #""id":"window-skips-adjacent-current-and-state""#
+      )
+    )
+    XCTAssertTrue(text.contains(#""id":"window-clamps-at-book-start""#))
+    XCTAssertTrue(text.contains(#""id":"window-clamps-at-book-end""#))
+    XCTAssertTrue(
+      text.contains(
+        #""id":"two-direction-workers-start-concurrently""#
+      )
+    )
+    XCTAssertTrue(
+      text.contains(
+        #""id":"new-invocation-cancels-previous-policy-job""#
+      )
+    )
+  }
+
+  func testPrefetchProjectionPreservesWindowAndSkipRules() throws {
+    let text = try prefetchProjectionText()
+
+    XCTAssertTrue(
+      text.contains(
+        #""downloaded_indices":[1,3,7,8,9]"#
+      )
+    )
+    XCTAssertTrue(
+      text.contains(
+        #""failure_counts":[{"count":2,"index":1},{"count":3,"index":2}]"#
+      )
+    )
+    XCTAssertTrue(text.contains(#""downloaded_indices":[2,3,4]"#))
+    XCTAssertTrue(text.contains(#""downloaded_indices":[0,1,2]"#))
+  }
+
+  func testPrefetchProjectionPreservesWorkersAndReplacement() throws {
+    let text = try prefetchProjectionText()
+
+    XCTAssertTrue(text.contains(#""child_job_count":2"#))
+    XCTAssertTrue(text.contains(#""initial_loading_indices":[3,7]"#))
+    XCTAssertTrue(text.contains(#""first_task_cancelled":true"#))
+    XCTAssertTrue(text.contains(#""replacement_current_chapter":6"#))
+    XCTAssertTrue(text.contains(#""task_identity_changed":true"#))
+  }
+
   private func projectionText() throws -> String {
     let fixture = repositoryRoot.appendingPathComponent(
       "ios/harness/fixtures/runtime-lab/"
@@ -1083,6 +1143,26 @@ final class ReaderCoreTests: XCTestCase {
       isDirectory: true
     )
     let run = try ReaderProgressFixtureProjection.run(
+      caseData: Data(
+        contentsOf: fixture.appendingPathComponent("case.json")
+      ),
+      inputData: Data(
+        contentsOf: fixture.appendingPathComponent("input.json")
+      )
+    )
+    return String(
+      decoding: try JSONValueCodec.encode(run.artifact),
+      as: UTF8.self
+    )
+  }
+
+  private func prefetchProjectionText() throws -> String {
+    let fixture = repositoryRoot.appendingPathComponent(
+      "ios/harness/fixtures/runtime-lab/"
+        + ReaderPrefetchFixtureProjection.fixtureID,
+      isDirectory: true
+    )
+    let run = try ReaderPrefetchFixtureProjection.run(
       caseData: Data(
         contentsOf: fixture.appendingPathComponent("case.json")
       ),
