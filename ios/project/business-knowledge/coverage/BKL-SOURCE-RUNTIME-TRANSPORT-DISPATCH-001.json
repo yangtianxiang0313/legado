@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgeCoverageLedger",
+  "id": "BKL-SOURCE-RUNTIME-TRANSPORT-DISPATCH-001",
+  "revision": 1,
+  "status": "current",
+  "packet_refs": [
+    {
+      "id": "BKP-SOURCE-RUNTIME-TRANSPORT-DISPATCH-001",
+      "revision": 1,
+      "sha256": "7022d105bd987ed82e9e3d87a54441998c0f6f236913bb539f337f2c3b640d9a"
+    }
+  ],
+  "generated_from": {
+    "knowledge_authority_sha256": "41cc108625d0b0fe9db187ea34ba188578c7a1efb8c6c2f2fb1dd471481f6539",
+    "requirement_catalog_sha256": "b85716b39fb6ce2dcda3be4c0c77a918f6d71787e548d093e4a74da611ffa856",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "entries": [
+    {
+      "id": "BKE-SR-TRANSPORT-DISPATCH-001",
+      "claim_ref": {
+        "id": "BKC-SR-TRANSPORT-DISPATCH-001",
+        "revision": 2
+      },
+      "validation": {
+        "required": "android_runtime",
+        "state": "verified",
+        "evidence_refs": [
+          "ios/harness/goldens/releases/sl-source-transport-request-dispatch-contract-001-30436609446-1.json",
+          "ios/harness/goldens/android-legado-v1/sl-source-transport-request-dispatch-contract-001.json#/artifact/result/value"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "covered_by_requirement",
+        "refs": [
+          "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01"
+        ],
+        "reason": "受保护 Android Golden 已冻结 GET/POST body 派发、响应分型、data URI、媒体 header、proxy 与 timeout 策略，交由独立 SourceRuntime 实现并逐字段对齐",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "planned",
+        "requirement_refs": [
+          "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01"
+        ],
+        "work_item_refs": [
+          "IOS-SOURCE-RUNTIME-TRANSPORT-DISPATCH-001"
+        ],
+        "capability_refs": [
+          "CAP-CONFORMANCE",
+          "CAP-RUNTIME-PORTS"
+        ],
+        "evidence_refs": [
+          "ios/harness/goldens/releases/sl-source-transport-request-dispatch-contract-001-30436609446-1.json"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    }
+  ],
+  "updated_by": "IOS-CHARACTERIZE-SOURCE-TRANSPORT-REQUEST-DISPATCH-CONTRACT-001",
+  "updated_at": "2026-07-29T08:57:33Z"
+}

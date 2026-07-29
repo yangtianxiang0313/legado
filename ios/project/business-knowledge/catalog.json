@@ -5,8 +5,8 @@
   "inventory_control_sha256": "30cac916034a71f4ce34aa11388c0c3d578c78ccd937f888e48b556b01d72172",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "1394f77c2fae044d0f646f49ca042d19f1a3e2bb0b80537fa99bd062e8864640",
-  "coverage_sha256": "5ade530d01524b4de9c7c081b845ed7b9ead670ef571ae400201ac7dd1d1335e",
+  "authority_sha256": "43b4a93cb82d8a1a0753d034b2d10e0216189ac5b7cecb72cad9c519a5a99270",
+  "coverage_sha256": "ba7698132d64befc77e2fee8768cdc4effcb7be9c4e0a93f5719d6c13f56c7ce",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -87,6 +87,19 @@
       "claim_refs": [
         {
           "id": "BKC-SR-RATE-LIMIT-STATE-001",
+          "revision": 2
+        }
+      ]
+    },
+    {
+      "id": "BKP-SOURCE-RUNTIME-TRANSPORT-DISPATCH-001",
+      "revision": 1,
+      "semantic_key": "source.runtime-transport-dispatch-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-SOURCE-RUNTIME-TRANSPORT-DISPATCH-001/r0001.json",
+      "record_sha256": "7022d105bd987ed82e9e3d87a54441998c0f6f236913bb539f337f2c3b640d9a",
+      "claim_refs": [
+        {
+          "id": "BKC-SR-TRANSPORT-DISPATCH-001",
           "revision": 2
         }
       ]
@@ -177,6 +190,14 @@
       "resolution_state": "resolved"
     },
     {
+      "id": "DRV-SOURCE-RUNTIME-TRANSPORT-DISPATCH-001",
+      "revision": 1,
+      "semantic_key": "source.execution.transport-dispatch",
+      "path": "ios/project/business-knowledge/drivers/published/DRV-SOURCE-RUNTIME-TRANSPORT-DISPATCH-001/r0001.json",
+      "record_sha256": "d66509f47ff7e333ffd0220a8d2ca4fa8aaf6ed72f8a74a64f48f5709bb2c537",
+      "resolution_state": "resolved"
+    },
+    {
       "id": "DRV-SOURCE-RUNTIME-URL-TEMPLATE-001",
       "revision": 1,
       "semantic_key": "source.execution.url-template-compilation",
@@ -249,6 +270,15 @@
       "record_sha256": "b4f624590e3fd6cb208c5a17fa1ed58a10a9e3e27ad5e4ba907688bf9433e185",
       "entry_ids": [
         "BKE-SR-RATE-LIMIT-STATE-001"
+      ]
+    },
+    {
+      "id": "BKL-SOURCE-RUNTIME-TRANSPORT-DISPATCH-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-SOURCE-RUNTIME-TRANSPORT-DISPATCH-001.json",
+      "record_sha256": "850cd1e8297a6e88a03e513acc1f8cea8a36b757ac9b20dfda5fbde1e43c6580",
+      "entry_ids": [
+        "BKE-SR-TRANSPORT-DISPATCH-001"
       ]
     },
     {

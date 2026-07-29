@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-SOURCE-RUNTIME-TRANSPORT-DISPATCH-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "source.execution.transport-dispatch",
+  "title": "在独立 SourceRuntime 中显式建模请求计划与响应分型",
+  "claim_refs": [
+    {
+      "id": "BKC-SR-TRANSPORT-DISPATCH-001",
+      "revision": 2
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "GET、显式 media type 的原始 POST、隐式 JSON POST、字符串/Response/字节/流/媒体模型以及 data URI 短路必须逐字段对齐 Android Golden。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "isolation",
+      "scenario": "RequestPlan、ResponseKind、proxy、timeout 与 header policy 属于独立 SourceRuntime，不得进入 SwiftUI、页面状态或 Domain 实体。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "security",
+      "scenario": "proxy 是传输配置而非可下发请求 header；data URI 必须本地解码且不能意外访问网络。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "testability",
+      "scenario": "传输端口必须可注入，结构化验收既比较 RequestPlan，也比较响应分型与 SourceLab 路由命中次数。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "evolvability",
+      "scenario": "本次只实现 Golden 已覆盖的派发与返回分型；重定向、压缩、charset 探测和 WebView 继续由后续独立声明推进。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "如何用值语义 RequestPlan 和穷举 ResponseKind 表达网络 Response、字符串、字节、流与媒体模型，同时保持 UI 无感知？",
+    "如何把 proxy、timeout、header/cookie policy 注入 TransportClient，并保证 data URI 在端口之外安全短路？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002"
+    ],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-SOURCE-TRANSPORT-REQUEST-DISPATCH-CONTRACT-001",
+      "IOS-SOURCE-RUNTIME-TRANSPORT-DISPATCH-001"
+    ]
+  },
+  "supersedes": null,
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30437408032/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "created_by": "IOS-CHARACTERIZE-SOURCE-TRANSPORT-REQUEST-DISPATCH-CONTRACT-001"
+}

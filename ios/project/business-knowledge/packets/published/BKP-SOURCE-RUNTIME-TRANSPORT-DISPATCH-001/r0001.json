@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-SOURCE-RUNTIME-TRANSPORT-DISPATCH-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "source.runtime-transport-dispatch-golden",
+  "title": "受保护 Android Golden 验证的请求派发与响应分型",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "source.execution"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-RUNTIME-PORTS"
+    ],
+    "subject_keys": [
+      "source.request",
+      "source.transport"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-SR-TRANSPORT-DISPATCH-001",
+      "revision": 2,
+      "semantic_key": "source.transport.request-dispatch-contract",
+      "kind": "runtime_behavior",
+      "topic": "请求派发与响应类型",
+      "statement": "在 sl-source-transport-request-dispatch-contract-001 的固定输入下，Android AnalyzeUrl 以 GET 返回原始 Response；POST 在显式 Content-Type 时保留 text/plain 原始 body，在未声明 Content-Type 的 JSON body 上补 application/json; charset=UTF-8。type 分支把响应字节编码为十六进制字符串，网络 byte array 与 input stream 保留原始字节，data URI 的两种读取返回相同字节且不命中 SourceLab 路由。GlideUrl 与 MediaItem 均携带逻辑 URL 和合并后的 header；proxy 伪 header 从请求 header 中移除并配置为 HTTP proxy，750ms read timeout 对应 60000ms call timeout。六个网络分支各由真实 Android 请求精确命中一次。",
+      "subject_keys": [
+        "source.request",
+        "source.transport"
+      ],
+      "depends_on": [],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da",
+            "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+            "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/getStrResponseAwait"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "b4ead2bb5a02cebe9e5bf7e42fbced5f67785485",
+            "path": "app/src/main/java/io/legado/app/help/http/OkHttpUtils.kt",
+            "symbol_id": "kotlin://io.legado.app.help.http/OkHttpUtils"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/sl-source-transport-request-dispatch-contract-001.json",
+            "artifact_sha256": "ec88f3122d0a7f219f0aba4834289426c26c0ff47628a4fd24b9ccc7c80d86c1",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "25e65dc8f0e8da75d6b590b24b78d6cfc65ef5034c8ed8b3307fdbcc2fefa9d1",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "91ff5e025ef8e3711735f155fc969eeebf74389bd2c4b57e521a388e3c4d8fea",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-SR-TRANSPORT-DISPATCH-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-SOURCE-TRANSPORT-REQUEST-DISPATCH-CONTRACT-001"
+}
