@@ -41,6 +41,7 @@ public enum MinimalTaskConformanceRunner {
     }
     let fixtureRoot =
       fixtureID == ReaderBookmarkConformanceRunner.fixtureID
+        || fixtureID == ReaderReadRecordConformanceRunner.fixtureID
       ? "runtime-lab"
       : "source-lab"
     let fixtureDirectory = try resolve(
@@ -49,6 +50,19 @@ public enum MinimalTaskConformanceRunner {
     )
     if fixtureID == ReaderBookmarkConformanceRunner.fixtureID {
       let run = try ReaderBookmarkConformanceRunner.run(
+        fixtureDirectory: fixtureDirectory
+      )
+      return try finish(
+        taskID: taskID,
+        fixtureID: fixtureID,
+        goldenPath: goldenPath,
+        actualArtifact: run.artifact,
+        canonicalPlans: run.requestPlan,
+        root: root
+      )
+    }
+    if fixtureID == ReaderReadRecordConformanceRunner.fixtureID {
+      let run = try ReaderReadRecordConformanceRunner.run(
         fixtureDirectory: fixtureDirectory
       )
       return try finish(

@@ -801,6 +801,47 @@ final class ReaderCoreTests: XCTestCase {
     XCTAssertTrue(text.contains(#""content":"新内容""#))
   }
 
+  func testReadRecordProjectionContainsAllSixGoldenCases() throws {
+    let text = try readRecordProjectionText()
+
+    XCTAssertTrue(text.contains(#""id":"all-device-aggregate-query""#))
+    XCTAssertTrue(text.contains(#""id":"reset-loads-all-device-total""#))
+    XCTAssertTrue(text.contains(#""id":"empty-device-write-recounts-foreign""#))
+    XCTAssertTrue(text.contains(#""id":"pause-save-leaves-tail-unsettled""#))
+    XCTAssertTrue(text.contains(#""id":"disabled-recording-preserves-session-start""#))
+    XCTAssertTrue(text.contains(#""id":"composite-key-replace-isolated-by-device""#))
+  }
+
+  func testReadRecordProjectionPreservesAggregateRisk() throws {
+    let text = try readRecordProjectionText()
+
+    XCTAssertTrue(text.contains(#""all_device_read_time":230"#))
+    XCTAssertTrue(text.contains(#""session_read_time":230"#))
+    XCTAssertTrue(text.contains(#""foreign_device_total":200"#))
+    XCTAssertTrue(text.contains(#""foreign_time_counted_twice":true"#))
+  }
+
+  func testReadRecordProjectionPreservesUnsettledBoundaries() throws {
+    let text = try readRecordProjectionText()
+
+    XCTAssertTrue(text.contains(#""save_read_settled_session_time":false"#))
+    XCTAssertTrue(text.contains(#""read_start_time_unchanged":true"#))
+    XCTAssertTrue(text.contains(#""persisted_row_count":0"#))
+  }
+
+  func testReadRecordProjectionReplacesOnlyMatchingCompositeKey() throws {
+    let text = try readRecordProjectionText()
+    let start = try XCTUnwrap(
+      text.range(of: #""id":"composite-key-replace-isolated-by-device""#)
+    )
+    let result = text[start.lowerBound...]
+
+    XCTAssertTrue(result.contains(#""row_count":3"#))
+    XCTAssertTrue(result.contains(#""device_id":"","last_read":5004,"read_time":40"#))
+    XCTAssertTrue(result.contains(#""device_id":"device-a","last_read":5005,"read_time":15"#))
+    XCTAssertTrue(result.contains(#""device_id":"device-b","last_read":5003,"read_time":20"#))
+  }
+
   private func projectionText() throws -> String {
     let fixture = repositoryRoot.appendingPathComponent(
       "ios/harness/fixtures/runtime-lab/"
@@ -808,6 +849,26 @@ final class ReaderCoreTests: XCTestCase {
       isDirectory: true
     )
     let run = try ReaderBookmarkFixtureProjection.run(
+      caseData: Data(
+        contentsOf: fixture.appendingPathComponent("case.json")
+      ),
+      inputData: Data(
+        contentsOf: fixture.appendingPathComponent("input.json")
+      )
+    )
+    return String(
+      decoding: try JSONValueCodec.encode(run.artifact),
+      as: UTF8.self
+    )
+  }
+
+  private func readRecordProjectionText() throws -> String {
+    let fixture = repositoryRoot.appendingPathComponent(
+      "ios/harness/fixtures/runtime-lab/"
+        + ReaderReadRecordFixtureProjection.fixtureID,
+      isDirectory: true
+    )
+    let run = try ReaderReadRecordFixtureProjection.run(
       caseData: Data(
         contentsOf: fixture.appendingPathComponent("case.json")
       ),

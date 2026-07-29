@@ -496,3 +496,402 @@ public enum ReaderBookmarkFixtureProjection {
     .number(JSONNumber(value))
   }
 }
+
+public enum ReaderReadRecordFixtureProjectionError: Error, Sendable {
+  case invalidFixture
+}
+
+public struct ReaderReadRecordFixtureProjectionRun: Sendable {
+  public let artifact: JSONValue
+  public let requestPlan: JSONValue
+
+  public init(artifact: JSONValue, requestPlan: JSONValue) {
+    self.artifact = artifact
+    self.requestPlan = requestPlan
+  }
+}
+
+public enum ReaderReadRecordFixtureProjection {
+  public static let fixtureID =
+    "rl-reader-history-read-record-runtime-risk-001"
+
+  public static func run(
+    caseData: Data,
+    inputData: Data
+  ) throws -> ReaderReadRecordFixtureProjectionRun {
+    let caseDocument: JSONValue
+    let inputDocument: JSONValue
+    do {
+      caseDocument = try JSONValueCodec.decode(caseData)
+      inputDocument = try JSONValueCodec.decode(inputData)
+    } catch {
+      throw ReaderReadRecordFixtureProjectionError.invalidFixture
+    }
+    guard
+      case .object(let caseRoot) = caseDocument,
+      caseRoot["id"] == .string(fixtureID),
+      caseRoot["kind"] == .string("android_runtime_scenario"),
+      caseRoot["operation"] == .string("android_runtime"),
+      case .object(let inputRoot) = inputDocument,
+      case .array(let inputCases)? = inputRoot["cases"]
+    else {
+      throw ReaderReadRecordFixtureProjectionError.invalidFixture
+    }
+
+    var plans: [JSONValue] = []
+    var cases: [JSONValue] = []
+    var identifiers: Set<String> = []
+    for value in inputCases {
+      guard
+        case .object(let inputCase) = value,
+        case .string(let id)? = inputCase["id"],
+        identifiers.insert(id).inserted,
+        case .string(let operation)? = inputCase["operation"],
+        case .object(let arguments)? = inputCase["arguments"]
+      else {
+        throw ReaderReadRecordFixtureProjectionError.invalidFixture
+      }
+      plans.append(
+        .object([
+          "operation": .string(operation),
+          "arguments": .object(arguments),
+        ])
+      )
+      let result: JSONValue
+      switch operation {
+      case "read_record_query":
+        result = try query(arguments)
+      case "read_record_reset":
+        result = try reset(arguments)
+      case "read_record_session_write":
+        result = try sessionWrite(arguments)
+      case "read_record_pause_boundary":
+        result = try pauseBoundary(arguments)
+      case "read_record_disabled":
+        result = try disabled(arguments)
+      case "read_record_insert_conflict":
+        result = try insertConflict(arguments)
+      default:
+        throw ReaderReadRecordFixtureProjectionError.invalidFixture
+      }
+      cases.append(
+        .object([
+          "id": .string(id),
+          "operation": .string(operation),
+          "result": result,
+          "issue": .null,
+        ])
+      )
+    }
+
+    let requestPlan = JSONValue.array(plans)
+    return ReaderReadRecordFixtureProjectionRun(
+      artifact: .object([
+        "schema_version": number(1),
+        "fixture_id": .string(fixtureID),
+        "engine": .object([
+          "platform": .string("ios"),
+          "revision": .string("reader-read-record-compatibility-v1"),
+          "compatibility_profile": .string("android-legado-v1"),
+        ]),
+        "request_plan": requestPlan,
+        "decode": .null,
+        "stages": .array([]),
+        "result": .object([
+          "type": .string("reader_runtime"),
+          "value": .object([
+            "portable_known_projection": .object([
+              "cases": .array(cases)
+            ])
+          ]),
+        ]),
+        "issues": .array([]),
+      ]),
+      requestPlan: requestPlan
+    )
+  }
+
+  private static func query(
+    _ arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    let rows = try records(arguments)
+    guard
+      case .string(let bookName)? = arguments["book_name"],
+      case .array(let deviceValues)? = arguments["device_ids"]
+    else {
+      throw ReaderReadRecordFixtureProjectionError.invalidFixture
+    }
+    let deviceIDs = try deviceValues.map { value in
+      guard case .string(let deviceID) = value else {
+        throw ReaderReadRecordFixtureProjectionError.invalidFixture
+      }
+      return deviceID
+    }
+    return .object([
+      "all_books_read_time": number(
+        AndroidReadRecordCompatibility.aggregateReadTime(rows)
+      ),
+      "all_device_read_time": number(
+        AndroidReadRecordCompatibility.aggregateReadTime(
+          rows,
+          bookName: bookName
+        )
+      ),
+      "per_device": .array(
+        deviceIDs.map { deviceID in
+          .object([
+            "device_id": .string(deviceID),
+            "read_time": nullableNumber(
+              AndroidReadRecordCompatibility.readTime(
+                rows,
+                deviceID: deviceID,
+                bookName: bookName
+              )
+            ),
+          ])
+        }
+      ),
+    ])
+  }
+
+  private static func reset(
+    _ arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    let rows = try records(arguments)
+    let bookName = try requiredString("book_name", in: arguments)
+    let aggregate = AndroidReadRecordCompatibility.aggregateReadTime(
+      rows,
+      bookName: bookName
+    )
+    let session = AndroidReadRecordCompatibility.resetSession(
+      records: rows,
+      bookName: bookName,
+      readStartTimeMilliseconds: 0
+    )
+    return .object([
+      "aggregate_before_reset": number(aggregate),
+      "session_book_name": .string(session.bookName),
+      "session_device_id": .string(session.deviceID),
+      "session_read_time": number(session.readTime),
+      "session_uses_all_device_total": .bool(
+        session.readTime == aggregate
+      ),
+    ])
+  }
+
+  private static func sessionWrite(
+    _ arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    let rows = AndroidReadRecordCompatibility
+      .insertingReplacingByCompositeKey(try records(arguments))
+    let bookName = try requiredString("book_name", in: arguments)
+    let aggregateBefore =
+      AndroidReadRecordCompatibility.aggregateReadTime(
+        rows,
+        bookName: bookName
+      )
+    let foreignRows = rows.filter {
+      $0.bookName == bookName && !$0.deviceID.isEmpty
+    }
+    let foreignTotal = foreignRows.reduce(Int64(0)) {
+      $0 &+ $1.readTime
+    }
+    let session = AndroidReadRecordCompatibility.resetSession(
+      records: rows,
+      bookName: bookName,
+      readStartTimeMilliseconds: 0
+    )
+    let update = AndroidReadRecordCompatibility.updateReadTime(
+      session: session,
+      nowMilliseconds: 0,
+      recordingEnabled: true
+    )
+    guard let inserted = update.recordToPersist else {
+      throw ReaderReadRecordFixtureProjectionError.invalidFixture
+    }
+    let after = AndroidReadRecordCompatibility
+      .insertingReplacingByCompositeKey(rows + [inserted])
+    let aggregateAfter =
+      AndroidReadRecordCompatibility.aggregateReadTime(
+        after,
+        bookName: bookName
+      )
+    let foreignAfter = after.filter {
+      $0.bookName == bookName && !$0.deviceID.isEmpty
+    }
+    return .object([
+      "aggregate_after_minus_empty_row": number(
+        aggregateAfter &- inserted.readTime
+      ),
+      "aggregate_before": number(aggregateBefore),
+      "foreign_device_total": number(foreignTotal),
+      "foreign_rows_preserved": .bool(foreignRows == foreignAfter),
+      "foreign_time_counted_twice": .bool(
+        aggregateAfter == (foreignTotal &+ inserted.readTime)
+          && inserted.readTime >= aggregateBefore
+      ),
+      "inserted_at_least_aggregate_before": .bool(
+        inserted.readTime >= aggregateBefore
+      ),
+      "inserted_device_id": .string(inserted.deviceID),
+      "session_delta_nonnegative": .bool(
+        update.session.readTime >= session.readTime
+      ),
+    ])
+  }
+
+  private static func pauseBoundary(
+    _ arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    let rows = AndroidReadRecordCompatibility
+      .insertingReplacingByCompositeKey(try records(arguments))
+    let bookName = try requiredString("book_name", in: arguments)
+    let readStartTime = try requiredInt64(
+      "read_start_time",
+      in: arguments
+    )
+    let session = AndroidReadRecordCompatibility.resetSession(
+      records: rows,
+      bookName: bookName,
+      readStartTimeMilliseconds: readStartTime
+    )
+    let saved = AndroidReadRecordCompatibility.saveReadWithoutSettling(
+      session: session
+    )
+    return .object([
+      "database_rows_unchanged": .bool(true),
+      "persisted_empty_device_read_time": nullableNumber(
+        AndroidReadRecordCompatibility.readTime(
+          rows,
+          deviceID: "",
+          bookName: bookName
+        )
+      ),
+      "read_start_time_unchanged": .bool(
+        saved.readStartTimeMilliseconds == readStartTime
+      ),
+      "save_read_settled_session_time": .bool(
+        saved.readTime != session.readTime
+      ),
+      "session_in_memory_read_time": number(saved.readTime),
+    ])
+  }
+
+  private static func disabled(
+    _ arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    let rows = AndroidReadRecordCompatibility
+      .insertingReplacingByCompositeKey(try records(arguments))
+    let bookName = try requiredString("book_name", in: arguments)
+    let readStartTime = try requiredInt64(
+      "read_start_time",
+      in: arguments
+    )
+    let session = AndroidReadRecordCompatibility.resetSession(
+      records: rows,
+      bookName: bookName,
+      readStartTimeMilliseconds: readStartTime
+    )
+    let update = AndroidReadRecordCompatibility.updateReadTime(
+      session: session,
+      nowMilliseconds: readStartTime &+ 10_000,
+      recordingEnabled: false
+    )
+    return .object([
+      "persisted_row_count": number(rows.count),
+      "read_start_time_unchanged": .bool(
+        update.session.readStartTimeMilliseconds == readStartTime
+      ),
+      "session_read_time": number(update.session.readTime),
+    ])
+  }
+
+  private static func insertConflict(
+    _ arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    let rows = AndroidReadRecordCompatibility
+      .insertingReplacingByCompositeKey(try records(arguments))
+    let bookName = try requiredString("book_name", in: arguments)
+    return .object([
+      "aggregate_read_time": number(
+        AndroidReadRecordCompatibility.aggregateReadTime(
+          rows,
+          bookName: bookName
+        )
+      ),
+      "row_count": number(rows.count),
+      "rows": .array(
+        rows.map { row in
+          .object([
+            "book_name": .string(row.bookName),
+            "device_id": .string(row.deviceID),
+            "last_read": number(row.lastRead),
+            "read_time": number(row.readTime),
+          ])
+        }
+      ),
+    ])
+  }
+
+  private static func records(
+    _ arguments: [String: JSONValue]
+  ) throws -> [ReadRecord] {
+    guard case .array(let values)? = arguments["rows"] else {
+      throw ReaderReadRecordFixtureProjectionError.invalidFixture
+    }
+    return try values.map { value in
+      guard
+        case .object(let row) = value,
+        case .string(let deviceID)? = row["deviceId"],
+        case .string(let bookName)? = row["bookName"],
+        case .number(let readTime)? = row["readTime"],
+        let readTimeValue = Int64(readTime.rawToken),
+        case .number(let lastRead)? = row["lastRead"],
+        let lastReadValue = Int64(lastRead.rawToken)
+      else {
+        throw ReaderReadRecordFixtureProjectionError.invalidFixture
+      }
+      return ReadRecord(
+        deviceID: deviceID,
+        bookName: bookName,
+        readTime: readTimeValue,
+        lastRead: lastReadValue
+      )
+    }
+  }
+
+  private static func requiredString(
+    _ key: String,
+    in arguments: [String: JSONValue]
+  ) throws -> String {
+    guard case .string(let value)? = arguments[key] else {
+      throw ReaderReadRecordFixtureProjectionError.invalidFixture
+    }
+    return value
+  }
+
+  private static func requiredInt64(
+    _ key: String,
+    in arguments: [String: JSONValue]
+  ) throws -> Int64 {
+    guard
+      case .number(let number)? = arguments[key],
+      let value = Int64(number.rawToken)
+    else {
+      throw ReaderReadRecordFixtureProjectionError.invalidFixture
+    }
+    return value
+  }
+
+  private static func nullableNumber(_ value: Int64?) -> JSONValue {
+    value.map(number) ?? .null
+  }
+
+  private static func number(_ value: Int) -> JSONValue {
+    .number(JSONNumber(Int64(value)))
+  }
+
+  private static func number(_ value: Int64) -> JSONValue {
+    .number(JSONNumber(value))
+  }
+}
