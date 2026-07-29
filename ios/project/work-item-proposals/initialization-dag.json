@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "InitializationWorkItemProposalDAG",
   "id": "WIPD-IOS-INITIALIZATION-001",
-  "revision": 29,
+  "revision": 30,
   "authority": "proposal_only",
   "status": "proposed",
   "created_by": "IOS-KNOWLEDGE-CONTROL-PLANE-001",
@@ -314,6 +314,13 @@
       "title": "建立 Golden Dispatcher 精确自动实现边界",
       "outputs": ["exact dispatcher scope", "publisher and workflow denial", "bounded supervisor integration"],
       "gates": [], "constraint": "只在 Loop Supervisor 增加 Golden Dispatcher/测试、Supervisor 接线/config/README/记忆的精确自动实现策略；禁止 Publisher、Workflow、Golden、Receipt、Oracle、Package、产品和 wildcard"
+    },
+    {
+      "proposal_id": "IOS-GITHUB-GOLDEN-DISPATCHER-001", "phase": 34, "class": "control_plane",
+      "depends_on": ["IOS-GITHUB-GOLDEN-DISPATCHER-SCOPE-001"], "knowledge_mode": "not_applicable",
+      "title": "实现 Golden 外部执行与结果回收",
+      "outputs": ["create-only request dispatcher", "unique run/result artifact reconciliation", "verified fast-forward", "Supervisor continuation"],
+      "gates": [], "constraint": "只实现 Dispatcher/test、Supervisor 接线/example/README/记忆；必须在 fast-forward 前验证 request/run/artifact/result commit/parent/三文件/Manifest/receipt 全绑定，不修改 Publisher/Workflow/Golden 内容、Oracle、Package 或产品"
     }
   ],
   "compiler_rules": [
