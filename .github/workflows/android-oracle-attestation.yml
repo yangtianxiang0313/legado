@@ -198,20 +198,42 @@ jobs:
             >"${ORACLE_TEMP}/emulator.log" 2>&1 &
           echo "$!" >"${ORACLE_TEMP}/emulator.pid"
           ready=false
-          for _ in $(seq 1 120); do
+          emulator_alive=true
+          emulator_booted() {
             if ! kill -0 "$(cat "${ORACLE_TEMP}/emulator.pid")" 2>/dev/null; then
-              break
+              emulator_alive=false
+              return 1
             fi
             adb_state="$("${ADB}" -s "${AVD_SERIAL}" get-state 2>/dev/null || true)"
             if test "${adb_state}" = "device" && \
               test "$("${ADB}" -s "${AVD_SERIAL}" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1"; then
+              return 0
+            fi
+            sleep 2
+            return 1
+          }
+          for _ in $(seq 1 120); do
+            if emulator_booted; then
               ready=true
               break
             fi
-            sleep 2
+            test "${emulator_alive}" = true || break
           done
+          if test "${ready}" != true && test "${EMULATOR_ACCEL}" = "off"; then
+            for _ in $(seq 1 180); do
+              if emulator_booted; then
+                ready=true
+                break
+              fi
+              test "${emulator_alive}" = true || break
+            done
+          fi
           if test "${ready}" != true; then
-            echo "::error::Android emulator did not boot within 240 seconds"
+            if test "${EMULATOR_ACCEL}" = "off"; then
+              echo "::error::Android emulator did not boot within 600 seconds"
+            else
+              echo "::error::Android emulator did not boot within 240 seconds"
+            fi
             "${ADB}" devices -l || true
             tail -n 200 "${ORACLE_TEMP}/emulator.log" || true
             exit 1
