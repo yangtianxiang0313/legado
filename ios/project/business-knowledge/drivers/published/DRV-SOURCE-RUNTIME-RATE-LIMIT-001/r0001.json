@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-SOURCE-RUNTIME-RATE-LIMIT-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "source.execution.rate-limit-shared-state",
+  "title": "在独立 SourceRuntime 中显式建模按书源共享的限流状态",
+  "claim_refs": [
+    {
+      "id": "BKC-SR-RATE-LIMIT-STATE-001",
+      "revision": 2
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "0、最小间隔、次数/时间窗、非法配置降级以及次数边界必须与 Android 真值一致，不能按配置文字重新解释。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "isolation",
+      "scenario": "限流状态属于独立 SourceRuntime 的会话策略，不得进入 SwiftUI、业务页面或具体网络客户端。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "concurrency",
+      "scenario": "多个运行实例必须按稳定 source key 共享记录，不同 key 隔离，并发读写不能产生竞态或重复放行。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "testability",
+      "scenario": "时间读取必须通过可注入时钟表达，结构化验收应验证状态转移而不依赖真实墙钟数值。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "evolvability",
+      "scenario": "当前只实现 Golden 已覆盖的 fetchStart/fetchEnd 语义；等待、取消和跨进程持久化不得擅自扩展。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "如何用 actor 或等价同步原语提供进程内共享记录，同时保持 SourceRuntime 的调用接口可测试？",
+    "如何把单调时钟与限流结果建模为显式端口，避免产品代码真实等待并保留 Android 的异常降级语义？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002"
+    ],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-SOURCE-SESSION-RATE-LIMIT-SHARED-STATE-001",
+      "IOS-SOURCE-RUNTIME-RATE-LIMIT-001"
+    ]
+  },
+  "supersedes": null,
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30431588817/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "created_by": "IOS-CHARACTERIZE-SOURCE-SESSION-RATE-LIMIT-SHARED-STATE-001"
+}

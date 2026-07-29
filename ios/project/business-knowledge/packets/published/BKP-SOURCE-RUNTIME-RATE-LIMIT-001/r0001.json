@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-SOURCE-RUNTIME-RATE-LIMIT-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "source.runtime-rate-limit-golden",
+  "title": "受保护 Android Golden 验证的单源限流共享状态",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "source.execution"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-RUNTIME-PORTS"
+    ],
+    "subject_keys": [
+      "source.session",
+      "source.transport"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-SR-RATE-LIMIT-STATE-001",
+      "revision": 2,
+      "semantic_key": "source.session.rate-limit-shared-state",
+      "kind": "risk_or_anomaly",
+      "topic": "单源并发与频率状态",
+      "statement": "在 sl-source-session-rate-limit-shared-state-001 的固定输入下，Android AnalyzeUrl 按 source key 在进程级共享限流记录：0 关闭限流，60000 表示最小间隔且 fetchEnd 后同 key 仍被拒绝，2/60000 采用次数/时间窗模式并因 frequency > count 的边界判断而放行前三次、第四次才拒绝；不同 key 相互隔离，非法间隔或时间窗配置捕获异常后降级放行。",
+      "subject_keys": [
+        "source.session",
+        "source.transport"
+      ],
+      "depends_on": [],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da",
+            "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+            "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/fetchStart"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/sl-source-session-rate-limit-shared-state-001.json",
+            "artifact_sha256": "8b4e3440383bc2424d60a9648fb09cf2739304d7c6d9682b487f820f4264f6c8",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "87886593c02d577649962646f7dd0daf385100b83dc0e75eeee46f50f8b4c349",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "d50de66daceeefb6abe8828b9a291c7dead83f4bb1cb4c6594939ae6eb0837c2",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-SR-RATE-LIMIT-STATE-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-SOURCE-SESSION-RATE-LIMIT-SHARED-STATE-001"
+}
