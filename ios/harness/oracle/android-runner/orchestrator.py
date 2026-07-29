@@ -1880,6 +1880,55 @@ def _render_inputs(root: Path, scenario_id: str) -> Dict[str, Any]:
     return value
 
 
+def _instrumentation_arguments(
+    *,
+    adb: Path,
+    serial: str,
+    source_base64: Optional[str],
+    integration_scenario: bool,
+    device_origin: Optional[str],
+    logical_origin: str,
+    scenario_id: str,
+    input_base64: str,
+) -> list[str]:
+    arguments = [
+        str(adb),
+        "-s",
+        serial,
+        "shell",
+        "am",
+        "instrument",
+        "-w",
+        "-r",
+        "-e",
+        "class",
+        TEST_CLASS,
+    ]
+    if source_base64 is not None:
+        arguments.extend(["-e", "sourceBase64", source_base64])
+    if integration_scenario:
+        if device_origin is None:
+            raise AndroidOracleRunnerError(
+                "INTEGRATION_DEVICE_ORIGIN_MISSING"
+            )
+        arguments.extend(["-e", "deviceOrigin", device_origin])
+    arguments.extend(
+        [
+            "-e",
+            "logicalOrigin",
+            logical_origin,
+            "-e",
+            "scenarioId",
+            scenario_id,
+            "-e",
+            "inputBase64",
+            input_base64,
+            INSTRUMENTATION,
+        ]
+    )
+    return arguments
+
+
 def run_characterization(
     root: Path,
     *,
@@ -2024,44 +2073,15 @@ def run_characterization(
             input_base64 = base64.b64encode(
                 _canonical(inputs)
             ).decode("ascii")
-            instrumentation_arguments = [
-                str(adb),
-                "-s",
-                serial,
-                "shell",
-                "am",
-                "instrument",
-                "-w",
-                "-r",
-                "-e",
-                "class",
-                TEST_CLASS,
-            ]
-            if source_base64 is not None:
-                instrumentation_arguments.extend(
-                    ["-e", "sourceBase64", source_base64]
-                )
-                if integration_scenario:
-                    if device_origin is None:
-                        raise AndroidOracleRunnerError(
-                            "INTEGRATION_DEVICE_ORIGIN_MISSING"
-                        )
-                    instrumentation_arguments.extend(
-                        ["-e", "deviceOrigin", device_origin]
-                    )
-            instrumentation_arguments.extend(
-                [
-                    "-e",
-                    "logicalOrigin",
-                    logical_origin,
-                    "-e",
-                    "scenarioId",
-                    scenario_id,
-                    "-e",
-                    "inputBase64",
-                    input_base64,
-                    INSTRUMENTATION,
-                ]
+            instrumentation_arguments = _instrumentation_arguments(
+                adb=adb,
+                serial=serial,
+                source_base64=source_base64,
+                integration_scenario=integration_scenario,
+                device_origin=device_origin,
+                logical_origin=logical_origin,
+                scenario_id=scenario_id,
+                input_base64=input_base64,
             )
             instrumentation = _run(
                 instrumentation_arguments,
@@ -2072,8 +2092,14 @@ def run_characterization(
                 b"OK (" not in instrumentation.stdout
                 or b"FAILURES!!!" in instrumentation.stdout
             ):
+                diagnostic = (
+                    instrumentation.stdout
+                    + b"\n"
+                    + instrumentation.stderr
+                ).decode("utf-8", errors="replace")
                 raise AndroidOracleRunnerError(
-                    "INSTRUMENTATION_FAILED"
+                    "INSTRUMENTATION_FAILED",
+                    diagnostic[-16_384:],
                 )
             raw_bytes = _run(
                 [

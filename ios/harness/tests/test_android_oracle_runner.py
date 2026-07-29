@@ -1020,6 +1020,28 @@ def remote_management_integration_raw_artifact():
 
 
 class AndroidOracleRunnerTests(unittest.TestCase):
+    def test_android_listener_instrumentation_receives_device_origin_without_source(
+        self,
+    ):
+        arguments = runner._instrumentation_arguments(
+            adb=Path("/sdk/adb"),
+            serial="emulator-5554",
+            source_base64=None,
+            integration_scenario=True,
+            device_origin="http://127.0.0.1:0",
+            logical_origin=runner.INTEGRATION_LOGICAL_ORIGIN,
+            scenario_id=(
+                "il-integration-remote-http-websocket-management-001"
+            ),
+            input_base64="e30=",
+        )
+        self.assertNotIn("sourceBase64", arguments)
+        origin_index = arguments.index("deviceOrigin")
+        self.assertEqual(
+            "http://127.0.0.1:0",
+            arguments[origin_index + 1],
+        )
+
     def test_ci_emulator_boot_probes_have_wall_clock_and_command_timeouts(self) -> None:
         workflow = (
             ROOT / ".github/workflows/android-oracle-attestation.yml"
