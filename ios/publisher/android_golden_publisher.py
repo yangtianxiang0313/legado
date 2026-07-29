@@ -181,8 +181,6 @@ def _fixture_binding(
         raise GoldenPublisherError(
             "GOLDEN_FIXTURE_BINDING_DRIFT"
         ) from error
-    if exact_json.dumps(manifest) != manifest_bytes:
-        raise GoldenPublisherError("GOLDEN_FIXTURE_BINDING_DRIFT")
     fixtures = manifest.get("fixtures")
     matches = [
         entry

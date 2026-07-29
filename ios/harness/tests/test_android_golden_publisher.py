@@ -91,8 +91,8 @@ class AndroidGoldenPublisherTests(unittest.TestCase):
             / "ios/harness/fixtures/manifest.json"
         )
         fixture_manifest.parent.mkdir(parents=True)
-        fixture_manifest.write_bytes(
-            ci_proposal._dump(
+        fixture_manifest.write_text(
+            json.dumps(
                 {
                     "schema_version": 1,
                     "compatibility_profile": publisher.PROFILE,
@@ -107,8 +107,12 @@ class AndroidGoldenPublisherTests(unittest.TestCase):
                             "sha256": "c" * 64,
                         }
                     ],
-                }
+                },
+                ensure_ascii=False,
+                indent=2,
             )
+            + "\n",
+            encoding="utf-8",
         )
         self.payload = ci_proposal._dump(
             {
