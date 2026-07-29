@@ -102,6 +102,8 @@ class LegadoOracleInstrumentedTest {
                 runDynamicWebCases()
             "sl-source-session-rule-variable-scope-001" ->
                 runRuleVariableScopeCases()
+            "sl-source-rule-backend-dispatch-runtime-001" ->
+                runRuleBackendDispatchCases()
             else -> {
                 runCase("search-hit", "search", searchRequest("星河")) {
                     searchProjection(WebBook.searchBookAwait(source, "星河"))
@@ -423,6 +425,315 @@ class LegadoOracleInstrumentedTest {
             }
         }
     }
+
+    private suspend fun runRuleBackendDispatchCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            require(value.getString("operation") == "rule_backend_dispatch") {
+                "Rule backend scenario only accepts rule_backend_dispatch stimuli"
+            }
+            val requestValue = value.getJSONObject("request")
+            val request = request(
+                deviceOrigin + requestValue.getString("target")
+            )
+            runCase(
+                value.getString("id"),
+                "rule_backend_dispatch",
+                request
+            ) {
+                ruleBackendDispatchProjection(value.getJSONObject("arguments"))
+            }
+        }
+    }
+
+    private fun ruleBackendDispatchProjection(
+        arguments: JSONObject
+    ): JSONObject = when (val mode = arguments.getString("mode")) {
+        "html_prefix_dispatch" -> htmlPrefixDispatchProjection(arguments)
+        "json_content_dispatch" -> jsonContentDispatchProjection(arguments)
+        "javascript_dispatch" -> javascriptDispatchProjection(arguments)
+        "regex_stickiness" -> regexStickinessProjection(arguments)
+        "parser_cache_lifecycle" -> parserCacheProjection(arguments)
+        "native_object_access" -> nativeObjectProjection(arguments)
+        "null_content" -> nullContentProjection()
+        "foreign_content_isolation" ->
+            foreignContentIsolationProjection(arguments)
+        else -> error("Unsupported rule backend mode: $mode")
+    }
+
+    private fun htmlPrefixDispatchProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val analyze = AnalyzeRule().setContent(arguments.getString("content"))
+        val ruleKeys = listOf(
+            "default_rule",
+            "css_rule",
+            "escaped_default_rule",
+            "xpath_rule",
+            "leading_xpath_rule"
+        )
+        return JSONObject()
+            .put(
+                "modes",
+                JSONObject().apply {
+                    ruleKeys.forEach { key ->
+                        put(
+                            key.removeSuffix("_rule"),
+                            sourceRuleProjection(
+                                analyze,
+                                arguments.getString(key)
+                            )
+                        )
+                    }
+                }
+            )
+            .put(
+                "default_value",
+                analyze.getString(arguments.getString("default_rule"))
+            )
+            .put(
+                "css_value",
+                analyze.getString(arguments.getString("css_rule"))
+            )
+            .put(
+                "escaped_default_value",
+                analyze.getString(
+                    arguments.getString("escaped_default_rule")
+                )
+            )
+            .put(
+                "xpath_value",
+                analyze.getString(arguments.getString("xpath_rule"))
+            )
+            .put(
+                "leading_xpath_value",
+                analyze.getString(
+                    arguments.getString("leading_xpath_rule")
+                )
+            )
+    }
+
+    private fun jsonContentDispatchProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val analyze = AnalyzeRule().setContent(arguments.getString("content"))
+        val ruleKeys = listOf(
+            "auto_rule",
+            "signature_rule",
+            "explicit_rule",
+            "list_rule"
+        )
+        return JSONObject()
+            .put(
+                "modes",
+                JSONObject().apply {
+                    ruleKeys.forEach { key ->
+                        put(
+                            key.removeSuffix("_rule"),
+                            sourceRuleProjection(
+                                analyze,
+                                arguments.getString(key)
+                            )
+                        )
+                    }
+                }
+            )
+            .put(
+                "auto_value",
+                analyze.getString(arguments.getString("auto_rule"))
+            )
+            .put(
+                "signature_value",
+                analyze.getString(arguments.getString("signature_rule"))
+            )
+            .put(
+                "explicit_value",
+                analyze.getString(arguments.getString("explicit_rule"))
+            )
+            .put(
+                "list_values",
+                JSONArray(
+                    analyze.getStringList(
+                        arguments.getString("list_rule")
+                    ) ?: emptyList<String>()
+                )
+            )
+    }
+
+    private fun javascriptDispatchProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val analyze = AnalyzeRule().setContent(arguments.getString("content"))
+        val embeddedRule = arguments.getString("embedded_rule")
+        val tailRule = arguments.getString("tail_rule")
+        return JSONObject()
+            .put("embedded_mode", sourceRuleProjection(analyze, embeddedRule))
+            .put("tail_mode", sourceRuleProjection(analyze, tailRule))
+            .put("embedded_value", analyze.getString(embeddedRule))
+            .put("tail_value", analyze.getString(tailRule))
+    }
+
+    private fun regexStickinessProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val analyze = AnalyzeRule().setContent(arguments.getString("content"))
+        val activationRule = arguments.getString("activation_rule")
+        val followupRule = arguments.getString("followup_rule")
+        val activationMode = sourceRuleProjection(
+            analyze,
+            activationRule,
+            allInOne = true
+        )
+        val activationValues = analyze.getElements(activationRule)
+        val followupMode = sourceRuleProjection(
+            analyze,
+            followupRule,
+            allInOne = true
+        )
+        val followupValues = analyze.getElements(followupRule)
+        return JSONObject()
+            .put("activation_mode", activationMode)
+            .put("followup_mode", followupMode)
+            .put(
+                "activation_values",
+                JSONArray(GSON.toJson(activationValues))
+            )
+            .put(
+                "followup_values",
+                JSONArray(GSON.toJson(followupValues))
+            )
+    }
+
+    private fun parserCacheProjection(arguments: JSONObject): JSONObject =
+        JSONObject()
+            .put(
+                "jsoup",
+                parserCacheLifecycle(
+                    arguments.getString("html_first"),
+                    arguments.getString("html_second"),
+                    arguments.getString("css_rule"),
+                    "analyzeByJSoup"
+                )
+            )
+            .put(
+                "xpath",
+                parserCacheLifecycle(
+                    arguments.getString("html_first"),
+                    arguments.getString("html_second"),
+                    arguments.getString("xpath_rule"),
+                    "analyzeByXPath"
+                )
+            )
+            .put(
+                "jsonpath",
+                parserCacheLifecycle(
+                    arguments.getString("json_first"),
+                    arguments.getString("json_second"),
+                    arguments.getString("json_rule"),
+                    "analyzeByJSonPath"
+                )
+            )
+
+    private fun parserCacheLifecycle(
+        firstContent: String,
+        secondContent: String,
+        rule: String,
+        fieldName: String
+    ): JSONObject {
+        val analyze = AnalyzeRule().setContent(firstContent)
+        val firstValue = analyze.getString(rule)
+        val firstParser = analyzeRuleField(analyze, fieldName)
+        val repeatedValue = analyze.getString(rule)
+        val repeatedParser = analyzeRuleField(analyze, fieldName)
+        analyze.setContent(secondContent)
+        val secondValue = analyze.getString(rule)
+        val secondParser = analyzeRuleField(analyze, fieldName)
+        return JSONObject()
+            .put("first_value", firstValue)
+            .put("repeated_value", repeatedValue)
+            .put("second_value", secondValue)
+            .put("same_instance_for_same_content", firstParser === repeatedParser)
+            .put("replaced_after_set_content", firstParser !== secondParser)
+    }
+
+    private fun nativeObjectProjection(arguments: JSONObject): JSONObject {
+        val nativeObject = requireNotNull(
+            AnalyzeRule().evalJS(arguments.getString("script"))
+        )
+        val analyze = AnalyzeRule().setContent(nativeObject)
+        val key = arguments.getString("key")
+        return JSONObject()
+            .put("runtime_type", nativeObject.javaClass.name)
+            .put("rule_mode", sourceRuleProjection(analyze, key))
+            .put("direct_value", analyze.getString(key))
+    }
+
+    private fun nullContentProjection(): JSONObject {
+        var accepted = true
+        var exceptionType: String? = null
+        try {
+            AnalyzeRule().setContent(null)
+        } catch (error: Throwable) {
+            accepted = false
+            exceptionType = error.javaClass.name
+        }
+        return JSONObject()
+            .put("accepted", accepted)
+            .put("exception_type", nullable(exceptionType))
+    }
+
+    private fun foreignContentIsolationProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val analyze = AnalyzeRule().setContent(
+            arguments.getString("current_content")
+        )
+        val rule = arguments.getString("rule")
+        val currentBefore = analyze.getString(rule)
+        val parserBefore = analyzeRuleField(analyze, "analyzeByJSoup")
+        val foreignValue = analyze.getString(
+            rule,
+            arguments.getString("foreign_content")
+        )
+        val parserAfterForeign = analyzeRuleField(analyze, "analyzeByJSoup")
+        val currentAfter = analyze.getString(rule)
+        val parserAfterCurrent = analyzeRuleField(analyze, "analyzeByJSoup")
+        return JSONObject()
+            .put("current_before", currentBefore)
+            .put("foreign_value", foreignValue)
+            .put("current_after", currentAfter)
+            .put(
+                "cache_preserved_after_foreign",
+                parserBefore === parserAfterForeign
+            )
+            .put(
+                "cache_reused_after_foreign",
+                parserBefore === parserAfterCurrent
+            )
+    }
+
+    private fun sourceRuleProjection(
+        analyze: AnalyzeRule,
+        rule: String,
+        allInOne: Boolean = false
+    ): JSONArray = JSONArray().apply {
+        analyze.splitSourceRule(rule, allInOne).forEach { sourceRule ->
+            put(
+                JSONObject()
+                    .put("mode", sourceRule.mode.name.lowercase())
+                    .put("rule", sourceRule.rule)
+            )
+        }
+    }
+
+    private fun analyzeRuleField(
+        analyze: AnalyzeRule,
+        name: String
+    ): Any? = AnalyzeRule::class.java
+        .getDeclaredField(name)
+        .apply { isAccessible = true }
+        .get(analyze)
 
     private suspend fun ruleVariableScopeProjection(
         value: JSONObject

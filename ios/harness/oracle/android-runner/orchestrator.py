@@ -288,6 +288,32 @@ SCENARIO_CONTRACTS = {
             "independent-context-isolation",
         }),
     },
+    "sl-source-rule-backend-dispatch-runtime-001": {
+        "status": "candidate",
+        "expected_cases": (
+            ("html-prefix-dispatch", "rule_backend_dispatch"),
+            ("json-content-dispatch", "rule_backend_dispatch"),
+            ("javascript-dispatch", "rule_backend_dispatch"),
+            ("regex-all-in-one-stickiness", "rule_backend_dispatch"),
+            (
+                "parser-cache-content-invalidation",
+                "rule_backend_dispatch",
+            ),
+            ("native-object-direct-access", "rule_backend_dispatch"),
+            ("null-content-rejected", "rule_backend_dispatch"),
+            ("foreign-content-cache-isolation", "rule_backend_dispatch"),
+        ),
+        "nominal_cases": frozenset({
+            "html-prefix-dispatch",
+            "json-content-dispatch",
+            "javascript-dispatch",
+            "regex-all-in-one-stickiness",
+            "parser-cache-content-invalidation",
+            "native-object-direct-access",
+            "null-content-rejected",
+            "foreign-content-cache-isolation",
+        }),
+    },
 }
 ROUTE_OBSERVATION_SCENARIOS = {
     "sl-source-request-header-cookie-retry-layering-001": (

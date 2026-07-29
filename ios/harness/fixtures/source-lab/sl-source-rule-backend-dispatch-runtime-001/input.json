@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "html-prefix-dispatch",
+      "operation": "rule_backend_dispatch",
+      "arguments": {
+        "mode": "html_prefix_dispatch",
+        "content": "<html><body><div class=\"item\"><span>Alpha &amp; Beta</span></div></body></html>",
+        "default_rule": ".item span@text",
+        "css_rule": "@CSS:.item span@text",
+        "escaped_default_rule": "@@.item span@text",
+        "xpath_rule": "@XPath://span/text()",
+        "leading_xpath_rule": "//span/text()"
+      },
+      "request": {"method": "GET", "target": "/rule-dispatch/html-prefix-dispatch"}
+    },
+    {
+      "id": "json-content-dispatch",
+      "operation": "rule_backend_dispatch",
+      "arguments": {
+        "mode": "json_content_dispatch",
+        "content": "{\"items\":[{\"name\":\"Alpha\"},{\"name\":\"Beta\"}]}",
+        "auto_rule": "items[0].name",
+        "signature_rule": "$.items[0].name",
+        "explicit_rule": "@Json:$.items[1].name",
+        "list_rule": "$.items[*].name"
+      },
+      "request": {"method": "GET", "target": "/rule-dispatch/json-content-dispatch"}
+    },
+    {
+      "id": "javascript-dispatch",
+      "operation": "rule_backend_dispatch",
+      "arguments": {
+        "mode": "javascript_dispatch",
+        "content": "seed",
+        "embedded_rule": "<js>result.toString() + '-embedded'</js>",
+        "tail_rule": "@js:result.toString() + '-tail'"
+      },
+      "request": {"method": "GET", "target": "/rule-dispatch/javascript-dispatch"}
+    },
+    {
+      "id": "regex-all-in-one-stickiness",
+      "operation": "rule_backend_dispatch",
+      "arguments": {
+        "mode": "regex_stickiness",
+        "content": "item-12 item-34",
+        "activation_rule": ":item-(\\d+)",
+        "followup_rule": "item-(\\d+)"
+      },
+      "request": {"method": "GET", "target": "/rule-dispatch/regex-all-in-one-stickiness"}
+    },
+    {
+      "id": "parser-cache-content-invalidation",
+      "operation": "rule_backend_dispatch",
+      "arguments": {
+        "mode": "parser_cache_lifecycle",
+        "html_first": "<html><body><p class=\"value\">first-html</p></body></html>",
+        "html_second": "<html><body><p class=\"value\">second-html</p></body></html>",
+        "css_rule": "@CSS:.value@text",
+        "xpath_rule": "@XPath://p/text()",
+        "json_first": "{\"value\":\"first-json\"}",
+        "json_second": "{\"value\":\"second-json\"}",
+        "json_rule": "@Json:$.value"
+      },
+      "request": {"method": "GET", "target": "/rule-dispatch/parser-cache-content-invalidation"}
+    },
+    {
+      "id": "native-object-direct-access",
+      "operation": "rule_backend_dispatch",
+      "arguments": {
+        "mode": "native_object_access",
+        "script": "({name:'native-value', count:2})",
+        "key": "name"
+      },
+      "request": {"method": "GET", "target": "/rule-dispatch/native-object-direct-access"}
+    },
+    {
+      "id": "null-content-rejected",
+      "operation": "rule_backend_dispatch",
+      "arguments": {"mode": "null_content"},
+      "request": {"method": "GET", "target": "/rule-dispatch/null-content-rejected"}
+    },
+    {
+      "id": "foreign-content-cache-isolation",
+      "operation": "rule_backend_dispatch",
+      "arguments": {
+        "mode": "foreign_content_isolation",
+        "current_content": "<html><body><p class=\"value\">current</p></body></html>",
+        "foreign_content": "<html><body><p class=\"value\">foreign</p></body></html>",
+        "rule": "@CSS:.value@text"
+      },
+      "request": {"method": "GET", "target": "/rule-dispatch/foreign-content-cache-isolation"}
+    }
+  ]
+}

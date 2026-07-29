@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "logical_origin": "http://sourcelab.test",
-  "control_sha256": "8fcb53e0758eedbef5bc16825b15b47aec5497cdd72ec55c81eca1e3037989e7",
+  "control_sha256": "1e6b0c5404aceae0072f61b100b5479156ba2b33b54a96c168addffeab2d35a6",
   "scenarios": [
     {
       "id": "sl-html-basic-001",
@@ -44,6 +44,12 @@
       "status": "candidate",
       "path": "ios/harness/fixtures/source-lab/sl-source-response-xml-declaration-normalization-001",
       "sha256": "04f71ad2d0832dc6c9a21578c504a8ad6903d8c413c6693ff00677d5a84523ac"
+    },
+    {
+      "id": "sl-source-rule-backend-dispatch-runtime-001",
+      "status": "candidate",
+      "path": "ios/harness/fixtures/source-lab/sl-source-rule-backend-dispatch-runtime-001",
+      "sha256": "0c1dd0103682ce10f6ecfefc2ef7a424c4df4ea0d454a0da61f65217968f72cf"
     },
     {
       "id": "sl-source-session-rate-limit-shared-state-001",

@@ -1,0 +1,142 @@
+{
+  "schema_version": 1,
+  "kind": "source_lab_scenario",
+  "id": "sl-source-rule-backend-dispatch-runtime-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "source_lab_site",
+  "capabilities": [
+    "CAP-RUNTIME-PORTS",
+    "CAP-CONFORMANCE"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": "source.template.json",
+  "input": "input.json",
+  "transport": {
+    "mode": "fixture_and_loopback",
+    "external_network": "deny",
+    "responses": [
+      {
+        "id": "html-prefix-dispatch",
+        "match": {"method": "GET", "path": "/rule-dispatch/html-prefix-dispatch", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "json-content-dispatch",
+        "match": {"method": "GET", "path": "/rule-dispatch/json-content-dispatch", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "javascript-dispatch",
+        "match": {"method": "GET", "path": "/rule-dispatch/javascript-dispatch", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "regex-all-in-one-stickiness",
+        "match": {"method": "GET", "path": "/rule-dispatch/regex-all-in-one-stickiness", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "parser-cache-content-invalidation",
+        "match": {"method": "GET", "path": "/rule-dispatch/parser-cache-content-invalidation", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "native-object-direct-access",
+        "match": {"method": "GET", "path": "/rule-dispatch/native-object-direct-access", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "null-content-rejected",
+        "match": {"method": "GET", "path": "/rule-dispatch/null-content-rejected", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "foreign-content-cache-isolation",
+        "match": {"method": "GET", "path": "/rule-dispatch/foreign-content-cache-isolation", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      }
+    ]
+  },
+  "coverage": [
+    {
+      "behavior": "runtime.rule-backend-dispatch",
+      "cases": [
+        {
+          "id": "html-prefix-dispatch",
+          "role": "nominal",
+          "android_fact_refs": ["AF-WEBBOOK-SEARCH-ENTRYPOINT"],
+          "branch_refs": ["AnalyzeRule explicit CSS/XPath prefixes, @@ escape, leading XPath signature and default HTML dispatch"]
+        },
+        {
+          "id": "json-content-dispatch",
+          "role": "nominal",
+          "android_fact_refs": ["AF-WEBBOOK-SEARCH-ENTRYPOINT"],
+          "branch_refs": ["AnalyzeRule setContent JSON detection plus explicit and signature-based JSONPath dispatch"]
+        },
+        {
+          "id": "javascript-dispatch",
+          "role": "nominal",
+          "android_fact_refs": ["AF-WEBBOOK-SEARCH-ENTRYPOINT"],
+          "branch_refs": ["AnalyzeRule JS_PATTERN splits embedded and tail JavaScript segments into Mode.Js"]
+        },
+        {
+          "id": "regex-all-in-one-stickiness",
+          "role": "boundary",
+          "android_fact_refs": ["AF-WEBBOOK-SEARCH-ENTRYPOINT"],
+          "branch_refs": ["AnalyzeRule allInOne leading-colon Regex activation and instance-level isRegex persistence"]
+        },
+        {
+          "id": "parser-cache-content-invalidation",
+          "role": "boundary",
+          "android_fact_refs": ["AF-WEBBOOK-SEARCH-ENTRYPOINT"],
+          "branch_refs": ["AnalyzeRule JSoup/XPath/JSONPath parser reuse for current content and invalidation after setContent"]
+        },
+        {
+          "id": "native-object-direct-access",
+          "role": "boundary",
+          "android_fact_refs": ["AF-WEBBOOK-SEARCH-ENTRYPOINT"],
+          "branch_refs": ["AnalyzeRule NativeObject first-rule direct key access bypasses document backend dispatch"]
+        },
+        {
+          "id": "null-content-rejected",
+          "role": "malformed",
+          "android_fact_refs": ["AF-WEBBOOK-SEARCH-ENTRYPOINT"],
+          "branch_refs": ["AnalyzeRule setContent null fail-fast boundary"]
+        },
+        {
+          "id": "foreign-content-cache-isolation",
+          "role": "denied",
+          "android_fact_refs": ["AF-WEBBOOK-SEARCH-ENTRYPOINT"],
+          "branch_refs": ["AnalyzeRule mContent override uses an isolated parser and must not replace the current-content parser cache"]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "2026-01-01T00:00:00Z",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 41,
+    "network_allowed": false,
+    "logical_origin": "http://sourcelab.test"
+  },
+  "limits": {
+    "timeout_ms": 1000,
+    "max_response_bytes": 1048576,
+    "max_request_body_bytes": 1048576,
+    "max_requests": 16,
+    "max_concurrency": 2
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt",
+      "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByJSoup.kt",
+      "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByXPath.kt",
+      "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByJSonPath.kt",
+      "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByRegex.kt"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-SOURCE-RULE-BACKEND-DISPATCH-RUNTIME-001"
+  }
+}
