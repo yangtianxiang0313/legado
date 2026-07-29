@@ -487,6 +487,14 @@ class BusinessKnowledgePublisherTests(unittest.TestCase):
             ') + "\\n"',
             workflow,
         )
+        self.assertNotIn(
+            "done | sort >SHA256SUMS",
+            workflow,
+        )
+        self.assertIn(
+            "done >SHA256SUMS",
+            workflow,
+        )
         self.assertIn(
             "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
             workflow,
