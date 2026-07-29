@@ -20,6 +20,9 @@
 - 可复发的坑以及预防办法；
 - 仍未覆盖的边界和下一步。
 
+`summary/current_status/architecture_change/pitfalls/next_step` 都是完成事件的真实
+输入，Loop 不再把状态固定写成 `completed`，也不再把架构变化固定写成 `none`。
+
 构建日志、stdout/stderr、截图、xcresult、DOM dump 和结构化 actual 放入
 `.harness-runtime/loop`，不进入 Git。稳定结论进入 Business Knowledge；一次性的实现
 过程只留在 Git 历史。旧 WorkItem、Evidence、Checkpoint、Gate 和大状态投影属于 v1

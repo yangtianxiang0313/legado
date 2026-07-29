@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import datetime as dt
+import fcntl
 import fnmatch
 import hashlib
 import json
@@ -12,6 +14,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
@@ -22,6 +25,7 @@ TASK_PATH = LOOP_ROOT / "task.json"
 CURRENT_PATH = LOOP_ROOT / "current.json"
 EVENTS_PATH = LOOP_ROOT / "events.jsonl"
 RUNTIME_ROOT = Path(".harness-runtime/loop")
+LOCK_PATH = RUNTIME_ROOT / "loop.lock"
 CONTROL_PATHS = {
     TASK_PATH.as_posix(),
     CURRENT_PATH.as_posix(),
@@ -61,7 +65,21 @@ def read_json(path: Path) -> Mapping[str, Any]:
 
 def write_json(path: Path, value: Mapping[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(canonical(value))
+    temporary: str | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            dir=path.parent,
+            prefix=f".{path.name}.",
+            delete=False,
+        ) as stream:
+            temporary = stream.name
+            stream.write(canonical(value))
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, path)
+    finally:
+        if temporary is not None and os.path.exists(temporary):
+            os.unlink(temporary)
 
 
 def utc_now() -> str:
@@ -141,7 +159,24 @@ def append_event(
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("ab") as stream:
         stream.write(canonical(record))
+        stream.flush()
+        os.fsync(stream.fileno())
     return record
+
+
+@contextlib.contextmanager
+def exclusive_lock(root: Path) -> Iterable[None]:
+    path = root / LOCK_PATH
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a+b") as stream:
+        try:
+            fcntl.flock(stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as error:
+            raise LoopError("LOOP_BUSY") from error
+        try:
+            yield
+        finally:
+            fcntl.flock(stream.fileno(), fcntl.LOCK_UN)
 
 
 def completed_task_ids(root: Path) -> set[str]:
@@ -1045,6 +1080,80 @@ def initial_current() -> Mapping[str, Any]:
     }
 
 
+def project_current(
+    events: Sequence[Mapping[str, Any]],
+) -> Mapping[str, Any]:
+    state = dict(initial_current())
+    for event in events:
+        event_name = event["event"]
+        task_id = event.get("task_id")
+        sequence = event["sequence"]
+        if event_name == "task_started":
+            if state["status"] != "idle" or not isinstance(task_id, str):
+                raise LoopError(f"EVENT_TRANSITION_INVALID:{sequence}")
+            state = {
+                "schema_version": SCHEMA_VERSION,
+                "status": "running",
+                "active_task": task_id,
+                "attempt": 0,
+                "verification": None,
+                "last_completed": state.get("last_completed"),
+            }
+        elif event_name in {"verification_passed", "verification_failed"}:
+            details = event.get("details")
+            expected_passed = event_name == "verification_passed"
+            if (
+                state["status"] not in {"running", "verified"}
+                or state["active_task"] != task_id
+                or not isinstance(details, dict)
+                or details.get("passed") is not expected_passed
+                or not isinstance(details.get("attempt"), int)
+                or isinstance(details.get("attempt"), bool)
+                or details["attempt"] <= int(state["attempt"])
+            ):
+                raise LoopError(f"EVENT_TRANSITION_INVALID:{sequence}")
+            state = {
+                **state,
+                "status": "verified" if expected_passed else "running",
+                "attempt": details["attempt"],
+                "verification": details,
+            }
+        elif event_name == "task_completed":
+            details = event.get("details")
+            if (
+                state["status"] != "verified"
+                or state["active_task"] != task_id
+                or not isinstance(task_id, str)
+                or not isinstance(details, dict)
+            ):
+                raise LoopError(f"EVENT_TRANSITION_INVALID:{sequence}")
+            required_memory = {
+                "summary": str,
+                "current_status": str,
+                "architecture_change": str,
+                "pitfalls": list,
+                "next_step": str,
+            }
+            if any(
+                not isinstance(details.get(field), expected_type)
+                for field, expected_type in required_memory.items()
+            ):
+                raise LoopError(f"EVENT_MEMORY_INVALID:{sequence}")
+            state = {
+                "schema_version": SCHEMA_VERSION,
+                "status": "idle",
+                "active_task": None,
+                "attempt": 0,
+                "verification": None,
+                "last_completed": {
+                    "task_id": task_id,
+                    "sequence": sequence,
+                    "at": event["at"],
+                },
+            }
+    return state
+
+
 def current(root: Path) -> Mapping[str, Any]:
     path = root / CURRENT_PATH
     return read_json(path) if path.exists() else initial_current()
@@ -1156,11 +1265,28 @@ def validate_task(root: Path, task: Mapping[str, Any]) -> None:
             or not expected_values
         ):
             raise LoopError("TASK_ACCEPTANCE_INVALID")
+    knowledge_updates = task.get("knowledge_updates")
+    required_memory = (
+        knowledge_updates.get("required_on_completion")
+        if isinstance(knowledge_updates, dict)
+        else None
+    )
+    if required_memory != [
+        "summary",
+        "current_status",
+        "architecture_change",
+        "pitfalls",
+        "next_step",
+    ]:
+        raise LoopError("TASK_KNOWLEDGE_INVALID")
 
 
 def doctor(root: Path) -> Mapping[str, Any]:
     state = current(root)
     events = load_events(root)
+    projected = project_current(events)
+    if state != projected:
+        raise LoopError("CURRENT_EVENT_PROJECTION_DRIFT")
     task_path = root / TASK_PATH
     active = state.get("active_task")
     if state.get("schema_version") != SCHEMA_VERSION:
@@ -1182,6 +1308,37 @@ def doctor(root: Path) -> Mapping[str, Any]:
         "status": "ok",
         "current": state,
         "event_count": len(events),
+    }
+
+
+def reconcile(root: Path) -> Mapping[str, Any]:
+    events = load_events(root)
+    projected = project_current(events)
+    task_path = root / TASK_PATH
+    repairs = []
+    if projected["status"] == "idle":
+        if task_path.exists():
+            task_path.unlink()
+            repairs.append("removed_orphan_task")
+    else:
+        if not task_path.is_file():
+            raise LoopError("ACTIVE_TASK_MISSING")
+        task = read_json(task_path)
+        validate_task(root, task)
+        if task.get("id") != projected["active_task"]:
+            raise LoopError("ACTIVE_TASK_ID_DRIFT")
+    try:
+        state = current(root)
+    except LoopError:
+        state = None
+    if state != projected:
+        write_json(root / CURRENT_PATH, projected)
+        repairs.append("rebuilt_current_projection")
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "status": "reconciled" if repairs else "unchanged",
+        "repairs": repairs,
+        "current": projected,
     }
 
 
@@ -1583,12 +1740,18 @@ def complete(
     root: Path,
     *,
     summary: str,
+    current_status: str,
+    architecture_change: str,
     pitfall: Sequence[str],
     next_step: str,
 ) -> Mapping[str, Any]:
     if (
         not isinstance(summary, str)
         or not summary.strip()
+        or not isinstance(current_status, str)
+        or not current_status.strip()
+        or not isinstance(architecture_change, str)
+        or not architecture_change.strip()
         or not isinstance(next_step, str)
         or not next_step.strip()
         or any(
@@ -1612,8 +1775,8 @@ def complete(
         raise LoopError("TASK_CHANGED_AFTER_VERIFY")
     details = {
         "summary": summary,
-        "current_status": "completed",
-        "architecture_change": "none",
+        "current_status": current_status,
+        "architecture_change": architecture_change,
         "pitfalls": list(pitfall),
         "next_step": next_step,
         "verification": {
@@ -1655,8 +1818,187 @@ def complete(
     return event
 
 
+def advance(
+    root: Path,
+    *,
+    summary: str | None = None,
+    current_status: str | None = None,
+    architecture_change: str | None = None,
+    pitfall: Sequence[str] = (),
+    next_step: str | None = None,
+) -> Mapping[str, Any]:
+    reconciliation = reconcile(root)
+    doctor(root)
+    state = current(root)
+    if state["status"] == "idle":
+        task = next_task(root)
+        if task is None:
+            return {
+                "schema_version": SCHEMA_VERSION,
+                "status": "queue_empty",
+                "action": "done",
+                "reconciliation": reconciliation,
+            }
+        started = start(root)
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "status": "running",
+            "action": "implement",
+            "task": started,
+            "reconciliation": reconciliation,
+        }
+
+    task = read_json(root / TASK_PATH)
+    paths = changed_paths(root, str(task["base_commit"]))
+    work_paths = [
+        path
+        for path in paths
+        if path not in CONTROL_PATHS
+        and not path.startswith(".harness-runtime/")
+    ]
+    verification = state.get("verification")
+    workspace_sha256 = workspace_digest(root, paths)
+    if state["status"] == "verified" and isinstance(verification, dict):
+        if workspace_sha256 == verification.get("workspace_sha256"):
+            memory_supplied = any(
+                value is not None
+                for value in (
+                    summary,
+                    current_status,
+                    architecture_change,
+                    next_step,
+                )
+            ) or bool(pitfall)
+            if not memory_supplied:
+                return {
+                    "schema_version": SCHEMA_VERSION,
+                    "status": "verified",
+                    "action": "record_completion",
+                    "task_id": task["id"],
+                    "required_knowledge": task["knowledge_updates"][
+                        "required_on_completion"
+                    ],
+                    "verification": verification,
+                    "reconciliation": reconciliation,
+                }
+            completed = complete(
+                root,
+                summary=summary or "",
+                current_status=current_status or "",
+                architecture_change=architecture_change or "",
+                pitfall=pitfall,
+                next_step=next_step or "",
+            )
+            next_task_value = next_task(root)
+            if next_task_value is None:
+                return {
+                    "schema_version": SCHEMA_VERSION,
+                    "status": "queue_empty",
+                    "action": "done",
+                    "completed": completed,
+                    "reconciliation": reconciliation,
+                }
+            started = start(root)
+            return {
+                "schema_version": SCHEMA_VERSION,
+                "status": "running",
+                "action": "implement",
+                "completed": completed,
+                "task": started,
+                "reconciliation": reconciliation,
+            }
+
+    if (
+        state["status"] == "running"
+        and isinstance(verification, dict)
+        and verification.get("passed") is False
+        and workspace_sha256 == verification.get("workspace_sha256")
+    ):
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "status": "verification_failed",
+            "action": "repair",
+            "task_id": task["id"],
+            "verification": verification,
+            "reconciliation": reconciliation,
+        }
+    if not work_paths:
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "status": "running",
+            "action": "implement",
+            "task": task,
+            "reconciliation": reconciliation,
+        }
+
+    result = verify(root)
+    memory_supplied = any(
+        value is not None
+        for value in (
+            summary,
+            current_status,
+            architecture_change,
+            next_step,
+        )
+    ) or bool(pitfall)
+    if result["passed"] and memory_supplied:
+        return advance(
+            root,
+            summary=summary,
+            current_status=current_status,
+            architecture_change=architecture_change,
+            pitfall=pitfall,
+            next_step=next_step,
+        )
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "status": "verified" if result["passed"] else "verification_failed",
+        "action": "record_completion" if result["passed"] else "repair",
+        "task_id": task["id"],
+        "verification": result,
+        "reconciliation": reconciliation,
+    }
+
+
 def output(value: Any) -> None:
     sys.stdout.buffer.write(canonical(value))
+
+
+def dispatch(root: Path, args: argparse.Namespace) -> Mapping[str, Any]:
+    if args.command == "doctor":
+        return doctor(root)
+    if args.command == "status":
+        return current(root)
+    if args.command == "next":
+        return next_task(root) or {
+            "schema_version": SCHEMA_VERSION,
+            "status": "queue_empty",
+        }
+    if args.command == "start":
+        return start(root)
+    if args.command == "verify":
+        return verify(root)
+    if args.command == "reconcile":
+        return reconcile(root)
+    if args.command == "complete":
+        return complete(
+            root,
+            summary=args.summary,
+            current_status=args.current_status,
+            architecture_change=args.architecture_change,
+            pitfall=args.pitfall,
+            next_step=args.next_step,
+        )
+    if args.command == "advance":
+        return advance(
+            root,
+            summary=args.summary,
+            current_status=args.current_status,
+            architecture_change=args.architecture_change,
+            pitfall=args.pitfall,
+            next_step=args.next_step,
+        )
+    raise AssertionError(args.command)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -1668,35 +2010,33 @@ def main(argv: Sequence[str] | None = None) -> int:
     subparsers.add_parser("next")
     subparsers.add_parser("start")
     subparsers.add_parser("verify")
+    subparsers.add_parser("reconcile")
     complete_parser = subparsers.add_parser("complete")
     complete_parser.add_argument("--summary", required=True)
+    complete_parser.add_argument("--current-status", required=True)
+    complete_parser.add_argument("--architecture-change", required=True)
     complete_parser.add_argument("--pitfall", action="append", default=[])
     complete_parser.add_argument("--next-step", required=True)
+    advance_parser = subparsers.add_parser("advance")
+    advance_parser.add_argument("--summary")
+    advance_parser.add_argument("--current-status")
+    advance_parser.add_argument("--architecture-change")
+    advance_parser.add_argument("--pitfall", action="append", default=[])
+    advance_parser.add_argument("--next-step")
     args = parser.parse_args(argv)
     try:
         root = repository_root(args.root.resolve())
-        if args.command == "doctor":
-            value = doctor(root)
-        elif args.command == "status":
-            value = current(root)
-        elif args.command == "next":
-            value = next_task(root) or {
-                "schema_version": SCHEMA_VERSION,
-                "status": "queue_empty",
-            }
-        elif args.command == "start":
-            value = start(root)
-        elif args.command == "verify":
-            value = verify(root)
-        elif args.command == "complete":
-            value = complete(
-                root,
-                summary=args.summary,
-                pitfall=args.pitfall,
-                next_step=args.next_step,
-            )
+        if args.command in {
+            "start",
+            "verify",
+            "reconcile",
+            "complete",
+            "advance",
+        }:
+            with exclusive_lock(root):
+                value = dispatch(root, args)
         else:
-            raise AssertionError(args.command)
+            value = dispatch(root, args)
         output(value)
         return 0
     except LoopError as error:

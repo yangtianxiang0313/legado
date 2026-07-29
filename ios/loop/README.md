@@ -18,18 +18,28 @@ Loop v2 只保留一个当前任务、一个追加事件流和一个紧凑状态
 - `ios/project/loop/events.jsonl`：短事件和完成知识；
 - `ios/project/loop/current.json`：可重建的当前投影。
 
-命令：
+AI 日常只需要反复调用一个幂等入口：
 
 ```bash
-python3 -B ios/loop/loop.py doctor
-python3 -B ios/loop/loop.py next
-python3 -B ios/loop/loop.py start
-python3 -B ios/loop/loop.py verify
-python3 -B ios/loop/loop.py complete \
+python3 -B ios/loop/loop.py advance
+```
+
+它会按当前状态自动执行一个安全转换：空闲时派生并启动下一任务；产品发生变化时
+执行验收；相同失败工作区不会重复烧 attempt；验证通过后要求 AI 提交项目记忆。
+验证通过时可在同一次调用中完成当前项并启动下一项：
+
+```bash
+python3 -B ios/loop/loop.py advance \
   --summary "完成内容" \
+  --current-status "当前能力及未覆盖边界" \
+  --architecture-change "none，或 ADR/依赖变化" \
   --pitfall "可复发问题与预防办法" \
   --next-step "下一步"
 ```
+
+`doctor/next/start/verify/complete/reconcile` 保留为诊断原语。`advance` 会先从
+`events.jsonl` 重建并对齐 `current.json`，可以续接控制文件写入中断；它不会在
+仓库内再次启动另一个 AI 进程，AI Executor 由当前 Codex 任务承担。
 
 普通失败只追加 `verification_failed` 并增加 attempt，不创建 Recovery
 任务。完整 stdout/stderr 和 verification report 位于 `.harness-runtime/loop`，

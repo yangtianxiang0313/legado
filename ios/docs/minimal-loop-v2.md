@@ -83,6 +83,17 @@ UI 任务必须启动 iOS Simulator，验收页面结构、导航入口、多级
 `verification_failed` 事件。不会复制出 `RECOVERY-002/003`。只有业务知识、架构决策
 或外部权威真的发生变化时，Planner 才会产生新的任务。
 
+AI Executor 反复调用幂等的 `advance`：空闲时启动任务，有产品变化时验证，验证通过
+时请求项目记忆，相同失败工作区则返回 `repair` 而不重复执行。`events.jsonl` 是状态
+恢复依据；`current.json` 是可重建投影。控制文件写入中断后，`advance` 先执行
+`reconcile`，只恢复当前投影或删除未形成开始事件的孤立 `task.json`。JSON 投影使用
+临时文件加原子替换，事件追加在返回前落盘；仓库外的单进程锁拒绝两个 Driver 并发
+推进同一任务，避免重复开始或重复 attempt。
+
+Loop 不从仓库内递归启动 Codex CLI。当前 Codex 任务负责 AI Executor，Loop 只负责
+任务派生、范围约束、独立验证、恢复和项目记忆，这样不会重新引入已删除的 Agent
+adapter、Supervisor daemon 和重复状态机。
+
 ## 项目信息沉淀
 
 完成事件必须包含：
@@ -104,7 +115,8 @@ v2 在删除旧控制面前必须满足：
    `IOS-SOURCE-RUNTIME-POST-FORM-001`；
 2. 能完成结构化书源 Golden 对齐；
 3. 能连续生成下一任务；
-4. `doctor`、`next`、`start`、`verify`、`complete` 全链路通过；
+4. `advance` 自动串联 `next/start/verify/complete`，`doctor` 与 `reconcile`
+   可独立验证和恢复事件投影；
 5. 旧完成历史压缩为 completion index/event 后，当前 HEAD 可删除重复
    Candidate/Recipe/WorkItem/Evidence/Checkpoint/state 投影；
 6. Git 历史仍保留旧审计材料，当前运行不再依赖它们。

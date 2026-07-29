@@ -29,29 +29,30 @@ AI 只有在五者同时一致时才能声明一项能力完成。
 ```bash
 python3 -B ios/loop/loop.py doctor
 python3 -B ios/harness/android-intake/android_intake.py doctor --root .
-python3 -B ios/loop/loop.py next
-python3 -B ios/loop/loop.py start
+python3 -B ios/loop/loop.py advance
 python3 ios/harness/source-lab/source_lab.py verify-site --root . --scenario sl-html-basic-001
 ```
 
-验证并完成当前任务：
+验证通过后，AI 用同一个入口沉淀项目记忆并续接下一任务：
 
 ```bash
-python3 -B ios/loop/loop.py verify
-python3 -B ios/loop/loop.py complete \
-  --summary "完成内容" --next-step "下一步"
+python3 -B ios/loop/loop.py advance \
+  --summary "完成内容" \
+  --current-status "当前能力及未覆盖边界" \
+  --architecture-change "none，或 ADR/依赖变化" \
+  --pitfall "可复发问题与预防办法" \
+  --next-step "下一步"
 ```
 
 完整运行日志保存在 `.harness-runtime/loop`。Android Golden 仍只能由独立
 GitHub Publisher 从真实 Android Oracle 结果发布。
 
-## 计划中的产品目录
+## 当前产品目录
 
 ```text
 ios/
 ├── Apps/
-│   ├── LegadoStoreSafe/
-│   └── LegadoFullCompat/
+│   └── Legado/
 ├── Packages/LegadoKit/
 │   ├── Package.swift
 │   ├── Sources/
@@ -64,4 +65,5 @@ ios/
 └── project/
 ```
 
-当前提交先建立设计、推进器和记忆系统；第一个工作项负责生成并验证 Swift Package 骨架。
+当前 App 先链接 StoreSafe profile；FullCompat 仍通过同一 Package 的独立 product
+保持链接边界，待对应能力切片需要时再物化第二个 App 壳。

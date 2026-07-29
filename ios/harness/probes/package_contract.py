@@ -20,6 +20,7 @@ REQUIRED_SOURCE_TARGETS = {
     "SourceRuntime",
     "ReaderCore",
     "AppUseCases",
+    "AppNavigation",
     "TestSupport",
     "ConformanceCLI",
 }
@@ -29,6 +30,7 @@ REQUIRED_TEST_TARGETS = {
     "TestSupportTests",
     "ConformanceCLITests",
     "SourceFormatTests",
+    "AppNavigationTests",
 }
 REQUIRED_LIBRARY_PRODUCTS = {
     "LegadoStoreSafeKit",
@@ -90,6 +92,13 @@ def architecture_issues(package_root, package, policy):
         for target in package.get("targets", [])
         if isinstance(target, dict) and isinstance(target.get("name"), str)
     }
+    for name, target in package_targets.items():
+        target_type = target.get("type")
+        if target_type == "test" and name not in test_rules:
+            errors.append(f"{name}: Test Target 缺少架构规则")
+        elif target_type in {"regular", "executable"} and name not in target_rules:
+            errors.append(f"{name}: Target 缺少架构规则")
+
     dependencies = {}
     for name, target in package_targets.items():
         dependencies[name] = {

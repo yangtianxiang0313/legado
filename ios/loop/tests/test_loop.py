@@ -762,6 +762,186 @@ class MinimalLoopTests(unittest.TestCase):
                 missing_receipt,
             )
 
+    def test_projection_replays_task_lifecycle_and_memory(self):
+        events = [
+            {
+                "schema_version": 2,
+                "sequence": 1,
+                "at": "2026-07-29T00:00:00Z",
+                "event": "task_started",
+                "task_id": "IOS-TEST-001",
+            },
+            {
+                "schema_version": 2,
+                "sequence": 2,
+                "at": "2026-07-29T00:01:00Z",
+                "event": "verification_passed",
+                "task_id": "IOS-TEST-001",
+                "details": {
+                    "attempt": 1,
+                    "passed": True,
+                },
+            },
+            {
+                "schema_version": 2,
+                "sequence": 3,
+                "at": "2026-07-29T00:02:00Z",
+                "event": "task_completed",
+                "task_id": "IOS-TEST-001",
+                "details": {
+                    "summary": "done",
+                    "current_status": "capability available",
+                    "architecture_change": "none",
+                    "pitfalls": [],
+                    "next_step": "next",
+                },
+            },
+        ]
+
+        projected = loop.project_current(events)
+
+        self.assertEqual("idle", projected["status"])
+        self.assertEqual(
+            {
+                "task_id": "IOS-TEST-001",
+                "sequence": 3,
+                "at": "2026-07-29T00:02:00Z",
+            },
+            projected["last_completed"],
+        )
+
+    def test_exclusive_lock_rejects_concurrent_driver(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+
+            with loop.exclusive_lock(root):
+                with self.assertRaisesRegex(loop.LoopError, "LOOP_BUSY"):
+                    with loop.exclusive_lock(root):
+                        self.fail("second driver acquired the same lock")
+
+    def test_advance_starts_once_and_waits_for_product_changes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            self.init_git(root)
+            subprocess.run(["git", "add", "."], cwd=root, check=True)
+            subprocess.run(
+                ["git", "commit", "-qm", "fixture"],
+                cwd=root,
+                check=True,
+            )
+
+            started = loop.advance(root)
+            waiting = loop.advance(root)
+
+            self.assertEqual("implement", started["action"])
+            self.assertEqual("implement", waiting["action"])
+            self.assertEqual(
+                "IOS-SOURCE-RUNTIME-POST-FORM-001",
+                waiting["task"]["id"],
+            )
+            self.assertEqual(1, len(loop.load_events(root)))
+
+    def test_advance_does_not_repeat_unchanged_failed_workspace(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            self.init_git(root)
+            subprocess.run(["git", "add", "."], cwd=root, check=True)
+            subprocess.run(
+                ["git", "commit", "-qm", "fixture"],
+                cwd=root,
+                check=True,
+            )
+            loop.advance(root)
+            changed = (
+                root
+                / "ios/Packages/LegadoKit/Sources/SourceRuntime/Change.swift"
+            )
+            changed.parent.mkdir(parents=True)
+            changed.write_text("struct Change {}\n", encoding="utf-8")
+
+            failed = loop.advance(root)
+            unchanged = loop.advance(root)
+
+            self.assertEqual("verification_failed", failed["status"])
+            self.assertEqual("repair", unchanged["action"])
+            self.assertEqual(1, unchanged["verification"]["attempt"])
+            self.assertEqual(2, len(loop.load_events(root)))
+
+    def test_reconcile_rebuilds_current_projection_after_interruption(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            self.init_git(root)
+            subprocess.run(["git", "add", "."], cwd=root, check=True)
+            subprocess.run(
+                ["git", "commit", "-qm", "fixture"],
+                cwd=root,
+                check=True,
+            )
+            loop.advance(root)
+            loop.write_json(root / loop.CURRENT_PATH, loop.initial_current())
+
+            result = loop.reconcile(root)
+
+            self.assertEqual("reconciled", result["status"])
+            self.assertIn("rebuilt_current_projection", result["repairs"])
+            self.assertEqual("running", loop.current(root)["status"])
+
+    def test_advance_records_real_memory_and_closes_verified_task(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            self.init_git(root)
+            subprocess.run(["git", "add", "."], cwd=root, check=True)
+            subprocess.run(
+                ["git", "commit", "-qm", "fixture"],
+                cwd=root,
+                check=True,
+            )
+            loop.advance(root)
+            task = loop.read_json(root / loop.TASK_PATH)
+            paths = loop.changed_paths(root, task["base_commit"])
+            verification = {
+                "passed": True,
+                "attempt": 1,
+                "head_commit": loop.git(root, "rev-parse", "HEAD"),
+                "workspace_sha256": loop.workspace_digest(root, paths),
+                "changed_paths": paths,
+                "runtime": ".harness-runtime/loop/test/attempt-1",
+                "checks": [],
+            }
+            loop.append_event(
+                root,
+                "verification_passed",
+                task_id=task["id"],
+                details=verification,
+            )
+            loop.write_json(
+                root / loop.CURRENT_PATH,
+                loop.project_current(loop.load_events(root)),
+            )
+
+            result = loop.advance(
+                root,
+                summary="implemented",
+                current_status="available with one known boundary",
+                architecture_change="none",
+                pitfall=["keep inputs deterministic"],
+                next_step="continue",
+            )
+
+            self.assertEqual("done", result["action"])
+            self.assertEqual("queue_empty", result["status"])
+            self.assertFalse((root / loop.TASK_PATH).exists())
+            completed = loop.load_events(root)[-1]
+            self.assertEqual("task_completed", completed["event"])
+            self.assertEqual(
+                "available with one known boundary",
+                completed["details"]["current_status"],
+            )
+
     def test_completion_rejects_empty_project_memory(self):
         with self.assertRaisesRegex(
             loop.LoopError,
@@ -770,6 +950,8 @@ class MinimalLoopTests(unittest.TestCase):
             loop.complete(
                 Path("."),
                 summary="",
+                current_status="",
+                architecture_change="",
                 pitfall=[],
                 next_step="",
             )

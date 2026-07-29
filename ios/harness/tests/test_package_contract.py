@@ -138,6 +138,26 @@ class PackageArchitectureContractTests(unittest.TestCase):
         self.assertTrue(any("项目 import 越界" in error for error in errors))
         self.assertTrue(any("链接禁止 Target" in error for error in errors))
 
+    def test_rejects_package_target_without_architecture_rule(self):
+        self.package["targets"].append(
+            {
+                "name": "UnruledTests",
+                "type": "test",
+                "dependencies": [],
+            }
+        )
+
+        errors = package_contract.architecture_issues(
+            self.package_root,
+            self.package,
+            self.policy,
+        )
+
+        self.assertIn(
+            "UnruledTests: Test Target 缺少架构规则",
+            errors,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
