@@ -1,0 +1,43 @@
+{
+  "authority": "proposal_only",
+  "candidate_sha256": "9c8562f49c725e33ed5b26797bc08c7e549dafd6a15c172892f96d85335cd168",
+  "compiler_version": "proposal-compiler-v1",
+  "dag": {
+    "id": "WIPD-IOS-INITIALIZATION-001",
+    "revision": 32,
+    "sha256": "014044b252c71f70b8e74305eefa1cc9465482de1a2e8628007c095645291465"
+  },
+  "dependencies": [
+    {
+      "chain": [
+        "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTOMATION-001"
+      ],
+      "checkpoint": "ios/project/checkpoints/IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTOMATION-001.json",
+      "checkpoint_sha256": "a7cc25d5d0f354c4a5d31f84952cbd2267d6fd5cc4cb5f37555333ac63223d79",
+      "evidence": "ios/harness/evidence/runs/run-20260729T024344Z-ios-business-knowledge-publisher-automation-001-f04847f5.json",
+      "evidence_sha256": "3de1e242bfc3571a4c0e1c85c9d51cd8abe799d5e4d53a335af1f1d3f20e3b0f",
+      "original": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTOMATION-001",
+      "reason_code": "DIRECT_COMPLETION",
+      "resolved": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTOMATION-001",
+      "work_item_sha256": "2ba29a07b0a2cdf94df004a9f033607fa53b474bd12d4315fb8894b08534384b"
+    }
+  ],
+  "node_sha256": "4277a0dc3a17119f03f66ceb8ca56fe7d9a63ef933ba24a0318200c7d67b8db0",
+  "proposal_id": "IOS-BUSINESS-KNOWLEDGE-PUBLICATION-DIGEST-RECOVERY-002",
+  "queue_effect": "none",
+  "recipe_sha256": "999ed59cfb61d53c4579c4f305a468e62f9c0c13c46301fed4a5e33aeb6d2e60",
+  "recovery": {
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "checkpoint": null,
+    "checkpoint_sha256": null,
+    "evidence": "ios/harness/evidence/runs/run-20260729T025414Z-ios-business-knowledge-publication-digest-001-a66a2efe.json",
+    "evidence_sha256": "4e972ca44ff1df94578e9bfdf1ba2f7954b4ad701b86e6ce0dee19db04dfdc4b",
+    "predecessor": "IOS-BUSINESS-KNOWLEDGE-PUBLICATION-DIGEST-001",
+    "replacement": null,
+    "runtime_sha256": "c44269add58de09d088c53bf2a9feceb5bdd393af54f6fb711e2aa116b89d689",
+    "status": "rejected",
+    "work_item": "ios/harness/work-items/IOS-BUSINESS-KNOWLEDGE-PUBLICATION-DIGEST-001.json",
+    "work_item_sha256": "08a1330291b4999d40f3aee94bf25db0e9218ed35af3f6783cb93a418ec90f01"
+  },
+  "schema_version": 1
+}

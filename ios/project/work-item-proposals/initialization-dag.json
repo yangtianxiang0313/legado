@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "InitializationWorkItemProposalDAG",
   "id": "WIPD-IOS-INITIALIZATION-001",
-  "revision": 31,
+  "revision": 32,
   "authority": "proposal_only",
   "status": "proposed",
   "created_by": "IOS-KNOWLEDGE-CONTROL-PLANE-001",
@@ -388,6 +388,14 @@
       "title": "统一知识发布输入的 Git 字节摘要语义",
       "outputs": ["producer WorkItem git-blob digest binding", "semantic-vs-byte digest regression", "real publisher preflight continuation"],
       "gates": [], "constraint": "只修复 DemandCompiler 对 producer WorkItem 的摘要域，使 request binding 与 Dispatcher 对 source commit 原始字节的验证一致；不得降低六类输入验证、修改 Workflow/Dispatcher、发布知识、改 Requirement/Golden/SourceLab/Package/产品或扩张 authority"
+    },
+    {
+      "proposal_id": "IOS-BUSINESS-KNOWLEDGE-PUBLICATION-DIGEST-RECOVERY-002", "phase": 44, "class": "control_plane",
+      "recovers": "IOS-BUSINESS-KNOWLEDGE-PUBLICATION-DIGEST-001",
+      "depends_on": ["IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTOMATION-001"], "knowledge_mode": "not_applicable",
+      "title": "恢复知识发布 Git 字节摘要绑定",
+      "outputs": ["verified producer git-blob digest binding", "protected-path baseline recovery", "publisher preflight continuation"],
+      "gates": [], "constraint": "恢复因领取后提交物化文件而被 Harness 正确拒绝的摘要修复；重新实现并验证 producer WorkItem 原始字节摘要，保持物化、实现、验证和记忆关闭在同一领取事务中，不得放宽 protected-path、修改 Workflow/Dispatcher 或写任何发布 authority/产品"
     }
   ],
   "compiler_rules": [
