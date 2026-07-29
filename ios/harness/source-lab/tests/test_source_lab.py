@@ -19,6 +19,7 @@ import source_lab  # noqa: E402
 class SourceLabTests(unittest.TestCase):
     scenario = "sl-html-basic-001"
     runtime_scenario = "rl-reader-bookmark-search-runtime-risk-001"
+    integration_scenario = "il-integration-backup-webdav-001"
 
     def oracle_workflow(self):
         return (
@@ -222,6 +223,33 @@ class SourceLabTests(unittest.TestCase):
         ):
             with source_lab.running_server(REPO_ROOT, self.runtime_scenario):
                 self.fail("runtime scenario started a SourceLab server")
+
+    def test_global_scenario_manifest_includes_independent_integration_lab(self):
+        directory, case, inputs = source_lab.load_scenario(
+            REPO_ROOT,
+            self.integration_scenario,
+        )
+        self.assertEqual(
+            [],
+            source_lab.validate_scenario(
+                REPO_ROOT,
+                directory,
+                case,
+            ),
+        )
+        self.assertEqual("integration_lab_scenario", case["kind"])
+        self.assertEqual(12, len(inputs["cases"]))
+        scenarios = {
+            value["id"]: value
+            for value in source_lab.manifest_value(REPO_ROOT)["scenarios"]
+        }
+        self.assertEqual(
+            (
+                "ios/harness/fixtures/integration-lab/"
+                "il-integration-backup-webdav-001"
+            ),
+            scenarios[self.integration_scenario]["path"],
+        )
 
     def test_rejects_non_loopback_origin(self):
         with self.assertRaises(source_lab.SourceLabError):

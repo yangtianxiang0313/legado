@@ -1,8 +1,14 @@
 {
   "schema_version": 1,
   "logical_origin": "http://sourcelab.test",
-  "control_sha256": "1cf86f3f780bde5f709e0e503528485a08b1300ed1efa457d9bf0a0205f92e31",
+  "control_sha256": "03e7e33d6aabc1febdef5494ee37b3219765c89f631e2dc08b388f4bba8ee20d",
   "scenarios": [
+    {
+      "id": "il-integration-backup-webdav-001",
+      "status": "candidate",
+      "path": "ios/harness/fixtures/integration-lab/il-integration-backup-webdav-001",
+      "sha256": "ec3bd44e5dd02c305a5996e04f28966dc0c2e55cc1b6d1d10c4593dcfa7b5faf"
+    },
     {
       "id": "rl-reader-bookmark-search-runtime-risk-001",
       "status": "candidate",

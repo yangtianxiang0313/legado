@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<d:multistatus xmlns:d="DAV:">
+  <d:response>
+    <d:href>/dav/file%20name.zip</d:href>
+    <d:propstat>
+      <d:prop>
+        <d:displayname>server-display-name-is-ignored</d:displayname>
+        <d:resourcetype/>
+        <d:getcontenttype>application/zip</d:getcontenttype>
+        <d:getcontentlength>42</d:getcontentlength>
+        <d:getlastmodified>Wed, 21 Oct 2015 07:28:00 GMT</d:getlastmodified>
+      </d:prop>
+      <d:status>HTTP/1.1 200 OK</d:status>
+    </d:propstat>
+  </d:response>
+</d:multistatus>

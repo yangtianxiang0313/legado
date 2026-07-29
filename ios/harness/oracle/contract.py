@@ -242,13 +242,20 @@ def _validate_bindings(
     if scenario_aware:
         runner_inventory = [
             {
-                "path": name,
-                "sha256": file_digest(
-                    root / "ios/harness/oracle/android-runner" / name
-                ),
+                "path": path.relative_to(root).as_posix(),
+                "sha256": file_digest(path),
             }
-            for name in sorted(
-                ("LegadoOracleInstrumentedTest.kt", "orchestrator.py")
+            for path in sorted(
+                (
+                    root
+                    / "ios/harness/oracle/android-runner/"
+                    "LegadoOracleInstrumentedTest.kt",
+                    root
+                    / "ios/harness/oracle/android-runner/orchestrator.py",
+                    root
+                    / "ios/harness/integration-lab/integration_lab.py",
+                ),
+                key=lambda value: value.relative_to(root).as_posix(),
             )
         ]
         if (

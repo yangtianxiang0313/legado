@@ -398,6 +398,102 @@
       "symbol": "replaceRegex",
       "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeRule/replaceRegex",
       "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-WEBDAV-CHECK",
+      "fact_key": "integration.backup.webdav.authorization-check",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/lib/webdav/WebDav.kt",
+      "symbol": "check",
+      "symbol_id": "kotlin://io.legado.app.lib.webdav/WebDav/check",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-WEBDAV-EXISTS",
+      "fact_key": "integration.backup.webdav.exists",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/lib/webdav/WebDav.kt",
+      "symbol": "exists",
+      "symbol_id": "kotlin://io.legado.app.lib.webdav/WebDav/exists",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-WEBDAV-MAKE-DIR",
+      "fact_key": "integration.backup.webdav.make-directory",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/lib/webdav/WebDav.kt",
+      "symbol": "makeAsDir",
+      "symbol_id": "kotlin://io.legado.app.lib.webdav/WebDav/makeAsDir",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-WEBDAV-LIST-FILES",
+      "fact_key": "integration.backup.webdav.list-files",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/lib/webdav/WebDav.kt",
+      "symbol": "listFiles",
+      "symbol_id": "kotlin://io.legado.app.lib.webdav/WebDav/listFiles",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-WEBDAV-GET-FILE",
+      "fact_key": "integration.backup.webdav.get-file",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/lib/webdav/WebDav.kt",
+      "symbol": "getWebDavFile",
+      "symbol_id": "kotlin://io.legado.app.lib.webdav/WebDav/getWebDavFile",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-WEBDAV-DOWNLOAD",
+      "fact_key": "integration.backup.webdav.download",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/lib/webdav/WebDav.kt",
+      "symbol": "download",
+      "symbol_id": "kotlin://io.legado.app.lib.webdav/WebDav/download",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-WEBDAV-UPLOAD",
+      "fact_key": "integration.backup.webdav.upload",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/lib/webdav/WebDav.kt",
+      "symbol": "upload",
+      "symbol_id": "kotlin://io.legado.app.lib.webdav/WebDav/upload",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-WEBDAV-DELETE",
+      "fact_key": "integration.backup.webdav.delete",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/lib/webdav/WebDav.kt",
+      "symbol": "delete",
+      "symbol_id": "kotlin://io.legado.app.lib.webdav/WebDav/delete",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
     }
   ]
 }

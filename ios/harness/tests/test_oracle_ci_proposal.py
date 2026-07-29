@@ -132,6 +132,21 @@ class OracleCIProposalTests(unittest.TestCase):
         )
         self.assertEqual([scenario], report["fixture_ids"])
 
+    def test_integration_lab_fixture_is_bound_by_shared_oracle_manifest(self):
+        scenario = "il-integration-backup-webdav-001"
+
+        fixture, case, manifest_entry = ci_proposal._fixture_entry(
+            REPOSITORY_ROOT,
+            scenario,
+        )
+
+        self.assertEqual("integration_lab_scenario", case["kind"])
+        self.assertEqual(
+            f"ios/harness/fixtures/integration-lab/{scenario}",
+            fixture["path"],
+        )
+        self.assertEqual(fixture["path"], manifest_entry["path"])
+
     def test_prepare_canonicalizes_real_request_plan_and_preserves_raw_provenance(self):
         scenario = "sl-post-form-001"
         value = self._local_run(scenario)

@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "check-unauthorized-false",
+      "operation": "webdav_check",
+      "arguments": {"target": "/dav/auth-denied"}
+    },
+    {
+      "id": "check-non-auth-error-true",
+      "operation": "webdav_check",
+      "arguments": {"target": "/dav/method-not-allowed"}
+    },
+    {
+      "id": "exists-multistatus-true",
+      "operation": "webdav_exists",
+      "arguments": {"target": "/dav/existing"}
+    },
+    {
+      "id": "exists-not-found-false",
+      "operation": "webdav_exists",
+      "arguments": {"target": "/dav/missing"}
+    },
+    {
+      "id": "make-directory-after-missing-probe",
+      "operation": "webdav_make_directory",
+      "arguments": {"target": "/dav/create"}
+    },
+    {
+      "id": "list-multistatus-metadata",
+      "operation": "webdav_list",
+      "arguments": {"target": "/dav/list/"}
+    },
+    {
+      "id": "get-encoded-file-metadata",
+      "operation": "webdav_get_file",
+      "arguments": {"target": "/dav/file name.zip"}
+    },
+    {
+      "id": "download-byte-array",
+      "operation": "webdav_download",
+      "arguments": {"target": "/dav/download.bin"}
+    },
+    {
+      "id": "upload-byte-array",
+      "operation": "webdav_upload",
+      "arguments": {
+        "target": "/dav/upload.bin",
+        "media_type": "application/octet-stream",
+        "payload_utf8": "android-webdav-upload"
+      }
+    },
+    {
+      "id": "delete-success",
+      "operation": "webdav_delete",
+      "arguments": {"target": "/dav/delete.bin"}
+    },
+    {
+      "id": "delete-not-found-false",
+      "operation": "webdav_delete",
+      "arguments": {"target": "/dav/delete-missing.bin"}
+    },
+    {
+      "id": "object-not-found-exception",
+      "operation": "webdav_get_file",
+      "arguments": {"target": "/dav/object-not-found"}
+    }
+  ]
+}

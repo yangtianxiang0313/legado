@@ -526,13 +526,18 @@ def _control_bindings(root: Path, request: Any) -> Dict[str, Any]:
 def _repository_runner_digest(root: Path) -> str:
     runner_root = root / "ios/harness/oracle/android-runner"
     entries = [
-        {"path": path.name, "sha256": file_digest(_safe_regular(path))}
+        {
+            "path": path.relative_to(root).as_posix(),
+            "sha256": file_digest(_safe_regular(path)),
+        }
         for path in sorted(
             (
                 runner_root / "LegadoOracleInstrumentedTest.kt",
                 runner_root / "orchestrator.py",
+                root
+                / "ios/harness/integration-lab/integration_lab.py",
             ),
-            key=lambda value: value.name,
+            key=lambda value: value.relative_to(root).as_posix(),
         )
     ]
     return _sha256(_dump(entries))
@@ -561,11 +566,13 @@ def _fixture_entry(
     case = _object(_read_json(root / fixture_path / "case.json"), "fixture_case")
     if case.get("id") != scenario_id:
         raise CIProposalError("FIXTURE_CASE_DRIFT")
-    fixture_root = (
-        "runtime-lab"
-        if case.get("kind") == "android_runtime_scenario"
-        else "source-lab"
-    )
+    fixture_root = {
+        "android_runtime_scenario": "runtime-lab",
+        "integration_lab_scenario": "integration-lab",
+        "source_lab_scenario": "source-lab",
+    }.get(case.get("kind"))
+    if fixture_root is None:
+        raise CIProposalError("FIXTURE_KIND_INVALID")
     expected_path = f"ios/harness/fixtures/{fixture_root}/{scenario_id}"
     if fixture_path != expected_path:
         raise CIProposalError("FIXTURE_PATH_DRIFT")

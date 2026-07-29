@@ -9,6 +9,7 @@ import contextlib
 import hashlib
 import json
 import os
+import re
 import shutil
 import stat
 import subprocess
@@ -23,6 +24,7 @@ COMMANDS = ("doctor", "run")
 DEFAULT_SCENARIO_ID = "sl-html-basic-001"
 SCENARIO_ID = DEFAULT_SCENARIO_ID
 LOGICAL_ORIGIN = "http://sourcelab.test"
+INTEGRATION_LOGICAL_ORIGIN = "http://integrationlab.test"
 BASELINE_PATH = "ios/project/baseline.json"
 INVENTORY_PATH = "ios/project/android-intake/inventory-manifest.json"
 FIXTURE_MANIFEST_PATH = "ios/harness/fixtures/manifest.json"
@@ -644,6 +646,48 @@ SCENARIO_CONTRACTS = {
             "audio-save-refreshes-title-and-persists-book-fields",
         }),
     },
+    "il-integration-backup-webdav-001": {
+        "status": "candidate",
+        "fixture_kind": "integration_lab_scenario",
+        "result_type": "integration_runtime",
+        "stage_names": (
+            "fixture_setup",
+            "request_build",
+            "protocol_exchange",
+            "response_parse",
+            "result_mapping",
+        ),
+        "expected_cases": (
+            ("check-unauthorized-false", "webdav_check"),
+            ("check-non-auth-error-true", "webdav_check"),
+            ("exists-multistatus-true", "webdav_exists"),
+            ("exists-not-found-false", "webdav_exists"),
+            (
+                "make-directory-after-missing-probe",
+                "webdav_make_directory",
+            ),
+            ("list-multistatus-metadata", "webdav_list"),
+            ("get-encoded-file-metadata", "webdav_get_file"),
+            ("download-byte-array", "webdav_download"),
+            ("upload-byte-array", "webdav_upload"),
+            ("delete-success", "webdav_delete"),
+            ("delete-not-found-false", "webdav_delete"),
+            ("object-not-found-exception", "webdav_get_file"),
+        ),
+        "nominal_cases": frozenset({
+            "check-unauthorized-false",
+            "check-non-auth-error-true",
+            "exists-multistatus-true",
+            "exists-not-found-false",
+            "make-directory-after-missing-probe",
+            "list-multistatus-metadata",
+            "get-encoded-file-metadata",
+            "download-byte-array",
+            "upload-byte-array",
+            "delete-success",
+            "delete-not-found-false",
+        }),
+    },
 }
 ROUTE_OBSERVATION_SCENARIOS = {
     "sl-source-request-header-cookie-retry-layering-001": (
@@ -695,6 +739,21 @@ ROUTE_OBSERVATION_SCENARIOS = {
         "dynamic-sniff-target",
         "dynamic-cookie-bridge",
         "dynamic-user-agent",
+    ),
+    "il-integration-backup-webdav-001": (
+        "check-unauthorized",
+        "check-method-not-allowed",
+        "exists-present",
+        "exists-missing",
+        "create-probe",
+        "create-collection",
+        "list-multistatus",
+        "get-file-metadata",
+        "download-object",
+        "upload-object",
+        "delete-object",
+        "delete-missing",
+        "object-not-found",
     ),
 }
 ANDROID_PRODUCT_PATHS = (
@@ -800,16 +859,22 @@ def _runner_files() -> tuple[Path, ...]:
     return (
         directory / KOTLIN_RUNNER,
         directory / "orchestrator.py",
+        directory.parents[1] / "integration-lab" / "integration_lab.py",
     )
 
 
 def runner_digest() -> str:
     entries = [
         {
-            "path": path.name,
+            "path": path.relative_to(
+                Path(__file__).resolve().parents[4]
+            ).as_posix(),
             "sha256": _file_sha(path),
         }
-        for path in sorted(_runner_files(), key=lambda value: value.name)
+        for path in sorted(
+            _runner_files(),
+            key=lambda value: value.as_posix(),
+        )
     ]
     return _sha256(_canonical(entries))
 
@@ -910,11 +975,13 @@ def repository_bindings(
     fixture_kind = str(
         contract.get("fixture_kind", "source_lab_scenario")
     )
-    fixture_root_name = (
-        "runtime-lab"
-        if fixture_kind == "android_runtime_scenario"
-        else "source-lab"
-    )
+    fixture_root_name = {
+        "android_runtime_scenario": "runtime-lab",
+        "integration_lab_scenario": "integration-lab",
+        "source_lab_scenario": "source-lab",
+    }.get(fixture_kind)
+    if fixture_root_name is None:
+        raise AndroidOracleRunnerError("SCENARIO_KIND_DRIFT")
     expected_path = (
         f"ios/harness/fixtures/{fixture_root_name}/{scenario_id}"
     )
@@ -986,9 +1053,13 @@ def normalize_raw_artifact(
         contract.get("fixture_kind", "source_lab_scenario")
     )
     runtime_scenario = fixture_kind == "android_runtime_scenario"
+    integration_scenario = fixture_kind == "integration_lab_scenario"
+    structured_stimulus = runtime_scenario or integration_scenario
     expected_origin = (
         "android-runtime://local"
         if runtime_scenario
+        else INTEGRATION_LOGICAL_ORIGIN
+        if integration_scenario
         else LOGICAL_ORIGIN
     )
     if (
@@ -1018,7 +1089,7 @@ def normalize_raw_artifact(
     ]
     if actual_cases != list(expected_cases) or len(request_plan) != len(cases):
         raise AndroidOracleRunnerError("RAW_CASE_SELECTION_DRIFT")
-    source_lab_observation = None
+    route_observation = None
     observed_route_ids = ROUTE_OBSERVATION_SCENARIOS.get(scenario_id)
     if observed_route_ids is not None:
         route_counts = raw.get("source_lab_route_counts")
@@ -1039,7 +1110,7 @@ def normalize_raw_artifact(
                     for route_id in observed_route_ids
                 ),
             )
-        source_lab_observation = {
+        route_observation = {
             "route_request_counts": [
                 {
                     "route_id": route_id,
@@ -1048,6 +1119,70 @@ def normalize_raw_artifact(
                 for route_id in observed_route_ids
             ]
         }
+        if integration_scenario:
+            observations = raw.get("integration_lab_observations")
+            if (
+                not isinstance(observations, list)
+                or len(observations) != len(observed_route_ids)
+            ):
+                raise AndroidOracleRunnerError(
+                    "INTEGRATION_LAB_OBSERVATION_INVALID"
+                )
+            validated_observations = []
+            for index, observation in enumerate(observations):
+                expected_keys = {
+                    "route_id",
+                    "method",
+                    "logical_target",
+                    "depth",
+                    "authorization_scheme",
+                    "content_type",
+                    "body_sha256",
+                    "body_bytes",
+                }
+                if (
+                    not isinstance(observation, dict)
+                    or set(observation) != expected_keys
+                    or observation.get("route_id")
+                    != observed_route_ids[index]
+                    or observation.get("method")
+                    not in {"GET", "PUT", "DELETE", "PROPFIND", "MKCOL"}
+                    or not isinstance(
+                        observation.get("logical_target"),
+                        str,
+                    )
+                    or not observation["logical_target"].startswith(
+                        INTEGRATION_LOGICAL_ORIGIN + "/"
+                    )
+                    or observation.get("authorization_scheme") != "Basic"
+                    or (
+                        observation.get("depth") is not None
+                        and not isinstance(observation.get("depth"), str)
+                    )
+                    or (
+                        observation.get("content_type") is not None
+                        and not isinstance(
+                            observation.get("content_type"),
+                            str,
+                        )
+                    )
+                    or not isinstance(observation.get("body_sha256"), str)
+                    or re.fullmatch(
+                        r"[0-9a-f]{64}",
+                        observation["body_sha256"],
+                    )
+                    is None
+                    or not isinstance(observation.get("body_bytes"), int)
+                    or isinstance(observation.get("body_bytes"), bool)
+                    or observation["body_bytes"] < 0
+                    or observation["body_bytes"] > 1024 * 1024
+                ):
+                    raise AndroidOracleRunnerError(
+                        "INTEGRATION_LAB_OBSERVATION_INVALID",
+                        str(index),
+                    )
+                validated_observations.append(dict(observation))
+            route_observation["requests"] = validated_observations
     portable_cases = []
     issues = []
     android_exceptions = []
@@ -1081,7 +1216,7 @@ def normalize_raw_artifact(
         if entry["request"] != request_plan[index]:
             raise AndroidOracleRunnerError("RAW_REQUEST_BINDING_DRIFT")
         request = request_plan[index]
-        if runtime_scenario:
+        if structured_stimulus:
             if (
                 not isinstance(request, dict)
                 or set(request) != {"operation", "arguments"}
@@ -1089,7 +1224,7 @@ def normalize_raw_artifact(
                 or not isinstance(request.get("arguments"), dict)
             ):
                 raise AndroidOracleRunnerError(
-                    "RAW_RUNTIME_STIMULUS_INVALID"
+                    "RAW_STRUCTURED_STIMULUS_INVALID"
                 )
             if any(
                 isinstance(value, str)
@@ -1097,7 +1232,7 @@ def normalize_raw_artifact(
                 for value in _recursive_strings(request)
             ):
                 raise AndroidOracleRunnerError(
-                    "RAW_RUNTIME_NETWORK_STIMULUS_INVALID"
+                    "RAW_STRUCTURED_NETWORK_STIMULUS_INVALID"
                 )
             request = request_plan[index]
         else:
@@ -1261,6 +1396,8 @@ def normalize_raw_artifact(
             failure_stage = (
                 "room_query"
                 if runtime_scenario
+                else "response_parse"
+                if integration_scenario
                 else "field_evaluation"
             )
             stages.append(
@@ -1292,7 +1429,7 @@ def normalize_raw_artifact(
         "scenario_sha256": bindings["scenario_sha256"],
         "input_sha256": bindings["input_sha256"],
     }
-    if not runtime_scenario:
+    if fixture_kind == "source_lab_scenario":
         fixture_integrity["source_template_sha256"] = bindings[
             "source_template_sha256"
         ]
@@ -1324,10 +1461,14 @@ def normalize_raw_artifact(
         },
         "issues": issues,
     }
-    if source_lab_observation is not None:
+    if route_observation is not None:
         artifact["result"]["value"]["android_characterization"][
-            "source_lab_observation"
-        ] = source_lab_observation
+            (
+                "integration_lab_observation"
+                if integration_scenario
+                else "source_lab_observation"
+            )
+        ] = route_observation
     return artifact
 
 
@@ -1476,6 +1617,15 @@ def _source_lab_server(root: Path, scenario_id: str):
     return source_lab.running_server(root, scenario_id)
 
 
+def _integration_lab_server(root: Path, scenario_id: str):
+    integration_lab_directory = root / "ios/harness/integration-lab"
+    if str(integration_lab_directory) not in sys.path:
+        sys.path.insert(0, str(integration_lab_directory))
+    import integration_lab  # type: ignore
+
+    return integration_lab.running_server(root, scenario_id)
+
+
 def _render_inputs(root: Path, scenario_id: str) -> Dict[str, Any]:
     manifest = _read_json(root / FIXTURE_MANIFEST_PATH)
     matches = [
@@ -1572,20 +1722,24 @@ def run_characterization(
         )
         installed_packages.append(TEST_PACKAGE)
 
-        runtime_scenario = (
-            bindings["fixture_kind"] == "android_runtime_scenario"
-        )
-        server_context = (
-            contextlib.nullcontext(None)
-            if runtime_scenario
-            else _source_lab_server(root, scenario_id)
-        )
+        fixture_kind = bindings["fixture_kind"]
+        runtime_scenario = fixture_kind == "android_runtime_scenario"
+        integration_scenario = fixture_kind == "integration_lab_scenario"
+        if runtime_scenario:
+            server_context = contextlib.nullcontext(None)
+        elif integration_scenario:
+            server_context = _integration_lab_server(root, scenario_id)
+        else:
+            server_context = _source_lab_server(root, scenario_id)
         source_lab_route_counts: Dict[str, int] = {}
+        integration_lab_observations: list[Dict[str, Any]] = []
         with server_context as server:
             source_base64: Optional[str] = None
             logical_origin = (
                 "android-runtime://local"
                 if runtime_scenario
+                else INTEGRATION_LOGICAL_ORIGIN
+                if integration_scenario
                 else LOGICAL_ORIGIN
             )
             if server is not None:
@@ -1603,14 +1757,15 @@ def run_characterization(
                     timeout=30,
                 )
                 device_origin = f"http://127.0.0.1:{reverse_port}"
-                source = _render_source(
-                    root,
-                    device_origin,
-                    scenario_id,
-                )
-                source_base64 = base64.b64encode(
-                    _canonical(source)
-                ).decode("ascii")
+                if not integration_scenario:
+                    source = _render_source(
+                        root,
+                        device_origin,
+                        scenario_id,
+                    )
+                    source_base64 = base64.b64encode(
+                        _canonical(source)
+                    ).decode("ascii")
             inputs = _render_inputs(root, scenario_id)
             input_base64 = base64.b64encode(
                 _canonical(inputs)
@@ -1631,6 +1786,10 @@ def run_characterization(
             if source_base64 is not None:
                 instrumentation_arguments.extend(
                     ["-e", "sourceBase64", source_base64]
+                )
+            if integration_scenario:
+                instrumentation_arguments.extend(
+                    ["-e", "deviceOrigin", device_origin]
                 )
             instrumentation_arguments.extend(
                 [
@@ -1676,6 +1835,11 @@ def run_characterization(
                 source_lab_route_counts = dict(
                     server.route_request_counts
                 )
+                if integration_scenario:
+                    integration_lab_observations = [
+                        dict(value)
+                        for value in server.request_observations
+                    ]
         try:
             raw = json.loads(raw_bytes)
         except (UnicodeDecodeError, json.JSONDecodeError) as error:
@@ -1686,6 +1850,10 @@ def run_characterization(
             raise AndroidOracleRunnerError("RAW_ARTIFACT_SHAPE_INVALID")
         if scenario_id in ROUTE_OBSERVATION_SCENARIOS:
             raw["source_lab_route_counts"] = source_lab_route_counts
+        if integration_scenario:
+            raw["integration_lab_observations"] = (
+                integration_lab_observations
+            )
         artifact = normalize_raw_artifact(
             raw,
             bindings,

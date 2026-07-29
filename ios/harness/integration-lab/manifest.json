@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "logical_origin": "http://integrationlab.test",
+  "control_sha256": "f318c1503ebbe5c14f5400b0e51d888ab634291a9ed997decf229f053f32ef2d",
+  "scenarios": [
+    {
+      "id": "il-integration-backup-webdav-001",
+      "status": "candidate",
+      "path": "ios/harness/fixtures/integration-lab/il-integration-backup-webdav-001",
+      "sha256": "e2a87b102936e5f873dd547be55ad4057f1628a9bfda3eda4bde88d5bf6ed215"
+    }
+  ]
+}

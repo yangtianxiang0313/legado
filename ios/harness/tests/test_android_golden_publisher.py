@@ -305,6 +305,28 @@ class AndroidGoldenPublisherTests(unittest.TestCase):
             report["status"],
         )
 
+    def test_prepare_accepts_integration_fixture_from_frozen_manifest(self):
+        integration_path = (
+            "ios/harness/fixtures/integration-lab/"
+            f"{self.scenario}"
+        )
+        self.proposal["fixtures"][0]["fixture_path"] = integration_path
+        self._refresh_proposal()
+        manifest = (
+            self.publisher_root
+            / "ios/harness/fixtures/manifest.json"
+        )
+        value = json.loads(manifest.read_bytes())
+        value["fixtures"][0]["path"] = integration_path
+        manifest.write_bytes(ci_proposal._dump(value))
+
+        report = self._prepare(self.root / "integration-fixture")
+
+        self.assertEqual(
+            "staged_for_external_publisher",
+            report["status"],
+        )
+
     def test_prepare_rejects_authorization_and_fixture_drift(self):
         cases = (
             {

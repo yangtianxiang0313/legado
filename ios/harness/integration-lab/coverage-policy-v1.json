@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "roles": ["nominal", "boundary", "malformed", "denied"],
+  "behaviors": [
+    {
+      "id": "webdav.authorization-check",
+      "status": "active",
+      "required_roles": ["boundary", "denied"],
+      "min_cases_per_role": 1
+    },
+    {
+      "id": "webdav.resource-existence",
+      "status": "active",
+      "required_roles": ["nominal", "boundary"],
+      "min_cases_per_role": 1
+    },
+    {
+      "id": "webdav.collection-create",
+      "status": "active",
+      "required_roles": ["nominal"],
+      "min_cases_per_role": 1
+    },
+    {
+      "id": "webdav.multistatus-metadata",
+      "status": "active",
+      "required_roles": ["nominal", "boundary"],
+      "min_cases_per_role": 1
+    },
+    {
+      "id": "webdav.object-transfer",
+      "status": "active",
+      "required_roles": ["nominal"],
+      "min_cases_per_role": 1
+    },
+    {
+      "id": "webdav.delete",
+      "status": "active",
+      "required_roles": ["nominal", "boundary"],
+      "min_cases_per_role": 1
+    },
+    {
+      "id": "webdav.error-mapping",
+      "status": "active",
+      "required_roles": ["denied"],
+      "min_cases_per_role": 1
+    }
+  ]
+}

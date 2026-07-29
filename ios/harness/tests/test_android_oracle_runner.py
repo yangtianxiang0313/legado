@@ -793,6 +793,83 @@ def content_cache_queue_completion_raw_artifact():
     }
 
 
+def webdav_integration_raw_artifact():
+    scenario = "il-integration-backup-webdav-001"
+    contract = runner.SCENARIO_CONTRACTS[scenario]
+    requests = []
+    cases = []
+    for index, (case_id, operation) in enumerate(
+        contract["expected_cases"]
+    ):
+        arguments = {"target": f"/dav/test-{index}"}
+        if operation == "webdav_upload":
+            arguments.update(
+                {
+                    "media_type": "application/octet-stream",
+                    "payload_utf8": "payload",
+                }
+            )
+        request = {
+            "operation": operation,
+            "arguments": arguments,
+        }
+        requests.append(request)
+        cases.append(
+            {
+                "id": case_id,
+                "operation": operation,
+                "request": request,
+                "result": (
+                    None
+                    if case_id == "object-not-found-exception"
+                    else {"case_index": index}
+                ),
+                "issue": (
+                    {
+                        "code": "android_exception",
+                        "exception_type": (
+                            "io.legado.app.lib.webdav."
+                            "ObjectNotFoundException"
+                        ),
+                    }
+                    if case_id == "object-not-found-exception"
+                    else None
+                ),
+            }
+        )
+    return {
+        "schema_version": 1,
+        "scenario_id": scenario,
+        "device_origin": "http://127.0.0.1:49152",
+        "logical_origin": runner.INTEGRATION_LOGICAL_ORIGIN,
+        "request_plan": requests,
+        "cases": cases,
+        "source_lab_route_counts": {
+            route_id: index + 1
+            for index, route_id in enumerate(
+                runner.ROUTE_OBSERVATION_SCENARIOS[scenario]
+            )
+        },
+        "integration_lab_observations": [
+            {
+                "route_id": route_id,
+                "method": "PROPFIND",
+                "logical_target": (
+                    f"{runner.INTEGRATION_LOGICAL_ORIGIN}/observed/{index}"
+                ),
+                "depth": "0",
+                "authorization_scheme": "Basic",
+                "content_type": "application/xml",
+                "body_sha256": f"{index:064x}",
+                "body_bytes": index,
+            }
+            for index, route_id in enumerate(
+                runner.ROUTE_OBSERVATION_SCENARIOS[scenario]
+            )
+        ],
+    }
+
+
 class AndroidOracleRunnerTests(unittest.TestCase):
     def test_doctor_binds_frozen_android_tree_and_exposes_no_authority(self):
         report = runner.doctor(ROOT)
@@ -944,6 +1021,14 @@ class AndroidOracleRunnerTests(unittest.TestCase):
             "rl-reader-bookmark-search-runtime-risk-001",
             bookmark_runtime["scenario_id"],
         )
+        webdav = runner.doctor(
+            ROOT,
+            "il-integration-backup-webdav-001",
+        )
+        self.assertEqual(
+            "il-integration-backup-webdav-001",
+            webdav["scenario_id"],
+        )
         with mock.patch.object(
             runner,
             "fixture_digest",
@@ -1049,6 +1134,54 @@ class AndroidOracleRunnerTests(unittest.TestCase):
                 for value in artifact["request_plan"]
             )
         )
+
+    def test_integration_fixture_uses_protocol_stimuli_and_redacted_observation(
+        self,
+    ):
+        scenario = "il-integration-backup-webdav-001"
+        integration_bindings = {
+            **bindings(),
+            "fixture_kind": "integration_lab_scenario",
+            "fixture_path": (
+                "ios/harness/fixtures/integration-lab/"
+                f"{scenario}"
+            ),
+        }
+        integration_bindings.pop("source_template_sha256")
+        artifact = runner.normalize_raw_artifact(
+            webdav_integration_raw_artifact(),
+            integration_bindings,
+            scenario,
+        )
+        self.assertEqual("integration_runtime", artifact["result"]["type"])
+        self.assertEqual(11 * 5 + 4, len(artifact["stages"]))
+        fixture = artifact["result"]["value"]["fixture_integrity"]
+        self.assertEqual("integration_lab_scenario", fixture["fixture_kind"])
+        self.assertNotIn("source_template_sha256", fixture)
+        characterization = artifact["result"]["value"][
+            "android_characterization"
+        ]
+        self.assertIn("integration_lab_observation", characterization)
+        self.assertNotIn("source_lab_observation", characterization)
+        self.assertEqual(
+            13,
+            len(
+                characterization["integration_lab_observation"][
+                    "requests"
+                ]
+            ),
+        )
+        self.assertEqual(
+            "response_parse",
+            next(
+                stage["stage"]
+                for stage in artifact["stages"]
+                if stage["outcome"] == "failed"
+            ),
+        )
+        rendered = json.dumps(artifact, ensure_ascii=False)
+        self.assertNotIn("127.0.0.1", rendered)
+        self.assertNotIn("oracle-password", rendered)
 
     def test_read_record_runtime_fixture_uses_relational_reader_projection(self):
         scenario = "rl-reader-history-read-record-runtime-risk-001"

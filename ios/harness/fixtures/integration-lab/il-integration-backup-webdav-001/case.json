@@ -1,0 +1,302 @@
+{
+  "schema_version": 1,
+  "kind": "integration_lab_scenario",
+  "id": "il-integration-backup-webdav-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "webdav_protocol",
+  "capabilities": [
+    "CAP-INTEGRATION-WEBDAV",
+    "CAP-CONFORMANCE"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "input": "input.json",
+  "transport": {
+    "mode": "fixture_and_loopback",
+    "external_network": "deny",
+    "responses": [
+      {
+        "id": "check-unauthorized",
+        "match": {"method": "PROPFIND", "path": "/dav/auth-denied"},
+        "respond": {
+          "status": 401,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8",
+            "www-authenticate": "Basic realm=\"integration-lab\""
+          },
+          "body_file": "responses/unauthorized.txt"
+        }
+      },
+      {
+        "id": "check-method-not-allowed",
+        "match": {
+          "method": "PROPFIND",
+          "path": "/dav/method-not-allowed"
+        },
+        "respond": {
+          "status": 405,
+          "headers": {"content-type": "text/plain; charset=utf-8"},
+          "body_file": "responses/method-not-allowed.txt"
+        }
+      },
+      {
+        "id": "exists-present",
+        "match": {"method": "PROPFIND", "path": "/dav/existing"},
+        "respond": {
+          "status": 207,
+          "headers": {"content-type": "application/xml; charset=utf-8"},
+          "body_file": "responses/existing.xml"
+        }
+      },
+      {
+        "id": "exists-missing",
+        "match": {"method": "PROPFIND", "path": "/dav/missing"},
+        "respond": {
+          "status": 404,
+          "headers": {"content-type": "text/plain; charset=utf-8"},
+          "body_file": "responses/missing.txt"
+        }
+      },
+      {
+        "id": "create-probe",
+        "match": {"method": "PROPFIND", "path": "/dav/create"},
+        "respond": {
+          "status": 404,
+          "headers": {"content-type": "text/plain; charset=utf-8"},
+          "body_file": "responses/missing.txt"
+        }
+      },
+      {
+        "id": "create-collection",
+        "match": {"method": "MKCOL", "path": "/dav/create"},
+        "respond": {
+          "status": 201,
+          "headers": {"content-type": "text/plain; charset=utf-8"},
+          "body_file": "responses/empty.txt"
+        }
+      },
+      {
+        "id": "list-multistatus",
+        "match": {"method": "PROPFIND", "path": "/dav/list/"},
+        "respond": {
+          "status": 207,
+          "headers": {"content-type": "application/xml; charset=utf-8"},
+          "body_file": "responses/list-multistatus.xml"
+        }
+      },
+      {
+        "id": "get-file-metadata",
+        "match": {
+          "method": "PROPFIND",
+          "path": "/dav/file%20name.zip"
+        },
+        "respond": {
+          "status": 207,
+          "headers": {"content-type": "application/xml; charset=utf-8"},
+          "body_file": "responses/file-metadata.xml"
+        }
+      },
+      {
+        "id": "download-object",
+        "match": {"method": "GET", "path": "/dav/download.bin"},
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "application/octet-stream",
+            "etag": "\"download-v1\"",
+            "last-modified": "Wed, 21 Oct 2015 07:28:00 GMT"
+          },
+          "body_file": "responses/download.bin"
+        }
+      },
+      {
+        "id": "upload-object",
+        "match": {"method": "PUT", "path": "/dav/upload.bin"},
+        "respond": {
+          "status": 201,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8",
+            "etag": "\"upload-v1\""
+          },
+          "body_file": "responses/empty.txt"
+        }
+      },
+      {
+        "id": "delete-object",
+        "match": {"method": "DELETE", "path": "/dav/delete.bin"},
+        "respond": {
+          "status": 204,
+          "headers": {"content-type": "text/plain; charset=utf-8"},
+          "body_file": "responses/empty.txt"
+        }
+      },
+      {
+        "id": "delete-missing",
+        "match": {"method": "DELETE", "path": "/dav/delete-missing.bin"},
+        "respond": {
+          "status": 404,
+          "headers": {"content-type": "text/plain; charset=utf-8"},
+          "body_file": "responses/missing.txt"
+        }
+      },
+      {
+        "id": "object-not-found",
+        "match": {"method": "PROPFIND", "path": "/dav/object-not-found"},
+        "respond": {
+          "status": 404,
+          "headers": {"content-type": "text/html; charset=utf-8"},
+          "body_file": "responses/object-not-found.html"
+        }
+      }
+    ]
+  },
+  "coverage": [
+    {
+      "behavior": "webdav.authorization-check",
+      "cases": [
+        {
+          "id": "check-unauthorized-false",
+          "role": "denied",
+          "android_fact_refs": ["AF-WEBDAV-CHECK"],
+          "branch_refs": ["WebDav.check returns false only for HTTP 401"]
+        },
+        {
+          "id": "check-non-auth-error-true",
+          "role": "boundary",
+          "android_fact_refs": ["AF-WEBDAV-CHECK"],
+          "branch_refs": [
+            "WebDav.check treats every received non-401 status as accepted"
+          ]
+        }
+      ]
+    },
+    {
+      "behavior": "webdav.resource-existence",
+      "cases": [
+        {
+          "id": "exists-multistatus-true",
+          "role": "nominal",
+          "android_fact_refs": ["AF-WEBDAV-EXISTS"],
+          "branch_refs": ["WebDav.exists returns Response.isSuccessful"]
+        },
+        {
+          "id": "exists-not-found-false",
+          "role": "boundary",
+          "android_fact_refs": ["AF-WEBDAV-EXISTS"],
+          "branch_refs": ["WebDav.exists maps unsuccessful response to false"]
+        }
+      ]
+    },
+    {
+      "behavior": "webdav.collection-create",
+      "cases": [
+        {
+          "id": "make-directory-after-missing-probe",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBDAV-EXISTS",
+            "AF-WEBDAV-MAKE-DIR"
+          ],
+          "branch_refs": [
+            "WebDav.makeAsDir probes existence before sending MKCOL"
+          ]
+        }
+      ]
+    },
+    {
+      "behavior": "webdav.multistatus-metadata",
+      "cases": [
+        {
+          "id": "list-multistatus-metadata",
+          "role": "nominal",
+          "android_fact_refs": ["AF-WEBDAV-LIST-FILES"],
+          "branch_refs": [
+            "WebDav.listFiles parses DAV response nodes and filters by path equality"
+          ]
+        },
+        {
+          "id": "get-encoded-file-metadata",
+          "role": "boundary",
+          "android_fact_refs": ["AF-WEBDAV-GET-FILE"],
+          "branch_refs": [
+            "WebDav encodes URL path spaces and URL-decodes DAV href display names"
+          ]
+        }
+      ]
+    },
+    {
+      "behavior": "webdav.object-transfer",
+      "cases": [
+        {
+          "id": "download-byte-array",
+          "role": "nominal",
+          "android_fact_refs": ["AF-WEBDAV-DOWNLOAD"],
+          "branch_refs": ["WebDav.download reads the complete successful body"]
+        },
+        {
+          "id": "upload-byte-array",
+          "role": "nominal",
+          "android_fact_refs": ["AF-WEBDAV-UPLOAD"],
+          "branch_refs": [
+            "WebDav.upload(ByteArray) sends a PUT RequestBody with the supplied media type"
+          ]
+        }
+      ]
+    },
+    {
+      "behavior": "webdav.delete",
+      "cases": [
+        {
+          "id": "delete-success",
+          "role": "nominal",
+          "android_fact_refs": ["AF-WEBDAV-DELETE"],
+          "branch_refs": ["WebDav.delete returns true when checkResult succeeds"]
+        },
+        {
+          "id": "delete-not-found-false",
+          "role": "boundary",
+          "android_fact_refs": ["AF-WEBDAV-DELETE"],
+          "branch_refs": [
+            "WebDav.delete catches checkResult failure and returns false"
+          ]
+        }
+      ]
+    },
+    {
+      "behavior": "webdav.error-mapping",
+      "cases": [
+        {
+          "id": "object-not-found-exception",
+          "role": "denied",
+          "android_fact_refs": ["AF-WEBDAV-GET-FILE"],
+          "branch_refs": [
+            "WebDav.checkResult maps an s:exception ObjectNotFound body"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "1970-01-01T00:00:00Z",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 0,
+    "network_allowed": false,
+    "logical_origin": "http://integrationlab.test"
+  },
+  "limits": {
+    "timeout_ms": 5000,
+    "max_response_bytes": 1048576,
+    "max_request_body_bytes": 1048576,
+    "max_requests": 64,
+    "max_concurrency": 4
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/lib/webdav/WebDav.kt",
+      "app/src/main/java/io/legado/app/lib/webdav/WebDavFile.kt"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-INTEGRATION-BACKUP-WEBDAV-001"
+  }
+}

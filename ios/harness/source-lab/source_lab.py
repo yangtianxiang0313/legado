@@ -27,9 +27,14 @@ LOGICAL_ORIGIN = "http://sourcelab.test"
 SOURCE_PLACEHOLDER = "${SOURCE_LAB_ORIGIN}"
 SOURCE_FIXTURE_ROOT = Path("ios/harness/fixtures/source-lab")
 RUNTIME_FIXTURE_ROOT = Path("ios/harness/fixtures/runtime-lab")
-FIXTURE_ROOTS = (SOURCE_FIXTURE_ROOT, RUNTIME_FIXTURE_ROOT)
+INTEGRATION_FIXTURE_ROOT = Path("ios/harness/fixtures/integration-lab")
+FIXTURE_ROOTS = (
+    SOURCE_FIXTURE_ROOT,
+    RUNTIME_FIXTURE_ROOT,
+    INTEGRATION_FIXTURE_ROOT,
+)
 CONTROL_ROOT = Path("ios/harness/source-lab")
-SCENARIO_ID = re.compile(r"^(?:sl|rl)-[a-z0-9-]+-[0-9]{3}$")
+SCENARIO_ID = re.compile(r"^(?:sl|rl|il)-[a-z0-9-]+-[0-9]{3}$")
 FIXED_DATE = "Thu, 01 Jan 1970 00:00:00 GMT"
 ALLOWED_RESPONSE_HEADERS = {"content-type", "cache-control", "content-encoding", "location", "set-cookie"}
 class SourceLabError(RuntimeError):
@@ -320,6 +325,15 @@ def validate_coverage(
 def validate_scenario(root: Path, directory: Path, case: Dict[str, Any]) -> List[str]:
     if case.get("kind") == "android_runtime_scenario":
         return validate_runtime_scenario(root, directory, case)
+    if case.get("kind") == "integration_lab_scenario":
+        integration_directory = (
+            root / "ios/harness/integration-lab"
+        )
+        if str(integration_directory) not in sys.path:
+            sys.path.insert(0, str(integration_directory))
+        import integration_lab  # type: ignore
+
+        return integration_lab.validate_scenario(root, directory, case)
     errors: List[str] = []
     scenario_id = case.get("id")
     required_top = {
@@ -564,6 +578,8 @@ def doctor(root: Path) -> List[str]:
                 errors.append(f"case 必须是 object：{directory}")
                 continue
             errors.extend(validate_scenario(root, directory, case))
+            if case.get("kind") == "integration_lab_scenario":
+                continue
             for entry in case.get("coverage", []):
                 behavior = entry.get("behavior") if isinstance(entry, dict) else None
                 if behavior not in known_behaviors:

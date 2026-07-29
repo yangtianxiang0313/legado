@@ -18,6 +18,9 @@ import io.legado.app.help.http.CookieManager
 import io.legado.app.help.http.CookieStore
 import io.legado.app.help.http.StrResponse
 import io.legado.app.help.http.newCallResponse
+import io.legado.app.lib.webdav.Authorization
+import io.legado.app.lib.webdav.WebDav
+import io.legado.app.lib.webdav.WebDavFile
 import io.legado.app.model.CacheBook
 import io.legado.app.model.AudioPlay
 import io.legado.app.model.ReadBook
@@ -66,6 +69,7 @@ class LegadoOracleInstrumentedTest {
     private val logicalOrigin = requiredArgument("logicalOrigin").trimEnd('/')
     private val scenarioId = requiredArgument("scenarioId")
     private val isAndroidRuntimeScenario = scenarioId.startsWith("rl-")
+    private val isIntegrationLabScenario = scenarioId.startsWith("il-")
     private val input = JSONObject(
         String(
             Base64.decode(
@@ -86,10 +90,11 @@ class LegadoOracleInstrumentedTest {
         GSON.fromJson(sourceJson, BookSource::class.java)
     }
     private val deviceOrigin by lazy {
-        if (isAndroidRuntimeScenario) {
-            "android-runtime://local"
-        } else {
-            source.bookSourceUrl.trimEnd('/')
+        when {
+            isAndroidRuntimeScenario -> "android-runtime://local"
+            isIntegrationLabScenario ->
+                requiredArgument("deviceOrigin").trimEnd('/')
+            else -> source.bookSourceUrl.trimEnd('/')
         }
     }
     private val cases = JSONArray()
@@ -97,7 +102,7 @@ class LegadoOracleInstrumentedTest {
 
     @Test
     fun runCharacterization() = runBlocking {
-        if (!isAndroidRuntimeScenario) {
+        if (!isAndroidRuntimeScenario && !isIntegrationLabScenario) {
             require(deviceOrigin.startsWith("http://127.0.0.1:")) {
                 "Oracle source must use the run-scoped device loopback origin"
             }
@@ -105,8 +110,15 @@ class LegadoOracleInstrumentedTest {
                 scenarioId == "sl-source-request-header-cookie-retry-layering-001" ||
                     scenarioId == "sl-source-cookie-persistent-session-merge-runtime-001"
         }
+        if (isIntegrationLabScenario) {
+            require(deviceOrigin.startsWith("http://127.0.0.1:")) {
+                "Integration Oracle must use the run-scoped loopback origin"
+            }
+        }
 
         when (scenarioId) {
+            "il-integration-backup-webdav-001" ->
+                runWebDavIntegrationCases()
             "rl-reader-bookmark-search-runtime-risk-001" ->
                 runBookmarkRuntimeCases()
             "rl-reader-history-read-record-runtime-risk-001" ->
@@ -244,6 +256,103 @@ class LegadoOracleInstrumentedTest {
         val target = InstrumentationRegistry.getInstrumentation().targetContext
         File(target.filesDir, OUTPUT_FILE).writeText(raw.toString(), Charsets.UTF_8)
     }
+
+    private suspend fun runWebDavIntegrationCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            val operation = value.getString("operation")
+            require(
+                operation in setOf(
+                    "webdav_check",
+                    "webdav_exists",
+                    "webdav_make_directory",
+                    "webdav_list",
+                    "webdav_get_file",
+                    "webdav_download",
+                    "webdav_upload",
+                    "webdav_delete"
+                )
+            ) {
+                "Unsupported WebDAV integration operation: $operation"
+            }
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", operation)
+                .put("arguments", JSONObject(arguments.toString()))
+            runCase(
+                value.getString("id"),
+                operation,
+                stimulus
+            ) {
+                webDavProjection(operation, arguments)
+            }
+        }
+    }
+
+    private suspend fun webDavProjection(
+        operation: String,
+        arguments: JSONObject
+    ): JSONObject {
+        val client = WebDav(
+            "$deviceOrigin${arguments.getString("target")}",
+            Authorization("oracle-user", "oracle-password")
+        )
+        return when (operation) {
+            "webdav_check" -> JSONObject()
+                .put("accepted", client.check())
+            "webdav_exists" -> JSONObject()
+                .put("exists", client.exists())
+            "webdav_make_directory" -> JSONObject()
+                .put("created", client.makeAsDir())
+            "webdav_list" -> JSONObject().put(
+                "files",
+                JSONArray().apply {
+                    client.listFiles().forEach { put(webDavFileProjection(it)) }
+                }
+            )
+            "webdav_get_file" -> JSONObject().put(
+                "file",
+                client.getWebDavFile()?.let(::webDavFileProjection)
+                    ?: JSONObject.NULL
+            )
+            "webdav_download" -> {
+                val bytes = client.download()
+                JSONObject()
+                    .put(
+                        "body_base64",
+                        Base64.encodeToString(bytes, Base64.NO_WRAP)
+                    )
+                    .put("body_bytes", bytes.size)
+            }
+            "webdav_upload" -> {
+                val bytes = arguments
+                    .getString("payload_utf8")
+                    .toByteArray(Charsets.UTF_8)
+                client.upload(
+                    bytes,
+                    arguments.getString("media_type")
+                )
+                JSONObject()
+                    .put("completed", true)
+                    .put("body_bytes", bytes.size)
+            }
+            "webdav_delete" -> JSONObject()
+                .put("deleted", client.delete())
+            else -> error("Unsupported WebDAV operation: $operation")
+        }
+    }
+
+    private fun webDavFileProjection(value: WebDavFile): JSONObject =
+        JSONObject()
+            .put("path", logical(value.path))
+            .put("display_name", value.displayName)
+            .put("url_name", value.urlName)
+            .put("size", value.size)
+            .put("content_type", value.contentType)
+            .put("resource_type", value.resourceType)
+            .put("last_modify", value.lastModify)
+            .put("is_directory", value.isDir)
 
     private suspend fun runBookmarkRuntimeCases() {
         val values = input.getJSONArray("cases")

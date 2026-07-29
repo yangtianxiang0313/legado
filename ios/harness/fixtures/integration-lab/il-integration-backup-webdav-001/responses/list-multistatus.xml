@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<d:multistatus xmlns:d="DAV:">
+  <d:response>
+    <d:href>/dav/list/</d:href>
+    <d:propstat>
+      <d:prop>
+        <d:displayname>list</d:displayname>
+        <d:resourcetype><d:collection/></d:resourcetype>
+        <d:getcontenttype>httpd/unix-directory</d:getcontenttype>
+        <d:getcontentlength>0</d:getcontentlength>
+        <d:getlastmodified>Wed, 21 Oct 2015 07:28:00 GMT</d:getlastmodified>
+      </d:prop>
+      <d:status>HTTP/1.1 200 OK</d:status>
+    </d:propstat>
+  </d:response>
+  <d:response>
+    <d:href>/dav/list/backup%20one.zip</d:href>
+    <d:propstat>
+      <d:prop>
+        <d:displayname>ignored-by-android</d:displayname>
+        <d:resourcetype/>
+        <d:getcontenttype>application/zip</d:getcontenttype>
+        <d:getcontentlength>12</d:getcontentlength>
+        <d:getlastmodified>Wed, 21 Oct 2015 07:28:00 GMT</d:getlastmodified>
+      </d:prop>
+      <d:status>HTTP/1.1 200 OK</d:status>
+    </d:propstat>
+  </d:response>
+  <d:response>
+    <d:href>/dav/list/folder/</d:href>
+    <d:propstat>
+      <d:prop>
+        <d:displayname>folder</d:displayname>
+        <d:resourcetype><d:collection/></d:resourcetype>
+        <d:getcontenttype>httpd/unix-directory</d:getcontenttype>
+        <d:getcontentlength>not-a-number</d:getcontentlength>
+        <d:getlastmodified>malformed-date</d:getlastmodified>
+      </d:prop>
+      <d:status>HTTP/1.1 200 OK</d:status>
+    </d:propstat>
+  </d:response>
+</d:multistatus>

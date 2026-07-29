@@ -9,24 +9,9 @@
       "sha256": "67524464e9c2f0b5ce9bf6420532cb0ca382f698f9a16229ce8d1a7af9b10f7f"
     },
     {
-      "id": "source-format-minimal-001",
-      "path": "ios/harness/fixtures/source-format/source-format-minimal-001",
-      "sha256": "8a1171771cc4d89d211d234138dd3f02a25984ccfd9d6fab6a6394115dc7b063"
-    },
-    {
-      "id": "source-format-null-missing-empty-001",
-      "path": "ios/harness/fixtures/source-format/source-format-null-missing-empty-001",
-      "sha256": "cf60a4db3d8fb57c77e5e6ee5dfd9437eec22d2a8d1aa37f7b3592b3cec4c6e8"
-    },
-    {
-      "id": "source-format-rule-groups-001",
-      "path": "ios/harness/fixtures/source-format/source-format-rule-groups-001",
-      "sha256": "f4b8107a1f12a7d52da8f034637534a9ff10c313cc40e3bb6e0dc4d703a4d697"
-    },
-    {
-      "id": "source-format-unknown-fields-001",
-      "path": "ios/harness/fixtures/source-format/source-format-unknown-fields-001",
-      "sha256": "02b5e5b037f450e192077acd350495f82cce24e72bb2a60302129a5c48b48b07"
+      "id": "il-integration-backup-webdav-001",
+      "path": "ios/harness/fixtures/integration-lab/il-integration-backup-webdav-001",
+      "sha256": "db383a54ed3729b9255b272989c2595749c5b9340e98c20e213d55ce09478f18"
     },
     {
       "id": "rl-reader-bookmark-search-runtime-risk-001",
@@ -132,6 +117,26 @@
       "id": "sl-source-transport-retry-redirect-runtime-001",
       "path": "ios/harness/fixtures/source-lab/sl-source-transport-retry-redirect-runtime-001",
       "sha256": "b8d6f8e5c03b732268b7cca918874d540616ee71c81b85a93f62322f00586626"
+    },
+    {
+      "id": "source-format-minimal-001",
+      "path": "ios/harness/fixtures/source-format/source-format-minimal-001",
+      "sha256": "8a1171771cc4d89d211d234138dd3f02a25984ccfd9d6fab6a6394115dc7b063"
+    },
+    {
+      "id": "source-format-null-missing-empty-001",
+      "path": "ios/harness/fixtures/source-format/source-format-null-missing-empty-001",
+      "sha256": "cf60a4db3d8fb57c77e5e6ee5dfd9437eec22d2a8d1aa37f7b3592b3cec4c6e8"
+    },
+    {
+      "id": "source-format-rule-groups-001",
+      "path": "ios/harness/fixtures/source-format/source-format-rule-groups-001",
+      "sha256": "f4b8107a1f12a7d52da8f034637534a9ff10c313cc40e3bb6e0dc4d703a4d697"
+    },
+    {
+      "id": "source-format-unknown-fields-001",
+      "path": "ios/harness/fixtures/source-format/source-format-unknown-fields-001",
+      "sha256": "02b5e5b037f450e192077acd350495f82cce24e72bb2a60302129a5c48b48b07"
     }
   ]
 }

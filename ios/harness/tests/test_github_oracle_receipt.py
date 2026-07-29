@@ -311,6 +311,45 @@ class ReceiptTests(unittest.TestCase):
             ):
                 self.assertEqual(fixture, settler._fixture_path("HEAD"))
 
+    def test_authority_fixture_path_accepts_integration_manifest_binding(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            gh = root / "fake-gh"
+            gh.write_text("#!/bin/sh\nexit 1\n")
+            os.chmod(gh, 0o700)
+            scenario = "il-integration-backup-webdav-001"
+            settler = GitHubOracleReceiptSettler(
+                root,
+                repository="owner/repo",
+                scenario=scenario,
+                source_digest="a" * 40,
+                run_id=123,
+                attempt=2,
+                runner=lambda argv, cwd: None,
+                gh=gh,
+            )
+            fixture = (
+                "ios/harness/fixtures/integration-lab/"
+                f"{scenario}"
+            )
+            manifest = json.dumps(
+                {
+                    "fixtures": [
+                        {
+                            "id": scenario,
+                            "path": fixture,
+                            "sha256": "b" * 64,
+                        }
+                    ]
+                }
+            )
+            with mock.patch.object(
+                settler,
+                "_git",
+                return_value=manifest,
+            ):
+                self.assertEqual(fixture, settler._fixture_path("HEAD"))
+
     def test_receipt_parent_rejects_symlink(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

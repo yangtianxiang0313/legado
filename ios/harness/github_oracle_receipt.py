@@ -36,6 +36,10 @@ AUTHORITY_PATHS = (
     "ios/harness/oracle/request-registry.json",
     "ios/harness/oracle/trusted_import.py",
     "ios/harness/source-lab/manifest.json",
+    "ios/harness/integration-lab/integration_lab.py",
+    "ios/harness/integration-lab/coverage-policy-v1.json",
+    "ios/harness/integration-lab/manifest.json",
+    "ios/harness/schemas/integration-lab-scenario.schema.json",
 )
 
 
@@ -219,6 +223,10 @@ class GitHubOracleReceiptSettler:
         allowed = {
             f"ios/harness/fixtures/source-lab/{self.identity.scenario}",
             f"ios/harness/fixtures/runtime-lab/{self.identity.scenario}",
+            (
+                "ios/harness/fixtures/integration-lab/"
+                f"{self.identity.scenario}"
+            ),
         }
         if fixture not in allowed:
             raise GitHubOracleReceiptError("AUTHORITY_TREE_INVALID")

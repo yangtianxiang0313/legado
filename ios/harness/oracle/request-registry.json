@@ -169,6 +169,15 @@
       ],
       "authority": "android_oracle_candidate_only",
       "status": "candidate"
+    },
+    {
+      "id": "IOS-ANDROID-INTEGRATION-WEBDAV-ATTESTATION-001",
+      "scenario_id": "il-integration-backup-webdav-001",
+      "fixture_ids": [
+        "il-integration-backup-webdav-001"
+      ],
+      "authority": "android_oracle_candidate_only",
+      "status": "candidate"
     }
   ]
 }
