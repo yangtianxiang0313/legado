@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-SOURCE-RUNTIME-XML-RESPONSE-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "source.execution.xml-response-normalization",
+  "title": "在独立 SourceRuntime 中实现 Android 对齐的 XML 响应归一化",
+  "claim_refs": [
+    {
+      "id": "BKC-SR-RESPONSE-XML-NORMALIZATION-001",
+      "revision": 2
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "XML 声明补全、既有声明识别和非 XML Content-Type 分支必须与受保护 Android Golden 逐字段一致。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "isolation",
+      "scenario": "响应归一化属于 SourceRuntime/Transport 边界，不得进入 SwiftUI、Domain Model 或具体网络库类型。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "evolvability",
+      "scenario": "charset、BOM、压缩与空 body 必须由后续独立 Android characterization 扩展，不能从当前三个案例推断。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "observability",
+      "scenario": "验收必须输出结构化 body、final_url 和 first-divergence，不能只断言请求成功。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "XML 声明补全应位于 Transport 解码后还是 SourceRuntime 字符串响应适配层，才能避免污染通用 URLSession？",
+    "如何把 Content-Type 匹配和声明检测表达为可由 Golden 驱动的纯函数，同时保留原始正文空白？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002"
+    ],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-SOURCE-RESPONSE-XML-DECLARATION-NORMALIZATION-001",
+      "IOS-SOURCE-RUNTIME-XML-RESPONSE-001"
+    ]
+  },
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30422881491/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-SOURCE-RESPONSE-XML-DECLARATION-NORMALIZATION-001"
+}

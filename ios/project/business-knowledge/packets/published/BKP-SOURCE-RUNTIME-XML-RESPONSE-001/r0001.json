@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-SOURCE-RUNTIME-XML-RESPONSE-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "source.runtime-xml-response-golden",
+  "title": "受保护 Android Golden 验证的 XML 字符串响应归一化",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "source.execution"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-RUNTIME-PORTS"
+    ],
+    "subject_keys": [
+      "source.response",
+      "source.transport"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-SR-RESPONSE-XML-NORMALIZATION-001",
+      "revision": 2,
+      "semantic_key": "source.response.xml-declaration-normalization",
+      "kind": "runtime_behavior",
+      "topic": "字符串响应 XML 声明补全",
+      "statement": "在 sl-source-response-xml-declaration-normalization-001 的固定输入下，Android 非 WebView getStrResponseAwait 对 application/xml 且缺少声明的 body 精确前置 <?xml version=\"1.0\"?>；对去空白后已以大小写不敏感 XML 声明开头的 text/xml body 保持原始前导空格与正文；对 text/plain 的 XML 外形正文不补声明。三个结果均返回归一化后的最终逻辑 URL。本结论不外推到 charset、BOM、空 body、压缩响应或其他 Content-Type。",
+      "subject_keys": [
+        "source.response",
+        "source.transport"
+      ],
+      "depends_on": [],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da",
+            "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+            "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/getStrResponseAwait"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/sl-source-response-xml-declaration-normalization-001.json",
+            "artifact_sha256": "af8f3c83e00311f4f2501d3bfc2f40237bf50bfd294895b13613dba58c2f56f9",
+            "projection_pointer": "/artifact/result/value/portable_known_projection/cases",
+            "observed_sha256": "652a8eda5ae40b2c86cae1bb6216ad0054fb6f5acc5bc749b2b58c472eb8a3ff",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "dd287c0a87d05c775f71dbfd2096d371ecddee69d1d590a88e92603b3f5908db",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-SR-RESPONSE-XML-NORMALIZATION-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-SOURCE-RESPONSE-XML-DECLARATION-NORMALIZATION-001"
+}
