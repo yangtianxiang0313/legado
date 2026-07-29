@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-SOURCE-RUNTIME-URL-TEMPLATE-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "source.runtime-url-template-golden",
+  "title": "受保护 Android Golden 验证的 URL 模板编译顺序",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122"
+  },
+  "scope": {
+    "bounded_contexts": ["source.execution"],
+    "capability_refs": ["CAP-CONFORMANCE", "CAP-RUNTIME-PORTS"],
+    "subject_keys": ["source.request", "source.script"]
+  },
+  "claims": [
+    {
+      "id": "BKC-SR-URL-TEMPLATE-COMPILE-001",
+      "revision": 2,
+      "semantic_key": "source.request.url-template-compilation",
+      "kind": "runtime_behavior",
+      "topic": "URL 模板编译顺序",
+      "statement": "在 sl-source-request-url-template-compilation-001 的固定输入下，Android AnalyzeUrl 先执行 <js> 并把后缀中的 @result 替换为脚本结果，再执行 {{js}}；整数脚本结果输出无小数文本，null 输出空字符串，嵌套函数花括号可正确求值。随后替换 page 分支，页码超过候选数量时选择最后一项，再基于 baseUrl 解析相对 URL，最后解析逗号后的 option；option 中已替换的 POST body 继续进入字段编码。本结论不外推到任意 Rhino Host API、副作用脚本、异常脚本、未闭合模板、option.js、变量作用域或网络执行。",
+      "subject_keys": ["source.request", "source.script"],
+      "depends_on": [],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da",
+            "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+            "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/initUrl"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/sl-source-request-url-template-compilation-001.json",
+            "artifact_sha256": "40d4744406fbc5cfbd5a4888f42c20fee7265366b7c0696ce0af45d937ddc690",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "c1fb920636a836742e2facf7b5030be62ec3ee89dcd4801e6807add8414819bf",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "9d9655aadfeda10c866e6cba12933e7e1937dc8828e477d56f56ec0bd755e751",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-SR-URL-TEMPLATE-COMPILE-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-SOURCE-REQUEST-URL-TEMPLATE-COMPILATION-001"
+}

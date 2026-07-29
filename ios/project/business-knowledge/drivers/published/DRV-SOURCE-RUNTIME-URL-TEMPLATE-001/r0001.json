@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-SOURCE-RUNTIME-URL-TEMPLATE-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "source.execution.url-template-compilation",
+  "title": "在独立 SourceRuntime 中确定性编译 URL 模板",
+  "claim_refs": [
+    {"id": "BKC-SR-URL-TEMPLATE-COMPILE-001", "revision": 2}
+  ],
+  "forces": [
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "脚本、内嵌表达式、关键字、页码、相对 URL 与 option 的编译顺序必须与 Android 真值一致。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "determinism",
+      "scenario": "相同模板、key、page、baseUrl 和脚本输入必须生成稳定 RequestPlan。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "isolation",
+      "scenario": "模板编译属于 SourceRuntime，Transport 只执行已编译请求，UI 和 Domain 不解释模板或脚本。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "safety",
+      "scenario": "未支持脚本能力必须显式失败，不能把模板原文当成可访问 URL。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "如何把模板各阶段表示为可测试的确定性编译流水线，同时保持 RequestPlan 为公开边界？",
+    "脚本求值端口如何隔离 Rhino 兼容语义与 iOS 运行策略？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": ["ADR-0001", "ADR-0002"],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-SOURCE-REQUEST-URL-TEMPLATE-COMPILATION-001",
+      "IOS-SOURCE-RUNTIME-URL-TEMPLATE-COMPILATION-001"
+    ]
+  },
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30428503832/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-SOURCE-REQUEST-URL-TEMPLATE-COMPILATION-001"
+}

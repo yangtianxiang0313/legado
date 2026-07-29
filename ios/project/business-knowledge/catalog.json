@@ -5,8 +5,8 @@
   "inventory_control_sha256": "30cac916034a71f4ce34aa11388c0c3d578c78ccd937f888e48b556b01d72172",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "69cddef05c2b65c828d1c7aaa7efb7844bf221af21930f50e11dd887de8ccbca",
-  "coverage_sha256": "c6d3b203b92a559109da46bf3ac8cd22425c22964f865843ae7f2598a3d6a55d",
+  "authority_sha256": "4cf66f82cef14ed7183666aae3fee9e6bc4aea53484ab977e0b0d221ef610ab9",
+  "coverage_sha256": "e9221663f4de5cdf4336e24cf9500495839dee5a2e13df765bf651cd42eeddd9",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -79,6 +79,19 @@
       ]
     },
     {
+      "id": "BKP-SOURCE-RUNTIME-URL-TEMPLATE-001",
+      "revision": 1,
+      "semantic_key": "source.runtime-url-template-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-SOURCE-RUNTIME-URL-TEMPLATE-001/r0001.json",
+      "record_sha256": "9516c72f29272440129033423080421010522fc8b997bf09149b378631d72f62",
+      "claim_refs": [
+        {
+          "id": "BKC-SR-URL-TEMPLATE-COMPILE-001",
+          "revision": 2
+        }
+      ]
+    },
+    {
       "id": "BKP-SOURCE-RUNTIME-XML-RESPONSE-001",
       "revision": 1,
       "semantic_key": "source.runtime-xml-response-golden",
@@ -123,6 +136,14 @@
       "semantic_key": "source.execution.post-form-independent-runtime",
       "path": "ios/project/business-knowledge/drivers/published/DRV-SOURCE-RUNTIME-POST-FORM-001/r0001.json",
       "record_sha256": "f0443143e85e2ed25dc0854821376388330013d7ffb82b3b8fe0dc88a17cb135",
+      "resolution_state": "resolved"
+    },
+    {
+      "id": "DRV-SOURCE-RUNTIME-URL-TEMPLATE-001",
+      "revision": 1,
+      "semantic_key": "source.execution.url-template-compilation",
+      "path": "ios/project/business-knowledge/drivers/published/DRV-SOURCE-RUNTIME-URL-TEMPLATE-001/r0001.json",
+      "record_sha256": "6d393ef69eadc174bf8630116ccd4bcae6cbafd312ef622db4125bd80cb01d7c",
       "resolution_state": "resolved"
     },
     {
@@ -173,6 +194,15 @@
       "entry_ids": [
         "BKE-SR-POST-FORM-BOUNDARY-001",
         "BKE-SR-POST-FORM-REQUEST-001"
+      ]
+    },
+    {
+      "id": "BKL-SOURCE-RUNTIME-URL-TEMPLATE-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-SOURCE-RUNTIME-URL-TEMPLATE-001.json",
+      "record_sha256": "f80aab91a878e7b6d73a5bf9068bde7d54021fe0e5f38e493c9559c251af6b2e",
+      "entry_ids": [
+        "BKE-SR-URL-TEMPLATE-COMPILE-001"
       ]
     },
     {
