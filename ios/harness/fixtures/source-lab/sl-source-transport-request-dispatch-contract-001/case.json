@@ -1,0 +1,233 @@
+{
+  "schema_version": 1,
+  "kind": "source_lab_scenario",
+  "id": "sl-source-transport-request-dispatch-contract-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "source_lab_site",
+  "capabilities": [
+    "CAP-RUNTIME-PORTS",
+    "CAP-CONFORMANCE"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": "source.template.json",
+  "input": "input.json",
+  "transport": {
+    "mode": "fixture_and_loopback",
+    "external_network": "deny",
+    "responses": [
+      {
+        "id": "get-response-metadata",
+        "match": {
+          "method": "GET",
+          "path": "/transport/get-response",
+          "query": {}
+        },
+        "respond": {
+          "status": 206,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/get-response.txt"
+        }
+      },
+      {
+        "id": "post-raw-content-type",
+        "match": {
+          "method": "POST",
+          "path": "/transport/post-raw",
+          "query": {}
+        },
+        "respond": {
+          "status": 201,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/post-raw.txt"
+        }
+      },
+      {
+        "id": "post-json-default",
+        "match": {
+          "method": "POST",
+          "path": "/transport/post-json",
+          "query": {}
+        },
+        "respond": {
+          "status": 202,
+          "headers": {
+            "content-type": "application/json; charset=utf-8"
+          },
+          "body_file": "responses/post-json.json"
+        }
+      },
+      {
+        "id": "typed-string-hex",
+        "match": {
+          "method": "GET",
+          "path": "/transport/typed-hex",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "application/octet-stream"
+          },
+          "body_file": "responses/typed-hex.txt"
+        }
+      },
+      {
+        "id": "byte-array-network",
+        "match": {
+          "method": "GET",
+          "path": "/transport/byte-array",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "application/octet-stream"
+          },
+          "body_file": "responses/byte-array.txt"
+        }
+      },
+      {
+        "id": "input-stream-network",
+        "match": {
+          "method": "GET",
+          "path": "/transport/input-stream",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "application/octet-stream"
+          },
+          "body_file": "responses/input-stream.txt"
+        }
+      }
+    ]
+  },
+  "coverage": [
+    {
+      "behavior": "transport.request-dispatch",
+      "cases": [
+        {
+          "id": "get-response-metadata",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl.getResponseAwait GET dispatch and raw Response return"
+          ]
+        },
+        {
+          "id": "post-raw-content-type",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl.getResponseAwait explicit Content-Type raw RequestBody branch"
+          ]
+        },
+        {
+          "id": "post-json-default",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl.getResponseAwait implicit application/json RequestBody branch"
+          ]
+        },
+        {
+          "id": "typed-string-hex",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl.getStrResponseAwait type option delegates to getByteArrayAwait and hex encodes"
+          ]
+        },
+        {
+          "id": "byte-array-network",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl.getByteArrayAwait reads network ResponseBody bytes"
+          ]
+        },
+        {
+          "id": "input-stream-network",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl.getInputStreamAwait returns network ResponseBody byteStream"
+          ]
+        },
+        {
+          "id": "data-uri-short-circuit",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl.getByteArrayIfDataUri bypasses transport for byte array and input stream"
+          ]
+        },
+        {
+          "id": "media-models",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-WEBBOOK-CONTENT-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl.getGlideUrl and getMediaItem bind URL plus resolved headers"
+          ]
+        },
+        {
+          "id": "proxy-timeout-policy",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl constructor removes proxy pseudo-header and getClient applies read/call timeout policy"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "2026-01-01T00:00:00Z",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 17,
+    "network_allowed": false,
+    "logical_origin": "http://sourcelab.test"
+  },
+  "limits": {
+    "timeout_ms": 1000,
+    "max_response_bytes": 1048576,
+    "max_request_body_bytes": 4096,
+    "max_requests": 32,
+    "max_concurrency": 2
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+      "app/src/main/java/io/legado/app/help/http/OkHttpUtils.kt",
+      "app/src/main/java/io/legado/app/help/http/HttpHelper.kt",
+      "app/src/main/java/io/legado/app/help/exoplayer/ExoPlayerHelper.kt"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-SOURCE-TRANSPORT-REQUEST-DISPATCH-CONTRACT-001"
+  }
+}

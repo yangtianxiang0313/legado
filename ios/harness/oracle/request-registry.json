@@ -49,6 +49,13 @@
       "fixture_ids": ["sl-source-session-rate-limit-shared-state-001"],
       "authority": "android_oracle_candidate_only",
       "status": "candidate"
+    },
+    {
+      "id": "IOS-ANDROID-TRANSPORT-DISPATCH-ATTESTATION-001",
+      "scenario_id": "sl-source-transport-request-dispatch-contract-001",
+      "fixture_ids": ["sl-source-transport-request-dispatch-contract-001"],
+      "authority": "android_oracle_candidate_only",
+      "status": "candidate"
     }
   ]
 }

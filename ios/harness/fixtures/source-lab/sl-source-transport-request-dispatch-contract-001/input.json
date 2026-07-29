@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "get-response-metadata",
+      "operation": "transport_dispatch",
+      "arguments": {
+        "mode": "response"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/transport/get-response"
+      }
+    },
+    {
+      "id": "post-raw-content-type",
+      "operation": "transport_dispatch",
+      "arguments": {
+        "mode": "response",
+        "body": "raw=星河&kept=true",
+        "content_type": "text/plain; charset=utf-8"
+      },
+      "request": {
+        "method": "POST",
+        "target": "/transport/post-raw"
+      }
+    },
+    {
+      "id": "post-json-default",
+      "operation": "transport_dispatch",
+      "arguments": {
+        "mode": "response",
+        "body": "{\"keyword\":\"星河\",\"page\":1}"
+      },
+      "request": {
+        "method": "POST",
+        "target": "/transport/post-json"
+      }
+    },
+    {
+      "id": "typed-string-hex",
+      "operation": "transport_dispatch",
+      "arguments": {
+        "mode": "typed_string",
+        "type": "application/octet-stream"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/transport/typed-hex"
+      }
+    },
+    {
+      "id": "byte-array-network",
+      "operation": "transport_dispatch",
+      "arguments": {
+        "mode": "byte_array"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/transport/byte-array"
+      }
+    },
+    {
+      "id": "input-stream-network",
+      "operation": "transport_dispatch",
+      "arguments": {
+        "mode": "input_stream"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/transport/input-stream"
+      }
+    },
+    {
+      "id": "data-uri-short-circuit",
+      "operation": "transport_dispatch",
+      "arguments": {
+        "mode": "data_uri",
+        "data_uri": "data:application/octet-stream;base64,U291cmNlTGFiLeaYn+aysQ=="
+      },
+      "request": {
+        "method": "GET",
+        "target": "data:application/octet-stream;base64,U291cmNlTGFiLeaYn+aysQ=="
+      }
+    },
+    {
+      "id": "media-models",
+      "operation": "transport_dispatch",
+      "arguments": {
+        "mode": "media_models",
+        "header_name": "X-Media",
+        "header_value": "source-lab"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/transport/media"
+      }
+    },
+    {
+      "id": "proxy-timeout-policy",
+      "operation": "transport_dispatch",
+      "arguments": {
+        "mode": "client_policy",
+        "proxy": "http://127.0.0.1:18080",
+        "read_timeout_ms": 750
+      },
+      "request": {
+        "method": "GET",
+        "target": "/transport/client-policy"
+      }
+    }
+  ]
+}

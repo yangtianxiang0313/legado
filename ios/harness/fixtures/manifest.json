@@ -62,6 +62,11 @@
       "id": "sl-source-session-rate-limit-shared-state-001",
       "path": "ios/harness/fixtures/source-lab/sl-source-session-rate-limit-shared-state-001",
       "sha256": "bb8f016150201999baa6de04736e9dff94bbc8d3f06852a188262e4d516ac625"
+    },
+    {
+      "id": "sl-source-transport-request-dispatch-contract-001",
+      "path": "ios/harness/fixtures/source-lab/sl-source-transport-request-dispatch-contract-001",
+      "sha256": "22d3181cd201f0aa819d4565f113024e0811a175d441909d0e9b89c6783f3ab7"
     }
   ]
 }

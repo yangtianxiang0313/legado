@@ -303,6 +303,74 @@ def rate_limit_raw_artifact():
     }
 
 
+def transport_dispatch_raw_artifact():
+    scenario = "sl-source-transport-request-dispatch-contract-001"
+    contract = runner.SCENARIO_CONTRACTS[scenario]
+    requests = []
+    cases = []
+    route_counts = {}
+    for index, (case_id, operation) in enumerate(
+        contract["expected_cases"]
+    ):
+        method = (
+            "POST"
+            if case_id in {
+                "post-raw-content-type",
+                "post-json-default",
+            }
+            else "GET"
+        )
+        url = (
+            "data:application/octet-stream;base64,U291cmNlTGFi"
+            if case_id == "data-uri-short-circuit"
+            else f"{runner.LOGICAL_ORIGIN}/transport/{case_id}"
+        )
+        body = (
+            "{\"keyword\":\"星河\"}"
+            if case_id == "post-json-default"
+            else "raw=星河"
+            if case_id == "post-raw-content-type"
+            else None
+        )
+        headers = (
+            [{"name": "Content-Type", "value": "application/json"}]
+            if case_id == "post-json-default"
+            else [{"name": "Content-Type", "value": "text/plain"}]
+            if case_id == "post-raw-content-type"
+            else []
+        )
+        request = {
+            "method": method,
+            "url": url,
+            "headers": headers,
+            "body": body,
+            "timeout_ms": 750
+            if case_id == "proxy-timeout-policy"
+            else None,
+        }
+        requests.append(request)
+        cases.append(
+            {
+                "id": case_id,
+                "operation": operation,
+                "request": request,
+                "result": {"observed_case": index},
+                "issue": None,
+            }
+        )
+        if case_id in runner.ROUTE_OBSERVATION_SCENARIOS[scenario]:
+            route_counts[case_id] = index + 1
+    return {
+        "schema_version": 1,
+        "scenario_id": scenario,
+        "device_origin": "http://127.0.0.1:49152",
+        "logical_origin": runner.LOGICAL_ORIGIN,
+        "request_plan": requests,
+        "cases": cases,
+        "source_lab_route_counts": route_counts,
+    }
+
+
 class AndroidOracleRunnerTests(unittest.TestCase):
     def test_doctor_binds_frozen_android_tree_and_exposes_no_authority(self):
         report = runner.doctor(ROOT)
@@ -357,6 +425,14 @@ class AndroidOracleRunnerTests(unittest.TestCase):
         self.assertEqual(
             "sl-source-session-rate-limit-shared-state-001",
             rate_limit["scenario_id"],
+        )
+        transport_dispatch = runner.doctor(
+            ROOT,
+            "sl-source-transport-request-dispatch-contract-001",
+        )
+        self.assertEqual(
+            "sl-source-transport-request-dispatch-contract-001",
+            transport_dispatch["scenario_id"],
         )
         with mock.patch.object(
             runner,
@@ -552,6 +628,49 @@ class AndroidOracleRunnerTests(unittest.TestCase):
         self.assertTrue(cases[3]["result"]["records_are_distinct"])
         self.assertFalse(cases[4]["result"]["is_count_window"])
         self.assertTrue(cases[5]["result"]["is_count_window"])
+
+    def test_transport_dispatch_accepts_mixed_requests_and_binds_network_routes(self):
+        scenario = "sl-source-transport-request-dispatch-contract-001"
+        raw = transport_dispatch_raw_artifact()
+        artifact = runner.normalize_raw_artifact(
+            raw,
+            bindings(),
+            scenario,
+        )
+        self.assertEqual(
+            ["GET", "POST", "POST"],
+            [
+                request["method"]
+                for request in artifact["request_plan"][:3]
+            ],
+        )
+        self.assertTrue(
+            artifact["request_plan"][6]["url"].startswith("data:")
+        )
+        self.assertEqual(750, artifact["request_plan"][8]["timeout_ms"])
+        observation = artifact["result"]["value"][
+            "android_characterization"
+        ]["source_lab_observation"]
+        self.assertEqual(
+            list(runner.ROUTE_OBSERVATION_SCENARIOS[scenario]),
+            [
+                entry["route_id"]
+                for entry in observation["route_request_counts"]
+            ],
+        )
+
+        invalid = transport_dispatch_raw_artifact()
+        invalid["request_plan"][0]["headers"] = [{"name": "broken"}]
+        invalid["cases"][0]["request"] = invalid["request_plan"][0]
+        with self.assertRaisesRegex(
+            runner.AndroidOracleRunnerError,
+            "RAW_TRANSPORT_REQUEST_INVALID",
+        ):
+            runner.normalize_raw_artifact(
+                invalid,
+                bindings(),
+                scenario,
+            )
 
     def test_nominal_issue_external_request_and_device_origin_leak_fail_closed(self):
         issue = raw_artifact()

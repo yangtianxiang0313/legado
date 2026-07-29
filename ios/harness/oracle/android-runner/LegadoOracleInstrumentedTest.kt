@@ -19,6 +19,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 import java.lang.reflect.InvocationTargetException
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okio.Buffer
 
 @RunWith(AndroidJUnit4::class)
 class LegadoOracleInstrumentedTest {
@@ -63,6 +67,8 @@ class LegadoOracleInstrumentedTest {
                 runURLTemplateCompilationCases()
             "sl-source-session-rate-limit-shared-state-001" ->
                 runRateLimitStateCases()
+            "sl-source-transport-request-dispatch-contract-001" ->
+                runTransportDispatchCases()
             else -> {
                 runCase("search-hit", "search", searchRequest("星河")) {
                     searchProjection(WebBook.searchBookAwait(source, "星河"))
@@ -516,6 +522,343 @@ class LegadoOracleInstrumentedTest {
         }
     }
 
+    private suspend fun runTransportDispatchCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            require(value.getString("operation") == "transport_dispatch") {
+                "Transport dispatch scenario only accepts transport_dispatch stimuli"
+            }
+            when (value.getJSONObject("arguments").getString("mode")) {
+                "response" -> runTransportCase(value) {
+                    val analyze = transportAnalyze(value)
+                    analyze.getResponseAwait().use { response ->
+                        val networkRequest =
+                            response.networkResponse?.request ?: response.request
+                        Pair(
+                            observedRequest(networkRequest),
+                            responseProjection(response)
+                        )
+                    }
+                }
+
+                "typed_string" -> runTransportCase(value) {
+                    val analyze = transportAnalyze(value)
+                    val response = analyze.getStrResponseAwait(useWebView = false)
+                    Pair(
+                        analyzedRequest(analyze),
+                        JSONObject()
+                            .put("body_hex", nullable(response.body))
+                            .put("final_url", logical(response.url))
+                    )
+                }
+
+                "byte_array" -> runTransportCase(value) {
+                    val analyze = transportAnalyze(value)
+                    val bytes = analyze.getByteArrayAwait()
+                    Pair(
+                        analyzedRequest(analyze),
+                        JSONObject()
+                            .put("bytes_base64", base64(bytes))
+                            .put("byte_count", bytes.size)
+                    )
+                }
+
+                "input_stream" -> runTransportCase(value) {
+                    val analyze = transportAnalyze(value)
+                    val bytes = analyze.getInputStreamAwait().use {
+                        it.readBytes()
+                    }
+                    Pair(
+                        analyzedRequest(analyze),
+                        JSONObject()
+                            .put("bytes_base64", base64(bytes))
+                            .put("byte_count", bytes.size)
+                    )
+                }
+
+                "data_uri" -> runTransportCase(value) {
+                    val analyze = transportAnalyze(value)
+                    val byteArray = analyze.getByteArrayAwait()
+                    val streamBytes = analyze.getInputStreamAwait().use {
+                        it.readBytes()
+                    }
+                    Pair(
+                        analyzedRequest(analyze),
+                        JSONObject()
+                            .put("byte_array_base64", base64(byteArray))
+                            .put("input_stream_base64", base64(streamBytes))
+                            .put("same_bytes", byteArray.contentEquals(streamBytes))
+                    )
+                }
+
+                "media_models" -> runTransportCase(value) {
+                    val analyze = transportAnalyze(value)
+                    val glide = analyze.getGlideUrl()
+                    val mediaUri = requireNotNull(
+                        analyze.getMediaItem().localConfiguration
+                    ).uri.toString()
+                    val mediaParts = mediaUri.split("🚧", limit = 2)
+                    require(mediaParts.size == 2) {
+                        "MediaItem did not preserve the URL/header boundary"
+                    }
+                    val mediaHeaders = JSONObject(mediaParts[1])
+                    val mediaHeaderPairs = buildList {
+                        mediaHeaders.keys().forEach { name ->
+                            add(name to mediaHeaders.getString(name))
+                        }
+                    }
+                    Pair(
+                        analyzedRequest(analyze),
+                        JSONObject()
+                            .put("glide_url", logical(glide.toStringUrl()))
+                            .put(
+                                "glide_headers",
+                                controlledHeaders(
+                                    glide.headers.entries.map {
+                                        it.key to it.value
+                                    }
+                                )
+                            )
+                            .put("media_url", logical(mediaParts[0]))
+                            .put(
+                                "media_headers",
+                                controlledHeaders(mediaHeaderPairs)
+                            )
+                    )
+                }
+
+                "client_policy" -> runTransportCase(value) {
+                    val arguments = value.getJSONObject("arguments")
+                    val readTimeout = arguments.getLong("read_timeout_ms")
+                    val analyze = transportAnalyze(value)
+                    val client = reflectedClient(analyze)
+                    Pair(
+                        analyzedRequest(analyze, readTimeout.toInt()),
+                        JSONObject()
+                            .put(
+                                "proxy_header_removed",
+                                analyze.headerMap.keys.none {
+                                    it.equals("proxy", ignoreCase = true)
+                                }
+                            )
+                            .put("proxy_configured", client.proxy != null)
+                            .put(
+                                "proxy_type",
+                                nullable(client.proxy?.type()?.name)
+                            )
+                            .put(
+                                "read_timeout_ms",
+                                client.readTimeoutMillis
+                            )
+                            .put(
+                                "call_timeout_ms",
+                                client.callTimeoutMillis
+                            )
+                            .put(
+                                "request_headers",
+                                controlledHeaders(
+                                    analyze.headerMap.entries.map {
+                                        it.key to it.value
+                                    }
+                                )
+                            )
+                    )
+                }
+
+                else -> error(
+                    "Unsupported transport dispatch mode: " +
+                        value.getJSONObject("arguments").getString("mode")
+                )
+            }
+        }
+    }
+
+    private suspend fun runTransportCase(
+        value: JSONObject,
+        execute: suspend () -> Pair<JSONObject, JSONObject>
+    ) {
+        val id = value.getString("id")
+        val record = JSONObject()
+            .put("id", id)
+            .put("operation", "transport_dispatch")
+        try {
+            val (request, result) = execute()
+            requestPlan.put(request)
+            record
+                .put("request", request)
+                .put("result", result)
+                .put("issue", JSONObject.NULL)
+        } catch (error: Throwable) {
+            val request = fallbackTransportRequest(value)
+            requestPlan.put(request)
+            record
+                .put("request", request)
+                .put("result", JSONObject.NULL)
+                .put(
+                    "issue",
+                    JSONObject()
+                        .put("code", "android_exception")
+                        .put("exception_type", error.javaClass.name)
+                )
+        }
+        cases.put(record)
+    }
+
+    private fun transportAnalyze(value: JSONObject): AnalyzeUrl {
+        val request = value.getJSONObject("request")
+        val arguments = value.getJSONObject("arguments")
+        val target = request.getString("target")
+        val rawURL =
+            if (target.startsWith("data:")) target else deviceOrigin + target
+        if (arguments.getString("mode") == "client_policy") {
+            return AnalyzeUrl(
+                mUrl = rawURL,
+                baseUrl = source.bookSourceUrl,
+                source = source,
+                readTimeout = arguments.getLong("read_timeout_ms"),
+                headerMapF = mapOf(
+                    "proxy" to arguments.getString("proxy"),
+                    "X-Policy" to "source"
+                )
+            )
+        }
+        val option = JSONObject()
+        if (request.getString("method") == "POST") {
+            option
+                .put("method", "POST")
+                .put("body", arguments.getString("body"))
+        }
+        if (arguments.has("content_type")) {
+            option.put(
+                "headers",
+                JSONObject().put(
+                    "Content-Type",
+                    arguments.getString("content_type")
+                )
+            )
+        }
+        if (arguments.has("type")) {
+            option.put("type", arguments.getString("type"))
+        }
+        if (arguments.has("header_name")) {
+            option.put(
+                "headers",
+                JSONObject().put(
+                    arguments.getString("header_name"),
+                    arguments.getString("header_value")
+                )
+            )
+        }
+        val ruleURL =
+            if (option.length() == 0) rawURL else "$rawURL,$option"
+        return AnalyzeUrl(
+            mUrl = ruleURL,
+            baseUrl = source.bookSourceUrl,
+            source = source,
+            headerMapF = source.getHeaderMap(true)
+        )
+    }
+
+    private fun fallbackTransportRequest(value: JSONObject): JSONObject {
+        val request = value.getJSONObject("request")
+        val arguments = value.getJSONObject("arguments")
+        val target = request.getString("target")
+        val url =
+            if (target.startsWith("data:")) target else deviceOrigin + target
+        val result = request(url).put("method", request.getString("method"))
+        if (arguments.has("body")) {
+            result.put("body", arguments.getString("body"))
+        }
+        if (arguments.has("content_type")) {
+            result.put(
+                "headers",
+                controlledHeaders(
+                    listOf(
+                        "Content-Type" to arguments.getString("content_type")
+                    )
+                )
+            )
+        }
+        if (arguments.has("read_timeout_ms")) {
+            result.put("timeout_ms", arguments.getInt("read_timeout_ms"))
+        }
+        return result
+    }
+
+    private fun observedRequest(
+        value: Request,
+        timeoutMillis: Int? = null
+    ): JSONObject {
+        val requestBody = value.body
+        val body =
+            if (requestBody == null) {
+                null
+            } else {
+                Buffer().use { buffer ->
+                    requestBody.writeTo(buffer)
+                    buffer.readString(Charsets.UTF_8)
+                }
+            }
+        val headers = buildList {
+            for (index in 0 until value.headers.size) {
+                add(
+                    value.headers.name(index) to
+                        value.headers.value(index)
+                )
+            }
+        }
+        return JSONObject()
+            .put("method", value.method)
+            .put("url", logical(value.url.toString()))
+            .put("headers", controlledHeaders(headers))
+            .put("body", nullable(body))
+            .put("timeout_ms", timeoutMillis ?: JSONObject.NULL)
+    }
+
+    private fun analyzedRequest(
+        analyze: AnalyzeUrl,
+        timeoutMillis: Int? = null
+    ): JSONObject =
+        JSONObject()
+            .put("method", if (analyze.isPost()) "POST" else "GET")
+            .put("url", logical(analyze.url))
+            .put(
+                "headers",
+                controlledHeaders(
+                    analyze.headerMap.entries.map {
+                        it.key to it.value
+                    }
+                )
+            )
+            .put(
+                "body",
+                if (analyze.isPost()) nullable(analyze.body) else JSONObject.NULL
+            )
+            .put("timeout_ms", timeoutMillis ?: JSONObject.NULL)
+
+    private fun responseProjection(response: Response): JSONObject {
+        val bytes = response.body?.bytes() ?: byteArrayOf()
+        return JSONObject()
+            .put("status_code", response.code)
+            .put("final_url", logical(response.request.url.toString()))
+            .put("body_base64", base64(bytes))
+            .put("byte_count", bytes.size)
+    }
+
+    private fun reflectedClient(analyze: AnalyzeUrl): OkHttpClient {
+        val method = AnalyzeUrl::class.java.getDeclaredMethod("getClient")
+        method.isAccessible = true
+        return try {
+            method.invoke(analyze) as OkHttpClient
+        } catch (error: InvocationTargetException) {
+            throw error.targetException
+        }
+    }
+
+    private fun base64(value: ByteArray): String =
+        Base64.encodeToString(value, Base64.NO_WRAP)
+
     private fun rateLimitProjection(value: JSONObject): JSONObject {
         val id = value.getString("id")
         val arguments = value.getJSONObject("arguments")
@@ -667,6 +1010,7 @@ class LegadoOracleInstrumentedTest {
                     val name = it.first.lowercase()
                     name == "cookie" ||
                         name == "cookiejar" ||
+                        name == "content-type" ||
                         name.startsWith("x-")
                 }
                 .sortedWith(

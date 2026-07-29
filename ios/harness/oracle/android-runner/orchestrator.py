@@ -135,6 +135,45 @@ SCENARIO_CONTRACTS = {
             "invalid-window",
         }),
     },
+    "sl-source-transport-request-dispatch-contract-001": {
+        "status": "candidate",
+        "expected_cases": (
+            ("get-response-metadata", "transport_dispatch"),
+            ("post-raw-content-type", "transport_dispatch"),
+            ("post-json-default", "transport_dispatch"),
+            ("typed-string-hex", "transport_dispatch"),
+            ("byte-array-network", "transport_dispatch"),
+            ("input-stream-network", "transport_dispatch"),
+            ("data-uri-short-circuit", "transport_dispatch"),
+            ("media-models", "transport_dispatch"),
+            ("proxy-timeout-policy", "transport_dispatch"),
+        ),
+        "nominal_cases": frozenset({
+            "get-response-metadata",
+            "post-raw-content-type",
+            "post-json-default",
+            "typed-string-hex",
+            "byte-array-network",
+            "input-stream-network",
+            "data-uri-short-circuit",
+            "media-models",
+            "proxy-timeout-policy",
+        }),
+    },
+}
+ROUTE_OBSERVATION_SCENARIOS = {
+    "sl-source-request-header-cookie-retry-layering-001": (
+        "retry-two-with-header-cookie",
+        "retry-default",
+    ),
+    "sl-source-transport-request-dispatch-contract-001": (
+        "get-response-metadata",
+        "post-raw-content-type",
+        "post-json-default",
+        "typed-string-hex",
+        "byte-array-network",
+        "input-stream-network",
+    ),
 }
 ANDROID_PRODUCT_PATHS = (
     "app/src/main",
@@ -419,17 +458,17 @@ def normalize_raw_artifact(
     if actual_cases != list(expected_cases) or len(request_plan) != len(cases):
         raise AndroidOracleRunnerError("RAW_CASE_SELECTION_DRIFT")
     source_lab_observation = None
-    if scenario_id == "sl-source-request-header-cookie-retry-layering-001":
+    observed_route_ids = ROUTE_OBSERVATION_SCENARIOS.get(scenario_id)
+    if observed_route_ids is not None:
         route_counts = raw.get("source_lab_route_counts")
-        expected_route_ids = [case_id for case_id, _ in expected_cases]
         if (
             not isinstance(route_counts, dict)
-            or set(route_counts) != set(expected_route_ids)
+            or set(route_counts) != set(observed_route_ids)
             or any(
                 not isinstance(route_counts[route_id], int)
                 or isinstance(route_counts[route_id], bool)
                 or route_counts[route_id] < 1
-                for route_id in expected_route_ids
+                for route_id in observed_route_ids
             )
         ):
             raise AndroidOracleRunnerError(
@@ -441,7 +480,7 @@ def normalize_raw_artifact(
                     "route_id": route_id,
                     "request_count": route_counts[route_id],
                 }
-                for route_id in expected_route_ids
+                for route_id in observed_route_ids
             ]
         }
     portable_cases = []
@@ -488,6 +527,20 @@ def normalize_raw_artifact(
             expected_request_keys.update(
                 {"body_base64", "form_fields"}
             )
+        request_url = request.get("url") if isinstance(request, dict) else None
+        request_url_valid = (
+            isinstance(request_url, str)
+            and request_url.startswith(LOGICAL_ORIGIN + "/")
+        )
+        if (
+            scenario_id
+            == "sl-source-transport-request-dispatch-contract-001"
+            and entry.get("id") == "data-uri-short-circuit"
+        ):
+            request_url_valid = (
+                isinstance(request_url, str)
+                and request_url.startswith("data:")
+            )
         if (
             not isinstance(request, dict)
             or (
@@ -495,6 +548,7 @@ def normalize_raw_artifact(
                 if scenario_id in {
                     "sl-source-request-field-encoding-runtime-001",
                     "sl-source-request-url-template-compilation-001",
+                    "sl-source-transport-request-dispatch-contract-001",
                 }
                 else request.get("method")
                 != (
@@ -503,10 +557,36 @@ def normalize_raw_artifact(
                     else "GET"
                 )
             )
-            or not str(request.get("url", "")).startswith(LOGICAL_ORIGIN + "/")
+            or not request_url_valid
             or set(request) != expected_request_keys
         ):
             raise AndroidOracleRunnerError("RAW_REQUEST_INVALID")
+        if scenario_id == "sl-source-transport-request-dispatch-contract-001":
+            headers = request.get("headers")
+            body = request.get("body")
+            timeout_ms = request.get("timeout_ms")
+            if (
+                not isinstance(headers, list)
+                or any(
+                    not isinstance(header, dict)
+                    or set(header) != {"name", "value"}
+                    or not isinstance(header["name"], str)
+                    or not isinstance(header["value"], str)
+                    for header in headers
+                )
+                or (body is not None and not isinstance(body, str))
+                or (
+                    timeout_ms is not None
+                    and (
+                        not isinstance(timeout_ms, int)
+                        or isinstance(timeout_ms, bool)
+                        or timeout_ms <= 0
+                    )
+                )
+            ):
+                raise AndroidOracleRunnerError(
+                    "RAW_TRANSPORT_REQUEST_INVALID"
+                )
         if scenario_id == "sl-post-form-001":
             body = request.get("body")
             body_base64 = request.get("body_base64")
@@ -977,10 +1057,7 @@ def run_characterization(
             ) from error
         if not isinstance(raw, dict):
             raise AndroidOracleRunnerError("RAW_ARTIFACT_SHAPE_INVALID")
-        if (
-            scenario_id
-            == "sl-source-request-header-cookie-retry-layering-001"
-        ):
+        if scenario_id in ROUTE_OBSERVATION_SCENARIOS:
             raw["source_lab_route_counts"] = source_lab_route_counts
         artifact = normalize_raw_artifact(
             raw,
