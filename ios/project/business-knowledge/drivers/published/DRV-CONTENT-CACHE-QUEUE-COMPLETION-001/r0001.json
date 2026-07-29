@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-CONTENT-CACHE-QUEUE-COMPLETION-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "content.runtime.cache-queue-completion",
+  "title": "用独立内容缓存运行时承载文件完成态、重试和任务生命周期",
+  "claim_refs": [
+    {
+      "id": "BKC-BOOK-CACHE-RUNTIME-001",
+      "revision": 2
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "ContentRuntime 必须逐字段对齐受保护 Android Golden 中的正文文件、卷节点、图片完整性、重试预算、取消与成功集合语义；UI 和阅读页不得自行推断缓存完成态。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "modularity",
+      "scenario": "正文存储、图片检查、下载队列和完成态投影通过 ContentRuntime 内部协议组合，不能依赖 SwiftUI、页面生命周期、具体网络库或 Android 文件路径。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "state_management",
+      "scenario": "等待、下载中、成功、错误、停止和 waitingRetry 是单个缓存任务及运行时注册表的受控内存状态；iOS 应由隔离执行器串行化转换，不能用散落全局集合复刻 Android 的偶然线程模型。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "retry_semantics",
+      "scenario": "普通错误按三次预算计数，只有前两次重排；并发占用错误不消耗预算；停止态禁止错误或取消触发重排。上述转换必须由同一状态机决定。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "cache_correctness",
+      "scenario": "正文存在与图片完整是两个不同投影；无图片正文可完成，缺图或无效图不完成且无效文件要移除，有尺寸 SVG 可完成。存储适配器必须提供确定性文件身份与显式清理。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "lifecycle",
+      "scenario": "运行时注册表的保留只由等待和下载中集合决定，waitingRetry 本身不保活；实现必须把这一边界写成可审计转换，避免后台重试句柄与任务注册表形成隐式生命周期。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "portability",
+      "scenario": "本切片只实现 Golden 已验证的 7 个场景；进程恢复、真实下载调度、并发竞态、后台执行和完整图片格式支持必须由后续 Android 真源任务继续扩张。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "如何把正文与图片文件投影、重试预算和队列集合转换放入一个独立且可替换存储后端的 ContentRuntime？",
+    "如何在保留 Android 可观察语义的同时，用隔离执行器消除全局可变集合和线程竞态对 iOS 上层的泄漏？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002"
+    ],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-CONTENT-CACHE-QUEUE-COMPLETION-RUNTIME-001",
+      "IOS-SOURCE-RUNTIME-CACHE-QUEUE-COMPLETION-001"
+    ]
+  },
+  "supersedes": null,
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30455023911/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "created_by": "IOS-CHARACTERIZE-CONTENT-CACHE-QUEUE-COMPLETION-RUNTIME-001"
+}

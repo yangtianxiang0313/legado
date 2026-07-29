@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgeCoverageLedger",
+  "id": "BKL-CONTENT-CACHE-QUEUE-COMPLETION-001",
+  "revision": 1,
+  "status": "current",
+  "packet_refs": [
+    {
+      "id": "BKP-CONTENT-CACHE-QUEUE-COMPLETION-001",
+      "revision": 1,
+      "sha256": "172263c13c59f2d52b5e57b9b6138879a6d2374243592647217cc14a7e3ad461"
+    }
+  ],
+  "generated_from": {
+    "knowledge_authority_sha256": "b1b3d57c94d554e292f4b91982d563a8a428d8a6825e7d9404586d2caa8dbe52",
+    "requirement_catalog_sha256": "f6139abee7c37eec155977d09a7a401b6c09d58f34bf15aa06bd06d58322bbd0",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "entries": [
+    {
+      "id": "BKE-CONTENT-CACHE-QUEUE-COMPLETION-001",
+      "claim_ref": {
+        "id": "BKC-BOOK-CACHE-RUNTIME-001",
+        "revision": 2
+      },
+      "validation": {
+        "required": "android_runtime",
+        "state": "verified",
+        "evidence_refs": [
+          "ios/harness/goldens/releases/sl-content-cache-queue-completion-runtime-001-30454155940-1.json",
+          "ios/harness/goldens/android-legado-v1/sl-content-cache-queue-completion-runtime-001.json#/artifact/result/value"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "covered_by_requirement",
+        "refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "reason": "受保护 Android Golden 已冻结 7 个场景中的正文与图片完成态、重试预算、停止取消、成功失败集合和注册表清理边界，交由独立 SourceRuntime 内容缓存执行器实现",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "planned",
+        "requirement_refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "work_item_refs": [
+          "IOS-SOURCE-RUNTIME-CACHE-QUEUE-COMPLETION-001"
+        ],
+        "capability_refs": [
+          "CAP-CONFORMANCE",
+          "CAP-RUNTIME-PORTS"
+        ],
+        "evidence_refs": [
+          "ios/harness/goldens/releases/sl-content-cache-queue-completion-runtime-001-30454155940-1.json"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    }
+  ],
+  "updated_by": "IOS-CHARACTERIZE-CONTENT-CACHE-QUEUE-COMPLETION-RUNTIME-001",
+  "updated_at": "2026-07-29T13:16:57Z"
+}

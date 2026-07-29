@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-CONTENT-CACHE-QUEUE-COMPLETION-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "content.cache-queue-completion-golden",
+  "title": "受保护 Android Golden 验证的离线缓存完成态",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "30cac916034a71f4ce34aa11388c0c3d578c78ccd937f888e48b556b01d72172"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "content.runtime"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-RUNTIME-PORTS"
+    ],
+    "subject_keys": [
+      "content.cache"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-BOOK-CACHE-RUNTIME-001",
+      "revision": 2,
+      "semantic_key": "content.cache.queue-completion-runtime",
+      "kind": "runtime_behavior",
+      "topic": "离线缓存完成态",
+      "statement": "在 sl-content-cache-queue-completion-runtime-001 的固定输入下，Android BookHelp 只把已存在的远端章节正文文件或 URL 以标题开头的卷标记视为有正文；本地 TXT 在本场景给定的 local 标识下不短路，普通卷和无文件远端章节也不完成。空正文写入不创建缓存，非空正文可按派生文件名读取、枚举和删除。图片完成态要求先有正文；无图片引用的正文完成，缺图或无效图片不完成，无效图片同时被删除，有尺寸的 SVG 完成并保留。CacheBookModel 对重叠区间去重，stop 清空等待集合并阻止当前重试，后续 addDownload 可恢复运行。普通错误递增计数并只在前两次重排，第三次后停止；ConcurrentException 不计数且可重排。成功会移出下载中集合、写入成功集合并清除旧错误；取消仅在未停止时重排。onFinally 在等待与下载中集合都为空时移除全局注册，即使 waitingRetry 仍为 true；存在等待项时保留。本结论只冻结上述 7 个观测场景，不外推到进程重启后的持久化、真实网络下载、任务调度时序、并发竞态、后台执行、磁盘空间与文件权限、全部图片格式或任意本地书类型。",
+      "subject_keys": [
+        "content.cache"
+      ],
+      "depends_on": [],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "40f47f3a0f6bfa63cce79efb7a1518737b84dc45",
+            "path": "app/src/main/java/io/legado/app/help/book/BookHelp.kt",
+            "symbol_id": "kotlin://io.legado.app.help.book/BookHelp/hasContent"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "cdcbbf5696c1d2b018e25c2819c0461e8c667866",
+            "path": "app/src/main/java/io/legado/app/model/CacheBook.kt",
+            "symbol_id": "kotlin://io.legado.app.model/CacheBook"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/sl-content-cache-queue-completion-runtime-001.json",
+            "artifact_sha256": "a972336c27b75a904f1660c12b8cf042ce95a194049e61ad749fde02b89cfd74",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "545d1c14da28758a20e4ac590514b993529d8830fbd40b3e0c75c4c2e68be157",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "40bf0b4a37a0ba65fb989fbd33bd06068295a81b1a809b41791c725fcf93b704",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-BOOK-CACHE-RUNTIME-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-CONTENT-CACHE-QUEUE-COMPLETION-RUNTIME-001"
+}
