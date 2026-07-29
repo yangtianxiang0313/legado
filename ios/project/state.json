@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "revision": 498,
+  "revision": 499,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-29T01:22:16Z",
-  "event_head": "7415e048ed9aa766cef46f17c615bafbf1a3464b6c86199f26e54f99a610997e",
+  "updated_at": "2026-07-29T01:27:50Z",
+  "event_head": "5fb4d95a92cb31207b7f01ae6303b50cf4458b3212c74e97ef6d4dd8025fec71",
   "active_work_items": [],
   "last_completed_work_item": "IOS-HARNESS-RUNTIME-CONTEXT-REPRO-001",
   "work_items": {
@@ -9384,6 +9384,11 @@
           "stderr_tail": "..........................................................EF.FFF.............................................................................................................................................................................................................................\n======================================================================\nERROR: test_prepare_is_deterministic_staging_only_and_complete (test_business_knowledge_publisher.BusinessKnowledgePublisherTests)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_business_knowledge_publisher.py\", line 226, in test_prepare_is_deterministic_staging_only_and_complete\n    first = self._prepare(self.base / \"first\")\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_business_knowledge_publisher.py\", line 181, in _prepare\n    return publisher.prepare(self.root, **values)\n  File \"/Users/yangtianxiang/legado/ios/publisher/business_knowledge_publisher.py\", line 600, in prepare\n    raise KnowledgePublisherError(\nbusiness_knowledge_publisher.KnowledgePublisherError: RUNTIME_EVIDENCE_BINDING_DRIFT\n\n======================================================================\nFAIL: test_prepare_recomputes_every_runtime_projection (test_business_knowledge_publisher.BusinessKnowledgePublisherTests)\n----------------------------------------------------------------------\nbusiness_knowledge_publisher.KnowledgePublisherError: RUNTIME_EVIDENCE_BINDING_DRIFT\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_business_knowledge_publisher.py\", line 305, in test_prepare_recomputes_every_runtime_projection\n    self._prepare(self.base / \"projection-drift\")\nAssertionError: \"OBSERVED_PROJECTION_SHA256_DRIFT\" does not match \"RUNTIME_EVIDENCE_BINDING_DRIFT\"\n\n======================================================================\nFAIL: test_prepare_rejects_dirty_source_and_repository_output (test_business_knowledge_publisher.BusinessKnowledgePublisherTests)\n----------------------------------------------------------------------\nbusiness_knowledge_publisher.KnowledgePublisherError: RUNTIME_EVIDENCE_BINDING_DRIFT\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_business_knowledge_publisher.py\", line 348, in test_prepare_rejects_dirty_source_and_repository_output\n    self._prepare(forbidden)\nAssertionError: \"OUTPUT_INSIDE_REPOSITORY\" does not match \"RUNTIME_EVIDENCE_BINDING_DRIFT\"\n\n======================================================================\nFAIL: test_prepare_rejects_driver_claim_outside_packet (test_business_knowledge_publisher.BusinessKnowledgePublisherTests)\n----------------------------------------------------------------------\nbusiness_knowledge_publisher.KnowledgePublisherError: RUNTIME_EVIDENCE_BINDING_DRIFT\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_business_knowledge_publisher.py\", line 340, in test_prepare_rejects_driver_claim_outside_packet\n    self._prepare(self.base / \"driver-drift\")\nAssertionError: \"DRIVER_CLAIM_SELECTION_DRIFT\" does not match \"RUNTIME_EVIDENCE_BINDING_DRIFT\"\n\n======================================================================\nFAIL: test_prepare_rejects_existing_publication_target (test_business_knowledge_publisher.BusinessKnowledgePublisherTests)\n----------------------------------------------------------------------\nbusiness_knowledge_publisher.KnowledgePublisherError: RUNTIME_EVIDENCE_BINDING_DRIFT\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_business_knowledge_publisher.py\", line 390, in test_prepare_rejects_existing_publication_target\n    self._prepare(self.base / \"existing\")\nAssertionError: \"PUBLICATION_TARGET_ALREADY_EXISTS\" does not match \"RUNTIME_EVIDENCE_BINDING_DRIFT\"\n\n----------------------------------------------------------------------\nRan 285 tests in 144.500s\n\nFAILED (failures=4, errors=1)\n"
         }
       ]
+    },
+    "IOS-GOLDEN-CONSUMER-BASELINE-SCOPE-001": {
+      "status": "ready",
+      "attempt": 0,
+      "last_evidence": null
     }
   },
   "health": {
