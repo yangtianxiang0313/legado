@@ -519,6 +519,37 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/Packages/LegadoKit/Tests/AppNavigationTests/**",
             ],
         }
+    if "APP-NAVIGATION" in target:
+        return {
+            "owner": "AppNavigation",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-004",
+                "ARCH-005",
+                "ARCH-006",
+                "ARCH-007",
+                "ARCH-010",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/Apps/Legado/**",
+                "ios/Packages/LegadoKit/Package.swift",
+                "ios/Packages/LegadoKit/Sources/AppNavigation/**",
+                "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+                "ios/Packages/LegadoKit/Sources/ConformanceCLI/**",
+                "ios/Packages/LegadoKit/Sources/TestSupport/FixtureModel.swift",
+                "ios/Packages/LegadoKit/Tests/AppNavigationTests/**",
+                "ios/Packages/LegadoKit/Tests/ConformanceCLITests/**",
+                "ios/harness/ui/ui_simulator.py",
+                "ios/harness/ui/tests/test_ui_simulator.py",
+                (
+                    "ios/harness/ui/expected/"
+                    "ui-app-startup-first-use-and-restore-v1.json"
+                ),
+            ],
+        }
     if "SOURCE-RUNTIME" in target:
         return {
             "owner": "SourceRuntime",
@@ -1289,10 +1320,140 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_filter": "LibraryDomainTests",
             "acceptance_id": "structured-domain-acceptance",
         },
+        "AppNavigation": {
+            "goal": (
+                "按照冻结 Android 启动运行结果，在 AppNavigation/AppUseCases "
+                "中实现平台无关启动状态机与显式 effect，并由 AppShell 投影"
+                "为原生 iPhone/iPad 导航和对话框。"
+            ),
+            "rule": (
+                "AppNavigation 只承载稳定 Route、启动快照、检查点与 effect；"
+                "AppUseCases 通过端口执行持久化，AppShell 只投影 UI，"
+                "Android Activity、Dialog 与平台 I/O 不进入核心。"
+            ),
+            "test_id": "app-navigation-tests",
+            "test_filter": "AppNavigationTests",
+            "acceptance_id": "structured-app-startup-acceptance",
+            "ui_acceptance": {
+                "scenario_id": "ui-app-startup-first-use-and-restore-v1",
+                "profile": "store_safe",
+                "expected": (
+                    "ios/harness/ui/expected/"
+                    "ui-app-startup-first-use-and-restore-v1.json"
+                ),
+                "project": "ios/Apps/Legado/Legado.xcodeproj",
+                "scheme": "LegadoApp",
+                "test_method": "testStartupFirstUseAndRestore",
+                "simulators": [
+                    {
+                        "simulator_id": "SIM-PHONE-COMPACT-001",
+                        "name": "Legado Loop iPhone SE (3rd generation)",
+                        "device_type": (
+                            "com.apple.CoreSimulator.SimDeviceType."
+                            "iPhone-SE-3rd-generation"
+                        ),
+                        "runtime": (
+                            "com.apple.CoreSimulator.SimRuntime.iOS-26-0"
+                        ),
+                        "projection": "compactStack",
+                    },
+                    {
+                        "simulator_id": "SIM-PAD-REGULAR-001",
+                        "name": "Legado Loop iPad Pro 13-inch (M4)",
+                        "device_type": (
+                            "com.apple.CoreSimulator.SimDeviceType."
+                            "iPad-Pro-13-inch-M4-8GB"
+                        ),
+                        "runtime": (
+                            "com.apple.CoreSimulator.SimRuntime.iOS-26-0"
+                        ),
+                        "projection": "regularSplit",
+                    },
+                ],
+            },
+        },
     }
     delivery_contract = delivery_contracts.get(str(architecture["owner"]))
     if delivery_contract is None:
         raise LoopError(f"DELIVERY_CONTRACT_NOT_MAPPED:{architecture['owner']}")
+    source = {
+        "android_baseline": (
+            migration.get("android_baseline")
+            if isinstance(migration, dict)
+            else None
+        ),
+        "anchors": source_anchors,
+        "fixture_id": fixture_id,
+        "android_golden": golden_path,
+        "knowledge": {
+            "coverage": delivery["ledger_path"],
+            "packets": ledger.get("packet_refs", []),
+            "driver": driver_ref,
+            "claims": claim_refs,
+        },
+    }
+    commands = [
+        {
+            "id": "package-contract",
+            "argv": [
+                "python3",
+                "-B",
+                "ios/harness/probes/package_contract.py",
+                "--root",
+                ".",
+            ],
+            "timeout_seconds": 120,
+        },
+        {
+            "id": delivery_contract["test_id"],
+            "argv": [
+                "swift",
+                "test",
+                "--package-path",
+                "ios/Packages/LegadoKit",
+                "--disable-automatic-resolution",
+                "--filter",
+                delivery_contract["test_filter"],
+            ],
+            "required_output_pattern": (
+                r"Executed [1-9][0-9]* tests?, with 0 failures"
+            ),
+            "timeout_seconds": 300,
+        },
+        {
+            "id": delivery_contract["acceptance_id"],
+            "argv": [
+                "swift",
+                "run",
+                "--package-path",
+                "ios/Packages/LegadoKit",
+                "--disable-automatic-resolution",
+                "ConformanceCLI",
+                "run-task",
+                "ios/project/loop/task.json",
+            ],
+            "timeout_seconds": 300,
+        },
+    ]
+    ui_acceptance = delivery_contract.get("ui_acceptance")
+    if isinstance(ui_acceptance, dict):
+        source["ui_acceptance"] = ui_acceptance
+        commands.append(
+            {
+                "id": "ui-simulator-acceptance",
+                "argv": [
+                    "python3",
+                    "-B",
+                    "ios/harness/ui/ui_simulator.py",
+                    "verify",
+                    "--root",
+                    ".",
+                    "--task",
+                    "ios/project/loop/task.json",
+                ],
+                "timeout_seconds": 1800,
+            }
+        )
     task = {
         "schema_version": SCHEMA_VERSION,
         "id": target,
@@ -1301,22 +1462,7 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
         "status": "ready",
         "priority": 100,
         "goal": delivery_contract["goal"],
-        "source": {
-            "android_baseline": (
-                migration.get("android_baseline")
-                if isinstance(migration, dict)
-                else None
-            ),
-            "anchors": source_anchors,
-            "fixture_id": fixture_id,
-            "android_golden": golden_path,
-            "knowledge": {
-                "coverage": delivery["ledger_path"],
-                "packets": ledger.get("packet_refs", []),
-                "driver": driver_ref,
-                "claims": claim_refs,
-            },
-        },
+        "source": source,
         "requirements": requirement_refs,
         "architecture": {
             "owner": architecture["owner"],
@@ -1333,49 +1479,7 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             ],
         },
         "acceptance": {
-            "commands": [
-                {
-                    "id": "package-contract",
-                    "argv": [
-                        "python3",
-                        "-B",
-                        "ios/harness/probes/package_contract.py",
-                        "--root",
-                        ".",
-                    ],
-                    "timeout_seconds": 120,
-                },
-                {
-                    "id": delivery_contract["test_id"],
-                    "argv": [
-                        "swift",
-                        "test",
-                        "--package-path",
-                        "ios/Packages/LegadoKit",
-                        "--disable-automatic-resolution",
-                        "--filter",
-                        delivery_contract["test_filter"],
-                    ],
-                    "required_output_pattern": (
-                        r"Executed [1-9][0-9]* tests?, with 0 failures"
-                    ),
-                    "timeout_seconds": 300,
-                },
-                {
-                    "id": delivery_contract["acceptance_id"],
-                    "argv": [
-                        "swift",
-                        "run",
-                        "--package-path",
-                        "ios/Packages/LegadoKit",
-                        "--disable-automatic-resolution",
-                        "ConformanceCLI",
-                        "run-task",
-                        "ios/project/loop/task.json",
-                    ],
-                    "timeout_seconds": 300,
-                },
-            ],
+            "commands": commands,
             "structured_output": {
                 "mode": "command_json",
                 "command_id": delivery_contract["acceptance_id"],

@@ -7,6 +7,7 @@ import argparse
 import base64
 import json
 import os
+import re
 import subprocess
 import sys
 import uuid
@@ -163,6 +164,16 @@ def first_difference(expected: Any, actual: Any, pointer: str = "") -> str | Non
     return None if expected == actual else (pointer or "/")
 
 
+def ui_test_method(ui: Mapping[str, Any]) -> str:
+    value = ui.get("test_method", "testRootTopology")
+    if (
+        not isinstance(value, str)
+        or re.fullmatch(r"[A-Za-z][A-Za-z0-9_]*", value) is None
+    ):
+        raise UIAcceptanceError("UI_TEST_METHOD_INVALID")
+    return value
+
+
 def run(root: Path, task_path: str) -> Mapping[str, Any]:
     task_file = safe_path(root, task_path)
     try:
@@ -173,6 +184,7 @@ def run(root: Path, task_path: str) -> Mapping[str, Any]:
         matrix = ui["simulators"]
         project = safe_path(root, ui["project"])
         scheme = ui["scheme"]
+        test_method = ui_test_method(ui)
     except (OSError, KeyError, TypeError, json.JSONDecodeError) as error:
         raise UIAcceptanceError("UI_TASK_INVALID") from error
     if (
@@ -221,7 +233,10 @@ def run(root: Path, task_path: str) -> Mapping[str, Any]:
                 str(result_bundle),
                 "-parallel-testing-enabled",
                 "NO",
-                "-only-testing:LegadoAppUITests/LegadoAppUITests/testRootTopology",
+                (
+                    "-only-testing:LegadoAppUITests/LegadoAppUITests/"
+                    f"{test_method}"
+                ),
             ],
             cwd=root,
             timeout=900,

@@ -48,6 +48,25 @@ class UISimulatorContractTests(unittest.TestCase):
         ):
             ui_simulator.safe_path(ROOT, "../secret")
 
+    def test_ui_test_method_defaults_and_rejects_injection(self):
+        self.assertEqual(
+            "testRootTopology",
+            ui_simulator.ui_test_method({}),
+        )
+        self.assertEqual(
+            "testStartupFirstUseAndRestore",
+            ui_simulator.ui_test_method(
+                {"test_method": "testStartupFirstUseAndRestore"}
+            ),
+        )
+        with self.assertRaisesRegex(
+            ui_simulator.UIAcceptanceError,
+            "UI_TEST_METHOD_INVALID",
+        ):
+            ui_simulator.ui_test_method(
+                {"test_method": "testRootTopology;rm"}
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

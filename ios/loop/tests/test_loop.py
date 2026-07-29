@@ -278,6 +278,125 @@ class MinimalLoopTests(unittest.TestCase):
             )
             loop.validate_task(root, task)
 
+    def test_app_navigation_startup_derives_structured_and_ui_delivery(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.write(
+                root,
+                "ios/project/requirements/accepted/"
+                "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001.json",
+                {"id": "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"},
+            )
+            golden_path = (
+                "ios/harness/goldens/android-legado-v1/"
+                "rl-app-startup-first-use-and-restore-001.json"
+            )
+            self.write(
+                root,
+                golden_path,
+                {
+                    "fixture_id": (
+                        "rl-app-startup-first-use-and-restore-001"
+                    )
+                },
+            )
+            self.write(
+                root,
+                "ios/project/business-knowledge/packets/published/"
+                "BKP-APP-STARTUP-FIRST-USE-AND-RESTORE-001/r0001.json",
+                {
+                    "claims": [
+                        {
+                            "id": "BKC-APP-STARTUP-001",
+                            "revision": 2,
+                            "support": {"source_anchors": []},
+                        }
+                    ]
+                },
+            )
+            self.write(
+                root,
+                "ios/project/business-knowledge/drivers/published/"
+                "DRV-APP-STARTUP-FIRST-USE-AND-RESTORE-001/r0001.json",
+                {
+                    "id": (
+                        "DRV-APP-STARTUP-FIRST-USE-AND-RESTORE-001"
+                    ),
+                    "revision": 1,
+                    "title": "启动状态机",
+                    "claim_refs": [
+                        {"id": "BKC-APP-STARTUP-001", "revision": 2}
+                    ],
+                },
+            )
+            self.write(
+                root,
+                "ios/project/business-knowledge/coverage/"
+                "BKL-APP-STARTUP-FIRST-USE-AND-RESTORE-001.json",
+                {
+                    "status": "current",
+                    "packet_refs": [
+                        {
+                            "id": (
+                                "BKP-APP-STARTUP-FIRST-USE-AND-RESTORE-001"
+                            ),
+                            "revision": 1,
+                            "sha256": "c" * 64,
+                        }
+                    ],
+                    "entries": [
+                        {
+                            "claim_ref": {
+                                "id": "BKC-APP-STARTUP-001",
+                                "revision": 2,
+                            },
+                            "delivery": {
+                                "state": "planned",
+                                "work_item_refs": [
+                                    (
+                                        "IOS-APP-NAVIGATION-STARTUP-"
+                                        "FIRST-USE-RESTORE-001"
+                                    )
+                                ],
+                                "requirement_refs": [
+                                    (
+                                        "REQ-ANDROID-MIGRATION-"
+                                        "CHARACTERIZATION-001@1#RC-01"
+                                    )
+                                ],
+                            },
+                            "validation": {
+                                "evidence_refs": [
+                                    f"{golden_path}#/artifact/result/value"
+                                ]
+                            },
+                        }
+                    ],
+                },
+            )
+
+            task = loop.next_task(root)
+
+            self.assertEqual(
+                "IOS-APP-NAVIGATION-STARTUP-FIRST-USE-RESTORE-001",
+                task["id"],
+            )
+            self.assertEqual(
+                "AppNavigation",
+                task["architecture"]["owner"],
+            )
+            self.assertEqual(
+                "testStartupFirstUseAndRestore",
+                task["source"]["ui_acceptance"]["test_method"],
+            )
+            command_ids = {
+                command["id"]
+                for command in task["acceptance"]["commands"]
+            }
+            self.assertIn("structured-app-startup-acceptance", command_ids)
+            self.assertIn("ui-simulator-acceptance", command_ids)
+            loop.validate_task(root, task)
+
     def test_legacy_completion_index_prevents_replanning(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
