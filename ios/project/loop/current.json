@@ -1,1 +1,1 @@
-{"active_task":"IOS-SOURCE-RUNTIME-RESPONSE-DECODING-001","attempt":0,"last_completed":{"at":"2026-07-29T09:31:54Z","sequence":51,"task_id":"IOS-CHARACTERIZE-SOURCE-TRANSPORT-RESPONSE-DECODING-RUNTIME-001"},"schema_version":2,"status":"running","verification":null}
+{"active_task":null,"attempt":0,"last_completed":{"at":"2026-07-29T09:38:22Z","sequence":54,"task_id":"IOS-SOURCE-RUNTIME-RESPONSE-DECODING-001"},"schema_version":2,"status":"idle","verification":null}
