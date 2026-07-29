@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "requests": [
+    {
+      "id": "IOS-ANDROID-ORACLE-ATTESTATION-001",
+      "scenario_id": "sl-html-basic-001",
+      "fixture_ids": ["sl-html-basic-001"],
+      "authority": "android_oracle_candidate_only",
+      "status": "reference"
+    },
+    {
+      "id": "IOS-ANDROID-POST-FORM-ATTESTATION-001",
+      "scenario_id": "sl-post-form-001",
+      "fixture_ids": ["sl-post-form-001"],
+      "authority": "android_oracle_candidate_only",
+      "status": "candidate"
+    }
+  ]
+}

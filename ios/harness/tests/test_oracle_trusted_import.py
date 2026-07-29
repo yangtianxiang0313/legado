@@ -328,11 +328,9 @@ class OracleTrustedImportTests(unittest.TestCase):
         )
         controls = ci_proposal._control_bindings(
             REPOSITORY_ROOT,
-            loads(
-                (
-                    REPOSITORY_ROOT
-                    / f"ios/harness/work-items/{ci_proposal.WORK_ITEM_ID}.json"
-                ).read_bytes()
+            ci_proposal.request_by_id(
+                REPOSITORY_ROOT,
+                ci_proposal.WORK_ITEM_ID,
             ),
         )
         artifact = {

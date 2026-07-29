@@ -16,6 +16,10 @@ verify-proposal --proposal FILE --request-work-item ID
 Every command also requires `--root REPOSITORY`. Output is stdout only; there is
 no output-path or in-place option.
 
+`--request-work-item` 是 v1 artifact 字段的兼容名称；实际授权源已经迁移到
+`request-registry.json`，不再读取 WorkItem 文件。新增场景只需增加一个紧凑、
+唯一的 scenario/request 绑定。
+
 ## Hash contracts
 
 - Control JSON hashes are SHA-256 of the parsed document emitted with exact
@@ -25,7 +29,7 @@ no output-path or in-place option.
 - Payload hash and byte count bind the same raw bytes. A payload must already be
   canonical-v1 bytes.
 - Proposal bindings cover the frozen Android commit/tree, clean checkout,
-  runner/image digests, protected request work item, baseline, generic fixture
+  runner/image digests, protected request registry entry, baseline, generic fixture
   manifest, Fact inventory, Requirement catalog, envelope schema, canonicalizer
   config/implementation, and comparator implementation.
 

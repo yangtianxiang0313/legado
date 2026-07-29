@@ -11,6 +11,11 @@ from pathlib import Path, PurePosixPath
 from oracle import SHARED_CHANNELS
 from oracle.canonicalizer import canonicalize_bytes, load_config
 from oracle.exact_json import JSONNode, NumberToken, dumps, file_digest, integer, loads
+from oracle.request_registry import (
+    RequestRegistryError,
+    load_registry,
+    request_by_id,
+)
 
 
 ALLOWED_COMMANDS = ("doctor", "canonicalize", "compare", "verify-proposal")
@@ -30,6 +35,7 @@ def doctor(root: Path) -> list[str]:
         load_config(root / "ios/harness/normalization/canonical-v1.json")
         fixture_manifest = _read_json(root / "ios/harness/fixtures/manifest.json")
         _fixture_index(fixture_manifest)
+        load_registry(root)
         for relative in (
             "ios/project/baseline.json",
             "ios/project/android-intake/inventory-manifest.json",
@@ -102,45 +108,24 @@ def verify_proposal(
         raise ProposalError("request.work_item_id is invalid")
     if request_id != expected_request_id:
         raise ProposalError("proposal request does not match the caller's trusted request")
-    request_path = _safe_file(root, f"ios/harness/work-items/{request_id}.json")
-    request_node = _read_json(request_path)
-    request_item = _object(request_node, "proposal request work item")
-    metadata = _object(request_item.get("metadata"), "proposal request metadata")
-    labels = metadata.get("labels", [])
-    gates = request_item.get("spec", {}).get("gates")
-    legacy_authorized = not scenario_aware and "oracle-golden-request" in labels
-    scenario_labels = {
-        "trusted-proposal",
-        "candidate-only",
-        "android-oracle",
-        "attestation",
-        "github-actions",
-    }
-    scenario_authorized = (
-        scenario_aware
-        and isinstance(labels, list)
-        and scenario_labels.issubset(labels)
-        and gates == []
-    )
-    if (
-        request_item.get("kind") != "WorkItem"
-        or metadata.get("id") != request_id
-        or not (legacy_authorized or scenario_authorized)
-    ):
-        raise ProposalError("request work item is not authorized for Oracle golden generation")
     try:
-        expected_fixture_ids = request_item["spec"]["inputs"]["fixtures"]
-    except (KeyError, TypeError) as error:
-        raise ProposalError("request work item has no fixture selection") from error
+        request_node = request_by_id(root, request_id)
+    except RequestRegistryError as error:
+        raise ProposalError("request is not registered") from error
+    if request_node.get("authority") != "android_oracle_candidate_only":
+        raise ProposalError("request is not authorized for Oracle golden generation")
+    expected_fixture_ids = request_node["fixture_ids"]
     fixture_ids = _string_list(request["fixture_ids"], "proposal.request.fixture_ids")
     if fixture_ids != sorted(set(fixture_ids)) or not fixture_ids:
         raise ProposalError("request.fixture_ids must be a non-empty sorted unique set")
-    if fixture_ids != sorted(_string_list(expected_fixture_ids, "request work item fixtures")):
-        raise ProposalError("proposal fixture selection drifts from protected work item")
+    if fixture_ids != sorted(_string_list(expected_fixture_ids, "request fixtures")):
+        raise ProposalError("proposal fixture selection drifts from request registry")
     if scenario_aware:
         scenario_id = _string(request["scenario_id"], "proposal.request.scenario_id")
         if fixture_ids != [scenario_id]:
             raise ProposalError("proposal scenario must equal the unique selected fixture")
+        if request_node.get("scenario_id") != scenario_id:
+            raise ProposalError("proposal scenario drifts from request registry")
 
     producer = _object(proposal["producer"], "proposal.producer")
     _exact_keys(

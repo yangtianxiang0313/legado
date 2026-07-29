@@ -37,6 +37,7 @@ from oracle.exact_json import (  # noqa: E402
     loads,
 )
 from oracle.contract import ProposalError, verify_proposal  # noqa: E402
+from oracle.request_registry import request_by_id  # noqa: E402
 
 
 COMMANDS = ("verify",)
@@ -234,7 +235,7 @@ def verify(
         scenario_id = _validate_scenario_id(scenario_id)
     except Exception as error:
         raise TrustedImportError("SCENARIO_SELECTOR_INVALID") from error
-    request_work_item = _request_for_scenario(scenario_id)
+    request_work_item = _request_for_scenario(root, scenario_id)
     if REPOSITORY.fullmatch(repository) is None:
         raise TrustedImportError("REPOSITORY_INVALID")
     gh = _safe_executable(gh)
@@ -266,11 +267,7 @@ def verify(
         evidence_archive,
         expected_evidence_members(scenario_id),
     )
-    request = loads(
-        _safe_regular(
-            root / f"ios/harness/work-items/{request_work_item}.json"
-        ).read_bytes()
-    )
+    request = request_by_id(root, request_work_item)
     evidence_run, evidence_payload_value, evidence_payload = _validate_evidence(
         root,
         evidence_members,

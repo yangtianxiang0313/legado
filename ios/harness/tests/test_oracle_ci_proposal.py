@@ -639,15 +639,13 @@ class OracleCIProposalTests(unittest.TestCase):
             REPOSITORY_ROOT,
             scenario_id,
         )
-        request_id = ci_proposal._request_for_scenario(scenario_id)
+        request_id = ci_proposal._request_for_scenario(
+            REPOSITORY_ROOT,
+            scenario_id,
+        )
         controls = ci_proposal._control_bindings(
             REPOSITORY_ROOT,
-            loads(
-                (
-                    REPOSITORY_ROOT
-                    / f"ios/harness/work-items/{request_id}.json"
-                ).read_bytes()
-            ),
+            ci_proposal.request_by_id(REPOSITORY_ROOT, request_id),
         )
         artifact = {
             "schema_version": 1,

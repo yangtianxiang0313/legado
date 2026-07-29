@@ -24,7 +24,8 @@ from oracle.contract import (  # noqa: E402
     implementation_digest,
     verify_proposal,
 )
-from oracle.exact_json import ExactJSONError, loads  # noqa: E402
+from oracle.exact_json import ExactJSONError, dumps, loads  # noqa: E402
+from oracle.request_registry import request_by_id  # noqa: E402
 
 
 class OracleControlTests(unittest.TestCase):
@@ -45,14 +46,18 @@ class OracleControlTests(unittest.TestCase):
         )
         self._write("ios/project/requirements/catalog.json", {"schema_version": 1, "requirements": []})
         self._write(
-            f"ios/harness/work-items/{self.request_id}.json",
+            "ios/harness/oracle/request-registry.json",
             {
-                "kind": "WorkItem",
-                "metadata": {
-                    "id": self.request_id,
-                    "labels": ["oracle-golden-request"],
-                },
-                "spec": {"inputs": {"fixtures": [self.fixture_id]}},
+                "schema_version": 1,
+                "requests": [
+                    {
+                        "id": self.request_id,
+                        "scenario_id": self.fixture_id,
+                        "fixture_ids": [self.fixture_id],
+                        "authority": "android_oracle_candidate_only",
+                        "status": "reference",
+                    }
+                ],
             },
         )
         fixture = self.root / f"ios/harness/fixtures/source-format/{self.fixture_id}"
@@ -312,9 +317,9 @@ class OracleControlTests(unittest.TestCase):
             "checkout_clean": True,
             "runner_digest": "8" * 64,
             "runner_image_digest": "sha256:" + "9" * 64,
-            "request_work_item_sha256": canonical_file_digest(
-                self.root / f"ios/harness/work-items/{self.request_id}.json"
-            ),
+            "request_work_item_sha256": hashlib.sha256(
+                dumps(request_by_id(self.root, self.request_id))
+            ).hexdigest(),
             "android_baseline_sha256": canonical_file_digest(self.root / "ios/project/baseline.json"),
             "fixture_manifest_sha256": canonical_file_digest(
                 self.root / "ios/harness/fixtures/manifest.json"

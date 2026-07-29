@@ -36,6 +36,12 @@ from oracle.exact_json import (  # noqa: E402
     integer,
     loads,
 )
+from oracle.request_registry import (  # noqa: E402
+    RequestRegistryError,
+    SCENARIO_ID,
+    request_by_id,
+    request_for_scenario,
+)
 
 
 COMMANDS = ("environment", "prepare", "finalize")
@@ -43,16 +49,6 @@ WORK_ITEM_ID = "IOS-ANDROID-ORACLE-ATTESTATION-001"
 POST_FORM_WORK_ITEM_ID = "IOS-ANDROID-POST-FORM-ATTESTATION-001"
 FIXTURE_ID = "sl-html-basic-001"
 SOURCE_LAB_MANIFEST_PATH = "ios/harness/source-lab/manifest.json"
-SUPPORTED_SCENARIOS = {
-    "sl-html-basic-001": {
-        "status": "reference",
-        "request_work_item": WORK_ITEM_ID,
-    },
-    "sl-post-form-001": {
-        "status": "candidate",
-        "request_work_item": POST_FORM_WORK_ITEM_ID,
-    },
-}
 EVIDENCE_ARCHIVE_NAME = "android-oracle-evidence.tar"
 PROPOSAL_ARCHIVE_NAME = "android-oracle-proposal.tar"
 HEX40 = re.compile(r"[0-9a-f]{40}\Z")
@@ -176,7 +172,7 @@ def _validate_source_digest(value: str) -> str:
 
 def _validate_scenario_id(value: str) -> str:
     if (
-        value not in SUPPORTED_SCENARIOS
+        SCENARIO_ID.fullmatch(value) is None
         or "/" in value
         or "\\" in value
         or value in {".", ".."}
@@ -185,8 +181,18 @@ def _validate_scenario_id(value: str) -> str:
     return value
 
 
-def _request_for_scenario(scenario_id: str) -> str:
-    return str(SUPPORTED_SCENARIOS[_validate_scenario_id(scenario_id)]["request_work_item"])
+def _request_for_scenario(root: Path, scenario_id: str) -> str:
+    try:
+        request = request_for_scenario(
+            root,
+            _validate_scenario_id(scenario_id),
+        )
+    except RequestRegistryError as error:
+        raise CIProposalError(
+            "SCENARIO_SELECTOR_INVALID",
+            scenario_id,
+        ) from error
+    return str(request["id"])
 
 
 def _validate_run_id(value: str) -> str:
@@ -569,7 +575,7 @@ def _fixture_entry(
     if len(scenario_matches) != 1:
         raise CIProposalError("SOURCE_LAB_SCENARIO_MISSING")
     scenario = scenario_matches[0]
-    contract = SUPPORTED_SCENARIOS[scenario_id]
+    contract = request_for_scenario(root, scenario_id)
     if (
         scenario.get("path") != expected_path
         or scenario.get("status") != contract["status"]
@@ -632,7 +638,7 @@ def prepare(
 ) -> Dict[str, Any]:
     root = root.resolve(strict=True)
     scenario_id = _validate_scenario_id(scenario_id)
-    expected_request = _request_for_scenario(scenario_id)
+    expected_request = _request_for_scenario(root, scenario_id)
     request_work_item = request_work_item or expected_request
     repository = _validate_repository(repository)
     workflow_ref = _validate_workflow_ref(workflow_ref, repository)
@@ -640,15 +646,12 @@ def prepare(
     source_digest = _validate_source_digest(source_digest)
     if request_work_item != expected_request:
         raise CIProposalError("REQUEST_WORK_ITEM_INVALID")
-    request = _read_json(root / f"ios/harness/work-items/{request_work_item}.json")
-    request = _object(request, "request_work_item")
+    request = request_by_id(root, request_work_item)
     if (
-        request.get("metadata", {}).get("id") != request_work_item
-        or request.get("spec", {}).get("inputs", {}).get("fixtures") != [scenario_id]
-        or not (
-            "oracle-golden-request" in request.get("metadata", {}).get("labels", [])
-            or "trusted-proposal" in request.get("metadata", {}).get("labels", [])
-        )
+        request.get("id") != request_work_item
+        or request.get("scenario_id") != scenario_id
+        or request.get("fixture_ids") != [scenario_id]
+        or request.get("authority") != "android_oracle_candidate_only"
     ):
         raise CIProposalError("REQUEST_WORK_ITEM_UNAUTHORIZED")
     local_value, local_bytes = _canonical_json(
@@ -831,7 +834,7 @@ def _validate_evidence(
         or run["status"] != "produced"
         or run["request"]
         != {
-            "work_item_id": _request_for_scenario(scenario_id),
+            "work_item_id": _request_for_scenario(root, scenario_id),
             "fixture_ids": [scenario_id],
             "scenario_id": scenario_id,
         }
@@ -913,12 +916,11 @@ def finalize(
 ) -> Dict[str, Any]:
     root = root.resolve(strict=True)
     scenario_id = _validate_scenario_id(scenario_id)
-    expected_request = _request_for_scenario(scenario_id)
+    expected_request = _request_for_scenario(root, scenario_id)
     request_work_item = request_work_item or expected_request
     if request_work_item != expected_request:
         raise CIProposalError("REQUEST_WORK_ITEM_INVALID")
-    request_path = root / f"ios/harness/work-items/{request_work_item}.json"
-    request = _read_json(request_path)
+    request = request_by_id(root, request_work_item)
     members = read_deterministic_tar(
         evidence_archive,
         expected_evidence_members(scenario_id),
