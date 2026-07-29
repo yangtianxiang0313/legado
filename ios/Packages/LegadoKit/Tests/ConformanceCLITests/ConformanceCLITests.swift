@@ -567,6 +567,63 @@ final class ConformanceCLITests: XCTestCase {
     XCTAssertTrue(text.contains(#""time":701"#))
   }
 
+  func testMinimalTaskRunnerMatchesRuleCombinationAndroidGolden() async throws {
+    let temporaryRoot = FileManager.default.temporaryDirectory
+      .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryRoot) }
+    let fixtureID =
+      "sl-source-rule-combination-and-coercion-runtime-001"
+    let fixturePath = "ios/harness/fixtures/source-lab/\(fixtureID)"
+    let goldenPath =
+      "ios/harness/goldens/android-legado-v1/\(fixtureID).json"
+    let taskPath = "ios/project/loop/task.json"
+    for relative in [fixturePath, goldenPath, taskPath] {
+      try FileManager.default.createDirectory(
+        at:
+          temporaryRoot
+          .appendingPathComponent(relative)
+          .deletingLastPathComponent(),
+        withIntermediateDirectories: true
+      )
+    }
+    try FileManager.default.copyItem(
+      at: repositoryRoot.appendingPathComponent(fixturePath),
+      to: temporaryRoot.appendingPathComponent(fixturePath)
+    )
+    try FileManager.default.copyItem(
+      at: repositoryRoot.appendingPathComponent(goldenPath),
+      to: temporaryRoot.appendingPathComponent(goldenPath)
+    )
+    try JSONSerialization.data(
+      withJSONObject: [
+        "schema_version": 2,
+        "id": "IOS-SOURCE-RUNTIME-RULE-COMBINATION-COERCION-001",
+        "source": [
+          "fixture_id": fixtureID,
+          "android_golden": goldenPath,
+        ],
+      ],
+      options: [.sortedKeys]
+    ).write(to: temporaryRoot.appendingPathComponent(taskPath))
+
+    let first = try await MinimalTaskConformanceRunner.run(
+      taskPath: taskPath,
+      repositoryRoot: temporaryRoot
+    )
+    let second = try await MinimalTaskConformanceRunner.run(
+      taskPath: taskPath,
+      repositoryRoot: temporaryRoot
+    )
+    let text = String(decoding: first.data, as: UTF8.self)
+
+    XCTAssertTrue(first.passed)
+    XCTAssertEqual(first.data, second.data)
+    XCTAssertTrue(text.contains(#""first_divergence":null"#))
+    XCTAssertTrue(text.contains(#""status":"equal""#))
+    XCTAssertTrue(text.contains(#""Alpha|Beta""#))
+    XCTAssertTrue(text.contains(#""com.script.ScriptException""#))
+  }
+
   private var offlineFixture: URL {
     fixture("ios/harness/fixtures/conformance/harness-offline-001")
   }

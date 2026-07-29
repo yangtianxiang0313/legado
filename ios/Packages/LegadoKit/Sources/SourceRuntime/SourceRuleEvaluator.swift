@@ -39,8 +39,10 @@ public struct SourceParserCacheIdentity: RawRepresentable, Sendable, Equatable {
 
 public enum SourceRuleRuntimeError: Error, Sendable, Equatable {
   case missingContent
+  case missingRedirectURL
   case malformedContent(SourceRuleBackend)
   case unsupportedRule(SourceRuleBackend, String)
+  case scriptFailure
 }
 
 /// Stateful, UI-independent compatibility evaluator for one AnalyzeRule
