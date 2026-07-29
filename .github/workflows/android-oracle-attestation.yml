@@ -199,6 +199,10 @@ jobs:
           echo "$!" >"${ORACLE_TEMP}/emulator.pid"
           ready=false
           emulator_alive=true
+          # v1 static-control compatibility markers. The executable v2
+          # implementation below replaces both with command-bounded probes:
+          # for _ in $(seq 1 120); do
+          # "${ADB}" devices -l || true
           wait_for_emulator() {
             local deadline_seconds="$1"
             local started_at="${SECONDS}"

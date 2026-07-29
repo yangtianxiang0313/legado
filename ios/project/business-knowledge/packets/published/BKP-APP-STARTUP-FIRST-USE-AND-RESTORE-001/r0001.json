@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-APP-STARTUP-FIRST-USE-AND-RESTORE-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "app.startup.first-use-and-restore-runtime-golden",
+  "title": "受保护 Android Golden 验证的启动、首次使用与恢复入口语义",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "app.startup",
+      "app.navigation"
+    ],
+    "capability_refs": [
+      "CAP-BOOTSTRAP",
+      "CAP-CONFORMANCE",
+      "CAP-CORE"
+    ],
+    "subject_keys": [
+      "app.startup",
+      "app.navigation"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-APP-STARTUP-001",
+      "revision": 2,
+      "semantic_key": "app.startup.first-use-and-restore",
+      "kind": "runtime_behavior",
+      "topic": "启动、首次使用与恢复入口",
+      "statement": "在 rl-app-startup-first-use-and-restore-001 的 6 个固定 Android 场景中，Welcome 总是先发出 MainActivity 启动；defaultToRead=false 时下游序列只有 MainActivity，defaultToRead=true 时序列为 MainActivity、ReadBookActivity，且两种情况下 Welcome 均销毁。MainActivity 的固定调试构建观察为：隐私拒绝只出现 privacy，Activity 进入 finishing，firstOpen、未设置密码、appCrash 与 lastBackup 保持原值，后续首次使用链停止；首次打开并同意隐私时依次出现 privacy、help、local_password，关闭帮助并取消未设置的本地密码后 firstOpen=false、版本更新为当前值、密码持久为 empty，Activity 不结束；已同意隐私、当前版本且已有非空密码时不出现对话框；已同意隐私但版本变化的调试构建会把版本更新为当前值，却不显示 release 更新日志。固定场景没有 WebDAV 凭据，因此 lastBackup 保持 0；调试构建不会执行 release-only 崩溃提示和更新日志分支，不能据此推断这些分支的 UI、失败反馈或恢复语义。MainActivity 源码声明的总体检查顺序仍是隐私、版本/首次帮助或更新、本地密码、崩溃提示、WebDAV 恢复与后续刷新，但本结论只把上述 6 个运行路径冻结为跨端合同，不把 Android Activity 生命周期、singleTask 实例创建顺序、Dialog 实现或平台 I/O 投射为 iOS 架构。",
+      "subject_keys": [
+        "app.startup",
+        "app.navigation"
+      ],
+      "depends_on": [],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [
+          {
+            "id": "AF-WELCOME-ACTIVITY-START-MAIN",
+            "revision_sha256": "30ce199750e78168465d58d2e394b5061a735b38ead2ce7e294058739025501c"
+          },
+          {
+            "id": "AF-MAIN-ACTIVITY-ON-POST-CREATE",
+            "revision_sha256": "b511880e18eff02b3b29aae169d56db57d9bdfec638dcfad8dd12fad74a86842"
+          }
+        ],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "25980274f4307f77b062b4426434cf118d5dec24",
+            "path": "app/src/main/java/io/legado/app/ui/welcome/WelcomeActivity.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.welcome/WelcomeActivity/startMainActivity"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "641c1dffd26c5ad6f9b9e095791a68c7f1df0972",
+            "path": "app/src/main/java/io/legado/app/ui/main/MainActivity.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.main/MainActivity/onPostCreate"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/rl-app-startup-first-use-and-restore-001.json",
+            "artifact_sha256": "5f1adcdabd8784eedc1e60d1f6106c6b4a971599da118701de481a2630452d5f",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "64e5fdd5b1314ed7a604caf7c9bc3b209198527cbd89366d9ce59f77077ffacb",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "6340918476f172da42f78a28fb2e68809d1878099c046c9454a692f3db108038",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-APP-STARTUP-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-APP-STARTUP-FIRST-USE-AND-RESTORE-001"
+}

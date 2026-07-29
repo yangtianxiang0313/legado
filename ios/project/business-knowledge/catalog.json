@@ -2,14 +2,27 @@
   "schema_version": 1,
   "contract_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-  "inventory_control_sha256": "6e5cfb3844359da0176fa60795087d3d271d7d05dbdccd85b8626833281ff204",
+  "inventory_control_sha256": "9108c1e898ffbc821dba934c2664512c7933e94b9383605453cb98fff02eb46a",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "673118d00a284d30d17480db1516db892fa95a5cf1bfaae872412764b2e4ebfd",
-  "coverage_sha256": "5f686ee560ae1d49b4e97ec7bdc3fde85f38015343c23219845651f7a2295cc5",
+  "authority_sha256": "a2c993852170d394140c393e6fe18fa56fb96eb27817fb8408b4a403c56f2d00",
+  "coverage_sha256": "a9f29f618c88c7f435bd98c02d3634657845b69c1ddbc51e29e1b918e1530e17",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
+    {
+      "id": "BKP-APP-STARTUP-FIRST-USE-AND-RESTORE-001",
+      "revision": 1,
+      "semantic_key": "app.startup.first-use-and-restore-runtime-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-APP-STARTUP-FIRST-USE-AND-RESTORE-001/r0001.json",
+      "record_sha256": "eec4c619d61158d5560b026adeffe9d4e624b45c2105b9acd2a3d01c3fc7121e",
+      "claim_refs": [
+        {
+          "id": "BKC-APP-STARTUP-001",
+          "revision": 2
+        }
+      ]
+    },
     {
       "id": "BKP-CONTENT-CACHE-QUEUE-COMPLETION-001",
       "revision": 1,
@@ -371,6 +384,14 @@
   ],
   "architecture_drivers": [
     {
+      "id": "DRV-APP-STARTUP-FIRST-USE-AND-RESTORE-001",
+      "revision": 1,
+      "semantic_key": "app.startup.first-use-and-restore-boundary",
+      "path": "ios/project/business-knowledge/drivers/published/DRV-APP-STARTUP-FIRST-USE-AND-RESTORE-001/r0001.json",
+      "record_sha256": "9ca3ec07055cea95b02be78bc1110d68aa4650a0e188d4af43443fc69c84fc84",
+      "resolution_state": "resolved"
+    },
+    {
       "id": "DRV-CONTENT-CACHE-QUEUE-COMPLETION-001",
       "revision": 1,
       "semantic_key": "content.runtime.cache-queue-completion",
@@ -572,6 +593,15 @@
     }
   ],
   "coverage_ledgers": [
+    {
+      "id": "BKL-APP-STARTUP-FIRST-USE-AND-RESTORE-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-APP-STARTUP-FIRST-USE-AND-RESTORE-001.json",
+      "record_sha256": "29bbb33d1750e8f0c784a2d374346710afea52008813f46b52619cc5ce3ce453",
+      "entry_ids": [
+        "BKE-APP-STARTUP-FIRST-USE-AND-RESTORE-001"
+      ]
+    },
     {
       "id": "BKL-CONTENT-CACHE-QUEUE-COMPLETION-001",
       "revision": 1,

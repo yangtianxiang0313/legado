@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-APP-STARTUP-FIRST-USE-AND-RESTORE-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "app.startup.first-use-and-restore-boundary",
+  "title": "以纯启动协调器隔离 Android 首次使用状态机",
+  "claim_refs": [
+    {
+      "id": "BKC-APP-STARTUP-001",
+      "revision": 2
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "structural_fidelity",
+      "scenario": "iOS 必须保持受保护 Golden 的主壳先行、可选直达阅读、隐私拒绝终止，以及首次同意后 help 先于 local password 的可观察结构；Android Activity、Fragment、singleTask 和对话框类不属于跨端合同。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "modularity",
+      "scenario": "启动决策应由 AppNavigation/AppUseCases 中的纯状态转换与显式 effect 描述；AppShell 只投影 route/dialog，版本、密码、崩溃和备份状态经端口读取，Feature 与 View 不直接访问 UserDefaults、Keychain、文件或网络。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "state_safety",
+      "scenario": "隐私拒绝必须短路后续 effect；首次帮助关闭后才允许本地密码提示；取消未设置密码必须显式产生 empty，而不是继续保持 unset；版本写回、firstOpen 写回和导航 effect 需要可重放且顺序稳定。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "testability",
+      "scenario": "核心状态机用结构化 trace 对齐 Android Golden，AppShell 再在真实 iPhone/iPad Simulator 验证 route/dialog 层级与拒绝、同意、跳过、直达阅读路径。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "scope_control",
+      "scenario": "本切片只实现 6 个固定调试构建场景；release-only 更新日志、崩溃提示、真实 WebDAV 恢复、失败重试、并发启动和系统强杀恢复保持未验证，必须由后续 Android 真源任务扩张后再进入 iOS 合同。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "evidence_integrity",
+      "scenario": "Android 启动顺序以实际 startActivity dispatch 取证，不能用 Activity 实例创建或生命周期回调替代，因为 singleTask 复用会改变实例观察顺序。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "如何把 StartupSnapshot、StartupEffect 和 StartupCheckpoint 设计为平台无关值，使拒绝、帮助关闭、密码取消和导航都能逐步推进并输出稳定 trace？",
+    "AppUseCases 如何通过版本、隐私、密码、崩溃与备份端口执行 effect，同时确保 AppNavigation 不依赖持久化和平台 I/O？",
+    "如何在 iPhone/iPad Simulator 中验证相同结构状态机，同时允许 iOS 使用平台原生 sheet、alert 和 split/stack 导航细节？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002",
+      "ADR-0006"
+    ],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-APP-STARTUP-FIRST-USE-AND-RESTORE-001",
+      "IOS-APP-NAVIGATION-STARTUP-FIRST-USE-RESTORE-001"
+    ]
+  },
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30494892905/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-APP-STARTUP-FIRST-USE-AND-RESTORE-001"
+}

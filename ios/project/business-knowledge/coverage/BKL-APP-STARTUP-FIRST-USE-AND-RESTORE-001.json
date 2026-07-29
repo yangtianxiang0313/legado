@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgeCoverageLedger",
+  "id": "BKL-APP-STARTUP-FIRST-USE-AND-RESTORE-001",
+  "revision": 1,
+  "status": "current",
+  "packet_refs": [
+    {
+      "id": "BKP-APP-STARTUP-FIRST-USE-AND-RESTORE-001",
+      "revision": 1,
+      "sha256": "eec4c619d61158d5560b026adeffe9d4e624b45c2105b9acd2a3d01c3fc7121e"
+    }
+  ],
+  "generated_from": {
+    "knowledge_authority_sha256": "a2c993852170d394140c393e6fe18fa56fb96eb27817fb8408b4a403c56f2d00",
+    "requirement_catalog_sha256": "dd85c5dd5cb7ede382e84ac3b08e6beeb8ffc38275cf8dfcb0e75d8b0a42800d",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "entries": [
+    {
+      "id": "BKE-APP-STARTUP-FIRST-USE-AND-RESTORE-001",
+      "claim_ref": {
+        "id": "BKC-APP-STARTUP-001",
+        "revision": 2
+      },
+      "validation": {
+        "required": "android_runtime",
+        "state": "verified",
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-app-startup-first-use-and-restore-001-30494053274-1.json",
+          "ios/harness/goldens/android-legado-v1/rl-app-startup-first-use-and-restore-001.json#/artifact/result/value"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "covered_by_requirement",
+        "refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "reason": "受保护 Android Golden 已冻结主壳先行、可选直达阅读、隐私拒绝短路、首次帮助与密码顺序、当前版本跳过和调试构建版本变化边界，交由 AppNavigation/AppUseCases 纯启动协调器实现",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "planned",
+        "requirement_refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "work_item_refs": [
+          "IOS-APP-NAVIGATION-STARTUP-FIRST-USE-RESTORE-001"
+        ],
+        "capability_refs": [
+          "CAP-BOOTSTRAP",
+          "CAP-CONFORMANCE",
+          "CAP-CORE"
+        ],
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-app-startup-first-use-and-restore-001-30494053274-1.json"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    }
+  ],
+  "updated_by": "IOS-CHARACTERIZE-APP-STARTUP-FIRST-USE-AND-RESTORE-001",
+  "updated_at": "2026-07-29T22:11:02Z"
+}
