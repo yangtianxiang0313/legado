@@ -33,8 +33,10 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.json.JSONArray
 import org.json.JSONObject
+import org.jsoup.nodes.Element
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.seimicrawler.xpath.JXNode
 import java.io.File
 import java.io.IOException
 import java.lang.reflect.InvocationTargetException
@@ -127,6 +129,8 @@ class LegadoOracleInstrumentedTest {
                 runRuleBackendDispatchCases()
             "sl-source-rule-combination-and-coercion-runtime-001" ->
                 runRuleCombinationCases()
+            "sl-source-rule-dom-selector-backends-001" ->
+                runDOMSelectorBackendCases()
             "sl-content-cache-queue-completion-runtime-001" ->
                 runContentCacheQueueCompletionCases()
             else -> {
@@ -579,6 +583,33 @@ class LegadoOracleInstrumentedTest {
                 request
             ) {
                 ruleCombinationProjection(
+                    value.getJSONObject("arguments")
+                )
+            }
+        }
+    }
+
+    private suspend fun runDOMSelectorBackendCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            require(
+                value.getString("operation") ==
+                    "dom_selector_backends"
+            ) {
+                "DOM selector scenario only accepts " +
+                    "dom_selector_backends stimuli"
+            }
+            val requestValue = value.getJSONObject("request")
+            val request = request(
+                deviceOrigin + requestValue.getString("target")
+            )
+            runCase(
+                value.getString("id"),
+                "dom_selector_backends",
+                request
+            ) {
+                domSelectorProjection(
                     value.getJSONObject("arguments")
                 )
             }
@@ -1209,6 +1240,400 @@ class LegadoOracleInstrumentedTest {
         "exception_boundary" -> ruleExceptionProjection(arguments)
         else -> error("Unsupported rule combination mode: $mode")
     }
+
+    private fun domSelectorProjection(
+        arguments: JSONObject
+    ): JSONObject = when (val mode = arguments.getString("mode")) {
+        "css_strings" -> cssStringProjection(arguments)
+        "css_indexing" -> cssIndexProjection(arguments)
+        "css_combinations" -> cssCombinationProjection(arguments)
+        "css_url" -> cssURLProjection(arguments)
+        "css_failure" -> cssFailureProjection(arguments)
+        "xpath_strings" -> xpathStringProjection(arguments)
+        "xpath_nodes" -> xpathNodeProjection(arguments)
+        "xpath_fragments" -> xpathFragmentProjection(arguments)
+        "xpath_namespace_functions" ->
+            xpathNamespaceFunctionProjection(arguments)
+        "xpath_failure" -> xpathFailureProjection(arguments)
+        else -> error("Unsupported DOM selector mode: $mode")
+    }
+
+    private fun cssStringProjection(arguments: JSONObject): JSONObject =
+        stringRuleMatrix(
+            arguments.getString("content"),
+            arguments.getJSONObject("rules")
+        )
+
+    private fun cssIndexProjection(arguments: JSONObject): JSONObject =
+        stringRuleMatrix(
+            arguments.getString("content"),
+            arguments.getJSONObject("rules")
+        )
+
+    private fun cssCombinationProjection(
+        arguments: JSONObject
+    ): JSONObject = stringRuleMatrix(
+        arguments.getString("content"),
+        arguments.getJSONObject("rules")
+    )
+
+    private fun stringRuleMatrix(
+        content: String,
+        rules: JSONObject
+    ): JSONObject = JSONObject().apply {
+        val keys = rules.keys().asSequence().toList().sorted()
+        keys.forEach { key ->
+            val rule = rules.getString(key)
+            put(
+                key,
+                JSONObject()
+                    .put(
+                        "string",
+                        AnalyzeRule().setContent(content).getString(rule)
+                    )
+                    .put(
+                        "list",
+                        nullableStringList(
+                            AnalyzeRule().setContent(content)
+                                .getStringList(rule)
+                        )
+                    )
+            )
+        }
+    }
+
+    private fun cssURLProjection(arguments: JSONObject): JSONObject {
+        val content = arguments.getString("content")
+        val redirectURL = arguments.getString("redirect_url")
+        val rules = arguments.getJSONObject("rules")
+        return JSONObject().apply {
+            val keys = rules.keys().asSequence().toList().sorted()
+            keys.forEach { key ->
+                val rule = rules.getString(key)
+                put(
+                    key,
+                    JSONObject()
+                        .put(
+                            "raw_string",
+                            AnalyzeRule().setContent(content)
+                                .getString(rule)
+                        )
+                        .put(
+                            "absolute_string",
+                            urlAnalyzer(content, redirectURL)
+                                .getString(rule, isUrl = true)
+                        )
+                        .put(
+                            "raw_list",
+                            nullableStringList(
+                                AnalyzeRule().setContent(content)
+                                    .getStringList(rule)
+                            )
+                        )
+                        .put(
+                            "absolute_list",
+                            nullableStringList(
+                                urlAnalyzer(content, redirectURL)
+                                    .getStringList(rule, isUrl = true)
+                            )
+                        )
+                )
+            }
+        }
+    }
+
+    private fun urlAnalyzer(
+        content: String,
+        redirectURL: String
+    ): AnalyzeRule = AnalyzeRule()
+        .setContent(content, redirectURL)
+        .apply { setRedirectUrl(redirectURL) }
+
+    private fun cssFailureProjection(arguments: JSONObject): JSONObject {
+        val content = arguments.getString("content")
+        val missing = arguments.getString("missing_rule")
+        val missingElements = arguments.getString(
+            "missing_elements_rule"
+        )
+        val malformed = arguments.getString("malformed_rule")
+        return JSONObject()
+            .put(
+                "missing",
+                JSONObject()
+                    .put(
+                        "string",
+                        AnalyzeRule().setContent(content)
+                            .getString(missing)
+                    )
+                    .put(
+                        "list",
+                        nullableStringList(
+                            AnalyzeRule().setContent(content)
+                                .getStringList(missing)
+                        )
+                    )
+                    .put(
+                        "elements_count",
+                        AnalyzeRule().setContent(content)
+                            .getElements(missingElements).size
+                    )
+            )
+            .put(
+                "malformed",
+                JSONObject()
+                    .put(
+                        "string",
+                        stringOutcome {
+                            AnalyzeRule().setContent(content)
+                                .getString(malformed)
+                        }
+                    )
+                    .put(
+                        "list",
+                        stringListOutcome {
+                            AnalyzeRule().setContent(content)
+                                .getStringList(malformed)
+                        }
+                    )
+                    .put(
+                        "elements",
+                        elementOutcome {
+                            AnalyzeRule().setContent(content)
+                                .getElements(malformed)
+                        }
+                    )
+            )
+    }
+
+    private fun xpathStringProjection(
+        arguments: JSONObject
+    ): JSONObject = outcomeStringRuleMatrix(
+        arguments.getString("content"),
+        arguments.getJSONObject("rules")
+    )
+
+    private fun xpathNodeProjection(arguments: JSONObject): JSONObject {
+        val content = arguments.getString("content")
+        val rules = arguments.getJSONObject("rules")
+        return JSONObject().apply {
+            val keys = rules.keys().asSequence().toList().sorted()
+            keys.forEach { key ->
+                put(
+                    key,
+                    elementProjection(
+                        AnalyzeRule().setContent(content)
+                            .getElements(rules.getString(key))
+                    )
+                )
+            }
+        }
+    }
+
+    private fun xpathFragmentProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val rules = arguments.getJSONObject("rules")
+        return JSONObject()
+            .put(
+                "td",
+                stringRuleMatrix(
+                    arguments.getString("td_fragment"),
+                    JSONObject().put("value", rules.getString("td"))
+                ).getJSONObject("value")
+            )
+            .put(
+                "tr",
+                stringRuleMatrix(
+                    arguments.getString("tr_fragment"),
+                    JSONObject().put("value", rules.getString("tr"))
+                ).getJSONObject("value")
+            )
+            .put(
+                "malformed",
+                stringRuleMatrix(
+                    arguments.getString("malformed_html"),
+                    JSONObject()
+                        .put("value", rules.getString("malformed"))
+                ).getJSONObject("value")
+            )
+    }
+
+    private fun xpathNamespaceFunctionProjection(
+        arguments: JSONObject
+    ): JSONObject = outcomeStringRuleMatrix(
+        arguments.getString("content"),
+        arguments.getJSONObject("rules")
+    )
+
+    private fun outcomeStringRuleMatrix(
+        content: String,
+        rules: JSONObject
+    ): JSONObject = JSONObject().apply {
+        val keys = rules.keys().asSequence().toList().sorted()
+        keys.forEach { key ->
+            val rule = rules.getString(key)
+            put(
+                key,
+                JSONObject()
+                    .put(
+                        "string",
+                        stringOutcome {
+                            AnalyzeRule().setContent(content)
+                                .getString(rule)
+                        }
+                    )
+                    .put(
+                        "list",
+                        stringListOutcome {
+                            AnalyzeRule().setContent(content)
+                                .getStringList(rule)
+                        }
+                    )
+            )
+        }
+    }
+
+    private fun xpathFailureProjection(arguments: JSONObject): JSONObject {
+        val content = arguments.getString("content")
+        val missing = arguments.getString("missing_rule")
+        val malformed = arguments.getString("malformed_rule")
+        return JSONObject()
+            .put(
+                "missing",
+                JSONObject()
+                    .put(
+                        "string",
+                        AnalyzeRule().setContent(content)
+                            .getString(missing)
+                    )
+                    .put(
+                        "list",
+                        nullableStringList(
+                            AnalyzeRule().setContent(content)
+                                .getStringList(missing)
+                        )
+                    )
+                    .put(
+                        "elements",
+                        elementProjection(
+                            AnalyzeRule().setContent(content)
+                                .getElements(missing)
+                        )
+                    )
+            )
+            .put(
+                "malformed",
+                JSONObject()
+                    .put(
+                        "string",
+                        stringOutcome {
+                            AnalyzeRule().setContent(content)
+                                .getString(malformed)
+                        }
+                    )
+                    .put(
+                        "list",
+                        stringListOutcome {
+                            AnalyzeRule().setContent(content)
+                                .getStringList(malformed)
+                        }
+                    )
+                    .put(
+                        "elements",
+                        elementOutcome {
+                            AnalyzeRule().setContent(content)
+                                .getElements(malformed)
+                        }
+                    )
+            )
+    }
+
+    private fun stringOutcome(block: () -> String): JSONObject =
+        runCatching(block).fold(
+            onSuccess = { value ->
+                JSONObject()
+                    .put("completed", true)
+                    .put("value", value)
+                    .put("exception_type", JSONObject.NULL)
+            },
+            onFailure = { error ->
+                JSONObject()
+                    .put("completed", false)
+                    .put("value", JSONObject.NULL)
+                    .put("exception_type", error.javaClass.name)
+            }
+        )
+
+    private fun stringListOutcome(
+        block: () -> List<String>?
+    ): JSONObject = runCatching(block).fold(
+        onSuccess = { value ->
+            JSONObject()
+                .put("completed", true)
+                .put("value", nullableStringList(value))
+                .put("exception_type", JSONObject.NULL)
+        },
+        onFailure = { error ->
+            JSONObject()
+                .put("completed", false)
+                .put("value", JSONObject.NULL)
+                .put("exception_type", error.javaClass.name)
+        }
+    )
+
+    private fun elementOutcome(
+        block: () -> List<Any>
+    ): JSONObject = runCatching(block).fold(
+        onSuccess = { value ->
+            JSONObject()
+                .put("completed", true)
+                .put("value", elementProjection(value))
+                .put("exception_type", JSONObject.NULL)
+        },
+        onFailure = { error ->
+            JSONObject()
+                .put("completed", false)
+                .put("value", JSONObject.NULL)
+                .put("exception_type", error.javaClass.name)
+        }
+    )
+
+    private fun elementProjection(values: List<Any>): JSONArray =
+        JSONArray().apply {
+            values.forEach { value ->
+                put(
+                    when (value) {
+                        is Element -> JSONObject()
+                            .put("kind", "jsoup_element")
+                            .put("tag", value.tagName())
+                            .put("text", value.text())
+                            .put("rendered", value.outerHtml())
+                        is JXNode -> JSONObject()
+                            .put(
+                                "kind",
+                                if (value.isElement) {
+                                    "xpath_element"
+                                } else {
+                                    "xpath_value"
+                                }
+                            )
+                            .put(
+                                "tag",
+                                if (value.isElement) {
+                                    value.asElement().tagName()
+                                } else {
+                                    JSONObject.NULL
+                                }
+                            )
+                            .put("as_string", value.asString())
+                            .put("rendered", value.toString())
+                        else -> JSONObject()
+                            .put("kind", value.javaClass.name)
+                            .put("rendered", value.toString())
+                    }
+                )
+            }
+        }
 
     private fun stringAndListProjection(
         arguments: JSONObject

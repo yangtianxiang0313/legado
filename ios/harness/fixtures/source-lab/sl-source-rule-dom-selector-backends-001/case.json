@@ -1,0 +1,162 @@
+{
+  "schema_version": 1,
+  "kind": "source_lab_scenario",
+  "id": "sl-source-rule-dom-selector-backends-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "source_lab_site",
+  "capabilities": [
+    "CAP-RUNTIME-PORTS",
+    "CAP-CONFORMANCE"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": "source.template.json",
+  "input": "input.json",
+  "transport": {
+    "mode": "fixture_and_loopback",
+    "external_network": "deny",
+    "responses": [
+      {
+        "id": "css-string-derivations",
+        "match": {"method": "GET", "path": "/dom-selector/css-string-derivations", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "css-index-children-filtering",
+        "match": {"method": "GET", "path": "/dom-selector/css-index-children-filtering", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "css-combination-operators",
+        "match": {"method": "GET", "path": "/dom-selector/css-combination-operators", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "css-url-resolution-deduplication",
+        "match": {"method": "GET", "path": "/dom-selector/css-url-resolution-deduplication", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "css-empty-and-malformed-selector",
+        "match": {"method": "GET", "path": "/dom-selector/css-empty-and-malformed-selector", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "xpath-string-node-forms",
+        "match": {"method": "GET", "path": "/dom-selector/xpath-string-node-forms", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "xpath-element-node-projections",
+        "match": {"method": "GET", "path": "/dom-selector/xpath-element-node-projections", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "xpath-tolerant-html-fragments",
+        "match": {"method": "GET", "path": "/dom-selector/xpath-tolerant-html-fragments", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "xpath-namespace-and-functions",
+        "match": {"method": "GET", "path": "/dom-selector/xpath-namespace-and-functions", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "xpath-empty-and-malformed-expression",
+        "match": {"method": "GET", "path": "/dom-selector/xpath-empty-and-malformed-expression", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      }
+    ]
+  },
+  "coverage": [
+    {
+      "behavior": "runtime.rule-dom-selector-backends",
+      "cases": [
+        {
+          "id": "css-string-derivations",
+          "role": "nominal",
+          "android_fact_refs": ["AF-ANALYZE-RULE-GET-STRING", "AF-ANALYZE-RULE-GET-STRING-LIST"],
+          "branch_refs": ["AnalyzeByJSoup getResultLast text, ownText, textNodes, html, all and attribute branches"]
+        },
+        {
+          "id": "css-index-children-filtering",
+          "role": "boundary",
+          "android_fact_refs": ["AF-ANALYZE-RULE-GET-STRING-LIST"],
+          "branch_refs": ["AnalyzeByJSoup ElementsSingle children, positive/negative index, slice, exclusion and reverse branches"]
+        },
+        {
+          "id": "css-combination-operators",
+          "role": "nominal",
+          "android_fact_refs": ["AF-ANALYZE-RULE-GET-STRING", "AF-ANALYZE-RULE-GET-STRING-LIST"],
+          "branch_refs": ["AnalyzeByJSoup CSS &&, || and %% result combination branches"]
+        },
+        {
+          "id": "css-url-resolution-deduplication",
+          "role": "boundary",
+          "android_fact_refs": ["AF-ANALYZE-RULE-GET-STRING", "AF-ANALYZE-RULE-GET-STRING-LIST"],
+          "branch_refs": ["AnalyzeByJSoup attribute extraction followed by AnalyzeRule URL completion and deduplication"]
+        },
+        {
+          "id": "css-empty-and-malformed-selector",
+          "role": "malformed",
+          "android_fact_refs": ["AF-ANALYZE-RULE-GET-STRING", "AF-ANALYZE-RULE-GET-STRING-LIST"],
+          "branch_refs": ["AnalyzeByJSoup empty result and selector parser exception boundary"]
+        },
+        {
+          "id": "xpath-string-node-forms",
+          "role": "nominal",
+          "android_fact_refs": ["AF-ANALYZE-RULE-GET-STRING", "AF-ANALYZE-RULE-GET-STRING-LIST"],
+          "branch_refs": ["AnalyzeByXPath JXNode asString and TextUtils joined getString paths for text, attribute and scalar function results"]
+        },
+        {
+          "id": "xpath-element-node-projections",
+          "role": "nominal",
+          "android_fact_refs": ["AF-ANALYZE-RULE-GET-STRING-LIST"],
+          "branch_refs": ["AnalyzeByXPath getElements node kinds and node-to-string projection"]
+        },
+        {
+          "id": "xpath-tolerant-html-fragments",
+          "role": "boundary",
+          "android_fact_refs": ["AF-ANALYZE-RULE-GET-STRING-LIST"],
+          "branch_refs": ["AnalyzeByXPath strToJXDocument td/tr wrapping and tolerant malformed HTML conversion"]
+        },
+        {
+          "id": "xpath-namespace-and-functions",
+          "role": "boundary",
+          "android_fact_refs": ["AF-ANALYZE-RULE-GET-STRING", "AF-ANALYZE-RULE-GET-STRING-LIST"],
+          "branch_refs": ["AnalyzeByXPath XML parser, local-name/namespace/scalar function evaluation and unresolved prefix boundary"]
+        },
+        {
+          "id": "xpath-empty-and-malformed-expression",
+          "role": "malformed",
+          "android_fact_refs": ["AF-ANALYZE-RULE-GET-STRING", "AF-ANALYZE-RULE-GET-STRING-LIST"],
+          "branch_refs": ["AnalyzeByXPath empty node result and malformed expression exception boundary"]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "2026-01-01T00:00:00Z",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 43,
+    "network_allowed": false,
+    "logical_origin": "http://sourcelab.test"
+  },
+  "limits": {
+    "timeout_ms": 1000,
+    "max_response_bytes": 1048576,
+    "max_request_body_bytes": 1048576,
+    "max_requests": 20,
+    "max_concurrency": 2
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt",
+      "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByJSoup.kt",
+      "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByXPath.kt"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-SOURCE-RULE-DOM-SELECTOR-BACKENDS-001"
+  }
+}

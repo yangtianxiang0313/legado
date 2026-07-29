@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "css-string-derivations",
+      "operation": "dom_selector_backends",
+      "arguments": {
+        "mode": "css_strings",
+        "content": "<html><body><article class=\"card\" data-code=\"A1\"> leading <h1>Alpha &amp; Beta</h1><div class=\"body\">First <b>bold</b><script>drop()</script><style>.x{}</style> tail</div><a class=\"link\" href=\"../book/1?x=1&amp;y=2\">Read</a></article></body></html>",
+        "rules": {
+          "text": "@CSS:.card@text",
+          "own_text": "@CSS:.card@ownText",
+          "text_nodes": "@CSS:.body@textNodes",
+          "html": "@CSS:.body@html",
+          "all": "@CSS:.body@all",
+          "attribute": "@CSS:.card@data-code",
+          "href": "@CSS:.link@href"
+        }
+      },
+      "request": {"method": "GET", "target": "/dom-selector/css-string-derivations"}
+    },
+    {
+      "id": "css-index-children-filtering",
+      "operation": "dom_selector_backends",
+      "arguments": {
+        "mode": "css_indexing",
+        "content": "<html><body><ul id=\"items\"><li>zero</li><li>one</li><li>two</li><li>three</li></ul></body></html>",
+        "rules": {
+          "children_second": "#items@children.1@text",
+          "negative_and_first": "#items@tag.li[-1,0]@text",
+          "slice": "#items@tag.li[0:3:2]@text",
+          "exclude": "#items@tag.li[!1,3]@text",
+          "reverse": "#items@tag.li[-1:0]@text"
+        }
+      },
+      "request": {"method": "GET", "target": "/dom-selector/css-index-children-filtering"}
+    },
+    {
+      "id": "css-combination-operators",
+      "operation": "dom_selector_backends",
+      "arguments": {
+        "mode": "css_combinations",
+        "content": "<html><body><ul><li class=\"left\">L1</li><li class=\"right\">R1</li><li class=\"left\">L2</li><li class=\"right\">R2</li></ul></body></html>",
+        "rules": {
+          "and": "@CSS:li.left@text&&li.right@text",
+          "or": "@CSS:li.missing@text||li.right@text",
+          "percent": "@CSS:li.left@text%%li.right@text"
+        }
+      },
+      "request": {"method": "GET", "target": "/dom-selector/css-combination-operators"}
+    },
+    {
+      "id": "css-url-resolution-deduplication",
+      "operation": "dom_selector_backends",
+      "arguments": {
+        "mode": "css_url",
+        "content": "<html><body><a class=\"relative\" href=\"../book/1\">one</a><a class=\"relative\" href=\"../book/1\">duplicate</a><a class=\"root\" href=\"/book/2\">two</a><img src=\"//cdn.example.test/covers/1.png\"></body></html>",
+        "redirect_url": "https://reader.example.test/catalog/list/index.html",
+        "rules": {
+          "relative": "@CSS:a.relative@href",
+          "all_links": "@CSS:a@href",
+          "image": "@CSS:img@src",
+          "missing": "@CSS:a.missing@href"
+        }
+      },
+      "request": {"method": "GET", "target": "/dom-selector/css-url-resolution-deduplication"}
+    },
+    {
+      "id": "css-empty-and-malformed-selector",
+      "operation": "dom_selector_backends",
+      "arguments": {
+        "mode": "css_failure",
+        "content": "<html><body><p class=\"value\">present</p></body></html>",
+        "missing_rule": "@CSS:.missing@text",
+        "missing_elements_rule": "@CSS:.missing",
+        "malformed_rule": "@CSS:div["
+      },
+      "request": {"method": "GET", "target": "/dom-selector/css-empty-and-malformed-selector"}
+    },
+    {
+      "id": "xpath-string-node-forms",
+      "operation": "dom_selector_backends",
+      "arguments": {
+        "mode": "xpath_strings",
+        "content": "<html><body><h1>  Alpha <em>Beta</em>  </h1><ul><li>A</li><li>B</li></ul><a href=\"../next\">Next</a></body></html>",
+        "rules": {
+          "text_nodes": "@XPath://li/text()",
+          "attribute_nodes": "@XPath://a/@href",
+          "string_function": "@XPath:string(//h1)",
+          "normalize_function": "@XPath:normalize-space(string(//h1))"
+        }
+      },
+      "request": {"method": "GET", "target": "/dom-selector/xpath-string-node-forms"}
+    },
+    {
+      "id": "xpath-element-node-projections",
+      "operation": "dom_selector_backends",
+      "arguments": {
+        "mode": "xpath_nodes",
+        "content": "<html><body><ul><li data-id=\"1\">Alpha <b>A</b></li><li data-id=\"2\">Beta</li></ul></body></html>",
+        "rules": {
+          "elements": "@XPath://li",
+          "text_nodes": "@XPath://li/text()",
+          "attribute_nodes": "@XPath://li/@data-id"
+        }
+      },
+      "request": {"method": "GET", "target": "/dom-selector/xpath-element-node-projections"}
+    },
+    {
+      "id": "xpath-tolerant-html-fragments",
+      "operation": "dom_selector_backends",
+      "arguments": {
+        "mode": "xpath_fragments",
+        "td_fragment": "<td data-k=\"x\">Cell</td>",
+        "tr_fragment": "<tr><td>Row A</td><td>Row B</td></tr>",
+        "malformed_html": "<ul><li>One<li>Two</ul>",
+        "rules": {
+          "td": "@XPath://td/text()",
+          "tr": "@XPath://td/text()",
+          "malformed": "@XPath://li/text()"
+        }
+      },
+      "request": {"method": "GET", "target": "/dom-selector/xpath-tolerant-html-fragments"}
+    },
+    {
+      "id": "xpath-namespace-and-functions",
+      "operation": "dom_selector_backends",
+      "arguments": {
+        "mode": "xpath_namespace_functions",
+        "content": "<?xml version=\"1.0\"?><catalog xmlns:b=\"urn:book\"><b:book id=\"1\"><b:title> First </b:title></b:book><b:book id=\"2\"><b:title>Second</b:title></b:book></catalog>",
+        "rules": {
+          "local_name_titles": "@XPath://*[local-name()='title']/text()",
+          "count": "@XPath:count(//*[local-name()='book'])",
+          "normalized_first": "@XPath:normalize-space(string(//*[local-name()='title'][1]))",
+          "namespace_uri": "@XPath:namespace-uri(//*[local-name()='title'][1])",
+          "prefixed": "@XPath://b:title/text()"
+        }
+      },
+      "request": {"method": "GET", "target": "/dom-selector/xpath-namespace-and-functions"}
+    },
+    {
+      "id": "xpath-empty-and-malformed-expression",
+      "operation": "dom_selector_backends",
+      "arguments": {
+        "mode": "xpath_failure",
+        "content": "<html><body><p class=\"value\">present</p></body></html>",
+        "missing_rule": "@XPath://missing/text()",
+        "malformed_rule": "@XPath://*["
+      },
+      "request": {"method": "GET", "target": "/dom-selector/xpath-empty-and-malformed-expression"}
+    }
+  ]
+}

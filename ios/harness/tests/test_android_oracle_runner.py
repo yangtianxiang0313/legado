@@ -839,6 +839,14 @@ class AndroidOracleRunnerTests(unittest.TestCase):
             "sl-source-rule-combination-and-coercion-runtime-001",
             rule_combination["scenario_id"],
         )
+        dom_selector_backends = runner.doctor(
+            ROOT,
+            "sl-source-rule-dom-selector-backends-001",
+        )
+        self.assertEqual(
+            "sl-source-rule-dom-selector-backends-001",
+            dom_selector_backends["scenario_id"],
+        )
         content_cache_queue_completion = runner.doctor(
             ROOT,
             "sl-content-cache-queue-completion-runtime-001",

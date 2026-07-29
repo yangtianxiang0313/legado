@@ -364,6 +364,51 @@ SCENARIO_CONTRACTS = {
             "javascript-exception-interruption",
         }),
     },
+    "sl-source-rule-dom-selector-backends-001": {
+        "status": "candidate",
+        "expected_cases": (
+            ("css-string-derivations", "dom_selector_backends"),
+            ("css-index-children-filtering", "dom_selector_backends"),
+            ("css-combination-operators", "dom_selector_backends"),
+            (
+                "css-url-resolution-deduplication",
+                "dom_selector_backends",
+            ),
+            (
+                "css-empty-and-malformed-selector",
+                "dom_selector_backends",
+            ),
+            ("xpath-string-node-forms", "dom_selector_backends"),
+            (
+                "xpath-element-node-projections",
+                "dom_selector_backends",
+            ),
+            (
+                "xpath-tolerant-html-fragments",
+                "dom_selector_backends",
+            ),
+            (
+                "xpath-namespace-and-functions",
+                "dom_selector_backends",
+            ),
+            (
+                "xpath-empty-and-malformed-expression",
+                "dom_selector_backends",
+            ),
+        ),
+        "nominal_cases": frozenset({
+            "css-string-derivations",
+            "css-index-children-filtering",
+            "css-combination-operators",
+            "css-url-resolution-deduplication",
+            "css-empty-and-malformed-selector",
+            "xpath-string-node-forms",
+            "xpath-element-node-projections",
+            "xpath-tolerant-html-fragments",
+            "xpath-namespace-and-functions",
+            "xpath-empty-and-malformed-expression",
+        }),
+    },
     "sl-content-cache-queue-completion-runtime-001": {
         "status": "candidate",
         "expected_cases": (

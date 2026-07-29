@@ -1,0 +1,33 @@
+{
+  "bookSourceUrl": "${SOURCE_LAB_ORIGIN}",
+  "bookSourceName": "SourceLab DOM Selector Backend 测试源",
+  "bookSourceGroup": "SourceLab",
+  "bookSourceType": 0,
+  "enabled": true,
+  "enabledExplore": false,
+  "searchUrl": "${SOURCE_LAB_ORIGIN}/dom-selector",
+  "ruleSearch": {
+    "bookList": "@CSS:.book-item",
+    "name": "@CSS:.book-name@text",
+    "author": "@CSS:.book-author@text",
+    "bookUrl": "@CSS:a.book-link@href"
+  },
+  "ruleBookInfo": {
+    "name": "@XPath:string(//h1[@class='book-name'])",
+    "author": "@XPath:string(//*[@class='book-author'])",
+    "tocUrl": "@CSS:a.toc-link@href"
+  },
+  "ruleToc": {
+    "chapterList": "@XPath://ul[@id='chapter-list']/li",
+    "chapterName": "@CSS:a@text",
+    "chapterUrl": "@CSS:a@href"
+  },
+  "ruleContent": {
+    "title": "@XPath:string(//h1[@class='chapter-title'])",
+    "content": "@CSS:#chapter-content@html"
+  },
+  "x-source-lab": {
+    "scenario": "sl-source-rule-dom-selector-backends-001",
+    "logicalOrigin": "http://sourcelab.test"
+  }
+}
