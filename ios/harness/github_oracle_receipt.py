@@ -30,6 +30,7 @@ EXPECTED_FILES = {
 MAX_FILE_BYTES = 128 * 1024 * 1024
 AUTHORITY_PATHS = (
     WORKFLOW_PATH,
+    "ios/harness/fixtures/manifest.json",
     "ios/harness/oracle/contract.py",
     "ios/harness/oracle/ci_proposal.py",
     "ios/harness/oracle/request-registry.json",
@@ -198,8 +199,35 @@ class GitHubOracleReceiptSettler:
             raise GitHubOracleReceiptError("GITHUB_ARTIFACT_INVALID")
         return artifact
 
+    def _fixture_path(self, reference: str) -> str:
+        manifest_path = "ios/harness/fixtures/manifest.json"
+        try:
+            manifest = json.loads(
+                self._git("show", f"{reference}:{manifest_path}")
+            )
+        except (UnicodeError, json.JSONDecodeError) as error:
+            raise GitHubOracleReceiptError("AUTHORITY_TREE_INVALID") from error
+        matches = [
+            entry
+            for entry in manifest.get("fixtures", [])
+            if isinstance(entry, dict)
+            and entry.get("id") == self.identity.scenario
+        ] if isinstance(manifest, dict) else []
+        if len(matches) != 1 or not isinstance(matches[0].get("path"), str):
+            raise GitHubOracleReceiptError("AUTHORITY_TREE_INVALID")
+        fixture = str(matches[0]["path"])
+        allowed = {
+            f"ios/harness/fixtures/source-lab/{self.identity.scenario}",
+            f"ios/harness/fixtures/runtime-lab/{self.identity.scenario}",
+        }
+        if fixture not in allowed:
+            raise GitHubOracleReceiptError("AUTHORITY_TREE_INVALID")
+        return fixture
+
     def _authority_paths(self, source: str) -> tuple[str, ...]:
-        fixture = f"ios/harness/fixtures/source-lab/{self.identity.scenario}"
+        fixture = self._fixture_path("HEAD")
+        if fixture != self._fixture_path(source):
+            raise GitHubOracleReceiptError("AUTHORITY_TREE_INVALID")
         current_files = tuple(x for x in self._git(
             "ls-tree", "-r", "--name-only", "HEAD", "--", fixture
         ).splitlines() if x)

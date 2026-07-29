@@ -252,15 +252,64 @@ class ReceiptTests(unittest.TestCase):
             root = Path(directory)
             settler = self._settler(root, lambda argv, cwd: None)
             fixture = "ios/harness/fixtures/source-lab/sl-post-form-001/a"
-            with mock.patch.object(
-                settler,
-                "_git",
-                side_effect=(fixture, fixture + "\nextra"),
+            with (
+                mock.patch.object(
+                    settler,
+                    "_fixture_path",
+                    return_value=(
+                        "ios/harness/fixtures/source-lab/sl-post-form-001"
+                    ),
+                ),
+                mock.patch.object(
+                    settler,
+                    "_git",
+                    side_effect=(fixture, fixture + "\nextra"),
+                ),
             ):
                 with self.assertRaisesRegex(
                     GitHubOracleReceiptError, "AUTHORITY_TREE_INVALID"
                 ):
                     settler._authority_paths("a" * 40)
+
+    def test_authority_fixture_path_accepts_runtime_manifest_binding(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            gh = root / "fake-gh"
+            gh.write_text("#!/bin/sh\nexit 1\n")
+            os.chmod(gh, 0o700)
+            settler = GitHubOracleReceiptSettler(
+                root,
+                repository="owner/repo",
+                scenario="rl-reader-bookmark-search-runtime-risk-001",
+                source_digest="a" * 40,
+                run_id=123,
+                attempt=2,
+                runner=lambda argv, cwd: None,
+                gh=gh,
+            )
+            fixture = (
+                "ios/harness/fixtures/runtime-lab/"
+                "rl-reader-bookmark-search-runtime-risk-001"
+            )
+            manifest = json.dumps(
+                {
+                    "fixtures": [
+                        {
+                            "id": (
+                                "rl-reader-bookmark-search-runtime-risk-001"
+                            ),
+                            "path": fixture,
+                            "sha256": "b" * 64,
+                        }
+                    ]
+                }
+            )
+            with mock.patch.object(
+                settler,
+                "_git",
+                return_value=manifest,
+            ):
+                self.assertEqual(fixture, settler._fixture_path("HEAD"))
 
     def test_receipt_parent_rejects_symlink(self):
         with tempfile.TemporaryDirectory() as directory:
