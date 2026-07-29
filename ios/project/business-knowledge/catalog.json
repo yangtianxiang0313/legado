@@ -5,11 +5,24 @@
   "inventory_control_sha256": "30cac916034a71f4ce34aa11388c0c3d578c78ccd937f888e48b556b01d72172",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "81ab2116765b5125c20da049d4d4c5dcffce65e3fa07217c6745ae9bbf72648c",
-  "coverage_sha256": "eb89065771cbb186d6ebdcca43c20ac80a5edf943298bdf1a1e064daeb9e7719",
+  "authority_sha256": "46f86b5b407d474fa9c573e0f1e997539f187612a84fc01401dfb9d193f86735",
+  "coverage_sha256": "a0f51a3ffedb4c28547682b28bf4d59dc98cfe2bfead99f85003cae3a24dbb19",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
+    {
+      "id": "BKP-SOURCE-RUNTIME-COOKIE-SESSION-001",
+      "revision": 1,
+      "semantic_key": "source.runtime-cookie-session-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-SOURCE-RUNTIME-COOKIE-SESSION-001/r0001.json",
+      "record_sha256": "9f936727bacf2ac952c04b6d8f2a698a9837b9a3bc0863c233969de2834cda79",
+      "claim_refs": [
+        {
+          "id": "BKC-SR-COOKIE-LAYERS-001",
+          "revision": 2
+        }
+      ]
+    },
     {
       "id": "BKP-SOURCE-RUNTIME-FIELD-ENCODING-001",
       "revision": 1,
@@ -176,6 +189,14 @@
   ],
   "architecture_drivers": [
     {
+      "id": "DRV-SOURCE-RUNTIME-COOKIE-SESSION-001",
+      "revision": 1,
+      "semantic_key": "source.execution.cookie-session",
+      "path": "ios/project/business-knowledge/drivers/published/DRV-SOURCE-RUNTIME-COOKIE-SESSION-001/r0001.json",
+      "record_sha256": "0190aec328bd25fcde1488569c179ec3c967b46c0b4c3fe4b9d1723a77f280d9",
+      "resolution_state": "resolved"
+    },
+    {
       "id": "DRV-SOURCE-RUNTIME-FIELD-ENCODING-001",
       "revision": 1,
       "semantic_key": "source.execution.field-encoding",
@@ -265,6 +286,15 @@
     }
   ],
   "coverage_ledgers": [
+    {
+      "id": "BKL-SOURCE-RUNTIME-COOKIE-SESSION-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-SOURCE-RUNTIME-COOKIE-SESSION-001.json",
+      "record_sha256": "80667bdc92158a1b3e62f90e97c46b1700f1fb3bece9bbf49221d40a86ab0859",
+      "entry_ids": [
+        "BKE-SR-COOKIE-SESSION-001"
+      ]
+    },
     {
       "id": "BKL-SOURCE-RUNTIME-FIELD-ENCODING-001",
       "revision": 1,

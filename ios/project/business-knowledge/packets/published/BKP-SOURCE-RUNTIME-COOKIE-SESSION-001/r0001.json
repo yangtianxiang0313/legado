@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-SOURCE-RUNTIME-COOKIE-SESSION-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "source.runtime-cookie-session-golden",
+  "title": "受保护 Android Golden 验证的 Cookie 持久层、会话层与传输合并语义",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "source.execution"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-RUNTIME-PORTS"
+    ],
+    "subject_keys": [
+      "source.cookie",
+      "source.session",
+      "source.transport"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-SR-COOKIE-LAYERS-001",
+      "revision": 2,
+      "semantic_key": "source.cookie.persistent-session-merge-runtime",
+      "kind": "runtime_behavior",
+      "topic": "Cookie 持久层与会话层",
+      "statement": "在 sl-source-cookie-persistent-session-merge-runtime-001 的固定输入下，Android Cookie 解析忽略空值、空白值和无等号片段，值可继续包含等号，同名项保留首次位置但以最后值覆盖。CookieStore 先合并持久层再合并内存 session 层，因此 session 同名值胜出。enabledCookieJar=true 时，AnalyzeUrl 构造阶段由显式 Cookie 覆盖存储值并写入内部 CookieJar 标记，真正发网前拦截器移除标记、重新加载存储值，使持久层与 session 层同名值覆盖显式值；false 时保留显式覆盖结果、无标记且响应 Set-Cookie 不入库。响应 Cookie 按 persistent/session 分类保存，但最终仅保留 name/value：Path、Max-Age 等元数据被压平，Max-Age=0 的条目仍可在后续域请求中出现。重定向起点写入的 session Cookie 会发送给终点，终点 persistent Cookie 与其合并；按 key 清理同时作用于两层，按 domain 清理清空两层。www.example.com 与 api.example.com 归一化到 example.com 并共享 Cookie，example.org 隔离。",
+      "subject_keys": [
+        "source.cookie",
+        "source.session",
+        "source.transport"
+      ],
+      "depends_on": [
+        {
+          "id": "BKC-SR-TRANSPORT-DISPATCH-001",
+          "revision": 2
+        },
+        {
+          "id": "BKC-SR-REQUEST-HEADER-COOKIE-RETRY-001",
+          "revision": 2
+        }
+      ],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "fbd720ca3df874038f6d8e232a671958e5217632",
+            "path": "app/src/main/java/io/legado/app/help/http/CookieManager.kt",
+            "symbol_id": "kotlin://io.legado.app.help.http/CookieManager"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "bc17fab6ccf68d507a045b08ad5418da1ba410b5",
+            "path": "app/src/main/java/io/legado/app/help/http/CookieStore.kt",
+            "symbol_id": "kotlin://io.legado.app.help.http/CookieStore"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da",
+            "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+            "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/setCookie"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9c104f66bfd9fa638afaf01e1f687ecf9a0a0749",
+            "path": "app/src/main/java/io/legado/app/help/http/HttpHelper.kt",
+            "symbol_id": "kotlin://io.legado.app.help.http/HttpHelper"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "a0e47b6494a497a7d6793f7dc34d709bc700220e",
+            "path": "app/src/main/java/io/legado/app/utils/NetworkUtils.kt",
+            "symbol_id": "kotlin://io.legado.app.utils/NetworkUtils/getSubDomain"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/sl-source-cookie-persistent-session-merge-runtime-001.json",
+            "artifact_sha256": "be4d7911edd23129ad721c7d654313229e99576a669afd1ba820b4f0b670884a",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "d168305d578fce1737fe02f6f958edbea8bc2d6d06d0ac8f77f4fde1ee1b06d3",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "92ba1d0680c297f9b4b3469fd08bf697a19aeccb9278ca0b998cd436dcf62d0e",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-SR-COOKIE-LAYERS-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-SOURCE-COOKIE-PERSISTENT-SESSION-MERGE-RUNTIME-001"
+}

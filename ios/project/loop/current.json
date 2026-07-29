@@ -1,1 +1,1 @@
-{"active_task":"IOS-CHARACTERIZE-SOURCE-COOKIE-PERSISTENT-SESSION-MERGE-RUNTIME-001","attempt":0,"last_completed":{"at":"2026-07-29T10:10:29Z","sequence":62,"task_id":"IOS-SOURCE-RUNTIME-RETRY-REDIRECT-001"},"schema_version":2,"status":"running","verification":null}
+{"active_task":null,"attempt":0,"last_completed":{"at":"2026-07-29T10:36:09Z","sequence":65,"task_id":"IOS-CHARACTERIZE-SOURCE-COOKIE-PERSISTENT-SESSION-MERGE-RUNTIME-001"},"schema_version":2,"status":"idle","verification":null}

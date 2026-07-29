@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-SOURCE-RUNTIME-COOKIE-SESSION-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "source.execution.cookie-session",
+  "title": "在独立 SourceRuntime 中显式建模 Cookie 双层存储与传输阶段合并",
+  "claim_refs": [
+    {
+      "id": "BKC-SR-COOKIE-LAYERS-001",
+      "revision": 2
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "iOS 必须区分持久 Cookie、内存 session Cookie、显式请求 Cookie、构造阶段 Cookie 与 wire Cookie，并按 Android Golden 的两阶段优先级合并。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "isolation",
+      "scenario": "Cookie 解析、双层存储、域归一化、响应分类与清理属于独立 SourceRuntime，不得进入 SwiftUI、页面状态或 Domain 实体。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "security",
+      "scenario": "CookieJar 内部控制标记不得发送到服务器；enabledCookieJar=false 时不得自动持久化响应 Cookie。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "Android 会压平 Path、Max-Age 等元数据并保留本应过期的 name/value；兼容实现不得擅自替换为系统 HTTPCookieStorage 的标准过期和路径过滤语义。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "testability",
+      "scenario": "验收必须结构化输出九类源码派生案例及每条 SourceLab 路由观测，覆盖 parser、合并、开关、响应分类、元数据压平、重定向、清理和域归一化。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "evolvability",
+      "scenario": "当前域归一化只实现 Android Golden 已观测范围；完整 public suffix、容量淘汰、安全属性与并发冲突应由后续源码 Characterization 扩展。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "如何用可注入、可持久化的 SourceRuntime actor 表达 persistent/session 两层，同时保留 Android 的稳定插入顺序和同名覆盖结果？",
+    "如何在请求构造、真正发网、响应保存和重定向各阶段显式处理 Cookie，而不把 URLSession 的系统 Cookie 行为当作业务语义？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002"
+    ],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-SOURCE-COOKIE-PERSISTENT-SESSION-MERGE-RUNTIME-001",
+      "IOS-SOURCE-RUNTIME-COOKIE-SESSION-001"
+    ]
+  },
+  "supersedes": null,
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30444102905/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "created_by": "IOS-CHARACTERIZE-SOURCE-COOKIE-PERSISTENT-SESSION-MERGE-RUNTIME-001"
+}
