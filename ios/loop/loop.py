@@ -1280,6 +1280,21 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
         if isinstance(migration, dict)
         else []
     )
+    if not source_anchors:
+        source_anchors = source_anchors_for_claims(root, claim_refs)
+    android_baseline = (
+        migration.get("android_baseline")
+        if isinstance(migration, dict)
+        else None
+    )
+    if android_baseline is None and golden_path:
+        android_commit = (
+            read_json(root / golden_path)
+            .get("oracle", {})
+            .get("android_git_commit")
+        )
+        if isinstance(android_commit, str):
+            android_baseline = {"android_commit": android_commit}
     delivery_contracts = {
         "SourceRuntime": {
             "goal": (
@@ -1377,11 +1392,7 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
     if delivery_contract is None:
         raise LoopError(f"DELIVERY_CONTRACT_NOT_MAPPED:{architecture['owner']}")
     source = {
-        "android_baseline": (
-            migration.get("android_baseline")
-            if isinstance(migration, dict)
-            else None
-        ),
+        "android_baseline": android_baseline,
         "anchors": source_anchors,
         "fixture_id": fixture_id,
         "android_golden": golden_path,

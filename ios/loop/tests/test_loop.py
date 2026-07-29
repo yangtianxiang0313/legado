@@ -297,7 +297,8 @@ class MinimalLoopTests(unittest.TestCase):
                 {
                     "fixture_id": (
                         "rl-app-startup-first-use-and-restore-001"
-                    )
+                    ),
+                    "oracle": {"android_git_commit": "a" * 40},
                 },
             )
             self.write(
@@ -309,7 +310,16 @@ class MinimalLoopTests(unittest.TestCase):
                         {
                             "id": "BKC-APP-STARTUP-001",
                             "revision": 2,
-                            "support": {"source_anchors": []},
+                            "support": {
+                                "source_anchors": [
+                                    {
+                                        "android_commit": "a" * 40,
+                                        "path": "WelcomeActivity.kt",
+                                        "symbol_id": "startMainActivity",
+                                        "git_blob": "b" * 40,
+                                    }
+                                ]
+                            },
                         }
                     ]
                 },
@@ -388,6 +398,14 @@ class MinimalLoopTests(unittest.TestCase):
             self.assertEqual(
                 "testStartupFirstUseAndRestore",
                 task["source"]["ui_acceptance"]["test_method"],
+            )
+            self.assertEqual(
+                {"android_commit": "a" * 40},
+                task["source"]["android_baseline"],
+            )
+            self.assertEqual(
+                "WelcomeActivity.kt",
+                task["source"]["anchors"][0]["path"],
             )
             command_ids = {
                 command["id"]
