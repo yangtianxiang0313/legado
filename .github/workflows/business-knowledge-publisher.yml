@@ -251,13 +251,14 @@ jobs:
           set -euo pipefail
           artifact="${RUNNER_TEMP}/publisher-result"
           mkdir -m 0700 "${artifact}"
-          cp "${RUNNER_TEMP}/business-knowledge-release/transaction.json" \
-            "${artifact}/transaction.json"
-          python3 - "${artifact}/publisher-result.json" <<'PY'
+          python3 - \
+            "${artifact}/publisher-result.json" \
+            "${artifact}/transaction.json" <<'PY'
           import hashlib
           import json
           import os
           import pathlib
+          import sys
           request = json.loads(
               pathlib.Path("publisher/.business-knowledge-publication-request.json")
               .read_text()
@@ -276,6 +277,16 @@ jobs:
           transaction = pathlib.Path(
               os.environ["RUNNER_TEMP"]
           ) / "business-knowledge-release/transaction.json"
+          transaction_payload = (
+              json.dumps(
+                  json.loads(transaction.read_text()),
+                  ensure_ascii=False,
+                  sort_keys=True,
+                  separators=(",", ":"),
+              )
+              + "\n"
+          ).encode("utf-8")
+          pathlib.Path(sys.argv[2]).write_bytes(transaction_payload)
           report = {
               "schema_version": 1,
               "status": "published",
@@ -290,17 +301,20 @@ jobs:
                   "attempt": int(os.environ["GITHUB_RUN_ATTEMPT"]),
               },
               "transaction_sha256": hashlib.sha256(
-                  transaction.read_bytes()
+                  transaction_payload
               ).hexdigest(),
               "execution_id": os.environ["EXECUTION_ID"],
           }
-          pathlib.Path(__import__("sys").argv[1]).write_text(
-              json.dumps(
-                  report,
-                  ensure_ascii=False,
-                  sort_keys=True,
-                  separators=(",", ":"),
-              )
+          pathlib.Path(sys.argv[1]).write_bytes(
+              (
+                  json.dumps(
+                      report,
+                      ensure_ascii=False,
+                      sort_keys=True,
+                      separators=(",", ":"),
+                  )
+                  + "\n"
+              ).encode("utf-8")
           )
           PY
           (

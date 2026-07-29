@@ -483,8 +483,16 @@ class BusinessKnowledgePublisherTests(unittest.TestCase):
             "business-knowledge-result-${{ env.EXECUTION_ID }}",
             workflow,
         )
-        self.assertNotIn(
-            ') + "\\n"',
+        self.assertIn(
+            '+ "\\n"',
+            workflow,
+        )
+        self.assertIn(
+            "transaction_payload",
+            workflow,
+        )
+        self.assertIn(
+            "write_bytes(transaction_payload)",
             workflow,
         )
         self.assertNotIn(
