@@ -1,1 +1,1 @@
-{"active_task":"IOS-SOURCE-RUNTIME-FIELD-ENCODING-001","attempt":0,"last_completed":{"at":"2026-07-29T05:52:57Z","sequence":21,"task_id":"IOS-CHARACTERIZE-SOURCE-REQUEST-FIELD-ENCODING-RUNTIME-001"},"schema_version":2,"status":"running","verification":null}
+{"active_task":null,"attempt":0,"last_completed":{"at":"2026-07-29T06:00:28Z","sequence":26,"task_id":"IOS-SOURCE-RUNTIME-FIELD-ENCODING-001"},"schema_version":2,"status":"idle","verification":null}
