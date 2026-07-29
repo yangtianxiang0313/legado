@@ -3536,7 +3536,9 @@ class DemandCompiler:
                             "work_item": work_item_path.relative_to(
                                 self.root
                             ).as_posix(),
-                            "work_item_sha256": _sha256_json(work_item),
+                            "work_item_sha256": _sha256(
+                                work_item_path.read_bytes()
+                            ),
                             "evidence": evidence_relative,
                             "evidence_sha256": _sha256(
                                 self.resolve(

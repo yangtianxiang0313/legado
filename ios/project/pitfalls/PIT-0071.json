@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0071",
+  "revision": 1,
+  "title": "内容寻址绑定必须声明并统一摘要证明域",
+  "fingerprint": "canonical-json-digest-used-for-git-blob-verification",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "DemandCompiler 生成的发布计划在业务语义上没有变化，但 Dispatcher preflight 报 KNOWLEDGE_PUBLICATION_INPUT_DIGEST_DRIFT",
+    "同一个 JSON 文件的 canonical JSON SHA-256 与 source commit 原始字节 SHA-256 不相等",
+    "单元测试用手工构造的 64 位摘要通过，真实格式化文件却无法通过跨进程验证"
+  ],
+  "conditions": [
+    "生产者用解析后的 JSON 值计算摘要，消费者从 Git object 或文件原始字节计算摘要",
+    "JSON 存在缩进、换行、键顺序或结尾换行等不影响语义但影响字节的表示差异",
+    "协议字段只命名为 sha256，没有显式说明 proof domain"
+  ],
+  "root_cause": "发布计划把 producer WorkItem 绑定为 canonical JSON 语义摘要，而 Dispatcher 的安全边界需要证明请求引用的正是 source commit 中那个 Git blob，因此验证的是原始字节。两端对同名字段使用了不同证明域。",
+  "diagnosis": [
+    "分别计算 json.loads 后 canonical serialization 的 SHA-256 与 git show <sha>:<path> 原始字节 SHA-256",
+    "逐项比较发布请求绑定的六类输入，先定位具体漂移字段，不要整体关闭摘要验证",
+    "使用真实格式化 JSON 作为回归样本，确认两种摘要确实可区分"
+  ],
+  "fix": "DemandCompiler 对 producer WorkItem 使用 committed 文件原始字节 SHA-256，与 Dispatcher 的 git show 验证域一致；保留其他五类输入及全部 fail-closed 校验。回归同时断言真实样本的语义摘要不等于字节摘要、计划值等于字节摘要。",
+  "prevention": {
+    "architecture_rule": "跨进程内容寻址字段必须在合同中明确 proof domain。证明 Git/file identity 时统一使用原始字节摘要；仅证明规范化语义时使用 canonical JSON 摘要，二者不得共用未限定语义的期望值。",
+    "tests": [
+      "ios/harness/tests/test_demand_compiler.py#KnowledgePublicationDemandRegressionTests.test_real_post_form_producer_compiles_source_bound_publication",
+      "ios/harness/tests/test_github_business_knowledge_publisher.py"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTOMATION-001",
+    "until": "IOS-BUSINESS-KNOWLEDGE-PUBLICATION-DIGEST-RECOVERY-002"
+  },
+  "status": "mitigated",
+  "occurrences": 1,
+  "first_seen": "2026-07-29",
+  "last_seen": "2026-07-29",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260729T025414Z-ios-business-knowledge-publication-digest-001-a66a2efe.json",
+    "ios/harness/evidence/runs/run-20260729T030241Z-ios-business-knowledge-publication-digest-recovery-002-a967408e.json"
+  ]
+}

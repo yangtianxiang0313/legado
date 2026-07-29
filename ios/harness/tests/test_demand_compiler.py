@@ -81,6 +81,24 @@ class KnowledgePublicationDemandRegressionTests(unittest.TestCase):
             "sl-post-form-001",
             plan.bindings["fixture_id"],
         )
+        producer_path = (
+            root / plan.bindings["producer"]["work_item"]
+        )
+        raw_digest = hashlib.sha256(
+            producer_path.read_bytes()
+        ).hexdigest()
+        semantic_digest = demand_compiler._sha256_json(
+            json.loads(producer_path.read_text())
+        )
+        self.assertNotEqual(
+            semantic_digest,
+            raw_digest,
+            "回归样本必须能区分 canonical JSON 与 Git blob 字节摘要",
+        )
+        self.assertEqual(
+            raw_digest,
+            plan.bindings["producer"]["work_item_sha256"],
+        )
 
 
 class DemandFixture:

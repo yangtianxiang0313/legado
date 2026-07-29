@@ -2,13 +2,13 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-29T02:54:15Z
+- 更新时间：2026-07-29T03:05:05Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
 - 下一个可领取工作项：无
-- 最近完成：IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTOMATION-001
+- 最近完成：IOS-BUSINESS-KNOWLEDGE-PUBLICATION-DIGEST-RECOVERY-002
 
 ## 健康度
 
@@ -62,6 +62,8 @@
 | knowledge_initialization_dag | `proposal_verified` |
 | knowledge_integrations | `candidate_verified` |
 | knowledge_promotion_context | `receipt_bound` |
+| knowledge_publication_digest_recovery | `typed_verified_v1` |
+| knowledge_publication_input_digest | `git_blob_bytes_v1` |
 | knowledge_publisher_demand_plan | `batch_envelope_bound` |
 | knowledge_publisher_verification | `immutable_commit_before_push` |
 | knowledge_reader_lifecycle | `candidate_verified` |
@@ -131,6 +133,7 @@
 | IOS-AUTO-MATERIALIZATION-POLICY-001 | 100 | `completed` | IOS-PROPOSAL-COMPILER-001, IOS-DECISION-GATE-POLICY-001, IOS-LOOP-SUPERVISOR-E2E-001 | 让无决策、无权威迁移的编译候选自动进入队列 |
 | IOS-BOOT-001 | 100 | `completed` | 无 | 建立 Swift Package 与首批模块骨架 |
 | IOS-BUSINESS-KNOWLEDGE-PUBLICATION-DIGEST-001 | 100 | `rejected` | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTOMATION-001 | 统一知识发布输入的 Git 字节摘要语义 |
+| IOS-BUSINESS-KNOWLEDGE-PUBLICATION-DIGEST-RECOVERY-002 | 100 | `completed` | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTOMATION-001 | 恢复知识发布 Git 字节摘要绑定 |
 | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-001 | 100 | `completed` | IOS-ANDROID-GOLDEN-PUBLISHER-001, IOS-KNOWLEDGE-SOURCE-RUNTIME-GOLDEN-002 | 建立受信 Business Knowledge Publisher |
 | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTO-SCOPE-001 | 100 | `completed` | IOS-KNOWLEDGE-SOURCE-RUNTIME-POST-FORM-001 | 建立无人工 Gate 的业务知识发布精确自动边界 |
 | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTOMATION-001 | 100 | `completed` | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTO-SCOPE-001 | 实现无人工 Gate 的场景化业务知识发布与续接 |
