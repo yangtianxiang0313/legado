@@ -691,6 +691,14 @@ class MinimalLoopTests(unittest.TestCase):
             "ios/harness/integration-lab/**",
             task["scope"]["allowed_paths"],
         )
+        self.assertIn(
+            "ios/harness/oracle/ci_proposal.py",
+            task["scope"]["allowed_paths"],
+        )
+        self.assertIn(
+            "ios/harness/tests/test_oracle_control.py",
+            task["scope"]["allowed_paths"],
+        )
         with self.assertRaisesRegex(
             loop.LoopError,
             "OWNER_NOT_MAPPED",

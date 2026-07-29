@@ -776,6 +776,13 @@ def characterization_contract(claim: Mapping[str, Any]) -> Mapping[str, Any]:
             "allowed_paths": [
                 "ios/harness/integration-lab/**",
                 "ios/harness/schemas/integration-lab-scenario.schema.json",
+                "ios/harness/oracle/ci_proposal.py",
+                "ios/harness/oracle/contract.py",
+                "ios/harness/oracle/trusted_import.py",
+                "ios/harness/oracle/cli.py",
+                "ios/harness/tests/test_oracle_ci_proposal.py",
+                "ios/harness/tests/test_oracle_control.py",
+                "ios/harness/tests/test_oracle_trusted_import.py",
             ],
         }
     raise LoopError(f"CHARACTERIZATION_DOMAIN_NOT_MAPPED:{semantic_key}")
