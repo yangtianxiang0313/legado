@@ -6,7 +6,7 @@
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
   "authority_sha256": "1e685b2caf1f754e819fcec6596c95820cb7d7d41e70f592c16db2d8bf69016f",
-  "coverage_sha256": "6b49b8e1cd79f676d83872f78ce6d9bb503df6b65782f9fed5a5aca4c158963f",
+  "coverage_sha256": "4a0334ca92ac176a5a02aab0e5c2f0f7ceb5c1c4b2af63f4a662bb0f2e963883",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -183,6 +183,19 @@
       ]
     },
     {
+      "id": "BKP-SOURCE-RUNTIME-RULE-COMBINATION-COERCION-001",
+      "revision": 1,
+      "semantic_key": "source.rule-combination-coercion-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-SOURCE-RUNTIME-RULE-COMBINATION-COERCION-001/r0001.json",
+      "record_sha256": "2bc865e70f3d4b25a4377929da22e9dc2ded50df546a4e52ff36c6557c5df7f6",
+      "claim_refs": [
+        {
+          "id": "BKC-SR-RULE-COMBINATION-COERCION-001",
+          "revision": 2
+        }
+      ]
+    },
+    {
       "id": "BKP-SOURCE-RUNTIME-RULE-VARIABLE-SCOPE-001",
       "revision": 1,
       "semantic_key": "source.rule-variable-scope-golden",
@@ -350,6 +363,14 @@
       "resolution_state": "resolved"
     },
     {
+      "id": "DRV-SOURCE-RUNTIME-RULE-COMBINATION-COERCION-001",
+      "revision": 1,
+      "semantic_key": "source.execution.rule-combination-coercion",
+      "path": "ios/project/business-knowledge/drivers/published/DRV-SOURCE-RUNTIME-RULE-COMBINATION-COERCION-001/r0001.json",
+      "record_sha256": "e52e58d73ff8a1b43b7f58900c1c39006d611e713298d57046f4fb351e180b94",
+      "resolution_state": "resolved"
+    },
+    {
       "id": "DRV-SOURCE-RUNTIME-RULE-VARIABLE-SCOPE-001",
       "revision": 1,
       "semantic_key": "source.execution.rule-variable-scope",
@@ -501,6 +522,15 @@
       "record_sha256": "925989831e5a98d1fdd19d96f7d59bcedf104490fe0623839b9d58279e048d80",
       "entry_ids": [
         "BKE-SR-RULE-BACKEND-DISPATCH-001"
+      ]
+    },
+    {
+      "id": "BKL-SOURCE-RUNTIME-RULE-COMBINATION-COERCION-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-SOURCE-RUNTIME-RULE-COMBINATION-COERCION-001.json",
+      "record_sha256": "b36fa1954b2d60ceb8694951e91cab64295ddc51e8c975da46562c42f9fd3ea7",
+      "entry_ids": [
+        "BKE-SR-RULE-COMBINATION-COERCION-001"
       ]
     },
     {

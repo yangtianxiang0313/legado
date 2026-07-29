@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-SOURCE-RUNTIME-RULE-COMBINATION-COERCION-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "source.execution.rule-combination-coercion",
+  "title": "用独立规则求值内核承载组合、消费器与结果转换",
+  "claim_refs": [
+    {
+      "id": "BKC-SR-RULE-COMBINATION-COERCION-001",
+      "revision": 2
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "SourceRuntime 必须逐字段复现受保护 Android Golden 中的 &&、||、%%、顺序 CSS→JavaScript、标量转换、空值传播、URL 解析去重和异常中断结果；测试不得自行改写 expected。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "modularity",
+      "scenario": "规则组合与 getString、getStringList、getElement、getElements 消费器属于独立 SourceRuntime 内核；UI、Domain、持久化与书源页面层不得重新解释组合或转换语义。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "type_safety",
+      "scenario": "求值流水线内部必须保留文本、列表、对象、标量、null 与异常的显式中间值，消费器在边界上完成 Android 兼容转换，避免过早全部字符串化。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "determinism",
+      "scenario": "列表拼接、回退、交错、换行拆分、URL 首次出现去重和空行处理必须是纯确定性步骤；平台网络、WebView 生命周期与全局共享状态不能影响结果。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "error_semantics",
+      "scenario": "JavaScript 异常必须中断当前求值并通过 SourceRuntime 稳定错误类型向外传播；兼容层可以记录 Android 异常类别，但产品接口不得泄漏 Java 类名。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "portability",
+      "scenario": "本切片只实现 Golden 已验证的组合与转换表面；完整运算符语法、后端方言、脚本沙箱和未覆盖类型必须继续由 Android 真源任务扩张，不能从 9 个样例猜测补齐。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "如何定义一个可 Sendable 的规则中间值，使文本、列表、对象、标量、null 与失败能在后端间顺序流动，并由四类消费器做兼容转换？",
+    "如何把 &&、||、%% 的组合规则与 CSS、JSONPath、JavaScript 后端分派协调起来，同时保持规则内核不绑定具体三方解析库？",
+    "如何复用 SourceTransport 的 URL 解析能力并精确保留末尾空行解析为 redirectUrl 自身的 Android 边界？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002"
+    ],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-SOURCE-RULE-COMBINATION-AND-COERCION-RUNTIME-001",
+      "IOS-SOURCE-RUNTIME-RULE-COMBINATION-COERCION-001"
+    ]
+  },
+  "supersedes": null,
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30463094320/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "created_by": "IOS-CHARACTERIZE-SOURCE-RULE-COMBINATION-AND-COERCION-RUNTIME-001"
+}

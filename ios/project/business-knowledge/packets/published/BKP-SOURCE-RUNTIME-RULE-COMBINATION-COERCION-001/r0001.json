@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-SOURCE-RUNTIME-RULE-COMBINATION-COERCION-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "source.rule-combination-coercion-golden",
+  "title": "受保护 Android Golden 验证的规则组合与结果转换语义",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "4d105d3cf23af0a5b9b57448264fe90f19f7edbbcfb78a80e1ac2ad548c25c6c"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "source.execution"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-RUNTIME-PORTS"
+    ],
+    "subject_keys": [
+      "source.rule",
+      "source.document",
+      "source.script"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-SR-RULE-COMBINATION-COERCION-001",
+      "revision": 2,
+      "semantic_key": "source.rule.combination-and-coercion-runtime",
+      "kind": "runtime_behavior",
+      "topic": "规则组合、消费器形态、空值与 URL 转换",
+      "statement": "在 sl-source-rule-combination-and-coercion-runtime-001 的 9 个固定场景中，Android AnalyzeRule 对 JSON 列表使用 && 按左后右拼接，|| 在左侧无结果时回退到右侧，%% 按索引交错并保留较长列表的余项；getStringList 分别得到 [A,B,C,D]、[C,D]、[A,C,B,D,E]，getString 对前两者以换行连接，但对同一 %% 规则得到空字符串。数字 12、布尔 true 和字符串 plain 由 getString 转为对应文本、由 getStringList 转为单元素列表；JSON null 则分别成为空字符串和空列表。getElement 保留 JSON 对象或标量的运行时形态，getElements 保留对象列表。CSS 结果可继续交给 JavaScript 消费当前 result：字符串消费器先把 Alpha 与 Beta 以换行连接再追加 -tail，列表消费器把两项变成单元素 Alpha|Beta。isUrl 列表消费器会按换行切分、基于 redirectUrl 解析相对地址并按首次出现去重；末尾空行被解析成 redirectUrl 自身，而不是丢弃。空规则下 getString 返回空字符串、getStringList 返回 null、getElement 返回 null、getElements 返回空列表；JSONPath 缺失时 getString 返回空字符串而 getStringList 返回空列表。JavaScript 抛错会中断求值并以 ScriptException 离开消费器。本结论只冻结这 9 个场景，不外推到运算符嵌套与转义优先级、任意后端方言、完整 JavaScript 语义、URL 国际化、Unicode 字符转换、并发求值或未观测的对象类型。",
+      "subject_keys": [
+        "source.rule",
+        "source.document",
+        "source.script"
+      ],
+      "depends_on": [
+        {
+          "id": "BKC-SR-RULE-BACKEND-DISPATCH-001",
+          "revision": 2
+        }
+      ],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [
+          {
+            "id": "AF-ANALYZE-RULE-GET-STRING",
+            "revision_sha256": "a7976dbfc4aec15b3de5395e852a7d705c6648ce3df6dd24314a3af62e61650f"
+          },
+          {
+            "id": "AF-ANALYZE-RULE-GET-STRING-LIST",
+            "revision_sha256": "fb7aa8c348c0ad505fd631728337c6cb098dea4b9ba3482ee68acc32c49be8bc"
+          }
+        ],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "7bb96778bbf33c5277867cd8a1e8db6ea19090df",
+            "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt",
+            "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeRule/getStringList"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "7bb96778bbf33c5277867cd8a1e8db6ea19090df",
+            "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt",
+            "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeRule/getString"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/sl-source-rule-combination-and-coercion-runtime-001.json",
+            "artifact_sha256": "b9d960c79a2de12d0396c2cc988c6806d53aba7dc810a5ae551e1c0cdce5d53e",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "66104f44487398c1253defe517b5d748f21e541cebb2e360c1af30a8ff8f3d6b",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "a700a83146013396f33714d4032d5582f918580e73aa9d7dd073de81b5131539",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-SR-RULE-COMBINATION-COERCION-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-SOURCE-RULE-COMBINATION-AND-COERCION-RUNTIME-001"
+}
