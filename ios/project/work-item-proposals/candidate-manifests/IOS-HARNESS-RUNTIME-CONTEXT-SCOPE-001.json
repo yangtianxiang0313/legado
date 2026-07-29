@@ -1,0 +1,30 @@
+{
+  "authority": "proposal_only",
+  "candidate_sha256": "1bf393d835c6336467e974ba1a4875a334d00a96cfb6535bb756a100cc5fb5a5",
+  "compiler_version": "proposal-compiler-v1",
+  "dag": {
+    "id": "WIPD-IOS-INITIALIZATION-001",
+    "revision": 30,
+    "sha256": "7a6d485dbb1c6d2ffe30720ff642a485e4a644a107f6f8d42c9fdf6bd0180719"
+  },
+  "dependencies": [
+    {
+      "chain": [
+        "IOS-GITHUB-GOLDEN-DISPATCHER-001"
+      ],
+      "checkpoint": "ios/project/checkpoints/IOS-GITHUB-GOLDEN-DISPATCHER-001.json",
+      "checkpoint_sha256": "b2699580f103c6b97397cc2ecffae89932fc87c61e4f7023df5fffc6258f0e68",
+      "evidence": "ios/harness/evidence/runs/run-20260729T004757Z-ios-github-golden-dispatcher-001-c934d502.json",
+      "evidence_sha256": "8d2cfdac37b082fbdad7ce28a52dd4f4568ae438d9cbd2b072afd79a298491cf",
+      "original": "IOS-GITHUB-GOLDEN-DISPATCHER-001",
+      "reason_code": "DIRECT_COMPLETION",
+      "resolved": "IOS-GITHUB-GOLDEN-DISPATCHER-001",
+      "work_item_sha256": "843768600fdc42bfe7b5e226790e6b7c16c456e7ebf43cfa59b89f947443923f"
+    }
+  ],
+  "node_sha256": "8ef46ea6e764305f93fd9317b3b6c94141ca6bc1593c3ac5e77ed0feda22414d",
+  "proposal_id": "IOS-HARNESS-RUNTIME-CONTEXT-SCOPE-001",
+  "queue_effect": "none",
+  "recipe_sha256": "e69bcaac85075dadf2bad7d33ec39f6a56317a5d9004ad3139e73c1b34b4a821",
+  "schema_version": 1
+}
