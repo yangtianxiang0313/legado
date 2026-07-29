@@ -1,1 +1,1 @@
-{"active_task":null,"attempt":0,"last_completed":{"at":"2026-07-29T08:58:28Z","sequence":45,"task_id":"IOS-CHARACTERIZE-SOURCE-TRANSPORT-REQUEST-DISPATCH-CONTRACT-001"},"schema_version":2,"status":"idle","verification":null}
+{"active_task":"IOS-SOURCE-RUNTIME-TRANSPORT-DISPATCH-001","attempt":0,"last_completed":{"at":"2026-07-29T08:58:28Z","sequence":45,"task_id":"IOS-CHARACTERIZE-SOURCE-TRANSPORT-REQUEST-DISPATCH-CONTRACT-001"},"schema_version":2,"status":"running","verification":null}
