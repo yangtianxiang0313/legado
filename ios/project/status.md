@@ -11,19 +11,19 @@
 - SourceLab 本地书站、离线 FixtureTransport 和真实 Android Golden 发布链；
 - SourceFormat 无损 round-trip；
 - HTML/CSS 的 search、book info、toc、content 纵向解析；
-- GET 与 POST Form 的确定性 RequestPlan；
+- GET、POST Form、Header/Cookie/Retry、字段 charset 编码与 URL 模板编译；
+- XML 字符串响应归一化；
 - `android_expected / ios_actual / canonical_request_plan / first_divergence`
   结构化验收；
 - Minimal Loop v2 的 `next/start/verify/complete/doctor`。
 
-当前 Loop：空闲；最近完成 `IOS-SOURCE-RUNTIME-POST-FORM-001`。`next` 已从
-`AnalyzeUrl.getStrResponseAwait` 的源码 Claim 自动选择
-`IOS-CHARACTERIZE-SOURCE-RESPONSE-XML-DECLARATION-NORMALIZATION-001`。
+当前任务、最近完成项与下一项分别以
+[`current.json`](loop/current.json)、[`events.jsonl`](loop/events.jsonl) 和
+`python3 -B ios/loop/loop.py next` 的实时结果为准，本文不重复保存动态队列投影。
 
-下一条产品主线：为 XML response normalization 扩展 SourceLab 场景，通过真实
-Android runner 获得受保护 Golden，再生成对应 SourceRuntime Delivery。随后继续
-raw/JSON 与 header/cookie/retry。Phase 1 的非 JS 单源链路稳定后，进入本地书架、
-阅读器和 iOS Simulator UI 验收。
+下一阶段仍沿冻结 Android Claim 逐项补齐 SourceRuntime。Phase 1 的单源链路稳定后，
+发布 UI Topology 业务知识、物化 iOS App/UITest Target，再进入本地书架、阅读器和
+固定 iOS Simulator 结构验收。
 
 v1 的 WorkItem、Evidence、Checkpoint、proposal projection、Gate 和大状态文件只作为
 Git 历史迁移材料；新任务不得继续写入。
