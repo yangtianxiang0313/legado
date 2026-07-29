@@ -13,6 +13,59 @@ import loop  # noqa: E402
 
 
 class MinimalLoopTests(unittest.TestCase):
+    def init_git(self, root: Path) -> None:
+        subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+        subprocess.run(
+            ["git", "config", "user.email", "loop@example.invalid"],
+            cwd=root,
+            check=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.name", "Loop Test"],
+            cwd=root,
+            check=True,
+        )
+
+    def run_test_count_acceptance(
+        self,
+        root: Path,
+        count: int,
+    ) -> tuple[bool, list[dict]]:
+        self.init_git(root)
+        subprocess.run(
+            ["git", "commit", "--allow-empty", "-qm", "base"],
+            cwd=root,
+            check=True,
+        )
+        task = {
+            "id": "IOS-TEST-001",
+            "acceptance": {
+                "commands": [
+                    {
+                        "id": "tests",
+                        "argv": [
+                            sys.executable,
+                            "-c",
+                            (
+                                "print('Executed "
+                                f"{count} tests, with 0 failures')"
+                            ),
+                        ],
+                        "required_output_pattern": (
+                            r"Executed [1-9][0-9]* tests?, with 0 failures"
+                        ),
+                    }
+                ]
+            },
+        }
+        passed, checks, _ = loop.run_acceptance(
+            root,
+            task,
+            attempt=1,
+            paths=[],
+        )
+        return passed, checks
+
     def write(self, root: Path, relative: str, value) -> None:
         path = root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -96,6 +149,15 @@ class MinimalLoopTests(unittest.TestCase):
             self.assertEqual(
                 "sl-post-form-001",
                 task["source"]["fixture_id"],
+            )
+            source_runtime_check = next(
+                check
+                for check in task["acceptance"]["commands"]
+                if check["id"] == "source-runtime-tests"
+            )
+            self.assertIn(
+                "[1-9]",
+                source_runtime_check["required_output_pattern"],
             )
             self.assertNotIn("recipe", task)
             self.assertNotIn("recovery", task)
@@ -387,17 +449,7 @@ class MinimalLoopTests(unittest.TestCase):
     def test_changed_paths_preserves_first_porcelain_path(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            subprocess.run(["git", "init", "-q"], cwd=root, check=True)
-            subprocess.run(
-                ["git", "config", "user.email", "loop@example.invalid"],
-                cwd=root,
-                check=True,
-            )
-            subprocess.run(
-                ["git", "config", "user.name", "Loop Test"],
-                cwd=root,
-                check=True,
-            )
+            self.init_git(root)
             path = root / "ios/first.txt"
             path.parent.mkdir(parents=True)
             path.write_text("before\n")
@@ -419,6 +471,20 @@ class MinimalLoopTests(unittest.TestCase):
             second = loop.workspace_digest(root, ["ios/value.txt"])
 
             self.assertNotEqual(first, second)
+
+    def test_acceptance_requires_nonzero_test_count(self):
+        for count, expected in ((0, False), (36, True)):
+            with self.subTest(count=count):
+                with tempfile.TemporaryDirectory() as directory:
+                    passed, checks = self.run_test_count_acceptance(
+                        Path(directory),
+                        count,
+                    )
+                self.assertEqual(expected, passed)
+                self.assertEqual(
+                    expected,
+                    checks[0]["output_assertion_passed"],
+                )
 
 
 if __name__ == "__main__":

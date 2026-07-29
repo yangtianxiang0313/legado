@@ -587,6 +587,9 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
                         "--filter",
                         "SourceRuntimeTests",
                     ],
+                    "required_output_pattern": (
+                        r"Executed [1-9][0-9]* tests?, with 0 failures"
+                    ),
                     "timeout_seconds": 300,
                 },
                 {
@@ -1023,8 +1026,33 @@ def run_acceptance(
             "stdout_sha256": digest(stdout),
             "stderr_sha256": digest(stderr),
         }
+        required_output_pattern = check.get("required_output_pattern")
+        output_assertion_passed = True
+        if required_output_pattern is not None:
+            if not isinstance(required_output_pattern, str):
+                raise LoopError(
+                    f"ACCEPTANCE_OUTPUT_PATTERN_INVALID:{check_id}"
+                )
+            try:
+                output_assertion_passed = (
+                    re.search(
+                        required_output_pattern,
+                        (stdout + b"\n" + stderr).decode(
+                            "utf-8",
+                            errors="replace",
+                        ),
+                    )
+                    is not None
+                )
+            except re.error as error:
+                raise LoopError(
+                    f"ACCEPTANCE_OUTPUT_PATTERN_INVALID:{check_id}"
+                ) from error
+            result_record["output_assertion_passed"] = (
+                output_assertion_passed
+            )
         results.append(result_record)
-        if exit_code != 0:
+        if exit_code != 0 or not output_assertion_passed:
             passed = False
             break
     report = {
