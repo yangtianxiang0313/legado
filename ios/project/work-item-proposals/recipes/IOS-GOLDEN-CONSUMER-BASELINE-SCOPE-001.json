@@ -1,0 +1,177 @@
+{
+  "schema_version": 1,
+  "proposal_id": "IOS-GOLDEN-CONSUMER-BASELINE-SCOPE-001",
+  "proposal_constraint": "只在 Loop Supervisor 增加 Manifest v2 consumer recovery 的固定精确范围；下一恢复项仅可修复 DemandCompiler/Supervisor、Business Knowledge Publisher 兼容与对应测试/记忆，禁止 Golden、Workflow、Android Publisher、Oracle、SourceLab、Package、产品和 authority 写入",
+  "work_item": {
+    "api_version": "legado.harness/v1",
+    "kind": "WorkItem",
+    "metadata": {
+      "id": "IOS-GOLDEN-CONSUMER-BASELINE-SCOPE-001",
+      "title": "建立 Manifest v2 消费恢复的精确自动边界",
+      "priority": 100,
+      "risk": "high",
+      "labels": [
+        "phase-0",
+        "control-plane",
+        "loop-supervisor",
+        "auto-materialization",
+        "baseline-recovery-scope",
+        "corrective",
+        "recovery"
+      ]
+    },
+    "spec": {
+      "capability": "CAP-KNOWLEDGE-CONTROL",
+      "intent": "IOS-GOLDEN-CONSUMER-CONTINUATION-001 在 claim 基线中发现 Manifest v2 发布后 Business Knowledge Publisher 仍读取 legacy 全局 oracle.runner_digest，当前干净 HEAD 的 harness-tests 因 RUNTIME_EVIDENCE_BINDING_DRIFT 失败。先在 Loop Supervisor 增加专用、精确的 recovery scope policy：固定标签只允许后续恢复项修改 DemandCompiler、LoopSupervisor、Business Knowledge Publisher、三组对应测试、README、Capability/Checkpoint/Pitfall；要求 gates=[]、control_plane、knowledge/source_lab not_applicable、completion effect 仅 health，并逐项要求 Golden/Workflow/Android Publisher/Oracle/Receipt/Dispatcher/SourceLab/Package/产品/Requirement/Approval/ADR/Schema/状态文件 denial。此项不修 Publisher 或需求状态机，只建立最小自愈权限边界。",
+      "recovers": "IOS-GOLDEN-CONSUMER-CONTINUATION-001",
+      "depends_on": [
+        "IOS-GITHUB-GOLDEN-DISPATCHER-001"
+      ],
+      "scope": {
+        "allow_write": [
+          "ios/harness/loop_supervisor.py",
+          "ios/harness/tests/test_loop_supervisor.py",
+          "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+          "ios/project/checkpoints/IOS-GOLDEN-CONSUMER-BASELINE-SCOPE-001.json",
+          "ios/project/pitfalls/PIT-*.json"
+        ],
+        "deny_write": [
+          ".github/**",
+          "app/**",
+          "modules/**",
+          "ios/Packages/**",
+          "ios/publisher/**",
+          "ios/harness/harness.py",
+          "ios/harness/demand_compiler.py",
+          "ios/harness/github_golden_publisher.py",
+          "ios/harness/github_oracle_dispatcher.py",
+          "ios/harness/github_oracle_receipt.py",
+          "ios/harness/proposal_compiler.py",
+          "ios/harness/config.json",
+          "ios/harness/supervisor.example.json",
+          "ios/harness/schemas/**",
+          "ios/harness/goldens/**",
+          "ios/harness/oracle/**",
+          "ios/harness/source-lab/**",
+          "ios/harness/work-items/**",
+          "ios/project/state.json",
+          "ios/project/events.jsonl",
+          "ios/project/status.md",
+          "ios/project/business-knowledge/**",
+          "ios/project/delivery-intents/**",
+          "ios/project/migration-intents/**",
+          "ios/project/requirements/**",
+          "ios/project/approvals/**",
+          "ios/project/work-item-proposals/**",
+          "ios/docs/**"
+        ],
+        "max_files_changed": 5,
+        "max_changed_lines": 1200
+      },
+      "inputs": {
+        "context_files": [
+          "ios/harness/loop_supervisor.py",
+          "ios/harness/tests/test_loop_supervisor.py",
+          "ios/harness/work-items/IOS-GOLDEN-CONSUMER-CONTINUATION-001.json",
+          "ios/project/checkpoints/IOS-GITHUB-GOLDEN-DISPATCHER-001.json"
+        ],
+        "android_source_anchors": [],
+        "fixtures": []
+      },
+      "architecture_refs": [
+        "ARCH-014",
+        "ARCH-017",
+        "ADR-0002",
+        "ADR-0004"
+      ],
+      "acceptance": {
+        "criteria": [
+          {
+            "id": "AC-1",
+            "statement": "专用 policy 只在固定 golden-consumer-recovery 标签集合完整时启用，并要求 gates=[]、control_plane、无知识/SourceLab authority、completion effect 仅 health。",
+            "verified_by": [
+              "dependency-policy"
+            ],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          },
+          {
+            "id": "AC-2",
+            "statement": "allow_write 必须与 Manifest v2 consumer recovery 的十个精确文件模式完全相等；缺项、多项、wildcard 或替换路径均拒绝。",
+            "verified_by": [
+              "dependency-policy"
+            ],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          },
+          {
+            "id": "AC-3",
+            "statement": "denial 覆盖 Golden、Workflow、Android Publisher、Oracle、Receipt、Dispatcher、SourceLab、Package、产品、Requirement、Approval、ADR、Schema 和状态文件；测试直接证明最小恢复 candidate 可接受且 authority 路径被拒绝。",
+            "verified_by": [
+              "dependency-policy"
+            ],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          }
+        ],
+        "required_checks": [
+          "dependency-policy"
+        ]
+      },
+      "baseline_checks": [
+        "dependency-policy"
+      ],
+      "budget": {
+        "wall_clock_seconds": 7200,
+        "max_edit_verify_cycles": 4,
+        "max_targeted_test_runs": 12,
+        "max_full_test_runs": 1,
+        "max_infra_retries": 1
+      },
+      "gates": [],
+      "completion_effects": {
+        "health": {
+          "golden_consumer_recovery_scope": "exact_v1"
+        }
+      },
+      "memory": {
+        "capability_state_required": true,
+        "checkpoint_required": true,
+        "pitfall": "required",
+        "adr": "not_required"
+      },
+      "requirements": {
+        "mode": "control_plane",
+        "refs": [],
+        "none_reason": "本项只建立控制面恢复边界"
+      },
+      "knowledge": {
+        "contract_version": 1,
+        "mode": "not_applicable",
+        "claim_refs": [],
+        "driver_refs": [],
+        "coverage_refs": [],
+        "produces": [],
+        "expected_ledger_transitions": [],
+        "context_budget": {
+          "max_claims": 6,
+          "max_bytes": 32768
+        },
+        "none_reason": "本项不修改或发布业务知识"
+      },
+      "source_lab": {
+        "mode": "not_applicable",
+        "behaviors": [],
+        "scenarios": [],
+        "none_reason": "本项不修改 SourceLab"
+      },
+      "stop_on": [
+        "doctor_red",
+        "scope_violation",
+        "authority_scope",
+        "same_failure_twice",
+        "budget_exhausted"
+      ]
+    }
+  }
+}
