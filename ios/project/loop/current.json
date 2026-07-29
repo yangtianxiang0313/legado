@@ -1,1 +1,1 @@
-{"active_task":null,"attempt":0,"last_completed":{"at":"2026-07-29T20:34:48Z","sequence":145,"task_id":"IOS-CHARACTERIZE-READER-PROGRESS-TOC-REMAP-001"},"schema_version":2,"status":"idle","verification":null}
+{"active_task":"IOS-READER-CORE-PROGRESS-TOC-REMAP-001","attempt":0,"last_completed":{"at":"2026-07-29T20:34:48Z","sequence":145,"task_id":"IOS-CHARACTERIZE-READER-PROGRESS-TOC-REMAP-001"},"schema_version":2,"status":"running","verification":null}
