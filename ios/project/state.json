@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "revision": 480,
+  "revision": 481,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-29T00:22:09Z",
-  "event_head": "4ed38ce9119542450f55fd65c1eaf5ab9b3513d10bfb5c896341b2313b6484d7",
+  "updated_at": "2026-07-29T00:23:26Z",
+  "event_head": "aafc1053fdaf6fd6c285317b9c8d73e92ccd0665aa3ba6c89b7f596efcfcd3e7",
   "active_work_items": [],
   "last_completed_work_item": "IOS-GITHUB-GOLDEN-PUBLISHER-AUTOMATION-001",
   "work_items": {
@@ -9000,6 +9000,11 @@
       "verified_at": "2026-07-29T00:20:57Z",
       "completed_at": "2026-07-29T00:22:09Z",
       "final_tree_sha256": "92d5f15b72cf102a22f6b7a4d3c8e1cdd024af38e9dbe821865219d54a6d43fe"
+    },
+    "IOS-GITHUB-GOLDEN-DISPATCHER-SCOPE-001": {
+      "status": "ready",
+      "attempt": 0,
+      "last_evidence": null
     }
   },
   "health": {
