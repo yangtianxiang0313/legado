@@ -35,6 +35,7 @@ ACTIVE_STATUSES = {"implementing", "verified", "awaiting_human"}
 TERMINAL_STATUSES = {"completed", "rejected", "exhausted", "cancelled", "superseded"}
 RECOVERABLE_STATUSES = {"blocked", "rejected", "exhausted", "cancelled"}
 ALL_STATUSES = ACTIVE_STATUSES | TERMINAL_STATUSES | {"ready", "blocked"}
+HISTORICAL_CONTEXT_STATUSES = TERMINAL_STATUSES | {"blocked"}
 WORK_ITEM_ID = re.compile(r"^IOS-[A-Z][A-Z0-9-]*-[0-9]{3}$")
 CAPABILITY_ID = re.compile(r"^CAP-[A-Z0-9-]+$")
 DECISION_ID = re.compile(r"^[a-z0-9][a-z0-9-]*$")
@@ -1939,6 +1940,30 @@ class Harness:
                         context,
                         state,
                     )
+                    runtime = state.get("work_items", {}).get(
+                        item_id, {}
+                    )
+                    status = (
+                        runtime.get("status")
+                        if isinstance(runtime, dict)
+                        else None
+                    )
+                    context_path = Path(context)
+                    ignored_runtime_context = (
+                        isinstance(context, str)
+                        and context.startswith(".harness-runtime/")
+                        and context_path.as_posix() == context
+                        and context_path.parts
+                        and context_path.parts[0] == ".harness-runtime"
+                        and "." not in context_path.parts
+                        and ".." not in context_path.parts
+                    )
+                    if (
+                        not promoted
+                        and ignored_runtime_context
+                        and status in HISTORICAL_CONTEXT_STATUSES
+                    ):
+                        continue
                     if not promoted:
                         errors.append(
                             f"{item_id}: "

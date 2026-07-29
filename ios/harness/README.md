@@ -139,6 +139,12 @@ python3 ios/harness/loop_supervisor.py materialize-review \
   当前 WorkItem Checkpoint 与 PIT；历史 WorkItem/State、Workflow、Golden、
   Publisher、Dispatcher、Oracle、Package、产品、Requirement、proposal 与
   wildcard 均保持 deny。缺少任一标签的候选不会获得 Harness core 写权限；
+- WorkItem 的 `context_files` 默认始终是强引用。唯一例外是路径规范位于
+  `.harness-runtime/` 且 WorkItem 已处于 completed、blocked、rejected、
+  exhausted、cancelled 或 superseded：这些文件只是历史执行诊断，不随 Git
+  checkout 分发，缺失不会让干净 checkout 的 doctor 变红。ready、implementing、
+  verified、awaiting_human 等非终态仍必须保有 runtime context；任何受管源码、
+  记忆或其他非 runtime context 在所有状态下继续 fail closed；
 - Receipt Settlement corrective 候选只有同时带
   `external-execution`、`android-oracle`、`receipt-settlement`、`corrective`
   四个标签，且为无 Gate 的 control-plane、Business Knowledge 与 SourceLab 均

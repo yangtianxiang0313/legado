@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0068",
+  "revision": 1,
+  "title": "本地 ignored runtime 缓存会掩盖干净 Checkout 的 Doctor 失败",
+  "fingerprint": "terminal-work-item-ignored-runtime-context-required-on-clean-checkout",
+  "capabilities": ["CAP-KNOWLEDGE-CONTROL"],
+  "symptoms": [
+    "本地 Harness doctor 长期为绿色，但 GitHub Actions 在相同 commit 的干净 checkout 中报 context file 不存在",
+    "缺失路径位于 .harness-runtime，且来自已经完成的历史 WorkItem",
+    "重新创建本地 runtime 缓存可以让错误消失，却无法让仓库本身可复现"
+  ],
+  "conditions": [
+    "WorkItem 把一次性运行诊断文件列入 context_files",
+    ".harness-runtime 被 Git 忽略且文件没有转化为受管 Evidence 或 Receipt",
+    "validate_references 对所有历史 WorkItem 永久要求 context 物理存在"
+  ],
+  "root_cause": "context_files 同时承担实现时强输入和历史诊断索引，但旧验证没有区分 WorkItem 生命周期与文件分发边界。终态任务已由 Evidence/Checkpoint 固化后，ignored runtime 文件不再是可移植权威。",
+  "diagnosis": [
+    "在 git clean checkout 或临时 worktree 中运行 harness doctor",
+    "用 git check-ignore 检查缺失 context 是否位于 .harness-runtime",
+    "核对对应 WorkItem state；非终态缺失仍应视为真实阻断"
+  ],
+  "fix": "新增 HISTORICAL_CONTEXT_STATUSES。validate_references 仅对 completed/blocked/rejected/exhausted/cancelled/superseded WorkItem 的规范 .harness-runtime/ 路径容忍缺失；ready/implementing/verified/awaiting_human 仍强校验，所有非 runtime context 在所有状态下继续 fail closed。",
+  "prevention": {
+    "architecture_rule": "ignored runtime 文件只能作为活动执行输入或诊断缓存；终态可移植权威必须落在受管 Evidence/Checkpoint/Receipt，clean checkout doctor 不得依赖本机缓存。",
+    "tests": [
+      "ios/harness/tests/test_harness.py#test_terminal_runtime_context_is_optional_only_after_execution"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-GITHUB-ORACLE-RECEIPT-HARDENING-001",
+    "until": "IOS-HARNESS-RUNTIME-CONTEXT-REPRO-001"
+  },
+  "status": "mitigated",
+  "occurrences": 1,
+  "first_seen": "2026-07-29",
+  "last_seen": "2026-07-29",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260729T011011Z-ios-harness-runtime-context-repro-001-ce292995.json",
+    "https://github.com/yangtianxiang0313/legado/actions/runs/30412309698"
+  ]
+}

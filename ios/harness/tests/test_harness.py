@@ -255,6 +255,68 @@ class HarnessFixture:
 
 
 class HarnessTests(unittest.TestCase):
+    def test_terminal_runtime_context_is_optional_only_after_execution(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = HarnessFixture(Path(directory))
+            harness = fixture.initialize()
+            items = harness.work_items()
+            item = items["IOS-BOOT-001"]
+            runtime_context = (
+                ".harness-runtime/github-oracle/review-1/report.json"
+            )
+            item["spec"]["inputs"]["context_files"] = [
+                runtime_context
+            ]
+            state = harness.state()
+
+            for status in (
+                "completed",
+                "blocked",
+                "rejected",
+                "exhausted",
+                "cancelled",
+                "superseded",
+            ):
+                with self.subTest(status=status):
+                    state["work_items"]["IOS-BOOT-001"]["status"] = status
+                    errors = harness.validate_references(items, state)
+                    self.assertFalse(
+                        any(runtime_context in error for error in errors),
+                        errors,
+                    )
+
+            for status in (
+                "ready",
+                "implementing",
+                "verified",
+                "awaiting_human",
+            ):
+                with self.subTest(status=status):
+                    state["work_items"]["IOS-BOOT-001"]["status"] = status
+                    errors = harness.validate_references(items, state)
+                    self.assertTrue(
+                        any(runtime_context in error for error in errors),
+                        errors,
+                    )
+
+            state["work_items"]["IOS-BOOT-001"]["status"] = "completed"
+            for managed_context in (
+                "ios/project/missing.json",
+                ".harness-runtime/../missing.json",
+            ):
+                with self.subTest(managed_context=managed_context):
+                    item["spec"]["inputs"]["context_files"] = [
+                        managed_context
+                    ]
+                    errors = harness.validate_references(items, state)
+                    self.assertTrue(
+                        any(
+                            managed_context in error
+                            for error in errors
+                        ),
+                        errors,
+                    )
+
     @staticmethod
     def initialize_git(root: Path):
         subprocess.run(["git", "init", "-q"], cwd=str(root), check=True)
