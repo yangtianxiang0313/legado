@@ -47,13 +47,14 @@ public enum SourceRequestCompiler {
         of: "{{key}}",
         with: encodeURLComponent(keyword)
       )
+      let compiled = try compiledGET(url, charset: nil)
       return SourceRequestPlan(
         request: HTTPRequest(
           method: .get,
-          url: try validatedURL(url)
+          url: compiled.url
         ),
         body: nil,
-        formFields: []
+        formFields: compiled.fields
       )
     }
     let rendered = try render(template: template, keyword: keyword)
@@ -86,14 +87,15 @@ public enum SourceRequestCompiler {
     }
     let headers = try configuredHeaders(option.headers ?? option.header)
     guard option.method?.caseInsensitiveCompare("POST") == .orderedSame else {
+      let compiled = try compiledGET(parts.url, charset: option.charset)
       return SourceRequestPlan(
         request: HTTPRequest(
           method: .get,
-          url: try validatedURL(parts.url),
+          url: compiled.url,
           headers: HTTPHeaders(headers)
         ),
         body: nil,
-        formFields: [],
+        formFields: compiled.fields,
         retry: retry
       )
     }
@@ -101,7 +103,7 @@ public enum SourceRequestCompiler {
     let contentType = headers.first(where: { $0.name == "content-type" })?.value
     let formFields =
       contentType == nil && !looksLikeJSONOrXML(body)
-      ? encodedFormFields(body)
+      ? try SourceFieldCompiler.compile(body, charset: option.charset)
       : []
     let canonicalBody =
       formFields.isEmpty && !body.isEmpty
@@ -132,6 +134,7 @@ public enum SourceRequestCompiler {
     let header: [String: String]?
     let headers: [String: String]?
     let retry: Int?
+    let charset: String?
   }
 
   private static func render(template: String, keyword: String) throws -> String {
@@ -209,85 +212,24 @@ public enum SourceRequestCompiler {
     }.map { try HTTPHeader(name: $0.key, value: $0.value) }
   }
 
-  private static func encodedFormFields(_ body: String) -> [HTTPFormField] {
-    var fields: [HTTPFormField] = []
-    var positions: [String: Int] = [:]
-    for raw in body.split(separator: "&", omittingEmptySubsequences: false) {
-      let item = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-      guard !item.isEmpty else { continue }
-      let pair = item.split(
-        separator: "=",
-        maxSplits: 1,
-        omittingEmptySubsequences: false
-      )
-      let key = String(pair[0]).trimmingCharacters(in: .whitespacesAndNewlines)
-      guard !key.isEmpty else { continue }
-      let rawValue =
-        pair.count == 2
-        ? String(pair[1]).trimmingCharacters(in: .whitespacesAndNewlines)
-        : ""
-      let value = hasValidURLFormEncoding(rawValue)
-        ? rawValue
-        : javaFormEncode(rawValue)
-      if let position = positions[key] {
-        fields[position] = HTTPFormField(key: key, value: value)
-      } else {
-        positions[key] = fields.count
-        fields.append(HTTPFormField(key: key, value: value))
-      }
+  private static func compiledGET(
+    _ value: String,
+    charset: String?
+  ) throws -> (url: HTTPURL, fields: [HTTPFormField]) {
+    guard let queryStart = value.firstIndex(of: "?") else {
+      return (try validatedURL(value), [])
     }
-    return fields
-  }
-
-  private static func hasValidURLFormEncoding(_ value: String) -> Bool {
-    let bytes = Array(value.utf8)
-    var index = 0
-    while index < bytes.count {
-      let byte = bytes[index]
-      if isFormSafe(byte) || byte == 43 {
-        index += 1
-      } else if
-        byte == 37,
-        index + 2 < bytes.count,
-        isHex(bytes[index + 1]),
-        isHex(bytes[index + 2])
-      {
-        index += 3
-      } else {
-        return false
-      }
-    }
-    return true
-  }
-
-  private static func javaFormEncode(_ value: String) -> String {
-    let hexadecimal = Array("0123456789ABCDEF".utf8)
-    var output: [UInt8] = []
-    for byte in value.utf8 {
-      if isFormSafe(byte) {
-        output.append(byte)
-      } else if byte == 32 {
-        output.append(43)
-      } else {
-        output.append(37)
-        output.append(hexadecimal[Int(byte >> 4)])
-        output.append(hexadecimal[Int(byte & 15)])
-      }
-    }
-    return String(decoding: output, as: UTF8.self)
-  }
-
-  private static func isFormSafe(_ byte: UInt8) -> Bool {
-    (48...57).contains(byte)
-      || (65...90).contains(byte)
-      || (97...122).contains(byte)
-      || [42, 45, 46, 95].contains(byte)
-  }
-
-  private static func isHex(_ byte: UInt8) -> Bool {
-    (48...57).contains(byte)
-      || (65...70).contains(byte)
-      || (97...102).contains(byte)
+    let base = String(value[..<queryStart])
+    let rawQuery = String(value[value.index(after: queryStart)...])
+    let fields = try SourceFieldCompiler.compile(rawQuery, charset: charset)
+    let query =
+      fields
+      .map { "\($0.key)=\($0.value)" }
+      .joined(separator: "&")
+    return (
+      try validatedURL(base + "?" + query),
+      fields
+    )
   }
 
   private static func looksLikeJSONOrXML(_ body: String) -> Bool {

@@ -186,6 +186,34 @@ public enum MinimalTaskConformanceRunner {
         else {
           throw MinimalTaskConformanceError.invalidFixture
         }
+      } else if operation == FixtureOperation.fieldEncoding.rawValue {
+        guard
+          case .string(let methodText)? = arguments["method"],
+          let method = HTTPMethod(rawValue: methodText),
+          case .string(let fields)? = arguments["fields"]
+        else {
+          throw MinimalTaskConformanceError.invalidFixture
+        }
+        let charset: String?
+        if case .string(let value)? = arguments["charset"] {
+          charset = value
+        } else if arguments["charset"] == nil {
+          charset = nil
+        } else {
+          throw MinimalTaskConformanceError.invalidFixture
+        }
+        guard
+          result.fieldEncodings.updateValue(
+            SourceFieldEncodingInput(
+              method: method,
+              fields: fields,
+              charset: charset
+            ),
+            forKey: id
+          ) == nil
+        else {
+          throw MinimalTaskConformanceError.invalidFixture
+        }
       }
     }
     return result

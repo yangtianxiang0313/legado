@@ -177,6 +177,56 @@ final class ConformanceCLITests: XCTestCase {
     )
   }
 
+  func testMinimalTaskRunnerMatchesFieldEncodingAndroidGolden() async throws {
+    let temporaryRoot = FileManager.default.temporaryDirectory
+      .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryRoot) }
+    let fixtureID = "sl-source-request-field-encoding-runtime-001"
+    let fixturePath = "ios/harness/fixtures/source-lab/\(fixtureID)"
+    let goldenPath = "ios/harness/goldens/android-legado-v1/\(fixtureID).json"
+    let taskPath = "ios/project/loop/task.json"
+    for relative in [fixturePath, goldenPath, taskPath] {
+      try FileManager.default.createDirectory(
+        at: temporaryRoot
+          .appendingPathComponent(relative)
+          .deletingLastPathComponent(),
+        withIntermediateDirectories: true
+      )
+    }
+    try FileManager.default.copyItem(
+      at: repositoryRoot.appendingPathComponent(fixturePath),
+      to: temporaryRoot.appendingPathComponent(fixturePath)
+    )
+    try FileManager.default.copyItem(
+      at: repositoryRoot.appendingPathComponent(goldenPath),
+      to: temporaryRoot.appendingPathComponent(goldenPath)
+    )
+    let task = try JSONSerialization.data(
+      withJSONObject: [
+        "schema_version": 2,
+        "id": "IOS-SOURCE-RUNTIME-FIELD-ENCODING-001",
+        "source": [
+          "fixture_id": fixtureID,
+          "android_golden": goldenPath,
+        ],
+      ],
+      options: [.sortedKeys]
+    )
+    try task.write(to: temporaryRoot.appendingPathComponent(taskPath))
+
+    let run = try await MinimalTaskConformanceRunner.run(
+      taskPath: taskPath,
+      repositoryRoot: temporaryRoot
+    )
+    let text = String(decoding: run.data, as: UTF8.self)
+
+    XCTAssertTrue(run.passed)
+    XCTAssertTrue(text.contains(#""first_divergence":null"#))
+    XCTAssertTrue(text.contains(#""value":"%D0%C7%BA%D3""#))
+    XCTAssertTrue(text.contains(#""value":"%u661f%20%u6cb3%2b%25""#))
+    XCTAssertTrue(text.contains(#""code":"rule_failed""#))
+  }
+
   func testRunnerProducesIdenticalCanonicalBytesWithoutRawBodyOrDynamicFields() async throws {
     let fixture = offlineFixture
 

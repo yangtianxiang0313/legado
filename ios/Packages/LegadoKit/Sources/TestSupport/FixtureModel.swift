@@ -11,6 +11,7 @@ public enum FixtureOperation: String, Codable, Sendable {
   case content
   case rawResponse = "raw_response"
   case requestOptions = "request_options"
+  case fieldEncoding = "field_encoding"
   case rule
 }
 

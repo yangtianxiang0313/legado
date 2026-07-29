@@ -16,9 +16,16 @@ struct SourceRequestOptionInput: Equatable, Sendable {
   let retry: Int
 }
 
+struct SourceFieldEncodingInput: Equatable, Sendable {
+  let method: HTTPMethod
+  let fields: String
+  let charset: String?
+}
+
 struct SourcePipelineInput: Equatable, Sendable {
   var searchKeywords: [String: String] = [:]
   var requestOptions: [String: SourceRequestOptionInput] = [:]
+  var fieldEncodings: [String: SourceFieldEncodingInput] = [:]
 }
 
 public enum SourcePipelineConformanceRunner {
@@ -58,6 +65,19 @@ public enum SourcePipelineConformanceRunner {
         throw SourcePipelineConformanceError.inputRouteMismatch
       }
       let request = plan.request
+      if requestCase.operation == .fieldEncoding {
+        guard let stimulus = input.fieldEncodings[requestCase.id] else {
+          throw SourcePipelineConformanceError.inputRouteMismatch
+        }
+        requestPlan.append(HTTPRequestEnvelope(request: request))
+        cases.append(
+          fieldEncodingCase(
+            requestCase,
+            input: stimulus
+          )
+        )
+        continue
+      }
       guard
         request.method == requestCase.request.method,
         request.url == requestCase.request.url
@@ -293,12 +313,114 @@ public enum SourcePipelineConformanceRunner {
           formFields: [],
           retry: preparation.retry
         )
+      case .fieldEncoding:
+        guard let stimulus = input.fieldEncodings[requestCase.id] else {
+          throw SourcePipelineConformanceError.inputRouteMismatch
+        }
+        plan = fieldEncodingPlan(
+          requestCase,
+          input: stimulus
+        )
       default:
         throw SourcePipelineConformanceError.unsupportedOperation
       }
       plans[requestCase.id] = plan
     }
     return plans
+  }
+
+  private static func fieldEncodingPlan(
+    _ requestCase: FixtureRequestCase,
+    input: SourceFieldEncodingInput
+  ) -> SourceRequestPlan {
+    guard input.method == requestCase.request.method else {
+      return SourceRequestPlan(
+        request: requestCase.request,
+        body: nil,
+        formFields: []
+      )
+    }
+    do {
+      let fields = try SourceFieldCompiler.compile(
+        input.fields,
+        charset: input.charset
+      )
+      let encoded =
+        fields
+        .map { "\($0.key)=\($0.value)" }
+        .joined(separator: "&")
+      switch input.method {
+      case .get:
+        return SourceRequestPlan(
+          request: HTTPRequest(
+            method: .get,
+            url: try HTTPURL(
+              requestCase.request.url.absoluteString + "?" + encoded
+            )
+          ),
+          body: nil,
+          formFields: fields
+        )
+      case .post:
+        return SourceRequestPlan(
+          request: HTTPRequest(
+            method: .post,
+            url: requestCase.request.url,
+            body: HTTPBody(Data(encoded.utf8))
+          ),
+          body: encoded,
+          formFields: fields
+        )
+      }
+    } catch {
+      return SourceRequestPlan(
+        request: HTTPRequest(
+          method: input.method,
+          url: requestCase.request.url
+        ),
+        body: nil,
+        formFields: []
+      )
+    }
+  }
+
+  private static func fieldEncodingCase(
+    _ requestCase: FixtureRequestCase,
+    input: SourceFieldEncodingInput
+  ) -> JSONValue {
+    do {
+      let fields = try SourceFieldCompiler.compile(
+        input.fields,
+        charset: input.charset
+      )
+      return .object([
+        "id": .string(requestCase.id),
+        "operation": .string(requestCase.operation.rawValue),
+        "result": .object([
+          "field_map": .array(
+            fields.map { field in
+              .object([
+                "key": .string(field.key),
+                "value": .string(field.value),
+              ])
+            }
+          ),
+          "method": .string(input.method.rawValue),
+          "query_string": .string(input.fields),
+        ]),
+        "issue": .null,
+      ])
+    } catch {
+      return .object([
+        "id": .string(requestCase.id),
+        "operation": .string(requestCase.operation.rawValue),
+        "result": .null,
+        "issue": .object([
+          "code": .string("rule_failed"),
+          "stage": .string("field_evaluation"),
+        ]),
+      ])
+    }
   }
 
   private static func requestPreparation(
