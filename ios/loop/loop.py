@@ -400,6 +400,50 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/Packages/LegadoKit/Sources/TestSupport/FixtureModel.swift",
             ],
         }
+    if "READER-CORE" in target:
+        return {
+            "owner": "ReaderCore",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-002",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/Packages/LegadoKit/Package.swift",
+                "ios/Packages/LegadoKit/Sources/LibraryDomain/**",
+                "ios/Packages/LegadoKit/Sources/ReaderCore/**",
+                "ios/Packages/LegadoKit/Tests/ReaderCoreTests/**",
+                "ios/Packages/LegadoKit/Sources/ConformanceCLI/**",
+                "ios/Packages/LegadoKit/Tests/ConformanceCLITests/**",
+                "ios/Packages/LegadoKit/Sources/TestSupport/FixtureModel.swift",
+            ],
+        }
+    if "LIBRARY-DOMAIN" in target:
+        return {
+            "owner": "LibraryDomain",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-002",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-014",
+                "ARCH-015",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/Packages/LegadoKit/Package.swift",
+                "ios/Packages/LegadoKit/Sources/LibraryDomain/**",
+                "ios/Packages/LegadoKit/Tests/LibraryDomainTests/**",
+                "ios/Packages/LegadoKit/Sources/ConformanceCLI/**",
+                "ios/Packages/LegadoKit/Tests/ConformanceCLITests/**",
+                "ios/Packages/LegadoKit/Sources/TestSupport/FixtureModel.swift",
+            ],
+        }
     raise LoopError(f"OWNER_NOT_MAPPED:{target}")
 
 
@@ -601,9 +645,81 @@ def characterization_task_id(semantic_key: str) -> str:
     return f"IOS-CHARACTERIZE-{slug}-001"
 
 
-def characterization_fixture_id(semantic_key: str) -> str:
+def characterization_contract(claim: Mapping[str, Any]) -> Mapping[str, Any]:
+    semantic_key = str(claim.get("semantic_key", ""))
+    subject_keys = {
+        str(value)
+        for value in claim.get("subject_keys", [])
+        if isinstance(value, str)
+    }
+    keys = {semantic_key, *subject_keys}
+    if any(
+        value.startswith(("reader.",))
+        for value in keys
+    ):
+        return {
+            "owner": "ReaderCore",
+            "fixture_prefix": "rl",
+            "fixture_root": "runtime-lab",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-002",
+                "ARCH-005",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "rule": (
+                "先固定 Android 阅读运行时可观察结果，再扩展 ReaderCore；"
+                "LibraryDomain 只承载值，Android Room 与 Golden 不进入产品 Target。"
+            ),
+        }
+    if any(value.startswith("library.") for value in keys):
+        return {
+            "owner": "LibraryDomain",
+            "fixture_prefix": "rl",
+            "fixture_root": "runtime-lab",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-002",
+                "ARCH-014",
+                "ARCH-015",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "rule": (
+                "先固定 Android 领域运行时可观察结果，再扩展 LibraryDomain；"
+                "数据库 Record、Android Room 与 Golden 不进入领域 Target。"
+            ),
+        }
+    if any(
+        value.startswith(("source.", "content.cache"))
+        for value in keys
+    ):
+        return {
+            "owner": "SourceRuntime",
+            "fixture_prefix": "sl",
+            "fixture_root": "source-lab",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-005",
+                "ARCH-014",
+                "ARCH-017",
+            ],
+            "rule": (
+                "先固定 Android 可观察结果，再扩展独立 SourceRuntime；"
+                "SourceLab 与 Golden 不进入 UI/Domain。"
+            ),
+        }
+    raise LoopError(f"CHARACTERIZATION_DOMAIN_NOT_MAPPED:{semantic_key}")
+
+
+def characterization_fixture_id(
+    semantic_key: str,
+    fixture_prefix: str = "sl",
+) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", semantic_key.lower()).strip("-")
-    return f"sl-{slug}-001"
+    return f"{fixture_prefix}-{slug}-001"
 
 
 def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -811,6 +927,50 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
         if isinstance(migration, dict)
         else []
     )
+    delivery_contracts = {
+        "SourceRuntime": {
+            "goal": (
+                "按照冻结 Android 运行结果，在独立 SourceRuntime 中实现该书源能力；"
+                "源码对齐为主，结构化测试为辅。"
+            ),
+            "rule": (
+                "SourceRuntime 生成确定性 RequestPlan；Transport 只执行，"
+                "UI/Domain 不解释请求语义。"
+            ),
+            "test_id": "source-runtime-tests",
+            "test_filter": "SourceRuntimeTests",
+            "acceptance_id": "structured-source-acceptance",
+        },
+        "ReaderCore": {
+            "goal": (
+                "按照冻结 Android 运行结果，在 ReaderCore 与 LibraryDomain 的既定"
+                "边界内实现阅读能力；源码对齐为主，结构化测试为辅。"
+            ),
+            "rule": (
+                "ReaderCore 只依赖自有 Sendable 领域值和消费方协议；"
+                "Android Room、平台数据库与 UI 不进入内核。"
+            ),
+            "test_id": "reader-core-tests",
+            "test_filter": "ReaderCoreTests",
+            "acceptance_id": "structured-reader-acceptance",
+        },
+        "LibraryDomain": {
+            "goal": (
+                "按照冻结 Android 运行结果实现平台无关领域值与规则；"
+                "Record、DTO 与 Domain Model 保持分离。"
+            ),
+            "rule": (
+                "LibraryDomain 只承载平台无关、不可变、Sendable 的领域语义；"
+                "数据库查询和 Android Room 留在适配器或验收层。"
+            ),
+            "test_id": "library-domain-tests",
+            "test_filter": "LibraryDomainTests",
+            "acceptance_id": "structured-domain-acceptance",
+        },
+    }
+    delivery_contract = delivery_contracts.get(str(architecture["owner"]))
+    if delivery_contract is None:
+        raise LoopError(f"DELIVERY_CONTRACT_NOT_MAPPED:{architecture['owner']}")
     task = {
         "schema_version": SCHEMA_VERSION,
         "id": target,
@@ -818,10 +978,7 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
         "title": title,
         "status": "ready",
         "priority": 100,
-        "goal": (
-            "按照冻结 Android 运行结果，在独立 SourceRuntime 中实现该书源能力；"
-            "源码对齐为主，结构化测试为辅。"
-        ),
+        "goal": delivery_contract["goal"],
         "source": {
             "android_baseline": (
                 migration.get("android_baseline")
@@ -842,10 +999,7 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
         "architecture": {
             "owner": architecture["owner"],
             "refs": architecture["architecture_refs"],
-            "rule": (
-                "SourceRuntime 生成确定性 RequestPlan；Transport 只执行，"
-                "UI/Domain 不解释请求语义。"
-            ),
+            "rule": delivery_contract["rule"],
         },
         "scope": {
             "allowed_paths": architecture["allowed_paths"],
@@ -870,7 +1024,7 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
                     "timeout_seconds": 120,
                 },
                 {
-                    "id": "source-runtime-tests",
+                    "id": delivery_contract["test_id"],
                     "argv": [
                         "swift",
                         "test",
@@ -878,7 +1032,7 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
                         "ios/Packages/LegadoKit",
                         "--disable-automatic-resolution",
                         "--filter",
-                        "SourceRuntimeTests",
+                        delivery_contract["test_filter"],
                     ],
                     "required_output_pattern": (
                         r"Executed [1-9][0-9]* tests?, with 0 failures"
@@ -886,7 +1040,7 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
                     "timeout_seconds": 300,
                 },
                 {
-                    "id": "structured-source-acceptance",
+                    "id": delivery_contract["acceptance_id"],
                     "argv": [
                         "swift",
                         "run",
@@ -902,7 +1056,7 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             ],
             "structured_output": {
                 "mode": "command_json",
-                "command_id": "structured-source-acceptance",
+                "command_id": delivery_contract["acceptance_id"],
                 "fixture_id": fixture_id,
                 "expected": golden_path,
                 "required_fields": [
@@ -938,7 +1092,11 @@ def build_characterization_task(
     packet = candidate["packet"]
     claim = candidate["claim"]
     semantic_key = str(claim["semantic_key"])
-    fixture_id = characterization_fixture_id(semantic_key)
+    domain = characterization_contract(claim)
+    fixture_id = characterization_fixture_id(
+        semantic_key,
+        str(domain["fixture_prefix"]),
+    )
     golden_path = (
         f"ios/harness/goldens/android-legado-v1/{fixture_id}.json"
     )
@@ -969,7 +1127,7 @@ def build_characterization_task(
         "status": "ready",
         "priority": 100,
         "goal": (
-            "从冻结 Android 源码声明出发扩展 SourceLab 场景，"
+            "从冻结 Android 源码声明出发扩展确定性 Characterization 场景，"
             "由真实 Android runner 产出结构化 Golden，并发布对应业务知识与"
             "Coverage；测试只验证权威链，不能替代源码语义或手写 expected。"
         ),
@@ -995,25 +1153,29 @@ def build_characterization_task(
         },
         "requirements": candidate["requirements"],
         "architecture": {
-            "owner": "SourceRuntime",
-            "refs": ["ARCH-001", "ARCH-005", "ARCH-014", "ARCH-017"],
-            "rule": (
-                "先固定 Android 可观察结果，再扩展独立 SourceRuntime；"
-                "SourceLab 与 Golden 不进入 UI/Domain。"
-            ),
+            "owner": domain["owner"],
+            "refs": domain["architecture_refs"],
+            "rule": domain["rule"],
         },
         "scope": {
             "allowed_paths": [
-                f"ios/harness/fixtures/source-lab/{fixture_id}/**",
+                (
+                    "ios/harness/fixtures/"
+                    f"{domain['fixture_root']}/{fixture_id}/**"
+                ),
                 "ios/harness/fixtures/manifest.json",
                 "ios/harness/source-lab/manifest.json",
                 "ios/harness/source-lab/coverage-policy-v1.json",
+                "ios/harness/source-lab/source_lab.py",
+                "ios/harness/source-lab/tests/test_source_lab.py",
+                "ios/harness/schemas/source-lab-scenario.schema.json",
+                "ios/harness/android-intake/**",
+                "ios/project/android-intake/inventory-manifest.json",
+                "ios/project/requirements/catalog.json",
                 "ios/harness/oracle/request-registry.json",
                 "ios/harness/oracle/scenario_selector.py",
                 "ios/harness/oracle/android-runner/**",
                 "ios/harness/tests/test_android_oracle_runner.py",
-                "ios/harness/source-lab/source_lab.py",
-                "ios/harness/source-lab/tests/test_source_lab.py",
                 ".github/workflows/android-oracle-attestation.yml",
                 golden_path,
                 "ios/harness/goldens/manifest.json",

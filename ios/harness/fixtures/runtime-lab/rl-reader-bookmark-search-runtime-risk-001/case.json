@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "kind": "android_runtime_scenario",
+  "id": "rl-reader-bookmark-search-runtime-risk-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "android_runtime",
+  "capabilities": ["android.room", "reader.bookmark"],
+  "compatibility_profile": "android-legado-v1",
+  "source": null,
+  "input": "input.json",
+  "transport": {
+    "mode": "none",
+    "external_network": "deny",
+    "responses": []
+  },
+  "coverage": [
+    {
+      "behavior": "reader.bookmark-search-room",
+      "cases": [
+        {
+          "id": "same-book-chapter-name",
+          "role": "nominal",
+          "android_fact_refs": ["AF-BOOKMARK-CONSTRUCTOR", "AF-BOOKMARK-FLOW-SEARCH-QUERY"],
+          "branch_refs": ["BookmarkDao.flowSearch:bookName/bookAuthor/chapterName branch"]
+        },
+        {
+          "id": "content-branch-cross-book",
+          "role": "boundary",
+          "android_fact_refs": ["AF-BOOKMARK-FLOW-SEARCH-QUERY"],
+          "branch_refs": ["BookmarkDao.flowSearch:OR content LIKE precedence"]
+        },
+        {
+          "id": "empty-key-cross-book",
+          "role": "boundary",
+          "android_fact_refs": ["AF-BOOKMARK-FLOW-SEARCH-QUERY"],
+          "branch_refs": ["BookmarkDao.flowSearch:empty LIKE pattern"]
+        },
+        {
+          "id": "percent-wildcard",
+          "role": "boundary",
+          "android_fact_refs": ["AF-BOOKMARK-FLOW-SEARCH-QUERY"],
+          "branch_refs": ["BookmarkDao.flowSearch:unescaped percent wildcard"]
+        },
+        {
+          "id": "underscore-wildcard",
+          "role": "boundary",
+          "android_fact_refs": ["AF-BOOKMARK-FLOW-SEARCH-QUERY"],
+          "branch_refs": ["BookmarkDao.flowSearch:unescaped underscore wildcard"]
+        },
+        {
+          "id": "global-chapter-order",
+          "role": "boundary",
+          "android_fact_refs": ["AF-BOOKMARK-FLOW-SEARCH-QUERY"],
+          "branch_refs": ["BookmarkDao.flowSearch:global ORDER BY chapterIndex after OR"]
+        },
+        {
+          "id": "time-primary-key-replace",
+          "role": "boundary",
+          "android_fact_refs": ["AF-BOOKMARK-CONSTRUCTOR"],
+          "branch_refs": ["Bookmark.time primary key with INSERT REPLACE"]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "fixture",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 0,
+    "network_allowed": false,
+    "logical_origin": null,
+    "database_reset_per_case": true
+  },
+  "limits": {"timeout_ms": 5000},
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/data/dao/BookmarkDao.kt#flowSearch",
+      "app/src/main/java/io/legado/app/data/entities/Bookmark.kt"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-READER-BOOKMARK-SEARCH-RUNTIME-RISK-001"
+  }
+}

@@ -18,6 +18,7 @@ import source_lab  # noqa: E402
 
 class SourceLabTests(unittest.TestCase):
     scenario = "sl-html-basic-001"
+    runtime_scenario = "rl-reader-bookmark-search-runtime-risk-001"
 
     def oracle_workflow(self):
         return (
@@ -197,6 +198,30 @@ class SourceLabTests(unittest.TestCase):
         self.assertIn("{{key}}", source["searchUrl"])
         self.assertEqual("@CSS:.book-item", source["ruleSearch"]["bookList"])
         self.assertFalse(any(source_lab.SOURCE_PLACEHOLDER in value for value in source_lab.recursive_strings(source)))
+
+    def test_runtime_scenario_is_valid_without_source_or_network(self):
+        directory, case, inputs = source_lab.load_scenario(
+            REPO_ROOT,
+            self.runtime_scenario,
+        )
+        self.assertEqual([], source_lab.validate_scenario(REPO_ROOT, directory, case))
+        self.assertEqual("android_runtime_scenario", case["kind"])
+        self.assertEqual(7, len(inputs["cases"]))
+        with self.assertRaisesRegex(
+            source_lab.SourceLabError,
+            "没有书源模板",
+        ):
+            source_lab.build_source(
+                REPO_ROOT,
+                self.runtime_scenario,
+                source_lab.LOGICAL_ORIGIN,
+            )
+        with self.assertRaisesRegex(
+            source_lab.SourceLabError,
+            "禁止启动网站",
+        ):
+            with source_lab.running_server(REPO_ROOT, self.runtime_scenario):
+                self.fail("runtime scenario started a SourceLab server")
 
     def test_rejects_non_loopback_origin(self):
         with self.assertRaises(source_lab.SourceLabError):

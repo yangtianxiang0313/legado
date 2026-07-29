@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Deterministic local origin and contract checks for Legado book sources."""
+"""Deterministic source-site and Android runtime characterization fixtures."""
 
 from __future__ import annotations
 
@@ -25,9 +25,11 @@ from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence, Set,
 
 LOGICAL_ORIGIN = "http://sourcelab.test"
 SOURCE_PLACEHOLDER = "${SOURCE_LAB_ORIGIN}"
-FIXTURE_ROOT = Path("ios/harness/fixtures/source-lab")
+SOURCE_FIXTURE_ROOT = Path("ios/harness/fixtures/source-lab")
+RUNTIME_FIXTURE_ROOT = Path("ios/harness/fixtures/runtime-lab")
+FIXTURE_ROOTS = (SOURCE_FIXTURE_ROOT, RUNTIME_FIXTURE_ROOT)
 CONTROL_ROOT = Path("ios/harness/source-lab")
-SCENARIO_ID = re.compile(r"^sl-[a-z0-9-]+-[0-9]{3}$")
+SCENARIO_ID = re.compile(r"^(?:sl|rl)-[a-z0-9-]+-[0-9]{3}$")
 FIXED_DATE = "Thu, 01 Jan 1970 00:00:00 GMT"
 ALLOWED_RESPONSE_HEADERS = {"content-type", "cache-control", "content-encoding", "location", "set-cookie"}
 class SourceLabError(RuntimeError):
@@ -116,10 +118,12 @@ def fixture_body_bytes(path: Path) -> bytes:
 
 
 def scenario_directories(root: Path) -> List[Path]:
-    fixture_root = root / FIXTURE_ROOT
-    if not fixture_root.exists():
-        return []
-    return sorted(path.parent for path in fixture_root.glob("*/case.json"))
+    directories = []
+    for relative in FIXTURE_ROOTS:
+        fixture_root = root / relative
+        if fixture_root.exists():
+            directories.extend(path.parent for path in fixture_root.glob("*/case.json"))
+    return sorted(directories)
 
 
 def scenario_directory(root: Path, scenario_id: str) -> Path:
@@ -156,6 +160,8 @@ def validate_origin(origin: str) -> None:
 def build_source(root: Path, scenario_id: str, origin: str) -> Dict[str, Any]:
     validate_origin(origin)
     directory, case, _ = load_scenario(root, scenario_id)
+    if case.get("kind") != "source_lab_scenario":
+        raise SourceLabError(f"{scenario_id}: Android runtime scenario 没有书源模板")
     source_path = safe_child(directory, str(case.get("source", "")))
     source = load_json(source_path)
     if not isinstance(source, dict):
@@ -176,7 +182,144 @@ def route_signature(route: Dict[str, Any]) -> Tuple[str, str, Tuple[Tuple[str, s
     return str(match["method"]), str(match["path"]), query
 
 
+def validate_runtime_scenario(
+    root: Path,
+    directory: Path,
+    case: Dict[str, Any],
+) -> List[str]:
+    errors: List[str] = []
+    scenario_id = case.get("id")
+    required_top = {
+        "schema_version", "kind", "id", "revision", "status", "operation", "capabilities",
+        "compatibility_profile", "source", "input", "transport", "coverage", "determinism", "limits", "provenance",
+    }
+    extras = sorted(set(case) - required_top)
+    missing = sorted(required_top - set(case))
+    if extras:
+        errors.append(f"{scenario_id}: 不允许的 runtime case 字段：{', '.join(extras)}")
+    if missing:
+        errors.append(f"{scenario_id}: 缺少 runtime case 字段：{', '.join(missing)}")
+    if (
+        scenario_id != directory.name
+        or not isinstance(scenario_id, str)
+        or not scenario_id.startswith("rl-")
+        or not SCENARIO_ID.fullmatch(scenario_id)
+    ):
+        errors.append(f"runtime scenario ID/目录无效：{directory}")
+    if case.get("operation") != "android_runtime" or case.get("source") is not None:
+        errors.append(f"{scenario_id}: runtime operation/source 无效")
+    transport = case.get("transport")
+    if transport != {
+        "mode": "none",
+        "external_network": "deny",
+        "responses": [],
+    }:
+        errors.append(f"{scenario_id}: runtime transport 必须禁用")
+    determinism = case.get("determinism")
+    if (
+        not isinstance(determinism, dict)
+        or determinism.get("network_allowed") is not False
+        or determinism.get("logical_origin") is not None
+        or determinism.get("database_reset_per_case") is not True
+        or determinism.get("timezone") != "UTC"
+        or determinism.get("locale") != "en_US_POSIX"
+    ):
+        errors.append(f"{scenario_id}: runtime determinism 无效")
+    limits = case.get("limits")
+    if (
+        not isinstance(limits, dict)
+        or not isinstance(limits.get("timeout_ms"), int)
+        or not 1 <= limits["timeout_ms"] <= 5_000
+    ):
+        errors.append(f"{scenario_id}: runtime limits.timeout_ms 无效")
+    try:
+        input_path = safe_child(directory, str(case.get("input", "")))
+        inputs = load_json(input_path)
+        input_cases: Dict[str, Dict[str, Any]] = {}
+        if not isinstance(inputs, dict) or set(inputs) != {"schema_version", "cases"}:
+            errors.append(f"{scenario_id}: runtime input 必须只含 schema_version/cases")
+        elif inputs.get("schema_version") != 1 or not isinstance(inputs.get("cases"), list):
+            errors.append(f"{scenario_id}: runtime input schema/cases 无效")
+        else:
+            for entry in inputs["cases"]:
+                if (
+                    not isinstance(entry, dict)
+                    or set(entry) != {"id", "operation", "arguments"}
+                    or not isinstance(entry.get("id"), str)
+                    or not isinstance(entry.get("operation"), str)
+                    or not isinstance(entry.get("arguments"), dict)
+                ):
+                    errors.append(f"{scenario_id}: runtime input case 无效")
+                    continue
+                if forbidden_business_keys(entry):
+                    errors.append(f"{scenario_id}: runtime input 含业务答案字段：{entry['id']}")
+                if entry["id"] in input_cases:
+                    errors.append(f"{scenario_id}: runtime input case ID 重复：{entry['id']}")
+                input_cases[entry["id"]] = entry
+    except SourceLabError as error:
+        errors.append(str(error))
+        input_cases = {}
+    errors.extend(validate_coverage(case, input_cases))
+    return errors
+
+
+def validate_coverage(
+    case: Dict[str, Any],
+    input_cases: Dict[str, Dict[str, Any]],
+) -> List[str]:
+    errors: List[str] = []
+    scenario_id = case.get("id")
+    coverage = case.get("coverage")
+    if not isinstance(coverage, list):
+        return [f"{scenario_id}: coverage 必须是数组"]
+    seen_behaviors: Set[str] = set()
+    for entry in coverage:
+        if not isinstance(entry, dict) or set(entry) != {"behavior", "cases"}:
+            errors.append(f"{scenario_id}: coverage entry 无效")
+            continue
+        behavior = entry.get("behavior")
+        if not isinstance(behavior, str) or behavior in seen_behaviors:
+            errors.append(f"{scenario_id}: behavior 无效或重复：{behavior}")
+            continue
+        seen_behaviors.add(behavior)
+        role_cases = entry.get("cases")
+        if not isinstance(role_cases, list) or not role_cases:
+            errors.append(f"{scenario_id}: {behavior}.cases 不能为空")
+            continue
+        seen_case_roles: Set[Tuple[str, str]] = set()
+        for role_case in role_cases:
+            if not isinstance(role_case, dict) or set(role_case) != {
+                "id", "role", "android_fact_refs", "branch_refs"
+            }:
+                errors.append(f"{scenario_id}: {behavior} case-role 结构无效")
+                continue
+            case_id = role_case.get("id")
+            role = role_case.get("role")
+            if case_id not in input_cases:
+                errors.append(f"{scenario_id}: {behavior} 引用未知 input case：{case_id}")
+            if role not in {"nominal", "boundary", "malformed", "denied"}:
+                errors.append(f"{scenario_id}: {behavior} case role 无效：{role}")
+            key = (str(case_id), str(role))
+            if key in seen_case_roles:
+                errors.append(f"{scenario_id}: {behavior} case-role 重复：{case_id}/{role}")
+            seen_case_roles.add(key)
+            fact_refs = role_case.get("android_fact_refs")
+            branch_refs = role_case.get("branch_refs")
+            if not isinstance(fact_refs, list) or not fact_refs or any(
+                not isinstance(value, str) or re.fullmatch(r"AF-[A-Z0-9-]+", value) is None
+                for value in fact_refs
+            ):
+                errors.append(f"{scenario_id}: {behavior}/{case_id} 缺少合法 android_fact_refs")
+            if not isinstance(branch_refs, list) or not branch_refs or any(
+                not isinstance(value, str) or not value.strip() for value in branch_refs
+            ):
+                errors.append(f"{scenario_id}: {behavior}/{case_id} 缺少 branch_refs")
+    return errors
+
+
 def validate_scenario(root: Path, directory: Path, case: Dict[str, Any]) -> List[str]:
+    if case.get("kind") == "android_runtime_scenario":
+        return validate_runtime_scenario(root, directory, case)
     errors: List[str] = []
     scenario_id = case.get("id")
     required_top = {
@@ -311,52 +454,7 @@ def validate_scenario(root: Path, directory: Path, case: Dict[str, Any]) -> List
         except SourceLabError as error:
             errors.append(str(error))
 
-    coverage = case.get("coverage")
-    if not isinstance(coverage, list):
-        errors.append(f"{scenario_id}: coverage 必须是数组")
-    else:
-        seen_behaviors: Set[str] = set()
-        for entry in coverage:
-            if not isinstance(entry, dict) or set(entry) != {"behavior", "cases"}:
-                errors.append(f"{scenario_id}: coverage entry 无效")
-                continue
-            behavior = entry.get("behavior")
-            if not isinstance(behavior, str) or behavior in seen_behaviors:
-                errors.append(f"{scenario_id}: behavior 无效或重复：{behavior}")
-                continue
-            seen_behaviors.add(behavior)
-            role_cases = entry.get("cases")
-            if not isinstance(role_cases, list) or not role_cases:
-                errors.append(f"{scenario_id}: {behavior}.cases 不能为空")
-                continue
-            seen_case_roles: Set[Tuple[str, str]] = set()
-            for role_case in role_cases:
-                if not isinstance(role_case, dict) or set(role_case) != {
-                    "id", "role", "android_fact_refs", "branch_refs"
-                }:
-                    errors.append(f"{scenario_id}: {behavior} case-role 结构无效")
-                    continue
-                case_id = role_case.get("id")
-                role = role_case.get("role")
-                if case_id not in input_cases:
-                    errors.append(f"{scenario_id}: {behavior} 引用未知 input case：{case_id}")
-                if role not in {"nominal", "boundary", "malformed", "denied"}:
-                    errors.append(f"{scenario_id}: {behavior} case role 无效：{role}")
-                key = (str(case_id), str(role))
-                if key in seen_case_roles:
-                    errors.append(f"{scenario_id}: {behavior} case-role 重复：{case_id}/{role}")
-                seen_case_roles.add(key)
-                fact_refs = role_case.get("android_fact_refs")
-                branch_refs = role_case.get("branch_refs")
-                if not isinstance(fact_refs, list) or not fact_refs or any(
-                    not isinstance(value, str) or re.fullmatch(r"AF-[A-Z0-9-]+", value) is None
-                    for value in fact_refs
-                ):
-                    errors.append(f"{scenario_id}: {behavior}/{case_id} 缺少合法 android_fact_refs")
-                if not isinstance(branch_refs, list) or not branch_refs or any(
-                    not isinstance(value, str) or not value.strip() for value in branch_refs
-                ):
-                    errors.append(f"{scenario_id}: {behavior}/{case_id} 缺少 branch_refs")
+    errors.extend(validate_coverage(case, input_cases))
     return errors
 
 
@@ -643,6 +741,8 @@ class SourceLabRequestHandler(http.server.BaseHTTPRequestHandler):
 @contextlib.contextmanager
 def running_server(root: Path, scenario_id: str) -> Iterator[SourceLabHTTPServer]:
     directory, case, _ = load_scenario(root, scenario_id)
+    if case.get("kind") != "source_lab_scenario":
+        raise SourceLabError(f"{scenario_id}: Android runtime scenario 禁止启动网站")
     server = SourceLabHTTPServer(("127.0.0.1", 0), directory, case)
     thread = threading.Thread(target=server.serve_forever, name=f"SourceLab-{scenario_id}")
     thread.start()

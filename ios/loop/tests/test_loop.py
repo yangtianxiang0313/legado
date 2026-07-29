@@ -545,6 +545,32 @@ class MinimalLoopTests(unittest.TestCase):
             )
             loop.validate_task(root, task)
 
+    def test_reader_characterization_routes_to_runtime_lab_and_reader_core(self):
+        claim = {
+            "semantic_key": "reader.bookmark.search-runtime-risk",
+            "subject_keys": ["reader.bookmark"],
+        }
+
+        contract = loop.characterization_contract(claim)
+
+        self.assertEqual("ReaderCore", contract["owner"])
+        self.assertEqual("runtime-lab", contract["fixture_root"])
+        self.assertEqual(
+            "rl-reader-bookmark-search-runtime-risk-001",
+            loop.characterization_fixture_id(
+                claim["semantic_key"],
+                contract["fixture_prefix"],
+            ),
+        )
+        delivery = loop.owner_contract(
+            "IOS-READER-CORE-BOOKMARK-SEARCH-001"
+        )
+        self.assertEqual("ReaderCore", delivery["owner"])
+        self.assertIn(
+            "ios/Packages/LegadoKit/Sources/ReaderCore/**",
+            delivery["allowed_paths"],
+        )
+
     def test_project_charter_fails_closed_on_android_baseline_drift(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

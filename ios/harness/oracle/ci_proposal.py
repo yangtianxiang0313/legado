@@ -556,14 +556,19 @@ def _fixture_entry(
         raise CIProposalError("FIXTURE_MANIFEST_BINDING_MISSING")
     entry = matches[0]
     fixture_path = _string(entry.get("path"), "fixture.path")
-    expected_path = f"ios/harness/fixtures/source-lab/{scenario_id}"
-    if fixture_path != expected_path:
-        raise CIProposalError("FIXTURE_PATH_DRIFT")
     if fixture_digest(root / fixture_path) != entry.get("sha256"):
         raise CIProposalError("FIXTURE_DIGEST_DRIFT")
     case = _object(_read_json(root / fixture_path / "case.json"), "fixture_case")
     if case.get("id") != scenario_id:
         raise CIProposalError("FIXTURE_CASE_DRIFT")
+    fixture_root = (
+        "runtime-lab"
+        if case.get("kind") == "android_runtime_scenario"
+        else "source-lab"
+    )
+    expected_path = f"ios/harness/fixtures/{fixture_root}/{scenario_id}"
+    if fixture_path != expected_path:
+        raise CIProposalError("FIXTURE_PATH_DRIFT")
     source_lab = _object(
         _read_json(root / SOURCE_LAB_MANIFEST_PATH),
         "source_lab_manifest",

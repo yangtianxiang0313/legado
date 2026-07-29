@@ -115,6 +115,15 @@
       ],
       "authority": "android_oracle_candidate_only",
       "status": "candidate"
+    },
+    {
+      "id": "IOS-ANDROID-READER-BOOKMARK-SEARCH-ATTESTATION-001",
+      "scenario_id": "rl-reader-bookmark-search-runtime-risk-001",
+      "fixture_ids": [
+        "rl-reader-bookmark-search-runtime-risk-001"
+      ],
+      "authority": "android_oracle_candidate_only",
+      "status": "candidate"
     }
   ]
 }

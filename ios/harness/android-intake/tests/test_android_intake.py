@@ -18,7 +18,7 @@ class AndroidIntakeTests(unittest.TestCase):
         self.assertEqual(first, second)
         baseline = json.loads((REPO_ROOT / "ios/project/baseline.json").read_text(encoding="utf-8"))
         self.assertEqual(baseline["android_oracle"]["git_commit"], first["android_git_commit"])
-        self.assertEqual(12, len(first["facts"]))
+        self.assertEqual(14, len(first["facts"]))
 
     def test_book_source_fact_is_data_contract_not_runtime_proof(self):
         inventory = android_intake.inventory_value(REPO_ROOT)
@@ -37,6 +37,30 @@ class AndroidIntakeTests(unittest.TestCase):
             if value["id"] == "REQ-ANDROID-SOURCE-PIPELINE-001"
         )
         self.assertEqual("implementation_ready", entry["readiness"])
+
+    def test_bookmark_query_fact_preserves_sql_precedence(self):
+        inventory = android_intake.inventory_value(REPO_ROOT)
+        facts = {entry["id"]: entry for entry in inventory["facts"]}
+        query = facts["AF-BOOKMARK-FLOW-SEARCH-QUERY"]
+        self.assertEqual("kotlin_room_query", query["payload"]["kind"])
+        self.assertIn(
+            "and chapterName like '%'||:key||'%' or content like '%'||:key||'%'",
+            query["payload"]["sql"],
+        )
+        bookmark = facts["AF-BOOKMARK-CONSTRUCTOR"]
+        self.assertEqual(
+            [
+                "time",
+                "bookName",
+                "bookAuthor",
+                "chapterIndex",
+                "chapterPos",
+                "chapterName",
+                "bookText",
+                "content",
+            ],
+            [value["name"] for value in bookmark["payload"]["properties"]],
+        )
 
 if __name__ == "__main__":
     unittest.main()

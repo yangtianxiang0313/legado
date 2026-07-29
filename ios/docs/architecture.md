@@ -52,14 +52,22 @@ AI 推进控制面采用
 
 Android baseline 是兼容事实源，Requirement Catalog 是产品范围源，Minimal Loop Task
 是一次交付载体；三者不能合并。受控 extractor 从固定 commit 提取字段/入口等 Fact。
-静态数据合同可在 L1 进入实现，运行语义必须经 SourceLab 刺激与 Android Oracle 达到
-L4 后才进入产品实现。
+静态数据合同可在 L1 进入实现，运行语义必须经确定性 Characterization fixture 与
+Android Oracle 达到 L4 后才进入产品实现。书源/网络行为使用 SourceLab 本地网站；
+Room、阅读器和其他本地状态行为使用禁止网络且逐 case 重置状态的 Runtime fixture，
+不得为非书源能力构造假书源。
 
 ```text
 Android commit → Fact Inventory → Requirement Candidate
 → scope/evidence decision → Accepted Requirement
 → Business Knowledge / Coverage → Minimal Loop Task
 ```
+
+Loop 根据 Claim 的 `semantic_key` 与 `subject_keys` 在生成任务时确定产品所有者：
+`source.*` 进入 `SourceRuntime`，`reader.*` 进入 `ReaderCore`，
+`library.*` 进入 `LibraryDomain`；未登记或跨域含糊的前缀必须 fail closed，禁止统一
+回退到 `SourceRuntime`。Characterization harness 可以复用可信 Oracle 管线，但
+fixture 类型、产品 Target 和 Delivery 验收必须保持各自边界。
 
 完整契约、证据等级、去重与 baseline 升级规则见 `android-requirement-intake.md`。
 

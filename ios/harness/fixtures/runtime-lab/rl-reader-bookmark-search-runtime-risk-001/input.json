@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "same-book-chapter-name",
+      "operation": "bookmark_search",
+      "arguments": {
+        "book_name": "甲书",
+        "book_author": "甲作者",
+        "key": "星河",
+        "rows": [
+          {"time": 101, "bookName": "甲书", "bookAuthor": "甲作者", "chapterIndex": 3, "chapterPos": 30, "chapterName": "星河", "bookText": "甲摘录", "content": "普通内容"},
+          {"time": 102, "bookName": "甲书", "bookAuthor": "甲作者", "chapterIndex": 1, "chapterPos": 10, "chapterName": "序章", "bookText": "甲摘录二", "content": "无关"},
+          {"time": 103, "bookName": "乙书", "bookAuthor": "乙作者", "chapterIndex": 0, "chapterPos": 5, "chapterName": "星河", "bookText": "乙摘录", "content": "无关"}
+        ]
+      }
+    },
+    {
+      "id": "content-branch-cross-book",
+      "operation": "bookmark_search",
+      "arguments": {
+        "book_name": "甲书",
+        "book_author": "甲作者",
+        "key": "needle",
+        "rows": [
+          {"time": 201, "bookName": "甲书", "bookAuthor": "甲作者", "chapterIndex": 4, "chapterPos": 40, "chapterName": "甲章", "bookText": "甲", "content": "needle in target"},
+          {"time": 202, "bookName": "乙书", "bookAuthor": "乙作者", "chapterIndex": 2, "chapterPos": 20, "chapterName": "乙章", "bookText": "乙", "content": "needle in foreign"},
+          {"time": 203, "bookName": "丙书", "bookAuthor": "丙作者", "chapterIndex": 1, "chapterPos": 10, "chapterName": "needle only in title", "bookText": "丙", "content": "无关"}
+        ]
+      }
+    },
+    {
+      "id": "empty-key-cross-book",
+      "operation": "bookmark_search",
+      "arguments": {
+        "book_name": "甲书",
+        "book_author": "甲作者",
+        "key": "",
+        "rows": [
+          {"time": 301, "bookName": "甲书", "bookAuthor": "甲作者", "chapterIndex": 9, "chapterPos": 90, "chapterName": "甲九", "bookText": "甲", "content": ""},
+          {"time": 302, "bookName": "乙书", "bookAuthor": "乙作者", "chapterIndex": 1, "chapterPos": 10, "chapterName": "乙一", "bookText": "乙", "content": "foreign"}
+        ]
+      }
+    },
+    {
+      "id": "percent-wildcard",
+      "operation": "bookmark_search",
+      "arguments": {
+        "book_name": "甲书",
+        "book_author": "甲作者",
+        "key": "%",
+        "rows": [
+          {"time": 401, "bookName": "甲书", "bookAuthor": "甲作者", "chapterIndex": 4, "chapterPos": 40, "chapterName": "甲四", "bookText": "甲", "content": "plain"},
+          {"time": 402, "bookName": "乙书", "bookAuthor": "乙作者", "chapterIndex": 2, "chapterPos": 20, "chapterName": "乙二", "bookText": "乙", "content": "foreign"}
+        ]
+      }
+    },
+    {
+      "id": "underscore-wildcard",
+      "operation": "bookmark_search",
+      "arguments": {
+        "book_name": "甲书",
+        "book_author": "甲作者",
+        "key": "_",
+        "rows": [
+          {"time": 501, "bookName": "甲书", "bookAuthor": "甲作者", "chapterIndex": 5, "chapterPos": 50, "chapterName": "", "bookText": "甲", "content": "x"},
+          {"time": 502, "bookName": "乙书", "bookAuthor": "乙作者", "chapterIndex": 1, "chapterPos": 10, "chapterName": "", "bookText": "乙", "content": "y"},
+          {"time": 503, "bookName": "丙书", "bookAuthor": "丙作者", "chapterIndex": 0, "chapterPos": 0, "chapterName": "", "bookText": "丙", "content": ""}
+        ]
+      }
+    },
+    {
+      "id": "global-chapter-order",
+      "operation": "bookmark_search",
+      "arguments": {
+        "book_name": "甲书",
+        "book_author": "甲作者",
+        "key": "hit",
+        "rows": [
+          {"time": 601, "bookName": "甲书", "bookAuthor": "甲作者", "chapterIndex": 8, "chapterPos": 80, "chapterName": "甲", "bookText": "甲", "content": "hit"},
+          {"time": 602, "bookName": "乙书", "bookAuthor": "乙作者", "chapterIndex": 2, "chapterPos": 20, "chapterName": "乙", "bookText": "乙", "content": "hit"},
+          {"time": 603, "bookName": "丙书", "bookAuthor": "丙作者", "chapterIndex": 5, "chapterPos": 50, "chapterName": "丙", "bookText": "丙", "content": "hit"}
+        ]
+      }
+    },
+    {
+      "id": "time-primary-key-replace",
+      "operation": "bookmark_insert_conflict",
+      "arguments": {
+        "rows": [
+          {"time": 701, "bookName": "旧书", "bookAuthor": "旧作者", "chapterIndex": 1, "chapterPos": 10, "chapterName": "旧章", "bookText": "旧摘录", "content": "旧内容"},
+          {"time": 701, "bookName": "新书", "bookAuthor": "新作者", "chapterIndex": 9, "chapterPos": 90, "chapterName": "新章", "bookText": "新摘录", "content": "新内容"}
+        ]
+      }
+    }
+  ]
+}

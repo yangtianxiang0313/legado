@@ -2,8 +2,8 @@
   "schema_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
   "android_tree": "c81f5d383116e37c1eefee3eb86654514e82022b",
-  "control_sha256": "30cac916034a71f4ce34aa11388c0c3d578c78ccd937f888e48b556b01d72172",
-  "policy_sha256": "de7fbfb70bc4e871d41b29a36c374da94e57bece18d492ea044aa3e7ef0ddace",
+  "control_sha256": "1d3d35af7146d8f92d885be6005fbadfdfda9d52b9f4aa741953d41819c591cc",
+  "policy_sha256": "7c6412566f4325612b7653b6076fd6e09af8d890f033e0b9ce5505dc10bf71ea",
   "facts": [
     {
       "id": "AF-BOOKINFORULE-CONSTRUCTOR",
@@ -87,6 +87,94 @@
       "revision_sha256": "0a8831430959b5809a6325cf405ecae9b81f60b7999b55dba40a0111ef082014",
       "maps_to": [
         "REQ-ANDROID-BOOKSOURCE-SCHEMA-001"
+      ]
+    },
+    {
+      "id": "AF-BOOKMARK-CONSTRUCTOR",
+      "fact_key": "reader.bookmark.schema",
+      "category": "data_contract",
+      "evidence_level": "L1",
+      "support_state": "declaration_only",
+      "extractor": "kotlin_primary_constructor",
+      "symbol_id": "kotlin://io.legado.app.data.entities/Bookmark/primary-constructor",
+      "path": "app/src/main/java/io/legado/app/data/entities/Bookmark.kt",
+      "git_blob": "1093970423bc64d7405a142a75befd23c09ec163",
+      "source_sha256": "cc49f8ee61e76390f36287b2da7771923ac344b7d84c66b5d2dc843d5d8fe55f",
+      "start_line": 14,
+      "end_line": 24,
+      "payload": {
+        "kind": "kotlin_primary_constructor",
+        "symbol": "Bookmark",
+        "properties": [
+          {
+            "name": "time",
+            "type": "Long",
+            "default": "System.currentTimeMillis()"
+          },
+          {
+            "name": "bookName",
+            "type": "String",
+            "default": "\"\""
+          },
+          {
+            "name": "bookAuthor",
+            "type": "String",
+            "default": "\"\""
+          },
+          {
+            "name": "chapterIndex",
+            "type": "Int",
+            "default": "0"
+          },
+          {
+            "name": "chapterPos",
+            "type": "Int",
+            "default": "0"
+          },
+          {
+            "name": "chapterName",
+            "type": "String",
+            "default": "\"\""
+          },
+          {
+            "name": "bookText",
+            "type": "String",
+            "default": "\"\""
+          },
+          {
+            "name": "content",
+            "type": "String",
+            "default": "\"\""
+          }
+        ]
+      },
+      "revision_sha256": "618fde0b9f134f1c4eba97768c09fdba4ced5c7faddeb1b14cd0881d22f07edb",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-BOOKMARK-FLOW-SEARCH-QUERY",
+      "fact_key": "reader.bookmark.search-query",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_room_query",
+      "symbol_id": "kotlin://io.legado.app.data.dao/BookmarkDao/flowSearch",
+      "path": "app/src/main/java/io/legado/app/data/dao/BookmarkDao.kt",
+      "git_blob": "7940139ff5c87e977f4aeefa43064e733055ddca",
+      "source_sha256": "e8515cb82b479f9319bdc9267336a80458e7dc949c05857d318d9836379fd49d",
+      "start_line": 28,
+      "end_line": 34,
+      "payload": {
+        "kind": "kotlin_room_query",
+        "symbol": "flowSearch",
+        "signature": "fun flowSearch(bookName: String, bookAuthor: String, key: String): Flow<List<Bookmark>>",
+        "sql": "SELECT * FROM bookmarks where bookName = :bookName and bookAuthor = :bookAuthor and chapterName like '%'||:key||'%' or content like '%'||:key||'%' order by chapterIndex"
+      },
+      "revision_sha256": "4bbe562f89555ae64442f1eee47cb3a2bbb3dd5a92a9764c29a86ab87c9d3ecb",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
       ]
     },
     {

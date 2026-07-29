@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "scope": "phase-0-and-phase-1-source-domain",
+  "scope": "frozen-android-cross-domain-migration",
   "unmapped_fact_action": "fail",
   "sensors": [
     {
@@ -146,6 +146,30 @@
       "symbol": "getContentAwait",
       "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook/getContentAwait",
       "maps_to": ["REQ-ANDROID-SOURCE-PIPELINE-001"]
+    },
+    {
+      "fact_id": "AF-BOOKMARK-CONSTRUCTOR",
+      "fact_key": "reader.bookmark.schema",
+      "category": "data_contract",
+      "evidence_level": "L1",
+      "support_state": "declaration_only",
+      "extractor": "kotlin_primary_constructor",
+      "path": "app/src/main/java/io/legado/app/data/entities/Bookmark.kt",
+      "symbol": "Bookmark",
+      "symbol_id": "kotlin://io.legado.app.data.entities/Bookmark/primary-constructor",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-BOOKMARK-FLOW-SEARCH-QUERY",
+      "fact_key": "reader.bookmark.search-query",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_room_query",
+      "path": "app/src/main/java/io/legado/app/data/dao/BookmarkDao.kt",
+      "symbol": "flowSearch",
+      "symbol_id": "kotlin://io.legado.app.data.dao/BookmarkDao/flowSearch",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
     }
   ]
 }

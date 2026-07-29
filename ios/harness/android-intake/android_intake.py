@@ -211,6 +211,48 @@ def extract_function(text: str, symbol: str) -> Tuple[Dict[str, Any], int, int]:
     return payload, line_number(text, match.start()), line_number(text, body_close)
 
 
+def extract_room_query(text: str, symbol: str) -> Tuple[Dict[str, Any], int, int]:
+    function = re.search(rf"\bfun\s+{re.escape(symbol)}\s*\(", text)
+    if function is None:
+        raise IntakeError(f"找不到 Kotlin Room query function：{symbol}")
+    query = None
+    for candidate in re.finditer(r"@Query\s*\(", text[: function.start()]):
+        query = candidate
+    if query is None:
+        raise IntakeError(f"找不到 Room @Query：{symbol}")
+    opening = text.find("(", query.start())
+    closing = matching_delimiter(text, opening, "(", ")")
+    if closing > function.start():
+        raise IntakeError(f"Room @Query 与 function 绑定无效：{symbol}")
+    if re.search(r"@\w+", text[closing + 1 : function.start()]):
+        raise IntakeError(f"Room @Query 与 function 之间存在其他 annotation：{symbol}")
+    annotation = text[opening + 1 : closing].strip()
+    triple = re.fullmatch(r'"""(.*)"""', annotation, flags=re.DOTALL)
+    quoted = re.fullmatch(r'"((?:\\.|[^"\\])*)"', annotation, flags=re.DOTALL)
+    if triple is not None:
+        sql = triple.group(1)
+    elif quoted is not None:
+        sql = bytes(quoted.group(1), "utf-8").decode("unicode_escape")
+    else:
+        raise IntakeError(f"Room @Query 必须使用静态字符串：{symbol}")
+    function_open = text.find("(", function.start())
+    function_close = matching_delimiter(text, function_open, "(", ")")
+    signature_end = text.find("\n", function_close)
+    if signature_end < 0:
+        signature_end = len(text)
+    payload = {
+        "kind": "kotlin_room_query",
+        "symbol": symbol,
+        "signature": normalize_space(text[function.start() : signature_end]),
+        "sql": normalize_space(sql),
+    }
+    return (
+        payload,
+        line_number(text, query.start()),
+        line_number(text, signature_end),
+    )
+
+
 def policy_value(root: Path) -> Dict[str, Any]:
     value = load_json(root / POLICY_PATH)
     if not isinstance(value, dict) or value.get("schema_version") != 1:
@@ -271,6 +313,8 @@ def inventory_value(root: Path) -> Dict[str, Any]:
             payload, start_line, end_line = extract_constructor(text, symbol)
         elif extractor == "kotlin_function_entrypoint":
             payload, start_line, end_line = extract_function(text, symbol)
+        elif extractor == "kotlin_room_query":
+            payload, start_line, end_line = extract_room_query(text, symbol)
         else:
             raise IntakeError(f"{fact_id}: 未知 extractor：{extractor}")
         maps_to = sensor.get("maps_to")

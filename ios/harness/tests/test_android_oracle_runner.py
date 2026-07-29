@@ -128,6 +128,41 @@ def post_raw_artifact():
     }
 
 
+def bookmark_runtime_raw_artifact():
+    scenario = "rl-reader-bookmark-search-runtime-risk-001"
+    contract = runner.SCENARIO_CONTRACTS[scenario]
+    requests = []
+    cases = []
+    for index, (case_id, operation) in enumerate(
+        contract["expected_cases"]
+    ):
+        request = {
+            "operation": operation,
+            "arguments": {"fixture_case": case_id},
+        }
+        requests.append(request)
+        cases.append(
+            {
+                "id": case_id,
+                "operation": operation,
+                "request": request,
+                "result": {
+                    "row_count": 1,
+                    "rows": [{"time": index + 1}],
+                },
+                "issue": None,
+            }
+        )
+    return {
+        "schema_version": 1,
+        "scenario_id": scenario,
+        "device_origin": "android-runtime://local",
+        "logical_origin": "android-runtime://local",
+        "request_plan": requests,
+        "cases": cases,
+    }
+
+
 def xml_raw_artifact():
     scenario = "sl-source-response-xml-declaration-normalization-001"
     values = (
@@ -804,6 +839,14 @@ class AndroidOracleRunnerTests(unittest.TestCase):
             "sl-content-cache-queue-completion-runtime-001",
             content_cache_queue_completion["scenario_id"],
         )
+        bookmark_runtime = runner.doctor(
+            ROOT,
+            "rl-reader-bookmark-search-runtime-risk-001",
+        )
+        self.assertEqual(
+            "rl-reader-bookmark-search-runtime-risk-001",
+            bookmark_runtime["scenario_id"],
+        )
         with mock.patch.object(
             runner,
             "fixture_digest",
@@ -873,6 +916,41 @@ class AndroidOracleRunnerTests(unittest.TestCase):
         self.assertNotIn(
             "127.0.0.1",
             json.dumps(artifact, ensure_ascii=False),
+        )
+
+    def test_runtime_fixture_uses_non_network_stimuli_and_reader_stages(self):
+        scenario = "rl-reader-bookmark-search-runtime-risk-001"
+        runtime_bindings = {
+            **bindings(),
+            "fixture_kind": "android_runtime_scenario",
+            "fixture_path": (
+                "ios/harness/fixtures/runtime-lab/"
+                f"{scenario}"
+            ),
+        }
+        runtime_bindings.pop("source_template_sha256")
+        artifact = runner.normalize_raw_artifact(
+            bookmark_runtime_raw_artifact(),
+            runtime_bindings,
+            scenario,
+        )
+        self.assertEqual("reader_runtime", artifact["result"]["type"])
+        self.assertEqual(7 * 4, len(artifact["stages"]))
+        self.assertEqual(
+            "android_runtime_scenario",
+            artifact["result"]["value"]["fixture_integrity"][
+                "fixture_kind"
+            ],
+        )
+        self.assertNotIn(
+            "source_template_sha256",
+            artifact["result"]["value"]["fixture_integrity"],
+        )
+        self.assertTrue(
+            all(
+                set(value) == {"operation", "arguments"}
+                for value in artifact["request_plan"]
+            )
         )
 
     def test_post_form_android_request_plan_preserves_ordered_fields_and_bytes(self):

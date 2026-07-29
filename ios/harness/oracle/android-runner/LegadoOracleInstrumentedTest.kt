@@ -6,7 +6,9 @@ import androidx.test.platform.app.InstrumentationRegistry
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
 import io.legado.app.data.entities.BookSource
+import io.legado.app.data.entities.Bookmark
 import io.legado.app.data.entities.SearchBook
+import io.legado.app.data.appDb
 import io.legado.app.exception.ConcurrentException
 import io.legado.app.help.CacheManager
 import io.legado.app.help.book.BookHelp
@@ -26,6 +28,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.json.JSONArray
@@ -53,6 +56,7 @@ class LegadoOracleInstrumentedTest {
     private val arguments = InstrumentationRegistry.getArguments()
     private val logicalOrigin = requiredArgument("logicalOrigin").trimEnd('/')
     private val scenarioId = requiredArgument("scenarioId")
+    private val isAndroidRuntimeScenario = scenarioId.startsWith("rl-")
     private val input = JSONObject(
         String(
             Base64.decode(
@@ -62,25 +66,40 @@ class LegadoOracleInstrumentedTest {
             Charsets.UTF_8
         )
     )
-    private val sourceJson = String(
-        Base64.decode(requiredArgument("sourceBase64"), Base64.DEFAULT),
-        Charsets.UTF_8
-    )
-    private val source = GSON.fromJson(sourceJson, BookSource::class.java)
-    private val deviceOrigin = source.bookSourceUrl.trimEnd('/')
+    private val sourceJson by lazy {
+        val encoded = arguments.getString("sourceBase64")
+        require(!encoded.isNullOrEmpty()) {
+            "Source scenario requires sourceBase64"
+        }
+        String(Base64.decode(encoded, Base64.DEFAULT), Charsets.UTF_8)
+    }
+    private val source: BookSource by lazy {
+        GSON.fromJson(sourceJson, BookSource::class.java)
+    }
+    private val deviceOrigin by lazy {
+        if (isAndroidRuntimeScenario) {
+            "android-runtime://local"
+        } else {
+            source.bookSourceUrl.trimEnd('/')
+        }
+    }
     private val cases = JSONArray()
     private val requestPlan = JSONArray()
 
     @Test
-    fun runSourceLabCharacterization() = runBlocking {
-        require(deviceOrigin.startsWith("http://127.0.0.1:")) {
-            "Oracle source must use the run-scoped device loopback origin"
+    fun runCharacterization() = runBlocking {
+        if (!isAndroidRuntimeScenario) {
+            require(deviceOrigin.startsWith("http://127.0.0.1:")) {
+                "Oracle source must use the run-scoped device loopback origin"
+            }
+            source.enabledCookieJar =
+                scenarioId == "sl-source-request-header-cookie-retry-layering-001" ||
+                    scenarioId == "sl-source-cookie-persistent-session-merge-runtime-001"
         }
-        source.enabledCookieJar =
-            scenarioId == "sl-source-request-header-cookie-retry-layering-001" ||
-                scenarioId == "sl-source-cookie-persistent-session-merge-runtime-001"
 
         when (scenarioId) {
+            "rl-reader-bookmark-search-runtime-risk-001" ->
+                runBookmarkRuntimeCases()
             "sl-post-form-001" -> runPostFormCases()
             "sl-source-response-xml-declaration-normalization-001" ->
                 runXmlResponseCases()
@@ -206,6 +225,92 @@ class LegadoOracleInstrumentedTest {
         val target = InstrumentationRegistry.getInstrumentation().targetContext
         File(target.filesDir, OUTPUT_FILE).writeText(raw.toString(), Charsets.UTF_8)
     }
+
+    private suspend fun runBookmarkRuntimeCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            val operation = value.getString("operation")
+            require(
+                operation == "bookmark_search" ||
+                    operation == "bookmark_insert_conflict"
+            ) {
+                "Unsupported bookmark runtime operation: $operation"
+            }
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", operation)
+                .put("arguments", JSONObject(arguments.toString()))
+            runCase(
+                value.getString("id"),
+                operation,
+                stimulus
+            ) {
+                bookmarkRuntimeProjection(operation, arguments)
+            }
+        }
+    }
+
+    private suspend fun bookmarkRuntimeProjection(
+        operation: String,
+        arguments: JSONObject
+    ): JSONObject {
+        clearBookmarks()
+        return try {
+            val rows = arguments.getJSONArray("rows")
+            for (index in 0 until rows.length()) {
+                appDb.bookmarkDao.insert(bookmark(rows.getJSONObject(index)))
+            }
+            val selected = when (operation) {
+                "bookmark_search" -> appDb.bookmarkDao.flowSearch(
+                    arguments.getString("book_name"),
+                    arguments.getString("book_author"),
+                    arguments.getString("key")
+                ).first()
+                "bookmark_insert_conflict" -> appDb.bookmarkDao.all
+                else -> error("Unsupported bookmark runtime operation")
+            }
+            JSONObject()
+                .put("row_count", selected.size)
+                .put(
+                    "rows",
+                    JSONArray().apply {
+                        selected.forEach { put(bookmarkProjection(it)) }
+                    }
+                )
+        } finally {
+            clearBookmarks()
+        }
+    }
+
+    private fun clearBookmarks() {
+        val existing = appDb.bookmarkDao.all
+        if (existing.isNotEmpty()) {
+            appDb.bookmarkDao.delete(*existing.toTypedArray())
+        }
+    }
+
+    private fun bookmark(value: JSONObject): Bookmark = Bookmark(
+        time = value.getLong("time"),
+        bookName = value.getString("bookName"),
+        bookAuthor = value.getString("bookAuthor"),
+        chapterIndex = value.getInt("chapterIndex"),
+        chapterPos = value.getInt("chapterPos"),
+        chapterName = value.getString("chapterName"),
+        bookText = value.getString("bookText"),
+        content = value.getString("content")
+    )
+
+    private fun bookmarkProjection(value: Bookmark): JSONObject =
+        JSONObject()
+            .put("time", value.time)
+            .put("book_name", value.bookName)
+            .put("book_author", value.bookAuthor)
+            .put("chapter_index", value.chapterIndex)
+            .put("chapter_pos", value.chapterPos)
+            .put("chapter_name", value.chapterName)
+            .put("book_text", value.bookText)
+            .put("content", value.content)
 
     private suspend fun runPostFormCases() {
         val values = input.getJSONArray("cases")

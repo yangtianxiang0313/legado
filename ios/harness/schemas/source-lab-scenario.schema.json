@@ -6,25 +6,25 @@
   "required": ["schema_version", "kind", "id", "revision", "status", "operation", "capabilities", "compatibility_profile", "source", "input", "transport", "coverage", "determinism", "limits", "provenance"],
   "properties": {
     "schema_version": {"const": 1},
-    "kind": {"const": "source_lab_scenario"},
-    "id": {"type": "string", "pattern": "^sl-[a-z0-9-]+-[0-9]{3}$"},
+    "kind": {"enum": ["source_lab_scenario", "android_runtime_scenario"]},
+    "id": {"type": "string", "pattern": "^(sl|rl)-[a-z0-9-]+-[0-9]{3}$"},
     "revision": {"type": "integer", "minimum": 1},
     "status": {"enum": ["candidate", "reference", "retired"]},
-    "operation": {"const": "source_lab_site"},
+    "operation": {"enum": ["source_lab_site", "android_runtime"]},
     "capabilities": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
     "compatibility_profile": {"type": "string", "minLength": 1},
-    "source": {"type": "string", "minLength": 1},
+    "source": {"type": ["string", "null"], "minLength": 1},
     "input": {"type": "string", "minLength": 1},
     "transport": {
       "type": "object",
       "additionalProperties": false,
       "required": ["mode", "external_network", "responses"],
       "properties": {
-        "mode": {"const": "fixture_and_loopback"},
+        "mode": {"enum": ["fixture_and_loopback", "none"]},
         "external_network": {"const": "deny"},
         "responses": {
           "type": "array",
-          "minItems": 1,
+          "minItems": 0,
           "items": {
             "type": "object",
             "additionalProperties": false,
@@ -93,7 +93,8 @@
         "locale": {"const": "en_US_POSIX"},
         "random_seed": {"type": "integer"},
         "network_allowed": {"const": false},
-        "logical_origin": {"const": "http://sourcelab.test"}
+        "logical_origin": {"enum": ["http://sourcelab.test", null]},
+        "database_reset_per_case": {"type": "boolean"}
       }
     },
     "limits": {
