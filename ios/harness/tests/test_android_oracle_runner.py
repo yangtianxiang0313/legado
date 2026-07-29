@@ -399,8 +399,8 @@ class AndroidOracleRunnerTests(unittest.TestCase):
             scenario,
         )
         observation = artifact["result"]["value"][
-            "source_lab_observation"
-        ]
+            "android_characterization"
+        ]["source_lab_observation"]
         self.assertEqual(
             [
                 {

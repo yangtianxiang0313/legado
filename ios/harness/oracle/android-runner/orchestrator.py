@@ -574,7 +574,7 @@ def normalize_raw_artifact(
         "issues": issues,
     }
     if source_lab_observation is not None:
-        artifact["result"]["value"][
+        artifact["result"]["value"]["android_characterization"][
             "source_lab_observation"
         ] = source_lab_observation
     return artifact
