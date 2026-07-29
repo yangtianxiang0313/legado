@@ -1,1 +1,1 @@
-{"active_task":null,"attempt":0,"last_completed":{"at":"2026-07-29T10:06:04Z","sequence":57,"task_id":"IOS-CHARACTERIZE-SOURCE-TRANSPORT-RETRY-REDIRECT-RUNTIME-001"},"schema_version":2,"status":"idle","verification":null}
+{"active_task":"IOS-SOURCE-RUNTIME-RETRY-REDIRECT-001","attempt":0,"last_completed":{"at":"2026-07-29T10:06:04Z","sequence":57,"task_id":"IOS-CHARACTERIZE-SOURCE-TRANSPORT-RETRY-REDIRECT-RUNTIME-001"},"schema_version":2,"status":"running","verification":null}
