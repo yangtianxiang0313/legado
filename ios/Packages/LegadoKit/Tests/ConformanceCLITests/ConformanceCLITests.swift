@@ -66,6 +66,71 @@ final class ConformanceCLITests: XCTestCase {
     XCTAssertFalse(text.contains(#""dup","value":"first""#))
   }
 
+  func testMinimalTaskRunnerMatchesAppStartupAndroidGolden() async throws {
+    let temporaryRoot = FileManager.default.temporaryDirectory
+      .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryRoot) }
+    let fixtureID = AppStartupConformanceRunner.fixtureID
+    let fixturePath = "ios/harness/fixtures/runtime-lab/\(fixtureID)"
+    let goldenPath =
+      "ios/harness/goldens/android-legado-v1/\(fixtureID).json"
+    let taskPath = "ios/project/loop/task.json"
+    for relative in [fixturePath, goldenPath, taskPath] {
+      try FileManager.default.createDirectory(
+        at:
+          temporaryRoot
+          .appendingPathComponent(relative)
+          .deletingLastPathComponent(),
+        withIntermediateDirectories: true
+      )
+    }
+    try FileManager.default.copyItem(
+      at: repositoryRoot.appendingPathComponent(fixturePath),
+      to: temporaryRoot.appendingPathComponent(fixturePath)
+    )
+    try FileManager.default.copyItem(
+      at: repositoryRoot.appendingPathComponent(goldenPath),
+      to: temporaryRoot.appendingPathComponent(goldenPath)
+    )
+    let task = try JSONSerialization.data(
+      withJSONObject: [
+        "schema_version": 2,
+        "id": "IOS-APP-NAVIGATION-STARTUP-FIRST-USE-RESTORE-001",
+        "source": [
+          "fixture_id": fixtureID,
+          "android_golden": goldenPath,
+        ],
+      ],
+      options: [.sortedKeys]
+    )
+    try task.write(to: temporaryRoot.appendingPathComponent(taskPath))
+
+    let first = try await MinimalTaskConformanceRunner.run(
+      taskPath: taskPath,
+      repositoryRoot: temporaryRoot
+    )
+    let second = try await MinimalTaskConformanceRunner.run(
+      taskPath: taskPath,
+      repositoryRoot: temporaryRoot
+    )
+    let text = String(decoding: first.data, as: UTF8.self)
+
+    XCTAssertTrue(first.passed)
+    XCTAssertEqual(first.data, second.data)
+    XCTAssertTrue(text.contains(#""status":"equal""#))
+    XCTAssertTrue(text.contains(#""first_divergence":null"#))
+    XCTAssertTrue(
+      text.contains(
+        #""dialog_sequence":["privacy","help","local_password"]"#
+      )
+    )
+    XCTAssertTrue(
+      text.contains(
+        #""downstream_start_sequence":["MainActivity","ReadBookActivity"]"#
+      )
+    )
+  }
+
   func testMinimalTaskRunnerMatchesDOMSelectorAndroidGolden() async throws {
     let temporaryRoot = FileManager.default.temporaryDirectory
       .appendingPathComponent(UUID().uuidString, isDirectory: true)

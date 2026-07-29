@@ -1,4 +1,5 @@
 import Foundation
+import AppUseCases
 import LegadoCore
 import LibraryDomain
 import ReaderCore
@@ -1756,5 +1757,248 @@ public enum ReaderTOCRemapFixtureProjection {
 
   private static func number(_ value: Int) -> JSONValue {
     .number(JSONNumber(Int64(value)))
+  }
+}
+
+public enum AppStartupFixtureProjectionError: Error, Sendable {
+  case invalidFixture
+}
+
+public struct AppStartupFixtureProjectionRun: Sendable {
+  public let artifact: JSONValue
+  public let requestPlan: JSONValue
+
+  public init(
+    artifact: JSONValue,
+    requestPlan: JSONValue
+  ) {
+    self.artifact = artifact
+    self.requestPlan = requestPlan
+  }
+}
+
+public enum AppStartupFixtureProjection {
+  public static let fixtureID =
+    "rl-app-startup-first-use-and-restore-001"
+
+  public static func run(
+    caseData: Data,
+    inputData: Data
+  ) throws -> AppStartupFixtureProjectionRun {
+    let caseDocument: JSONValue
+    let inputDocument: JSONValue
+    do {
+      caseDocument = try JSONValueCodec.decode(caseData)
+      inputDocument = try JSONValueCodec.decode(inputData)
+    } catch {
+      throw AppStartupFixtureProjectionError.invalidFixture
+    }
+    guard
+      case .object(let caseRoot) = caseDocument,
+      caseRoot["id"] == .string(fixtureID),
+      caseRoot["kind"] == .string("android_runtime_scenario"),
+      caseRoot["operation"] == .string("android_runtime"),
+      case .object(let inputRoot) = inputDocument,
+      inputRoot["schema_version"] == .number(JSONNumber(1)),
+      case .array(let inputCases)? = inputRoot["cases"]
+    else {
+      throw AppStartupFixtureProjectionError.invalidFixture
+    }
+
+    var identifiers: Set<String> = []
+    var plans: [JSONValue] = []
+    var cases: [JSONValue] = []
+    for value in inputCases {
+      guard
+        case .object(let inputCase) = value,
+        case .string(let id)? = inputCase["id"],
+        identifiers.insert(id).inserted,
+        case .string(let operation)? = inputCase["operation"],
+        case .object(let arguments)? = inputCase["arguments"]
+      else {
+        throw AppStartupFixtureProjectionError.invalidFixture
+      }
+      plans.append(
+        .object([
+          "operation": .string(operation),
+          "arguments": .object(arguments),
+        ])
+      )
+      let result: JSONValue
+      switch operation {
+      case "app_startup_welcome":
+        guard
+          case .bool(let defaultToRead)? =
+            arguments["default_to_read"]
+        else {
+          throw AppStartupFixtureProjectionError.invalidFixture
+        }
+        result = welcomeValue(
+          AppStartupCoordinator.welcome(
+            defaultToRead: defaultToRead
+          ).outcome
+        )
+      case "app_startup_main_pipeline":
+        result = mainValue(
+          AppStartupCoordinator.main(
+            try snapshot(arguments)
+          ).outcome
+        )
+      default:
+        throw AppStartupFixtureProjectionError.invalidFixture
+      }
+      cases.append(
+        .object([
+          "id": .string(id),
+          "operation": .string(operation),
+          "result": result,
+          "issue": .null,
+        ])
+      )
+    }
+
+    let requestPlan = JSONValue.array(plans)
+    return AppStartupFixtureProjectionRun(
+      artifact: .object([
+        "schema_version": .number(JSONNumber(1)),
+        "fixture_id": .string(fixtureID),
+        "engine": .object([
+          "platform": .string("ios"),
+          "revision": .string("app-use-cases-startup-v1"),
+          "compatibility_profile": .string("android-legado-v1"),
+        ]),
+        "request_plan": requestPlan,
+        "result": .object([
+          "type": .string("app_runtime"),
+          "value": .object([
+            "portable_known_projection": .object([
+              "cases": .array(cases)
+            ])
+          ]),
+        ]),
+        "issues": .array([]),
+      ]),
+      requestPlan: requestPlan
+    )
+  }
+
+  private static func snapshot(
+    _ arguments: [String: JSONValue]
+  ) throws -> StartupMainSnapshot {
+    guard
+      let privacyState = try enumValue(
+        StartupPrivacyState.self,
+        key: "privacy_state",
+        in: arguments
+      ),
+      let storedVersion = try enumValue(
+        StartupStoredVersion.self,
+        key: "stored_version",
+        in: arguments
+      ),
+      case .bool(let firstOpen)? = arguments["first_open"],
+      let passwordState = try enumValue(
+        StartupPasswordState.self,
+        key: "password_state",
+        in: arguments
+      ),
+      case .bool(let appCrash)? = arguments["app_crash"]
+    else {
+      throw AppStartupFixtureProjectionError.invalidFixture
+    }
+    let lastBackup: Int64
+    if case .number(let value)? = arguments["last_backup"],
+      let parsed = Int64(value.rawToken)
+    {
+      lastBackup = parsed
+    } else if arguments["last_backup"] == nil {
+      lastBackup = 0
+    } else {
+      throw AppStartupFixtureProjectionError.invalidFixture
+    }
+    let isDebugBuild: Bool
+    if case .bool(let value)? = arguments["build_debug"] {
+      isDebugBuild = value
+    } else if arguments["build_debug"] == nil {
+      isDebugBuild = true
+    } else {
+      throw AppStartupFixtureProjectionError.invalidFixture
+    }
+    return StartupMainSnapshot(
+      privacyState: privacyState,
+      privacyAction: try enumValue(
+        StartupPrivacyAction.self,
+        key: "privacy_action",
+        in: arguments
+      ),
+      storedVersion: storedVersion,
+      firstOpen: firstOpen,
+      passwordState: passwordState,
+      passwordAction: try enumValue(
+        StartupPasswordAction.self,
+        key: "password_action",
+        in: arguments
+      ),
+      appCrash: appCrash,
+      lastBackup: lastBackup,
+      isDebugBuild: isDebugBuild
+    )
+  }
+
+  private static func enumValue<Value: RawRepresentable>(
+    _ type: Value.Type,
+    key: String,
+    in arguments: [String: JSONValue]
+  ) throws -> Value? where Value.RawValue == String {
+    guard let raw = arguments[key] else {
+      return nil
+    }
+    guard
+      case .string(let value) = raw,
+      let parsed = Value(rawValue: value)
+    else {
+      throw AppStartupFixtureProjectionError.invalidFixture
+    }
+    return parsed
+  }
+
+  private static func welcomeValue(
+    _ outcome: StartupWelcomeOutcome
+  ) -> JSONValue {
+    let readerStarted = outcome.destinations.contains(.reader)
+    return .object([
+      "downstream_start_sequence": .array(
+        outcome.destinations.map {
+          .string(
+            $0 == .main ? "MainActivity" : "ReadBookActivity"
+          )
+        }
+      ),
+      "main_started": .bool(outcome.destinations.contains(.main)),
+      "reader_activity_observed": .bool(readerStarted),
+      "reader_started": .bool(readerStarted),
+      "welcome_destroyed": .bool(outcome.welcomeCompleted),
+    ])
+  }
+
+  private static func mainValue(
+    _ outcome: StartupMainOutcome
+  ) -> JSONValue {
+    .object([
+      "activity_finishing": .bool(outcome.isFinishing),
+      "app_crash_after": .bool(outcome.appCrashPending),
+      "build_debug": .bool(outcome.isDebugBuild),
+      "dialog_sequence": .array(
+        outcome.prompts.map { .string($0.rawValue) }
+      ),
+      "first_open_after": .bool(outcome.firstOpen),
+      "help_dialog_remaining": .bool(outcome.helpPromptVisible),
+      "last_backup_after": .number(JSONNumber(outcome.lastBackup)),
+      "password_state_after":
+        .string(outcome.passwordState.rawValue),
+      "privacy_accepted": .bool(outcome.privacyAccepted),
+      "update_log_visible": .bool(outcome.updateLogVisible),
+      "version_matches_current": .bool(outcome.versionIsCurrent),
+    ])
   }
 }

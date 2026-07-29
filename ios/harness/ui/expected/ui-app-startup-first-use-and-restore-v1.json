@@ -1,0 +1,177 @@
+{
+  "schema_version": 1,
+  "scenario_id": "ui-app-startup-first-use-and-restore-v1",
+  "profile": "store_safe",
+  "simulators": [
+    {
+      "simulator_id": "SIM-PAD-REGULAR-001",
+      "projection": "regularSplit",
+      "cases": [
+        {
+          "id": "welcome-default-opens-main-only",
+          "initial": "screen.root.shelf",
+          "final": "screen.root.shelf",
+          "action_trace": [],
+          "route_trace": [
+            "main"
+          ],
+          "visible": [
+            "screen.root.shelf"
+          ]
+        },
+        {
+          "id": "welcome-default-to-read-opens-reader-after-main",
+          "initial": "screen.reader.startup",
+          "final": "screen.reader.startup",
+          "action_trace": [],
+          "route_trace": [
+            "main",
+            "reader"
+          ],
+          "visible": [
+            "screen.reader.startup"
+          ]
+        },
+        {
+          "id": "privacy-refusal-stops-main-pipeline",
+          "initial": "startup.prompt.privacy",
+          "final": "screen.startup.finished",
+          "action_trace": [
+            "startup.action.privacy.refuse"
+          ],
+          "route_trace": [
+            "main"
+          ],
+          "visible": [
+            "screen.startup.finished"
+          ]
+        },
+        {
+          "id": "first-open-agreement-runs-help-then-password",
+          "initial": "startup.prompt.privacy",
+          "final": "screen.root.shelf",
+          "action_trace": [
+            "startup.action.privacy.agree",
+            "startup.action.help.close",
+            "startup.action.local_password.cancel"
+          ],
+          "route_trace": [
+            "main"
+          ],
+          "visible": [
+            "screen.root.shelf"
+          ]
+        },
+        {
+          "id": "returning-current-version-skips-onboarding",
+          "initial": "screen.root.shelf",
+          "final": "screen.root.shelf",
+          "action_trace": [],
+          "route_trace": [
+            "main"
+          ],
+          "visible": [
+            "screen.root.shelf"
+          ]
+        },
+        {
+          "id": "returning-version-change-debug-skips-update-log",
+          "initial": "screen.root.shelf",
+          "final": "screen.root.shelf",
+          "action_trace": [],
+          "route_trace": [
+            "main"
+          ],
+          "visible": [
+            "screen.root.shelf"
+          ]
+        }
+      ]
+    },
+    {
+      "simulator_id": "SIM-PHONE-COMPACT-001",
+      "projection": "compactStack",
+      "cases": [
+        {
+          "id": "welcome-default-opens-main-only",
+          "initial": "screen.root.shelf",
+          "final": "screen.root.shelf",
+          "action_trace": [],
+          "route_trace": [
+            "main"
+          ],
+          "visible": [
+            "screen.root.shelf"
+          ]
+        },
+        {
+          "id": "welcome-default-to-read-opens-reader-after-main",
+          "initial": "screen.reader.startup",
+          "final": "screen.reader.startup",
+          "action_trace": [],
+          "route_trace": [
+            "main",
+            "reader"
+          ],
+          "visible": [
+            "screen.reader.startup"
+          ]
+        },
+        {
+          "id": "privacy-refusal-stops-main-pipeline",
+          "initial": "startup.prompt.privacy",
+          "final": "screen.startup.finished",
+          "action_trace": [
+            "startup.action.privacy.refuse"
+          ],
+          "route_trace": [
+            "main"
+          ],
+          "visible": [
+            "screen.startup.finished"
+          ]
+        },
+        {
+          "id": "first-open-agreement-runs-help-then-password",
+          "initial": "startup.prompt.privacy",
+          "final": "screen.root.shelf",
+          "action_trace": [
+            "startup.action.privacy.agree",
+            "startup.action.help.close",
+            "startup.action.local_password.cancel"
+          ],
+          "route_trace": [
+            "main"
+          ],
+          "visible": [
+            "screen.root.shelf"
+          ]
+        },
+        {
+          "id": "returning-current-version-skips-onboarding",
+          "initial": "screen.root.shelf",
+          "final": "screen.root.shelf",
+          "action_trace": [],
+          "route_trace": [
+            "main"
+          ],
+          "visible": [
+            "screen.root.shelf"
+          ]
+        },
+        {
+          "id": "returning-version-change-debug-skips-update-log",
+          "initial": "screen.root.shelf",
+          "final": "screen.root.shelf",
+          "action_trace": [],
+          "route_trace": [
+            "main"
+          ],
+          "visible": [
+            "screen.root.shelf"
+          ]
+        }
+      ]
+    }
+  ]
+}

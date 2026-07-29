@@ -1,4 +1,5 @@
 import AppNavigation
+import Foundation
 import SwiftUI
 
 @main
@@ -7,7 +8,16 @@ struct LegadoApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootShellView(router: router)
+            if let startupCase = StartupAcceptanceCase(
+                processArguments: ProcessInfo.processInfo.arguments
+            ) {
+                StartupAcceptanceView(
+                    router: router,
+                    startupCase: startupCase
+                )
+            } else {
+                RootShellView(router: router)
+            }
         }
     }
 }

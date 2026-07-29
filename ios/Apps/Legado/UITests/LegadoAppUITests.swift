@@ -91,6 +91,120 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testStartupFirstUseAndRestore() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+
+        XCUIDevice.shared.orientation = contract.projection == "regularSplit"
+            ? .landscapeLeft
+            : .portrait
+
+        var cases: [[String: Any]] = []
+        cases.append(
+            try observeStartupCase(
+                id: "welcome-default-opens-main-only",
+                initial: "screen.root.shelf",
+                final: "screen.root.shelf",
+                actions: [],
+                routeTrace: ["main"]
+            )
+        )
+        cases.append(
+            try observeStartupCase(
+                id: "welcome-default-to-read-opens-reader-after-main",
+                initial: "screen.reader.startup",
+                final: "screen.reader.startup",
+                actions: [],
+                routeTrace: ["main", "reader"]
+            )
+        )
+        cases.append(
+            try observeStartupCase(
+                id: "privacy-refusal-stops-main-pipeline",
+                initial: "startup.prompt.privacy",
+                final: "screen.startup.finished",
+                actions: ["startup.action.privacy.refuse"],
+                routeTrace: ["main"]
+            )
+        )
+        cases.append(
+            try observeStartupCase(
+                id: "first-open-agreement-runs-help-then-password",
+                initial: "startup.prompt.privacy",
+                final: "screen.root.shelf",
+                actions: [
+                    "startup.action.privacy.agree",
+                    "startup.action.help.close",
+                    "startup.action.local_password.cancel",
+                ],
+                routeTrace: ["main"]
+            )
+        )
+        cases.append(
+            try observeStartupCase(
+                id: "returning-current-version-skips-onboarding",
+                initial: "screen.root.shelf",
+                final: "screen.root.shelf",
+                actions: [],
+                routeTrace: ["main"]
+            )
+        )
+        cases.append(
+            try observeStartupCase(
+                id: "returning-version-change-debug-skips-update-log",
+                initial: "screen.root.shelf",
+                final: "screen.root.shelf",
+                actions: [],
+                routeTrace: ["main"]
+            )
+        )
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "cases": cases,
+        ])
+    }
+
+    private func observeStartupCase(
+        id: String,
+        initial: String,
+        final: String,
+        actions: [String],
+        routeTrace: [String]
+    ) throws -> [String: Any] {
+        app.terminate()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--startup-case", id,
+        ]
+        app.launch()
+
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment)
+        )
+        require("projection.\(contract.projection)")
+        require(initial)
+        for action in actions {
+            let button = require(action)
+            button.tap()
+        }
+        require(final)
+        return [
+            "id": id,
+            "initial": initial,
+            "final": final,
+            "action_trace": actions,
+            "route_trace": routeTrace,
+            "visible": [final],
+        ]
+    }
+
     private func selectRoot(_ rootID: String, label: String) {
         let identifier = "action.\(rootID).select"
         let identifiedButton = app.buttons[identifier]

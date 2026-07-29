@@ -1,4 +1,5 @@
 import AppNavigation
+import AppUseCases
 import SwiftUI
 
 struct RootShellView: View {
@@ -178,5 +179,283 @@ private extension RootRoute {
 
     var selectionIdentifier: String {
         "action.\(rawValue).select"
+    }
+}
+
+enum StartupAcceptanceCase: String {
+    case welcomeMainOnly = "welcome-default-opens-main-only"
+    case welcomeReader = "welcome-default-to-read-opens-reader-after-main"
+    case privacyRefusal = "privacy-refusal-stops-main-pipeline"
+    case firstAgreement = "first-open-agreement-runs-help-then-password"
+    case returningCurrent = "returning-current-version-skips-onboarding"
+    case returningVersionChange =
+        "returning-version-change-debug-skips-update-log"
+
+    init?(processArguments: [String]) {
+        guard
+            let marker = processArguments.firstIndex(of: "--startup-case"),
+            processArguments.indices.contains(marker + 1)
+        else {
+            return nil
+        }
+        self.init(rawValue: processArguments[marker + 1])
+    }
+
+    var effects: [StartupEffect] {
+        switch self {
+        case .welcomeMainOnly:
+            AppStartupCoordinator.welcome(
+                defaultToRead: false
+            ).effects
+        case .welcomeReader:
+            AppStartupCoordinator.welcome(
+                defaultToRead: true
+            ).effects
+        case .privacyRefusal:
+            AppStartupCoordinator.main(
+                StartupMainSnapshot(
+                    privacyState: .pending,
+                    privacyAction: .refuse,
+                    storedVersion: .zero,
+                    firstOpen: true,
+                    passwordState: .unset,
+                    appCrash: true
+                )
+            ).effects
+        case .firstAgreement:
+            AppStartupCoordinator.main(
+                StartupMainSnapshot(
+                    privacyState: .pending,
+                    privacyAction: .agree,
+                    storedVersion: .zero,
+                    firstOpen: true,
+                    passwordState: .unset,
+                    passwordAction: .cancel,
+                    appCrash: true
+                )
+            ).effects
+        case .returningCurrent:
+            AppStartupCoordinator.main(
+                StartupMainSnapshot(
+                    privacyState: .accepted,
+                    storedVersion: .current,
+                    firstOpen: false,
+                    passwordState: .nonempty,
+                    appCrash: true
+                )
+            ).effects
+        case .returningVersionChange:
+            AppStartupCoordinator.main(
+                StartupMainSnapshot(
+                    privacyState: .accepted,
+                    storedVersion: .previous,
+                    firstOpen: false,
+                    passwordState: .empty,
+                    appCrash: false
+                )
+            ).effects
+        }
+    }
+}
+
+struct StartupAcceptanceView: View {
+    @Bindable var router: AppRouter
+    let startupCase: StartupAcceptanceCase
+
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @State private var promptIndex = 0
+
+    var body: some View {
+        ZStack {
+            destination
+            if let prompt = currentPrompt {
+                Color.black.opacity(0.24)
+                    .ignoresSafeArea()
+                promptCard(prompt)
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("projection.\(projection)")
+    }
+
+    @ViewBuilder
+    private var destination: some View {
+        if promptsAreComplete && effects.contains(.finishMain) {
+            StartupStatusView(
+                symbol: "hand.raised.fill",
+                title: "已停止启动",
+                subtitle: "隐私政策未同意，后续启动步骤不会执行。",
+                identifier: "screen.startup.finished"
+            )
+        } else if promptsAreComplete && destinations.last == .reader {
+            StartupStatusView(
+                symbol: "book.pages.fill",
+                title: "阅读",
+                subtitle: "主壳已建立，随后进入阅读目的地。",
+                identifier: "screen.reader.startup"
+            )
+        } else {
+            RootShellView(router: router)
+        }
+    }
+
+    private var effects: [StartupEffect] {
+        startupCase.effects
+    }
+
+    private var prompts: [StartupPrompt] {
+        effects.compactMap { effect in
+            guard case .present(let prompt) = effect else {
+                return nil
+            }
+            return prompt
+        }
+    }
+
+    private var destinations: [StartupDestination] {
+        effects.compactMap { effect in
+            guard case .navigate(let destination) = effect else {
+                return nil
+            }
+            return destination
+        }
+    }
+
+    private var promptsAreComplete: Bool {
+        promptIndex >= prompts.count
+    }
+
+    private var currentPrompt: StartupPrompt? {
+        prompts.indices.contains(promptIndex) ? prompts[promptIndex] : nil
+    }
+
+    private var projection: String {
+        horizontalSizeClass == .regular
+            ? "regularSplit"
+            : "compactStack"
+    }
+
+    @ViewBuilder
+    private func promptCard(_ prompt: StartupPrompt) -> some View {
+        VStack(spacing: 18) {
+            Image(systemName: prompt.symbol)
+                .font(.system(size: 36, weight: .semibold))
+                .foregroundStyle(.tint)
+
+            Text(prompt.title)
+                .font(.title2.bold())
+
+            Text(prompt.message)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
+            switch prompt {
+            case .privacy:
+                HStack {
+                    Button("拒绝") {
+                        advancePrompt()
+                    }
+                    .buttonStyle(.bordered)
+                    .accessibilityIdentifier(
+                        "startup.action.privacy.refuse"
+                    )
+
+                    Button("同意") {
+                        advancePrompt()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .accessibilityIdentifier(
+                        "startup.action.privacy.agree"
+                    )
+                }
+            case .help:
+                Button("开始使用") {
+                    advancePrompt()
+                }
+                .buttonStyle(.borderedProminent)
+                .accessibilityIdentifier("startup.action.help.close")
+            case .localPassword:
+                Button("暂不设置") {
+                    advancePrompt()
+                }
+                .buttonStyle(.borderedProminent)
+                .accessibilityIdentifier(
+                    "startup.action.local_password.cancel"
+                )
+            }
+        }
+        .padding(28)
+        .frame(maxWidth: 420)
+        .background(
+            .regularMaterial,
+            in: RoundedRectangle(cornerRadius: 24)
+        )
+        .shadow(radius: 24)
+        .padding()
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("startup.prompt.\(prompt.rawValue)")
+    }
+
+    private func advancePrompt() {
+        promptIndex += 1
+    }
+}
+
+private struct StartupStatusView: View {
+    let symbol: String
+    let title: String
+    let subtitle: String
+    let identifier: String
+
+    var body: some View {
+        VStack(spacing: 18) {
+            Image(systemName: symbol)
+                .font(.system(size: 48, weight: .semibold))
+                .foregroundStyle(.tint)
+            Text(title)
+                .font(.largeTitle.bold())
+                .accessibilityIdentifier(identifier)
+            Text(subtitle)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(uiColor: .systemGroupedBackground))
+    }
+}
+
+private extension StartupPrompt {
+    var title: String {
+        switch self {
+        case .privacy:
+            "隐私政策"
+        case .help:
+            "欢迎使用 Legado"
+        case .localPassword:
+            "本地密码"
+        }
+    }
+
+    var message: String {
+        switch self {
+        case .privacy:
+            "请阅读并选择是否同意隐私政策。"
+        case .help:
+            "完成首次使用说明后，再检查本地密码。"
+        case .localPassword:
+            "可以设置本地密码，也可以暂时跳过。"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .privacy:
+            "hand.raised.fill"
+        case .help:
+            "sparkles"
+        case .localPassword:
+            "lock.fill"
+        }
     }
 }
