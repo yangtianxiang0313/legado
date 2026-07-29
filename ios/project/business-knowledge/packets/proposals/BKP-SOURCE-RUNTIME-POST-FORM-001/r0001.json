@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-SOURCE-RUNTIME-POST-FORM-001",
+  "revision": 1,
+  "status": "candidate",
+  "semantic_key": "source.runtime-post-form-golden",
+  "title": "受保护 Android Golden 验证的 POST Form 请求语义",
+  "scope": {
+    "bounded_contexts": [
+      "source.execution"
+    ],
+    "capability_refs": [
+      "CAP-RUNTIME-PORTS",
+      "CAP-CONFORMANCE"
+    ],
+    "subject_keys": [
+      "source.request",
+      "source.transport"
+    ]
+  },
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122"
+  },
+  "claims": [
+    {
+      "id": "BKC-SR-POST-FORM-REQUEST-001",
+      "revision": 1,
+      "semantic_key": "source.request.post-form-request-plan",
+      "kind": "runtime_behavior",
+      "topic": "POST Form 请求计划与字段编码",
+      "statement": "在 sl-post-form-001 的 nominal 输入下，Android 把请求编译为 POST RequestPlan；form_fields 按 keyword、author 的稳定次序输出，两个中文值保持 UTF-8 percent-encoded 表达，body 按相同次序连接为 keyword=%E6%98%9F%E6%B2%B3&author=%E5%8C%97%E8%BE%B0。",
+      "subject_keys": [
+        "source.request",
+        "source.transport"
+      ],
+      "depends_on": [],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da",
+            "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+            "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/analyzeUrl"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da",
+            "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+            "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/analyzeFields"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/sl-post-form-001.json",
+            "artifact_sha256": "08c52c7022df81af27193053a59d10911f5703d6441dc0500d2dcf25a9d9e913",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "b7549e6b0c63a8a093d0c4d62608512ea847bd02894588979a3255561c580a5e",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97",
+            "projection_pointer": "/artifact/request_plan/0",
+            "observed_sha256": "a4213ac1b93430836a099460a5dbc3c5ab1b9e8bc14b876e3e19e00c8417f52b"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    },
+    {
+      "id": "BKC-SR-POST-FORM-BOUNDARY-001",
+      "revision": 1,
+      "semantic_key": "source.request.post-form-field-boundary",
+      "kind": "runtime_behavior",
+      "topic": "空值、重复字段与已编码值边界",
+      "statement": "在 sl-post-form-001 的 boundary 输入下，Android RequestPlan 保留 empty 的空字符串值；重复 dup 字段只保留最后值 second；encoded 字段保持 %E6%98%9F%E6%B2%B3，不发生二次编码；最终字段次序为 empty、dup、encoded，body 与该次序和值完全一致。",
+      "subject_keys": [
+        "source.request"
+      ],
+      "depends_on": [
+        {
+          "id": "BKC-SR-POST-FORM-REQUEST-001",
+          "revision": 1
+        }
+      ],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da",
+            "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+            "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/analyzeFields"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/sl-post-form-001.json",
+            "artifact_sha256": "08c52c7022df81af27193053a59d10911f5703d6441dc0500d2dcf25a9d9e913",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "b7549e6b0c63a8a093d0c4d62608512ea847bd02894588979a3255561c580a5e",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97",
+            "projection_pointer": "/artifact/request_plan/1",
+            "observed_sha256": "aa0d126736383004362f10812ec7d8b63f6f51a3fe4e4386ef59da82e9bd3b62"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-KNOWLEDGE-SOURCE-RUNTIME-POST-FORM-001"
+}

@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "run_id": "run-20260729T020525Z-ios-knowledge-source-runtime-post-form-001-b6a80c7f",
+  "work_item_id": "IOS-KNOWLEDGE-SOURCE-RUNTIME-POST-FORM-001",
+  "work_item_sha256": "f39d4f0d4bbb610fab312447baeff2dbfc95ff99d2f618579327cf288883d4f2",
+  "result": "passed",
+  "inputs": {
+    "base_commit": "e4d4153c70fbe04ce7649a7f72931420b20cd59a",
+    "head_commit": "e4d4153c70fbe04ce7649a7f72931420b20cd59a",
+    "snapshot_sha256": "f210ab02ba5fae3083740f65c92fda7c6d78cdecae53e50c034b7a3107abdce7",
+    "baseline_sha256": "eeeaf0017b79a2420faf73c686a110a2d0372b2da865e42aa8db360fd3015e93",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
+    "architecture_rules_sha256": "51ebc4cff5921643f95d8a045c21ea85cad046acb99ed56026f77bf842642fa5",
+    "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+    "golden_manifest_sha256": "7ea4d7a08e21b3289bcac1d963e42fa2e864ec769f36645968b88321d9c93550",
+    "fixture_manifest_sha256": "76b8ba91dfca774e1fd548280a927dd383b7efadabed81704dcba408b6874243",
+    "dependency_lock_sha256": null,
+    "source_lab_control_sha256": "07735447b310c1cbaeb361851520bde93087b801a13995078674ed03564cb2fa",
+    "android_intake_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122",
+    "business_knowledge_control_sha256": "b432003b7d73982a98df286bf685349ff2eb19a05c80800fbb617fa8472cbdba",
+    "business_knowledge_authority_sha256": "9a898622fab665e380b0fdb7837d6aa24f938f5c87e4bc635c32fbdf4dfe81c8",
+    "business_knowledge_coverage_sha256": "8cd21f8c89530ad6b94a2a6f35c5f671b052ec180f93a365f0c9c0cfa4357961",
+    "business_knowledge_proposal_sha256": "f9806a256b9a5fc0e872ca97a1a584a226dc60efc11646876b1aabb2f4feabe6",
+    "android_requirement_selection_sha256": null,
+    "source_lab_selection_sha256": null,
+    "knowledge_selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "environment": {
+      "platform": "macOS-26.4.1-arm64-arm-64bit",
+      "python": "3.9.6",
+      "xcode": "Xcode 26.0\nBuild version 17A324",
+      "swift": "Apple Swift version 6.2 (swiftlang-6.2.0.19.9 clang-1700.3.19.1)\nTarget: arm64-apple-macosx26.0"
+    }
+  },
+  "changes": {
+    "paths": [
+      "ios/project/business-knowledge/drivers/proposals/DRV-SOURCE-RUNTIME-POST-FORM-001/r0001.json",
+      "ios/project/business-knowledge/packets/proposals/BKP-SOURCE-RUNTIME-POST-FORM-001/r0001.json"
+    ],
+    "changed_lines_approximate": 186,
+    "file_fingerprints": {
+      "ios/project/business-knowledge/drivers/proposals/DRV-SOURCE-RUNTIME-POST-FORM-001/r0001.json": "file:0o644:eccf47d757ecdf7d122ace9dab6509cd5cc892240a03a03cd539765d273c0741",
+      "ios/project/business-knowledge/packets/proposals/BKP-SOURCE-RUNTIME-POST-FORM-001/r0001.json": "file:0o644:e5e6185012e741f7bbc6c09026b06a869f55888559b8c1972a5b0b647287cd69"
+    },
+    "dirty_snapshot": {
+      "ios/project/business-knowledge/catalog.json": "file:0o644:2c1fdb99b272927a4e40973e5a6d6c65aa6010c2851efbeca0f59b48f45f4356",
+      "ios/project/business-knowledge/drivers/proposals/DRV-SOURCE-RUNTIME-POST-FORM-001/r0001.json": "file:0o644:eccf47d757ecdf7d122ace9dab6509cd5cc892240a03a03cd539765d273c0741",
+      "ios/project/business-knowledge/packets/proposals/BKP-SOURCE-RUNTIME-POST-FORM-001/r0001.json": "file:0o644:e5e6185012e741f7bbc6c09026b06a869f55888559b8c1972a5b0b647287cd69",
+      "ios/project/events.jsonl": "file:0o644:00401d89e4fe314a55f907e19d4c4254aa5b46721f148ae37ad88e62eeb30741",
+      "ios/project/state.json": "file:0o644:6f66db13850cf82c2e7fe436fab29938e78e83452a4c4b9f4bf7ac839eb37d6f",
+      "ios/project/status.md": "file:0o644:69d9178d31698ffcfe902f7545d4fba4a667e8a950a2b59637811b5561e8d0e5"
+    },
+    "diff_sha256": "23d664b2342c8159dadea2449bb5ca908d3da5fd0d083226d4031545139fb06e"
+  },
+  "policy_errors": [],
+  "architecture_errors": [],
+  "architecture_warnings": [],
+  "checks": [
+    {
+      "id": "dependency-policy",
+      "argv": [
+        "python3",
+        "ios/harness/probes/dependency_contract.py",
+        "--root",
+        "."
+      ],
+      "executable_path": "/usr/bin/python3",
+      "definition_sha256": "eca96cb1b69567829ed8396386b0449da8c0d6e7295a00f1decfb60430ff1153",
+      "cwd": ".",
+      "started_at": "2026-07-29T02:03:02Z",
+      "duration_ms": 763,
+      "timeout_seconds": 90,
+      "timed_out": false,
+      "process_leak": false,
+      "cleanup_error": null,
+      "exit_code": 0,
+      "passed": true,
+      "stdout_sha256": "17595a1d68cdc5b52c010f46dff48514afa3fa3cf0215cdea7ae8eff38677c0a",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_tail": "DEPENDENCY_CONTRACT: OK\n",
+      "stderr_tail": ""
+    },
+    {
+      "id": "harness-tests",
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "ios/harness/tests",
+        "-p",
+        "test_*.py"
+      ],
+      "executable_path": "/usr/bin/python3",
+      "definition_sha256": "244d512cbdd15fe0c5e35e6d9676510c943b19e9437987c24ac6e627a2e7ad94",
+      "cwd": ".",
+      "started_at": "2026-07-29T02:03:03Z",
+      "duration_ms": 140515,
+      "timeout_seconds": 180,
+      "timed_out": false,
+      "process_leak": false,
+      "cleanup_error": null,
+      "exit_code": 0,
+      "passed": true,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "7396a0b82e1fc76989353aeca0916e76b8d38ee6d652acf1a3462eab4390c6d1",
+      "stdout_tail": "",
+      "stderr_tail": ".................................................................................................................................................................................................................................................................................................\n----------------------------------------------------------------------\nRan 289 tests in 140.361s\n\nOK\n"
+    }
+  ],
+  "failure": null,
+  "started_at": "2026-07-29T02:03:01Z",
+  "finished_at": "2026-07-29T02:05:25Z",
+  "reproduction": "python3 ios/harness/harness.py verify IOS-KNOWLEDGE-SOURCE-RUNTIME-POST-FORM-001"
+}

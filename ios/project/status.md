@@ -2,13 +2,13 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-29T01:57:35Z
+- 更新时间：2026-07-29T02:06:21Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
-- 下一个可领取工作项：IOS-KNOWLEDGE-SOURCE-RUNTIME-POST-FORM-001
-- 最近完成：IOS-GOLDEN-CONSUMER-CONTINUATION-RECOVERY-002
+- 下一个可领取工作项：无
+- 最近完成：IOS-KNOWLEDGE-SOURCE-RUNTIME-POST-FORM-001
 
 ## 健康度
 
@@ -93,6 +93,7 @@
 | source_request_options_intake | `proposal_ready` |
 | source_runtime_golden_conformance | `android_exact_first_slice` |
 | source_runtime_html_css | `golden_verified_first_slice` |
+| source_runtime_post_form_knowledge | `runtime_verified_proposal_ready` |
 | supervisor_run_journal | `local_replayable` |
 | swiftpm_manifest_verification | `sandbox_isolated` |
 | synthetic_provenance_gate | `policy_managed` |
@@ -170,7 +171,7 @@
 | IOS-HARNESS-TIMEOUT-CLEANUP-001 | 100 | `completed` | IOS-HARNESS-APPROVAL-UI-001 | 让 Harness 超时清理失败保留结构化 Evidence |
 | IOS-KNOWLEDGE-PROMOTION-CONTEXT-004 | 100 | `completed` | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-REMOTE-003 | 让 Harness 识别已提升知识 proposal 的历史上下文 |
 | IOS-KNOWLEDGE-SOURCE-RUNTIME-GOLDEN-002 | 100 | `completed` | IOS-ANDROID-GOLDEN-PUBLISHER-001, IOS-LOOP-DEMAND-COMPILER-003 | 从受保护 Android Golden 提炼 HTML/CSS 书源纵向知识 |
-| IOS-KNOWLEDGE-SOURCE-RUNTIME-POST-FORM-001 | 100 | `ready` | IOS-GOLDEN-CONSUMER-CONTINUATION-RECOVERY-002 | 从受保护 POST Form Golden 收敛可发布业务知识 |
+| IOS-KNOWLEDGE-SOURCE-RUNTIME-POST-FORM-001 | 100 | `completed` | IOS-GOLDEN-CONSUMER-CONTINUATION-RECOVERY-002 | 从受保护 POST Form Golden 收敛可发布业务知识 |
 | IOS-KNOWLEDGE-TOMBSTONE-PROTOCOL-001 | 100 | `completed` | IOS-KNOWLEDGE-CONTROL-PLANE-001, IOS-PROPOSAL-LIFECYCLE-RECOVERY-002, IOS-CODEX-AGENT-ADAPTER-COMPAT-002 | 建立失败知识产出 revision tombstone 协议 |
 | IOS-KNOWLEDGE-UI-TOPOLOGY-CONTINUATION-001 | 100 | `cancelled` | IOS-KNOWLEDGE-ANDROID-SURFACES-001, IOS-KNOWLEDGE-BOOK-DOMAIN-001, IOS-KNOWLEDGE-SOURCE-RUNTIME-001, IOS-KNOWLEDGE-READER-LIFECYCLE-001 | 续接并冻结 UI Topology 知识候选 |
 | IOS-KNOWLEDGE-UI-TOPOLOGY-RECOVERY-002 | 100 | `completed` | IOS-KNOWLEDGE-ANDROID-SURFACES-001, IOS-KNOWLEDGE-BOOK-DOMAIN-001, IOS-KNOWLEDGE-SOURCE-RUNTIME-001, IOS-KNOWLEDGE-READER-LIFECYCLE-001 | 按知识 revision 规则恢复 UI Topology 候选 |

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 76,
+  "revision": 77,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -72,12 +72,13 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260729T015050Z-ios-golden-consumer-continuation-recovery-002-7047cca2.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260729T020525Z-ios-knowledge-source-runtime-post-form-001-b6a80c7f.json",
   "next_actions": [
-    "把已终结的 POST Form Migration Intent 续接为独立 SourceRuntime Delivery Intent 与完整蓝图",
-    "发布已由源码与真实 Golden 支撑的 POST Form Packet/Driver，并执行结构化验收",
+    "通过无人工 Gate 的受信 Publisher 发布 POST Form Packet/Driver，并回收发布结果",
+    "从已发布 POST Form 知识生成独立 SourceRuntime Delivery Intent 与完整蓝图",
+    "用 canonical RequestPlan、Android expected、iOS actual 和 first-divergence 完成结构化验收",
     "在 iOS Simulator 完成 UI 结构与多级导航验收"
   ],
-  "updated_at": "2026-07-29T01:50:50Z",
-  "updated_by": "IOS-GOLDEN-CONSUMER-CONTINUATION-RECOVERY-002"
+  "updated_at": "2026-07-29T02:05:25Z",
+  "updated_by": "IOS-KNOWLEDGE-SOURCE-RUNTIME-POST-FORM-001"
 }

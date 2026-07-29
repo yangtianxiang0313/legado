@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-KNOWLEDGE-SOURCE-RUNTIME-POST-FORM-001",
+  "summary": "已从受保护 sl-post-form-001 Android Golden 收敛最小 POST Form 业务知识切片。BKP-SOURCE-RUNTIME-POST-FORM-001@1 仅包含两条 runtime_verified Claim：nominal Claim 精确绑定 /artifact/request_plan/0，固定 POST、字段次序、UTF-8 percent-encoded 值与 body；boundary Claim 精确绑定 /artifact/request_plan/1，固定空值、重复 key last-wins、已编码值保留与最终字段次序。每条 Claim 均绑定 Golden 字节摘要、Android commit、runner、canonicalizer、投影 canonical 摘要和 AnalyzeUrl.kt blob/symbol。DRV-SOURCE-RUNTIME-POST-FORM-001@1 只约束独立 SourceRuntime、稳定 RequestPlan、Transport 隔离、确定性验收和未来能力分片，由 ADR-0001/ADR-0002 解决。raw body、JSON/XML、Cookie/retry、WebView 未被错误提升；原宽泛 proposal 未修改。Harness 自动刷新了 proposal 索引 Catalog，但 published、Coverage、release、Requirement、Golden 和产品 authority 均未改变；完整 289 项 Harness tests 与 dependency-policy 通过。",
+  "evidence": "ios/harness/evidence/runs/run-20260729T020525Z-ios-knowledge-source-runtime-post-form-001-b6a80c7f.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 76,
+      "to_revision": 77,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002"
+    ]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null
+  },
+  "business_knowledge": {
+    "mode": "produce",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [
+      {
+        "kind": "packet",
+        "id": "BKP-SOURCE-RUNTIME-POST-FORM-001",
+        "revision": 1
+      },
+      {
+        "kind": "driver",
+        "id": "DRV-SOURCE-RUNTIME-POST-FORM-001",
+        "revision": 1
+      }
+    ],
+    "ledger_updates": [],
+    "none_reason": null
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项只形成知识 proposal，不改变 iOS 产品兼容实现"
+  },
+  "pitfalls": {
+    "records": [],
+    "none_reason": "现有 versioned Golden consumer 与 proposal reservation 防护已覆盖本项，未出现新的可复用失效模式"
+  },
+  "remaining_risks": [
+    "Packet/Driver 仍为 proposal，尚未经过受信 Publisher 原子发布",
+    "当前 Business Knowledge workflow 仍有场景硬编码和人工 Environment 遗留，不能作为最终无人值守链路",
+    "POST Form SourceRuntime Delivery Intent、iOS 实现及结构化差分 Evidence 尚未生成",
+    "iOS Simulator UI 结构验收尚未闭环"
+  ],
+  "next_actions": [
+    "建立场景化、无人工 Gate 的 Business Knowledge Publisher Dispatcher 与结果回收",
+    "发布并严格消费 POST Form Packet/Driver",
+    "自动生成 SourceRuntime POST Form Delivery Intent 与完整蓝图",
+    "执行 canonical RequestPlan 的 Android expected/iOS actual/first-divergence 验收",
+    "接入 iOS Simulator UI 结构与多级导航验收"
+  ],
+  "created_at": "2026-07-29T02:05:25Z"
+}
