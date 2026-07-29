@@ -13,6 +13,9 @@ public struct SourceRuleConsumerEvaluator: Sendable {
 
   public func getString(_ rule: String?) throws -> String {
     guard let rule, !rule.isEmpty else { return "" }
+    if rule.contains("##") {
+      return SourceRegexReplacementEvaluator(content: content).getString(rule)
+    }
     var current: ConsumerValue = .string(content)
     for stage in stages(rule) {
       switch stage {
@@ -31,6 +34,10 @@ public struct SourceRuleConsumerEvaluator: Sendable {
     redirectURL: URL? = nil
   ) throws -> [String]? {
     guard let rule, !rule.isEmpty else { return nil }
+    if rule.contains("##") {
+      return SourceRegexReplacementEvaluator(content: content)
+        .getStringList(rule)
+    }
     var current: ConsumerValue = .string(content)
     for stage in stages(rule) {
       switch stage {
@@ -64,11 +71,17 @@ public struct SourceRuleConsumerEvaluator: Sendable {
 
   public func getElement(_ rule: String) throws -> JSONValue? {
     guard !rule.isEmpty else { return nil }
+    if isJSONRule(rule) {
+      return try jsonPathEvaluator().getElement(rule)
+    }
     return try evaluateJSONPath(rule)
   }
 
   public func getElements(_ rule: String) throws -> [JSONValue] {
     guard !rule.isEmpty else { return [] }
+    if isJSONRule(rule) {
+      return try jsonPathEvaluator().getElements(rule)
+    }
     guard case .array(let values) = try evaluateJSONPath(rule) else {
       return []
     }
@@ -124,6 +137,9 @@ public struct SourceRuleConsumerEvaluator: Sendable {
   }
 
   private func stringRule(_ rule: String) throws -> ConsumerValue {
+    if isJSONRule(rule) {
+      return .string(try jsonPathEvaluator().getString(rule))
+    }
     if rule.contains(CombinationOperator.interleave.rawValue) {
       // Android's JSON string consumer only recognizes && and ||. A %%
       // expression therefore reaches JSONPath as an unsupported path and
@@ -147,6 +163,9 @@ public struct SourceRuleConsumerEvaluator: Sendable {
   }
 
   private func listRule(_ rule: String) throws -> ConsumerValue {
+    if isJSONRule(rule) {
+      return .list(try jsonPathEvaluator().getStringList(rule))
+    }
     if let combination = combination(
       rule,
       allowed: [.concatenate, .fallback, .interleave]
@@ -193,6 +212,20 @@ public struct SourceRuleConsumerEvaluator: Sendable {
   private func evaluateJSONPath(_ rawRule: String) throws -> JSONValue {
     let evaluator = SourceRuleEvaluator(content: content)
     return try evaluator.evaluate(rawRule).value
+  }
+
+  private func isJSONRule(_ rule: String) -> Bool {
+    rule.lowercased().hasPrefix("@json:")
+      || rule.hasPrefix("$")
+      || (try? JSONValueCodec.decode(Data(content.utf8))) != nil
+  }
+
+  private func jsonPathEvaluator() throws -> SourceJSONPathEvaluator {
+    do {
+      return try SourceJSONPathEvaluator(input: .jsonString(content))
+    } catch {
+      throw SourceRuleRuntimeError.malformedContent(.json)
+    }
   }
 
   private func isCSSRule(_ rule: String) -> Bool {

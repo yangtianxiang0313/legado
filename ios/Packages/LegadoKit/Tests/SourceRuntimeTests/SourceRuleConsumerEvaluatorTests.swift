@@ -114,4 +114,30 @@ final class SourceRuleConsumerEvaluatorTests: XCTestCase {
       XCTAssertEqual(error as? SourceRuleRuntimeError, .scriptFailure)
     }
   }
+
+  func testJSONPathRegexBackendsAreIntegratedIntoRuleConsumers() throws {
+    let evaluator = SourceRuleConsumerEvaluator(
+      content:
+        #"{"books":[{"title":"A","price":8},{"title":"B","price":12},{"title":"C","price":5}],"items":["alpha-1","beta-22","gamma"]}"#
+    )
+
+    XCTAssertEqual(
+      try evaluator.getString(
+        "@Json:$.books[?(@.price < 10)].title"
+      ),
+      "A\nC"
+    )
+    XCTAssertEqual(
+      try evaluator.getStringList(
+        "@Json:$.items[*]##-\\d+$##"
+      ),
+      ["alpha", "beta", "gamma"]
+    )
+    XCTAssertEqual(
+      try evaluator.getString(
+        "@Json:$.items[*]##^[a-z]+##item"
+      ),
+      "item-1\nbeta-22\ngamma"
+    )
+  }
 }
