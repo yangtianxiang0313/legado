@@ -282,8 +282,8 @@ class BusinessKnowledgePublisherTests(unittest.TestCase):
         self.assertEqual("resolved", driver["status"])
         self.assertEqual(
             (
-                "github-actions-environment:"
-                "business-knowledge-publisher:424242/1"
+                "github-actions:"
+                "business-knowledge-publisher-v2:424242/1"
             ),
             driver["promotion"]["approval_ref"],
         )
@@ -437,19 +437,21 @@ class BusinessKnowledgePublisherTests(unittest.TestCase):
         ):
             self._prepare(self.base / "existing")
 
-    def test_workflow_is_environment_protected_pinned_and_pr_only(self):
+    def test_workflow_is_push_only_content_addressed_and_result_bound(self):
         workflow = (
             REPOSITORY_ROOT
             / ".github/workflows/business-knowledge-publisher.yml"
         ).read_text(encoding="utf-8")
         self._assert_block_scalars_are_indented(workflow)
-        self.assertIn("workflow_dispatch:", workflow)
-        self.assertIn(
+        self.assertIn('"knowledge/request-**"', workflow)
+        self.assertNotIn("workflow_dispatch:", workflow)
+        self.assertNotIn(
             "environment: business-knowledge-publisher",
             workflow,
         )
         self.assertIn("contents: write", workflow)
-        self.assertIn("pull-requests: write", workflow)
+        self.assertIn("actions: read", workflow)
+        self.assertNotIn("pull-requests: write", workflow)
         self.assertNotIn("pull_request_target", workflow)
         self.assertNotIn("secrets.", workflow)
         self.assertNotIn("permissions: write-all", workflow)
@@ -457,77 +459,37 @@ class BusinessKnowledgePublisherTests(unittest.TestCase):
             "actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
             workflow,
         )
-        self.assertIn(
-            "TARGET_BRANCH: feature/ios-ai-harness-bootstrap",
-            workflow,
-        )
-        self.assertIn('AUTHORIZED_ACTOR_ID: "35530717"', workflow)
+        self.assertNotIn("TARGET_BRANCH:", workflow)
+        self.assertNotIn("AUTHORIZED_ACTOR_ID:", workflow)
         self.assertIn(
             "business_knowledge_publisher.py",
             workflow,
         )
-        self.assertEqual(
-            3,
-            workflow.count("git -C publisher ls-remote origin"),
+        self.assertIn(
+            ".business-knowledge-publication-request.json",
+            workflow,
         )
-        self.assertNotIn(
-            "\n            git ls-remote origin",
+        self.assertIn("business_knowledge.py", workflow)
+        self.assertIn(
+            "publisher/ios/harness/harness.py",
             workflow,
         )
         self.assertIn(
-            "business_knowledge.py \\\n            doctor",
-            workflow,
-        )
-        self.assertIn(
-            '.plans[0].state == "requirement_readiness_required"',
+            '.state != "business_knowledge_publisher_required"',
             workflow,
         )
         self.assertIn(".blockers == []", workflow)
-        self.assertIn("and (.plans | length) == 1", workflow)
         self.assertIn(
-            '.plans[0].reason_code == "REQUIREMENT_READINESS_REQUIRED"',
+            "business-knowledge-result-${{ env.EXECUTION_ID }}",
             workflow,
         )
         self.assertIn(
-            '.plans[0].authority_transition == true',
+            "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
             workflow,
         )
-        self.assertNotIn(
-            '\n            .state == "requirement_readiness_required"',
-            workflow,
-        )
-        freeze = workflow.index(
-            "- name: Freeze staged authority transaction in a local commit"
-        )
-        verify = workflow.index(
-            "- name: Independently verify the installed graph and next Loop state"
-        )
-        push = workflow.index(
-            "- name: Push verified release commit and create review PR"
-        )
-        self.assertLess(freeze, verify)
-        self.assertLess(verify, push)
-        self.assertIn(
-            "git -C publisher commit",
-            workflow[freeze:verify],
-        )
-        self.assertNotIn(
-            "git -C publisher push",
-            workflow[freeze:verify],
-        )
-        self.assertNotIn(
-            "git -C publisher commit",
-            workflow[verify:push],
-        )
-        self.assertIn(
-            'test "$(git -C publisher branch --show-current)" = "${RELEASE_BRANCH}"',
-            workflow[push:],
-        )
-        self.assertIn("gh pr create", workflow)
-        self.assertNotIn(
-            'HEAD:refs/heads/${TARGET_BRANCH}',
-            workflow,
-        )
+        self.assertIn("knowledge/result-", workflow)
+        self.assertNotIn("gh pr create", workflow)
+        self.assertNotIn("gh pr merge", workflow)
 
 
 if __name__ == "__main__":

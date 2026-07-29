@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTOMATION-001",
+  "summary": "已实现无人工 Gate、场景化的 Business Knowledge 发布与续接控制面。DemandCompiler 的 source-bound-knowledge-publication-v1 从 completed producer 中只选择同批 Packet/Driver、全部 runtime_verified Claim、唯一共同 protected Golden，并通过 fixture 唯一联结 Android Migration Intent、accepted Requirement clauses、未来目标 WorkItem 与 Delivery Intent；当前真实 POST Form 编译为 KPUB-SOURCE-RUNTIME-POST-FORM-001/business_knowledge_publisher_required，精确绑定 RC-01。专用 Dispatcher 以 canonical request manifest 的 SHA-256 建立 execution identity，创建 source HEAD 的唯一子 request commit；push-only Workflow 不使用 workflow_dispatch、Environment、PR、固定场景或固定目标分支，从 request commit 重算六类输入并只安装 staging transaction，result commit 删除 request。Dispatcher 独立验证唯一 Run/Artifact、transaction/report、request/result refs、两级 parent、source/request/result 精确 delta、每个 Git object 摘要、proposal 删除与 ff-only，快进后运行 Business Knowledge/Harness doctor；verified/settled journal 重放仍复验远端 authority。Publisher 输出升级为 github_actions_push_v2。完整 dependency-policy 与 297 项 Harness tests 通过，PIT-0070 已缓解；当前 WorkItem 未直接修改任何 published/Coverage/release/Requirement/Golden/ADR/Package/产品 authority。",
+  "evidence": "ios/harness/evidence/runs/run-20260729T024344Z-ios-business-knowledge-publisher-automation-001-f04847f5.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 78,
+      "to_revision": 79,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002",
+      "ADR-0004"
+    ]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项只实现发布控制面，不由 Agent 消费或提升知识；真实 authority 由外部 Publisher 事务产生"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项只改变发布编排，不改变 iOS 产品兼容语义"
+  },
+  "pitfalls": {
+    "records": [
+      "ios/project/pitfalls/PIT-0070.json"
+    ],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "真实 GitHub push Run、Artifact、result branch 与本地 ff-only 尚需在本提交关闭后执行",
+    "POST Form Packet/Driver 当前仍为 proposal，外部发布尚未结算",
+    "发布完成后的 Delivery Intent/Blueprint 生成与 SourceRuntime 产品验收尚未执行",
+    "iOS Simulator UI 结构验收尚未闭环"
+  ],
+  "next_actions": [
+    "提交当前实现并由 Supervisor 执行真实 GitHub Business Knowledge Dispatcher",
+    "验证远端 result transaction 后受限快进并确认 publication plan 退出",
+    "生成并物化 DINT-SOURCE-RUNTIME-POST-FORM-001 与完整 Delivery Blueprint",
+    "实现 canonical RequestPlan 并输出 Android expected/iOS actual/first-divergence",
+    "接入 iOS Simulator UI 结构与多级导航验收"
+  ],
+  "created_at": "2026-07-29T02:43:44Z"
+}

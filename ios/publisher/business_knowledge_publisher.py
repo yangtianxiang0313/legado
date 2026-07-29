@@ -25,7 +25,8 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, Sequence, Tuple
 
 
-PUBLISHER_ID = "github-actions-environment:business-knowledge-publisher"
+PUBLISHER_ID = "github-actions:business-knowledge-publisher-v2"
+AUTHORIZATION = "github_actions_push_v2"
 HEX40 = re.compile(r"[0-9a-f]{40}\Z")
 HEX64 = re.compile(r"[0-9a-f]{64}\Z")
 RUN_ID = re.compile(r"[1-9][0-9]*/[1-9][0-9]*\Z")
@@ -526,7 +527,8 @@ def prepare(
     if (
         receipt.get("kind") != "android_golden_release"
         or receipt.get("authority") != "protected_android_golden"
-        or receipt.get("authorization") != "github_environment_review"
+        or receipt.get("authorization")
+        not in {"github_environment_review", "github_actions_push_v2"}
     ):
         raise KnowledgePublisherError("GOLDEN_RECEIPT_AUTHORITY_INVALID")
     golden_path, golden_relative = _relative_regular(
@@ -841,7 +843,7 @@ def prepare(
         "schema_version": 1,
         "kind": "business_knowledge_release",
         "authority": "protected_business_knowledge",
-        "authorization": "github_environment_review",
+        "authorization": AUTHORIZATION,
         "publisher": PUBLISHER_ID,
         "publisher_run_id": authorized_run_id,
         "approved_by": approved_by,

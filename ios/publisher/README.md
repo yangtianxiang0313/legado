@@ -51,9 +51,17 @@ Driver、Coverage Ledger、派生 Catalog 和不可变 release receipt，并额�
 `transaction.json`。事务明确列出每个安装文件的 SHA-256 与两个待删除 proposal；脚本
 本身不修改源仓库。
 
-`.github/workflows/business-knowledge-publisher.yml` 是唯一安装方。它固定
-`business-knowledge-publisher` Environment、用户、目标分支、source commit、两个
-proposal 摘要和 Golden receipt 摘要；安装后只允许事务声明的七个路径变化，重跑
-Business Knowledge doctor、Harness doctor 和 Demand Compiler，再推专用发布分支并
-创建 PR。它不能直接推目标分支，也不能修改 Requirement、Golden、ADR 或产品代码。
-回滚通过 revert Publisher PR 完成；已发布 receipt 不允许被后续普通任务覆写。
+`.github/workflows/business-knowledge-publisher.yml` 是唯一安装方。Loop Dispatcher
+先把 DemandCompiler 闭合的 producer、proposal、Golden、Requirement clauses 与未来
+目标 Work Item 写入 canonical request manifest，并以 source HEAD 的唯一子提交创建
+`knowledge/request-<batch>-<source-sha>`。Workflow 只监听该 create-only push，不使用
+`workflow_dispatch`、Environment、PR 或硬编码场景；所有输入路径和摘要都来自 request
+commit，安装范围只取 staging transaction。
+
+安装后 Workflow 删除 request manifest，重跑 Business Knowledge doctor、Harness
+doctor 和 Demand Compiler，再把结果作为 request commit 的唯一子提交推到
+`knowledge/result-<batch>-<source-sha>`，同时上传 canonical transaction/report。
+本地 `github_business_knowledge_publisher.py` 不信任运行 journal，必须重新验证唯一
+Run、Artifact、request/result ref、双父链、source/result 与 request/result 两组精确
+diff、每个 Git object 摘要和 proposal 删除，最后才允许 `--ff-only`。普通 Agent 和
+当前实现 WorkItem 仍不能直接修改 published Packet/Driver、Coverage 或 release。

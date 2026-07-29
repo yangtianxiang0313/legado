@@ -48,8 +48,15 @@ ORACLE_CONTRACT_PATH = "ios/harness/oracle/contract.py"
 ORACLE_CI_PROPOSAL_PATH = "ios/harness/oracle/ci_proposal.py"
 ORACLE_TRUSTED_IMPORT_PATH = "ios/harness/oracle/trusted_import.py"
 EXTERNAL_RECEIPT_ROOT = "ios/project/external-execution-receipts"
+KNOWLEDGE_PACKET_PROPOSAL_ROOT = (
+    "ios/project/business-knowledge/packets/proposals"
+)
+KNOWLEDGE_DRIVER_PROPOSAL_ROOT = (
+    "ios/project/business-knowledge/drivers/proposals"
+)
 POLICY = "structured-delivery-intent-v1"
 MIGRATION_POLICY = "source-anchored-android-migration-v1"
+KNOWLEDGE_PUBLICATION_POLICY = "source-bound-knowledge-publication-v1"
 INTENT_ID = re.compile(r"^DINT-[A-Z][A-Z0-9-]*-[0-9]{3}$")
 MIGRATION_INTENT_ID = re.compile(r"^MINT-[A-Z][A-Z0-9-]*-[0-9]{3}$")
 WORK_ITEM_ID = re.compile(r"^IOS-[A-Z][A-Z0-9-]*-[0-9]{3}$")
@@ -3253,11 +3260,344 @@ class DemandCompiler:
             },
         }
 
+    def knowledge_publication_plans(self) -> Tuple[DemandPlan, ...]:
+        catalog_path = self.resolve(KNOWLEDGE_CATALOG)
+        if not catalog_path.exists():
+            return ()
+        catalog = _load_object(catalog_path, "KNOWLEDGE_CATALOG")
+        proposal_entries = {
+            (entry.get("id"), entry.get("revision")): entry
+            for entry in catalog.get("proposals", [])
+            if isinstance(entry, dict)
+        }
+        published_entries = {
+            (entry.get("id"), entry.get("revision")): entry
+            for group in ("packets", "architecture_drivers")
+            for entry in catalog.get(group, [])
+            if isinstance(entry, dict)
+        }
+        state = _load_object(self.resolve(STATE_PATH), "STATE")
+        state_items = state.get("work_items", {})
+        if not isinstance(state_items, dict):
+            raise DemandCompilerError("KNOWLEDGE_PUBLICATION_STATE_INVALID")
+
+        migration_records: List[Tuple[Dict[str, Any], str]] = []
+        migration_root = self.resolve(MIGRATION_INTENT_ROOT)
+        if migration_root.is_dir() and not migration_root.is_symlink():
+            for migration_path in sorted(migration_root.glob("*.json")):
+                migration = _load_object(
+                    migration_path,
+                    "KNOWLEDGE_PUBLICATION_MIGRATION",
+                )
+                blueprint_relative = migration.get(
+                    "characterization_blueprint"
+                )
+                if not isinstance(blueprint_relative, str):
+                    continue
+                blueprint = _load_object(
+                    self.resolve(blueprint_relative),
+                    "KNOWLEDGE_PUBLICATION_CHARACTERIZATION",
+                )
+                scenarios = (
+                    blueprint.get("spec", {})
+                    .get("source_lab", {})
+                    .get("scenarios", [])
+                )
+                if (
+                    isinstance(scenarios, list)
+                    and len(scenarios) == 1
+                    and isinstance(scenarios[0], str)
+                ):
+                    migration_records.append((migration, scenarios[0]))
+
+        result: List[DemandPlan] = []
+        work_item_root = self.resolve(WORK_ITEM_ROOT)
+        for work_item_path in sorted(work_item_root.glob("IOS-*.json")):
+            work_item = _load_object(
+                work_item_path,
+                "KNOWLEDGE_PUBLICATION_PRODUCER",
+            )
+            producer_id = work_item.get("metadata", {}).get("id")
+            runtime = state_items.get(producer_id)
+            knowledge = work_item.get("spec", {}).get("knowledge", {})
+            produced = knowledge.get("produces", [])
+            if (
+                not isinstance(producer_id, str)
+                or not isinstance(runtime, dict)
+                or runtime.get("status") != "completed"
+                or knowledge.get("mode") != "produce"
+                or not isinstance(produced, list)
+            ):
+                continue
+            packets = [
+                value
+                for value in produced
+                if isinstance(value, dict)
+                and value.get("kind") == "packet"
+                and isinstance(value.get("id"), str)
+                and value["id"].startswith("BKP-SOURCE-RUNTIME-")
+            ]
+            drivers = [
+                value
+                for value in produced
+                if isinstance(value, dict)
+                and value.get("kind") == "driver"
+            ]
+            if not packets:
+                continue
+            if len(packets) != 1 or len(drivers) != 1:
+                raise DemandCompilerError(
+                    f"KNOWLEDGE_PUBLICATION_BATCH_INVALID:{producer_id}"
+                )
+            packet_ref, driver_ref = packets[0], drivers[0]
+            packet_key = (
+                packet_ref.get("id"),
+                packet_ref.get("revision"),
+            )
+            driver_key = (
+                driver_ref.get("id"),
+                driver_ref.get("revision"),
+            )
+            packet_published = packet_key in published_entries
+            driver_published = driver_key in published_entries
+            if packet_published and driver_published:
+                continue
+            if packet_published != driver_published:
+                raise DemandCompilerError(
+                    f"KNOWLEDGE_PUBLICATION_PARTIAL:{producer_id}"
+                )
+            packet_entry = proposal_entries.get(packet_key)
+            driver_entry = proposal_entries.get(driver_key)
+            if not isinstance(packet_entry, dict) or not isinstance(
+                driver_entry, dict
+            ):
+                raise DemandCompilerError(
+                    f"KNOWLEDGE_PUBLICATION_PROPOSAL_MISSING:{producer_id}"
+                )
+            packet_relative = packet_entry.get("path")
+            driver_relative = driver_entry.get("path")
+            if not isinstance(packet_relative, str) or not isinstance(
+                driver_relative, str
+            ):
+                raise DemandCompilerError(
+                    f"KNOWLEDGE_PUBLICATION_PROPOSAL_INVALID:{producer_id}"
+                )
+            packet = _load_object(
+                self.resolve(packet_relative),
+                "KNOWLEDGE_PUBLICATION_PACKET",
+            )
+            driver = _load_object(
+                self.resolve(driver_relative),
+                "KNOWLEDGE_PUBLICATION_DRIVER",
+            )
+            claims = packet.get("claims", [])
+            runtime_verified = (
+                isinstance(claims, list)
+                and bool(claims)
+                and all(
+                    isinstance(claim, dict)
+                    and claim.get("support", {}).get("state")
+                    == "runtime_verified"
+                    and len(
+                        claim.get("support", {}).get(
+                            "runtime_evidence", []
+                        )
+                    )
+                    == 1
+                    for claim in claims
+                )
+            )
+            if not runtime_verified:
+                continue
+            fixture_ids = {
+                Path(evidence.get("artifact_uri", "")).stem
+                for claim in claims
+                if isinstance(claim, dict)
+                for evidence in claim.get("support", {}).get(
+                    "runtime_evidence", []
+                )
+                if isinstance(evidence, dict)
+            }
+            if (
+                packet.get("created_by") != producer_id
+                or driver.get("created_by") != producer_id
+                or len(fixture_ids) != 1
+            ):
+                raise DemandCompilerError(
+                    f"KNOWLEDGE_PUBLICATION_EVIDENCE_INVALID:{producer_id}"
+                )
+            fixture_id = next(iter(fixture_ids))
+            golden = self.protected_golden_binding(fixture_id)
+            if golden is None:
+                raise DemandCompilerError(
+                    f"KNOWLEDGE_PUBLICATION_GOLDEN_MISSING:{fixture_id}"
+                )
+            migrations = [
+                migration
+                for migration, scenario in migration_records
+                if scenario == fixture_id
+            ]
+            if len(migrations) != 1:
+                raise DemandCompilerError(
+                    f"KNOWLEDGE_PUBLICATION_MIGRATION_AMBIGUOUS:{fixture_id}"
+                )
+            migration = migrations[0]
+            requirement = migration.get("requirement_binding", {})
+            requirement_id = requirement.get("id")
+            requirement_revision = requirement.get("revision")
+            clauses = requirement.get("clauses")
+            if (
+                not isinstance(requirement_id, str)
+                or not isinstance(requirement_revision, int)
+                or not isinstance(clauses, list)
+                or not clauses
+                or any(not isinstance(value, str) for value in clauses)
+            ):
+                raise DemandCompilerError(
+                    f"KNOWLEDGE_PUBLICATION_REQUIREMENT_INVALID:{fixture_id}"
+                )
+            suffix = str(packet_ref["id"]).removeprefix("BKP-")
+            target_id = f"IOS-{suffix}"
+            delivery_intent_id = f"DINT-{suffix}"
+            publication_id = f"KPUB-{suffix}"
+            if (
+                WORK_ITEM_ID.fullmatch(target_id) is None
+                or INTENT_ID.fullmatch(delivery_intent_id) is None
+            ):
+                raise DemandCompilerError(
+                    f"KNOWLEDGE_PUBLICATION_TARGET_INVALID:{producer_id}"
+                )
+            evidence_relative = runtime.get("last_evidence")
+            checkpoint_relative = (
+                f"{CHECKPOINT_ROOT}/{producer_id}.json"
+            )
+            if not isinstance(evidence_relative, str):
+                raise DemandCompilerError(
+                    f"KNOWLEDGE_PUBLICATION_PRODUCER_EVIDENCE_INVALID:{producer_id}"
+                )
+            bound_paths = [
+                packet_relative,
+                driver_relative,
+                golden["release_receipt"],
+                str(migration.get("characterization_blueprint")),
+                checkpoint_relative,
+                evidence_relative,
+                work_item_path.relative_to(self.root).as_posix(),
+            ]
+            self._head_regular(bound_paths)
+            result.append(
+                DemandPlan(
+                    intent_id=publication_id,
+                    priority=int(
+                        work_item.get("metadata", {}).get(
+                            "priority", 0
+                        )
+                    ),
+                    target_work_item_id=target_id,
+                    state="business_knowledge_publisher_required",
+                    reason_code=(
+                        "BUSINESS_KNOWLEDGE_PUBLISHER_REQUIRED"
+                    ),
+                    authority_transition=True,
+                    artifacts=(
+                        {
+                            "kind": "business_knowledge_packet",
+                            "id": packet_key[0],
+                            "revision": packet_key[1],
+                            "status": "proposal_only",
+                            "path": packet_relative,
+                            "sha256": packet_entry.get("sha256"),
+                        },
+                        {
+                            "kind": "business_knowledge_driver",
+                            "id": driver_key[0],
+                            "revision": driver_key[1],
+                            "status": "proposal_only",
+                            "path": driver_relative,
+                            "sha256": driver_entry.get("sha256"),
+                        },
+                        {
+                            "kind": "protected_android_golden",
+                            "id": fixture_id,
+                            "status": "published",
+                            "path": golden["golden_path"],
+                            "sha256": golden["golden_sha256"],
+                            "release_receipt": golden[
+                                "release_receipt"
+                            ],
+                            "release_receipt_sha256": golden[
+                                "release_receipt_sha256"
+                            ],
+                        },
+                    ),
+                    bindings={
+                        "producer": {
+                            "work_item_id": producer_id,
+                            "work_item": work_item_path.relative_to(
+                                self.root
+                            ).as_posix(),
+                            "work_item_sha256": _sha256_json(work_item),
+                            "evidence": evidence_relative,
+                            "evidence_sha256": _sha256(
+                                self.resolve(
+                                    evidence_relative
+                                ).read_bytes()
+                            ),
+                            "checkpoint": checkpoint_relative,
+                            "checkpoint_sha256": _sha256(
+                                self.resolve(
+                                    checkpoint_relative
+                                ).read_bytes()
+                            ),
+                        },
+                        "publication": {
+                            "packet_proposal": packet_relative,
+                            "packet_proposal_sha256": packet_entry[
+                                "sha256"
+                            ],
+                            "driver_proposal": driver_relative,
+                            "driver_proposal_sha256": driver_entry[
+                                "sha256"
+                            ],
+                            "golden_receipt": golden[
+                                "release_receipt"
+                            ],
+                            "golden_receipt_sha256": golden[
+                                "release_receipt_sha256"
+                            ],
+                            "requirement_refs": [
+                                f"{requirement_id}@{requirement_revision}#{clause}"
+                                for clause in sorted(clauses)
+                            ],
+                            "target_work_item_id": target_id,
+                        },
+                        "migration_intent_id": migration.get("id"),
+                        "fixture_id": fixture_id,
+                        "next_delivery_intent_id": delivery_intent_id,
+                        "knowledge_catalog_sha256": _sha256(
+                            catalog_path.read_bytes()
+                        ),
+                    },
+                    policy=KNOWLEDGE_PUBLICATION_POLICY,
+                    intent_kind="business_knowledge_publication",
+                )
+            )
+        return tuple(result)
+
     def plans(
         self,
     ) -> Tuple[Tuple[DemandPlan, ...], Tuple[Mapping[str, Any], ...]]:
         plans: List[DemandPlan] = []
         blockers: List[Mapping[str, Any]] = []
+        try:
+            plans.extend(self.knowledge_publication_plans())
+        except DemandCompilerError as error:
+            blockers.append(
+                {
+                    "intent_kind": "business_knowledge_publication",
+                    "reason_code": str(error),
+                }
+            )
         sources = (
             (INTENT_ROOT, self.compile, "INTENT_ROOT_INVALID", "delivery"),
             (

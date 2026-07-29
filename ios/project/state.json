@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "revision": 515,
+  "revision": 518,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-29T02:20:54Z",
-  "event_head": "dfe7f4b5d2b27018db6e35169b380ea3aebd76a4917f7e2352914be7ad1d6129",
+  "updated_at": "2026-07-29T02:45:04Z",
+  "event_head": "008e0166b8d1a61735e536f39e35342bc230ec27a982315ca18b49af1d8c5cf3",
   "active_work_items": [],
-  "last_completed_work_item": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTO-SCOPE-001",
+  "last_completed_work_item": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTOMATION-001",
   "work_items": {
     "IOS-BOOT-001": {
       "status": "completed",
@@ -9656,9 +9656,85 @@
       "final_tree_sha256": "9f978cd83101dd35893bd73cacab13f81f3892a481e8a9107c2bbe34e9b45f6d"
     },
     "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTOMATION-001": {
-      "status": "ready",
-      "attempt": 0,
-      "last_evidence": null
+      "status": "completed",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260729T024344Z-ios-business-knowledge-publisher-automation-001-f04847f5.json",
+      "claimed_by": "codex-root",
+      "claimed_at": "2026-07-29T02:23:48Z",
+      "lease_expires_at": "2026-07-30T02:23:48Z",
+      "work_item_sha256": "19f8b1d56e5454b9c3dc9df755902901d28dac34e3c386fd3096a1b134cafaab",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "8e71b6518c01967163489ae3aa76ed1a41763979",
+      "base_capability_revision": 78,
+      "base_capability_assurance_sha256": "6c08426cf2cc8f0277426284e00909a10444767bc01eeb84e0db43db8dcbb2ac",
+      "android_requirement_selection_sha256": null,
+      "business_knowledge_control_sha256": "b432003b7d73982a98df286bf685349ff2eb19a05c80800fbb617fa8472cbdba",
+      "business_knowledge_authority_sha256": "9a898622fab665e380b0fdb7837d6aa24f938f5c87e4bc635c32fbdf4dfe81c8",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 1,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "dependency-policy",
+          "argv": [
+            "python3",
+            "ios/harness/probes/dependency_contract.py",
+            "--root",
+            "."
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "eca96cb1b69567829ed8396386b0449da8c0d6e7295a00f1decfb60430ff1153",
+          "cwd": ".",
+          "started_at": "2026-07-29T02:21:15Z",
+          "duration_ms": 715,
+          "timeout_seconds": 90,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "17595a1d68cdc5b52c010f46dff48514afa3fa3cf0215cdea7ae8eff38677c0a",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_tail": "DEPENDENCY_CONTRACT: OK\n",
+          "stderr_tail": ""
+        },
+        {
+          "id": "harness-tests",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "244d512cbdd15fe0c5e35e6d9676510c943b19e9437987c24ac6e627a2e7ad94",
+          "cwd": ".",
+          "started_at": "2026-07-29T02:21:15Z",
+          "duration_ms": 152360,
+          "timeout_seconds": 180,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "c3d8424b37df6912e677faaae121b90f6cbaff5201f1914501e5d7a3dd49ae62",
+          "stdout_tail": "",
+          "stderr_tail": "..................................................................................................................................................................................................................................................................................................\n----------------------------------------------------------------------\nRan 290 tests in 152.184s\n\nOK\n"
+        }
+      ],
+      "last_evidence_sha256": "3de1e242bfc3571a4c0e1c85c9d51cd8abe799d5e4d53a335af1f1d3f20e3b0f",
+      "verified_at": "2026-07-29T02:43:44Z",
+      "completed_at": "2026-07-29T02:45:04Z",
+      "final_tree_sha256": "b5f69e76d05ad6de621e0d082c2d15fa4b374e22f2f1819da31f0716cf129e7e"
     }
   },
   "health": {
@@ -9704,7 +9780,7 @@
     "loop_demand_autonomy": "bound_delivery_blueprint_v1",
     "loop_demand_compiler": "canonical_requirement_binding_v1",
     "knowledge_source_runtime_html_css": "golden_characterized_candidate",
-    "business_knowledge_publisher": "checkout_remote_bound",
+    "business_knowledge_publisher": "scenario_aware_push_v2",
     "knowledge_promotion_context": "receipt_bound",
     "knowledge_publisher_verification": "immutable_commit_before_push",
     "knowledge_publisher_demand_plan": "batch_envelope_bound",
@@ -9750,7 +9826,9 @@
     "golden_consumer_recovery_scope": "exact_v1",
     "protected_golden_consumption": "migration_continuation_v2_recovered",
     "source_runtime_post_form_knowledge": "runtime_verified_proposal_ready",
-    "business_knowledge_publisher_auto_scope": "exact_paths_v1"
+    "business_knowledge_publisher_auto_scope": "exact_paths_v1",
+    "business_knowledge_dispatcher": "result_verified_ff_v1",
+    "business_knowledge_publication_demand": "source_bound_v1"
   },
   "risks": [
     {

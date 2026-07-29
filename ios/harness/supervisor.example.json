@@ -89,6 +89,11 @@
       "enabled": true,
       "repository": "yangtianxiang0313/legado",
       "remote": "origin"
+    },
+    "github_business_knowledge": {
+      "enabled": true,
+      "repository": "yangtianxiang0313/legado",
+      "remote": "origin"
     }
   },
   "agent_invocation": {

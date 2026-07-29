@@ -786,6 +786,161 @@ class MaterializationTests(unittest.TestCase):
             self.assertEqual([], result["transitions"])
             invoke.assert_not_called()
 
+    def test_business_knowledge_plan_maps_to_dedicated_publisher(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            publication = {
+                "packet_proposal": "packet.json",
+                "packet_proposal_sha256": "1" * 64,
+                "driver_proposal": "driver.json",
+                "driver_proposal_sha256": "2" * 64,
+                "golden_receipt": "golden.json",
+                "golden_receipt_sha256": "3" * 64,
+                "requirement_refs": ["REQ-X@1#RC-01"],
+                "target_work_item_id": "IOS-SOURCE-RUNTIME-X-001",
+            }
+            producer = {"work_item_id": "IOS-KNOWLEDGE-X-001"}
+            plan = loop_supervisor.DemandPlan(
+                intent_id="KPUB-SOURCE-RUNTIME-X-001",
+                priority=100,
+                target_work_item_id="IOS-SOURCE-RUNTIME-X-001",
+                state="business_knowledge_publisher_required",
+                reason_code="BUSINESS_KNOWLEDGE_PUBLISHER_REQUIRED",
+                authority_transition=True,
+                artifacts=(),
+                bindings={
+                    "publication": publication,
+                    "producer": producer,
+                    "fixture_id": "sl-x-001",
+                    "migration_intent_id": "MINT-X-001",
+                    "next_delivery_intent_id": (
+                        "DINT-SOURCE-RUNTIME-X-001"
+                    ),
+                },
+                policy="source-bound-knowledge-publication-v1",
+                intent_kind="business_knowledge_publication",
+            )
+            supervisor = loop_supervisor.LoopSupervisor(
+                fixture.harness
+            )
+            with mock.patch.object(
+                loop_supervisor.DemandCompiler,
+                "plans",
+                return_value=((plan,), ()),
+            ):
+                decision = supervisor._demand_decision([])
+            self.assertEqual(
+                "external_knowledge_publisher_required",
+                decision.state,
+            )
+            self.assertFalse(decision.requires_human)
+            binding = decision.details["knowledge_publication"]
+            self.assertEqual(plan.intent_id, binding["intent_id"])
+            self.assertEqual(publication["packet_proposal"], binding[
+                "packet_proposal"
+            ])
+            self.assertEqual(producer, binding["producer"])
+            self.assertEqual(
+                "DINT-SOURCE-RUNTIME-X-001",
+                binding["next_delivery_intent_id"],
+            )
+
+    def test_enabled_knowledge_publisher_never_invokes_agent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            supervisor = loop_supervisor.LoopSupervisor(
+                fixture.harness
+            )
+            config = Path(directory) / "supervisor.json"
+            config.write_text(
+                json.dumps(
+                    {
+                        "external_execution": {
+                            "github_business_knowledge": {
+                                "enabled": True,
+                                "repository": "owner/legado",
+                                "remote": "origin",
+                            }
+                        }
+                    }
+                )
+            )
+            binding = {
+                "intent_id": "KPUB-SOURCE-RUNTIME-X-001",
+                "target_work_item_id": "IOS-SOURCE-RUNTIME-X-001",
+                "packet_proposal": (
+                    "ios/project/business-knowledge/packets/proposals/"
+                    "BKP-SOURCE-RUNTIME-X-001/r0001.json"
+                ),
+                "packet_proposal_sha256": "1" * 64,
+                "driver_proposal": (
+                    "ios/project/business-knowledge/drivers/proposals/"
+                    "DRV-SOURCE-RUNTIME-X-001/r0001.json"
+                ),
+                "driver_proposal_sha256": "2" * 64,
+                "golden_receipt": (
+                    "ios/harness/goldens/releases/sl-x-001-1-1.json"
+                ),
+                "golden_receipt_sha256": "3" * 64,
+                "requirement_refs": ["REQ-X@1#RC-01"],
+                "producer": {
+                    "work_item": (
+                        "ios/harness/work-items/"
+                        "IOS-KNOWLEDGE-X-001.json"
+                    ),
+                    "work_item_sha256": "4" * 64,
+                    "evidence": (
+                        "ios/harness/evidence/runs/run-x.json"
+                    ),
+                    "evidence_sha256": "5" * 64,
+                    "checkpoint": (
+                        "ios/project/checkpoints/"
+                        "IOS-KNOWLEDGE-X-001.json"
+                    ),
+                    "checkpoint_sha256": "6" * 64,
+                },
+                "next_delivery_intent_id": (
+                    "DINT-SOURCE-RUNTIME-X-001"
+                ),
+            }
+            decision = loop_supervisor.LoopDecision(
+                state="external_knowledge_publisher_required",
+                reason_code="BUSINESS_KNOWLEDGE_PUBLISHER_REQUIRED",
+                work_item_id="IOS-SOURCE-RUNTIME-X-001",
+                requires_human=False,
+                details={"knowledge_publication": binding},
+            )
+            dispatched = {
+                "schema_version": 1,
+                "outcome": "pending",
+            }
+            with mock.patch.object(
+                supervisor, "inspect", return_value=decision
+            ), mock.patch.object(
+                supervisor, "_invoke_agent_phase"
+            ) as invoke, mock.patch.object(
+                fixture.harness,
+                "git_head",
+                return_value="a" * 40,
+            ), mock.patch.object(
+                loop_supervisor
+                .GitHubBusinessKnowledgePublisherDispatcher,
+                "dispatch",
+                return_value=dispatched,
+            ) as dispatch:
+                result = supervisor.drive(
+                    config_path=config,
+                    agent_id="test-agent",
+                    max_transitions=1,
+                )
+            self.assertEqual("pending", result["outcome"])
+            self.assertEqual(
+                dispatched,
+                result["external_knowledge_publisher"],
+            )
+            dispatch.assert_called_once_with()
+            invoke.assert_not_called()
+
     def test_enabled_external_publisher_dispatches_and_never_invokes_agent(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = MaterializationFixture(Path(directory))

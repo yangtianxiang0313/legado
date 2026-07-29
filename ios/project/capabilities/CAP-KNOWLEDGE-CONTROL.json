@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 78,
+  "revision": 79,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -63,7 +63,7 @@
   "depends_on": ["CAP-BOOTSTRAP"],
   "active_decisions": ["ADR-0004"],
   "open_compatibility": [],
-  "open_pitfalls": ["PIT-0012", "PIT-0016", "PIT-0061", "PIT-0062", "PIT-0064", "PIT-0067", "PIT-0068", "PIT-0069"],
+  "open_pitfalls": ["PIT-0012", "PIT-0016", "PIT-0061", "PIT-0062", "PIT-0064", "PIT-0067", "PIT-0068", "PIT-0069", "PIT-0070"],
   "blockers": [],
   "required_evidence": ["harness-tests", "dependency-policy", "architecture"],
   "freshness_inputs": [
@@ -72,13 +72,13 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260729T021747Z-ios-business-knowledge-publisher-auto-scope-001-d305e002.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260729T024344Z-ios-business-knowledge-publisher-automation-001-f04847f5.json",
   "next_actions": [
-    "实现无人工 Gate、场景化、push-triggered 的 Business Knowledge Publisher 与专用 Dispatcher",
-    "由 Loop 自动发现并发布 POST Form Packet/Driver，再独立验证结果事务并受限快进",
+    "在干净提交上执行真实 GitHub Business Knowledge Dispatcher 并发布 POST Form Packet/Driver",
+    "验证 result branch、Artifact 与本地受限快进后 publication plan 自动退出",
     "从已发布 POST Form 知识生成独立 SourceRuntime Delivery Intent 与完整蓝图",
     "用 canonical RequestPlan、Android expected、iOS actual 和 first-divergence 完成结构化验收"
   ],
-  "updated_at": "2026-07-29T02:17:47Z",
-  "updated_by": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTO-SCOPE-001"
+  "updated_at": "2026-07-29T02:43:44Z",
+  "updated_by": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTOMATION-001"
 }

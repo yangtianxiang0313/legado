@@ -63,6 +63,11 @@ try:
         GitHubGoldenPublisherDispatcher,
         GitHubGoldenPublisherError,
     )
+    from .github_business_knowledge_publisher import (
+        WORKFLOW_PATH as KNOWLEDGE_PUBLISHER_WORKFLOW_PATH,
+        GitHubBusinessKnowledgePublisherDispatcher,
+        GitHubBusinessKnowledgePublisherError,
+    )
 except ImportError:
     from approval_ui import (  # type: ignore
         LOOPBACK_HOST,
@@ -102,6 +107,11 @@ except ImportError:
         WORKFLOW_PATH as GOLDEN_PUBLISHER_WORKFLOW_PATH,
         GitHubGoldenPublisherDispatcher,
         GitHubGoldenPublisherError,
+    )
+    from github_business_knowledge_publisher import (  # type: ignore
+        WORKFLOW_PATH as KNOWLEDGE_PUBLISHER_WORKFLOW_PATH,
+        GitHubBusinessKnowledgePublisherDispatcher,
+        GitHubBusinessKnowledgePublisherError,
     )
 
 
@@ -2623,6 +2633,9 @@ class LoopSupervisor:
             "trusted_oracle_golden_publisher_required": (
                 "external_publisher_required"
             ),
+            "business_knowledge_publisher_required": (
+                "external_knowledge_publisher_required"
+            ),
         }
         if plan.state not in state_mapping:
             return LoopDecision(
@@ -2651,6 +2664,22 @@ class LoopSupervisor:
             details["external_publisher"] = dict(
                 plan.bindings.get("trusted_oracle_execution", {})
             )
+        if plan.state == "business_knowledge_publisher_required":
+            details["knowledge_publication"] = {
+                "intent_id": plan.intent_id,
+                "target_work_item_id": plan.target_work_item_id,
+                **dict(plan.bindings.get("publication", {})),
+                "producer": dict(
+                    plan.bindings.get("producer", {})
+                ),
+                "fixture_id": plan.bindings.get("fixture_id"),
+                "migration_intent_id": plan.bindings.get(
+                    "migration_intent_id"
+                ),
+                "next_delivery_intent_id": plan.bindings.get(
+                    "next_delivery_intent_id"
+                ),
+            }
         return LoopDecision(
             state=state_mapping[plan.state],
             reason_code=plan.reason_code,
@@ -3893,6 +3922,61 @@ class LoopSupervisor:
         except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
             raise LoopSupervisorError(f"Supervisor config 无效：{error}") from error
         initial_decision = self.inspect()
+        if initial_decision.state == "external_knowledge_publisher_required":
+            external_config = config.get("external_execution")
+            github_config = (
+                external_config.get("github_business_knowledge")
+                if isinstance(external_config, dict)
+                else None
+            )
+            if (
+                isinstance(github_config, dict)
+                and github_config.get("enabled") is True
+            ):
+                details = (
+                    initial_decision.details
+                    if isinstance(initial_decision.details, Mapping)
+                    else {}
+                )
+                binding = details.get("knowledge_publication", {})
+                try:
+                    external_result = (
+                        GitHubBusinessKnowledgePublisherDispatcher(
+                            self.harness.root,
+                            repository=github_config.get("repository"),
+                            workflow_path=(
+                                KNOWLEDGE_PUBLISHER_WORKFLOW_PATH
+                            ),
+                            batch_id=binding.get("intent_id"),
+                            source_sha=self.harness.git_head(),
+                            remote=github_config.get("remote"),
+                            publication=binding,
+                            producer=binding.get("producer", {}),
+                            next_delivery_intent_id=binding.get(
+                                "next_delivery_intent_id"
+                            ),
+                        ).dispatch()
+                    )
+                except GitHubBusinessKnowledgePublisherError as error:
+                    raise LoopSupervisorError(str(error)) from error
+                result = {
+                    "schema_version": SCHEMA_VERSION,
+                    "outcome": external_result["outcome"],
+                    "decision": initial_decision.to_dict(),
+                    "external_knowledge_publisher": external_result,
+                    "transitions": [],
+                }
+                if external_result["outcome"] == "settled":
+                    result["continuation_decision"] = (
+                        self.inspect().to_dict()
+                    )
+                return result
+            return {
+                "schema_version": SCHEMA_VERSION,
+                "outcome": initial_decision.reason_code.lower(),
+                "decision": initial_decision.to_dict(),
+                "transitions": [],
+            }
         if initial_decision.state == "external_publisher_required":
             external_config = config.get("external_execution")
             github_config = (

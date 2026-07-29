@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0070",
+  "revision": 1,
+  "title": "动态发布输入不能由 workflow_dispatch 与硬编码路径充当权威",
+  "fingerprint": "publisher-dynamic-inputs-not-bound-by-request-commit",
+  "capabilities": [
+    "CAP-KNOWLEDGE-CONTROL"
+  ],
+  "symptoms": [
+    "同一个 Business Knowledge Workflow 只能发布固定 HTML/CSS Packet、Driver、Golden 和目标分支，新增 POST Form 后无法复用",
+    "Loop 完成知识 producer 后进入 queue_empty，无法从 proposal、Golden 与 Migration Intent 自动得出下一发布需求",
+    "workflow_dispatch 输入、Environment 批准或 PR 只能证明有人触发，不能独立证明发布参数来自当前 source HEAD",
+    "本地若只相信 settled journal，远端 result branch 或 Artifact 漂移后仍可能接受历史结论"
+  ],
+  "conditions": [
+    "发布目标随知识批次变化，但 Workflow 将路径、Requirement clauses 或目标 WorkItem 写死",
+    "动态参数仅存在于 API 调用或人工界面，没有进入 Git commit/tree authority",
+    "外部 Workflow 需要产生可快进结果，同时请求元数据不应永久污染目标工作树"
+  ],
+  "root_cause": "旧发布链把调度方式误当成输入权威：workflow_dispatch、Environment 与 PR 能控制谁触发，却不能把 producer、proposal、Golden、Requirement 和目标 WorkItem 原子绑定到 source commit。结果是场景扩展依赖继续复制 Workflow，Loop 也没有可重放的机器需求。",
+  "diagnosis": [
+    "检查 Workflow 是否包含固定 Packet/Driver/Golden 路径、固定目标分支或固定 Requirement clauses",
+    "确认发布 Run 的 head SHA 是否包含完整 canonical request，而不是只指向不携带参数的 source HEAD",
+    "分别比较 source→request、request→result、source→result 三组 commit delta，确认 request manifest 是唯一临时输入且 result 将其删除",
+    "删除或篡改本地 journal，确认 Dispatcher 仍从远端唯一 Run、Artifact、result ref 和 Git objects 推导结论"
+  ],
+  "fix": "DemandCompiler 新增 source-bound-knowledge-publication-v1，唯一联结 completed producer、runtime_verified proposal、共同 protected Golden、Android Migration Intent、accepted Requirement clauses 与未来目标 WorkItem。Dispatcher 创建 source HEAD 的唯一子 request commit，只增加 canonical manifest；push-only Workflow 从 manifest staging 并安装精确 transaction，result commit 作为 request 的唯一子提交删除 manifest。Dispatcher 复验 Run、Artifact、transaction/report、双层 parent/diff、Git object 摘要与 proposal 删除后才 ff-only；journal 仅用于崩溃定位，merged replay 仍重查远端 authority。",
+  "prevention": {
+    "architecture_rule": "任何参数化外部发布都必须把完整输入与摘要放入内容寻址 request commit；result 必须显式移除临时 request，并由独立消费者验证 source→request→result 亲缘、净变化和远端执行证明。调度 API、Environment、PR 和本地 journal 均不得替代输入或结果权威。",
+    "tests": [
+      "ios/harness/tests/test_demand_compiler.py#KnowledgePublicationDemandRegressionTests",
+      "ios/harness/tests/test_github_business_knowledge_publisher.py",
+      "ios/harness/tests/test_business_knowledge_publisher.py#test_workflow_is_push_only_content_addressed_and_result_bound",
+      "ios/harness/tests/test_loop_supervisor.py#test_enabled_knowledge_publisher_never_invokes_agent"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-001",
+    "until": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTOMATION-001"
+  },
+  "status": "mitigated",
+  "occurrences": 1,
+  "first_seen": "2026-07-29",
+  "last_seen": "2026-07-29",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260729T024344Z-ios-business-knowledge-publisher-automation-001-f04847f5.json"
+  ]
+}

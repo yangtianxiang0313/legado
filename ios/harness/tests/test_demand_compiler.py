@@ -45,6 +45,44 @@ class OracleReceiptDigestRegressionTests(unittest.TestCase):
         )
 
 
+class KnowledgePublicationDemandRegressionTests(unittest.TestCase):
+    def test_real_post_form_producer_compiles_source_bound_publication(self):
+        root = HARNESS_ROOT.parents[1]
+        plans = demand_compiler.DemandCompiler(
+            root
+        ).knowledge_publication_plans()
+        plan = next(
+            value
+            for value in plans
+            if value.intent_id
+            == "KPUB-SOURCE-RUNTIME-POST-FORM-001"
+        )
+        self.assertEqual(
+            "business_knowledge_publisher_required",
+            plan.state,
+        )
+        self.assertEqual(
+            "IOS-SOURCE-RUNTIME-POST-FORM-001",
+            plan.target_work_item_id,
+        )
+        self.assertEqual(
+            "MINT-SOURCE-REQUEST-POST-FORM-001",
+            plan.bindings["migration_intent_id"],
+        )
+        self.assertEqual(
+            "DINT-SOURCE-RUNTIME-POST-FORM-001",
+            plan.bindings["next_delivery_intent_id"],
+        )
+        self.assertEqual(
+            ["REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01"],
+            plan.bindings["publication"]["requirement_refs"],
+        )
+        self.assertEqual(
+            "sl-post-form-001",
+            plan.bindings["fixture_id"],
+        )
+
+
 class DemandFixture:
     intent_id = "DINT-TEST-DELIVERY-001"
     target_id = "IOS-TEST-DELIVERY-001"

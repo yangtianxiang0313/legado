@@ -382,6 +382,19 @@ Publisher、专用 Dispatcher、Demand/Supervisor、示例配置、对应测试/
 release、Requirement、Golden、ADR、Package 或产品；这些 authority 只能由外部
 Publisher 的内容寻址结果事务产生，再由 Dispatcher 独立验证并受限快进。
 
+DemandCompiler 的 `source-bound-knowledge-publication-v1` 会枚举已完成的知识 producer，
+但只选择 Packet/Driver 同批、全部 Claim 为 `runtime_verified`、共同绑定唯一 protected
+Golden、且该 fixture 能唯一联结 Android Migration Intent 与 accepted Requirement
+clauses 的批次。计划同时冻结未来目标 Work Item 和 Delivery Intent ID；缺失、部分发布、
+多 Golden、多 Migration 或摘要漂移都会 fail closed，不会退回人工选择。
+
+Supervisor 对 `business_knowledge_publisher_required` 只调用专用 GitHub Dispatcher，
+不会启动 Agent。request commit 只增加 canonical manifest；result commit 必须是 request
+commit 的唯一子提交并删除 manifest，source 到 result 的净变化只能是 transaction 的五个
+安装路径和两个 proposal 删除。Dispatcher 在快进前后分别验证远端权威与本地 doctor；
+`verified/settled` journal 只用于崩溃定位，恢复时仍重新查询 Run、Artifact、result ref
+和 Git objects。
+
 ## Codex exec Agent Adapter
 
 `codex_agent_adapter.py` 是 Loop Supervisor 的 Codex CLI argv adapter。它使用稳定的
