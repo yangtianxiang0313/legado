@@ -136,6 +136,8 @@ class LegadoOracleInstrumentedTest {
                 runRuleCombinationCases()
             "sl-source-rule-dom-selector-backends-001" ->
                 runDOMSelectorBackendCases()
+            "sl-source-rule-jsonpath-regex-backends-001" ->
+                runJSONPathRegexBackendCases()
             "sl-content-cache-queue-completion-runtime-001" ->
                 runContentCacheQueueCompletionCases()
             else -> {
@@ -940,6 +942,33 @@ class LegadoOracleInstrumentedTest {
         }
     }
 
+    private suspend fun runJSONPathRegexBackendCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            require(
+                value.getString("operation") ==
+                    "jsonpath_regex_backends"
+            ) {
+                "JSONPath/Regex scenario only accepts " +
+                    "jsonpath_regex_backends stimuli"
+            }
+            val requestValue = value.getJSONObject("request")
+            val request = request(
+                deviceOrigin + requestValue.getString("target")
+            )
+            runCase(
+                value.getString("id"),
+                "jsonpath_regex_backends",
+                request
+            ) {
+                jsonPathRegexProjection(
+                    value.getJSONObject("arguments")
+                )
+            }
+        }
+    }
+
     private suspend fun runContentCacheQueueCompletionCases() {
         val values = input.getJSONArray("cases")
         for (index in 0 until values.length()) {
@@ -1580,6 +1609,233 @@ class LegadoOracleInstrumentedTest {
             xpathNamespaceFunctionProjection(arguments)
         "xpath_failure" -> xpathFailureProjection(arguments)
         else -> error("Unsupported DOM selector mode: $mode")
+    }
+
+    private fun jsonPathRegexProjection(
+        arguments: JSONObject
+    ): JSONObject = when (val mode = arguments.getString("mode")) {
+        "jsonpath_matrix" -> jsonPathMatrixProjection(
+            arguments.getString("content"),
+            arguments.getJSONObject("rules")
+        )
+        "jsonpath_object_input" -> jsonPathMatrixProjection(
+            GSON.fromJson(
+                arguments.getJSONObject("content_object").toString(),
+                Any::class.java
+            ),
+            arguments.getJSONObject("rules")
+        )
+        "jsonpath_failure" -> jsonPathFailureProjection(arguments)
+        "regex_capture" -> regexCaptureProjection(arguments)
+        "regex_replacement" -> regexReplacementProjection(arguments)
+        "regex_failure" -> regexFailureProjection(arguments)
+        else -> error("Unsupported JSONPath/Regex mode: $mode")
+    }
+
+    private fun jsonPathMatrixProjection(
+        content: Any,
+        rules: JSONObject
+    ): JSONObject = JSONObject().apply {
+        val keys = rules.keys().asSequence().toList().sorted()
+        keys.forEach { key ->
+            val rule = rules.getString(key)
+            put(
+                key,
+                JSONObject()
+                    .put(
+                        "string",
+                        stringOutcome {
+                            AnalyzeRule().setContent(content)
+                                .getString(rule)
+                        }
+                    )
+                    .put(
+                        "list",
+                        stringListOutcome {
+                            AnalyzeRule().setContent(content)
+                                .getStringList(rule)
+                        }
+                    )
+                    .put(
+                        "element",
+                        anyOutcome {
+                            AnalyzeRule().setContent(content)
+                                .getElement(rule)
+                        }
+                    )
+                    .put(
+                        "elements",
+                        anyOutcome {
+                            AnalyzeRule().setContent(content)
+                                .getElements(rule)
+                        }
+                    )
+            )
+        }
+    }
+
+    private fun jsonPathFailureProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val rules = JSONObject()
+            .put("missing", arguments.getString("missing_rule"))
+            .put("null", arguments.getString("null_rule"))
+            .put("malformed", arguments.getString("malformed_rule"))
+        return jsonPathMatrixProjection(
+            arguments.getString("content"),
+            rules
+        )
+    }
+
+    private fun regexCaptureProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val content = arguments.getString("content")
+        val rules = arguments.getJSONObject("rules")
+        return JSONObject().apply {
+            val keys = rules.keys().asSequence().toList().sorted()
+            keys.forEach { key ->
+                val rule = rules.getString(key)
+                put(
+                    key,
+                    JSONObject()
+                        .put(
+                            "element",
+                            anyOutcome {
+                                AnalyzeRule().setContent(content)
+                                    .getElement(rule)
+                            }
+                        )
+                        .put(
+                            "elements",
+                            anyOutcome {
+                                AnalyzeRule().setContent(content)
+                                    .getElements(rule)
+                            }
+                        )
+                )
+            }
+        }
+    }
+
+    private fun regexReplacementProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val content = arguments.getString("content")
+        val rules = arguments.getJSONObject("rules")
+        return JSONObject().apply {
+            val keys = rules.keys().asSequence().toList().sorted()
+            keys.forEach { key ->
+                val rule = rules.getString(key)
+                put(
+                    key,
+                    JSONObject()
+                        .put(
+                            "string",
+                            stringOutcome {
+                                AnalyzeRule().setContent(content)
+                                    .getString(rule)
+                            }
+                        )
+                        .put(
+                            "list",
+                            stringListOutcome {
+                                AnalyzeRule().setContent(content)
+                                    .getStringList(rule)
+                            }
+                        )
+                )
+            }
+        }
+    }
+
+    private fun regexFailureProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val content = arguments.getString("content")
+        val malformed = arguments.getString("malformed_capture_rule")
+        val optional = arguments.getString("optional_single_rule")
+        return JSONObject()
+            .put(
+                "malformed_capture",
+                JSONObject()
+                    .put(
+                        "element",
+                        anyOutcome {
+                            AnalyzeRule().setContent(content)
+                                .getElement(malformed)
+                        }
+                    )
+                    .put(
+                        "elements",
+                        anyOutcome {
+                            AnalyzeRule().setContent(content)
+                                .getElements(malformed)
+                        }
+                    )
+            )
+            .put(
+                "optional_single",
+                anyOutcome {
+                    AnalyzeRule().setContent(content)
+                        .getElement(optional)
+                }
+            )
+            .put(
+                "invalid_replace_all",
+                stringOutcome {
+                    AnalyzeRule().setContent(content).getString(
+                        arguments.getString("invalid_replace_all_rule")
+                    )
+                }
+            )
+            .put(
+                "invalid_replace_first",
+                stringOutcome {
+                    AnalyzeRule().setContent(content).getString(
+                        arguments.getString("invalid_replace_first_rule")
+                    )
+                }
+            )
+    }
+
+    private fun anyOutcome(block: () -> Any?): JSONObject =
+        runCatching(block).fold(
+            onSuccess = { value ->
+                JSONObject()
+                    .put("completed", true)
+                    .put("value", stableAny(value))
+                    .put("exception_type", JSONObject.NULL)
+            },
+            onFailure = { error ->
+                JSONObject()
+                    .put("completed", false)
+                    .put("value", JSONObject.NULL)
+                    .put("exception_type", error.javaClass.name)
+            }
+        )
+
+    private fun stableAny(value: Any?): Any = when (value) {
+        null -> JSONObject.NULL
+        is Map<*, *> -> JSONObject().apply {
+            value.keys
+                .map { it.toString() }
+                .sorted()
+                .forEach { key ->
+                    put(key, stableAny(value[key]))
+                }
+        }
+        is Iterable<*> -> JSONArray().apply {
+            value.forEach { item -> put(stableAny(item)) }
+        }
+        is Array<*> -> JSONArray().apply {
+            value.forEach { item -> put(stableAny(item)) }
+        }
+        is String, is Number, is Boolean -> value
+        else -> JSONObject()
+            .put("type", value.javaClass.name)
+            .put("rendered", value.toString())
+            .put("json", GSON.toJson(value))
     }
 
     private fun cssStringProjection(arguments: JSONObject): JSONObject =

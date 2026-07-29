@@ -409,6 +409,63 @@ SCENARIO_CONTRACTS = {
             "xpath-empty-and-malformed-expression",
         }),
     },
+    "sl-source-rule-jsonpath-regex-backends-001": {
+        "status": "candidate",
+        "expected_cases": (
+            (
+                "jsonpath-scalars-and-null",
+                "jsonpath_regex_backends",
+            ),
+            (
+                "jsonpath-filter-recursive-slice",
+                "jsonpath_regex_backends",
+            ),
+            (
+                "jsonpath-combination-and-interpolation",
+                "jsonpath_regex_backends",
+            ),
+            (
+                "jsonpath-object-input",
+                "jsonpath_regex_backends",
+            ),
+            (
+                "jsonpath-missing-null-malformed",
+                "jsonpath_regex_backends",
+            ),
+            (
+                "regex-single-capture-and-chain",
+                "jsonpath_regex_backends",
+            ),
+            (
+                "regex-list-optional-unicode-zero-width",
+                "jsonpath_regex_backends",
+            ),
+            (
+                "regex-replacement-all-first-groups",
+                "jsonpath_regex_backends",
+            ),
+            (
+                "regex-replacement-after-json-list",
+                "jsonpath_regex_backends",
+            ),
+            (
+                "regex-malformed-boundaries",
+                "jsonpath_regex_backends",
+            ),
+        ),
+        "nominal_cases": frozenset({
+            "jsonpath-scalars-and-null",
+            "jsonpath-filter-recursive-slice",
+            "jsonpath-combination-and-interpolation",
+            "jsonpath-object-input",
+            "jsonpath-missing-null-malformed",
+            "regex-single-capture-and-chain",
+            "regex-list-optional-unicode-zero-width",
+            "regex-replacement-all-first-groups",
+            "regex-replacement-after-json-list",
+            "regex-malformed-boundaries",
+        }),
+    },
     "sl-content-cache-queue-completion-runtime-001": {
         "status": "candidate",
         "expected_cases": (

@@ -2,9 +2,153 @@
   "schema_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
   "android_tree": "c81f5d383116e37c1eefee3eb86654514e82022b",
-  "control_sha256": "307b6a8700e2d9303387591da2c486cf6e0a657b25618ae2bdec4cf4f876762c",
-  "policy_sha256": "347adddda5365db4a6664622c306003ba9f32d5dbb147296e0fc6d7b60332a47",
+  "control_sha256": "015b0f516ef1b60d2d085bb1e13a720385e45cd43075d831b9c9849cd11284ee",
+  "policy_sha256": "adc745714a7225abe7ad0e00847c4a620d10d988629d189b085507e60ca8d1f9",
   "facts": [
+    {
+      "id": "AF-ANALYZE-JSONPATH-GET-LIST",
+      "fact_key": "source.rule.jsonpath.get-list",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeByJSonPath/getList",
+      "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByJSonPath.kt",
+      "git_blob": "71d9006ce17a96f2e9db9c9288047f2a66bf2c28",
+      "source_sha256": "4d9e99a41586a27e21c329474702a65a2da26029a1739f22b156ac4ba1c71d59",
+      "start_line": 129,
+      "end_line": 170,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "getList",
+        "signature": "fun getList(rule: String): ArrayList<Any>?",
+        "body_semantic_sha256": "acdc0e80f69d5fd0657a8581de4aa21a5c7bc924028dbabcf7f319d9bc0ccd4b"
+      },
+      "revision_sha256": "a6094969bcfc855ce7811dce94fd2bd79498a5a84a366bef79cfe2a744627016",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-ANALYZE-JSONPATH-GET-OBJECT",
+      "fact_key": "source.rule.jsonpath.get-object",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeByJSonPath/getObject",
+      "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByJSonPath.kt",
+      "git_blob": "71d9006ce17a96f2e9db9c9288047f2a66bf2c28",
+      "source_sha256": "4d9e99a41586a27e21c329474702a65a2da26029a1739f22b156ac4ba1c71d59",
+      "start_line": 125,
+      "end_line": 127,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "getObject",
+        "signature": "fun getObject(rule: String): Any",
+        "body_semantic_sha256": "a3f6df4a610a98bba1eddea68e4c990661de48e1ad7d58332c17e31536ae7fe6"
+      },
+      "revision_sha256": "e0225b6e6cdeba5d82c7929bb109be08208183dc73ea0c28eb43b802a78daf58",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-ANALYZE-JSONPATH-GET-STRING",
+      "fact_key": "source.rule.jsonpath.get-string",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeByJSonPath/getString",
+      "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByJSonPath.kt",
+      "git_blob": "71d9006ce17a96f2e9db9c9288047f2a66bf2c28",
+      "source_sha256": "4d9e99a41586a27e21c329474702a65a2da26029a1739f22b156ac4ba1c71d59",
+      "start_line": 31,
+      "end_line": 69,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "getString",
+        "signature": "fun getString(rule: String): String?",
+        "body_semantic_sha256": "fed9ff9da88248a535cde885bd81726cdc48453f13d36169348bf4ed3cd5d1a7"
+      },
+      "revision_sha256": "f1089b74990b751f68d8c02dbd73d110b9d3f840f046117bf568bc20165701e2",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-ANALYZE-JSONPATH-GET-STRING-LIST",
+      "fact_key": "source.rule.jsonpath.get-string-list",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeByJSonPath/getStringList",
+      "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByJSonPath.kt",
+      "git_blob": "71d9006ce17a96f2e9db9c9288047f2a66bf2c28",
+      "source_sha256": "4d9e99a41586a27e21c329474702a65a2da26029a1739f22b156ac4ba1c71d59",
+      "start_line": 71,
+      "end_line": 123,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "getStringList",
+        "signature": "fun getStringList(rule: String): List<String>",
+        "body_semantic_sha256": "0b6b8d586407ffc5a2842da3b61aefe95533465de1d587d539d56568fde6f04d"
+      },
+      "revision_sha256": "036ec6e78f173a0b0ca0df2007d365d42832be0e1b4015d666b8b22a25bc7a38",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-ANALYZE-REGEX-GET-ELEMENT",
+      "fact_key": "source.rule.regex.get-element",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeByRegex/getElement",
+      "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByRegex.kt",
+      "git_blob": "7e41eba6a3967746338f12a22ef4ea64dee8254e",
+      "source_sha256": "b3d8e3266516415ecd0709cca952965704898682ef61179ddff383ef27e0c321",
+      "start_line": 9,
+      "end_line": 30,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "getElement",
+        "signature": "fun getElement(res: String, regs: Array<String>, index: Int = 0): List<String>?",
+        "body_semantic_sha256": "c110a9850a7c4129063278fb8c5f70bdb87f532c3b7072c023bc764a51440b88"
+      },
+      "revision_sha256": "313b25926a636f1f9321a093cc7295158862736d012589d1a5a19f161c225271",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-ANALYZE-REGEX-GET-ELEMENTS",
+      "fact_key": "source.rule.regex.get-elements",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeByRegex/getElements",
+      "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByRegex.kt",
+      "git_blob": "7e41eba6a3967746338f12a22ef4ea64dee8254e",
+      "source_sha256": "b3d8e3266516415ecd0709cca952965704898682ef61179ddff383ef27e0c321",
+      "start_line": 32,
+      "end_line": 59,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "getElements",
+        "signature": "fun getElements(res: String, regs: Array<String>, index: Int = 0): List<List<String>>",
+        "body_semantic_sha256": "58a38e538fc16e7ed71479fc9ee4642fc91edee2eddd805c26aeebf7321dcf29"
+      },
+      "revision_sha256": "580837043e6dd29568b8bd5575feb12323a3f78676e0455df465c541f0a38a6f",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
     {
       "id": "AF-ANALYZE-RULE-GET-STRING",
       "fact_key": "source.rule.get-string",
@@ -49,6 +193,30 @@
         "body_semantic_sha256": "51d6c310151be82377998faf3c751d4036fdd0494e36acd3a2fcb0d98f8a2280"
       },
       "revision_sha256": "fb7aa8c348c0ad505fd631728337c6cb098dea4b9ba3482ee68acc32c49be8bc",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-ANALYZE-RULE-REPLACE-REGEX",
+      "fact_key": "source.rule.regex.replace",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeRule/replaceRegex",
+      "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt",
+      "git_blob": "7bb96778bbf33c5277867cd8a1e8db6ea19090df",
+      "source_sha256": "d2aca9c407aef4aebc3cb83c858ed92d68860600bfbd6236d25fb48fe3ce8ba1",
+      "start_line": 422,
+      "end_line": 447,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "replaceRegex",
+        "signature": "fun replaceRegex(result: String, rule: SourceRule): String",
+        "body_semantic_sha256": "a42025607b7d31befaf05307881fd09444ca55b91f641e0fae1887ebf85e87fc"
+      },
+      "revision_sha256": "543ee75933f9cdb84e6338baf78a1231709d00787f57f68e8637b53bbb968372",
       "maps_to": [
         "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
       ]

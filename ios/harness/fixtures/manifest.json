@@ -94,6 +94,11 @@
       "sha256": "d63fa1534e3172bd9ac17cbff7370fae6ce5d286e5395880087c237b9a69b2ba"
     },
     {
+      "id": "sl-source-rule-jsonpath-regex-backends-001",
+      "path": "ios/harness/fixtures/source-lab/sl-source-rule-jsonpath-regex-backends-001",
+      "sha256": "5a88c3f0b5dcdeef13e7da7f1e12416d7bcfe3be64cfd4ec372927a79d9361ac"
+    },
+    {
       "id": "sl-source-session-rate-limit-shared-state-001",
       "path": "ios/harness/fixtures/source-lab/sl-source-session-rate-limit-shared-state-001",
       "sha256": "bb8f016150201999baa6de04736e9dff94bbc8d3f06852a188262e4d516ac625"

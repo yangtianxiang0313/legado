@@ -266,6 +266,90 @@
       "symbol": "getStringList",
       "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeRule/getStringList",
       "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-ANALYZE-JSONPATH-GET-STRING",
+      "fact_key": "source.rule.jsonpath.get-string",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByJSonPath.kt",
+      "symbol": "getString",
+      "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeByJSonPath/getString",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-ANALYZE-JSONPATH-GET-STRING-LIST",
+      "fact_key": "source.rule.jsonpath.get-string-list",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByJSonPath.kt",
+      "symbol": "getStringList",
+      "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeByJSonPath/getStringList",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-ANALYZE-JSONPATH-GET-OBJECT",
+      "fact_key": "source.rule.jsonpath.get-object",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByJSonPath.kt",
+      "symbol": "getObject",
+      "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeByJSonPath/getObject",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-ANALYZE-JSONPATH-GET-LIST",
+      "fact_key": "source.rule.jsonpath.get-list",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByJSonPath.kt",
+      "symbol": "getList",
+      "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeByJSonPath/getList",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-ANALYZE-REGEX-GET-ELEMENT",
+      "fact_key": "source.rule.regex.get-element",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByRegex.kt",
+      "symbol": "getElement",
+      "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeByRegex/getElement",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-ANALYZE-REGEX-GET-ELEMENTS",
+      "fact_key": "source.rule.regex.get-elements",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByRegex.kt",
+      "symbol": "getElements",
+      "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeByRegex/getElements",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-ANALYZE-RULE-REPLACE-REGEX",
+      "fact_key": "source.rule.regex.replace",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt",
+      "symbol": "replaceRegex",
+      "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeRule/replaceRegex",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
     }
   ]
 }

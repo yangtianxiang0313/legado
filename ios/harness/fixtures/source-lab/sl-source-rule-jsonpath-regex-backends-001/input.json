@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "jsonpath-scalars-and-null",
+      "operation": "jsonpath_regex_backends",
+      "arguments": {
+        "mode": "jsonpath_matrix",
+        "content": "{\"number\":12.5,\"integer\":7,\"truth\":true,\"nil\":null,\"text\":\"alpha\",\"array\":[\"x\",2,false,null],\"object\":{\"b\":2,\"a\":1}}",
+        "rules": {
+          "array": "@Json:$.array",
+          "boolean": "@Json:$.truth",
+          "integer": "@Json:$.integer",
+          "null": "@Json:$.nil",
+          "number": "@Json:$.number",
+          "object": "@Json:$.object",
+          "string": "@Json:$.text"
+        }
+      },
+      "request": {"method": "GET", "target": "/jsonpath-regex/jsonpath-scalars-and-null"}
+    },
+    {
+      "id": "jsonpath-filter-recursive-slice",
+      "operation": "jsonpath_regex_backends",
+      "arguments": {
+        "mode": "jsonpath_matrix",
+        "content": "{\"books\":[{\"title\":\"A\",\"price\":8},{\"title\":\"B\",\"price\":12},{\"title\":\"C\",\"price\":5}],\"nested\":{\"title\":\"N\"},\"odd.key\":{\"value\":\"quoted\"}}",
+        "rules": {
+          "filter": "@Json:$.books[?(@.price < 10)].title",
+          "quoted_key": "@Json:$['odd.key'].value",
+          "recursive": "@Json:$..title",
+          "slice": "@Json:$.books[0:3:2].title"
+        }
+      },
+      "request": {"method": "GET", "target": "/jsonpath-regex/jsonpath-filter-recursive-slice"}
+    },
+    {
+      "id": "jsonpath-combination-and-interpolation",
+      "operation": "jsonpath_regex_backends",
+      "arguments": {
+        "mode": "jsonpath_matrix",
+        "content": "{\"left\":[\"L1\",\"L2\"],\"right\":[\"R1\",\"R2\",\"R3\"],\"meta\":{\"name\":\"Alpha\",\"nested\":{\"value\":\"Beta\"}}}",
+        "rules": {
+          "and": "@Json:$.left[*]&&$.right[*]",
+          "embedded": "@Json:prefix-{$.meta.name}-{$.meta.nested.value}",
+          "or": "@Json:$.missing[*]||$.right[*]",
+          "percent": "@Json:$.left[*]%%$.right[*]"
+        }
+      },
+      "request": {"method": "GET", "target": "/jsonpath-regex/jsonpath-combination-and-interpolation"}
+    },
+    {
+      "id": "jsonpath-object-input",
+      "operation": "jsonpath_regex_backends",
+      "arguments": {
+        "mode": "jsonpath_object_input",
+        "content_object": {
+          "catalog": {
+            "items": [
+              {"id": 1, "label": "one"},
+              {"id": 2, "label": "two"}
+            ]
+          }
+        },
+        "rules": {
+          "first_object": "@Json:$.catalog.items[0]",
+          "labels": "@Json:$.catalog.items[*].label"
+        }
+      },
+      "request": {"method": "GET", "target": "/jsonpath-regex/jsonpath-object-input"}
+    },
+    {
+      "id": "jsonpath-missing-null-malformed",
+      "operation": "jsonpath_regex_backends",
+      "arguments": {
+        "mode": "jsonpath_failure",
+        "content": "{\"present\":\"value\",\"nil\":null,\"items\":[1,2]}",
+        "missing_rule": "@Json:$.missing.value",
+        "null_rule": "@Json:$.nil",
+        "malformed_rule": "@Json:$.["
+      },
+      "request": {"method": "GET", "target": "/jsonpath-regex/jsonpath-missing-null-malformed"}
+    },
+    {
+      "id": "regex-single-capture-and-chain",
+      "operation": "jsonpath_regex_backends",
+      "arguments": {
+        "mode": "regex_capture",
+        "content": "<item id=\"1\">Alpha</item><item id=\"2\">Beta</item>",
+        "rules": {
+          "chain": ":<item id=\"\\d+\">[^<]+</item>&&id=\"(\\d+)\"",
+          "single": ":<item id=\"(\\d+)\">([^<]+)</item>"
+        }
+      },
+      "request": {"method": "GET", "target": "/jsonpath-regex/regex-single-capture-and-chain"}
+    },
+    {
+      "id": "regex-list-optional-unicode-zero-width",
+      "operation": "jsonpath_regex_backends",
+      "arguments": {
+        "mode": "regex_capture",
+        "content": "A1 B 汉字 C3",
+        "rules": {
+          "optional": ":([A-Z])(?:(\\d))?",
+          "unicode": ":(?U)\\b\\w+\\b",
+          "zero_width": ":(?=\\d)"
+        }
+      },
+      "request": {"method": "GET", "target": "/jsonpath-regex/regex-list-optional-unicode-zero-width"}
+    },
+    {
+      "id": "regex-replacement-all-first-groups",
+      "operation": "jsonpath_regex_backends",
+      "arguments": {
+        "mode": "regex_replacement",
+        "content": "a1 b22 c333",
+        "rules": {
+          "all": "##\\d+##X",
+          "capture": "##([a-z])(\\d+)##$2-$1",
+          "first": "##\\d+##X###",
+          "no_match_first": "##Z+##X###"
+        }
+      },
+      "request": {"method": "GET", "target": "/jsonpath-regex/regex-replacement-all-first-groups"}
+    },
+    {
+      "id": "regex-replacement-after-json-list",
+      "operation": "jsonpath_regex_backends",
+      "arguments": {
+        "mode": "regex_replacement",
+        "content": "{\"items\":[\"alpha-1\",\"beta-22\",\"gamma\"]}",
+        "rules": {
+          "replace_digits": "@Json:$.items[*]##-\\d+$##",
+          "replace_prefix": "@Json:$.items[*]##^[a-z]+##item"
+        }
+      },
+      "request": {"method": "GET", "target": "/jsonpath-regex/regex-replacement-after-json-list"}
+    },
+    {
+      "id": "regex-malformed-boundaries",
+      "operation": "jsonpath_regex_backends",
+      "arguments": {
+        "mode": "regex_failure",
+        "content": "A B [ C",
+        "malformed_capture_rule": ":[",
+        "optional_single_rule": ":(A)(\\d)?",
+        "invalid_replace_all_rule": "##[##X",
+        "invalid_replace_first_rule": "##[##X###"
+      },
+      "request": {"method": "GET", "target": "/jsonpath-regex/regex-malformed-boundaries"}
+    }
+  ]
+}

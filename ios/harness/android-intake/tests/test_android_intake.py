@@ -18,7 +18,7 @@ class AndroidIntakeTests(unittest.TestCase):
         self.assertEqual(first, second)
         baseline = json.loads((REPO_ROOT / "ios/project/baseline.json").read_text(encoding="utf-8"))
         self.assertEqual(baseline["android_oracle"]["git_commit"], first["android_git_commit"])
-        self.assertEqual(22, len(first["facts"]))
+        self.assertEqual(29, len(first["facts"]))
 
     def test_book_source_fact_is_data_contract_not_runtime_proof(self):
         inventory = android_intake.inventory_value(REPO_ROOT)
@@ -72,6 +72,30 @@ class AndroidIntakeTests(unittest.TestCase):
         self.assertEqual(
             "getStringList",
             facts["AF-ANALYZE-RULE-GET-STRING-LIST"]["payload"]["symbol"],
+        )
+
+    def test_jsonpath_and_regex_backends_have_source_anchors(self):
+        inventory = android_intake.inventory_value(REPO_ROOT)
+        facts = {entry["id"]: entry for entry in inventory["facts"]}
+        self.assertEqual(
+            "getObject",
+            facts["AF-ANALYZE-JSONPATH-GET-OBJECT"]["payload"]["symbol"],
+        )
+        self.assertEqual(
+            "getList",
+            facts["AF-ANALYZE-JSONPATH-GET-LIST"]["payload"]["symbol"],
+        )
+        self.assertEqual(
+            "getElement",
+            facts["AF-ANALYZE-REGEX-GET-ELEMENT"]["payload"]["symbol"],
+        )
+        self.assertEqual(
+            "getElements",
+            facts["AF-ANALYZE-REGEX-GET-ELEMENTS"]["payload"]["symbol"],
+        )
+        self.assertEqual(
+            "replaceRegex",
+            facts["AF-ANALYZE-RULE-REPLACE-REGEX"]["payload"]["symbol"],
         )
 
     def test_read_record_runtime_risk_has_source_anchors(self):

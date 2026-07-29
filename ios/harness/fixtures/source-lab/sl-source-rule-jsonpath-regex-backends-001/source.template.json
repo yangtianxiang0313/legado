@@ -1,0 +1,32 @@
+{
+  "bookSourceUrl": "${SOURCE_LAB_ORIGIN}",
+  "bookSourceName": "SourceLab JSONPath Regex Backend 测试源",
+  "bookSourceGroup": "SourceLab",
+  "bookSourceType": 0,
+  "enabled": true,
+  "enabledExplore": false,
+  "searchUrl": "${SOURCE_LAB_ORIGIN}/jsonpath-regex",
+  "ruleSearch": {
+    "bookList": "@Json:$.books[*]",
+    "name": "@Json:$.name",
+    "author": "@Json:$.author",
+    "bookUrl": "@Json:$.url"
+  },
+  "ruleBookInfo": {
+    "name": "@Json:$.name",
+    "author": "@Json:$.author",
+    "tocUrl": "@Json:$.toc"
+  },
+  "ruleToc": {
+    "chapterList": "@Json:$.chapters[*]",
+    "chapterName": "@Json:$.name",
+    "chapterUrl": "@Json:$.url"
+  },
+  "ruleContent": {
+    "content": "@Json:$.content##<script[^>]*>[\\s\\S]*?</script>##"
+  },
+  "x-source-lab": {
+    "scenario": "sl-source-rule-jsonpath-regex-backends-001",
+    "logicalOrigin": "http://sourcelab.test"
+  }
+}

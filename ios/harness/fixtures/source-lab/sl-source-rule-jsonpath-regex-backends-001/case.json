@@ -1,0 +1,167 @@
+{
+  "schema_version": 1,
+  "kind": "source_lab_scenario",
+  "id": "sl-source-rule-jsonpath-regex-backends-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "source_lab_site",
+  "capabilities": [
+    "CAP-RUNTIME-PORTS",
+    "CAP-CONFORMANCE"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": "source.template.json",
+  "input": "input.json",
+  "transport": {
+    "mode": "fixture_and_loopback",
+    "external_network": "deny",
+    "responses": [
+      {
+        "id": "jsonpath-scalars-and-null",
+        "match": {"method": "GET", "path": "/jsonpath-regex/jsonpath-scalars-and-null", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "jsonpath-filter-recursive-slice",
+        "match": {"method": "GET", "path": "/jsonpath-regex/jsonpath-filter-recursive-slice", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "jsonpath-combination-and-interpolation",
+        "match": {"method": "GET", "path": "/jsonpath-regex/jsonpath-combination-and-interpolation", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "jsonpath-object-input",
+        "match": {"method": "GET", "path": "/jsonpath-regex/jsonpath-object-input", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "jsonpath-missing-null-malformed",
+        "match": {"method": "GET", "path": "/jsonpath-regex/jsonpath-missing-null-malformed", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "regex-single-capture-and-chain",
+        "match": {"method": "GET", "path": "/jsonpath-regex/regex-single-capture-and-chain", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "regex-list-optional-unicode-zero-width",
+        "match": {"method": "GET", "path": "/jsonpath-regex/regex-list-optional-unicode-zero-width", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "regex-replacement-all-first-groups",
+        "match": {"method": "GET", "path": "/jsonpath-regex/regex-replacement-all-first-groups", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "regex-replacement-after-json-list",
+        "match": {"method": "GET", "path": "/jsonpath-regex/regex-replacement-after-json-list", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "regex-malformed-boundaries",
+        "match": {"method": "GET", "path": "/jsonpath-regex/regex-malformed-boundaries", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      }
+    ]
+  },
+  "coverage": [
+    {
+      "behavior": "rule.jsonpath",
+      "cases": [
+        {
+          "id": "jsonpath-scalars-and-null",
+          "role": "nominal",
+          "android_fact_refs": ["AF-ANALYZE-JSONPATH-GET-STRING", "AF-ANALYZE-JSONPATH-GET-STRING-LIST", "AF-ANALYZE-JSONPATH-GET-OBJECT"],
+          "branch_refs": ["AnalyzeByJSonPath scalar, list, object and null coercion branches"]
+        },
+        {
+          "id": "jsonpath-filter-recursive-slice",
+          "role": "nominal",
+          "android_fact_refs": ["AF-ANALYZE-JSONPATH-GET-STRING", "AF-ANALYZE-JSONPATH-GET-STRING-LIST", "AF-ANALYZE-JSONPATH-GET-LIST"],
+          "branch_refs": ["Jayway filter, recursive descent, array slice and quoted-key dialect"]
+        },
+        {
+          "id": "jsonpath-combination-and-interpolation",
+          "role": "boundary",
+          "android_fact_refs": ["AF-ANALYZE-JSONPATH-GET-STRING", "AF-ANALYZE-JSONPATH-GET-STRING-LIST"],
+          "branch_refs": ["AnalyzeByJSonPath &&, ||, %% and balanced embedded-rule branches"]
+        },
+        {
+          "id": "jsonpath-object-input",
+          "role": "boundary",
+          "android_fact_refs": ["AF-ANALYZE-JSONPATH-GET-STRING", "AF-ANALYZE-JSONPATH-GET-STRING-LIST", "AF-ANALYZE-JSONPATH-GET-OBJECT"],
+          "branch_refs": ["AnalyzeByJSonPath parse(Object) rather than parse(String) branch"]
+        },
+        {
+          "id": "jsonpath-missing-null-malformed",
+          "role": "malformed",
+          "android_fact_refs": ["AF-ANALYZE-JSONPATH-GET-STRING", "AF-ANALYZE-JSONPATH-GET-STRING-LIST", "AF-ANALYZE-JSONPATH-GET-OBJECT", "AF-ANALYZE-JSONPATH-GET-LIST"],
+          "branch_refs": ["Missing path, explicit null and invalid JSONPath failure boundaries"]
+        }
+      ]
+    },
+    {
+      "behavior": "rule.regex",
+      "cases": [
+        {
+          "id": "regex-single-capture-and-chain",
+          "role": "nominal",
+          "android_fact_refs": ["AF-ANALYZE-REGEX-GET-ELEMENT", "AF-ANALYZE-REGEX-GET-ELEMENTS"],
+          "branch_refs": ["AnalyzeByRegex first match groups and chained regex concatenation"]
+        },
+        {
+          "id": "regex-list-optional-unicode-zero-width",
+          "role": "boundary",
+          "android_fact_refs": ["AF-ANALYZE-REGEX-GET-ELEMENTS"],
+          "branch_refs": ["Java Pattern optional group, Unicode class and zero-width match branches"]
+        },
+        {
+          "id": "regex-replacement-all-first-groups",
+          "role": "nominal",
+          "android_fact_refs": ["AF-ANALYZE-RULE-REPLACE-REGEX"],
+          "branch_refs": ["AnalyzeRule replace-all, capture replacement and replaceFirst result-shape branches"]
+        },
+        {
+          "id": "regex-replacement-after-json-list",
+          "role": "boundary",
+          "android_fact_refs": ["AF-ANALYZE-RULE-REPLACE-REGEX", "AF-ANALYZE-JSONPATH-GET-STRING-LIST"],
+          "branch_refs": ["JSONPath list consumer followed by per-item regex replacement"]
+        },
+        {
+          "id": "regex-malformed-boundaries",
+          "role": "malformed",
+          "android_fact_refs": ["AF-ANALYZE-REGEX-GET-ELEMENT", "AF-ANALYZE-REGEX-GET-ELEMENTS", "AF-ANALYZE-RULE-REPLACE-REGEX"],
+          "branch_refs": ["Invalid Pattern exception, unmatched optional group and literal replacement fallback"]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "2026-01-01T00:00:00Z",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 47,
+    "network_allowed": false,
+    "logical_origin": "http://sourcelab.test"
+  },
+  "limits": {
+    "timeout_ms": 1000,
+    "max_response_bytes": 1048576,
+    "max_request_body_bytes": 1048576,
+    "max_requests": 20,
+    "max_concurrency": 2
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByJSonPath.kt",
+      "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByRegex.kt",
+      "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-SOURCE-RULE-JSONPATH-REGEX-BACKENDS-001"
+  }
+}
