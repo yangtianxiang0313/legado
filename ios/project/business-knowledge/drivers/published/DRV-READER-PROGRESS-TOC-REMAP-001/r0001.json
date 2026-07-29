@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-READER-PROGRESS-TOC-REMAP-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "reader.progress.toc-remap-compatibility-boundary",
+  "title": "用 ReaderCore 纯重映射策略隔离 Android 目录匹配语义",
+  "claim_refs": [
+    {
+      "id": "BKC-RD-PROGRESS-REMAP-001",
+      "revision": 2
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "ReaderCore 必须逐场景复现受保护 Android Golden 中的空目录短路、标题清洗、重复标题首胜、精确章节号、比例搜索窗口、旧索引回退和严格 0.96 阈值；expected 不得由 iOS 实现反向生成。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "modularity",
+      "scenario": "章节值与旧阅读位置属于 LibraryDomain，标题规范化、章节号解析、相似度与窗口选择属于 ReaderCore 纯策略；核心不得依赖 Room、SwiftUI、数据库、Android BookChapter 或 Golden 文件。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "state_safety",
+      "scenario": "返回值必须区分“命中新目录内索引”和“空目录时保留但暂时不可解引用的旧索引”；上层不能在空目录结果上直接数组下标访问，也不能擅自钳制掉 Android 已验证的未解析状态。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "determinism",
+      "scenario": "规范化、Jaccard 字符集合、章节号与窗口计算必须用显式稳定算法实现；相似度相等时保持先扫描者，0.96 必须使用与 Android 相同的严格比较边界。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "overflow_safety",
+      "scenario": "实现需显式表达 oldIndex * oldListSize / newListSize 的 Android 兼容运算顺序，同时把未验证的负值和 Int32 溢出拒绝或隔离在兼容入口，不能让 Swift Int 的更宽范围静默改变已覆盖正常输入。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "scope_control",
+      "scenario": "本切片只实现 Golden 覆盖的 11 个场景；并发目录写入、持久化原子性、负索引、溢出、完整 Unicode 等价与更多重复章节号由后续 Android 真源任务扩张。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "如何用 ChapterRemapOutcome 显式表达 selected 与 preservedUnresolved，避免空目录旧索引被误当成可解引用索引？",
+    "如何把 Android 标题规范化、章节号解析与 Jaccard 字符集合实现为可单测的纯组件，并固定严格阈值与首胜 tie-break？",
+    "如何在保持 Android 正常输入运算顺序的同时，对 Swift 中未验证的负数和乘法溢出 fail closed？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002"
+    ],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-READER-PROGRESS-TOC-REMAP-001",
+      "IOS-READER-CORE-PROGRESS-TOC-REMAP-001"
+    ]
+  },
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30488766831/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-READER-PROGRESS-TOC-REMAP-001"
+}

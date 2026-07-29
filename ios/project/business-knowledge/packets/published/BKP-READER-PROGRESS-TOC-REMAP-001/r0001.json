@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-READER-PROGRESS-TOC-REMAP-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "reader.progress.toc-remap-runtime-golden",
+  "title": "受保护 Android Golden 验证的目录变化进度重映射语义",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "6e5cfb3844359da0176fa60795087d3d271d7d05dbdccd85b8626833281ff204"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "reader.progress",
+      "reader.toc"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-CORE"
+    ],
+    "subject_keys": [
+      "reader.progress",
+      "reader.toc"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-RD-PROGRESS-REMAP-001",
+      "revision": 2,
+      "semantic_key": "reader.progress.toc-remap",
+      "kind": "runtime_behavior",
+      "topic": "目录变化后的阅读进度重映射",
+      "statement": "在 rl-reader-progress-toc-remap-001 的 11 个固定场景中，旧索引为 0 时即使新目录为空也返回 0；非零旧索引 7 遇到空目录时原样返回 7，结果不在新目录边界内。标题会先经历全角转半角、去空白、去章节序号与尾注等清洗：旧索引 3 的“第４章 星 河 归 途（旧站）”映射到新索引 5 的“第4章 星河归途”；两个同等最高相似标题位于 7 和 12 时选择先扫描到的 7。标题相似度不足时，旧“第42章 完全不同”由精确章节号映射到索引 6 的“第42回 陌路”；只有最近的 49 而无精确 50 时不会采用最近值，而是回退旧索引 3；旧索引 20 在三章新目录中回退并钳制到末索引 2。搜索窗口同时使用旧索引与 oldIndex * oldListSize / newListSize：旧规模 15、新规模 30 时可把索引 0 的同名标题纳入窗口，旧规模 60、新规模 30 时索引 5 的同名标题被排除并回退到 20。对固定 ASCII 标题集合，相似度恰为 24/25 = 0.96 时不接受新索引 3而回退索引 1，相似度 25/26 > 0.96 时接受索引 3。本结论不外推负旧索引、整数乘法溢出、其他 Unicode 清洗、列表规模为极值、0.96 之外的浮点实现差异、多写者目录更新、持久化时序或未覆盖重复章节号布局。",
+      "subject_keys": [
+        "reader.progress",
+        "reader.toc"
+      ],
+      "depends_on": [],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [
+          {
+            "id": "AF-BOOK-HELP-GET-DUR-CHAPTER",
+            "revision_sha256": "dd3fb6a7a0deaf4e52ac4495a669cf5df2305a34f5adee46eb9be97913a6c869"
+          }
+        ],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "40f47f3a0f6bfa63cce79efb7a1518737b84dc45",
+            "path": "app/src/main/java/io/legado/app/help/book/BookHelp.kt",
+            "symbol_id": "kotlin://io.legado.app.help.book.BookHelp/getDurChapter"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "40f47f3a0f6bfa63cce79efb7a1518737b84dc45",
+            "path": "app/src/main/java/io/legado/app/help/book/BookHelp.kt",
+            "symbol_id": "kotlin://io.legado.app.help.book.BookHelp/getChapterNum"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "40f47f3a0f6bfa63cce79efb7a1518737b84dc45",
+            "path": "app/src/main/java/io/legado/app/help/book/BookHelp.kt",
+            "symbol_id": "kotlin://io.legado.app.help.book.BookHelp/getPureChapterName"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/rl-reader-progress-toc-remap-001.json",
+            "artifact_sha256": "94c85e59eac8e456f2b03fd9f21156435c9a16e2f2817d1e9b8c840cb792ef1a",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "552fd46b6f3072e3f393b8d827f79a6b330cfb54a6c3abb36451db45bb06ae54",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "1c1016b710dedc4d59130f4f25d1f7614f6cbba3d479113e45edee692b883573",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-RD-PROGRESS-REMAP-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-READER-PROGRESS-TOC-REMAP-001"
+}

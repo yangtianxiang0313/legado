@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgeCoverageLedger",
+  "id": "BKL-READER-PROGRESS-TOC-REMAP-001",
+  "revision": 1,
+  "status": "current",
+  "packet_refs": [
+    {
+      "id": "BKP-READER-PROGRESS-TOC-REMAP-001",
+      "revision": 1,
+      "sha256": "60885ddeb55ef8ad106448426e87b61980fc90a507e06088089496a0c1434cf8"
+    }
+  ],
+  "generated_from": {
+    "knowledge_authority_sha256": "673118d00a284d30d17480db1516db892fa95a5cf1bfaae872412764b2e4ebfd",
+    "requirement_catalog_sha256": "bdffa172168c989bddfed4e8e1b438ffac00ee2bd4a60b66b0e531fe367ffdfd",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "entries": [
+    {
+      "id": "BKE-READER-PROGRESS-TOC-REMAP-001",
+      "claim_ref": {
+        "id": "BKC-RD-PROGRESS-REMAP-001",
+        "revision": 2
+      },
+      "validation": {
+        "required": "android_runtime",
+        "state": "verified",
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-reader-progress-toc-remap-001-30486526559-2.json",
+          "ios/harness/goldens/android-legado-v1/rl-reader-progress-toc-remap-001.json#/artifact/result/value"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "covered_by_requirement",
+        "refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "reason": "受保护 Android Golden 已冻结旧索引与空目录短路、标题清洗、重复标题首胜、精确章节号、比例搜索窗口、旧索引回退和严格 0.96 相似度边界，交由 ReaderCore 纯重映射策略实现",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "planned",
+        "requirement_refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "work_item_refs": [
+          "IOS-READER-CORE-PROGRESS-TOC-REMAP-001"
+        ],
+        "capability_refs": [
+          "CAP-CONFORMANCE",
+          "CAP-CORE"
+        ],
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-reader-progress-toc-remap-001-30486526559-2.json"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    }
+  ],
+  "updated_by": "IOS-CHARACTERIZE-READER-PROGRESS-TOC-REMAP-001",
+  "updated_at": "2026-07-29T20:33:53Z"
+}
