@@ -1,0 +1,216 @@
+{
+  "schema_version": 1,
+  "proposal_id": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTOMATION-001",
+  "proposal_constraint": "把已完成 producer、proposal、受保护 Golden、Android Migration Intent、Requirement clause 与确定性目标 WorkItem 联结成唯一发布需求；Workflow 必须使用 create-only push request 和内容寻址 result，不得使用 workflow_dispatch、Environment、PR 或硬编码场景；Dispatcher 必须复验远端 Run、Artifact、result ref、单父精确事务 commit 后受限快进并续接 Delivery Intent，普通 Agent 不得直接写 published/Coverage/release authority",
+  "work_item": {
+    "api_version": "legado.harness/v1",
+    "kind": "WorkItem",
+    "metadata": {
+      "id": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTOMATION-001",
+      "title": "实现无人工 Gate 的场景化业务知识发布与续接",
+      "priority": 100,
+      "risk": "high",
+      "labels": [
+        "phase-0",
+        "control-plane",
+        "external-execution",
+        "business-knowledge",
+        "knowledge-publisher",
+        "corrective"
+      ]
+    },
+    "spec": {
+      "capability": "CAP-KNOWLEDGE-CONTROL",
+      "intent": "让 Loop 在没有静态 Delivery Intent 的情况下也能从真实迁移链自动产生受约束的业务知识发布需求，并在发布后续接产品交付。DemandCompiler 必须枚举 completed knowledge producer 的 produces，只选择物理 proposal 存在、published 不存在、Packet/Driver producer 与 Claim 集闭合的批次；从每条 runtime_evidence 得到唯一共同 protected Golden，再按 fixture/scenario 唯一联结已终结 Android Migration Intent、accepted Requirement clause 和确定性未来目标 IOS-SOURCE-RUNTIME-<SLICE>-001。任何多 Golden、多 Migration、Requirement 不唯一、target 冲突、proposal 漂移或已有不同 publication 都 fail closed。输出 business_knowledge_publisher_required 计划及内容寻址 binding。新增专用 GitHub Dispatcher：从干净 HEAD 创建 knowledge/request-<batch>-<exact-sha> 的 create-only 单提交请求分支；push-triggered Workflow 从提交内 request manifest 重算 proposal/Golden/producer/Requirement 绑定，调用 staging-only Publisher，安装且只安装 transaction 声明的 published Packet、resolved Driver、Coverage、release、Catalog 与 proposal 删除，独立 doctor/demand 验证后生成 source SHA 的唯一单父 result commit 到 knowledge/result-<batch>-<request-sha> 并上传 publisher-result。Workflow 不使用 workflow_dispatch、Environment、PR、硬编码 HTML/CSS/POST Form 路径或人工 Gate。Dispatcher 不信任本地 journal，重查唯一成功 Run/Artifact、request/result refs、commit parent/tree/changed paths、transaction/report digests与远端 repository，然后只在本地 HEAD 仍等于 request source 且可 fast-forward 时合并。Supervisor 对该计划只调用 Dispatcher、不调用 Agent；settled 后重新 inspect，知识已发布则自动产生并物化绑定的 POST Form Delivery Intent/Blueprint 或返回精确下一状态。普通 Agent、当前 WorkItem 和 staging Publisher 均不能直接写 published/Coverage/release authority。",
+      "depends_on": [
+        "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTO-SCOPE-001"
+      ],
+      "scope": {
+        "allow_write": [
+          ".github/workflows/business-knowledge-publisher.yml",
+          "ios/publisher/business_knowledge_publisher.py",
+          "ios/harness/github_business_knowledge_publisher.py",
+          "ios/harness/demand_compiler.py",
+          "ios/harness/loop_supervisor.py",
+          "ios/harness/supervisor.example.json",
+          "ios/harness/tests/test_business_knowledge_publisher.py",
+          "ios/harness/tests/test_github_business_knowledge_publisher.py",
+          "ios/harness/tests/test_demand_compiler.py",
+          "ios/harness/tests/test_loop_supervisor.py",
+          "ios/harness/README.md",
+          "ios/publisher/README.md",
+          "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+          "ios/project/checkpoints/IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTOMATION-001.json",
+          "ios/project/pitfalls/PIT-*.json"
+        ],
+        "deny_write": [
+          ".github/workflows/android-*.yml",
+          ".github/workflows/ios-*.yml",
+          "app/**",
+          "modules/**",
+          "ios/Packages/**",
+          "ios/harness/harness.py",
+          "ios/harness/proposal_compiler.py",
+          "ios/harness/config.json",
+          "ios/harness/schemas/**",
+          "ios/harness/business-knowledge/**",
+          "ios/harness/goldens/**",
+          "ios/harness/oracle/**",
+          "ios/harness/source-lab/**",
+          "ios/harness/github_golden_publisher.py",
+          "ios/harness/github_oracle_dispatcher.py",
+          "ios/harness/github_oracle_receipt.py",
+          "ios/publisher/android_golden_publisher.py",
+          "ios/project/state.json",
+          "ios/project/events.jsonl",
+          "ios/project/status.md",
+          "ios/project/requirements/**",
+          "ios/project/approvals/**",
+          "ios/project/business-knowledge/packets/published/**",
+          "ios/project/business-knowledge/drivers/published/**",
+          "ios/project/business-knowledge/coverage/**",
+          "ios/project/business-knowledge/releases/**",
+          "ios/project/work-item-proposals/**",
+          "ios/project/delivery-intents/**",
+          "ios/project/migration-intents/**",
+          "ios/docs/architecture.md",
+          "ios/docs/adr/**"
+        ],
+        "max_files_changed": 15,
+        "max_changed_lines": 6000
+      },
+      "inputs": {
+        "context_files": [
+          "ios/project/business-knowledge/packets/proposals/BKP-SOURCE-RUNTIME-POST-FORM-001/r0001.json",
+          "ios/project/business-knowledge/drivers/proposals/DRV-SOURCE-RUNTIME-POST-FORM-001/r0001.json",
+          "ios/harness/goldens/releases/sl-post-form-001-30403665320-1.json",
+          "ios/project/migration-intents/MINT-SOURCE-REQUEST-POST-FORM-001.json",
+          "ios/project/requirements/accepted/REQ-ANDROID-SOURCE-PIPELINE-001.json",
+          "ios/project/checkpoints/IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTO-SCOPE-001.json",
+          ".github/workflows/business-knowledge-publisher.yml",
+          "ios/publisher/business_knowledge_publisher.py",
+          "ios/harness/github_golden_publisher.py",
+          "ios/harness/demand_compiler.py",
+          "ios/harness/loop_supervisor.py"
+        ],
+        "android_source_anchors": [],
+        "fixtures": [
+          "sl-post-form-001"
+        ]
+      },
+      "architecture_refs": [
+        "ADR-0001",
+        "ADR-0002",
+        "ADR-0004"
+      ],
+      "acceptance": {
+        "criteria": [
+          {
+            "id": "AC-1",
+            "statement": "DemandCompiler 从 completed producer、proposal、共同 protected Golden、唯一 Migration Intent、accepted Requirement clause 和确定性 target 联结 publication plan；POST Form 当前 HEAD 必须得到 business_knowledge_publisher_required，任一绑定漂移/歧义 fail closed。",
+            "verified_by": ["harness-tests"],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          },
+          {
+            "id": "AC-2",
+            "statement": "Workflow 仅由 knowledge/request-<batch>-<exact-sha> create-only push 触发；参数来自 commit 内内容寻址 request manifest，不含 workflow_dispatch、Environment、PR、硬编码场景或硬编码目标分支。",
+            "verified_by": ["dependency-policy", "harness-tests"],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          },
+          {
+            "id": "AC-3",
+            "statement": "Workflow 只安装 staging transaction 的 published Packet、resolved Driver、Coverage、release、Catalog 与 proposal 删除；doctor 和下一 Loop 状态通过后创建 source SHA 的唯一单父精确 result commit，并上传 canonical publisher-result。",
+            "verified_by": ["harness-tests"],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          },
+          {
+            "id": "AC-4",
+            "statement": "Dispatcher 幂等创建 request branch，复验唯一 Run/Artifact、request/result refs、commit parent/tree/changed paths、transaction/report digests、repository 与 fast-forward；settled replay 不信任本地 journal，远端或本地漂移均 fail closed。",
+            "verified_by": ["harness-tests"],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          },
+          {
+            "id": "AC-5",
+            "statement": "Supervisor 对 publisher_required 只调用 Dispatcher 且不调用 Agent；settled 后重新 inspect，已发布知识退出 publication queue 并续接绑定 Delivery Intent/Blueprint，重复 drive 不重复发布。",
+            "verified_by": ["harness-tests"],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          },
+          {
+            "id": "AC-6",
+            "statement": "当前 WorkItem 不直接修改 published/Coverage/release/Requirement/Golden/ADR/Package/产品；完整 Harness、dependency policy、干净 checkout doctor 与真实 gh 可执行 dry-run 通过。",
+            "verified_by": ["dependency-policy", "harness-tests"],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          }
+        ],
+        "required_checks": [
+          "dependency-policy",
+          "harness-tests"
+        ]
+      },
+      "baseline_checks": [
+        "dependency-policy",
+        "harness-tests"
+      ],
+      "budget": {
+        "wall_clock_seconds": 14400,
+        "max_edit_verify_cycles": 6,
+        "max_targeted_test_runs": 24,
+        "max_full_test_runs": 4,
+        "max_infra_retries": 2
+      },
+      "gates": [],
+      "completion_effects": {
+        "health": {
+          "business_knowledge_publisher": "scenario_aware_push_v2",
+          "business_knowledge_dispatcher": "result_verified_ff_v1",
+          "business_knowledge_publication_demand": "source_bound_v1"
+        }
+      },
+      "memory": {
+        "capability_state_required": true,
+        "checkpoint_required": true,
+        "pitfall": "if_non_obvious_and_preventable",
+        "adr": "not_required"
+      },
+      "requirements": {
+        "mode": "control_plane",
+        "refs": [],
+        "none_reason": "本项实现外部知识发布编排，不直接改变产品 Requirement authority"
+      },
+      "knowledge": {
+        "contract_version": 1,
+        "mode": "not_applicable",
+        "claim_refs": [],
+        "driver_refs": [],
+        "coverage_refs": [],
+        "produces": [],
+        "expected_ledger_transitions": [],
+        "context_budget": {
+          "max_claims": 1,
+          "max_bytes": 16384
+        },
+        "none_reason": "本项只实现发布控制面，不由 Agent 消费或提升知识；真实 authority 由外部 Publisher 事务产生"
+      },
+      "source_lab": {
+        "mode": "not_applicable",
+        "behaviors": [],
+        "scenarios": [],
+        "none_reason": "本项只读取 protected Golden 绑定，不修改或运行 SourceLab"
+      },
+      "stop_on": [
+        "doctor_red",
+        "scope_violation",
+        "authority_escalation",
+        "remote_result_drift",
+        "same_failure_twice",
+        "budget_exhausted"
+      ]
+    }
+  }
+}

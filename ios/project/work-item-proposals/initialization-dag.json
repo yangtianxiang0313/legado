@@ -374,6 +374,13 @@
       "title": "建立无人工 Gate 的业务知识发布精确自动边界",
       "outputs": ["exact business-knowledge publisher automation scope", "workflow and dispatcher denial regression", "publication authority isolation"],
       "gates": [], "constraint": "只在 Loop Supervisor 预声明业务知识 Publisher 自动化的固定精确修改范围与拒绝回归；未来实现项仅可修改固定 Business Knowledge Workflow、staging Publisher、专用 Dispatcher、Demand/Supervisor、配置、对应测试与文档，禁止其他 Workflow、Requirement、Golden、ADR、SourceLab、Package、产品和已发布知识 authority 写入"
+    },
+    {
+      "proposal_id": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTOMATION-001", "phase": 42, "class": "control_plane",
+      "depends_on": ["IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTO-SCOPE-001"], "knowledge_mode": "not_applicable",
+      "title": "实现无人工 Gate 的场景化业务知识发布与续接",
+      "outputs": ["source-bound knowledge publication demand", "push-triggered publisher workflow", "verified dispatcher settlement", "delivery continuation"],
+      "gates": [], "constraint": "把已完成 producer、proposal、受保护 Golden、Android Migration Intent、Requirement clause 与确定性目标 WorkItem 联结成唯一发布需求；Workflow 必须使用 create-only push request 和内容寻址 result，不得使用 workflow_dispatch、Environment、PR 或硬编码场景；Dispatcher 必须复验远端 Run、Artifact、result ref、单父精确事务 commit 后受限快进并续接 Delivery Intent，普通 Agent 不得直接写 published/Coverage/release authority"
     }
   ],
   "compiler_rules": [

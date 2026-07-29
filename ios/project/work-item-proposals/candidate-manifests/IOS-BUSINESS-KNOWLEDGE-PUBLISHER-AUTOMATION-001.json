@@ -1,0 +1,30 @@
+{
+  "authority": "proposal_only",
+  "candidate_sha256": "19f8b1d56e5454b9c3dc9df755902901d28dac34e3c386fd3096a1b134cafaab",
+  "compiler_version": "proposal-compiler-v1",
+  "dag": {
+    "id": "WIPD-IOS-INITIALIZATION-001",
+    "revision": 30,
+    "sha256": "de782e7351353c9008191df0e260b9d263c2546a9a09503163f20f0d0200b196"
+  },
+  "dependencies": [
+    {
+      "chain": [
+        "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTO-SCOPE-001"
+      ],
+      "checkpoint": "ios/project/checkpoints/IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTO-SCOPE-001.json",
+      "checkpoint_sha256": "edf220d051ecb5f1c4e2ced30e65a81d0dc3a882877462be935b56ffd95d0c28",
+      "evidence": "ios/harness/evidence/runs/run-20260729T021747Z-ios-business-knowledge-publisher-auto-scope-001-d305e002.json",
+      "evidence_sha256": "89d517b32cd05dd0e46f08cdc02bd4cbfaf8e0955de8211829c57fb676a4d529",
+      "original": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTO-SCOPE-001",
+      "reason_code": "DIRECT_COMPLETION",
+      "resolved": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTO-SCOPE-001",
+      "work_item_sha256": "7c87b85658a1c68deb5b5354efc159fec442a54f3f6d7249f10a0387ab6cb826"
+    }
+  ],
+  "node_sha256": "c63f19d1b986b731c6ff232611a62b3d1b572eeccf6350aaf648ac5c2b060766",
+  "proposal_id": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTOMATION-001",
+  "queue_effect": "none",
+  "recipe_sha256": "9311ddd77de3690d4dbea19d03b090cfc2d0455a2b003630ceb4b4afe034aa3b",
+  "schema_version": 1
+}
