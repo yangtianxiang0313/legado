@@ -1,0 +1,209 @@
+{
+  "api_version": "legado.harness/v1",
+  "kind": "WorkItem",
+  "metadata": {
+    "id": "IOS-KNOWLEDGE-SOURCE-RUNTIME-POST-FORM-001",
+    "labels": [
+      "phase-0",
+      "control-plane",
+      "business-knowledge",
+      "runtime-evidence",
+      "post-form",
+      "proposal",
+      "corrective"
+    ],
+    "priority": 100,
+    "risk": "high",
+    "title": "从受保护 POST Form Golden 收敛可发布业务知识"
+  },
+  "spec": {
+    "acceptance": {
+      "criteria": [
+        {
+          "id": "AC-1",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "Packet proposal 仅包含 POST/form nominal 与 boundary 直接证明的两个 runtime_behavior Claim；每条 Claim 都有唯一 runtime_evidence，精确绑定 Golden、Android commit、runner、canonicalizer、JSON Pointer 与 canonical observed SHA-256。",
+          "verified_by": [
+            "harness-tests"
+          ]
+        },
+        {
+          "id": "AC-2",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "nominal Claim 覆盖 method=POST、form fields 稳定次序、percent-encoded body；boundary Claim 覆盖空值、重复 key last-wins 与 encoded value 保留。两个 observed hash 必须从当前 protected Golden 重算。",
+          "verified_by": [
+            "harness-tests"
+          ]
+        },
+        {
+          "id": "AC-3",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "未被本 Golden 观察的 raw Content-Type、JSON/XML、Cookie/retry、WebView 行为不进入新 Packet；原宽泛 request-options proposal 保持不变且继续 proposed。",
+          "verified_by": [
+            "dependency-policy",
+            "harness-tests"
+          ]
+        },
+        {
+          "id": "AC-4",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "Driver proposal 只引用两个 Claim，forces 明确稳定 RequestPlan、传输隔离、确定性 form 语义和扩展边界，resolution=resolved 且只绑定既有 ADR-0001/ADR-0002，不提出新架构决策。",
+          "verified_by": [
+            "dependency-policy",
+            "harness-tests"
+          ]
+        },
+        {
+          "id": "AC-5",
+          "knowledge_claims": [],
+          "requirement_clauses": [],
+          "statement": "Catalog/Coverage/published/release/Requirement/Golden/产品均不改变；Checkpoint 记录精确发布输入和下一步 Delivery Intent，Capability 保持 partial。",
+          "verified_by": [
+            "memory-close"
+          ]
+        }
+      ],
+      "required_checks": [
+        "dependency-policy",
+        "harness-tests"
+      ]
+    },
+    "architecture_refs": [
+      "ADR-0001",
+      "ADR-0002"
+    ],
+    "baseline_checks": [
+      "dependency-policy",
+      "harness-tests"
+    ],
+    "budget": {
+      "max_edit_verify_cycles": 5,
+      "max_full_test_runs": 3,
+      "max_infra_retries": 1,
+      "max_targeted_test_runs": 16,
+      "wall_clock_seconds": 10800
+    },
+    "capability": "CAP-KNOWLEDGE-CONTROL",
+    "completion_effects": {
+      "health": {
+        "source_runtime_post_form_knowledge": "runtime_verified_proposal_ready"
+      }
+    },
+    "depends_on": [
+      "IOS-GOLDEN-CONSUMER-CONTINUATION-RECOVERY-002"
+    ],
+    "gates": [],
+    "inputs": {
+      "android_source_anchors": [
+        {
+          "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da",
+          "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+          "symbols": [
+            "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/analyzeUrl",
+            "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/analyzeFields"
+          ]
+        }
+      ],
+      "context_files": [
+        "ios/harness/goldens/android-legado-v1/sl-post-form-001.json",
+        "ios/harness/goldens/releases/sl-post-form-001-30403665320-1.json",
+        "ios/project/business-knowledge/packets/proposals/BKP-SOURCE-REQUEST-OPTIONS-001/r0001.json",
+        "ios/project/business-knowledge/drivers/proposals/DRV-SOURCE-REQUEST-OPTIONS-001/r0001.json",
+        "ios/project/checkpoints/IOS-GOLDEN-CONSUMER-CONTINUATION-RECOVERY-002.json",
+        "ios/project/requirements/accepted/REQ-ANDROID-SOURCE-PIPELINE-001.json"
+      ],
+      "fixtures": [
+        "sl-post-form-001"
+      ]
+    },
+    "intent": "以已经通过 versioned consumer 严格验证的 sl-post-form-001 protected Android Golden 为运行事实，从宽泛的 BKP/DRV-SOURCE-REQUEST-OPTIONS-001 源码候选中只收敛本场景实际证明的最小知识切片。创建 BKP-SOURCE-RUNTIME-POST-FORM-001@1：Claim 一绑定 /artifact/request_plan/0 的 POST/form 选择、字段次序与 encoded body；Claim 二绑定 /artifact/request_plan/1 的空值、重复 key last-wins 与已编码值保留。runtime_evidence 必须逐条写入 Golden 路径/摘要、Android commit、runner digest、canonicalizer、projection pointer 与 canonical observed hash，并保留 AnalyzeUrl.kt 精确 blob/symbol source anchor。创建 DRV-SOURCE-RUNTIME-POST-FORM-001@1，限定 RequestPlan 与 Transport 边界、确定性编码和未来 raw/json/xml 扩展，resolution=resolved 且只引用既有 ADR-0001/ADR-0002。不得把当前 Golden 没有观察到的 raw body、JSON/XML、Cookie/retry 或 WebView 行为标为 runtime_verified；不得删除或改写原宽泛 proposal，也不得直接发布。",
+    "knowledge": {
+      "claim_refs": [],
+      "context_budget": {
+        "max_bytes": 49152,
+        "max_claims": 6
+      },
+      "contract_version": 1,
+      "coverage_refs": [],
+      "driver_refs": [],
+      "expected_ledger_transitions": [],
+      "mode": "produce",
+      "none_reason": null,
+      "produces": [
+        {
+          "id": "BKP-SOURCE-RUNTIME-POST-FORM-001",
+          "kind": "packet",
+          "revision": 1
+        },
+        {
+          "id": "DRV-SOURCE-RUNTIME-POST-FORM-001",
+          "kind": "driver",
+          "revision": 1
+        }
+      ]
+    },
+    "memory": {
+      "adr": "not_required",
+      "capability_state_required": true,
+      "checkpoint_required": true,
+      "pitfall": "if_non_obvious_and_preventable"
+    },
+    "requirements": {
+      "mode": "control_plane",
+      "none_reason": "本项从已接受 Requirement 的真实运行证据形成知识 proposal，不改变 Requirement authority",
+      "refs": []
+    },
+    "scope": {
+      "allow_write": [
+        "ios/project/business-knowledge/packets/proposals/BKP-SOURCE-RUNTIME-POST-FORM-001/r0001.json",
+        "ios/project/business-knowledge/drivers/proposals/DRV-SOURCE-RUNTIME-POST-FORM-001/r0001.json",
+        "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+        "ios/project/checkpoints/IOS-KNOWLEDGE-SOURCE-RUNTIME-POST-FORM-001.json",
+        "ios/project/pitfalls/PIT-*.json"
+      ],
+      "deny_write": [
+        ".github/**",
+        "app/**",
+        "modules/**",
+        "ios/Packages/**",
+        "ios/publisher/**",
+        "ios/harness/**",
+        "ios/project/state.json",
+        "ios/project/events.jsonl",
+        "ios/project/status.md",
+        "ios/project/business-knowledge/catalog.json",
+        "ios/project/business-knowledge/coverage/**",
+        "ios/project/business-knowledge/packets/published/**",
+        "ios/project/business-knowledge/drivers/published/**",
+        "ios/project/business-knowledge/releases/**",
+        "ios/project/business-knowledge/packets/proposals/BKP-SOURCE-REQUEST-OPTIONS-001/**",
+        "ios/project/business-knowledge/drivers/proposals/DRV-SOURCE-REQUEST-OPTIONS-001/**",
+        "ios/project/delivery-intents/**",
+        "ios/project/migration-intents/**",
+        "ios/project/requirements/**",
+        "ios/project/approvals/**",
+        "ios/project/work-item-proposals/**",
+        "ios/docs/**"
+      ],
+      "max_changed_lines": 1400,
+      "max_files_changed": 5
+    },
+    "source_lab": {
+      "behaviors": [],
+      "mode": "not_applicable",
+      "none_reason": "本项消费已发布 Golden 作为 knowledge evidence，不修改 SourceLab",
+      "scenarios": []
+    },
+    "stop_on": [
+      "doctor_red",
+      "scope_violation",
+      "knowledge_drift",
+      "same_failure_twice",
+      "budget_exhausted"
+    ]
+  }
+}
