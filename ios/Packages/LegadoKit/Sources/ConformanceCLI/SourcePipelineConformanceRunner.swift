@@ -22,10 +22,18 @@ struct SourceFieldEncodingInput: Equatable, Sendable {
   let charset: String?
 }
 
+struct SourceURLTemplateInput: Equatable, Sendable {
+  let template: String
+  let key: String?
+  let page: Int?
+  let basePath: String?
+}
+
 struct SourcePipelineInput: Equatable, Sendable {
   var searchKeywords: [String: String] = [:]
   var requestOptions: [String: SourceRequestOptionInput] = [:]
   var fieldEncodings: [String: SourceFieldEncodingInput] = [:]
+  var urlTemplates: [String: SourceURLTemplateInput] = [:]
 }
 
 public enum SourcePipelineConformanceRunner {
@@ -65,6 +73,23 @@ public enum SourcePipelineConformanceRunner {
         throw SourcePipelineConformanceError.inputRouteMismatch
       }
       let request = plan.request
+      if requestCase.operation == .urlTemplateCompilation {
+        guard let stimulus = input.urlTemplates[requestCase.id] else {
+          throw SourcePipelineConformanceError.inputRouteMismatch
+        }
+        let compilation = try urlTemplateCompilation(
+          fixture,
+          input: stimulus
+        )
+        requestPlan.append(HTTPRequestEnvelope(request: request))
+        cases.append(
+          urlTemplateCase(
+            requestCase,
+            compilation: compilation
+          )
+        )
+        continue
+      }
       if requestCase.operation == .fieldEncoding {
         guard let stimulus = input.fieldEncodings[requestCase.id] else {
           throw SourcePipelineConformanceError.inputRouteMismatch
@@ -321,12 +346,70 @@ public enum SourcePipelineConformanceRunner {
           requestCase,
           input: stimulus
         )
+      case .urlTemplateCompilation:
+        guard let stimulus = input.urlTemplates[requestCase.id] else {
+          throw SourcePipelineConformanceError.inputRouteMismatch
+        }
+        plan = try urlTemplateCompilation(
+          fixture,
+          input: stimulus
+        ).plan
       default:
         throw SourcePipelineConformanceError.unsupportedOperation
       }
       plans[requestCase.id] = plan
     }
     return plans
+  }
+
+  private static func urlTemplateCompilation(
+    _ fixture: LoadedFixture,
+    input: SourceURLTemplateInput
+  ) throws -> SourceURLTemplateCompilation {
+    guard
+      let origin = fixture.definition.determinism.logicalOrigin?
+        .absoluteString
+    else {
+      throw SourcePipelineConformanceError.invalidSourceDefinition
+    }
+    let baseURL = input.basePath.map { origin + $0 } ?? origin
+    return try SourceURLTemplateCompiler.compile(
+      SourceRuntime.SourceURLTemplateInput(
+        template: input.template,
+        key: input.key,
+        page: input.page,
+        baseURL: baseURL
+      )
+    )
+  }
+
+  private static func urlTemplateCase(
+    _ requestCase: FixtureRequestCase,
+    compilation: SourceURLTemplateCompilation
+  ) -> JSONValue {
+    let plan = compilation.plan
+    return .object([
+      "id": .string(requestCase.id),
+      "operation": .string(requestCase.operation.rawValue),
+      "result": .object([
+        "rule_url": .string(compilation.ruleURL),
+        "url": .string(compilation.logicalURL),
+        "url_no_query": .string(compilation.logicalURLNoQuery),
+        "method": .string(plan.request.method.rawValue),
+        "body": plan.body.map(JSONValue.string) ?? .null,
+        "query_string": compilation.queryString.map(JSONValue.string) ?? .null,
+        "field_map": .array(
+          plan.formFields.map { field in
+            .object([
+              "key": .string(field.key),
+              "value": .string(field.value),
+            ])
+          }
+        ),
+        "retry": .number(JSONNumber(Int64(plan.retry))),
+      ]),
+      "issue": .null,
+    ])
   }
 
   private static func fieldEncodingPlan(

@@ -43,7 +43,7 @@ public enum MinimalTaskConformanceRunner {
       "ios/harness/fixtures/source-lab/\(fixtureID)",
       root: root
     )
-    let loaded = try FixtureLoader.load(from: fixtureDirectory)
+    let loaded = try loadFixtureForTask(from: fixtureDirectory)
     guard loaded.definition.id == fixtureID else {
       throw MinimalTaskConformanceError.invalidFixture
     }
@@ -117,6 +117,89 @@ public enum MinimalTaskConformanceRunner {
       data: try JSONValueCodec.encode(output),
       passed: passed
     )
+  }
+
+  private static func loadFixtureForTask(
+    from directory: URL
+  ) throws -> LoadedFixture {
+    do {
+      return try FixtureLoader.load(from: directory)
+    } catch FixtureLoadingError.inputRouteMismatch {
+      return try loadURLTemplateFixture(from: directory)
+    }
+  }
+
+  private static func loadURLTemplateFixture(
+    from directory: URL
+  ) throws -> LoadedFixture {
+    let caseURL = directory.appendingPathComponent("case.json")
+    let inputURL = directory.appendingPathComponent("input.json")
+    guard
+      var caseDocument = try JSONSerialization.jsonObject(
+        with: Data(contentsOf: caseURL)
+      ) as? [String: Any],
+      let transport = caseDocument["transport"] as? [String: Any],
+      let responses = transport["responses"] as? [[String: Any]],
+      var inputDocument = try JSONSerialization.jsonObject(
+        with: Data(contentsOf: inputURL)
+      ) as? [String: Any],
+      var cases = inputDocument["cases"] as? [[String: Any]],
+      !cases.isEmpty,
+      cases.allSatisfy({
+        $0["operation"] as? String
+          == FixtureOperation.urlTemplateCompilation.rawValue
+      })
+    else {
+      throw MinimalTaskConformanceError.invalidFixture
+    }
+    let routes = Dictionary(
+      uniqueKeysWithValues: try responses.map { response in
+        guard
+          let id = response["id"] as? String,
+          let match = response["match"] as? [String: Any],
+          let method = match["method"] as? String,
+          let path = match["path"] as? String
+        else {
+          throw MinimalTaskConformanceError.invalidFixture
+        }
+        return (id, (method, path))
+      }
+    )
+    for index in cases.indices {
+      guard
+        let id = cases[index]["id"] as? String,
+        let route = routes[id]
+      else {
+        throw MinimalTaskConformanceError.invalidFixture
+      }
+      cases[index]["request"] = [
+        "method": route.0,
+        "target": route.1,
+      ]
+    }
+    inputDocument["cases"] = cases
+    let temporaryRoot = FileManager.default.temporaryDirectory
+      .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    let temporary = temporaryRoot.appendingPathComponent(
+      directory.lastPathComponent,
+      isDirectory: true
+    )
+    defer { try? FileManager.default.removeItem(at: temporaryRoot) }
+    try FileManager.default.createDirectory(
+      at: temporaryRoot,
+      withIntermediateDirectories: true
+    )
+    try FileManager.default.copyItem(at: directory, to: temporary)
+    caseDocument["input"] = "input.json"
+    try JSONSerialization.data(
+      withJSONObject: caseDocument,
+      options: [.sortedKeys]
+    ).write(to: temporary.appendingPathComponent("case.json"))
+    try JSONSerialization.data(
+      withJSONObject: inputDocument,
+      options: [.sortedKeys]
+    ).write(to: temporary.appendingPathComponent("input.json"))
+    return try FixtureLoader.load(from: temporary)
   }
 
   private static func pipelineInput(at inputURL: URL) throws -> SourcePipelineInput {
@@ -214,6 +297,49 @@ public enum MinimalTaskConformanceRunner {
         else {
           throw MinimalTaskConformanceError.invalidFixture
         }
+      } else if operation == FixtureOperation.urlTemplateCompilation.rawValue {
+        guard case .string(let template)? = arguments["template"] else {
+          throw MinimalTaskConformanceError.invalidFixture
+        }
+        let key: String?
+        if case .string(let value)? = arguments["key"] {
+          key = value
+        } else if arguments["key"] == nil {
+          key = nil
+        } else {
+          throw MinimalTaskConformanceError.invalidFixture
+        }
+        let page: Int?
+        if case .number(let number)? = arguments["page"],
+          let value = Int(number.rawToken)
+        {
+          page = value
+        } else if arguments["page"] == nil {
+          page = nil
+        } else {
+          throw MinimalTaskConformanceError.invalidFixture
+        }
+        let basePath: String?
+        if case .string(let value)? = arguments["base_path"] {
+          basePath = value
+        } else if arguments["base_path"] == nil {
+          basePath = nil
+        } else {
+          throw MinimalTaskConformanceError.invalidFixture
+        }
+        guard
+          result.urlTemplates.updateValue(
+            SourceURLTemplateInput(
+              template: template,
+              key: key,
+              page: page,
+              basePath: basePath
+            ),
+            forKey: id
+          ) == nil
+        else {
+          throw MinimalTaskConformanceError.invalidFixture
+        }
       }
     }
     return result
@@ -229,11 +355,15 @@ public enum MinimalTaskConformanceRunner {
           throw MinimalTaskConformanceError.invalidFixture
         }
         let bodyData = plan.request.body?.bytes
+        let projectedHeaders =
+          requestCase.operation == .urlTemplateCompilation
+          ? []
+          : plan.request.headers.canonicalFields
         var value: [String: JSONValue] = [
           "method": .string(plan.request.method.rawValue),
           "url": .string(plan.request.url.absoluteString),
           "headers": .array(
-            plan.request.headers.canonicalFields.map { header in
+            projectedHeaders.map { header in
               .object([
                 "name": .string(header.name),
                 "value": .string(header.value),
@@ -246,9 +376,10 @@ public enum MinimalTaskConformanceRunner {
           } ?? .null,
         ]
         if requestCase.operation == .search {
-          value["body_base64"] = bodyData.map {
-            .string($0.base64EncodedString())
-          } ?? .null
+          value["body_base64"] =
+            bodyData.map {
+              .string($0.base64EncodedString())
+            } ?? .null
           value["form_fields"] = .array(
             plan.formFields.map { field in
               .object([
@@ -282,8 +413,7 @@ public enum MinimalTaskConformanceRunner {
     ]
     if let observation = value["source_lab_observation"] {
       comparison["source_lab_observation"] = observation
-    } else if
-      case .object(let characterization)? = value["android_characterization"],
+    } else if case .object(let characterization)? = value["android_characterization"],
       let observation = characterization["source_lab_observation"]
     {
       comparison["source_lab_observation"] = observation
@@ -314,7 +444,8 @@ public enum MinimalTaskConformanceRunner {
     else {
       throw MinimalTaskConformanceError.pathEscapesRepository
     }
-    let candidate = root
+    let candidate =
+      root
       .appendingPathComponent(relative)
       .standardizedFileURL
       .resolvingSymlinksInPath()

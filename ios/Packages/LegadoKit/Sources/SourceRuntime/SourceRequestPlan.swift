@@ -39,15 +39,31 @@ public enum SourceRequestCompiler {
     template: String,
     keyword: String
   ) throws -> SourceRequestPlan {
-    if splitURLAndOption(template).option == nil {
-      guard template.contains("{{key}}") else {
-        throw SourceRuntimeIssue(stage: .urlTemplate, code: .invalidURL)
-      }
-      let url = template.replacingOccurrences(
+    let prepared =
+      splitURLAndOption(template).option == nil
+      ? template.replacingOccurrences(
         of: "{{key}}",
         with: encodeURLComponent(keyword)
       )
-      let compiled = try compiledGET(url, charset: nil)
+      : template
+    return try SourceURLTemplateCompiler.compile(
+      SourceURLTemplateInput(
+        template: prepared,
+        key: keyword,
+        baseURL: prepared
+      )
+    ).plan
+  }
+
+  static func compileRendered(
+    _ rendered: String
+  ) throws -> SourceRequestPlan {
+    let parts = splitURLAndOption(rendered)
+    guard !parts.url.isEmpty else {
+      throw SourceRuntimeIssue(stage: .urlTemplate, code: .invalidURL)
+    }
+    guard let optionText = parts.option else {
+      let compiled = try compiledGET(parts.url, charset: nil)
       return SourceRequestPlan(
         request: HTTPRequest(
           method: .get,
@@ -55,21 +71,6 @@ public enum SourceRequestCompiler {
         ),
         body: nil,
         formFields: compiled.fields
-      )
-    }
-    let rendered = try render(template: template, keyword: keyword)
-    let parts = splitURLAndOption(rendered)
-    guard !parts.url.isEmpty else {
-      throw SourceRuntimeIssue(stage: .urlTemplate, code: .invalidURL)
-    }
-    guard let optionText = parts.option else {
-      return SourceRequestPlan(
-        request: HTTPRequest(
-          method: .get,
-          url: try validatedURL(parts.url)
-        ),
-        body: nil,
-        formFields: []
       )
     }
     let option: URLOption
@@ -137,54 +138,7 @@ public enum SourceRequestCompiler {
     let charset: String?
   }
 
-  private static func render(template: String, keyword: String) throws -> String {
-    var output = ""
-    var cursor = template.startIndex
-    while let start = template.range(of: "{{", range: cursor..<template.endIndex) {
-      output += template[cursor..<start.lowerBound]
-      guard
-        let end = template.range(
-          of: "}}",
-          range: start.upperBound..<template.endIndex
-        )
-      else {
-        throw SourceRuntimeIssue(stage: .urlTemplate, code: .invalidURL)
-      }
-      let expression = String(template[start.upperBound..<end.lowerBound])
-        .trimmingCharacters(in: .whitespacesAndNewlines)
-      output += try evaluate(expression: expression, keyword: keyword)
-      cursor = end.upperBound
-    }
-    output += template[cursor...]
-    return output
-  }
-
-  private static func evaluate(
-    expression: String,
-    keyword: String
-  ) throws -> String {
-    if expression == "key" {
-      return keyword
-    }
-    let pattern =
-      #"^key\s*==\s*'([^']*)'\s*\?\s*'([^']*)'\s*:\s*'([^']*)'$"#
-    let regex = try NSRegularExpression(pattern: pattern)
-    let range = NSRange(expression.startIndex..., in: expression)
-    guard
-      let match = regex.firstMatch(in: expression, range: range),
-      match.range == range,
-      let expectedRange = Range(match.range(at: 1), in: expression),
-      let trueRange = Range(match.range(at: 2), in: expression),
-      let falseRange = Range(match.range(at: 3), in: expression)
-    else {
-      throw SourceRuntimeIssue(stage: .urlTemplate, code: .invalidURL)
-    }
-    return keyword == expression[expectedRange]
-      ? String(expression[trueRange])
-      : String(expression[falseRange])
-  }
-
-  private static func splitURLAndOption(
+  static func splitURLAndOption(
     _ rendered: String
   ) -> (url: String, option: String?) {
     guard
