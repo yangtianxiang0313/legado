@@ -2,12 +2,12 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-29T02:18:25Z
+- 更新时间：2026-07-29T02:20:54Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
-- 下一个可领取工作项：无
+- 下一个可领取工作项：IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTOMATION-001
 - 最近完成：IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTO-SCOPE-001
 
 ## 健康度
@@ -130,6 +130,7 @@
 | IOS-BOOT-001 | 100 | `completed` | 无 | 建立 Swift Package 与首批模块骨架 |
 | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-001 | 100 | `completed` | IOS-ANDROID-GOLDEN-PUBLISHER-001, IOS-KNOWLEDGE-SOURCE-RUNTIME-GOLDEN-002 | 建立受信 Business Knowledge Publisher |
 | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTO-SCOPE-001 | 100 | `completed` | IOS-KNOWLEDGE-SOURCE-RUNTIME-POST-FORM-001 | 建立无人工 Gate 的业务知识发布精确自动边界 |
+| IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTOMATION-001 | 100 | `ready` | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTO-SCOPE-001 | 实现无人工 Gate 的场景化业务知识发布与续接 |
 | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-IMMUTABLE-005 | 100 | `completed` | IOS-KNOWLEDGE-PROMOTION-CONTEXT-004 | 让发布后的 Loop 验证运行在不可变提交上 |
 | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-PLAN-006 | 100 | `completed` | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-IMMUTABLE-005 | 校验 Demand Compiler 批量计划信封 |
 | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-REMOTE-003 | 100 | `completed` | IOS-BUSINESS-KNOWLEDGE-PUBLISHER-YAML-002 | 修复 Publisher checkout remote 绑定 |
