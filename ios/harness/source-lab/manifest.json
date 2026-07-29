@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "logical_origin": "http://sourcelab.test",
-  "control_sha256": "c58bf0956adca5c626c0a819c56b91c0c4eddc63e1fac277758b50ddcb34c928",
+  "control_sha256": "1cf86f3f780bde5f709e0e503528485a08b1300ed1efa457d9bf0a0205f92e31",
   "scenarios": [
     {
       "id": "rl-reader-bookmark-search-runtime-risk-001",
@@ -14,6 +14,12 @@
       "status": "candidate",
       "path": "ios/harness/fixtures/runtime-lab/rl-reader-history-read-record-runtime-risk-001",
       "sha256": "1e51d8d1855158bd443a5c59f253c08fb3cbaecd2dc12c7dffe2ef15c614d4e9"
+    },
+    {
+      "id": "rl-reader-progress-layout-save-runtime-001",
+      "status": "candidate",
+      "path": "ios/harness/fixtures/runtime-lab/rl-reader-progress-layout-save-runtime-001",
+      "sha256": "da8a7b89bcbe08ce9ed6dcb6c506ab6f6312f70bb5ff3dccb352256c032254bb"
     },
     {
       "id": "sl-content-cache-queue-completion-runtime-001",

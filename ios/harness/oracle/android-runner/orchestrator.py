@@ -577,6 +577,73 @@ SCENARIO_CONTRACTS = {
             "composite-key-replace-isolated-by-device",
         }),
     },
+    "rl-reader-progress-layout-save-runtime-001": {
+        "status": "candidate",
+        "fixture_kind": "android_runtime_scenario",
+        "result_type": "reader_runtime",
+        "stage_names": (
+            "fixture_setup",
+            "layout_conversion",
+            "read_session_action",
+            "database_write",
+            "room_query",
+            "result_mapping",
+        ),
+        "expected_cases": (
+            (
+                "page-index-maps-to-layout-char-position",
+                "layout_set_page_index",
+            ),
+            (
+                "negative-page-index-resets-to-zero",
+                "layout_set_page_index",
+            ),
+            (
+                "oversized-page-index-clamps-to-last-layout-page",
+                "layout_set_page_index",
+            ),
+            (
+                "completed-layout-maps-char-boundaries",
+                "layout_char_to_page",
+            ),
+            (
+                "incomplete-layout-rejects-position-past-page-end",
+                "layout_char_to_page",
+            ),
+            (
+                "page-save-same-chapter-preserves-existing-title",
+                "save_read_page_changed",
+            ),
+            (
+                "page-save-after-chapter-switch-refreshes-title",
+                "save_read_page_changed",
+            ),
+            (
+                "pause-default-save-refreshes-title",
+                "save_read_page_changed",
+            ),
+            (
+                "reset-clamps-chapter-index-without-immediate-write",
+                "reset_progress",
+            ),
+            (
+                "audio-save-refreshes-title-and-persists-book-fields",
+                "audio_save_read",
+            ),
+        ),
+        "nominal_cases": frozenset({
+            "page-index-maps-to-layout-char-position",
+            "negative-page-index-resets-to-zero",
+            "oversized-page-index-clamps-to-last-layout-page",
+            "completed-layout-maps-char-boundaries",
+            "incomplete-layout-rejects-position-past-page-end",
+            "page-save-same-chapter-preserves-existing-title",
+            "page-save-after-chapter-switch-refreshes-title",
+            "pause-default-save-refreshes-title",
+            "reset-clamps-chapter-index-without-immediate-write",
+            "audio-save-refreshes-title-and-persists-book-fields",
+        }),
+    },
 }
 ROUTE_OBSERVATION_SCENARIOS = {
     "sl-source-request-header-cookie-retry-layering-001": (

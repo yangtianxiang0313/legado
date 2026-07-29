@@ -2,8 +2,8 @@
   "schema_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
   "android_tree": "c81f5d383116e37c1eefee3eb86654514e82022b",
-  "control_sha256": "015b0f516ef1b60d2d085bb1e13a720385e45cd43075d831b9c9849cd11284ee",
-  "policy_sha256": "adc745714a7225abe7ad0e00847c4a620d10d988629d189b085507e60ca8d1f9",
+  "control_sha256": "3fec21baa59aefe12d9bf4a55e9af1b4a57ef155eaaf883da17abed80d74f0a5",
+  "policy_sha256": "dd6edf49f89aab8d6e92fc3f86a3d13d3deaa1435910ecfbbad88ee8e30d909c",
   "facts": [
     {
       "id": "AF-ANALYZE-JSONPATH-GET-LIST",
@@ -217,6 +217,30 @@
         "body_semantic_sha256": "a42025607b7d31befaf05307881fd09444ca55b91f641e0fae1887ebf85e87fc"
       },
       "revision_sha256": "543ee75933f9cdb84e6338baf78a1231709d00787f57f68e8637b53bbb968372",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-AUDIO-PLAY-SAVE-READ",
+      "fact_key": "reader.progress.audio-save",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.AudioPlay/saveRead",
+      "path": "app/src/main/java/io/legado/app/model/AudioPlay.kt",
+      "git_blob": "0299cf552d36a1ab6a45d15988730cf73c2f20ad",
+      "source_sha256": "74d9c87508b41baf7ad5669432f4296ee044c898f3cf1c9fae8003f2c4c370bf",
+      "start_line": 198,
+      "end_line": 212,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "saveRead",
+        "signature": "fun saveRead()",
+        "body_semantic_sha256": "ccea761ddd0e294a1663b6ae0e057ec83a61190e4d99d926c875faefc5e23786"
+      },
+      "revision_sha256": "ae5104d5ba24bd44020d12e7139e43de303262d52eecc4da43a0d6e54ba0131b",
       "maps_to": [
         "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
       ]
@@ -783,6 +807,30 @@
       ]
     },
     {
+      "id": "AF-READ-BOOK-SET-PAGE-INDEX",
+      "fact_key": "reader.progress.set-page-index",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.ReadBook/setPageIndex",
+      "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+      "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d",
+      "source_sha256": "c6fa38c435f0075555e61bc397a6ef81baadd7a5c434e79d424f3d0e1abfef12",
+      "start_line": 295,
+      "end_line": 300,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "setPageIndex",
+        "signature": "fun setPageIndex(index: Int)",
+        "body_semantic_sha256": "b20a5360ab5c5be4f227e19ac68820ab551ce4e755008f513a902a538da94e50"
+      },
+      "revision_sha256": "e12e355831387c79b30c69511ce4357a30cd9daadd23a2fe2006bde7f144a565",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
       "id": "AF-READ-BOOK-UP-READ-TIME",
       "fact_key": "reader.history.settle-session-time",
       "category": "production_entrypoint",
@@ -1025,6 +1073,54 @@
       "revision_sha256": "f89bd4c1afa4d1edfe7d85304609a72926b03e752f6e9a75f1a1ed330433ce06",
       "maps_to": [
         "REQ-ANDROID-BOOKSOURCE-SCHEMA-001"
+      ]
+    },
+    {
+      "id": "AF-TEXT-CHAPTER-GET-PAGE-INDEX",
+      "fact_key": "reader.progress.char-position-to-page",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.ui.book.read.page.entities.TextChapter/getPageIndexByCharIndex",
+      "path": "app/src/main/java/io/legado/app/ui/book/read/page/entities/TextChapter.kt",
+      "git_blob": "eb8524f5b531f076e5708cad56cfe9a592a55d7a",
+      "source_sha256": "97305a41b9be1b1fb42c928fdb8e4bc713127df22764c1d8ea1dd5707b70ca55",
+      "start_line": 221,
+      "end_line": 251,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "getPageIndexByCharIndex",
+        "signature": "fun getPageIndexByCharIndex(charIndex: Int): Int",
+        "body_semantic_sha256": "5d1b73aad7d92eb067dc9fad63970f4cb312d9be0bb4dcffc8595a3181778451"
+      },
+      "revision_sha256": "d2e3fb8a1cb416694f73c373e8b1d47646e6bcb1e52be962926c75d911f03bf4",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-TEXT-CHAPTER-GET-READ-LENGTH",
+      "fact_key": "reader.progress.page-to-char-position",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.ui.book.read.page.entities.TextChapter/getReadLength",
+      "path": "app/src/main/java/io/legado/app/ui/book/read/page/entities/TextChapter.kt",
+      "git_blob": "eb8524f5b531f076e5708cad56cfe9a592a55d7a",
+      "source_sha256": "97305a41b9be1b1fb42c928fdb8e4bc713127df22764c1d8ea1dd5707b70ca55",
+      "start_line": 113,
+      "end_line": 124,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "getReadLength",
+        "signature": "fun getReadLength(pageIndex: Int): Int",
+        "body_semantic_sha256": "1d91f964b390bc973f608fad28ccd91b3af83b8e13748d193a609ca3dee621a8"
+      },
+      "revision_sha256": "1966865f4cb02cf8e63ca7b55bdab908a7125b7fd4b1d77a93578257e643c19b",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
       ]
     },
     {

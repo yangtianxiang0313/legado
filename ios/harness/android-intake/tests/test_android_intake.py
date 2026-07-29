@@ -18,7 +18,7 @@ class AndroidIntakeTests(unittest.TestCase):
         self.assertEqual(first, second)
         baseline = json.loads((REPO_ROOT / "ios/project/baseline.json").read_text(encoding="utf-8"))
         self.assertEqual(baseline["android_oracle"]["git_commit"], first["android_git_commit"])
-        self.assertEqual(29, len(first["facts"]))
+        self.assertEqual(33, len(first["facts"]))
 
     def test_book_source_fact_is_data_contract_not_runtime_proof(self):
         inventory = android_intake.inventory_value(REPO_ROOT)
@@ -124,6 +124,26 @@ class AndroidIntakeTests(unittest.TestCase):
         self.assertEqual(
             "onPause",
             facts["AF-READ-ACTIVITY-ON-PAUSE"]["payload"]["symbol"],
+        )
+
+    def test_reader_progress_runtime_has_layout_and_save_anchors(self):
+        inventory = android_intake.inventory_value(REPO_ROOT)
+        facts = {entry["id"]: entry for entry in inventory["facts"]}
+        self.assertEqual(
+            "setPageIndex",
+            facts["AF-READ-BOOK-SET-PAGE-INDEX"]["payload"]["symbol"],
+        )
+        self.assertEqual(
+            "getReadLength",
+            facts["AF-TEXT-CHAPTER-GET-READ-LENGTH"]["payload"]["symbol"],
+        )
+        self.assertEqual(
+            "getPageIndexByCharIndex",
+            facts["AF-TEXT-CHAPTER-GET-PAGE-INDEX"]["payload"]["symbol"],
+        )
+        self.assertEqual(
+            "saveRead",
+            facts["AF-AUDIO-PLAY-SAVE-READ"]["payload"]["symbol"],
         )
 
 if __name__ == "__main__":

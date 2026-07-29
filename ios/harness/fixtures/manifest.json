@@ -39,6 +39,11 @@
       "sha256": "9d8fdcf47ba610cc27c84a21383aa60e8755737fc5e7be1aa62db78db15b8f90"
     },
     {
+      "id": "rl-reader-progress-layout-save-runtime-001",
+      "path": "ios/harness/fixtures/runtime-lab/rl-reader-progress-layout-save-runtime-001",
+      "sha256": "25c94f7df76048a07620f20f41040bd0beaf54d9b908ebfaff646c3b3a63b9c0"
+    },
+    {
       "id": "sl-content-cache-queue-completion-runtime-001",
       "path": "ios/harness/fixtures/source-lab/sl-content-cache-queue-completion-runtime-001",
       "sha256": "1172d2ca2d61315b604e338ac3e86cb9c7b6d3de0265c923e70da670d1414b98"

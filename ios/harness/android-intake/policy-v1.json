@@ -244,6 +244,54 @@
       "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
     },
     {
+      "fact_id": "AF-READ-BOOK-SET-PAGE-INDEX",
+      "fact_key": "reader.progress.set-page-index",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+      "symbol": "setPageIndex",
+      "symbol_id": "kotlin://io.legado.app.model.ReadBook/setPageIndex",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-TEXT-CHAPTER-GET-READ-LENGTH",
+      "fact_key": "reader.progress.page-to-char-position",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/ui/book/read/page/entities/TextChapter.kt",
+      "symbol": "getReadLength",
+      "symbol_id": "kotlin://io.legado.app.ui.book.read.page.entities.TextChapter/getReadLength",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-TEXT-CHAPTER-GET-PAGE-INDEX",
+      "fact_key": "reader.progress.char-position-to-page",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/ui/book/read/page/entities/TextChapter.kt",
+      "symbol": "getPageIndexByCharIndex",
+      "symbol_id": "kotlin://io.legado.app.ui.book.read.page.entities.TextChapter/getPageIndexByCharIndex",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-AUDIO-PLAY-SAVE-READ",
+      "fact_key": "reader.progress.audio-save",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/model/AudioPlay.kt",
+      "symbol": "saveRead",
+      "symbol_id": "kotlin://io.legado.app.model.AudioPlay/saveRead",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
       "fact_id": "AF-ANALYZE-RULE-GET-STRING",
       "fact_key": "source.rule.get-string",
       "category": "production_entrypoint",

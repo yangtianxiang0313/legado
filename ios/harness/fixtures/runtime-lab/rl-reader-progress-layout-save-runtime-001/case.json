@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "kind": "android_runtime_scenario",
+  "id": "rl-reader-progress-layout-save-runtime-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "android_runtime",
+  "capabilities": ["reader.progress", "reader.layout", "android.room"],
+  "compatibility_profile": "android-legado-v1",
+  "source": null,
+  "input": "input.json",
+  "transport": {
+    "mode": "none",
+    "external_network": "deny",
+    "responses": []
+  },
+  "coverage": [
+    {
+      "behavior": "reader.progress-layout-save-runtime",
+      "cases": [
+        {
+          "id": "page-index-maps-to-layout-char-position",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-READ-BOOK-SET-PAGE-INDEX",
+            "AF-TEXT-CHAPTER-GET-READ-LENGTH",
+            "AF-READ-BOOK-SAVE-READ"
+          ],
+          "branch_refs": [
+            "ReadBook.setPageIndex persists TextChapter.getReadLength(pageIndex), not the transient page index"
+          ]
+        },
+        {
+          "id": "negative-page-index-resets-to-zero",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-READ-BOOK-SET-PAGE-INDEX",
+            "AF-TEXT-CHAPTER-GET-READ-LENGTH"
+          ],
+          "branch_refs": [
+            "TextChapter.getReadLength returns zero for a negative page index"
+          ]
+        },
+        {
+          "id": "oversized-page-index-clamps-to-last-layout-page",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-READ-BOOK-SET-PAGE-INDEX",
+            "AF-TEXT-CHAPTER-GET-READ-LENGTH"
+          ],
+          "branch_refs": [
+            "TextChapter.getReadLength clamps an oversized page index to lastIndex"
+          ]
+        },
+        {
+          "id": "completed-layout-maps-char-boundaries",
+          "role": "nominal",
+          "android_fact_refs": ["AF-TEXT-CHAPTER-GET-PAGE-INDEX"],
+          "branch_refs": [
+            "Completed TextChapter maps any position at or beyond the final page start to the final page"
+          ]
+        },
+        {
+          "id": "incomplete-layout-rejects-position-past-page-end",
+          "role": "boundary",
+          "android_fact_refs": ["AF-TEXT-CHAPTER-GET-PAGE-INDEX"],
+          "branch_refs": [
+            "Incomplete TextChapter returns -1 only when charIndex is greater than last page start plus charSize"
+          ]
+        },
+        {
+          "id": "page-save-same-chapter-preserves-existing-title",
+          "role": "boundary",
+          "android_fact_refs": ["AF-READ-BOOK-SAVE-READ"],
+          "branch_refs": [
+            "saveRead(pageChanged=true) skips title lookup when the persisted and runtime chapter indices match"
+          ]
+        },
+        {
+          "id": "page-save-after-chapter-switch-refreshes-title",
+          "role": "nominal",
+          "android_fact_refs": ["AF-READ-BOOK-SAVE-READ"],
+          "branch_refs": [
+            "saveRead(pageChanged=true) still refreshes title when chapterChanged is true"
+          ]
+        },
+        {
+          "id": "pause-default-save-refreshes-title",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-READ-ACTIVITY-ON-PAUSE",
+            "AF-READ-BOOK-SAVE-READ"
+          ],
+          "branch_refs": [
+            "ReadBookActivity.onPause calls saveRead() and the default pageChanged=false path refreshes the title"
+          ]
+        },
+        {
+          "id": "reset-clamps-chapter-index-without-immediate-write",
+          "role": "boundary",
+          "android_fact_refs": ["AF-READ-BOOK-RESET-DATA"],
+          "branch_refs": [
+            "ReadBook.resetData clamps in-memory durChapterIndex to chapterSize - 1 without immediately updating Room"
+          ]
+        },
+        {
+          "id": "audio-save-refreshes-title-and-persists-book-fields",
+          "role": "nominal",
+          "android_fact_refs": ["AF-AUDIO-PLAY-SAVE-READ"],
+          "branch_refs": [
+            "AudioPlay.saveRead refreshes the chapter title and asynchronously updates the current Book"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "relational_projection_without_exact_timestamps",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 0,
+    "network_allowed": false,
+    "logical_origin": null,
+    "database_reset_per_case": true
+  },
+  "limits": {"timeout_ms": 5000},
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/model/ReadBook.kt#resetData",
+      "app/src/main/java/io/legado/app/model/ReadBook.kt#setPageIndex",
+      "app/src/main/java/io/legado/app/model/ReadBook.kt#saveRead",
+      "app/src/main/java/io/legado/app/model/AudioPlay.kt#saveRead",
+      "app/src/main/java/io/legado/app/ui/book/read/page/entities/TextChapter.kt#getReadLength",
+      "app/src/main/java/io/legado/app/ui/book/read/page/entities/TextChapter.kt#getPageIndexByCharIndex",
+      "app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt#onPause"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-READER-PROGRESS-LAYOUT-SAVE-RUNTIME-001"
+  }
+}

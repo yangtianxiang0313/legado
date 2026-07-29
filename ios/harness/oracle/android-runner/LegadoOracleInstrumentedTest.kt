@@ -19,11 +19,15 @@ import io.legado.app.help.http.CookieStore
 import io.legado.app.help.http.StrResponse
 import io.legado.app.help.http.newCallResponse
 import io.legado.app.model.CacheBook
+import io.legado.app.model.AudioPlay
 import io.legado.app.model.ReadBook
 import io.legado.app.model.analyzeRule.AnalyzeRule
 import io.legado.app.model.analyzeRule.AnalyzeUrl
 import io.legado.app.model.analyzeRule.RuleData
 import io.legado.app.model.webBook.WebBook
+import io.legado.app.ui.book.read.page.entities.TextChapter
+import io.legado.app.ui.book.read.page.entities.TextLine
+import io.legado.app.ui.book.read.page.entities.TextPage
 import io.legado.app.utils.GSON
 import io.legado.app.utils.NetworkUtils
 import kotlinx.coroutines.CancellationException
@@ -107,6 +111,8 @@ class LegadoOracleInstrumentedTest {
                 runBookmarkRuntimeCases()
             "rl-reader-history-read-record-runtime-risk-001" ->
                 runReadRecordRuntimeCases()
+            "rl-reader-progress-layout-save-runtime-001" ->
+                runReaderProgressRuntimeCases()
             "sl-post-form-001" -> runPostFormCases()
             "sl-source-response-xml-declaration-normalization-001" ->
                 runXmlResponseCases()
@@ -643,6 +649,292 @@ class LegadoOracleInstrumentedTest {
             .put("book_name", value.bookName)
             .put("read_time", value.readTime)
             .put("last_read", value.lastRead)
+
+    private suspend fun runReaderProgressRuntimeCases() {
+        val values = input.getJSONArray("cases")
+        val supported = setOf(
+            "layout_set_page_index",
+            "layout_char_to_page",
+            "save_read_page_changed",
+            "reset_progress",
+            "audio_save_read"
+        )
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            val operation = value.getString("operation")
+            require(operation in supported) {
+                "Unsupported reader progress operation: $operation"
+            }
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", operation)
+                .put("arguments", JSONObject(arguments.toString()))
+            runCase(value.getString("id"), operation, stimulus) {
+                readerProgressRuntimeProjection(operation, arguments)
+            }
+        }
+    }
+
+    private suspend fun readerProgressRuntimeProjection(
+        operation: String,
+        arguments: JSONObject
+    ): JSONObject {
+        clearProgressRuntimeState()
+        val previousReadRecordEnabled = AppConfig.enableReadRecord
+        AppConfig.enableReadRecord = false
+        return try {
+            when (operation) {
+                "layout_set_page_index" ->
+                    layoutSetPageIndexProjection(arguments)
+                "layout_char_to_page" ->
+                    layoutCharToPageProjection(arguments)
+                "save_read_page_changed" ->
+                    saveReadPageChangedProjection(arguments)
+                "reset_progress" ->
+                    resetProgressProjection(arguments)
+                "audio_save_read" ->
+                    audioSaveReadProjection(arguments)
+                else -> error("Unsupported reader progress operation")
+            }
+        } finally {
+            drainReadBookExecutor()
+            AppConfig.enableReadRecord = previousReadRecordEnabled
+            clearProgressRuntimeState()
+        }
+    }
+
+    private fun layoutSetPageIndexProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val book = progressBook(
+            chapterIndex = 0,
+            chapterPos = 0,
+            chapterTitle = "既有标题"
+        )
+        seedProgressBook(book)
+        ReadBook.resetData(book)
+        ReadBook.curTextChapter = textChapter(arguments, book, 0)
+        val requestedPageIndex = arguments.getInt("page_index")
+        ReadBook.setPageIndex(requestedPageIndex)
+        drainReadBookExecutor()
+        val persisted = requireNotNull(appDb.bookDao.getBook(book.bookUrl))
+        return JSONObject()
+            .put("requested_page_index", requestedPageIndex)
+            .put("runtime_char_position", ReadBook.durChapterPos)
+            .put("runtime_page_index", ReadBook.durPageIndex)
+            .put("persisted_chapter_index", persisted.durChapterIndex)
+            .put("persisted_char_position", persisted.durChapterPos)
+            .put("persisted_chapter_title", persisted.durChapterTitle)
+    }
+
+    private fun layoutCharToPageProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val chapter = textChapter(
+            arguments,
+            progressBook(),
+            chapterIndex = 0
+        )
+        val values = arguments.getJSONArray("char_indices")
+        return JSONObject()
+            .put("layout_completed", chapter.isCompleted)
+            .put(
+                "mappings",
+                JSONArray().apply {
+                    for (index in 0 until values.length()) {
+                        val charIndex = values.getInt(index)
+                        put(
+                            JSONObject()
+                                .put("char_index", charIndex)
+                                .put(
+                                    "page_index",
+                                    chapter.getPageIndexByCharIndex(charIndex)
+                                )
+                        )
+                    }
+                }
+            )
+    }
+
+    private fun saveReadPageChangedProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val book = progressBook(
+            chapterIndex = arguments.getInt("stored_chapter_index"),
+            chapterPos = 5,
+            chapterTitle = "既有标题"
+        )
+        seedProgressBook(book)
+        ReadBook.resetData(book)
+        ReadBook.durChapterIndex =
+            arguments.getInt("runtime_chapter_index")
+        ReadBook.durChapterPos =
+            arguments.getInt("runtime_chapter_pos")
+        val pageChanged = arguments.getBoolean("page_changed")
+        ReadBook.saveRead(pageChanged)
+        drainReadBookExecutor()
+        val persisted = requireNotNull(appDb.bookDao.getBook(book.bookUrl))
+        return JSONObject()
+            .put("page_changed", pageChanged)
+            .put("persisted_chapter_index", persisted.durChapterIndex)
+            .put("persisted_char_position", persisted.durChapterPos)
+            .put("persisted_chapter_title", persisted.durChapterTitle)
+            .put("last_check_count", persisted.lastCheckCount)
+            .put("timestamp_was_refreshed", persisted.durChapterTime > 1L)
+    }
+
+    private fun resetProgressProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val book = progressBook(
+            chapterIndex = arguments.getInt("stored_chapter_index"),
+            chapterPos = arguments.getInt("stored_chapter_pos"),
+            chapterTitle = "既有标题"
+        )
+        seedProgressBook(book)
+        ReadBook.resetData(book)
+        val persisted = requireNotNull(appDb.bookDao.getBook(book.bookUrl))
+        return JSONObject()
+            .put("chapter_size", ReadBook.chapterSize)
+            .put("runtime_chapter_index", ReadBook.durChapterIndex)
+            .put("runtime_char_position", ReadBook.durChapterPos)
+            .put("persisted_chapter_index", persisted.durChapterIndex)
+            .put("persisted_char_position", persisted.durChapterPos)
+    }
+
+    private suspend fun audioSaveReadProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val book = progressBook(
+            chapterIndex = arguments.getInt("stored_chapter_index"),
+            chapterPos = arguments.getInt("stored_chapter_pos"),
+            chapterTitle = "既有标题"
+        )
+        seedProgressBook(book)
+        AudioPlay.book = book
+        AudioPlay.saveRead()
+        val persisted = withTimeout(5_000) {
+            while (true) {
+                val current = appDb.bookDao.getBook(book.bookUrl)
+                if (
+                    current?.durChapterTitle == "第二章" &&
+                    current.lastCheckCount == 0
+                ) {
+                    return@withTimeout current
+                }
+                delay(10)
+            }
+            error("unreachable")
+        }
+        return JSONObject()
+            .put("persisted_chapter_index", persisted.durChapterIndex)
+            .put("persisted_char_position", persisted.durChapterPos)
+            .put("persisted_chapter_title", persisted.durChapterTitle)
+            .put("last_check_count", persisted.lastCheckCount)
+            .put("timestamp_was_refreshed", persisted.durChapterTime > 1L)
+    }
+
+    private fun progressBook(
+        chapterIndex: Int = 0,
+        chapterPos: Int = 0,
+        chapterTitle: String = "既有标题"
+    ): Book = Book(
+        bookUrl = "/android-runtime/reader-progress/book.txt",
+        originName = "RuntimeLab",
+        name = "RuntimeLab 阅读进度",
+        author = "RuntimeLab",
+        totalChapterNum = 3,
+        durChapterTitle = chapterTitle,
+        durChapterIndex = chapterIndex,
+        durChapterPos = chapterPos,
+        durChapterTime = 1L,
+        lastCheckCount = 7
+    )
+
+    private fun seedProgressBook(book: Book) {
+        appDb.bookDao.insert(book)
+        val titles = listOf("第一章", "第二章", "第三章")
+        appDb.bookChapterDao.insert(
+            *titles.mapIndexed { index, title ->
+                BookChapter(
+                    url = "/android-runtime/reader-progress/$index",
+                    title = title,
+                    bookUrl = book.bookUrl,
+                    index = index
+                )
+            }.toTypedArray()
+        )
+    }
+
+    private fun textChapter(
+        arguments: JSONObject,
+        book: Book,
+        chapterIndex: Int
+    ): TextChapter {
+        val starts = arguments.getJSONArray("page_starts")
+        val texts = arguments.getJSONArray("page_texts")
+        require(starts.length() == texts.length() && starts.length() > 0)
+        val chapter = TextChapter(
+            chapter = BookChapter(
+                url = "/android-runtime/reader-progress/$chapterIndex",
+                title = "第${chapterIndex + 1}章",
+                bookUrl = book.bookUrl,
+                index = chapterIndex
+            ),
+            position = chapterIndex,
+            title = "第${chapterIndex + 1}章",
+            chaptersSize = 3,
+            sameTitleRemoved = false,
+            isVip = false,
+            isPay = false,
+            effectiveReplaceRules = null
+        )
+        val field = TextChapter::class.java.getDeclaredField("textPages")
+        field.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        val pages = field.get(chapter) as ArrayList<TextPage>
+        for (index in 0 until starts.length()) {
+            val text = texts.getString(index)
+            val page = TextPage(
+                index = index,
+                text = text,
+                title = chapter.title,
+                chapterSize = 3,
+                chapterIndex = chapterIndex
+            )
+            page.addLine(
+                TextLine(
+                    text = text,
+                    chapterPosition = starts.getInt(index)
+                )
+            )
+            page.textChapter = chapter
+            pages.add(page)
+        }
+        chapter.isCompleted = arguments.getBoolean("layout_completed")
+        return chapter
+    }
+
+    private fun clearProgressRuntimeState() {
+        drainReadBookExecutor()
+        AudioPlay.book = null
+        AudioPlay.durChapter = null
+        ReadBook.book = null
+        ReadBook.prevTextChapter = null
+        ReadBook.curTextChapter = null
+        ReadBook.nextTextChapter = null
+        clearReadRecords()
+        appDb.bookDao.all
+            .filter {
+                it.bookUrl.startsWith(
+                    "/android-runtime/reader-progress/"
+                )
+            }
+            .forEach {
+                appDb.bookChapterDao.delByBook(it.bookUrl)
+                appDb.bookDao.delete(it)
+            }
+    }
 
     private suspend fun runPostFormCases() {
         val values = input.getJSONArray("cases")

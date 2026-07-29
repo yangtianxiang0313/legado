@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "page-index-maps-to-layout-char-position",
+      "operation": "layout_set_page_index",
+      "arguments": {
+        "page_index": 1,
+        "page_starts": [0, 120, 260],
+        "page_texts": ["aaaaaaaaaa", "bbbbbbbb", "ccccc"],
+        "layout_completed": true
+      }
+    },
+    {
+      "id": "negative-page-index-resets-to-zero",
+      "operation": "layout_set_page_index",
+      "arguments": {
+        "page_index": -1,
+        "page_starts": [0, 120, 260],
+        "page_texts": ["aaaaaaaaaa", "bbbbbbbb", "ccccc"],
+        "layout_completed": true
+      }
+    },
+    {
+      "id": "oversized-page-index-clamps-to-last-layout-page",
+      "operation": "layout_set_page_index",
+      "arguments": {
+        "page_index": 99,
+        "page_starts": [0, 120, 260],
+        "page_texts": ["aaaaaaaaaa", "bbbbbbbb", "ccccc"],
+        "layout_completed": true
+      }
+    },
+    {
+      "id": "completed-layout-maps-char-boundaries",
+      "operation": "layout_char_to_page",
+      "arguments": {
+        "char_indices": [0, 119, 120, 259, 260, 265, 266, 1000],
+        "page_starts": [0, 120, 260],
+        "page_texts": ["aaaaaaaaaa", "bbbbbbbb", "ccccc"],
+        "layout_completed": true
+      }
+    },
+    {
+      "id": "incomplete-layout-rejects-position-past-page-end",
+      "operation": "layout_char_to_page",
+      "arguments": {
+        "char_indices": [259, 260, 265, 266, 1000],
+        "page_starts": [0, 120, 260],
+        "page_texts": ["aaaaaaaaaa", "bbbbbbbb", "ccccc"],
+        "layout_completed": false
+      }
+    },
+    {
+      "id": "page-save-same-chapter-preserves-existing-title",
+      "operation": "save_read_page_changed",
+      "arguments": {
+        "stored_chapter_index": 0,
+        "runtime_chapter_index": 0,
+        "runtime_chapter_pos": 120,
+        "page_changed": true
+      }
+    },
+    {
+      "id": "page-save-after-chapter-switch-refreshes-title",
+      "operation": "save_read_page_changed",
+      "arguments": {
+        "stored_chapter_index": 0,
+        "runtime_chapter_index": 1,
+        "runtime_chapter_pos": 35,
+        "page_changed": true
+      }
+    },
+    {
+      "id": "pause-default-save-refreshes-title",
+      "operation": "save_read_page_changed",
+      "arguments": {
+        "stored_chapter_index": 0,
+        "runtime_chapter_index": 0,
+        "runtime_chapter_pos": 80,
+        "page_changed": false
+      }
+    },
+    {
+      "id": "reset-clamps-chapter-index-without-immediate-write",
+      "operation": "reset_progress",
+      "arguments": {
+        "stored_chapter_index": 99,
+        "stored_chapter_pos": 777
+      }
+    },
+    {
+      "id": "audio-save-refreshes-title-and-persists-book-fields",
+      "operation": "audio_save_read",
+      "arguments": {
+        "stored_chapter_index": 1,
+        "stored_chapter_pos": 345
+      }
+    }
+  ]
+}
