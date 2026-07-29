@@ -140,6 +140,130 @@ class MinimalLoopTests(unittest.TestCase):
             )
             self.assertIsNone(loop.next_task(root))
 
+    def test_next_characterization_comes_from_smallest_ready_android_claim(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.write(
+                root,
+                "ios/project/requirements/accepted/"
+                "REQ-ANDROID-SOURCE-PIPELINE-001.json",
+                {"id": "REQ-ANDROID-SOURCE-PIPELINE-001"},
+            )
+            self.write(
+                root,
+                "ios/project/migration-intents/MINT-SOURCE-REQUEST-001.json",
+                {
+                    "id": "MINT-SOURCE-REQUEST-001",
+                    "android_baseline": {"commit": "a" * 40},
+                    "source_anchors": [{"path": "AnalyzeUrl.kt"}],
+                    "requirement_binding": {
+                        "id": "REQ-ANDROID-SOURCE-PIPELINE-001",
+                        "revision": 1,
+                        "clauses": ["RC-01"],
+                    },
+                },
+            )
+            creator = "IOS-ANDROID-SOURCE-KNOWLEDGE-001"
+            self.write(
+                root,
+                "ios/project/business-knowledge/packets/proposals/"
+                "BKP-SOURCE-REQUEST-001/r0001.json",
+                {
+                    "id": "BKP-SOURCE-REQUEST-001",
+                    "revision": 1,
+                    "status": "candidate",
+                    "created_by": creator,
+                    "baseline": {"android_commit": "a" * 40},
+                    "claims": [
+                        {
+                            "id": "BKC-HEADER-001",
+                            "revision": 1,
+                            "semantic_key": "source.request.header-cookie-retry",
+                            "topic": "Header Cookie Retry",
+                            "subject_keys": ["request", "session", "transport"],
+                            "depends_on": [
+                                {"id": "BKC-BODY-001", "revision": 1}
+                            ],
+                            "support": {
+                                "state": "candidate_source_anchored",
+                                "runtime_requirement": "android_characterization",
+                                "source_anchors": [
+                                    {"path": "AnalyzeUrl.kt"},
+                                    {"path": "Cookie.kt"},
+                                ],
+                            },
+                        },
+                        {
+                            "id": "BKC-XML-001",
+                            "revision": 1,
+                            "semantic_key": "source.response.xml-normalization",
+                            "topic": "XML normalization",
+                            "statement": "Android may prepend an XML declaration.",
+                            "subject_keys": ["transport"],
+                            "depends_on": [
+                                {"id": "BKC-BODY-001", "revision": 1}
+                            ],
+                            "support": {
+                                "state": "candidate_source_anchored",
+                                "runtime_requirement": "android_characterization",
+                                "source_anchors": [
+                                    {"path": "AnalyzeUrl.kt"}
+                                ],
+                            },
+                        },
+                    ],
+                },
+            )
+            self.write(
+                root,
+                "ios/project/business-knowledge/drivers/proposals/"
+                "DRV-SOURCE-REQUEST-001/r0001.json",
+                {
+                    "id": "DRV-SOURCE-REQUEST-001",
+                    "revision": 1,
+                    "created_by": creator,
+                    "claim_refs": [
+                        {"id": "BKC-HEADER-001", "revision": 1},
+                        {"id": "BKC-XML-001", "revision": 1},
+                    ],
+                },
+            )
+            self.write(
+                root,
+                loop.EVENTS_PATH.as_posix(),
+                {
+                    "schema_version": 2,
+                    "sequence": 1,
+                    "at": "2026-07-29T00:00:00Z",
+                    "event": "knowledge_linked",
+                    "task_id": "IOS-PRIOR-001",
+                    "details": {
+                        "knowledge": {
+                            "candidate_claim_refs": [
+                                {"id": "BKC-BODY-001", "revision": 1}
+                            ]
+                        }
+                    },
+                },
+            )
+
+            task = loop.next_task(root)
+
+            self.assertEqual("characterization", task["kind"])
+            self.assertEqual(
+                "BKC-XML-001",
+                task["source"]["knowledge"]["candidate_claim"]["id"],
+            )
+            self.assertEqual(
+                "sl-source-response-xml-normalization-001",
+                task["source"]["fixture_id"],
+            )
+            self.assertFalse(
+                (root / task["source"]["android_golden"]).exists()
+            )
+            loop.validate_task(root, task)
+            self.assertLess(len(loop.canonical(task)), 8_000)
+
     def test_changed_paths_preserves_first_porcelain_path(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

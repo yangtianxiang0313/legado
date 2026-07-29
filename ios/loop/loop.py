@@ -9,6 +9,7 @@ import fnmatch
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -164,6 +165,26 @@ def completed_task_ids(root: Path) -> set[str]:
     return completed
 
 
+def characterized_claim_refs(root: Path) -> set[tuple[str, int]]:
+    result: set[tuple[str, int]] = set()
+    for event in load_events(root):
+        details = event.get("details")
+        if not isinstance(details, dict):
+            continue
+        knowledge = details.get("knowledge")
+        if not isinstance(knowledge, dict):
+            continue
+        for reference in knowledge.get("candidate_claim_refs", []):
+            if (
+                isinstance(reference, dict)
+                and isinstance(reference.get("id"), str)
+                and isinstance(reference.get("revision"), int)
+                and not isinstance(reference.get("revision"), bool)
+            ):
+                result.add((reference["id"], reference["revision"]))
+    return result
+
+
 def relative_jsons(root: Path, relative: str) -> Iterable[tuple[str, Mapping[str, Any]]]:
     directory = root / relative
     if not directory.exists():
@@ -277,6 +298,127 @@ def planned_deliveries(root: Path) -> list[Mapping[str, Any]]:
                 )
                 candidate["entries"].append(entry)
     return [deliveries[key] for key in sorted(deliveries)]
+
+
+def requirement_refs_for_claim(
+    root: Path,
+    packet: Mapping[str, Any],
+    claim: Mapping[str, Any],
+) -> list[str]:
+    packet_commit = packet.get("baseline", {}).get("android_commit")
+    claim_paths = {
+        value.get("path")
+        for value in claim.get("support", {}).get("source_anchors", [])
+        if isinstance(value, dict) and isinstance(value.get("path"), str)
+    }
+    matches: list[tuple[str, Mapping[str, Any]]] = []
+    for path, intent in relative_jsons(root, "ios/project/migration-intents"):
+        baseline = intent.get("android_baseline")
+        anchors = intent.get("source_anchors")
+        binding = intent.get("requirement_binding")
+        if (
+            not isinstance(baseline, dict)
+            or baseline.get("commit") != packet_commit
+            or not isinstance(anchors, list)
+            or not isinstance(binding, dict)
+        ):
+            continue
+        intent_paths = {
+            value.get("path")
+            for value in anchors
+            if isinstance(value, dict) and isinstance(value.get("path"), str)
+        }
+        if claim_paths and not (claim_paths & intent_paths):
+            continue
+        matches.append((path, binding))
+    if not matches:
+        return []
+    _, binding = sorted(matches, key=lambda value: value[0])[0]
+    identifier = binding.get("id")
+    revision = binding.get("revision")
+    clauses = binding.get("clauses")
+    if (
+        not isinstance(identifier, str)
+        or not isinstance(revision, int)
+        or isinstance(revision, bool)
+        or not isinstance(clauses, list)
+        or not clauses
+        or any(not isinstance(value, str) for value in clauses)
+    ):
+        return []
+    return [
+        f"{identifier}@{revision}#{clause}"
+        for clause in sorted(set(clauses))
+    ]
+
+
+def pending_characterizations(root: Path) -> list[Mapping[str, Any]]:
+    completed = completed_task_ids(root)
+    characterized = characterized_claim_refs(root)
+    candidates: list[tuple[int, int, str, Mapping[str, Any]]] = []
+    for packet_path, packet in relative_jsons(
+        root,
+        "ios/project/business-knowledge/packets/proposals",
+    ):
+        if packet.get("status") != "candidate":
+            continue
+        for claim in packet.get("claims", []):
+            if not isinstance(claim, dict):
+                continue
+            claim_id = claim.get("id")
+            revision = claim.get("revision")
+            support = claim.get("support")
+            if (
+                not isinstance(claim_id, str)
+                or not isinstance(revision, int)
+                or isinstance(revision, bool)
+                or not isinstance(support, dict)
+                or support.get("runtime_requirement")
+                != "android_characterization"
+                or support.get("state") != "candidate_source_anchored"
+                or (claim_id, revision) in characterized
+            ):
+                continue
+            dependencies = {
+                (value.get("id"), value.get("revision"))
+                for value in claim.get("depends_on", [])
+                if isinstance(value, dict)
+            }
+            if not dependencies.issubset(characterized):
+                continue
+            requirements = requirement_refs_for_claim(root, packet, claim)
+            if not requirements:
+                continue
+            semantic_key = str(claim.get("semantic_key") or claim_id)
+            task_id = characterization_task_id(semantic_key)
+            if task_id in completed:
+                continue
+            value = {
+                "packet_path": packet_path,
+                "packet": packet,
+                "claim": claim,
+                "requirements": requirements,
+                "task_id": task_id,
+            }
+            candidates.append(
+                (
+                    len(claim.get("subject_keys", [])),
+                    len(support.get("source_anchors", [])),
+                    semantic_key,
+                    value,
+                )
+            )
+    return [value for _, _, _, value in sorted(candidates, key=lambda item: item[:3])]
+
+
+def characterization_task_id(semantic_key: str) -> str:
+    slug = re.sub(r"[^A-Z0-9]+", "-", semantic_key.upper()).strip("-")
+    return f"IOS-CHARACTERIZE-{slug}-001"
+
+
+def characterization_fixture_id(semantic_key: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", semantic_key.lower()).strip("-")
+    return f"sl-{slug}-001"
 
 
 def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -443,11 +585,189 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
     return task
 
 
+def build_characterization_task(
+    root: Path,
+    candidate: Mapping[str, Any],
+) -> Mapping[str, Any]:
+    packet = candidate["packet"]
+    claim = candidate["claim"]
+    semantic_key = str(claim["semantic_key"])
+    fixture_id = characterization_fixture_id(semantic_key)
+    golden_path = (
+        f"ios/harness/goldens/android-legado-v1/{fixture_id}.json"
+    )
+    creator = packet.get("created_by")
+    driver_ref = None
+    claim_key = (claim.get("id"), claim.get("revision"))
+    for path, driver in relative_jsons(
+        root,
+        "ios/project/business-knowledge/drivers/proposals",
+    ):
+        refs = {
+            (value.get("id"), value.get("revision"))
+            for value in driver.get("claim_refs", [])
+            if isinstance(value, dict)
+        }
+        if driver.get("created_by") == creator and claim_key in refs:
+            driver_ref = {
+                "id": driver.get("id"),
+                "revision": driver.get("revision"),
+                "path": path,
+            }
+            break
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "id": candidate["task_id"],
+        "kind": "characterization",
+        "title": str(claim.get("topic") or semantic_key),
+        "status": "ready",
+        "priority": 100,
+        "goal": (
+            "从冻结 Android 源码声明出发扩展 SourceLab 场景，"
+            "由真实 Android runner 产出结构化 Golden，并发布对应业务知识与"
+            "Coverage；测试只验证权威链，不能替代源码语义或手写 expected。"
+        ),
+        "source": {
+            "android_baseline": packet.get("baseline"),
+            "anchors": claim.get("support", {}).get("source_anchors", []),
+            "fixture_id": fixture_id,
+            "android_golden": golden_path,
+            "knowledge": {
+                "packet": {
+                    "id": packet.get("id"),
+                    "revision": packet.get("revision"),
+                    "path": candidate["packet_path"],
+                },
+                "candidate_claim": {
+                    "id": claim.get("id"),
+                    "revision": claim.get("revision"),
+                    "semantic_key": semantic_key,
+                    "statement": claim.get("statement"),
+                },
+                "driver": driver_ref,
+            },
+        },
+        "requirements": candidate["requirements"],
+        "architecture": {
+            "owner": "SourceRuntime",
+            "refs": ["ARCH-001", "ARCH-005", "ARCH-014", "ARCH-017"],
+            "rule": (
+                "先固定 Android 可观察结果，再扩展独立 SourceRuntime；"
+                "SourceLab 与 Golden 不进入 UI/Domain。"
+            ),
+        },
+        "scope": {
+            "allowed_paths": [
+                f"ios/harness/fixtures/source-lab/{fixture_id}/**",
+                "ios/harness/source-lab/manifest.json",
+                "ios/harness/source-lab/coverage-policy-v1.json",
+                "ios/harness/oracle/request-registry.json",
+                "ios/harness/oracle/android-runner/**",
+                golden_path,
+                "ios/harness/goldens/manifest.json",
+                "ios/harness/goldens/releases/**",
+                "ios/project/external-execution-receipts/**",
+                "ios/project/business-knowledge/packets/proposals/**",
+                "ios/project/business-knowledge/packets/published/**",
+                "ios/project/business-knowledge/drivers/proposals/**",
+                "ios/project/business-knowledge/drivers/published/**",
+                "ios/project/business-knowledge/coverage/**",
+                "ios/project/business-knowledge/releases/**",
+                "ios/project/business-knowledge/catalog.json",
+            ],
+            "forbidden": [
+                "手写 Android expected",
+                "iOS 产品实现",
+                "accepted Requirement",
+                "架构依赖边",
+                "三方依赖",
+            ],
+        },
+        "acceptance": {
+            "commands": [
+                {
+                    "id": "source-lab-contract",
+                    "argv": [
+                        "python3",
+                        "-B",
+                        "ios/harness/source-lab/source_lab.py",
+                        "doctor",
+                        "--root",
+                        ".",
+                    ],
+                    "timeout_seconds": 120,
+                },
+                {
+                    "id": "oracle-contract-tests",
+                    "argv": [
+                        "python3",
+                        "-B",
+                        "-m",
+                        "unittest",
+                        "ios.harness.tests.test_oracle_control",
+                        "ios.harness.tests.test_oracle_ci_proposal",
+                        "ios.harness.tests.test_oracle_trusted_import",
+                    ],
+                    "timeout_seconds": 180,
+                },
+                {
+                    "id": "android-golden-contract",
+                    "argv": [
+                        "python3",
+                        "-B",
+                        "-m",
+                        "unittest",
+                        "ios.harness.tests.test_android_golden_publisher",
+                    ],
+                    "timeout_seconds": 300,
+                },
+                {
+                    "id": "business-knowledge-contract",
+                    "argv": [
+                        "python3",
+                        "-B",
+                        "ios/harness/business-knowledge/business_knowledge.py",
+                        "doctor",
+                        "--root",
+                        ".",
+                    ],
+                    "timeout_seconds": 120,
+                },
+            ],
+            "structured_output": {
+                "fixture_id": fixture_id,
+                "expected": golden_path,
+                "required_fields": [
+                    "android_expected",
+                    "source_lab_transcript",
+                    "oracle_bindings",
+                    "golden_receipt",
+                ],
+            },
+        },
+        "knowledge_updates": {
+            "candidate_claim_refs": [
+                {"id": claim.get("id"), "revision": claim.get("revision")}
+            ],
+            "required_on_completion": [
+                "summary",
+                "current_status",
+                "architecture_change",
+                "pitfalls",
+                "next_step",
+            ],
+        },
+    }
+
+
 def next_task(root: Path) -> Mapping[str, Any] | None:
     deliveries = planned_deliveries(root)
-    if not deliveries:
-        return None
-    return build_task(root, deliveries[0])
+    if deliveries:
+        return build_task(root, deliveries[0])
+    characterizations = pending_characterizations(root)
+    if characterizations:
+        return build_characterization_task(root, characterizations[0])
+    return None
 
 
 def initial_current() -> Mapping[str, Any]:
@@ -470,7 +790,7 @@ def validate_task(root: Path, task: Mapping[str, Any]) -> None:
     if (
         task.get("schema_version") != SCHEMA_VERSION
         or not isinstance(task.get("id"), str)
-        or task.get("kind") != "delivery"
+        or task.get("kind") not in {"delivery", "characterization"}
         or task.get("status") not in {"ready", "in_progress"}
         or not isinstance(task.get("requirements"), list)
         or not task["requirements"]
@@ -488,10 +808,11 @@ def validate_task(root: Path, task: Mapping[str, Any]) -> None:
     source = task.get("source")
     if not isinstance(source, dict):
         raise LoopError("TASK_SOURCE_INVALID")
-    for key in ("android_golden",):
-        value = source.get(key)
-        if not isinstance(value, str) or not (root / value).is_file():
-            raise LoopError(f"TASK_SOURCE_MISSING:{key}")
+    golden = source.get("android_golden")
+    if not isinstance(golden, str):
+        raise LoopError("TASK_SOURCE_MISSING:android_golden")
+    if task.get("kind") == "delivery" and not (root / golden).is_file():
+        raise LoopError("TASK_SOURCE_MISSING:android_golden")
 
 
 def doctor(root: Path) -> Mapping[str, Any]:
@@ -743,6 +1064,13 @@ def complete(
             "runtime": verification["runtime"],
         },
     }
+    knowledge_updates = task.get("knowledge_updates")
+    if isinstance(knowledge_updates, dict):
+        candidate_refs = knowledge_updates.get("candidate_claim_refs")
+        if isinstance(candidate_refs, list) and candidate_refs:
+            details["knowledge"] = {
+                "candidate_claim_refs": candidate_refs,
+            }
     event = append_event(
         root,
         "task_completed",

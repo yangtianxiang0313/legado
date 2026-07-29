@@ -16,7 +16,9 @@ v2 的目标不是削弱业务、架构或验收约束，而是删除重复表�
 
 ```mermaid
 flowchart LR
-  A["冻结 Android 源码"] --> K["Published Business Knowledge"]
+  A["冻结 Android 源码"] --> C["Source-anchored Candidate Claim"]
+  C --> P
+  A --> K["Published Business Knowledge"]
   G["Android Golden"] --> K
   K --> P["Planner（纯派生）"]
   P --> T["唯一 task.json"]
@@ -40,16 +42,20 @@ flowchart LR
 
 ## Task 如何产生
 
-Planner 只读取已经发布的业务知识：
+Planner 有两条纯派生入口：
 
-1. 从 Coverage Ledger 找到 `delivery.state=planned` 的 claim；
-2. 绑定精确 Requirement revision/clause；
-3. 绑定 Android baseline、源码 path/blob/symbol；
-4. 绑定 SourceLab fixture、受保护 Android Golden；
-5. 根据 Architecture Driver 决定 owner、允许写路径和不变量；
-6. 生成一个任务，不生成候选或中间 Recipe。
+1. 优先从 Coverage Ledger 找到 `delivery.state=planned` 的已发布 Claim，生成
+   iOS Delivery Task；
+2. 没有 Delivery 时，从源码锚定且要求 `android_characterization` 的 Candidate
+   Claim 中选择依赖已闭合、范围最小的一项；
+3. Characterization Task 只允许扩展 SourceLab、Oracle request registry、受保护
+   Android Golden 及其 Business Knowledge/Coverage 发布结果，禁止先写 iOS 产品实现
+   或手写 expected；
+4. 两类任务都绑定精确 Requirement revision/clause、Android baseline、
+   source path/blob/symbol 和 Architecture Driver；
+5. 每次只生成一个 `task.json`，不生成候选或中间 Recipe。
 
-业务知识不完整时 Planner 报结构化错误；不得由 AI 猜测或扩大任务。
+业务知识不完整时该 Claim 不进入可执行队列；不得由 AI 猜测或扩大任务。
 
 ## 验证
 
