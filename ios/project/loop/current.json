@@ -1,1 +1,1 @@
-{"active_task":null,"attempt":0,"last_completed":{"at":"2026-07-29T18:12:16Z","sequence":129,"task_id":"IOS-READER-CORE-PROGRESS-LAYOUT-SAVE-001"},"schema_version":2,"status":"idle","verification":null}
+{"active_task":"IOS-CHARACTERIZE-INTEGRATION-BACKUP-WEBDAV-001","attempt":0,"last_completed":{"at":"2026-07-29T18:12:16Z","sequence":129,"task_id":"IOS-READER-CORE-PROGRESS-LAYOUT-SAVE-001"},"schema_version":2,"status":"running","verification":null}
