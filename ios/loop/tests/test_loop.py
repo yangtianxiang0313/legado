@@ -772,6 +772,25 @@ class MinimalLoopTests(unittest.TestCase):
             delivery["allowed_paths"],
         )
 
+    def test_app_characterization_routes_to_navigation_runtime_lab(self):
+        claim = {
+            "semantic_key": "app.startup.first-use-and-restore",
+            "subject_keys": ["app.startup", "app.navigation"],
+        }
+
+        contract = loop.characterization_contract(claim)
+
+        self.assertEqual("AppNavigation", contract["owner"])
+        self.assertEqual("runtime-lab", contract["fixture_root"])
+        self.assertEqual(
+            "rl-app-startup-first-use-and-restore-001",
+            loop.characterization_fixture_id(
+                claim["semantic_key"],
+                contract["fixture_prefix"],
+            ),
+        )
+        self.assertIn("ARCH-010", contract["architecture_refs"])
+
     def test_integration_characterization_bootstraps_protocol_lab_only(self):
         claim = {
             "id": "BKC-INTEGRATION-WEBDAV-001",

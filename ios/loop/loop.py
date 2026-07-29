@@ -790,6 +790,27 @@ def characterization_contract(claim: Mapping[str, Any]) -> Mapping[str, Any]:
         if isinstance(value, str)
     }
     keys = {semantic_key, *subject_keys}
+    if any(value.startswith(("app.", "ui.")) for value in keys):
+        return {
+            "owner": "AppNavigation",
+            "fixture_prefix": "rl",
+            "fixture_root": "runtime-lab",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-004",
+                "ARCH-006",
+                "ARCH-007",
+                "ARCH-010",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "rule": (
+                "先固定 Android 启动与导航决策的可观察状态转换，再决定"
+                " AppNavigation、AppUseCases 和 AppShell 的职责；"
+                "Android Activity、平台 I/O 与 Golden 不进入产品 Target。"
+            ),
+        }
     if any(
         value.startswith(("reader.",))
         for value in keys
