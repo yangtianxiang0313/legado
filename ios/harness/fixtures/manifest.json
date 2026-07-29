@@ -39,6 +39,11 @@
       "sha256": "09b93767bf463cb0f658488b9c6e4243a6b163796cd860559851f4d65018ad23"
     },
     {
+      "id": "sl-source-cookie-persistent-session-merge-runtime-001",
+      "path": "ios/harness/fixtures/source-lab/sl-source-cookie-persistent-session-merge-runtime-001",
+      "sha256": "58a803e1e40ddddfb6e5f8e924eda639c9ccc9f02908c7bd98e7df2de8989f6e"
+    },
+    {
       "id": "sl-source-request-field-encoding-runtime-001",
       "path": "ios/harness/fixtures/source-lab/sl-source-request-field-encoding-runtime-001",
       "sha256": "6610dbfa785228ad1074af9c0be3f0a69e1a2936e7db65c76052c45107f42334"

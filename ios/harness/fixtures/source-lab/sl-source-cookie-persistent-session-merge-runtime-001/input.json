@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "cookie-parser-boundaries",
+      "operation": "cookie_session",
+      "arguments": {
+        "mode": "parser",
+        "cookie": "a=1; empty=; blank=   ; lone; equals=a=b; null=null; duplicate=first; duplicate=second"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/cookie/helper-anchor"
+      }
+    },
+    {
+      "id": "persistent-session-merge-order",
+      "operation": "cookie_session",
+      "arguments": {
+        "mode": "store_merge",
+        "persistent_cookie": "persisted=stored; shared=persistent",
+        "session_set_cookies": [
+          "session=memory; Path=/",
+          "shared=session; Path=/"
+        ]
+      },
+      "request": {
+        "method": "GET",
+        "target": "/cookie/helper-anchor"
+      }
+    },
+    {
+      "id": "enabled-jar-network-reloads-store",
+      "operation": "cookie_session",
+      "arguments": {
+        "mode": "analyze_request",
+        "enabled_cookie_jar": true,
+        "persistent_cookie": "persisted=stored; shared=persistent",
+        "session_set_cookies": [
+          "session=memory; Path=/",
+          "shared=session; Path=/"
+        ],
+        "explicit_cookie": "explicit=source; shared=explicit"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/cookie/enabled-observe"
+      }
+    },
+    {
+      "id": "disabled-jar-keeps-explicit-and-ignores-response",
+      "operation": "cookie_session",
+      "arguments": {
+        "mode": "analyze_request",
+        "enabled_cookie_jar": false,
+        "persistent_cookie": "persisted=stored; shared=persistent",
+        "session_set_cookies": [
+          "session=memory; Path=/",
+          "shared=session; Path=/"
+        ],
+        "explicit_cookie": "explicit=source; shared=explicit"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/cookie/disabled-set"
+      }
+    },
+    {
+      "id": "response-classifies-persistent-and-session",
+      "operation": "cookie_session",
+      "arguments": {
+        "mode": "response_classification",
+        "set_cookies": [
+          "persisted=server; Max-Age=3600; Path=/",
+          "shared=persistent; Max-Age=3600; Path=/",
+          "session=memory; Path=/",
+          "shared=session; Path=/"
+        ]
+      },
+      "request": {
+        "method": "GET",
+        "target": "/cookie/helper-anchor"
+      }
+    },
+    {
+      "id": "path-and-expiry-metadata-flattened",
+      "operation": "cookie_session",
+      "arguments": {
+        "mode": "metadata_flattening",
+        "set_cookies": [
+          "pathOnly=value; Max-Age=3600; Path=/restricted",
+          "expired=value; Max-Age=0; Path=/"
+        ],
+        "load_target": "/cookie/outside"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/cookie/helper-anchor"
+      }
+    },
+    {
+      "id": "redirect-cookie-chain",
+      "operation": "cookie_session",
+      "arguments": {
+        "mode": "redirect"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/cookie/redirect-start"
+      }
+    },
+    {
+      "id": "remove-key-and-domain",
+      "operation": "cookie_session",
+      "arguments": {
+        "mode": "removal",
+        "persistent_cookie": "persisted=stored; shared=persistent",
+        "session_set_cookies": [
+          "session=memory; Path=/",
+          "shared=session; Path=/"
+        ],
+        "remove_key": "shared"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/cookie/helper-anchor"
+      }
+    },
+    {
+      "id": "registrable-domain-normalization",
+      "operation": "cookie_session",
+      "arguments": {
+        "mode": "domain_normalization",
+        "write_url": "https://www.example.com/path",
+        "same_site_url": "https://api.example.com/other",
+        "other_site_url": "https://www.example.org/path",
+        "cookie": "registrable=shared"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/cookie/helper-anchor"
+      }
+    }
+  ]
+}

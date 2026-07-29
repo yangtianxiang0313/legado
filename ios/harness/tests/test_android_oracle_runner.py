@@ -478,6 +478,52 @@ def retry_redirect_raw_artifact():
     }
 
 
+def cookie_session_raw_artifact():
+    scenario = "sl-source-cookie-persistent-session-merge-runtime-001"
+    contract = runner.SCENARIO_CONTRACTS[scenario]
+    requests = []
+    cases = []
+    for index, (case_id, operation) in enumerate(
+        contract["expected_cases"]
+    ):
+        request = {
+            "method": "GET",
+            "url": f"{runner.LOGICAL_ORIGIN}/cookie/{case_id}",
+            "headers": [
+                {"name": "x-source", "value": "cookie-session"}
+            ],
+            "body": None,
+            "timeout_ms": None,
+        }
+        requests.append(request)
+        cases.append(
+            {
+                "id": case_id,
+                "operation": operation,
+                "request": request,
+                "result": {
+                    "domain": "sourcelab.test",
+                    "combined_cookie": f"case={index}",
+                },
+                "issue": None,
+            }
+        )
+    return {
+        "schema_version": 1,
+        "scenario_id": scenario,
+        "device_origin": "http://127.0.0.1:49152",
+        "logical_origin": runner.LOGICAL_ORIGIN,
+        "request_plan": requests,
+        "cases": cases,
+        "source_lab_route_counts": {
+            route_id: index + 1
+            for index, route_id in enumerate(
+                runner.ROUTE_OBSERVATION_SCENARIOS[scenario]
+            )
+        },
+    }
+
+
 class AndroidOracleRunnerTests(unittest.TestCase):
     def test_doctor_binds_frozen_android_tree_and_exposes_no_authority(self):
         report = runner.doctor(ROOT)
@@ -556,6 +602,14 @@ class AndroidOracleRunnerTests(unittest.TestCase):
         self.assertEqual(
             "sl-source-transport-retry-redirect-runtime-001",
             retry_redirect["scenario_id"],
+        )
+        cookie_session = runner.doctor(
+            ROOT,
+            "sl-source-cookie-persistent-session-merge-runtime-001",
+        )
+        self.assertEqual(
+            "sl-source-cookie-persistent-session-merge-runtime-001",
+            cookie_session["scenario_id"],
         )
         with mock.patch.object(
             runner,
@@ -833,6 +887,35 @@ class AndroidOracleRunnerTests(unittest.TestCase):
         scenario = "sl-source-transport-retry-redirect-runtime-001"
         artifact = runner.normalize_raw_artifact(
             retry_redirect_raw_artifact(),
+            bindings(),
+            scenario,
+        )
+        projected = artifact["result"]["value"][
+            "portable_known_projection"
+        ]["cases"]
+        self.assertEqual(
+            [
+                case_id
+                for case_id, _ in
+                runner.SCENARIO_CONTRACTS[scenario]["expected_cases"]
+            ],
+            [case["id"] for case in projected],
+        )
+        observation = artifact["result"]["value"][
+            "android_characterization"
+        ]["source_lab_observation"]
+        self.assertEqual(
+            list(runner.ROUTE_OBSERVATION_SCENARIOS[scenario]),
+            [
+                entry["route_id"]
+                for entry in observation["route_request_counts"]
+            ],
+        )
+
+    def test_cookie_session_binds_all_cases_and_route_observations(self):
+        scenario = "sl-source-cookie-persistent-session-merge-runtime-001"
+        artifact = runner.normalize_raw_artifact(
+            cookie_session_raw_artifact(),
             bindings(),
             scenario,
         )

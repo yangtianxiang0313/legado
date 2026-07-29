@@ -1,0 +1,208 @@
+{
+  "schema_version": 1,
+  "kind": "source_lab_scenario",
+  "id": "sl-source-cookie-persistent-session-merge-runtime-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "source_lab_site",
+  "capabilities": [
+    "CAP-RUNTIME-PORTS",
+    "CAP-CONFORMANCE"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": "source.template.json",
+  "input": "input.json",
+  "transport": {
+    "mode": "fixture_and_loopback",
+    "external_network": "deny",
+    "responses": [
+      {
+        "id": "cookie-enabled-observe",
+        "match": {
+          "method": "GET",
+          "path": "/cookie/enabled-observe",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/ok.txt"
+        }
+      },
+      {
+        "id": "cookie-disabled-set",
+        "match": {
+          "method": "GET",
+          "path": "/cookie/disabled-set",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8",
+            "set-cookie": "ignored=server; Path=/"
+          },
+          "body_file": "responses/ok.txt"
+        }
+      },
+      {
+        "id": "cookie-redirect-start",
+        "match": {
+          "method": "GET",
+          "path": "/cookie/redirect-start",
+          "query": {}
+        },
+        "respond": {
+          "status": 302,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8",
+            "location": "/cookie/redirect-final",
+            "set-cookie": "hop=start; Path=/"
+          },
+          "body_file": "responses/redirect.txt"
+        }
+      },
+      {
+        "id": "cookie-redirect-final",
+        "match": {
+          "method": "GET",
+          "path": "/cookie/redirect-final",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8",
+            "set-cookie": "final=end; Max-Age=3600; Path=/"
+          },
+          "body_file": "responses/final.txt"
+        }
+      }
+    ]
+  },
+  "coverage": [
+    {
+      "behavior": "transport.cookie-session",
+      "cases": [
+        {
+          "id": "cookie-parser-boundaries",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "CookieStore.cookieToMap blank, null, duplicate and embedded equals handling"
+          ]
+        },
+        {
+          "id": "persistent-session-merge-order",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "CookieStore.getCookie persistent then session merge order"
+          ]
+        },
+        {
+          "id": "enabled-jar-network-reloads-store",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl.setCookie and HttpHelper network interceptor CookieManager.loadRequest"
+          ]
+        },
+        {
+          "id": "disabled-jar-keeps-explicit-and-ignores-response",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "enabledCookieJar false skips marker, request reload and response save"
+          ]
+        },
+        {
+          "id": "response-classifies-persistent-and-session",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "CookieManager.saveResponse partitions persistent and non-persistent Set-Cookie values"
+          ]
+        },
+        {
+          "id": "path-and-expiry-metadata-flattened",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "CookieManager stores parsed cookies as domain-level name/value strings"
+          ]
+        },
+        {
+          "id": "redirect-cookie-chain",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "HttpHelper network interceptor cookie marker behavior across OkHttp redirects"
+          ]
+        },
+        {
+          "id": "remove-key-and-domain",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "CookieManager.removeCookie key cleanup and CookieStore.removeCookie domain cleanup"
+          ]
+        },
+        {
+          "id": "registrable-domain-normalization",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "NetworkUtils.getSubDomain effective-TLD-plus-one storage key normalization"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "2026-01-01T00:00:00Z",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 29,
+    "network_allowed": false,
+    "logical_origin": "http://sourcelab.test"
+  },
+  "limits": {
+    "timeout_ms": 2000,
+    "max_response_bytes": 1048576,
+    "max_request_body_bytes": 0,
+    "max_requests": 24,
+    "max_concurrency": 2
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/help/http/CookieManager.kt",
+      "app/src/main/java/io/legado/app/help/http/CookieStore.kt",
+      "app/src/main/java/io/legado/app/help/http/HttpHelper.kt",
+      "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+      "app/src/main/java/io/legado/app/utils/NetworkUtils.kt"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-SOURCE-COOKIE-PERSISTENT-SESSION-MERGE-RUNTIME-001"
+  }
+}

@@ -8,12 +8,15 @@ import io.legado.app.data.entities.BookChapter
 import io.legado.app.data.entities.BookSource
 import io.legado.app.data.entities.SearchBook
 import io.legado.app.exception.ConcurrentException
+import io.legado.app.help.CacheManager
+import io.legado.app.help.http.CookieManager
 import io.legado.app.help.http.CookieStore
 import io.legado.app.help.http.StrResponse
 import io.legado.app.help.http.newCallResponse
 import io.legado.app.model.analyzeRule.AnalyzeUrl
 import io.legado.app.model.webBook.WebBook
 import io.legado.app.utils.GSON
+import io.legado.app.utils.NetworkUtils
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
@@ -31,6 +34,7 @@ import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import okhttp3.OkHttpClient
+import okhttp3.Headers
 import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
@@ -67,7 +71,8 @@ class LegadoOracleInstrumentedTest {
             "Oracle source must use the run-scoped device loopback origin"
         }
         source.enabledCookieJar =
-            scenarioId == "sl-source-request-header-cookie-retry-layering-001"
+            scenarioId == "sl-source-request-header-cookie-retry-layering-001" ||
+                scenarioId == "sl-source-cookie-persistent-session-merge-runtime-001"
 
         when (scenarioId) {
             "sl-post-form-001" -> runPostFormCases()
@@ -87,6 +92,8 @@ class LegadoOracleInstrumentedTest {
                 runResponseDecodingCases()
             "sl-source-transport-retry-redirect-runtime-001" ->
                 runRetryRedirectCases()
+            "sl-source-cookie-persistent-session-merge-runtime-001" ->
+                runCookieSessionCases()
             else -> {
                 runCase("search-hit", "search", searchRequest("星河")) {
                     searchProjection(WebBook.searchBookAwait(source, "星河"))
@@ -316,6 +323,375 @@ class LegadoOracleInstrumentedTest {
             }
             cases.put(record)
         }
+    }
+
+    private suspend fun runCookieSessionCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            require(value.getString("operation") == "cookie_session") {
+                "Cookie session scenario only accepts cookie_session stimuli"
+            }
+            val id = value.getString("id")
+            val record = JSONObject()
+                .put("id", id)
+                .put("operation", "cookie_session")
+            try {
+                val (request, result) = cookieSessionProjection(value)
+                requestPlan.put(request)
+                record
+                    .put("request", request)
+                    .put("result", result)
+                    .put("issue", JSONObject.NULL)
+            } catch (error: Throwable) {
+                val request = cookieHelperRequest(value)
+                requestPlan.put(request)
+                record
+                    .put("request", request)
+                    .put("result", JSONObject.NULL)
+                    .put(
+                        "issue",
+                        JSONObject()
+                            .put("code", "android_exception")
+                            .put("exception_type", error.javaClass.name)
+                    )
+            }
+            cases.put(record)
+        }
+    }
+
+    private suspend fun cookieSessionProjection(
+        value: JSONObject
+    ): Pair<JSONObject, JSONObject> {
+        val arguments = value.getJSONObject("arguments")
+        return when (val mode = arguments.getString("mode")) {
+            "parser" -> Pair(
+                cookieHelperRequest(value),
+                JSONObject()
+                    .put(
+                        "entries",
+                        cookieEntries(
+                            CookieStore.cookieToMap(
+                                arguments.getString("cookie")
+                            )
+                        )
+                    )
+                    .put(
+                        "serialized",
+                        nullable(
+                            CookieStore.mapToCookie(
+                                CookieStore.cookieToMap(
+                                    arguments.getString("cookie")
+                                )
+                            )
+                        )
+                    )
+            )
+
+            "store_merge" -> {
+                resetCookieState(deviceOrigin)
+                seedCookieState(arguments)
+                Pair(
+                    cookieHelperRequest(value),
+                    cookieState(deviceOrigin)
+                )
+            }
+
+            "analyze_request" -> cookieAnalyzeProjection(value)
+
+            "response_classification" -> {
+                resetCookieState(deviceOrigin)
+                saveSetCookies(
+                    deviceOrigin,
+                    jsonStrings(arguments.getJSONArray("set_cookies"))
+                )
+                Pair(
+                    cookieHelperRequest(value),
+                    cookieState(deviceOrigin)
+                )
+            }
+
+            "metadata_flattening" -> {
+                resetCookieState(deviceOrigin)
+                saveSetCookies(
+                    deviceOrigin,
+                    jsonStrings(arguments.getJSONArray("set_cookies"))
+                )
+                val loadURL =
+                    deviceOrigin + arguments.getString("load_target")
+                val loaded = CookieManager.loadRequest(
+                    Request.Builder().url(loadURL).build()
+                )
+                Pair(
+                    cookieHelperRequest(value),
+                    cookieState(deviceOrigin)
+                        .put("load_url", logical(loadURL))
+                        .put(
+                            "loaded_cookie",
+                            nullable(loaded.header("Cookie"))
+                        )
+                )
+            }
+
+            "redirect" -> cookieRedirectProjection(value)
+
+            "removal" -> {
+                resetCookieState(deviceOrigin)
+                seedCookieState(arguments)
+                val before = cookieState(deviceOrigin)
+                CookieManager.removeCookie(
+                    deviceOrigin,
+                    arguments.getString("remove_key")
+                )
+                val afterKey = cookieState(deviceOrigin)
+                CookieStore.removeCookie(deviceOrigin)
+                val afterDomain = cookieState(deviceOrigin)
+                Pair(
+                    cookieHelperRequest(value),
+                    JSONObject()
+                        .put("before", before)
+                        .put("after_key_removal", afterKey)
+                        .put("after_domain_removal", afterDomain)
+                )
+            }
+
+            "domain_normalization" -> {
+                val writeURL = arguments.getString("write_url")
+                val sameSiteURL = arguments.getString("same_site_url")
+                val otherSiteURL = arguments.getString("other_site_url")
+                resetCookieState(writeURL)
+                resetCookieState(otherSiteURL)
+                CookieStore.setCookie(
+                    writeURL,
+                    arguments.getString("cookie")
+                )
+                val result = JSONObject()
+                    .put(
+                        "write_domain",
+                        NetworkUtils.getSubDomain(writeURL)
+                    )
+                    .put(
+                        "same_site_domain",
+                        NetworkUtils.getSubDomain(sameSiteURL)
+                    )
+                    .put(
+                        "other_site_domain",
+                        NetworkUtils.getSubDomain(otherSiteURL)
+                    )
+                    .put(
+                        "same_site_cookie",
+                        CookieStore.getCookie(sameSiteURL)
+                    )
+                    .put(
+                        "other_site_cookie",
+                        CookieStore.getCookie(otherSiteURL)
+                    )
+                resetCookieState(writeURL)
+                resetCookieState(otherSiteURL)
+                Pair(cookieHelperRequest(value), result)
+            }
+
+            else -> error("Unsupported cookie session mode: $mode")
+        }
+    }
+
+    private suspend fun cookieAnalyzeProjection(
+        value: JSONObject
+    ): Pair<JSONObject, JSONObject> {
+        val arguments = value.getJSONObject("arguments")
+        resetCookieState(deviceOrigin)
+        seedCookieState(arguments)
+        val caseSource = GSON.fromJson(sourceJson, BookSource::class.java)
+        caseSource.enabledCookieJar =
+            arguments.getBoolean("enabled_cookie_jar")
+        val headers = HashMap(
+            caseSource.getHeaderMap(true) ?: emptyMap()
+        )
+        headers["Cookie"] = arguments.getString("explicit_cookie")
+        val target = value.getJSONObject("request").getString("target")
+        val analyze = AnalyzeUrl(
+            mUrl = "$deviceOrigin$target",
+            baseUrl = caseSource.bookSourceUrl,
+            source = caseSource,
+            headerMapF = headers
+        )
+        val initialCookie = analyze.headerMap["Cookie"]
+        val response = analyze.getStrResponseAwait(useWebView = false)
+        val networkRequest =
+            response.raw.networkResponse?.request ?: response.raw.request
+        return Pair(
+            analyzedRequest(analyze),
+            cookieState(deviceOrigin)
+                .put(
+                    "enabled_cookie_jar",
+                    caseSource.enabledCookieJar == true
+                )
+                .put("initial_cookie", nullable(initialCookie))
+                .put(
+                    "resolved_cookie",
+                    nullable(analyze.headerMap["Cookie"])
+                )
+                .put(
+                    "marker_present",
+                    analyze.headerMap.containsKey(
+                        CookieManager.cookieJarHeader
+                    )
+                )
+                .put(
+                    "network_cookie",
+                    nullable(networkRequest.header("Cookie"))
+                )
+                .put(
+                    "network_marker_present",
+                    networkRequest.header(
+                        CookieManager.cookieJarHeader
+                    ) != null
+                )
+                .put("status_code", response.code())
+                .put("final_url", logical(response.url))
+        )
+    }
+
+    private suspend fun cookieRedirectProjection(
+        value: JSONObject
+    ): Pair<JSONObject, JSONObject> {
+        resetCookieState(deviceOrigin)
+        val caseSource = GSON.fromJson(sourceJson, BookSource::class.java)
+        caseSource.enabledCookieJar = true
+        val target = value.getJSONObject("request").getString("target")
+        val analyze = AnalyzeUrl(
+            mUrl = "$deviceOrigin$target",
+            baseUrl = caseSource.bookSourceUrl,
+            source = caseSource,
+            headerMapF = caseSource.getHeaderMap(true)
+        )
+        val response = analyze.getStrResponseAwait(useWebView = false)
+        val prior = response.raw.priorResponse
+        val finalNetwork =
+            response.raw.networkResponse?.request ?: response.raw.request
+        var redirectCount = 0
+        var cursor = prior
+        while (cursor != null) {
+            redirectCount += 1
+            cursor = cursor.priorResponse
+        }
+        return Pair(
+            analyzedRequest(analyze),
+            cookieState(deviceOrigin)
+                .put("redirect_count", redirectCount)
+                .put(
+                    "prior_request_cookie",
+                    nullable(prior?.request?.header("Cookie"))
+                )
+                .put(
+                    "prior_marker_present",
+                    prior?.request?.header(
+                        CookieManager.cookieJarHeader
+                    ) != null
+                )
+                .put(
+                    "final_request_cookie",
+                    nullable(finalNetwork.header("Cookie"))
+                )
+                .put(
+                    "final_marker_present",
+                    finalNetwork.header(
+                        CookieManager.cookieJarHeader
+                    ) != null
+                )
+                .put("final_url", logical(response.url))
+                .put("status_code", response.code())
+        )
+    }
+
+    private fun seedCookieState(arguments: JSONObject) {
+        CookieStore.setCookie(
+            deviceOrigin,
+            arguments.optString("persistent_cookie", "")
+        )
+        if (arguments.has("session_set_cookies")) {
+            saveSetCookies(
+                deviceOrigin,
+                jsonStrings(
+                    arguments.getJSONArray("session_set_cookies")
+                )
+            )
+        }
+    }
+
+    private fun saveSetCookies(
+        url: String,
+        values: List<String>
+    ) {
+        val request = Request.Builder().url(url).build()
+        val headers = Headers.Builder().apply {
+            values.forEach { add("Set-Cookie", it) }
+        }.build()
+        val response = Response.Builder()
+            .request(request)
+            .protocol(Protocol.HTTP_1_1)
+            .code(200)
+            .message("cookie-seed")
+            .headers(headers)
+            .body(
+                ByteArray(0).toResponseBody(
+                    "text/plain; charset=utf-8".toMediaType()
+                )
+            )
+            .build()
+        CookieManager.saveResponse(response)
+        response.close()
+    }
+
+    private fun resetCookieState(url: String) {
+        val domain = NetworkUtils.getSubDomain(url)
+        CookieStore.setCookie(url, "")
+        CacheManager.deleteMemory("${domain}_session_cookie")
+        CacheManager.deleteMemory("${domain}_cookieJar")
+    }
+
+    private fun cookieState(url: String): JSONObject {
+        val domain = NetworkUtils.getSubDomain(url)
+        return JSONObject()
+            .put("domain", domain)
+            .put(
+                "persistent_cookie",
+                CookieManager.getCookieNoSession(url)
+            )
+            .put(
+                "session_cookie",
+                nullable(CookieManager.getSessionCookie(domain))
+            )
+            .put("combined_cookie", CookieStore.getCookie(url))
+    }
+
+    private fun cookieEntries(
+        values: Map<String, String>
+    ): JSONArray = JSONArray().apply {
+        values.forEach { (name, value) ->
+            put(
+                JSONObject()
+                    .put("name", name)
+                    .put("value", value)
+            )
+        }
+    }
+
+    private fun jsonStrings(values: JSONArray): List<String> =
+        buildList {
+            for (index in 0 until values.length()) {
+                add(values.getString(index))
+            }
+        }
+
+    private fun cookieHelperRequest(value: JSONObject): JSONObject {
+        val target = value.getJSONObject("request").getString("target")
+        return request(deviceOrigin + target).put(
+            "headers",
+            controlledHeaders(
+                listOf("X-Source" to "cookie-session")
+            )
+        )
     }
 
     private suspend fun retryAnalyzeProjection(

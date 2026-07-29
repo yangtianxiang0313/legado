@@ -207,6 +207,37 @@ SCENARIO_CONTRACTS = {
             "negative-retry-empty-range",
         }),
     },
+    "sl-source-cookie-persistent-session-merge-runtime-001": {
+        "status": "candidate",
+        "expected_cases": (
+            ("cookie-parser-boundaries", "cookie_session"),
+            ("persistent-session-merge-order", "cookie_session"),
+            ("enabled-jar-network-reloads-store", "cookie_session"),
+            (
+                "disabled-jar-keeps-explicit-and-ignores-response",
+                "cookie_session",
+            ),
+            (
+                "response-classifies-persistent-and-session",
+                "cookie_session",
+            ),
+            ("path-and-expiry-metadata-flattened", "cookie_session"),
+            ("redirect-cookie-chain", "cookie_session"),
+            ("remove-key-and-domain", "cookie_session"),
+            ("registrable-domain-normalization", "cookie_session"),
+        ),
+        "nominal_cases": frozenset({
+            "cookie-parser-boundaries",
+            "persistent-session-merge-order",
+            "enabled-jar-network-reloads-store",
+            "disabled-jar-keeps-explicit-and-ignores-response",
+            "response-classifies-persistent-and-session",
+            "path-and-expiry-metadata-flattened",
+            "redirect-cookie-chain",
+            "remove-key-and-domain",
+            "registrable-domain-normalization",
+        }),
+    },
 }
 ROUTE_OBSERVATION_SCENARIOS = {
     "sl-source-request-header-cookie-retry-layering-001": (
@@ -241,6 +272,12 @@ ROUTE_OBSERVATION_SCENARIOS = {
         "redirect-success-final",
         "redirect-failure-start",
         "redirect-failure-final",
+    ),
+    "sl-source-cookie-persistent-session-merge-runtime-001": (
+        "cookie-enabled-observe",
+        "cookie-disabled-set",
+        "cookie-redirect-start",
+        "cookie-redirect-final",
     ),
 }
 ANDROID_PRODUCT_PATHS = (
