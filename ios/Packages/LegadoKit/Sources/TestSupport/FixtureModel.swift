@@ -10,6 +10,7 @@ public enum FixtureOperation: String, Codable, Sendable {
   case chapters
   case content
   case rawResponse = "raw_response"
+  case requestOptions = "request_options"
   case rule
 }
 

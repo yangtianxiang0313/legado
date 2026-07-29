@@ -14,11 +14,18 @@ public struct SourceRequestPlan: Equatable, Sendable {
   public let request: HTTPRequest
   public let body: String?
   public let formFields: [HTTPFormField]
+  public let retry: Int
 
-  public init(request: HTTPRequest, body: String?, formFields: [HTTPFormField]) {
+  public init(
+    request: HTTPRequest,
+    body: String?,
+    formFields: [HTTPFormField],
+    retry: Int = 0
+  ) {
     self.request = request
     self.body = body
     self.formFields = formFields
+    self.retry = retry
   }
 }
 
@@ -73,6 +80,10 @@ public enum SourceRequestCompiler {
     } catch {
       throw SourceRuntimeIssue(stage: .urlTemplate, code: .invalidURL)
     }
+    let retry = option.retry ?? 0
+    guard retry >= 0, retry < Int.max else {
+      throw SourceRequestPreparationError.invalidRetry
+    }
     let headers = try configuredHeaders(option.headers ?? option.header)
     guard option.method?.caseInsensitiveCompare("POST") == .orderedSame else {
       return SourceRequestPlan(
@@ -82,7 +93,8 @@ public enum SourceRequestCompiler {
           headers: HTTPHeaders(headers)
         ),
         body: nil,
-        formFields: []
+        formFields: [],
+        retry: retry
       )
     }
     let body = option.body ?? ""
@@ -109,7 +121,8 @@ public enum SourceRequestCompiler {
         body: HTTPBody(Data(canonicalBody.utf8))
       ),
       body: canonicalBody,
-      formFields: formFields
+      formFields: formFields,
+      retry: retry
     )
   }
 
@@ -118,6 +131,7 @@ public enum SourceRequestCompiler {
     let body: String?
     let header: [String: String]?
     let headers: [String: String]?
+    let retry: Int?
   }
 
   private static func render(template: String, keyword: String) throws -> String {

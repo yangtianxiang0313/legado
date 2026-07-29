@@ -120,6 +120,63 @@ final class ConformanceCLITests: XCTestCase {
     XCTAssertTrue(text.contains(#""operation":"raw_response""#))
   }
 
+  func testMinimalTaskRunnerMatchesRequestOptionLayeringAndroidGolden() async throws {
+    let temporaryRoot = FileManager.default.temporaryDirectory
+      .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryRoot) }
+    let fixtureID = "sl-source-request-header-cookie-retry-layering-001"
+    let fixturePath = "ios/harness/fixtures/source-lab/\(fixtureID)"
+    let goldenPath = "ios/harness/goldens/android-legado-v1/\(fixtureID).json"
+    let taskPath = "ios/project/loop/task.json"
+    for relative in [fixturePath, goldenPath, taskPath] {
+      try FileManager.default.createDirectory(
+        at: temporaryRoot
+          .appendingPathComponent(relative)
+          .deletingLastPathComponent(),
+        withIntermediateDirectories: true
+      )
+    }
+    try FileManager.default.copyItem(
+      at: repositoryRoot.appendingPathComponent(fixturePath),
+      to: temporaryRoot.appendingPathComponent(fixturePath)
+    )
+    try FileManager.default.copyItem(
+      at: repositoryRoot.appendingPathComponent(goldenPath),
+      to: temporaryRoot.appendingPathComponent(goldenPath)
+    )
+    let task = try JSONSerialization.data(
+      withJSONObject: [
+        "schema_version": 2,
+        "id": "IOS-SOURCE-RUNTIME-HEADER-COOKIE-RETRY-001",
+        "source": [
+          "fixture_id": fixtureID,
+          "android_golden": goldenPath,
+        ],
+      ],
+      options: [.sortedKeys]
+    )
+    try task.write(to: temporaryRoot.appendingPathComponent(taskPath))
+
+    let run = try await MinimalTaskConformanceRunner.run(
+      taskPath: taskPath,
+      repositoryRoot: temporaryRoot
+    )
+    let text = String(decoding: run.data, as: UTF8.self)
+
+    XCTAssertTrue(run.passed)
+    XCTAssertTrue(text.contains(#""first_divergence":null"#))
+    XCTAssertTrue(
+      text.contains(
+        #""value":"persisted=stored; shared=stored; explicit=option""#
+      )
+    )
+    XCTAssertTrue(
+      text.contains(
+        #""route_request_counts":[{"request_count":3,"route_id":"retry-two-with-header-cookie"},{"request_count":1,"route_id":"retry-default"}]"#
+      )
+    )
+  }
+
   func testRunnerProducesIdenticalCanonicalBytesWithoutRawBodyOrDynamicFields() async throws {
     let fixture = offlineFixture
 

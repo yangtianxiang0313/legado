@@ -47,17 +47,17 @@ public enum MinimalTaskConformanceRunner {
     guard loaded.definition.id == fixtureID else {
       throw MinimalTaskConformanceError.invalidFixture
     }
-    let keywords = try searchKeywords(
+    let input = try pipelineInput(
       at: fixtureDirectory.appendingPathComponent(loaded.definition.input)
     )
     let plans = try SourcePipelineConformanceRunner.compiledPlans(
       loaded,
-      searchKeywords: keywords
+      input: input
     )
     let actualArtifact = try JSONValueCodec.decode(
       await SourcePipelineConformanceRunner.run(
         loaded,
-        searchKeywords: keywords
+        input: input
       )
     )
     let golden = try json(
@@ -119,7 +119,7 @@ public enum MinimalTaskConformanceRunner {
     )
   }
 
-  private static func searchKeywords(at inputURL: URL) throws -> [String: String] {
+  private static func pipelineInput(at inputURL: URL) throws -> SourcePipelineInput {
     let value = try json(at: inputURL, error: .invalidFixture)
     guard
       case .object(let root) = value,
@@ -127,22 +127,62 @@ public enum MinimalTaskConformanceRunner {
     else {
       throw MinimalTaskConformanceError.invalidFixture
     }
-    var result: [String: String] = [:]
+    var result = SourcePipelineInput()
     var identifiers: Set<String> = []
     for value in cases {
       guard
         case .object(let inputCase) = value,
         case .string(let id)? = inputCase["id"],
         identifiers.insert(id).inserted,
-        case .string(let operation)? = inputCase["operation"],
-        case .object(let arguments)? = inputCase["arguments"]
+        case .string(let operation)? = inputCase["operation"]
       else {
         throw MinimalTaskConformanceError.invalidFixture
+      }
+      let arguments: [String: JSONValue]
+      if case .object(let value)? = inputCase["arguments"] {
+        arguments = value
+      } else {
+        arguments = [:]
       }
       if operation == FixtureOperation.search.rawValue {
         guard
           case .string(let keyword)? = arguments["keyword"],
-          result.updateValue(keyword, forKey: id) == nil
+          result.searchKeywords.updateValue(keyword, forKey: id) == nil
+        else {
+          throw MinimalTaskConformanceError.invalidFixture
+        }
+      } else if operation == FixtureOperation.requestOptions.rawValue {
+        guard
+          case .string(let persistentCookie)? = arguments["persistent_cookie"],
+          case .object(let option)? = arguments["option"],
+          case .object(let rawHeaders)? = option["headers"]
+        else {
+          throw MinimalTaskConformanceError.invalidFixture
+        }
+        let headers = try rawHeaders.map { name, value -> SourceHeaderField in
+          guard case .string(let stringValue) = value else {
+            throw MinimalTaskConformanceError.invalidFixture
+          }
+          return try SourceHeaderField(name: name, value: stringValue)
+        }
+        let retry: Int
+        if case .number(let number)? = option["retry"], let value = Int(number.rawToken) {
+          retry = value
+        } else if option["retry"] == nil {
+          retry = 0
+        } else {
+          throw MinimalTaskConformanceError.invalidFixture
+        }
+        guard
+          retry >= 0,
+          result.requestOptions.updateValue(
+            SourceRequestOptionInput(
+              persistentCookie: persistentCookie,
+              optionHeaders: headers,
+              retry: retry
+            ),
+            forKey: id
+          ) == nil
         else {
           throw MinimalTaskConformanceError.invalidFixture
         }
@@ -177,7 +217,7 @@ public enum MinimalTaskConformanceRunner {
             .number(JSONNumber(Int64($0.milliseconds)))
           } ?? .null,
         ]
-        if requestCase.operation != .rawResponse {
+        if requestCase.operation == .search {
           value["body_base64"] = bodyData.map {
             .string($0.base64EncodedString())
           } ?? .null
@@ -208,10 +248,19 @@ public enum MinimalTaskConformanceRunner {
     else {
       throw MinimalTaskConformanceError.comparisonFailed
     }
-    return .object([
+    var comparison: [String: JSONValue] = [
       "request_plan": requestPlan,
       "portable_known_projection": projection,
-    ])
+    ]
+    if let observation = value["source_lab_observation"] {
+      comparison["source_lab_observation"] = observation
+    } else if
+      case .object(let characterization)? = value["android_characterization"],
+      let observation = characterization["source_lab_observation"]
+    {
+      comparison["source_lab_observation"] = observation
+    }
+    return .object(comparison)
   }
 
   private static func json(
