@@ -1,1 +1,1 @@
-{"active_task":null,"attempt":0,"last_completed":{"at":"2026-07-29T12:41:25Z","sequence":86,"task_id":"IOS-SOURCE-RUNTIME-RULE-BACKEND-DISPATCH-001"},"schema_version":2,"status":"idle","verification":null}
+{"active_task":"IOS-CHARACTERIZE-CONTENT-CACHE-QUEUE-COMPLETION-RUNTIME-001","attempt":0,"last_completed":{"at":"2026-07-29T12:41:25Z","sequence":86,"task_id":"IOS-SOURCE-RUNTIME-RULE-BACKEND-DISPATCH-001"},"schema_version":2,"status":"running","verification":null}
