@@ -3,6 +3,7 @@ package io.legado.app.oracle
 import android.util.Base64
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import io.legado.app.constant.BookType
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
 import io.legado.app.data.entities.BookSource
@@ -36,6 +37,7 @@ import io.legado.app.utils.NetworkUtils
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -125,6 +127,8 @@ class LegadoOracleInstrumentedTest {
                 runReadRecordRuntimeCases()
             "rl-reader-progress-layout-save-runtime-001" ->
                 runReaderProgressRuntimeCases()
+            "rl-reader-cache-prefetch-policy-001" ->
+                runReaderPrefetchPolicyCases()
             "sl-post-form-001" -> runPostFormCases()
             "sl-source-response-xml-declaration-normalization-001" ->
                 runXmlResponseCases()
@@ -1044,6 +1048,284 @@ class LegadoOracleInstrumentedTest {
                 appDb.bookDao.delete(it)
             }
     }
+
+    private suspend fun runReaderPrefetchPolicyCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            require(
+                value.getString("operation") == "reader_prefetch_policy"
+            ) {
+                "Unsupported reader prefetch operation"
+            }
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", "reader_prefetch_policy")
+                .put("arguments", JSONObject(arguments.toString()))
+            runCase(
+                value.getString("id"),
+                "reader_prefetch_policy",
+                stimulus
+            ) {
+                readerPrefetchPolicyProjection(
+                    value.getString("id"),
+                    arguments
+                )
+            }
+        }
+    }
+
+    private suspend fun readerPrefetchPolicyProjection(
+        caseId: String,
+        arguments: JSONObject
+    ): JSONObject {
+        clearPrefetchRuntimeState()
+        val previousPreDownloadNum = AppConfig.preDownloadNum
+        val book = prefetchBook(caseId, arguments)
+        return try {
+            seedPrefetchBook(book, arguments)
+            ReadBook.resetData(book)
+            ReadBook.durChapterIndex =
+                arguments.getInt("current_chapter")
+            ReadBook.downloadedChapters.addAll(
+                jsonInts(arguments.getJSONArray("pre_downloaded_indices"))
+            )
+            val failureCounts = arguments.getJSONArray("failure_counts")
+            for (index in 0 until failureCounts.length()) {
+                val value = failureCounts.getJSONObject(index)
+                ReadBook.downloadFailChapters[value.getInt("index")] =
+                    value.getInt("count")
+            }
+            AppConfig.preDownloadNum =
+                arguments.getInt("pre_download_num")
+            when (arguments.getString("mode")) {
+                "settled" -> settledPrefetchProjection()
+                "observe_workers" -> prefetchWorkersProjection()
+                "replace_job" -> replacementPrefetchProjection(arguments)
+                else -> error("Unsupported reader prefetch mode")
+            }
+        } finally {
+            AppConfig.preDownloadNum = previousPreDownloadNum
+            clearPrefetchRuntimeState()
+        }
+    }
+
+    private suspend fun settledPrefetchProjection(): JSONObject {
+        invokePreDownload()
+        val task = ReadBook.preDownloadTask
+        if (task != null) {
+            withTimeout(5_000) {
+                while (!task.isCompleted) {
+                    delay(10)
+                }
+            }
+        }
+        return JSONObject()
+            .put("task_created", task != null)
+            .put("task_completed", task?.isCompleted == true)
+            .put(
+                "downloaded_indices",
+                intProjection(ReadBook.downloadedChapters)
+            )
+            .put(
+                "failure_counts",
+                failureCountProjection()
+            )
+            .put(
+                "loading_indices",
+                intProjection(prefetchLoadingIndices())
+            )
+    }
+
+    private suspend fun prefetchWorkersProjection(): JSONObject {
+        invokePreDownload()
+        val task = requireNotNull(ReadBook.preDownloadTask)
+        val expectedFirstIndices = listOf(
+            ReadBook.durChapterIndex - 2,
+            ReadBook.durChapterIndex + 2
+        ).sorted()
+        withTimeout(900) {
+            while (
+                !prefetchLoadingIndices().containsAll(expectedFirstIndices)
+            ) {
+                delay(5)
+            }
+        }
+        val loading = prefetchLoadingIndices()
+        val childCount = task.children.count()
+        task.cancel()
+        return JSONObject()
+            .put("task_created", true)
+            .put("child_job_count", childCount)
+            .put(
+                "initial_loading_indices",
+                intProjection(loading)
+            )
+            .put(
+                "directions_started",
+                loading.containsAll(expectedFirstIndices)
+            )
+    }
+
+    private suspend fun replacementPrefetchProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        invokePreDownload()
+        val first = requireNotNull(ReadBook.preDownloadTask)
+        val expectedFirstIndices = listOf(
+            ReadBook.durChapterIndex - 2,
+            ReadBook.durChapterIndex + 2
+        )
+        withTimeout(900) {
+            while (
+                !prefetchLoadingIndices().containsAll(expectedFirstIndices)
+            ) {
+                delay(5)
+            }
+        }
+        ReadBook.durChapterIndex =
+            arguments.getInt("replacement_current_chapter")
+        invokePreDownload()
+        val replacement = requireNotNull(ReadBook.preDownloadTask)
+        withTimeout(900) {
+            while (!first.isCancelled) {
+                delay(5)
+            }
+        }
+        replacement.cancel()
+        return JSONObject()
+            .put("first_task_cancelled", first.isCancelled)
+            .put("replacement_task_created", true)
+            .put("task_identity_changed", replacement !== first)
+            .put(
+                "replacement_current_chapter",
+                ReadBook.durChapterIndex
+            )
+    }
+
+    private fun invokePreDownload() {
+        val method = ReadBook::class.java.getDeclaredMethod("preDownload")
+        method.isAccessible = true
+        method.invoke(ReadBook)
+        drainReadBookExecutor()
+    }
+
+    private fun prefetchBook(
+        caseId: String,
+        arguments: JSONObject
+    ): Book = Book(
+        bookUrl = "/android-runtime/reader-prefetch/$caseId.txt",
+        origin = if (arguments.getBoolean("local_book")) {
+            "loc_book"
+        } else {
+            "runtime-prefetch-source"
+        },
+        originName = "RuntimeLab",
+        name = "RuntimeLab 预取 $caseId",
+        author = "RuntimeLab",
+        type = if (arguments.getBoolean("local_book")) {
+            BookType.local
+        } else {
+            BookType.text
+        },
+        totalChapterNum = arguments.getInt("chapter_size"),
+        durChapterIndex = arguments.getInt("current_chapter")
+    )
+
+    private fun seedPrefetchBook(
+        book: Book,
+        arguments: JSONObject
+    ) {
+        BookHelp.clearCache(book)
+        appDb.bookChapterDao.delByBook(book.bookUrl)
+        appDb.bookDao.getBook(book.bookUrl)?.let {
+            appDb.bookDao.delete(it)
+        }
+        appDb.bookDao.insert(book)
+        val chapterSize = arguments.getInt("chapter_size")
+        val chapters = (0 until chapterSize).map { index ->
+            BookChapter(
+                url = "/android-runtime/reader-prefetch/chapter/$index",
+                title = "第${index + 1}章",
+                bookUrl = book.bookUrl,
+                index = index
+            )
+        }
+        appDb.bookChapterDao.insert(*chapters.toTypedArray())
+        val cached = jsonInts(arguments.getJSONArray("cached_indices")).toSet()
+        chapters
+            .filter { it.index in cached }
+            .forEach {
+                BookHelp.saveText(book, it, "cached-${it.index}")
+            }
+    }
+
+    private suspend fun clearPrefetchRuntimeState() {
+        val task = ReadBook.preDownloadTask
+        task?.cancel()
+        ReadBook.downloadScope.coroutineContext.cancelChildren()
+        if (task != null) {
+            withTimeout(5_000) {
+                while (!task.isCompleted) {
+                    delay(10)
+                }
+            }
+        }
+        drainReadBookExecutor()
+        ReadBook.preDownloadTask = null
+        ReadBook.downloadedChapters.clear()
+        ReadBook.downloadFailChapters.clear()
+        synchronized(ReadBook) {
+            prefetchLoadingList().clear()
+        }
+        ReadBook.book = null
+        appDb.bookDao.all
+            .filter {
+                it.bookUrl.startsWith(
+                    "/android-runtime/reader-prefetch/"
+                )
+            }
+            .forEach {
+                BookHelp.clearCache(it)
+                appDb.bookChapterDao.delByBook(it.bookUrl)
+                appDb.bookDao.delete(it)
+            }
+    }
+
+    private fun prefetchLoadingIndices(): List<Int> =
+        synchronized(ReadBook) {
+            prefetchLoadingList().toList().sorted()
+        }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun prefetchLoadingList(): ArrayList<Int> {
+        val field = ReadBook::class.java.getDeclaredField(
+            "loadingChapters"
+        )
+        field.isAccessible = true
+        return field.get(ReadBook) as ArrayList<Int>
+    }
+
+    private fun jsonInts(values: JSONArray): List<Int> =
+        (0 until values.length()).map(values::getInt)
+
+    private fun intProjection(values: Collection<Int>): JSONArray =
+        JSONArray().apply {
+            values.toSortedSet().forEach { put(it) }
+        }
+
+    private fun failureCountProjection(): JSONArray =
+        JSONArray().apply {
+            ReadBook.downloadFailChapters
+                .toSortedMap()
+                .forEach { (index, count) ->
+                    put(
+                        JSONObject()
+                            .put("index", index)
+                            .put("count", count)
+                    )
+                }
+        }
 
     private suspend fun runPostFormCases() {
         val values = input.getJSONArray("cases")

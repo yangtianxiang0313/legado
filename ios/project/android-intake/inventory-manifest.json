@@ -2,8 +2,8 @@
   "schema_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
   "android_tree": "c81f5d383116e37c1eefee3eb86654514e82022b",
-  "control_sha256": "81c4ee6deb8ba5d879d8c0575cc142b7a8699487ee881a71016faf489a9c889b",
-  "policy_sha256": "6eceefd88e2758531325ed6d8dbf61ab49e5a3a537a78d93425070824af44ab4",
+  "control_sha256": "e1d4ba381569cbc60e5e4a5c2436f5d42ba32021370a1e8bf3964057493b682b",
+  "policy_sha256": "0759a2b0449ce6cf1b170b0047661d62f23d410e3ccffed7e9df8837e362ac5f",
   "facts": [
     {
       "id": "AF-ANALYZE-JSONPATH-GET-LIST",
@@ -754,6 +754,54 @@
         "body_semantic_sha256": "e7370a9f4bc33205f4c12e03fefefe81c71a93fc259dc8b929c71e881fd7f051"
       },
       "revision_sha256": "afc6894fef46e05b916d9476c91c84b20db94b493457cb1f0df52c03298147a0",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-READ-BOOK-DOWNLOAD-INDEX",
+      "fact_key": "reader.cache.prefetch-index-execution",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.ReadBook/downloadIndex",
+      "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+      "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d",
+      "source_sha256": "c6fa38c435f0075555e61bc397a6ef81baadd7a5c434e79d424f3d0e1abfef12",
+      "start_line": 459,
+      "end_line": 481,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "downloadIndex",
+        "signature": "suspend fun downloadIndex(index: Int)",
+        "body_semantic_sha256": "56fb588eb11d6255c34e2924756ac8366f343cf566fd8139b530d378ca17d4cc"
+      },
+      "revision_sha256": "6a24358bebf47b7fc11c918f0d8ad92e9bbfd672e4fe3ccaba557a281851245b",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-READ-BOOK-PRE-DOWNLOAD",
+      "fact_key": "reader.cache.prefetch-policy",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.ReadBook/preDownload",
+      "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+      "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d",
+      "source_sha256": "c6fa38c435f0075555e61bc397a6ef81baadd7a5c434e79d424f3d0e1abfef12",
+      "start_line": 653,
+      "end_line": 681,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "preDownload",
+        "signature": "fun preDownload()",
+        "body_semantic_sha256": "af76fe2889da35a3f2c329bad9262b296eafe5857f8fa9806275424a0e5198ae"
+      },
+      "revision_sha256": "2aefd20b0d34ae877268ccf94152e950887e34c13d76af7feaef03f44df9cc38",
       "maps_to": [
         "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
       ]

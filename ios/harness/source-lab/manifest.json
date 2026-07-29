@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "logical_origin": "http://sourcelab.test",
-  "control_sha256": "03e7e33d6aabc1febdef5494ee37b3219765c89f631e2dc08b388f4bba8ee20d",
+  "control_sha256": "7bcdee390db42ba7012b975bbd0b02c4529c9b3e46b6886f9de8cf584df8a7fc",
   "scenarios": [
     {
       "id": "il-integration-backup-webdav-001",
@@ -14,6 +14,12 @@
       "status": "candidate",
       "path": "ios/harness/fixtures/runtime-lab/rl-reader-bookmark-search-runtime-risk-001",
       "sha256": "de6f1ee7d4bbedae37d82abe35577a87cdf4715d0a65060b93abfb94a0d4efdf"
+    },
+    {
+      "id": "rl-reader-cache-prefetch-policy-001",
+      "status": "candidate",
+      "path": "ios/harness/fixtures/runtime-lab/rl-reader-cache-prefetch-policy-001",
+      "sha256": "8d3abef10dd1f487b44cf993140e8e076dfd37fbb177fc5731e5b3ac1ba65ad5"
     },
     {
       "id": "rl-reader-history-read-record-runtime-risk-001",

@@ -36,6 +36,7 @@
     {"id": "profile.store-safe-denial", "status": "planned", "required_roles": ["denied"], "min_cases_per_role": 1, "phase": 4},
     {"id": "reader.bookmark-search-room", "status": "planned", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 2},
     {"id": "reader.read-record-runtime-risk", "status": "planned", "required_roles": ["nominal", "boundary", "denied"], "min_cases_per_role": 1, "phase": 2},
-    {"id": "reader.progress-layout-save-runtime", "status": "planned", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 2}
+    {"id": "reader.progress-layout-save-runtime", "status": "planned", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 2},
+    {"id": "reader.cache-prefetch-policy", "status": "planned", "required_roles": ["nominal", "boundary", "denied"], "min_cases_per_role": 1, "phase": 2}
   ]
 }

@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "local-book-does-not-create-task",
+      "operation": "reader_prefetch_policy",
+      "arguments": {
+        "mode": "settled",
+        "local_book": true,
+        "chapter_size": 10,
+        "current_chapter": 5,
+        "pre_download_num": 4,
+        "cached_indices": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+        "pre_downloaded_indices": [],
+        "failure_counts": []
+      }
+    },
+    {
+      "id": "configuration-below-two-disables-prefetch",
+      "operation": "reader_prefetch_policy",
+      "arguments": {
+        "mode": "settled",
+        "local_book": false,
+        "chapter_size": 10,
+        "current_chapter": 5,
+        "pre_download_num": 1,
+        "cached_indices": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+        "pre_downloaded_indices": [],
+        "failure_counts": []
+      }
+    },
+    {
+      "id": "minimum-enabled-prefetches-both-directions",
+      "operation": "reader_prefetch_policy",
+      "arguments": {
+        "mode": "settled",
+        "local_book": false,
+        "chapter_size": 10,
+        "current_chapter": 5,
+        "pre_download_num": 2,
+        "cached_indices": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+        "pre_downloaded_indices": [],
+        "failure_counts": []
+      }
+    },
+    {
+      "id": "window-skips-adjacent-current-and-state",
+      "operation": "reader_prefetch_policy",
+      "arguments": {
+        "mode": "settled",
+        "local_book": false,
+        "chapter_size": 12,
+        "current_chapter": 5,
+        "pre_download_num": 4,
+        "cached_indices": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+        "pre_downloaded_indices": [8],
+        "failure_counts": [
+          {"index": 1, "count": 2},
+          {"index": 2, "count": 3}
+        ]
+      }
+    },
+    {
+      "id": "window-clamps-at-book-start",
+      "operation": "reader_prefetch_policy",
+      "arguments": {
+        "mode": "settled",
+        "local_book": false,
+        "chapter_size": 5,
+        "current_chapter": 0,
+        "pre_download_num": 4,
+        "cached_indices": [0, 1, 2, 3, 4],
+        "pre_downloaded_indices": [],
+        "failure_counts": []
+      }
+    },
+    {
+      "id": "window-clamps-at-book-end",
+      "operation": "reader_prefetch_policy",
+      "arguments": {
+        "mode": "settled",
+        "local_book": false,
+        "chapter_size": 5,
+        "current_chapter": 4,
+        "pre_download_num": 4,
+        "cached_indices": [0, 1, 2, 3, 4],
+        "pre_downloaded_indices": [],
+        "failure_counts": []
+      }
+    },
+    {
+      "id": "two-direction-workers-start-concurrently",
+      "operation": "reader_prefetch_policy",
+      "arguments": {
+        "mode": "observe_workers",
+        "local_book": false,
+        "chapter_size": 12,
+        "current_chapter": 5,
+        "pre_download_num": 4,
+        "cached_indices": [],
+        "pre_downloaded_indices": [],
+        "failure_counts": []
+      }
+    },
+    {
+      "id": "new-invocation-cancels-previous-policy-job",
+      "operation": "reader_prefetch_policy",
+      "arguments": {
+        "mode": "replace_job",
+        "local_book": false,
+        "chapter_size": 12,
+        "current_chapter": 5,
+        "replacement_current_chapter": 6,
+        "pre_download_num": 4,
+        "cached_indices": [],
+        "pre_downloaded_indices": [],
+        "failure_counts": []
+      }
+    }
+  ]
+}

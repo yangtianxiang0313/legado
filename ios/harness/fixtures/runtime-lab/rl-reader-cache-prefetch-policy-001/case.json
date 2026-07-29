@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "kind": "android_runtime_scenario",
+  "id": "rl-reader-cache-prefetch-policy-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "android_runtime",
+  "capabilities": ["reader.cache", "reader.session", "runtime.cancellation"],
+  "compatibility_profile": "android-legado-v1",
+  "source": null,
+  "input": "input.json",
+  "transport": {
+    "mode": "none",
+    "external_network": "deny",
+    "responses": []
+  },
+  "coverage": [
+    {
+      "behavior": "reader.cache-prefetch-policy",
+      "cases": [
+        {
+          "id": "local-book-does-not-create-task",
+          "role": "denied",
+          "android_fact_refs": ["AF-READ-BOOK-PRE-DOWNLOAD"],
+          "branch_refs": [
+            "ReadBook.preDownload returns before executor dispatch when the current Book is local"
+          ]
+        },
+        {
+          "id": "configuration-below-two-disables-prefetch",
+          "role": "denied",
+          "android_fact_refs": ["AF-READ-BOOK-PRE-DOWNLOAD"],
+          "branch_refs": [
+            "ReadBook.preDownload returns inside the executor when AppConfig.preDownloadNum is less than two"
+          ]
+        },
+        {
+          "id": "minimum-enabled-prefetches-both-directions",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-READ-BOOK-PRE-DOWNLOAD",
+            "AF-READ-BOOK-DOWNLOAD-INDEX"
+          ],
+          "branch_refs": [
+            "preDownloadNum equal to two selects exactly current plus two and current minus two when both exist"
+          ]
+        },
+        {
+          "id": "window-skips-adjacent-current-and-state",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-READ-BOOK-PRE-DOWNLOAD",
+            "AF-READ-BOOK-DOWNLOAD-INDEX"
+          ],
+          "branch_refs": [
+            "Forward and backward loops start two chapters away, skip downloaded indices and skip failure counts greater than or equal to three"
+          ]
+        },
+        {
+          "id": "window-clamps-at-book-start",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-READ-BOOK-PRE-DOWNLOAD",
+            "AF-READ-BOOK-DOWNLOAD-INDEX"
+          ],
+          "branch_refs": [
+            "Negative backward indices are rejected by downloadIndex while the forward window remains eligible"
+          ]
+        },
+        {
+          "id": "window-clamps-at-book-end",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-READ-BOOK-PRE-DOWNLOAD",
+            "AF-READ-BOOK-DOWNLOAD-INDEX"
+          ],
+          "branch_refs": [
+            "Forward indices beyond chapterSize minus one do not download while the backward window remains eligible"
+          ]
+        },
+        {
+          "id": "two-direction-workers-start-concurrently",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-READ-BOOK-PRE-DOWNLOAD",
+            "AF-READ-BOOK-DOWNLOAD-INDEX"
+          ],
+          "branch_refs": [
+            "The preDownload parent launches distinct forward and backward child jobs"
+          ]
+        },
+        {
+          "id": "new-invocation-cancels-previous-policy-job",
+          "role": "boundary",
+          "android_fact_refs": ["AF-READ-BOOK-PRE-DOWNLOAD"],
+          "branch_refs": [
+            "A later preDownload executor action cancels the previous preDownloadTask before assigning a replacement"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "eventual-state-with-bounded-coroutine-quiescence",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 0,
+    "network_allowed": false,
+    "logical_origin": null,
+    "database_reset_per_case": true
+  },
+  "limits": {"timeout_ms": 5000},
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/model/ReadBook.kt#preDownload",
+      "app/src/main/java/io/legado/app/model/ReadBook.kt#downloadIndex",
+      "app/src/main/java/io/legado/app/help/config/AppConfig.kt#preDownloadNum",
+      "app/src/main/java/io/legado/app/help/book/BookHelp.kt#hasContent"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-READER-CACHE-PREFETCH-POLICY-001"
+  }
+}

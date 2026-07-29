@@ -646,6 +646,62 @@ SCENARIO_CONTRACTS = {
             "audio-save-refreshes-title-and-persists-book-fields",
         }),
     },
+    "rl-reader-cache-prefetch-policy-001": {
+        "status": "candidate",
+        "fixture_kind": "android_runtime_scenario",
+        "result_type": "reader_runtime",
+        "stage_names": (
+            "fixture_setup",
+            "policy_evaluation",
+            "cache_probe",
+            "cancellation",
+            "result_mapping",
+        ),
+        "expected_cases": (
+            (
+                "local-book-does-not-create-task",
+                "reader_prefetch_policy",
+            ),
+            (
+                "configuration-below-two-disables-prefetch",
+                "reader_prefetch_policy",
+            ),
+            (
+                "minimum-enabled-prefetches-both-directions",
+                "reader_prefetch_policy",
+            ),
+            (
+                "window-skips-adjacent-current-and-state",
+                "reader_prefetch_policy",
+            ),
+            (
+                "window-clamps-at-book-start",
+                "reader_prefetch_policy",
+            ),
+            (
+                "window-clamps-at-book-end",
+                "reader_prefetch_policy",
+            ),
+            (
+                "two-direction-workers-start-concurrently",
+                "reader_prefetch_policy",
+            ),
+            (
+                "new-invocation-cancels-previous-policy-job",
+                "reader_prefetch_policy",
+            ),
+        ),
+        "nominal_cases": frozenset({
+            "local-book-does-not-create-task",
+            "configuration-below-two-disables-prefetch",
+            "minimum-enabled-prefetches-both-directions",
+            "window-skips-adjacent-current-and-state",
+            "window-clamps-at-book-start",
+            "window-clamps-at-book-end",
+            "two-direction-workers-start-concurrently",
+            "new-invocation-cancels-previous-policy-job",
+        }),
+    },
     "il-integration-backup-webdav-001": {
         "status": "candidate",
         "fixture_kind": "integration_lab_scenario",

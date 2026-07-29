@@ -18,7 +18,7 @@ class AndroidIntakeTests(unittest.TestCase):
         self.assertEqual(first, second)
         baseline = json.loads((REPO_ROOT / "ios/project/baseline.json").read_text(encoding="utf-8"))
         self.assertEqual(baseline["android_oracle"]["git_commit"], first["android_git_commit"])
-        self.assertEqual(41, len(first["facts"]))
+        self.assertEqual(43, len(first["facts"]))
 
     def test_book_source_fact_is_data_contract_not_runtime_proof(self):
         inventory = android_intake.inventory_value(REPO_ROOT)
@@ -144,6 +144,18 @@ class AndroidIntakeTests(unittest.TestCase):
         self.assertEqual(
             "saveRead",
             facts["AF-AUDIO-PLAY-SAVE-READ"]["payload"]["symbol"],
+        )
+
+    def test_reader_prefetch_runtime_has_policy_and_index_anchors(self):
+        inventory = android_intake.inventory_value(REPO_ROOT)
+        facts = {entry["id"]: entry for entry in inventory["facts"]}
+        self.assertEqual(
+            "preDownload",
+            facts["AF-READ-BOOK-PRE-DOWNLOAD"]["payload"]["symbol"],
+        )
+        self.assertEqual(
+            "downloadIndex",
+            facts["AF-READ-BOOK-DOWNLOAD-INDEX"]["payload"]["symbol"],
         )
 
     def test_webdav_runtime_has_protocol_operation_anchors(self):
