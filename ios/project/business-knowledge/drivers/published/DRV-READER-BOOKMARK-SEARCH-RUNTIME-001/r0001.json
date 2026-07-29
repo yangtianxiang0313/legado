@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-READER-BOOKMARK-SEARCH-RUNTIME-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "reader.bookmark.search-compatibility-boundary",
+  "title": "把 Android 书签搜索兼容语义隔离在 ReaderCore",
+  "claim_refs": [
+    {
+      "id": "BKC-BOOKMARK-RUNTIME-RISK-001",
+      "revision": 2
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "ReaderCore 必须逐场景复现受保护 Android Golden 中的 LIKE 通配符、跨书正文分支、全局 chapterIndex 排序和同 time 替换结果；测试不得自行改写 expected。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "safety",
+      "scenario": "跨书正文命中是 Android 可观察兼容语义，也是明确风险；它应由命名清晰的兼容投影承载，不能悄然成为所有 iOS 书签查询的默认安全语义。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "modularity",
+      "scenario": "书签值属于 LibraryDomain，搜索与冲突投影属于 ReaderCore；两者不能依赖 Room、SQLite、SwiftUI、具体持久化框架或 Android Golden 文件。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "determinism",
+      "scenario": "LIKE 匹配、排序与同主键替换必须实现为纯确定性规则，并通过 ConformanceCLI 对固定 runtime-lab 输入输出结构化结果。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "evolvability",
+      "scenario": "后续可增加严格按书过滤的原生查询 API，但不得修改 android-legado-v1 兼容入口；新的迁移和目录重映射行为必须由后续 Android 真源任务扩展。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "如何用不依赖 SQLite 的纯 Swift LIKE 匹配器精确复现本 Golden 已覆盖的 % 与 _ 语义，并对未覆盖的转义、大小写和 Unicode 行为保持显式边界？",
+    "如何同时提供 Android 兼容查询与严格按书过滤的安全查询，避免 UI 无意选择跨书结果？",
+    "如何让持久化适配器保留 time 主键替换语义，同时把数据库技术选择留在平台基础设施层？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002"
+    ],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-READER-BOOKMARK-SEARCH-RUNTIME-RISK-001",
+      "IOS-READER-CORE-BOOKMARK-SEARCH-001"
+    ]
+  },
+  "supersedes": null,
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30459746502/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "created_by": "IOS-CHARACTERIZE-READER-BOOKMARK-SEARCH-RUNTIME-RISK-001"
+}

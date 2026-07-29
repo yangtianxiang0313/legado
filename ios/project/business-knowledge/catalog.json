@@ -2,11 +2,11 @@
   "schema_version": 1,
   "contract_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-  "inventory_control_sha256": "30cac916034a71f4ce34aa11388c0c3d578c78ccd937f888e48b556b01d72172",
+  "inventory_control_sha256": "1d3d35af7146d8f92d885be6005fbadfdfda9d52b9f4aa741953d41819c591cc",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "b1b3d57c94d554e292f4b91982d563a8a428d8a6825e7d9404586d2caa8dbe52",
-  "coverage_sha256": "647dbd2b33d76f07ccfb0d3a47daa1e535dbbe75e2e3cb0033c02cec87e40329",
+  "authority_sha256": "1e685b2caf1f754e819fcec6596c95820cb7d7d41e70f592c16db2d8bf69016f",
+  "coverage_sha256": "6b49b8e1cd79f676d83872f78ce6d9bb503df6b65782f9fed5a5aca4c158963f",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -19,6 +19,19 @@
       "claim_refs": [
         {
           "id": "BKC-BOOK-CACHE-RUNTIME-001",
+          "revision": 2
+        }
+      ]
+    },
+    {
+      "id": "BKP-READER-BOOKMARK-SEARCH-RUNTIME-001",
+      "revision": 1,
+      "semantic_key": "reader.bookmark-search-runtime-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-READER-BOOKMARK-SEARCH-RUNTIME-001/r0001.json",
+      "record_sha256": "dce086235bb008f9cf7dac395cb06f028a8003799651a66fcfe0981d0ebb4089",
+      "claim_refs": [
+        {
+          "id": "BKC-BOOKMARK-RUNTIME-RISK-001",
           "revision": 2
         }
       ]
@@ -249,6 +262,14 @@
       "resolution_state": "resolved"
     },
     {
+      "id": "DRV-READER-BOOKMARK-SEARCH-RUNTIME-001",
+      "revision": 1,
+      "semantic_key": "reader.bookmark.search-compatibility-boundary",
+      "path": "ios/project/business-knowledge/drivers/published/DRV-READER-BOOKMARK-SEARCH-RUNTIME-001/r0001.json",
+      "record_sha256": "53694ccfd14cb41fdf4491e8fe23fd7b84a3e8e5b44b3cc5a89a3ed305293910",
+      "resolution_state": "resolved"
+    },
+    {
       "id": "DRV-SOURCE-RUNTIME-COOKIE-SESSION-001",
       "revision": 1,
       "semantic_key": "source.execution.cookie-session",
@@ -377,6 +398,15 @@
       "record_sha256": "0a282edb9e5003757a0dfde63fed77ff4e4049c7c753d1d0f644bf18d52fee66",
       "entry_ids": [
         "BKE-CONTENT-CACHE-QUEUE-COMPLETION-001"
+      ]
+    },
+    {
+      "id": "BKL-READER-BOOKMARK-SEARCH-RUNTIME-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-READER-BOOKMARK-SEARCH-RUNTIME-001.json",
+      "record_sha256": "79ff4d5bd79b9b0cccb93c468b3cd657f9fd2bede1813f90867d090622894a6f",
+      "entry_ids": [
+        "BKE-READER-BOOKMARK-SEARCH-RUNTIME-001"
       ]
     },
     {

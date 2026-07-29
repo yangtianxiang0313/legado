@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-READER-BOOKMARK-SEARCH-RUNTIME-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "reader.bookmark-search-runtime-golden",
+  "title": "受保护 Android Golden 验证的书签搜索兼容语义",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "reader.bookmark"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-CORE"
+    ],
+    "subject_keys": [
+      "reader.bookmark"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-BOOKMARK-RUNTIME-RISK-001",
+      "revision": 2,
+      "semantic_key": "reader.bookmark.search-runtime-risk",
+      "kind": "risk_or_anomaly",
+      "topic": "书签搜索 SQL 与主键冲突语义",
+      "statement": "在 rl-reader-bookmark-search-runtime-risk-001 的 7 个固定场景中，Android BookmarkDao.flowSearch 的可观察语义等价于“书名作者相同且章节名 LIKE 模式，或任意书的正文 LIKE 模式”，因此正文命中、空 key、百分号和下划线模式都可能返回其他书的书签；结果跨书按 chapterIndex 全局升序。key 未转义地拼入 LIKE 模式，% 与 _ 保留 SQLite 通配符语义。Bookmark 以 time 为主键，固定场景中连续插入相同 time 后只保留后插入的整行。本结论只冻结上述搜索、排序和同主键替换结果，不外推到书签迁移、目录重映射、并发写入、数据库升级、区域排序或 UI 应默认暴露跨书结果。",
+      "subject_keys": [
+        "reader.bookmark"
+      ],
+      "depends_on": [],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [
+          {
+            "id": "AF-BOOKMARK-CONSTRUCTOR",
+            "revision_sha256": "618fde0b9f134f1c4eba97768c09fdba4ced5c7faddeb1b14cd0881d22f07edb"
+          },
+          {
+            "id": "AF-BOOKMARK-FLOW-SEARCH-QUERY",
+            "revision_sha256": "4bbe562f89555ae64442f1eee47cb3a2bbb3dd5a92a9764c29a86ab87c9d3ecb"
+          }
+        ],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "7940139ff5c87e977f4aeefa43064e733055ddca",
+            "path": "app/src/main/java/io/legado/app/data/dao/BookmarkDao.kt",
+            "symbol_id": "kotlin://io.legado.app.data.dao/BookmarkDao/flowSearch"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "1093970423bc64d7405a142a75befd23c09ec163",
+            "path": "app/src/main/java/io/legado/app/data/entities/Bookmark.kt",
+            "symbol_id": "kotlin://io.legado.app.data.entities/Bookmark"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/rl-reader-bookmark-search-runtime-risk-001.json",
+            "artifact_sha256": "11fffd7009a1173e821aba4bbd59bca7e03c717cf80b2029e29b9e81cd51c994",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "4d4ac4537e225d85e3f6e09e270b50b8090d94e4792dd2863baea7da3f8f34ac",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "d066820bac98f1c7e8579895835980ff159f2c4caad71fcd10c5c91862747d70",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-BOOKMARK-RUNTIME-RISK-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-READER-BOOKMARK-SEARCH-RUNTIME-RISK-001"
+}

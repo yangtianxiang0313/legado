@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgeCoverageLedger",
+  "id": "BKL-READER-BOOKMARK-SEARCH-RUNTIME-001",
+  "revision": 1,
+  "status": "current",
+  "packet_refs": [
+    {
+      "id": "BKP-READER-BOOKMARK-SEARCH-RUNTIME-001",
+      "revision": 1,
+      "sha256": "dce086235bb008f9cf7dac395cb06f028a8003799651a66fcfe0981d0ebb4089"
+    }
+  ],
+  "generated_from": {
+    "knowledge_authority_sha256": "1e685b2caf1f754e819fcec6596c95820cb7d7d41e70f592c16db2d8bf69016f",
+    "requirement_catalog_sha256": "68d9f3c0def1e41f7b1e5eea9e34d8f8c5a85253c247cf5b703202859086918c",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "entries": [
+    {
+      "id": "BKE-READER-BOOKMARK-SEARCH-RUNTIME-001",
+      "claim_ref": {
+        "id": "BKC-BOOKMARK-RUNTIME-RISK-001",
+        "revision": 2
+      },
+      "validation": {
+        "required": "android_runtime",
+        "state": "verified",
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-reader-bookmark-search-runtime-risk-001-30457985389-1.json",
+          "ios/harness/goldens/android-legado-v1/rl-reader-bookmark-search-runtime-risk-001.json#/artifact/result/value"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "covered_by_requirement",
+        "refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "reason": "受保护 Android Golden 已冻结书签 LIKE 搜索、跨书正文分支、全局排序和同 time 替换边界，交由 ReaderCore 中显式命名的 Android 兼容投影实现",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "planned",
+        "requirement_refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "work_item_refs": [
+          "IOS-READER-CORE-BOOKMARK-SEARCH-001"
+        ],
+        "capability_refs": [
+          "CAP-CONFORMANCE",
+          "CAP-CORE"
+        ],
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-reader-bookmark-search-runtime-risk-001-30457985389-1.json"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    }
+  ],
+  "updated_by": "IOS-CHARACTERIZE-READER-BOOKMARK-SEARCH-RUNTIME-RISK-001",
+  "updated_at": "2026-07-29T14:15:02Z"
+}
