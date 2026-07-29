@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-READER-HISTORY-READ-RECORD-RUNTIME-RISK-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "reader.history.read-record-compatibility-boundary",
+  "title": "把 Android 阅读时长风险语义隔离在 ReaderCore 兼容投影",
+  "claim_refs": [
+    {
+      "id": "BKC-BOOK-READ-RECORD-RISK-001",
+      "revision": 2
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "ReaderCore 的 Android 兼容投影必须逐场景复现受保护 Golden 中的跨设备求和、空 deviceId 写回、会话重置、暂停不结算、关闭记录与复合主键替换语义；测试不得自行修正真源结果。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "safety",
+      "scenario": "跨设备累计值写回空 deviceId 会重复计时，暂停未结算会丢失尾段时间；这些是需显式命名的 Android 风险语义，不得无意成为 iOS 原生阅读统计的默认策略。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "modularity",
+      "scenario": "ReadRecord 值、聚合和会话状态转换属于 ReaderCore；存储通过端口注入，核心不得依赖 Room、Core Data、SwiftData、SQLite、SwiftUI 或 Android Golden 文件。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "determinism",
+      "scenario": "聚合、复合键替换和会话边界必须实现为纯确定性状态转换；时间由调用方显式注入，ConformanceCLI 对固定 runtime-lab 输入输出结构化投影。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "evolvability",
+      "scenario": "iOS 原生策略可使用稳定设备身份、单设备会话基线和明确的生命周期结算，但必须与 android-legado-v1 兼容入口分离，并由后续需求和证据定义迁移关系。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "如何同时提供 Android 兼容投影与 iOS 安全统计策略，使调用方不能因默认参数误选风险语义？",
+    "如何设计 ReadRecordStore 端口，既保留 (deviceId, bookName) 替换与聚合能力，又不泄漏具体数据库类型？",
+    "如何用显式时钟和生命周期事件保证会话结算可测试，并为历史数据迁移保留版本化策略？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002"
+    ],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-READER-HISTORY-READ-RECORD-RUNTIME-RISK-001",
+      "IOS-READER-CORE-READ-RECORD-001"
+    ]
+  },
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30470856226/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-READER-HISTORY-READ-RECORD-RUNTIME-RISK-001"
+}

@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgeCoverageLedger",
+  "id": "BKL-READER-HISTORY-READ-RECORD-RUNTIME-RISK-001",
+  "revision": 1,
+  "status": "current",
+  "packet_refs": [
+    {
+      "id": "BKP-READER-HISTORY-READ-RECORD-RUNTIME-RISK-001",
+      "revision": 1,
+      "sha256": "0fe7d1e9f1b84928b4c49835a2d937fa187af6310cbd762a5bc9db6e32f4a1c9"
+    }
+  ],
+  "generated_from": {
+    "knowledge_authority_sha256": "11c855790a82a12bac070cc83a7c9665fc77d7345370f6dff3085267325f7441",
+    "requirement_catalog_sha256": "e71031f26f3e6975d27937d7f8832094facd76a7c2f7cff95c117322ef81d515",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "entries": [
+    {
+      "id": "BKE-READER-HISTORY-READ-RECORD-RUNTIME-RISK-001",
+      "claim_ref": {
+        "id": "BKC-BOOK-READ-RECORD-RISK-001",
+        "revision": 2
+      },
+      "validation": {
+        "required": "android_runtime",
+        "state": "verified",
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-reader-history-read-record-runtime-risk-001-30469890402-1.json",
+          "ios/harness/goldens/android-legado-v1/rl-reader-history-read-record-runtime-risk-001.json#/artifact/result/value"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "covered_by_requirement",
+        "refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "reason": "受保护 Android Golden 已冻结跨设备聚合、空设备写回、暂停不结算、关闭记录和复合主键替换边界，交由 ReaderCore 中显式命名的 Android 兼容投影实现",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "planned",
+        "requirement_refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "work_item_refs": [
+          "IOS-READER-CORE-READ-RECORD-001"
+        ],
+        "capability_refs": [
+          "CAP-CONFORMANCE",
+          "CAP-CORE"
+        ],
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-reader-history-read-record-runtime-risk-001-30469890402-1.json"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    }
+  ],
+  "updated_by": "IOS-CHARACTERIZE-READER-HISTORY-READ-RECORD-RUNTIME-RISK-001",
+  "updated_at": "2026-07-29T16:33:09Z"
+}

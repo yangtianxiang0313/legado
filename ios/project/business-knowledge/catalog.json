@@ -2,11 +2,11 @@
   "schema_version": 1,
   "contract_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-  "inventory_control_sha256": "4d105d3cf23af0a5b9b57448264fe90f19f7edbbcfb78a80e1ac2ad548c25c6c",
+  "inventory_control_sha256": "307b6a8700e2d9303387591da2c486cf6e0a657b25618ae2bdec4cf4f876762c",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "11c855790a82a12bac070cc83a7c9665fc77d7345370f6dff3085267325f7441",
-  "coverage_sha256": "c974c87a5b32a4f5f69e07b5465d8aab10461056c131c0a3c3c6e98c50fb1322",
+  "authority_sha256": "7ecc6982b57c823022eb397fb23f564202ae0d398664c3cc7d6318ec903b5020",
+  "coverage_sha256": "152db674e0f57a5330b9dfa831830712e6db3a5713989a4dafd50c4e21f8648b",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -32,6 +32,19 @@
       "claim_refs": [
         {
           "id": "BKC-BOOKMARK-RUNTIME-RISK-001",
+          "revision": 2
+        }
+      ]
+    },
+    {
+      "id": "BKP-READER-HISTORY-READ-RECORD-RUNTIME-RISK-001",
+      "revision": 1,
+      "semantic_key": "reader.history.read-record-runtime-risk-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-READER-HISTORY-READ-RECORD-RUNTIME-RISK-001/r0001.json",
+      "record_sha256": "0fe7d1e9f1b84928b4c49835a2d937fa187af6310cbd762a5bc9db6e32f4a1c9",
+      "claim_refs": [
+        {
+          "id": "BKC-BOOK-READ-RECORD-RISK-001",
           "revision": 2
         }
       ]
@@ -296,6 +309,14 @@
       "resolution_state": "resolved"
     },
     {
+      "id": "DRV-READER-HISTORY-READ-RECORD-RUNTIME-RISK-001",
+      "revision": 1,
+      "semantic_key": "reader.history.read-record-compatibility-boundary",
+      "path": "ios/project/business-knowledge/drivers/published/DRV-READER-HISTORY-READ-RECORD-RUNTIME-RISK-001/r0001.json",
+      "record_sha256": "71ee4501c68d56a7d74331f75b82b1bf7176e9afe878a5b5833a92f43ede2238",
+      "resolution_state": "resolved"
+    },
+    {
       "id": "DRV-SOURCE-RUNTIME-COOKIE-SESSION-001",
       "revision": 1,
       "semantic_key": "source.execution.cookie-session",
@@ -449,6 +470,15 @@
       "record_sha256": "79ff4d5bd79b9b0cccb93c468b3cd657f9fd2bede1813f90867d090622894a6f",
       "entry_ids": [
         "BKE-READER-BOOKMARK-SEARCH-RUNTIME-001"
+      ]
+    },
+    {
+      "id": "BKL-READER-HISTORY-READ-RECORD-RUNTIME-RISK-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-READER-HISTORY-READ-RECORD-RUNTIME-RISK-001.json",
+      "record_sha256": "59d109e4052491af903e82a8d7bcf79a4f98b284a6ab5d61d954829429c8032f",
+      "entry_ids": [
+        "BKE-READER-HISTORY-READ-RECORD-RUNTIME-RISK-001"
       ]
     },
     {
