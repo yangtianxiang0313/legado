@@ -24,6 +24,61 @@ final class HTMLCSSSourceRuntimeTests: XCTestCase {
     XCTAssertEqual(detail.url.absoluteString, "http://sourcelab.test/books/star-river/index.html")
   }
 
+  func testPOSTFormPlanMatchesAndroidNominalGolden() throws {
+    let runtime = makeRuntime(
+      searchURL:
+        "http://sourcelab.test/post/{{key}},"
+        + #"{"method":"POST","body":"{{key == 'nominal' ? 'keyword=星河&author=北辰' : 'unused='}}"}"#
+    )
+    let plan = try runtime.searchRequestPlan(keyword: "nominal")
+
+    XCTAssertEqual(plan.request.method, .post)
+    XCTAssertEqual(plan.request.url.absoluteString, "http://sourcelab.test/post/nominal")
+    XCTAssertEqual(
+      plan.request.headers.fields,
+      [
+        try HTTPHeader(
+          name: "user-agent",
+          value: SourceRequestCompiler.androidDefaultUserAgent
+        )
+      ]
+    )
+    XCTAssertEqual(
+      plan.formFields,
+      [
+        HTTPFormField(key: "keyword", value: "%E6%98%9F%E6%B2%B3"),
+        HTTPFormField(key: "author", value: "%E5%8C%97%E8%BE%B0"),
+      ]
+    )
+    XCTAssertEqual(
+      plan.body,
+      "keyword=%E6%98%9F%E6%B2%B3&author=%E5%8C%97%E8%BE%B0"
+    )
+    XCTAssertEqual(plan.request.body?.bytes, Data(plan.body!.utf8))
+  }
+
+  func testPOSTFormKeepsFirstKeyPositionAndLastValue() throws {
+    let runtime = makeRuntime(
+      searchURL:
+        "http://sourcelab.test/post/{{key}},"
+        + #"{"method":"post","body":"empty=&dup=first&dup=second&encoded=%E6%98%9F%E6%B2%B3"}"#
+    )
+    let plan = try runtime.searchRequestPlan(keyword: "boundary")
+
+    XCTAssertEqual(
+      plan.formFields,
+      [
+        HTTPFormField(key: "empty", value: ""),
+        HTTPFormField(key: "dup", value: "second"),
+        HTTPFormField(key: "encoded", value: "%E6%98%9F%E6%B2%B3"),
+      ]
+    )
+    XCTAssertEqual(
+      plan.body,
+      "empty=&dup=second&encoded=%E6%98%9F%E6%B2%B3"
+    )
+  }
+
   func testSearchProjectionMatchesAndroidGolden() throws {
     let runtime = makeRuntime()
     let books = try runtime.search(
@@ -186,10 +241,12 @@ final class HTMLCSSSourceRuntimeTests: XCTestCase {
     XCTAssertEqual(first.first?.bookURL.absoluteString, "http://sourcelab.test/novels/other.html")
   }
 
-  private func makeRuntime() -> HTMLCSSSourceRuntime {
+  private func makeRuntime(
+    searchURL: String = "http://sourcelab.test/search.html?q={{key}}"
+  ) -> HTMLCSSSourceRuntime {
     HTMLCSSSourceRuntime(
       definition: HTMLCSSSourceDefinition(
-        searchURLTemplate: "http://sourcelab.test/search.html?q={{key}}",
+        searchURLTemplate: searchURL,
         search: SearchRules(
           list: ".book-item",
           name: HTMLCSSRule(".book-name"),

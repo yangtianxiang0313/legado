@@ -168,16 +168,13 @@ public struct HTMLCSSSourceRuntime: Sendable {
   }
 
   public func searchRequest(keyword: String) throws -> HTTPRequest {
-    var allowed = CharacterSet.urlQueryAllowed
-    allowed.remove(charactersIn: ":#[]@!$&'()*+,;=?/")
-    guard
-      definition.searchURLTemplate.contains("{{key}}"),
-      let encoded = keyword.addingPercentEncoding(withAllowedCharacters: allowed)
-    else {
-      throw SourceRuntimeIssue(stage: .urlTemplate, code: .invalidURL)
-    }
-    return try request(
-      for: definition.searchURLTemplate.replacingOccurrences(of: "{{key}}", with: encoded)
+    try searchRequestPlan(keyword: keyword).request
+  }
+
+  public func searchRequestPlan(keyword: String) throws -> SourceRequestPlan {
+    try SourceRequestCompiler.compile(
+      template: definition.searchURLTemplate,
+      keyword: keyword
     )
   }
 

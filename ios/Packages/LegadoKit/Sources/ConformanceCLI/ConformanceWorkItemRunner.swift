@@ -220,7 +220,8 @@ public enum ConformanceWorkItemRunner {
     let manifest = try decodeJSON(at: manifestURL, mappedError: .invalidGoldenManifest)
     guard
       case .object(let manifestRoot) = manifest,
-      manifestRoot["schema_version"] == .number(JSONNumber(1)),
+      manifestRoot["schema_version"] == .number(JSONNumber(1))
+        || manifestRoot["schema_version"] == .number(JSONNumber(2)),
       case .object(let oracle)? = manifestRoot["oracle"],
       oracle["profile"] == .string("android-legado-v1"),
       case .object(let fixtures)? = manifestRoot["fixtures"]

@@ -11,7 +11,10 @@ public enum SourcePipelineConformanceError: String, Error, Equatable, Sendable {
 }
 
 public enum SourcePipelineConformanceRunner {
-  public static func run(_ fixture: LoadedFixture) async throws -> Data {
+  public static func run(
+    _ fixture: LoadedFixture,
+    searchKeywords: [String: String] = [:]
+  ) async throws -> Data {
     guard
       fixture.definition.operation == .sourceLabSite,
       fixture.definition.transport.mode == .fixtureAndLoopback
@@ -23,12 +26,15 @@ public enum SourcePipelineConformanceRunner {
     let transport = FixtureTransport(fixture: fixture)
     var requestPlan: [HTTPRequestEnvelope] = []
     var cases: [JSONValue] = []
+    let plans = try compiledPlans(
+      fixture,
+      searchKeywords: searchKeywords
+    )
 
     for requestCase in fixture.requestCases {
-      let request = try compiledRequest(
-        for: requestCase,
-        runtime: runtime
-      )
+      guard let request = plans[requestCase.id]?.request else {
+        throw SourcePipelineConformanceError.inputRouteMismatch
+      }
       guard
         request.method == requestCase.request.method,
         request.url == requestCase.request.url
@@ -80,7 +86,7 @@ public enum SourcePipelineConformanceRunner {
     return try ExecutionEnvelopeCodec.artifactData(envelope)
   }
 
-  private static func definition(from data: Data) throws -> HTMLCSSSourceDefinition {
+  static func definition(from data: Data) throws -> HTMLCSSSourceDefinition {
     guard
       case .object(let source) = try? JSONValueCodec.decode(data),
       case .string(let searchURL)? = source["searchUrl"],
@@ -97,20 +103,20 @@ public enum SourcePipelineConformanceRunner {
       search: SearchRules(
         list: selector(search, "bookList"),
         name: rule(search, "name"),
-        author: rule(search, "author"),
-        intro: rule(search, "intro"),
-        kind: rule(search, "kind"),
-        lastChapter: rule(search, "lastChapter"),
+        author: optionalRule(search, "author"),
+        intro: optionalRule(search, "intro"),
+        kind: optionalRule(search, "kind"),
+        lastChapter: optionalRule(search, "lastChapter"),
         bookURL: rule(search, "bookUrl"),
-        coverURL: rule(search, "coverUrl")
+        coverURL: optionalRule(search, "coverUrl")
       ),
       bookInfo: BookInfoRules(
         name: rule(bookInfo, "name"),
-        author: rule(bookInfo, "author"),
-        intro: rule(bookInfo, "intro"),
-        kind: rule(bookInfo, "kind"),
-        lastChapter: rule(bookInfo, "lastChapter"),
-        coverURL: rule(bookInfo, "coverUrl"),
+        author: optionalRule(bookInfo, "author"),
+        intro: optionalRule(bookInfo, "intro"),
+        kind: optionalRule(bookInfo, "kind"),
+        lastChapter: optionalRule(bookInfo, "lastChapter"),
+        coverURL: optionalRule(bookInfo, "coverUrl"),
         tocURL: rule(bookInfo, "tocUrl")
       ),
       toc: TOCRules(
@@ -162,27 +168,47 @@ public enum SourcePipelineConformanceRunner {
     return HTMLCSSRule(raw)
   }
 
-  private static func compiledRequest(
-    for requestCase: FixtureRequestCase,
-    runtime: HTMLCSSSourceRuntime
-  ) throws -> HTTPRequest {
-    switch requestCase.operation {
-    case .search:
-      guard
-        let components = URLComponents(string: requestCase.request.url.absoluteString),
-        let keyword = components.queryItems?.first(where: { $0.name == "q" })?.value
-      else {
-        throw SourcePipelineConformanceError.inputRouteMismatch
+  private static func optionalRule(
+    _ object: [String: JSONValue],
+    _ key: String
+  ) -> HTMLCSSRule {
+    (try? rule(object, key)) ?? HTMLCSSRule("[data-legado-missing-field]")
+  }
+
+  static func compiledPlans(
+    _ fixture: LoadedFixture,
+    searchKeywords: [String: String]
+  ) throws -> [String: SourceRequestPlan] {
+    let runtime = HTMLCSSSourceRuntime(
+      definition: try definition(from: fixture.sourceData)
+    )
+    var plans: [String: SourceRequestPlan] = [:]
+    for requestCase in fixture.requestCases {
+      let plan: SourceRequestPlan
+      switch requestCase.operation {
+      case .search:
+        let queryKeyword = URLComponents(
+          string: requestCase.request.url.absoluteString
+        )?.queryItems?.first(where: { $0.name == "q" })?.value
+        guard let keyword = searchKeywords[requestCase.id] ?? queryKeyword else {
+          throw SourcePipelineConformanceError.inputRouteMismatch
+        }
+        plan = try runtime.searchRequestPlan(keyword: keyword)
+      case .bookInfo, .chapters, .content:
+        guard let url = URL(string: requestCase.request.url.absoluteString) else {
+          throw SourcePipelineConformanceError.inputRouteMismatch
+        }
+        plan = SourceRequestPlan(
+          request: try runtime.request(for: url),
+          body: nil,
+          formFields: []
+        )
+      default:
+        throw SourcePipelineConformanceError.unsupportedOperation
       }
-      return try runtime.searchRequest(keyword: keyword)
-    case .bookInfo, .chapters, .content:
-      guard let url = URL(string: requestCase.request.url.absoluteString) else {
-        throw SourcePipelineConformanceError.inputRouteMismatch
-      }
-      return try runtime.request(for: url)
-    default:
-      throw SourcePipelineConformanceError.unsupportedOperation
+      plans[requestCase.id] = plan
     }
+    return plans
   }
 
   private static func pipelineCase(
@@ -241,9 +267,9 @@ public enum SourcePipelineConformanceRunner {
     .object([
       "name": .string(book.name),
       "author": optional(book.author),
-      "intro": optional(book.intro),
+      "intro": .string(book.intro ?? ""),
       "kind": optional(book.kind),
-      "last_chapter": optional(book.lastChapter),
+      "last_chapter": .string(book.lastChapter ?? ""),
       "book_url": .string(book.bookURL.absoluteString),
       "cover_url": optional(book.coverURL?.absoluteString),
     ])
