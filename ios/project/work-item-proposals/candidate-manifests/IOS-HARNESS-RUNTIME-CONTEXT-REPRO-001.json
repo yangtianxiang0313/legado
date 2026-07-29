@@ -1,0 +1,30 @@
+{
+  "authority": "proposal_only",
+  "candidate_sha256": "2878670db3bb4254153f6811c3037bc3526ad2ea5083c82dc073182fcf76f719",
+  "compiler_version": "proposal-compiler-v1",
+  "dag": {
+    "id": "WIPD-IOS-INITIALIZATION-001",
+    "revision": 30,
+    "sha256": "7a6d485dbb1c6d2ffe30720ff642a485e4a644a107f6f8d42c9fdf6bd0180719"
+  },
+  "dependencies": [
+    {
+      "chain": [
+        "IOS-HARNESS-RUNTIME-CONTEXT-SCOPE-001"
+      ],
+      "checkpoint": "ios/project/checkpoints/IOS-HARNESS-RUNTIME-CONTEXT-SCOPE-001.json",
+      "checkpoint_sha256": "620a66488201e33ea3d0cb398931d59d41071c0995d40210809bcaf1eb15d797",
+      "evidence": "ios/harness/evidence/runs/run-20260729T010052Z-ios-harness-runtime-context-scope-001-bd3e4391.json",
+      "evidence_sha256": "f98ec962b1bf4bf8387d613289a52e735108a4543cc7d3997baed5513ff58441",
+      "original": "IOS-HARNESS-RUNTIME-CONTEXT-SCOPE-001",
+      "reason_code": "DIRECT_COMPLETION",
+      "resolved": "IOS-HARNESS-RUNTIME-CONTEXT-SCOPE-001",
+      "work_item_sha256": "ec434d61a2e3528b8b78674cd6922cd6404d1a3a90b99ca0011bf6aa7c3625cd"
+    }
+  ],
+  "node_sha256": "e5a174f15ef490c331c042d4a61caa4a72fdedce2d45eab0a6a8bbd77b0912aa",
+  "proposal_id": "IOS-HARNESS-RUNTIME-CONTEXT-REPRO-001",
+  "queue_effect": "none",
+  "recipe_sha256": "fe4672a9e8eb19aa8c07e07c89783c9aa23d229f15af9ae18589df19357b8d40",
+  "schema_version": 1
+}
