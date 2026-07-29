@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-UI-BOOTSTRAP-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "ui.native-bootstrap-static-structure",
+  "title": "四个根入口与书架入口的静态 UI 结构",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "ui.navigation"
+    ],
+    "capability_refs": [
+      "CAP-BOOTSTRAP",
+      "CAP-CORE"
+    ],
+    "subject_keys": [
+      "ui.root",
+      "ui.navigation",
+      "ui.action"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-UI-ROOTS-001",
+      "revision": 4,
+      "semantic_key": "ui.root.primary-destinations",
+      "kind": "business_inference",
+      "topic": "主入口",
+      "statement": "冻结 Android MainActivity 的 bookshelf、explore、rss、my 四个业务根入口；iOS 保留四个稳定 Root 身份，但不复制 BottomNavigationView、ViewPager 或 Fragment 实现。",
+      "subject_keys": [
+        "ui.root",
+        "ui.navigation"
+      ],
+      "depends_on": [],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "641c1dffd26c5ad6f9b9e095791a68c7f1df0972",
+            "path": "app/src/main/java/io/legado/app/ui/main/MainActivity.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.main.MainActivity"
+          }
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "human_decision"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-UI-ROOTS-001",
+        "revision": 3
+      }
+    },
+    {
+      "id": "BKC-UI-SHELF-ROOT-001",
+      "revision": 4,
+      "semantic_key": "ui.shelf.root-surface",
+      "kind": "business_inference",
+      "topic": "书架根页面",
+      "statement": "首个 iOS UI 纵切保留书架根页面与搜索入口；刷新、导入、缓存、批量管理、分组和布局等已知入口按后续 Feature 增量实现，不由 Bootstrap 伪报完成。",
+      "subject_keys": [
+        "ui.root",
+        "ui.action",
+        "ui.state"
+      ],
+      "depends_on": [
+        {
+          "id": "BKC-UI-ROOTS-001",
+          "revision": 4
+        }
+      ],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "f371a8706a10ab9cc027a3ebe4b795973a57fc0c",
+            "path": "app/src/main/java/io/legado/app/ui/main/bookshelf/BaseBookshelfFragment.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.main.bookshelf.BaseBookshelfFragment"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "641c1dffd26c5ad6f9b9e095791a68c7f1df0972",
+            "path": "app/src/main/java/io/legado/app/ui/main/MainActivity.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.main.MainActivity/getFragmentId"
+          }
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "human_decision"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-UI-SHELF-ROOT-001",
+        "revision": 3
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-UI-BOOTSTRAP-001"
+}

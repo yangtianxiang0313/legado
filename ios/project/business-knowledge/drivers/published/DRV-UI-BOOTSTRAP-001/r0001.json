@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-UI-BOOTSTRAP-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "ui.native-bootstrap-and-simulator",
+  "title": "先运行最小原生 App，再按 Feature 扩展 UI 拓扑",
+  "claim_refs": [
+    {
+      "id": "BKC-UI-ROOTS-001",
+      "revision": 4
+    },
+    {
+      "id": "BKC-UI-SHELF-ROOT-001",
+      "revision": 4
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "structural_fidelity",
+      "scenario": "四个业务 Root 与书架搜索入口必须存在，Android 平台控件细节不进入 iOS 合同。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "testability",
+      "scenario": "App 必须在真实 iPhone/iPad Simulator 启动，并输出可逐字段比较的结构化观察。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "modularity",
+      "scenario": "Route 状态位于独立 AppNavigation；App 只做 composition，不把 Repository 或 I/O 塞进 View。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "economy",
+      "scenario": "Bootstrap 不展开全部 UI Topology r3；每个后续 Feature 只增加自身结构与场景。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "后续 Feature 应如何以独立 Packet/Requirement 扩展 Route 与菜单，而不改写已经发布的 Bootstrap Root 合同？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0005",
+      "ADR-0006"
+    ],
+    "work_item_refs": [
+      "IOS-UI-BOOTSTRAP-001"
+    ]
+  },
+  "supersedes": null,
+  "promotion": {
+    "approval_ref": "project-owner:ui-topology-materialization",
+    "approved_by": "project-owner-request"
+  },
+  "created_by": "IOS-UI-BOOTSTRAP-001"
+}

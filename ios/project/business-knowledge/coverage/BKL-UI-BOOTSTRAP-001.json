@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgeCoverageLedger",
+  "id": "BKL-UI-BOOTSTRAP-001",
+  "revision": 1,
+  "status": "current",
+  "packet_refs": [
+    {
+      "id": "BKP-UI-BOOTSTRAP-001",
+      "revision": 1,
+      "sha256": "f1476a96b8acab739fcf622768070a035d7c6a9612338426fcc0ca7551a05ec5"
+    }
+  ],
+  "generated_from": {
+    "knowledge_authority_sha256": "41cc108625d0b0fe9db187ea34ba188578c7a1efb8c6c2f2fb1dd471481f6539",
+    "requirement_catalog_sha256": "0aefdd782897ef19462a089d77d2847284628f9cf570e0ac85062b623657681a",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "entries": [
+    {
+      "id": "BKE-UI-ROOTS-001",
+      "claim_ref": {
+        "id": "BKC-UI-ROOTS-001",
+        "revision": 4
+      },
+      "validation": {
+        "required": "human_decision",
+        "state": "verified",
+        "evidence_refs": [
+          "app/src/main/java/io/legado/app/ui/main/MainActivity.kt",
+          "ios/docs/adr/0006-native-ui-bootstrap-and-simulator-loop.md"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "covered_by_requirement",
+        "refs": [
+          "REQ-IOS-UI-BOOTSTRAP-001@1#RC-02"
+        ],
+        "reason": "冻结四个业务 Root，由 iOS 原生平台投影实现并通过双设备 Simulator 验收",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "planned",
+        "requirement_refs": [
+          "REQ-IOS-UI-BOOTSTRAP-001@1#RC-01",
+          "REQ-IOS-UI-BOOTSTRAP-001@1#RC-02"
+        ],
+        "work_item_refs": [
+          "IOS-UI-BOOTSTRAP-001"
+        ],
+        "capability_refs": [
+          "CAP-BOOTSTRAP",
+          "CAP-CORE"
+        ],
+        "evidence_refs": [
+          "ios/docs/adr/0006-native-ui-bootstrap-and-simulator-loop.md"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    },
+    {
+      "id": "BKE-UI-SHELF-ROOT-001",
+      "claim_ref": {
+        "id": "BKC-UI-SHELF-ROOT-001",
+        "revision": 4
+      },
+      "validation": {
+        "required": "human_decision",
+        "state": "verified",
+        "evidence_refs": [
+          "app/src/main/java/io/legado/app/ui/main/bookshelf/BaseBookshelfFragment.kt",
+          "app/src/main/java/io/legado/app/ui/main/MainActivity.kt#getFragmentId",
+          "ios/docs/adr/0006-native-ui-bootstrap-and-simulator-loop.md"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "covered_by_requirement",
+        "refs": [
+          "REQ-IOS-UI-BOOTSTRAP-001@1#RC-03"
+        ],
+        "reason": "首个纵切只交付书架搜索入口；其余已知菜单按 Feature 增量交付",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "planned",
+        "requirement_refs": [
+          "REQ-IOS-UI-BOOTSTRAP-001@1#RC-03"
+        ],
+        "work_item_refs": [
+          "IOS-UI-BOOTSTRAP-001"
+        ],
+        "capability_refs": [
+          "CAP-BOOTSTRAP",
+          "CAP-CORE"
+        ],
+        "evidence_refs": [
+          "ios/docs/adr/0006-native-ui-bootstrap-and-simulator-loop.md"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    }
+  ],
+  "updated_by": "IOS-UI-BOOTSTRAP-001",
+  "updated_at": "2026-07-29T07:45:00Z"
+}

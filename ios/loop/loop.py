@@ -288,7 +288,60 @@ def driver_for(
     return path, driver
 
 
+def source_anchors_for_claims(
+    root: Path,
+    claim_refs: Sequence[Mapping[str, Any]],
+) -> list[Mapping[str, Any]]:
+    wanted = {
+        (value.get("id"), value.get("revision"))
+        for value in claim_refs
+        if isinstance(value, dict)
+    }
+    anchors: dict[tuple[str, str, str, str], Mapping[str, Any]] = {}
+    for _, packet in relative_jsons(
+        root,
+        "ios/project/business-knowledge/packets/published",
+    ):
+        for claim in packet.get("claims", []):
+            if (
+                isinstance(claim, dict)
+                and (claim.get("id"), claim.get("revision")) in wanted
+            ):
+                for anchor in claim.get("support", {}).get(
+                    "source_anchors",
+                    [],
+                ):
+                    if not isinstance(anchor, dict):
+                        continue
+                    key = (
+                        str(anchor.get("android_commit", "")),
+                        str(anchor.get("path", "")),
+                        str(anchor.get("symbol_id", "")),
+                        str(anchor.get("git_blob", "")),
+                    )
+                    anchors[key] = anchor
+    return [anchors[key] for key in sorted(anchors)]
+
+
 def owner_contract(target: str) -> Mapping[str, Any]:
+    if target == "IOS-UI-BOOTSTRAP-001":
+        return {
+            "owner": "AppShell",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-004",
+                "ARCH-006",
+                "ARCH-007",
+                "ARCH-010",
+                "ARCH-017",
+            ],
+            "allowed_paths": [
+                "ios/Apps/Legado/**",
+                "ios/Packages/LegadoKit/Package.swift",
+                "ios/Packages/LegadoKit/Sources/AppNavigation/**",
+                "ios/Packages/LegadoKit/Tests/AppNavigationTests/**",
+            ],
+        }
     if "SOURCE-RUNTIME" in target:
         return {
             "owner": "SourceRuntime",
@@ -513,6 +566,157 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "path": driver_path,
         }
         title = str(driver.get("title") or target)
+    if architecture["owner"] == "AppShell":
+        expected_path = (
+            "ios/harness/ui/expected/ui-bootstrap-roots-v1.json"
+        )
+        scenario_id = "ui-bootstrap-roots-v1"
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "id": target,
+            "kind": "delivery",
+            "title": title,
+            "status": "ready",
+            "priority": 100,
+            "goal": (
+                "物化最小原生 iOS App、共享 Route 状态和 UITest Target；"
+                "在固定 iPhone/iPad Simulator 上验证四 Root 与书架搜索结构。"
+            ),
+            "source": {
+                "authority": "ios_product_decision",
+                "decision_refs": ["ADR-0001", "ADR-0005", "ADR-0006"],
+                "anchors": source_anchors_for_claims(root, claim_refs),
+                "knowledge": {
+                    "coverage": delivery["ledger_path"],
+                    "packets": ledger.get("packet_refs", []),
+                    "driver": driver_ref,
+                    "claims": claim_refs,
+                },
+                "ui_acceptance": {
+                    "scenario_id": scenario_id,
+                    "profile": "store_safe",
+                    "expected": expected_path,
+                    "project": "ios/Apps/Legado/Legado.xcodeproj",
+                    "scheme": "LegadoApp",
+                    "simulators": [
+                        {
+                            "simulator_id": "SIM-PHONE-COMPACT-001",
+                            "name": "Legado Loop iPhone SE (3rd generation)",
+                            "device_type": (
+                                "com.apple.CoreSimulator.SimDeviceType."
+                                "iPhone-SE-3rd-generation"
+                            ),
+                            "runtime": (
+                                "com.apple.CoreSimulator.SimRuntime.iOS-26-0"
+                            ),
+                            "projection": "compactStack",
+                        },
+                        {
+                            "simulator_id": "SIM-PAD-REGULAR-001",
+                            "name": "Legado Loop iPad Pro 13-inch (M4)",
+                            "device_type": (
+                                "com.apple.CoreSimulator.SimDeviceType."
+                                "iPad-Pro-13-inch-M4-8GB"
+                            ),
+                            "runtime": (
+                                "com.apple.CoreSimulator.SimRuntime.iOS-26-0"
+                            ),
+                            "projection": "regularSplit",
+                        },
+                    ],
+                },
+            },
+            "requirements": requirement_refs,
+            "architecture": {
+                "owner": architecture["owner"],
+                "refs": architecture["architecture_refs"],
+                "rule": (
+                    "App 只做 composition；Route 只携带稳定值；"
+                    "compact/regular 共用同一 Router，Feature 不直接 I/O。"
+                ),
+            },
+            "scope": {
+                "allowed_paths": architecture["allowed_paths"],
+                "forbidden": [
+                    "Android source",
+                    "Business Knowledge",
+                    "accepted Requirement",
+                    "architecture rules",
+                    "三方依赖",
+                ],
+            },
+            "acceptance": {
+                "commands": [
+                    {
+                        "id": "package-contract",
+                        "argv": [
+                            "python3",
+                            "-B",
+                            "ios/harness/probes/package_contract.py",
+                            "--root",
+                            ".",
+                        ],
+                        "timeout_seconds": 120,
+                    },
+                    {
+                        "id": "app-navigation-tests",
+                        "argv": [
+                            "swift",
+                            "test",
+                            "--package-path",
+                            "ios/Packages/LegadoKit",
+                            "--disable-automatic-resolution",
+                            "--filter",
+                            "AppNavigationTests",
+                        ],
+                        "required_output_pattern": (
+                            r"Executed [1-9][0-9]* tests?, with 0 failures"
+                        ),
+                        "timeout_seconds": 300,
+                    },
+                    {
+                        "id": "ui-simulator-acceptance",
+                        "argv": [
+                            "python3",
+                            "-B",
+                            "ios/harness/ui/ui_simulator.py",
+                            "verify",
+                            "--root",
+                            ".",
+                            "--task",
+                            "ios/project/loop/task.json",
+                        ],
+                        "timeout_seconds": 1800,
+                    },
+                ],
+                "structured_output": {
+                    "mode": "command_json",
+                    "command_id": "ui-simulator-acceptance",
+                    "fixture_id": scenario_id,
+                    "expected": expected_path,
+                    "required_fields": [
+                        "expected",
+                        "actual",
+                        "simulator_matrix",
+                        "first_divergence",
+                    ],
+                    "expected_values": {
+                        "scenario_id": scenario_id,
+                        "status": "equal",
+                        "first_divergence": None,
+                    },
+                },
+            },
+            "knowledge_updates": {
+                "required_on_completion": [
+                    "summary",
+                    "current_status",
+                    "architecture_change",
+                    "pitfalls",
+                    "next_step",
+                ]
+            },
+        }
     source_anchors = (
         migration.get("source_anchors", [])
         if isinstance(migration, dict)
@@ -868,11 +1072,32 @@ def validate_task(root: Path, task: Mapping[str, Any]) -> None:
     source = task.get("source")
     if not isinstance(source, dict):
         raise LoopError("TASK_SOURCE_INVALID")
-    golden = source.get("android_golden")
-    if not isinstance(golden, str):
-        raise LoopError("TASK_SOURCE_MISSING:android_golden")
-    if task.get("kind") == "delivery" and not (root / golden).is_file():
-        raise LoopError("TASK_SOURCE_MISSING:android_golden")
+    authority = source.get("authority", "android_golden")
+    if authority == "android_golden":
+        golden = source.get("android_golden")
+        if not isinstance(golden, str):
+            raise LoopError("TASK_SOURCE_MISSING:android_golden")
+        if task.get("kind") == "delivery" and not (root / golden).is_file():
+            raise LoopError("TASK_SOURCE_MISSING:android_golden")
+    elif authority == "ios_product_decision":
+        decision_refs = source.get("decision_refs")
+        ui_acceptance = source.get("ui_acceptance")
+        expected = (
+            ui_acceptance.get("expected")
+            if isinstance(ui_acceptance, dict)
+            else None
+        )
+        if (
+            task.get("kind") != "delivery"
+            or not isinstance(decision_refs, list)
+            or not decision_refs
+            or any(not isinstance(value, str) for value in decision_refs)
+            or not isinstance(expected, str)
+            or not (root / expected).is_file()
+        ):
+            raise LoopError("TASK_SOURCE_INVALID:ios_product_decision")
+    else:
+        raise LoopError("TASK_SOURCE_AUTHORITY_INVALID")
     acceptance = task.get("acceptance")
     commands = (
         acceptance.get("commands")

@@ -181,6 +181,103 @@ class MinimalLoopTests(unittest.TestCase):
             )
             self.assertIsNone(loop.next_task(root))
 
+    def test_ui_bootstrap_derives_simulator_delivery_without_android_golden(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.write(
+                root,
+                "ios/project/requirements/accepted/"
+                "REQ-IOS-UI-BOOTSTRAP-001.json",
+                {"id": "REQ-IOS-UI-BOOTSTRAP-001"},
+            )
+            self.write(
+                root,
+                "ios/harness/ui/expected/ui-bootstrap-roots-v1.json",
+                {"scenario_id": "ui-bootstrap-roots-v1"},
+            )
+            self.write(
+                root,
+                "ios/project/business-knowledge/packets/published/"
+                "BKP-UI-BOOTSTRAP-001/r0001.json",
+                {
+                    "claims": [
+                        {
+                            "id": "BKC-UI-ROOTS-001",
+                            "revision": 4,
+                            "support": {
+                                "source_anchors": [
+                                    {
+                                        "android_commit": "a" * 40,
+                                        "path": "MainActivity.kt",
+                                        "symbol_id": "MainActivity",
+                                        "git_blob": "b" * 40,
+                                    }
+                                ]
+                            },
+                        }
+                    ]
+                },
+            )
+            self.write(
+                root,
+                "ios/project/business-knowledge/drivers/published/"
+                "DRV-UI-BOOTSTRAP-001/r0001.json",
+                {
+                    "id": "DRV-UI-BOOTSTRAP-001",
+                    "revision": 1,
+                    "title": "原生 UI Bootstrap",
+                    "claim_refs": [
+                        {"id": "BKC-UI-ROOTS-001", "revision": 4}
+                    ],
+                },
+            )
+            self.write(
+                root,
+                "ios/project/business-knowledge/coverage/"
+                "BKL-UI-BOOTSTRAP-001.json",
+                {
+                    "status": "current",
+                    "packet_refs": [
+                        {
+                            "id": "BKP-UI-BOOTSTRAP-001",
+                            "revision": 1,
+                            "sha256": "c" * 64,
+                        }
+                    ],
+                    "entries": [
+                        {
+                            "claim_ref": {
+                                "id": "BKC-UI-ROOTS-001",
+                                "revision": 4,
+                            },
+                            "delivery": {
+                                "state": "planned",
+                                "work_item_refs": ["IOS-UI-BOOTSTRAP-001"],
+                                "requirement_refs": [
+                                    "REQ-IOS-UI-BOOTSTRAP-001@1#RC-01"
+                                ],
+                            },
+                            "validation": {"evidence_refs": []},
+                        }
+                    ],
+                },
+            )
+
+            task = loop.next_task(root)
+
+            self.assertEqual("IOS-UI-BOOTSTRAP-001", task["id"])
+            self.assertEqual("AppShell", task["architecture"]["owner"])
+            self.assertEqual(
+                "ios_product_decision",
+                task["source"]["authority"],
+            )
+            self.assertNotIn("android_golden", task["source"])
+            self.assertEqual(
+                "ui-simulator-acceptance",
+                task["acceptance"]["structured_output"]["command_id"],
+            )
+            loop.validate_task(root, task)
+
     def test_legacy_completion_index_prevents_replanning(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

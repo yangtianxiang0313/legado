@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "scenario_id": "ui-bootstrap-roots-v1",
+  "profile": "store_safe",
+  "simulators": [
+    {
+      "simulator_id": "SIM-PAD-REGULAR-001",
+      "projection": "regularSplit",
+      "steps": [
+        {
+          "id": "launch",
+          "root": "root.shelf",
+          "screen": "screen.root.shelf",
+          "visible": [
+            "action.shelf.openSearch",
+            "screen.root.shelf"
+          ]
+        },
+        {
+          "id": "selectExplore",
+          "root": "root.explore",
+          "screen": "screen.root.explore",
+          "visible": [
+            "screen.root.explore"
+          ]
+        },
+        {
+          "id": "selectRSS",
+          "root": "root.rss",
+          "screen": "screen.root.rss",
+          "visible": [
+            "screen.root.rss"
+          ]
+        },
+        {
+          "id": "selectSettings",
+          "root": "root.settings",
+          "screen": "screen.root.settings",
+          "visible": [
+            "screen.root.settings"
+          ]
+        },
+        {
+          "id": "openSearch",
+          "root": "root.shelf",
+          "screen": "screen.search.books",
+          "visible": [
+            "screen.search.books"
+          ]
+        }
+      ],
+      "route_trace": [
+        {
+          "operation": "selectRoot",
+          "route_id": "root.explore"
+        },
+        {
+          "operation": "selectRoot",
+          "route_id": "root.rss"
+        },
+        {
+          "operation": "selectRoot",
+          "route_id": "root.settings"
+        },
+        {
+          "operation": "selectRoot",
+          "route_id": "root.shelf"
+        },
+        {
+          "operation": "push",
+          "route_id": "search.books"
+        }
+      ]
+    },
+    {
+      "simulator_id": "SIM-PHONE-COMPACT-001",
+      "projection": "compactStack",
+      "steps": [
+        {
+          "id": "launch",
+          "root": "root.shelf",
+          "screen": "screen.root.shelf",
+          "visible": [
+            "action.shelf.openSearch",
+            "screen.root.shelf"
+          ]
+        },
+        {
+          "id": "selectExplore",
+          "root": "root.explore",
+          "screen": "screen.root.explore",
+          "visible": [
+            "screen.root.explore"
+          ]
+        },
+        {
+          "id": "selectRSS",
+          "root": "root.rss",
+          "screen": "screen.root.rss",
+          "visible": [
+            "screen.root.rss"
+          ]
+        },
+        {
+          "id": "selectSettings",
+          "root": "root.settings",
+          "screen": "screen.root.settings",
+          "visible": [
+            "screen.root.settings"
+          ]
+        },
+        {
+          "id": "openSearch",
+          "root": "root.shelf",
+          "screen": "screen.search.books",
+          "visible": [
+            "screen.search.books"
+          ]
+        }
+      ],
+      "route_trace": [
+        {
+          "operation": "selectRoot",
+          "route_id": "root.explore"
+        },
+        {
+          "operation": "selectRoot",
+          "route_id": "root.rss"
+        },
+        {
+          "operation": "selectRoot",
+          "route_id": "root.settings"
+        },
+        {
+          "operation": "selectRoot",
+          "route_id": "root.shelf"
+        },
+        {
+          "operation": "push",
+          "route_id": "search.books"
+        }
+      ]
+    }
+  ]
+}

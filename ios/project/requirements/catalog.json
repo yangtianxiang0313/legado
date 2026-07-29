@@ -49,6 +49,22 @@
         "RC-01",
         "RC-02"
       ]
+    },
+    {
+      "id": "REQ-IOS-UI-BOOTSTRAP-001",
+      "revision": 1,
+      "status": "accepted",
+      "semantic_key": "ios.ui.native-bootstrap-and-simulator",
+      "origin_kind": "ios_product_decision",
+      "readiness": "implementation_ready",
+      "path": "ios/project/requirements/accepted/REQ-IOS-UI-BOOTSTRAP-001.json",
+      "record_sha256": "002a576c58bd8a94dd9d4da64dac8d5a1ecde40eddb7d53d24f39bfab94b8f86",
+      "fact_selection_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "clauses": [
+        "RC-01",
+        "RC-02",
+        "RC-03"
+      ]
     }
   ]
 }

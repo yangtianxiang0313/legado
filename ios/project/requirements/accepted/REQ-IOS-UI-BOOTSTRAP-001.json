@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "id": "REQ-IOS-UI-BOOTSTRAP-001",
+  "revision": 1,
+  "status": "accepted",
+  "semantic_key": "ios.ui.native-bootstrap-and-simulator",
+  "title": "原生 iOS App 壳与结构化模拟器验收",
+  "origin": {
+    "kind": "ios_product_decision",
+    "baseline_commit": null,
+    "fact_refs": [],
+    "decision_refs": [
+      "ARCH-001",
+      "ARCH-007",
+      "ARCH-010",
+      "ADR-0001",
+      "ADR-0005",
+      "ADR-0006"
+    ],
+    "admission": "project_owner_approved"
+  },
+  "classification": {
+    "kind": "ios_policy_extension",
+    "profiles": [
+      "store_safe"
+    ],
+    "support_state": "project_only",
+    "evidence_level": "project"
+  },
+  "capability_refs": [
+    "CAP-BOOTSTRAP",
+    "CAP-CORE"
+  ],
+  "clauses": [
+    {
+      "id": "RC-01",
+      "statement": "提供可由 Xcode 构建、安装和启动的 iOS App Target，以及独立 UITest Target。",
+      "proof_kind": "architecture_decision",
+      "required_checks": [
+        "package-contract",
+        "ui-simulator-acceptance"
+      ],
+      "source_lab_behaviors": []
+    },
+    {
+      "id": "RC-02",
+      "statement": "同一 RootSelection 在 compact iPhone 上投影为四 Root Tab，在 regular iPad 上投影为 Sidebar/Split；默认 Root 为书架。",
+      "proof_kind": "static_source",
+      "required_checks": [
+        "app-navigation-tests",
+        "ui-simulator-acceptance"
+      ],
+      "source_lab_behaviors": []
+    },
+    {
+      "id": "RC-03",
+      "statement": "书架根页面提供搜索入口，并通过稳定 Route 进入搜索页面；结构验收输出 expected、actual 与 first_divergence。",
+      "proof_kind": "static_source",
+      "required_checks": [
+        "app-navigation-tests",
+        "ui-simulator-acceptance"
+      ],
+      "source_lab_behaviors": []
+    }
+  ],
+  "readiness": {
+    "state": "implementation_ready",
+    "blockers": [],
+    "next_action": "由 Minimal Loop 派生 IOS-UI-BOOTSTRAP-001 并在固定双设备模拟器验收"
+  },
+  "supersedes": null
+}
