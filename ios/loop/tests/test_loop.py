@@ -161,6 +161,7 @@ class MinimalLoopTests(unittest.TestCase):
             )
             self.assertNotIn("recipe", task)
             self.assertNotIn("recovery", task)
+            loop.validate_task(root, task)
             self.assertLess(len(loop.canonical(task)), 8_000)
 
     def test_completed_event_removes_delivery_from_queue(self):
@@ -485,6 +486,196 @@ class MinimalLoopTests(unittest.TestCase):
                     expected,
                     checks[0]["output_assertion_passed"],
                 )
+
+    def test_acceptance_rejects_exit_zero_with_invalid_structured_output(self):
+        cases = [
+            (
+                {
+                    "fixture_id": "fixture",
+                    "status": "equal",
+                    "android_expected": {},
+                },
+                False,
+            ),
+            (
+                {
+                    "fixture_id": "fixture",
+                    "status": "equal",
+                    "android_expected": {},
+                    "ios_actual": {},
+                    "canonical_request_plan": [],
+                    "first_divergence": None,
+                },
+                True,
+            ),
+        ]
+        for payload, expected in cases:
+            with self.subTest(expected=expected):
+                with tempfile.TemporaryDirectory() as directory:
+                    root = Path(directory)
+                    self.init_git(root)
+                    subprocess.run(
+                        ["git", "commit", "--allow-empty", "-qm", "base"],
+                        cwd=root,
+                        check=True,
+                    )
+                    task = {
+                        "id": "IOS-TEST-STRUCTURED-001",
+                        "acceptance": {
+                            "commands": [
+                                {
+                                    "id": "structured",
+                                    "argv": [
+                                        sys.executable,
+                                        "-c",
+                                        "import sys;sys.stdout.write(sys.argv[1])",
+                                        json.dumps(payload),
+                                    ],
+                                }
+                            ],
+                            "structured_output": {
+                                "mode": "command_json",
+                                "command_id": "structured",
+                                "fixture_id": "fixture",
+                                "expected": "golden.json",
+                                "required_fields": [
+                                    "android_expected",
+                                    "ios_actual",
+                                    "canonical_request_plan",
+                                    "first_divergence",
+                                ],
+                                "expected_values": {
+                                    "fixture_id": "fixture",
+                                    "status": "equal",
+                                    "first_divergence": None,
+                                },
+                            },
+                        },
+                    }
+
+                    passed, checks, _ = loop.run_acceptance(
+                        root,
+                        task,
+                        attempt=1,
+                        paths=[],
+                    )
+
+                self.assertEqual(expected, passed)
+                self.assertEqual(
+                    expected,
+                    checks[-1]["structured_output_passed"],
+                )
+
+    def test_android_golden_contract_binds_manifest_receipt_and_coverage(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture_id = "sl-contract-001"
+            golden_relative = (
+                "ios/harness/goldens/android-legado-v1/"
+                f"{fixture_id}.json"
+            )
+            receipt_relative = (
+                "ios/harness/goldens/releases/"
+                f"{fixture_id}-1-1.json"
+            )
+            golden = {
+                "fixture_id": fixture_id,
+                "artifact": {
+                    "fixture_id": fixture_id,
+                    "request_plan": [],
+                    "result": {
+                        "value": {"portable_known_projection": {}}
+                    },
+                },
+                "oracle": {
+                    "android_git_commit": "a" * 40,
+                    "runner_digest": "b" * 64,
+                },
+            }
+            self.write(root, golden_relative, golden)
+            golden_sha256 = loop.digest((root / golden_relative).read_bytes())
+            self.write(
+                root,
+                "ios/harness/goldens/manifest.json",
+                {
+                    "fixtures": {
+                        fixture_id: {
+                            "path": golden_relative,
+                            "golden_sha256": golden_sha256,
+                            "release_receipt": receipt_relative,
+                        }
+                    }
+                },
+            )
+            self.write(
+                root,
+                receipt_relative,
+                {
+                    "authority": "protected_android_golden",
+                    "fixture_id": fixture_id,
+                    "golden_path": golden_relative,
+                    "golden_sha256": golden_sha256,
+                },
+            )
+            self.write(
+                root,
+                "ios/project/business-knowledge/coverage/BKL-TEST.json",
+                {
+                    "status": "current",
+                    "entries": [
+                        {
+                            "validation": {
+                                "evidence_refs": [
+                                    f"{golden_relative}#/artifact"
+                                ]
+                            },
+                            "delivery": {
+                                "state": "planned",
+                                "work_item_refs": ["IOS-SOURCE-RUNTIME-TEST-001"],
+                            },
+                        }
+                    ],
+                },
+            )
+            contract = {
+                "fixture_id": fixture_id,
+                "expected": golden_relative,
+                "required_fields": [
+                    "artifact.request_plan",
+                    "artifact.result.value.portable_known_projection",
+                    "oracle.android_git_commit",
+                    "oracle.runner_digest",
+                ],
+            }
+
+            failures, observed = loop.validate_android_golden(
+                root,
+                contract,
+            )
+            (root / receipt_relative).unlink()
+            missing_receipt, _ = loop.validate_android_golden(
+                root,
+                contract,
+            )
+
+            self.assertEqual([], failures)
+            self.assertEqual(golden_sha256, observed)
+            self.assertIn(
+                "golden_receipt_invalid_or_missing",
+                missing_receipt,
+            )
+
+    def test_completion_rejects_empty_project_memory(self):
+        with self.assertRaisesRegex(
+            loop.LoopError,
+            "COMPLETION_KNOWLEDGE_INVALID",
+        ):
+            loop.complete(
+                Path("."),
+                summary="",
+                pitfall=[],
+                next_step="",
+            )
 
 
 if __name__ == "__main__":

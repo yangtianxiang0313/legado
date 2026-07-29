@@ -608,6 +608,8 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
                 },
             ],
             "structured_output": {
+                "mode": "command_json",
+                "command_id": "structured-source-acceptance",
                 "fixture_id": fixture_id,
                 "expected": golden_path,
                 "required_fields": [
@@ -616,6 +618,11 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
                     "canonical_request_plan",
                     "first_divergence",
                 ],
+                "expected_values": {
+                    "fixture_id": fixture_id,
+                    "status": "equal",
+                    "first_divergence": None,
+                },
             },
         },
         "knowledge_updates": {
@@ -787,13 +794,14 @@ def build_characterization_task(
                 },
             ],
             "structured_output": {
+                "mode": "android_golden",
                 "fixture_id": fixture_id,
                 "expected": golden_path,
                 "required_fields": [
-                    "android_expected",
-                    "source_lab_transcript",
-                    "oracle_bindings",
-                    "golden_receipt",
+                    "artifact.request_plan",
+                    "artifact.result.value.portable_known_projection",
+                    "oracle.android_git_commit",
+                    "oracle.runner_digest",
                 ],
             },
         },
@@ -865,6 +873,64 @@ def validate_task(root: Path, task: Mapping[str, Any]) -> None:
         raise LoopError("TASK_SOURCE_MISSING:android_golden")
     if task.get("kind") == "delivery" and not (root / golden).is_file():
         raise LoopError("TASK_SOURCE_MISSING:android_golden")
+    acceptance = task.get("acceptance")
+    commands = (
+        acceptance.get("commands")
+        if isinstance(acceptance, dict)
+        else None
+    )
+    structured = (
+        acceptance.get("structured_output")
+        if isinstance(acceptance, dict)
+        else None
+    )
+    if (
+        not isinstance(commands, list)
+        or not commands
+        or not isinstance(structured, dict)
+        or structured.get("mode")
+        not in {"command_json", "android_golden"}
+        or not isinstance(structured.get("fixture_id"), str)
+        or not isinstance(structured.get("expected"), str)
+        or not isinstance(structured.get("required_fields"), list)
+        or not structured["required_fields"]
+        or not all(
+            isinstance(value, str) and value
+            for value in structured["required_fields"]
+        )
+    ):
+        raise LoopError("TASK_ACCEPTANCE_INVALID")
+    command_ids = [
+        command.get("id")
+        for command in commands
+        if isinstance(command, dict)
+    ]
+    if (
+        len(command_ids) != len(commands)
+        or not all(isinstance(value, str) and value for value in command_ids)
+        or not all(
+            re.fullmatch(r"[A-Za-z0-9._-]+", value)
+            for value in command_ids
+        )
+        or len(set(command_ids)) != len(command_ids)
+    ):
+        raise LoopError("TASK_ACCEPTANCE_INVALID")
+    if (
+        task["kind"] == "delivery"
+        and structured["mode"] != "command_json"
+    ) or (
+        task["kind"] == "characterization"
+        and structured["mode"] != "android_golden"
+    ):
+        raise LoopError("TASK_ACCEPTANCE_INVALID")
+    if structured["mode"] == "command_json":
+        expected_values = structured.get("expected_values")
+        if (
+            structured.get("command_id") not in command_ids
+            or not isinstance(expected_values, dict)
+            or not expected_values
+        ):
+            raise LoopError("TASK_ACCEPTANCE_INVALID")
 
 
 def doctor(root: Path) -> Mapping[str, Any]:
@@ -984,6 +1050,173 @@ def workspace_digest(root: Path, paths: Sequence[str]) -> str:
     return digest(canonical(inventory))
 
 
+def json_field(
+    document: Mapping[str, Any],
+    field: str,
+) -> tuple[bool, Any]:
+    value: Any = document
+    for component in field.split("."):
+        if not isinstance(value, dict) or component not in value:
+            return False, None
+        value = value[component]
+    return True, value
+
+
+def validate_command_json(
+    runtime: Path,
+    contract: Mapping[str, Any],
+) -> tuple[list[str], str | None]:
+    command_id = str(contract["command_id"])
+    stdout_path = runtime / f"{command_id}.stdout"
+    try:
+        payload = stdout_path.read_bytes()
+        document = json.loads(payload)
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return ["command_stdout_invalid_json"], None
+    if not isinstance(document, dict):
+        return ["command_stdout_not_object"], digest(payload)
+    failures = [
+        f"missing:{field}"
+        for field in contract["required_fields"]
+        if not json_field(document, field)[0]
+    ]
+    for field, expected in contract["expected_values"].items():
+        present, actual = json_field(document, field)
+        if not present:
+            failures.append(f"missing:{field}")
+        elif actual != expected:
+            failures.append(f"mismatch:{field}")
+    return sorted(set(failures)), digest(payload)
+
+
+def validate_android_golden(
+    root: Path,
+    contract: Mapping[str, Any],
+) -> tuple[list[str], str | None]:
+    fixture_id = str(contract["fixture_id"])
+    golden_relative = str(contract["expected"])
+    golden_path = root / golden_relative
+    try:
+        payload = golden_path.read_bytes()
+        golden = json.loads(payload)
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return ["golden_invalid_or_missing"], None
+    if not isinstance(golden, dict):
+        return ["golden_not_object"], digest(payload)
+    failures = [
+        f"missing:{field}"
+        for field in contract["required_fields"]
+        if not json_field(golden, field)[0]
+    ]
+    if golden.get("fixture_id") != fixture_id:
+        failures.append("mismatch:fixture_id")
+    present, artifact_fixture = json_field(golden, "artifact.fixture_id")
+    if not present or artifact_fixture != fixture_id:
+        failures.append("mismatch:artifact.fixture_id")
+
+    try:
+        manifest = read_json(root / "ios/harness/goldens/manifest.json")
+    except LoopError:
+        manifest = {}
+        failures.append("golden_manifest_invalid_or_missing")
+    fixtures = manifest.get("fixtures")
+    manifest_entry = (
+        fixtures.get(fixture_id)
+        if isinstance(fixtures, dict)
+        else None
+    )
+    golden_sha256 = digest(payload)
+    if not isinstance(manifest_entry, dict):
+        failures.append("golden_manifest_entry_missing")
+    else:
+        if manifest_entry.get("path") != golden_relative:
+            failures.append("mismatch:manifest.path")
+        if manifest_entry.get("golden_sha256") != golden_sha256:
+            failures.append("mismatch:manifest.golden_sha256")
+        receipt_relative = manifest_entry.get("release_receipt")
+        if not isinstance(receipt_relative, str):
+            failures.append("manifest.release_receipt_missing")
+        else:
+            try:
+                receipt = read_json(root / receipt_relative)
+            except LoopError:
+                receipt = {}
+                failures.append("golden_receipt_invalid_or_missing")
+            expected_receipt = {
+                "authority": "protected_android_golden",
+                "fixture_id": fixture_id,
+                "golden_path": golden_relative,
+                "golden_sha256": golden_sha256,
+            }
+            for field, expected in expected_receipt.items():
+                if receipt.get(field) != expected:
+                    failures.append(f"mismatch:receipt.{field}")
+
+    coverage_bound = False
+    for _, ledger in relative_jsons(
+        root,
+        "ios/project/business-knowledge/coverage",
+    ):
+        if ledger.get("status") != "current":
+            continue
+        for entry in ledger.get("entries", []):
+            if not isinstance(entry, dict):
+                continue
+            evidence = entry.get("validation", {}).get("evidence_refs", [])
+            delivery = entry.get("delivery")
+            if (
+                isinstance(evidence, list)
+                and any(
+                    isinstance(value, str)
+                    and value.split("#", 1)[0] == golden_relative
+                    for value in evidence
+                )
+                and isinstance(delivery, dict)
+                and delivery.get("state") == "planned"
+                and delivery.get("work_item_refs")
+            ):
+                coverage_bound = True
+                break
+        if coverage_bound:
+            break
+    if not coverage_bound:
+        failures.append("published_coverage_binding_missing")
+    return sorted(set(failures)), golden_sha256
+
+
+def validate_structured_output(
+    root: Path,
+    task: Mapping[str, Any],
+    runtime: Path,
+) -> Mapping[str, Any]:
+    contract = task["acceptance"]["structured_output"]
+    mode = contract["mode"]
+    if mode == "command_json":
+        failures, observed_sha256 = validate_command_json(
+            runtime,
+            contract,
+        )
+    elif mode == "android_golden":
+        failures, observed_sha256 = validate_android_golden(
+            root,
+            contract,
+        )
+    else:
+        raise LoopError("TASK_ACCEPTANCE_INVALID")
+    passed = not failures
+    result: dict[str, Any] = {
+        "id": "structured-output-contract",
+        "exit_code": 0 if passed else 1,
+        "structured_output_passed": passed,
+        "mode": mode,
+    }
+    if observed_sha256 is not None:
+        result["observed_sha256"] = observed_sha256
+    if failures:
+        result["failures"] = failures
+    return result
+
+
 def run_acceptance(
     root: Path,
     task: Mapping[str, Any],
@@ -1018,6 +1251,8 @@ def run_acceptance(
             stderr = error.stderr or b""
             exit_code = 124
         check_id = str(check.get("id"))
+        if re.fullmatch(r"[A-Za-z0-9._-]+", check_id) is None:
+            raise LoopError(f"ACCEPTANCE_COMMAND_INVALID:{check_id}")
         (runtime / f"{check_id}.stdout").write_bytes(stdout)
         (runtime / f"{check_id}.stderr").write_bytes(stderr)
         result_record = {
@@ -1055,6 +1290,17 @@ def run_acceptance(
         if exit_code != 0 or not output_assertion_passed:
             passed = False
             break
+    if passed and isinstance(
+        task.get("acceptance", {}).get("structured_output"),
+        dict,
+    ):
+        structured_result = validate_structured_output(
+            root,
+            task,
+            runtime,
+        )
+        results.append(structured_result)
+        passed = structured_result["structured_output_passed"] is True
     report = {
         "schema_version": SCHEMA_VERSION,
         "task_id": task["id"],
@@ -1115,6 +1361,17 @@ def complete(
     pitfall: Sequence[str],
     next_step: str,
 ) -> Mapping[str, Any]:
+    if (
+        not isinstance(summary, str)
+        or not summary.strip()
+        or not isinstance(next_step, str)
+        or not next_step.strip()
+        or any(
+            not isinstance(value, str) or not value.strip()
+            for value in pitfall
+        )
+    ):
+        raise LoopError("COMPLETION_KNOWLEDGE_INVALID")
     doctor(root)
     state = current(root)
     verification = state.get("verification")

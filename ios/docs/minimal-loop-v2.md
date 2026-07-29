@@ -66,6 +66,11 @@ Planner 有两条纯派生入口：
 - `canonical_request_plan`
 - `first_divergence`
 
+Verifier 不把退出码 `0` 直接当成功：测试命令必须证明实际执行了非零数量的测试；
+Delivery 的 JSON stdout 必须包含上述字段、目标 Fixture，且 `status=equal`、
+`first_divergence=null`；Characterization 必须同时形成受保护 Golden、Manifest/
+Release Receipt 绑定和指向该 Golden 的 Published Coverage。
+
 SourceLab 负责稳定网站刺激与故障模拟，Android Golden 才是业务期望。书源实现以源码
 对齐为主，测试用于发现偏差，不能用有限用例反向定义全部书源语义。
 
