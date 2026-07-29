@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 77,
+  "revision": 78,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -72,13 +72,13 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260729T020525Z-ios-knowledge-source-runtime-post-form-001-b6a80c7f.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260729T021747Z-ios-business-knowledge-publisher-auto-scope-001-d305e002.json",
   "next_actions": [
-    "通过无人工 Gate 的受信 Publisher 发布 POST Form Packet/Driver，并回收发布结果",
+    "实现无人工 Gate、场景化、push-triggered 的 Business Knowledge Publisher 与专用 Dispatcher",
+    "由 Loop 自动发现并发布 POST Form Packet/Driver，再独立验证结果事务并受限快进",
     "从已发布 POST Form 知识生成独立 SourceRuntime Delivery Intent 与完整蓝图",
-    "用 canonical RequestPlan、Android expected、iOS actual 和 first-divergence 完成结构化验收",
-    "在 iOS Simulator 完成 UI 结构与多级导航验收"
+    "用 canonical RequestPlan、Android expected、iOS actual 和 first-divergence 完成结构化验收"
   ],
-  "updated_at": "2026-07-29T02:05:25Z",
-  "updated_by": "IOS-KNOWLEDGE-SOURCE-RUNTIME-POST-FORM-001"
+  "updated_at": "2026-07-29T02:17:47Z",
+  "updated_by": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTO-SCOPE-001"
 }

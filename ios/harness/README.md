@@ -374,6 +374,14 @@ Supervisor 接线、示例配置和控制面记忆。它没有 Publisher/Workflo
 Receipt 写权限；实现项即使带齐标签，也不能把外部执行适配层与答案生成 authority
 合并。
 
+Business Knowledge Publisher 自动化使用第三条独立 exact-scope。只有同时携带
+`external-execution`、`business-knowledge`、`knowledge-publisher`、`corrective`
+四个标签，且 `allow_write` 精确等于固定 Business Knowledge Workflow、staging-only
+Publisher、专用 Dispatcher、Demand/Supervisor、示例配置、对应测试/README 和控制面
+记忆集合时才可自动物化。该实现项不能直接写 published Packet/Driver、Coverage、
+release、Requirement、Golden、ADR、Package 或产品；这些 authority 只能由外部
+Publisher 的内容寻址结果事务产生，再由 Dispatcher 独立验证并受限快进。
+
 ## Codex exec Agent Adapter
 
 `codex_agent_adapter.py` 是 Loop Supervisor 的 Codex CLI argv adapter。它使用稳定的

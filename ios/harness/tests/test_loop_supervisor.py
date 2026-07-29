@@ -2014,6 +2014,150 @@ class MaterializationTests(unittest.TestCase):
                 ),
             )
 
+    def test_business_knowledge_publisher_auto_scope_is_exact(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            item_id = "IOS-TEST-BUSINESS-KNOWLEDGE-PUBLISHER-001"
+            item = fixture.fixture.item(
+                item_id,
+                "CAP-KNOWLEDGE-CONTROL",
+                100,
+            )
+            required_labels = {
+                "external-execution",
+                "business-knowledge",
+                "knowledge-publisher",
+                "corrective",
+            }
+            item["metadata"]["labels"] = sorted(required_labels)
+            item["spec"]["requirements"] = {
+                "mode": "control_plane",
+                "refs": [],
+                "none_reason": "test",
+            }
+            item["spec"]["knowledge"] = {
+                "mode": "not_applicable",
+            }
+            item["spec"]["source_lab"] = {
+                "mode": "not_applicable",
+                "behaviors": [],
+                "scenarios": [],
+                "none_reason": "test",
+            }
+            item["spec"]["scope"]["allow_write"] = [
+                ".github/workflows/business-knowledge-publisher.yml",
+                "ios/publisher/business_knowledge_publisher.py",
+                "ios/harness/github_business_knowledge_publisher.py",
+                "ios/harness/demand_compiler.py",
+                "ios/harness/loop_supervisor.py",
+                "ios/harness/supervisor.example.json",
+                "ios/harness/tests/test_business_knowledge_publisher.py",
+                "ios/harness/tests/test_github_business_knowledge_publisher.py",
+                "ios/harness/tests/test_demand_compiler.py",
+                "ios/harness/tests/test_loop_supervisor.py",
+                "ios/harness/README.md",
+                "ios/publisher/README.md",
+                "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+                f"ios/project/checkpoints/{item_id}.json",
+                "ios/project/pitfalls/PIT-*.json",
+            ]
+            item["spec"]["scope"]["deny_write"] = [
+                ".github/workflows/android-*.yml",
+                "app/**",
+                "modules/**",
+                "ios/Packages/**",
+                "ios/publisher/android_golden_publisher.py",
+                "ios/harness/harness.py",
+                "ios/harness/proposal_compiler.py",
+                "ios/harness/github_golden_publisher.py",
+                "ios/harness/github_oracle_dispatcher.py",
+                "ios/harness/github_oracle_receipt.py",
+                "ios/harness/config.json",
+                "ios/harness/schemas/**",
+                "ios/harness/business-knowledge/**",
+                "ios/harness/goldens/**",
+                "ios/harness/oracle/**",
+                "ios/harness/source-lab/**",
+                "ios/project/state.json",
+                "ios/project/events.jsonl",
+                "ios/project/status.md",
+                "ios/project/requirements/**",
+                "ios/project/approvals/**",
+                "ios/project/business-knowledge/packets/published/**",
+                "ios/project/business-knowledge/drivers/published/**",
+                "ios/project/business-knowledge/coverage/**",
+                "ios/project/business-knowledge/releases/**",
+                "ios/project/work-item-proposals/**",
+                "ios/docs/**",
+            ]
+            supervisor = loop_supervisor.LoopSupervisor(
+                fixture.harness
+            )
+            self.assertEqual(
+                [],
+                supervisor
+                ._github_business_knowledge_publisher_scope_issues(
+                    item
+                ),
+            )
+            for drift in (
+                ".github/workflows/other.yml",
+                "ios/Packages/LegadoKit/Package.swift",
+                "ios/harness/harness.py",
+                "ios/harness/goldens/manifest.json",
+                "ios/project/requirements/catalog.json",
+                "ios/project/business-knowledge/packets/published/"
+                "BKP-EXAMPLE-001/r0001.json",
+                "ios/project/checkpoints/IOS-OTHER-001.json",
+                "ios/**",
+            ):
+                with self.subTest(drift=drift):
+                    changed = json.loads(json.dumps(item))
+                    changed["spec"]["scope"]["allow_write"].append(
+                        drift
+                    )
+                    self.assertIn(
+                        (
+                            "AUTO_BUSINESS_KNOWLEDGE_PUBLISHER_"
+                            "SCOPE_ALLOW_INVALID"
+                        ),
+                        supervisor
+                        ._github_business_knowledge_publisher_scope_issues(
+                            changed
+                        ),
+                    )
+            for missing in required_labels:
+                with self.subTest(missing=missing):
+                    changed = json.loads(json.dumps(item))
+                    changed["metadata"]["labels"] = sorted(
+                        required_labels - {missing}
+                    )
+                    self.assertIn(
+                        (
+                            "AUTO_BUSINESS_KNOWLEDGE_PUBLISHER_"
+                            "AUTHORITY_INVALID"
+                        ),
+                        supervisor
+                        ._github_business_knowledge_publisher_scope_issues(
+                            changed
+                        ),
+                    )
+            denial_drift = json.loads(json.dumps(item))
+            denial_drift["spec"]["scope"]["deny_write"].remove(
+                "ios/project/business-knowledge/releases/**"
+            )
+            self.assertIn(
+                (
+                    "AUTO_BUSINESS_KNOWLEDGE_PUBLISHER_"
+                    "SCOPE_DENY_MISSING:"
+                    "ios/project/business-knowledge/releases/release.json"
+                ),
+                supervisor
+                ._github_business_knowledge_publisher_scope_issues(
+                    denial_drift
+                ),
+            )
+
     def test_github_oracle_receipt_settlement_auto_scope_is_exact(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = MaterializationFixture(Path(directory))

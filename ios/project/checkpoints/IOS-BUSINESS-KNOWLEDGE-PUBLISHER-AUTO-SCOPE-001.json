@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTO-SCOPE-001",
+  "summary": "已为无人工 Gate 的 Business Knowledge Publisher 自动化建立独立 exact-scope。只有同时携带 external-execution、business-knowledge、knowledge-publisher、corrective 标签，且 gates=[]、requirements=control_plane、knowledge/source_lab=not_applicable、completion_effects 仅含 health 的 WorkItem 才能使用该例外。allow_write 必须精确等于固定 Business Knowledge Workflow、staging Publisher、专用 Dispatcher、Demand/Supervisor、示例配置、对应测试/README 与 Capability/Checkpoint/Pitfall 集合，任何缺失、增加、通配或非字符串都会 fail closed。拒绝回归覆盖其他 Workflow、Android/Golden/Oracle/SourceLab、Requirement、ADR、Package、产品、published/coverage/release authority、Harness schema/config 和审批路径。本项没有修改 Workflow、Publisher、Dispatcher、DemandCompiler、知识 authority 或产品；完整 Harness 与 dependency-policy 通过。",
+  "evidence": "ios/harness/evidence/runs/run-20260729T021747Z-ios-business-knowledge-publisher-auto-scope-001-d305e002.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 77,
+      "to_revision": 78,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": [
+      "ADR-0002",
+      "ADR-0004"
+    ]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项只建立自动修改范围，不消费或发布业务知识"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "本项只收紧控制面自动修改策略，不改变产品兼容实现"
+  },
+  "pitfalls": {
+    "records": [],
+    "none_reason": "沿用既有 authority isolation 与 exact-scope 模式，未出现新的可复用失效模式"
+  },
+  "remaining_risks": [
+    "当前 Business Knowledge Workflow 仍使用 workflow_dispatch、Environment、硬编码 HTML/CSS 路径和 PR",
+    "专用 Dispatcher 与发布结果独立复验尚未实现",
+    "Loop 尚不能自动发现 completed producer 留下的未发布 proposal",
+    "POST Form Packet/Driver 尚未发布，Delivery Intent 与产品结构化验收仍未生成"
+  ],
+  "next_actions": [
+    "物化并实现 Business Knowledge Publisher 自动化任务",
+    "将 Workflow 改为 create-only push 触发且参数全部来自内容寻址 request commit",
+    "实现 Dispatcher 的远端 Run/Artifact/result ref/commit 复验与受限快进",
+    "让 Supervisor 自动扫描未发布 proposal 并调度发布",
+    "发布 POST Form 知识后自动续接 Delivery Intent"
+  ],
+  "created_at": "2026-07-29T02:17:47Z"
+}
