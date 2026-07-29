@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-SOURCE-RUNTIME-JSONPATH-REGEX-BACKENDS-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "source.execution.jsonpath-regex-backends",
+  "title": "用独立规则内核承载 JSONPath 与 Regex 兼容语义",
+  "claim_refs": [
+    {
+      "id": "BKC-SR-JSONPATH-BACKEND-001",
+      "revision": 2
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "SourceRuntime 必须逐消费者复现受保护 Android Golden 中的 JSONPath 求值、类型投影、组合、插值、Regex 捕获、替换和失败结果；expected 不得由 iOS 实现反向生成。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "modularity",
+      "scenario": "JSONPath 与 Regex 的解析、求值和替换属于独立 SourceRuntime 规则内核；UI、Domain、持久化、书源页面与 SourceLab 不得复制解释逻辑。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "portability",
+      "scenario": "Android 的 Jayway JSONPath 与 Java Pattern 是语义来源而非 iOS 依赖指令；公共端口只暴露 Sendable 值、稳定错误和消费者结果，禁止泄漏具体解析库类型。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "consumer_semantics",
+      "scenario": "字符串、列表、element 与 elements 是四种不同消费合同；null、对象、数组、组合、可选捕获组与替换不得在上层用单一通用 coercion 模糊处理。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "determinism",
+      "scenario": "求值顺序、递归遍历、slice/filter、列表交错、捕获组和替换必须是确定性纯逻辑，不得依赖网络、WebView、locale 或共享可变状态。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "error_semantics",
+      "scenario": "产品接口使用稳定 SourceRuntime 错误表达 missing、null、malformed 与 unsupported；Conformance 边界可映射受保护 Golden 中的 Android 异常类别，但不得向产品调用方泄漏 Java 类名。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "scope_control",
+      "scenario": "本切片只实现 Golden 已验证的 10 个场景；完整 JSONPath/Regex 方言、任意对象文本顺序、脚本/put/DOM 串联和未观测替换行为必须由后续 Android 真源任务扩张。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "如何把 JSONPath 的字段、索引、通配符、filter、递归、slice、引号键与嵌入规则建模为不泄漏库类型的中间表示？",
+    "如何让四种消费者共享解析与求值内核，同时保留各自不同的 null、对象、组合、异常和替换边界？",
+    "在不引入未经批准依赖的前提下，Foundation/自研实现能覆盖哪些 Golden 语法，哪些未覆盖语法必须明确返回 unsupported？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002"
+    ],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-SOURCE-RULE-JSONPATH-REGEX-BACKENDS-001",
+      "IOS-SOURCE-RUNTIME-JSONPATH-REGEX-BACKENDS-001"
+    ]
+  },
+  "supersedes": null,
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30475415360/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "created_by": "IOS-CHARACTERIZE-SOURCE-RULE-JSONPATH-REGEX-BACKENDS-001"
+}

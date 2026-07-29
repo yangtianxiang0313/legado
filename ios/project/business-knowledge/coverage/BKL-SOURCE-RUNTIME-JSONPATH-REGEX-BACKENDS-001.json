@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgeCoverageLedger",
+  "id": "BKL-SOURCE-RUNTIME-JSONPATH-REGEX-BACKENDS-001",
+  "revision": 1,
+  "status": "current",
+  "packet_refs": [
+    {
+      "id": "BKP-SOURCE-RUNTIME-JSONPATH-REGEX-BACKENDS-001",
+      "revision": 1,
+      "sha256": "52780d24b929400d5701899928a4bdba8c8ea59df3c089c3e8549ce98e80b49d"
+    }
+  ],
+  "generated_from": {
+    "knowledge_authority_sha256": "04bd28e9d63370999b1c2541fd51db13f6fbcad8caab5d8800a99ddf19983f4a",
+    "requirement_catalog_sha256": "c0ccae4e196d719913679926f88ee7adbe5feed0d4c51bd444ec25848caf1512",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "entries": [
+    {
+      "id": "BKE-SR-JSONPATH-REGEX-BACKENDS-001",
+      "claim_ref": {
+        "id": "BKC-SR-JSONPATH-BACKEND-001",
+        "revision": 2
+      },
+      "validation": {
+        "required": "android_runtime",
+        "state": "verified",
+        "evidence_refs": [
+          "ios/harness/goldens/releases/sl-source-rule-jsonpath-regex-backends-001-30472816314-2.json",
+          "ios/harness/goldens/android-legado-v1/sl-source-rule-jsonpath-regex-backends-001.json#/artifact/result/value"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "covered_by_requirement",
+        "refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "reason": "受保护 Android Golden 已冻结 10 个场景中的 JSONPath 求值、四类消费者、Regex 捕获、替换和失败边界，交由独立 SourceRuntime 规则内核实现",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "planned",
+        "requirement_refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "work_item_refs": [
+          "IOS-SOURCE-RUNTIME-JSONPATH-REGEX-BACKENDS-001"
+        ],
+        "capability_refs": [
+          "CAP-CONFORMANCE",
+          "CAP-RUNTIME-PORTS"
+        ],
+        "evidence_refs": [
+          "ios/harness/goldens/releases/sl-source-rule-jsonpath-regex-backends-001-30472816314-2.json"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    }
+  ],
+  "updated_by": "IOS-CHARACTERIZE-SOURCE-RULE-JSONPATH-REGEX-BACKENDS-001",
+  "updated_at": "2026-07-29T17:29:31Z"
+}

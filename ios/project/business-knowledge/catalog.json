@@ -2,11 +2,11 @@
   "schema_version": 1,
   "contract_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-  "inventory_control_sha256": "307b6a8700e2d9303387591da2c486cf6e0a657b25618ae2bdec4cf4f876762c",
+  "inventory_control_sha256": "015b0f516ef1b60d2d085bb1e13a720385e45cd43075d831b9c9849cd11284ee",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "7ecc6982b57c823022eb397fb23f564202ae0d398664c3cc7d6318ec903b5020",
-  "coverage_sha256": "152db674e0f57a5330b9dfa831830712e6db3a5713989a4dafd50c4e21f8648b",
+  "authority_sha256": "04bd28e9d63370999b1c2541fd51db13f6fbcad8caab5d8800a99ddf19983f4a",
+  "coverage_sha256": "85658688e62c8cf709dd22e5a543ee12faeaa41bd988c90d921cc7134f44052c",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -136,6 +136,19 @@
         {
           "id": "BKC-SR-HTML-CSS-REQUEST-001",
           "revision": 1
+        }
+      ]
+    },
+    {
+      "id": "BKP-SOURCE-RUNTIME-JSONPATH-REGEX-BACKENDS-001",
+      "revision": 1,
+      "semantic_key": "source.jsonpath-regex-backends-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-SOURCE-RUNTIME-JSONPATH-REGEX-BACKENDS-001/r0001.json",
+      "record_sha256": "52780d24b929400d5701899928a4bdba8c8ea59df3c089c3e8549ce98e80b49d",
+      "claim_refs": [
+        {
+          "id": "BKC-SR-JSONPATH-BACKEND-001",
+          "revision": 2
         }
       ]
     },
@@ -365,6 +378,14 @@
       "resolution_state": "resolved"
     },
     {
+      "id": "DRV-SOURCE-RUNTIME-JSONPATH-REGEX-BACKENDS-001",
+      "revision": 1,
+      "semantic_key": "source.execution.jsonpath-regex-backends",
+      "path": "ios/project/business-knowledge/drivers/published/DRV-SOURCE-RUNTIME-JSONPATH-REGEX-BACKENDS-001/r0001.json",
+      "record_sha256": "8120793c44c8c1fe685c6d1d870d18a7c7d7e62d368aa34b20f4cb8496613ae9",
+      "resolution_state": "resolved"
+    },
+    {
       "id": "DRV-SOURCE-RUNTIME-POST-FORM-001",
       "revision": 1,
       "semantic_key": "source.execution.post-form-independent-runtime",
@@ -536,6 +557,15 @@
         "BKE-SR-HTML-CSS-ERROR-001",
         "BKE-SR-HTML-CSS-PIPELINE-001",
         "BKE-SR-HTML-CSS-REQUEST-001"
+      ]
+    },
+    {
+      "id": "BKL-SOURCE-RUNTIME-JSONPATH-REGEX-BACKENDS-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-SOURCE-RUNTIME-JSONPATH-REGEX-BACKENDS-001.json",
+      "record_sha256": "4db1ec252f431c3620d981e854b88380fe5168badbd2857ba251335248ae2af0",
+      "entry_ids": [
+        "BKE-SR-JSONPATH-REGEX-BACKENDS-001"
       ]
     },
     {

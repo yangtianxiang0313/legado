@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-SOURCE-RUNTIME-JSONPATH-REGEX-BACKENDS-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "source.jsonpath-regex-backends-golden",
+  "title": "受保护 Android Golden 验证的 JSONPath 与 Regex 后端语义",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "015b0f516ef1b60d2d085bb1e13a720385e45cd43075d831b9c9849cd11284ee"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "source.execution"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-RUNTIME-PORTS"
+    ],
+    "subject_keys": [
+      "source.rule",
+      "source.document"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-SR-JSONPATH-BACKEND-001",
+      "revision": 2,
+      "semantic_key": "source.rule.jsonpath-regex-backends",
+      "kind": "runtime_behavior",
+      "topic": "JSONPath 与 Regex 求值、消费、替换和失败边界",
+      "statement": "在 sl-source-rule-jsonpath-regex-backends-001 的 10 个固定场景中，Android JSONPath 后端可从 JSON 字符串或对象输入求值字段、索引、通配符、带数值比较的 filter、递归下降、带步长 slice 与引号键。字符串消费者把数组各项按换行连接，列表消费者逐项执行 Android toString，显式 null 在数组中成为字符串 \"null\"，但单独 null 分别成为空字符串、空列表、零个 elements，element 入口抛 NullPointerException；对象值在字符串和列表入口使用 Android Map 文本投影。&& 在字符串、列表和 elements 入口顺序拼接，|| 选择首个非空分支，%% 只在列表与 elements 入口按索引交错，字符串入口为空；平衡的 {$...} 可嵌入字符串和列表结果，但 element 入口按普通路径失败。缺失路径与畸形路径在字符串/列表入口降为空，elements 入口降为空列表，element 入口分别抛 PathNotFoundException 与 InvalidPathException。Regex 后端把首个或全部匹配投影为完整匹配加捕获组，支持 && 链式匹配、可选组和零宽匹配；全部匹配中的未命中可选组为空字符串，但首个匹配读取未命中组会抛 NullPointerException。(?U)\\b\\w+\\b 与畸形表达式在本场景中抛 PatternSyntaxException。##pattern##replacement 执行全局替换并支持 $n 组引用；带 ### 的 replaceFirst 只返回首个匹配的替换结果，未命中返回空字符串，而不是保留输入两侧。JSONPath 列表后的替换在列表消费者逐项执行，在字符串消费者对换行连接后的文本执行。无效全局替换表达式回退为字面量替换，无效 replaceFirst 直接返回 replacement。本结论只冻结这 10 个场景，不外推到完整 Jayway JSONPath 方言、任意 Java Pattern/ICU 差异、所有对象文本顺序、脚本串联、put 变量、DOM 输入或未观测替换边界。",
+      "subject_keys": [
+        "source.rule",
+        "source.document"
+      ],
+      "depends_on": [
+        {
+          "id": "BKC-SR-RULE-BACKEND-DISPATCH-001",
+          "revision": 2
+        },
+        {
+          "id": "BKC-SR-RULE-COMBINATION-COERCION-001",
+          "revision": 2
+        }
+      ],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [
+          {
+            "id": "AF-ANALYZE-JSONPATH-GET-STRING",
+            "revision_sha256": "f1089b74990b751f68d8c02dbd73d110b9d3f840f046117bf568bc20165701e2"
+          },
+          {
+            "id": "AF-ANALYZE-JSONPATH-GET-STRING-LIST",
+            "revision_sha256": "036ec6e78f173a0b0ca0df2007d365d42832be0e1b4015d666b8b22a25bc7a38"
+          },
+          {
+            "id": "AF-ANALYZE-JSONPATH-GET-OBJECT",
+            "revision_sha256": "e0225b6e6cdeba5d82c7929bb109be08208183dc73ea0c28eb43b802a78daf58"
+          },
+          {
+            "id": "AF-ANALYZE-JSONPATH-GET-LIST",
+            "revision_sha256": "a6094969bcfc855ce7811dce94fd2bd79498a5a84a366bef79cfe2a744627016"
+          },
+          {
+            "id": "AF-ANALYZE-REGEX-GET-ELEMENT",
+            "revision_sha256": "313b25926a636f1f9321a093cc7295158862736d012589d1a5a19f161c225271"
+          },
+          {
+            "id": "AF-ANALYZE-REGEX-GET-ELEMENTS",
+            "revision_sha256": "580837043e6dd29568b8bd5575feb12323a3f78676e0455df465c541f0a38a6f"
+          },
+          {
+            "id": "AF-ANALYZE-RULE-REPLACE-REGEX",
+            "revision_sha256": "543ee75933f9cdb84e6338baf78a1231709d00787f57f68e8637b53bbb968372"
+          }
+        ],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "71d9006ce17a96f2e9db9c9288047f2a66bf2c28",
+            "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByJSonPath.kt",
+            "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeByJSonPath"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "7e41eba6a3967746338f12a22ef4ea64dee8254e",
+            "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByRegex.kt",
+            "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeByRegex"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "7bb96778bbf33c5277867cd8a1e8db6ea19090df",
+            "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt",
+            "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeRule/replaceRegex"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/sl-source-rule-jsonpath-regex-backends-001.json",
+            "artifact_sha256": "9ec824182b43972ae76422f5507a997a2c49b4665b91a9049c455670c7ec7677",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "59069233ebad8ff3b76870f0781282789d51e9745b23d7c7ad39a03e69d4c4e4",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "4026dad3189b15873fae6c017aa659ea8a61f32d5466cde4113434f6016bb66e",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-SR-JSONPATH-BACKEND-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-SOURCE-RULE-JSONPATH-REGEX-BACKENDS-001"
+}
