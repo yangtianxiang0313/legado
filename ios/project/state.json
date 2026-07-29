@@ -1,13 +1,15 @@
 {
   "schema_version": 1,
-  "revision": 518,
+  "revision": 520,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-29T02:45:04Z",
-  "event_head": "008e0166b8d1a61735e536f39e35342bc230ec27a982315ca18b49af1d8c5cf3",
-  "active_work_items": [],
+  "updated_at": "2026-07-29T02:53:07Z",
+  "event_head": "6b87b6378b02e295d5a38b52fafb22e8620a218037f1594a58764979e53a25d9",
+  "active_work_items": [
+    "IOS-BUSINESS-KNOWLEDGE-PUBLICATION-DIGEST-001"
+  ],
   "last_completed_work_item": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTOMATION-001",
   "work_items": {
     "IOS-BOOT-001": {
@@ -9735,6 +9737,89 @@
       "verified_at": "2026-07-29T02:43:44Z",
       "completed_at": "2026-07-29T02:45:04Z",
       "final_tree_sha256": "b5f69e76d05ad6de621e0d082c2d15fa4b374e22f2f1819da31f0716cf129e7e"
+    },
+    "IOS-BUSINESS-KNOWLEDGE-PUBLICATION-DIGEST-001": {
+      "status": "implementing",
+      "attempt": 1,
+      "last_evidence": null,
+      "claimed_by": "codex-root",
+      "claimed_at": "2026-07-29T02:53:06Z",
+      "lease_expires_at": "2026-07-30T02:53:06Z",
+      "work_item_sha256": "ab2ac28e7ad51d584fd08c9a8bf9a515bd9d0f538ca386845ea344f5729761d0",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "3eaa781622f515fafb235f9f181fededbdbaafd5",
+      "base_dirty_fingerprints": {
+        "ios/harness/work-items/IOS-BUSINESS-KNOWLEDGE-PUBLICATION-DIGEST-001.json": "file:0o644:08a1330291b4999d40f3aee94bf25db0e9218ed35af3f6783cb93a418ec90f01",
+        "ios/project/events.jsonl": "file:0o644:e8f8693dbfef991c8dcaa9135cc8496362fb5141873d392c884dad264d9668b8",
+        "ios/project/state.json": "file:0o644:f5e6ffab221a84039404058f21e5a72ffc4da32dbaf3c56522ac460dc473adae",
+        "ios/project/status.md": "file:0o644:7349a0482de8bc1985f0075d90037f193f4a5d20870660994d1dd5faacaa3d26"
+      },
+      "base_capability_revision": 79,
+      "base_capability_assurance_sha256": "6c08426cf2cc8f0277426284e00909a10444767bc01eeb84e0db43db8dcbb2ac",
+      "android_requirement_selection_sha256": null,
+      "business_knowledge_control_sha256": "b432003b7d73982a98df286bf685349ff2eb19a05c80800fbb617fa8472cbdba",
+      "business_knowledge_authority_sha256": "9a898622fab665e380b0fdb7837d6aa24f938f5c87e4bc635c32fbdf4dfe81c8",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 0,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "dependency-policy",
+          "argv": [
+            "python3",
+            "ios/harness/probes/dependency_contract.py",
+            "--root",
+            "."
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "eca96cb1b69567829ed8396386b0449da8c0d6e7295a00f1decfb60430ff1153",
+          "cwd": ".",
+          "started_at": "2026-07-29T02:50:44Z",
+          "duration_ms": 718,
+          "timeout_seconds": 90,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "17595a1d68cdc5b52c010f46dff48514afa3fa3cf0215cdea7ae8eff38677c0a",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_tail": "DEPENDENCY_CONTRACT: OK\n",
+          "stderr_tail": ""
+        },
+        {
+          "id": "harness-tests",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "ios/harness/tests",
+            "-p",
+            "test_*.py"
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "244d512cbdd15fe0c5e35e6d9676510c943b19e9437987c24ac6e627a2e7ad94",
+          "cwd": ".",
+          "started_at": "2026-07-29T02:50:45Z",
+          "duration_ms": 141159,
+          "timeout_seconds": 180,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "38fab6486ed545fe0fbf3ff1dba4d1266d4a256d6689994eceda54f64f77f743",
+          "stdout_tail": "",
+          "stderr_tail": ".........................................................................................................................................................................................................................................................................................................\n----------------------------------------------------------------------\nRan 297 tests in 140.963s\n\nOK\n"
+        }
+      ]
     }
   },
   "health": {
