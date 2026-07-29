@@ -261,6 +261,33 @@ SCENARIO_CONTRACTS = {
             "configured-user-agent",
         }),
     },
+    "sl-source-session-rule-variable-scope-001": {
+        "status": "candidate",
+        "expected_cases": (
+            ("rule-data-storage-boundary", "rule_variable_scope"),
+            (
+                "analyze-rule-priority-and-specials",
+                "rule_variable_scope",
+            ),
+            (
+                "analyze-url-priority-and-specials",
+                "rule_variable_scope",
+            ),
+            ("rule-script-shared-propagation", "rule_variable_scope"),
+            ("url-script-shared-propagation", "rule_variable_scope"),
+            ("failure-keeps-prior-write", "rule_variable_scope"),
+            ("independent-context-isolation", "rule_variable_scope"),
+        ),
+        "nominal_cases": frozenset({
+            "rule-data-storage-boundary",
+            "analyze-rule-priority-and-specials",
+            "analyze-url-priority-and-specials",
+            "rule-script-shared-propagation",
+            "url-script-shared-propagation",
+            "failure-keeps-prior-write",
+            "independent-context-isolation",
+        }),
+    },
 }
 ROUTE_OBSERVATION_SCENARIOS = {
     "sl-source-request-header-cookie-retry-layering-001": (

@@ -13,7 +13,9 @@ import io.legado.app.help.http.CookieManager
 import io.legado.app.help.http.CookieStore
 import io.legado.app.help.http.StrResponse
 import io.legado.app.help.http.newCallResponse
+import io.legado.app.model.analyzeRule.AnalyzeRule
 import io.legado.app.model.analyzeRule.AnalyzeUrl
+import io.legado.app.model.analyzeRule.RuleData
 import io.legado.app.model.webBook.WebBook
 import io.legado.app.utils.GSON
 import io.legado.app.utils.NetworkUtils
@@ -98,6 +100,8 @@ class LegadoOracleInstrumentedTest {
                 runCookieSessionCases()
             "sl-source-transport-dynamic-web-runtime-001" ->
                 runDynamicWebCases()
+            "sl-source-session-rule-variable-scope-001" ->
+                runRuleVariableScopeCases()
             else -> {
                 runCase("search-hit", "search", searchRequest("星河")) {
                     searchProjection(WebBook.searchBookAwait(source, "星河"))
@@ -398,6 +402,283 @@ class LegadoOracleInstrumentedTest {
             cases.put(record)
         }
     }
+
+    private suspend fun runRuleVariableScopeCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            require(value.getString("operation") == "rule_variable_scope") {
+                "Rule variable scenario only accepts rule_variable_scope stimuli"
+            }
+            val requestValue = value.getJSONObject("request")
+            val request = request(
+                deviceOrigin + requestValue.getString("target")
+            )
+            runCase(
+                value.getString("id"),
+                "rule_variable_scope",
+                request
+            ) {
+                ruleVariableScopeProjection(value)
+            }
+        }
+    }
+
+    private suspend fun ruleVariableScopeProjection(
+        value: JSONObject
+    ): JSONObject {
+        val arguments = value.getJSONObject("arguments")
+        return when (val mode = arguments.getString("mode")) {
+            "storage_boundary" -> ruleDataStorageBoundary(arguments)
+            "analyze_rule_priority" ->
+                analyzeRulePriorityProjection(value, arguments)
+            "analyze_url_priority" ->
+                analyzeURLPriorityProjection(value, arguments)
+            "rule_script_propagation" ->
+                ruleScriptPropagationProjection(arguments)
+            "url_script_propagation" ->
+                urlScriptPropagationProjection(arguments)
+            "failure_mutation" ->
+                failureMutationProjection(arguments)
+            "independent_contexts" ->
+                independentContextProjection(arguments)
+            else -> error("Unsupported rule variable mode: $mode")
+        }
+    }
+
+    private fun ruleDataStorageBoundary(
+        arguments: JSONObject
+    ): JSONObject {
+        val data = RuleData()
+        val key = arguments.getString("key")
+        val smallLength = arguments.getInt("small_length")
+        val largeLength = arguments.getInt("large_length")
+        val smallAccepted = data.putVariable(
+            key,
+            "s".repeat(smallLength)
+        )
+        val observedSmallLength = data.getVariable(key).length
+        val largeAccepted = data.putVariable(
+            key,
+            "l".repeat(largeLength)
+        )
+        val observedLargeLength = data.getVariable(key).length
+        val removalAccepted = data.putVariable(key, null)
+        return JSONObject()
+            .put("small_write_returned", smallAccepted)
+            .put("small_value_length", observedSmallLength)
+            .put("large_write_returned", largeAccepted)
+            .put("large_value_length", observedLargeLength)
+            .put("removal_returned", removalAccepted)
+            .put("value_after_removal", data.getVariable(key))
+            .put(
+                "serialized_after_removal",
+                nullable(data.getVariable())
+            )
+    }
+
+    private fun analyzeRulePriorityProjection(
+        value: JSONObject,
+        arguments: JSONObject
+    ): JSONObject {
+        val id = value.getString("id")
+        val key = arguments.getString("key")
+        val caseSource = variableCaseSource(id)
+        val book = variableBook(arguments, id)
+        val chapter = variableChapter(arguments, book)
+        caseSource.put(key, arguments.getString("source_value"))
+        caseSource.put("source-only", "source-only-value")
+        book.putVariable(key, arguments.getString("book_value"))
+        book.putVariable("empty-fallback", "book-fallback")
+        book.putVariable("bookName", "variable-book-name")
+        chapter.putVariable(key, arguments.getString("chapter_value"))
+        chapter.putVariable("empty-fallback", "")
+        chapter.putVariable("title", "variable-chapter-title")
+        val analyze = AnalyzeRule(book, caseSource)
+        analyze.chapter = chapter
+        val writeReturn = analyze.put("written", "via-analyze-rule")
+        return JSONObject()
+            .put("priority_value", analyze.get(key))
+            .put("empty_chapter_falls_back", analyze.get("empty-fallback"))
+            .put("source_fallback", analyze.get("source-only"))
+            .put("book_name", analyze.get("bookName"))
+            .put("chapter_title", analyze.get("title"))
+            .put("write_return", writeReturn)
+            .put("chapter_write", chapter.getVariable("written"))
+            .put("book_write", book.getVariable("written"))
+            .put("source_write", caseSource.get("written"))
+    }
+
+    private fun analyzeURLPriorityProjection(
+        value: JSONObject,
+        arguments: JSONObject
+    ): JSONObject {
+        val id = value.getString("id")
+        val key = arguments.getString("key")
+        val caseSource = variableCaseSource(id)
+        val book = variableBook(arguments, id)
+        val chapter = variableChapter(arguments, book)
+        caseSource.put(key, arguments.getString("source_value"))
+        caseSource.put("source-only", "source-only-value")
+        book.putVariable(key, arguments.getString("book_value"))
+        book.putVariable("empty-fallback", "book-fallback")
+        book.putVariable("bookName", "variable-book-name")
+        chapter.putVariable(key, arguments.getString("chapter_value"))
+        chapter.putVariable("empty-fallback", "")
+        chapter.putVariable("title", "variable-chapter-title")
+        val analyze = AnalyzeUrl(
+            mUrl = "$deviceOrigin/variables/priority",
+            baseUrl = caseSource.bookSourceUrl,
+            source = caseSource,
+            ruleData = book,
+            chapter = chapter
+        )
+        val writeReturn = analyze.put("written", "via-analyze-url")
+        return JSONObject()
+            .put("priority_value", analyze.get(key))
+            .put("empty_chapter_falls_back", analyze.get("empty-fallback"))
+            .put("source_fallback", analyze.get("source-only"))
+            .put("book_name", analyze.get("bookName"))
+            .put("chapter_title", analyze.get("title"))
+            .put("write_return", writeReturn)
+            .put("chapter_write", chapter.getVariable("written"))
+            .put("book_write", book.getVariable("written"))
+            .put("source_write", caseSource.get("written"))
+    }
+
+    private fun ruleScriptPropagationProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val key = arguments.getString("key")
+        val value = arguments.getString("value")
+        val shared = RuleData()
+        val scriptValue = AnalyzeRule(shared).evalJS(
+            "java.put(${JSONObject.quote(key)},${JSONObject.quote(value)});" +
+                "java.get(${JSONObject.quote(key)})"
+        )
+        val later = AnalyzeRule(shared)
+        val isolated = AnalyzeRule(RuleData())
+        return JSONObject()
+            .put("script_value", nullable(scriptValue?.toString()))
+            .put("later_field_value", later.get(key))
+            .put("isolated_field_value", isolated.get(key))
+            .put("serialized_variables", nullable(shared.getVariable()))
+    }
+
+    private fun urlScriptPropagationProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val key = arguments.getString("key")
+        val value = arguments.getString("value")
+        val quotedKey = JSONObject.quote(key)
+        val shared = RuleData()
+        val first = AnalyzeUrl(
+            mUrl =
+                "<js>java.put($quotedKey,${JSONObject.quote(value)});" +
+                    "${JSONObject.quote("$deviceOrigin/variables/url-written")}" +
+                    "</js>",
+            baseUrl = source.bookSourceUrl,
+            ruleData = shared
+        )
+        val second = AnalyzeUrl(
+            mUrl =
+                "$deviceOrigin/variables/url-read/" +
+                    "{{java.get($quotedKey)}}",
+            baseUrl = source.bookSourceUrl,
+            ruleData = shared
+        )
+        return JSONObject()
+            .put("first_url", logical(first.url))
+            .put("second_url", logical(second.url))
+            .put("stored_value", shared.getVariable(key))
+    }
+
+    private fun failureMutationProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val shared = RuleData()
+        val ruleKey = arguments.getString("rule_key")
+        val urlKey = arguments.getString("url_key")
+        val value = arguments.getString("value")
+        var ruleThrew = false
+        try {
+            AnalyzeRule(shared).evalJS(
+                "java.put(${JSONObject.quote(ruleKey)}," +
+                    "${JSONObject.quote(value)});throw 'rule-failure'"
+            )
+        } catch (_: Throwable) {
+            ruleThrew = true
+        }
+        var urlThrew = false
+        try {
+            AnalyzeUrl(
+                mUrl =
+                    "<js>java.put(${JSONObject.quote(urlKey)}," +
+                        "${JSONObject.quote(value)});throw 'url-failure'</js>",
+                baseUrl = source.bookSourceUrl,
+                ruleData = shared
+            )
+        } catch (_: Throwable) {
+            urlThrew = true
+        }
+        return JSONObject()
+            .put("rule_threw", ruleThrew)
+            .put("rule_value_after_failure", shared.getVariable(ruleKey))
+            .put("url_threw", urlThrew)
+            .put("url_value_after_failure", shared.getVariable(urlKey))
+    }
+
+    private suspend fun independentContextProjection(
+        arguments: JSONObject
+    ): JSONObject = coroutineScope {
+        val key = arguments.getString("key")
+        val leftData = RuleData()
+        val rightData = RuleData()
+        val left = async {
+            val analyze = AnalyzeRule(leftData)
+            analyze.put(key, arguments.getString("left_value"))
+            analyze.get(key)
+        }
+        val right = async {
+            val analyze = AnalyzeRule(rightData)
+            analyze.put(key, arguments.getString("right_value"))
+            analyze.get(key)
+        }
+        JSONObject()
+            .put("left_value", left.await())
+            .put("right_value", right.await())
+            .put("left_storage", leftData.getVariable(key))
+            .put("right_storage", rightData.getVariable(key))
+            .put(
+                "storage_identity_distinct",
+                leftData.variableMap !== rightData.variableMap
+            )
+    }
+
+    private fun variableCaseSource(id: String): BookSource =
+        GSON.fromJson(sourceJson, BookSource::class.java).apply {
+            bookSourceUrl = "$deviceOrigin/variable-source/$id"
+            bookSourceName = "Variable $id"
+        }
+
+    private fun variableBook(
+        arguments: JSONObject,
+        id: String
+    ): Book = Book(
+        bookUrl = "$deviceOrigin/variables/book/$id",
+        origin = source.bookSourceUrl,
+        originName = source.bookSourceName,
+        name = arguments.getString("book_name")
+    )
+
+    private fun variableChapter(
+        arguments: JSONObject,
+        book: Book
+    ): BookChapter = BookChapter(
+        url = "$deviceOrigin/variables/chapter",
+        title = arguments.getString("chapter_title"),
+        bookUrl = book.bookUrl
+    )
 
     private suspend fun dynamicWebProjection(
         value: JSONObject

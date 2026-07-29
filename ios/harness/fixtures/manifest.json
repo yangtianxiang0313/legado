@@ -69,6 +69,11 @@
       "sha256": "bb8f016150201999baa6de04736e9dff94bbc8d3f06852a188262e4d516ac625"
     },
     {
+      "id": "sl-source-session-rule-variable-scope-001",
+      "path": "ios/harness/fixtures/source-lab/sl-source-session-rule-variable-scope-001",
+      "sha256": "7d8a411da7ab536f9c35e4ca799c0e38443cf786394ba1ec6ffc7f841750e7c7"
+    },
+    {
       "id": "sl-source-transport-dynamic-web-runtime-001",
       "path": "ios/harness/fixtures/source-lab/sl-source-transport-dynamic-web-runtime-001",
       "sha256": "6baf0aae2e2293b38631335cd5e884788870fec04a1f626217c35d5c5f8f8283"

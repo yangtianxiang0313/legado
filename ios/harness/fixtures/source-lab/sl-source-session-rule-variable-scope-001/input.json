@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "rule-data-storage-boundary",
+      "operation": "rule_variable_scope",
+      "arguments": {
+        "mode": "storage_boundary",
+        "key": "payload",
+        "small_length": 9999,
+        "large_length": 10000
+      },
+      "request": {
+        "method": "GET",
+        "target": "/variables/rule-data-storage-boundary"
+      }
+    },
+    {
+      "id": "analyze-rule-priority-and-specials",
+      "operation": "rule_variable_scope",
+      "arguments": {
+        "mode": "analyze_rule_priority",
+        "key": "scope",
+        "source_value": "source",
+        "book_value": "book",
+        "chapter_value": "chapter",
+        "book_name": "Mapped Book",
+        "chapter_title": "Mapped Chapter"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/variables/analyze-rule-priority-and-specials"
+      }
+    },
+    {
+      "id": "analyze-url-priority-and-specials",
+      "operation": "rule_variable_scope",
+      "arguments": {
+        "mode": "analyze_url_priority",
+        "key": "scope",
+        "source_value": "source",
+        "book_value": "book",
+        "chapter_value": "chapter",
+        "book_name": "Mapped Book",
+        "chapter_title": "Mapped Chapter"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/variables/analyze-url-priority-and-specials"
+      }
+    },
+    {
+      "id": "rule-script-shared-propagation",
+      "operation": "rule_variable_scope",
+      "arguments": {
+        "mode": "rule_script_propagation",
+        "key": "token",
+        "value": "from-rule"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/variables/rule-script-shared-propagation"
+      }
+    },
+    {
+      "id": "url-script-shared-propagation",
+      "operation": "rule_variable_scope",
+      "arguments": {
+        "mode": "url_script_propagation",
+        "key": "token",
+        "value": "from-url"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/variables/url-script-shared-propagation"
+      }
+    },
+    {
+      "id": "failure-keeps-prior-write",
+      "operation": "rule_variable_scope",
+      "arguments": {
+        "mode": "failure_mutation",
+        "rule_key": "rule-token",
+        "url_key": "url-token",
+        "value": "before-throw"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/variables/failure-keeps-prior-write"
+      }
+    },
+    {
+      "id": "independent-context-isolation",
+      "operation": "rule_variable_scope",
+      "arguments": {
+        "mode": "independent_contexts",
+        "key": "shared-name",
+        "left_value": "left",
+        "right_value": "right"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/variables/independent-context-isolation"
+      }
+    }
+  ]
+}
