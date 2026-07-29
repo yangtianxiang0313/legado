@@ -31,6 +31,8 @@ import org.junit.runner.RunWith
 import java.io.File
 import java.io.IOException
 import java.lang.reflect.InvocationTargetException
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import okhttp3.OkHttpClient
@@ -94,6 +96,8 @@ class LegadoOracleInstrumentedTest {
                 runRetryRedirectCases()
             "sl-source-cookie-persistent-session-merge-runtime-001" ->
                 runCookieSessionCases()
+            "sl-source-transport-dynamic-web-runtime-001" ->
+                runDynamicWebCases()
             else -> {
                 runCase("search-hit", "search", searchRequest("星河")) {
                     searchProjection(WebBook.searchBookAwait(source, "星河"))
@@ -358,6 +362,177 @@ class LegadoOracleInstrumentedTest {
             }
             cases.put(record)
         }
+    }
+
+    private suspend fun runDynamicWebCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            require(value.getString("operation") == "dynamic_web") {
+                "Dynamic web scenario only accepts dynamic_web stimuli"
+            }
+            val id = value.getString("id")
+            val record = JSONObject()
+                .put("id", id)
+                .put("operation", "dynamic_web")
+            try {
+                val (request, result) = dynamicWebProjection(value)
+                requestPlan.put(request)
+                record
+                    .put("request", request)
+                    .put("result", result)
+                    .put("issue", JSONObject.NULL)
+            } catch (error: Throwable) {
+                val request = dynamicWebFallbackRequest(value)
+                requestPlan.put(request)
+                record
+                    .put("request", request)
+                    .put("result", JSONObject.NULL)
+                    .put(
+                        "issue",
+                        JSONObject()
+                            .put("code", "android_exception")
+                            .put("exception_type", error.javaClass.name)
+                    )
+            }
+            cases.put(record)
+        }
+    }
+
+    private suspend fun dynamicWebProjection(
+        value: JSONObject
+    ): Pair<JSONObject, JSONObject> {
+        clearDynamicCookieState()
+        val arguments = value.getJSONObject("arguments")
+        val requestValue = value.getJSONObject("request")
+        val method = requestValue.getString("method")
+        val target = requestValue.getString("target")
+        val optionUseWebView =
+            arguments.getBoolean("option_use_webview")
+        val invocationUseWebView =
+            arguments.getBoolean("invocation_use_webview")
+        val option = JSONObject().put("webView", optionUseWebView)
+        if (!arguments.isNull("web_js")) {
+            option.put("webJs", arguments.getString("web_js"))
+        }
+        if (method == "POST") {
+            option
+                .put("method", "POST")
+                .put("body", arguments.getString("body"))
+        } else {
+            require(method == "GET")
+        }
+        val analyze = AnalyzeUrl(
+            mUrl = "$deviceOrigin$target,$option",
+            baseUrl = source.bookSourceUrl,
+            source = source,
+            headerMapF = source.getHeaderMap(true)
+        )
+        val sourceCookieBefore = CookieStore.getCookie(deviceOrigin)
+        val webCookieBefore = currentWebCookie(deviceOrigin)
+        val sourceRegex =
+            if (arguments.isNull("source_regex")) {
+                null
+            } else {
+                arguments.getString("source_regex")
+            }
+        val response = withTimeout(15_000) {
+            analyze.getStrResponseAwait(
+                sourceRegex = sourceRegex,
+                useWebView = invocationUseWebView
+            )
+        }
+        return Pair(
+            analyzedRequest(analyze),
+            JSONObject()
+                .put("configured_use_webview", optionUseWebView)
+                .put("invocation_use_webview", invocationUseWebView)
+                .put(
+                    "configured_web_js",
+                    nullable(
+                        if (arguments.isNull("web_js")) {
+                            null
+                        } else {
+                            arguments.getString("web_js")
+                        }
+                    )
+                )
+                .put("source_regex", nullable(sourceRegex))
+                .put(
+                    "body",
+                    nullable(
+                        response.body?.replace(
+                            deviceOrigin,
+                            logicalOrigin
+                        )
+                    )
+                )
+                .put("final_url", logical(response.url))
+                .put("source_cookie_before", sourceCookieBefore)
+                .put(
+                    "source_cookie_after",
+                    CookieStore.getCookie(deviceOrigin)
+                )
+                .put("web_cookie_before", nullable(webCookieBefore))
+                .put(
+                    "web_cookie_after",
+                    nullable(currentWebCookie(deviceOrigin))
+                )
+        )
+    }
+
+    private fun clearDynamicCookieState() {
+        resetCookieState(deviceOrigin)
+        val latch = CountDownLatch(1)
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            android.webkit.CookieManager
+                .getInstance()
+                .removeAllCookies {
+                    latch.countDown()
+                }
+        }
+        require(latch.await(5, TimeUnit.SECONDS)) {
+            "Timed out clearing WebView cookies"
+        }
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            android.webkit.CookieManager.getInstance().flush()
+        }
+    }
+
+    private fun currentWebCookie(url: String): String? {
+        var value: String? = null
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            value = android.webkit.CookieManager
+                .getInstance()
+                .getCookie(url)
+        }
+        return value
+    }
+
+    private fun dynamicWebFallbackRequest(value: JSONObject): JSONObject {
+        val requestValue = value.getJSONObject("request")
+        val method = requestValue.getString("method")
+        return JSONObject()
+            .put("method", method)
+            .put(
+                "url",
+                logical(deviceOrigin + requestValue.getString("target"))
+            )
+            .put(
+                "headers",
+                controlledHeaders(
+                    listOf("X-Source" to "dynamic-web")
+                )
+            )
+            .put(
+                "body",
+                if (method == "POST") {
+                    value.getJSONObject("arguments").getString("body")
+                } else {
+                    JSONObject.NULL
+                }
+            )
+            .put("timeout_ms", JSONObject.NULL)
     }
 
     private suspend fun cookieSessionProjection(

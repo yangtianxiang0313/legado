@@ -52,6 +52,12 @@
       "sha256": "26d96b5366d4fa44ad5b3a70275a253f76bfde963c62ca5b3cbf60968c2a483b"
     },
     {
+      "id": "sl-source-transport-dynamic-web-runtime-001",
+      "status": "candidate",
+      "path": "ios/harness/fixtures/source-lab/sl-source-transport-dynamic-web-runtime-001",
+      "sha256": "07eaf0a56d9a789a0be6a01164ec9fb950d9be2867a0461886c6e6e3d40e15b5"
+    },
+    {
       "id": "sl-source-transport-request-dispatch-contract-001",
       "status": "candidate",
       "path": "ios/harness/fixtures/source-lab/sl-source-transport-request-dispatch-contract-001",

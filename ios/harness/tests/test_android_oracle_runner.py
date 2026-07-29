@@ -524,6 +524,53 @@ def cookie_session_raw_artifact():
     }
 
 
+def dynamic_web_raw_artifact():
+    scenario = "sl-source-transport-dynamic-web-runtime-001"
+    contract = runner.SCENARIO_CONTRACTS[scenario]
+    requests = []
+    cases = []
+    for case_id, operation in contract["expected_cases"]:
+        method = "POST" if case_id == "post-http-then-webview" else "GET"
+        request = {
+            "method": method,
+            "url": f"{runner.LOGICAL_ORIGIN}/dynamic/{case_id}",
+            "headers": [
+                {"name": "x-source", "value": "dynamic-web"}
+            ],
+            "body": (
+                "{\"probe\":\"post-bootstrap\"}"
+                if method == "POST"
+                else None
+            ),
+            "timeout_ms": None,
+        }
+        requests.append(request)
+        cases.append(
+            {
+                "id": case_id,
+                "operation": operation,
+                "request": request,
+                "result": {
+                    "body": f"result-{case_id}",
+                    "final_url": request["url"],
+                },
+                "issue": None,
+            }
+        )
+    return {
+        "schema_version": 1,
+        "scenario_id": scenario,
+        "device_origin": "http://127.0.0.1:49152",
+        "logical_origin": runner.LOGICAL_ORIGIN,
+        "request_plan": requests,
+        "cases": cases,
+        "source_lab_route_counts": {
+            route_id: 1
+            for route_id in runner.ROUTE_OBSERVATION_SCENARIOS[scenario]
+        },
+    }
+
+
 class AndroidOracleRunnerTests(unittest.TestCase):
     def test_doctor_binds_frozen_android_tree_and_exposes_no_authority(self):
         report = runner.doctor(ROOT)
@@ -610,6 +657,14 @@ class AndroidOracleRunnerTests(unittest.TestCase):
         self.assertEqual(
             "sl-source-cookie-persistent-session-merge-runtime-001",
             cookie_session["scenario_id"],
+        )
+        dynamic_web = runner.doctor(
+            ROOT,
+            "sl-source-transport-dynamic-web-runtime-001",
+        )
+        self.assertEqual(
+            "sl-source-transport-dynamic-web-runtime-001",
+            dynamic_web["scenario_id"],
         )
         with mock.patch.object(
             runner,
@@ -930,6 +985,36 @@ class AndroidOracleRunnerTests(unittest.TestCase):
             ],
             [case["id"] for case in projected],
         )
+        observation = artifact["result"]["value"][
+            "android_characterization"
+        ]["source_lab_observation"]
+        self.assertEqual(
+            list(runner.ROUTE_OBSERVATION_SCENARIOS[scenario]),
+            [
+                entry["route_id"]
+                for entry in observation["route_request_counts"]
+            ],
+        )
+
+    def test_dynamic_web_accepts_post_and_binds_all_route_observations(self):
+        scenario = "sl-source-transport-dynamic-web-runtime-001"
+        artifact = runner.normalize_raw_artifact(
+            dynamic_web_raw_artifact(),
+            bindings(),
+            scenario,
+        )
+        projected = artifact["result"]["value"][
+            "portable_known_projection"
+        ]["cases"]
+        self.assertEqual(
+            [
+                case_id
+                for case_id, _ in
+                runner.SCENARIO_CONTRACTS[scenario]["expected_cases"]
+            ],
+            [case["id"] for case in projected],
+        )
+        self.assertEqual("POST", artifact["request_plan"][4]["method"])
         observation = artifact["result"]["value"][
             "android_characterization"
         ]["source_lab_observation"]

@@ -1,0 +1,268 @@
+{
+  "schema_version": 1,
+  "kind": "source_lab_scenario",
+  "id": "sl-source-transport-dynamic-web-runtime-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "source_lab_site",
+  "capabilities": [
+    "CAP-RUNTIME-PORTS",
+    "CAP-CONFORMANCE"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": "source.template.json",
+  "input": "input.json",
+  "transport": {
+    "mode": "fixture_and_loopback",
+    "external_network": "deny",
+    "responses": [
+      {
+        "id": "dynamic-default-html",
+        "match": {
+          "method": "GET",
+          "path": "/dynamic/default.html",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "body_file": "responses/default.html"
+        }
+      },
+      {
+        "id": "dynamic-custom-js",
+        "match": {
+          "method": "GET",
+          "path": "/dynamic/custom-js.html",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "body_file": "responses/custom-js.html"
+        }
+      },
+      {
+        "id": "dynamic-http-bypass",
+        "match": {
+          "method": "GET",
+          "path": "/dynamic/http-bypass.txt",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/http-bypass.txt"
+        }
+      },
+      {
+        "id": "dynamic-option-disabled",
+        "match": {
+          "method": "GET",
+          "path": "/dynamic/option-disabled.txt",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/option-disabled.txt"
+        }
+      },
+      {
+        "id": "dynamic-post-bootstrap",
+        "match": {
+          "method": "POST",
+          "path": "/dynamic/post-bootstrap",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "body_file": "responses/post-bootstrap.html"
+        }
+      },
+      {
+        "id": "dynamic-sniff-page",
+        "match": {
+          "method": "GET",
+          "path": "/dynamic/sniff.html",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "body_file": "responses/sniff.html"
+        }
+      },
+      {
+        "id": "dynamic-sniff-target",
+        "match": {
+          "method": "GET",
+          "path": "/dynamic/sniff-target.js",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "application/javascript; charset=utf-8"
+          },
+          "body_file": "responses/sniff-target.js"
+        }
+      },
+      {
+        "id": "dynamic-cookie-bridge",
+        "match": {
+          "method": "GET",
+          "path": "/dynamic/cookie.html",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/html; charset=utf-8",
+            "set-cookie": "websession=from-webview; Path=/"
+          },
+          "body_file": "responses/cookie.html"
+        }
+      },
+      {
+        "id": "dynamic-user-agent",
+        "match": {
+          "method": "GET",
+          "path": "/dynamic/user-agent.html",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "body_file": "responses/user-agent.html"
+        }
+      }
+    ]
+  },
+  "coverage": [
+    {
+      "behavior": "runtime.dynamic-web",
+      "cases": [
+        {
+          "id": "get-default-dom",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl GET useWebView and BackstageWebView default outerHTML evaluation"
+          ]
+        },
+        {
+          "id": "get-custom-js-value",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "BackstageWebView custom webJs evaluation and JSON string unescaping"
+          ]
+        },
+        {
+          "id": "invocation-disables-webview",
+          "role": "denied",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "getStrResponseAwait useWebView argument overrides URL option"
+          ]
+        },
+        {
+          "id": "option-disables-webview",
+          "role": "denied",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl UrlOption.useWebView false selects HTTP transport"
+          ]
+        },
+        {
+          "id": "post-http-then-webview",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl POST first uses OkHttp then injects final URL and HTML into BackstageWebView"
+          ]
+        },
+        {
+          "id": "resource-regex-sniff",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "BackstageWebView SnifferWebClient onLoadResource sourceRegex"
+          ]
+        },
+        {
+          "id": "webview-cookie-bridge",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "BackstageWebView onPageFinished bridges android.webkit.CookieManager into CookieStore"
+          ]
+        },
+        {
+          "id": "configured-user-agent",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "BackstageWebView userAgentString uses source header User-Agent"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "2026-01-01T00:00:00Z",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 31,
+    "network_allowed": false,
+    "logical_origin": "http://sourcelab.test"
+  },
+  "limits": {
+    "timeout_ms": 5000,
+    "max_response_bytes": 1048576,
+    "max_request_body_bytes": 65536,
+    "max_requests": 24,
+    "max_concurrency": 1
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+      "app/src/main/java/io/legado/app/help/http/BackstageWebView.kt",
+      "app/src/main/java/io/legado/app/help/http/CookieStore.kt"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-SOURCE-TRANSPORT-DYNAMIC-WEB-RUNTIME-001"
+  }
+}

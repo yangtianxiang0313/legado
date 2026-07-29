@@ -238,6 +238,29 @@ SCENARIO_CONTRACTS = {
             "registrable-domain-normalization",
         }),
     },
+    "sl-source-transport-dynamic-web-runtime-001": {
+        "status": "candidate",
+        "expected_cases": (
+            ("get-default-dom", "dynamic_web"),
+            ("get-custom-js-value", "dynamic_web"),
+            ("invocation-disables-webview", "dynamic_web"),
+            ("option-disables-webview", "dynamic_web"),
+            ("post-http-then-webview", "dynamic_web"),
+            ("resource-regex-sniff", "dynamic_web"),
+            ("webview-cookie-bridge", "dynamic_web"),
+            ("configured-user-agent", "dynamic_web"),
+        ),
+        "nominal_cases": frozenset({
+            "get-default-dom",
+            "get-custom-js-value",
+            "invocation-disables-webview",
+            "option-disables-webview",
+            "post-http-then-webview",
+            "resource-regex-sniff",
+            "webview-cookie-bridge",
+            "configured-user-agent",
+        }),
+    },
 }
 ROUTE_OBSERVATION_SCENARIOS = {
     "sl-source-request-header-cookie-retry-layering-001": (
@@ -278,6 +301,17 @@ ROUTE_OBSERVATION_SCENARIOS = {
         "cookie-disabled-set",
         "cookie-redirect-start",
         "cookie-redirect-final",
+    ),
+    "sl-source-transport-dynamic-web-runtime-001": (
+        "dynamic-default-html",
+        "dynamic-custom-js",
+        "dynamic-http-bypass",
+        "dynamic-option-disabled",
+        "dynamic-post-bootstrap",
+        "dynamic-sniff-page",
+        "dynamic-sniff-target",
+        "dynamic-cookie-bridge",
+        "dynamic-user-agent",
     ),
 }
 ANDROID_PRODUCT_PATHS = (
@@ -581,7 +615,11 @@ def normalize_raw_artifact(
             )
         ):
             raise AndroidOracleRunnerError(
-                "SOURCE_LAB_OBSERVATION_INVALID"
+                "SOURCE_LAB_OBSERVATION_INVALID",
+                ",".join(
+                    f"{route_id}:{route_counts.get(route_id, 'missing')}"
+                    for route_id in observed_route_ids
+                ),
             )
         source_lab_observation = {
             "route_request_counts": [
@@ -658,6 +696,7 @@ def normalize_raw_artifact(
                     "sl-source-request-field-encoding-runtime-001",
                     "sl-source-request-url-template-compilation-001",
                     "sl-source-transport-request-dispatch-contract-001",
+                    "sl-source-transport-dynamic-web-runtime-001",
                 }
                 else request.get("method")
                 != (

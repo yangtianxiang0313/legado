@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "get-default-dom",
+      "operation": "dynamic_web",
+      "arguments": {
+        "option_use_webview": true,
+        "invocation_use_webview": true,
+        "web_js": null,
+        "source_regex": null
+      },
+      "request": {
+        "method": "GET",
+        "target": "/dynamic/default.html"
+      }
+    },
+    {
+      "id": "get-custom-js-value",
+      "operation": "dynamic_web",
+      "arguments": {
+        "option_use_webview": true,
+        "invocation_use_webview": true,
+        "web_js": "document.getElementById('value').textContent",
+        "source_regex": null
+      },
+      "request": {
+        "method": "GET",
+        "target": "/dynamic/custom-js.html"
+      }
+    },
+    {
+      "id": "invocation-disables-webview",
+      "operation": "dynamic_web",
+      "arguments": {
+        "option_use_webview": true,
+        "invocation_use_webview": false,
+        "web_js": "document.documentElement.outerHTML",
+        "source_regex": null
+      },
+      "request": {
+        "method": "GET",
+        "target": "/dynamic/http-bypass.txt"
+      }
+    },
+    {
+      "id": "option-disables-webview",
+      "operation": "dynamic_web",
+      "arguments": {
+        "option_use_webview": false,
+        "invocation_use_webview": true,
+        "web_js": "document.documentElement.outerHTML",
+        "source_regex": null
+      },
+      "request": {
+        "method": "GET",
+        "target": "/dynamic/option-disabled.txt"
+      }
+    },
+    {
+      "id": "post-http-then-webview",
+      "operation": "dynamic_web",
+      "arguments": {
+        "option_use_webview": true,
+        "invocation_use_webview": true,
+        "web_js": "document.getElementById('post-result').textContent",
+        "source_regex": null,
+        "body": "{\"probe\":\"post-bootstrap\"}"
+      },
+      "request": {
+        "method": "POST",
+        "target": "/dynamic/post-bootstrap"
+      }
+    },
+    {
+      "id": "resource-regex-sniff",
+      "operation": "dynamic_web",
+      "arguments": {
+        "option_use_webview": true,
+        "invocation_use_webview": true,
+        "web_js": null,
+        "source_regex": ".*/dynamic/sniff-target\\.js"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/dynamic/sniff.html"
+      }
+    },
+    {
+      "id": "webview-cookie-bridge",
+      "operation": "dynamic_web",
+      "arguments": {
+        "option_use_webview": true,
+        "invocation_use_webview": true,
+        "web_js": "document.getElementById('cookie').textContent",
+        "source_regex": null
+      },
+      "request": {
+        "method": "GET",
+        "target": "/dynamic/cookie.html"
+      }
+    },
+    {
+      "id": "configured-user-agent",
+      "operation": "dynamic_web",
+      "arguments": {
+        "option_use_webview": true,
+        "invocation_use_webview": true,
+        "web_js": "navigator.userAgent",
+        "source_regex": null
+      },
+      "request": {
+        "method": "GET",
+        "target": "/dynamic/user-agent.html"
+      }
+    }
+  ]
+}

@@ -79,6 +79,15 @@
       ],
       "authority": "android_oracle_candidate_only",
       "status": "candidate"
+    },
+    {
+      "id": "IOS-ANDROID-DYNAMIC-WEB-ATTESTATION-001",
+      "scenario_id": "sl-source-transport-dynamic-web-runtime-001",
+      "fixture_ids": [
+        "sl-source-transport-dynamic-web-runtime-001"
+      ],
+      "authority": "android_oracle_candidate_only",
+      "status": "candidate"
     }
   ]
 }
