@@ -1,0 +1,49 @@
+name: Legado
+options:
+  bundleIdPrefix: com.yangtianxiang.legado
+  deploymentTarget:
+    iOS: "17.0"
+packages:
+  LegadoKit:
+    path: ../../Packages/LegadoKit
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+targets:
+  LegadoApp:
+    type: application
+    platform: iOS
+    sources:
+      - App
+    dependencies:
+      - package: LegadoKit
+        product: LegadoStoreSafeKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.yangtianxiang.legado.app
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Legado
+        TARGETED_DEVICE_FAMILY: "1,2"
+  LegadoAppUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - UITests
+    dependencies:
+      - target: LegadoApp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.yangtianxiang.legado.app.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: LegadoApp
+schemes:
+  LegadoApp:
+    build:
+      targets:
+        LegadoApp: all
+        LegadoAppUITests:
+          - test
+    test:
+      targets:
+        - LegadoAppUITests

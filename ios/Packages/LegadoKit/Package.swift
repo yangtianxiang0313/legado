@@ -9,8 +9,8 @@ let package = Package(
         .macOS(.v14),
     ],
     products: [
-        .library(name: "LegadoStoreSafeKit", targets: ["AppUseCases"]),
-        .library(name: "LegadoFullCompatKit", targets: ["AppUseCases"]),
+        .library(name: "LegadoStoreSafeKit", targets: ["AppUseCases", "AppNavigation"]),
+        .library(name: "LegadoFullCompatKit", targets: ["AppUseCases", "AppNavigation"]),
         .executable(name: "ConformanceCLI", targets: ["ConformanceCLI"]),
     ],
     dependencies: [],
@@ -27,6 +27,10 @@ let package = Package(
         .target(
             name: "AppUseCases",
             dependencies: ["LegadoCore", "LibraryDomain", "SourceRuntime", "ReaderCore"]
+        ),
+        .target(
+            name: "AppNavigation",
+            dependencies: ["LegadoCore", "LibraryDomain"]
         ),
         .target(
             name: "TestSupport",
@@ -67,6 +71,10 @@ let package = Package(
         .testTarget(
             name: "SourceFormatTests",
             dependencies: ["LegadoCore", "SourceFormat", "TestSupport"]
+        ),
+        .testTarget(
+            name: "AppNavigationTests",
+            dependencies: ["AppNavigation"]
         ),
     ],
     swiftLanguageModes: [.v6]
