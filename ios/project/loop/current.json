@@ -1,1 +1,1 @@
-{"active_task":null,"attempt":0,"last_completed":{"at":"2026-07-29T04:46:03Z","sequence":12,"task_id":"IOS-SOURCE-RUNTIME-XML-RESPONSE-001"},"schema_version":2,"status":"idle","verification":null}
+{"active_task":"IOS-CHARACTERIZE-SOURCE-REQUEST-HEADER-COOKIE-RETRY-LAYERING-001","attempt":0,"last_completed":{"at":"2026-07-29T04:46:03Z","sequence":12,"task_id":"IOS-SOURCE-RUNTIME-XML-RESPONSE-001"},"schema_version":2,"status":"running","verification":null}
