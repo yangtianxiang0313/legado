@@ -264,6 +264,7 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/Packages/LegadoKit/Tests/SourceRuntimeTests/**",
                 "ios/Packages/LegadoKit/Sources/ConformanceCLI/**",
                 "ios/Packages/LegadoKit/Tests/ConformanceCLITests/**",
+                "ios/Packages/LegadoKit/Sources/TestSupport/FixtureModel.swift",
             ],
         }
     raise LoopError(f"OWNER_NOT_MAPPED:{target}")

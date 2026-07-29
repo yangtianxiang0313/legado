@@ -128,15 +128,24 @@ public enum MinimalTaskConformanceRunner {
       throw MinimalTaskConformanceError.invalidFixture
     }
     var result: [String: String] = [:]
+    var identifiers: Set<String> = []
     for value in cases {
       guard
         case .object(let inputCase) = value,
         case .string(let id)? = inputCase["id"],
-        case .object(let arguments)? = inputCase["arguments"],
-        case .string(let keyword)? = arguments["keyword"],
-        result.updateValue(keyword, forKey: id) == nil
+        identifiers.insert(id).inserted,
+        case .string(let operation)? = inputCase["operation"],
+        case .object(let arguments)? = inputCase["arguments"]
       else {
         throw MinimalTaskConformanceError.invalidFixture
+      }
+      if operation == FixtureOperation.search.rawValue {
+        guard
+          case .string(let keyword)? = arguments["keyword"],
+          result.updateValue(keyword, forKey: id) == nil
+        else {
+          throw MinimalTaskConformanceError.invalidFixture
+        }
       }
     }
     return result
@@ -152,7 +161,7 @@ public enum MinimalTaskConformanceRunner {
           throw MinimalTaskConformanceError.invalidFixture
         }
         let bodyData = plan.request.body?.bytes
-        return .object([
+        var value: [String: JSONValue] = [
           "method": .string(plan.request.method.rawValue),
           "url": .string(plan.request.url.absoluteString),
           "headers": .array(
@@ -164,21 +173,24 @@ public enum MinimalTaskConformanceRunner {
             }
           ),
           "body": plan.body.map(JSONValue.string) ?? .null,
-          "body_base64": bodyData.map {
-            .string($0.base64EncodedString())
+          "timeout_ms": plan.request.timeout.map {
+            .number(JSONNumber(Int64($0.milliseconds)))
           } ?? .null,
-          "form_fields": .array(
+        ]
+        if requestCase.operation != .rawResponse {
+          value["body_base64"] = bodyData.map {
+            .string($0.base64EncodedString())
+          } ?? .null
+          value["form_fields"] = .array(
             plan.formFields.map { field in
               .object([
                 "key": .string(field.key),
                 "value": .string(field.value),
               ])
             }
-          ),
-          "timeout_ms": plan.request.timeout.map {
-            .number(JSONNumber(Int64($0.milliseconds)))
-          } ?? .null,
-        ])
+          )
+        }
+        return .object(value)
       }
     )
   }

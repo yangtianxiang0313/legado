@@ -9,6 +9,7 @@ public enum FixtureOperation: String, Codable, Sendable {
   case bookInfo = "book_info"
   case chapters
   case content
+  case rawResponse = "raw_response"
   case rule
 }
 

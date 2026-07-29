@@ -50,6 +50,11 @@ public enum SourcePipelineConformanceRunner {
         continue
       }
       requestPlan.append(HTTPRequestEnvelope(request: request))
+      if requestCase.operation == .rawResponse {
+        let normalized = try SourceStringResponseNormalizer.normalize(response)
+        cases.append(rawResponseCase(requestCase, response: normalized))
+        continue
+      }
       guard let html = String(data: response.body.bytes, encoding: .utf8) else {
         throw SourcePipelineConformanceError.invalidResponseEncoding
       }
@@ -67,7 +72,7 @@ public enum SourcePipelineConformanceRunner {
       fixtureID: fixture.definition.id,
       engine: ExecutionEngine(
         platform: .ios,
-        revision: "conformance-source-runtime-html-css-v1",
+        revision: "conformance-source-runtime-v2",
         compatibilityProfile: fixture.definition.compatibilityProfile
       ),
       requestPlan: requestPlan,
@@ -203,6 +208,16 @@ public enum SourcePipelineConformanceRunner {
           body: nil,
           formFields: []
         )
+      case .rawResponse:
+        plan = SourceRequestPlan(
+          request: HTTPRequest(
+            method: requestCase.request.method,
+            url: requestCase.request.url,
+            headers: requestCase.request.headers
+          ),
+          body: nil,
+          formFields: []
+        )
       default:
         throw SourcePipelineConformanceError.unsupportedOperation
       }
@@ -260,6 +275,21 @@ public enum SourcePipelineConformanceRunner {
       "operation": .string(requestCase.operation.rawValue),
       "result": result,
       "issue": issue,
+    ])
+  }
+
+  private static func rawResponseCase(
+    _ requestCase: FixtureRequestCase,
+    response: SourceStringResponse
+  ) -> JSONValue {
+    .object([
+      "id": .string(requestCase.id),
+      "operation": .string(requestCase.operation.rawValue),
+      "result": .object([
+        "body": .string(response.body),
+        "final_url": .string(response.finalURL.absoluteString),
+      ]),
+      "issue": .null,
     ])
   }
 
