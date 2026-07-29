@@ -1,0 +1,184 @@
+{
+  "schema_version": 1,
+  "proposal_id": "IOS-BUSINESS-KNOWLEDGE-PUBLICATION-DIGEST-001",
+  "proposal_constraint": "只修复 DemandCompiler 对 producer WorkItem 的摘要域，使 request binding 与 Dispatcher 对 source commit 原始字节的验证一致；不得降低六类输入验证、修改 Workflow/Dispatcher、发布知识、改 Requirement/Golden/SourceLab/Package/产品或扩张 authority",
+  "work_item": {
+    "api_version": "legado.harness/v1",
+    "kind": "WorkItem",
+    "metadata": {
+      "id": "IOS-BUSINESS-KNOWLEDGE-PUBLICATION-DIGEST-001",
+      "title": "统一知识发布输入的 Git 字节摘要语义",
+      "priority": 100,
+      "risk": "medium",
+      "labels": [
+        "phase-0",
+        "control-plane",
+        "demand-compiler",
+        "business-knowledge",
+        "corrective"
+      ]
+    },
+    "spec": {
+      "capability": "CAP-KNOWLEDGE-CONTROL",
+      "intent": "真实 Loop drive 在 Business Knowledge Publisher preflight 暴露 KNOWLEDGE_PUBLICATION_INPUT_DIGEST_DRIFT。六类 authority 输入中只有 producer WorkItem 不匹配：DemandCompiler 绑定 canonical JSON 的语义摘要，Dispatcher 则按 source commit 中 git blob 的原始字节验证。将该 binding 改为 committed 文件原始字节 SHA-256，并新增真实格式化 JSON 与 canonical JSON 摘要不同的回归，证明计划摘要等于文件字节且仍会在内容漂移时 fail closed。其他五类输入、Dispatcher、Workflow、发布事务与 authority 边界保持不变。",
+      "depends_on": [
+        "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTOMATION-001"
+      ],
+      "scope": {
+        "allow_write": [
+          "ios/harness/demand_compiler.py",
+          "ios/harness/tests/test_demand_compiler.py",
+          "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+          "ios/project/checkpoints/IOS-BUSINESS-KNOWLEDGE-PUBLICATION-DIGEST-001.json",
+          "ios/project/pitfalls/PIT-*.json"
+        ],
+        "deny_write": [
+          ".github/**",
+          "app/**",
+          "modules/**",
+          "ios/Packages/**",
+          "ios/publisher/**",
+          "ios/harness/github_business_knowledge_publisher.py",
+          "ios/harness/loop_supervisor.py",
+          "ios/harness/harness.py",
+          "ios/harness/proposal_compiler.py",
+          "ios/harness/config.json",
+          "ios/harness/schemas/**",
+          "ios/harness/business-knowledge/**",
+          "ios/harness/goldens/**",
+          "ios/harness/oracle/**",
+          "ios/harness/source-lab/**",
+          "ios/project/state.json",
+          "ios/project/events.jsonl",
+          "ios/project/status.md",
+          "ios/project/requirements/**",
+          "ios/project/approvals/**",
+          "ios/project/business-knowledge/**",
+          "ios/project/work-item-proposals/**",
+          "ios/project/delivery-intents/**",
+          "ios/project/migration-intents/**",
+          "ios/docs/**"
+        ],
+        "max_files_changed": 5,
+        "max_changed_lines": 500
+      },
+      "inputs": {
+        "context_files": [
+          "ios/harness/demand_compiler.py",
+          "ios/harness/github_business_knowledge_publisher.py",
+          "ios/harness/tests/test_demand_compiler.py",
+          "ios/harness/work-items/IOS-KNOWLEDGE-SOURCE-RUNTIME-POST-FORM-001.json",
+          "ios/project/checkpoints/IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTOMATION-001.json",
+          "ios/project/pitfalls/PIT-0070.json"
+        ],
+        "android_source_anchors": [],
+        "fixtures": []
+      },
+      "architecture_refs": [
+        "ADR-0002",
+        "ADR-0004"
+      ],
+      "acceptance": {
+        "criteria": [
+          {
+            "id": "AC-1",
+            "statement": "POST Form knowledge publication plan 的 producer.work_item_sha256 必须等于 source commit 中 WorkItem 文件原始字节 SHA-256，且不得等于内容相同但重新 canonical 化后的替代摘要。",
+            "verified_by": [
+              "harness-tests"
+            ],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          },
+          {
+            "id": "AC-2",
+            "statement": "回归测试覆盖格式化 JSON 的语义摘要与字节摘要不同，并证明 publication plan 输出字节摘要；现有 proposal、Golden、evidence、checkpoint 摘要和歧义 fail-closed 行为不变。",
+            "verified_by": [
+              "harness-tests"
+            ],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          },
+          {
+            "id": "AC-3",
+            "statement": "完整 dependency policy 与 Harness tests 通过；真实 Dispatcher preflight 不再因 producer WorkItem 摘要域不一致失败。",
+            "verified_by": [
+              "dependency-policy",
+              "harness-tests"
+            ],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          },
+          {
+            "id": "AC-4",
+            "statement": "当前项不修改 Workflow、Dispatcher、Publisher、published/Coverage/release、Requirement、Golden、SourceLab、Package、产品或架构 authority。",
+            "verified_by": [
+              "dependency-policy",
+              "memory-close"
+            ],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          }
+        ],
+        "required_checks": [
+          "dependency-policy",
+          "harness-tests"
+        ]
+      },
+      "baseline_checks": [
+        "dependency-policy",
+        "harness-tests"
+      ],
+      "budget": {
+        "wall_clock_seconds": 7200,
+        "max_edit_verify_cycles": 4,
+        "max_targeted_test_runs": 12,
+        "max_full_test_runs": 3,
+        "max_infra_retries": 2
+      },
+      "gates": [],
+      "completion_effects": {
+        "health": {
+          "knowledge_publication_input_digest": "git_blob_bytes_v1"
+        }
+      },
+      "memory": {
+        "capability_state_required": true,
+        "checkpoint_required": true,
+        "pitfall": "required",
+        "adr": "not_required"
+      },
+      "requirements": {
+        "mode": "control_plane",
+        "refs": [],
+        "none_reason": "本项只修复发布计划的输入摘要控制语义，不改变产品 Requirement"
+      },
+      "knowledge": {
+        "contract_version": 1,
+        "mode": "not_applicable",
+        "claim_refs": [],
+        "driver_refs": [],
+        "coverage_refs": [],
+        "produces": [],
+        "expected_ledger_transitions": [],
+        "context_budget": {
+          "max_claims": 1,
+          "max_bytes": 16384
+        },
+        "none_reason": "本项不消费或发布业务知识，只修复 proposal binding 的字节摘要语义"
+      },
+      "source_lab": {
+        "mode": "not_applicable",
+        "behaviors": [],
+        "scenarios": [],
+        "none_reason": "本项不修改或运行 SourceLab"
+      },
+      "stop_on": [
+        "doctor_red",
+        "scope_violation",
+        "authority_escalation",
+        "same_failure_twice",
+        "budget_exhausted"
+      ]
+    }
+  }
+}
