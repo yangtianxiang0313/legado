@@ -2,13 +2,13 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-29T00:02:19Z
+- 更新时间：2026-07-29T00:08:30Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
-- 下一个可领取工作项：IOS-GITHUB-GOLDEN-PUBLISHER-SCOPE-001
-- 最近完成：IOS-GITHUB-GOLDEN-DISPATCHER-OWNER-001
+- 下一个可领取工作项：无
+- 最近完成：IOS-GITHUB-GOLDEN-PUBLISHER-SCOPE-001
 
 ## 健康度
 
@@ -34,6 +34,7 @@
 | control_catalog_resume | `bounded_self_heal` |
 | delivery_intent_settlement | `completed_evidence_bound` |
 | github_golden_dispatcher_owner | `declared_v1` |
+| github_golden_publisher_auto_scope | `exact_paths_v1` |
 | github_golden_publisher_owner | `declared_v1` |
 | github_oracle_auto_scope | `exact_path_authorized_v1` |
 | github_oracle_external_execution | `branch_push_reconciled_v2` |
@@ -133,7 +134,7 @@
 | IOS-DELIVERY-INTENT-SETTLEMENT-001 | 100 | `completed` | IOS-SOURCE-RUNTIME-HTML-CSS-001, IOS-READINESS-EVIDENCE-HANDOFF-RECOVERY-002 | 让已完成 Delivery Intent 由 Evidence 结算并退出调度 |
 | IOS-GITHUB-GOLDEN-DISPATCHER-OWNER-001 | 100 | `completed` | IOS-GITHUB-GOLDEN-PUBLISHER-OWNER-001 | 预声明 Golden Dispatcher 与结果回收所有权 |
 | IOS-GITHUB-GOLDEN-PUBLISHER-OWNER-001 | 100 | `completed` | IOS-GITHUB-ORACLE-RECEIPT-SETTLEMENT-001 | 预声明无人工 Gate Golden Publisher 所有权 |
-| IOS-GITHUB-GOLDEN-PUBLISHER-SCOPE-001 | 100 | `ready` | IOS-GITHUB-GOLDEN-DISPATCHER-OWNER-001 | 建立 Golden Publisher 精确自动实现边界 |
+| IOS-GITHUB-GOLDEN-PUBLISHER-SCOPE-001 | 100 | `completed` | IOS-GITHUB-GOLDEN-DISPATCHER-OWNER-001 | 建立 Golden Publisher 精确自动实现边界 |
 | IOS-GITHUB-ORACLE-AUTO-SCOPE-001 | 100 | `completed` | IOS-GITHUB-ORACLE-OWNER-001 | 授权自动策略物化精确 GitHub Oracle Dispatcher 路径 |
 | IOS-GITHUB-ORACLE-DISPATCHER-001 | 100 | `completed` | IOS-GITHUB-ORACLE-AUTO-SCOPE-001 | 建立可恢复的 GitHub Android Oracle 外部执行适配层 |
 | IOS-GITHUB-ORACLE-DISPATCHER-HARDENING-001 | 100 | `completed` | IOS-GITHUB-ORACLE-DISPATCHER-001, IOS-GITHUB-ORACLE-PUSH-TRIGGER-RECOVERY-002 | 以 branch push/run 对账闭合 GitHub Oracle 幂等恢复 |

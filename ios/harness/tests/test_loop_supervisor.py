@@ -1305,6 +1305,120 @@ class MaterializationTests(unittest.TestCase):
                         ),
                     )
 
+    def test_github_golden_publisher_auto_scope_is_exact(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            item_id = "IOS-TEST-GOLDEN-PUBLISHER-001"
+            item = fixture.fixture.item(
+                item_id,
+                "CAP-CONFORMANCE",
+                100,
+            )
+            required_labels = {
+                "external-execution",
+                "android-oracle",
+                "golden-publisher",
+                "corrective",
+            }
+            item["metadata"]["labels"] = sorted(required_labels)
+            item["spec"]["requirements"] = {
+                "mode": "control_plane",
+                "refs": [],
+                "none_reason": "test",
+            }
+            item["spec"]["knowledge"] = {
+                "mode": "not_applicable",
+            }
+            item["spec"]["scope"]["allow_write"] = [
+                ".github/workflows/android-golden-publisher.yml",
+                "ios/publisher/android_golden_publisher.py",
+                "ios/publisher/README.md",
+                "ios/harness/tests/test_android_golden_publisher.py",
+                "ios/project/capabilities/CAP-CONFORMANCE.json",
+                f"ios/project/checkpoints/{item_id}.json",
+                "ios/project/pitfalls/PIT-*.json",
+            ]
+            item["spec"]["scope"]["deny_write"] = [
+                ".github/workflows/android-oracle-attestation.yml",
+                ".github/workflows/change.yml",
+                "app/**",
+                "modules/**",
+                "ios/Packages/**",
+                "ios/harness/harness.py",
+                "ios/harness/demand_compiler.py",
+                "ios/harness/loop_supervisor.py",
+                "ios/harness/github_golden_publisher.py",
+                "ios/harness/github_oracle_dispatcher.py",
+                "ios/harness/github_oracle_receipt.py",
+                "ios/harness/oracle/**",
+                "ios/harness/fixtures/**",
+                "ios/harness/source-lab/**",
+                "ios/harness/goldens/**",
+                "ios/project/external-execution-receipts/**",
+                "ios/project/baseline.json",
+                "ios/project/requirements/**",
+                "ios/project/business-knowledge/**",
+                "ios/project/approvals/**",
+                "ios/project/work-item-proposals/**",
+                "ios/docs/**",
+            ]
+            supervisor = loop_supervisor.LoopSupervisor(
+                fixture.harness
+            )
+
+            self.assertEqual(
+                [],
+                supervisor._github_golden_publisher_scope_issues(item),
+            )
+
+            for drift in (
+                ".github/workflows/change.yml",
+                "ios/harness/goldens/manifest.json",
+                "ios/harness/github_golden_publisher.py",
+                "ios/harness/github_oracle_receipt.py",
+                "ios/harness/oracle/contract.py",
+                "ios/Packages/LegadoKit/Package.swift",
+                "app/new.kt",
+                "modules/new.kt",
+                "ios/project/requirements/catalog.json",
+                "ios/project/checkpoints/IOS-OTHER-001.json",
+                "ios/**",
+            ):
+                with self.subTest(drift=drift):
+                    changed = json.loads(json.dumps(item))
+                    changed["spec"]["scope"]["allow_write"].append(
+                        drift
+                    )
+                    self.assertIn(
+                        "AUTO_GITHUB_GOLDEN_PUBLISHER_SCOPE_ALLOW_INVALID",
+                        supervisor
+                        ._github_golden_publisher_scope_issues(changed),
+                    )
+
+            for missing in required_labels:
+                with self.subTest(missing=missing):
+                    changed = json.loads(json.dumps(item))
+                    changed["metadata"]["labels"] = sorted(
+                        required_labels - {missing}
+                    )
+                    self.assertIn(
+                        "AUTO_GITHUB_GOLDEN_PUBLISHER_AUTHORITY_INVALID",
+                        supervisor
+                        ._github_golden_publisher_scope_issues(changed),
+                    )
+
+            changed = json.loads(json.dumps(item))
+            changed["spec"]["scope"]["deny_write"] = []
+            self.assertTrue(
+                all(
+                    issue.startswith(
+                        "AUTO_GITHUB_GOLDEN_PUBLISHER_SCOPE_DENY_MISSING:"
+                    )
+                    for issue in supervisor
+                    ._github_golden_publisher_scope_issues(changed)
+                )
+            )
+
             for field, value in (
                 ("gates", ["approval"]),
                 (

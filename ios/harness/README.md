@@ -325,6 +325,13 @@ compiler check 和 preflight，不信任先前 `inspect` 的缓存结果。最�
 未提交变化、manifest 漂移、Human Decision、`supersede`、critical risk 或 authority
 scope 都会 fail closed，并给出稳定 blocker，不会退回一个“请确认”的橡皮图章。
 
+Golden Publisher 的自动实现使用独立 exact-scope 特例。只有同时携带
+`external-execution`、`android-oracle`、`golden-publisher`、`corrective` 四个标签，
+且 `allow_write` 精确等于固定 workflow、staging-only publisher、对应测试/README
+和 Capability/Checkpoint/PIT 记忆集合时才可自动物化。当前 `goldens/**`、其他
+workflow、Oracle/Receipt/Dispatcher、Package 与产品代码始终在该实现项的拒绝域；
+真实 Golden 只能由后续外部 Publisher 结果事务产生。
+
 ## Codex exec Agent Adapter
 
 `codex_agent_adapter.py` 是 Loop Supervisor 的 Codex CLI argv adapter。它使用稳定的
