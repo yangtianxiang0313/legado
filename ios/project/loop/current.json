@@ -1,1 +1,1 @@
-{"active_task":null,"attempt":0,"last_completed":{"at":"2026-07-29T19:43:09Z","sequence":139,"task_id":"IOS-CHARACTERIZE-READER-CACHE-PREFETCH-POLICY-001"},"schema_version":2,"status":"idle","verification":null}
+{"active_task":"IOS-READER-CORE-CACHE-PREFETCH-POLICY-001","attempt":0,"last_completed":{"at":"2026-07-29T19:43:09Z","sequence":139,"task_id":"IOS-CHARACTERIZE-READER-CACHE-PREFETCH-POLICY-001"},"schema_version":2,"status":"running","verification":null}
