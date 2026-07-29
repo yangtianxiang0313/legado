@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 68,
+  "revision": 69,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -22,6 +22,7 @@
       "ios/harness/approval_ui.py",
       "ios/harness/codex_agent_adapter.py",
       "ios/harness/demand_compiler.py",
+      "ios/harness/github_golden_publisher.py",
       "ios/harness/github_oracle_dispatcher.py",
       "ios/harness/github_oracle_receipt.py",
       "ios/harness/harness.py",
@@ -35,6 +36,7 @@
       "ios/harness/tests/test_codex_agent_adapter.py",
       "ios/harness/tests/test_business_knowledge_publisher.py",
       "ios/harness/tests/test_demand_compiler.py",
+      "ios/harness/tests/test_github_golden_publisher.py",
       "ios/harness/tests/test_github_oracle_dispatcher.py",
       "ios/harness/tests/test_github_oracle_receipt.py",
       "ios/harness/tests/test_harness.py",
@@ -70,12 +72,12 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260728T233241Z-ios-github-oracle-receipt-gh-executable-001-b074f9b5.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260729T000006Z-ios-github-golden-dispatcher-owner-001-32482754.json",
   "next_actions": [
-    "使用修复后的独立 Receipt Settler 重新结算真实 sl-post-form-001 run 30403665320 与 provenance-bound exact artifact",
-    "验证双 attestation 与 trusted import 后提交 create-only verified-candidate Receipt",
-    "由独立 Publisher 审核 Receipt 与 candidate，发布 scenario-aware protected Golden 后续接 SourceRuntime POST Form iOS 验收"
+    "建立 Golden 自动发布的精确跨边界 WorkItem scope",
+    "实现 create-only request branch、唯一 run、result artifact/commit 对账与受限 fast-forward",
+    "让 Supervisor 在 external_publisher_required 状态调用 Dispatcher 并在结果合并后自动续接 Package 验收"
   ],
-  "updated_at": "2026-07-28T23:32:41Z",
-  "updated_by": "IOS-GITHUB-ORACLE-RECEIPT-GH-EXECUTABLE-001"
+  "updated_at": "2026-07-29T00:00:06Z",
+  "updated_by": "IOS-GITHUB-GOLDEN-DISPATCHER-OWNER-001"
 }
