@@ -39,10 +39,27 @@ public enum MinimalTaskConformanceRunner {
     else {
       throw MinimalTaskConformanceError.invalidTask
     }
+    let fixtureRoot =
+      fixtureID == ReaderBookmarkConformanceRunner.fixtureID
+      ? "runtime-lab"
+      : "source-lab"
     let fixtureDirectory = try resolve(
-      "ios/harness/fixtures/source-lab/\(fixtureID)",
+      "ios/harness/fixtures/\(fixtureRoot)/\(fixtureID)",
       root: root
     )
+    if fixtureID == ReaderBookmarkConformanceRunner.fixtureID {
+      let run = try ReaderBookmarkConformanceRunner.run(
+        fixtureDirectory: fixtureDirectory
+      )
+      return try finish(
+        taskID: taskID,
+        fixtureID: fixtureID,
+        goldenPath: goldenPath,
+        actualArtifact: run.artifact,
+        canonicalPlans: run.requestPlan,
+        root: root
+      )
+    }
     if fixtureID == ContentCacheQueueCompletionConformanceRunner.fixtureID {
       let run = try await ContentCacheQueueCompletionConformanceRunner.run(
         fixtureDirectory: fixtureDirectory
@@ -540,7 +557,8 @@ public enum MinimalTaskConformanceRunner {
     guard
       let requestPlan,
       case .object(let result)? = artifact["result"],
-      result["type"] == .string("source_pipeline"),
+      result["type"] == .string("source_pipeline")
+        || result["type"] == .string("reader_runtime"),
       case .object(let value)? = result["value"],
       let projection = value["portable_known_projection"]
     else {

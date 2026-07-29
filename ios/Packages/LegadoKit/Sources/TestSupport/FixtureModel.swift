@@ -1,4 +1,7 @@
 import Foundation
+import LegadoCore
+import LibraryDomain
+import ReaderCore
 import SourceRuntime
 
 public enum FixtureOperation: String, Codable, Sendable {
@@ -291,4 +294,205 @@ public enum LoadedConformanceFixture: Sendable {
 public struct LoadedSourceRoundTripFixture: Sendable {
   public let definition: FixtureDefinition
   public let sourceData: Data
+}
+
+public enum ReaderBookmarkFixtureProjectionError: Error, Sendable {
+  case invalidFixture
+}
+
+public struct ReaderBookmarkFixtureProjectionRun: Sendable {
+  public let artifact: JSONValue
+  public let requestPlan: JSONValue
+
+  public init(artifact: JSONValue, requestPlan: JSONValue) {
+    self.artifact = artifact
+    self.requestPlan = requestPlan
+  }
+}
+
+public enum ReaderBookmarkFixtureProjection {
+  public static let fixtureID =
+    "rl-reader-bookmark-search-runtime-risk-001"
+
+  public static func run(
+    caseData: Data,
+    inputData: Data
+  ) throws -> ReaderBookmarkFixtureProjectionRun {
+    let caseDocument: JSONValue
+    let inputDocument: JSONValue
+    do {
+      caseDocument = try JSONValueCodec.decode(caseData)
+      inputDocument = try JSONValueCodec.decode(inputData)
+    } catch {
+      throw ReaderBookmarkFixtureProjectionError.invalidFixture
+    }
+    guard
+      case .object(let caseRoot) = caseDocument,
+      caseRoot["id"] == .string(fixtureID),
+      caseRoot["kind"] == .string("android_runtime_scenario"),
+      caseRoot["operation"] == .string("android_runtime"),
+      case .object(let inputRoot) = inputDocument,
+      case .array(let inputCases)? = inputRoot["cases"]
+    else {
+      throw ReaderBookmarkFixtureProjectionError.invalidFixture
+    }
+
+    var plans: [JSONValue] = []
+    var cases: [JSONValue] = []
+    var identifiers: Set<String> = []
+    for value in inputCases {
+      guard
+        case .object(let inputCase) = value,
+        case .string(let id)? = inputCase["id"],
+        identifiers.insert(id).inserted,
+        case .string(let operation)? = inputCase["operation"],
+        case .object(let arguments)? = inputCase["arguments"]
+      else {
+        throw ReaderBookmarkFixtureProjectionError.invalidFixture
+      }
+      plans.append(
+        .object([
+          "operation": .string(operation),
+          "arguments": .object(arguments),
+        ])
+      )
+      let result: JSONValue
+      switch operation {
+      case "bookmark_search":
+        result = try search(arguments)
+      case "bookmark_insert_conflict":
+        result = try insertConflict(arguments)
+      default:
+        throw ReaderBookmarkFixtureProjectionError.invalidFixture
+      }
+      cases.append(
+        .object([
+          "id": .string(id),
+          "operation": .string(operation),
+          "result": result,
+          "issue": .null,
+        ])
+      )
+    }
+
+    let requestPlan = JSONValue.array(plans)
+    return ReaderBookmarkFixtureProjectionRun(
+      artifact: .object([
+        "schema_version": number(1),
+        "fixture_id": .string(fixtureID),
+        "engine": .object([
+          "platform": .string("ios"),
+          "revision": .string("reader-bookmark-compatibility-v1"),
+          "compatibility_profile": .string("android-legado-v1"),
+        ]),
+        "request_plan": requestPlan,
+        "decode": .null,
+        "stages": .array([]),
+        "result": .object([
+          "type": .string("reader_runtime"),
+          "value": .object([
+            "portable_known_projection": .object([
+              "cases": .array(cases)
+            ])
+          ]),
+        ]),
+        "issues": .array([]),
+      ]),
+      requestPlan: requestPlan
+    )
+  }
+
+  private static func search(
+    _ arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    guard
+      case .string(let bookName)? = arguments["book_name"],
+      case .string(let bookAuthor)? = arguments["book_author"],
+      case .string(let key)? = arguments["key"]
+    else {
+      throw ReaderBookmarkFixtureProjectionError.invalidFixture
+    }
+    return rows(
+      AndroidBookmarkCompatibility.search(
+        try bookmarks(arguments),
+        bookName: bookName,
+        bookAuthor: bookAuthor,
+        key: key
+      )
+    )
+  }
+
+  private static func insertConflict(
+    _ arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    rows(
+      AndroidBookmarkCompatibility.insertingReplacingByTime(
+        try bookmarks(arguments)
+      )
+    )
+  }
+
+  private static func bookmarks(
+    _ arguments: [String: JSONValue]
+  ) throws -> [Bookmark] {
+    guard case .array(let values)? = arguments["rows"] else {
+      throw ReaderBookmarkFixtureProjectionError.invalidFixture
+    }
+    return try values.map { value in
+      guard
+        case .object(let row) = value,
+        case .number(let time)? = row["time"],
+        let timeValue = Int64(time.rawToken),
+        case .string(let bookName)? = row["bookName"],
+        case .string(let bookAuthor)? = row["bookAuthor"],
+        case .number(let chapterIndex)? = row["chapterIndex"],
+        let chapterIndexValue = Int(chapterIndex.rawToken),
+        case .number(let chapterPosition)? = row["chapterPos"],
+        let chapterPositionValue = Int(chapterPosition.rawToken),
+        case .string(let chapterName)? = row["chapterName"],
+        case .string(let bookText)? = row["bookText"],
+        case .string(let content)? = row["content"]
+      else {
+        throw ReaderBookmarkFixtureProjectionError.invalidFixture
+      }
+      return Bookmark(
+        time: timeValue,
+        bookName: bookName,
+        bookAuthor: bookAuthor,
+        chapterIndex: chapterIndexValue,
+        chapterPosition: chapterPositionValue,
+        chapterName: chapterName,
+        bookText: bookText,
+        content: content
+      )
+    }
+  }
+
+  private static func rows(_ bookmarks: [Bookmark]) -> JSONValue {
+    .object([
+      "row_count": number(bookmarks.count),
+      "rows": .array(
+        bookmarks.map { bookmark in
+          .object([
+            "time": number(bookmark.time),
+            "book_name": .string(bookmark.bookName),
+            "book_author": .string(bookmark.bookAuthor),
+            "chapter_index": number(bookmark.chapterIndex),
+            "chapter_pos": number(bookmark.chapterPosition),
+            "chapter_name": .string(bookmark.chapterName),
+            "book_text": .string(bookmark.bookText),
+            "content": .string(bookmark.content),
+          ])
+        }
+      ),
+    ])
+  }
+
+  private static func number(_ value: Int) -> JSONValue {
+    .number(JSONNumber(Int64(value)))
+  }
+
+  private static func number(_ value: Int64) -> JSONValue {
+    .number(JSONNumber(value))
+  }
 }

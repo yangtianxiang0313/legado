@@ -509,6 +509,64 @@ final class ConformanceCLITests: XCTestCase {
     }
   }
 
+  func testMinimalTaskRunnerMatchesBookmarkRuntimeAndroidGolden() async throws {
+    let temporaryRoot = FileManager.default.temporaryDirectory
+      .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryRoot) }
+    let fixtureID =
+      "rl-reader-bookmark-search-runtime-risk-001"
+    let fixturePath =
+      "ios/harness/fixtures/runtime-lab/\(fixtureID)"
+    let goldenPath =
+      "ios/harness/goldens/android-legado-v1/\(fixtureID).json"
+    let taskPath = "ios/project/loop/task.json"
+    for relative in [fixturePath, goldenPath, taskPath] {
+      try FileManager.default.createDirectory(
+        at:
+          temporaryRoot
+          .appendingPathComponent(relative)
+          .deletingLastPathComponent(),
+        withIntermediateDirectories: true
+      )
+    }
+    try FileManager.default.copyItem(
+      at: repositoryRoot.appendingPathComponent(fixturePath),
+      to: temporaryRoot.appendingPathComponent(fixturePath)
+    )
+    try FileManager.default.copyItem(
+      at: repositoryRoot.appendingPathComponent(goldenPath),
+      to: temporaryRoot.appendingPathComponent(goldenPath)
+    )
+    try JSONSerialization.data(
+      withJSONObject: [
+        "schema_version": 2,
+        "id": "IOS-READER-CORE-BOOKMARK-SEARCH-001",
+        "source": [
+          "fixture_id": fixtureID,
+          "android_golden": goldenPath,
+        ],
+      ],
+      options: [.sortedKeys]
+    ).write(to: temporaryRoot.appendingPathComponent(taskPath))
+
+    let first = try await MinimalTaskConformanceRunner.run(
+      taskPath: taskPath,
+      repositoryRoot: temporaryRoot
+    )
+    let second = try await MinimalTaskConformanceRunner.run(
+      taskPath: taskPath,
+      repositoryRoot: temporaryRoot
+    )
+    let text = String(decoding: first.data, as: UTF8.self)
+
+    XCTAssertTrue(first.passed)
+    XCTAssertEqual(first.data, second.data)
+    XCTAssertTrue(text.contains(#""first_divergence":null"#))
+    XCTAssertTrue(text.contains(#""status":"equal""#))
+    XCTAssertTrue(text.contains(#""book_name":"乙书""#))
+    XCTAssertTrue(text.contains(#""time":701"#))
+  }
+
   private var offlineFixture: URL {
     fixture("ios/harness/fixtures/conformance/harness-offline-001")
   }
@@ -573,6 +631,85 @@ final class ConformanceCLITests: XCTestCase {
     return number.rawToken
   }
 
+}
+
+final class ReaderCoreTests: XCTestCase {
+  func testBookmarkProjectionContainsAllSevenGoldenCases() throws {
+    let text = try projectionText()
+
+    XCTAssertTrue(text.contains(#""id":"same-book-chapter-name""#))
+    XCTAssertTrue(text.contains(#""id":"content-branch-cross-book""#))
+    XCTAssertTrue(text.contains(#""id":"empty-key-cross-book""#))
+    XCTAssertTrue(text.contains(#""id":"percent-wildcard""#))
+    XCTAssertTrue(text.contains(#""id":"underscore-wildcard""#))
+    XCTAssertTrue(text.contains(#""id":"global-chapter-order""#))
+    XCTAssertTrue(text.contains(#""id":"time-primary-key-replace""#))
+  }
+
+  func testBookmarkProjectionPreservesCrossBookContentResult() throws {
+    let text = try projectionText()
+
+    XCTAssertTrue(text.contains(#""book_name":"乙书""#))
+    XCTAssertTrue(text.contains(#""content":"needle in foreign""#))
+    XCTAssertTrue(text.contains(#""time":202"#))
+  }
+
+  func testBookmarkProjectionPreservesWildcardResults() throws {
+    let text = try projectionText()
+
+    XCTAssertTrue(text.contains(#""key":"%""#))
+    XCTAssertTrue(text.contains(#""key":"_""#))
+    XCTAssertTrue(text.contains(#""content":"y""#))
+  }
+
+  func testBookmarkProjectionPreservesGlobalOrder() throws {
+    let text = try projectionText()
+    let start = try XCTUnwrap(
+      text.range(of: #""id":"global-chapter-order""#)
+    )
+    let result = text[start.lowerBound...]
+    let two = try XCTUnwrap(result.range(of: #""time":602"#))
+    let five = try XCTUnwrap(result.range(of: #""time":603"#))
+    let eight = try XCTUnwrap(result.range(of: #""time":601"#))
+
+    XCTAssertLessThan(two.lowerBound, five.lowerBound)
+    XCTAssertLessThan(five.lowerBound, eight.lowerBound)
+  }
+
+  func testBookmarkProjectionReplacesSameTimeWithLastRow() throws {
+    let text = try projectionText()
+
+    XCTAssertTrue(text.contains(#""book_name":"新书""#))
+    XCTAssertTrue(text.contains(#""content":"新内容""#))
+  }
+
+  private func projectionText() throws -> String {
+    let fixture = repositoryRoot.appendingPathComponent(
+      "ios/harness/fixtures/runtime-lab/"
+        + ReaderBookmarkFixtureProjection.fixtureID,
+      isDirectory: true
+    )
+    let run = try ReaderBookmarkFixtureProjection.run(
+      caseData: Data(
+        contentsOf: fixture.appendingPathComponent("case.json")
+      ),
+      inputData: Data(
+        contentsOf: fixture.appendingPathComponent("input.json")
+      )
+    )
+    return String(
+      decoding: try JSONValueCodec.encode(run.artifact),
+      as: UTF8.self
+    )
+  }
+
+  private var repositoryRoot: URL {
+    var root = URL(fileURLWithPath: #filePath)
+    for _ in 0..<6 {
+      root.deleteLastPathComponent()
+    }
+    return root
+  }
 }
 
 private enum TestError: Error {
