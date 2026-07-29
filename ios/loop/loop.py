@@ -1178,6 +1178,8 @@ def build_characterization_task(
                 "ios/harness/oracle/android-runner/**",
                 "ios/harness/tests/test_android_oracle_runner.py",
                 "ios/harness/tests/test_github_oracle_receipt.py",
+                "ios/harness/tests/test_android_golden_publisher.py",
+                "ios/publisher/android_golden_publisher.py",
                 ".github/workflows/android-oracle-attestation.yml",
                 golden_path,
                 "ios/harness/goldens/manifest.json",

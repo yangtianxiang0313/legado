@@ -163,6 +163,50 @@ def _scenario(value: str) -> str:
     return value
 
 
+def _fixture_binding(
+    oracle_root: Path,
+    scenario_id: str,
+    exact_json: Any,
+) -> Tuple[str, str]:
+    manifest_path = (
+        oracle_root / "ios/harness/fixtures/manifest.json"
+    )
+    manifest_bytes = _safe_regular(manifest_path).read_bytes()
+    try:
+        manifest = _object(
+            exact_json.loads(manifest_bytes),
+            "fixture manifest",
+        )
+    except (UnicodeError, ValueError) as error:
+        raise GoldenPublisherError(
+            "GOLDEN_FIXTURE_BINDING_DRIFT"
+        ) from error
+    if exact_json.dumps(manifest) != manifest_bytes:
+        raise GoldenPublisherError("GOLDEN_FIXTURE_BINDING_DRIFT")
+    fixtures = manifest.get("fixtures")
+    matches = [
+        entry
+        for entry in fixtures
+        if isinstance(entry, dict) and entry.get("id") == scenario_id
+    ] if isinstance(fixtures, list) else []
+    if len(matches) != 1:
+        raise GoldenPublisherError("GOLDEN_FIXTURE_BINDING_DRIFT")
+    entry = matches[0]
+    path = entry.get("path")
+    digest = entry.get("sha256")
+    if (
+        manifest.get("compatibility_profile") != PROFILE
+        or path not in {
+            f"ios/harness/fixtures/source-lab/{scenario_id}",
+            f"ios/harness/fixtures/runtime-lab/{scenario_id}",
+        }
+        or not isinstance(digest, str)
+        or HEX64.fullmatch(digest) is None
+    ):
+        raise GoldenPublisherError("GOLDEN_FIXTURE_BINDING_DRIFT")
+    return path, digest
+
+
 def _migrate_manifest(
     manifest: Mapping[str, Any],
 ) -> tuple[Dict[str, Any], Dict[str, Any]]:
@@ -357,10 +401,17 @@ def prepare(
     ):
         raise GoldenPublisherError("PROPOSAL_AUTHORIZATION_DRIFT")
     fixture = _object(fixtures[0], "proposal.fixtures[0]")
+    expected_fixture_path, expected_fixture_sha256 = _fixture_binding(
+        oracle_root,
+        scenario_id,
+        exact_json,
+    )
     if (
         bindings.get("compatibility_profile") != PROFILE
         or fixture.get("fixture_path")
-        != f"ios/harness/fixtures/source-lab/{scenario_id}"
+        != expected_fixture_path
+        or fixture.get("fixture_sha256")
+        != expected_fixture_sha256
         or fixture.get("payload_path")
         != f"payloads/{scenario_id}.json"
     ):

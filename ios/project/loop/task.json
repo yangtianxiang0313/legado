@@ -1,1 +1,184 @@
-{"acceptance":{"commands":[{"argv":["python3","-B","ios/harness/source-lab/source_lab.py","doctor","--root","."],"id":"source-lab-contract","timeout_seconds":120},{"argv":["python3","-B","-m","unittest","ios.harness.tests.test_oracle_control","ios.harness.tests.test_oracle_ci_proposal","ios.harness.tests.test_oracle_trusted_import"],"id":"oracle-contract-tests","timeout_seconds":180},{"argv":["python3","-B","-m","unittest","ios.harness.tests.test_android_golden_publisher"],"id":"android-golden-contract","timeout_seconds":300},{"argv":["python3","-B","ios/harness/business-knowledge/business_knowledge.py","doctor","--root","."],"id":"business-knowledge-contract","timeout_seconds":120}],"structured_output":{"expected":"ios/harness/goldens/android-legado-v1/rl-reader-bookmark-search-runtime-risk-001.json","fixture_id":"rl-reader-bookmark-search-runtime-risk-001","mode":"android_golden","required_fields":["artifact.request_plan","artifact.result.value.portable_known_projection","oracle.android_git_commit","oracle.runner_digest"]}},"architecture":{"owner":"ReaderCore","refs":["ARCH-001","ARCH-002","ARCH-005","ARCH-014","ARCH-017","ARCH-018"],"rule":"先固定 Android 阅读运行时可观察结果，再扩展 ReaderCore；LibraryDomain 只承载值，Android Room 与 Golden 不进入产品 Target。"},"base_commit":"fe4bd6dbc15cea330034610c387660faab52ef53","goal":"从冻结 Android 源码声明出发扩展确定性 Characterization 场景，由真实 Android runner 产出结构化 Golden，并发布对应业务知识与Coverage；测试只验证权威链，不能替代源码语义或手写 expected。","id":"IOS-CHARACTERIZE-READER-BOOKMARK-SEARCH-RUNTIME-RISK-001","kind":"characterization","knowledge_updates":{"candidate_claim_refs":[{"id":"BKC-BOOKMARK-RUNTIME-RISK-001","revision":1}],"required_on_completion":["summary","current_status","architecture_change","pitfalls","next_step"]},"priority":100,"requirements":["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"],"schema_version":2,"scope":{"allowed_paths":[".github/workflows/android-oracle-attestation.yml","ios/docs/architecture.md","ios/harness/android-intake/**","ios/harness/fixtures/manifest.json","ios/harness/fixtures/runtime-lab/rl-reader-bookmark-search-runtime-risk-001/**","ios/harness/github_oracle_receipt.py","ios/harness/goldens/android-legado-v1/rl-reader-bookmark-search-runtime-risk-001.json","ios/harness/goldens/manifest.json","ios/harness/goldens/releases/**","ios/harness/oracle/android-runner/**","ios/harness/oracle/ci_proposal.py","ios/harness/oracle/request-registry.json","ios/harness/oracle/scenario_selector.py","ios/harness/schemas/source-lab-scenario.schema.json","ios/harness/source-lab/coverage-policy-v1.json","ios/harness/source-lab/manifest.json","ios/harness/source-lab/source_lab.py","ios/harness/source-lab/tests/test_source_lab.py","ios/harness/tests/test_android_oracle_runner.py","ios/harness/tests/test_github_oracle_receipt.py","ios/loop/loop.py","ios/loop/tests/test_loop.py","ios/project/android-intake/inventory-manifest.json","ios/project/business-knowledge/catalog.json","ios/project/business-knowledge/coverage/**","ios/project/business-knowledge/drivers/proposals/**","ios/project/business-knowledge/drivers/published/**","ios/project/business-knowledge/packets/proposals/**","ios/project/business-knowledge/packets/published/**","ios/project/business-knowledge/releases/**","ios/project/external-execution-receipts/**","ios/project/requirements/catalog.json"],"forbidden":["手写 Android expected","iOS 产品实现","accepted Requirement","架构依赖边","三方依赖"]},"source":{"anchors":[{"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","git_blob":"7940139ff5c87e977f4aeefa43064e733055ddca","path":"app/src/main/java/io/legado/app/data/dao/BookmarkDao.kt","symbol_id":"kotlin://io.legado.app.data.dao/BookmarkDao/flowSearch"},{"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","git_blob":"1093970423bc64d7405a142a75befd23c09ec163","path":"app/src/main/java/io/legado/app/data/entities/Bookmark.kt","symbol_id":"kotlin://io.legado.app.data.entities/Bookmark"}],"android_baseline":{"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","inventory_control_sha256":"833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122"},"android_golden":"ios/harness/goldens/android-legado-v1/rl-reader-bookmark-search-runtime-risk-001.json","fixture_id":"rl-reader-bookmark-search-runtime-risk-001","knowledge":{"candidate_claim":{"id":"BKC-BOOKMARK-RUNTIME-RISK-001","revision":1,"semantic_key":"reader.bookmark.search-runtime-risk","statement":"Bookmark 搜索 SQL 的 content LIKE 分支可能绕过书名作者限制而返回其他书的记录；换源、改名与目录重排后也可能形成无法正确关联或定位的书签，需要 characterization。"},"driver":null,"packet":{"id":"BKP-BOOK-DOMAIN-001","path":"ios/project/business-knowledge/packets/proposals/BKP-BOOK-DOMAIN-001/r0001.json","revision":1}}},"status":"in_progress","title":"书签搜索与迁移风险"}
+{
+    "acceptance": {
+        "commands": [
+            {
+                "argv": [
+                    "python3",
+                    "-B",
+                    "ios/harness/source-lab/source_lab.py",
+                    "doctor",
+                    "--root",
+                    "."
+                ],
+                "id": "source-lab-contract",
+                "timeout_seconds": 120
+            },
+            {
+                "argv": [
+                    "python3",
+                    "-B",
+                    "-m",
+                    "unittest",
+                    "ios.harness.tests.test_oracle_control",
+                    "ios.harness.tests.test_oracle_ci_proposal",
+                    "ios.harness.tests.test_oracle_trusted_import"
+                ],
+                "id": "oracle-contract-tests",
+                "timeout_seconds": 180
+            },
+            {
+                "argv": [
+                    "python3",
+                    "-B",
+                    "-m",
+                    "unittest",
+                    "ios.harness.tests.test_android_golden_publisher"
+                ],
+                "id": "android-golden-contract",
+                "timeout_seconds": 300
+            },
+            {
+                "argv": [
+                    "python3",
+                    "-B",
+                    "ios/harness/business-knowledge/business_knowledge.py",
+                    "doctor",
+                    "--root",
+                    "."
+                ],
+                "id": "business-knowledge-contract",
+                "timeout_seconds": 120
+            }
+        ],
+        "structured_output": {
+            "expected": "ios/harness/goldens/android-legado-v1/rl-reader-bookmark-search-runtime-risk-001.json",
+            "fixture_id": "rl-reader-bookmark-search-runtime-risk-001",
+            "mode": "android_golden",
+            "required_fields": [
+                "artifact.request_plan",
+                "artifact.result.value.portable_known_projection",
+                "oracle.android_git_commit",
+                "oracle.runner_digest"
+            ]
+        }
+    },
+    "architecture": {
+        "owner": "ReaderCore",
+        "refs": [
+            "ARCH-001",
+            "ARCH-002",
+            "ARCH-005",
+            "ARCH-014",
+            "ARCH-017",
+            "ARCH-018"
+        ],
+        "rule": "\u5148\u56fa\u5b9a Android \u9605\u8bfb\u8fd0\u884c\u65f6\u53ef\u89c2\u5bdf\u7ed3\u679c\uff0c\u518d\u6269\u5c55 ReaderCore\uff1bLibraryDomain \u53ea\u627f\u8f7d\u503c\uff0cAndroid Room \u4e0e Golden \u4e0d\u8fdb\u5165\u4ea7\u54c1 Target\u3002"
+    },
+    "base_commit": "fe4bd6dbc15cea330034610c387660faab52ef53",
+    "goal": "\u4ece\u51bb\u7ed3 Android \u6e90\u7801\u58f0\u660e\u51fa\u53d1\u6269\u5c55\u786e\u5b9a\u6027 Characterization \u573a\u666f\uff0c\u7531\u771f\u5b9e Android runner \u4ea7\u51fa\u7ed3\u6784\u5316 Golden\uff0c\u5e76\u53d1\u5e03\u5bf9\u5e94\u4e1a\u52a1\u77e5\u8bc6\u4e0eCoverage\uff1b\u6d4b\u8bd5\u53ea\u9a8c\u8bc1\u6743\u5a01\u94fe\uff0c\u4e0d\u80fd\u66ff\u4ee3\u6e90\u7801\u8bed\u4e49\u6216\u624b\u5199 expected\u3002",
+    "id": "IOS-CHARACTERIZE-READER-BOOKMARK-SEARCH-RUNTIME-RISK-001",
+    "kind": "characterization",
+    "knowledge_updates": {
+        "candidate_claim_refs": [
+            {
+                "id": "BKC-BOOKMARK-RUNTIME-RISK-001",
+                "revision": 1
+            }
+        ],
+        "required_on_completion": [
+            "summary",
+            "current_status",
+            "architecture_change",
+            "pitfalls",
+            "next_step"
+        ]
+    },
+    "priority": 100,
+    "requirements": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+    ],
+    "schema_version": 2,
+    "scope": {
+        "allowed_paths": [
+            ".github/workflows/android-oracle-attestation.yml",
+            "ios/docs/architecture.md",
+            "ios/harness/android-intake/**",
+            "ios/harness/fixtures/manifest.json",
+            "ios/harness/fixtures/runtime-lab/rl-reader-bookmark-search-runtime-risk-001/**",
+            "ios/harness/github_oracle_receipt.py",
+            "ios/harness/goldens/android-legado-v1/rl-reader-bookmark-search-runtime-risk-001.json",
+            "ios/harness/goldens/manifest.json",
+            "ios/harness/goldens/releases/**",
+            "ios/harness/oracle/android-runner/**",
+            "ios/harness/oracle/ci_proposal.py",
+            "ios/harness/oracle/request-registry.json",
+            "ios/harness/oracle/scenario_selector.py",
+            "ios/harness/schemas/source-lab-scenario.schema.json",
+            "ios/harness/source-lab/coverage-policy-v1.json",
+            "ios/harness/source-lab/manifest.json",
+            "ios/harness/source-lab/source_lab.py",
+            "ios/harness/source-lab/tests/test_source_lab.py",
+            "ios/harness/tests/test_android_oracle_runner.py",
+            "ios/harness/tests/test_android_golden_publisher.py",
+            "ios/harness/tests/test_github_oracle_receipt.py",
+            "ios/loop/loop.py",
+            "ios/loop/tests/test_loop.py",
+            "ios/publisher/android_golden_publisher.py",
+            "ios/project/android-intake/inventory-manifest.json",
+            "ios/project/business-knowledge/catalog.json",
+            "ios/project/business-knowledge/coverage/**",
+            "ios/project/business-knowledge/drivers/proposals/**",
+            "ios/project/business-knowledge/drivers/published/**",
+            "ios/project/business-knowledge/packets/proposals/**",
+            "ios/project/business-knowledge/packets/published/**",
+            "ios/project/business-knowledge/releases/**",
+            "ios/project/external-execution-receipts/**",
+            "ios/project/requirements/catalog.json"
+        ],
+        "forbidden": [
+            "\u624b\u5199 Android expected",
+            "iOS \u4ea7\u54c1\u5b9e\u73b0",
+            "accepted Requirement",
+            "\u67b6\u6784\u4f9d\u8d56\u8fb9",
+            "\u4e09\u65b9\u4f9d\u8d56"
+        ]
+    },
+    "source": {
+        "anchors": [
+            {
+                "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+                "git_blob": "7940139ff5c87e977f4aeefa43064e733055ddca",
+                "path": "app/src/main/java/io/legado/app/data/dao/BookmarkDao.kt",
+                "symbol_id": "kotlin://io.legado.app.data.dao/BookmarkDao/flowSearch"
+            },
+            {
+                "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+                "git_blob": "1093970423bc64d7405a142a75befd23c09ec163",
+                "path": "app/src/main/java/io/legado/app/data/entities/Bookmark.kt",
+                "symbol_id": "kotlin://io.legado.app.data.entities/Bookmark"
+            }
+        ],
+        "android_baseline": {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "inventory_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122"
+        },
+        "android_golden": "ios/harness/goldens/android-legado-v1/rl-reader-bookmark-search-runtime-risk-001.json",
+        "fixture_id": "rl-reader-bookmark-search-runtime-risk-001",
+        "knowledge": {
+            "candidate_claim": {
+                "id": "BKC-BOOKMARK-RUNTIME-RISK-001",
+                "revision": 1,
+                "semantic_key": "reader.bookmark.search-runtime-risk",
+                "statement": "Bookmark \u641c\u7d22 SQL \u7684 content LIKE \u5206\u652f\u53ef\u80fd\u7ed5\u8fc7\u4e66\u540d\u4f5c\u8005\u9650\u5236\u800c\u8fd4\u56de\u5176\u4ed6\u4e66\u7684\u8bb0\u5f55\uff1b\u6362\u6e90\u3001\u6539\u540d\u4e0e\u76ee\u5f55\u91cd\u6392\u540e\u4e5f\u53ef\u80fd\u5f62\u6210\u65e0\u6cd5\u6b63\u786e\u5173\u8054\u6216\u5b9a\u4f4d\u7684\u4e66\u7b7e\uff0c\u9700\u8981 characterization\u3002"
+            },
+            "driver": null,
+            "packet": {
+                "id": "BKP-BOOK-DOMAIN-001",
+                "path": "ios/project/business-knowledge/packets/proposals/BKP-BOOK-DOMAIN-001/r0001.json",
+                "revision": 1
+            }
+        }
+    },
+    "status": "in_progress",
+    "title": "\u4e66\u7b7e\u641c\u7d22\u4e0e\u8fc1\u79fb\u98ce\u9669"
+}

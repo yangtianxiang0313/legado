@@ -86,6 +86,30 @@ class AndroidGoldenPublisherTests(unittest.TestCase):
             ),
             encoding="utf-8",
         )
+        fixture_manifest = (
+            self.publisher_root
+            / "ios/harness/fixtures/manifest.json"
+        )
+        fixture_manifest.parent.mkdir(parents=True)
+        fixture_manifest.write_bytes(
+            ci_proposal._dump(
+                {
+                    "schema_version": 1,
+                    "compatibility_profile": publisher.PROFILE,
+                    "canonicalizer": "canonical-v1",
+                    "fixtures": [
+                        {
+                            "id": self.scenario,
+                            "path": (
+                                "ios/harness/fixtures/source-lab/"
+                                f"{self.scenario}"
+                            ),
+                            "sha256": "c" * 64,
+                        }
+                    ],
+                }
+            )
+        )
         self.payload = ci_proposal._dump(
             {
                 "schema_version": 1,
@@ -213,6 +237,15 @@ class AndroidGoldenPublisherTests(unittest.TestCase):
         fake_trusted_import = SimpleNamespace(verify=fake_verify)
         oracle_root = self.root / "historical-oracle-source"
         oracle_root.mkdir()
+        historical_manifest = (
+            oracle_root / "ios/harness/fixtures/manifest.json"
+        )
+        historical_manifest.parent.mkdir(parents=True)
+        shutil.copyfile(
+            self.publisher_root
+            / "ios/harness/fixtures/manifest.json",
+            historical_manifest,
+        )
         with mock.patch.object(
             publisher,
             "_oracle_modules",
@@ -244,6 +277,28 @@ class AndroidGoldenPublisherTests(unittest.TestCase):
         self.assertEqual(
             oracle_root.resolve(),
             fake_verify.call_args.args[0],
+        )
+
+    def test_prepare_accepts_runtime_fixture_from_frozen_manifest(self):
+        runtime_path = (
+            "ios/harness/fixtures/runtime-lab/"
+            f"{self.scenario}"
+        )
+        self.proposal["fixtures"][0]["fixture_path"] = runtime_path
+        self._refresh_proposal()
+        manifest = (
+            self.publisher_root
+            / "ios/harness/fixtures/manifest.json"
+        )
+        value = json.loads(manifest.read_bytes())
+        value["fixtures"][0]["path"] = runtime_path
+        manifest.write_bytes(ci_proposal._dump(value))
+
+        report = self._prepare(self.root / "runtime-fixture")
+
+        self.assertEqual(
+            "staged_for_external_publisher",
+            report["status"],
         )
 
     def test_prepare_rejects_authorization_and_fixture_drift(self):
