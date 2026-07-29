@@ -1059,6 +1059,98 @@ class LoopSupervisor:
                 )
         return issues
 
+    def _golden_consumer_recovery_scope_issues(
+        self,
+        item: Mapping[str, Any],
+    ) -> List[str]:
+        metadata = item.get("metadata", {})
+        item_id = str(metadata.get("id", ""))
+        labels = set(metadata.get("labels", []))
+        spec = item.get("spec", {})
+        scope = spec.get("scope", {})
+        allow_write = scope.get("allow_write", [])
+        deny_write = scope.get("deny_write", [])
+        expected_allow = {
+            "ios/harness/demand_compiler.py",
+            "ios/harness/loop_supervisor.py",
+            "ios/publisher/business_knowledge_publisher.py",
+            "ios/harness/tests/test_business_knowledge_publisher.py",
+            "ios/harness/tests/test_demand_compiler.py",
+            "ios/harness/tests/test_loop_supervisor.py",
+            "ios/harness/README.md",
+            "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+            f"ios/project/checkpoints/{item_id}.json",
+            "ios/project/pitfalls/PIT-*.json",
+        }
+        required_labels = {
+            "control-plane",
+            "demand-compiler",
+            "golden-consumer-recovery",
+            "publisher-compat",
+            "corrective",
+            "recovery",
+        }
+        issues: List[str] = []
+        if (
+            not required_labels.issubset(labels)
+            or spec.get("gates") != []
+            or spec.get("requirements", {}).get("mode")
+            != "control_plane"
+            or spec.get("knowledge", {}).get("mode")
+            != "not_applicable"
+            or spec.get("source_lab", {}).get("mode")
+            != "not_applicable"
+            or set(spec.get("completion_effects", {})) - {"health"}
+        ):
+            issues.append(
+                "AUTO_GOLDEN_CONSUMER_RECOVERY_AUTHORITY_INVALID"
+            )
+        if (
+            not isinstance(allow_write, list)
+            or any(not isinstance(value, str) for value in allow_write)
+            or len(allow_write) != len(expected_allow)
+            or set(allow_write) != expected_allow
+        ):
+            issues.append(
+                "AUTO_GOLDEN_CONSUMER_RECOVERY_SCOPE_ALLOW_INVALID"
+            )
+        required_denials = (
+            ".github/workflows/android-golden-publisher.yml",
+            ".github/workflows/business-knowledge-publisher.yml",
+            "app/src/main/java/example.kt",
+            "modules/book/src/main/java/example.kt",
+            "ios/Packages/LegadoKit/Package.swift",
+            "ios/publisher/android_golden_publisher.py",
+            "ios/harness/harness.py",
+            "ios/harness/proposal_compiler.py",
+            "ios/harness/github_golden_publisher.py",
+            "ios/harness/github_oracle_dispatcher.py",
+            "ios/harness/github_oracle_receipt.py",
+            "ios/harness/config.json",
+            "ios/harness/schemas/work-item.schema.json",
+            "ios/harness/goldens/manifest.json",
+            "ios/harness/oracle/contract.py",
+            "ios/harness/source-lab/source_lab.py",
+            "ios/harness/work-items/IOS-OLD-001.json",
+            "ios/project/state.json",
+            "ios/project/events.jsonl",
+            "ios/project/status.md",
+            "ios/project/business-knowledge/catalog.json",
+            "ios/project/delivery-intents/example.json",
+            "ios/project/migration-intents/example.json",
+            "ios/project/requirements/catalog.json",
+            "ios/project/approvals/decision.json",
+            "ios/project/work-item-proposals/candidate.json",
+            "ios/docs/architecture.md",
+        )
+        for path in required_denials:
+            if not path_matches(path, deny_write):
+                issues.append(
+                    "AUTO_GOLDEN_CONSUMER_RECOVERY_SCOPE_DENY_MISSING:"
+                    + path
+                )
+        return issues
+
     def _auto_candidate(
         self,
         proposal_id: str,
@@ -1211,6 +1303,14 @@ class LoopSupervisor:
             "reproducibility",
             "corrective",
         }.issubset(labels)
+        golden_consumer_recovery = {
+            "control-plane",
+            "demand-compiler",
+            "golden-consumer-recovery",
+            "publisher-compat",
+            "corrective",
+            "recovery",
+        }.issubset(labels)
         if trusted_oracle_recovery:
             recovery_issues = (
                 self._trusted_oracle_recovery_scope_issues(item)
@@ -1270,6 +1370,14 @@ class LoopSupervisor:
             if runtime_context_issues:
                 raise MaterializationConflict(
                     ";".join(runtime_context_issues)
+                )
+        elif golden_consumer_recovery:
+            consumer_issues = (
+                self._golden_consumer_recovery_scope_issues(item)
+            )
+            if consumer_issues:
+                raise MaterializationConflict(
+                    ";".join(consumer_issues)
                 )
         else:
             rejected_scope = [

@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "revision": 499,
+  "revision": 502,
   "project": "legado-ios",
   "phase": "phase-0-control-plane-and-bootstrap",
   "architecture_version": "1.0",
   "architecture_digest": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a",
-  "updated_at": "2026-07-29T01:27:50Z",
-  "event_head": "5fb4d95a92cb31207b7f01ae6303b50cf4458b3212c74e97ef6d4dd8025fec71",
+  "updated_at": "2026-07-29T01:33:19Z",
+  "event_head": "c248d5c92ca5b6754551e02bfa7375f712790c62147b156ea66cf28fa198579d",
   "active_work_items": [],
-  "last_completed_work_item": "IOS-HARNESS-RUNTIME-CONTEXT-REPRO-001",
+  "last_completed_work_item": "IOS-GOLDEN-CONSUMER-BASELINE-SCOPE-001",
   "work_items": {
     "IOS-BOOT-001": {
       "status": "completed",
@@ -9383,12 +9383,62 @@
           "stdout_tail": "",
           "stderr_tail": "..........................................................EF.FFF.............................................................................................................................................................................................................................\n======================================================================\nERROR: test_prepare_is_deterministic_staging_only_and_complete (test_business_knowledge_publisher.BusinessKnowledgePublisherTests)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_business_knowledge_publisher.py\", line 226, in test_prepare_is_deterministic_staging_only_and_complete\n    first = self._prepare(self.base / \"first\")\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_business_knowledge_publisher.py\", line 181, in _prepare\n    return publisher.prepare(self.root, **values)\n  File \"/Users/yangtianxiang/legado/ios/publisher/business_knowledge_publisher.py\", line 600, in prepare\n    raise KnowledgePublisherError(\nbusiness_knowledge_publisher.KnowledgePublisherError: RUNTIME_EVIDENCE_BINDING_DRIFT\n\n======================================================================\nFAIL: test_prepare_recomputes_every_runtime_projection (test_business_knowledge_publisher.BusinessKnowledgePublisherTests)\n----------------------------------------------------------------------\nbusiness_knowledge_publisher.KnowledgePublisherError: RUNTIME_EVIDENCE_BINDING_DRIFT\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_business_knowledge_publisher.py\", line 305, in test_prepare_recomputes_every_runtime_projection\n    self._prepare(self.base / \"projection-drift\")\nAssertionError: \"OBSERVED_PROJECTION_SHA256_DRIFT\" does not match \"RUNTIME_EVIDENCE_BINDING_DRIFT\"\n\n======================================================================\nFAIL: test_prepare_rejects_dirty_source_and_repository_output (test_business_knowledge_publisher.BusinessKnowledgePublisherTests)\n----------------------------------------------------------------------\nbusiness_knowledge_publisher.KnowledgePublisherError: RUNTIME_EVIDENCE_BINDING_DRIFT\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_business_knowledge_publisher.py\", line 348, in test_prepare_rejects_dirty_source_and_repository_output\n    self._prepare(forbidden)\nAssertionError: \"OUTPUT_INSIDE_REPOSITORY\" does not match \"RUNTIME_EVIDENCE_BINDING_DRIFT\"\n\n======================================================================\nFAIL: test_prepare_rejects_driver_claim_outside_packet (test_business_knowledge_publisher.BusinessKnowledgePublisherTests)\n----------------------------------------------------------------------\nbusiness_knowledge_publisher.KnowledgePublisherError: RUNTIME_EVIDENCE_BINDING_DRIFT\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_business_knowledge_publisher.py\", line 340, in test_prepare_rejects_driver_claim_outside_packet\n    self._prepare(self.base / \"driver-drift\")\nAssertionError: \"DRIVER_CLAIM_SELECTION_DRIFT\" does not match \"RUNTIME_EVIDENCE_BINDING_DRIFT\"\n\n======================================================================\nFAIL: test_prepare_rejects_existing_publication_target (test_business_knowledge_publisher.BusinessKnowledgePublisherTests)\n----------------------------------------------------------------------\nbusiness_knowledge_publisher.KnowledgePublisherError: RUNTIME_EVIDENCE_BINDING_DRIFT\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/Users/yangtianxiang/legado/ios/harness/tests/test_business_knowledge_publisher.py\", line 390, in test_prepare_rejects_existing_publication_target\n    self._prepare(self.base / \"existing\")\nAssertionError: \"PUBLICATION_TARGET_ALREADY_EXISTS\" does not match \"RUNTIME_EVIDENCE_BINDING_DRIFT\"\n\n----------------------------------------------------------------------\nRan 285 tests in 144.500s\n\nFAILED (failures=4, errors=1)\n"
         }
-      ]
+      ],
+      "replacement": "IOS-GOLDEN-CONSUMER-BASELINE-SCOPE-001",
+      "replacement_bound_at": "2026-07-29T01:33:19Z"
     },
     "IOS-GOLDEN-CONSUMER-BASELINE-SCOPE-001": {
-      "status": "ready",
-      "attempt": 0,
-      "last_evidence": null
+      "status": "completed",
+      "attempt": 1,
+      "last_evidence": "ios/harness/evidence/runs/run-20260729T013147Z-ios-golden-consumer-baseline-scope-001-129b1a87.json",
+      "claimed_by": "codex-root",
+      "claimed_at": "2026-07-29T01:28:08Z",
+      "lease_expires_at": "2026-07-30T01:28:08Z",
+      "work_item_sha256": "e8f8b9f5f4836e36d41e8f08db0a24eb689b25ec15d1c23998a5a3c9e4a61928",
+      "harness_config_sha256": "d6cc12b9379ae38a0152f04254c8fbda1f5fd0c4ef785643e7cf752986d53a77",
+      "base_commit": "ace6625d7481fd65d57e5ba5b1a97bbfd4233007",
+      "base_capability_revision": 74,
+      "base_capability_assurance_sha256": "6c08426cf2cc8f0277426284e00909a10444767bc01eeb84e0db43db8dcbb2ac",
+      "android_requirement_selection_sha256": null,
+      "business_knowledge_control_sha256": "b432003b7d73982a98df286bf685349ff2eb19a05c80800fbb617fa8472cbdba",
+      "business_knowledge_authority_sha256": "9a898622fab665e380b0fdb7837d6aa24f938f5c87e4bc635c32fbdf4dfe81c8",
+      "knowledge_selection_sha256": null,
+      "coverage_selection_sha256": null,
+      "architecture_driver_selection_sha256": null,
+      "knowledge_ledger_revisions": {},
+      "knowledge_ledger_snapshots": {},
+      "verify_cycles": 1,
+      "last_failure_fingerprint": null,
+      "baseline_checks": [
+        {
+          "id": "dependency-policy",
+          "argv": [
+            "python3",
+            "ios/harness/probes/dependency_contract.py",
+            "--root",
+            "."
+          ],
+          "executable_path": "/usr/bin/python3",
+          "definition_sha256": "eca96cb1b69567829ed8396386b0449da8c0d6e7295a00f1decfb60430ff1153",
+          "cwd": ".",
+          "started_at": "2026-07-29T01:28:07Z",
+          "duration_ms": 713,
+          "timeout_seconds": 90,
+          "timed_out": false,
+          "process_leak": false,
+          "cleanup_error": null,
+          "exit_code": 0,
+          "passed": true,
+          "stdout_sha256": "17595a1d68cdc5b52c010f46dff48514afa3fa3cf0215cdea7ae8eff38677c0a",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_tail": "DEPENDENCY_CONTRACT: OK\n",
+          "stderr_tail": ""
+        }
+      ],
+      "last_evidence_sha256": "0419d372b3438afd335b039cce6fdfce9af8d9e22816380568a6bf1ca43792da",
+      "verified_at": "2026-07-29T01:31:47Z",
+      "completed_at": "2026-07-29T01:33:19Z",
+      "final_tree_sha256": "196047f710253295b2d538220fe320f2c4ef06d161153981683621ac1bf88dbb"
     }
   },
   "health": {
@@ -9476,7 +9526,8 @@
     "github_golden_dispatcher": "result_verified_ff_v1",
     "loop_external_publisher": "automatic_v1",
     "harness_runtime_context_auto_scope": "exact_paths_v1",
-    "harness_terminal_runtime_context": "clean_checkout_reproducible_v1"
+    "harness_terminal_runtime_context": "clean_checkout_reproducible_v1",
+    "golden_consumer_recovery_scope": "exact_v1"
   },
   "risks": [
     {

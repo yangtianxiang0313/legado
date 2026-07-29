@@ -1848,6 +1848,130 @@ class MaterializationTests(unittest.TestCase):
                 )
             )
 
+    def test_golden_consumer_recovery_auto_scope_is_exact(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            item_id = "IOS-TEST-GOLDEN-CONSUMER-RECOVERY-002"
+            item = fixture.fixture.item(
+                item_id,
+                "CAP-KNOWLEDGE-CONTROL",
+                100,
+            )
+            required_labels = {
+                "control-plane",
+                "demand-compiler",
+                "golden-consumer-recovery",
+                "publisher-compat",
+                "corrective",
+                "recovery",
+            }
+            item["metadata"]["labels"] = sorted(required_labels)
+            item["spec"]["requirements"] = {
+                "mode": "control_plane",
+                "refs": [],
+                "none_reason": "test",
+            }
+            item["spec"]["knowledge"] = {
+                "mode": "not_applicable",
+            }
+            item["spec"]["source_lab"] = {
+                "mode": "not_applicable",
+                "behaviors": [],
+                "scenarios": [],
+                "none_reason": "test",
+            }
+            item["spec"]["scope"]["allow_write"] = [
+                "ios/harness/demand_compiler.py",
+                "ios/harness/loop_supervisor.py",
+                "ios/publisher/business_knowledge_publisher.py",
+                "ios/harness/tests/test_business_knowledge_publisher.py",
+                "ios/harness/tests/test_demand_compiler.py",
+                "ios/harness/tests/test_loop_supervisor.py",
+                "ios/harness/README.md",
+                "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+                f"ios/project/checkpoints/{item_id}.json",
+                "ios/project/pitfalls/PIT-*.json",
+            ]
+            item["spec"]["scope"]["deny_write"] = [
+                ".github/**",
+                "app/**",
+                "modules/**",
+                "ios/Packages/**",
+                "ios/publisher/android_golden_publisher.py",
+                "ios/harness/harness.py",
+                "ios/harness/proposal_compiler.py",
+                "ios/harness/github_golden_publisher.py",
+                "ios/harness/github_oracle_dispatcher.py",
+                "ios/harness/github_oracle_receipt.py",
+                "ios/harness/config.json",
+                "ios/harness/schemas/**",
+                "ios/harness/goldens/**",
+                "ios/harness/oracle/**",
+                "ios/harness/source-lab/**",
+                "ios/harness/work-items/**",
+                "ios/project/state.json",
+                "ios/project/events.jsonl",
+                "ios/project/status.md",
+                "ios/project/business-knowledge/**",
+                "ios/project/delivery-intents/**",
+                "ios/project/migration-intents/**",
+                "ios/project/requirements/**",
+                "ios/project/approvals/**",
+                "ios/project/work-item-proposals/**",
+                "ios/docs/**",
+            ]
+            supervisor = loop_supervisor.LoopSupervisor(
+                fixture.harness
+            )
+            self.assertEqual(
+                [],
+                supervisor._golden_consumer_recovery_scope_issues(item),
+            )
+            for drift in (
+                ".github/workflows/android-golden-publisher.yml",
+                "ios/publisher/android_golden_publisher.py",
+                "ios/harness/goldens/manifest.json",
+                "ios/harness/github_golden_publisher.py",
+                "ios/Packages/LegadoKit/Package.swift",
+                "ios/project/business-knowledge/catalog.json",
+                "ios/project/checkpoints/IOS-OTHER-001.json",
+                "ios/**",
+            ):
+                with self.subTest(drift=drift):
+                    changed = json.loads(json.dumps(item))
+                    changed["spec"]["scope"]["allow_write"].append(
+                        drift
+                    )
+                    self.assertIn(
+                        "AUTO_GOLDEN_CONSUMER_RECOVERY_SCOPE_ALLOW_INVALID",
+                        supervisor
+                        ._golden_consumer_recovery_scope_issues(changed),
+                    )
+            for missing in required_labels:
+                with self.subTest(missing=missing):
+                    changed = json.loads(json.dumps(item))
+                    changed["metadata"]["labels"] = sorted(
+                        required_labels - {missing}
+                    )
+                    self.assertIn(
+                        "AUTO_GOLDEN_CONSUMER_RECOVERY_AUTHORITY_INVALID",
+                        supervisor
+                        ._golden_consumer_recovery_scope_issues(changed),
+                    )
+            denial_drift = json.loads(json.dumps(item))
+            denial_drift["spec"]["scope"]["deny_write"].remove(
+                "ios/harness/goldens/**"
+            )
+            self.assertIn(
+                (
+                    "AUTO_GOLDEN_CONSUMER_RECOVERY_SCOPE_DENY_MISSING:"
+                    "ios/harness/goldens/manifest.json"
+                ),
+                supervisor._golden_consumer_recovery_scope_issues(
+                    denial_drift
+                ),
+            )
+
     def test_github_oracle_receipt_settlement_auto_scope_is_exact(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = MaterializationFixture(Path(directory))

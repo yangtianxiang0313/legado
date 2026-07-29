@@ -2,13 +2,13 @@
 
 > 此文件由 `ios/harness/harness.py` 从 `state.json` 生成，请勿手工编辑。
 
-- 更新时间：2026-07-29T01:27:50Z
+- 更新时间：2026-07-29T01:33:19Z
 - 当前阶段：`phase-0-control-plane-and-bootstrap`
 - 架构版本：`1.0`
 - 架构摘要：`fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a`
 - 活跃工作项：无
-- 下一个可领取工作项：IOS-GOLDEN-CONSUMER-BASELINE-SCOPE-001
-- 最近完成：IOS-HARNESS-RUNTIME-CONTEXT-REPRO-001
+- 下一个可领取工作项：无
+- 最近完成：IOS-GOLDEN-CONSUMER-BASELINE-SCOPE-001
 
 ## 健康度
 
@@ -45,6 +45,7 @@
 | github_oracle_receipt_gh_executable | `resolved_regular_v1` |
 | github_oracle_receipt_owner | `declared_v1` |
 | github_oracle_receipt_settlement | `audited_verified_candidate_v2` |
+| golden_consumer_recovery_scope | `exact_v1` |
 | harness | `ready` |
 | harness_runtime_context_auto_scope | `exact_paths_v1` |
 | harness_terminal_runtime_context | `clean_checkout_reproducible_v1` |
@@ -158,7 +159,7 @@
 | IOS-GITHUB-ORACLE-RECEIPT-SETTLEMENT-001 | 100 | `completed` | IOS-GITHUB-ORACLE-RECEIPT-SCOPE-001, IOS-GITHUB-ORACLE-DISPATCHER-HARDENING-001, IOS-GITHUB-ORACLE-PAYLOAD-CANONICALIZATION-001 | 实现 GitHub Oracle Attestation Receipt Settlement |
 | IOS-GITHUB-ORACLE-WORKFLOW-OWNER-001 | 100 | `completed` | IOS-GITHUB-ORACLE-DISPATCHER-001 | 预声明 Android Oracle Workflow 的 Conformance 所有权 |
 | IOS-GITHUB-ORACLE-WORKFLOW-SCOPE-001 | 100 | `completed` | IOS-GITHUB-ORACLE-WORKFLOW-OWNER-001 | 建立固定 Android Oracle Workflow 的受限自动修改策略 |
-| IOS-GOLDEN-CONSUMER-BASELINE-SCOPE-001 | 100 | `ready` | IOS-GITHUB-GOLDEN-DISPATCHER-001 | 建立 Manifest v2 消费恢复的精确自动边界 |
+| IOS-GOLDEN-CONSUMER-BASELINE-SCOPE-001 | 100 | `completed` | IOS-GITHUB-GOLDEN-DISPATCHER-001 | 建立 Manifest v2 消费恢复的精确自动边界 |
 | IOS-GOLDEN-CONSUMER-CONTINUATION-001 | 100 | `blocked` | IOS-GITHUB-GOLDEN-DISPATCHER-001, IOS-HARNESS-RUNTIME-CONTEXT-REPRO-001 | 消费受保护 Golden 并续接迁移需求 |
 | IOS-HARNESS-APPROVAL-UI-001 | 100 | `completed` | IOS-KNOWLEDGE-BOOK-DOMAIN-001 | 提供本地一键人工审批界面 |
 | IOS-HARNESS-RUNTIME-CONTEXT-REPRO-001 | 100 | `completed` | IOS-HARNESS-RUNTIME-CONTEXT-SCOPE-001 | 让终态 WorkItem Runtime Context 在干净 Checkout 可复现 |

@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "id": "PIT-0069",
+  "revision": 1,
+  "title": "Golden Manifest 控制下沉后旧消费者仍读取全局 Oracle 字段",
+  "fingerprint": "manifest-v2-per-fixture-controls-consumed-as-legacy-global-oracle",
+  "capabilities": ["CAP-KNOWLEDGE-CONTROL"],
+  "symptoms": [
+    "新场景 Golden 发布与 Dispatcher settlement 成功，但干净 HEAD 的 Business Knowledge Publisher 测试报 RUNTIME_EVIDENCE_BINDING_DRIFT",
+    "旧 HTML/CSS Golden、Packet 和 Receipt 均未改变，发布准备却突然失效",
+    "Manifest v2 fixture entry 含 runner_digest，而全局 oracle 不再携带该字段"
+  ],
+  "conditions": [
+    "Golden Manifest 从全局 runner control 演进为每 fixture 独立 controls",
+    "历史消费者直接读取 manifest.oracle.runner_digest",
+    "测试复制当前真实 Manifest，因此在新增 v2 场景后暴露跨场景回归"
+  ],
+  "root_cause": "Manifest schema 演进只验证了 Publisher/Dispatcher 写入链，未枚举并回归所有 Golden 消费者。Business Knowledge Publisher 将场景级运行身份错误绑定到全局 oracle 节点，无法同时表达不同 runner digest 的多个场景。",
+  "diagnosis": [
+    "在干净 HEAD 运行完整 ios/harness/tests，而不只运行 Golden Publisher 测试",
+    "对比目标 fixture entry、release receipt、Packet runtime_evidence 与 manifest.oracle 的 runner/canonicalizer/android commit",
+    "搜索所有直接读取 manifest.oracle runner/control 的消费者"
+  ],
+  "fix": "先建立只允许 Manifest v2 consumer recovery 的精确自动范围；后续恢复项必须让消费者优先使用目标 fixture entry 的场景级 controls，并对 legacy v1 提供严格、显式回退，同时补齐多场景回归。",
+  "prevention": {
+    "architecture_rule": "Golden schema 新版本必须提供共享的 versioned consumer validator，并在发布前对全部消费者执行旧版与新版混合场景回归；场景级 identity 不得读取全局单值。",
+    "tests": [
+      "ios/harness/tests/test_loop_supervisor.py#test_golden_consumer_recovery_auto_scope_is_exact",
+      "ios/harness/tests/test_business_knowledge_publisher.py"
+    ],
+    "lint": []
+  },
+  "affected_versions": {
+    "from": "IOS-GITHUB-GOLDEN-PUBLISHER-AUTOMATION-001",
+    "until": null
+  },
+  "status": "open",
+  "occurrences": 1,
+  "first_seen": "2026-07-29",
+  "last_seen": "2026-07-29",
+  "evidence": [
+    "ios/harness/evidence/runs/run-20260729T013147Z-ios-golden-consumer-baseline-scope-001-129b1a87.json"
+  ]
+}
