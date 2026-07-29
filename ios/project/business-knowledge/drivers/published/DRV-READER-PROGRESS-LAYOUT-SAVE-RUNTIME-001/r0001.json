@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-READER-PROGRESS-LAYOUT-SAVE-RUNTIME-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "reader.progress.layout-save-compatibility-boundary",
+  "title": "用 ReaderCore 坐标模型隔离排版页与持久阅读位置",
+  "claim_refs": [
+    {
+      "id": "BKC-BOOK-PROGRESS-RUNTIME-001",
+      "revision": 2
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "ReaderCore 必须逐场景复现受保护 Android Golden 中的页索引/字符位置换算、完整与未完整排版边界、标题刷新条件、reset 钳制和音频保存结果；expected 不得由 iOS 实现反向生成。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "modularity",
+      "scenario": "稳定阅读坐标、排版页映射和保存状态转换属于 ReaderCore；LibraryDomain 只承载 Sendable 值，核心通过章节标题解析与进度存储端口协作，不得依赖 SwiftUI、Room、Core Data、SwiftData 或 Golden 文件。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "coordinate_stability",
+      "scenario": "持久坐标必须表示章节索引加字符偏移；页索引只在当前排版快照内有效，任何 UI、重排或旋转路径都必须先经显式 LayoutPageMap 换算，不能直接落库。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "determinism",
+      "scenario": "页边界查询、reset 钳制、标题刷新条件和保存变换必须是确定性纯逻辑；时钟、章节标题查询和异步存储由调用方注入，以便结构化 Conformance 重放。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "lifecycle_safety",
+      "scenario": "翻页保存、暂停保存和音频保存必须是显式命名的输入事件，不用布尔默认值在上层传播语义；产品编排层负责等待或合并写入，核心不得宣称 Android 未验证的进程终止持久性。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "scope_control",
+      "scenario": "本切片只实现 Golden 覆盖的 10 个场景；空排版、缺章、并发重排、多写者竞争、写入去抖和进程被杀保证由后续 Android 真源任务扩张。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "如何把 LayoutPageMap 建模为当前排版快照，使页索引永远不能冒充持久字符偏移？",
+    "如何用显式 PageChanged、LifecycleSave 与 AudioSave 事件表达不同标题刷新条件，同时共享同一保存内核？",
+    "如何设计 ProgressStore 与 ChapterTitleResolver 端口，使异步副作用可替换、可等待且不泄漏具体数据库类型？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002"
+    ],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-READER-PROGRESS-LAYOUT-SAVE-RUNTIME-001",
+      "IOS-READER-CORE-PROGRESS-LAYOUT-SAVE-001"
+    ]
+  },
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30478016789/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-READER-PROGRESS-LAYOUT-SAVE-RUNTIME-001"
+}

@@ -2,11 +2,11 @@
   "schema_version": 1,
   "contract_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-  "inventory_control_sha256": "015b0f516ef1b60d2d085bb1e13a720385e45cd43075d831b9c9849cd11284ee",
+  "inventory_control_sha256": "3fec21baa59aefe12d9bf4a55e9af1b4a57ef155eaaf883da17abed80d74f0a5",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "04bd28e9d63370999b1c2541fd51db13f6fbcad8caab5d8800a99ddf19983f4a",
-  "coverage_sha256": "85658688e62c8cf709dd22e5a543ee12faeaa41bd988c90d921cc7134f44052c",
+  "authority_sha256": "a7415a2f2de50325d401de9ae56dfba77d5e3aac774aa49e0143a1d4b6a48bf9",
+  "coverage_sha256": "689ea2fa579c6504f5e3b2689cef4be25500c1a9dfa92c96cbb44a76f42b96af",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -45,6 +45,19 @@
       "claim_refs": [
         {
           "id": "BKC-BOOK-READ-RECORD-RISK-001",
+          "revision": 2
+        }
+      ]
+    },
+    {
+      "id": "BKP-READER-PROGRESS-LAYOUT-SAVE-RUNTIME-001",
+      "revision": 1,
+      "semantic_key": "reader.progress.layout-save-runtime-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-READER-PROGRESS-LAYOUT-SAVE-RUNTIME-001/r0001.json",
+      "record_sha256": "5b210d4057b301091ddec9f0dac51bd59dcf44f4bf7499f4908b3bd1d39f5a8a",
+      "claim_refs": [
+        {
+          "id": "BKC-BOOK-PROGRESS-RUNTIME-001",
           "revision": 2
         }
       ]
@@ -330,6 +343,14 @@
       "resolution_state": "resolved"
     },
     {
+      "id": "DRV-READER-PROGRESS-LAYOUT-SAVE-RUNTIME-001",
+      "revision": 1,
+      "semantic_key": "reader.progress.layout-save-compatibility-boundary",
+      "path": "ios/project/business-knowledge/drivers/published/DRV-READER-PROGRESS-LAYOUT-SAVE-RUNTIME-001/r0001.json",
+      "record_sha256": "001dc9130808d37824ff7304fcb60423d4a4a7bf8c5efa06236c490b3e8382bf",
+      "resolution_state": "resolved"
+    },
+    {
       "id": "DRV-SOURCE-RUNTIME-COOKIE-SESSION-001",
       "revision": 1,
       "semantic_key": "source.execution.cookie-session",
@@ -500,6 +521,15 @@
       "record_sha256": "59d109e4052491af903e82a8d7bcf79a4f98b284a6ab5d61d954829429c8032f",
       "entry_ids": [
         "BKE-READER-HISTORY-READ-RECORD-RUNTIME-RISK-001"
+      ]
+    },
+    {
+      "id": "BKL-READER-PROGRESS-LAYOUT-SAVE-RUNTIME-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-READER-PROGRESS-LAYOUT-SAVE-RUNTIME-001.json",
+      "record_sha256": "549627eccaca18f02d5f0fa05bdc0b95eabde05f6f00cae37911ff56efdf4790",
+      "entry_ids": [
+        "BKE-READER-PROGRESS-LAYOUT-SAVE-RUNTIME-001"
       ]
     },
     {

@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgeCoverageLedger",
+  "id": "BKL-READER-PROGRESS-LAYOUT-SAVE-RUNTIME-001",
+  "revision": 1,
+  "status": "current",
+  "packet_refs": [
+    {
+      "id": "BKP-READER-PROGRESS-LAYOUT-SAVE-RUNTIME-001",
+      "revision": 1,
+      "sha256": "5b210d4057b301091ddec9f0dac51bd59dcf44f4bf7499f4908b3bd1d39f5a8a"
+    }
+  ],
+  "generated_from": {
+    "knowledge_authority_sha256": "a7415a2f2de50325d401de9ae56dfba77d5e3aac774aa49e0143a1d4b6a48bf9",
+    "requirement_catalog_sha256": "7a86c6003ae7ab3ae098cd5bc2830d013c6a963a35436c85f2756f9776fada1f",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "entries": [
+    {
+      "id": "BKE-READER-PROGRESS-LAYOUT-SAVE-RUNTIME-001",
+      "claim_ref": {
+        "id": "BKC-BOOK-PROGRESS-RUNTIME-001",
+        "revision": 2
+      },
+      "validation": {
+        "required": "android_runtime",
+        "state": "verified",
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-reader-progress-layout-save-runtime-001-30477107488-1.json",
+          "ios/harness/goldens/android-legado-v1/rl-reader-progress-layout-save-runtime-001.json#/artifact/result/value"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "covered_by_requirement",
+        "refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "reason": "受保护 Android Golden 已冻结页索引/字符位置换算、完整与未完整排版边界、普通翻页/暂停/音频保存和 reset 钳制语义，交由 ReaderCore 中显式坐标模型与存储端口实现",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "planned",
+        "requirement_refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "work_item_refs": [
+          "IOS-READER-CORE-PROGRESS-LAYOUT-SAVE-001"
+        ],
+        "capability_refs": [
+          "CAP-CONFORMANCE",
+          "CAP-CORE"
+        ],
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-reader-progress-layout-save-runtime-001-30477107488-1.json"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    }
+  ],
+  "updated_by": "IOS-CHARACTERIZE-READER-PROGRESS-LAYOUT-SAVE-RUNTIME-001",
+  "updated_at": "2026-07-29T18:04:38Z"
+}

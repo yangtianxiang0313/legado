@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-READER-PROGRESS-LAYOUT-SAVE-RUNTIME-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "reader.progress.layout-save-runtime-golden",
+  "title": "受保护 Android Golden 验证的阅读位置换算与保存语义",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "3fec21baa59aefe12d9bf4a55e9af1b4a57ef155eaaf883da17abed80d74f0a5"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "reader.progress"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-CORE"
+    ],
+    "subject_keys": [
+      "reader.progress"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-BOOK-PROGRESS-RUNTIME-001",
+      "revision": 2,
+      "semantic_key": "reader.progress.layout-save-runtime",
+      "kind": "runtime_behavior",
+      "topic": "排版坐标换算、阅读位置更新与异步保存边界",
+      "statement": "在 rl-reader-progress-layout-save-runtime-001 的 10 个固定场景中，Android 持久化的是章节索引和排版页首行的字符位置，不持久化页码：页索引 1 映射为字符位置 120，负页索引映射为 0，超过末页的索引钳制到末页起点 260。字符位置按页首位置反查页索引；排版完成后超过末页末尾的位置仍落到末页，排版未完成时末页起点加 charSize 的边界仍有效，只有严格大于该边界才返回 -1。ReadBook.saveRead 异步写回章节索引、字符位置、更新时间并把 lastCheckCount 清零；pageChanged=true 且章节未变时保留既有章节标题，章节已变时刷新标题，暂停所用的默认 pageChanged=false 路径即使章节未变也刷新标题。resetData 把内存章节索引钳制到 [0, chapterSize - 1]，保留字符位置，且不立即改写 Room；AudioPlay.saveRead 刷新章节标题、更新时间和 lastCheckCount 后异步更新当前 Book。本结论只冻结上述 10 个场景，不外推到空排版、目录缺章、重排中的并发页表、进程被杀时的落盘保证、多写者竞争、写入合并顺序或任意 TextPage 文本结构。",
+      "subject_keys": [
+        "reader.progress"
+      ],
+      "depends_on": [],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [
+          {
+            "id": "AF-READ-BOOK-RESET-DATA",
+            "revision_sha256": "71cb776f8966882bf7a37e2a75094c9972ecebafa393de56ed03a094e892aefa"
+          },
+          {
+            "id": "AF-READ-BOOK-SAVE-READ",
+            "revision_sha256": "e2cf510cd44c6777d41065be5a56fb906a95d0ff26a16308dda8f854763879d6"
+          },
+          {
+            "id": "AF-READ-ACTIVITY-ON-PAUSE",
+            "revision_sha256": "afc6894fef46e05b916d9476c91c84b20db94b493457cb1f0df52c03298147a0"
+          },
+          {
+            "id": "AF-READ-BOOK-SET-PAGE-INDEX",
+            "revision_sha256": "e12e355831387c79b30c69511ce4357a30cd9daadd23a2fe2006bde7f144a565"
+          },
+          {
+            "id": "AF-TEXT-CHAPTER-GET-READ-LENGTH",
+            "revision_sha256": "1966865f4cb02cf8e63ca7b55bdab908a7125b7fd4b1d77a93578257e643c19b"
+          },
+          {
+            "id": "AF-TEXT-CHAPTER-GET-PAGE-INDEX",
+            "revision_sha256": "d2e3fb8a1cb416694f73c373e8b1d47646e6bcb1e52be962926c75d911f03bf4"
+          },
+          {
+            "id": "AF-AUDIO-PLAY-SAVE-READ",
+            "revision_sha256": "ae5104d5ba24bd44020d12e7139e43de303262d52eecc4da43a0d6e54ba0131b"
+          }
+        ],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d",
+            "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+            "symbol_id": "kotlin://io.legado.app.model.ReadBook/setPageIndex"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d",
+            "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+            "symbol_id": "kotlin://io.legado.app.model.ReadBook/saveRead"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d",
+            "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+            "symbol_id": "kotlin://io.legado.app.model.ReadBook/resetData"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "eb8524f5b531f076e5708cad56cfe9a592a55d7a",
+            "path": "app/src/main/java/io/legado/app/ui/book/read/page/entities/TextChapter.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.read.page.entities.TextChapter/getReadLength"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "eb8524f5b531f076e5708cad56cfe9a592a55d7a",
+            "path": "app/src/main/java/io/legado/app/ui/book/read/page/entities/TextChapter.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.read.page.entities.TextChapter/getPageIndexByCharIndex"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "0299cf552d36a1ab6a45d15988730cf73c2f20ad",
+            "path": "app/src/main/java/io/legado/app/model/AudioPlay.kt",
+            "symbol_id": "kotlin://io.legado.app.model.AudioPlay/saveRead"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "b116c77fa2d48c9d1a1013e60a92236f71bea1bc",
+            "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.read.ReadBookActivity/onPause"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/rl-reader-progress-layout-save-runtime-001.json",
+            "artifact_sha256": "13775c2dbbd4a5fc014ef36dafbc915cf8b56e22a7558e249e75eb0a9ad2ca08",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "0a24e296d422ec99d324263c29bb2342698d11957873bf56f332c2cddd9a6174",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "6b546f3538fdee640483c0d914acd1d5c015708bfa20cf08324da996fadad281",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-BOOK-PROGRESS-RUNTIME-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-READER-PROGRESS-LAYOUT-SAVE-RUNTIME-001"
+}
