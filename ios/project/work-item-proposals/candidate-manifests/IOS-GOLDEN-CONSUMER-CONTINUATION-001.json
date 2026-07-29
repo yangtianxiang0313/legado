@@ -1,0 +1,43 @@
+{
+  "authority": "proposal_only",
+  "candidate_sha256": "40434257c1e0b83489770b638d5617bc6b07cef08a9dc98414dec9ea46255e4e",
+  "compiler_version": "proposal-compiler-v1",
+  "dag": {
+    "id": "WIPD-IOS-INITIALIZATION-001",
+    "revision": 30,
+    "sha256": "53d2ba3fa6bc164dd0d48cd3f24f1a78479b63b8ad13142d6286fdcae63aca83"
+  },
+  "dependencies": [
+    {
+      "chain": [
+        "IOS-GITHUB-GOLDEN-DISPATCHER-001"
+      ],
+      "checkpoint": "ios/project/checkpoints/IOS-GITHUB-GOLDEN-DISPATCHER-001.json",
+      "checkpoint_sha256": "b2699580f103c6b97397cc2ecffae89932fc87c61e4f7023df5fffc6258f0e68",
+      "evidence": "ios/harness/evidence/runs/run-20260729T004757Z-ios-github-golden-dispatcher-001-c934d502.json",
+      "evidence_sha256": "8d2cfdac37b082fbdad7ce28a52dd4f4568ae438d9cbd2b072afd79a298491cf",
+      "original": "IOS-GITHUB-GOLDEN-DISPATCHER-001",
+      "reason_code": "DIRECT_COMPLETION",
+      "resolved": "IOS-GITHUB-GOLDEN-DISPATCHER-001",
+      "work_item_sha256": "843768600fdc42bfe7b5e226790e6b7c16c456e7ebf43cfa59b89f947443923f"
+    },
+    {
+      "chain": [
+        "IOS-HARNESS-RUNTIME-CONTEXT-REPRO-001"
+      ],
+      "checkpoint": "ios/project/checkpoints/IOS-HARNESS-RUNTIME-CONTEXT-REPRO-001.json",
+      "checkpoint_sha256": "e98c75fab12d4e988394ac57320ec8407fe2bc2b77bff249f30b0e8b687d3313",
+      "evidence": "ios/harness/evidence/runs/run-20260729T011011Z-ios-harness-runtime-context-repro-001-ce292995.json",
+      "evidence_sha256": "95f07792b46a01240911a4073ae77080b854cd110dca2fabd0b7671c3c501ac1",
+      "original": "IOS-HARNESS-RUNTIME-CONTEXT-REPRO-001",
+      "reason_code": "DIRECT_COMPLETION",
+      "resolved": "IOS-HARNESS-RUNTIME-CONTEXT-REPRO-001",
+      "work_item_sha256": "cfd61a4b347cb40686db135b889d430f7526966ca76a4e22d093fe7cbc12ee08"
+    }
+  ],
+  "node_sha256": "ce5993e0068a6e937c6cba964ece4730c4ca8268dfa6c0aaa7b17cd576201f54",
+  "proposal_id": "IOS-GOLDEN-CONSUMER-CONTINUATION-001",
+  "queue_effect": "none",
+  "recipe_sha256": "7ec98dd6476f68f29e82418c5b026daafae70265b4893a62fd61278d39536021",
+  "schema_version": 1
+}

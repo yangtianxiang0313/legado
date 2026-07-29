@@ -335,6 +335,13 @@
       "title": "让终态 WorkItem Runtime Context 在干净 Checkout 可复现",
       "outputs": ["terminal ignored-context tolerance", "active context fail-closed validation", "clean-checkout doctor regression"],
       "gates": [], "constraint": "只修复 Harness reference validation：仅对终态 WorkItem 的 .harness-runtime context 缺失容忍，活动/待执行 WorkItem 和所有受管 context 继续 fail closed；不得改历史 WorkItem、Workflow、Golden、Publisher、Dispatcher、Package 或产品"
+    },
+    {
+      "proposal_id": "IOS-GOLDEN-CONSUMER-CONTINUATION-001", "phase": 37, "class": "control_plane",
+      "depends_on": ["IOS-GITHUB-GOLDEN-DISPATCHER-001", "IOS-HARNESS-RUNTIME-CONTEXT-REPRO-001"], "knowledge_mode": "not_applicable",
+      "title": "消费受保护 Golden 并续接迁移需求",
+      "outputs": ["manifest-v2 Golden consumer", "completed migration terminal state", "delivery continuation after publication"],
+      "gates": [], "constraint": "只修复 DemandCompiler/Supervisor 对已发布受保护 Golden 的消费与续接：必须严格绑定 verified Receipt、Manifest v2、release v2、scenario/source/proposal/run/controls，并兼容既有 v1 release；不得重新发布 Golden、修改 Publisher/Workflow/Oracle/SourceLab、创建产品实现或放宽 authority"
     }
   ],
   "compiler_rules": [
