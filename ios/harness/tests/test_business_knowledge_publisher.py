@@ -483,6 +483,10 @@ class BusinessKnowledgePublisherTests(unittest.TestCase):
             "business-knowledge-result-${{ env.EXECUTION_ID }}",
             workflow,
         )
+        self.assertNotIn(
+            ') + "\\n"',
+            workflow,
+        )
         self.assertIn(
             "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
             workflow,

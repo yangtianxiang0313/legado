@@ -300,7 +300,7 @@ jobs:
                   ensure_ascii=False,
                   sort_keys=True,
                   separators=(",", ":"),
-              ) + "\n"
+              )
           )
           PY
           (
