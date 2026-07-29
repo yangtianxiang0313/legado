@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "kind": "source_lab_scenario",
+  "id": "sl-source-request-field-encoding-runtime-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "source_lab_site",
+  "capabilities": [
+    "CAP-RUNTIME-PORTS",
+    "CAP-CONFORMANCE"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": "source.template.json",
+  "input": "input.json",
+  "transport": {
+    "mode": "fixture_and_loopback",
+    "external_network": "deny",
+    "responses": [
+      {
+        "id": "utf8-preserved-and-duplicate",
+        "match": {
+          "method": "GET",
+          "path": "/fields/utf8",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/ok.txt"
+        }
+      },
+      {
+        "id": "declared-gbk",
+        "match": {
+          "method": "POST",
+          "path": "/fields/gbk",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/ok.txt"
+        }
+      },
+      {
+        "id": "escape-mode",
+        "match": {
+          "method": "POST",
+          "path": "/fields/escape",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/ok.txt"
+        }
+      },
+      {
+        "id": "invalid-charset",
+        "match": {
+          "method": "POST",
+          "path": "/fields/invalid-charset",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/ok.txt"
+        }
+      }
+    ]
+  },
+  "coverage": [
+    {
+      "behavior": "request.field-encoding",
+      "cases": [
+        {
+          "id": "utf8-preserved-and-duplicate",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl.analyzeFields UTF-8, already encoded, duplicate, empty and missing-value branches"
+          ]
+        },
+        {
+          "id": "declared-gbk",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl.analyzeFields declared charset branch"
+          ]
+        },
+        {
+          "id": "escape-mode",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl.analyzeFields escape branch"
+          ]
+        },
+        {
+          "id": "invalid-charset",
+          "role": "malformed",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl.analyzeFields unsupported charset failure branch"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "2026-01-01T00:00:00Z",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 19,
+    "network_allowed": false,
+    "logical_origin": "http://sourcelab.test"
+  },
+  "limits": {
+    "timeout_ms": 1000,
+    "max_response_bytes": 1048576,
+    "max_request_body_bytes": 1048576,
+    "max_requests": 16,
+    "max_concurrency": 2
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-SOURCE-REQUEST-FIELD-ENCODING-RUNTIME-001"
+  }
+}

@@ -15,6 +15,7 @@
     {"id": "transport.cookie-session", "status": "planned", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 1},
     {"id": "transport.header-cookie-retry", "status": "planned", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 1},
     {"id": "transport.rate-limit", "status": "planned", "required_roles": ["nominal", "denied"], "min_cases_per_role": 1, "phase": 1},
+    {"id": "request.field-encoding", "status": "planned", "required_roles": ["nominal", "malformed"], "min_cases_per_role": 1, "phase": 1},
     {"id": "decode.charset", "status": "planned", "required_roles": ["nominal", "malformed"], "min_cases_per_role": 1, "phase": 1},
     {"id": "decode.compression", "status": "planned", "required_roles": ["nominal", "malformed"], "min_cases_per_role": 1, "phase": 1},
     {"id": "decode.xml-declaration", "status": "planned", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 1},

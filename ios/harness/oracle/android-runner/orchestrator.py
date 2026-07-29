@@ -90,6 +90,19 @@ SCENARIO_CONTRACTS = {
         ),
         "nominal_cases": frozenset({"retry-two-with-header-cookie"}),
     },
+    "sl-source-request-field-encoding-runtime-001": {
+        "status": "candidate",
+        "expected_cases": (
+            ("utf8-preserved-and-duplicate", "field_encoding"),
+            ("declared-gbk", "field_encoding"),
+            ("escape-mode", "field_encoding"),
+            ("invalid-charset", "field_encoding"),
+        ),
+        "nominal_cases": frozenset({
+            "utf8-preserved-and-duplicate",
+            "declared-gbk",
+        }),
+    },
 }
 ANDROID_PRODUCT_PATHS = (
     "app/src/main",
@@ -427,11 +440,16 @@ def normalize_raw_artifact(
             )
         if (
             not isinstance(request, dict)
-            or request.get("method")
-            != (
-                "POST"
-                if scenario_id == "sl-post-form-001"
-                else "GET"
+            or (
+                request.get("method") not in {"GET", "POST"}
+                if scenario_id
+                == "sl-source-request-field-encoding-runtime-001"
+                else request.get("method")
+                != (
+                    "POST"
+                    if scenario_id == "sl-post-form-001"
+                    else "GET"
+                )
             )
             or not str(request.get("url", "")).startswith(LOGICAL_ORIGIN + "/")
             or set(request) != expected_request_keys

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "logical_origin": "http://sourcelab.test",
-  "control_sha256": "ffd3282979490d230271b7127f850ab5abb1db7a105747266251cf36c70196dc",
+  "control_sha256": "ba719bd3ea924dc1750b5a186c9c75ae2f8e1bb00dc8f582ca17d06b8999480c",
   "scenarios": [
     {
       "id": "sl-html-basic-001",
@@ -14,6 +14,12 @@
       "status": "candidate",
       "path": "ios/harness/fixtures/source-lab/sl-post-form-001",
       "sha256": "f427538d556c7ed65dcf3723029eb272edb2ce6a0ce25671007368476bf2607b"
+    },
+    {
+      "id": "sl-source-request-field-encoding-runtime-001",
+      "status": "candidate",
+      "path": "ios/harness/fixtures/source-lab/sl-source-request-field-encoding-runtime-001",
+      "sha256": "ed84f90a0aeae684015e99fb44010d266c6ff73f087e16beef3517abd47a3104"
     },
     {
       "id": "sl-source-request-header-cookie-retry-layering-001",

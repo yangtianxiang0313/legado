@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "utf8-preserved-and-duplicate",
+      "operation": "field_encoding",
+      "arguments": {
+        "method": "GET",
+        "fields": "plain=星河&encoded=%E6%98%9F%E6%B2%B3&dup=first&dup=second&empty=&flag"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/fields/utf8"
+      }
+    },
+    {
+      "id": "declared-gbk",
+      "operation": "field_encoding",
+      "arguments": {
+        "method": "POST",
+        "charset": "GBK",
+        "fields": "word=星河&space=a b"
+      },
+      "request": {
+        "method": "POST",
+        "target": "/fields/gbk"
+      }
+    },
+    {
+      "id": "escape-mode",
+      "operation": "field_encoding",
+      "arguments": {
+        "method": "POST",
+        "charset": "escape",
+        "fields": "word=星 河+%"
+      },
+      "request": {
+        "method": "POST",
+        "target": "/fields/escape"
+      }
+    },
+    {
+      "id": "invalid-charset",
+      "operation": "field_encoding",
+      "arguments": {
+        "method": "POST",
+        "charset": "not-a-charset",
+        "fields": "word=星河"
+      },
+      "request": {
+        "method": "POST",
+        "target": "/fields/invalid-charset"
+      }
+    }
+  ]
+}
