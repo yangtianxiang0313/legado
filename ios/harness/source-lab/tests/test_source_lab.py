@@ -218,7 +218,25 @@ class SourceLabTests(unittest.TestCase):
             route = servers[0].case["transport"]["responses"][0]
             source_lab.request_route(servers[0], route)
             self.assertEqual(1, servers[0].request_count)
+            self.assertEqual(
+                1,
+                servers[0].route_request_counts[route["id"]],
+            )
+            self.assertTrue(
+                all(
+                    count == 0
+                    for route_id, count
+                    in servers[0].route_request_counts.items()
+                    if route_id != route["id"]
+                )
+            )
             self.assertEqual([0, 0, 0], [server.request_count for server in servers[1:]])
+            self.assertTrue(
+                all(
+                    all(count == 0 for count in server.route_request_counts.values())
+                    for server in servers[1:]
+                )
+            )
 
     def test_repeated_outputs_are_byte_identical_and_headers_fixed(self):
         directory, case, _ = source_lab.load_scenario(REPO_ROOT, self.scenario)

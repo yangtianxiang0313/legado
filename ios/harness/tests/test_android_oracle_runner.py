@@ -177,6 +177,56 @@ def xml_raw_artifact():
     }
 
 
+def request_option_raw_artifact():
+    scenario = "sl-source-request-header-cookie-retry-layering-001"
+    values = (
+        ("retry-two-with-header-cookie", 7),
+        ("retry-default", 5),
+    )
+    requests = []
+    cases = []
+    for case_id, retry in values:
+        headers = [{"name": "X-Layer", "value": case_id}]
+        request = {
+            "method": "GET",
+            "url": f"{runner.LOGICAL_ORIGIN}/request-options/{case_id}",
+            "headers": headers,
+            "body": None,
+            "timeout_ms": None,
+        }
+        requests.append(request)
+        cases.append(
+            {
+                "id": case_id,
+                "operation": "request_options",
+                "request": request,
+                "result": {
+                    "inherited_headers": headers,
+                    "constructed_headers": headers,
+                    "resolved_headers": headers,
+                    "network_headers": headers,
+                    "retry": retry,
+                    "status_code": 503,
+                    "body": "retryable\n",
+                    "final_url": request["url"],
+                },
+                "issue": None,
+            }
+        )
+    return {
+        "schema_version": 1,
+        "scenario_id": scenario,
+        "device_origin": "http://127.0.0.1:49152",
+        "logical_origin": runner.LOGICAL_ORIGIN,
+        "request_plan": requests,
+        "cases": cases,
+        "source_lab_route_counts": {
+            "retry-two-with-header-cookie": 11,
+            "retry-default": 13,
+        },
+    }
+
+
 class AndroidOracleRunnerTests(unittest.TestCase):
     def test_doctor_binds_frozen_android_tree_and_exposes_no_authority(self):
         report = runner.doctor(ROOT)
@@ -207,6 +257,14 @@ class AndroidOracleRunnerTests(unittest.TestCase):
         self.assertEqual(
             "sl-source-response-xml-declaration-normalization-001",
             xml["scenario_id"],
+        )
+        request_options = runner.doctor(
+            ROOT,
+            "sl-source-request-header-cookie-retry-layering-001",
+        )
+        self.assertEqual(
+            "sl-source-request-header-cookie-retry-layering-001",
+            request_options["scenario_id"],
         )
 
     def test_product_tree_drift_fails_before_runner_execution(self):
@@ -331,6 +389,47 @@ class AndroidOracleRunnerTests(unittest.TestCase):
         self.assertTrue(
             cases[2]["result"]["body"].startswith("<feed>")
         )
+
+    def test_request_option_characterization_binds_source_lab_route_counts(self):
+        scenario = "sl-source-request-header-cookie-retry-layering-001"
+        raw = request_option_raw_artifact()
+        artifact = runner.normalize_raw_artifact(
+            raw,
+            bindings(),
+            scenario,
+        )
+        observation = artifact["result"]["value"][
+            "source_lab_observation"
+        ]
+        self.assertEqual(
+            [
+                {
+                    "route_id": "retry-two-with-header-cookie",
+                    "request_count": raw["source_lab_route_counts"][
+                        "retry-two-with-header-cookie"
+                    ],
+                },
+                {
+                    "route_id": "retry-default",
+                    "request_count": raw["source_lab_route_counts"][
+                        "retry-default"
+                    ],
+                },
+            ],
+            observation["route_request_counts"],
+        )
+
+        invalid = request_option_raw_artifact()
+        del invalid["source_lab_route_counts"]["retry-default"]
+        with self.assertRaisesRegex(
+            runner.AndroidOracleRunnerError,
+            "SOURCE_LAB_OBSERVATION_INVALID",
+        ):
+            runner.normalize_raw_artifact(
+                invalid,
+                bindings(),
+                scenario,
+            )
 
     def test_nominal_issue_external_request_and_device_origin_leak_fail_closed(self):
         issue = raw_artifact()

@@ -82,6 +82,14 @@ SCENARIO_CONTRACTS = {
         ),
         "nominal_cases": frozenset({"xml-missing-declaration"}),
     },
+    "sl-source-request-header-cookie-retry-layering-001": {
+        "status": "candidate",
+        "expected_cases": (
+            ("retry-two-with-header-cookie", "request_options"),
+            ("retry-default", "request_options"),
+        ),
+        "nominal_cases": frozenset({"retry-two-with-header-cookie"}),
+    },
 }
 ANDROID_PRODUCT_PATHS = (
     "app/src/main",
@@ -347,6 +355,32 @@ def normalize_raw_artifact(
     ]
     if actual_cases != list(expected_cases) or len(request_plan) != len(cases):
         raise AndroidOracleRunnerError("RAW_CASE_SELECTION_DRIFT")
+    source_lab_observation = None
+    if scenario_id == "sl-source-request-header-cookie-retry-layering-001":
+        route_counts = raw.get("source_lab_route_counts")
+        expected_route_ids = [case_id for case_id, _ in expected_cases]
+        if (
+            not isinstance(route_counts, dict)
+            or set(route_counts) != set(expected_route_ids)
+            or any(
+                not isinstance(route_counts[route_id], int)
+                or isinstance(route_counts[route_id], bool)
+                or route_counts[route_id] < 1
+                for route_id in expected_route_ids
+            )
+        ):
+            raise AndroidOracleRunnerError(
+                "SOURCE_LAB_OBSERVATION_INVALID"
+            )
+        source_lab_observation = {
+            "route_request_counts": [
+                {
+                    "route_id": route_id,
+                    "request_count": route_counts[route_id],
+                }
+                for route_id in expected_route_ids
+            ]
+        }
     portable_cases = []
     issues = []
     android_exceptions = []
@@ -539,6 +573,10 @@ def normalize_raw_artifact(
         },
         "issues": issues,
     }
+    if source_lab_observation is not None:
+        artifact["result"]["value"][
+            "source_lab_observation"
+        ] = source_lab_observation
     return artifact
 
 
@@ -858,6 +896,9 @@ def run_characterization(
                 cwd=root,
                 timeout=30,
             ).stdout
+            source_lab_route_counts = dict(
+                server.route_request_counts
+            )
         try:
             raw = json.loads(raw_bytes)
         except (UnicodeDecodeError, json.JSONDecodeError) as error:
@@ -866,6 +907,11 @@ def run_characterization(
             ) from error
         if not isinstance(raw, dict):
             raise AndroidOracleRunnerError("RAW_ARTIFACT_SHAPE_INVALID")
+        if (
+            scenario_id
+            == "sl-source-request-header-cookie-retry-layering-001"
+        ):
+            raw["source_lab_route_counts"] = source_lab_route_counts
         artifact = normalize_raw_artifact(
             raw,
             bindings,

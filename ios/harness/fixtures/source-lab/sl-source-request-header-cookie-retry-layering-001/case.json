@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "kind": "source_lab_scenario",
+  "id": "sl-source-request-header-cookie-retry-layering-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "source_lab_site",
+  "capabilities": [
+    "CAP-RUNTIME-PORTS",
+    "CAP-CONFORMANCE"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": "source.template.json",
+  "input": "input.json",
+  "transport": {
+    "mode": "fixture_and_loopback",
+    "external_network": "deny",
+    "responses": [
+      {
+        "id": "retry-two-with-header-cookie",
+        "match": {
+          "method": "GET",
+          "path": "/request-options/retry-two",
+          "query": {}
+        },
+        "respond": {
+          "status": 503,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/retryable.txt"
+        }
+      },
+      {
+        "id": "retry-default",
+        "match": {
+          "method": "GET",
+          "path": "/request-options/retry-default",
+          "query": {}
+        },
+        "respond": {
+          "status": 503,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/retryable.txt"
+        }
+      }
+    ]
+  },
+  "coverage": [
+    {
+      "behavior": "transport.header-cookie-retry",
+      "cases": [
+        {
+          "id": "retry-two-with-header-cookie",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl constructor header inheritance and URL option overwrite",
+            "AnalyzeUrl.setCookie persistent and explicit Cookie merge",
+            "OkHttpUtils.newCallResponse retry loop"
+          ]
+        },
+        {
+          "id": "retry-default",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl.UrlOption.getRetry default branch"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "2026-01-01T00:00:00Z",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 17,
+    "network_allowed": false,
+    "logical_origin": "http://sourcelab.test"
+  },
+  "limits": {
+    "timeout_ms": 1000,
+    "max_response_bytes": 1048576,
+    "max_request_body_bytes": 0,
+    "max_requests": 16,
+    "max_concurrency": 2
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+      "app/src/main/java/io/legado/app/help/http/OkHttpUtils.kt",
+      "app/src/main/java/io/legado/app/help/http/CookieManager.kt"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-SOURCE-REQUEST-HEADER-COOKIE-RETRY-LAYERING-001"
+  }
+}

@@ -7,6 +7,7 @@ import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
 import io.legado.app.data.entities.BookSource
 import io.legado.app.data.entities.SearchBook
+import io.legado.app.help.http.CookieStore
 import io.legado.app.model.analyzeRule.AnalyzeUrl
 import io.legado.app.model.webBook.WebBook
 import io.legado.app.utils.GSON
@@ -45,12 +46,15 @@ class LegadoOracleInstrumentedTest {
         require(deviceOrigin.startsWith("http://127.0.0.1:")) {
             "Oracle source must use the run-scoped device loopback origin"
         }
-        source.enabledCookieJar = false
+        source.enabledCookieJar =
+            scenarioId == "sl-source-request-header-cookie-retry-layering-001"
 
         when (scenarioId) {
             "sl-post-form-001" -> runPostFormCases()
             "sl-source-response-xml-declaration-normalization-001" ->
                 runXmlResponseCases()
+            "sl-source-request-header-cookie-retry-layering-001" ->
+                runRequestOptionCases()
             else -> {
                 runCase("search-hit", "search", searchRequest("星河")) {
                     searchProjection(WebBook.searchBookAwait(source, "星河"))
@@ -202,6 +206,116 @@ class LegadoOracleInstrumentedTest {
             }
         }
     }
+
+    private suspend fun runRequestOptionCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            require(value.getString("operation") == "request_options") {
+                "Request option scenario only accepts request_options stimuli"
+            }
+            val arguments = value.getJSONObject("arguments")
+            val persistentCookie = arguments.getString("persistent_cookie")
+            val option = arguments.getJSONObject("option")
+            val target = value
+                .getJSONObject("request")
+                .getString("target")
+            CookieStore.removeCookie(deviceOrigin)
+            if (persistentCookie.isNotEmpty()) {
+                CookieStore.setCookie(deviceOrigin, persistentCookie)
+            }
+            try {
+                val inheritedHeaders = controlledHeaders(
+                    source.getHeaderMap(true).orEmpty().entries.map {
+                        it.key to it.value
+                    }
+                )
+                val analyze = AnalyzeUrl(
+                    mUrl = "$deviceOrigin$target,${option}",
+                    baseUrl = source.bookSourceUrl,
+                    source = source,
+                    headerMapF = source.getHeaderMap(true)
+                )
+                val constructedHeaders = controlledHeaders(
+                    analyze.headerMap.entries.map { it.key to it.value }
+                )
+                val request = request(analyze.url)
+                    .put("headers", constructedHeaders)
+                val retryField =
+                    AnalyzeUrl::class.java.getDeclaredField("retry")
+                retryField.isAccessible = true
+                val retry = retryField.getInt(analyze)
+                runCase(
+                    value.getString("id"),
+                    "request_options",
+                    request
+                ) {
+                    val response = analyze.getStrResponseAwait(
+                        useWebView = false
+                    )
+                    val networkRequest =
+                        response.raw.networkResponse?.request
+                            ?: response.raw.request
+                    val networkHeaderPairs = buildList {
+                        for (headerIndex in 0 until networkRequest.headers.size) {
+                            add(
+                                networkRequest.headers.name(headerIndex) to
+                                    networkRequest.headers.value(headerIndex)
+                            )
+                        }
+                    }
+                    JSONObject()
+                        .put("inherited_headers", inheritedHeaders)
+                        .put("constructed_headers", constructedHeaders)
+                        .put(
+                            "resolved_headers",
+                            controlledHeaders(
+                                analyze.headerMap.entries.map {
+                                    it.key to it.value
+                                }
+                            )
+                        )
+                        .put(
+                            "network_headers",
+                            controlledHeaders(networkHeaderPairs)
+                        )
+                        .put("retry", retry)
+                        .put("status_code", response.code())
+                        .put("body", nullable(response.body))
+                        .put("final_url", logical(response.url))
+                }
+            } finally {
+                CookieStore.removeCookie(deviceOrigin)
+            }
+        }
+    }
+
+    private fun controlledHeaders(
+        values: List<Pair<String, String>>
+    ): JSONArray =
+        JSONArray().apply {
+            values
+                .filter {
+                    val name = it.first.lowercase()
+                    name == "cookie" ||
+                        name == "cookiejar" ||
+                        name.startsWith("x-")
+                }
+                .sortedWith(
+                    compareBy<Pair<String, String>>(
+                        { it.first.lowercase() },
+                        { it.first },
+                        { it.second }
+                    )
+                )
+                .forEach { (name, value) ->
+                    put(
+                        JSONObject()
+                            .put("name", name)
+                            .put("value", value)
+                    )
+                }
+        }
 
     private fun postSearchRequest(keyword: String): JSONObject {
         val analyze = AnalyzeUrl(

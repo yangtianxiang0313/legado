@@ -502,6 +502,9 @@ class SourceLabHTTPServer(http.server.ThreadingHTTPServer):
         }
         self.counter_lock = threading.Lock()
         self.request_count = 0
+        self.route_request_counts = {
+            route["id"]: 0 for route in case["transport"]["responses"]
+        }
         self.semaphore = threading.BoundedSemaphore(self.limits["max_concurrency"])
         super().__init__(address, SourceLabRequestHandler, bind_and_activate=True)
 
@@ -524,6 +527,10 @@ class SourceLabHTTPServer(http.server.ThreadingHTTPServer):
                 return False
             self.request_count += 1
         return True
+
+    def record_route_request(self, route_id: str) -> None:
+        with self.counter_lock:
+            self.route_request_counts[route_id] += 1
 
 
 class SourceLabRequestHandler(http.server.BaseHTTPRequestHandler):
@@ -611,6 +618,7 @@ class SourceLabRequestHandler(http.server.BaseHTTPRequestHandler):
             if route is None:
                 self.send_stable_response(404, {"content-type": "application/json; charset=utf-8"}, b'{"error":"route_not_declared"}\n')
                 return
+            server.record_route_request(route["id"])
             respond = route["respond"]
             body = safe_child(server.scenario_directory, respond["body_file"]).read_bytes()
             self.send_stable_response(respond["status"], respond["headers"], body)

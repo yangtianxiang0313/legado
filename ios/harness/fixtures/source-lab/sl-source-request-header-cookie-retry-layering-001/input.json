@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "retry-two-with-header-cookie",
+      "operation": "request_options",
+      "arguments": {
+        "persistent_cookie": "persisted=stored; shared=stored",
+        "option": {
+          "headers": {
+            "X-Layer": "option",
+            "x-case": "option-lowercase",
+            "X-Option": "option-only",
+            "Cookie": "explicit=option; shared=option"
+          },
+          "retry": 2
+        }
+      },
+      "request": {
+        "method": "GET",
+        "target": "/request-options/retry-two"
+      }
+    },
+    {
+      "id": "retry-default",
+      "operation": "request_options",
+      "arguments": {
+        "persistent_cookie": "",
+        "option": {
+          "headers": {
+            "X-Layer": "default-retry"
+          }
+        }
+      },
+      "request": {
+        "method": "GET",
+        "target": "/request-options/retry-default"
+      }
+    }
+  ]
+}

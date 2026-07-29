@@ -667,6 +667,7 @@ def build_characterization_task(
                 "ios/harness/oracle/scenario_selector.py",
                 "ios/harness/oracle/android-runner/**",
                 "ios/harness/tests/test_android_oracle_runner.py",
+                "ios/harness/source-lab/source_lab.py",
                 "ios/harness/source-lab/tests/test_source_lab.py",
                 ".github/workflows/android-oracle-attestation.yml",
                 golden_path,
