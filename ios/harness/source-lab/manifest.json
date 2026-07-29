@@ -1,8 +1,14 @@
 {
   "schema_version": 1,
   "logical_origin": "http://sourcelab.test",
-  "control_sha256": "1e6b0c5404aceae0072f61b100b5479156ba2b33b54a96c168addffeab2d35a6",
+  "control_sha256": "0770a4d8725f04a3416863ef453bb9faed0d4d118417ef65f8fdffa5aab0f03e",
   "scenarios": [
+    {
+      "id": "sl-content-cache-queue-completion-runtime-001",
+      "status": "candidate",
+      "path": "ios/harness/fixtures/source-lab/sl-content-cache-queue-completion-runtime-001",
+      "sha256": "ad8db25cd419426523f44da2a5b46a0a3dbf2db4a61f9e1cc720e74abd749105"
+    },
     {
       "id": "sl-html-basic-001",
       "status": "reference",

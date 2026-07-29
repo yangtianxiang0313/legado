@@ -29,6 +29,11 @@
       "sha256": "02b5e5b037f450e192077acd350495f82cce24e72bb2a60302129a5c48b48b07"
     },
     {
+      "id": "sl-content-cache-queue-completion-runtime-001",
+      "path": "ios/harness/fixtures/source-lab/sl-content-cache-queue-completion-runtime-001",
+      "sha256": "1172d2ca2d61315b604e338ac3e86cb9c7b6d3de0265c923e70da670d1414b98"
+    },
+    {
       "id": "sl-html-basic-001",
       "path": "ios/harness/fixtures/source-lab/sl-html-basic-001",
       "sha256": "9f87981be618e50dd4ff66ceb5a838aba6cc66ef3c1f9034cf889bb05515ee4e"

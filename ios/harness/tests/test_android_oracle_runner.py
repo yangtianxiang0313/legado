@@ -647,6 +647,44 @@ def rule_backend_dispatch_raw_artifact():
     }
 
 
+def content_cache_queue_completion_raw_artifact():
+    scenario = "sl-content-cache-queue-completion-runtime-001"
+    contract = runner.SCENARIO_CONTRACTS[scenario]
+    requests = []
+    cases = []
+    for index, (case_id, operation) in enumerate(
+        contract["expected_cases"]
+    ):
+        request = {
+            "method": "GET",
+            "url": f"{runner.LOGICAL_ORIGIN}/cache/{case_id}",
+            "headers": [],
+            "body": None,
+            "timeout_ms": None,
+        }
+        requests.append(request)
+        cases.append(
+            {
+                "id": case_id,
+                "operation": operation,
+                "request": request,
+                "result": {
+                    "case_index": index,
+                    "cache_value": case_id,
+                },
+                "issue": None,
+            }
+        )
+    return {
+        "schema_version": 1,
+        "scenario_id": scenario,
+        "device_origin": "http://127.0.0.1:49152",
+        "logical_origin": runner.LOGICAL_ORIGIN,
+        "request_plan": requests,
+        "cases": cases,
+    }
+
+
 class AndroidOracleRunnerTests(unittest.TestCase):
     def test_doctor_binds_frozen_android_tree_and_exposes_no_authority(self):
         report = runner.doctor(ROOT)
@@ -757,6 +795,14 @@ class AndroidOracleRunnerTests(unittest.TestCase):
         self.assertEqual(
             "sl-source-rule-backend-dispatch-runtime-001",
             rule_backend_dispatch["scenario_id"],
+        )
+        content_cache_queue_completion = runner.doctor(
+            ROOT,
+            "sl-content-cache-queue-completion-runtime-001",
+        )
+        self.assertEqual(
+            "sl-content-cache-queue-completion-runtime-001",
+            content_cache_queue_completion["scenario_id"],
         )
         with mock.patch.object(
             runner,
@@ -1149,6 +1195,31 @@ class AndroidOracleRunnerTests(unittest.TestCase):
         scenario = "sl-source-rule-backend-dispatch-runtime-001"
         artifact = runner.normalize_raw_artifact(
             rule_backend_dispatch_raw_artifact(),
+            bindings(),
+            scenario,
+        )
+        projected = artifact["result"]["value"][
+            "portable_known_projection"
+        ]["cases"]
+        self.assertEqual(
+            [
+                case_id
+                for case_id, _ in
+                runner.SCENARIO_CONTRACTS[scenario]["expected_cases"]
+            ],
+            [case["id"] for case in projected],
+        )
+        self.assertNotIn(
+            "source_lab_observation",
+            artifact["result"]["value"]["android_characterization"],
+        )
+
+    def test_content_cache_queue_completion_binds_all_cases_without_network_observation(
+        self,
+    ):
+        scenario = "sl-content-cache-queue-completion-runtime-001"
+        artifact = runner.normalize_raw_artifact(
+            content_cache_queue_completion_raw_artifact(),
             bindings(),
             scenario,
         )

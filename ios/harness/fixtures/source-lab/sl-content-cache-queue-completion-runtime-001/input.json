@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "content-presence-short-circuits",
+      "operation": "content_cache_queue_completion",
+      "arguments": {
+        "mode": "content_presence",
+        "book_url": "http://books.test/presence",
+        "book_name": "Presence Book",
+        "chapter_url": "/presence/chapter-1",
+        "chapter_title": "Chapter One",
+        "local_txt_name": "presence.txt",
+        "volume_title": "Volume One"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/cache/content-presence-short-circuits"
+      }
+    },
+    {
+      "id": "text-cache-file-lifecycle",
+      "operation": "content_cache_queue_completion",
+      "arguments": {
+        "mode": "text_cache_lifecycle",
+        "book_url": "http://books.test/text-lifecycle",
+        "book_name": "Text Lifecycle",
+        "chapter_url": "/text/chapter-2",
+        "chapter_title": "Chapter Two",
+        "content": "line-one\nline-two"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/cache/text-cache-file-lifecycle"
+      }
+    },
+    {
+      "id": "image-completion-boundary",
+      "operation": "content_cache_queue_completion",
+      "arguments": {
+        "mode": "image_completion",
+        "book_url": "http://books.test/image-boundary",
+        "book_name": "Image Boundary",
+        "chapter_url": "/image/chapter-3",
+        "chapter_title": "Chapter Three",
+        "plain_content": "plain cached text",
+        "missing_image_url": "http://assets.test/missing.jpg",
+        "valid_svg_url": "http://assets.test/valid.svg",
+        "valid_svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"10\" height=\"20\"><rect width=\"10\" height=\"20\"/></svg>"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/cache/image-completion-boundary"
+      }
+    },
+    {
+      "id": "queue-range-stop-resume",
+      "operation": "content_cache_queue_completion",
+      "arguments": {
+        "mode": "queue_range_stop_resume",
+        "book_url": "http://books.test/queue-range",
+        "book_name": "Queue Range",
+        "first_start": 2,
+        "first_end": 4,
+        "second_start": 3,
+        "second_end": 5,
+        "resume_index": 6
+      },
+      "request": {
+        "method": "GET",
+        "target": "/cache/queue-range-stop-resume"
+      }
+    },
+    {
+      "id": "retry-budget-concurrent-stop",
+      "operation": "content_cache_queue_completion",
+      "arguments": {
+        "mode": "retry_budget",
+        "book_url": "http://books.test/retry-budget",
+        "book_name": "Retry Budget",
+        "chapter_url": "/retry/chapter-7",
+        "chapter_title": "Chapter Seven",
+        "chapter_index": 7,
+        "concurrent_index": 8,
+        "stopped_index": 9
+      },
+      "request": {
+        "method": "GET",
+        "target": "/cache/retry-budget-concurrent-stop"
+      }
+    },
+    {
+      "id": "success-cancel-memory-state",
+      "operation": "content_cache_queue_completion",
+      "arguments": {
+        "mode": "success_cancel",
+        "book_url": "http://books.test/success-cancel",
+        "book_name": "Success Cancel",
+        "chapter_url": "/success/chapter-10",
+        "chapter_title": "Chapter Ten",
+        "success_index": 10,
+        "cancel_index": 11,
+        "stopped_cancel_index": 12
+      },
+      "request": {
+        "method": "GET",
+        "target": "/cache/success-cancel-memory-state"
+      }
+    },
+    {
+      "id": "registry-finally-cleanup",
+      "operation": "content_cache_queue_completion",
+      "arguments": {
+        "mode": "registry_cleanup",
+        "book_url": "http://books.test/registry-cleanup",
+        "book_name": "Registry Cleanup",
+        "chapter_index": 13
+      },
+      "request": {
+        "method": "GET",
+        "target": "/cache/registry-finally-cleanup"
+      }
+    }
+  ]
+}

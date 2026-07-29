@@ -314,6 +314,48 @@ SCENARIO_CONTRACTS = {
             "foreign-content-cache-isolation",
         }),
     },
+    "sl-content-cache-queue-completion-runtime-001": {
+        "status": "candidate",
+        "expected_cases": (
+            (
+                "content-presence-short-circuits",
+                "content_cache_queue_completion",
+            ),
+            (
+                "text-cache-file-lifecycle",
+                "content_cache_queue_completion",
+            ),
+            (
+                "image-completion-boundary",
+                "content_cache_queue_completion",
+            ),
+            (
+                "queue-range-stop-resume",
+                "content_cache_queue_completion",
+            ),
+            (
+                "retry-budget-concurrent-stop",
+                "content_cache_queue_completion",
+            ),
+            (
+                "success-cancel-memory-state",
+                "content_cache_queue_completion",
+            ),
+            (
+                "registry-finally-cleanup",
+                "content_cache_queue_completion",
+            ),
+        ),
+        "nominal_cases": frozenset({
+            "content-presence-short-circuits",
+            "text-cache-file-lifecycle",
+            "image-completion-boundary",
+            "queue-range-stop-resume",
+            "retry-budget-concurrent-stop",
+            "success-cancel-memory-state",
+            "registry-finally-cleanup",
+        }),
+    },
 }
 ROUTE_OBSERVATION_SCENARIOS = {
     "sl-source-request-header-cookie-retry-layering-001": (

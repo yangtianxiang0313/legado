@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "kind": "source_lab_scenario",
+  "id": "sl-content-cache-queue-completion-runtime-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "source_lab_site",
+  "capabilities": [
+    "CAP-RUNTIME-PORTS",
+    "CAP-CONFORMANCE"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": "source.template.json",
+  "input": "input.json",
+  "transport": {
+    "mode": "fixture_and_loopback",
+    "external_network": "deny",
+    "responses": [
+      {
+        "id": "content-presence-short-circuits",
+        "match": {
+          "method": "GET",
+          "path": "/cache/content-presence-short-circuits",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/ok.txt"
+        }
+      },
+      {
+        "id": "text-cache-file-lifecycle",
+        "match": {
+          "method": "GET",
+          "path": "/cache/text-cache-file-lifecycle",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/ok.txt"
+        }
+      },
+      {
+        "id": "image-completion-boundary",
+        "match": {
+          "method": "GET",
+          "path": "/cache/image-completion-boundary",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/ok.txt"
+        }
+      },
+      {
+        "id": "queue-range-stop-resume",
+        "match": {
+          "method": "GET",
+          "path": "/cache/queue-range-stop-resume",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/ok.txt"
+        }
+      },
+      {
+        "id": "retry-budget-concurrent-stop",
+        "match": {
+          "method": "GET",
+          "path": "/cache/retry-budget-concurrent-stop",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/ok.txt"
+        }
+      },
+      {
+        "id": "success-cancel-memory-state",
+        "match": {
+          "method": "GET",
+          "path": "/cache/success-cancel-memory-state",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/ok.txt"
+        }
+      },
+      {
+        "id": "registry-finally-cleanup",
+        "match": {
+          "method": "GET",
+          "path": "/cache/registry-finally-cleanup",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/ok.txt"
+        }
+      }
+    ]
+  },
+  "coverage": [
+    {
+      "behavior": "content.cache-queue-completion",
+      "cases": [
+        {
+          "id": "content-presence-short-circuits",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-CONTENT-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "BookHelp.hasContent local TXT and volume pseudo-chapter short circuits versus remote file existence"
+          ]
+        },
+        {
+          "id": "text-cache-file-lifecycle",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-CONTENT-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "BookHelp.saveText empty-content no-op, file-backed read, chapter listing and deletion lifecycle"
+          ]
+        },
+        {
+          "id": "image-completion-boundary",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-WEBBOOK-CONTENT-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "BookHelp.hasImageContent distinguishes text completion from missing, malformed and valid SVG image resources"
+          ]
+        },
+        {
+          "id": "queue-range-stop-resume",
+          "role": "denied",
+          "android_fact_refs": [
+            "AF-WEBBOOK-CONTENT-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "CacheBookModel overlapping range deduplication, stop clearing waits and later addDownload resumption"
+          ]
+        },
+        {
+          "id": "retry-budget-concurrent-stop",
+          "role": "malformed",
+          "android_fact_refs": [
+            "AF-WEBBOOK-CONTENT-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "CacheBookModel ordinary failure counter and three-attempt ceiling, ConcurrentException exclusion and stopped retry denial"
+          ]
+        },
+        {
+          "id": "success-cancel-memory-state",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-WEBBOOK-CONTENT-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "CacheBook in-memory success/error bookkeeping and cancellation requeue conditioned on stopped state"
+          ]
+        },
+        {
+          "id": "registry-finally-cleanup",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-WEBBOOK-CONTENT-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "CacheBookModel onFinally registry removal depends on wait/on-download sets and ignores waitingRetry"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "2026-01-01T00:00:00Z",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 43,
+    "network_allowed": false,
+    "logical_origin": "http://sourcelab.test"
+  },
+  "limits": {
+    "timeout_ms": 1000,
+    "max_response_bytes": 1048576,
+    "max_request_body_bytes": 1048576,
+    "max_requests": 16,
+    "max_concurrency": 2
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/help/book/BookHelp.kt",
+      "app/src/main/java/io/legado/app/model/CacheBook.kt",
+      "app/src/main/java/io/legado/app/data/entities/Book.kt",
+      "app/src/main/java/io/legado/app/data/entities/BookChapter.kt"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-CONTENT-CACHE-QUEUE-COMPLETION-RUNTIME-001"
+  }
+}

@@ -9,10 +9,12 @@ import io.legado.app.data.entities.BookSource
 import io.legado.app.data.entities.SearchBook
 import io.legado.app.exception.ConcurrentException
 import io.legado.app.help.CacheManager
+import io.legado.app.help.book.BookHelp
 import io.legado.app.help.http.CookieManager
 import io.legado.app.help.http.CookieStore
 import io.legado.app.help.http.StrResponse
 import io.legado.app.help.http.newCallResponse
+import io.legado.app.model.CacheBook
 import io.legado.app.model.analyzeRule.AnalyzeRule
 import io.legado.app.model.analyzeRule.AnalyzeUrl
 import io.legado.app.model.analyzeRule.RuleData
@@ -104,6 +106,8 @@ class LegadoOracleInstrumentedTest {
                 runRuleVariableScopeCases()
             "sl-source-rule-backend-dispatch-runtime-001" ->
                 runRuleBackendDispatchCases()
+            "sl-content-cache-queue-completion-runtime-001" ->
+                runContentCacheQueueCompletionCases()
             else -> {
                 runCase("search-hit", "search", searchRequest("星河")) {
                     searchProjection(WebBook.searchBookAwait(source, "星河"))
@@ -445,6 +449,603 @@ class LegadoOracleInstrumentedTest {
                 ruleBackendDispatchProjection(value.getJSONObject("arguments"))
             }
         }
+    }
+
+    private suspend fun runContentCacheQueueCompletionCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            require(
+                value.getString("operation") ==
+                    "content_cache_queue_completion"
+            ) {
+                "Content cache scenario only accepts " +
+                    "content_cache_queue_completion stimuli"
+            }
+            val requestValue = value.getJSONObject("request")
+            val request = request(
+                deviceOrigin + requestValue.getString("target")
+            )
+            runCase(
+                value.getString("id"),
+                "content_cache_queue_completion",
+                request
+            ) {
+                contentCacheQueueCompletionProjection(
+                    value.getJSONObject("arguments")
+                )
+            }
+        }
+    }
+
+    private fun contentCacheQueueCompletionProjection(
+        arguments: JSONObject
+    ): JSONObject = when (val mode = arguments.getString("mode")) {
+        "content_presence" -> contentPresenceProjection(arguments)
+        "text_cache_lifecycle" -> textCacheLifecycleProjection(arguments)
+        "image_completion" -> imageCompletionProjection(arguments)
+        "queue_range_stop_resume" ->
+            queueRangeStopResumeProjection(arguments)
+        "retry_budget" -> retryBudgetProjection(arguments)
+        "success_cancel" -> successCancelProjection(arguments)
+        "registry_cleanup" -> registryCleanupProjection(arguments)
+        else -> error("Unsupported content cache mode: $mode")
+    }
+
+    private fun contentPresenceProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val remote = cacheProbeBook(arguments)
+        val chapter = cacheProbeChapter(arguments, remote)
+        val local = Book(
+            bookUrl = arguments.getString("book_url") + "/local",
+            origin = "local",
+            originName = arguments.getString("local_txt_name"),
+            name = arguments.getString("book_name") + " Local"
+        )
+        val volumeTitle = arguments.getString("volume_title")
+        val pseudoVolume = BookChapter(
+            url = "$volumeTitle::marker",
+            title = volumeTitle,
+            isVolume = true,
+            bookUrl = remote.bookUrl,
+            index = 1
+        )
+        val ordinaryVolume = BookChapter(
+            url = "/volume/ordinary",
+            title = volumeTitle,
+            isVolume = true,
+            bookUrl = remote.bookUrl,
+            index = 2
+        )
+        BookHelp.clearCache(remote)
+        return try {
+            JSONObject()
+                .put(
+                    "local_txt_without_file",
+                    BookHelp.hasContent(local, chapter.copy(bookUrl = local.bookUrl))
+                )
+                .put(
+                    "pseudo_volume_without_file",
+                    BookHelp.hasContent(remote, pseudoVolume)
+                )
+                .put(
+                    "ordinary_volume_without_file",
+                    BookHelp.hasContent(remote, ordinaryVolume)
+                )
+                .put(
+                    "remote_chapter_without_file",
+                    BookHelp.hasContent(remote, chapter)
+                )
+        } finally {
+            BookHelp.clearCache(remote)
+        }
+    }
+
+    private fun textCacheLifecycleProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val book = cacheProbeBook(arguments)
+        val chapter = cacheProbeChapter(arguments, book)
+        val content = arguments.getString("content")
+        BookHelp.clearCache(book)
+        return try {
+            val before = BookHelp.hasContent(book, chapter)
+            BookHelp.saveText(book, chapter, "")
+            val afterEmpty = BookHelp.hasContent(book, chapter)
+            BookHelp.saveText(book, chapter, content)
+            val afterText = BookHelp.hasContent(book, chapter)
+            val stored = BookHelp.getContent(book, chapter)
+            val files = BookHelp.getChapterFiles(book).toList().sorted()
+            BookHelp.delContent(book, chapter)
+            JSONObject()
+                .put("before_save", before)
+                .put("after_empty_save", afterEmpty)
+                .put("after_text_save", afterText)
+                .put("stored_content", nullable(stored))
+                .put("chapter_files", JSONArray(files))
+                .put(
+                    "expected_file_name",
+                    chapter.getFileName()
+                )
+                .put(
+                    "after_delete",
+                    BookHelp.hasContent(book, chapter)
+                )
+        } finally {
+            BookHelp.clearCache(book)
+        }
+    }
+
+    private fun imageCompletionProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val book = cacheProbeBook(arguments)
+        val chapter = cacheProbeChapter(arguments, book)
+        val missing = arguments.getString("missing_image_url")
+        val valid = arguments.getString("valid_svg_url")
+        BookHelp.clearCache(book)
+        val invalidImage = BookHelp.getImage(book, missing)
+        val validImage = BookHelp.getImage(book, valid)
+        invalidImage.delete()
+        validImage.delete()
+        return try {
+            val withoutText = BookHelp.hasImageContent(book, chapter)
+            BookHelp.saveText(
+                book,
+                chapter,
+                arguments.getString("plain_content")
+            )
+            val plainTextComplete = BookHelp.hasImageContent(book, chapter)
+            BookHelp.saveText(
+                book,
+                chapter,
+                "<p>text</p><img src=\"$missing\">"
+            )
+            val missingImageComplete = BookHelp.hasImageContent(book, chapter)
+            invalidImage.parentFile?.mkdirs()
+            invalidImage.writeText("not-an-image")
+            val invalidImageComplete = BookHelp.hasImageContent(book, chapter)
+            val invalidDeleted = !invalidImage.exists()
+            BookHelp.saveText(
+                book,
+                chapter,
+                "<p>text</p><img src=\"$valid\">"
+            )
+            validImage.parentFile?.mkdirs()
+            validImage.writeText(arguments.getString("valid_svg"))
+            val validSVGComplete = BookHelp.hasImageContent(book, chapter)
+            JSONObject()
+                .put("without_text", withoutText)
+                .put("plain_text_complete", plainTextComplete)
+                .put("text_file_present", BookHelp.hasContent(book, chapter))
+                .put("missing_image_complete", missingImageComplete)
+                .put("invalid_image_complete", invalidImageComplete)
+                .put("invalid_image_deleted", invalidDeleted)
+                .put("valid_svg_complete", validSVGComplete)
+                .put("valid_svg_retained", validImage.exists())
+        } finally {
+            BookHelp.clearCache(book)
+        }
+    }
+
+    private fun queueRangeStopResumeProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        resetCacheBookState()
+        val book = cacheProbeBook(arguments)
+        val model = CacheBook.CacheBookModel(source, book)
+        return try {
+            model.addDownload(
+                arguments.getInt("first_start"),
+                arguments.getInt("first_end")
+            )
+            model.addDownload(
+                arguments.getInt("second_start"),
+                arguments.getInt("second_end")
+            )
+            val beforeStop = cacheModelState(model)
+            val registeredBeforeStop =
+                CacheBook.cacheBookMap[book.bookUrl] === model
+            model.stop()
+            val afterStop = cacheModelState(model)
+            val registeredAfterStop =
+                CacheBook.cacheBookMap[book.bookUrl] === model
+            model.addDownload(
+                arguments.getInt("resume_index"),
+                arguments.getInt("resume_index")
+            )
+            JSONObject()
+                .put("before_stop", beforeStop)
+                .put("registered_before_stop", registeredBeforeStop)
+                .put("after_stop", afterStop)
+                .put("registered_after_stop", registeredAfterStop)
+                .put("after_resume", cacheModelState(model))
+        } finally {
+            resetCacheBookState()
+        }
+    }
+
+    private fun retryBudgetProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        resetCacheBookState()
+        return try {
+            val ordinaryBook = cacheProbeBook(arguments)
+            val ordinaryChapter = cacheProbeChapter(
+                arguments,
+                ordinaryBook,
+                arguments.getInt("chapter_index")
+            )
+            val ordinaryModel = CacheBook.CacheBookModel(
+                source,
+                ordinaryBook
+            )
+            ordinaryModel.addDownload(
+                ordinaryChapter.index,
+                ordinaryChapter.index
+            )
+            val attempts = JSONArray()
+            repeat(3) {
+                beginCacheAttempt(ordinaryModel, ordinaryChapter.index)
+                invokeCacheModel(
+                    ordinaryModel,
+                    "onPreError",
+                    ordinaryChapter,
+                    IOException("ordinary-${it + 1}")
+                )
+                val waitingDuringBackoff = cacheModelBoolean(
+                    ordinaryModel,
+                    "waitingRetry"
+                )
+                invokeCacheModel(
+                    ordinaryModel,
+                    "onPostError",
+                    ordinaryChapter,
+                    IOException("ordinary-${it + 1}")
+                )
+                attempts.put(
+                    JSONObject()
+                        .put("attempt", it + 1)
+                        .put(
+                            "error_count",
+                            CacheBook.errorDownloadMap[
+                                ordinaryChapter.primaryStr()
+                            ] ?: 0
+                        )
+                        .put(
+                            "waiting_during_backoff",
+                            waitingDuringBackoff
+                        )
+                        .put(
+                            "requeued",
+                            cacheModelIndices(
+                                ordinaryModel,
+                                "waitDownloadSet"
+                            ).contains(ordinaryChapter.index)
+                        )
+                )
+            }
+
+            val concurrentBook = ordinaryBook.copy(
+                bookUrl = ordinaryBook.bookUrl + "/concurrent"
+            )
+            val concurrentChapter = ordinaryChapter.copy(
+                bookUrl = concurrentBook.bookUrl,
+                url = ordinaryChapter.url + "/concurrent",
+                index = arguments.getInt("concurrent_index")
+            )
+            val concurrentModel = CacheBook.CacheBookModel(
+                source,
+                concurrentBook
+            )
+            concurrentModel.addDownload(
+                concurrentChapter.index,
+                concurrentChapter.index
+            )
+            beginCacheAttempt(concurrentModel, concurrentChapter.index)
+            val concurrentError = ConcurrentException("busy", 1)
+            invokeCacheModel(
+                concurrentModel,
+                "onPreError",
+                concurrentChapter,
+                concurrentError
+            )
+            invokeCacheModel(
+                concurrentModel,
+                "onPostError",
+                concurrentChapter,
+                concurrentError
+            )
+
+            val stoppedBook = ordinaryBook.copy(
+                bookUrl = ordinaryBook.bookUrl + "/stopped"
+            )
+            val stoppedChapter = ordinaryChapter.copy(
+                bookUrl = stoppedBook.bookUrl,
+                url = ordinaryChapter.url + "/stopped",
+                index = arguments.getInt("stopped_index")
+            )
+            val stoppedModel = CacheBook.CacheBookModel(source, stoppedBook)
+            stoppedModel.addDownload(
+                stoppedChapter.index,
+                stoppedChapter.index
+            )
+            beginCacheAttempt(stoppedModel, stoppedChapter.index)
+            val stoppedError = IOException("stopped")
+            invokeCacheModel(
+                stoppedModel,
+                "onPreError",
+                stoppedChapter,
+                stoppedError
+            )
+            stoppedModel.stop()
+            invokeCacheModel(
+                stoppedModel,
+                "onPostError",
+                stoppedChapter,
+                stoppedError
+            )
+
+            JSONObject()
+                .put("ordinary_attempts", attempts)
+                .put(
+                    "ordinary_is_stop_after_budget",
+                    ordinaryModel.isStop()
+                )
+                .put(
+                    "concurrent_error_count",
+                    CacheBook.errorDownloadMap[
+                        concurrentChapter.primaryStr()
+                    ] ?: 0
+                )
+                .put(
+                    "concurrent_requeued",
+                    cacheModelIndices(
+                        concurrentModel,
+                        "waitDownloadSet"
+                    ).contains(concurrentChapter.index)
+                )
+                .put(
+                    "stopped_error_count",
+                    CacheBook.errorDownloadMap[
+                        stoppedChapter.primaryStr()
+                    ] ?: 0
+                )
+                .put(
+                    "stopped_requeued",
+                    cacheModelIndices(
+                        stoppedModel,
+                        "waitDownloadSet"
+                    ).contains(stoppedChapter.index)
+                )
+                .put("stopped_is_stop", stoppedModel.isStop())
+        } finally {
+            resetCacheBookState()
+        }
+    }
+
+    private fun successCancelProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        resetCacheBookState()
+        return try {
+            val book = cacheProbeBook(arguments)
+            val baseChapter = cacheProbeChapter(arguments, book)
+            val successChapter = baseChapter.copy(
+                index = arguments.getInt("success_index")
+            )
+            val successModel = CacheBook.CacheBookModel(source, book)
+            successModel.addDownload(
+                successChapter.index,
+                successChapter.index
+            )
+            beginCacheAttempt(successModel, successChapter.index)
+            CacheBook.errorDownloadMap[successChapter.primaryStr()] = 2
+            invokeCacheModel(successModel, "onSuccess", successChapter)
+
+            val cancelBook = book.copy(bookUrl = book.bookUrl + "/cancel")
+            val cancelChapter = baseChapter.copy(
+                bookUrl = cancelBook.bookUrl,
+                url = baseChapter.url + "/cancel",
+                index = arguments.getInt("cancel_index")
+            )
+            val cancelModel = CacheBook.CacheBookModel(source, cancelBook)
+            cancelModel.addDownload(
+                cancelChapter.index,
+                cancelChapter.index
+            )
+            beginCacheAttempt(cancelModel, cancelChapter.index)
+            invokeCacheModel(cancelModel, "onCancel", cancelChapter.index)
+
+            val stoppedBook = book.copy(bookUrl = book.bookUrl + "/stopped")
+            val stoppedChapter = baseChapter.copy(
+                bookUrl = stoppedBook.bookUrl,
+                url = baseChapter.url + "/stopped",
+                index = arguments.getInt("stopped_cancel_index")
+            )
+            val stoppedModel = CacheBook.CacheBookModel(source, stoppedBook)
+            stoppedModel.addDownload(
+                stoppedChapter.index,
+                stoppedChapter.index
+            )
+            beginCacheAttempt(stoppedModel, stoppedChapter.index)
+            stoppedModel.stop()
+            invokeCacheModel(stoppedModel, "onCancel", stoppedChapter.index)
+
+            JSONObject()
+                .put(
+                    "success_recorded",
+                    CacheBook.successDownloadSet.contains(
+                        successChapter.primaryStr()
+                    )
+                )
+                .put(
+                    "success_removed_prior_error",
+                    !CacheBook.errorDownloadMap.containsKey(
+                        successChapter.primaryStr()
+                    )
+                )
+                .put(
+                    "success_removed_on_download",
+                    !cacheModelIndices(
+                        successModel,
+                        "onDownloadSet"
+                    ).contains(successChapter.index)
+                )
+                .put(
+                    "cancel_requeued",
+                    cacheModelIndices(
+                        cancelModel,
+                        "waitDownloadSet"
+                    ).contains(cancelChapter.index)
+                )
+                .put(
+                    "stopped_cancel_requeued",
+                    cacheModelIndices(
+                        stoppedModel,
+                        "waitDownloadSet"
+                    ).contains(stoppedChapter.index)
+                )
+        } finally {
+            resetCacheBookState()
+        }
+    }
+
+    private fun registryCleanupProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        resetCacheBookState()
+        val book = cacheProbeBook(arguments)
+        val model = CacheBook.getOrCreate(source, book)
+        val index = arguments.getInt("chapter_index")
+        return try {
+            model.addDownload(index, index)
+            invokeCacheModel(model, "onFinally")
+            val retainedWithWait =
+                CacheBook.cacheBookMap[book.bookUrl] === model
+            cacheModelIndices(model, "waitDownloadSet").clear()
+            cacheModelIndices(model, "onDownloadSet").clear()
+            setCacheModelBoolean(model, "waitingRetry", true)
+            val isStopWithOnlyWaitingRetry = model.isStop()
+            invokeCacheModel(model, "onFinally")
+            JSONObject()
+                .put("registered_initially", true)
+                .put("registry_retained_with_wait", retainedWithWait)
+                .put(
+                    "is_stop_with_only_waiting_retry",
+                    isStopWithOnlyWaitingRetry
+                )
+                .put(
+                    "registry_removed_with_only_waiting_retry",
+                    !CacheBook.cacheBookMap.containsKey(book.bookUrl)
+                )
+        } finally {
+            resetCacheBookState()
+        }
+    }
+
+    private fun cacheProbeBook(arguments: JSONObject): Book = Book(
+        bookUrl = arguments.getString("book_url"),
+        origin = source.bookSourceUrl,
+        originName = source.bookSourceName,
+        name = arguments.getString("book_name")
+    )
+
+    private fun cacheProbeChapter(
+        arguments: JSONObject,
+        book: Book,
+        index: Int = arguments.optInt("chapter_index", 0)
+    ): BookChapter = BookChapter(
+        url = arguments.optString(
+            "chapter_url",
+            "/chapter/$index"
+        ),
+        title = arguments.optString(
+            "chapter_title",
+            "Chapter $index"
+        ),
+        bookUrl = book.bookUrl,
+        index = index
+    )
+
+    private fun cacheModelState(
+        model: CacheBook.CacheBookModel
+    ): JSONObject = JSONObject()
+        .put(
+            "wait_indices",
+            JSONArray(
+                cacheModelIndices(model, "waitDownloadSet").toList()
+            )
+        )
+        .put(
+            "on_download_indices",
+            JSONArray(
+                cacheModelIndices(model, "onDownloadSet").toList()
+            )
+        )
+        .put("wait_count", model.waitCount)
+        .put("on_download_count", model.onDownloadCount)
+        .put("is_run", model.isRun())
+        .put("is_stop", model.isStop())
+
+    @Suppress("UNCHECKED_CAST")
+    private fun cacheModelIndices(
+        model: CacheBook.CacheBookModel,
+        name: String
+    ): MutableSet<Int> = CacheBook.CacheBookModel::class.java
+        .getDeclaredField(name)
+        .apply { isAccessible = true }
+        .get(model) as MutableSet<Int>
+
+    private fun cacheModelBoolean(
+        model: CacheBook.CacheBookModel,
+        name: String
+    ): Boolean = CacheBook.CacheBookModel::class.java
+        .getDeclaredField(name)
+        .apply { isAccessible = true }
+        .getBoolean(model)
+
+    private fun setCacheModelBoolean(
+        model: CacheBook.CacheBookModel,
+        name: String,
+        value: Boolean
+    ) {
+        CacheBook.CacheBookModel::class.java
+            .getDeclaredField(name)
+            .apply { isAccessible = true }
+            .setBoolean(model, value)
+    }
+
+    private fun beginCacheAttempt(
+        model: CacheBook.CacheBookModel,
+        index: Int
+    ) {
+        cacheModelIndices(model, "waitDownloadSet").remove(index)
+        cacheModelIndices(model, "onDownloadSet").add(index)
+    }
+
+    private fun invokeCacheModel(
+        model: CacheBook.CacheBookModel,
+        name: String,
+        vararg arguments: Any?
+    ): Any? {
+        val method = CacheBook.CacheBookModel::class.java.declaredMethods
+            .single {
+                it.name == name &&
+                    it.parameterTypes.size == arguments.size
+            }
+            .apply { isAccessible = true }
+        return try {
+            method.invoke(model, *arguments)
+        } catch (error: InvocationTargetException) {
+            throw error.targetException
+        }
+    }
+
+    private fun resetCacheBookState() {
+        CacheBook.cacheBookMap.clear()
+        CacheBook.clear()
     }
 
     private fun ruleBackendDispatchProjection(
