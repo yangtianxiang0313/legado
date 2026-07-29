@@ -197,8 +197,31 @@ public enum SourceRequestPreparer {
 }
 
 public struct SourceRequestExecution: Equatable, Sendable {
+  public let requestURL: HTTPURL
   public let response: HTTPResponse
   public let attemptCount: Int
+
+  public init(
+    requestURL: HTTPURL,
+    response: HTTPResponse,
+    attemptCount: Int
+  ) {
+    self.requestURL = requestURL
+    self.response = response
+    self.attemptCount = attemptCount
+  }
+
+  public var effectiveURL: HTTPURL {
+    response.effectiveURL
+  }
+
+  public var isSuccessful: Bool {
+    (200...299).contains(response.statusCode)
+  }
+
+  public var redirectObserved: Bool {
+    requestURL != response.effectiveURL
+  }
 }
 
 public struct SourceRequestExecutor: Sendable {
@@ -221,10 +244,18 @@ public struct SourceRequestExecutor: Sendable {
       let response = try await transport.execute(request)
       lastResponse = response
       if (200...299).contains(response.statusCode) || attempt == retry + 1 {
-        return SourceRequestExecution(response: response, attemptCount: attempt)
+        return SourceRequestExecution(
+          requestURL: request.url,
+          response: response,
+          attemptCount: attempt
+        )
       }
     }
     // The closed range always executes at least once.
-    return SourceRequestExecution(response: lastResponse!, attemptCount: retry + 1)
+    return SourceRequestExecution(
+      requestURL: request.url,
+      response: lastResponse!,
+      attemptCount: retry + 1
+    )
   }
 }
