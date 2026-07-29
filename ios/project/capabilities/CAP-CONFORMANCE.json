@@ -12,7 +12,7 @@
   ],
   "declared_status": "partial",
   "profiles": {"store_safe": "development_only", "full_compat": "development_only"},
-  "owners": {"targets": ["TestSupport", "ConformanceCLI"], "paths": [".github/workflows/android-golden-publisher.yml", ".github/workflows/android-oracle-attestation.yml", "ios/Packages/LegadoKit/Sources/ConformanceCLI/**", "ios/Packages/LegadoKit/Sources/TestSupport/**", "ios/harness/fixtures/**", "ios/harness/goldens/**", "ios/harness/oracle/**", "ios/harness/probes/fixture_contract.py", "ios/harness/source-lab/**", "ios/harness/tests/test_android_golden_publisher.py", "ios/publisher/**"]},
+  "owners": {"targets": ["TestSupport", "ConformanceCLI"], "paths": [".github/workflows/android-golden-publisher.yml", ".github/workflows/android-oracle-attestation.yml", "ios/Packages/LegadoKit/Sources/ConformanceCLI/**", "ios/Packages/LegadoKit/Sources/TestSupport/**", "ios/harness/fixtures/**", "ios/harness/goldens/**", "ios/harness/oracle/**", "ios/harness/source-lab/**", "ios/harness/tests/test_android_golden_publisher.py", "ios/publisher/**"]},
   "depends_on": ["CAP-BOOTSTRAP", "CAP-CORE"],
   "active_decisions": ["ADR-0002", "ADR-0004"],
   "open_compatibility": [],

@@ -24,7 +24,6 @@ CLAIM_ID = re.compile(r"^BKC-[A-Z][A-Z0-9-]*-[0-9]{3}$")
 DRIVER_ID = re.compile(r"^DRV-[A-Z][A-Z0-9-]*-[0-9]{3}$")
 LEDGER_ID = re.compile(r"^BKL-[A-Z][A-Z0-9-]*-[0-9]{3}$")
 ENTRY_ID = re.compile(r"^BKE-[A-Z][A-Z0-9-]*-[0-9]{3}$")
-TERMINAL_PRODUCER_STATUSES = {"blocked", "rejected", "exhausted", "cancelled"}
 
 
 class KnowledgeError(RuntimeError):
@@ -191,124 +190,29 @@ def _current(records: Iterable[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
     return result
 
 
-def _proposal_producers(
-    root: Path,
-) -> Tuple[Dict[Tuple[str, str, int], Tuple[str, ...]], List[str]]:
-    """Index exact proposal outputs by their immutable Work Item producer."""
-
-    producers: Dict[Tuple[str, str, int], List[str]] = {}
-    errors: List[str] = []
-    work_items_dir = root / "ios/harness/work-items"
-    if not work_items_dir.exists():
-        return {}, errors
-    for path in sorted(work_items_dir.glob("IOS-*.json")):
-        try:
-            work_item = load_json(path)
-        except KnowledgeError as error:
-            errors.append(str(error))
-            continue
-        if not isinstance(work_item, dict):
-            continue
-        metadata = work_item.get("metadata")
-        spec = work_item.get("spec")
-        if not isinstance(metadata, dict) or not isinstance(spec, dict):
-            continue
-        item_id = metadata.get("id")
-        knowledge = spec.get("knowledge")
-        if (
-            not isinstance(item_id, str)
-            or item_id != path.stem
-            or not isinstance(knowledge, dict)
-            or knowledge.get("mode") not in {"produce", "supersede"}
-        ):
-            continue
-        produces = knowledge.get("produces")
-        if not isinstance(produces, list):
-            continue
-        for output in produces:
-            if not isinstance(output, dict) or set(output) != {"kind", "id", "revision"}:
-                continue
-            kind = output.get("kind")
-            identifier = output.get("id")
-            revision = output.get("revision")
-            if (
-                kind not in {"packet", "driver"}
-                or not isinstance(identifier, str)
-                or not isinstance(revision, int)
-                or isinstance(revision, bool)
-            ):
-                continue
-            producers.setdefault((kind, identifier, revision), []).append(item_id)
-
-    result: Dict[Tuple[str, str, int], Tuple[str, ...]] = {}
-    for key, item_ids in sorted(producers.items()):
-        ordered = tuple(sorted(item_ids))
-        result[key] = ordered
-        if len(ordered) > 1:
-            errors.append(
-                f"proposal 生产声明不唯一：{key[0]} {key[1]}@{key[2]} -> "
-                + ", ".join(ordered)
-            )
-    return result, errors
-
-
 def _proposal_owner(
     entry: Dict[str, Any],
-    kind: str,
-    producers: Dict[Tuple[str, str, int], Tuple[str, ...]],
 ) -> Tuple[Optional[str], List[str]]:
+    """Use the proposal's immutable creator as its batch identity."""
+
     record = entry["record"]
-    key = (kind, record.get("id"), record.get("revision"))
-    declared = producers.get(key, ())
     created_by = record.get("created_by")
-    if not declared:
+    if not isinstance(created_by, str) or not created_by:
         return None, [
-            f"{entry['path']}: proposal 未由 created_by Work Item 精确声明 knowledge.produces"
+            f"{entry['path']}: proposal 缺少稳定 created_by 批次标识"
         ]
-    if len(declared) != 1:
-        return None, []
-    if created_by != declared[0]:
-        return None, [
-            f"{entry['path']}: proposal created_by={created_by!r} "
-            f"与 knowledge.produces producer={declared[0]!r} 不一致"
-        ]
-    return declared[0], []
+    return created_by, []
 
 
 def _tombstone_issues(
     root: Path,
     entries: Sequence[Dict[str, Any]],
-    producers: Dict[Tuple[str, str, int], Tuple[str, ...]],
 ) -> Tuple[List[Dict[str, Any]], List[str]]:
+    """Validate reserved revisions without replaying the retired v1 runtime."""
+
     errors: List[str] = []
     valid: List[Dict[str, Any]] = []
-    if not entries:
-        return valid, errors
     schema = _schema(root, "knowledge-revision-tombstone.schema.json")
-    try:
-        state = load_json(root / "ios/project/state.json")
-    except KnowledgeError as error:
-        return [], [str(error)]
-    state_items = state.get("work_items", {}) if isinstance(state, dict) else {}
-    events: List[Dict[str, Any]] = []
-    events_path = root / "ios/project/events.jsonl"
-    if events_path.is_file():
-        for line_number, line in enumerate(
-            events_path.read_text(encoding="utf-8").splitlines(),
-            1,
-        ):
-            if not line.strip():
-                continue
-            try:
-                event = json.loads(line)
-            except json.JSONDecodeError:
-                errors.append(
-                    f"tombstone event lineage JSON 无效："
-                    f"{relative(root, events_path)}:{line_number}"
-                )
-                continue
-            if isinstance(event, dict):
-                events.append(event)
     seen: set[Tuple[str, str, int]] = set()
     for entry in entries:
         error_count = len(errors)
@@ -329,97 +233,15 @@ def _tombstone_issues(
         seen.add(key)
         pattern = PACKET_ID if kind == "packet" else DRIVER_ID
         plural = "packets" if kind == "packet" else "drivers"
-        path = Path(entry["path"])
         expected = (
             Path("ios/project/business-knowledge/tombstones")
             / plural
             / identifier
             / f"r{revision:04d}.json"
         )
-        if pattern.fullmatch(identifier) is None or path != expected:
+        if pattern.fullmatch(identifier) is None or Path(entry["path"]) != expected:
             errors.append(
                 f"{entry['path']}: tombstone knowledge_kind/ID/revision 与路径不一致"
-            )
-        declared = producers.get(key, ())
-        producer = record["producer_work_item"]
-        if declared != (producer,):
-            errors.append(
-                f"{entry['path']}: tombstone producer 不匹配 reservation "
-                f"{kind} {identifier}@{revision} -> {declared}"
-            )
-        runtime = (
-            state_items.get(producer, {})
-            if isinstance(state_items, dict)
-            else {}
-        )
-        terminal_status = record["producer_terminal_status"]
-        if (
-            not isinstance(runtime, dict)
-            or runtime.get("status") != terminal_status
-            or terminal_status not in TERMINAL_PRODUCER_STATUSES
-        ):
-            errors.append(
-                f"{entry['path']}: producer 不是声明的终态 "
-                f"{producer} status={runtime.get('status') if isinstance(runtime, dict) else None}"
-            )
-        expected_reason = (
-            runtime.get("blocker")
-            or runtime.get("rejected_reason")
-            or runtime.get("exhausted_reason")
-            or runtime.get("cancelled_reason")
-        ) if isinstance(runtime, dict) else None
-        if isinstance(expected_reason, dict):
-            expected_reason = expected_reason.get("class") or expected_reason.get(
-                "message"
-            )
-        if record["reason_code"] != expected_reason:
-            errors.append(
-                f"{entry['path']}: tombstone reason_code 与 producer state 不一致"
-            )
-        expected_evidence = (
-            runtime.get("last_evidence") if isinstance(runtime, dict) else None
-        )
-        if record["evidence"] != expected_evidence:
-            errors.append(
-                f"{entry['path']}: tombstone evidence 与 producer state 不一致"
-            )
-        if isinstance(expected_evidence, str) and not (
-            root / expected_evidence
-        ).is_file():
-            errors.append(f"{entry['path']}: tombstone evidence 不存在")
-        event_names = {
-            "blocked": {"WorkItemBaselineRed", "WorkItemLeaseExpired"},
-            "rejected": {"WorkItemRejected"},
-            "exhausted": {"WorkItemExhausted"},
-            "cancelled": {"WorkItemCancelled"},
-        }[terminal_status]
-        if not any(
-            event.get("work_item_id") == producer
-            and event.get("event") in event_names
-            for event in events
-        ):
-            errors.append(
-                f"{entry['path']}: producer 缺少匹配的 terminal event lineage"
-            )
-        creator_path = (
-            root
-            / "ios/harness/work-items"
-            / f"{record['created_by']}.json"
-        )
-        try:
-            creator = load_json(creator_path)
-        except KnowledgeError as error:
-            errors.append(str(error))
-            creator = {}
-        labels = creator.get("metadata", {}).get("labels", []) if isinstance(
-            creator, dict
-        ) else []
-        if not isinstance(labels, list) or not {
-            "control-plane",
-            "corrective",
-        }.issubset(set(labels)):
-            errors.append(
-                f"{entry['path']}: tombstone created_by 必须是 corrective control-plane Work Item"
             )
         proposal_root = (
             "ios/project/business-knowledge/packets"
@@ -587,12 +409,9 @@ def _graph(root: Path) -> Tuple[Dict[str, Any], List[str]]:
     ledger_schema = _schema(root, "coverage-ledger.schema.json")
     all_packets = data["packets_published"] + data["packets_proposals"]
     all_drivers = data["drivers_published"] + data["drivers_proposals"]
-    proposal_producers, proposal_producer_errors = _proposal_producers(root)
-    errors.extend(proposal_producer_errors)
     valid_tombstones, tombstone_errors = _tombstone_issues(
         root,
         data["tombstones"],
-        proposal_producers,
     )
     errors.extend(tombstone_errors)
     errors.extend(
@@ -637,7 +456,7 @@ def _graph(root: Path) -> Tuple[Dict[str, Any], List[str]]:
             if record.get("status") not in allowed_status:
                 errors.append(f"{entry['path']}: Packet status 与 authority 不一致")
             if authority == "proposal":
-                owner, owner_errors = _proposal_owner(entry, "packet", proposal_producers)
+                owner, owner_errors = _proposal_owner(entry)
                 errors.extend(owner_errors)
                 if owner is not None:
                     proposal_owner_by_path[entry["path"]] = owner
@@ -795,7 +614,7 @@ def _graph(root: Path) -> Tuple[Dict[str, Any], List[str]]:
             if record.get("status") not in allowed_status:
                 errors.append(f"{entry['path']}: Driver status 与 authority 不一致")
             if authority == "proposal":
-                owner, owner_errors = _proposal_owner(entry, "driver", proposal_producers)
+                owner, owner_errors = _proposal_owner(entry)
                 errors.extend(owner_errors)
                 if owner is not None:
                     proposal_owner_by_path[entry["path"]] = owner
@@ -1104,234 +923,6 @@ def doctor(root: Path, *, check_catalog: bool = True) -> List[str]:
     return errors
 
 
-def _ref_key(reference: Dict[str, Any]) -> Tuple[Any, Any]:
-    return reference.get("id"), reference.get("revision")
-
-
-def selection_value(root: Path, work_item: Dict[str, Any]) -> Dict[str, Any]:
-    errors = doctor(root)
-    if errors:
-        raise KnowledgeError("Business Knowledge doctor 未通过：\n- " + "\n- ".join(errors))
-    data, _ = _graph(root)
-    knowledge = work_item.get("spec", {}).get("knowledge")
-    if not isinstance(knowledge, dict):
-        return {
-            "contract_version": None,
-            "mode": "legacy",
-            "control_sha256": catalog_value(root)["control_sha256"],
-            "authority_sha256": data["authority_sha256"],
-            "knowledge_selection_sha256": None,
-            "coverage_selection_sha256": None,
-            "architecture_driver_selection_sha256": None,
-            "claims": [],
-            "coverage": [],
-            "drivers": [],
-            "blocking_reasons": [],
-            "required_paths": [],
-        }
-    mode = knowledge.get("mode")
-    catalog = catalog_value(root)
-    if mode == "not_applicable":
-        return {
-            "contract_version": knowledge.get("contract_version"),
-            "mode": mode,
-            "control_sha256": catalog["control_sha256"],
-            "authority_sha256": catalog["authority_sha256"],
-            "knowledge_selection_sha256": None,
-            "coverage_selection_sha256": None,
-            "architecture_driver_selection_sha256": None,
-            "claims": [],
-            "coverage": [],
-            "drivers": [],
-            "blocking_reasons": [],
-            "required_paths": ["ios/project/business-knowledge/catalog.json"],
-        }
-
-    selected: Dict[Tuple[str, int], Dict[str, Any]] = {}
-
-    def include(reference: Dict[str, Any]) -> None:
-        key = _ref_key(reference)
-        claim = data["current_claims"].get(key)
-        if claim is None:
-            raise KnowledgeError(f"claim 不存在或不是 current published revision：{key[0]}@{key[1]}")
-        if key in selected:
-            return
-        selected[key] = claim
-        for dependency in claim.get("depends_on", []):
-            include(dependency)
-
-    for reference in knowledge.get("claim_refs", []):
-        include(reference)
-
-    drivers_by_id: Dict[str, Dict[str, Any]] = {}
-    for reference in knowledge.get("driver_refs", []):
-        driver = data["current_drivers"].get(reference.get("id"))
-        if driver is None or driver["record"].get("revision") != reference.get("revision"):
-            raise KnowledgeError(
-                f"Architecture Driver 不存在或 revision 不匹配："
-                f"{reference.get('id')}@{reference.get('revision')}"
-            )
-        drivers_by_id[driver["record"]["id"]] = driver
-        for claim_ref in driver["record"].get("claim_refs", []):
-            include(claim_ref)
-    changed = True
-    while changed:
-        changed = False
-        for identifier, driver in data["current_drivers"].items():
-            driver_claims = {_ref_key(reference) for reference in driver["record"].get("claim_refs", [])}
-            if identifier in drivers_by_id or not driver_claims.intersection(selected):
-                continue
-            drivers_by_id[identifier] = driver
-            for claim_ref in driver["record"].get("claim_refs", []):
-                include(claim_ref)
-            changed = True
-    drivers = list(drivers_by_id.values())
-
-    coverage: List[Dict[str, Any]] = []
-    covered_claims: set[Tuple[str, int]] = set()
-    ledger_by_id = {entry["record"]["id"]: entry for entry in data["ledgers"]}
-    for reference in knowledge.get("coverage_refs", []):
-        ledger = ledger_by_id.get(reference.get("id"))
-        if ledger is None or ledger["record"].get("revision") != reference.get("revision"):
-            raise KnowledgeError(
-                f"Coverage Ledger 不存在或 revision 不匹配："
-                f"{reference.get('id')}@{reference.get('revision')}"
-            )
-        entries = {entry["id"]: entry for entry in ledger["record"].get("entries", [])}
-        for entry_id in reference.get("entries", []):
-            selected_entry = entries.get(entry_id)
-            if selected_entry is None:
-                raise KnowledgeError(f"Coverage entry 不存在：{reference.get('id')}#{entry_id}")
-            claim_key = _ref_key(selected_entry["claim_ref"])
-            if claim_key not in selected:
-                raise KnowledgeError(
-                    f"Coverage selection 包含未选择的 claim："
-                    f"{reference.get('id')}#{entry_id} -> {claim_key[0]}@{claim_key[1]}"
-                )
-            covered_claims.add(claim_key)
-            coverage.append(
-                {
-                    "ledger": {
-                        "id": ledger["record"]["id"],
-                        "revision": ledger["record"]["revision"],
-                        "path": ledger["path"],
-                        "sha256": ledger["sha256"],
-                    },
-                    "entry": selected_entry,
-                }
-            )
-    missing_coverage = sorted(set(selected) - covered_claims)
-    if missing_coverage:
-        rendered = ", ".join(f"{item[0]}@{item[1]}" for item in missing_coverage)
-        raise KnowledgeError(f"选中的 claim 缺少显式 Coverage selection：{rendered}")
-
-    claims = []
-    blocking_reasons: List[str] = []
-    coverage_by_claim = {
-        _ref_key(value["entry"]["claim_ref"]): value["entry"] for value in coverage
-    }
-    ready_support = set(data["policy"].get("implementation_ready_support", []))
-    for key, claim in sorted(selected.items()):
-        packet = data["claim_packet"][key]
-        ledger_entry = coverage_by_claim.get(key)
-        support_state = claim.get("support", {}).get("state")
-        claims.append(
-            {
-                "ref": {"id": key[0], "revision": key[1]},
-                "packet": {
-                    "id": packet["record"]["id"],
-                    "revision": packet["record"]["revision"],
-                    "path": packet["path"],
-                    "sha256": packet["sha256"],
-                },
-                "kind": claim.get("kind"),
-                "statement": claim.get("statement"),
-                "support_state": support_state,
-                "disposition": (
-                    ledger_entry.get("product_disposition") if isinstance(ledger_entry, dict) else None
-                ),
-            }
-        )
-        if support_state not in ready_support:
-            blocking_reasons.append(f"{key[0]}@{key[1]} support={support_state}")
-        coverage_state = (
-            ledger_entry.get("computed", {}).get("coverage_state")
-            if isinstance(ledger_entry, dict)
-            else None
-        )
-        if coverage_state in {"stale", "conflicted", "blocked", "gap"}:
-            blocking_reasons.append(f"{key[0]}@{key[1]} coverage={coverage_state}")
-        disposition_kind = (
-            ledger_entry.get("product_disposition", {}).get("kind")
-            if isinstance(ledger_entry, dict)
-            else None
-        )
-        if disposition_kind in data["policy"].get("terminal_dispositions", []):
-            blocking_reasons.append(f"{key[0]}@{key[1]} disposition={disposition_kind}")
-    driver_context = []
-    for entry in sorted(drivers, key=lambda value: value["record"]["id"]):
-        record = entry["record"]
-        driver_context.append(
-            {
-                "ref": {"id": record["id"], "revision": record["revision"]},
-                "path": entry["path"],
-                "sha256": entry["sha256"],
-                "title": record["title"],
-                "forces": record["forces"],
-                "decision_questions": record["decision_questions"],
-                "resolution": record["resolution"],
-            }
-        )
-        if record.get("resolution", {}).get("state") not in {"resolved", "accepted_risk"}:
-            blocking_reasons.append(
-                f"{record['id']}@{record['revision']} unresolved="
-                f"{record.get('resolution', {}).get('state')}"
-            )
-    context_payload = {
-        "claims": claims,
-        "coverage": coverage,
-        "drivers": driver_context,
-    }
-    budget = knowledge.get("context_budget", data["policy"]["default_context_budget"])
-    if len(claims) > budget.get("max_claims", 40):
-        raise KnowledgeError(
-            f"CONTEXT_OVERSIZED: claims {len(claims)} > {budget.get('max_claims')}"
-        )
-    context_bytes = len(canonical_bytes(context_payload))
-    if context_bytes > budget.get("max_bytes", 65536):
-        raise KnowledgeError(
-            f"CONTEXT_OVERSIZED: bytes {context_bytes} > {budget.get('max_bytes')}"
-        )
-    required_paths = {"ios/project/business-knowledge/catalog.json"}
-    required_paths.update(value["packet"]["path"] for value in claims)
-    required_paths.update(value["ledger"]["path"] for value in coverage)
-    required_paths.update(value["path"] for value in driver_context)
-    return {
-        "contract_version": knowledge.get("contract_version"),
-        "mode": mode,
-        "control_sha256": catalog["control_sha256"],
-        "authority_sha256": catalog["authority_sha256"],
-        "knowledge_selection_sha256": sha256_json(claims) if claims else None,
-        "coverage_selection_sha256": sha256_json(coverage) if coverage else None,
-        "architecture_driver_selection_sha256": (
-            sha256_json(driver_context) if driver_context else None
-        ),
-        "claims": claims,
-        "coverage": coverage,
-        "drivers": driver_context,
-        "blocking_reasons": sorted(set(blocking_reasons)),
-        "required_paths": sorted(required_paths),
-    }
-
-
-def _load_work_item(root: Path, item_id: str) -> Dict[str, Any]:
-    path = root / "ios/harness/work-items" / f"{item_id}.json"
-    value = load_json(path)
-    if not isinstance(value, dict):
-        raise KnowledgeError(f"Work Item 必须是 object：{item_id}")
-    return value
-
-
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Legado Business Knowledge control")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -1339,9 +930,6 @@ def _parser() -> argparse.ArgumentParser:
     doctor_parser.add_argument("--root", default=str(DEFAULT_ROOT))
     manifest_parser = subparsers.add_parser("manifest")
     manifest_parser.add_argument("--root", default=str(DEFAULT_ROOT))
-    selection_parser = subparsers.add_parser("selection")
-    selection_parser.add_argument("--root", default=str(DEFAULT_ROOT))
-    selection_parser.add_argument("--work-item", required=True)
     return parser
 
 
@@ -1359,10 +947,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             return 0
         if args.command == "manifest":
             print(json.dumps(catalog_value(root), ensure_ascii=False, indent=2))
-            return 0
-        if args.command == "selection":
-            item = _load_work_item(root, args.work_item)
-            print(json.dumps(selection_value(root, item), ensure_ascii=False, indent=2))
             return 0
     except KnowledgeError as error:
         print(str(error), file=sys.stderr)

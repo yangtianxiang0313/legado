@@ -32,6 +32,7 @@ AUTHORITY_PATHS = (
     WORKFLOW_PATH,
     "ios/harness/oracle/contract.py",
     "ios/harness/oracle/ci_proposal.py",
+    "ios/harness/oracle/request-registry.json",
     "ios/harness/oracle/trusted_import.py",
     "ios/harness/source-lab/manifest.json",
 )
@@ -198,13 +199,6 @@ class GitHubOracleReceiptSettler:
         return artifact
 
     def _authority_paths(self, source: str) -> tuple[str, ...]:
-        request_ids = {
-            "sl-html-basic-001": "IOS-ANDROID-ORACLE-ATTESTATION-001",
-            "sl-post-form-001": "IOS-ANDROID-POST-FORM-ATTESTATION-001",
-        }
-        request_id = request_ids.get(self.identity.scenario)
-        if request_id is None:
-            raise GitHubOracleReceiptError("SCENARIO_SELECTOR_INVALID")
         fixture = f"ios/harness/fixtures/source-lab/{self.identity.scenario}"
         current_files = tuple(x for x in self._git(
             "ls-tree", "-r", "--name-only", "HEAD", "--", fixture
@@ -214,8 +208,7 @@ class GitHubOracleReceiptSettler:
         ).splitlines() if x)
         if not current_files or current_files != source_files:
             raise GitHubOracleReceiptError("AUTHORITY_TREE_INVALID")
-        return (*AUTHORITY_PATHS, f"ios/harness/work-items/{request_id}.json",
-                *current_files)
+        return (*AUTHORITY_PATHS, *current_files)
 
     def _verify_source(self) -> dict[str, str]:
         source = self.identity.source_digest
