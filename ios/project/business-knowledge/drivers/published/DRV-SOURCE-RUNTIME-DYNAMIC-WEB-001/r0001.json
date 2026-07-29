@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-SOURCE-RUNTIME-DYNAMIC-WEB-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "source.execution.dynamic-web",
+  "title": "用 SourceRuntime 状态机和平台 Web 页面端口承载动态书源",
+  "claim_refs": [
+    {
+      "id": "BKC-SR-DYNAMIC-WEB-RUNTIME-001",
+      "revision": 2
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "动态执行必须显式表达 URL option 与调用参数双重开关、GET URL 加载、POST HTTP bootstrap 后 HTML 注入、脚本结果、资源嗅探和最终 URL，逐字段对齐 Android Golden。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "isolation",
+      "scenario": "SourceRuntime 只持有平台无关的动态 Web 请求、事件、结果与状态机；WKWebView 必须经协议端口接入，不得让 WebKit 类型进入规则解析核心、Domain 或 SwiftUI 页面状态。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "testability",
+      "scenario": "动态 Web 端口必须可注入，SourceLab 用确定性页面和资源事件验证状态机；真实 WKWebView 适配器另由 iOS 模拟器集成验收覆盖。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "session_consistency",
+      "scenario": "WebKit Cookie 与 SourceCookieStore 的桥接必须是显式端口操作，不能让系统 CookieStore 绕过已验证的 persistent/session 兼容语义。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "security",
+      "scenario": "Android 的任意 webJs、SSL proceed 与 mixed-content allow 是迁移事实，不应默认复制为 iOS 安全策略；未 Characterize 的能力必须失败关闭或留在后续任务。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "cancellation",
+      "scenario": "平台适配器必须支持销毁后台页面并只完成一次结果；JS 重试上限、取消竞态和超时错误在后续 Android Characterization 前不得猜测。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "如何把 load URL、inject HTML、evaluate JS、resource observed、page finished 与 cookie snapshot 建模为单向事件流，并保证只完成一次？",
+    "如何让同一 SourceRuntime 状态机同时使用确定性测试端口和真实 WKWebView 端口，而不把 WebKit 生命周期耦合到书源规则或 UI？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002"
+    ],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-SOURCE-TRANSPORT-DYNAMIC-WEB-RUNTIME-001",
+      "IOS-SOURCE-RUNTIME-DYNAMIC-WEB-001"
+    ]
+  },
+  "supersedes": null,
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30446049894/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "created_by": "IOS-CHARACTERIZE-SOURCE-TRANSPORT-DYNAMIC-WEB-RUNTIME-001"
+}

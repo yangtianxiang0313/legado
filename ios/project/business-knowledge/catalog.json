@@ -5,8 +5,8 @@
   "inventory_control_sha256": "30cac916034a71f4ce34aa11388c0c3d578c78ccd937f888e48b556b01d72172",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "46f86b5b407d474fa9c573e0f1e997539f187612a84fc01401dfb9d193f86735",
-  "coverage_sha256": "a0f51a3ffedb4c28547682b28bf4d59dc98cfe2bfead99f85003cae3a24dbb19",
+  "authority_sha256": "d6cfce60fd5bbfdd3d93f8799a3e4f5af2ad082ca6a0b34db96dc84fc34f63b2",
+  "coverage_sha256": "1b39408fc822abc71c36a836af18b2981405a3a46d75e85ccef3795ee87550d1",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -19,6 +19,19 @@
       "claim_refs": [
         {
           "id": "BKC-SR-COOKIE-LAYERS-001",
+          "revision": 2
+        }
+      ]
+    },
+    {
+      "id": "BKP-SOURCE-RUNTIME-DYNAMIC-WEB-001",
+      "revision": 1,
+      "semantic_key": "source.runtime-dynamic-web-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-SOURCE-RUNTIME-DYNAMIC-WEB-001/r0001.json",
+      "record_sha256": "7e96bf272a3a9abd3b8ef54750e6a9eec2ab1d589de099f05f65b9bd353f591c",
+      "claim_refs": [
+        {
+          "id": "BKC-SR-DYNAMIC-WEB-RUNTIME-001",
           "revision": 2
         }
       ]
@@ -197,6 +210,14 @@
       "resolution_state": "resolved"
     },
     {
+      "id": "DRV-SOURCE-RUNTIME-DYNAMIC-WEB-001",
+      "revision": 1,
+      "semantic_key": "source.execution.dynamic-web",
+      "path": "ios/project/business-knowledge/drivers/published/DRV-SOURCE-RUNTIME-DYNAMIC-WEB-001/r0001.json",
+      "record_sha256": "97097663f7b0cf56eaaf6b47ce24843e86bcdf57e628e2b06d7b2fd8d5e5fdd8",
+      "resolution_state": "resolved"
+    },
+    {
       "id": "DRV-SOURCE-RUNTIME-FIELD-ENCODING-001",
       "revision": 1,
       "semantic_key": "source.execution.field-encoding",
@@ -293,6 +314,15 @@
       "record_sha256": "80667bdc92158a1b3e62f90e97c46b1700f1fb3bece9bbf49221d40a86ab0859",
       "entry_ids": [
         "BKE-SR-COOKIE-SESSION-001"
+      ]
+    },
+    {
+      "id": "BKL-SOURCE-RUNTIME-DYNAMIC-WEB-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-SOURCE-RUNTIME-DYNAMIC-WEB-001.json",
+      "record_sha256": "fb0ab66dafec2d2b62ce2dd2be8a03b93177b12ef403786ca083a35beff56a0f",
+      "entry_ids": [
+        "BKE-SR-DYNAMIC-WEB-001"
       ]
     },
     {

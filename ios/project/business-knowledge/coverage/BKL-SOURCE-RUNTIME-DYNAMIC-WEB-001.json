@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgeCoverageLedger",
+  "id": "BKL-SOURCE-RUNTIME-DYNAMIC-WEB-001",
+  "revision": 1,
+  "status": "current",
+  "packet_refs": [
+    {
+      "id": "BKP-SOURCE-RUNTIME-DYNAMIC-WEB-001",
+      "revision": 1,
+      "sha256": "7e96bf272a3a9abd3b8ef54750e6a9eec2ab1d589de099f05f65b9bd353f591c"
+    }
+  ],
+  "generated_from": {
+    "knowledge_authority_sha256": "41cc108625d0b0fe9db187ea34ba188578c7a1efb8c6c2f2fb1dd471481f6539",
+    "requirement_catalog_sha256": "b85716b39fb6ce2dcda3be4c0c77a918f6d71787e548d093e4a74da611ffa856",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "entries": [
+    {
+      "id": "BKE-SR-DYNAMIC-WEB-001",
+      "claim_ref": {
+        "id": "BKC-SR-DYNAMIC-WEB-RUNTIME-001",
+        "revision": 2
+      },
+      "validation": {
+        "required": "android_runtime",
+        "state": "verified",
+        "evidence_refs": [
+          "ios/harness/goldens/releases/sl-source-transport-dynamic-web-runtime-001-30445338246-1.json",
+          "ios/harness/goldens/android-legado-v1/sl-source-transport-dynamic-web-runtime-001.json#/artifact/result/value"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "covered_by_requirement",
+        "refs": [
+          "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01"
+        ],
+        "reason": "受保护 Android Golden 已冻结动态 Web 双重开关、GET/POST 分流、HTML 注入、JS 结果、资源嗅探、Cookie 桥接和 User-Agent 语义，交由独立 SourceRuntime 状态机与平台端口实现",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "planned",
+        "requirement_refs": [
+          "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01"
+        ],
+        "work_item_refs": [
+          "IOS-SOURCE-RUNTIME-DYNAMIC-WEB-001"
+        ],
+        "capability_refs": [
+          "CAP-CONFORMANCE",
+          "CAP-RUNTIME-PORTS"
+        ],
+        "evidence_refs": [
+          "ios/harness/goldens/releases/sl-source-transport-dynamic-web-runtime-001-30445338246-1.json"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    }
+  ],
+  "updated_by": "IOS-CHARACTERIZE-SOURCE-TRANSPORT-DYNAMIC-WEB-RUNTIME-001",
+  "updated_at": "2026-07-29T11:03:44Z"
+}

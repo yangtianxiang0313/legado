@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-SOURCE-RUNTIME-DYNAMIC-WEB-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "source.runtime-dynamic-web-golden",
+  "title": "受保护 Android Golden 验证的后台 WebView 动态请求语义",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "source.execution"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-RUNTIME-PORTS"
+    ],
+    "subject_keys": [
+      "source.script",
+      "source.session",
+      "source.transport"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-SR-DYNAMIC-WEB-RUNTIME-001",
+      "revision": 2,
+      "semantic_key": "source.transport.dynamic-web-runtime",
+      "kind": "runtime_behavior",
+      "topic": "WebView 动态请求",
+      "statement": "在 sl-source-transport-dynamic-web-runtime-001 的固定输入下，Android 只有在 URL option.useWebView 与调用参数 useWebView 同时为 true 时才进入 BackstageWebView；任一为 false，即使配置 webJs，也直接返回 HTTP 正文。GET 动态路径加载 URL 后，默认脚本返回 WebView 规范化的 document.documentElement.outerHTML，定制 webJs 返回 evaluateJavascript 的 JSON 字符串解码值。POST 动态路径先由 OkHttp 发送一次 POST，再把响应的最终 URL 与 HTML 通过 loadDataWithBaseURL 注入 WebView，定制脚本从注入 DOM 返回结果，不产生第二次页面请求。sourceRegex 命中子资源时，结果 final_url 保持起始页面、body 为命中的绝对资源 URL。页面 Set-Cookie 先进入 android.webkit.CookieManager，并在 onPageFinished 回写书源 CookieStore；source Header 中的 User-Agent 被设置为 WebView userAgentString。八个案例对应的九条 SourceLab 页面/资源路由均精确命中一次。本结论不外推到 JS 连续 null 后的 31 次重试上限、取消、SSL 放行、overrideUrlRegex、重定向、混合内容或并发 WebView。",
+      "subject_keys": [
+        "source.script",
+        "source.session",
+        "source.transport"
+      ],
+      "depends_on": [
+        {
+          "id": "BKC-SR-COOKIE-LAYERS-001",
+          "revision": 2
+        }
+      ],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da",
+            "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+            "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/getStrResponseAwait"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "16b89cd63b3d19ac7574cf850d66f885fecf5c54",
+            "path": "app/src/main/java/io/legado/app/help/http/BackstageWebView.kt",
+            "symbol_id": "kotlin://io.legado.app.help.http/BackstageWebView"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/sl-source-transport-dynamic-web-runtime-001.json",
+            "artifact_sha256": "9f2c3b581969bf1756e7270472dc16ef3d7ee871bb0a86d3721e7b34828d4ac9",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "e92d67ea050b61ed0cdbe9174e5c58f5b35b7f1418e07adff0ad6bf600290497",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "2b2eb9006520f121486d15d585539f0a03addd8aefacd6fbd8dd72450ffa3cc0",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-SR-DYNAMIC-WEB-RUNTIME-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-SOURCE-TRANSPORT-DYNAMIC-WEB-RUNTIME-001"
+}

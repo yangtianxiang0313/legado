@@ -1,1 +1,1 @@
-{"active_task":"IOS-CHARACTERIZE-SOURCE-TRANSPORT-DYNAMIC-WEB-RUNTIME-001","attempt":0,"last_completed":{"at":"2026-07-29T10:41:23Z","sequence":68,"task_id":"IOS-SOURCE-RUNTIME-COOKIE-SESSION-001"},"schema_version":2,"status":"running","verification":null}
+{"active_task":null,"attempt":0,"last_completed":{"at":"2026-07-29T11:05:37Z","sequence":71,"task_id":"IOS-CHARACTERIZE-SOURCE-TRANSPORT-DYNAMIC-WEB-RUNTIME-001"},"schema_version":2,"status":"idle","verification":null}
