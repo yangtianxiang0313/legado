@@ -89,7 +89,11 @@ Coverage Ledger 使用 `BKL-*`，entry 使用 `BKE-*`。它把“知道了什么
 - `delivery`：关联 Requirement、Work Item、Capability 和 Evidence；
 - `computed`：是否已核算，以及 covered/gap/blocked/stale/conflicted 状态。
 
-Ledger 的 revision 与 Knowledge Authority digest 绑定。知识 revision 变化后旧 Ledger 会 stale，不能靠手工改状态继续使用。Ledger 进度变化只改变 Coverage digest，不改变知识本身的 Authority digest。
+Ledger 通过 `packet_refs` 的 ID、revision 和内容摘要绑定自己覆盖的 Packet。新增其他
+Packet/Driver 不会让既有 Ledger 失效；只有它实际引用的 Packet revision 或内容变化时，
+该 Ledger 才 stale。`generated_from.knowledge_authority_sha256` 仅记录创建时的全图快照，
+不得作为后续全图 freshness 门禁。Ledger 进度变化只改变 Coverage digest，不改变知识本身
+的 Authority digest。
 
 ### 3.4 Architecture Driver
 

@@ -515,7 +515,16 @@ class BusinessKnowledgeTests(unittest.TestCase):
                 "id": LEDGER_ID,
                 "revision": 1,
                 "status": "current",
-                "packet_refs": [{"id": PACKET_ID, "revision": 1}],
+                "packet_refs": [
+                    {
+                        "id": PACKET_ID,
+                        "revision": 1,
+                        "sha256": knowledge._record(
+                            packet_path,
+                            self.root,
+                        )["sha256"],
+                    }
+                ],
                 "generated_from": {
                     "knowledge_authority_sha256": authority,
                     "requirement_catalog_sha256": knowledge.sha256_json(
@@ -637,6 +646,45 @@ class BusinessKnowledgeTests(unittest.TestCase):
 
         self.assertEqual(before["authority_sha256"], after["authority_sha256"])
         self.assertNotEqual(before["coverage_sha256"], after["coverage_sha256"])
+
+    def test_authority_expansion_does_not_stale_existing_ledger(self) -> None:
+        self.install_valid_graph(write_catalog=False)
+        second_driver = self.driver()
+        second_driver.update(
+            {
+                "id": "DRV-TEST-ARCH-ALT-002",
+                "semantic_key": "test.architecture.alt",
+                "title": "第二个独立架构驱动力",
+            }
+        )
+        write_json(
+            self.root
+            / "ios/project/business-knowledge/drivers/published/"
+            "DRV-TEST-ARCH-ALT-002/r0001.json",
+            second_driver,
+        )
+        write_json(
+            self.root / "ios/project/business-knowledge/catalog.json",
+            knowledge.catalog_value(self.root),
+        )
+
+        self.assertEqual([], knowledge.doctor(self.root))
+
+    def test_ledger_packet_binding_detects_local_content_drift(self) -> None:
+        packet_path, _, _ = self.install_valid_graph()
+        packet = knowledge.load_json(packet_path)
+        packet["title"] = "被篡改的标题"
+        write_json(packet_path, packet)
+
+        self.assertTrue(
+            any(
+                "packet_ref 内容摘要不匹配" in error
+                for error in knowledge.doctor(
+                    self.root,
+                    check_catalog=False,
+                )
+            )
+        )
 
     def test_candidate_packet_cannot_be_consumed(self) -> None:
         proposal_path = (

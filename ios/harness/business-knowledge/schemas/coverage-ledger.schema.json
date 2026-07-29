@@ -31,7 +31,8 @@
         "required": ["id", "revision"],
         "properties": {
           "id": {"type": "string", "pattern": "^BKP-[A-Z][A-Z0-9-]*-[0-9]{3}$"},
-          "revision": {"type": "integer", "minimum": 1}
+          "revision": {"type": "integer", "minimum": 1},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
         }
       }
     },

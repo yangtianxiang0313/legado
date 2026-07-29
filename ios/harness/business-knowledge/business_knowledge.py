@@ -858,8 +858,6 @@ def _graph(root: Path) -> Tuple[Dict[str, Any], List[str]]:
         record = entry["record"]
         errors.extend(f"{entry['path']}: {error}" for error in validate_schema(record, ledger_schema))
         errors.extend(_path_issues(entry, "coverage", "ledger"))
-        if record.get("generated_from", {}).get("knowledge_authority_sha256") != authority_sha256:
-            errors.append(f"{entry['path']}: knowledge authority digest 已过期")
         if record.get("id") in ledger_ids:
             errors.append(f"Coverage Ledger ID 重复：{record.get('id')}")
         ledger_ids.add(record.get("id"))
@@ -872,6 +870,14 @@ def _graph(root: Path) -> Tuple[Dict[str, Any], List[str]]:
             current = current_packets.get(packet_ref.get("id"))
             if current is None or current["record"].get("revision") != packet_ref.get("revision"):
                 errors.append(f"{entry['path']}: packet_ref 不存在或非 current {packet_ref}")
+            elif (
+                packet_ref.get("sha256") is not None
+                and packet_ref.get("sha256") != current["sha256"]
+            ):
+                errors.append(
+                    f"{entry['path']}: packet_ref 内容摘要不匹配 "
+                    f"{packet_ref.get('id')}@{packet_ref.get('revision')}"
+                )
         for ledger_entry in record.get("entries", []):
             entry_id = ledger_entry.get("id")
             if entry_id in ledger_entry_ids:

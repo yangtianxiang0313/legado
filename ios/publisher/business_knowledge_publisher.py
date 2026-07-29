@@ -753,6 +753,7 @@ def prepare(
                 {
                     "id": packet_id,
                     "revision": packet_revision,
+                    "sha256": _sha256(packet_bytes),
                 }
             ],
             "generated_from": {
