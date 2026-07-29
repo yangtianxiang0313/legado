@@ -1,1 +1,1 @@
-{"active_task":null,"attempt":0,"last_completed":{"at":"2026-07-29T13:18:12Z","sequence":89,"task_id":"IOS-CHARACTERIZE-CONTENT-CACHE-QUEUE-COMPLETION-RUNTIME-001"},"schema_version":2,"status":"idle","verification":null}
+{"active_task":"IOS-SOURCE-RUNTIME-CACHE-QUEUE-COMPLETION-001","attempt":0,"last_completed":{"at":"2026-07-29T13:18:12Z","sequence":89,"task_id":"IOS-CHARACTERIZE-CONTENT-CACHE-QUEUE-COMPLETION-RUNTIME-001"},"schema_version":2,"status":"running","verification":null}
