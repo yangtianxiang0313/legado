@@ -2,7 +2,7 @@
   "schema_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
   "android_tree": "c81f5d383116e37c1eefee3eb86654514e82022b",
-  "control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122",
+  "control_sha256": "30cac916034a71f4ce34aa11388c0c3d578c78ccd937f888e48b556b01d72172",
   "policy_sha256": "de7fbfb70bc4e871d41b29a36c374da94e57bece18d492ea044aa3e7ef0ddace",
   "facts": [
     {

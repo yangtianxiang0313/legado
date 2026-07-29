@@ -272,7 +272,7 @@ jobs:
               | sort
           )"
           test "${actual}" = "${expected}"
-          python3 -B publisher/ios/harness/harness.py \
+          python3 -B publisher/ios/loop/loop.py \
             --root publisher doctor
 
       - name: Commit create-only result branch and result contract

@@ -15,7 +15,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path, PurePosixPath
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 
 CONTROL_ROOT = Path("ios/harness/android-intake")
@@ -23,7 +23,6 @@ POLICY_PATH = CONTROL_ROOT / "policy-v1.json"
 INVENTORY_PATH = Path("ios/project/android-intake/inventory-manifest.json")
 CATALOG_PATH = Path("ios/project/requirements/catalog.json")
 REQUIREMENTS_ROOT = Path("ios/project/requirements/accepted")
-WORK_ITEMS_ROOT = Path("ios/harness/work-items")
 COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 FACT_ID_RE = re.compile(r"^AF-[A-Z0-9-]+$")
 REQUIREMENT_ID_RE = re.compile(r"^REQ-[A-Z0-9-]+$")
@@ -231,14 +230,11 @@ def baseline_commit(root: Path) -> str:
 
 
 def control_digest(root: Path) -> str:
-    paths: List[Path] = []
-    control = root / CONTROL_ROOT
-    for path in control.rglob("*"):
-        if not path.is_file() or "__pycache__" in path.parts or path.suffix == ".pyc":
-            continue
-        paths.append(path)
-    for name in ("android-requirement.schema.json", "work-item.schema.json"):
-        paths.append(root / "ios/harness/schemas" / name)
+    paths = [
+        root / CONTROL_ROOT / "android_intake.py",
+        root / POLICY_PATH,
+        root / "ios/harness/schemas/android-requirement.schema.json",
+    ]
     entries = []
     for path in sorted(set(paths)):
         entries.append(
@@ -435,101 +431,13 @@ def catalog_value(root: Path, inventory: Optional[Dict[str, Any]] = None) -> Dic
     }
 
 
-def requirement_selection(root: Path, item: Dict[str, Any], inventory: Dict[str, Any], catalog: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    requirement_spec = item.get("spec", {}).get("requirements", {}) if isinstance(item, dict) else {}
-    if not isinstance(requirement_spec, dict):
-        raise IntakeError("工作项 requirements 必须是 object")
-    mode = requirement_spec.get("mode")
-    refs = requirement_spec.get("refs")
-    none_reason = requirement_spec.get("none_reason")
-    if mode == "control_plane":
-        if refs != [] or not isinstance(none_reason, str) or not none_reason.strip():
-            raise IntakeError("control_plane 工作项必须清空 refs 并填写 none_reason")
-        return None
-    if mode not in {"implementation", "enabler", "characterization", "verification"}:
-        raise IntakeError(f"工作项 requirements.mode 无效：{mode}")
-    if not isinstance(refs, list) or not refs or none_reason is not None:
-        raise IntakeError("非 control_plane 工作项必须引用 Requirement，none_reason 为 null")
-    catalog_index = {entry["id"]: entry for entry in catalog["requirements"]}
-    records = {record["id"]: record for record in requirement_records(root)}
-    facts = {entry["id"]: entry for entry in inventory["facts"]}
-    selected = []
-    for ref in refs:
-        if not isinstance(ref, dict) or set(ref) != {"id", "revision", "clauses"}:
-            raise IntakeError("Requirement ref 必须精确包含 id/revision/clauses")
-        requirement_id = ref.get("id")
-        entry = catalog_index.get(requirement_id)
-        record = records.get(requirement_id)
-        if entry is None or record is None:
-            raise IntakeError(f"工作项引用未发布 Requirement：{requirement_id}")
-        if ref.get("revision") != entry.get("revision"):
-            raise IntakeError(f"工作项 Requirement revision 已过期：{requirement_id}")
-        clauses = ref.get("clauses")
-        if not isinstance(clauses, list) or not clauses or any(not isinstance(value, str) for value in clauses):
-            raise IntakeError(f"{requirement_id}: clauses 必须是非空字符串数组")
-        known_clauses = {clause["id"]: clause for clause in record["clauses"]}
-        unknown = sorted(set(clauses) - set(known_clauses))
-        if unknown:
-            raise IntakeError(f"{requirement_id}: 工作项引用未知 clause：{', '.join(unknown)}")
-        if mode == "implementation" and record.get("readiness", {}).get("state") != "implementation_ready":
-            raise IntakeError(f"{requirement_id}: 尚未达到 implementation_ready")
-        fact_refs = record.get("origin", {}).get("fact_refs", [])
-        selected.append(
-            {
-                "ref": ref,
-                "catalog_entry": entry,
-                "clauses": [known_clauses[clause_id] for clause_id in sorted(set(clauses))],
-                "facts": [facts[fact_id] for fact_id in sorted(fact_refs)],
-            }
-        )
-    return {
-        "schema_version": 1,
-        "mode": mode,
-        "android_git_commit": inventory["android_git_commit"],
-        "control_sha256": inventory["control_sha256"],
-        "requirements": sorted(selected, key=lambda value: value["ref"]["id"]),
-    }
-
-
-def validate_work_item(root: Path, work_item_id: str, inventory: Dict[str, Any], catalog: Dict[str, Any]) -> List[str]:
-    errors: List[str] = []
-    try:
-        item = load_json(root / WORK_ITEMS_ROOT / f"{work_item_id}.json")
-        selection = requirement_selection(root, item, inventory, catalog)
-        requirement_spec = item.get("spec", {}).get("requirements", {})
-        if selection is not None:
-            referenced_clauses = {
-                f"{ref.get('id')}#{clause}"
-                for ref in requirement_spec.get("refs", [])
-                for clause in ref.get("clauses", [])
-                if isinstance(clause, str)
-            }
-            criteria = item.get("spec", {}).get("acceptance", {}).get("criteria", [])
-            covered: set[str] = set()
-            for criterion in criteria:
-                clauses = criterion.get("requirement_clauses") if isinstance(criterion, dict) else None
-                if not isinstance(clauses, list):
-                    errors.append(f"{work_item_id}: 每条 AC 必须声明 requirement_clauses")
-                    continue
-                covered.update(value for value in clauses if isinstance(value, str))
-            missing = sorted(referenced_clauses - covered)
-            extra = sorted(covered - referenced_clauses)
-            if missing:
-                errors.append(f"{work_item_id}: Requirement clause 未映射 AC：{', '.join(missing)}")
-            if extra:
-                errors.append(f"{work_item_id}: AC 引用未选择 Requirement clause：{', '.join(extra)}")
-    except IntakeError as error:
-        errors.append(f"{work_item_id}: {error}")
-    return errors
-
-
 def manifest_bundle(root: Path) -> Dict[str, Any]:
     inventory = inventory_value(root)
     catalog = catalog_value(root, inventory)
     return {"inventory": inventory, "catalog": catalog}
 
 
-def doctor(root: Path, work_item_id: Optional[str]) -> List[str]:
+def doctor(root: Path) -> List[str]:
     errors: List[str] = []
     try:
         bundle = manifest_bundle(root)
@@ -537,16 +445,6 @@ def doctor(root: Path, work_item_id: Optional[str]) -> List[str]:
             errors.append("Android fact inventory 已过期")
         if load_json(root / CATALOG_PATH) != bundle["catalog"]:
             errors.append("Requirement catalog 已过期")
-        work_items: Iterable[Path]
-        if work_item_id:
-            work_items = [root / WORK_ITEMS_ROOT / f"{work_item_id}.json"]
-        else:
-            work_items = sorted((root / WORK_ITEMS_ROOT).glob("*.json"))
-        for path in work_items:
-            if not path.exists():
-                errors.append(f"未知工作项：{path.stem}")
-                continue
-            errors.extend(validate_work_item(root, path.stem, bundle["inventory"], bundle["catalog"]))
     except IntakeError as error:
         errors.append(str(error))
     return errors
@@ -554,9 +452,8 @@ def doctor(root: Path, work_item_id: Optional[str]) -> List[str]:
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Android Requirement Intake")
-    parser.add_argument("command", choices=["inventory", "catalog", "manifest", "doctor", "selection"])
+    parser.add_argument("command", choices=["inventory", "catalog", "manifest", "doctor"])
     parser.add_argument("--root", default=".")
-    parser.add_argument("--work-item")
     args = parser.parse_args(argv)
     root = Path(args.root).resolve()
     try:
@@ -566,18 +463,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             value = catalog_value(root)
         elif args.command == "manifest":
             value = manifest_bundle(root)
-        elif args.command == "selection":
-            if not args.work_item:
-                raise IntakeError("selection 需要 --work-item")
-            bundle = manifest_bundle(root)
-            item = load_json(root / WORK_ITEMS_ROOT / f"{args.work_item}.json")
-            selection = requirement_selection(root, item, bundle["inventory"], bundle["catalog"])
-            value = {
-                "selection": selection,
-                "selection_sha256": sha256_json(selection) if selection is not None else None,
-            }
         else:
-            errors = doctor(root, args.work_item)
+            errors = doctor(root)
             if errors:
                 for error in errors:
                     print(error, file=sys.stderr)

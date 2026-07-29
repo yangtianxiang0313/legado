@@ -355,6 +355,8 @@ class AndroidGoldenPublisherTests(unittest.TestCase):
         self.assertIn("verified_candidate", workflow)
         self.assertIn("golden/result-", workflow)
         self.assertIn("publisher-result.json", workflow)
+        self.assertIn("publisher/ios/loop/loop.py", workflow)
+        self.assertNotIn("publisher/ios/harness/harness.py", workflow)
         self.assertIn(
             "android-golden-result-",
             workflow,

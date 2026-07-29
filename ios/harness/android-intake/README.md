@@ -6,7 +6,6 @@
 python3 -B ios/harness/android-intake/android_intake.py inventory --root .
 python3 -B ios/harness/android-intake/android_intake.py catalog --root .
 python3 -B ios/harness/android-intake/android_intake.py doctor --root .
-python3 -B ios/harness/android-intake/android_intake.py selection --root . --work-item IOS-SOURCE-FORMAT-001
 ```
 
-新增 extractor、sensor、accepted Requirement 或 baseline 必须走受保护变更。普通实现工作项只能读取其 selection，不能修改这些输入。
+新增 extractor、sensor、accepted Requirement 或 baseline 时，需要重建 inventory 与 catalog。Minimal Loop v2 的 Task 直接引用相关 Requirement、Android 源码锚点和 Golden，不再生成 WorkItem selection 投影。

@@ -1,4 +1,3 @@
-import copy
 import json
 import sys
 import unittest
@@ -30,37 +29,14 @@ class AndroidIntakeTests(unittest.TestCase):
         self.assertEqual("L1", fact["evidence_level"])
         self.assertEqual("declaration_only", fact["support_state"])
 
-    def test_pipeline_entrypoints_require_characterization(self):
+    def test_pipeline_entrypoints_are_ready_after_android_characterization(self):
         inventory = android_intake.inventory_value(REPO_ROOT)
         catalog = android_intake.catalog_value(REPO_ROOT, inventory)
         entry = next(
             value for value in catalog["requirements"]
             if value["id"] == "REQ-ANDROID-SOURCE-PIPELINE-001"
         )
-        self.assertEqual("characterization_required", entry["readiness"])
-
-    def test_source_format_work_item_has_content_addressed_selection(self):
-        inventory = android_intake.inventory_value(REPO_ROOT)
-        catalog = android_intake.catalog_value(REPO_ROOT, inventory)
-        item = json.loads(
-            (REPO_ROOT / "ios/harness/work-items/IOS-SOURCE-FORMAT-001.json").read_text(encoding="utf-8")
-        )
-        selection = android_intake.requirement_selection(REPO_ROOT, item, inventory, catalog)
-        self.assertIsNotNone(selection)
-        self.assertEqual("implementation", selection["mode"])
-        self.assertEqual(64, len(android_intake.sha256_json(selection)))
-
-    def test_implementation_rejects_uncharacterized_pipeline(self):
-        inventory = android_intake.inventory_value(REPO_ROOT)
-        catalog = android_intake.catalog_value(REPO_ROOT, inventory)
-        item = json.loads(
-            (REPO_ROOT / "ios/harness/work-items/IOS-SOURCELAB-ENGINE-001.json").read_text(encoding="utf-8")
-        )
-        candidate = copy.deepcopy(item)
-        candidate["spec"]["requirements"]["mode"] = "implementation"
-        with self.assertRaises(android_intake.IntakeError):
-            android_intake.requirement_selection(REPO_ROOT, candidate, inventory, catalog)
-
+        self.assertEqual("implementation_ready", entry["readiness"])
 
 if __name__ == "__main__":
     unittest.main()

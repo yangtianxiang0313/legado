@@ -6,8 +6,8 @@
 
 1. **Android Requirement Intake**：从固定 Android commit 提取可验证 Fact，发布带证据成熟度的 Requirement Catalog。
 2. **架构契约**：规定模块、依赖方向、并发所有权、数据流和发布 profile。
-3. **AI Harness**：从 Requirement 编译出的工作队列选择任务，限制写入范围，执行固定验收并生成与代码树绑定的 Evidence。
-4. **项目记忆**：保存当前能力状态、ADR、兼容差异、Pitfall、checkpoint 和冻结基准。
+3. **Minimal Loop v2**：从已发布业务知识直接派生唯一 Task，限制写入范围并执行固定验收。
+4. **项目记忆**：以短事件保存当前状态、架构变化、踩坑和下一步，稳定知识进入 Business Knowledge。
 5. **SourceLab**：把受版本控制的响应同时作为离线 FixtureTransport 和本地书站，按 behavior case-role 持续扩展书源环境能力。
 
 AI 只有在五者同时一致时才能声明一项能力完成。
@@ -19,8 +19,7 @@ AI 只有在五者同时一致时才能声明一项能力完成。
 - [依赖治理](docs/dependencies.md)
 - [测试与跨端一致性](docs/testing-and-conformance.md)
 - [SourceLab 本地书源模拟系统](docs/source-lab.md)
-- [AI 自动推进协议](docs/ai-harness.md)
-- [可信 Supervisor 与无人值守边界](docs/trusted-supervisor.md)
+- [AI 自动推进协议](docs/minimal-loop-v2.md)
 - [项目记忆](docs/project-memory.md)
 - [路线图](docs/roadmap.md)
 - [当前状态](project/status.md)
@@ -28,23 +27,23 @@ AI 只有在五者同时一致时才能声明一项能力完成。
 ## 立即可用的命令
 
 ```bash
-python3 ios/harness/harness.py doctor
+python3 -B ios/loop/loop.py doctor
 python3 -B ios/harness/android-intake/android_intake.py doctor --root .
-python3 ios/harness/harness.py next
-python3 ios/harness/harness.py context IOS-BOOT-001
-python3 -m unittest discover -s ios/harness/tests -p 'test_*.py'
+python3 -B ios/loop/loop.py next
+python3 -B ios/loop/loop.py start
 python3 ios/harness/source-lab/source_lab.py verify-site --root . --scenario sl-html-basic-001
 ```
 
-领取并推进任务：
+验证并完成当前任务：
 
 ```bash
-python3 ios/harness/harness.py claim IOS-BOOT-001 --agent codex-main
-python3 ios/harness/harness.py verify IOS-BOOT-001
-python3 ios/harness/harness.py close IOS-BOOT-001
+python3 -B ios/loop/loop.py verify
+python3 -B ios/loop/loop.py complete \
+  --summary "完成内容" --next-step "下一步"
 ```
 
-`close` 前必须按 schema 写 checkpoint 并更新能力状态。Harness 不提供 golden 更新命令；golden 只能走独立、受保护的人工工作流。
+完整运行日志保存在 `.harness-runtime/loop`。Android Golden 仍只能由独立
+GitHub Publisher 从真实 Android Oracle 结果发布。
 
 ## 计划中的产品目录
 

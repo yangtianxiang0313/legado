@@ -33,35 +33,7 @@ verified-candidate Receipt 重新验证 Oracle Run/Artifact 与双 attestation�
 Golden 写权限。result branch 只能 create-only；回滚通过新 revert commit 完成，不能
 覆写历史 release receipt。
 
-## Business Knowledge Publisher
-
-`business_knowledge_publisher.py prepare` 消费同一已完成 Work Item 产生的 Packet/Driver
-proposal、受保护 Android Golden release receipt、精确 Requirement clauses、目标
-Work Item、发布 run 和 source commit。它逐条重算：
-
-- proposal 原始文件摘要、schema、authority、producer Work Item、Evidence 与 Checkpoint；
-- Golden manifest/release/payload authority 及 Android commit、runner、canonicalizer；
-- 每条 `runtime_verified` Claim 的 JSON Pointer 与 canonical observed SHA-256；
-- Driver 的精确 Claim 集合、resolved ADR；
-- 新 authority digest、Requirement Catalog digest、architecture digest 和一 Claim
-  一 Coverage entry。
-
-输出仍只能位于仓库外的新目录，目录中按仓库相对路径保存 published Packet、resolved
-Driver、Coverage Ledger、派生 Catalog 和不可变 release receipt，并额外包含
-`transaction.json`。事务明确列出每个安装文件的 SHA-256 与两个待删除 proposal；脚本
-本身不修改源仓库。
-
-`.github/workflows/business-knowledge-publisher.yml` 是唯一安装方。Loop Dispatcher
-先把 DemandCompiler 闭合的 producer、proposal、Golden、Requirement clauses 与未来
-目标 Work Item 写入 canonical request manifest，并以 source HEAD 的唯一子提交创建
-`knowledge/request-<batch>-<source-sha>`。Workflow 只监听该 create-only push，不使用
-`workflow_dispatch`、Environment、PR 或硬编码场景；所有输入路径和摘要都来自 request
-commit，安装范围只取 staging transaction。
-
-安装后 Workflow 删除 request manifest，重跑 Business Knowledge doctor、Harness
-doctor 和 Demand Compiler，再把结果作为 request commit 的唯一子提交推到
-`knowledge/result-<batch>-<source-sha>`，同时上传 canonical transaction/report。
-本地 `github_business_knowledge_publisher.py` 不信任运行 journal，必须重新验证唯一
-Run、Artifact、request/result ref、双父链、source/result 与 request/result 两组精确
-diff、每个 Git object 摘要和 proposal 删除，最后才允许 `--ff-only`。普通 Agent 和
-当前实现 WorkItem 仍不能直接修改 published Packet/Driver、Coverage 或 release。
+Business Knowledge 与 Requirement 已切换到 Minimal Loop v2 的普通知识任务：直接
+绑定源码锚点、真实 Android Golden 和完成事件，不再经过 WorkItem/Evidence/Checkpoint
+发布器或人工 Gate。稳定知识仍由 `business_knowledge.py doctor` 校验；详细运行产物
+不进入 Git。
