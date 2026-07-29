@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "kind": "source_lab_scenario",
+  "id": "sl-source-request-url-template-compilation-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "source_lab_site",
+  "capabilities": [
+    "CAP-RUNTIME-PORTS",
+    "CAP-CONFORMANCE"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": "source.template.json",
+  "input": "input.json",
+  "transport": {
+    "mode": "fixture_and_loopback",
+    "external_network": "deny",
+    "responses": [
+      {
+        "id": "inline-js-key-page-option",
+        "match": {
+          "method": "POST",
+          "path": "/template/2/%E6%98%9F%E6%B2%B3/two",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/ok.txt"
+        }
+      },
+      {
+        "id": "script-block-order",
+        "match": {
+          "method": "GET",
+          "path": "/template/block/%E6%B2%B3%E6%B5%81/tail",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/ok.txt"
+        }
+      },
+      {
+        "id": "relative-empty-last-page",
+        "match": {
+          "method": "GET",
+          "path": "/library/template//last",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/ok.txt"
+        }
+      },
+      {
+        "id": "nested-inline-js",
+        "match": {
+          "method": "GET",
+          "path": "/template/3/second",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/ok.txt"
+        }
+      }
+    ]
+  },
+  "coverage": [
+    {
+      "behavior": "request.url-template-compilation",
+      "cases": [
+        {
+          "id": "inline-js-key-page-option",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl initUrl inner JS, keyword, page and option ordering"
+          ]
+        },
+        {
+          "id": "script-block-order",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl analyzeJs block and @result suffix ordering"
+          ]
+        },
+        {
+          "id": "relative-empty-last-page",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl null inner result, relative URL and last page fallback"
+          ]
+        },
+        {
+          "id": "nested-inline-js",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl nested braces in inner JavaScript"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "2026-01-01T00:00:00Z",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 23,
+    "network_allowed": false,
+    "logical_origin": "http://sourcelab.test"
+  },
+  "limits": {
+    "timeout_ms": 1000,
+    "max_response_bytes": 1048576,
+    "max_request_body_bytes": 1048576,
+    "max_requests": 16,
+    "max_concurrency": 2
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-SOURCE-REQUEST-URL-TEMPLATE-COMPILATION-001"
+  }
+}

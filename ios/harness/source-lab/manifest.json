@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "logical_origin": "http://sourcelab.test",
-  "control_sha256": "ba719bd3ea924dc1750b5a186c9c75ae2f8e1bb00dc8f582ca17d06b8999480c",
+  "control_sha256": "fd31f4bb93f303c1d6dd3dd5dff4fb297d7e6aed286e5cb15f7a81c0d8d92a54",
   "scenarios": [
     {
       "id": "sl-html-basic-001",
@@ -26,6 +26,12 @@
       "status": "candidate",
       "path": "ios/harness/fixtures/source-lab/sl-source-request-header-cookie-retry-layering-001",
       "sha256": "e594e4100473bdbe837e735efc40f651328db877aa4c978376cbe30f622e0e2a"
+    },
+    {
+      "id": "sl-source-request-url-template-compilation-001",
+      "status": "candidate",
+      "path": "ios/harness/fixtures/source-lab/sl-source-request-url-template-compilation-001",
+      "sha256": "f5a046dc6a559d563002d79a882fe8c7e5b6ad439d08330ed52690360d406b94"
     },
     {
       "id": "sl-source-response-xml-declaration-normalization-001",

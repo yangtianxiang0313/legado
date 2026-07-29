@@ -57,6 +57,8 @@ class LegadoOracleInstrumentedTest {
                 runRequestOptionCases()
             "sl-source-request-field-encoding-runtime-001" ->
                 runFieldEncodingCases()
+            "sl-source-request-url-template-compilation-001" ->
+                runURLTemplateCompilationCases()
             else -> {
                 runCase("search-hit", "search", searchRequest("星河")) {
                     searchProjection(WebBook.searchBookAwait(source, "星河"))
@@ -382,6 +384,116 @@ class LegadoOracleInstrumentedTest {
         }
     }
 
+    private fun runURLTemplateCompilationCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            require(value.getString("operation") == "url_template_compilation") {
+                "URL template scenario only accepts url_template_compilation stimuli"
+            }
+            val id = value.getString("id")
+            val arguments = value.getJSONObject("arguments")
+            val template = arguments.getString("template")
+            val key =
+                if (arguments.has("key")) arguments.getString("key") else null
+            val page =
+                if (arguments.has("page")) arguments.getInt("page") else null
+            val baseUrl =
+                if (arguments.has("base_path")) {
+                    deviceOrigin + arguments.getString("base_path")
+                } else {
+                    deviceOrigin
+                }
+            val fallback = value.getJSONObject("request")
+            val fallbackRequest = request(
+                deviceOrigin + fallback.getString("target")
+            ).put("method", fallback.getString("method"))
+            val record = JSONObject()
+                .put("id", id)
+                .put("operation", "url_template_compilation")
+            try {
+                val analyze = AnalyzeUrl(
+                    mUrl = template,
+                    key = key,
+                    page = page,
+                    baseUrl = baseUrl,
+                    source = source,
+                    headerMapF = source.getHeaderMap(true)
+                )
+                val fields = reflectedFieldMap(analyze)
+                val encodedFields = fields.entries.joinToString("&") {
+                    "${it.key}=${it.value}"
+                }
+                val method = if (analyze.isPost()) "POST" else "GET"
+                val body =
+                    if (analyze.isPost() && fields.isNotEmpty()) {
+                        encodedFields
+                    } else {
+                        analyze.body
+                    }
+                val requestURL =
+                    if (!analyze.isPost() && fields.isNotEmpty()) {
+                        "${reflectedString(analyze, "urlNoQuery")}?$encodedFields"
+                    } else {
+                        analyze.url
+                    }
+                val analyzedRequest = request(requestURL)
+                    .put("method", method)
+                    .put("body", nullable(body))
+                requestPlan.put(analyzedRequest)
+                record
+                    .put("request", analyzedRequest)
+                    .put(
+                        "result",
+                        JSONObject()
+                            .put("rule_url", analyze.ruleUrl)
+                            .put("url", logical(analyze.url))
+                            .put(
+                                "url_no_query",
+                                logical(reflectedString(analyze, "urlNoQuery"))
+                            )
+                            .put("method", method)
+                            .put("body", nullable(body))
+                            .put(
+                                "query_string",
+                                nullable(
+                                    reflectedNullableString(
+                                        analyze,
+                                        "queryStr"
+                                    )
+                                )
+                            )
+                            .put(
+                                "field_map",
+                                JSONArray().apply {
+                                    fields.forEach { (fieldKey, fieldValue) ->
+                                        put(
+                                            JSONObject()
+                                                .put("key", fieldKey)
+                                                .put("value", fieldValue)
+                                        )
+                                    }
+                                }
+                            )
+                            .put("retry", reflectedInt(analyze, "retry"))
+                    )
+                    .put("issue", JSONObject.NULL)
+            } catch (error: Throwable) {
+                requestPlan.put(fallbackRequest)
+                record
+                    .put("request", fallbackRequest)
+                    .put("result", JSONObject.NULL)
+                    .put(
+                        "issue",
+                        JSONObject()
+                            .put("code", "android_exception")
+                            .put("exception_type", error.javaClass.name)
+                    )
+            }
+            cases.put(record)
+        }
+    }
+
     @Suppress("UNCHECKED_CAST")
     private fun reflectedFieldMap(
         analyze: AnalyzeUrl
@@ -401,6 +513,12 @@ class LegadoOracleInstrumentedTest {
         val field = AnalyzeUrl::class.java.getDeclaredField(name)
         field.isAccessible = true
         return field.get(analyze) as? String
+    }
+
+    private fun reflectedInt(analyze: AnalyzeUrl, name: String): Int {
+        val field = AnalyzeUrl::class.java.getDeclaredField(name)
+        field.isAccessible = true
+        return field.getInt(analyze)
     }
 
     private fun controlledHeaders(

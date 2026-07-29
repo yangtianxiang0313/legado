@@ -266,6 +266,14 @@ class AndroidOracleRunnerTests(unittest.TestCase):
             "sl-source-request-header-cookie-retry-layering-001",
             request_options["scenario_id"],
         )
+        url_template = runner.doctor(
+            ROOT,
+            "sl-source-request-url-template-compilation-001",
+        )
+        self.assertEqual(
+            "sl-source-request-url-template-compilation-001",
+            url_template["scenario_id"],
+        )
 
     def test_product_tree_drift_fails_before_runner_execution(self):
         baseline = {

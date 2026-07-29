@@ -35,6 +35,13 @@
       "fixture_ids": ["sl-source-request-field-encoding-runtime-001"],
       "authority": "android_oracle_candidate_only",
       "status": "candidate"
+    },
+    {
+      "id": "IOS-ANDROID-URL-TEMPLATE-COMPILATION-ATTESTATION-001",
+      "scenario_id": "sl-source-request-url-template-compilation-001",
+      "fixture_ids": ["sl-source-request-url-template-compilation-001"],
+      "authority": "android_oracle_candidate_only",
+      "status": "candidate"
     }
   ]
 }

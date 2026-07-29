@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "inline-js-key-page-option",
+      "operation": "url_template_compilation",
+      "arguments": {
+        "template": "/template/{{1 + 1}}/{{key}}/<one,two,last>,{\"method\":\"POST\",\"body\":\"term={{key}}\",\"retry\":2}",
+        "key": "星河",
+        "page": 2
+      },
+      "request": {
+        "method": "POST",
+        "target": "/template/inline-fallback"
+      }
+    },
+    {
+      "id": "script-block-order",
+      "operation": "url_template_compilation",
+      "arguments": {
+        "template": "<js>'/template/block/' + key</js>@result/tail",
+        "key": "河流",
+        "page": 1
+      },
+      "request": {
+        "method": "GET",
+        "target": "/template/block-fallback"
+      }
+    },
+    {
+      "id": "relative-empty-last-page",
+      "operation": "url_template_compilation",
+      "arguments": {
+        "template": "../template/{{null}}/<first,second,last>",
+        "base_path": "/library/catalog/index.html",
+        "page": 5
+      },
+      "request": {
+        "method": "GET",
+        "target": "/template/relative-fallback"
+      }
+    },
+    {
+      "id": "nested-inline-js",
+      "operation": "url_template_compilation",
+      "arguments": {
+        "template": "/template/{{(function(){ return 3; })()}}/<first,second>",
+        "page": 2
+      },
+      "request": {
+        "method": "GET",
+        "target": "/template/nested-fallback"
+      }
+    }
+  ]
+}

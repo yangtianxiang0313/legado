@@ -103,6 +103,19 @@ SCENARIO_CONTRACTS = {
             "declared-gbk",
         }),
     },
+    "sl-source-request-url-template-compilation-001": {
+        "status": "candidate",
+        "expected_cases": (
+            ("inline-js-key-page-option", "url_template_compilation"),
+            ("script-block-order", "url_template_compilation"),
+            ("relative-empty-last-page", "url_template_compilation"),
+            ("nested-inline-js", "url_template_compilation"),
+        ),
+        "nominal_cases": frozenset({
+            "inline-js-key-page-option",
+            "script-block-order",
+        }),
+    },
 }
 ANDROID_PRODUCT_PATHS = (
     "app/src/main",
@@ -442,8 +455,10 @@ def normalize_raw_artifact(
             not isinstance(request, dict)
             or (
                 request.get("method") not in {"GET", "POST"}
-                if scenario_id
-                == "sl-source-request-field-encoding-runtime-001"
+                if scenario_id in {
+                    "sl-source-request-field-encoding-runtime-001",
+                    "sl-source-request-url-template-compilation-001",
+                }
                 else request.get("method")
                 != (
                     "POST"

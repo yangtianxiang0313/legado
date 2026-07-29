@@ -49,6 +49,11 @@
       "sha256": "6360f425971e29fab140e29d2c81130307b21142b7eecee96148c93fb583667d"
     },
     {
+      "id": "sl-source-request-url-template-compilation-001",
+      "path": "ios/harness/fixtures/source-lab/sl-source-request-url-template-compilation-001",
+      "sha256": "34f1ba35bbf5a04c0f2287633a7c1ac4ff2c33d5f32096c03cd4b0817d761f89"
+    },
+    {
       "id": "sl-source-response-xml-declaration-normalization-001",
       "path": "ios/harness/fixtures/source-lab/sl-source-response-xml-declaration-normalization-001",
       "sha256": "3201a955c3f355b123b8306f9ca2174fa0f971ac2ce7ac7471bd0569ce25a010"
