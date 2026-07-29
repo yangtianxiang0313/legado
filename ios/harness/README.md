@@ -332,6 +332,11 @@ Golden Publisher 的自动实现使用独立 exact-scope 特例。只有同时�
 workflow、Oracle/Receipt/Dispatcher、Package 与产品代码始终在该实现项的拒绝域；
 真实 Golden 只能由后续外部 Publisher 结果事务产生。
 
+Golden Dispatcher 使用另一条 exact-scope：仅允许新增独立 Dispatcher/test，并修改
+Supervisor 接线、示例配置和控制面记忆。它没有 Publisher/Workflow/Golden/Oracle/
+Receipt 写权限；实现项即使带齐标签，也不能把外部执行适配层与答案生成 authority
+合并。
+
 ## Codex exec Agent Adapter
 
 `codex_agent_adapter.py` 是 Loop Supervisor 的 Codex CLI argv adapter。它使用稳定的

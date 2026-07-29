@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 70,
+  "revision": 71,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -72,12 +72,12 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260729T000807Z-ios-github-golden-publisher-scope-001-627ee272.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260729T002938Z-ios-github-golden-dispatcher-scope-001-ac9b346a.json",
   "next_actions": [
-    "物化并实现 scenario-aware Golden Publisher workflow 与 manifest v2 staging",
-    "实现 create-only request branch、唯一 run、result artifact/commit 对账与受限 fast-forward",
-    "让 Supervisor 在 external_publisher_required 状态调用 Dispatcher 并在结果合并后自动续接 Package 验收"
+    "物化并实现 GitHubGoldenPublisherDispatcher 与完整 result artifact/commit 验证",
+    "让 Supervisor external_publisher_required 调用 Dispatcher，成功 fast-forward 后重新 inspect",
+    "运行真实 sl-post-form-001 Golden workflow 并自动续接 Package 验收"
   ],
-  "updated_at": "2026-07-29T00:08:07Z",
-  "updated_by": "IOS-GITHUB-GOLDEN-PUBLISHER-SCOPE-001"
+  "updated_at": "2026-07-29T00:29:38Z",
+  "updated_by": "IOS-GITHUB-GOLDEN-DISPATCHER-SCOPE-001"
 }
