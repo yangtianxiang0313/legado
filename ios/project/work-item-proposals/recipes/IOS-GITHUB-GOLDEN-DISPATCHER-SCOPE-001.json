@@ -1,0 +1,149 @@
+{
+  "schema_version": 1,
+  "proposal_id": "IOS-GITHUB-GOLDEN-DISPATCHER-SCOPE-001",
+  "proposal_constraint": "只在 Loop Supervisor 增加 Golden Dispatcher/测试、Supervisor 接线/config/README/记忆的精确自动实现策略；禁止 Publisher、Workflow、Golden、Receipt、Oracle、Package、产品和 wildcard",
+  "work_item": {
+    "api_version": "legado.harness/v1",
+    "kind": "WorkItem",
+    "metadata": {
+      "annotations": {},
+      "id": "IOS-GITHUB-GOLDEN-DISPATCHER-SCOPE-001",
+      "labels": ["phase-0", "control-plane", "external-execution", "android-oracle", "golden-dispatcher-scope", "corrective"],
+      "priority": 100,
+      "risk": "high",
+      "title": "建立 Golden Dispatcher 精确自动实现边界"
+    },
+    "spec": {
+      "acceptance": {
+        "criteria": [
+          {
+            "id": "AC-1",
+            "knowledge_claims": [],
+            "requirement_clauses": [],
+            "statement": "只有 external-execution/android-oracle/golden-dispatcher/corrective 四标签同时存在才启用 exact scope。",
+            "verified_by": ["harness-tests"]
+          },
+          {
+            "id": "AC-2",
+            "knowledge_claims": [],
+            "requirement_clauses": [],
+            "statement": "exact allow-set 只含 Golden Dispatcher/test、Loop Supervisor/test、supervisor example、README 与 CAP/Checkpoint/PIT。",
+            "verified_by": ["harness-tests", "dependency-policy"]
+          },
+          {
+            "id": "AC-3",
+            "knowledge_claims": [],
+            "requirement_clauses": [],
+            "statement": "Publisher、两个 workflow、当前 Golden、Oracle/Receipt、Demand、Harness core、Package、产品、Requirement 与 wildcard 均 fail closed。",
+            "verified_by": ["harness-tests"]
+          },
+          {
+            "id": "AC-4",
+            "knowledge_claims": [],
+            "requirement_clauses": [],
+            "statement": "CAP-KNOWLEDGE-CONTROL revision 70→71；本项不创建 Dispatcher、不修改外部 authority、不访问 GitHub。",
+            "verified_by": ["memory-close"]
+          }
+        ],
+        "required_checks": ["dependency-policy", "harness-tests"]
+      },
+      "architecture_refs": ["ARCH-014", "ARCH-017", "ADR-0002", "ADR-0004"],
+      "baseline_checks": ["dependency-policy", "harness-tests"],
+      "budget": {
+        "max_edit_verify_cycles": 4,
+        "max_full_test_runs": 4,
+        "max_infra_retries": 1,
+        "max_targeted_test_runs": 18,
+        "wall_clock_seconds": 10800
+      },
+      "capability": "CAP-KNOWLEDGE-CONTROL",
+      "completion_effects": {"health": {"github_golden_dispatcher_auto_scope": "exact_paths_v1"}},
+      "depends_on": ["IOS-GITHUB-GOLDEN-PUBLISHER-AUTOMATION-001"],
+      "gates": [],
+      "inputs": {
+        "android_source_anchors": [],
+        "context_files": [
+          "ios/harness/loop_supervisor.py",
+          "ios/harness/tests/test_loop_supervisor.py",
+          "ios/harness/github_oracle_dispatcher.py",
+          "ios/project/checkpoints/IOS-GITHUB-GOLDEN-PUBLISHER-AUTOMATION-001.json",
+          "ios/project/checkpoints/IOS-GITHUB-GOLDEN-DISPATCHER-OWNER-001.json"
+        ],
+        "fixtures": []
+      },
+      "intent": "为 Golden Dispatcher 与 Supervisor 接线建立精确自动策略。只在标签 external-execution/android-oracle/golden-dispatcher/corrective 全部存在时允许固定集合：ios/harness/github_golden_publisher.py、对应测试、loop_supervisor.py/test、supervisor.example.json、README、CAP-KNOWLEDGE-CONTROL、当前 Checkpoint 与 PIT wildcard。显式拒绝 Publisher、Golden/Oracle workflows、当前 goldens/**、Oracle/Receipt/Demand/Harness core/SourceLab/Package/产品/Requirement/approval/proposal/wildcard。本策略项只修改 Supervisor/test/README/CAP/Checkpoint/PIT，不创建 Dispatcher，不访问 GitHub。revision 70→71。",
+      "knowledge": {
+        "claim_refs": [],
+        "context_budget": {"max_bytes": 40960, "max_claims": 10},
+        "contract_version": 1,
+        "coverage_refs": [],
+        "driver_refs": [],
+        "expected_ledger_transitions": [],
+        "mode": "not_applicable",
+        "none_reason": "本项只建立 Dispatcher 自动物化范围策略",
+        "produces": []
+      },
+      "memory": {
+        "adr": "not_required",
+        "capability_state_required": true,
+        "checkpoint_required": true,
+        "pitfall": "if_non_obvious_and_preventable"
+      },
+      "requirements": {
+        "mode": "control_plane",
+        "none_reason": "本项只收窄 Golden Dispatcher 自动实现边界",
+        "refs": []
+      },
+      "scope": {
+        "allow_write": [
+          "ios/harness/loop_supervisor.py",
+          "ios/harness/tests/test_loop_supervisor.py",
+          "ios/harness/README.md",
+          "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+          "ios/project/checkpoints/IOS-GITHUB-GOLDEN-DISPATCHER-SCOPE-001.json",
+          "ios/project/pitfalls/PIT-*.json"
+        ],
+        "deny_write": [
+          ".github/**",
+          "app/**",
+          "modules/**",
+          "ios/Packages/**",
+          "ios/publisher/**",
+          "ios/harness/harness.py",
+          "ios/harness/demand_compiler.py",
+          "ios/harness/github_golden_publisher.py",
+          "ios/harness/github_oracle_dispatcher.py",
+          "ios/harness/github_oracle_receipt.py",
+          "ios/harness/proposal_compiler.py",
+          "ios/harness/config.json",
+          "ios/harness/supervisor.example.json",
+          "ios/harness/schemas/**",
+          "ios/harness/business-knowledge/**",
+          "ios/harness/android-intake/**",
+          "ios/harness/source-lab/**",
+          "ios/harness/fixtures/**",
+          "ios/harness/goldens/**",
+          "ios/harness/normalization/**",
+          "ios/harness/oracle/**",
+          "ios/project/external-execution-receipts/**",
+          "ios/project/android-intake/**",
+          "ios/project/requirements/**",
+          "ios/project/business-knowledge/**",
+          "ios/project/approvals/**",
+          "ios/project/work-item-proposals/**",
+          "ios/project/baseline.json",
+          "ios/docs/**"
+        ],
+        "max_changed_lines": 2400,
+        "max_files_changed": 8
+      },
+      "source_lab": {
+        "behaviors": [],
+        "mode": "not_applicable",
+        "none_reason": "本项只建立控制策略",
+        "scenarios": []
+      },
+      "stop_on": ["doctor_red", "scope_violation", "authority_scope", "same_failure_twice", "budget_exhausted"]
+    }
+  }
+}
