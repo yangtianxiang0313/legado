@@ -780,7 +780,10 @@ class HarnessTests(unittest.TestCase):
                 "schema_version": 1,
                 "kind": "business_knowledge_release",
                 "authority": "protected_business_knowledge",
-                "authorization": "github_environment_review",
+                "authorization": "github_actions_push_v2",
+                "publisher": (
+                    "github-actions:business-knowledge-publisher-v2"
+                ),
                 "source_commit": "b" * 40,
                 "producer": {
                     "work_item": item_id,
@@ -809,6 +812,20 @@ class HarnessTests(unittest.TestCase):
                 any(proposal in error for error in errors),
                 errors,
             )
+
+            receipt["authorization"] = "github_environment_review"
+            receipt.pop("publisher")
+            fixture.write_json(receipt_relative, receipt)
+            errors = harness.validate_references(items, state)
+            self.assertFalse(
+                any(proposal in error for error in errors),
+                errors,
+            )
+            receipt["authorization"] = "github_actions_push_v2"
+            receipt["publisher"] = (
+                "github-actions:business-knowledge-publisher-v2"
+            )
+            fixture.write_json(receipt_relative, receipt)
 
             consumer_id = "IOS-KNOWLEDGE-CONSUMER-001"
             consumer = fixture.item(consumer_id, "CAP-BOOT", 70)

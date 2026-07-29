@@ -1864,11 +1864,19 @@ class Harness:
             and sha256_bytes(producer_evidence_path.read_bytes())
             == producer_evidence_sha256
         )
+        authorization = receipt.get("authorization")
+        publisher_identity_valid = (
+            authorization == "github_environment_review"
+            or (
+                authorization == "github_actions_push_v2"
+                and receipt.get("publisher")
+                == "github-actions:business-knowledge-publisher-v2"
+            )
+        )
         if (
             receipt.get("kind") != "business_knowledge_release"
             or receipt.get("authority") != "protected_business_knowledge"
-            or receipt.get("authorization")
-            != "github_environment_review"
+            or not publisher_identity_valid
             or re.fullmatch(
                 r"[0-9a-f]{40}",
                 str(receipt.get("source_commit", "")),
