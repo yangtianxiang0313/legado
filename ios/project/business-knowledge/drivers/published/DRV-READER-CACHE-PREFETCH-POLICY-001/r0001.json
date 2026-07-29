@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-READER-CACHE-PREFETCH-POLICY-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "reader.cache.prefetch-policy-compatibility-boundary",
+  "title": "用 ReaderCore 纯策略和可取消编排隔离 Android 阅读预取语义",
+  "claim_refs": [
+    {
+      "id": "BKC-RD-PREFETCH-POLICY-001",
+      "revision": 2
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "ReaderCore 必须逐场景复现受保护 Android Golden 中的禁用条件、双侧第二章起始窗口、边界钳制、已完成与失败阈值跳过、双方向启动和新任务替换；expected 不得由 iOS 实现反向生成。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "modularity",
+      "scenario": "候选计算、跳过判定和代际替换属于 ReaderCore；缓存可用性、下载命令和取消信号通过端口表达，核心不得依赖 SwiftUI、URLSession、文件系统实现、Android Job 或 Golden 文件。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "determinism",
+      "scenario": "预取窗口和资格判断必须实现为稳定值输入到稳定值输出的纯策略；当前章、章节数、配置、已缓存集合和失败计数均显式注入，以便 ConformanceCLI 结构化重放。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "cancellation_safety",
+      "scenario": "AppUseCases 负责把两个方向的命令组合成具有 generation 身份的可取消会话；后一次调用必须淘汰前一 generation，但不能假设 Android 未验证的 downloadScope 子任务一定随父任务取消。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "evolvability",
+      "scenario": "下载端口、缓存状态和调度策略保持独立，使后续 UI 定制、后台调度、磁盘预算和换源不改写已冻结的 android-legado-v1 兼容策略。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "scope_control",
+      "scenario": "本切片只实现 Golden 覆盖的 8 个场景；真实传输并发、公平性、重试计数变更、磁盘淘汰、换源和进程恢复由后续 Android 真源任务扩张。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "如何把前向与后向候选建模为有方向的稳定命令，同时保留 Golden 已验证的首对启动行为？",
+    "如何用 generation token 表达后一次预取替换前一次，而不把 Kotlin Job 或 Swift Task 类型泄漏进领域接口？",
+    "如何拆分 PrefetchPolicy、CacheAvailabilityPort 与 DownloadCommandPort，使纯策略验收不依赖真实网络和磁盘？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002"
+    ],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-READER-CACHE-PREFETCH-POLICY-001",
+      "IOS-READER-CORE-CACHE-PREFETCH-POLICY-001"
+    ]
+  },
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30485265491/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-READER-CACHE-PREFETCH-POLICY-001"
+}

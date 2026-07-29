@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgeCoverageLedger",
+  "id": "BKL-READER-CACHE-PREFETCH-POLICY-001",
+  "revision": 1,
+  "status": "current",
+  "packet_refs": [
+    {
+      "id": "BKP-READER-CACHE-PREFETCH-POLICY-001",
+      "revision": 1,
+      "sha256": "3fd9f02d2f34f4b1231ca03402e9953982be6b99b93e132b9af5e9220a74677f"
+    }
+  ],
+  "generated_from": {
+    "knowledge_authority_sha256": "530858f9e36b45247fe2467755dd09c9049e6cc58f36707f42f34ae6d367102a",
+    "requirement_catalog_sha256": "38e5943c28e51a3a9a1b8d7cc51391e8d6354d01919ac8bf444cee3461766962",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "entries": [
+    {
+      "id": "BKE-READER-CACHE-PREFETCH-POLICY-001",
+      "claim_ref": {
+        "id": "BKC-RD-PREFETCH-POLICY-001",
+        "revision": 2
+      },
+      "validation": {
+        "required": "android_runtime",
+        "state": "verified",
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-reader-cache-prefetch-policy-001-30484383160-1.json",
+          "ios/harness/goldens/android-legado-v1/rl-reader-cache-prefetch-policy-001.json#/artifact/result/value"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "covered_by_requirement",
+        "refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "reason": "受保护 Android Golden 已冻结预取禁用条件、双侧窗口、边界钳制、完成与失败跳过、双方向启动和新任务替换语义，交由 ReaderCore 纯策略与 AppUseCases 可取消编排实现",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "planned",
+        "requirement_refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "work_item_refs": [
+          "IOS-READER-CORE-CACHE-PREFETCH-POLICY-001"
+        ],
+        "capability_refs": [
+          "CAP-CONFORMANCE",
+          "CAP-CORE"
+        ],
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-reader-cache-prefetch-policy-001-30484383160-1.json"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    }
+  ],
+  "updated_by": "IOS-CHARACTERIZE-READER-CACHE-PREFETCH-POLICY-001",
+  "updated_at": "2026-07-29T19:41:50Z"
+}
