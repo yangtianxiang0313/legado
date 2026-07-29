@@ -79,6 +79,11 @@
       "sha256": "87e9c697c850ee34ea731984f4f6a7ef230662e63afa43774cdae46f1d5d7d31"
     },
     {
+      "id": "sl-source-rule-combination-and-coercion-runtime-001",
+      "path": "ios/harness/fixtures/source-lab/sl-source-rule-combination-and-coercion-runtime-001",
+      "sha256": "1acdc7622e2456b5fe410e268f88049012a021b5fdb8a29716f4953332651c23"
+    },
+    {
       "id": "sl-source-session-rate-limit-shared-state-001",
       "path": "ios/harness/fixtures/source-lab/sl-source-session-rate-limit-shared-state-001",
       "sha256": "bb8f016150201999baa6de04736e9dff94bbc8d3f06852a188262e4d516ac625"

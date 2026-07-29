@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-  "inventory_sha256": "67b343ea0da8d72574153c0352ae5b9225646e669df041cc21e6c641b25694af",
+  "inventory_sha256": "dedf5f8341948318293dd60c72b80fe2e9304ae19666c1fa99f2bc28cceb2c7c",
   "requirements": [
     {
       "id": "REQ-ANDROID-BOOKSOURCE-SCHEMA-001",

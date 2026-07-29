@@ -2,9 +2,57 @@
   "schema_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
   "android_tree": "c81f5d383116e37c1eefee3eb86654514e82022b",
-  "control_sha256": "1d3d35af7146d8f92d885be6005fbadfdfda9d52b9f4aa741953d41819c591cc",
-  "policy_sha256": "7c6412566f4325612b7653b6076fd6e09af8d890f033e0b9ce5505dc10bf71ea",
+  "control_sha256": "4d105d3cf23af0a5b9b57448264fe90f19f7edbbcfb78a80e1ac2ad548c25c6c",
+  "policy_sha256": "847c3973b5dc0ad629007c94bff63813c0a88f1a91417d46641b2830cd69317a",
   "facts": [
+    {
+      "id": "AF-ANALYZE-RULE-GET-STRING",
+      "fact_key": "source.rule.get-string",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeRule/getString",
+      "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt",
+      "git_blob": "7bb96778bbf33c5277867cd8a1e8db6ea19090df",
+      "source_sha256": "d2aca9c407aef4aebc3cb83c858ed92d68860600bfbd6236d25fb48fe3ce8ba1",
+      "start_line": 244,
+      "end_line": 248,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "getString",
+        "signature": "fun getString(ruleStr: String?, mContent: Any? = null, isUrl: Boolean = false): String",
+        "body_semantic_sha256": "5c92edd194ee81fa6dbfd4ce5d66d21be9852192479ef0e54bd5883e16cfb775"
+      },
+      "revision_sha256": "a7976dbfc4aec15b3de5395e852a7d705c6648ce3df6dd24314a3af62e61650f",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-ANALYZE-RULE-GET-STRING-LIST",
+      "fact_key": "source.rule.get-string-list",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeRule/getStringList",
+      "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt",
+      "git_blob": "7bb96778bbf33c5277867cd8a1e8db6ea19090df",
+      "source_sha256": "d2aca9c407aef4aebc3cb83c858ed92d68860600bfbd6236d25fb48fe3ce8ba1",
+      "start_line": 157,
+      "end_line": 161,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "getStringList",
+        "signature": "fun getStringList(rule: String?, mContent: Any? = null, isUrl: Boolean = false): List<String>?",
+        "body_semantic_sha256": "51d6c310151be82377998faf3c751d4036fdd0494e36acd3a2fcb0d98f8a2280"
+      },
+      "revision_sha256": "fb7aa8c348c0ad505fd631728337c6cb098dea4b9ba3482ee68acc32c49be8bc",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
     {
       "id": "AF-BOOKINFORULE-CONSTRUCTOR",
       "fact_key": "book-source.schema.book-info-rule",

@@ -170,6 +170,30 @@
       "symbol": "flowSearch",
       "symbol_id": "kotlin://io.legado.app.data.dao/BookmarkDao/flowSearch",
       "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-ANALYZE-RULE-GET-STRING",
+      "fact_key": "source.rule.get-string",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt",
+      "symbol": "getString",
+      "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeRule/getString",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-ANALYZE-RULE-GET-STRING-LIST",
+      "fact_key": "source.rule.get-string-list",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt",
+      "symbol": "getStringList",
+      "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeRule/getStringList",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
     }
   ]
 }

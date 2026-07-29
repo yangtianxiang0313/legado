@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "kind": "source_lab_scenario",
+  "id": "sl-source-rule-combination-and-coercion-runtime-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "source_lab_site",
+  "capabilities": [
+    "CAP-RUNTIME-PORTS",
+    "CAP-CONFORMANCE"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": "source.template.json",
+  "input": "input.json",
+  "transport": {
+    "mode": "fixture_and_loopback",
+    "external_network": "deny",
+    "responses": [
+      {
+        "id": "json-list-and-concatenation",
+        "match": {"method": "GET", "path": "/rule-combination/json-list-and-concatenation", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "json-list-or-fallback",
+        "match": {"method": "GET", "path": "/rule-combination/json-list-or-fallback", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "json-list-percent-interleave",
+        "match": {"method": "GET", "path": "/rule-combination/json-list-percent-interleave", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "json-scalar-coercion-matrix",
+        "match": {"method": "GET", "path": "/rule-combination/json-scalar-coercion-matrix", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "json-element-consumer-shapes",
+        "match": {"method": "GET", "path": "/rule-combination/json-element-consumer-shapes", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "sequential-html-javascript-chain",
+        "match": {"method": "GET", "path": "/rule-combination/sequential-html-javascript-chain", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "newline-url-resolution-deduplication",
+        "match": {"method": "GET", "path": "/rule-combination/newline-url-resolution-deduplication", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "empty-and-missing-propagation",
+        "match": {"method": "GET", "path": "/rule-combination/empty-and-missing-propagation", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "javascript-exception-interruption",
+        "match": {"method": "GET", "path": "/rule-combination/javascript-exception-interruption", "query": {}},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      }
+    ]
+  },
+  "coverage": [
+    {
+      "behavior": "runtime.rule-combination-and-coercion",
+      "cases": [
+        {
+          "id": "json-list-and-concatenation",
+          "role": "nominal",
+          "android_fact_refs": ["AF-ANALYZE-RULE-GET-STRING", "AF-ANALYZE-RULE-GET-STRING-LIST"],
+          "branch_refs": ["AnalyzeByJSonPath getString/getStringList && list concatenation"]
+        },
+        {
+          "id": "json-list-or-fallback",
+          "role": "boundary",
+          "android_fact_refs": ["AF-ANALYZE-RULE-GET-STRING", "AF-ANALYZE-RULE-GET-STRING-LIST"],
+          "branch_refs": ["AnalyzeByJSonPath || first non-empty fallback"]
+        },
+        {
+          "id": "json-list-percent-interleave",
+          "role": "boundary",
+          "android_fact_refs": ["AF-ANALYZE-RULE-GET-STRING-LIST"],
+          "branch_refs": ["AnalyzeByJSonPath %% index-wise interleave with uneven lists"]
+        },
+        {
+          "id": "json-scalar-coercion-matrix",
+          "role": "boundary",
+          "android_fact_refs": ["AF-ANALYZE-RULE-GET-STRING", "AF-ANALYZE-RULE-GET-STRING-LIST"],
+          "branch_refs": ["JSON number, boolean, null and string coercion"]
+        },
+        {
+          "id": "json-element-consumer-shapes",
+          "role": "nominal",
+          "android_fact_refs": ["AF-ANALYZE-RULE-GET-STRING", "AF-ANALYZE-RULE-GET-STRING-LIST"],
+          "branch_refs": ["getElement/getElements object, list and scalar consumers"]
+        },
+        {
+          "id": "sequential-html-javascript-chain",
+          "role": "nominal",
+          "android_fact_refs": ["AF-ANALYZE-RULE-GET-STRING", "AF-ANALYZE-RULE-GET-STRING-LIST"],
+          "branch_refs": ["ordered SourceRule result transformation across CSS and JavaScript"]
+        },
+        {
+          "id": "newline-url-resolution-deduplication",
+          "role": "boundary",
+          "android_fact_refs": ["AF-ANALYZE-RULE-GET-STRING-LIST"],
+          "branch_refs": ["String newline split, absolute URL resolution and duplicate removal"]
+        },
+        {
+          "id": "empty-and-missing-propagation",
+          "role": "boundary",
+          "android_fact_refs": ["AF-ANALYZE-RULE-GET-STRING", "AF-ANALYZE-RULE-GET-STRING-LIST"],
+          "branch_refs": ["empty rule and missing JSON result propagation across consumers"]
+        },
+        {
+          "id": "javascript-exception-interruption",
+          "role": "malformed",
+          "android_fact_refs": ["AF-ANALYZE-RULE-GET-STRING"],
+          "branch_refs": ["JavaScript failure interrupts sequential getString evaluation"]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "2026-01-01T00:00:00Z",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 43,
+    "network_allowed": false,
+    "logical_origin": "http://sourcelab.test"
+  },
+  "limits": {
+    "timeout_ms": 1000,
+    "max_response_bytes": 1048576,
+    "max_request_body_bytes": 1048576,
+    "max_requests": 18,
+    "max_concurrency": 2
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt#getString",
+      "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt#getStringList",
+      "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt#getElement",
+      "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt#getElements",
+      "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByJSonPath.kt"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-SOURCE-RULE-COMBINATION-AND-COERCION-RUNTIME-001"
+  }
+}

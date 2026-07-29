@@ -18,7 +18,7 @@ class AndroidIntakeTests(unittest.TestCase):
         self.assertEqual(first, second)
         baseline = json.loads((REPO_ROOT / "ios/project/baseline.json").read_text(encoding="utf-8"))
         self.assertEqual(baseline["android_oracle"]["git_commit"], first["android_git_commit"])
-        self.assertEqual(14, len(first["facts"]))
+        self.assertEqual(16, len(first["facts"]))
 
     def test_book_source_fact_is_data_contract_not_runtime_proof(self):
         inventory = android_intake.inventory_value(REPO_ROOT)
@@ -60,6 +60,18 @@ class AndroidIntakeTests(unittest.TestCase):
                 "content",
             ],
             [value["name"] for value in bookmark["payload"]["properties"]],
+        )
+
+    def test_analyze_rule_string_consumers_are_inventory_anchors(self):
+        inventory = android_intake.inventory_value(REPO_ROOT)
+        facts = {entry["id"]: entry for entry in inventory["facts"]}
+        self.assertEqual(
+            "getString",
+            facts["AF-ANALYZE-RULE-GET-STRING"]["payload"]["symbol"],
+        )
+        self.assertEqual(
+            "getStringList",
+            facts["AF-ANALYZE-RULE-GET-STRING-LIST"]["payload"]["symbol"],
         )
 
 if __name__ == "__main__":

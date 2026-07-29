@@ -108,6 +108,15 @@
       "status": "candidate"
     },
     {
+      "id": "IOS-ANDROID-RULE-COMBINATION-COERCION-ATTESTATION-001",
+      "scenario_id": "sl-source-rule-combination-and-coercion-runtime-001",
+      "fixture_ids": [
+        "sl-source-rule-combination-and-coercion-runtime-001"
+      ],
+      "authority": "android_oracle_candidate_only",
+      "status": "candidate"
+    },
+    {
       "id": "IOS-ANDROID-CONTENT-CACHE-QUEUE-ATTESTATION-001",
       "scenario_id": "sl-content-cache-queue-completion-runtime-001",
       "fixture_ids": [

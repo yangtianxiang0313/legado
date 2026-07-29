@@ -315,6 +315,55 @@ SCENARIO_CONTRACTS = {
             "foreign-content-cache-isolation",
         }),
     },
+    "sl-source-rule-combination-and-coercion-runtime-001": {
+        "status": "candidate",
+        "expected_cases": (
+            (
+                "json-list-and-concatenation",
+                "rule_combination_coercion",
+            ),
+            ("json-list-or-fallback", "rule_combination_coercion"),
+            (
+                "json-list-percent-interleave",
+                "rule_combination_coercion",
+            ),
+            (
+                "json-scalar-coercion-matrix",
+                "rule_combination_coercion",
+            ),
+            (
+                "json-element-consumer-shapes",
+                "rule_combination_coercion",
+            ),
+            (
+                "sequential-html-javascript-chain",
+                "rule_combination_coercion",
+            ),
+            (
+                "newline-url-resolution-deduplication",
+                "rule_combination_coercion",
+            ),
+            (
+                "empty-and-missing-propagation",
+                "rule_combination_coercion",
+            ),
+            (
+                "javascript-exception-interruption",
+                "rule_combination_coercion",
+            ),
+        ),
+        "nominal_cases": frozenset({
+            "json-list-and-concatenation",
+            "json-list-or-fallback",
+            "json-list-percent-interleave",
+            "json-scalar-coercion-matrix",
+            "json-element-consumer-shapes",
+            "sequential-html-javascript-chain",
+            "newline-url-resolution-deduplication",
+            "empty-and-missing-propagation",
+            "javascript-exception-interruption",
+        }),
+    },
     "sl-content-cache-queue-completion-runtime-001": {
         "status": "candidate",
         "expected_cases": (

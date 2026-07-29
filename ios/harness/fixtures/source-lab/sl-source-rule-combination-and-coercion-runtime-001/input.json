@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "json-list-and-concatenation",
+      "operation": "rule_combination_coercion",
+      "arguments": {
+        "mode": "string_and_list",
+        "content": "{\"left\":[\"A\",\"B\"],\"right\":[\"C\",\"D\"]}",
+        "rule": "$.left[*]&&$.right[*]"
+      },
+      "request": {"method": "GET", "target": "/rule-combination/json-list-and-concatenation"}
+    },
+    {
+      "id": "json-list-or-fallback",
+      "operation": "rule_combination_coercion",
+      "arguments": {
+        "mode": "string_and_list",
+        "content": "{\"right\":[\"C\",\"D\"]}",
+        "rule": "$.missing[*]||$.right[*]"
+      },
+      "request": {"method": "GET", "target": "/rule-combination/json-list-or-fallback"}
+    },
+    {
+      "id": "json-list-percent-interleave",
+      "operation": "rule_combination_coercion",
+      "arguments": {
+        "mode": "string_and_list",
+        "content": "{\"left\":[\"A\",\"B\",\"E\"],\"right\":[\"C\",\"D\"]}",
+        "rule": "$.left[*]%%$.right[*]"
+      },
+      "request": {"method": "GET", "target": "/rule-combination/json-list-percent-interleave"}
+    },
+    {
+      "id": "json-scalar-coercion-matrix",
+      "operation": "rule_combination_coercion",
+      "arguments": {
+        "mode": "scalar_matrix",
+        "content": "{\"number\":12,\"boolean\":true,\"null\":null,\"string\":\"plain\"}",
+        "rules": {
+          "number": "$.number",
+          "boolean": "$.boolean",
+          "null": "$.null",
+          "string": "$.string"
+        }
+      },
+      "request": {"method": "GET", "target": "/rule-combination/json-scalar-coercion-matrix"}
+    },
+    {
+      "id": "json-element-consumer-shapes",
+      "operation": "rule_combination_coercion",
+      "arguments": {
+        "mode": "element_matrix",
+        "content": "{\"objects\":[{\"name\":\"A\"},{\"name\":\"B\"}],\"scalar\":7}",
+        "object_rule": "@Json:$.objects[0]",
+        "elements_rule": "@Json:$.objects[*]",
+        "scalar_rule": "@Json:$.scalar"
+      },
+      "request": {"method": "GET", "target": "/rule-combination/json-element-consumer-shapes"}
+    },
+    {
+      "id": "sequential-html-javascript-chain",
+      "operation": "rule_combination_coercion",
+      "arguments": {
+        "mode": "sequential_chain",
+        "content": "<html><body><span class=\"item\">Alpha</span><span class=\"item\">Beta</span></body></html>",
+        "string_rule": "@CSS:.item@text<js>result.toString() + '-tail'</js>",
+        "list_rule": "@CSS:.item@text<js>result.get(0).toString() + '|' + result.get(1).toString()</js>"
+      },
+      "request": {"method": "GET", "target": "/rule-combination/sequential-html-javascript-chain"}
+    },
+    {
+      "id": "newline-url-resolution-deduplication",
+      "operation": "rule_combination_coercion",
+      "arguments": {
+        "mode": "url_list",
+        "content": "seed",
+        "rule": "@js:'/a\\n/a\\n../b\\n'",
+        "redirect_url": "https://example.test/base/chapter/index.html"
+      },
+      "request": {"method": "GET", "target": "/rule-combination/newline-url-resolution-deduplication"}
+    },
+    {
+      "id": "empty-and-missing-propagation",
+      "operation": "rule_combination_coercion",
+      "arguments": {
+        "mode": "empty_matrix",
+        "content": "{\"present\":\"value\"}",
+        "missing_rule": "@Json:$.missing"
+      },
+      "request": {"method": "GET", "target": "/rule-combination/empty-and-missing-propagation"}
+    },
+    {
+      "id": "javascript-exception-interruption",
+      "operation": "rule_combination_coercion",
+      "arguments": {
+        "mode": "exception_boundary",
+        "content": "seed",
+        "rule": "@js:throw new Error('boom')"
+      },
+      "request": {"method": "GET", "target": "/rule-combination/javascript-exception-interruption"}
+    }
+  ]
+}

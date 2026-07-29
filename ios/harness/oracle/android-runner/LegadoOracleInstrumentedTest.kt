@@ -125,6 +125,8 @@ class LegadoOracleInstrumentedTest {
                 runRuleVariableScopeCases()
             "sl-source-rule-backend-dispatch-runtime-001" ->
                 runRuleBackendDispatchCases()
+            "sl-source-rule-combination-and-coercion-runtime-001" ->
+                runRuleCombinationCases()
             "sl-content-cache-queue-completion-runtime-001" ->
                 runContentCacheQueueCompletionCases()
             else -> {
@@ -552,6 +554,33 @@ class LegadoOracleInstrumentedTest {
                 request
             ) {
                 ruleBackendDispatchProjection(value.getJSONObject("arguments"))
+            }
+        }
+    }
+
+    private suspend fun runRuleCombinationCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            require(
+                value.getString("operation") ==
+                    "rule_combination_coercion"
+            ) {
+                "Rule combination scenario only accepts " +
+                    "rule_combination_coercion stimuli"
+            }
+            val requestValue = value.getJSONObject("request")
+            val request = request(
+                deviceOrigin + requestValue.getString("target")
+            )
+            runCase(
+                value.getString("id"),
+                "rule_combination_coercion",
+                request
+            ) {
+                ruleCombinationProjection(
+                    value.getJSONObject("arguments")
+                )
             }
         }
     }
@@ -1167,6 +1196,191 @@ class LegadoOracleInstrumentedTest {
             foreignContentIsolationProjection(arguments)
         else -> error("Unsupported rule backend mode: $mode")
     }
+
+    private fun ruleCombinationProjection(
+        arguments: JSONObject
+    ): JSONObject = when (val mode = arguments.getString("mode")) {
+        "string_and_list" -> stringAndListProjection(arguments)
+        "scalar_matrix" -> scalarCoercionProjection(arguments)
+        "element_matrix" -> elementConsumerProjection(arguments)
+        "sequential_chain" -> sequentialRuleProjection(arguments)
+        "url_list" -> urlListProjection(arguments)
+        "empty_matrix" -> emptyRuleProjection(arguments)
+        "exception_boundary" -> ruleExceptionProjection(arguments)
+        else -> error("Unsupported rule combination mode: $mode")
+    }
+
+    private fun stringAndListProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val content = arguments.getString("content")
+        val rule = arguments.getString("rule")
+        return JSONObject()
+            .put(
+                "string",
+                AnalyzeRule().setContent(content).getString(rule)
+            )
+            .put(
+                "list",
+                nullableStringList(
+                    AnalyzeRule().setContent(content)
+                        .getStringList(rule)
+                )
+            )
+    }
+
+    private fun scalarCoercionProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val content = arguments.getString("content")
+        val rules = arguments.getJSONObject("rules")
+        return JSONObject().put(
+            "values",
+            JSONArray().apply {
+                listOf("number", "boolean", "null", "string")
+                    .forEach { label ->
+                        val rule = rules.getString(label)
+                        put(
+                            JSONObject()
+                                .put("label", label)
+                                .put(
+                                    "string",
+                                    AnalyzeRule()
+                                        .setContent(content)
+                                        .getString(rule)
+                                )
+                                .put(
+                                    "list",
+                                    nullableStringList(
+                                        AnalyzeRule()
+                                            .setContent(content)
+                                            .getStringList(rule)
+                                    )
+                                )
+                        )
+                    }
+            }
+        )
+    }
+
+    private fun elementConsumerProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val content = arguments.getString("content")
+        val objectValue = AnalyzeRule().setContent(content)
+            .getElement(arguments.getString("object_rule"))
+        val elementsValue = AnalyzeRule().setContent(content)
+            .getElements(arguments.getString("elements_rule"))
+        val scalarValue = AnalyzeRule().setContent(content)
+            .getElement(arguments.getString("scalar_rule"))
+        return JSONObject()
+            .put("object_type", nullable(objectValue?.javaClass?.name))
+            .put("object_json", GSON.toJson(objectValue))
+            .put("elements_count", elementsValue.size)
+            .put("elements_json", GSON.toJson(elementsValue))
+            .put("scalar_type", nullable(scalarValue?.javaClass?.name))
+            .put("scalar_json", GSON.toJson(scalarValue))
+    }
+
+    private fun sequentialRuleProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val content = arguments.getString("content")
+        return JSONObject()
+            .put(
+                "string",
+                AnalyzeRule().setContent(content).getString(
+                    arguments.getString("string_rule")
+                )
+            )
+            .put(
+                "list",
+                nullableStringList(
+                    AnalyzeRule().setContent(content).getStringList(
+                        arguments.getString("list_rule")
+                    )
+                )
+            )
+    }
+
+    private fun urlListProjection(arguments: JSONObject): JSONObject {
+        val analyze = AnalyzeRule().setContent(
+            arguments.getString("content")
+        )
+        analyze.setRedirectUrl(arguments.getString("redirect_url"))
+        return JSONObject().put(
+            "urls",
+            nullableStringList(
+                analyze.getStringList(
+                    arguments.getString("rule"),
+                    isUrl = true
+                )
+            )
+        )
+    }
+
+    private fun emptyRuleProjection(arguments: JSONObject): JSONObject {
+        val content = arguments.getString("content")
+        val missing = arguments.getString("missing_rule")
+        return JSONObject()
+            .put(
+                "empty_string",
+                AnalyzeRule().setContent(content).getString(null)
+            )
+            .put(
+                "empty_list",
+                nullableStringList(
+                    AnalyzeRule().setContent(content)
+                        .getStringList(null)
+                )
+            )
+            .put(
+                "empty_element",
+                nullable(
+                    AnalyzeRule().setContent(content)
+                        .getElement("")?.toString()
+                )
+            )
+            .put(
+                "empty_elements_count",
+                AnalyzeRule().setContent(content)
+                    .getElements("").size
+            )
+            .put(
+                "missing_string",
+                AnalyzeRule().setContent(content).getString(missing)
+            )
+            .put(
+                "missing_list",
+                nullableStringList(
+                    AnalyzeRule().setContent(content)
+                        .getStringList(missing)
+                )
+            )
+    }
+
+    private fun ruleExceptionProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        var completed = false
+        var value: String? = null
+        var exceptionType: String? = null
+        try {
+            value = AnalyzeRule()
+                .setContent(arguments.getString("content"))
+                .getString(arguments.getString("rule"))
+            completed = true
+        } catch (error: Throwable) {
+            exceptionType = error.javaClass.name
+        }
+        return JSONObject()
+            .put("completed", completed)
+            .put("value", nullable(value))
+            .put("exception_type", nullable(exceptionType))
+    }
+
+    private fun nullableStringList(value: List<String>?): Any =
+        value?.let(::JSONArray) ?: JSONObject.NULL
 
     private fun htmlPrefixDispatchProjection(
         arguments: JSONObject
