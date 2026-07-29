@@ -5,43 +5,78 @@
     {
       "id": "webdav.authorization-check",
       "status": "active",
+      "operations": ["webdav_protocol"],
       "required_roles": ["boundary", "denied"],
       "min_cases_per_role": 1
     },
     {
       "id": "webdav.resource-existence",
       "status": "active",
+      "operations": ["webdav_protocol"],
       "required_roles": ["nominal", "boundary"],
       "min_cases_per_role": 1
     },
     {
       "id": "webdav.collection-create",
       "status": "active",
+      "operations": ["webdav_protocol"],
       "required_roles": ["nominal"],
       "min_cases_per_role": 1
     },
     {
       "id": "webdav.multistatus-metadata",
       "status": "active",
+      "operations": ["webdav_protocol"],
       "required_roles": ["nominal", "boundary"],
       "min_cases_per_role": 1
     },
     {
       "id": "webdav.object-transfer",
       "status": "active",
+      "operations": ["webdav_protocol"],
       "required_roles": ["nominal"],
       "min_cases_per_role": 1
     },
     {
       "id": "webdav.delete",
       "status": "active",
+      "operations": ["webdav_protocol"],
       "required_roles": ["nominal", "boundary"],
       "min_cases_per_role": 1
     },
     {
       "id": "webdav.error-mapping",
       "status": "active",
+      "operations": ["webdav_protocol"],
       "required_roles": ["denied"],
+      "min_cases_per_role": 1
+    },
+    {
+      "id": "remote.listener-binding",
+      "status": "active",
+      "operations": ["remote_management_protocol"],
+      "required_roles": ["nominal"],
+      "min_cases_per_role": 1
+    },
+    {
+      "id": "remote.http-cors",
+      "status": "active",
+      "operations": ["remote_management_protocol"],
+      "required_roles": ["nominal", "boundary"],
+      "min_cases_per_role": 1
+    },
+    {
+      "id": "remote.http-routing",
+      "status": "active",
+      "operations": ["remote_management_protocol"],
+      "required_roles": ["nominal", "boundary"],
+      "min_cases_per_role": 1
+    },
+    {
+      "id": "remote.websocket-routing",
+      "status": "active",
+      "operations": ["remote_management_protocol"],
+      "required_roles": ["nominal", "denied"],
       "min_cases_per_role": 1
     }
   ]

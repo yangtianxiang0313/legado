@@ -11,9 +11,11 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import subprocess
 import sys
+import tempfile
 from pathlib import Path, PurePosixPath
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
@@ -51,6 +53,24 @@ def load_json(path: Path) -> Any:
         raise IntakeError(f"缺少文件：{path}") from error
     except json.JSONDecodeError as error:
         raise IntakeError(f"JSON 无效：{path}: {error}") from error
+
+
+def write_json(path: Path, value: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary = tempfile.mkstemp(
+        dir=path.parent,
+        prefix=f".{path.name}.",
+    )
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+            json.dump(value, stream, ensure_ascii=False, indent=2)
+            stream.write("\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, path)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
 
 
 def safe_repo_path(value: str) -> str:
@@ -498,16 +518,30 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Android Requirement Intake")
     parser.add_argument("command", choices=["inventory", "catalog", "manifest", "doctor"])
     parser.add_argument("--root", default=".")
+    parser.add_argument(
+        "--write",
+        action="store_true",
+        help="原子更新命令对应的生成文件",
+    )
     args = parser.parse_args(argv)
     root = Path(args.root).resolve()
     try:
         if args.command == "inventory":
             value = inventory_value(root)
+            if args.write:
+                write_json(root / INVENTORY_PATH, value)
         elif args.command == "catalog":
             value = catalog_value(root)
+            if args.write:
+                write_json(root / CATALOG_PATH, value)
         elif args.command == "manifest":
             value = manifest_bundle(root)
+            if args.write:
+                write_json(root / INVENTORY_PATH, value["inventory"])
+                write_json(root / CATALOG_PATH, value["catalog"])
         else:
+            if args.write:
+                raise IntakeError("doctor 不支持 --write")
             errors = doctor(root)
             if errors:
                 for error in errors:

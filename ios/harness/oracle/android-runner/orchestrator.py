@@ -862,6 +862,48 @@ SCENARIO_CONTRACTS = {
             "delete-not-found-false",
         }),
     },
+    "il-integration-remote-http-websocket-management-001": {
+        "status": "candidate",
+        "fixture_kind": "integration_lab_scenario",
+        "result_type": "integration_runtime",
+        "stage_names": (
+            "fixture_setup",
+            "listener_start",
+            "protocol_exchange",
+            "route_dispatch",
+            "result_mapping",
+        ),
+        "expected_cases": (
+            ("listener-contract", "remote_listener_contract"),
+            ("options-origin-echo", "remote_http_request"),
+            ("options-without-origin", "remote_http_request"),
+            ("static-index", "remote_http_request"),
+            ("seeded-bookshelf", "remote_http_request"),
+            ("missing-static-asset", "remote_http_request"),
+            (
+                "book-source-debug-handshake",
+                "remote_websocket_handshake",
+            ),
+            (
+                "rss-source-debug-handshake",
+                "remote_websocket_handshake",
+            ),
+            ("search-book-handshake", "remote_websocket_handshake"),
+            ("unknown-websocket-path", "remote_websocket_handshake"),
+        ),
+        "nominal_cases": frozenset({
+            "listener-contract",
+            "options-origin-echo",
+            "options-without-origin",
+            "static-index",
+            "seeded-bookshelf",
+            "missing-static-asset",
+            "book-source-debug-handshake",
+            "rss-source-debug-handshake",
+            "search-book-handshake",
+            "unknown-websocket-path",
+        }),
+    },
 }
 ROUTE_OBSERVATION_SCENARIOS = {
     "sl-source-request-header-cookie-retry-layering-001": (
@@ -1800,6 +1842,28 @@ def _integration_lab_server(root: Path, scenario_id: str):
     return integration_lab.running_server(root, scenario_id)
 
 
+def _integration_lab_transport_mode(
+    root: Path,
+    scenario_id: str,
+) -> str:
+    case = _read_json(
+        root
+        / "ios/harness/fixtures/integration-lab"
+        / scenario_id
+        / "case.json"
+    )
+    transport = case.get("transport") if isinstance(case, dict) else None
+    mode = transport.get("mode") if isinstance(transport, dict) else None
+    if mode not in {
+        "fixture_and_loopback",
+        "android_loopback_listener",
+    }:
+        raise AndroidOracleRunnerError(
+            "INTEGRATION_TRANSPORT_MODE_INVALID"
+        )
+    return str(mode)
+
+
 def _render_inputs(root: Path, scenario_id: str) -> Dict[str, Any]:
     manifest = _read_json(root / FIXTURE_MANIFEST_PATH)
     matches = [
@@ -1899,16 +1963,32 @@ def run_characterization(
         fixture_kind = bindings["fixture_kind"]
         runtime_scenario = fixture_kind == "android_runtime_scenario"
         integration_scenario = fixture_kind == "integration_lab_scenario"
+        integration_transport_mode = (
+            _integration_lab_transport_mode(root, scenario_id)
+            if integration_scenario
+            else None
+        )
         if runtime_scenario:
             server_context = contextlib.nullcontext(None)
-        elif integration_scenario:
+        elif (
+            integration_scenario
+            and integration_transport_mode == "fixture_and_loopback"
+        ):
             server_context = _integration_lab_server(root, scenario_id)
+        elif integration_scenario:
+            server_context = contextlib.nullcontext(None)
         else:
             server_context = _source_lab_server(root, scenario_id)
         source_lab_route_counts: Dict[str, int] = {}
         integration_lab_observations: list[Dict[str, Any]] = []
         with server_context as server:
             source_base64: Optional[str] = None
+            device_origin: Optional[str] = (
+                "http://127.0.0.1:0"
+                if integration_transport_mode
+                == "android_loopback_listener"
+                else None
+            )
             logical_origin = (
                 "android-runtime://local"
                 if runtime_scenario
@@ -1961,10 +2041,14 @@ def run_characterization(
                 instrumentation_arguments.extend(
                     ["-e", "sourceBase64", source_base64]
                 )
-            if integration_scenario:
-                instrumentation_arguments.extend(
-                    ["-e", "deviceOrigin", device_origin]
-                )
+                if integration_scenario:
+                    if device_origin is None:
+                        raise AndroidOracleRunnerError(
+                            "INTEGRATION_DEVICE_ORIGIN_MISSING"
+                        )
+                    instrumentation_arguments.extend(
+                        ["-e", "deviceOrigin", device_origin]
+                    )
             instrumentation_arguments.extend(
                 [
                     "-e",

@@ -554,6 +554,42 @@
       "symbol": "delete",
       "symbol_id": "kotlin://io.legado.app.lib.webdav/WebDav/delete",
       "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-REMOTE-HTTP-SERVE",
+      "fact_key": "integration.remote.http.serve",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/web/HttpServer.kt",
+      "symbol": "serve",
+      "symbol_id": "kotlin://io.legado.app.web/HttpServer/serve",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-REMOTE-WEBSOCKET-OPEN",
+      "fact_key": "integration.remote.websocket.open",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/web/WebSocketServer.kt",
+      "symbol": "openWebSocket",
+      "symbol_id": "kotlin://io.legado.app.web/WebSocketServer/openWebSocket",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-REMOTE-WEB-SERVICE-UP",
+      "fact_key": "integration.remote.service.start-servers",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/service/WebService.kt",
+      "symbol": "upWebServer",
+      "symbol_id": "kotlin://io.legado.app.service/WebService/upWebServer",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
     }
   ]
 }

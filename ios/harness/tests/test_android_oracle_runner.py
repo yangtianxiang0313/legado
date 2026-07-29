@@ -976,6 +976,49 @@ def webdav_integration_raw_artifact():
     }
 
 
+def remote_management_integration_raw_artifact():
+    scenario = (
+        "il-integration-remote-http-websocket-management-001"
+    )
+    contract = runner.SCENARIO_CONTRACTS[scenario]
+    fixture = json.loads(
+        (
+            ROOT
+            / "ios/harness/fixtures/integration-lab"
+            / scenario
+            / "input.json"
+        ).read_text(encoding="utf-8")
+    )
+    requests = [
+        {
+            "operation": value["operation"],
+            "arguments": value["arguments"],
+        }
+        for value in fixture["cases"]
+    ]
+    cases = [
+        {
+            "id": case_id,
+            "operation": operation,
+            "request": requests[index],
+            "result": {"case_index": index},
+            "issue": None,
+        }
+        for index, (case_id, operation) in enumerate(
+            contract["expected_cases"]
+        )
+    ]
+    return {
+        "schema_version": 1,
+        "scenario_id": scenario,
+        "device_origin": "http://127.0.0.1:0",
+        "logical_origin": runner.INTEGRATION_LOGICAL_ORIGIN,
+        "request_plan": requests,
+        "cases": cases,
+        "integration_lab_observations": [],
+    }
+
+
 class AndroidOracleRunnerTests(unittest.TestCase):
     def test_ci_emulator_boot_probes_have_wall_clock_and_command_timeouts(self) -> None:
         workflow = (
@@ -1162,6 +1205,14 @@ class AndroidOracleRunnerTests(unittest.TestCase):
             "il-integration-backup-webdav-001",
             webdav["scenario_id"],
         )
+        remote_management = runner.doctor(
+            ROOT,
+            "il-integration-remote-http-websocket-management-001",
+        )
+        self.assertEqual(
+            "il-integration-remote-http-websocket-management-001",
+            remote_management["scenario_id"],
+        )
         with mock.patch.object(
             runner,
             "fixture_digest",
@@ -1315,6 +1366,42 @@ class AndroidOracleRunnerTests(unittest.TestCase):
         rendered = json.dumps(artifact, ensure_ascii=False)
         self.assertNotIn("127.0.0.1", rendered)
         self.assertNotIn("oracle-password", rendered)
+
+    def test_android_listener_integration_uses_structured_stimuli_without_host_routes(
+        self,
+    ):
+        scenario = (
+            "il-integration-remote-http-websocket-management-001"
+        )
+        integration_bindings = {
+            **bindings(),
+            "fixture_kind": "integration_lab_scenario",
+            "fixture_path": (
+                "ios/harness/fixtures/integration-lab/"
+                f"{scenario}"
+            ),
+        }
+        integration_bindings.pop("source_template_sha256")
+        artifact = runner.normalize_raw_artifact(
+            remote_management_integration_raw_artifact(),
+            integration_bindings,
+            scenario,
+        )
+        self.assertEqual("integration_runtime", artifact["result"]["type"])
+        self.assertEqual(50, len(artifact["stages"]))
+        characterization = artifact["result"]["value"][
+            "android_characterization"
+        ]
+        self.assertNotIn("integration_lab_observation", characterization)
+        self.assertEqual(10, characterization["case_count"])
+        self.assertTrue(
+            all(
+                set(value) == {"operation", "arguments"}
+                for value in artifact["request_plan"]
+            )
+        )
+        rendered = json.dumps(artifact, ensure_ascii=False)
+        self.assertNotIn("127.0.0.1", rendered)
 
     def test_read_record_runtime_fixture_uses_relational_reader_projection(self):
         scenario = "rl-reader-history-read-record-runtime-risk-001"

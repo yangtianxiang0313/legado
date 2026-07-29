@@ -26,6 +26,25 @@ SCENARIO_ID = re.compile(r"^il-[a-z0-9-]+-[0-9]{3}$")
 FACT_ID = re.compile(r"^AF-[A-Z0-9-]+$")
 FIXED_DATE = "Thu, 01 Jan 1970 00:00:00 GMT"
 METHODS = {"GET", "PUT", "DELETE", "PROPFIND", "MKCOL"}
+SCENARIO_OPERATIONS = {
+    "webdav_protocol": {
+        "webdav_check",
+        "webdav_exists",
+        "webdav_make_directory",
+        "webdav_list",
+        "webdav_get_file",
+        "webdav_download",
+        "webdav_upload",
+        "webdav_delete",
+    },
+    "remote_management_protocol": {
+        "remote_listener_contract",
+        "remote_http_request",
+        "remote_websocket_handshake",
+    },
+}
+TRANSPORT_FIXTURE_SERVER = "fixture_and_loopback"
+TRANSPORT_ANDROID_LISTENER = "android_loopback_listener"
 ALLOWED_RESPONSE_HEADERS = {
     "content-type",
     "etag",
@@ -272,7 +291,7 @@ def validate_scenario(
     if (
         case.get("schema_version") != 1
         or case.get("kind") != "integration_lab_scenario"
-        or case.get("operation") != "webdav_protocol"
+        or case.get("operation") not in SCENARIO_OPERATIONS
         or case.get("status") not in {"candidate", "reference", "retired"}
         or scenario_id != directory.name
         or not isinstance(scenario_id, str)
@@ -297,22 +316,16 @@ def validate_scenario(
     ):
         errors.append(f"{scenario_id}: input 必须只含 schema_version/cases")
     else:
+        allowed_operations = SCENARIO_OPERATIONS.get(
+            str(case.get("operation")),
+            set(),
+        )
         for value in inputs["cases"]:
             if (
                 not isinstance(value, dict)
                 or set(value) != {"id", "operation", "arguments"}
                 or not isinstance(value.get("id"), str)
-                or value.get("operation")
-                not in {
-                    "webdav_check",
-                    "webdav_exists",
-                    "webdav_make_directory",
-                    "webdav_list",
-                    "webdav_get_file",
-                    "webdav_download",
-                    "webdav_upload",
-                    "webdav_delete",
-                }
+                or value.get("operation") not in allowed_operations
                 or not isinstance(value.get("arguments"), dict)
             ):
                 errors.append(f"{scenario_id}: input case 无效")
@@ -328,17 +341,32 @@ def validate_scenario(
 
     transport = case.get("transport")
     routes: Sequence[Any] = []
-    if (
-        not isinstance(transport, dict)
-        or set(transport) != {"mode", "external_network", "responses"}
-        or transport.get("mode") != "fixture_and_loopback"
-        or transport.get("external_network") != "deny"
-        or not isinstance(transport.get("responses"), list)
-        or not transport["responses"]
-    ):
-        errors.append(f"{scenario_id}: transport 必须是非空 loopback fixture")
+    if not isinstance(transport, dict):
+        errors.append(f"{scenario_id}: transport 必须是 object")
+    elif transport.get("mode") == TRANSPORT_FIXTURE_SERVER:
+        if (
+            set(transport) != {"mode", "external_network", "responses"}
+            or transport.get("external_network") != "deny"
+            or not isinstance(transport.get("responses"), list)
+            or not transport["responses"]
+        ):
+            errors.append(
+                f"{scenario_id}: fixture transport 必须是非空 loopback fixture"
+            )
+        else:
+            routes = transport["responses"]
+    elif transport.get("mode") == TRANSPORT_ANDROID_LISTENER:
+        if (
+            set(transport) != {"mode", "external_network", "client"}
+            or transport.get("external_network") != "deny"
+            or transport.get("client")
+            != "android_instrumentation_loopback"
+        ):
+            errors.append(
+                f"{scenario_id}: Android listener transport 无效"
+            )
     else:
-        routes = transport["responses"]
+        errors.append(f"{scenario_id}: transport mode 无效")
     signatures: Set[Tuple[str, str]] = set()
     route_ids: Set[str] = set()
     limits = case.get("limits")
@@ -438,7 +466,11 @@ def validate_scenario(
             for value in inventory.get("facts", [])
             if isinstance(value, dict) and isinstance(value.get("id"), str)
         }
-        policy = coverage_policy(root)
+        policy = {
+            behavior: rule
+            for behavior, rule in coverage_policy(root).items()
+            if case.get("operation") in rule["operations"]
+        }
         errors.extend(
             validate_coverage(
                 case,
@@ -462,6 +494,12 @@ def coverage_policy(root: Path) -> Dict[str, Dict[str, Any]]:
             not isinstance(entry, dict)
             or not isinstance(entry.get("id"), str)
             or entry["id"] in result
+            or not isinstance(entry.get("operations"), list)
+            or not entry["operations"]
+            or any(
+                operation not in SCENARIO_OPERATIONS
+                for operation in entry["operations"]
+            )
             or not isinstance(entry.get("required_roles"), list)
             or not isinstance(entry.get("min_cases_per_role"), int)
         ):
@@ -773,6 +811,10 @@ def running_server(
         raise IntegrationLabError(
             "scenario 无效：\n- " + "\n- ".join(errors)
         )
+    if case["transport"]["mode"] != TRANSPORT_FIXTURE_SERVER:
+        raise IntegrationLabError(
+            "Android listener scenario 不启动 host fixture server"
+        )
     server = IntegrationLabHTTPServer(("127.0.0.1", 0), directory, case)
     thread = threading.Thread(
         target=server.serve_forever,
@@ -823,22 +865,28 @@ def request_route(
 
 
 def verify_protocol(root: Path, scenario_id: str) -> Dict[str, Any]:
-    directory, case, _ = load_scenario(root, scenario_id)
+    directory, case, inputs = load_scenario(root, scenario_id)
     errors = validate_scenario(root, directory, case)
     if errors:
         raise IntegrationLabError(
             "scenario 无效：\n- " + "\n- ".join(errors)
         )
-    with running_server(root, scenario_id) as first_server:
-        first = [
-            request_route(first_server, route)
-            for route in case["transport"]["responses"]
-        ]
-    with running_server(root, scenario_id) as second_server:
-        second = [
-            request_route(second_server, route)
-            for route in case["transport"]["responses"]
-        ]
+    if case["transport"]["mode"] == TRANSPORT_ANDROID_LISTENER:
+        first = inputs["cases"]
+        second = load_scenario(root, scenario_id)[2]["cases"]
+        route_count = 0
+    else:
+        with running_server(root, scenario_id) as first_server:
+            first = [
+                request_route(first_server, route)
+                for route in case["transport"]["responses"]
+            ]
+        with running_server(root, scenario_id) as second_server:
+            second = [
+                request_route(second_server, route)
+                for route in case["transport"]["responses"]
+            ]
+        route_count = len(first)
     if first != second:
         raise IntegrationLabError("IntegrationLab 重复运行 transcript 不一致")
     return {
@@ -846,7 +894,8 @@ def verify_protocol(root: Path, scenario_id: str) -> Dict[str, Any]:
         "scenario": scenario_id,
         "logical_origin": LOGICAL_ORIGIN,
         "transcript_sha256": sha256_bytes(canonical_bytes(first)),
-        "route_count": len(first),
+        "route_count": route_count,
+        "case_count": len(inputs["cases"]),
     }
 
 

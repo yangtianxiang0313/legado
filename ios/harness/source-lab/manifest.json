@@ -10,6 +10,12 @@
       "sha256": "ec3bd44e5dd02c305a5996e04f28966dc0c2e55cc1b6d1d10c4593dcfa7b5faf"
     },
     {
+      "id": "il-integration-remote-http-websocket-management-001",
+      "status": "candidate",
+      "path": "ios/harness/fixtures/integration-lab/il-integration-remote-http-websocket-management-001",
+      "sha256": "9fb06de352244d5a376f2e12f7f29e3532f77a3548c7e018755d283f9a246742"
+    },
+    {
       "id": "rl-app-startup-first-use-and-restore-001",
       "status": "candidate",
       "path": "ios/harness/fixtures/runtime-lab/rl-app-startup-first-use-and-restore-001",

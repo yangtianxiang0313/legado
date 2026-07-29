@@ -25,7 +25,9 @@
     "id": {"type": "string", "pattern": "^il-[a-z0-9-]+-[0-9]{3}$"},
     "revision": {"type": "integer", "minimum": 1},
     "status": {"enum": ["candidate", "reference", "retired"]},
-    "operation": {"const": "webdav_protocol"},
+    "operation": {
+      "enum": ["webdav_protocol", "remote_management_protocol"]
+    },
     "capabilities": {
       "type": "array",
       "minItems": 1,
@@ -35,50 +37,70 @@
     "compatibility_profile": {"type": "string", "minLength": 1},
     "input": {"type": "string", "minLength": 1},
     "transport": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["mode", "external_network", "responses"],
-      "properties": {
-        "mode": {"const": "fixture_and_loopback"},
-        "external_network": {"const": "deny"},
-        "responses": {
-          "type": "array",
-          "minItems": 1,
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": ["id", "match", "respond"],
-            "properties": {
-              "id": {"type": "string", "minLength": 1},
-              "match": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mode", "external_network", "responses"],
+          "properties": {
+            "mode": {"const": "fixture_and_loopback"},
+            "external_network": {"const": "deny"},
+            "responses": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["method", "path"],
+                "required": ["id", "match", "respond"],
                 "properties": {
-                  "method": {
-                    "enum": ["GET", "PUT", "DELETE", "PROPFIND", "MKCOL"]
+                  "id": {"type": "string", "minLength": 1},
+                  "match": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["method", "path"],
+                    "properties": {
+                      "method": {
+                        "enum": [
+                          "GET",
+                          "PUT",
+                          "DELETE",
+                          "PROPFIND",
+                          "MKCOL"
+                        ]
+                      },
+                      "path": {"type": "string", "pattern": "^/"}
+                    }
                   },
-                  "path": {"type": "string", "pattern": "^/"}
-                }
-              },
-              "respond": {
-                "type": "object",
-                "additionalProperties": false,
-                "required": ["status", "headers", "body_file"],
-                "properties": {
-                  "status": {
-                    "type": "integer",
-                    "minimum": 100,
-                    "maximum": 599
-                  },
-                  "headers": {"type": "object"},
-                  "body_file": {"type": "string", "minLength": 1}
+                  "respond": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["status", "headers", "body_file"],
+                    "properties": {
+                      "status": {
+                        "type": "integer",
+                        "minimum": 100,
+                        "maximum": 599
+                      },
+                      "headers": {"type": "object"},
+                      "body_file": {"type": "string", "minLength": 1}
+                    }
+                  }
                 }
               }
             }
           }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mode", "external_network", "client"],
+          "properties": {
+            "mode": {"const": "android_loopback_listener"},
+            "external_network": {"const": "deny"},
+            "client": {"const": "android_instrumentation_loopback"}
+          }
         }
-      }
+      ]
     },
     "coverage": {"type": "array", "minItems": 1},
     "determinism": {

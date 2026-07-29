@@ -2,8 +2,8 @@
   "schema_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
   "android_tree": "c81f5d383116e37c1eefee3eb86654514e82022b",
-  "control_sha256": "9108c1e898ffbc821dba934c2664512c7933e94b9383605453cb98fff02eb46a",
-  "policy_sha256": "b726c21734e1430d0219f6d3412fcce03c0bc60dee4045908f65601fed63b1c7",
+  "control_sha256": "c9d2d8201cb1d565259028cdd61a9d9c443569e560c225d603ed3825c33ef27a",
+  "policy_sha256": "90db0ebd6c9ab124df43eccf8d08d5627cdb69fe5b5fa9fce01edeb0ab44d7a7",
   "facts": [
     {
       "id": "AF-ANALYZE-JSONPATH-GET-LIST",
@@ -1014,6 +1014,78 @@
         ]
       },
       "revision_sha256": "e71a48f0f13f66185bd5a1f9f528b4e750a2a71457a16d861ac83294aec9a45d",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-REMOTE-HTTP-SERVE",
+      "fact_key": "integration.remote.http.serve",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.web/HttpServer/serve",
+      "path": "app/src/main/java/io/legado/app/web/HttpServer.kt",
+      "git_blob": "ef9e48f5ef156c181a77f42c9ec2637c0bdb5491",
+      "source_sha256": "cf9198e529936f4bb4b9083f2a449769f3ee6c244e0c3481d3ee602a266ed408",
+      "start_line": 24,
+      "end_line": 134,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "serve",
+        "signature": "fun serve(session: IHTTPSession): Response",
+        "body_semantic_sha256": "510c9ce187c75b7068eb517a82048750b4d1d2e26d29ff6c6c12b3d773afd3dc"
+      },
+      "revision_sha256": "61d9059c820a3dfd9d022c5ed2e2cb44f2d3f1e46e82fb52155ac097b3f79e22",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-REMOTE-WEB-SERVICE-UP",
+      "fact_key": "integration.remote.service.start-servers",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.service/WebService/upWebServer",
+      "path": "app/src/main/java/io/legado/app/service/WebService.kt",
+      "git_blob": "3193ff613685937069f7e7a819705159fed3e282",
+      "source_sha256": "995a611a03a6637ccd43613580074523cd95b3e73d481cc79af7b0f82e5ade08",
+      "start_line": 142,
+      "end_line": 172,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "upWebServer",
+        "signature": "fun upWebServer()",
+        "body_semantic_sha256": "d8eade9834c8d264b7ab2039acd6bda6d8932e680901adfcbe60f59aca0c1567"
+      },
+      "revision_sha256": "86f1163e90898e668ce8cf3d09de9ec771804be1b2bec0f4f50c92e04c05e561",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-REMOTE-WEBSOCKET-OPEN",
+      "fact_key": "integration.remote.websocket.open",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.web/WebSocketServer/openWebSocket",
+      "path": "app/src/main/java/io/legado/app/web/WebSocketServer.kt",
+      "git_blob": "f2c7c27a042cdc0823b7b33d139b39d48c4b7791",
+      "source_sha256": "bcf52dd731dd48ba38382614934ecd310245f996927636d7082cb54933c5dc0f",
+      "start_line": 9,
+      "end_line": 23,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "openWebSocket",
+        "signature": "fun openWebSocket(handshake: IHTTPSession): WebSocket?",
+        "body_semantic_sha256": "fb6865c3ebfcc5ad2082cc9af55e4c34ae5d6001634987f3981b307bfe7e31b0"
+      },
+      "revision_sha256": "816be0bcc7700dfa1ef96d6caa4918180bc29dd0878aa8ed9167d4d003635ddb",
       "maps_to": [
         "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
       ]

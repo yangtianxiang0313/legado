@@ -18,7 +18,7 @@ class AndroidIntakeTests(unittest.TestCase):
         self.assertEqual(first, second)
         baseline = json.loads((REPO_ROOT / "ios/project/baseline.json").read_text(encoding="utf-8"))
         self.assertEqual(baseline["android_oracle"]["git_commit"], first["android_git_commit"])
-        self.assertEqual(46, len(first["facts"]))
+        self.assertEqual(49, len(first["facts"]))
 
     def test_book_source_fact_is_data_contract_not_runtime_proof(self):
         inventory = android_intake.inventory_value(REPO_ROOT)
@@ -190,6 +190,22 @@ class AndroidIntakeTests(unittest.TestCase):
             "AF-WEBDAV-DOWNLOAD": "download",
             "AF-WEBDAV-UPLOAD": "upload",
             "AF-WEBDAV-DELETE": "delete",
+        }
+        self.assertEqual(
+            expected,
+            {
+                fact_id: facts[fact_id]["payload"]["symbol"]
+                for fact_id in expected
+            },
+        )
+
+    def test_remote_management_has_listener_and_route_anchors(self):
+        inventory = android_intake.inventory_value(REPO_ROOT)
+        facts = {entry["id"]: entry for entry in inventory["facts"]}
+        expected = {
+            "AF-REMOTE-HTTP-SERVE": "serve",
+            "AF-REMOTE-WEBSOCKET-OPEN": "openWebSocket",
+            "AF-REMOTE-WEB-SERVICE-UP": "upWebServer",
         }
         self.assertEqual(
             expected,

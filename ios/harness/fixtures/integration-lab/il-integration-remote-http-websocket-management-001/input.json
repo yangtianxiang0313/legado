@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "listener-contract",
+      "operation": "remote_listener_contract",
+      "arguments": {}
+    },
+    {
+      "id": "options-origin-echo",
+      "operation": "remote_http_request",
+      "arguments": {
+        "method": "OPTIONS",
+        "path": "/getBookshelf",
+        "origin": "oracle.client"
+      }
+    },
+    {
+      "id": "options-without-origin",
+      "operation": "remote_http_request",
+      "arguments": {
+        "method": "OPTIONS",
+        "path": "/getBookshelf"
+      }
+    },
+    {
+      "id": "static-index",
+      "operation": "remote_http_request",
+      "arguments": {
+        "method": "GET",
+        "path": "/"
+      }
+    },
+    {
+      "id": "seeded-bookshelf",
+      "operation": "remote_http_request",
+      "arguments": {
+        "method": "GET",
+        "path": "/getBookshelf",
+        "origin": "oracle.client",
+        "seed_bookshelf": true
+      }
+    },
+    {
+      "id": "missing-static-asset",
+      "operation": "remote_http_request",
+      "arguments": {
+        "method": "GET",
+        "path": "/oracle-missing.html"
+      }
+    },
+    {
+      "id": "book-source-debug-handshake",
+      "operation": "remote_websocket_handshake",
+      "arguments": {
+        "path": "/bookSourceDebug"
+      }
+    },
+    {
+      "id": "rss-source-debug-handshake",
+      "operation": "remote_websocket_handshake",
+      "arguments": {
+        "path": "/rssSourceDebug"
+      }
+    },
+    {
+      "id": "search-book-handshake",
+      "operation": "remote_websocket_handshake",
+      "arguments": {
+        "path": "/searchBook"
+      }
+    },
+    {
+      "id": "unknown-websocket-path",
+      "operation": "remote_websocket_handshake",
+      "arguments": {
+        "path": "/oracle-unknown"
+      }
+    }
+  ]
+}

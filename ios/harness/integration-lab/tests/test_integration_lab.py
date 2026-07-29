@@ -14,6 +14,9 @@ import integration_lab  # noqa: E402
 
 class IntegrationLabTests(unittest.TestCase):
     scenario = "il-integration-backup-webdav-001"
+    listener_scenario = (
+        "il-integration-remote-http-websocket-management-001"
+    )
 
     def test_scenario_contract_and_manifest_are_current(self):
         directory, case, inputs = integration_lab.load_scenario(
@@ -108,6 +111,39 @@ class IntegrationLabTests(unittest.TestCase):
             integration_lab.LOGICAL_ORIGIN,
             report["logical_origin"],
         )
+
+    def test_android_listener_scenario_is_deterministic_without_host_server(
+        self,
+    ):
+        directory, case, inputs = integration_lab.load_scenario(
+            REPO_ROOT,
+            self.listener_scenario,
+        )
+        self.assertEqual(
+            [],
+            integration_lab.validate_scenario(
+                REPO_ROOT,
+                directory,
+                case,
+            ),
+        )
+        self.assertEqual(
+            integration_lab.TRANSPORT_ANDROID_LISTENER,
+            case["transport"]["mode"],
+        )
+        self.assertEqual(10, len(inputs["cases"]))
+        report = integration_lab.verify_protocol(
+            REPO_ROOT,
+            self.listener_scenario,
+        )
+        self.assertEqual(0, report["route_count"])
+        self.assertEqual(10, report["case_count"])
+        with self.assertRaises(integration_lab.IntegrationLabError):
+            with integration_lab.running_server(
+                REPO_ROOT,
+                self.listener_scenario,
+            ):
+                pass
 
 
 if __name__ == "__main__":

@@ -49,6 +49,7 @@ import io.legado.app.model.analyzeRule.AnalyzeRule
 import io.legado.app.model.analyzeRule.AnalyzeUrl
 import io.legado.app.model.analyzeRule.RuleData
 import io.legado.app.model.webBook.WebBook
+import io.legado.app.service.WebService
 import io.legado.app.ui.book.read.page.entities.TextChapter
 import io.legado.app.ui.book.read.page.entities.TextLine
 import io.legado.app.ui.book.read.page.entities.TextPage
@@ -60,6 +61,8 @@ import io.legado.app.utils.GSON
 import io.legado.app.utils.NetworkUtils
 import io.legado.app.utils.defaultSharedPreferences
 import io.legado.app.utils.putPrefBoolean
+import io.legado.app.web.HttpServer
+import io.legado.app.web.WebSocketServer
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
@@ -77,7 +80,11 @@ import org.junit.runner.RunWith
 import org.seimicrawler.xpath.JXNode
 import java.io.File
 import java.io.IOException
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.io.OutputStreamWriter
 import java.lang.reflect.InvocationTargetException
+import java.net.Socket
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -148,6 +155,8 @@ class LegadoOracleInstrumentedTest {
         when (scenarioId) {
             "il-integration-backup-webdav-001" ->
                 runWebDavIntegrationCases()
+            "il-integration-remote-http-websocket-management-001" ->
+                runRemoteManagementIntegrationCases()
             "rl-reader-bookmark-search-runtime-risk-001" ->
                 runBookmarkRuntimeCases()
             "rl-reader-history-read-record-runtime-risk-001" ->
@@ -388,6 +397,264 @@ class LegadoOracleInstrumentedTest {
             .put("resource_type", value.resourceType)
             .put("last_modify", value.lastModify)
             .put("is_directory", value.isDir)
+
+    private suspend fun runRemoteManagementIntegrationCases() {
+        val httpServer = HttpServer(0)
+        val webSocketServer = WebSocketServer(0)
+        val context =
+            InstrumentationRegistry.getInstrumentation().targetContext
+        try {
+            httpServer.start(5_000, true)
+            webSocketServer.start(5_000, true)
+            require(httpServer.isAlive && webSocketServer.isAlive) {
+                "Remote management listeners did not start"
+            }
+            val values = input.getJSONArray("cases")
+            for (index in 0 until values.length()) {
+                val value = values.getJSONObject(index)
+                val operation = value.getString("operation")
+                require(
+                    operation in setOf(
+                        "remote_listener_contract",
+                        "remote_http_request",
+                        "remote_websocket_handshake"
+                    )
+                ) {
+                    "Unsupported remote integration operation: $operation"
+                }
+                val arguments = value.getJSONObject("arguments")
+                val stimulus = JSONObject()
+                    .put("operation", operation)
+                    .put("arguments", JSONObject(arguments.toString()))
+                runCase(
+                    value.getString("id"),
+                    operation,
+                    stimulus
+                ) {
+                    when (operation) {
+                        "remote_listener_contract" ->
+                            remoteListenerProjection(
+                                httpServer,
+                                webSocketServer
+                            )
+                        "remote_http_request" ->
+                            remoteHttpProjection(
+                                httpServer.listeningPort,
+                                arguments
+                            )
+                        "remote_websocket_handshake" ->
+                            remoteWebSocketProjection(
+                                webSocketServer.listeningPort,
+                                arguments.getString("path")
+                            )
+                        else -> error(
+                            "Unsupported remote operation: $operation"
+                        )
+                    }
+                }
+            }
+        } finally {
+            httpServer.stop()
+            webSocketServer.stop()
+            WebService.stop(context)
+        }
+    }
+
+    private fun remoteListenerProjection(
+        httpServer: HttpServer,
+        webSocketServer: WebSocketServer
+    ): JSONObject =
+        JSONObject()
+            .put("http_listening", httpServer.isAlive)
+            .put("websocket_listening", webSocketServer.isAlive)
+            .put(
+                "http_bind_scope",
+                if (httpServer.hostname.isNullOrBlank()) {
+                    "all_interfaces"
+                } else {
+                    "explicit_host"
+                }
+            )
+            .put(
+                "websocket_bind_scope",
+                if (webSocketServer.hostname.isNullOrBlank()) {
+                    "all_interfaces"
+                } else {
+                    "explicit_host"
+                }
+            )
+            .put("http_port_assigned", httpServer.listeningPort > 0)
+            .put(
+                "websocket_port_assigned",
+                webSocketServer.listeningPort > 0
+            )
+            .put(
+                "separate_ports",
+                httpServer.listeningPort != webSocketServer.listeningPort
+            )
+
+    private fun remoteHttpProjection(
+        port: Int,
+        arguments: JSONObject
+    ): JSONObject {
+        val seed = arguments.optBoolean("seed_bookshelf", false)
+        val seededBook = Book(
+            bookUrl = "oracle://remote-management/book",
+            origin = "oracle://remote-management/source",
+            originName = "Oracle Remote Source",
+            name = "Oracle Remote Book",
+            author = "Oracle",
+            latestChapterTime = 0,
+            lastCheckTime = 0,
+            durChapterTime = 0
+        )
+        if (seed) {
+            appDb.bookDao.insert(seededBook)
+        }
+        return try {
+            val method = arguments.getString("method")
+            val path = arguments.getString("path")
+            val builder = Request.Builder()
+                .url("http://127.0.0.1:$port$path")
+                .method(method, null)
+            if (arguments.has("origin")) {
+                builder.header(
+                    "Origin",
+                    "http://${arguments.getString("origin")}"
+                )
+            }
+            OkHttpClient()
+                .newCall(builder.build())
+                .execute()
+                .use { response ->
+                    val body = response.body?.string().orEmpty()
+                    val projection = JSONObject()
+                        .put("status", response.code)
+                        .put(
+                            "content_type",
+                            nullable(response.header("Content-Type"))
+                        )
+                        .put(
+                            "allow_methods",
+                            nullable(
+                                response.header(
+                                    "Access-Control-Allow-Methods"
+                                )
+                            )
+                        )
+                        .put(
+                            "allow_headers",
+                            nullable(
+                                response.header(
+                                    "Access-Control-Allow-Headers"
+                                )
+                            )
+                        )
+                        .put(
+                            "allow_origin",
+                            nullable(
+                                response.header(
+                                    "Access-Control-Allow-Origin"
+                                )
+                            )
+                        )
+                        .put("body_empty", body.isEmpty())
+                    when {
+                        seed -> {
+                            val envelope = JSONObject(body)
+                            val data = envelope.optJSONArray("data")
+                            projection
+                                .put(
+                                    "return_success",
+                                    envelope.getBoolean("isSuccess")
+                                )
+                                .put(
+                                    "seed_visible",
+                                    data != null &&
+                                        (0 until data.length()).any {
+                                            data
+                                                .getJSONObject(it)
+                                                .getString("name") ==
+                                                seededBook.name
+                                        }
+                                )
+                        }
+                        path == "/" -> projection.put(
+                            "asset_index_visible",
+                            body.contains("Legado web")
+                        )
+                        else -> projection.put(
+                            "missing_path_reported",
+                            body.contains("oracle-missing")
+                        )
+                    }
+                    projection
+                }
+        } finally {
+            if (seed) {
+                appDb.bookDao.delete(seededBook)
+            }
+        }
+    }
+
+    private fun remoteWebSocketProjection(
+        port: Int,
+        path: String
+    ): JSONObject {
+        return try {
+            Socket("127.0.0.1", port).use { socket ->
+                socket.soTimeout = 5_000
+                val writer = OutputStreamWriter(
+                    socket.getOutputStream(),
+                    Charsets.US_ASCII
+                )
+                writer.write(
+                    "GET $path HTTP/1.1\r\n" +
+                        "Host: 127.0.0.1:$port\r\n" +
+                        "Connection: Upgrade\r\n" +
+                        "Upgrade: websocket\r\n" +
+                        "Sec-WebSocket-Version: 13\r\n" +
+                        "Sec-WebSocket-Key: " +
+                        "dGhlIHNhbXBsZSBub25jZQ==\r\n\r\n"
+                )
+                writer.flush()
+                val reader = BufferedReader(
+                    InputStreamReader(
+                        socket.getInputStream(),
+                        Charsets.US_ASCII
+                    )
+                )
+                val statusLine = reader.readLine()
+                val headers = mutableMapOf<String, String>()
+                while (true) {
+                    val line = reader.readLine() ?: break
+                    if (line.isEmpty()) break
+                    val delimiter = line.indexOf(':')
+                    if (delimiter > 0) {
+                        headers[line.substring(0, delimiter).lowercase()] =
+                            line.substring(delimiter + 1).trim()
+                    }
+                }
+                val status = statusLine
+                    ?.split(' ')
+                    ?.getOrNull(1)
+                    ?.toIntOrNull()
+                JSONObject()
+                    .put("accepted", status == 101)
+                    .put("status", status ?: JSONObject.NULL)
+                    .put("upgrade", nullable(headers["upgrade"]))
+                    .put("connection", nullable(headers["connection"]))
+                    .put("failure_type", JSONObject.NULL)
+            }
+        } catch (error: Throwable) {
+            JSONObject()
+                .put("accepted", false)
+                .put("status", JSONObject.NULL)
+                .put("upgrade", JSONObject.NULL)
+                .put("connection", JSONObject.NULL)
+                .put("failure_type", error.javaClass.name)
+        }
+    }
 
     private suspend fun runBookmarkRuntimeCases() {
         val values = input.getJSONArray("cases")
