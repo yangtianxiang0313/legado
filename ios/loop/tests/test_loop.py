@@ -424,6 +424,71 @@ class MinimalLoopTests(unittest.TestCase):
             loop.validate_task(root, task)
             self.assertLess(len(loop.canonical(task)), 8_000)
 
+    def test_next_characterization_uses_latest_packet_revision(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.write(
+                root,
+                "ios/project/requirements/accepted/"
+                "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001.json",
+                {
+                    "id": "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001",
+                    "revision": 1,
+                    "status": "accepted",
+                    "origin": {
+                        "kind": "ios_product_decision",
+                        "baseline_commit": "a" * 40,
+                        "admission": "policy_auto",
+                    },
+                    "clauses": [{"id": "RC-01"}],
+                },
+            )
+            for packet_revision, claim_revision in ((1, 1), (2, 2)):
+                self.write(
+                    root,
+                    "ios/project/business-knowledge/packets/proposals/"
+                    f"BKP-REVISIONED-001/r{packet_revision:04d}.json",
+                    {
+                        "id": "BKP-REVISIONED-001",
+                        "revision": packet_revision,
+                        "status": "candidate",
+                        "baseline": {"android_commit": "a" * 40},
+                        "claims": [
+                            {
+                                "id": "BKC-REVISIONED-001",
+                                "revision": claim_revision,
+                                "semantic_key": (
+                                    "source.rule.revision-selection"
+                                ),
+                                "topic": f"Revision {claim_revision}",
+                                "subject_keys": ["source.rule"],
+                                "depends_on": [],
+                                "support": {
+                                    "state": "candidate_source_anchored",
+                                    "runtime_requirement": (
+                                        "android_characterization"
+                                    ),
+                                    "source_anchors": [
+                                        {"path": "AnalyzeRule.kt"}
+                                    ],
+                                },
+                            }
+                        ],
+                    },
+                )
+
+            task = loop.next_task(root)
+
+            self.assertEqual(
+                2,
+                task["source"]["knowledge"]["packet"]["revision"],
+            )
+            self.assertEqual(
+                2,
+                task["source"]["knowledge"]["candidate_claim"]["revision"],
+            )
+            self.assertEqual("Revision 2", task["title"])
+
     def test_static_source_claim_unlocks_runtime_characterization(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -570,6 +635,69 @@ class MinimalLoopTests(unittest.TestCase):
             "ios/Packages/LegadoKit/Sources/ReaderCore/**",
             delivery["allowed_paths"],
         )
+
+    def test_integration_characterization_bootstraps_protocol_lab_only(self):
+        claim = {
+            "id": "BKC-INTEGRATION-WEBDAV-001",
+            "revision": 2,
+            "semantic_key": "integration.backup.webdav",
+            "topic": "WebDAV 备份与恢复",
+            "subject_keys": ["integration.backup", "integration.remote"],
+            "support": {
+                "source_anchors": [{"path": "WebDav.kt"}],
+            },
+        }
+        contract = loop.characterization_contract(claim)
+
+        self.assertEqual("IntegrationKit", contract["owner"])
+        self.assertEqual("integration-lab", contract["fixture_root"])
+        self.assertEqual(
+            "il-integration-backup-webdav-001",
+            loop.characterization_fixture_id(
+                claim["semantic_key"],
+                contract["fixture_prefix"],
+            ),
+        )
+        self.assertEqual(
+            "integration-lab-contract",
+            contract["contract_command"]["id"],
+        )
+
+        task = loop.build_characterization_task(
+            Path("/tmp/unused"),
+            {
+                "packet_path": "packet.json",
+                "packet": {
+                    "id": "BKP-INTEGRATIONS-001",
+                    "revision": 4,
+                    "baseline": {"android_commit": "a" * 40},
+                },
+                "claim": claim,
+                "requirements": [
+                    "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+                ],
+                "task_id": (
+                    "IOS-CHARACTERIZE-INTEGRATION-BACKUP-WEBDAV-001"
+                ),
+            },
+        )
+
+        self.assertEqual("IntegrationKit", task["architecture"]["owner"])
+        self.assertEqual(
+            "integration-lab-contract",
+            task["acceptance"]["commands"][0]["id"],
+        )
+        self.assertIn(
+            "ios/harness/integration-lab/**",
+            task["scope"]["allowed_paths"],
+        )
+        with self.assertRaisesRegex(
+            loop.LoopError,
+            "OWNER_NOT_MAPPED",
+        ):
+            loop.owner_contract(
+                "IOS-INTEGRATION-KIT-WEBDAV-001"
+            )
 
     def test_project_charter_fails_closed_on_android_baseline_drift(self):
         with tempfile.TemporaryDirectory() as directory:

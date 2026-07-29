@@ -245,7 +245,7 @@ def satisfied_dependency_claim_refs(root: Path) -> set[tuple[str, int]]:
                 and not isinstance(claim.get("revision"), bool)
             ):
                 result.add((claim["id"], claim["revision"]))
-    for _, packet in relative_jsons(
+    for _, packet in latest_json_revisions(
         root,
         "ios/project/business-knowledge/packets/proposals",
     ):
@@ -271,6 +271,37 @@ def relative_jsons(root: Path, relative: str) -> Iterable[tuple[str, Mapping[str
         return
     for path in sorted(directory.rglob("*.json")):
         yield path.relative_to(root).as_posix(), read_json(path)
+
+
+def latest_json_revisions(
+    root: Path,
+    relative: str,
+) -> list[tuple[str, Mapping[str, Any]]]:
+    latest: dict[str, tuple[int, str, Mapping[str, Any]]] = {}
+    for path, value in relative_jsons(root, relative):
+        identifier = value.get("id")
+        revision = value.get("revision")
+        if (
+            not isinstance(identifier, str)
+            or not isinstance(revision, int)
+            or isinstance(revision, bool)
+        ):
+            continue
+        current = latest.get(identifier)
+        if current is not None and current[0] == revision:
+            raise LoopError(
+                f"REVISION_DUPLICATE:{identifier}@{revision}:"
+                f"{current[1]},{path}"
+            )
+        if current is None or revision > current[0]:
+            latest[identifier] = (revision, path, value)
+    return [
+        (path, value)
+        for _, path, value in sorted(
+            latest.values(),
+            key=lambda entry: (entry[1], entry[0]),
+        )
+    ]
 
 
 def migration_for(
@@ -585,7 +616,7 @@ def pending_characterizations(root: Path) -> list[Mapping[str, Any]]:
     characterized = characterized_claim_refs(root)
     satisfied_dependencies = satisfied_dependency_claim_refs(root)
     candidates: list[tuple[int, int, str, Mapping[str, Any]]] = []
-    for packet_path, packet in relative_jsons(
+    for packet_path, packet in latest_json_revisions(
         root,
         "ios/project/business-knowledge/packets/proposals",
     ):
@@ -710,6 +741,42 @@ def characterization_contract(claim: Mapping[str, Any]) -> Mapping[str, Any]:
                 "先固定 Android 可观察结果，再扩展独立 SourceRuntime；"
                 "SourceLab 与 Golden 不进入 UI/Domain。"
             ),
+        }
+    if any(value.startswith("integration.") for value in keys):
+        return {
+            "owner": "IntegrationKit",
+            "fixture_prefix": "il",
+            "fixture_root": "integration-lab",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "rule": (
+                "先用仅绑定 loopback 的 IntegrationLab 固定 Android 集成协议"
+                "可观察结果；这只授权 characterization。IntegrationKit 的产品"
+                "Target、依赖边和三方库必须由发布后的业务知识与 ADR 另行决定，"
+                "凭据不得进入 fixture、Golden 或 trace。"
+            ),
+            "contract_command": {
+                "id": "integration-lab-contract",
+                "argv": [
+                    "python3",
+                    "-B",
+                    "ios/harness/integration-lab/integration_lab.py",
+                    "doctor",
+                    "--root",
+                    ".",
+                ],
+                "timeout_seconds": 120,
+            },
+            "allowed_paths": [
+                "ios/harness/integration-lab/**",
+                "ios/harness/schemas/integration-lab-scenario.schema.json",
+            ],
         }
     raise LoopError(f"CHARACTERIZATION_DOMAIN_NOT_MAPPED:{semantic_key}")
 
@@ -1119,6 +1186,26 @@ def build_characterization_task(
                 "path": path,
             }
             break
+    contract_command = domain.get(
+        "contract_command",
+        {
+            "id": "source-lab-contract",
+            "argv": [
+                "python3",
+                "-B",
+                "ios/harness/source-lab/source_lab.py",
+                "doctor",
+                "--root",
+                ".",
+            ],
+            "timeout_seconds": 120,
+        },
+    )
+    domain_allowed_paths = [
+        str(value)
+        for value in domain.get("allowed_paths", [])
+        if isinstance(value, str)
+    ]
     return {
         "schema_version": SCHEMA_VERSION,
         "id": candidate["task_id"],
@@ -1192,6 +1279,7 @@ def build_characterization_task(
                 "ios/project/business-knowledge/coverage/**",
                 "ios/project/business-knowledge/releases/**",
                 "ios/project/business-knowledge/catalog.json",
+                *domain_allowed_paths,
             ],
             "forbidden": [
                 "手写 Android expected",
@@ -1203,18 +1291,7 @@ def build_characterization_task(
         },
         "acceptance": {
             "commands": [
-                {
-                    "id": "source-lab-contract",
-                    "argv": [
-                        "python3",
-                        "-B",
-                        "ios/harness/source-lab/source_lab.py",
-                        "doctor",
-                        "--root",
-                        ".",
-                    ],
-                    "timeout_seconds": 120,
-                },
+                contract_command,
                 {
                     "id": "oracle-contract-tests",
                     "argv": [

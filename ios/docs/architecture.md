@@ -65,9 +65,12 @@ Android commit → Fact Inventory → Requirement Candidate
 
 Loop 根据 Claim 的 `semantic_key` 与 `subject_keys` 在生成任务时确定产品所有者：
 `source.*` 进入 `SourceRuntime`，`reader.*` 进入 `ReaderCore`，
-`library.*` 进入 `LibraryDomain`；未登记或跨域含糊的前缀必须 fail closed，禁止统一
-回退到 `SourceRuntime`。Characterization harness 可以复用可信 Oracle 管线，但
-fixture 类型、产品 Target 和 Delivery 验收必须保持各自边界。
+`library.*` 进入 `LibraryDomain`。`integration.*` 先进入 `IntegrationKit`
+characterization owner，并由只绑定 loopback 的 `IntegrationLab` 固定协议行为；这不
+等于批准 `IntegrationKit` 产品 Target、模块依赖或三方库，必须在业务知识发布及 ADR
+裁决后才能形成 Delivery。未登记或跨域含糊的前缀必须 fail closed，禁止统一回退到
+`SourceRuntime`。Characterization harness 可以复用可信 Oracle 管线，但 fixture
+类型、产品 Target 和 Delivery 验收必须保持各自边界。
 
 完整契约、证据等级、去重与 baseline 升级规则见 `android-requirement-intake.md`。
 
