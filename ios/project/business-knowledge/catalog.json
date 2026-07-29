@@ -5,8 +5,8 @@
   "inventory_control_sha256": "30cac916034a71f4ce34aa11388c0c3d578c78ccd937f888e48b556b01d72172",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "a182045e8b5a9f7ddaf6af8faa5c6862f002b31d649bd6bcbc4a16826758a973",
-  "coverage_sha256": "99a347d36446872921b194a5ac77a1ec31bdb9f1fb6edfd357e94692de6beaef",
+  "authority_sha256": "81ab2116765b5125c20da049d4d4c5dcffce65e3fa07217c6745ae9bbf72648c",
+  "coverage_sha256": "eb89065771cbb186d6ebdcca43c20ac80a5edf943298bdf1a1e064daeb9e7719",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -100,6 +100,19 @@
       "claim_refs": [
         {
           "id": "BKC-SR-RESPONSE-DECODE-001",
+          "revision": 2
+        }
+      ]
+    },
+    {
+      "id": "BKP-SOURCE-RUNTIME-RETRY-REDIRECT-001",
+      "revision": 1,
+      "semantic_key": "source.runtime-retry-redirect-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-SOURCE-RUNTIME-RETRY-REDIRECT-001/r0001.json",
+      "record_sha256": "3c67f35c92ea4cc87ff1aa857f30329c3844317198013a281826e4bbbeb096d6",
+      "claim_refs": [
+        {
+          "id": "BKC-SR-RETRY-REDIRECT-001",
           "revision": 2
         }
       ]
@@ -211,6 +224,14 @@
       "resolution_state": "resolved"
     },
     {
+      "id": "DRV-SOURCE-RUNTIME-RETRY-REDIRECT-001",
+      "revision": 1,
+      "semantic_key": "source.execution.retry-redirect",
+      "path": "ios/project/business-knowledge/drivers/published/DRV-SOURCE-RUNTIME-RETRY-REDIRECT-001/r0001.json",
+      "record_sha256": "160f270fb15030d3d7a37199c14e42d1738899aa8351879b1891b281c9ef9144",
+      "resolution_state": "resolved"
+    },
+    {
       "id": "DRV-SOURCE-RUNTIME-TRANSPORT-DISPATCH-001",
       "revision": 1,
       "semantic_key": "source.execution.transport-dispatch",
@@ -300,6 +321,15 @@
       "record_sha256": "6e83c6286f1d6314c73de7a9a6ee99e19937217eb089b854c1d96597b2ef3415",
       "entry_ids": [
         "BKE-SR-RESPONSE-DECODING-001"
+      ]
+    },
+    {
+      "id": "BKL-SOURCE-RUNTIME-RETRY-REDIRECT-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-SOURCE-RUNTIME-RETRY-REDIRECT-001.json",
+      "record_sha256": "10123a87a7b342b717bd75bf9b238aed2105d517d61e3f3977219d80b5017fdf",
+      "entry_ids": [
+        "BKE-SR-RETRY-REDIRECT-001"
       ]
     },
     {

@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-SOURCE-RUNTIME-RETRY-REDIRECT-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "source.execution.retry-redirect",
+  "title": "在独立 SourceRuntime 中显式建模状态码重试、异常短路与重定向观测",
+  "claim_refs": [
+    {
+      "id": "BKC-SR-RETRY-REDIRECT-001",
+      "revision": 2
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "retry 必须表示状态码失败后的额外尝试次数；成功短路、失败链重复、最终 URL 和路由命中数必须逐字段对齐 Android Golden。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "cancellation",
+      "scenario": "传输异常不得被状态码重试吞掉，任务取消必须取消底层请求并向调用方传播。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "isolation",
+      "scenario": "重试策略、有效 URL 与重定向观测属于独立 SourceRuntime，不得由 SwiftUI 或具体页面补偿。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "safety",
+      "scenario": "Android 的负 retry 零请求后 NPE 是兼容性观测；iOS 内部应保留类型化失败，并仅在 Conformance 投影中表达对应结果，不复制崩溃。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "testability",
+      "scenario": "执行器必须支持注入传输以验证状态序列、请求指纹、异常和取消；重定向链由本地 SourceLab 路由验证，不依赖公网。",
+      "criticality": "critical"
+    }
+  ],
+  "decision_questions": [
+    "如何让执行结果同时保留初始 URL、有效 URL、状态码与尝试次数，而不把重定向判断耦合到页面层？",
+    "如何区分可重试的非成功状态、立即传播的传输异常、任务取消和非法 retry，并保持 Android Golden 兼容投影？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002"
+    ],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-SOURCE-TRANSPORT-RETRY-REDIRECT-RUNTIME-001",
+      "IOS-SOURCE-RUNTIME-RETRY-REDIRECT-001"
+    ]
+  },
+  "supersedes": null,
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30442087952/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "created_by": "IOS-CHARACTERIZE-SOURCE-TRANSPORT-RETRY-REDIRECT-RUNTIME-001"
+}

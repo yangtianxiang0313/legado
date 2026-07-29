@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-SOURCE-RUNTIME-RETRY-REDIRECT-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "source.runtime-retry-redirect-golden",
+  "title": "受保护 Android Golden 验证的状态码重试、异常短路与重定向观测",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "source.execution"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-RUNTIME-PORTS"
+    ],
+    "subject_keys": [
+      "source.rule",
+      "source.transport"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-SR-RETRY-REDIRECT-001",
+      "revision": 2,
+      "semantic_key": "source.transport.retry-redirect-runtime",
+      "kind": "runtime_behavior",
+      "topic": "重试、取消与重定向",
+      "statement": "在 sl-source-transport-retry-redirect-runtime-001 的固定输入下，Android newCallResponse 将 retry 解释为首个请求之外的状态码重试次数：默认 0 对 503 只请求一次，retry=2 对连续 503 共请求三次，并在 500、503、200 序列的第三次立即成功；每次构造新的 Request 实例但请求指纹一致。重定向由 OkHttp 自动跟随，成功链返回终点正文和最终 URL，WebBook.checkRedirect 能完成 priorResponse 检查；重定向终点仍为 503 时，retry=1 会把起点到终点的整条链重复两次。IOException 在第一次调用直接传播而不进行剩余重试；协程取消会取消底层 Call 并传播取消。retry=-1 形成空区间、零次请求，最终因 response!! 产生 java.lang.NullPointerException。",
+      "subject_keys": [
+        "source.rule",
+        "source.transport"
+      ],
+      "depends_on": [
+        {
+          "id": "BKC-SR-TRANSPORT-DISPATCH-001",
+          "revision": 2
+        }
+      ],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da",
+            "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+            "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/getStrResponseAwait"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "b4ead2bb5a02cebe9e5bf7e42fbced5f67785485",
+            "path": "app/src/main/java/io/legado/app/help/http/OkHttpUtils.kt",
+            "symbol_id": "kotlin://io.legado.app.help.http/OkHttpUtils/newCallResponse"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "af03cf51cef2eb31f54b8240c39e868ceabdba54",
+            "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
+            "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook/checkRedirect"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/sl-source-transport-retry-redirect-runtime-001.json",
+            "artifact_sha256": "439de34745f9876be1f2e6ba3f808306218059104568bf457715bb845c8d8ee6",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "1e11081b1fb6a0cf4580c7d92886d090a979ae3ed1d73ac007020d61317bcc59",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "41db0493033a167f37a7fa3685d08544e54b0d9174cd8648013b91536a95def6",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-SR-RETRY-REDIRECT-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-SOURCE-TRANSPORT-RETRY-REDIRECT-RUNTIME-001"
+}
