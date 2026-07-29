@@ -46,20 +46,70 @@ public struct HTMLDocument: Sendable {
   }
 
   public func select(_ selector: String, within node: HTMLNode? = nil) throws -> [HTMLNode] {
-    let segments = selector
-      .split(separator: ">", omittingEmptySubsequences: true)
-      .map { $0.trimmingCharacters(in: .whitespaces) }
-    guard !segments.isEmpty, segments.count <= 2 else {
+    let steps = try Self.selectorSteps(selector)
+    let base = node ?? root
+    var matches = Self.descendants(of: base).filter {
+      Self.matches($0, steps[0].selector)
+    }
+    for step in steps.dropFirst() {
+      let candidates: [HTMLNode]
+      switch step.combinator {
+      case .descendant:
+        candidates = matches.flatMap {
+          $0.children.flatMap(Self.descendants)
+        }
+      case .child:
+        candidates = matches.flatMap(\.children)
+      }
+      matches = candidates.filter { Self.matches($0, step.selector) }
+    }
+    return matches
+  }
+
+  private enum SelectorCombinator {
+    case descendant
+    case child
+  }
+
+  private struct SelectorStep {
+    let combinator: SelectorCombinator
+    let selector: String
+  }
+
+  private static func selectorSteps(_ selector: String) throws -> [SelectorStep] {
+    let normalized = selector.replacingOccurrences(
+      of: #"\s*>\s*"#,
+      with: " > ",
+      options: .regularExpression
+    )
+    let tokens = normalized.split(whereSeparator: \.isWhitespace).map(String.init)
+    guard let first = tokens.first, first != ">" else {
       throw HTMLDocumentError.unsupportedSelector(selector)
     }
-    let base = node ?? root
-    if segments.count == 1 {
-      return Self.descendants(of: base).filter { Self.matches($0, segments[0]) }
+    var steps = [
+      SelectorStep(combinator: .descendant, selector: first)
+    ]
+    var combinator = SelectorCombinator.descendant
+    var expectsSelector = false
+    for token in tokens.dropFirst() {
+      if token == ">" {
+        guard !expectsSelector else {
+          throw HTMLDocumentError.unsupportedSelector(selector)
+        }
+        combinator = .child
+        expectsSelector = true
+      } else {
+        steps.append(
+          SelectorStep(combinator: combinator, selector: token)
+        )
+        combinator = .descendant
+        expectsSelector = false
+      }
     }
-    return Self.descendants(of: base)
-      .filter { Self.matches($0, segments[0]) }
-      .flatMap(\.children)
-      .filter { Self.matches($0, segments[1]) }
+    guard !expectsSelector else {
+      throw HTMLDocumentError.unsupportedSelector(selector)
+    }
+    return steps
   }
 
   private static func sanitize(_ html: String) -> String {
