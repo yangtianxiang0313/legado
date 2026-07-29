@@ -682,7 +682,8 @@ public enum ReaderReadRecordFixtureProjection {
   private static func sessionWrite(
     _ arguments: [String: JSONValue]
   ) throws -> JSONValue {
-    let rows = AndroidReadRecordCompatibility
+    let rows =
+      AndroidReadRecordCompatibility
       .insertingReplacingByCompositeKey(try records(arguments))
     let bookName = try requiredString("book_name", in: arguments)
     let aggregateBefore =
@@ -709,7 +710,8 @@ public enum ReaderReadRecordFixtureProjection {
     guard let inserted = update.recordToPersist else {
       throw ReaderReadRecordFixtureProjectionError.invalidFixture
     }
-    let after = AndroidReadRecordCompatibility
+    let after =
+      AndroidReadRecordCompatibility
       .insertingReplacingByCompositeKey(rows + [inserted])
     let aggregateAfter =
       AndroidReadRecordCompatibility.aggregateReadTime(
@@ -743,7 +745,8 @@ public enum ReaderReadRecordFixtureProjection {
   private static func pauseBoundary(
     _ arguments: [String: JSONValue]
   ) throws -> JSONValue {
-    let rows = AndroidReadRecordCompatibility
+    let rows =
+      AndroidReadRecordCompatibility
       .insertingReplacingByCompositeKey(try records(arguments))
     let bookName = try requiredString("book_name", in: arguments)
     let readStartTime = try requiredInt64(
@@ -780,7 +783,8 @@ public enum ReaderReadRecordFixtureProjection {
   private static func disabled(
     _ arguments: [String: JSONValue]
   ) throws -> JSONValue {
-    let rows = AndroidReadRecordCompatibility
+    let rows =
+      AndroidReadRecordCompatibility
       .insertingReplacingByCompositeKey(try records(arguments))
     let bookName = try requiredString("book_name", in: arguments)
     let readStartTime = try requiredInt64(
@@ -809,7 +813,8 @@ public enum ReaderReadRecordFixtureProjection {
   private static func insertConflict(
     _ arguments: [String: JSONValue]
   ) throws -> JSONValue {
-    let rows = AndroidReadRecordCompatibility
+    let rows =
+      AndroidReadRecordCompatibility
       .insertingReplacingByCompositeKey(try records(arguments))
     let bookName = try requiredString("book_name", in: arguments)
     return .object([
@@ -893,5 +898,384 @@ public enum ReaderReadRecordFixtureProjection {
 
   private static func number(_ value: Int64) -> JSONValue {
     .number(JSONNumber(value))
+  }
+}
+
+public enum ReaderProgressFixtureProjectionError: Error, Sendable {
+  case invalidFixture
+}
+
+public struct ReaderProgressFixtureProjectionRun: Sendable {
+  public let artifact: JSONValue
+  public let requestPlan: JSONValue
+
+  public init(artifact: JSONValue, requestPlan: JSONValue) {
+    self.artifact = artifact
+    self.requestPlan = requestPlan
+  }
+}
+
+public enum ReaderProgressFixtureProjection {
+  public static let fixtureID =
+    "rl-reader-progress-layout-save-runtime-001"
+
+  public static func run(
+    caseData: Data,
+    inputData: Data
+  ) throws -> ReaderProgressFixtureProjectionRun {
+    let caseDocument: JSONValue
+    let inputDocument: JSONValue
+    do {
+      caseDocument = try JSONValueCodec.decode(caseData)
+      inputDocument = try JSONValueCodec.decode(inputData)
+    } catch {
+      throw ReaderProgressFixtureProjectionError.invalidFixture
+    }
+    guard
+      case .object(let caseRoot) = caseDocument,
+      caseRoot["id"] == .string(fixtureID),
+      caseRoot["kind"] == .string("android_runtime_scenario"),
+      caseRoot["operation"] == .string("android_runtime"),
+      case .object(let inputRoot) = inputDocument,
+      case .array(let inputCases)? = inputRoot["cases"]
+    else {
+      throw ReaderProgressFixtureProjectionError.invalidFixture
+    }
+
+    var plans: [JSONValue] = []
+    var cases: [JSONValue] = []
+    var identifiers: Set<String> = []
+    for value in inputCases {
+      guard
+        case .object(let inputCase) = value,
+        case .string(let id)? = inputCase["id"],
+        identifiers.insert(id).inserted,
+        case .string(let operation)? = inputCase["operation"],
+        case .object(let arguments)? = inputCase["arguments"]
+      else {
+        throw ReaderProgressFixtureProjectionError.invalidFixture
+      }
+      plans.append(
+        .object([
+          "operation": .string(operation),
+          "arguments": .object(arguments),
+        ])
+      )
+      let result: JSONValue
+      switch operation {
+      case "layout_set_page_index":
+        result = try setPageIndex(arguments)
+      case "layout_char_to_page":
+        result = try charToPage(arguments)
+      case "save_read_page_changed":
+        result = try saveRead(arguments)
+      case "reset_progress":
+        result = try reset(arguments)
+      case "audio_save_read":
+        result = try audioSave(arguments)
+      default:
+        throw ReaderProgressFixtureProjectionError.invalidFixture
+      }
+      cases.append(
+        .object([
+          "id": .string(id),
+          "operation": .string(operation),
+          "result": result,
+          "issue": .null,
+        ])
+      )
+    }
+
+    let requestPlan = JSONValue.array(plans)
+    return ReaderProgressFixtureProjectionRun(
+      artifact: .object([
+        "schema_version": number(1),
+        "fixture_id": .string(fixtureID),
+        "engine": .object([
+          "platform": .string("ios"),
+          "revision": .string("reader-progress-runtime-v1"),
+          "compatibility_profile": .string("android-legado-v1"),
+        ]),
+        "request_plan": requestPlan,
+        "decode": .null,
+        "stages": .array([]),
+        "result": .object([
+          "type": .string("reader_runtime"),
+          "value": .object([
+            "portable_known_projection": .object([
+              "cases": .array(cases)
+            ])
+          ]),
+        ]),
+        "issues": .array([]),
+      ]),
+      requestPlan: requestPlan
+    )
+  }
+
+  private static func setPageIndex(
+    _ arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    let pageIndex = try integer("page_index", in: arguments)
+    let layout = try layout(arguments)
+    let stored = snapshot(
+      chapterIndex: 0,
+      characterOffset: 0,
+      chapterTitle: "既有标题"
+    )
+    guard
+      let runtime = AndroidReaderProgressCompatibility.position(
+        afterSelectingPage: pageIndex,
+        current: stored.progress.position,
+        layout: layout
+      ),
+      let runtimePage = layout.pageIndex(
+        forCharacterOffset: runtime.characterOffset
+      )
+    else {
+      throw ReaderProgressFixtureProjectionError.invalidFixture
+    }
+    let persisted = AndroidReaderProgressCompatibility.saving(
+      stored: stored,
+      runtimePosition: runtime,
+      event: .pageChanged,
+      nowMilliseconds: 2,
+      resolvedChapterTitle: "第一章"
+    )
+    return .object([
+      "requested_page_index": number(pageIndex),
+      "runtime_char_position": number(runtime.characterOffset),
+      "runtime_page_index": number(runtimePage),
+      "persisted_chapter_index": number(
+        persisted.progress.position.chapterIndex
+      ),
+      "persisted_char_position": number(
+        persisted.progress.position.characterOffset
+      ),
+      "persisted_chapter_title": nullable(
+        persisted.progress.chapterTitle
+      ),
+    ])
+  }
+
+  private static func charToPage(
+    _ arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    let layout = try layout(arguments)
+    guard case .array(let values)? = arguments["char_indices"] else {
+      throw ReaderProgressFixtureProjectionError.invalidFixture
+    }
+    let mappings = try values.map { value -> JSONValue in
+      let characterOffset = try integer(value)
+      return .object([
+        "char_index": number(characterOffset),
+        "page_index": number(
+          layout.pageIndex(
+            forCharacterOffset: characterOffset
+          ) ?? -1
+        ),
+      ])
+    }
+    return .object([
+      "layout_completed": .bool(layout.isComplete),
+      "mappings": .array(mappings),
+    ])
+  }
+
+  private static func saveRead(
+    _ arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    let storedIndex = try integer(
+      "stored_chapter_index",
+      in: arguments
+    )
+    let runtime = ReadingPosition(
+      chapterIndex: try integer(
+        "runtime_chapter_index",
+        in: arguments
+      ),
+      characterOffset: try integer(
+        "runtime_chapter_pos",
+        in: arguments
+      )
+    )
+    guard case .bool(let pageChanged)? = arguments["page_changed"] else {
+      throw ReaderProgressFixtureProjectionError.invalidFixture
+    }
+    let persisted = AndroidReaderProgressCompatibility.saving(
+      stored: snapshot(
+        chapterIndex: storedIndex,
+        characterOffset: 5,
+        chapterTitle: "既有标题"
+      ),
+      runtimePosition: runtime,
+      event: pageChanged ? .pageChanged : .lifecycle,
+      nowMilliseconds: 2,
+      resolvedChapterTitle: title(runtime.chapterIndex)
+    )
+    return saveProjection(
+      persisted,
+      pageChanged: .bool(pageChanged)
+    )
+  }
+
+  private static func reset(
+    _ arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    let stored = ReadingPosition(
+      chapterIndex: try integer(
+        "stored_chapter_index",
+        in: arguments
+      ),
+      characterOffset: try integer(
+        "stored_chapter_pos",
+        in: arguments
+      )
+    )
+    let runtime = AndroidReaderProgressCompatibility.resetPosition(
+      stored: stored,
+      chapterCount: 3
+    )
+    return .object([
+      "chapter_size": number(3),
+      "runtime_chapter_index": number(runtime.chapterIndex),
+      "runtime_char_position": number(runtime.characterOffset),
+      "persisted_chapter_index": number(stored.chapterIndex),
+      "persisted_char_position": number(stored.characterOffset),
+    ])
+  }
+
+  private static func audioSave(
+    _ arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    let stored = snapshot(
+      chapterIndex: try integer(
+        "stored_chapter_index",
+        in: arguments
+      ),
+      characterOffset: try integer(
+        "stored_chapter_pos",
+        in: arguments
+      ),
+      chapterTitle: "既有标题"
+    )
+    let persisted = AndroidReaderProgressCompatibility.saving(
+      stored: stored,
+      runtimePosition: stored.progress.position,
+      event: .audio,
+      nowMilliseconds: 2,
+      resolvedChapterTitle: title(
+        stored.progress.position.chapterIndex
+      )
+    )
+    return saveProjection(persisted)
+  }
+
+  private static func saveProjection(
+    _ snapshot: ReaderProgressSnapshot,
+    pageChanged: JSONValue? = nil
+  ) -> JSONValue {
+    var value: [String: JSONValue] = [
+      "persisted_chapter_index": number(
+        snapshot.progress.position.chapterIndex
+      ),
+      "persisted_char_position": number(
+        snapshot.progress.position.characterOffset
+      ),
+      "persisted_chapter_title": nullable(
+        snapshot.progress.chapterTitle
+      ),
+      "last_check_count": number(snapshot.contentCheckCount),
+      "timestamp_was_refreshed": .bool(
+        snapshot.progress.updatedAtMilliseconds > 1
+      ),
+    ]
+    value["page_changed"] = pageChanged
+    return .object(value)
+  }
+
+  private static func layout(
+    _ arguments: [String: JSONValue]
+  ) throws -> ReaderLayoutMap {
+    guard
+      case .array(let starts)? = arguments["page_starts"],
+      case .array(let texts)? = arguments["page_texts"],
+      starts.count == texts.count,
+      !starts.isEmpty,
+      case .bool(let completed)? = arguments["layout_completed"]
+    else {
+      throw ReaderProgressFixtureProjectionError.invalidFixture
+    }
+    let pages = try zip(starts, texts).map {
+      value,
+      text -> ReaderLayoutPage in
+      guard case .string(let rawText) = text else {
+        throw ReaderProgressFixtureProjectionError.invalidFixture
+      }
+      return ReaderLayoutPage(
+        startCharacterOffset: try integer(value),
+        characterCount: rawText.utf16.count
+      )
+    }
+    do {
+      return try ReaderLayoutMap(
+        pages: pages,
+        isComplete: completed
+      )
+    } catch {
+      throw ReaderProgressFixtureProjectionError.invalidFixture
+    }
+  }
+
+  private static func snapshot(
+    chapterIndex: Int,
+    characterOffset: Int,
+    chapterTitle: String?
+  ) -> ReaderProgressSnapshot {
+    ReaderProgressSnapshot(
+      progress: ReadingProgress(
+        position: ReadingPosition(
+          chapterIndex: chapterIndex,
+          characterOffset: characterOffset
+        ),
+        chapterTitle: chapterTitle,
+        updatedAtMilliseconds: 1
+      ),
+      contentCheckCount: 7
+    )
+  }
+
+  private static func title(_ chapterIndex: Int) -> String? {
+    ["第一章", "第二章", "第三章"].indices.contains(chapterIndex)
+      ? ["第一章", "第二章", "第三章"][chapterIndex]
+      : nil
+  }
+
+  private static func integer(
+    _ key: String,
+    in arguments: [String: JSONValue]
+  ) throws -> Int {
+    guard let value = arguments[key] else {
+      throw ReaderProgressFixtureProjectionError.invalidFixture
+    }
+    return try integer(value)
+  }
+
+  private static func integer(_ value: JSONValue) throws -> Int {
+    guard
+      case .number(let number) = value,
+      let integer = Int(number.rawToken)
+    else {
+      throw ReaderProgressFixtureProjectionError.invalidFixture
+    }
+    return integer
+  }
+
+  private static func nullable(_ value: String?) -> JSONValue {
+    value.map(JSONValue.string) ?? .null
+  }
+
+  private static func number(_ value: Int) -> JSONValue {
+    .number(JSONNumber(Int64(value)))
   }
 }

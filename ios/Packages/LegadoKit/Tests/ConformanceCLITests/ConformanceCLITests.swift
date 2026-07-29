@@ -689,6 +689,67 @@ final class ConformanceCLITests: XCTestCase {
     XCTAssertTrue(text.contains(#""time":701"#))
   }
 
+  func testMinimalTaskRunnerMatchesReaderProgressAndroidGolden()
+    async throws
+  {
+    let temporaryRoot = FileManager.default.temporaryDirectory
+      .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryRoot) }
+    let fixtureID =
+      "rl-reader-progress-layout-save-runtime-001"
+    let fixturePath =
+      "ios/harness/fixtures/runtime-lab/\(fixtureID)"
+    let goldenPath =
+      "ios/harness/goldens/android-legado-v1/\(fixtureID).json"
+    let taskPath = "ios/project/loop/task.json"
+    for relative in [fixturePath, goldenPath, taskPath] {
+      try FileManager.default.createDirectory(
+        at:
+          temporaryRoot
+          .appendingPathComponent(relative)
+          .deletingLastPathComponent(),
+        withIntermediateDirectories: true
+      )
+    }
+    try FileManager.default.copyItem(
+      at: repositoryRoot.appendingPathComponent(fixturePath),
+      to: temporaryRoot.appendingPathComponent(fixturePath)
+    )
+    try FileManager.default.copyItem(
+      at: repositoryRoot.appendingPathComponent(goldenPath),
+      to: temporaryRoot.appendingPathComponent(goldenPath)
+    )
+    try JSONSerialization.data(
+      withJSONObject: [
+        "schema_version": 2,
+        "id": "IOS-READER-CORE-PROGRESS-LAYOUT-SAVE-001",
+        "source": [
+          "fixture_id": fixtureID,
+          "android_golden": goldenPath,
+        ],
+      ],
+      options: [.sortedKeys]
+    ).write(to: temporaryRoot.appendingPathComponent(taskPath))
+
+    let first = try await MinimalTaskConformanceRunner.run(
+      taskPath: taskPath,
+      repositoryRoot: temporaryRoot
+    )
+    let second = try await MinimalTaskConformanceRunner.run(
+      taskPath: taskPath,
+      repositoryRoot: temporaryRoot
+    )
+    let text = String(decoding: first.data, as: UTF8.self)
+
+    XCTAssertTrue(first.passed)
+    XCTAssertEqual(first.data, second.data)
+    XCTAssertTrue(text.contains(#""first_divergence":null"#))
+    XCTAssertTrue(text.contains(#""status":"equal""#))
+    XCTAssertTrue(text.contains(#""persisted_char_position":260"#))
+    XCTAssertTrue(text.contains(#""page_index":-1"#))
+    XCTAssertTrue(text.contains(#""persisted_chapter_title":"第二章""#))
+  }
+
   func testMinimalTaskRunnerMatchesRuleCombinationAndroidGolden() async throws {
     let temporaryRoot = FileManager.default.temporaryDirectory
       .appendingPathComponent(UUID().uuidString, isDirectory: true)
@@ -903,6 +964,78 @@ final class ReaderCoreTests: XCTestCase {
     XCTAssertTrue(result.contains(#""device_id":"device-b","last_read":5003,"read_time":20"#))
   }
 
+  func testProgressProjectionContainsAllTenGoldenCases() throws {
+    let text = try progressProjectionText()
+
+    XCTAssertTrue(text.contains(#""id":"page-index-maps-to-layout-char-position""#))
+    XCTAssertTrue(text.contains(#""id":"negative-page-index-resets-to-zero""#))
+    XCTAssertTrue(
+      text.contains(
+        #""id":"oversized-page-index-clamps-to-last-layout-page""#
+      )
+    )
+    XCTAssertTrue(text.contains(#""id":"completed-layout-maps-char-boundaries""#))
+    XCTAssertTrue(
+      text.contains(
+        #""id":"incomplete-layout-rejects-position-past-page-end""#
+      )
+    )
+    XCTAssertTrue(
+      text.contains(
+        #""id":"page-save-same-chapter-preserves-existing-title""#
+      )
+    )
+    XCTAssertTrue(
+      text.contains(
+        #""id":"page-save-after-chapter-switch-refreshes-title""#
+      )
+    )
+    XCTAssertTrue(text.contains(#""id":"pause-default-save-refreshes-title""#))
+    XCTAssertTrue(
+      text.contains(
+        #""id":"reset-clamps-chapter-index-without-immediate-write""#
+      )
+    )
+    XCTAssertTrue(
+      text.contains(
+        #""id":"audio-save-refreshes-title-and-persists-book-fields""#
+      )
+    )
+  }
+
+  func testProgressProjectionPreservesLayoutBoundaries() throws {
+    let text = try progressProjectionText()
+
+    XCTAssertTrue(text.contains(#""requested_page_index":-1"#))
+    XCTAssertTrue(text.contains(#""requested_page_index":99"#))
+    XCTAssertTrue(text.contains(#""persisted_char_position":260"#))
+    XCTAssertTrue(text.contains(#""char_index":266,"page_index":-1"#))
+    XCTAssertTrue(text.contains(#""char_index":1000,"page_index":2"#))
+  }
+
+  func testProgressProjectionPreservesSaveTitleRules() throws {
+    let text = try progressProjectionText()
+
+    XCTAssertTrue(text.contains(#""persisted_chapter_title":"既有标题""#))
+    XCTAssertTrue(text.contains(#""persisted_chapter_title":"第一章""#))
+    XCTAssertTrue(text.contains(#""persisted_chapter_title":"第二章""#))
+    XCTAssertTrue(text.contains(#""last_check_count":0"#))
+  }
+
+  func testProgressProjectionKeepsResetPersistenceSeparate() throws {
+    let text = try progressProjectionText()
+    let start = try XCTUnwrap(
+      text.range(
+        of: #""id":"reset-clamps-chapter-index-without-immediate-write""#
+      )
+    )
+    let result = text[start.lowerBound...]
+
+    XCTAssertTrue(result.contains(#""runtime_chapter_index":2"#))
+    XCTAssertTrue(result.contains(#""persisted_chapter_index":99"#))
+    XCTAssertTrue(result.contains(#""persisted_char_position":777"#))
+  }
+
   private func projectionText() throws -> String {
     let fixture = repositoryRoot.appendingPathComponent(
       "ios/harness/fixtures/runtime-lab/"
@@ -930,6 +1063,26 @@ final class ReaderCoreTests: XCTestCase {
       isDirectory: true
     )
     let run = try ReaderReadRecordFixtureProjection.run(
+      caseData: Data(
+        contentsOf: fixture.appendingPathComponent("case.json")
+      ),
+      inputData: Data(
+        contentsOf: fixture.appendingPathComponent("input.json")
+      )
+    )
+    return String(
+      decoding: try JSONValueCodec.encode(run.artifact),
+      as: UTF8.self
+    )
+  }
+
+  private func progressProjectionText() throws -> String {
+    let fixture = repositoryRoot.appendingPathComponent(
+      "ios/harness/fixtures/runtime-lab/"
+        + ReaderProgressFixtureProjection.fixtureID,
+      isDirectory: true
+    )
+    let run = try ReaderProgressFixtureProjection.run(
       caseData: Data(
         contentsOf: fixture.appendingPathComponent("case.json")
       ),
