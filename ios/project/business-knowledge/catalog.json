@@ -5,8 +5,8 @@
   "inventory_control_sha256": "30cac916034a71f4ce34aa11388c0c3d578c78ccd937f888e48b556b01d72172",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "43b4a93cb82d8a1a0753d034b2d10e0216189ac5b7cecb72cad9c519a5a99270",
-  "coverage_sha256": "ba7698132d64befc77e2fee8768cdc4effcb7be9c4e0a93f5719d6c13f56c7ce",
+  "authority_sha256": "a182045e8b5a9f7ddaf6af8faa5c6862f002b31d649bd6bcbc4a16826758a973",
+  "coverage_sha256": "99a347d36446872921b194a5ac77a1ec31bdb9f1fb6edfd357e94692de6beaef",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -87,6 +87,19 @@
       "claim_refs": [
         {
           "id": "BKC-SR-RATE-LIMIT-STATE-001",
+          "revision": 2
+        }
+      ]
+    },
+    {
+      "id": "BKP-SOURCE-RUNTIME-RESPONSE-DECODING-001",
+      "revision": 1,
+      "semantic_key": "source.runtime-response-decoding-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-SOURCE-RUNTIME-RESPONSE-DECODING-001/r0001.json",
+      "record_sha256": "0283e43c3a20ea2125c64141e1205ed2153518c0713d116c38af6db7f9267eaa",
+      "claim_refs": [
+        {
+          "id": "BKC-SR-RESPONSE-DECODE-001",
           "revision": 2
         }
       ]
@@ -190,6 +203,14 @@
       "resolution_state": "resolved"
     },
     {
+      "id": "DRV-SOURCE-RUNTIME-RESPONSE-DECODING-001",
+      "revision": 1,
+      "semantic_key": "source.execution.response-decoding",
+      "path": "ios/project/business-knowledge/drivers/published/DRV-SOURCE-RUNTIME-RESPONSE-DECODING-001/r0001.json",
+      "record_sha256": "ee9a3f531b19d9f3c097f042bf73c309d9b1727c61d7a7e18436615116a2f38f",
+      "resolution_state": "resolved"
+    },
+    {
       "id": "DRV-SOURCE-RUNTIME-TRANSPORT-DISPATCH-001",
       "revision": 1,
       "semantic_key": "source.execution.transport-dispatch",
@@ -270,6 +291,15 @@
       "record_sha256": "b4f624590e3fd6cb208c5a17fa1ed58a10a9e3e27ad5e4ba907688bf9433e185",
       "entry_ids": [
         "BKE-SR-RATE-LIMIT-STATE-001"
+      ]
+    },
+    {
+      "id": "BKL-SOURCE-RUNTIME-RESPONSE-DECODING-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-SOURCE-RUNTIME-RESPONSE-DECODING-001.json",
+      "record_sha256": "6e83c6286f1d6314c73de7a9a6ee99e19937217eb089b854c1d96597b2ef3415",
+      "entry_ids": [
+        "BKE-SR-RESPONSE-DECODING-001"
       ]
     },
     {

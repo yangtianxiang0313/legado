@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-SOURCE-RUNTIME-RESPONSE-DECODING-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "source.execution.response-decoding",
+  "title": "在独立 SourceRuntime 中分层处理响应字节、解码策略与最终 URL",
+  "claim_refs": [
+    {
+      "id": "BKC-SR-RESPONSE-DECODE-001",
+      "revision": 2
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "声明 charset、内容探测、BOM、错误声明、gzip/zip、损坏压缩包以及重定向终点必须逐字段对齐 Android Golden。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "isolation",
+      "scenario": "原始响应字节、解压、字符集选择和最终 URL 属于独立 SourceRuntime，不得由 SwiftUI 或页面状态自行猜测。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "determinism",
+      "scenario": "错误 charset 和损坏 ZIP 也必须产生稳定、可结构化比较的结果，不能依赖系统 locale 或隐式 Foundation 默认编码。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "testability",
+      "scenario": "解码器与重定向策略必须可由注入的响应字节、header、最终 URL 和失败类型驱动，不依赖真实公网。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "evolvability",
+      "scenario": "解码结果需要同时保留正文与最终 URL，供后续 baseUrl 和相对链接求值复用，不把 URL 解析耦合进解码算法。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "如何显式表达 BOM 去除、Content-Type charset 优先、内容探测回退与错误声明的稳定替换行为？",
+    "如何在 Transport 与 Rule Runtime 之间保留最终 URL，并把 gzip/zip 与重定向失败建模为可测试策略？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002"
+    ],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-SOURCE-TRANSPORT-RESPONSE-DECODING-RUNTIME-001",
+      "IOS-SOURCE-RUNTIME-RESPONSE-DECODING-001"
+    ]
+  },
+  "supersedes": null,
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30439677638/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "created_by": "IOS-CHARACTERIZE-SOURCE-TRANSPORT-RESPONSE-DECODING-RUNTIME-001"
+}
