@@ -7,6 +7,7 @@ import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
 import io.legado.app.data.entities.BookSource
 import io.legado.app.data.entities.SearchBook
+import io.legado.app.exception.ConcurrentException
 import io.legado.app.help.http.CookieStore
 import io.legado.app.model.analyzeRule.AnalyzeUrl
 import io.legado.app.model.webBook.WebBook
@@ -17,6 +18,7 @@ import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import java.lang.reflect.InvocationTargetException
 
 @RunWith(AndroidJUnit4::class)
 class LegadoOracleInstrumentedTest {
@@ -59,6 +61,8 @@ class LegadoOracleInstrumentedTest {
                 runFieldEncodingCases()
             "sl-source-request-url-template-compilation-001" ->
                 runURLTemplateCompilationCases()
+            "sl-source-session-rate-limit-shared-state-001" ->
+                runRateLimitStateCases()
             else -> {
                 runCase("search-hit", "search", searchRequest("星河")) {
                     searchProjection(WebBook.searchBookAwait(source, "星河"))
@@ -493,6 +497,139 @@ class LegadoOracleInstrumentedTest {
             cases.put(record)
         }
     }
+
+    private suspend fun runRateLimitStateCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            require(value.getString("operation") == "rate_limit_state") {
+                "Rate limit scenario only accepts rate_limit_state stimuli"
+            }
+            val target = value.getJSONObject("request").getString("target")
+            runCase(
+                value.getString("id"),
+                "rate_limit_state",
+                request("$deviceOrigin$target")
+            ) {
+                rateLimitProjection(value)
+            }
+        }
+    }
+
+    private fun rateLimitProjection(value: JSONObject): JSONObject {
+        val id = value.getString("id")
+        val arguments = value.getJSONObject("arguments")
+        val mode = arguments.getString("mode")
+        val rate = arguments.getString("concurrent_rate")
+        fun analyze(key: String = id): AnalyzeUrl {
+            val caseSource = GSON.fromJson(sourceJson, BookSource::class.java)
+            caseSource.bookSourceUrl = "$deviceOrigin/rate-source/$key"
+            caseSource.bookSourceName = "Rate $key"
+            caseSource.concurrentRate = rate
+            return AnalyzeUrl(
+                mUrl = "$deviceOrigin/rate-limit/$id",
+                baseUrl = caseSource.bookSourceUrl,
+                source = caseSource,
+                headerMapF = caseSource.getHeaderMap(true)
+            )
+        }
+
+        return when (mode) {
+            "disabled" -> {
+                val record = reflectedFetchStart(analyze())
+                JSONObject()
+                    .put("active", record != null)
+                    .put("rate", rate)
+            }
+
+            "interval_shared" -> {
+                val first = requireNotNull(reflectedFetchStart(analyze()))
+                val second = deniedWait(analyze())
+                val frequencyOnDenial = first.frequency
+                reflectedFetchEnd(analyze(), first)
+                val afterEnd = deniedWait(analyze())
+                JSONObject()
+                    .put("first_allowed", true)
+                    .put("second_same_key_denied", second > 0)
+                    .put("after_end_still_denied", afterEnd > 0)
+                    .put("record_mode", "minimum_interval")
+                    .put("frequency_on_denial", frequencyOnDenial)
+            }
+
+            "window_boundary" -> {
+                val limiter = analyze()
+                var allowed = 0
+                var record: AnalyzeUrl.ConcurrentRecord? = null
+                var denied = 0
+                repeat(4) {
+                    try {
+                        record = reflectedFetchStart(limiter)
+                        allowed += 1
+                    } catch (error: ConcurrentException) {
+                        denied = error.waitTime
+                    }
+                }
+                JSONObject()
+                    .put("allowed_before_denial", allowed)
+                    .put("denied_wait_positive", denied > 0)
+                    .put("record_mode", "count_per_window")
+                    .put("frequency_on_denial", requireNotNull(record).frequency)
+            }
+
+            "distinct_keys" -> {
+                val first = requireNotNull(reflectedFetchStart(analyze("$id-a")))
+                val second = requireNotNull(reflectedFetchStart(analyze("$id-b")))
+                JSONObject()
+                    .put("both_allowed", true)
+                    .put("records_are_distinct", first !== second)
+            }
+
+            "invalid_degrades" -> {
+                val limiter = analyze()
+                val first = requireNotNull(reflectedFetchStart(limiter))
+                val second = requireNotNull(reflectedFetchStart(limiter))
+                JSONObject()
+                    .put("both_allowed", true)
+                    .put("same_record", first === second)
+                    .put("is_count_window", first.isConcurrent)
+                    .put("frequency_after_second", second.frequency)
+            }
+
+            else -> error("Unsupported rate limit mode: $mode")
+        }
+    }
+
+    private fun reflectedFetchStart(
+        analyze: AnalyzeUrl
+    ): AnalyzeUrl.ConcurrentRecord? {
+        val method = AnalyzeUrl::class.java.getDeclaredMethod("fetchStart")
+        method.isAccessible = true
+        return try {
+            method.invoke(analyze) as? AnalyzeUrl.ConcurrentRecord
+        } catch (error: InvocationTargetException) {
+            throw error.targetException
+        }
+    }
+
+    private fun reflectedFetchEnd(
+        analyze: AnalyzeUrl,
+        record: AnalyzeUrl.ConcurrentRecord
+    ) {
+        val method = AnalyzeUrl::class.java.getDeclaredMethod(
+            "fetchEnd",
+            AnalyzeUrl.ConcurrentRecord::class.java
+        )
+        method.isAccessible = true
+        method.invoke(analyze, record)
+    }
+
+    private fun deniedWait(analyze: AnalyzeUrl): Int =
+        try {
+            reflectedFetchStart(analyze)
+            0
+        } catch (error: ConcurrentException) {
+            error.waitTime
+        }
 
     @Suppress("UNCHECKED_CAST")
     private fun reflectedFieldMap(

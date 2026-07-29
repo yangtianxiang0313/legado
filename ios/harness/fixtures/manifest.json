@@ -57,6 +57,11 @@
       "id": "sl-source-response-xml-declaration-normalization-001",
       "path": "ios/harness/fixtures/source-lab/sl-source-response-xml-declaration-normalization-001",
       "sha256": "3201a955c3f355b123b8306f9ca2174fa0f971ac2ce7ac7471bd0569ce25a010"
+    },
+    {
+      "id": "sl-source-session-rate-limit-shared-state-001",
+      "path": "ios/harness/fixtures/source-lab/sl-source-session-rate-limit-shared-state-001",
+      "sha256": "26d96b5366d4fa44ad5b3a70275a253f76bfde963c62ca5b3cbf60968c2a483b"
     }
   ]
 }

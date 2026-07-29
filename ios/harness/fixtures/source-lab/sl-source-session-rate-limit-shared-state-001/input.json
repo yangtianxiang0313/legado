@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "disabled-zero",
+      "operation": "rate_limit_state",
+      "arguments": {
+        "mode": "disabled",
+        "concurrent_rate": "0"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/rate-limit/disabled-zero"
+      }
+    },
+    {
+      "id": "interval-shared-key",
+      "operation": "rate_limit_state",
+      "arguments": {
+        "mode": "interval_shared",
+        "concurrent_rate": "60000"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/rate-limit/interval-shared-key"
+      }
+    },
+    {
+      "id": "window-count-boundary",
+      "operation": "rate_limit_state",
+      "arguments": {
+        "mode": "window_boundary",
+        "concurrent_rate": "2/60000"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/rate-limit/window-count-boundary"
+      }
+    },
+    {
+      "id": "distinct-source-keys",
+      "operation": "rate_limit_state",
+      "arguments": {
+        "mode": "distinct_keys",
+        "concurrent_rate": "60000"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/rate-limit/distinct-source-keys"
+      }
+    },
+    {
+      "id": "invalid-interval",
+      "operation": "rate_limit_state",
+      "arguments": {
+        "mode": "invalid_degrades",
+        "concurrent_rate": "invalid"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/rate-limit/invalid-interval"
+      }
+    },
+    {
+      "id": "invalid-window",
+      "operation": "rate_limit_state",
+      "arguments": {
+        "mode": "invalid_degrades",
+        "concurrent_rate": "2/invalid"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/rate-limit/invalid-window"
+      }
+    }
+  ]
+}

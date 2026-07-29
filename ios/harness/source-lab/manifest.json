@@ -38,6 +38,12 @@
       "status": "candidate",
       "path": "ios/harness/fixtures/source-lab/sl-source-response-xml-declaration-normalization-001",
       "sha256": "04f71ad2d0832dc6c9a21578c504a8ad6903d8c413c6693ff00677d5a84523ac"
+    },
+    {
+      "id": "sl-source-session-rate-limit-shared-state-001",
+      "status": "candidate",
+      "path": "ios/harness/fixtures/source-lab/sl-source-session-rate-limit-shared-state-001",
+      "sha256": "26d96b5366d4fa44ad5b3a70275a253f76bfde963c62ca5b3cbf60968c2a483b"
     }
   ],
   "coverage": {

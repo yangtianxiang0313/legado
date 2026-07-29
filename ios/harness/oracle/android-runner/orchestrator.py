@@ -116,6 +116,25 @@ SCENARIO_CONTRACTS = {
             "script-block-order",
         }),
     },
+    "sl-source-session-rate-limit-shared-state-001": {
+        "status": "candidate",
+        "expected_cases": (
+            ("disabled-zero", "rate_limit_state"),
+            ("interval-shared-key", "rate_limit_state"),
+            ("window-count-boundary", "rate_limit_state"),
+            ("distinct-source-keys", "rate_limit_state"),
+            ("invalid-interval", "rate_limit_state"),
+            ("invalid-window", "rate_limit_state"),
+        ),
+        "nominal_cases": frozenset({
+            "disabled-zero",
+            "interval-shared-key",
+            "window-count-boundary",
+            "distinct-source-keys",
+            "invalid-interval",
+            "invalid-window",
+        }),
+    },
 }
 ANDROID_PRODUCT_PATHS = (
     "app/src/main",

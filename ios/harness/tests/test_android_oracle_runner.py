@@ -227,6 +227,82 @@ def request_option_raw_artifact():
     }
 
 
+def rate_limit_raw_artifact():
+    scenario = "sl-source-session-rate-limit-shared-state-001"
+    values = (
+        ("disabled-zero", {"active": False, "rate": "0"}),
+        (
+            "interval-shared-key",
+            {
+                "first_allowed": True,
+                "second_same_key_denied": True,
+                "after_end_still_denied": True,
+                "record_mode": "minimum_interval",
+                "frequency_on_denial": 1,
+            },
+        ),
+        (
+            "window-count-boundary",
+            {
+                "allowed_before_denial": 3,
+                "denied_wait_positive": True,
+                "record_mode": "count_per_window",
+                "frequency_on_denial": 3,
+            },
+        ),
+        (
+            "distinct-source-keys",
+            {"both_allowed": True, "records_are_distinct": True},
+        ),
+        (
+            "invalid-interval",
+            {
+                "both_allowed": True,
+                "same_record": True,
+                "is_count_window": False,
+                "frequency_after_second": 1,
+            },
+        ),
+        (
+            "invalid-window",
+            {
+                "both_allowed": True,
+                "same_record": True,
+                "is_count_window": True,
+                "frequency_after_second": 1,
+            },
+        ),
+    )
+    requests = []
+    cases = []
+    for case_id, result in values:
+        request = {
+            "method": "GET",
+            "url": f"{runner.LOGICAL_ORIGIN}/rate-limit/{case_id}",
+            "headers": [],
+            "body": None,
+            "timeout_ms": None,
+        }
+        requests.append(request)
+        cases.append(
+            {
+                "id": case_id,
+                "operation": "rate_limit_state",
+                "request": request,
+                "result": result,
+                "issue": None,
+            }
+        )
+    return {
+        "schema_version": 1,
+        "scenario_id": scenario,
+        "device_origin": "http://127.0.0.1:49152",
+        "logical_origin": runner.LOGICAL_ORIGIN,
+        "request_plan": requests,
+        "cases": cases,
+    }
+
+
 class AndroidOracleRunnerTests(unittest.TestCase):
     def test_doctor_binds_frozen_android_tree_and_exposes_no_authority(self):
         report = runner.doctor(ROOT)
@@ -273,6 +349,14 @@ class AndroidOracleRunnerTests(unittest.TestCase):
         self.assertEqual(
             "sl-source-request-url-template-compilation-001",
             url_template["scenario_id"],
+        )
+        rate_limit = runner.doctor(
+            ROOT,
+            "sl-source-session-rate-limit-shared-state-001",
+        )
+        self.assertEqual(
+            "sl-source-session-rate-limit-shared-state-001",
+            rate_limit["scenario_id"],
         )
 
     def test_product_tree_drift_fails_before_runner_execution(self):
@@ -438,6 +522,23 @@ class AndroidOracleRunnerTests(unittest.TestCase):
                 bindings(),
                 scenario,
             )
+
+    def test_rate_limit_characterization_preserves_shared_state_boundary(self):
+        scenario = "sl-source-session-rate-limit-shared-state-001"
+        artifact = runner.normalize_raw_artifact(
+            rate_limit_raw_artifact(),
+            bindings(),
+            scenario,
+        )
+        cases = artifact["result"]["value"][
+            "portable_known_projection"
+        ]["cases"]
+
+        self.assertEqual(3, cases[2]["result"]["allowed_before_denial"])
+        self.assertTrue(cases[1]["result"]["second_same_key_denied"])
+        self.assertTrue(cases[3]["result"]["records_are_distinct"])
+        self.assertFalse(cases[4]["result"]["is_count_window"])
+        self.assertTrue(cases[5]["result"]["is_count_window"])
 
     def test_nominal_issue_external_request_and_device_origin_leak_fail_closed(self):
         issue = raw_artifact()

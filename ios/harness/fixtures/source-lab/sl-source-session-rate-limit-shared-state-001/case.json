@@ -1,0 +1,200 @@
+{
+  "schema_version": 1,
+  "kind": "source_lab_scenario",
+  "id": "sl-source-session-rate-limit-shared-state-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "source_lab_site",
+  "capabilities": [
+    "CAP-RUNTIME-PORTS",
+    "CAP-CONFORMANCE"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": "source.template.json",
+  "input": "input.json",
+  "transport": {
+    "mode": "fixture_and_loopback",
+    "external_network": "deny",
+    "responses": [
+      {
+        "id": "disabled-zero",
+        "match": {
+          "method": "GET",
+          "path": "/rate-limit/disabled-zero",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/ok.txt"
+        }
+      },
+      {
+        "id": "interval-shared-key",
+        "match": {
+          "method": "GET",
+          "path": "/rate-limit/interval-shared-key",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/ok.txt"
+        }
+      },
+      {
+        "id": "window-count-boundary",
+        "match": {
+          "method": "GET",
+          "path": "/rate-limit/window-count-boundary",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/ok.txt"
+        }
+      },
+      {
+        "id": "distinct-source-keys",
+        "match": {
+          "method": "GET",
+          "path": "/rate-limit/distinct-source-keys",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/ok.txt"
+        }
+      },
+      {
+        "id": "invalid-interval",
+        "match": {
+          "method": "GET",
+          "path": "/rate-limit/invalid-interval",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/ok.txt"
+        }
+      },
+      {
+        "id": "invalid-window",
+        "match": {
+          "method": "GET",
+          "path": "/rate-limit/invalid-window",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/ok.txt"
+        }
+      }
+    ]
+  },
+  "coverage": [
+    {
+      "behavior": "transport.rate-limit",
+      "cases": [
+        {
+          "id": "disabled-zero",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl.fetchStart empty or zero concurrentRate branch"
+          ]
+        },
+        {
+          "id": "interval-shared-key",
+          "role": "denied",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl.fetchStart process-shared source key and minimum interval denial branches"
+          ]
+        },
+        {
+          "id": "window-count-boundary",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl.fetchStart count per time-window frequency boundary"
+          ]
+        },
+        {
+          "id": "distinct-source-keys",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl.concurrentRecordMap isolation by BaseSource.getKey"
+          ]
+        },
+        {
+          "id": "invalid-interval",
+          "role": "malformed",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl.fetchStart invalid interval catch-and-continue branch"
+          ]
+        },
+        {
+          "id": "invalid-window",
+          "role": "malformed",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl.fetchStart invalid count-window catch-and-continue branch"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "2026-01-01T00:00:00Z",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 29,
+    "network_allowed": false,
+    "logical_origin": "http://sourcelab.test"
+  },
+  "limits": {
+    "timeout_ms": 1000,
+    "max_response_bytes": 1048576,
+    "max_request_body_bytes": 1048576,
+    "max_requests": 16,
+    "max_concurrency": 2
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-SOURCE-SESSION-RATE-LIMIT-SHARED-STATE-001"
+  }
+}
