@@ -1,0 +1,176 @@
+{
+  "schema_version": 1,
+  "proposal_id": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTO-SCOPE-001",
+  "proposal_constraint": "只在 Loop Supervisor 预声明业务知识 Publisher 自动化的固定精确修改范围与拒绝回归；未来实现项仅可修改固定 Business Knowledge Workflow、staging Publisher、专用 Dispatcher、Demand/Supervisor、配置、对应测试与文档，禁止其他 Workflow、Requirement、Golden、ADR、SourceLab、Package、产品和已发布知识 authority 写入",
+  "work_item": {
+    "api_version": "legado.harness/v1",
+    "kind": "WorkItem",
+    "metadata": {
+      "id": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTO-SCOPE-001",
+      "title": "建立无人工 Gate 的业务知识发布精确自动边界",
+      "priority": 100,
+      "risk": "high",
+      "labels": [
+        "phase-0",
+        "control-plane",
+        "business-knowledge-publisher-auto-scope",
+        "automation-policy",
+        "corrective"
+      ]
+    },
+    "spec": {
+      "capability": "CAP-KNOWLEDGE-CONTROL",
+      "intent": "为下一项无人工 Gate Business Knowledge Publisher 自动化预声明不可扩张的精确修改集合。在 LoopSupervisor 增加独立 scope validator：只有同时携带 external-execution、business-knowledge、knowledge-publisher、corrective 标签，且 gates 为空、requirements=control_plane、knowledge/source_lab=not_applicable、completion_effects 仅 health 的 WorkItem 才能进入此例外；allow_write 必须与固定 Workflow、staging Publisher、专用 Dispatcher、Demand/Supervisor、supervisor 配置、对应测试/README 和记忆文件集合完全相等。显式回归必须拒绝其他 Workflow、Android/Golden/Oracle/SourceLab、Requirement、ADR、Package、产品、published/coverage/release authority、Harness schema/config 与审批路径。此项不实现 Publisher、不修改 Workflow、不发布知识。",
+      "depends_on": [
+        "IOS-KNOWLEDGE-SOURCE-RUNTIME-POST-FORM-001"
+      ],
+      "scope": {
+        "allow_write": [
+          "ios/harness/loop_supervisor.py",
+          "ios/harness/tests/test_loop_supervisor.py",
+          "ios/harness/README.md",
+          "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+          "ios/project/checkpoints/IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTO-SCOPE-001.json",
+          "ios/project/pitfalls/PIT-*.json"
+        ],
+        "deny_write": [
+          ".github/**",
+          "app/**",
+          "modules/**",
+          "ios/Packages/**",
+          "ios/publisher/**",
+          "ios/harness/demand_compiler.py",
+          "ios/harness/github_business_knowledge_publisher.py",
+          "ios/harness/harness.py",
+          "ios/harness/config.json",
+          "ios/harness/schemas/**",
+          "ios/harness/business-knowledge/**",
+          "ios/harness/goldens/**",
+          "ios/harness/oracle/**",
+          "ios/harness/source-lab/**",
+          "ios/harness/supervisor.example.json",
+          "ios/project/state.json",
+          "ios/project/events.jsonl",
+          "ios/project/status.md",
+          "ios/project/requirements/**",
+          "ios/project/approvals/**",
+          "ios/project/business-knowledge/packets/published/**",
+          "ios/project/business-knowledge/drivers/published/**",
+          "ios/project/business-knowledge/coverage/**",
+          "ios/project/business-knowledge/releases/**",
+          "ios/project/work-item-proposals/**",
+          "ios/docs/**"
+        ],
+        "max_files_changed": 6,
+        "max_changed_lines": 1100
+      },
+      "inputs": {
+        "context_files": [
+          "ios/harness/loop_supervisor.py",
+          "ios/harness/tests/test_loop_supervisor.py",
+          "ios/project/checkpoints/IOS-KNOWLEDGE-SOURCE-RUNTIME-POST-FORM-001.json",
+          ".github/workflows/business-knowledge-publisher.yml",
+          "ios/publisher/business_knowledge_publisher.py",
+          "ios/harness/github_golden_publisher.py"
+        ],
+        "android_source_anchors": [],
+        "fixtures": []
+      },
+      "architecture_refs": [
+        "ADR-0002",
+        "ADR-0004"
+      ],
+      "acceptance": {
+        "criteria": [
+          {
+            "id": "AC-1",
+            "statement": "新增专用 business-knowledge publisher automation scope validator；触发标签、控制模式、无 Gate 和 completion effect 约束必须精确，不能与 Golden/Oracle 例外混用。",
+            "verified_by": ["harness-tests"],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          },
+          {
+            "id": "AC-2",
+            "statement": "未来实现项 allow_write 必须与固定 Workflow、staging Publisher、专用 Dispatcher、Demand/Supervisor、配置、对应测试/README、Capability/Checkpoint/Pitfall 完全相等；缺少、增加、通配或类型异常均 fail closed。",
+            "verified_by": ["harness-tests"],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          },
+          {
+            "id": "AC-3",
+            "statement": "拒绝回归覆盖其他 Workflow、Android/Golden/Oracle/SourceLab、Requirement、ADR、Package、产品、published/coverage/release authority、Harness schema/config 和审批路径。",
+            "verified_by": ["dependency-policy", "harness-tests"],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          },
+          {
+            "id": "AC-4",
+            "statement": "本项不修改 Workflow、Publisher、Dispatcher、DemandCompiler、配置或任何知识 authority；仅建立后续自动实现边界并沉淀下一步。",
+            "verified_by": ["dependency-policy", "memory-close"],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          }
+        ],
+        "required_checks": [
+          "dependency-policy",
+          "harness-tests"
+        ]
+      },
+      "baseline_checks": [
+        "dependency-policy",
+        "harness-tests"
+      ],
+      "budget": {
+        "wall_clock_seconds": 10800,
+        "max_edit_verify_cycles": 5,
+        "max_targeted_test_runs": 16,
+        "max_full_test_runs": 3,
+        "max_infra_retries": 1
+      },
+      "gates": [],
+      "completion_effects": {
+        "health": {
+          "business_knowledge_publisher_auto_scope": "exact_paths_v1"
+        }
+      },
+      "memory": {
+        "capability_state_required": true,
+        "checkpoint_required": true,
+        "pitfall": "if_non_obvious_and_preventable",
+        "adr": "not_required"
+      },
+      "requirements": {
+        "mode": "control_plane",
+        "refs": [],
+        "none_reason": "本项只建立 Loop 自动修改策略边界，不改变产品 Requirement"
+      },
+      "knowledge": {
+        "contract_version": 1,
+        "mode": "not_applicable",
+        "claim_refs": [],
+        "driver_refs": [],
+        "coverage_refs": [],
+        "produces": [],
+        "expected_ledger_transitions": [],
+        "context_budget": {
+          "max_claims": 1,
+          "max_bytes": 16384
+        },
+        "none_reason": "本项只建立自动修改范围，不消费或发布业务知识"
+      },
+      "source_lab": {
+        "mode": "not_applicable",
+        "behaviors": [],
+        "scenarios": [],
+        "none_reason": "本项不修改或运行 SourceLab"
+      },
+      "stop_on": [
+        "doctor_red",
+        "scope_violation",
+        "authority_escalation",
+        "same_failure_twice",
+        "budget_exhausted"
+      ]
+    }
+  }
+}

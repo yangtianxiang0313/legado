@@ -367,6 +367,13 @@
         {"kind": "driver", "id": "DRV-SOURCE-RUNTIME-POST-FORM-001", "revision": 1}
       ],
       "gates": [], "constraint": "只生成由 sl-post-form-001 真实 Golden 直接证明的 POST selection 与 field encoding Packet/Driver proposal；每条 Claim 绑定精确 JSON Pointer/canonical digest/source/runner，不得把未覆盖的 raw body、JSON/XML、Cookie/retry 声明为 verified，不得发布 Catalog/Coverage、修改 Requirement、Golden、架构或产品"
+    },
+    {
+      "proposal_id": "IOS-BUSINESS-KNOWLEDGE-PUBLISHER-AUTO-SCOPE-001", "phase": 41, "class": "control_plane",
+      "depends_on": ["IOS-KNOWLEDGE-SOURCE-RUNTIME-POST-FORM-001"], "knowledge_mode": "not_applicable",
+      "title": "建立无人工 Gate 的业务知识发布精确自动边界",
+      "outputs": ["exact business-knowledge publisher automation scope", "workflow and dispatcher denial regression", "publication authority isolation"],
+      "gates": [], "constraint": "只在 Loop Supervisor 预声明业务知识 Publisher 自动化的固定精确修改范围与拒绝回归；未来实现项仅可修改固定 Business Knowledge Workflow、staging Publisher、专用 Dispatcher、Demand/Supervisor、配置、对应测试与文档，禁止其他 Workflow、Requirement、Golden、ADR、SourceLab、Package、产品和已发布知识 authority 写入"
     }
   ],
   "compiler_rules": [
