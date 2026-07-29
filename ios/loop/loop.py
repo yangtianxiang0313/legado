@@ -82,7 +82,7 @@ def git(root: Path, *arguments: str, check: bool = True) -> str:
     )
     if check and result.returncode != 0:
         raise LoopError(f"GIT_FAILED:{' '.join(arguments)}:{result.stderr.strip()}")
-    return result.stdout.strip()
+    return result.stdout.rstrip()
 
 
 def repository_root(path: Path) -> Path:
@@ -582,10 +582,40 @@ def path_allowed(path: str, patterns: Sequence[str]) -> bool:
     return any(fnmatch.fnmatchcase(path, pattern) for pattern in patterns)
 
 
+def workspace_digest(root: Path, paths: Sequence[str]) -> str:
+    inventory = []
+    for relative in sorted(
+        path
+        for path in paths
+        if path not in CONTROL_PATHS
+        and not path.startswith(".harness-runtime/")
+    ):
+        path = root / relative
+        if path.is_symlink():
+            value = {
+                "path": relative,
+                "kind": "symlink",
+                "target": os.readlink(path),
+            }
+        elif path.is_file():
+            value = {
+                "path": relative,
+                "kind": "file",
+                "sha256": digest(path.read_bytes()),
+            }
+        elif path.exists():
+            value = {"path": relative, "kind": "other"}
+        else:
+            value = {"path": relative, "kind": "deleted"}
+        inventory.append(value)
+    return digest(canonical(inventory))
+
+
 def run_acceptance(
     root: Path,
     task: Mapping[str, Any],
     attempt: int,
+    paths: Sequence[str],
 ) -> tuple[bool, list[Mapping[str, Any]], Path]:
     runtime = root / RUNTIME_ROOT / str(task["id"]) / f"attempt-{attempt}"
     runtime.mkdir(parents=True, exist_ok=True)
@@ -633,6 +663,8 @@ def run_acceptance(
         "attempt": attempt,
         "passed": passed,
         "head_commit": git(root, "rev-parse", "HEAD"),
+        "workspace_sha256": workspace_digest(root, paths),
+        "changed_paths": list(paths),
         "checks": results,
     }
     write_json(runtime / "verification.json", report)
@@ -653,12 +685,14 @@ def verify(root: Path) -> Mapping[str, Any]:
     if violations:
         raise LoopError("SCOPE_VIOLATION:" + ",".join(violations))
     attempt = int(state.get("attempt", 0)) + 1
-    passed, checks, runtime = run_acceptance(root, task, attempt)
+    passed, checks, runtime = run_acceptance(root, task, attempt, paths)
     head = git(root, "rev-parse", "HEAD")
     verification = {
         "passed": passed,
         "attempt": attempt,
         "head_commit": head,
+        "workspace_sha256": workspace_digest(root, paths),
+        "changed_paths": paths,
         "runtime": runtime.as_posix(),
         "checks": checks,
     }
@@ -693,6 +727,9 @@ def complete(
     ):
         raise LoopError("TASK_NOT_VERIFIED")
     task = read_json(root / TASK_PATH)
+    paths = changed_paths(root, str(task["base_commit"]))
+    if workspace_digest(root, paths) != verification.get("workspace_sha256"):
+        raise LoopError("TASK_CHANGED_AFTER_VERIFY")
     details = {
         "summary": summary,
         "current_status": "completed",
@@ -702,6 +739,7 @@ def complete(
         "verification": {
             "attempt": verification["attempt"],
             "head_commit": verification["head_commit"],
+            "workspace_sha256": verification["workspace_sha256"],
             "runtime": verification["runtime"],
         },
     }

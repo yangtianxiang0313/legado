@@ -1,4 +1,5 @@
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -138,6 +139,42 @@ class MinimalLoopTests(unittest.TestCase):
                 },
             )
             self.assertIsNone(loop.next_task(root))
+
+    def test_changed_paths_preserves_first_porcelain_path(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+            subprocess.run(
+                ["git", "config", "user.email", "loop@example.invalid"],
+                cwd=root,
+                check=True,
+            )
+            subprocess.run(
+                ["git", "config", "user.name", "Loop Test"],
+                cwd=root,
+                check=True,
+            )
+            path = root / "ios/first.txt"
+            path.parent.mkdir(parents=True)
+            path.write_text("before\n")
+            subprocess.run(["git", "add", "."], cwd=root, check=True)
+            subprocess.run(["git", "commit", "-qm", "base"], cwd=root, check=True)
+            base = loop.git(root, "rev-parse", "HEAD")
+            path.write_text("after\n")
+
+            self.assertEqual(["ios/first.txt"], loop.changed_paths(root, base))
+
+    def test_workspace_digest_changes_with_product_bytes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / "ios/value.txt"
+            path.parent.mkdir(parents=True)
+            path.write_text("one")
+            first = loop.workspace_digest(root, ["ios/value.txt"])
+            path.write_text("two")
+            second = loop.workspace_digest(root, ["ios/value.txt"])
+
+            self.assertNotEqual(first, second)
 
 
 if __name__ == "__main__":
