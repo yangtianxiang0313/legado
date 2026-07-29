@@ -38,6 +38,7 @@
     {"id": "reader.read-record-runtime-risk", "status": "planned", "required_roles": ["nominal", "boundary", "denied"], "min_cases_per_role": 1, "phase": 2},
     {"id": "reader.progress-layout-save-runtime", "status": "planned", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 2},
     {"id": "reader.cache-prefetch-policy", "status": "planned", "required_roles": ["nominal", "boundary", "denied"], "min_cases_per_role": 1, "phase": 2},
-    {"id": "reader.progress-toc-remap", "status": "planned", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 2}
+    {"id": "reader.progress-toc-remap", "status": "planned", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 2},
+    {"id": "app.startup-first-use-and-restore", "status": "planned", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 2}
   ]
 }

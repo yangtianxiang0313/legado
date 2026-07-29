@@ -14,6 +14,11 @@
       "sha256": "db383a54ed3729b9255b272989c2595749c5b9340e98c20e213d55ce09478f18"
     },
     {
+      "id": "rl-app-startup-first-use-and-restore-001",
+      "path": "ios/harness/fixtures/runtime-lab/rl-app-startup-first-use-and-restore-001",
+      "sha256": "3383cdf3d0667fe16f2cfb930849d704157a107880158115336adf69fb9a2b95"
+    },
+    {
       "id": "rl-reader-bookmark-search-runtime-risk-001",
       "path": "ios/harness/fixtures/runtime-lab/rl-reader-bookmark-search-runtime-risk-001",
       "sha256": "5e470e57b4bc962a78a71d4198ea3e4d45e6c1cfd26cb5fef4a629bb035a49d6"

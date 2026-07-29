@@ -1,9 +1,28 @@
 package io.legado.app.oracle
 
+import android.app.Activity
+import android.app.Instrumentation
+import android.content.Context
+import android.content.Intent
+import android.os.Bundle
+import android.os.SystemClock
 import android.util.Base64
+import android.util.Log
+import androidx.lifecycle.Lifecycle
+import androidx.test.core.app.ActivityScenario
+import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.action.ViewActions.click
+import androidx.test.espresso.matcher.ViewMatchers.withId
+import androidx.test.espresso.matcher.ViewMatchers.withText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
+import androidx.test.runner.lifecycle.Stage
+import io.legado.app.BuildConfig
+import io.legado.app.R
+import io.legado.app.constant.AppConst.appInfo
 import io.legado.app.constant.BookType
+import io.legado.app.constant.PreferKey
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
 import io.legado.app.data.entities.BookSource
@@ -15,6 +34,7 @@ import io.legado.app.exception.ConcurrentException
 import io.legado.app.help.CacheManager
 import io.legado.app.help.book.BookHelp
 import io.legado.app.help.config.AppConfig
+import io.legado.app.help.config.LocalConfig
 import io.legado.app.help.http.CookieManager
 import io.legado.app.help.http.CookieStore
 import io.legado.app.help.http.StrResponse
@@ -32,8 +52,14 @@ import io.legado.app.model.webBook.WebBook
 import io.legado.app.ui.book.read.page.entities.TextChapter
 import io.legado.app.ui.book.read.page.entities.TextLine
 import io.legado.app.ui.book.read.page.entities.TextPage
+import io.legado.app.ui.book.read.ReadBookActivity
+import io.legado.app.ui.main.MainActivity
+import io.legado.app.ui.welcome.WelcomeActivity
+import io.legado.app.ui.widget.dialog.TextDialog
 import io.legado.app.utils.GSON
 import io.legado.app.utils.NetworkUtils
+import io.legado.app.utils.defaultSharedPreferences
+import io.legado.app.utils.putPrefBoolean
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
@@ -56,6 +82,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 import okhttp3.OkHttpClient
 import okhttp3.Headers
 import okhttp3.Protocol
@@ -131,6 +158,8 @@ class LegadoOracleInstrumentedTest {
                 runReaderPrefetchPolicyCases()
             "rl-reader-progress-toc-remap-001" ->
                 runReaderProgressTocRemapCases()
+            "rl-app-startup-first-use-and-restore-001" ->
+                runAppStartupCases()
             "sl-post-form-001" -> runPostFormCases()
             "sl-source-response-xml-declaration-normalization-001" ->
                 runXmlResponseCases()
@@ -1074,6 +1103,389 @@ class LegadoOracleInstrumentedTest {
             }
         }
     }
+
+    private suspend fun runAppStartupCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            val operation = value.getString("operation")
+            require(
+                operation == "app_startup_welcome" ||
+                    operation == "app_startup_main_pipeline"
+            ) {
+                "Unsupported app startup operation"
+            }
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", operation)
+                .put("arguments", JSONObject(arguments.toString()))
+            runCase(value.getString("id"), operation, stimulus) {
+                when (operation) {
+                    "app_startup_welcome" ->
+                        welcomeStartupProjection(arguments)
+                    else ->
+                        mainStartupProjection(arguments)
+                }
+            }
+        }
+    }
+
+    private suspend fun welcomeStartupProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        prepareStableMainStartup()
+        val target = InstrumentationRegistry.getInstrumentation().targetContext
+        target.putPrefBoolean(
+            PreferKey.defaultToRead,
+            arguments.getBoolean("default_to_read")
+        )
+        val instrumentation =
+            InstrumentationRegistry.getInstrumentation()
+        val startMonitor = StartupIntentMonitor(target.packageName)
+        instrumentation.addMonitor(startMonitor)
+        val scenario = ActivityScenario.launch<WelcomeActivity>(
+            Intent(target, WelcomeActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+        try {
+            waitForStartupCondition("main-start-dispatched") {
+                startMonitor.wasDispatched(MainActivity::class.java)
+            }
+            val expectsReader =
+                arguments.getBoolean("default_to_read")
+            if (expectsReader) {
+                waitForStartupCondition("reader-start-dispatched") {
+                    startMonitor.wasDispatched(
+                        ReadBookActivity::class.java
+                    )
+                }
+                waitForStartupCondition("reader-observed") {
+                    isTargetActivityPresent(ReadBookActivity::class.java)
+                }
+            }
+            waitForStartupCondition("welcome-destroyed") {
+                scenario.state == Lifecycle.State.DESTROYED
+            }
+            instrumentation.waitForIdleSync()
+            val downstreamSequence = startMonitor.downstreamSequence()
+            val mainIndex = downstreamSequence.indexOf(
+                MainActivity::class.java.simpleName
+            )
+            val readerIndex = downstreamSequence.indexOf(
+                ReadBookActivity::class.java.simpleName
+            )
+            require(mainIndex >= 0) {
+                "MainActivity start dispatch was not recorded"
+            }
+            require(
+                if (expectsReader) {
+                    readerIndex > mainIndex
+                } else {
+                    readerIndex < 0
+                }
+            ) {
+                "Downstream start order did not match defaultToRead"
+            }
+            val readerStarted =
+                startMonitor.wasDispatched(ReadBookActivity::class.java)
+            return JSONObject()
+                .put(
+                    "downstream_start_sequence",
+                    JSONArray(downstreamSequence)
+                )
+                .put("main_started", true)
+                .put("reader_started", readerStarted)
+                .put(
+                    "reader_activity_observed",
+                    isTargetActivityPresent(ReadBookActivity::class.java)
+                )
+                .put("welcome_destroyed", true)
+        } finally {
+            if (scenario.state != Lifecycle.State.DESTROYED) {
+                scenario.close()
+            }
+            instrumentation.removeMonitor(startMonitor)
+            finishTargetActivities()
+            target.putPrefBoolean(PreferKey.defaultToRead, false)
+        }
+    }
+
+    private suspend fun waitForStartupCondition(
+        label: String,
+        timeoutMillis: Long = 5_000,
+        condition: () -> Boolean
+    ) {
+        val deadline = SystemClock.elapsedRealtime() + timeoutMillis
+        while (!condition()) {
+            check(SystemClock.elapsedRealtime() < deadline) {
+                "Startup condition timed out: $label"
+            }
+            delay(20)
+        }
+    }
+
+    private fun isTargetActivityPresent(
+        activityClass: Class<out Activity>
+    ): Boolean =
+        currentTargetActivities().any { activityClass.isInstance(it) }
+
+    private class StartupIntentMonitor(
+        private val packageName: String
+    ) : Instrumentation.ActivityMonitor() {
+        private val dispatchedClassNames = mutableListOf<String>()
+
+        override fun onStartActivity(
+            intent: Intent
+        ): Instrumentation.ActivityResult? {
+            val component = intent.component
+            if (component?.packageName == packageName) {
+                synchronized(this) {
+                    dispatchedClassNames.add(
+                        component.className.substringAfterLast('.')
+                    )
+                }
+            }
+            return null
+        }
+
+        fun wasDispatched(
+            activityClass: Class<out Activity>
+        ): Boolean = synchronized(this) {
+            dispatchedClassNames.contains(activityClass.simpleName)
+        }
+
+        fun downstreamSequence(): List<String> =
+            synchronized(this) {
+                dispatchedClassNames.filter {
+                    it == MainActivity::class.java.simpleName ||
+                        it == ReadBookActivity::class.java.simpleName
+                }
+            }
+    }
+
+    private fun currentTargetActivities(): List<Activity> {
+        val result = AtomicReference<List<Activity>>(emptyList())
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            val monitor = ActivityLifecycleMonitorRegistry.getInstance()
+            result.set(
+                listOf(
+                    Stage.CREATED,
+                    Stage.STARTED,
+                    Stage.RESUMED,
+                    Stage.PAUSED,
+                    Stage.STOPPED
+                ).flatMap { stage ->
+                    monitor.getActivitiesInStage(stage)
+                }.distinct()
+            )
+        }
+        return result.get()
+    }
+
+    private suspend fun finishTargetActivities() {
+        val requested = mutableSetOf<Activity>()
+        withTimeout(10_000) {
+            while (true) {
+                val snapshot = currentTargetActivities()
+                if (snapshot.isEmpty()) {
+                    break
+                }
+                val pending = snapshot.filterNot {
+                    it in requested || it.isFinishing || it.isDestroyed
+                }
+                requested.addAll(pending)
+                InstrumentationRegistry.getInstrumentation()
+                    .runOnMainSync {
+                        pending.asReversed()
+                            .forEach(Activity::finishAndRemoveTask)
+                    }
+                delay(50)
+            }
+        }
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+    }
+
+    private suspend fun mainStartupProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val target = InstrumentationRegistry.getInstrumentation().targetContext
+        resetStartupPreferences(target)
+        val local = target.getSharedPreferences(
+            "local",
+            Context.MODE_PRIVATE
+        )
+        local.edit()
+            .putBoolean(
+                "privacyPolicyOk",
+                arguments.getString("privacy_state") == "accepted"
+            )
+            .putLong(
+                "appVersionCode",
+                when (arguments.getString("stored_version")) {
+                    "current" -> appInfo.versionCode
+                    "previous" -> maxOf(0L, appInfo.versionCode - 1L)
+                    else -> 0L
+                }
+            )
+            .putBoolean("firstOpen", arguments.getBoolean("first_open"))
+            .putBoolean("appCrash", arguments.getBoolean("app_crash"))
+            .apply {
+                when (arguments.getString("password_state")) {
+                    "empty" -> putString("password", "")
+                    "nonempty" -> putString("password", "oracle-secret")
+                    else -> remove("password")
+                }
+            }
+            .commit()
+
+        val dialogs = JSONArray()
+        val scenario = ActivityScenario.launch<MainActivity>(
+            Intent(target, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+        var activity: MainActivity? = null
+        scenario.onActivity { activity = it }
+        try {
+            if (arguments.optString("privacy_action") == "refuse") {
+                waitForText(R.string.refuse)
+                dialogs.put("privacy")
+                onView(withText(R.string.refuse)).perform(click())
+            } else if (arguments.optString("privacy_action") == "agree") {
+                waitForText(R.string.agree)
+                dialogs.put("privacy")
+                onView(withText(R.string.agree)).perform(click())
+            }
+
+            if (
+                arguments.getBoolean("first_open") &&
+                arguments.optString("privacy_action") != "refuse"
+            ) {
+                val main = requireNotNull(activity)
+                waitForTextDialog(main)
+                dialogs.put("help")
+                onView(withId(R.id.menu_close)).perform(click())
+            }
+            if (
+                arguments.getString("password_state") == "unset" &&
+                arguments.optString("privacy_action") != "refuse"
+            ) {
+                waitForText(android.R.string.cancel)
+                dialogs.put("local_password")
+                onView(withText(android.R.string.cancel)).perform(click())
+            }
+
+            delay(350)
+            InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+            val main = requireNotNull(activity)
+            return JSONObject()
+                .put("build_debug", BuildConfig.DEBUG)
+                .put("dialog_sequence", dialogs)
+                .put("activity_finishing", main.isFinishing)
+                .put("privacy_accepted", LocalConfig.privacyPolicyOk)
+                .put(
+                    "version_matches_current",
+                    LocalConfig.versionCode == appInfo.versionCode
+                )
+                .put(
+                    "first_open_after",
+                    local.getBoolean("firstOpen", true)
+                )
+                .put(
+                    "password_state_after",
+                    when (LocalConfig.password) {
+                        null -> "unset"
+                        "" -> "empty"
+                        else -> "nonempty"
+                    }
+                )
+                .put("app_crash_after", LocalConfig.appCrash)
+                .put("last_backup_after", LocalConfig.lastBackup)
+                .put(
+                    "help_dialog_remaining",
+                    hasTextDialog(main)
+                )
+                .put(
+                    "update_log_visible",
+                    isTextVisible(R.string.update_log)
+                )
+        } finally {
+            scenario.close()
+            resetStartupPreferences(target)
+        }
+    }
+
+    private fun prepareStableMainStartup() {
+        val target = InstrumentationRegistry.getInstrumentation().targetContext
+        resetStartupPreferences(target)
+        val local = target.getSharedPreferences(
+            "local",
+            Context.MODE_PRIVATE
+        )
+        local.edit()
+            .putBoolean("privacyPolicyOk", true)
+            .putLong("appVersionCode", appInfo.versionCode)
+            .putBoolean("firstOpen", false)
+            .putString("password", "")
+            .putBoolean("appCrash", false)
+            .commit()
+    }
+
+    private fun resetStartupPreferences(target: Context) {
+        target.getSharedPreferences("local", Context.MODE_PRIVATE)
+            .edit()
+            .clear()
+            .commit()
+        target.defaultSharedPreferences.edit()
+            .remove(PreferKey.defaultToRead)
+            .remove(PreferKey.webDavAccount)
+            .remove(PreferKey.webDavPassword)
+            .remove(PreferKey.autoRefresh)
+            .commit()
+    }
+
+    private suspend fun waitForText(resourceId: Int) {
+        withTimeout(5_000) {
+            while (!isTextVisible(resourceId)) {
+                delay(20)
+            }
+        }
+    }
+
+    private suspend fun waitForTextDialog(activity: MainActivity) {
+        withTimeout(5_000) {
+            while (!hasTextDialog(activity)) {
+                delay(20)
+            }
+        }
+    }
+
+    private fun hasTextDialog(activity: MainActivity): Boolean {
+        val present = AtomicBoolean(false)
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            val fragmentManager = activity.supportFragmentManager
+            if (!activity.isDestroyed && !fragmentManager.isDestroyed) {
+                fragmentManager.executePendingTransactions()
+                present.set(
+                    fragmentManager.fragments.any {
+                        it is TextDialog && it.isAdded
+                    }
+                )
+            }
+        }
+        return present.get()
+    }
+
+    private fun isTextVisible(resourceId: Int): Boolean =
+        try {
+            onView(withText(resourceId)).check { view, error ->
+                if (error != null || view == null || !view.isShown) {
+                    throw AssertionError("Text is not visible")
+                }
+            }
+            true
+        } catch (_: Throwable) {
+            false
+        }
 
     private fun readerProgressTocRemapProjection(
         arguments: JSONObject
@@ -5256,6 +5668,11 @@ class LegadoOracleInstrumentedTest {
                 .put("result", execute())
                 .put("issue", JSONObject.NULL)
         } catch (error: Throwable) {
+            Log.e(
+                "LegadoOracle",
+                "case=$id operation=$operation failed",
+                error
+            )
             record
                 .put("result", JSONObject.NULL)
                 .put(

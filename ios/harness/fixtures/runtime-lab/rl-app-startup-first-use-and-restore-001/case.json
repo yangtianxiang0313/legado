@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "kind": "android_runtime_scenario",
+  "id": "rl-app-startup-first-use-and-restore-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "android_runtime",
+  "capabilities": [
+    "app.startup",
+    "app.navigation",
+    "runtime.first-use"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": null,
+  "input": "input.json",
+  "transport": {
+    "mode": "none",
+    "external_network": "deny",
+    "responses": []
+  },
+  "coverage": [
+    {
+      "behavior": "app.startup-first-use-and-restore",
+      "cases": [
+        {
+          "id": "welcome-default-opens-main-only",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WELCOME-ACTIVITY-START-MAIN"
+          ],
+          "branch_refs": [
+            "WelcomeActivity always starts MainActivity before finishing and does not start ReadBookActivity when defaultToRead is false"
+          ]
+        },
+        {
+          "id": "welcome-default-to-read-opens-reader-after-main",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WELCOME-ACTIVITY-START-MAIN"
+          ],
+          "branch_refs": [
+            "WelcomeActivity starts ReadBookActivity after MainActivity when defaultToRead is true"
+          ]
+        },
+        {
+          "id": "privacy-refusal-stops-main-pipeline",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-MAIN-ACTIVITY-ON-POST-CREATE"
+          ],
+          "branch_refs": [
+            "MainActivity.onPostCreate returns from its lifecycle coroutine when privacyPolicy returns false"
+          ]
+        },
+        {
+          "id": "first-open-agreement-runs-help-then-password",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-MAIN-ACTIVITY-ON-POST-CREATE"
+          ],
+          "branch_refs": [
+            "After privacy agreement, onPostCreate serially awaits first-open help before the unset local-password prompt"
+          ]
+        },
+        {
+          "id": "returning-current-version-skips-onboarding",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-MAIN-ACTIVITY-ON-POST-CREATE"
+          ],
+          "branch_refs": [
+            "Accepted privacy, current version and a non-null password make all three awaited onboarding steps return immediately"
+          ]
+        },
+        {
+          "id": "returning-version-change-debug-skips-update-log",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-MAIN-ACTIVITY-ON-POST-CREATE"
+          ],
+          "branch_refs": [
+            "The debug build records the new version but does not present a release update-log dialog for a returning user"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "not-used",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 0,
+    "network_allowed": false,
+    "logical_origin": null,
+    "database_reset_per_case": true
+  },
+  "limits": {
+    "timeout_ms": 5000
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/ui/welcome/WelcomeActivity.kt#startMainActivity",
+      "app/src/main/java/io/legado/app/ui/main/MainActivity.kt#onPostCreate",
+      "app/src/main/java/io/legado/app/ui/main/MainActivity.kt#privacyPolicy",
+      "app/src/main/java/io/legado/app/ui/main/MainActivity.kt#upVersion",
+      "app/src/main/java/io/legado/app/ui/main/MainActivity.kt#setLocalPassword",
+      "app/src/main/java/io/legado/app/ui/main/MainActivity.kt#notifyAppCrash",
+      "app/src/main/java/io/legado/app/ui/main/MainActivity.kt#backupSync",
+      "app/src/main/java/io/legado/app/help/config/LocalConfig.kt#isFirstOpenApp"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-APP-STARTUP-FIRST-USE-AND-RESTORE-001"
+  }
+}

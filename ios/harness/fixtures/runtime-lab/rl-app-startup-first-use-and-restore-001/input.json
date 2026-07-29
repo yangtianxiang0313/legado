@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "welcome-default-opens-main-only",
+      "operation": "app_startup_welcome",
+      "arguments": {
+        "default_to_read": false
+      }
+    },
+    {
+      "id": "welcome-default-to-read-opens-reader-after-main",
+      "operation": "app_startup_welcome",
+      "arguments": {
+        "default_to_read": true
+      }
+    },
+    {
+      "id": "privacy-refusal-stops-main-pipeline",
+      "operation": "app_startup_main_pipeline",
+      "arguments": {
+        "privacy_state": "pending",
+        "privacy_action": "refuse",
+        "stored_version": "zero",
+        "first_open": true,
+        "password_state": "unset",
+        "app_crash": true
+      }
+    },
+    {
+      "id": "first-open-agreement-runs-help-then-password",
+      "operation": "app_startup_main_pipeline",
+      "arguments": {
+        "privacy_state": "pending",
+        "privacy_action": "agree",
+        "stored_version": "zero",
+        "first_open": true,
+        "password_state": "unset",
+        "password_action": "cancel",
+        "app_crash": true
+      }
+    },
+    {
+      "id": "returning-current-version-skips-onboarding",
+      "operation": "app_startup_main_pipeline",
+      "arguments": {
+        "privacy_state": "accepted",
+        "stored_version": "current",
+        "first_open": false,
+        "password_state": "nonempty",
+        "app_crash": true
+      }
+    },
+    {
+      "id": "returning-version-change-debug-skips-update-log",
+      "operation": "app_startup_main_pipeline",
+      "arguments": {
+        "privacy_state": "accepted",
+        "stored_version": "previous",
+        "first_open": false,
+        "password_state": "empty",
+        "app_crash": false
+      }
+    }
+  ]
+}

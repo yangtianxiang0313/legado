@@ -270,6 +270,40 @@ def reader_toc_remap_runtime_raw_artifact():
     }
 
 
+def app_startup_runtime_raw_artifact():
+    scenario = "rl-app-startup-first-use-and-restore-001"
+    contract = runner.SCENARIO_CONTRACTS[scenario]
+    requests = []
+    cases = []
+    for case_id, operation in contract["expected_cases"]:
+        request = {
+            "operation": operation,
+            "arguments": {"fixture_case": case_id},
+        }
+        requests.append(request)
+        cases.append(
+            {
+                "id": case_id,
+                "operation": operation,
+                "request": request,
+                "result": {
+                    "build_debug": True,
+                    "dialog_sequence": [],
+                    "activity_finishing": False,
+                },
+                "issue": None,
+            }
+        )
+    return {
+        "schema_version": 1,
+        "scenario_id": scenario,
+        "device_origin": "android-runtime://local",
+        "logical_origin": "android-runtime://local",
+        "request_plan": requests,
+        "cases": cases,
+    }
+
+
 def xml_raw_artifact():
     scenario = "sl-source-response-xml-declaration-normalization-001"
     values = (
@@ -1383,6 +1417,38 @@ class AndroidOracleRunnerTests(unittest.TestCase):
                 value["operation"] == "reader_progress_toc_remap"
                 for value in artifact["request_plan"]
             )
+        )
+
+    def test_app_startup_runtime_binds_activity_and_onboarding_boundaries(self):
+        scenario = "rl-app-startup-first-use-and-restore-001"
+        runtime_bindings = {
+            **bindings(),
+            "fixture_kind": "android_runtime_scenario",
+            "fixture_path": (
+                "ios/harness/fixtures/runtime-lab/"
+                f"{scenario}"
+            ),
+        }
+        runtime_bindings.pop("source_template_sha256")
+        artifact = runner.normalize_raw_artifact(
+            app_startup_runtime_raw_artifact(),
+            runtime_bindings,
+            scenario,
+        )
+        self.assertEqual("app_runtime", artifact["result"]["type"])
+        self.assertEqual(6 * 6, len(artifact["stages"]))
+        self.assertEqual(
+            [
+                case_id
+                for case_id, _ in
+                runner.SCENARIO_CONTRACTS[scenario]["expected_cases"]
+            ],
+            [
+                value["id"]
+                for value in artifact["result"]["value"][
+                    "portable_known_projection"
+                ]["cases"]
+            ],
         )
 
     def test_post_form_android_request_plan_preserves_ordered_fields_and_bytes(self):

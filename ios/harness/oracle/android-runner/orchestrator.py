@@ -773,6 +773,53 @@ SCENARIO_CONTRACTS = {
             "jaccard-above-point-nine-six-selects-title",
         }),
     },
+    "rl-app-startup-first-use-and-restore-001": {
+        "status": "candidate",
+        "fixture_kind": "android_runtime_scenario",
+        "result_type": "app_runtime",
+        "stage_names": (
+            "fixture_setup",
+            "activity_launch",
+            "privacy_gate",
+            "onboarding_sequence",
+            "restore_check",
+            "result_mapping",
+        ),
+        "expected_cases": (
+            (
+                "welcome-default-opens-main-only",
+                "app_startup_welcome",
+            ),
+            (
+                "welcome-default-to-read-opens-reader-after-main",
+                "app_startup_welcome",
+            ),
+            (
+                "privacy-refusal-stops-main-pipeline",
+                "app_startup_main_pipeline",
+            ),
+            (
+                "first-open-agreement-runs-help-then-password",
+                "app_startup_main_pipeline",
+            ),
+            (
+                "returning-current-version-skips-onboarding",
+                "app_startup_main_pipeline",
+            ),
+            (
+                "returning-version-change-debug-skips-update-log",
+                "app_startup_main_pipeline",
+            ),
+        ),
+        "nominal_cases": frozenset({
+            "welcome-default-opens-main-only",
+            "welcome-default-to-read-opens-reader-after-main",
+            "privacy-refusal-stops-main-pipeline",
+            "first-open-agreement-runs-help-then-password",
+            "returning-current-version-skips-onboarding",
+            "returning-version-change-debug-skips-update-log",
+        }),
+    },
     "il-integration-backup-webdav-001": {
         "status": "candidate",
         "fixture_kind": "integration_lab_scenario",

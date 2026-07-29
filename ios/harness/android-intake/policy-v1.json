@@ -268,6 +268,30 @@
       "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
     },
     {
+      "fact_id": "AF-WELCOME-ACTIVITY-START-MAIN",
+      "fact_key": "app.startup.welcome-routing",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/ui/welcome/WelcomeActivity.kt",
+      "symbol": "startMainActivity",
+      "symbol_id": "kotlin://io.legado.app.ui.welcome.WelcomeActivity/startMainActivity",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-MAIN-ACTIVITY-ON-POST-CREATE",
+      "fact_key": "app.startup.first-use-and-restore",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/ui/main/MainActivity.kt",
+      "symbol": "onPostCreate",
+      "symbol_id": "kotlin://io.legado.app.ui.main.MainActivity/onPostCreate",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
       "fact_id": "AF-READ-ACTIVITY-ON-PAUSE",
       "fact_key": "reader.lifecycle.pause",
       "category": "production_entrypoint",

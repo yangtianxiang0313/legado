@@ -2,8 +2,8 @@
   "schema_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
   "android_tree": "c81f5d383116e37c1eefee3eb86654514e82022b",
-  "control_sha256": "6e5cfb3844359da0176fa60795087d3d271d7d05dbdccd85b8626833281ff204",
-  "policy_sha256": "a7b84c3f9777ad2b17a7b0997b5a109143d0d20cbed2b3f865b9f57d9128dd82",
+  "control_sha256": "9108c1e898ffbc821dba934c2664512c7933e94b9383605453cb98fff02eb46a",
+  "policy_sha256": "b726c21734e1430d0219f6d3412fcce03c0bc60dee4045908f65601fed63b1c7",
   "facts": [
     {
       "id": "AF-ANALYZE-JSONPATH-GET-LIST",
@@ -756,6 +756,30 @@
       "revision_sha256": "bb0fa40fcd034a9984f17e7fd9b4548d23139a74743eb82ef1800fc6b5073405",
       "maps_to": [
         "REQ-ANDROID-BOOKSOURCE-SCHEMA-001"
+      ]
+    },
+    {
+      "id": "AF-MAIN-ACTIVITY-ON-POST-CREATE",
+      "fact_key": "app.startup.first-use-and-restore",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.ui.main.MainActivity/onPostCreate",
+      "path": "app/src/main/java/io/legado/app/ui/main/MainActivity.kt",
+      "git_blob": "641c1dffd26c5ad6f9b9e095791a68c7f1df0972",
+      "source_sha256": "f5631cc1c243874e081867522020ac869189acfdf8b3cf708b5beb28803d7bb5",
+      "start_line": 135,
+      "end_line": 158,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "onPostCreate",
+        "signature": "fun onPostCreate(savedInstanceState: Bundle?)",
+        "body_semantic_sha256": "4bb275876308b17174b7cc5442349ea831e37734b40cc03d8a9a7690143ca389"
+      },
+      "revision_sha256": "b511880e18eff02b3b29aae169d56db57d9bdfec638dcfad8dd12fad74a86842",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
       ]
     },
     {
@@ -1577,6 +1601,30 @@
         "body_semantic_sha256": "c221ba6dc6b83438f765bb9da93b525d017d0bc3df95cee52c939b616605147d"
       },
       "revision_sha256": "9a0214c241caaf936d5a0a653f134c7f80c9321a4c3c7dfb016b1da99f1b40e4",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-WELCOME-ACTIVITY-START-MAIN",
+      "fact_key": "app.startup.welcome-routing",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.ui.welcome.WelcomeActivity/startMainActivity",
+      "path": "app/src/main/java/io/legado/app/ui/welcome/WelcomeActivity.kt",
+      "git_blob": "25980274f4307f77b062b4426434cf118d5dec24",
+      "source_sha256": "200cb52b871e8cd501ed3d9d0b0082ce3dd0ee6f8b300dcfc5e5b07bc0c497b0",
+      "start_line": 70,
+      "end_line": 76,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "startMainActivity",
+        "signature": "fun startMainActivity()",
+        "body_semantic_sha256": "acfdd350c7e2b4e353cf134e860d3300456ebf4a335a750b89d617ba2343a3f0"
+      },
+      "revision_sha256": "30ce199750e78168465d58d2e394b5061a735b38ead2ce7e294058739025501c",
       "maps_to": [
         "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
       ]

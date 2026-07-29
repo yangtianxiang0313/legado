@@ -18,7 +18,7 @@ class AndroidIntakeTests(unittest.TestCase):
         self.assertEqual(first, second)
         baseline = json.loads((REPO_ROOT / "ios/project/baseline.json").read_text(encoding="utf-8"))
         self.assertEqual(baseline["android_oracle"]["git_commit"], first["android_git_commit"])
-        self.assertEqual(44, len(first["facts"]))
+        self.assertEqual(46, len(first["facts"]))
 
     def test_book_source_fact_is_data_contract_not_runtime_proof(self):
         inventory = android_intake.inventory_value(REPO_ROOT)
@@ -164,6 +164,18 @@ class AndroidIntakeTests(unittest.TestCase):
         self.assertEqual(
             "getDurChapter",
             facts["AF-BOOK-HELP-GET-DUR-CHAPTER"]["payload"]["symbol"],
+        )
+
+    def test_app_startup_has_welcome_and_main_activity_anchors(self):
+        inventory = android_intake.inventory_value(REPO_ROOT)
+        facts = {entry["id"]: entry for entry in inventory["facts"]}
+        self.assertEqual(
+            "startMainActivity",
+            facts["AF-WELCOME-ACTIVITY-START-MAIN"]["payload"]["symbol"],
+        )
+        self.assertEqual(
+            "onPostCreate",
+            facts["AF-MAIN-ACTIVITY-ON-POST-CREATE"]["payload"]["symbol"],
         )
 
     def test_webdav_runtime_has_protocol_operation_anchors(self):
