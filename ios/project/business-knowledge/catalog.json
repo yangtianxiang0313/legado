@@ -2,11 +2,11 @@
   "schema_version": 1,
   "contract_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-  "inventory_control_sha256": "9108c1e898ffbc821dba934c2664512c7933e94b9383605453cb98fff02eb46a",
+  "inventory_control_sha256": "c9d2d8201cb1d565259028cdd61a9d9c443569e560c225d603ed3825c33ef27a",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "a2c993852170d394140c393e6fe18fa56fb96eb27817fb8408b4a403c56f2d00",
-  "coverage_sha256": "a9f29f618c88c7f435bd98c02d3634657845b69c1ddbc51e29e1b918e1530e17",
+  "authority_sha256": "ca67b2fc32269026c5dd9e1de8d2621ce284d82b99d0894b88a5ea4af788948d",
+  "coverage_sha256": "13e2c2f4c19c826349d8aa3fb5bbfd504854d3a8abbdc8309f4b572dda466b6b",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -45,6 +45,19 @@
       "claim_refs": [
         {
           "id": "BKC-INTEGRATION-WEBDAV-001",
+          "revision": 3
+        }
+      ]
+    },
+    {
+      "id": "BKP-INTEGRATION-REMOTE-MANAGEMENT-RUNTIME-001",
+      "revision": 1,
+      "semantic_key": "integration.remote-management-runtime-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-INTEGRATION-REMOTE-MANAGEMENT-RUNTIME-001/r0001.json",
+      "record_sha256": "baa3b7ef7003e9be734345b96b3e5d340138588d1f48f4b0907eb7b268533761",
+      "claim_refs": [
+        {
+          "id": "BKC-INTEGRATION-REMOTE-SERVICE-001",
           "revision": 3
         }
       ]
@@ -618,6 +631,15 @@
       "record_sha256": "6f0d3552c654d443b07a8bfb7770ee92e3d8179780d027e5834814c14dea99fc",
       "entry_ids": [
         "BKE-INTEGRATION-BACKUP-WEBDAV-RUNTIME-001"
+      ]
+    },
+    {
+      "id": "BKL-INTEGRATION-REMOTE-MANAGEMENT-RUNTIME-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-INTEGRATION-REMOTE-MANAGEMENT-RUNTIME-001.json",
+      "record_sha256": "d604ddc318d653ba7a422295ccd8727ed0420785f795daf7be9f8e4c1301e82a",
+      "entry_ids": [
+        "BKE-INTEGRATION-REMOTE-MANAGEMENT-RUNTIME-001"
       ]
     },
     {
