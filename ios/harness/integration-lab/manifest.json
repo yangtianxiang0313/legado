@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "logical_origin": "http://integrationlab.test",
-  "control_sha256": "e3ca4d08f45ae64b386ee6a541752186a2f6a9bf4bd9d3119e438098cd7bc0cf",
+  "control_sha256": "d6097f670200a5506597d7e9d445f3622f83ad6efb185b7db1c931eac98c3736",
   "scenarios": [
     {
       "id": "il-integration-backup-webdav-001",
@@ -14,6 +14,12 @@
       "status": "candidate",
       "path": "ios/harness/fixtures/integration-lab/il-integration-remote-http-websocket-management-001",
       "sha256": "acd59dfa75f2fa9f4085504ff826ae74c2dbb4eeee4ce7c587fb77478bb0e682"
+    },
+    {
+      "id": "il-integration-system-text-to-speech-001",
+      "status": "candidate",
+      "path": "ios/harness/fixtures/integration-lab/il-integration-system-text-to-speech-001",
+      "sha256": "1bff279a2e55b1a10fb968241162d32c3d0d55d268da3f5d6717a5ffe8e6a626"
     }
   ]
 }

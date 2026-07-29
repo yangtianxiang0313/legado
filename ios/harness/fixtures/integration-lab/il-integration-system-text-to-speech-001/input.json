@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "helper-multiline-queue",
+      "operation": "tts_helper_queue",
+      "arguments": {
+        "text": "第一段\n\n第二段\n   \n第三段"
+      }
+    },
+    {
+      "id": "helper-latest-text-during-init",
+      "operation": "tts_helper_initialization",
+      "arguments": {
+        "texts": [
+          "旧文本",
+          "最终文本"
+        ]
+      }
+    },
+    {
+      "id": "helper-stop-keeps-engine",
+      "operation": "tts_helper_lifecycle",
+      "arguments": {
+        "action": "stop"
+      }
+    },
+    {
+      "id": "helper-clear-stops-shuts-down",
+      "operation": "tts_helper_lifecycle",
+      "arguments": {
+        "action": "clear"
+      }
+    },
+    {
+      "id": "service-custom-speech-rate",
+      "operation": "tts_service_speech_rate",
+      "arguments": {
+        "follow_system": false,
+        "preference": 7,
+        "reset": false
+      }
+    },
+    {
+      "id": "service-follow-system-no-rate-write",
+      "operation": "tts_service_speech_rate",
+      "arguments": {
+        "follow_system": true,
+        "preference": 7,
+        "reset": false
+      }
+    },
+    {
+      "id": "service-done-skips-punctuation",
+      "operation": "tts_service_progress",
+      "arguments": {
+        "content": [
+          "甲乙丙",
+          "？！…",
+          "下一段"
+        ],
+        "now_speak": 0,
+        "read_aloud_number": 0,
+        "paragraph_start_pos": 1
+      }
+    },
+    {
+      "id": "platform-engine-contract",
+      "operation": "tts_platform_engine_probe",
+      "arguments": {}
+    }
+  ]
+}

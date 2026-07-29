@@ -904,6 +904,58 @@ SCENARIO_CONTRACTS = {
             "unknown-websocket-path",
         }),
     },
+    "il-integration-system-text-to-speech-001": {
+        "status": "candidate",
+        "fixture_kind": "integration_lab_scenario",
+        "result_type": "integration_runtime",
+        "device_origin": "android-platform://text-to-speech",
+        "stage_names": (
+            "fixture_setup",
+            "adapter_injection",
+            "queue_planning",
+            "progress_update",
+            "platform_engine_probe",
+            "result_mapping",
+        ),
+        "expected_cases": (
+            ("helper-multiline-queue", "tts_helper_queue"),
+            (
+                "helper-latest-text-during-init",
+                "tts_helper_initialization",
+            ),
+            ("helper-stop-keeps-engine", "tts_helper_lifecycle"),
+            (
+                "helper-clear-stops-shuts-down",
+                "tts_helper_lifecycle",
+            ),
+            (
+                "service-custom-speech-rate",
+                "tts_service_speech_rate",
+            ),
+            (
+                "service-follow-system-no-rate-write",
+                "tts_service_speech_rate",
+            ),
+            (
+                "service-done-skips-punctuation",
+                "tts_service_progress",
+            ),
+            (
+                "platform-engine-contract",
+                "tts_platform_engine_probe",
+            ),
+        ),
+        "nominal_cases": frozenset({
+            "helper-multiline-queue",
+            "helper-latest-text-during-init",
+            "helper-stop-keeps-engine",
+            "helper-clear-stops-shuts-down",
+            "service-custom-speech-rate",
+            "service-follow-system-no-rate-write",
+            "service-done-skips-punctuation",
+            "platform-engine-contract",
+        }),
+    },
 }
 ROUTE_OBSERVATION_SCENARIOS = {
     "sl-source-request-header-cookie-retry-layering-001": (
@@ -1285,8 +1337,11 @@ def normalize_raw_artifact(
     ):
         raise AndroidOracleRunnerError("RAW_ARTIFACT_IDENTITY_INVALID")
     device_origin = raw.get("device_origin")
+    expected_device_origin = contract.get("device_origin")
     if runtime_scenario:
         device_origin_valid = device_origin == "android-runtime://local"
+    elif isinstance(expected_device_origin, str):
+        device_origin_valid = device_origin == expected_device_origin
     else:
         device_origin_valid = (
             isinstance(device_origin, str)
@@ -1857,6 +1912,7 @@ def _integration_lab_transport_mode(
     if mode not in {
         "fixture_and_loopback",
         "android_loopback_listener",
+        "android_platform_service",
     }:
         raise AndroidOracleRunnerError(
             "INTEGRATION_TRANSPORT_MODE_INVALID"
@@ -2032,12 +2088,11 @@ def run_characterization(
         integration_lab_observations: list[Dict[str, Any]] = []
         with server_context as server:
             source_base64: Optional[str] = None
-            device_origin: Optional[str] = (
-                "http://127.0.0.1:0"
-                if integration_transport_mode
-                == "android_loopback_listener"
-                else None
-            )
+            device_origin: Optional[str] = {
+                "android_loopback_listener": "http://127.0.0.1:0",
+                "android_platform_service":
+                    "android-platform://text-to-speech",
+            }.get(integration_transport_mode)
             logical_origin = (
                 "android-runtime://local"
                 if runtime_scenario

@@ -42,9 +42,18 @@ SCENARIO_OPERATIONS = {
         "remote_http_request",
         "remote_websocket_handshake",
     },
+    "system_text_to_speech": {
+        "tts_helper_queue",
+        "tts_helper_initialization",
+        "tts_helper_lifecycle",
+        "tts_service_speech_rate",
+        "tts_service_progress",
+        "tts_platform_engine_probe",
+    },
 }
 TRANSPORT_FIXTURE_SERVER = "fixture_and_loopback"
 TRANSPORT_ANDROID_LISTENER = "android_loopback_listener"
+TRANSPORT_ANDROID_PLATFORM = "android_platform_service"
 ALLOWED_RESPONSE_HEADERS = {
     "content-type",
     "etag",
@@ -364,6 +373,17 @@ def validate_scenario(
         ):
             errors.append(
                 f"{scenario_id}: Android listener transport 无效"
+            )
+    elif transport.get("mode") == TRANSPORT_ANDROID_PLATFORM:
+        if (
+            set(transport)
+            != {"mode", "external_network", "client", "service"}
+            or transport.get("external_network") != "deny"
+            or transport.get("client") != "android_instrumentation"
+            or transport.get("service") != "text_to_speech"
+        ):
+            errors.append(
+                f"{scenario_id}: Android platform transport 无效"
             )
     else:
         errors.append(f"{scenario_id}: transport mode 无效")
@@ -871,7 +891,10 @@ def verify_protocol(root: Path, scenario_id: str) -> Dict[str, Any]:
         raise IntegrationLabError(
             "scenario 无效：\n- " + "\n- ".join(errors)
         )
-    if case["transport"]["mode"] == TRANSPORT_ANDROID_LISTENER:
+    if case["transport"]["mode"] in {
+        TRANSPORT_ANDROID_LISTENER,
+        TRANSPORT_ANDROID_PLATFORM,
+    }:
         first = inputs["cases"]
         second = load_scenario(root, scenario_id)[2]["cases"]
         route_count = 0

@@ -2,8 +2,8 @@
   "schema_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
   "android_tree": "c81f5d383116e37c1eefee3eb86654514e82022b",
-  "control_sha256": "c9d2d8201cb1d565259028cdd61a9d9c443569e560c225d603ed3825c33ef27a",
-  "policy_sha256": "90db0ebd6c9ab124df43eccf8d08d5627cdb69fe5b5fa9fce01edeb0ab44d7a7",
+  "control_sha256": "adba6419fc0456866e7d4eb71e124a0017b8077fa226065dce0d1a358807e161",
+  "policy_sha256": "6d808698483635b991c2447b0636c1b3332eeab2bf4902c603f3f176c6b83fc6",
   "facts": [
     {
       "id": "AF-ANALYZE-JSONPATH-GET-LIST",
@@ -1363,6 +1363,126 @@
       "revision_sha256": "9c859daa6b8a22e3842951537f31b314c4f2ac2cd63644a839ec4c842af086cb",
       "maps_to": [
         "REQ-ANDROID-BOOKSOURCE-SCHEMA-001"
+      ]
+    },
+    {
+      "id": "AF-TTS-HELPER-CLEAR",
+      "fact_key": "integration.system-tts.helper-clear",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.help/TTS/clearTts",
+      "path": "app/src/main/java/io/legado/app/help/TTS.kt",
+      "git_blob": "3165bb3e80eff5db2f9e7d23a2b7f19e64c24054",
+      "source_sha256": "4d9e1d76b32d6670d71998bbaadcc11c7fa0a50f4a97176ad59ebb9d19053ff9",
+      "start_line": 71,
+      "end_line": 77,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "clearTts",
+        "signature": "fun clearTts()",
+        "body_semantic_sha256": "354e2ac092aa0c16b691a5d9a6d1beb1dcde0f3fe126eb1b8dd99613ffc2dc99"
+      },
+      "revision_sha256": "11df43d6f857e04508622a316fa66cb55a838424570ef8cc0d05ec01ec998c68",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-TTS-HELPER-SPEAK",
+      "fact_key": "integration.system-tts.helper-speak-queue",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.help/TTS/speak",
+      "path": "app/src/main/java/io/legado/app/help/TTS.kt",
+      "git_blob": "3165bb3e80eff5db2f9e7d23a2b7f19e64c24054",
+      "source_sha256": "4d9e1d76b32d6670d71998bbaadcc11c7fa0a50f4a97176ad59ebb9d19053ff9",
+      "start_line": 52,
+      "end_line": 64,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "speak",
+        "signature": "fun speak(text: String)",
+        "body_semantic_sha256": "a1b4d60d16f1cf62c129469eb7333ea09ba48a760202b925f1c5c1c6213db049"
+      },
+      "revision_sha256": "bb998b243e5b3a6013d35342ee2cebb95c9e3e1caa65c4ba64a25f623cddbabe",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-TTS-SERVICE-INIT",
+      "fact_key": "integration.system-tts.service-initialize",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.service/TTSReadAloudService/initTts",
+      "path": "app/src/main/java/io/legado/app/service/TTSReadAloudService.kt",
+      "git_blob": "2b2f5b096a5805d0b12dc38014144536f6d3333d",
+      "source_sha256": "e28a10d5fe40b96d38cb3f0786eb9eb5b4333f855502380917dedc6f2ac997ec",
+      "start_line": 46,
+      "end_line": 56,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "initTts",
+        "signature": "fun initTts()",
+        "body_semantic_sha256": "6d5d6da2b8e8ed2a116b445c51a84dbca7204140be7af3a0b69c0a48cbde3f4e"
+      },
+      "revision_sha256": "22c2d55a61e6e51c980fe5e908264370e136c3e9ffea00467838a4b324d52a7c",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-TTS-SERVICE-SPEECH-RATE",
+      "fact_key": "integration.system-tts.service-speech-rate",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.service/TTSReadAloudService/upSpeechRate",
+      "path": "app/src/main/java/io/legado/app/service/TTSReadAloudService.kt",
+      "git_blob": "2b2f5b096a5805d0b12dc38014144536f6d3333d",
+      "source_sha256": "e28a10d5fe40b96d38cb3f0786eb9eb5b4333f855502380917dedc6f2ac997ec",
+      "start_line": 143,
+      "end_line": 153,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "upSpeechRate",
+        "signature": "fun upSpeechRate(reset: Boolean)",
+        "body_semantic_sha256": "455d895289816d4e12da1c5172edae7f2f3cc563cc343754b4622a58bcc9886e"
+      },
+      "revision_sha256": "233cab5334a7a5d0f4c478824a4fdc83059bfe9de00f9eaf4fa9f3bf7a1b4c91",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-TTS-SERVICE-UTTERANCE-DONE",
+      "fact_key": "integration.system-tts.service-utterance-done",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.service/TTSReadAloudService/TTSUtteranceListener/onDone",
+      "path": "app/src/main/java/io/legado/app/service/TTSReadAloudService.kt",
+      "git_blob": "2b2f5b096a5805d0b12dc38014144536f6d3333d",
+      "source_sha256": "e28a10d5fe40b96d38cb3f0786eb9eb5b4333f855502380917dedc6f2ac997ec",
+      "start_line": 192,
+      "end_line": 204,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "onDone",
+        "signature": "fun onDone(s: String)",
+        "body_semantic_sha256": "ef4f2db3b5719004a5d2abc3395a4937533499faec1621ce287bcb2342ab8897"
+      },
+      "revision_sha256": "b4b09f37d6abb8ccf4ba067bb8fa2056df01850bcfffc7ebf5800bc1c71ac94a",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
       ]
     },
     {

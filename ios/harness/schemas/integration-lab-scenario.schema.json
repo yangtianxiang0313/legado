@@ -26,7 +26,11 @@
     "revision": {"type": "integer", "minimum": 1},
     "status": {"enum": ["candidate", "reference", "retired"]},
     "operation": {
-      "enum": ["webdav_protocol", "remote_management_protocol"]
+      "enum": [
+        "webdav_protocol",
+        "remote_management_protocol",
+        "system_text_to_speech"
+      ]
     },
     "capabilities": {
       "type": "array",
@@ -98,6 +102,22 @@
             "mode": {"const": "android_loopback_listener"},
             "external_network": {"const": "deny"},
             "client": {"const": "android_instrumentation_loopback"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "mode",
+            "external_network",
+            "client",
+            "service"
+          ],
+          "properties": {
+            "mode": {"const": "android_platform_service"},
+            "external_network": {"const": "deny"},
+            "client": {"const": "android_instrumentation"},
+            "service": {"const": "text_to_speech"}
           }
         }
       ]

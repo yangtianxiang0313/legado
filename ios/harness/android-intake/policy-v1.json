@@ -590,6 +590,66 @@
       "symbol": "upWebServer",
       "symbol_id": "kotlin://io.legado.app.service/WebService/upWebServer",
       "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-TTS-HELPER-SPEAK",
+      "fact_key": "integration.system-tts.helper-speak-queue",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/help/TTS.kt",
+      "symbol": "speak",
+      "symbol_id": "kotlin://io.legado.app.help/TTS/speak",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-TTS-HELPER-CLEAR",
+      "fact_key": "integration.system-tts.helper-clear",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/help/TTS.kt",
+      "symbol": "clearTts",
+      "symbol_id": "kotlin://io.legado.app.help/TTS/clearTts",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-TTS-SERVICE-INIT",
+      "fact_key": "integration.system-tts.service-initialize",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/service/TTSReadAloudService.kt",
+      "symbol": "initTts",
+      "symbol_id": "kotlin://io.legado.app.service/TTSReadAloudService/initTts",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-TTS-SERVICE-SPEECH-RATE",
+      "fact_key": "integration.system-tts.service-speech-rate",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/service/TTSReadAloudService.kt",
+      "symbol": "upSpeechRate",
+      "symbol_id": "kotlin://io.legado.app.service/TTSReadAloudService/upSpeechRate",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-TTS-SERVICE-UTTERANCE-DONE",
+      "fact_key": "integration.system-tts.service-utterance-done",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/service/TTSReadAloudService.kt",
+      "symbol": "onDone",
+      "symbol_id": "kotlin://io.legado.app.service/TTSReadAloudService/TTSUtteranceListener/onDone",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
     }
   ]
 }

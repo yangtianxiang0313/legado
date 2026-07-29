@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.os.SystemClock
+import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import android.util.Base64
 import android.util.Log
 import androidx.lifecycle.Lifecycle
@@ -32,6 +34,7 @@ import io.legado.app.data.entities.SearchBook
 import io.legado.app.data.appDb
 import io.legado.app.exception.ConcurrentException
 import io.legado.app.help.CacheManager
+import io.legado.app.help.TTS
 import io.legado.app.help.book.BookHelp
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.config.LocalConfig
@@ -50,6 +53,8 @@ import io.legado.app.model.analyzeRule.AnalyzeUrl
 import io.legado.app.model.analyzeRule.RuleData
 import io.legado.app.model.webBook.WebBook
 import io.legado.app.service.WebService
+import io.legado.app.service.BaseReadAloudService
+import io.legado.app.service.TTSReadAloudService
 import io.legado.app.ui.book.read.page.entities.TextChapter
 import io.legado.app.ui.book.read.page.entities.TextLine
 import io.legado.app.ui.book.read.page.entities.TextPage
@@ -106,6 +111,8 @@ class LegadoOracleInstrumentedTest {
     private val scenarioId = requiredArgument("scenarioId")
     private val isAndroidRuntimeScenario = scenarioId.startsWith("rl-")
     private val isIntegrationLabScenario = scenarioId.startsWith("il-")
+    private val isPlatformIntegrationScenario =
+        scenarioId == "il-integration-system-text-to-speech-001"
     private val input = JSONObject(
         String(
             Base64.decode(
@@ -147,8 +154,14 @@ class LegadoOracleInstrumentedTest {
                     scenarioId == "sl-source-cookie-persistent-session-merge-runtime-001"
         }
         if (isIntegrationLabScenario) {
-            require(deviceOrigin.startsWith("http://127.0.0.1:")) {
-                "Integration Oracle must use the run-scoped loopback origin"
+            if (isPlatformIntegrationScenario) {
+                require(deviceOrigin == "android-platform://text-to-speech") {
+                    "TTS Integration Oracle must use the Android platform origin"
+                }
+            } else {
+                require(deviceOrigin.startsWith("http://127.0.0.1:")) {
+                    "Integration Oracle must use the run-scoped loopback origin"
+                }
             }
         }
 
@@ -157,6 +170,8 @@ class LegadoOracleInstrumentedTest {
                 runWebDavIntegrationCases()
             "il-integration-remote-http-websocket-management-001" ->
                 runRemoteManagementIntegrationCases()
+            "il-integration-system-text-to-speech-001" ->
+                runSystemTextToSpeechIntegrationCases()
             "rl-reader-bookmark-search-runtime-risk-001" ->
                 runBookmarkRuntimeCases()
             "rl-reader-history-read-record-runtime-risk-001" ->
@@ -655,6 +670,379 @@ class LegadoOracleInstrumentedTest {
                 .put("failure_type", error.javaClass.name)
         }
     }
+
+    private suspend fun runSystemTextToSpeechIntegrationCases() {
+        val supported = setOf(
+            "tts_helper_queue",
+            "tts_helper_initialization",
+            "tts_helper_lifecycle",
+            "tts_service_speech_rate",
+            "tts_service_progress",
+            "tts_platform_engine_probe"
+        )
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            val operation = value.getString("operation")
+            require(operation in supported) {
+                "Unsupported system TTS integration operation: $operation"
+            }
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", operation)
+                .put("arguments", JSONObject(arguments.toString()))
+            runCase(
+                value.getString("id"),
+                operation,
+                stimulus
+            ) {
+                when (operation) {
+                    "tts_helper_queue" ->
+                        ttsHelperQueueProjection(arguments)
+                    "tts_helper_initialization" ->
+                        ttsHelperInitializationProjection(arguments)
+                    "tts_helper_lifecycle" ->
+                        ttsHelperLifecycleProjection(arguments)
+                    "tts_service_speech_rate" ->
+                        ttsServiceSpeechRateProjection(arguments)
+                    "tts_service_progress" ->
+                        ttsServiceProgressProjection(arguments)
+                    "tts_platform_engine_probe" ->
+                        ttsPlatformEngineProjection()
+                    else -> error(
+                        "Unsupported system TTS operation: $operation"
+                    )
+                }
+            }
+        }
+    }
+
+    private fun ttsHelperQueueProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val helper = TTS()
+        val recorder = recordingTextToSpeech()
+        setPrivateField(
+            TTS::class.java,
+            helper,
+            "textToSpeech",
+            recorder
+        )
+        return try {
+            helper.speak(arguments.getString("text"))
+            JSONObject()
+                .put("calls", recorder.callProjection())
+                .put("stop_count", recorder.stopCount)
+                .put("shutdown_count", recorder.shutdownCount)
+        } finally {
+            helper.clearTts()
+            recorder.releaseBaseEngine()
+        }
+    }
+
+    private fun ttsHelperInitializationProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val helper = TTS()
+        val recorder = recordingTextToSpeech()
+        setPrivateField(
+            TTS::class.java,
+            helper,
+            "textToSpeech",
+            recorder
+        )
+        setPrivateField(TTS::class.java, helper, "onInit", true)
+        return try {
+            val texts = arguments.getJSONArray("texts")
+            for (index in 0 until texts.length()) {
+                helper.speak(texts.getString(index))
+            }
+            JSONObject()
+                .put(
+                    "retained_text",
+                    privateField(TTS::class.java, helper, "text")
+                )
+                .put("queue_call_count", recorder.calls.size)
+                .put(
+                    "initialization_in_flight",
+                    privateField(TTS::class.java, helper, "onInit")
+                )
+        } finally {
+            setPrivateField(TTS::class.java, helper, "onInit", false)
+            helper.clearTts()
+            recorder.releaseBaseEngine()
+        }
+    }
+
+    private fun ttsHelperLifecycleProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val helper = TTS()
+        val recorder = recordingTextToSpeech()
+        setPrivateField(
+            TTS::class.java,
+            helper,
+            "textToSpeech",
+            recorder
+        )
+        return try {
+            when (arguments.getString("action")) {
+                "stop" -> helper.stop()
+                "clear" -> helper.clearTts()
+                else -> error("Unsupported TTS helper lifecycle action")
+            }
+            JSONObject()
+                .put("stop_count", recorder.stopCount)
+                .put("shutdown_count", recorder.shutdownCount)
+                .put(
+                    "engine_reference_present",
+                    privateField(
+                        TTS::class.java,
+                        helper,
+                        "textToSpeech"
+                    ) != null
+                )
+        } finally {
+            helper.clearTts()
+            recorder.releaseBaseEngine()
+        }
+    }
+
+    private fun ttsServiceSpeechRateProjection(
+        arguments: JSONObject
+    ): JSONObject = onMainThread {
+        val service = TTSReadAloudService()
+        val recorder = recordingTextToSpeech()
+        val oldFollowSystem = AppConfig.ttsFlowSys
+        val oldPreference = AppConfig.ttsSpeechRate
+        setPrivateField(
+            TTSReadAloudService::class.java,
+            service,
+            "textToSpeech",
+            recorder
+        )
+        try {
+            AppConfig.ttsFlowSys =
+                arguments.getBoolean("follow_system")
+            AppConfig.ttsSpeechRate = arguments.getInt("preference")
+            service.upSpeechRate(arguments.getBoolean("reset"))
+            JSONObject()
+                .put("speech_rates", recorder.speechRateProjection())
+                .put("engine_reinitialized", recorder.shutdownCount > 0)
+        } finally {
+            AppConfig.ttsFlowSys = oldFollowSystem
+            AppConfig.ttsSpeechRate = oldPreference
+            service.clearTTS()
+            recorder.releaseBaseEngine()
+        }
+    }
+
+    private fun ttsServiceProgressProjection(
+        arguments: JSONObject
+    ): JSONObject = onMainThread {
+        val service = TTSReadAloudService()
+        val content = arguments.getJSONArray("content")
+        val contentList = (0 until content.length()).map(content::getString)
+        setPrivateField(
+            BaseReadAloudService::class.java,
+            service,
+            "contentList",
+            contentList
+        )
+        setPrivateField(
+            BaseReadAloudService::class.java,
+            service,
+            "nowSpeak",
+            arguments.getInt("now_speak")
+        )
+        setPrivateField(
+            BaseReadAloudService::class.java,
+            service,
+            "readAloudNumber",
+            arguments.getInt("read_aloud_number")
+        )
+        service.paragraphStartPos =
+            arguments.getInt("paragraph_start_pos")
+        val listener = privateField(
+            TTSReadAloudService::class.java,
+            service,
+            "ttsUtteranceListener"
+        ) as UtteranceProgressListener
+        listener.onDone("oracle")
+        JSONObject()
+            .put(
+                "now_speak",
+                privateField(
+                    BaseReadAloudService::class.java,
+                    service,
+                    "nowSpeak"
+                )
+            )
+            .put(
+                "read_aloud_number",
+                privateField(
+                    BaseReadAloudService::class.java,
+                    service,
+                    "readAloudNumber"
+                )
+            )
+            .put("paragraph_start_pos", service.paragraphStartPos)
+    }
+
+    private fun ttsPlatformEngineProjection(): JSONObject {
+        val context =
+            InstrumentationRegistry.getInstrumentation().targetContext
+        val initStatus = AtomicInteger(Int.MIN_VALUE)
+        val latch = CountDownLatch(1)
+        val engine = TextToSpeech(context) { status ->
+            initStatus.set(status)
+            latch.countDown()
+        }
+        return try {
+            val callbackReceived = latch.await(20, TimeUnit.SECONDS)
+            val status = initStatus.get()
+            JSONObject()
+                .put("callback_received", callbackReceived)
+                .put(
+                    "init_status",
+                    when (status) {
+                        TextToSpeech.SUCCESS -> "success"
+                        TextToSpeech.ERROR -> "error"
+                        else -> "unknown"
+                    }
+                )
+                .put("default_engine", nullable(engine.defaultEngine))
+                .put(
+                    "installed_engines",
+                    JSONArray().apply {
+                        engine.engines
+                            .map { it.name }
+                            .distinct()
+                            .sorted()
+                            .forEach(::put)
+                    }
+                )
+                .put(
+                    "max_input_length",
+                    TextToSpeech.getMaxSpeechInputLength()
+                )
+        } finally {
+            engine.shutdown()
+        }
+    }
+
+    private fun recordingTextToSpeech(): RecordingTextToSpeech =
+        RecordingTextToSpeech(
+            InstrumentationRegistry.getInstrumentation().targetContext
+        )
+
+    private fun <T : Any> onMainThread(block: () -> T): T {
+        val value = AtomicReference<T>()
+        val failure = AtomicReference<Throwable>()
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            try {
+                value.set(block())
+            } catch (error: Throwable) {
+                failure.set(error)
+            }
+        }
+        failure.get()?.let { throw it }
+        return requireNotNull(value.get())
+    }
+
+    private fun setPrivateField(
+        owner: Class<*>,
+        target: Any,
+        name: String,
+        value: Any?
+    ) {
+        owner.getDeclaredField(name)
+            .apply { isAccessible = true }
+            .set(target, value)
+    }
+
+    private fun privateField(
+        owner: Class<*>,
+        target: Any,
+        name: String
+    ): Any? =
+        owner.getDeclaredField(name)
+            .apply { isAccessible = true }
+            .get(target)
+
+    private class RecordingTextToSpeech(
+        context: Context
+    ) : TextToSpeech(context, OnInitListener {}) {
+        val calls = mutableListOf<SpeechCall>()
+        val speechRates = mutableListOf<Float>()
+        var stopCount = 0
+        var shutdownCount = 0
+
+        override fun speak(
+            text: CharSequence,
+            queueMode: Int,
+            params: Bundle?,
+            utteranceId: String?
+        ): Int {
+            calls += SpeechCall(
+                text.toString(),
+                queueMode,
+                utteranceId
+            )
+            return SUCCESS
+        }
+
+        override fun stop(): Int {
+            stopCount++
+            return SUCCESS
+        }
+
+        override fun shutdown() {
+            shutdownCount++
+        }
+
+        override fun setSpeechRate(speechRate: Float): Int {
+            speechRates += speechRate
+            return SUCCESS
+        }
+
+        fun callProjection(): JSONArray =
+            JSONArray().apply {
+                calls.forEach { value ->
+                    put(
+                        JSONObject()
+                            .put("text", value.text)
+                            .put(
+                                "queue",
+                                when (value.queueMode) {
+                                    QUEUE_FLUSH -> "flush"
+                                    QUEUE_ADD -> "add"
+                                    else -> "unknown"
+                                }
+                            )
+                            .put(
+                                "utterance_id",
+                                value.utteranceId ?: JSONObject.NULL
+                            )
+                    )
+                }
+            }
+
+        fun speechRateProjection(): JSONArray =
+            JSONArray().apply {
+                speechRates.forEach { put(it.toDouble()) }
+            }
+
+        fun releaseBaseEngine() {
+            super.shutdown()
+        }
+    }
+
+    private data class SpeechCall(
+        val text: String,
+        val queueMode: Int,
+        val utteranceId: String?
+    )
 
     private suspend fun runBookmarkRuntimeCases() {
         val values = input.getJSONArray("cases")

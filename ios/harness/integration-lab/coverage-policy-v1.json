@@ -78,6 +78,41 @@
       "operations": ["remote_management_protocol"],
       "required_roles": ["nominal", "denied"],
       "min_cases_per_role": 1
+    },
+    {
+      "id": "tts.helper-queue",
+      "status": "active",
+      "operations": ["system_text_to_speech"],
+      "required_roles": ["nominal", "boundary"],
+      "min_cases_per_role": 1
+    },
+    {
+      "id": "tts.helper-lifecycle",
+      "status": "active",
+      "operations": ["system_text_to_speech"],
+      "required_roles": ["nominal", "boundary"],
+      "min_cases_per_role": 1
+    },
+    {
+      "id": "tts.service-speech-rate",
+      "status": "active",
+      "operations": ["system_text_to_speech"],
+      "required_roles": ["nominal", "boundary"],
+      "min_cases_per_role": 1
+    },
+    {
+      "id": "tts.service-progress",
+      "status": "active",
+      "operations": ["system_text_to_speech"],
+      "required_roles": ["nominal"],
+      "min_cases_per_role": 1
+    },
+    {
+      "id": "tts.platform-engine",
+      "status": "active",
+      "operations": ["system_text_to_speech"],
+      "required_roles": ["nominal"],
+      "min_cases_per_role": 1
     }
   ]
 }

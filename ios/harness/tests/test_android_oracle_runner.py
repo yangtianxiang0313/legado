@@ -1019,6 +1019,47 @@ def remote_management_integration_raw_artifact():
     }
 
 
+def system_tts_integration_raw_artifact():
+    scenario = "il-integration-system-text-to-speech-001"
+    contract = runner.SCENARIO_CONTRACTS[scenario]
+    fixture = json.loads(
+        (
+            ROOT
+            / "ios/harness/fixtures/integration-lab"
+            / scenario
+            / "input.json"
+        ).read_text(encoding="utf-8")
+    )
+    requests = [
+        {
+            "operation": value["operation"],
+            "arguments": value["arguments"],
+        }
+        for value in fixture["cases"]
+    ]
+    cases = [
+        {
+            "id": case_id,
+            "operation": operation,
+            "request": requests[index],
+            "result": {"case_index": index},
+            "issue": None,
+        }
+        for index, (case_id, operation) in enumerate(
+            contract["expected_cases"]
+        )
+    ]
+    return {
+        "schema_version": 1,
+        "scenario_id": scenario,
+        "device_origin": "android-platform://text-to-speech",
+        "logical_origin": runner.INTEGRATION_LOGICAL_ORIGIN,
+        "request_plan": requests,
+        "cases": cases,
+        "integration_lab_observations": [],
+    }
+
+
 class AndroidOracleRunnerTests(unittest.TestCase):
     def test_android_listener_instrumentation_receives_device_origin_without_source(
         self,
@@ -1039,6 +1080,26 @@ class AndroidOracleRunnerTests(unittest.TestCase):
         origin_index = arguments.index("deviceOrigin")
         self.assertEqual(
             "http://127.0.0.1:0",
+            arguments[origin_index + 1],
+        )
+
+    def test_android_platform_instrumentation_receives_service_origin_without_source(
+        self,
+    ):
+        arguments = runner._instrumentation_arguments(
+            adb=Path("/sdk/adb"),
+            serial="emulator-5554",
+            source_base64=None,
+            integration_scenario=True,
+            device_origin="android-platform://text-to-speech",
+            logical_origin=runner.INTEGRATION_LOGICAL_ORIGIN,
+            scenario_id="il-integration-system-text-to-speech-001",
+            input_base64="e30=",
+        )
+        self.assertNotIn("sourceBase64", arguments)
+        origin_index = arguments.index("deviceOrigin")
+        self.assertEqual(
+            "android-platform://text-to-speech",
             arguments[origin_index + 1],
         )
 
@@ -1424,6 +1485,51 @@ class AndroidOracleRunnerTests(unittest.TestCase):
         )
         rendered = json.dumps(artifact, ensure_ascii=False)
         self.assertNotIn("127.0.0.1", rendered)
+
+    def test_android_platform_integration_uses_bound_service_origin(
+        self,
+    ):
+        scenario = "il-integration-system-text-to-speech-001"
+        integration_bindings = {
+            **bindings(),
+            "fixture_kind": "integration_lab_scenario",
+            "fixture_path": (
+                "ios/harness/fixtures/integration-lab/"
+                f"{scenario}"
+            ),
+        }
+        integration_bindings.pop("source_template_sha256")
+        artifact = runner.normalize_raw_artifact(
+            system_tts_integration_raw_artifact(),
+            integration_bindings,
+            scenario,
+        )
+        self.assertEqual("integration_runtime", artifact["result"]["type"])
+        self.assertEqual(48, len(artifact["stages"]))
+        characterization = artifact["result"]["value"][
+            "android_characterization"
+        ]
+        self.assertNotIn("integration_lab_observation", characterization)
+        self.assertEqual(8, characterization["case_count"])
+        self.assertTrue(
+            all(
+                set(value) == {"operation", "arguments"}
+                for value in artifact["request_plan"]
+            )
+        )
+        rendered = json.dumps(artifact, ensure_ascii=False)
+        self.assertNotIn("127.0.0.1", rendered)
+        invalid = system_tts_integration_raw_artifact()
+        invalid["device_origin"] = "http://127.0.0.1:0"
+        with self.assertRaisesRegex(
+            runner.AndroidOracleRunnerError,
+            "RAW_DEVICE_ORIGIN_INVALID",
+        ):
+            runner.normalize_raw_artifact(
+                invalid,
+                integration_bindings,
+                scenario,
+            )
 
     def test_read_record_runtime_fixture_uses_relational_reader_projection(self):
         scenario = "rl-reader-history-read-record-runtime-risk-001"

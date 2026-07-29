@@ -16,6 +16,12 @@
       "sha256": "9fb06de352244d5a376f2e12f7f29e3532f77a3548c7e018755d283f9a246742"
     },
     {
+      "id": "il-integration-system-text-to-speech-001",
+      "status": "candidate",
+      "path": "ios/harness/fixtures/integration-lab/il-integration-system-text-to-speech-001",
+      "sha256": "e6a802208d98c50ecf6748cd1e373eb7ef7a14cc27580a976622e7b7201c1828"
+    },
+    {
       "id": "rl-app-startup-first-use-and-restore-001",
       "status": "candidate",
       "path": "ios/harness/fixtures/runtime-lab/rl-app-startup-first-use-and-restore-001",

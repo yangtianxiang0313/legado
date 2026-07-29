@@ -17,6 +17,7 @@ class IntegrationLabTests(unittest.TestCase):
     listener_scenario = (
         "il-integration-remote-http-websocket-management-001"
     )
+    platform_scenario = "il-integration-system-text-to-speech-001"
 
     def test_scenario_contract_and_manifest_are_current(self):
         directory, case, inputs = integration_lab.load_scenario(
@@ -142,6 +143,40 @@ class IntegrationLabTests(unittest.TestCase):
             with integration_lab.running_server(
                 REPO_ROOT,
                 self.listener_scenario,
+            ):
+                pass
+
+    def test_android_platform_scenario_is_deterministic_without_host_server(
+        self,
+    ):
+        directory, case, inputs = integration_lab.load_scenario(
+            REPO_ROOT,
+            self.platform_scenario,
+        )
+        self.assertEqual(
+            [],
+            integration_lab.validate_scenario(
+                REPO_ROOT,
+                directory,
+                case,
+            ),
+        )
+        self.assertEqual(
+            integration_lab.TRANSPORT_ANDROID_PLATFORM,
+            case["transport"]["mode"],
+        )
+        self.assertEqual("text_to_speech", case["transport"]["service"])
+        self.assertEqual(8, len(inputs["cases"]))
+        report = integration_lab.verify_protocol(
+            REPO_ROOT,
+            self.platform_scenario,
+        )
+        self.assertEqual(0, report["route_count"])
+        self.assertEqual(8, report["case_count"])
+        with self.assertRaises(integration_lab.IntegrationLabError):
+            with integration_lab.running_server(
+                REPO_ROOT,
+                self.platform_scenario,
             ):
                 pass
 

@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "kind": "integration_lab_scenario",
+  "id": "il-integration-system-text-to-speech-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "system_text_to_speech",
+  "capabilities": [
+    "CAP-CONFORMANCE"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "input": "input.json",
+  "transport": {
+    "mode": "android_platform_service",
+    "external_network": "deny",
+    "client": "android_instrumentation",
+    "service": "text_to_speech"
+  },
+  "coverage": [
+    {
+      "behavior": "tts.helper-queue",
+      "cases": [
+        {
+          "id": "helper-multiline-queue",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-TTS-HELPER-SPEAK"
+          ],
+          "branch_refs": [
+            "TTS.addTextToSpeakList flushes the engine before adding each non-blank newline segment with deterministic legado_tts IDs"
+          ]
+        },
+        {
+          "id": "helper-latest-text-during-init",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-TTS-HELPER-SPEAK"
+          ],
+          "branch_refs": [
+            "TTS.speak replaces the retained text and returns while an engine initialization is already in flight"
+          ]
+        }
+      ]
+    },
+    {
+      "behavior": "tts.helper-lifecycle",
+      "cases": [
+        {
+          "id": "helper-stop-keeps-engine",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-TTS-HELPER-CLEAR"
+          ],
+          "branch_refs": [
+            "TTS.stop delegates stop without dropping the engine reference"
+          ]
+        },
+        {
+          "id": "helper-clear-stops-shuts-down",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-TTS-HELPER-CLEAR"
+          ],
+          "branch_refs": [
+            "TTS.clearTts stops, shuts down and clears the engine reference"
+          ]
+        }
+      ]
+    },
+    {
+      "behavior": "tts.service-speech-rate",
+      "cases": [
+        {
+          "id": "service-custom-speech-rate",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-TTS-SERVICE-SPEECH-RATE"
+          ],
+          "branch_refs": [
+            "TTSReadAloudService maps the integer preference to (value + 5) / 10f when not following the system rate"
+          ]
+        },
+        {
+          "id": "service-follow-system-no-rate-write",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-TTS-SERVICE-SPEECH-RATE"
+          ],
+          "branch_refs": [
+            "TTSReadAloudService leaves the engine rate untouched when following the system rate and reset is false"
+          ]
+        }
+      ]
+    },
+    {
+      "behavior": "tts.service-progress",
+      "cases": [
+        {
+          "id": "service-done-skips-punctuation",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-TTS-SERVICE-UTTERANCE-DONE"
+          ],
+          "branch_refs": [
+            "TTSUtteranceListener.onDone advances character progress and skips punctuation-only paragraphs before selecting the next speak index"
+          ]
+        }
+      ]
+    },
+    {
+      "behavior": "tts.platform-engine",
+      "cases": [
+        {
+          "id": "platform-engine-contract",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-TTS-SERVICE-INIT"
+          ],
+          "branch_refs": [
+            "TTS and TTSReadAloudService delegate engine initialization to the Android TextToSpeech platform service"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "1970-01-01T00:00:00Z",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 0,
+    "network_allowed": false,
+    "logical_origin": "http://integrationlab.test"
+  },
+  "limits": {
+    "timeout_ms": 5000,
+    "max_response_bytes": 1048576,
+    "max_request_body_bytes": 0,
+    "max_requests": 16,
+    "max_concurrency": 1
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/help/TTS.kt",
+      "app/src/main/java/io/legado/app/service/TTSReadAloudService.kt",
+      "app/src/main/java/io/legado/app/service/BaseReadAloudService.kt"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-INTEGRATION-SYSTEM-TEXT-TO-SPEECH-001"
+  }
+}
