@@ -350,6 +350,13 @@
       "title": "建立 Manifest v2 消费恢复的精确自动边界",
       "outputs": ["exact golden-consumer recovery scope", "business publisher compatibility scope", "authority denial regression"],
       "gates": [], "constraint": "只在 Loop Supervisor 增加 Manifest v2 consumer recovery 的固定精确范围；下一恢复项仅可修复 DemandCompiler/Supervisor、Business Knowledge Publisher 兼容与对应测试/记忆，禁止 Golden、Workflow、Android Publisher、Oracle、SourceLab、Package、产品和 authority 写入"
+    },
+    {
+      "proposal_id": "IOS-GOLDEN-CONSUMER-CONTINUATION-RECOVERY-002", "phase": 39, "class": "control_plane",
+      "depends_on": ["IOS-GOLDEN-CONSUMER-BASELINE-SCOPE-001", "IOS-GITHUB-GOLDEN-DISPATCHER-001"], "knowledge_mode": "not_applicable",
+      "title": "恢复 Manifest v2 基线并完成受保护 Golden 续接",
+      "outputs": ["per-fixture publisher control binding", "strict v1-v2 Golden consumer", "migration terminal continuation"],
+      "gates": [], "constraint": "恢复原 Golden consumer 目标并修复真实基线：Business Knowledge Publisher 必须按目标 fixture 读取场景 controls 且 legacy 回退严格；DemandCompiler 必须交叉验证 Receipt/Manifest/release/trusted report 后终结 migration，Supervisor 自动续接；不得修改任何 authority 输入、Golden、Workflow、Android Publisher、Oracle、SourceLab、Package 或产品"
     }
   ],
   "compiler_rules": [

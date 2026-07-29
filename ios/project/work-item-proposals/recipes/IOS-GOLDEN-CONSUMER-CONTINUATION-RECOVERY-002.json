@@ -1,0 +1,199 @@
+{
+  "schema_version": 1,
+  "proposal_id": "IOS-GOLDEN-CONSUMER-CONTINUATION-RECOVERY-002",
+  "proposal_constraint": "恢复原 Golden consumer 目标并修复真实基线：Business Knowledge Publisher 必须按目标 fixture 读取场景 controls 且 legacy 回退严格；DemandCompiler 必须交叉验证 Receipt/Manifest/release/trusted report 后终结 migration，Supervisor 自动续接；不得修改任何 authority 输入、Golden、Workflow、Android Publisher、Oracle、SourceLab、Package 或产品",
+  "work_item": {
+    "api_version": "legado.harness/v1",
+    "kind": "WorkItem",
+    "metadata": {
+      "id": "IOS-GOLDEN-CONSUMER-CONTINUATION-RECOVERY-002",
+      "title": "恢复 Manifest v2 基线并完成受保护 Golden 续接",
+      "priority": 100,
+      "risk": "high",
+      "labels": [
+        "phase-0",
+        "control-plane",
+        "demand-compiler",
+        "golden-consumer-recovery",
+        "publisher-compat",
+        "continuation",
+        "corrective",
+        "recovery"
+      ]
+    },
+    "spec": {
+      "capability": "CAP-KNOWLEDGE-CONTROL",
+      "intent": "恢复 IOS-GOLDEN-CONSUMER-CONTINUATION-001。首先修复 Manifest v2 引发的真实 baseline_red：Business Knowledge Publisher 针对目标 fixture 从 manifest entry 读取 android commit、runner digest 和 canonicalizer，legacy v1 才允许从 oracle/global 明确回退；多场景的其他 fixture 不得改变目标 Packet 的 runtime binding。随后在 DemandCompiler 建立 versioned protected Golden validator：v1 精确保持 github_environment_review；v2 要求 schema_version=2、kind、github_actions_push_v2、固定 publisher/repository、previous authority、controls，并与 Manifest entry/Golden 及 committed verified-candidate Receipt/trusted report 的 scenario/source/proposal/run/archive/attestation/canonicalizer/runner/android commit 全部交叉一致。compile_migration 在有效发布缺失时保持 publisher required，有效时返回 migration_completed；任一已存在发布的 schema、路径、HEAD、hash、control 或 receipt 漂移必须 fail closed。Supervisor 排除 delivery_completed 与 migration_completed 后继续后续需求，不重新调 Dispatcher。Delivery Demand 与 bound-delivery materializer 同时接受严格 v1/v2 release，不使用仅 authorization 字符串的弱校验。",
+      "depends_on": [
+        "IOS-GOLDEN-CONSUMER-BASELINE-SCOPE-001",
+        "IOS-GITHUB-GOLDEN-DISPATCHER-001"
+      ],
+      "scope": {
+        "allow_write": [
+          "ios/harness/demand_compiler.py",
+          "ios/harness/loop_supervisor.py",
+          "ios/publisher/business_knowledge_publisher.py",
+          "ios/harness/tests/test_business_knowledge_publisher.py",
+          "ios/harness/tests/test_demand_compiler.py",
+          "ios/harness/tests/test_loop_supervisor.py",
+          "ios/harness/README.md",
+          "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+          "ios/project/checkpoints/IOS-GOLDEN-CONSUMER-CONTINUATION-RECOVERY-002.json",
+          "ios/project/pitfalls/PIT-*.json"
+        ],
+        "deny_write": [
+          ".github/**",
+          "app/**",
+          "modules/**",
+          "ios/Packages/**",
+          "ios/publisher/android_golden_publisher.py",
+          "ios/harness/harness.py",
+          "ios/harness/proposal_compiler.py",
+          "ios/harness/github_golden_publisher.py",
+          "ios/harness/github_oracle_dispatcher.py",
+          "ios/harness/github_oracle_receipt.py",
+          "ios/harness/config.json",
+          "ios/harness/supervisor.example.json",
+          "ios/harness/schemas/**",
+          "ios/harness/goldens/**",
+          "ios/harness/oracle/**",
+          "ios/harness/source-lab/**",
+          "ios/harness/work-items/**",
+          "ios/project/state.json",
+          "ios/project/events.jsonl",
+          "ios/project/status.md",
+          "ios/project/business-knowledge/**",
+          "ios/project/delivery-intents/**",
+          "ios/project/migration-intents/**",
+          "ios/project/requirements/**",
+          "ios/project/approvals/**",
+          "ios/project/work-item-proposals/**",
+          "ios/docs/**"
+        ],
+        "max_files_changed": 10,
+        "max_changed_lines": 3200
+      },
+      "inputs": {
+        "context_files": [
+          "ios/harness/work-items/IOS-GOLDEN-CONSUMER-CONTINUATION-001.json",
+          "ios/project/checkpoints/IOS-GOLDEN-CONSUMER-BASELINE-SCOPE-001.json",
+          "ios/harness/demand_compiler.py",
+          "ios/harness/loop_supervisor.py",
+          "ios/publisher/business_knowledge_publisher.py",
+          "ios/harness/goldens/manifest.json",
+          "ios/harness/goldens/releases/sl-html-basic-001-30355913470-1.json",
+          "ios/harness/goldens/releases/sl-post-form-001-30403665320-1.json",
+          "ios/project/external-execution-receipts/android-oracle-sl-post-form-001-faa7252c34dac546b65c618a52826e6fd42258c5-30403665320-1.json"
+        ],
+        "android_source_anchors": [],
+        "fixtures": [
+          "sl-html-basic-001",
+          "sl-post-form-001"
+        ]
+      },
+      "architecture_refs": [
+        "ARCH-014",
+        "ARCH-017",
+        "ADR-0002",
+        "ADR-0004"
+      ],
+      "acceptance": {
+        "criteria": [
+          {
+            "id": "AC-1",
+            "statement": "Business Knowledge Publisher 使用目标 manifest entry 的场景级 android commit、runner digest 与 canonicalizer；legacy v1 明确回退，混合 v1/v2 多场景不再互相污染，原 5 个 baseline 失败恢复且新增场景隔离回归。",
+            "verified_by": ["harness-tests"],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          },
+          {
+            "id": "AC-2",
+            "statement": "共享 protected Golden validator 对 v1/v2 执行精确版本合同；v2 release 的 schema/kind/authorization/publisher/repository/previous authority/controls 与 Manifest/Golden 全部绑定，未知版本、混合字段、未提交或 hash/path 漂移稳定拒绝。",
+            "verified_by": ["harness-tests"],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          },
+          {
+            "id": "AC-3",
+            "statement": "Migration consumer 还必须将 v2 release 与 trusted execution Receipt/report 的 scenario、source、proposal、run、archive/attestation/canonicalizer/runner/android commit 交叉一致；只有全闭合才产生 migration_completed，缺发布保持 publisher required，伪造已发布证据 fail closed。",
+            "verified_by": ["harness-tests"],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          },
+          {
+            "id": "AC-4",
+            "statement": "Supervisor 将 migration_completed 与 delivery_completed 一并排除，settled 后不再调用 Golden Dispatcher；若存在后续 Delivery Intent 则继续选择，若没有则进入正常 queue_empty，不出现 unsupported state。",
+            "verified_by": ["harness-tests"],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          },
+          {
+            "id": "AC-5",
+            "statement": "Delivery Demand 与 bound-delivery materialization 使用同一严格 v1/v2 release 语义，旧 HTML/CSS v1 继续有效、POST Form v2 可消费；README、Capability、Checkpoint 与 PIT-0069 记录恢复谱系和剩余续接工作。",
+            "verified_by": ["harness-tests", "dependency-policy", "memory-close"],
+            "requirement_clauses": [],
+            "knowledge_claims": []
+          }
+        ],
+        "required_checks": [
+          "dependency-policy",
+          "harness-tests"
+        ]
+      },
+      "baseline_checks": [
+        "dependency-policy"
+      ],
+      "budget": {
+        "wall_clock_seconds": 21600,
+        "max_edit_verify_cycles": 8,
+        "max_targeted_test_runs": 40,
+        "max_full_test_runs": 6,
+        "max_infra_retries": 2
+      },
+      "gates": [],
+      "completion_effects": {
+        "health": {
+          "protected_golden_consumption": "migration_continuation_v2_recovered"
+        }
+      },
+      "memory": {
+        "capability_state_required": true,
+        "checkpoint_required": true,
+        "pitfall": "required",
+        "adr": "not_required"
+      },
+      "requirements": {
+        "mode": "control_plane",
+        "refs": [],
+        "none_reason": "本项恢复证据消费者与需求状态机，不改变产品 Requirement"
+      },
+      "knowledge": {
+        "contract_version": 1,
+        "mode": "not_applicable",
+        "claim_refs": [],
+        "driver_refs": [],
+        "coverage_refs": [],
+        "produces": [],
+        "expected_ledger_transitions": [],
+        "context_budget": {
+          "max_claims": 8,
+          "max_bytes": 65536
+        },
+        "none_reason": "本项只修复 Business Knowledge Publisher 的证据绑定，不发布知识"
+      },
+      "source_lab": {
+        "mode": "not_applicable",
+        "behaviors": [],
+        "scenarios": [],
+        "none_reason": "本项读取既有场景/Golden，不修改 SourceLab"
+      },
+      "stop_on": [
+        "doctor_red",
+        "scope_violation",
+        "authority_scope",
+        "same_failure_twice",
+        "budget_exhausted"
+      ]
+    }
+  }
+}
