@@ -358,6 +358,19 @@ class AndroidOracleRunnerTests(unittest.TestCase):
             "sl-source-session-rate-limit-shared-state-001",
             rate_limit["scenario_id"],
         )
+        with mock.patch.object(
+            runner,
+            "fixture_digest",
+            return_value="0" * 64,
+        ):
+            with self.assertRaisesRegex(
+                runner.AndroidOracleRunnerError,
+                "FIXTURE_DIGEST_DRIFT",
+            ):
+                runner.repository_bindings(
+                    ROOT,
+                    "sl-source-session-rate-limit-shared-state-001",
+                )
 
     def test_product_tree_drift_fails_before_runner_execution(self):
         baseline = {

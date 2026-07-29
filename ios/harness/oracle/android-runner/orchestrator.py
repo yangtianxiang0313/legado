@@ -249,6 +249,22 @@ def runner_digest() -> str:
     return _sha256(_canonical(entries))
 
 
+def fixture_digest(directory: Path) -> str:
+    inventory = []
+    for path in sorted(directory.rglob("*")):
+        if path.is_symlink():
+            raise AndroidOracleRunnerError(
+                "FIXTURE_ENTRY_INVALID",
+                path.as_posix(),
+            )
+        if path.is_file():
+            inventory.append({
+                "path": path.relative_to(directory).as_posix(),
+                "sha256": _file_sha(path),
+            })
+    return _sha256(_canonical(inventory))
+
+
 def frozen_identity(root: Path) -> Dict[str, str]:
     baseline = _read_json(root / BASELINE_PATH)
     inventory = _read_json(root / INVENTORY_PATH)
@@ -336,6 +352,8 @@ def repository_bindings(
     source_path = fixture_root / "source.template.json"
     input_path = fixture_root / "input.json"
     case_path = fixture_root / "case.json"
+    if fixture_entry.get("sha256") != fixture_digest(fixture_root):
+        raise AndroidOracleRunnerError("FIXTURE_DIGEST_DRIFT")
     return {
         **identity,
         "scenario_id": scenario_id,
