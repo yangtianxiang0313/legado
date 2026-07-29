@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgeCoverageLedger",
+  "id": "BKL-SOURCE-RUNTIME-RULE-VARIABLE-SCOPE-001",
+  "revision": 1,
+  "status": "current",
+  "packet_refs": [
+    {
+      "id": "BKP-SOURCE-RUNTIME-RULE-VARIABLE-SCOPE-001",
+      "revision": 1,
+      "sha256": "358b00c677cb8215b6d3c1c7126c87505a88394470de8354374c5da2cfd819ba"
+    }
+  ],
+  "generated_from": {
+    "knowledge_authority_sha256": "41cc108625d0b0fe9db187ea34ba188578c7a1efb8c6c2f2fb1dd471481f6539",
+    "requirement_catalog_sha256": "b85716b39fb6ce2dcda3be4c0c77a918f6d71787e548d093e4a74da611ffa856",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "entries": [
+    {
+      "id": "BKE-SR-RULE-VARIABLE-SCOPE-001",
+      "claim_ref": {
+        "id": "BKC-SR-RULE-DATA-VARIABLES-001",
+        "revision": 2
+      },
+      "validation": {
+        "required": "android_runtime",
+        "state": "verified",
+        "evidence_refs": [
+          "ios/harness/goldens/releases/sl-source-session-rule-variable-scope-001-30447180869-1.json",
+          "ios/harness/goldens/android-legado-v1/sl-source-session-rule-variable-scope-001.json#/artifact/result/value"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "covered_by_requirement",
+        "refs": [
+          "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01"
+        ],
+        "reason": "受保护 Android Golden 已冻结变量存储边界、角色化读取优先级、特殊映射、首作用域写入、跨阶段传播、独立上下文隔离和失败不回滚语义，交由独立 SourceRuntime 会话上下文实现",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "planned",
+        "requirement_refs": [
+          "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01"
+        ],
+        "work_item_refs": [
+          "IOS-SOURCE-RUNTIME-RULE-VARIABLE-SCOPE-001"
+        ],
+        "capability_refs": [
+          "CAP-CONFORMANCE",
+          "CAP-RUNTIME-PORTS"
+        ],
+        "evidence_refs": [
+          "ios/harness/goldens/releases/sl-source-session-rule-variable-scope-001-30447180869-1.json"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    }
+  ],
+  "updated_by": "IOS-CHARACTERIZE-SOURCE-SESSION-RULE-VARIABLE-SCOPE-001",
+  "updated_at": "2026-07-29T11:34:11Z"
+}

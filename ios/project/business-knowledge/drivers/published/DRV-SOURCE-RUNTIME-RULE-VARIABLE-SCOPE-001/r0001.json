@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-SOURCE-RUNTIME-RULE-VARIABLE-SCOPE-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "source.execution.rule-variable-scope",
+  "title": "用显式作用域链与会话上下文承载规则变量",
+  "claim_refs": [
+    {
+      "id": "BKC-SR-RULE-DATA-VARIABLES-001",
+      "revision": 2
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "SourceRuntime 必须分别表达 AnalyzeRule 与 AnalyzeUrl 的读取链，保留空字符串继续回退、bookName/title 特殊映射、首个作用域写入和失败不回滚语义，逐字段对齐 Android Golden。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "isolation",
+      "scenario": "每条解析流水线持有独立变量上下文；共享只通过显式传递同一上下文发生，禁止全局可变字典让不同书籍、章节、请求或并发任务互相污染。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "concurrency",
+      "scenario": "Swift 并发下的变量存取必须由 SourceRuntime 内部 actor 或等价串行边界保护；规则求值器只消费作用域协议，不直接持有 UI、数据库或 WebKit 对象。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "lifecycle",
+      "scenario": "规则字段和后续 URL 请求需要复用同一会话上下文，而新流水线必须创建新上下文；持久 source/book/chapter 存储与瞬时 RuleData 要通过不同端口接入。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "failure_semantics",
+      "scenario": "变量写入是立即生效的非事务操作；脚本后续失败不得自动回滚。若产品层需要事务，必须作为更高层显式能力，不能改变兼容执行路径。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "bounded_storage",
+      "scenario": "10000 字符边界的返回值和可读性必须建模；Book/Chapter 大变量持久化尚未被本场景验证，需留在存储端口后续 Characterization，不得猜测复制。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "如何用角色化 ScopeChain 同时表达 rule evaluator 的 chapter→book/ruleData→source 与 URL evaluator 的 chapter→ruleData，避免用一套错误的统一优先级？",
+    "如何让变量上下文在同一解析流水线跨字段和请求传播，同时通过 actor 隔离并发任务，且不把持久化细节泄漏进规则执行核心？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002"
+    ],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-SOURCE-SESSION-RULE-VARIABLE-SCOPE-001",
+      "IOS-SOURCE-RUNTIME-RULE-VARIABLE-SCOPE-001"
+    ]
+  },
+  "supersedes": null,
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30447914907/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "created_by": "IOS-CHARACTERIZE-SOURCE-SESSION-RULE-VARIABLE-SCOPE-001"
+}

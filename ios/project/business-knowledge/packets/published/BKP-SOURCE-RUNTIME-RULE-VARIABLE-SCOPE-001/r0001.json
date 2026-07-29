@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-SOURCE-RUNTIME-RULE-VARIABLE-SCOPE-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "source.rule-variable-scope-golden",
+  "title": "受保护 Android Golden 验证的规则变量作用域语义",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "source.execution"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-RUNTIME-PORTS"
+    ],
+    "subject_keys": [
+      "source.rule",
+      "source.script",
+      "source.session"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-SR-RULE-DATA-VARIABLES-001",
+      "revision": 2,
+      "semantic_key": "source.session.rule-variable-scope",
+      "kind": "runtime_behavior",
+      "topic": "规则变量读写与作用域",
+      "statement": "在 sl-source-session-rule-variable-scope-001 的固定输入下，Android RuleDataInterface 对短于 10000 字符的值写入 variableMap 并返回 true；RuleData 的 10000 字符值走 putBigVariable、写入后仍可读取，但 putVariable 返回 false；null 删除后单键读取为空字符串，空 map 的序列化结果为 null。AnalyzeRule 的普通读取按 chapter 非空值、book 非空值、ruleData 非空值、source 非空值依次回退；AnalyzeUrl 只按 chapter 非空值、ruleData 非空值回退，不读取 source。空字符串虽然可以写入，但读取时被视为未命中并继续向低优先级作用域回退。存在 Book 或 BookChapter 时，bookName 与 title 分别直接映射实体 name 与 title，而不是同名变量。两类 put 都写入首个存在的 chapter，否则写入其 RuleData/Book，不向后续作用域广播。规则 JavaScript 的 java.put 写入可被共享 RuleData 上的后续字段读取，URL 脚本写入可被后续 URL 模板读取；两个独立 RuleData 上下文的同名键互不污染。规则脚本或 URL 脚本在 java.put 后抛错时，已写入值仍然保留，不存在事务回滚。本结论不外推到 Book/Chapter 大变量持久化、Source CacheManager 跨进程生命周期、同一 variableMap 的并发写入竞态或脚本安全策略。",
+      "subject_keys": [
+        "source.rule",
+        "source.script",
+        "source.session"
+      ],
+      "depends_on": [
+        {
+          "id": "BKC-SR-URL-TEMPLATE-COMPILE-001",
+          "revision": 2
+        }
+      ],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "ba17c882ede5e1a3dd4de4d7a0598f9f27527efd",
+            "path": "app/src/main/java/io/legado/app/model/analyzeRule/RuleData.kt",
+            "symbol_id": "kotlin://io.legado.app.model.analyzeRule/RuleData"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "7bb96778bbf33c5277867cd8a1e8db6ea19090df",
+            "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt",
+            "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeRule/put"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da",
+            "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+            "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/put"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/sl-source-session-rule-variable-scope-001.json",
+            "artifact_sha256": "849a1ebbc42660dd71fad86b95b3ce7ea733512918519c890724625fe2c6dc68",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "c1958a61cfe28ee2d8d02ba38fdde4db2c0d5329ab9f44ab01cdeadd3da279f8",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "3bd5df31ea66650decdba329ec87fd149fbe558b0c7e4520935b3aa6f745adea",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-SR-RULE-DATA-VARIABLES-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-SOURCE-SESSION-RULE-VARIABLE-SCOPE-001"
+}

@@ -5,8 +5,8 @@
   "inventory_control_sha256": "30cac916034a71f4ce34aa11388c0c3d578c78ccd937f888e48b556b01d72172",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "d6cfce60fd5bbfdd3d93f8799a3e4f5af2ad082ca6a0b34db96dc84fc34f63b2",
-  "coverage_sha256": "1b39408fc822abc71c36a836af18b2981405a3a46d75e85ccef3795ee87550d1",
+  "authority_sha256": "57a517d86d5ce6a45f1d72d2f0c18ef4ca80072d62e1254b88822a1053a380cf",
+  "coverage_sha256": "2fc9812012457377ca407d01fc31f74e7077f73ccdc58320111176a3a12c5fe5",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -144,6 +144,19 @@
       ]
     },
     {
+      "id": "BKP-SOURCE-RUNTIME-RULE-VARIABLE-SCOPE-001",
+      "revision": 1,
+      "semantic_key": "source.rule-variable-scope-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-SOURCE-RUNTIME-RULE-VARIABLE-SCOPE-001/r0001.json",
+      "record_sha256": "358b00c677cb8215b6d3c1c7126c87505a88394470de8354374c5da2cfd819ba",
+      "claim_refs": [
+        {
+          "id": "BKC-SR-RULE-DATA-VARIABLES-001",
+          "revision": 2
+        }
+      ]
+    },
+    {
       "id": "BKP-SOURCE-RUNTIME-TRANSPORT-DISPATCH-001",
       "revision": 1,
       "semantic_key": "source.runtime-transport-dispatch-golden",
@@ -274,6 +287,14 @@
       "resolution_state": "resolved"
     },
     {
+      "id": "DRV-SOURCE-RUNTIME-RULE-VARIABLE-SCOPE-001",
+      "revision": 1,
+      "semantic_key": "source.execution.rule-variable-scope",
+      "path": "ios/project/business-knowledge/drivers/published/DRV-SOURCE-RUNTIME-RULE-VARIABLE-SCOPE-001/r0001.json",
+      "record_sha256": "4dcd7bdf9d2ba73c4b7b4bf78ade073d27c624436380c010d386804d27b85e2d",
+      "resolution_state": "resolved"
+    },
+    {
       "id": "DRV-SOURCE-RUNTIME-TRANSPORT-DISPATCH-001",
       "revision": 1,
       "semantic_key": "source.execution.transport-dispatch",
@@ -390,6 +411,15 @@
       "record_sha256": "10123a87a7b342b717bd75bf9b238aed2105d517d61e3f3977219d80b5017fdf",
       "entry_ids": [
         "BKE-SR-RETRY-REDIRECT-001"
+      ]
+    },
+    {
+      "id": "BKL-SOURCE-RUNTIME-RULE-VARIABLE-SCOPE-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-SOURCE-RUNTIME-RULE-VARIABLE-SCOPE-001.json",
+      "record_sha256": "07e26ddd2a84381f4657e1893dc79d7f6b54aa8b772b0cf62bf0cf2ee9c0f730",
+      "entry_ids": [
+        "BKE-SR-RULE-VARIABLE-SCOPE-001"
       ]
     },
     {
