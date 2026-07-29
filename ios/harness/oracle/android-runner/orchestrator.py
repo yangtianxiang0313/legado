@@ -702,6 +702,77 @@ SCENARIO_CONTRACTS = {
             "new-invocation-cancels-previous-policy-job",
         }),
     },
+    "rl-reader-progress-toc-remap-001": {
+        "status": "candidate",
+        "fixture_kind": "android_runtime_scenario",
+        "result_type": "reader_runtime",
+        "stage_names": (
+            "fixture_setup",
+            "title_normalization",
+            "search_window",
+            "number_fallback",
+            "result_mapping",
+        ),
+        "expected_cases": (
+            (
+                "old-index-zero-short-circuits-empty-toc",
+                "reader_progress_toc_remap",
+            ),
+            (
+                "empty-new-toc-preserves-old-index",
+                "reader_progress_toc_remap",
+            ),
+            (
+                "cleaned-title-finds-inserted-chapter",
+                "reader_progress_toc_remap",
+            ),
+            (
+                "duplicate-cleaned-title-selects-first",
+                "reader_progress_toc_remap",
+            ),
+            (
+                "chapter-number-exact-match-recovers",
+                "reader_progress_toc_remap",
+            ),
+            (
+                "nearest-number-without-exact-match-falls-back",
+                "reader_progress_toc_remap",
+            ),
+            (
+                "fallback-clamps-high-index-to-new-last",
+                "reader_progress_toc_remap",
+            ),
+            (
+                "old-size-ratio-expands-search-to-index-zero",
+                "reader_progress_toc_remap",
+            ),
+            (
+                "old-size-ratio-excludes-early-title",
+                "reader_progress_toc_remap",
+            ),
+            (
+                "jaccard-exactly-point-nine-six-falls-back",
+                "reader_progress_toc_remap",
+            ),
+            (
+                "jaccard-above-point-nine-six-selects-title",
+                "reader_progress_toc_remap",
+            ),
+        ),
+        "nominal_cases": frozenset({
+            "old-index-zero-short-circuits-empty-toc",
+            "empty-new-toc-preserves-old-index",
+            "cleaned-title-finds-inserted-chapter",
+            "duplicate-cleaned-title-selects-first",
+            "chapter-number-exact-match-recovers",
+            "nearest-number-without-exact-match-falls-back",
+            "fallback-clamps-high-index-to-new-last",
+            "old-size-ratio-expands-search-to-index-zero",
+            "old-size-ratio-excludes-early-title",
+            "jaccard-exactly-point-nine-six-falls-back",
+            "jaccard-above-point-nine-six-selects-title",
+        }),
+    },
     "il-integration-backup-webdav-001": {
         "status": "candidate",
         "fixture_kind": "integration_lab_scenario",

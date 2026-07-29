@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "kind": "android_runtime_scenario",
+  "id": "rl-reader-progress-toc-remap-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "android_runtime",
+  "capabilities": [
+    "reader.progress",
+    "reader.toc",
+    "runtime.title-similarity"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": null,
+  "input": "input.json",
+  "transport": {
+    "mode": "none",
+    "external_network": "deny",
+    "responses": []
+  },
+  "coverage": [
+    {
+      "behavior": "reader.progress-toc-remap",
+      "cases": [
+        {
+          "id": "old-index-zero-short-circuits-empty-toc",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-BOOK-HELP-GET-DUR-CHAPTER"
+          ],
+          "branch_refs": [
+            "BookHelp.getDurChapter returns zero before inspecting an empty new chapter list"
+          ]
+        },
+        {
+          "id": "empty-new-toc-preserves-old-index",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-BOOK-HELP-GET-DUR-CHAPTER"
+          ],
+          "branch_refs": [
+            "A nonzero old index is returned unchanged when the new chapter list is empty"
+          ]
+        },
+        {
+          "id": "cleaned-title-finds-inserted-chapter",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-BOOK-HELP-GET-DUR-CHAPTER"
+          ],
+          "branch_refs": [
+            "Full-width conversion, whitespace removal, chapter-prefix removal and trailing annotation removal precede title similarity"
+          ]
+        },
+        {
+          "id": "duplicate-cleaned-title-selects-first",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-BOOK-HELP-GET-DUR-CHAPTER"
+          ],
+          "branch_refs": [
+            "Equal maximum title similarity does not replace an earlier selected index because comparison is strictly greater"
+          ]
+        },
+        {
+          "id": "chapter-number-exact-match-recovers",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-BOOK-HELP-GET-DUR-CHAPTER"
+          ],
+          "branch_refs": [
+            "When title similarity is below the threshold, an exact parsed chapter number wins"
+          ]
+        },
+        {
+          "id": "nearest-number-without-exact-match-falls-back",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-BOOK-HELP-GET-DUR-CHAPTER"
+          ],
+          "branch_refs": [
+            "Tracking the nearest chapter number does not select it unless the final integer difference is less than one"
+          ]
+        },
+        {
+          "id": "fallback-clamps-high-index-to-new-last",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-BOOK-HELP-GET-DUR-CHAPTER"
+          ],
+          "branch_refs": [
+            "A failed match returns the old index capped by the last index of a nonempty new list"
+          ]
+        },
+        {
+          "id": "old-size-ratio-expands-search-to-index-zero",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-BOOK-HELP-GET-DUR-CHAPTER"
+          ],
+          "branch_refs": [
+            "The derived index oldIndex times oldListSize divided by newListSize participates in both search-window bounds"
+          ]
+        },
+        {
+          "id": "old-size-ratio-excludes-early-title",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-BOOK-HELP-GET-DUR-CHAPTER"
+          ],
+          "branch_refs": [
+            "A matching title outside the derived inclusive window is ignored and the bounded old index is returned"
+          ]
+        },
+        {
+          "id": "jaccard-exactly-point-nine-six-falls-back",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-BOOK-HELP-GET-DUR-CHAPTER"
+          ],
+          "branch_refs": [
+            "A title similarity equal to 0.96 satisfies neither the less-than fallback-number branch nor the greater-than acceptance branch"
+          ]
+        },
+        {
+          "id": "jaccard-above-point-nine-six-selects-title",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-BOOK-HELP-GET-DUR-CHAPTER"
+          ],
+          "branch_refs": [
+            "A title similarity strictly greater than 0.96 returns the best title index"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "not-used",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 0,
+    "network_allowed": false,
+    "logical_origin": null,
+    "database_reset_per_case": true
+  },
+  "limits": {
+    "timeout_ms": 5000
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/help/book/BookHelp.kt#getDurChapter",
+      "app/src/main/java/io/legado/app/help/book/BookHelp.kt#getChapterNum",
+      "app/src/main/java/io/legado/app/help/book/BookHelp.kt#getPureChapterName",
+      "app/src/main/java/io/legado/app/utils/StringUtils.kt#stringToInt"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-READER-PROGRESS-TOC-REMAP-001"
+  }
+}

@@ -1,0 +1,233 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "old-index-zero-short-circuits-empty-toc",
+      "operation": "reader_progress_toc_remap",
+      "arguments": {
+        "old_index": 0,
+        "old_title": null,
+        "old_list_size": 0,
+        "new_titles": []
+      }
+    },
+    {
+      "id": "empty-new-toc-preserves-old-index",
+      "operation": "reader_progress_toc_remap",
+      "arguments": {
+        "old_index": 7,
+        "old_title": "第八章 旧章",
+        "old_list_size": 20,
+        "new_titles": []
+      }
+    },
+    {
+      "id": "cleaned-title-finds-inserted-chapter",
+      "operation": "reader_progress_toc_remap",
+      "arguments": {
+        "old_index": 3,
+        "old_title": "第４章 星 河 归 途（旧站）",
+        "old_list_size": 0,
+        "new_titles": [
+          "序章 启程",
+          "第一章 风",
+          "第二章 雨",
+          "第三章 山",
+          "插章 海",
+          "第4章 星河归途",
+          "第五章 夜"
+        ]
+      }
+    },
+    {
+      "id": "duplicate-cleaned-title-selects-first",
+      "operation": "reader_progress_toc_remap",
+      "arguments": {
+        "old_index": 10,
+        "old_title": "第十章 重逢",
+        "old_list_size": 0,
+        "new_titles": [
+          "第一章 占位",
+          "第二章 占位",
+          "第三章 占位",
+          "第四章 占位",
+          "第五章 占位",
+          "第六章 占位",
+          "第七章 占位",
+          "第十章 重逢",
+          "第九章 占位",
+          "第十章 占位",
+          "第十一章 占位",
+          "第十二章 占位",
+          "第十章 重逢",
+          "第十四章 占位",
+          "第十五章 占位"
+        ]
+      }
+    },
+    {
+      "id": "chapter-number-exact-match-recovers",
+      "operation": "reader_progress_toc_remap",
+      "arguments": {
+        "old_index": 4,
+        "old_title": "第42章 完全不同",
+        "old_list_size": 0,
+        "new_titles": [
+          "第一章 起点",
+          "第二章 远方",
+          "第三章 山谷",
+          "第四章 海岸",
+          "第五章 长夜",
+          "第六章 黎明",
+          "第42回 陌路",
+          "第八章 归途"
+        ]
+      }
+    },
+    {
+      "id": "nearest-number-without-exact-match-falls-back",
+      "operation": "reader_progress_toc_remap",
+      "arguments": {
+        "old_index": 3,
+        "old_title": "第50章 旧标题",
+        "old_list_size": 0,
+        "new_titles": [
+          "第一章 一",
+          "第二章 二",
+          "第三章 三",
+          "第四章 四",
+          "第五章 五",
+          "第六章 六",
+          "第49章 最近但不相等",
+          "第七章 七"
+        ]
+      }
+    },
+    {
+      "id": "fallback-clamps-high-index-to-new-last",
+      "operation": "reader_progress_toc_remap",
+      "arguments": {
+        "old_index": 20,
+        "old_title": "尾声 旧梦",
+        "old_list_size": 0,
+        "new_titles": [
+          "开篇 新雨",
+          "中篇 新雪",
+          "终篇 新月"
+        ]
+      }
+    },
+    {
+      "id": "old-size-ratio-expands-search-to-index-zero",
+      "operation": "reader_progress_toc_remap",
+      "arguments": {
+        "old_index": 20,
+        "old_title": "特别篇 唯一目标",
+        "old_list_size": 15,
+        "new_titles": [
+          "特别篇 唯一目标",
+          "占位01",
+          "占位02",
+          "占位03",
+          "占位04",
+          "占位05",
+          "占位06",
+          "占位07",
+          "占位08",
+          "占位09",
+          "占位10",
+          "占位11",
+          "占位12",
+          "占位13",
+          "占位14",
+          "占位15",
+          "占位16",
+          "占位17",
+          "占位18",
+          "占位19",
+          "占位20",
+          "占位21",
+          "占位22",
+          "占位23",
+          "占位24",
+          "占位25",
+          "占位26",
+          "占位27",
+          "占位28",
+          "占位29"
+        ]
+      }
+    },
+    {
+      "id": "old-size-ratio-excludes-early-title",
+      "operation": "reader_progress_toc_remap",
+      "arguments": {
+        "old_index": 20,
+        "old_title": "特别篇 唯一目标",
+        "old_list_size": 60,
+        "new_titles": [
+          "占位00",
+          "占位01",
+          "占位02",
+          "占位03",
+          "占位04",
+          "特别篇 唯一目标",
+          "占位06",
+          "占位07",
+          "占位08",
+          "占位09",
+          "占位10",
+          "占位11",
+          "占位12",
+          "占位13",
+          "占位14",
+          "占位15",
+          "占位16",
+          "占位17",
+          "占位18",
+          "占位19",
+          "占位20",
+          "占位21",
+          "占位22",
+          "占位23",
+          "占位24",
+          "占位25",
+          "占位26",
+          "占位27",
+          "占位28",
+          "占位29"
+        ]
+      }
+    },
+    {
+      "id": "jaccard-exactly-point-nine-six-falls-back",
+      "operation": "reader_progress_toc_remap",
+      "arguments": {
+        "old_index": 1,
+        "old_title": "abcdefghijklmnopqrstuvwx",
+        "old_list_size": 0,
+        "new_titles": [
+          "zzzz",
+          "fallback",
+          "yyyy",
+          "abcdefghijklmnopqrstuvwxy"
+        ]
+      }
+    },
+    {
+      "id": "jaccard-above-point-nine-six-selects-title",
+      "operation": "reader_progress_toc_remap",
+      "arguments": {
+        "old_index": 1,
+        "old_title": "abcdefghijklmnopqrstuvwxy",
+        "old_list_size": 0,
+        "new_titles": [
+          "zzzz",
+          "fallback",
+          "yyyy",
+          "abcdefghijklmnopqrstuvwxyz"
+        ]
+      }
+    }
+  ]
+}

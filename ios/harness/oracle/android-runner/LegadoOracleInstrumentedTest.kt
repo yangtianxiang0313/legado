@@ -129,6 +129,8 @@ class LegadoOracleInstrumentedTest {
                 runReaderProgressRuntimeCases()
             "rl-reader-cache-prefetch-policy-001" ->
                 runReaderPrefetchPolicyCases()
+            "rl-reader-progress-toc-remap-001" ->
+                runReaderProgressTocRemapCases()
             "sl-post-form-001" -> runPostFormCases()
             "sl-source-response-xml-declaration-normalization-001" ->
                 runXmlResponseCases()
@@ -1047,6 +1049,66 @@ class LegadoOracleInstrumentedTest {
                 appDb.bookChapterDao.delByBook(it.bookUrl)
                 appDb.bookDao.delete(it)
             }
+    }
+
+    private suspend fun runReaderProgressTocRemapCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            require(
+                value.getString("operation") ==
+                    "reader_progress_toc_remap"
+            ) {
+                "Unsupported reader progress TOC remap operation"
+            }
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", "reader_progress_toc_remap")
+                .put("arguments", JSONObject(arguments.toString()))
+            runCase(
+                value.getString("id"),
+                "reader_progress_toc_remap",
+                stimulus
+            ) {
+                readerProgressTocRemapProjection(arguments)
+            }
+        }
+    }
+
+    private fun readerProgressTocRemapProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val titles = arguments.getJSONArray("new_titles")
+        val chapters = ArrayList<BookChapter>(titles.length())
+        for (index in 0 until titles.length()) {
+            chapters.add(
+                BookChapter(
+                    url = "/android-runtime/toc-remap/$index",
+                    title = titles.getString(index),
+                    bookUrl = "/android-runtime/toc-remap/book",
+                    index = index
+                )
+            )
+        }
+        val oldTitle =
+            if (arguments.isNull("old_title")) null
+            else arguments.getString("old_title")
+        val selectedIndex = BookHelp.getDurChapter(
+            arguments.getInt("old_index"),
+            oldTitle,
+            chapters,
+            arguments.getInt("old_list_size")
+        )
+        val inBounds = selectedIndex in chapters.indices
+        return JSONObject()
+            .put("selected_index", selectedIndex)
+            .put("selected_index_in_bounds", inBounds)
+            .put(
+                "selected_title",
+                if (inBounds) chapters[selectedIndex].title
+                else JSONObject.NULL
+            )
+            .put("new_chapter_count", chapters.size)
     }
 
     private suspend fun runReaderPrefetchPolicyCases() {

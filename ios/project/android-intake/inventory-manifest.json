@@ -2,8 +2,8 @@
   "schema_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
   "android_tree": "c81f5d383116e37c1eefee3eb86654514e82022b",
-  "control_sha256": "e1d4ba381569cbc60e5e4a5c2436f5d42ba32021370a1e8bf3964057493b682b",
-  "policy_sha256": "0759a2b0449ce6cf1b170b0047661d62f23d410e3ccffed7e9df8837e362ac5f",
+  "control_sha256": "6e5cfb3844359da0176fa60795087d3d271d7d05dbdccd85b8626833281ff204",
+  "policy_sha256": "a7b84c3f9777ad2b17a7b0997b5a109143d0d20cbed2b3f865b9f57d9128dd82",
   "facts": [
     {
       "id": "AF-ANALYZE-JSONPATH-GET-LIST",
@@ -241,6 +241,30 @@
         "body_semantic_sha256": "ccea761ddd0e294a1663b6ae0e057ec83a61190e4d99d926c875faefc5e23786"
       },
       "revision_sha256": "ae5104d5ba24bd44020d12e7139e43de303262d52eecc4da43a0d6e54ba0131b",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-BOOK-HELP-GET-DUR-CHAPTER",
+      "fact_key": "reader.progress.toc-remap",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.help.book.BookHelp/getDurChapter",
+      "path": "app/src/main/java/io/legado/app/help/book/BookHelp.kt",
+      "git_blob": "40f47f3a0f6bfa63cce79efb7a1518737b84dc45",
+      "source_sha256": "c779cc59c934274215a07fbed9a9e60e259833299d643d60a104550257cca54a",
+      "start_line": 434,
+      "end_line": 481,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "getDurChapter",
+        "signature": "fun getDurChapter( oldDurChapterIndex: Int, oldDurChapterName: String?, newChapterList: List<BookChapter>, oldChapterListSize: Int = 0 ): Int",
+        "body_semantic_sha256": "5651009726c5dbf64486927b3e4f9a13d24ca7ee3ed12b68e4cc31d2071557db"
+      },
+      "revision_sha256": "dd3fb6a7a0deaf4e52ac4495a669cf5df2305a34f5adee46eb9be97913a6c869",
       "maps_to": [
         "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
       ]

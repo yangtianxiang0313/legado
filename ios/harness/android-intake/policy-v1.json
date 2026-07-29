@@ -256,6 +256,18 @@
       "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
     },
     {
+      "fact_id": "AF-BOOK-HELP-GET-DUR-CHAPTER",
+      "fact_key": "reader.progress.toc-remap",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/help/book/BookHelp.kt",
+      "symbol": "getDurChapter",
+      "symbol_id": "kotlin://io.legado.app.help.book.BookHelp/getDurChapter",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
       "fact_id": "AF-READ-ACTIVITY-ON-PAUSE",
       "fact_key": "reader.lifecycle.pause",
       "category": "production_entrypoint",
