@@ -977,6 +977,17 @@ def webdav_integration_raw_artifact():
 
 
 class AndroidOracleRunnerTests(unittest.TestCase):
+    def test_ci_emulator_boot_probes_have_wall_clock_and_command_timeouts(self) -> None:
+        workflow = (
+            ROOT / ".github/workflows/android-oracle-attestation.yml"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("wait_for_emulator()", workflow)
+        self.assertIn("while (( SECONDS - started_at < deadline_seconds ))", workflow)
+        self.assertIn('timeout 5s "${ADB}" -s "${AVD_SERIAL}" get-state', workflow)
+        self.assertIn("if wait_for_emulator 240; then", workflow)
+        self.assertIn("if wait_for_emulator 360; then", workflow)
+
     def test_doctor_binds_frozen_android_tree_and_exposes_no_authority(self):
         report = runner.doctor(ROOT)
         self.assertTrue(report["ok"])

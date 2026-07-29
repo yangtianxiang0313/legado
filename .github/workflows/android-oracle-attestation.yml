@@ -170,7 +170,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "${ORACLE_TEMP}" "${ANDROID_AVD_HOME}"
-          echo no | "${AVDMANAGER}" create avd \
+          echo no | timeout 60s "${AVDMANAGER}" create avd \
             --force \
             --name "${AVD_NAME}" \
             --package "${ANDROID_IMAGE}"
@@ -179,7 +179,7 @@ jobs:
             find "${ANDROID_AVD_HOME}" -maxdepth 2 -print || true
             exit 1
           fi
-          avd_list="$("${ANDROID_HOME}/emulator/emulator" -list-avds)"
+          avd_list="$(timeout 30s "${ANDROID_HOME}/emulator/emulator" -list-avds)"
           printf 'Discoverable AVDs:\n%s\n' "${avd_list}"
           if ! printf '%s\n' "${avd_list}" | grep -Fqx -- "${AVD_NAME}"; then
             echo "::error::Created AVD is not discoverable by emulator"
@@ -199,34 +199,42 @@ jobs:
           echo "$!" >"${ORACLE_TEMP}/emulator.pid"
           ready=false
           emulator_alive=true
-          emulator_booted() {
-            if ! kill -0 "$(cat "${ORACLE_TEMP}/emulator.pid")" 2>/dev/null; then
-              emulator_alive=false
-              return 1
-            fi
-            adb_state="$("${ADB}" -s "${AVD_SERIAL}" get-state 2>/dev/null || true)"
-            if test "${adb_state}" = "device" && \
-              test "$("${ADB}" -s "${AVD_SERIAL}" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1"; then
-              return 0
-            fi
-            sleep 2
+          wait_for_emulator() {
+            local deadline_seconds="$1"
+            local started_at="${SECONDS}"
+            local adb_state=""
+            local boot_completed=""
+            while (( SECONDS - started_at < deadline_seconds )); do
+              if ! kill -0 "$(cat "${ORACLE_TEMP}/emulator.pid")" 2>/dev/null; then
+                emulator_alive=false
+                return 1
+              fi
+              adb_state="$(
+                timeout 5s "${ADB}" -s "${AVD_SERIAL}" get-state \
+                  2>/dev/null || true
+              )"
+              if test "${adb_state}" = "device"; then
+                boot_completed="$(
+                  timeout 5s "${ADB}" -s "${AVD_SERIAL}" \
+                    shell getprop sys.boot_completed \
+                    2>/dev/null \
+                    | tr -d '\r' || true
+                )"
+                if test "${boot_completed}" = "1"; then
+                  return 0
+                fi
+              fi
+              sleep 2
+            done
             return 1
           }
-          for _ in $(seq 1 120); do
-            if emulator_booted; then
-              ready=true
-              break
-            fi
-            test "${emulator_alive}" = true || break
-          done
+          if wait_for_emulator 240; then
+            ready=true
+          fi
           if test "${ready}" != true && test "${EMULATOR_ACCEL}" = "off"; then
-            for _ in $(seq 1 180); do
-              if emulator_booted; then
-                ready=true
-                break
-              fi
-              test "${emulator_alive}" = true || break
-            done
+            if wait_for_emulator 360; then
+              ready=true
+            fi
           fi
           if test "${ready}" != true; then
             if test "${EMULATOR_ACCEL}" = "off"; then
@@ -234,11 +242,11 @@ jobs:
             else
               echo "::error::Android emulator did not boot within 240 seconds"
             fi
-            "${ADB}" devices -l || true
+            timeout 10s "${ADB}" devices -l || true
             tail -n 200 "${ORACLE_TEMP}/emulator.log" || true
             exit 1
           fi
-          "${ADB}" -s "${AVD_SERIAL}" shell input keyevent 82
+          timeout 10s "${ADB}" -s "${AVD_SERIAL}" shell input keyevent 82
 
       - name: Run frozen Android Oracle offline
         shell: bash
