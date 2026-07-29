@@ -69,6 +69,8 @@ class LegadoOracleInstrumentedTest {
                 runRateLimitStateCases()
             "sl-source-transport-request-dispatch-contract-001" ->
                 runTransportDispatchCases()
+            "sl-source-transport-response-decoding-runtime-001" ->
+                runResponseDecodingCases()
             else -> {
                 runCase("search-hit", "search", searchRequest("星河")) {
                     searchProjection(WebBook.searchBookAwait(source, "星河"))
@@ -217,6 +219,39 @@ class LegadoOracleInstrumentedTest {
                 JSONObject()
                     .put("body", nullable(response.body))
                     .put("final_url", logical(response.url))
+            }
+        }
+    }
+
+    private suspend fun runResponseDecodingCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            require(value.getString("operation") == "response_decoding") {
+                "Response decoding scenario only accepts response_decoding stimuli"
+            }
+            val target = value
+                .getJSONObject("request")
+                .getString("target")
+            val analyze = AnalyzeUrl(
+                mUrl = "$deviceOrigin$target",
+                baseUrl = source.bookSourceUrl,
+                source = source,
+                headerMapF = source.getHeaderMap(true)
+            )
+            runCase(
+                value.getString("id"),
+                "response_decoding",
+                analyzedRequest(analyze)
+            ) {
+                val response = analyze.getStrResponseAwait(
+                    useWebView = false
+                )
+                JSONObject()
+                    .put("body", nullable(response.body))
+                    .put("final_url", logical(response.url))
+                    .put("status_code", response.code())
+                    .put("is_successful", response.isSuccessful())
             }
         }
     }

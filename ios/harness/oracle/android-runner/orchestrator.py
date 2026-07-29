@@ -160,6 +160,30 @@ SCENARIO_CONTRACTS = {
             "proxy-timeout-policy",
         }),
     },
+    "sl-source-transport-response-decoding-runtime-001": {
+        "status": "candidate",
+        "expected_cases": (
+            ("header-utf8", "response_decoding"),
+            ("header-gbk", "response_decoding"),
+            ("detected-gbk", "response_decoding"),
+            ("utf8-bom", "response_decoding"),
+            ("wrong-declared-charset", "response_decoding"),
+            ("gzip-transparent", "response_decoding"),
+            ("zip-first-entry", "response_decoding"),
+            ("malformed-zip", "response_decoding"),
+            ("redirect-final-url", "response_decoding"),
+            ("redirect-loop-denied", "response_decoding"),
+        ),
+        "nominal_cases": frozenset({
+            "header-utf8",
+            "header-gbk",
+            "detected-gbk",
+            "utf8-bom",
+            "gzip-transparent",
+            "zip-first-entry",
+            "redirect-final-url",
+        }),
+    },
 }
 ROUTE_OBSERVATION_SCENARIOS = {
     "sl-source-request-header-cookie-retry-layering-001": (
@@ -173,6 +197,19 @@ ROUTE_OBSERVATION_SCENARIOS = {
         "typed-string-hex",
         "byte-array-network",
         "input-stream-network",
+    ),
+    "sl-source-transport-response-decoding-runtime-001": (
+        "header-utf8",
+        "header-gbk",
+        "detected-gbk",
+        "utf8-bom",
+        "wrong-declared-charset",
+        "gzip-transparent",
+        "zip-first-entry",
+        "malformed-zip",
+        "redirect-final-url",
+        "redirect-final-target",
+        "redirect-loop-denied",
     ),
 }
 ANDROID_PRODUCT_PATHS = (

@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+import base64
+import binascii
 import contextlib
 import hashlib
 import http.client
@@ -101,6 +103,16 @@ def safe_child(directory: Path, relative: str) -> Path:
     if not candidate.is_file():
         raise SourceLabError(f"场景文件不存在：{candidate}")
     return candidate
+
+
+def fixture_body_bytes(path: Path) -> bytes:
+    payload = path.read_bytes()
+    if not path.name.endswith(".base64"):
+        return payload
+    try:
+        return base64.b64decode(payload.strip(), validate=True)
+    except (ValueError, binascii.Error) as error:
+        raise SourceLabError(f"SourceLab base64 body 无效：{path}") from error
 
 
 def scenario_directories(root: Path) -> List[Path]:
@@ -294,7 +306,7 @@ def validate_scenario(root: Path, directory: Path, case: Dict[str, Any]) -> List
                     errors.append(f"{scenario_id}: route header 未批准：{route_id}/{key}")
         try:
             body_path = safe_child(directory, str(respond.get("body_file", "")))
-            if body_path.stat().st_size > limits.get("max_response_bytes", 0):
+            if len(fixture_body_bytes(body_path)) > limits.get("max_response_bytes", 0):
                 errors.append(f"{scenario_id}: route body 超限：{route_id}")
         except SourceLabError as error:
             errors.append(str(error))
@@ -620,7 +632,9 @@ class SourceLabRequestHandler(http.server.BaseHTTPRequestHandler):
                 return
             server.record_route_request(route["id"])
             respond = route["respond"]
-            body = safe_child(server.scenario_directory, respond["body_file"]).read_bytes()
+            body = fixture_body_bytes(
+                safe_child(server.scenario_directory, respond["body_file"])
+            )
             self.send_stable_response(respond["status"], respond["headers"], body)
         finally:
             server.semaphore.release()
@@ -649,6 +663,19 @@ def running_server(root: Path, scenario_id: str) -> Iterator[SourceLabHTTPServer
             probe.close()
 
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(
+        self,
+        request: urllib.request.Request,
+        file_pointer: Any,
+        code: int,
+        message: str,
+        headers: Any,
+        new_url: str,
+    ) -> None:
+        return None
+
+
 def request_route(server: SourceLabHTTPServer, route: Dict[str, Any]) -> Dict[str, Any]:
     method, path, query_items = route_signature(route)
     target = path
@@ -657,7 +684,8 @@ def request_route(server: SourceLabHTTPServer, route: Dict[str, Any]) -> Dict[st
     url = f"http://{server.authority}{target}"
     request = urllib.request.Request(url, method=method)
     try:
-        with urllib.request.urlopen(request, timeout=server.limits["timeout_ms"] / 1000.0) as response:
+        opener = urllib.request.build_opener(_NoRedirect)
+        with opener.open(request, timeout=server.limits["timeout_ms"] / 1000.0) as response:
             status = response.status
             headers = {key.lower(): value for key, value in response.headers.items()}
             body = response.read(server.limits["max_response_bytes"] + 1)
@@ -690,7 +718,9 @@ def verify_site(root: Path, scenario_id: str) -> Dict[str, Any]:
             raise SourceLabError("SourceLab 重复请求 transcript 不一致")
         for route, transcript in zip(case["transport"]["responses"], first):
             respond = route["respond"]
-            body = safe_child(directory, respond["body_file"]).read_bytes()
+            body = fixture_body_bytes(
+                safe_child(directory, respond["body_file"])
+            )
             if transcript["status"] != respond["status"] or transcript["body_sha256"] != sha256_bytes(body):
                 raise SourceLabError(f"SourceLab route 输出与 fixture 不一致：{route['id']}")
         connection = http.client.HTTPConnection(server.server_address[0], server.server_address[1], timeout=1)

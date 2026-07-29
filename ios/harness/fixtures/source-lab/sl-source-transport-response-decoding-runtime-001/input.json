@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "header-utf8",
+      "operation": "response_decoding",
+      "arguments": {
+        "mode": "declared_charset"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/decode/header-utf8"
+      }
+    },
+    {
+      "id": "header-gbk",
+      "operation": "response_decoding",
+      "arguments": {
+        "mode": "declared_charset"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/decode/header-gbk"
+      }
+    },
+    {
+      "id": "detected-gbk",
+      "operation": "response_decoding",
+      "arguments": {
+        "mode": "content_detection"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/decode/detected-gbk"
+      }
+    },
+    {
+      "id": "utf8-bom",
+      "operation": "response_decoding",
+      "arguments": {
+        "mode": "bom"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/decode/utf8-bom"
+      }
+    },
+    {
+      "id": "wrong-declared-charset",
+      "operation": "response_decoding",
+      "arguments": {
+        "mode": "malformed_charset"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/decode/wrong-declared-charset"
+      }
+    },
+    {
+      "id": "gzip-transparent",
+      "operation": "response_decoding",
+      "arguments": {
+        "mode": "gzip"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/decode/gzip-transparent"
+      }
+    },
+    {
+      "id": "zip-first-entry",
+      "operation": "response_decoding",
+      "arguments": {
+        "mode": "zip"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/decode/zip-first-entry"
+      }
+    },
+    {
+      "id": "malformed-zip",
+      "operation": "response_decoding",
+      "arguments": {
+        "mode": "malformed_zip"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/decode/malformed-zip"
+      }
+    },
+    {
+      "id": "redirect-final-url",
+      "operation": "response_decoding",
+      "arguments": {
+        "mode": "redirect"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/decode/redirect-start"
+      }
+    },
+    {
+      "id": "redirect-loop-denied",
+      "operation": "response_decoding",
+      "arguments": {
+        "mode": "redirect_loop"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/decode/redirect-loop"
+      }
+    }
+  ]
+}

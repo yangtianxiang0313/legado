@@ -371,6 +371,67 @@ def transport_dispatch_raw_artifact():
     }
 
 
+def response_decoding_raw_artifact():
+    scenario = "sl-source-transport-response-decoding-runtime-001"
+    contract = runner.SCENARIO_CONTRACTS[scenario]
+    requests = []
+    cases = []
+    for case_id, operation in contract["expected_cases"]:
+        path = (
+            "/decode/redirect-start"
+            if case_id == "redirect-final-url"
+            else f"/decode/{case_id}"
+        )
+        request = {
+            "method": "GET",
+            "url": runner.LOGICAL_ORIGIN + path,
+            "headers": [
+                {"name": "X-Source", "value": "response-decoding"}
+            ],
+            "body": None,
+            "timeout_ms": None,
+        }
+        requests.append(request)
+        denied = case_id == "redirect-loop-denied"
+        cases.append(
+            {
+                "id": case_id,
+                "operation": operation,
+                "request": request,
+                "result": None
+                if denied
+                else {
+                    "body": f"body-{case_id}",
+                    "final_url": (
+                        runner.LOGICAL_ORIGIN + "/decode/redirect-final"
+                        if case_id == "redirect-final-url"
+                        else request["url"]
+                    ),
+                    "status_code": 200,
+                    "is_successful": True,
+                },
+                "issue": {
+                    "code": "android_exception",
+                    "exception_type": "java.net.ProtocolException",
+                }
+                if denied
+                else None,
+            }
+        )
+    return {
+        "schema_version": 1,
+        "scenario_id": scenario,
+        "device_origin": "http://127.0.0.1:49152",
+        "logical_origin": runner.LOGICAL_ORIGIN,
+        "request_plan": requests,
+        "cases": cases,
+        "source_lab_route_counts": {
+            route_id: 1
+            for route_id in runner.ROUTE_OBSERVATION_SCENARIOS[scenario]
+        },
+    }
+
+
 class AndroidOracleRunnerTests(unittest.TestCase):
     def test_doctor_binds_frozen_android_tree_and_exposes_no_authority(self):
         report = runner.doctor(ROOT)
@@ -433,6 +494,14 @@ class AndroidOracleRunnerTests(unittest.TestCase):
         self.assertEqual(
             "sl-source-transport-request-dispatch-contract-001",
             transport_dispatch["scenario_id"],
+        )
+        response_decoding = runner.doctor(
+            ROOT,
+            "sl-source-transport-response-decoding-runtime-001",
+        )
+        self.assertEqual(
+            "sl-source-transport-response-decoding-runtime-001",
+            response_decoding["scenario_id"],
         )
         with mock.patch.object(
             runner,
@@ -671,6 +740,40 @@ class AndroidOracleRunnerTests(unittest.TestCase):
                 bindings(),
                 scenario,
             )
+
+    def test_response_decoding_preserves_final_url_and_denied_redirect(self):
+        scenario = "sl-source-transport-response-decoding-runtime-001"
+        artifact = runner.normalize_raw_artifact(
+            response_decoding_raw_artifact(),
+            bindings(),
+            scenario,
+        )
+        projected = artifact["result"]["value"][
+            "portable_known_projection"
+        ]["cases"]
+        redirect = next(
+            case for case in projected
+            if case["id"] == "redirect-final-url"
+        )
+        self.assertEqual(
+            runner.LOGICAL_ORIGIN + "/decode/redirect-final",
+            redirect["result"]["final_url"],
+        )
+        denied = next(
+            case for case in projected
+            if case["id"] == "redirect-loop-denied"
+        )
+        self.assertEqual("rule_failed", denied["issue"]["code"])
+        observation = artifact["result"]["value"][
+            "android_characterization"
+        ]["source_lab_observation"]
+        self.assertEqual(
+            list(runner.ROUTE_OBSERVATION_SCENARIOS[scenario]),
+            [
+                entry["route_id"]
+                for entry in observation["route_request_counts"]
+            ],
+        )
 
     def test_nominal_issue_external_request_and_device_origin_leak_fail_closed(self):
         issue = raw_artifact()

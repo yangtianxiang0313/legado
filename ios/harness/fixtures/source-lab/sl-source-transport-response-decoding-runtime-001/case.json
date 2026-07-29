@@ -1,0 +1,330 @@
+{
+  "schema_version": 1,
+  "kind": "source_lab_scenario",
+  "id": "sl-source-transport-response-decoding-runtime-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "source_lab_site",
+  "capabilities": [
+    "CAP-RUNTIME-PORTS",
+    "CAP-CONFORMANCE"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": "source.template.json",
+  "input": "input.json",
+  "transport": {
+    "mode": "fixture_and_loopback",
+    "external_network": "deny",
+    "responses": [
+      {
+        "id": "header-utf8",
+        "match": {
+          "method": "GET",
+          "path": "/decode/header-utf8",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/header-utf8.txt"
+        }
+      },
+      {
+        "id": "header-gbk",
+        "match": {
+          "method": "GET",
+          "path": "/decode/header-gbk",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=gbk"
+          },
+          "body_file": "responses/header-gbk.base64"
+        }
+      },
+      {
+        "id": "detected-gbk",
+        "match": {
+          "method": "GET",
+          "path": "/decode/detected-gbk",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/html"
+          },
+          "body_file": "responses/detected-gbk.base64"
+        }
+      },
+      {
+        "id": "utf8-bom",
+        "match": {
+          "method": "GET",
+          "path": "/decode/utf8-bom",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain"
+          },
+          "body_file": "responses/utf8-bom.base64"
+        }
+      },
+      {
+        "id": "wrong-declared-charset",
+        "match": {
+          "method": "GET",
+          "path": "/decode/wrong-declared-charset",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=gbk"
+          },
+          "body_file": "responses/wrong-declared-charset.base64"
+        }
+      },
+      {
+        "id": "gzip-transparent",
+        "match": {
+          "method": "GET",
+          "path": "/decode/gzip-transparent",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-encoding": "gzip",
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/gzip-transparent.base64"
+        }
+      },
+      {
+        "id": "zip-first-entry",
+        "match": {
+          "method": "GET",
+          "path": "/decode/zip-first-entry",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "application/zip"
+          },
+          "body_file": "responses/zip-first-entry.base64"
+        }
+      },
+      {
+        "id": "malformed-zip",
+        "match": {
+          "method": "GET",
+          "path": "/decode/malformed-zip",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "application/zip"
+          },
+          "body_file": "responses/malformed-zip.base64"
+        }
+      },
+      {
+        "id": "redirect-final-url",
+        "match": {
+          "method": "GET",
+          "path": "/decode/redirect-start",
+          "query": {}
+        },
+        "respond": {
+          "status": 302,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8",
+            "location": "/decode/redirect-final"
+          },
+          "body_file": "responses/redirect-start.txt"
+        }
+      },
+      {
+        "id": "redirect-final-target",
+        "match": {
+          "method": "GET",
+          "path": "/decode/redirect-final",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/redirect-final.txt"
+        }
+      },
+      {
+        "id": "redirect-loop-denied",
+        "match": {
+          "method": "GET",
+          "path": "/decode/redirect-loop",
+          "query": {}
+        },
+        "respond": {
+          "status": 302,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8",
+            "location": "/decode/redirect-loop"
+          },
+          "body_file": "responses/redirect-loop.txt"
+        }
+      }
+    ]
+  },
+  "coverage": [
+    {
+      "behavior": "decode.charset",
+      "cases": [
+        {
+          "id": "header-utf8",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "ResponseBody.text uses the HTTP Content-Type charset before content detection"
+          ]
+        },
+        {
+          "id": "header-gbk",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "ResponseBody.text decodes non-UTF8 bytes with the declared charset"
+          ]
+        },
+        {
+          "id": "detected-gbk",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "ResponseBody.text falls back to EncodingDetect when Content-Type omits charset"
+          ]
+        },
+        {
+          "id": "utf8-bom",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "ResponseBody.text removes UTF-8 BOM before charset selection"
+          ]
+        },
+        {
+          "id": "wrong-declared-charset",
+          "role": "malformed",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "ResponseBody.text gives a malformed declared charset precedence over content detection"
+          ]
+        }
+      ]
+    },
+    {
+      "behavior": "decode.compression",
+      "cases": [
+        {
+          "id": "gzip-transparent",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "HTTP client transparent gzip decoding precedes ResponseBody.text"
+          ]
+        },
+        {
+          "id": "zip-first-entry",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "ResponseBody.unCompress reads the first ZIP entry for application/zip"
+          ]
+        },
+        {
+          "id": "malformed-zip",
+          "role": "malformed",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "ResponseBody.unCompress observes malformed application/zip input"
+          ]
+        }
+      ]
+    },
+    {
+      "behavior": "transport.redirect",
+      "cases": [
+        {
+          "id": "redirect-final-url",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "StrResponse.url exposes the final network request URL after a followed redirect"
+          ]
+        },
+        {
+          "id": "redirect-loop-denied",
+          "role": "denied",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "HTTP client rejects a redirect loop before producing StrResponse"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "2026-01-01T00:00:00Z",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 19,
+    "network_allowed": false,
+    "logical_origin": "http://sourcelab.test"
+  },
+  "limits": {
+    "timeout_ms": 1000,
+    "max_response_bytes": 1048576,
+    "max_request_body_bytes": 0,
+    "max_requests": 64,
+    "max_concurrency": 2
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+      "app/src/main/java/io/legado/app/help/http/OkHttpUtils.kt",
+      "app/src/main/java/io/legado/app/help/http/StrResponse.kt"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-SOURCE-TRANSPORT-RESPONSE-DECODING-RUNTIME-001"
+  }
+}

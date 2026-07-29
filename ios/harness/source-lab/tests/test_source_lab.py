@@ -262,6 +262,31 @@ class SourceLabTests(unittest.TestCase):
         self.assertEqual(first, second)
         self.assertNotIn("127.0.0.1", json.dumps(first))
 
+    def test_binary_fixture_bodies_and_redirects_are_served_exactly(self):
+        scenario = "sl-source-transport-response-decoding-runtime-001"
+        directory, case, _ = source_lab.load_scenario(REPO_ROOT, scenario)
+        routes = {
+            route["id"]: route for route in case["transport"]["responses"]
+        }
+        gbk_path = source_lab.safe_child(
+            directory,
+            routes["header-gbk"]["respond"]["body_file"],
+        )
+        self.assertEqual(
+            "声明编码：星河\n",
+            source_lab.fixture_body_bytes(gbk_path).decode("gbk"),
+        )
+        with source_lab.running_server(REPO_ROOT, scenario) as server:
+            redirect = source_lab.request_route(
+                server,
+                routes["redirect-final-url"],
+            )
+        self.assertEqual(302, redirect["status"])
+        self.assertEqual(
+            source_lab.LOGICAL_ORIGIN + "/decode/redirect-start",
+            redirect["logical_target"],
+        )
+
     def test_case_roles_are_behavior_specific(self):
         _, case, _ = source_lab.load_scenario(REPO_ROOT, self.scenario)
         coverage = {entry["behavior"]: entry["cases"] for entry in case["coverage"]}
