@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "CAP-KNOWLEDGE-CONTROL",
-  "revision": 75,
+  "revision": 76,
   "title": "业务知识与架构输入控制面",
   "area": "foundation",
   "contract": "ios/docs/project-memory.md",
@@ -72,12 +72,12 @@
     "harness_config_sha256",
     "android_intake_control_sha256"
   ],
-  "latest_evidence": "ios/harness/evidence/runs/run-20260729T013147Z-ios-golden-consumer-baseline-scope-001-129b1a87.json",
+  "latest_evidence": "ios/harness/evidence/runs/run-20260729T015050Z-ios-golden-consumer-continuation-recovery-002-7047cca2.json",
   "next_actions": [
-    "恢复 IOS-GOLDEN-CONSUMER-CONTINUATION-001 并修复 Manifest v2 的 Business Knowledge Publisher 兼容",
-    "严格消费受保护 POST Form Golden 并续接 SourceRuntime Package 结构化验收",
+    "把已终结的 POST Form Migration Intent 续接为独立 SourceRuntime Delivery Intent 与完整蓝图",
+    "发布已由源码与真实 Golden 支撑的 POST Form Packet/Driver，并执行结构化验收",
     "在 iOS Simulator 完成 UI 结构与多级导航验收"
   ],
-  "updated_at": "2026-07-29T01:31:47Z",
-  "updated_by": "IOS-GOLDEN-CONSUMER-BASELINE-SCOPE-001"
+  "updated_at": "2026-07-29T01:50:50Z",
+  "updated_by": "IOS-GOLDEN-CONSUMER-CONTINUATION-RECOVERY-002"
 }

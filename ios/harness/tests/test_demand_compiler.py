@@ -109,25 +109,55 @@ class DemandFixture:
         self.write_json(
             self.receipt_relative,
             {
+                "schema_version": 1,
+                "kind": "android_golden_release",
                 "authority": "protected_android_golden",
+                "previous_authority": "candidate_only",
                 "authorization": "github_environment_review",
+                "publisher": (
+                    "github-actions-environment:"
+                    "android-golden-publisher"
+                ),
+                "repository": "owner/legado",
                 "fixture_id": self.fixture_id,
                 "golden_path": golden_relative,
                 "golden_sha256": golden_sha,
                 "run_id": "42/1",
                 "source_digest": "c" * 40,
                 "proposal_sha256": "d" * 64,
+                "proposal_archive_sha256": "e" * 64,
+                "evidence_archive_sha256": "f" * 64,
+                "proposal_attestation_sha256": "1" * 64,
+                "evidence_attestation_sha256": "2" * 64,
             },
         )
         self.write_json(
             demand_compiler.GOLDEN_MANIFEST,
             {
+                "schema_version": 1,
+                "canonicalizer_sha256": "3" * 64,
+                "oracle": {
+                    "android_git_commit": "6" * 40,
+                    "profile": "android-legado-v1",
+                    "runner_digest": "4" * 64,
+                    "runner_image_digest": "sha256:" + "5" * 64,
+                },
                 "fixtures": {
                     self.fixture_id: {
+                        "android_git_commit": "6" * 40,
+                        "authorization": "github_environment_review",
+                        "canonicalizer_sha256": "3" * 64,
+                        "evidence_archive_sha256": "f" * 64,
+                        "evidence_attestation_sha256": "2" * 64,
                         "path": golden_relative,
                         "golden_sha256": golden_sha,
+                        "profile": "android-legado-v1",
+                        "proposal_archive_sha256": "e" * 64,
+                        "proposal_attestation_sha256": "1" * 64,
                         "release_receipt": self.receipt_relative,
                         "run_id": "42/1",
+                        "runner_digest": "4" * 64,
+                        "runner_image_digest": "sha256:" + "5" * 64,
                         "source_digest": "c" * 40,
                         "proposal_sha256": "d" * 64,
                     }
@@ -1131,6 +1161,94 @@ class MigrationFixture:
 
 
 class DemandCompilerTests(unittest.TestCase):
+    def test_versioned_protected_golden_contract_and_trusted_binding(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = DemandFixture(Path(directory))
+            compiler = fixture.compiler()
+            legacy = compiler.protected_golden_binding(
+                fixture.fixture_id
+            )
+            self.assertEqual(1, legacy["release_schema_version"])
+            self.assertEqual(
+                "github_environment_review",
+                legacy["authorization"],
+            )
+
+            manifest_path = (
+                fixture.root / demand_compiler.GOLDEN_MANIFEST
+            )
+            manifest = json.loads(manifest_path.read_text())
+            manifest["schema_version"] = 2
+            entry = manifest["fixtures"][fixture.fixture_id]
+            entry["authorization"] = "github_actions_push_v2"
+            controls = {
+                "android_git_commit": entry["android_git_commit"],
+                "profile": entry["profile"],
+                "canonicalizer_sha256": entry[
+                    "canonicalizer_sha256"
+                ],
+                "runner_digest": entry["runner_digest"],
+                "runner_image_digest": entry[
+                    "runner_image_digest"
+                ],
+            }
+            receipt_path = fixture.root / fixture.receipt_relative
+            release = json.loads(receipt_path.read_text())
+            release["schema_version"] = 2
+            release["authorization"] = "github_actions_push_v2"
+            release["publisher"] = (
+                "github-actions:android-golden-publisher-v2"
+            )
+            release["controls"] = controls
+            fixture.write_json(
+                demand_compiler.GOLDEN_MANIFEST,
+                manifest,
+            )
+            fixture.write_json(fixture.receipt_relative, release)
+            fixture.commit("publish v2 golden")
+            report = {
+                "authority": "candidate_only",
+                "next_authority": "independent_golden_publisher",
+                "scenario_id": fixture.fixture_id,
+                "fixture_ids": [fixture.fixture_id],
+                "source_digest": release["source_digest"],
+                "repository": release["repository"],
+                "proposal_sha256": release["proposal_sha256"],
+                "proposal_archive_sha256": release[
+                    "proposal_archive_sha256"
+                ],
+                "evidence_archive_sha256": release[
+                    "evidence_archive_sha256"
+                ],
+                "runner_digest": controls["runner_digest"],
+            }
+            trusted = {
+                "scenario_id": fixture.fixture_id,
+                "source_digest": release["source_digest"],
+                "repository": release["repository"],
+                "run": {"id": 42, "attempt": 1},
+                "trusted_report": report,
+                "next_authority": "independent_golden_publisher",
+            }
+            protected = compiler.protected_golden_binding(
+                fixture.fixture_id,
+                trusted_execution=trusted,
+            )
+            self.assertEqual(2, protected["release_schema_version"])
+            self.assertEqual(controls, protected["controls"])
+
+            release["controls"]["runner_digest"] = "0" * 64
+            fixture.write_json(fixture.receipt_relative, release)
+            fixture.commit("tamper v2 controls")
+            with self.assertRaisesRegex(
+                demand_compiler.DemandCompilerError,
+                "GOLDEN_RELEASE_CONTRACT_INVALID",
+            ):
+                compiler.protected_golden_binding(
+                    fixture.fixture_id,
+                    trusted_execution=trusted,
+                )
+
     def test_compiles_shortest_authority_and_delivery_chain(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = DemandFixture(Path(directory))

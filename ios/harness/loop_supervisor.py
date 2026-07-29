@@ -45,6 +45,7 @@ try:
         ORACLE_BLUEPRINT_ROOT,
         TRUSTED_ORACLE_BLUEPRINT_ROOT,
         DemandCompiler,
+        DemandCompilerError,
         DemandPlan,
     )
     from .proposal_compiler import (
@@ -81,6 +82,7 @@ except ImportError:
         ORACLE_BLUEPRINT_ROOT,
         TRUSTED_ORACLE_BLUEPRINT_ROOT,
         DemandCompiler,
+        DemandCompilerError,
         DemandPlan,
     )
     from proposal_compiler import (  # type: ignore
@@ -2205,10 +2207,6 @@ class LoopSupervisor:
         if scope_issues:
             raise MaterializationConflict(";".join(scope_issues))
 
-        manifest_relative = "ios/harness/goldens/manifest.json"
-        self._require_head_regular((manifest_relative,))
-        manifest_path = self.harness.resolve(manifest_relative)
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         fixture_ids = binding.get("golden_fixtures")
         if (
             not isinstance(fixture_ids, list)
@@ -2218,44 +2216,27 @@ class LoopSupervisor:
         ):
             raise MaterializationConflict("DELIVERY_GOLDEN_SELECTOR_INVALID")
         golden_bindings: List[Tuple[str, str, str]] = []
+        golden_compiler = DemandCompiler(self.harness.root)
         for fixture_id in fixture_ids:
-            entry = manifest.get("fixtures", {}).get(fixture_id)
-            if not isinstance(entry, dict):
+            try:
+                golden = golden_compiler.protected_golden_binding(
+                    fixture_id
+                )
+            except DemandCompilerError as error:
+                raise MaterializationConflict(
+                    f"DELIVERY_{error}"
+                ) from error
+            if golden is None:
                 raise MaterializationConflict(
                     f"DELIVERY_GOLDEN_MISSING:{fixture_id}"
                 )
-            golden_relative = entry.get("path")
-            receipt_relative = entry.get("release_receipt")
-            if not isinstance(golden_relative, str) or not isinstance(
-                receipt_relative, str
-            ):
-                raise MaterializationConflict(
-                    f"DELIVERY_GOLDEN_BINDING_INVALID:{fixture_id}"
+            golden_bindings.append(
+                (
+                    fixture_id,
+                    str(golden["golden_sha256"]),
+                    str(golden["release_receipt_sha256"]),
                 )
-            self._require_head_regular((golden_relative, receipt_relative))
-            golden_path = self.harness.resolve(golden_relative)
-            receipt_path = self.harness.resolve(receipt_relative)
-            golden_sha = _sha256_bytes(golden_path.read_bytes())
-            receipt_sha = _sha256_bytes(receipt_path.read_bytes())
-            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
-            expected = {
-                "authority": "protected_android_golden",
-                "authorization": "github_environment_review",
-                "fixture_id": fixture_id,
-                "golden_path": golden_relative,
-                "golden_sha256": golden_sha,
-                "run_id": entry.get("run_id"),
-                "source_digest": entry.get("source_digest"),
-                "proposal_sha256": entry.get("proposal_sha256"),
-            }
-            if (
-                golden_sha != entry.get("golden_sha256")
-                or any(receipt.get(key) != value for key, value in expected.items())
-            ):
-                raise MaterializationConflict(
-                    f"DELIVERY_GOLDEN_RECEIPT_DRIFT:{fixture_id}"
-                )
-            golden_bindings.append((fixture_id, golden_sha, receipt_sha))
+            )
 
         state_items = self.harness.state().get("work_items", {})
         dependency_bindings: List[Tuple[str, str, str]] = []
@@ -2398,7 +2379,9 @@ class LoopSupervisor:
                 warnings=tuple(warnings),
             )
         plans = tuple(
-            plan for plan in plans if plan.state != "delivery_completed"
+            plan
+            for plan in plans
+            if plan.state not in {"delivery_completed", "migration_completed"}
         )
         if not plans:
             return None
@@ -3227,7 +3210,7 @@ class LoopSupervisor:
         eligible = tuple(
             plan
             for plan in plans
-            if plan.state != "delivery_completed"
+            if plan.state not in {"delivery_completed", "migration_completed"}
         )
         if not eligible:
             raise MaterializationConflict("MIGRATION_DEMAND_MISSING")
@@ -3257,7 +3240,7 @@ class LoopSupervisor:
         eligible = tuple(
             plan
             for plan in plans
-            if plan.state != "delivery_completed"
+            if plan.state not in {"delivery_completed", "migration_completed"}
         )
         if not eligible:
             raise MaterializationConflict(
@@ -3284,7 +3267,7 @@ class LoopSupervisor:
         eligible = tuple(
             plan
             for plan in plans
-            if plan.state != "delivery_completed"
+            if plan.state not in {"delivery_completed", "migration_completed"}
         )
         if not eligible:
             raise MaterializationConflict("ORACLE_DEMAND_MISSING")
@@ -3314,7 +3297,7 @@ class LoopSupervisor:
         eligible = tuple(
             plan
             for plan in plans
-            if plan.state != "delivery_completed"
+            if plan.state not in {"delivery_completed", "migration_completed"}
         )
         if not eligible:
             raise MaterializationConflict(

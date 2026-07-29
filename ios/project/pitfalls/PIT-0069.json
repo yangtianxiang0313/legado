@@ -21,7 +21,7 @@
     "对比目标 fixture entry、release receipt、Packet runtime_evidence 与 manifest.oracle 的 runner/canonicalizer/android commit",
     "搜索所有直接读取 manifest.oracle runner/control 的消费者"
   ],
-  "fix": "先建立只允许 Manifest v2 consumer recovery 的精确自动范围；后续恢复项必须让消费者优先使用目标 fixture entry 的场景级 controls，并对 legacy v1 提供严格、显式回退，同时补齐多场景回归。",
+  "fix": "Business Knowledge Publisher 现在优先使用目标 fixture entry 的 android commit、runner digest 与 canonicalizer，legacy v1 才显式回退全局字段。DemandCompiler 新增共享 versioned protected Golden validator，严格区分 release v1/v2，并由 Delivery Demand、bound-delivery materializer 与 Android migration 共同消费；回归覆盖混合场景隔离、v2 control tamper、trusted execution 绑定和 migration terminal continuation。",
   "prevention": {
     "architecture_rule": "Golden schema 新版本必须提供共享的 versioned consumer validator，并在发布前对全部消费者执行旧版与新版混合场景回归；场景级 identity 不得读取全局单值。",
     "tests": [
@@ -32,13 +32,14 @@
   },
   "affected_versions": {
     "from": "IOS-GITHUB-GOLDEN-PUBLISHER-AUTOMATION-001",
-    "until": null
+    "until": "IOS-GOLDEN-CONSUMER-CONTINUATION-RECOVERY-002"
   },
-  "status": "open",
+  "status": "mitigated",
   "occurrences": 1,
   "first_seen": "2026-07-29",
   "last_seen": "2026-07-29",
   "evidence": [
-    "ios/harness/evidence/runs/run-20260729T013147Z-ios-golden-consumer-baseline-scope-001-129b1a87.json"
+    "ios/harness/evidence/runs/run-20260729T013147Z-ios-golden-consumer-baseline-scope-001-129b1a87.json",
+    "ios/harness/evidence/runs/run-20260729T015050Z-ios-golden-consumer-continuation-recovery-002-7047cca2.json"
   ]
 }

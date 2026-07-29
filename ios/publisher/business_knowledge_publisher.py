@@ -554,9 +554,21 @@ def prepare(
         or manifest_entry.get("release_receipt") != receipt_relative
     ):
         raise KnowledgePublisherError("GOLDEN_MANIFEST_BINDING_DRIFT")
+    fixture_android_commit = manifest_entry.get(
+        "android_git_commit",
+        oracle.get("android_git_commit"),
+    )
+    fixture_runner_digest = manifest_entry.get(
+        "runner_digest",
+        oracle.get("runner_digest"),
+    )
+    fixture_canonicalizer_sha256 = manifest_entry.get(
+        "canonicalizer_sha256",
+        manifest.get("canonicalizer_sha256"),
+    )
     if packet.get("baseline", {}).get(
         "android_commit"
-    ) != oracle.get("android_git_commit"):
+    ) != fixture_android_commit:
         raise KnowledgePublisherError("PACKET_ANDROID_BASELINE_DRIFT")
 
     claims = packet.get("claims")
@@ -591,11 +603,11 @@ def prepare(
             or runtime.get("artifact_uri") != golden_relative
             or runtime.get("artifact_sha256") != golden_sha256
             or runtime.get("android_commit")
-            != oracle.get("android_git_commit")
+            != fixture_android_commit
             or runtime.get("runner_digest")
-            != oracle.get("runner_digest")
+            != fixture_runner_digest
             or runtime.get("canonicalizer_sha256")
-            != manifest.get("canonicalizer_sha256")
+            != fixture_canonicalizer_sha256
         ):
             raise KnowledgePublisherError(
                 "RUNTIME_EVIDENCE_BINDING_DRIFT",

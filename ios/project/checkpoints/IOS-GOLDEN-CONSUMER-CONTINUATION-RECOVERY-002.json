@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "work_item_id": "IOS-GOLDEN-CONSUMER-CONTINUATION-RECOVERY-002",
+  "summary": "已恢复 Manifest v2 基线并完成受保护 Golden 的迁移续接。Business Knowledge Publisher 改为绑定目标 fixture 的场景级 android commit、runner digest 与 canonicalizer，旧 v1 才允许全局回退；混合 v1/v2 其他场景不再污染目标知识发布。DemandCompiler 新增共享 versioned protected Golden validator：release v1 精确要求 legacy environment publisher，v2 精确要求 schema 2、github_actions_push_v2、固定 publisher/repository、previous authority 与完整 controls；两版均绑定 Manifest entry、Golden、release 的路径和全部摘要。Android migration 在 v2 上进一步交叉验证 committed verified-candidate Receipt/trusted report 的 scenario/source/proposal/run/archive/runner，完全闭合后进入 migration_completed；缺发布保持 publisher required，已存在但漂移 fail closed。Delivery Demand 与 bound-delivery materializer 复用相同 validator，Supervisor 排除 migration_completed 后继续下一需求。完整 289 项 Harness tests 与 dependency-policy 通过，PIT-0069 已缓解。",
+  "evidence": "ios/harness/evidence/runs/run-20260729T015050Z-ios-golden-consumer-continuation-recovery-002-7047cca2.json",
+  "capability_updates": [
+    {
+      "id": "CAP-KNOWLEDGE-CONTROL",
+      "from_revision": 75,
+      "to_revision": 76,
+      "declared_status": "partial"
+    }
+  ],
+  "architecture_impact": {
+    "kind": "implements_existing",
+    "adr_refs": ["ADR-0002", "ADR-0004"]
+  },
+  "requirements": {
+    "mode": "control_plane",
+    "refs": [],
+    "selection_sha256": null,
+    "none_reason": "本项修复证据消费者与需求状态机，不改变产品 Requirement"
+  },
+  "business_knowledge": {
+    "mode": "not_applicable",
+    "claim_refs": [],
+    "driver_refs": [],
+    "coverage_refs": [],
+    "selection_sha256": null,
+    "coverage_selection_sha256": null,
+    "architecture_driver_selection_sha256": null,
+    "produced_refs": [],
+    "ledger_updates": [],
+    "none_reason": "本项只修复 Business Knowledge Publisher 的证据绑定，不发布知识"
+  },
+  "source_lab": {
+    "mode": "not_applicable",
+    "behaviors": [],
+    "scenarios": [],
+    "selection_sha256": null,
+    "none_reason": "本项只读取既有 SourceLab/Golden，不修改场景"
+  },
+  "compatibility": {
+    "records": [],
+    "none_reason": "版本化 Golden consumer 的兼容性由测试与 PIT-0069 记录，不新增产品 Compatibility artifact"
+  },
+  "pitfalls": {
+    "records": ["ios/project/pitfalls/PIT-0069.json"],
+    "none_reason": null
+  },
+  "remaining_risks": [
+    "POST Form Packet/Driver 仍处于 proposal，尚未由受信 Publisher 发布",
+    "尚无 POST Form SourceRuntime Delivery Intent、产品实现与结构化差分 Evidence",
+    "iOS Simulator UI 结构验收尚未闭环"
+  ],
+  "next_actions": [
+    "在干净提交上证明真实 MINT-SOURCE-REQUEST-POST-FORM-001 编译为 migration_completed",
+    "续接并物化 POST Form SourceRuntime Delivery Intent/Blueprint",
+    "执行 SourceRuntime canonical envelope 与 Android Golden 结构化差分验收"
+  ],
+  "created_at": "2026-07-29T01:50:50Z"
+}

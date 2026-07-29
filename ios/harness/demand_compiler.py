@@ -58,6 +58,28 @@ REQUIREMENT_PROPOSAL_ID = re.compile(r"^ARQ-[A-Z][A-Z0-9-]*$")
 CAPABILITY_ID = re.compile(r"^CAP-[A-Z0-9-]+$")
 KNOWLEDGE_ID = re.compile(r"^(BKP|DRV)-[A-Z][A-Z0-9-]*-[0-9]{3}$")
 HEX40 = re.compile(r"^[0-9a-f]{40}$")
+HEX64 = re.compile(r"^[0-9a-f]{64}$")
+REPOSITORY = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
+GOLDEN_RELEASE_V1_FIELDS = {
+    "schema_version",
+    "kind",
+    "authority",
+    "previous_authority",
+    "authorization",
+    "publisher",
+    "repository",
+    "fixture_id",
+    "golden_path",
+    "golden_sha256",
+    "run_id",
+    "source_digest",
+    "proposal_sha256",
+    "proposal_archive_sha256",
+    "evidence_archive_sha256",
+    "proposal_attestation_sha256",
+    "evidence_attestation_sha256",
+}
+GOLDEN_RELEASE_V2_FIELDS = GOLDEN_RELEASE_V1_FIELDS | {"controls"}
 
 
 class DemandCompilerError(RuntimeError):
@@ -691,6 +713,247 @@ class DemandCompiler:
         result["sha256"] = _sha256(self.resolve(relative).read_bytes())
         return result
 
+    def protected_golden_binding(
+        self,
+        fixture_id: str,
+        *,
+        trusted_execution: Optional[Mapping[str, Any]] = None,
+        missing_ok: bool = False,
+    ) -> Optional[Mapping[str, Any]]:
+        self._head_regular((GOLDEN_MANIFEST,))
+        manifest_path = self.resolve(GOLDEN_MANIFEST)
+        manifest = _load_object(manifest_path, "GOLDEN_MANIFEST")
+        schema_version = manifest.get("schema_version")
+        fixtures = manifest.get("fixtures")
+        oracle = manifest.get("oracle")
+        if (
+            schema_version not in {1, 2}
+            or not isinstance(fixtures, dict)
+            or not isinstance(oracle, dict)
+        ):
+            raise DemandCompilerError("GOLDEN_MANIFEST_CONTRACT_INVALID")
+        entry = fixtures.get(fixture_id)
+        if entry is None and missing_ok:
+            return None
+        if not isinstance(entry, dict):
+            raise DemandCompilerError(f"GOLDEN_MISSING:{fixture_id}")
+        golden_relative = entry.get("path")
+        release_relative = entry.get("release_receipt")
+        if (
+            not isinstance(golden_relative, str)
+            or not isinstance(release_relative, str)
+        ):
+            raise DemandCompilerError(
+                f"GOLDEN_BINDING_INVALID:{fixture_id}"
+            )
+        self._head_regular((golden_relative, release_relative))
+        golden_path = self.resolve(golden_relative)
+        release_path = self.resolve(release_relative)
+        release = _load_object(release_path, "GOLDEN_RELEASE")
+        golden_sha = _sha256(golden_path.read_bytes())
+        release_schema = release.get("schema_version")
+        expected_fields = (
+            GOLDEN_RELEASE_V1_FIELDS
+            if release_schema == 1
+            else GOLDEN_RELEASE_V2_FIELDS
+            if release_schema == 2
+            else None
+        )
+        if expected_fields is None or set(release) != expected_fields:
+            raise DemandCompilerError(
+                f"GOLDEN_RELEASE_CONTRACT_INVALID:{fixture_id}"
+            )
+
+        common_expected = {
+            "kind": "android_golden_release",
+            "authority": "protected_android_golden",
+            "previous_authority": "candidate_only",
+            "fixture_id": fixture_id,
+            "golden_path": golden_relative,
+            "golden_sha256": golden_sha,
+            "run_id": entry.get("run_id"),
+            "source_digest": entry.get("source_digest"),
+            "proposal_sha256": entry.get("proposal_sha256"),
+            "proposal_archive_sha256": entry.get(
+                "proposal_archive_sha256"
+            ),
+            "evidence_archive_sha256": entry.get(
+                "evidence_archive_sha256"
+            ),
+            "proposal_attestation_sha256": entry.get(
+                "proposal_attestation_sha256"
+            ),
+            "evidence_attestation_sha256": entry.get(
+                "evidence_attestation_sha256"
+            ),
+        }
+        digest_keys = (
+            "golden_sha256",
+            "proposal_sha256",
+            "proposal_archive_sha256",
+            "evidence_archive_sha256",
+            "proposal_attestation_sha256",
+            "evidence_attestation_sha256",
+        )
+        if (
+            golden_sha != entry.get("golden_sha256")
+            or entry.get("authorization")
+            != release.get("authorization")
+            or any(
+                release.get(key) != value
+                for key, value in common_expected.items()
+            )
+            or any(
+                not isinstance(release.get(key), str)
+                or HEX64.fullmatch(str(release[key])) is None
+                for key in digest_keys
+            )
+            or not isinstance(release.get("source_digest"), str)
+            or HEX40.fullmatch(str(release["source_digest"])) is None
+            or not isinstance(release.get("run_id"), str)
+            or re.fullmatch(r"[1-9][0-9]*/[1-9][0-9]*", release["run_id"])
+            is None
+            or not isinstance(release.get("repository"), str)
+            or REPOSITORY.fullmatch(str(release["repository"])) is None
+        ):
+            raise DemandCompilerError(
+                f"GOLDEN_RECEIPT_DRIFT:{fixture_id}"
+            )
+
+        canonicalizer = entry.get(
+            "canonicalizer_sha256",
+            manifest.get("canonicalizer_sha256"),
+        )
+        android_commit = entry.get(
+            "android_git_commit",
+            oracle.get("android_git_commit"),
+        )
+        profile = entry.get("profile", oracle.get("profile"))
+        runner_digest = entry.get(
+            "runner_digest",
+            oracle.get("runner_digest"),
+        )
+        runner_image_digest = entry.get(
+            "runner_image_digest",
+            oracle.get("runner_image_digest"),
+        )
+        controls = {
+            "android_git_commit": android_commit,
+            "profile": profile,
+            "canonicalizer_sha256": canonicalizer,
+            "runner_digest": runner_digest,
+            "runner_image_digest": runner_image_digest,
+        }
+        if (
+            not isinstance(android_commit, str)
+            or HEX40.fullmatch(android_commit) is None
+            or not isinstance(profile, str)
+            or not profile
+            or not isinstance(canonicalizer, str)
+            or HEX64.fullmatch(canonicalizer) is None
+            or not isinstance(runner_digest, str)
+            or HEX64.fullmatch(runner_digest) is None
+            or not isinstance(runner_image_digest, str)
+            or re.fullmatch(r"sha256:[0-9a-f]{64}", runner_image_digest)
+            is None
+        ):
+            raise DemandCompilerError(
+                f"GOLDEN_CONTROL_BINDING_INVALID:{fixture_id}"
+            )
+        if release_schema == 1:
+            if (
+                release.get("authorization")
+                != "github_environment_review"
+                or release.get("publisher")
+                != (
+                    "github-actions-environment:"
+                    "android-golden-publisher"
+                )
+            ):
+                raise DemandCompilerError(
+                    f"GOLDEN_RELEASE_CONTRACT_INVALID:{fixture_id}"
+                )
+        else:
+            if (
+                schema_version != 2
+                or not {
+                    "android_git_commit",
+                    "profile",
+                    "canonicalizer_sha256",
+                    "runner_digest",
+                    "runner_image_digest",
+                }.issubset(entry)
+                or manifest.get("canonicalizer_sha256")
+                != canonicalizer
+                or oracle.get("android_git_commit") != android_commit
+                or oracle.get("profile") != profile
+                or release.get("authorization")
+                != "github_actions_push_v2"
+                or release.get("publisher")
+                != "github-actions:android-golden-publisher-v2"
+                or release.get("controls") != controls
+            ):
+                raise DemandCompilerError(
+                    f"GOLDEN_RELEASE_CONTRACT_INVALID:{fixture_id}"
+                )
+
+        if trusted_execution is not None:
+            report = trusted_execution.get("trusted_report")
+            run = trusted_execution.get("run")
+            if not isinstance(report, dict) or not isinstance(run, dict):
+                raise DemandCompilerError(
+                    f"GOLDEN_TRUSTED_EXECUTION_INVALID:{fixture_id}"
+                )
+            expected_run = f"{run.get('id')}/{run.get('attempt')}"
+            if (
+                release_schema != 2
+                or trusted_execution.get("scenario_id") != fixture_id
+                or report.get("scenario_id") != fixture_id
+                or report.get("fixture_ids") != [fixture_id]
+                or trusted_execution.get("source_digest")
+                != release["source_digest"]
+                or report.get("source_digest")
+                != release["source_digest"]
+                or trusted_execution.get("repository")
+                != release["repository"]
+                or report.get("repository") != release["repository"]
+                or expected_run != release["run_id"]
+                or report.get("proposal_sha256")
+                != release["proposal_sha256"]
+                or report.get("proposal_archive_sha256")
+                != release["proposal_archive_sha256"]
+                or report.get("evidence_archive_sha256")
+                != release["evidence_archive_sha256"]
+                or report.get("runner_digest") != runner_digest
+                or report.get("authority") != "candidate_only"
+                or report.get("next_authority")
+                != "independent_golden_publisher"
+                or trusted_execution.get("next_authority")
+                != "independent_golden_publisher"
+            ):
+                raise DemandCompilerError(
+                    f"GOLDEN_TRUSTED_EXECUTION_DRIFT:{fixture_id}"
+                )
+
+        return {
+            "fixture_id": fixture_id,
+            "manifest_schema_version": schema_version,
+            "manifest_sha256": _sha256(manifest_path.read_bytes()),
+            "golden_path": golden_relative,
+            "golden_sha256": golden_sha,
+            "release_receipt": release_relative,
+            "release_receipt_sha256": _sha256(
+                release_path.read_bytes()
+            ),
+            "release_schema_version": release_schema,
+            "authorization": release["authorization"],
+            "repository": release["repository"],
+            "run_id": release["run_id"],
+            "source_digest": release["source_digest"],
+            "proposal_sha256": release["proposal_sha256"],
+            "controls": controls,
+        }
+
     def compile_migration(self, intent_path: Path) -> DemandPlan:
         try:
             relative = intent_path.resolve().relative_to(
@@ -1156,6 +1419,88 @@ class DemandCompiler:
                                         ].get("receipt")
                                         is not None
                                     )
+                                    if receipt_ready:
+                                        execution_binding = bindings[
+                                            "trusted_oracle_execution"
+                                        ]
+                                        scenario_id = execution_binding.get(
+                                            "scenario_id"
+                                        )
+                                        if not isinstance(
+                                            scenario_id,
+                                            str,
+                                        ):
+                                            raise DemandCompilerError(
+                                                "GOLDEN_SCENARIO_INVALID"
+                                            )
+                                        golden_binding = (
+                                            self.protected_golden_binding(
+                                                scenario_id,
+                                                trusted_execution=(
+                                                    execution_binding
+                                                ),
+                                                missing_ok=True,
+                                            )
+                                        )
+                                        if golden_binding is not None:
+                                            bindings[
+                                                "protected_golden"
+                                            ] = golden_binding
+                                            artifacts.append(
+                                                {
+                                                    "kind": (
+                                                        "protected_android_"
+                                                        "golden"
+                                                    ),
+                                                    "id": scenario_id,
+                                                    "status": "published",
+                                                    "path": golden_binding[
+                                                        "golden_path"
+                                                    ],
+                                                    "sha256": (
+                                                        golden_binding[
+                                                            "golden_sha256"
+                                                        ]
+                                                    ),
+                                                    "release_receipt": (
+                                                        golden_binding[
+                                                            "release_receipt"
+                                                        ]
+                                                    ),
+                                                    "release_receipt_sha256": (
+                                                        golden_binding[
+                                                            "release_receipt_sha256"
+                                                        ]
+                                                    ),
+                                                }
+                                            )
+                                            return DemandPlan(
+                                                intent_id=str(
+                                                    intent["id"]
+                                                ),
+                                                priority=int(
+                                                    intent["priority"]
+                                                ),
+                                                target_work_item_id=str(
+                                                    trusted_settlement[
+                                                        "resolved_work_item_id"
+                                                    ]
+                                                ),
+                                                state=(
+                                                    "migration_completed"
+                                                ),
+                                                reason_code=(
+                                                    "MIGRATION_GOLDEN_"
+                                                    "SETTLED"
+                                                ),
+                                                authority_transition=False,
+                                                artifacts=tuple(artifacts),
+                                                bindings=bindings,
+                                                policy=MIGRATION_POLICY,
+                                                intent_kind=(
+                                                    "android_migration"
+                                                ),
+                                            )
                                     return DemandPlan(
                                         intent_id=str(intent["id"]),
                                         priority=int(intent["priority"]),
@@ -1412,52 +1757,23 @@ class DemandCompiler:
             "sha256": _sha256(capability_path.read_bytes()),
         }
 
-        golden_manifest_path = self.resolve(GOLDEN_MANIFEST)
-        golden_manifest = _load_object(
-            golden_manifest_path,
-            "GOLDEN_MANIFEST",
-        )
         golden_bindings = []
         for fixture_id in intent["golden_fixtures"]:
-            entry = golden_manifest.get("fixtures", {}).get(fixture_id)
-            if not isinstance(entry, dict):
+            golden = self.protected_golden_binding(fixture_id)
+            if golden is None:
                 raise DemandCompilerError(f"GOLDEN_MISSING:{fixture_id}")
-            golden_relative = entry.get("path")
-            receipt_relative = entry.get("release_receipt")
-            if not isinstance(golden_relative, str) or not isinstance(
-                receipt_relative, str
-            ):
-                raise DemandCompilerError(
-                    f"GOLDEN_BINDING_INVALID:{fixture_id}"
-                )
-            self._head_regular((golden_relative, receipt_relative))
-            golden_path = self.resolve(golden_relative)
-            receipt_path = self.resolve(receipt_relative)
-            receipt = _load_object(receipt_path, "GOLDEN_RECEIPT")
-            golden_sha = _sha256(golden_path.read_bytes())
-            expected = {
-                "authority": "protected_android_golden",
-                "authorization": "github_environment_review",
-                "fixture_id": fixture_id,
-                "golden_path": golden_relative,
-                "golden_sha256": golden_sha,
-                "run_id": entry.get("run_id"),
-                "source_digest": entry.get("source_digest"),
-                "proposal_sha256": entry.get("proposal_sha256"),
-            }
-            if (
-                golden_sha != entry.get("golden_sha256")
-                or any(receipt.get(key) != value for key, value in expected.items())
-            ):
-                raise DemandCompilerError(
-                    f"GOLDEN_RECEIPT_DRIFT:{fixture_id}"
-                )
             golden_bindings.append(
                 {
                     "fixture_id": fixture_id,
-                    "golden_sha256": golden_sha,
-                    "receipt": receipt_relative,
-                    "receipt_sha256": _sha256(receipt_path.read_bytes()),
+                    "golden_sha256": golden["golden_sha256"],
+                    "receipt": golden["release_receipt"],
+                    "receipt_sha256": golden[
+                        "release_receipt_sha256"
+                    ],
+                    "release_schema_version": golden[
+                        "release_schema_version"
+                    ],
+                    "authorization": golden["authorization"],
                 }
             )
         bindings["goldens"] = golden_bindings

@@ -131,6 +131,16 @@ python3 ios/harness/loop_supervisor.py materialize-review \
   立即重新 inspect 并返回 continuation decision；普通 Agent 不参与外部发布或
   结果回收。恢复 journal 位于 `.harness-runtime/github-golden/`，只记录单调
   运行状态，不作为 Golden authority；
+- Golden settlement 后由 DemandCompiler 的 versioned consumer 重新从 HEAD
+  校验 Manifest、场景 Golden 与 release receipt。release v1 只接受
+  `github_environment_review` 的 legacy publisher；release v2 只接受
+  `github_actions_push_v2`、固定 repository/publisher 与完整 per-fixture
+  controls。Android migration 还须把 v2 release 与 committed verified-candidate
+  Receipt/trusted report 的 scenario、source、proposal、run、archive 和 runner
+  交叉绑定；全部闭合才进入 `migration_completed`。Supervisor 排除该终态后继续
+  后续 Delivery Intent，不会再次触发 Golden Dispatcher。Business Knowledge
+  Publisher 同样读取目标 fixture 的 controls，其他场景或 legacy 全局字段不能
+  污染当前知识发布；
 - Harness runtime-context reproducibility corrective 只有同时带
   `control-plane`、`harness-runtime-context`、`reproducibility`、
   `corrective` 四标签，且为无 Gate 的 control-plane、Business Knowledge 与

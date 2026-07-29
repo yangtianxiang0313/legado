@@ -233,6 +233,7 @@ class BusinessKnowledgePublisherTests(unittest.TestCase):
         self.assertEqual("", before)
         self.assertEqual(before, after)
         self.assertEqual(first, second)
+
         self.assertEqual(
             self._files(self.base / "first"),
             self._files(self.base / "second"),
@@ -286,6 +287,53 @@ class BusinessKnowledgePublisherTests(unittest.TestCase):
             ),
             driver["promotion"]["approval_ref"],
         )
+
+    def test_runtime_controls_are_bound_to_target_fixture(self):
+        manifest_path = (
+            self.root / "ios/harness/goldens/manifest.json"
+        )
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        target = manifest["fixtures"]["sl-html-basic-001"]
+        self.assertIn("runner_digest", target)
+        manifest["oracle"].pop("runner_digest", None)
+        manifest["oracle"].pop("canonicalizer_sha256", None)
+        unrelated = manifest["fixtures"].get("sl-post-form-001")
+        if isinstance(unrelated, dict):
+            unrelated["runner_digest"] = "f" * 64
+            unrelated["canonicalizer_sha256"] = "e" * 64
+        manifest_path.write_text(
+            json.dumps(
+                manifest,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        self._commit_mutation("ios/harness/goldens/manifest.json")
+        self._prepare(self.base / "fixture-controls")
+
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest["fixtures"]["sl-html-basic-001"][
+            "runner_digest"
+        ] = "0" * 64
+        manifest_path.write_text(
+            json.dumps(
+                manifest,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        self._commit_mutation("ios/harness/goldens/manifest.json")
+        with self.assertRaisesRegex(
+            publisher.KnowledgePublisherError,
+            "RUNTIME_EVIDENCE_BINDING_DRIFT",
+        ):
+            self._prepare(self.base / "target-control-drift")
 
     def test_prepare_recomputes_every_runtime_projection(self):
         packet_path = self.root / self.packet_relative

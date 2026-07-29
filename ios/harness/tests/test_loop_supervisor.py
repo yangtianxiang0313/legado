@@ -328,6 +328,48 @@ class MaterializationTests(unittest.TestCase):
                     )._demand_decision([])
                 )
 
+    def test_completed_migration_is_filtered_before_delivery_continuation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = MaterializationFixture(Path(directory))
+            migration = loop_supervisor.DemandPlan(
+                intent_id="MINT-COMPLETED-001",
+                priority=100,
+                target_work_item_id="IOS-MIGRATION-COMPLETED-001",
+                state="migration_completed",
+                reason_code="MIGRATION_GOLDEN_SETTLED",
+                authority_transition=False,
+                artifacts=(),
+                bindings={"protected_golden": {}},
+                policy=loop_supervisor.MIGRATION_MATERIALIZATION_POLICY,
+                intent_kind="android_migration",
+            )
+            delivery = loop_supervisor.DemandPlan(
+                intent_id="DINT-NEXT-DELIVERY-001",
+                priority=90,
+                target_work_item_id="IOS-NEXT-DELIVERY-001",
+                state="blueprint_required",
+                reason_code="DELIVERY_BLUEPRINT_REQUIRED",
+                authority_transition=False,
+                artifacts=(),
+                bindings={},
+            )
+            with mock.patch.object(
+                loop_supervisor.DemandCompiler,
+                "plans",
+                return_value=((migration, delivery), ()),
+            ):
+                decision = loop_supervisor.LoopSupervisor(
+                    fixture.harness
+                )._demand_decision([])
+            self.assertEqual(
+                "demand_materialization_required",
+                decision.state,
+            )
+            self.assertEqual(
+                "DINT-NEXT-DELIVERY-001",
+                decision.details["demand_plan"]["intent_id"],
+            )
+
     def test_migration_demand_maps_to_automatic_materialization(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture = MaterializationFixture(Path(directory))
@@ -2636,26 +2678,55 @@ class DeliveryBlueprintTests(unittest.TestCase):
         fixture.fixture.write_json(
             receipt_relative,
             {
+                "schema_version": 1,
+                "kind": "android_golden_release",
                 "authority": "protected_android_golden",
+                "previous_authority": "candidate_only",
                 "authorization": "github_environment_review",
+                "publisher": (
+                    "github-actions-environment:"
+                    "android-golden-publisher"
+                ),
+                "repository": "owner/legado",
                 "fixture_id": "fixture-001",
                 "golden_path": golden_relative,
                 "golden_sha256": golden_sha,
                 "run_id": "42/1",
                 "source_digest": "a" * 40,
                 "proposal_sha256": "b" * 64,
+                "proposal_archive_sha256": "c" * 64,
+                "evidence_archive_sha256": "d" * 64,
+                "proposal_attestation_sha256": "e" * 64,
+                "evidence_attestation_sha256": "f" * 64,
             },
         )
         fixture.fixture.write_json(
             "ios/harness/goldens/manifest.json",
             {
                 "schema_version": 1,
+                "canonicalizer_sha256": "1" * 64,
+                "oracle": {
+                    "android_git_commit": "2" * 40,
+                    "profile": "android-legado-v1",
+                    "runner_digest": "3" * 64,
+                    "runner_image_digest": "sha256:" + "4" * 64,
+                },
                 "fixtures": {
                     "fixture-001": {
+                        "android_git_commit": "2" * 40,
+                        "authorization": "github_environment_review",
+                        "canonicalizer_sha256": "1" * 64,
+                        "evidence_archive_sha256": "d" * 64,
+                        "evidence_attestation_sha256": "f" * 64,
                         "path": golden_relative,
                         "golden_sha256": golden_sha,
+                        "profile": "android-legado-v1",
+                        "proposal_archive_sha256": "c" * 64,
+                        "proposal_attestation_sha256": "e" * 64,
                         "release_receipt": receipt_relative,
                         "run_id": "42/1",
+                        "runner_digest": "3" * 64,
+                        "runner_image_digest": "sha256:" + "4" * 64,
                         "source_digest": "a" * 40,
                         "proposal_sha256": "b" * 64,
                     }
