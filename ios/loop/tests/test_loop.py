@@ -264,6 +264,126 @@ class MinimalLoopTests(unittest.TestCase):
             loop.validate_task(root, task)
             self.assertLess(len(loop.canonical(task)), 8_000)
 
+    def test_static_source_claim_unlocks_runtime_characterization(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.write(
+                root,
+                "ios/project/migration-intents/MINT-SOURCE-REQUEST-001.json",
+                {
+                    "id": "MINT-SOURCE-REQUEST-001",
+                    "android_baseline": {"commit": "a" * 40},
+                    "source_anchors": [{"path": "AnalyzeUrl.kt"}],
+                    "requirement_binding": {
+                        "id": "REQ-ANDROID-SOURCE-PIPELINE-001",
+                        "revision": 1,
+                        "clauses": ["RC-01"],
+                    },
+                },
+            )
+            self.write(
+                root,
+                "ios/project/business-knowledge/packets/proposals/"
+                "BKP-SOURCE-REQUEST-001/r0001.json",
+                {
+                    "id": "BKP-SOURCE-REQUEST-001",
+                    "revision": 1,
+                    "status": "candidate",
+                    "baseline": {"android_commit": "a" * 40},
+                    "claims": [
+                        {
+                            "id": "BKC-STATIC-OPTION-001",
+                            "revision": 1,
+                            "semantic_key": "source.request.option-contract",
+                            "support": {
+                                "state": "candidate_source_anchored",
+                                "runtime_requirement": "none",
+                                "source_anchors": [{"path": "AnalyzeUrl.kt"}],
+                            },
+                        },
+                        {
+                            "id": "BKC-RUNTIME-TEMPLATE-001",
+                            "revision": 1,
+                            "semantic_key": "source.request.template-runtime",
+                            "subject_keys": ["source.request"],
+                            "depends_on": [
+                                {"id": "BKC-STATIC-OPTION-001", "revision": 1}
+                            ],
+                            "support": {
+                                "state": "candidate_source_anchored",
+                                "runtime_requirement": "android_characterization",
+                                "source_anchors": [{"path": "AnalyzeUrl.kt"}],
+                            },
+                        },
+                    ],
+                },
+            )
+
+            task = loop.next_task(root)
+
+            self.assertIsNotNone(task)
+            self.assertEqual("characterization", task["kind"])
+            self.assertEqual(
+                "BKC-RUNTIME-TEMPLATE-001",
+                task["source"]["knowledge"]["candidate_claim"]["id"],
+            )
+
+    def test_human_decision_claim_does_not_unlock_characterization(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.write(
+                root,
+                "ios/project/migration-intents/MINT-SOURCE-REQUEST-001.json",
+                {
+                    "id": "MINT-SOURCE-REQUEST-001",
+                    "android_baseline": {"commit": "a" * 40},
+                    "source_anchors": [{"path": "AnalyzeUrl.kt"}],
+                    "requirement_binding": {
+                        "id": "REQ-ANDROID-SOURCE-PIPELINE-001",
+                        "revision": 1,
+                        "clauses": ["RC-01"],
+                    },
+                },
+            )
+            self.write(
+                root,
+                "ios/project/business-knowledge/packets/proposals/"
+                "BKP-SOURCE-REQUEST-001/r0001.json",
+                {
+                    "id": "BKP-SOURCE-REQUEST-001",
+                    "revision": 1,
+                    "status": "candidate",
+                    "baseline": {"android_commit": "a" * 40},
+                    "claims": [
+                        {
+                            "id": "BKC-HUMAN-DECISION-001",
+                            "revision": 1,
+                            "support": {
+                                "state": "candidate_source_anchored",
+                                "runtime_requirement": "human_decision",
+                                "source_anchors": [{"path": "AnalyzeUrl.kt"}],
+                            },
+                        },
+                        {
+                            "id": "BKC-RUNTIME-TEMPLATE-001",
+                            "revision": 1,
+                            "semantic_key": "source.request.template-runtime",
+                            "subject_keys": ["source.request"],
+                            "depends_on": [
+                                {"id": "BKC-HUMAN-DECISION-001", "revision": 1}
+                            ],
+                            "support": {
+                                "state": "candidate_source_anchored",
+                                "runtime_requirement": "android_characterization",
+                                "source_anchors": [{"path": "AnalyzeUrl.kt"}],
+                            },
+                        },
+                    ],
+                },
+            )
+
+            self.assertIsNone(loop.next_task(root))
+
     def test_changed_paths_preserves_first_porcelain_path(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

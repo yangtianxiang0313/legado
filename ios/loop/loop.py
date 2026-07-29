@@ -185,6 +185,47 @@ def characterized_claim_refs(root: Path) -> set[tuple[str, int]]:
     return result
 
 
+def satisfied_dependency_claim_refs(root: Path) -> set[tuple[str, int]]:
+    """Claims that may unlock a downstream characterization.
+
+    Runtime behavior still requires an Android characterization event. Static
+    declarations explicitly marked as requiring no runtime evidence can be
+    consumed directly from the frozen source, while a human-decision claim
+    remains blocked until it is published.
+    """
+    result = characterized_claim_refs(root)
+    for _, packet in relative_jsons(
+        root,
+        "ios/project/business-knowledge/packets/published",
+    ):
+        for claim in packet.get("claims", []):
+            if (
+                isinstance(claim, dict)
+                and isinstance(claim.get("id"), str)
+                and isinstance(claim.get("revision"), int)
+                and not isinstance(claim.get("revision"), bool)
+            ):
+                result.add((claim["id"], claim["revision"]))
+    for _, packet in relative_jsons(
+        root,
+        "ios/project/business-knowledge/packets/proposals",
+    ):
+        if packet.get("status") != "candidate":
+            continue
+        for claim in packet.get("claims", []):
+            support = claim.get("support") if isinstance(claim, dict) else None
+            if (
+                isinstance(support, dict)
+                and support.get("state") == "candidate_source_anchored"
+                and support.get("runtime_requirement") == "none"
+                and isinstance(claim.get("id"), str)
+                and isinstance(claim.get("revision"), int)
+                and not isinstance(claim.get("revision"), bool)
+            ):
+                result.add((claim["id"], claim["revision"]))
+    return result
+
+
 def relative_jsons(root: Path, relative: str) -> Iterable[tuple[str, Mapping[str, Any]]]:
     directory = root / relative
     if not directory.exists():
@@ -356,6 +397,7 @@ def requirement_refs_for_claim(
 def pending_characterizations(root: Path) -> list[Mapping[str, Any]]:
     completed = completed_task_ids(root)
     characterized = characterized_claim_refs(root)
+    satisfied_dependencies = satisfied_dependency_claim_refs(root)
     candidates: list[tuple[int, int, str, Mapping[str, Any]]] = []
     for packet_path, packet in relative_jsons(
         root,
@@ -385,7 +427,7 @@ def pending_characterizations(root: Path) -> list[Mapping[str, Any]]:
                 for value in claim.get("depends_on", [])
                 if isinstance(value, dict)
             }
-            if not dependencies.issubset(characterized):
+            if not dependencies.issubset(satisfied_dependencies):
                 continue
             requirements = requirement_refs_for_claim(root, packet, claim)
             if not requirements:
