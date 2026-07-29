@@ -1,0 +1,156 @@
+{
+  "schema_version": 1,
+  "proposal_id": "IOS-HARNESS-RUNTIME-CONTEXT-SCOPE-001",
+  "proposal_constraint": "只在 Loop Supervisor 增加固定 Harness runtime-context reproducibility corrective 的精确自动范围；下一项仅可修改 harness.py、test_harness.py、README 与记忆，禁止 WorkItem 历史、Workflow、Golden、Publisher、Dispatcher、Package 和产品",
+  "work_item": {
+    "api_version": "legado.harness/v1",
+    "kind": "WorkItem",
+    "metadata": {
+      "annotations": {},
+      "id": "IOS-HARNESS-RUNTIME-CONTEXT-SCOPE-001",
+      "labels": ["phase-0", "control-plane", "harness-runtime-context-scope", "corrective"],
+      "priority": 100,
+      "risk": "high",
+      "title": "建立终态 Runtime Context 可复现修复边界"
+    },
+    "spec": {
+      "acceptance": {
+        "criteria": [
+          {
+            "id": "AC-1",
+            "knowledge_claims": [],
+            "requirement_clauses": [],
+            "statement": "只有 control-plane/harness-runtime-context/reproducibility/corrective 四标签齐全才启用专用 exact scope。",
+            "verified_by": ["harness-tests"]
+          },
+          {
+            "id": "AC-2",
+            "knowledge_claims": [],
+            "requirement_clauses": [],
+            "statement": "下一项 exact allow-set 只含 harness.py、test_harness.py、README、CAP-KNOWLEDGE-CONTROL、当前 Checkpoint 与 PIT。",
+            "verified_by": ["harness-tests", "dependency-policy"]
+          },
+          {
+            "id": "AC-3",
+            "knowledge_claims": [],
+            "requirement_clauses": [],
+            "statement": "历史 WorkItem/State、Workflow、Golden、Publisher、Dispatcher、Package、产品、Requirement、proposal 与 wildcard 全部 fail closed。",
+            "verified_by": ["harness-tests"]
+          },
+          {
+            "id": "AC-4",
+            "knowledge_claims": [],
+            "requirement_clauses": [],
+            "statement": "CAP-KNOWLEDGE-CONTROL revision 72→73；本项不修复 Harness、不访问 GitHub。",
+            "verified_by": ["memory-close"]
+          }
+        ],
+        "required_checks": ["dependency-policy", "harness-tests"]
+      },
+      "architecture_refs": ["ARCH-014", "ARCH-017", "ADR-0002", "ADR-0004"],
+      "baseline_checks": ["dependency-policy", "harness-tests"],
+      "budget": {
+        "max_edit_verify_cycles": 4,
+        "max_full_test_runs": 4,
+        "max_infra_retries": 1,
+        "max_targeted_test_runs": 18,
+        "wall_clock_seconds": 10800
+      },
+      "capability": "CAP-KNOWLEDGE-CONTROL",
+      "completion_effects": {
+        "health": {
+          "harness_runtime_context_auto_scope": "exact_paths_v1"
+        }
+      },
+      "depends_on": ["IOS-GITHUB-GOLDEN-DISPATCHER-001"],
+      "gates": [],
+      "inputs": {
+        "android_source_anchors": [],
+        "context_files": [
+          "ios/harness/harness.py",
+          "ios/harness/loop_supervisor.py",
+          "ios/harness/tests/test_harness.py",
+          "ios/harness/tests/test_loop_supervisor.py",
+          "ios/project/checkpoints/IOS-GITHUB-GOLDEN-DISPATCHER-001.json"
+        ],
+        "fixtures": []
+      },
+      "intent": "新增专用自动范围策略。只有标签 control-plane、harness-runtime-context、reproducibility、corrective 全部存在时，allow_write 必须精确为 ios/harness/harness.py、ios/harness/tests/test_harness.py、ios/harness/README.md、ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json、当前 WorkItem Checkpoint 与 PIT wildcard。明确 deny 历史 WorkItem/State、.github、Golden、Publisher、Dispatcher、Oracle、SourceLab、Package、产品、Requirement、proposal、approval 与所有额外 wildcard。缺任一标签继续走普通策略。本项自身只改 LoopSupervisor/test/README/CAP/Checkpoint/PIT，CAP revision 72→73。",
+      "knowledge": {
+        "claim_refs": [],
+        "context_budget": {"max_bytes": 32768, "max_claims": 8},
+        "contract_version": 1,
+        "coverage_refs": [],
+        "driver_refs": [],
+        "expected_ledger_transitions": [],
+        "mode": "not_applicable",
+        "none_reason": "本项只建立 Harness corrective 自动物化范围",
+        "produces": []
+      },
+      "memory": {
+        "adr": "not_required",
+        "capability_state_required": true,
+        "checkpoint_required": true,
+        "pitfall": "if_non_obvious_and_preventable"
+      },
+      "requirements": {
+        "mode": "control_plane",
+        "none_reason": "本项只建立 Harness runtime context 精确修复边界",
+        "refs": []
+      },
+      "scope": {
+        "allow_write": [
+          "ios/harness/loop_supervisor.py",
+          "ios/harness/tests/test_loop_supervisor.py",
+          "ios/harness/README.md",
+          "ios/project/capabilities/CAP-KNOWLEDGE-CONTROL.json",
+          "ios/project/checkpoints/IOS-HARNESS-RUNTIME-CONTEXT-SCOPE-001.json",
+          "ios/project/pitfalls/PIT-*.json"
+        ],
+        "deny_write": [
+          ".github/**",
+          "app/**",
+          "modules/**",
+          "ios/Packages/**",
+          "ios/publisher/**",
+          "ios/harness/harness.py",
+          "ios/harness/tests/test_harness.py",
+          "ios/harness/demand_compiler.py",
+          "ios/harness/github_golden_publisher.py",
+          "ios/harness/github_oracle_dispatcher.py",
+          "ios/harness/github_oracle_receipt.py",
+          "ios/harness/proposal_compiler.py",
+          "ios/harness/config.json",
+          "ios/harness/supervisor.example.json",
+          "ios/harness/schemas/**",
+          "ios/harness/goldens/**",
+          "ios/harness/oracle/**",
+          "ios/harness/source-lab/**",
+          "ios/project/work-items/**",
+          "ios/project/state.json",
+          "ios/project/events.jsonl",
+          "ios/project/status.md",
+          "ios/project/requirements/**",
+          "ios/project/approvals/**",
+          "ios/project/work-item-proposals/**",
+          "ios/docs/**"
+        ],
+        "max_changed_lines": 1800,
+        "max_files_changed": 6
+      },
+      "source_lab": {
+        "behaviors": [],
+        "mode": "not_applicable",
+        "none_reason": "本项只建立控制面自动范围",
+        "scenarios": []
+      },
+      "stop_on": [
+        "doctor_red",
+        "scope_violation",
+        "authority_scope",
+        "same_failure_twice",
+        "budget_exhausted"
+      ]
+    }
+  }
+}
