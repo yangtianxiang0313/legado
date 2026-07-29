@@ -56,10 +56,13 @@ let package = Package(
             name: "SourceRuntimeTests",
             dependencies: ["LegadoCore", "SourceRuntime", "TestSupport"]
         ),
-        .testTarget(name: "TestSupportTests", dependencies: ["TestSupport"]),
+        .testTarget(
+            name: "TestSupportTests",
+            dependencies: ["LegadoCore", "TestSupport"]
+        ),
         .testTarget(
             name: "ConformanceCLITests",
-            dependencies: ["ConformanceCLI", "TestSupport"]
+            dependencies: ["LegadoCore", "ConformanceCLI", "TestSupport"]
         ),
         .testTarget(
             name: "SourceFormatTests",

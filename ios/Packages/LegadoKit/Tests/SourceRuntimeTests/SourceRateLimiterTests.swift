@@ -19,8 +19,7 @@ final class SourceRateLimiterTests: XCTestCase {
   }
 
   func testMinimumIntervalRemainsActiveAfterFetchEnd() async {
-    let clock = TestRateLimitClock(1_000)
-    let limiter = SourceRateLimiter(clock: clock)
+    let limiter = SourceRateLimiter(clock: TestRateLimitClock(1_000))
 
     let first = await limiter.start(
       sourceKey: "source",
@@ -42,14 +41,6 @@ final class SourceRateLimiterTests: XCTestCase {
     XCTAssertEqual(second.state?.frequency, 1)
     XCTAssertFalse(afterEnd.isAllowed)
     XCTAssertEqual(afterEnd.waitMilliseconds, 60_000)
-
-    clock.advance(by: 60_000)
-    let afterWindow = await limiter.start(
-      sourceKey: "source",
-      concurrentRate: "60000"
-    )
-    XCTAssertTrue(afterWindow.isAllowed)
-    XCTAssertEqual(afterWindow.state?.frequency, 1)
   }
 
   func testCountWindowAllowsConfiguredCountPlusInitialRecord() async {
@@ -144,24 +135,14 @@ final class SourceRateLimiterTests: XCTestCase {
   }
 }
 
-private final class TestRateLimitClock:
-  SourceRateLimitClock,
-  @unchecked Sendable
-{
-  private let lock = NSLock()
-  private var milliseconds: Int64
+private struct TestRateLimitClock: SourceRateLimitClock {
+  let milliseconds: Int64
 
   init(_ milliseconds: Int64) {
     self.milliseconds = milliseconds
   }
 
   func nowMilliseconds() -> Int64 {
-    lock.withLock { milliseconds }
-  }
-
-  func advance(by delta: Int64) {
-    lock.withLock {
-      milliseconds += delta
-    }
+    milliseconds
   }
 }

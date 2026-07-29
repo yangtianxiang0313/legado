@@ -57,8 +57,6 @@ public struct SourceRateLimitStartResult: Equatable, Sendable {
 }
 
 public actor SourceRateLimiter {
-  public static let shared = SourceRateLimiter()
-
   private struct Record: Sendable {
     let mode: SourceRateLimitMode
     var startedAtMilliseconds: Int64

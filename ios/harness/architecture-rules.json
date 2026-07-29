@@ -71,8 +71,8 @@
   "test_targets": {
     "LegadoCoreTests": {"dependencies": ["LegadoCore"], "external_imports": []},
     "SourceRuntimeTests": {"dependencies": ["LegadoCore", "SourceRuntime", "TestSupport"], "external_imports": []},
-    "TestSupportTests": {"dependencies": ["TestSupport"], "external_imports": []},
-    "ConformanceCLITests": {"dependencies": ["ConformanceCLI", "TestSupport"], "external_imports": []},
+    "TestSupportTests": {"dependencies": ["LegadoCore", "TestSupport"], "external_imports": []},
+    "ConformanceCLITests": {"dependencies": ["LegadoCore", "ConformanceCLI", "TestSupport"], "external_imports": []},
     "SourceFormatTests": {"dependencies": ["LegadoCore", "SourceFormat", "TestSupport"], "external_imports": []}
   },
   "banned_patterns": [
