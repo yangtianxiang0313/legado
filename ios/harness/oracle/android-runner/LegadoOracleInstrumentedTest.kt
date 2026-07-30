@@ -3538,7 +3538,8 @@ class LegadoOracleInstrumentedTest {
                 else -> error("Unsupported book kind: $bookKind")
             },
             name = "Oracle Book $caseId",
-            author = "Oracle"
+            author = "Oracle",
+            type = if (local) BookType.local else BookType.text
         )
         book.canUpdate = arguments.getBoolean("can_update")
         book.setSplitLongChapter(
