@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P37-BOOK-METADATA-EDIT-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "title": "P37 编辑书籍元数据",
+  "objective": "依据冻结 Android BookInfoEditActivity、BookInfoEditViewModel 与 Book 源码，让已暂存或入架书籍可编辑书名、作者、封面和简介；书名作者直接更新，封面与简介作为独立用户覆盖层持久化，后续书源详情刷新保留覆盖层。",
+  "validation_policy": "运行一个元数据覆盖层、重开持久化与书源刷新保持性的聚焦测试，再执行一次 App 构建；不启动模拟器，不新增 Android Golden。",
+  "stages": [
+    {
+      "id": "P37-S1",
+      "title": "建立用户元数据覆盖层并连接编辑页",
+      "selectors": [
+        {
+          "id": "P37-S1-METADATA-OVERRIDE",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-APP-NAVIGATION-BOOK-METADATA-EDIT-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-APP-NAVIGATION-BOOK-METADATA-EDIT-001",
+      "title": "编辑并持久化书籍元数据",
+      "fixture_id": "rl-ui-book-detail-conditional-actions-001",
+      "requirement_ref": "REQ-IOS-UI-BOOTSTRAP-001@1#RC-01",
+      "prerequisite_task_ids": [
+        "IOS-APP-NAVIGATION-BOOK-INFO-REFRESH-001"
+      ],
+      "validation": "tests",
+      "test_filter": "DatabaseGRDBTests.testBookMetadataOverridesPersistAcrossRefresh",
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/AppNavigation/**",
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+        "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+        "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "b497dcdc93b970d4230851723fc42aef3afd8ab2",
+          "path": "app/src/main/java/io/legado/app/ui/book/info/edit/BookInfoEditActivity.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.info.edit.BookInfoEditActivity/saveData"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "e1815f3c4bc90c77fe68aafeea8fc4d10c219a79",
+          "path": "app/src/main/java/io/legado/app/data/entities/Book.kt",
+          "symbol_id": "kotlin://io.legado.app.data.entities.Book/getDisplayCover"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "e1815f3c4bc90c77fe68aafeea8fc4d10c219a79",
+          "path": "app/src/main/java/io/legado/app/data/entities/Book.kt",
+          "symbol_id": "kotlin://io.legado.app.data.entities.Book/getDisplayIntro"
+        }
+      ]
+    }
+  ]
+}
