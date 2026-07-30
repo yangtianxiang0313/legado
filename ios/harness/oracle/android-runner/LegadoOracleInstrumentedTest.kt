@@ -14,6 +14,7 @@ import android.util.Log
 import android.widget.TextView
 import androidx.appcompat.view.menu.MenuBuilder
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.click
@@ -68,6 +69,7 @@ import io.legado.app.ui.book.read.page.provider.ChapterProvider
 import io.legado.app.ui.book.read.ReadBookActivity
 import io.legado.app.ui.book.read.ReadBookViewModel
 import io.legado.app.ui.book.info.BookInfoActivity
+import io.legado.app.ui.book.info.BookInfoViewModel
 import io.legado.app.ui.book.changesource.ChangeChapterSourceViewModel
 import io.legado.app.ui.main.MainActivity
 import io.legado.app.ui.welcome.WelcomeActivity
@@ -3563,10 +3565,13 @@ class LegadoOracleInstrumentedTest {
 
         val menu = MenuBuilder(activity)
         activity.onCompatCreateOptionsMenu(menu)
-        activity.viewModel.inBookshelf =
+        val viewModel = ViewModelProvider(activity)[
+            BookInfoViewModel::class.java
+        ]
+        viewModel.inBookshelf =
             arguments.getBoolean("in_bookshelf")
-        activity.viewModel.bookSource = source
-        activity.viewModel.bookData.value = book
+        viewModel.bookSource = source
+        viewModel.bookData.value = book
         activity.onMenuOpened(0, menu)
 
         val shelfText = activity
