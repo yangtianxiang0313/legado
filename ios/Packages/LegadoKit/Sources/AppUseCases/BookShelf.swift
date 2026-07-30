@@ -341,6 +341,36 @@ public final class ShelfLibrary {
   }
 
   @discardableResult
+  public func setBookCustomVariable(
+    _ value: String,
+    bookID: LibraryDomain.BookID
+  ) async -> ShelfBookItem? {
+    guard let current = try? await repository.book(id: bookID) else {
+      errorMessage = "书籍不存在"
+      return nil
+    }
+    var variables = current.candidate.variables
+    variables["custom"] = value
+    do {
+      try await repository.saveSourceVariables(
+        bookID: bookID,
+        bookVariables: variables,
+        chapterID: nil,
+        chapterVariables: nil
+      )
+      let updated = try await repository.book(id: bookID)
+      if current.membership.isInBookshelf {
+        await reload()
+      }
+      errorMessage = nil
+      return updated
+    } catch {
+      errorMessage = "无法保存书籍变量"
+      return nil
+    }
+  }
+
+  @discardableResult
   public func importLocalText(
     fileName: String,
     managedReference: String,

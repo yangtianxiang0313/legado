@@ -9,7 +9,7 @@ final class SourceVariablePersistenceTests: XCTestCase {
   func testBookAndChapterVariablesSurviveRepositoryReopen()
     async throws
   {
-    let fixture = try await makeFixture()
+    let fixture = try await Self.makeFixture()
     defer { try? FileManager.default.removeItem(atPath: fixture.path) }
 
     try await fixture.repository.saveSourceVariables(
@@ -40,7 +40,7 @@ final class SourceVariablePersistenceTests: XCTestCase {
   func testReaderPersistsVariablesReportedBySourceRuntime()
     async throws
   {
-    let fixture = try await makeFixture()
+    let fixture = try await Self.makeFixture()
     defer { try? FileManager.default.removeItem(atPath: fixture.path) }
     let loader = RepositoryReaderContentLoader(
       repository: fixture.repository,
@@ -65,7 +65,32 @@ final class SourceVariablePersistenceTests: XCTestCase {
     )
   }
 
-  private func makeFixture() async throws -> (
+  @MainActor
+  func testShelfLibrarySetsCustomVariableWithoutLosingRuleVariables()
+    async throws
+  {
+    let fixture = try await Self.makeFixture()
+    defer { try? FileManager.default.removeItem(atPath: fixture.path) }
+    let library = ShelfLibrary(repository: fixture.repository)
+
+    let updated = await library.setBookCustomVariable(
+      "用户输入",
+      bookID: fixture.book.id
+    )
+
+    XCTAssertEqual(updated?.candidate.variables, [
+      "custom": "用户输入",
+      "detailToken": "from-toc",
+    ])
+    let reopened = try GRDBBookShelfRepository(path: fixture.path)
+    let restored = try await reopened.book(id: fixture.book.id)
+    XCTAssertEqual(restored?.candidate.variables, [
+      "custom": "用户输入",
+      "detailToken": "from-toc",
+    ])
+  }
+
+  private static func makeFixture() async throws -> (
     path: String,
     repository: GRDBBookShelfRepository,
     book: ShelfBookItem,

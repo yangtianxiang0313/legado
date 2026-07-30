@@ -183,6 +183,9 @@ struct BookDetailView: View {
     @State private var showsSourceSwitch = false
     @State private var switchingSource = false
     @State private var sourceSwitchMessage: String?
+    @State private var showsBookVariable = false
+    @State private var bookVariableDraft = ""
+    @State private var savingBookVariable = false
 
     init(
         snapshot: BookDetailActionSnapshot,
@@ -392,6 +395,53 @@ struct BookDetailView: View {
                 .accessibilityIdentifier("screen.bookSource.switch")
             }
         }
+        .sheet(isPresented: $showsBookVariable) {
+            NavigationStack {
+                Form {
+                    Section {
+                        TextEditor(text: $bookVariableDraft)
+                            .frame(minHeight: 180)
+                            .accessibilityIdentifier(
+                                "field.bookDetail.bookVariable"
+                            )
+                    } header: {
+                        Text("变量内容")
+                    } footer: {
+                        Text(bookVariableComment)
+                    }
+                }
+                .navigationTitle("设置书籍变量")
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("取消") {
+                            showsBookVariable = false
+                        }
+                        .disabled(savingBookVariable)
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("保存") {
+                            saveBookVariable()
+                        }
+                        .disabled(
+                            savingBookVariable
+                                || storedItem == nil
+                                || library == nil
+                        )
+                        .accessibilityIdentifier(
+                            "action.bookDetail.bookVariable.save"
+                        )
+                    }
+                }
+                .overlay {
+                    if savingBookVariable {
+                        ProgressView("正在保存…")
+                    }
+                }
+                .accessibilityIdentifier(
+                    "screen.bookDetail.bookVariable"
+                )
+            }
+        }
         .alert(
             "换源失败",
             isPresented: Binding(
@@ -486,10 +536,18 @@ struct BookDetailView: View {
                 )
             }
             if availability.actions.setBookVariable {
-                action(
-                    "设置书籍变量",
-                    id: "setBookVariable",
-                    systemImage: "text.badge.plus"
+                Button {
+                    bookVariableDraft =
+                        activeCandidate?.variables["custom"] ?? ""
+                    showsBookVariable = true
+                } label: {
+                    Label(
+                        "设置书籍变量",
+                        systemImage: "text.badge.plus"
+                    )
+                }
+                .accessibilityIdentifier(
+                    "action.bookDetail.setBookVariable"
                 )
             }
             if availability.actions.canUpdate {
@@ -538,6 +596,42 @@ struct BookDetailView: View {
                 sourceSwitchMessage = message
             }
         }
+    }
+
+    private func saveBookVariable() {
+        guard
+            let storedItem,
+            let library
+        else { return }
+        savingBookVariable = true
+        Task {
+            let updated = await library.setBookCustomVariable(
+                bookVariableDraft,
+                bookID: storedItem.id
+            )
+            if let updated {
+                self.storedItem = updated
+                showsBookVariable = false
+            }
+            savingBookVariable = false
+        }
+    }
+
+    private var bookVariableComment: String {
+        let fallback =
+            "书籍变量可在 JS 中通过 book.getVariable(\"custom\") 获取"
+        guard
+            let data = activeSource?.rawDefinition,
+            let root = try? JSONSerialization.jsonObject(with: data)
+                as? [String: Any],
+            let comment = root["variableComment"] as? String,
+            !comment.trimmingCharacters(
+                in: .whitespacesAndNewlines
+            ).isEmpty
+        else {
+            return fallback
+        }
+        return "\(comment)\n\(fallback)"
     }
 
     private func action(
