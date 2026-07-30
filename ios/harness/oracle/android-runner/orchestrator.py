@@ -1158,6 +1158,28 @@ SCENARIO_CONTRACTS = {
             "caller-result-matrix",
         }),
     },
+    "rl-app-source-import-runtime-001": {
+        "status": "candidate",
+        "fixture_kind": "android_runtime_scenario",
+        "result_type": "ui_runtime",
+        "stage_names": (
+            "fixture_setup",
+            "format_detection",
+            "existing_comparison",
+            "merge_policy",
+            "result_mapping",
+        ),
+        "expected_cases": (
+            ("format-matrix", "source_import_format_matrix"),
+            ("comparison-matrix", "source_import_comparison_matrix"),
+            ("merge-matrix", "source_import_merge_matrix"),
+        ),
+        "nominal_cases": frozenset({
+            "format-matrix",
+            "comparison-matrix",
+            "merge-matrix",
+        }),
+    },
     "rl-library-book-detail-staging-runtime-001": {
         "status": "candidate",
         "fixture_kind": "android_runtime_scenario",

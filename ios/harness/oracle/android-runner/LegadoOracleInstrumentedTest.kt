@@ -17,6 +17,7 @@ import android.widget.TextView
 import androidx.appcompat.view.menu.MenuBuilder
 import androidx.appcompat.widget.SearchView
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
@@ -96,6 +97,7 @@ import io.legado.app.ui.main.MainActivity
 import io.legado.app.ui.main.MainViewModel
 import io.legado.app.ui.main.bookshelf.BookshelfViewModel
 import io.legado.app.ui.book.import.local.ImportBookViewModel
+import io.legado.app.ui.association.ImportBookSourceViewModel
 import io.legado.app.ui.book.search.SearchActivity
 import io.legado.app.ui.book.search.SearchScope
 import io.legado.app.ui.book.search.SearchViewModel
@@ -262,6 +264,8 @@ class LegadoOracleInstrumentedTest {
                 runSearchFlowCases()
             "rl-ui-source-editor-debug-routes-001" ->
                 runSourceEditorDebugRouteCases()
+            "rl-app-source-import-runtime-001" ->
+                runSourceImportRuntimeCases()
             "rl-reader-cache-prefetch-policy-001" ->
                 runReaderPrefetchPolicyCases()
             "rl-reader-progress-toc-remap-001" ->
@@ -5594,6 +5598,320 @@ class LegadoOracleInstrumentedTest {
             )
         }
         return JSONObject().put("results", projected)
+    }
+
+    private suspend fun runSourceImportRuntimeCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            val operation = value.getString("operation")
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", operation)
+                .put("arguments", JSONObject(arguments.toString()))
+            runCase(value.getString("id"), operation, stimulus) {
+                when (operation) {
+                    "source_import_format_matrix" ->
+                        sourceImportFormatMatrix(arguments)
+                    "source_import_comparison_matrix" ->
+                        sourceImportComparisonMatrix(arguments)
+                    "source_import_merge_matrix" ->
+                        sourceImportMergeMatrix(arguments)
+                    else -> error(
+                        "Unsupported source import operation: $operation"
+                    )
+                }
+            }
+        }
+    }
+
+    private suspend fun sourceImportFormatMatrix(
+        arguments: JSONObject
+    ): JSONObject {
+        val formats = arguments.getJSONArray("formats")
+        val projected = JSONArray()
+        for (index in 0 until formats.length()) {
+            val item = formats.getJSONObject(index)
+            val id = item.getString("id")
+            val source = sourceImportFixture(
+                "android-runtime://source-import/$id",
+                "Imported $id",
+                20
+            )
+            val second = sourceImportFixture(
+                "android-runtime://source-import/$id/second",
+                "Imported $id second",
+                21
+            )
+            val invalidSecond = sourceImportFixture(
+                "",
+                "Missing URL",
+                21
+            )
+            val payload = when (item.getString("kind")) {
+                "object" -> GSON.toJson(source)
+                "array" -> GSON.toJson(listOf(source, second))
+                "empty_array" -> "[]"
+                "array_invalid_second" ->
+                    GSON.toJson(listOf(source, invalidSecond))
+                "missing_url" -> GSON.toJson(invalidSecond)
+                "invalid" -> "not-a-source-definition"
+                else -> error(
+                    "Unsupported source import format: ${
+                        item.getString("kind")
+                    }"
+                )
+            }
+            val viewModel = sourceImportViewModel()
+            val outcome = awaitSourceImport(viewModel, payload)
+            projected.put(
+                JSONObject()
+                    .put("id", id)
+                    .put("kind", item.getString("kind"))
+                    .put("status", outcome.getString("status"))
+                    .put(
+                        "count",
+                        if (outcome.isNull("count")) {
+                            JSONObject.NULL
+                        } else {
+                            outcome.getInt("count")
+                        }
+                    )
+                    .put(
+                        "source_urls",
+                        JSONArray().apply {
+                            viewModel.allSources.forEach {
+                                put(it.bookSourceUrl)
+                            }
+                        }
+                    )
+            )
+            viewModel.allSources.forEach {
+                if (it.bookSourceUrl.isNotEmpty()) {
+                    appDb.bookSourceDao.delete(it)
+                }
+            }
+        }
+        return JSONObject().put("formats", projected)
+    }
+
+    private suspend fun sourceImportComparisonMatrix(
+        arguments: JSONObject
+    ): JSONObject {
+        val comparisons = arguments.getJSONArray("comparisons")
+        val projected = JSONArray()
+        for (index in 0 until comparisons.length()) {
+            val item = comparisons.getJSONObject(index)
+            val id = item.getString("id")
+            val url = "android-runtime://source-import/comparison/$id"
+            val incoming = sourceImportFixture(
+                url,
+                "Incoming $id",
+                item.getLong("incoming_update")
+            )
+            var existing: BookSource? = null
+            if (!item.isNull("existing_update")) {
+                existing = sourceImportFixture(
+                    url,
+                    "Existing $id",
+                    item.getLong("existing_update")
+                )
+                appDb.bookSourceDao.insert(existing)
+            }
+            val viewModel = sourceImportViewModel()
+            val outcome = awaitSourceImport(
+                viewModel,
+                GSON.toJson(incoming)
+            )
+            projected.put(
+                JSONObject()
+                    .put("id", id)
+                    .put("status", outcome.getString("status"))
+                    .put(
+                        "selected",
+                        viewModel.selectStatus.firstOrNull() ?: false
+                    )
+                    .put(
+                        "new_source",
+                        viewModel.newSourceStatus.firstOrNull() ?: false
+                    )
+                    .put(
+                        "update_source",
+                        viewModel.updateSourceStatus.firstOrNull() ?: false
+                    )
+            )
+            appDb.bookSourceDao.delete(incoming)
+            existing?.let { appDb.bookSourceDao.delete(it) }
+        }
+        return JSONObject().put("comparisons", projected)
+    }
+
+    private suspend fun sourceImportMergeMatrix(
+        arguments: JSONObject
+    ): JSONObject {
+        val target = InstrumentationRegistry
+            .getInstrumentation()
+            .targetContext
+        val application = target.applicationContext as Application
+        val previousKeepName = AppConfig.importKeepName
+        val previousKeepGroup = AppConfig.importKeepGroup
+        val previousKeepEnable = AppConfig.importKeepEnable
+        val merges = arguments.getJSONArray("merges")
+        val projected = JSONArray()
+        try {
+            for (index in 0 until merges.length()) {
+                val item = merges.getJSONObject(index)
+                val id = item.getString("id")
+                val url = "android-runtime://source-import/merge/$id"
+                val existing = sourceImportFixture(
+                    url,
+                    "Existing $id",
+                    10
+                ).apply {
+                    bookSourceGroup = "oldA,oldB"
+                    enabled = false
+                    enabledExplore = false
+                    customOrder = 17
+                }
+                val incoming = sourceImportFixture(
+                    url,
+                    "Incoming $id",
+                    20
+                ).apply {
+                    bookSourceGroup = "incoming"
+                    enabled = true
+                    enabledExplore = true
+                    customOrder = 99
+                }
+                appDb.bookSourceDao.insert(existing)
+                target.putPrefBoolean(
+                    PreferKey.importKeepName,
+                    item.getBoolean("keep_name")
+                )
+                target.putPrefBoolean(
+                    PreferKey.importKeepGroup,
+                    item.getBoolean("keep_group")
+                )
+                AppConfig.importKeepEnable =
+                    item.getBoolean("keep_enable")
+
+                val viewModel = ImportBookSourceViewModel(application)
+                val outcome = awaitSourceImport(
+                    viewModel,
+                    GSON.toJson(incoming)
+                )
+                require(outcome.getString("status") == "accepted")
+                viewModel.groupName = item.getString("group")
+                viewModel.isAddGroup =
+                    item.getString("group_mode") == "append"
+                if (viewModel.selectStatus.isNotEmpty()) {
+                    viewModel.selectStatus[0] = true
+                }
+                val completed = CompletableDeferred<Unit>()
+                viewModel.importSelect {
+                    completed.complete(Unit)
+                }
+                require(
+                    withTimeoutOrNull(2000) {
+                        completed.await()
+                        true
+                    } == true
+                ) {
+                    "Source import merge did not complete"
+                }
+                val saved = requireNotNull(
+                    appDb.bookSourceDao.getBookSource(url)
+                )
+                projected.put(
+                    JSONObject()
+                        .put("id", id)
+                        .put("name", saved.bookSourceName)
+                        .put(
+                            "group",
+                            saved.bookSourceGroup ?: JSONObject.NULL
+                        )
+                        .put("enabled", saved.enabled)
+                        .put(
+                            "enabled_explore",
+                            saved.enabledExplore
+                        )
+                        .put("custom_order", saved.customOrder)
+                )
+                appDb.bookSourceDao.delete(saved)
+            }
+        } finally {
+            target.putPrefBoolean(
+                PreferKey.importKeepName,
+                previousKeepName
+            )
+            target.putPrefBoolean(
+                PreferKey.importKeepGroup,
+                previousKeepGroup
+            )
+            AppConfig.importKeepEnable = previousKeepEnable
+        }
+        return JSONObject().put("merges", projected)
+    }
+
+    private fun sourceImportViewModel(): ImportBookSourceViewModel {
+        val application = InstrumentationRegistry
+            .getInstrumentation()
+            .targetContext
+            .applicationContext as Application
+        return ImportBookSourceViewModel(application)
+    }
+
+    private fun sourceImportFixture(
+        url: String,
+        name: String,
+        update: Long
+    ): BookSource = BookSource(
+        bookSourceUrl = url,
+        bookSourceName = name
+    ).apply {
+        lastUpdateTime = update
+    }
+
+    private suspend fun awaitSourceImport(
+        viewModel: ImportBookSourceViewModel,
+        payload: String
+    ): JSONObject {
+        val completed = CompletableDeferred<JSONObject>()
+        val successObserver = Observer<Int> { count ->
+            if (!completed.isCompleted) {
+                completed.complete(
+                    JSONObject()
+                        .put("status", "accepted")
+                        .put("count", count)
+                )
+            }
+        }
+        val errorObserver = Observer<String> {
+            if (!completed.isCompleted) {
+                completed.complete(
+                    JSONObject()
+                        .put("status", "rejected")
+                        .put("count", JSONObject.NULL)
+                )
+            }
+        }
+        onMainThread {
+            viewModel.successLiveData.observeForever(successObserver)
+            viewModel.errorLiveData.observeForever(errorObserver)
+        }
+        return try {
+            viewModel.importSource(payload)
+            withTimeoutOrNull(2000) {
+                completed.await()
+            } ?: JSONObject()
+                .put("status", "timeout")
+                .put("count", JSONObject.NULL)
+        } finally {
+            onMainThread {
+                viewModel.successLiveData.removeObserver(successObserver)
+                viewModel.errorLiveData.removeObserver(errorObserver)
+            }
+        }
     }
 
     private fun searchScopeProjection(

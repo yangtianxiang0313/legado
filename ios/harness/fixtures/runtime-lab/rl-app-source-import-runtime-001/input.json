@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "format-matrix",
+      "operation": "source_import_format_matrix",
+      "arguments": {
+        "formats": [
+          {
+            "id": "object-valid",
+            "kind": "object"
+          },
+          {
+            "id": "array-valid",
+            "kind": "array"
+          },
+          {
+            "id": "array-empty",
+            "kind": "empty_array"
+          },
+          {
+            "id": "array-invalid-second",
+            "kind": "array_invalid_second"
+          },
+          {
+            "id": "object-missing-url",
+            "kind": "missing_url"
+          },
+          {
+            "id": "invalid-text",
+            "kind": "invalid"
+          }
+        ]
+      }
+    },
+    {
+      "id": "comparison-matrix",
+      "operation": "source_import_comparison_matrix",
+      "arguments": {
+        "comparisons": [
+          {
+            "id": "new",
+            "existing_update": null,
+            "incoming_update": 20
+          },
+          {
+            "id": "incoming-newer",
+            "existing_update": 10,
+            "incoming_update": 20
+          },
+          {
+            "id": "equal",
+            "existing_update": 20,
+            "incoming_update": 20
+          },
+          {
+            "id": "incoming-older",
+            "existing_update": 30,
+            "incoming_update": 20
+          }
+        ]
+      }
+    },
+    {
+      "id": "merge-matrix",
+      "operation": "source_import_merge_matrix",
+      "arguments": {
+        "merges": [
+          {
+            "id": "preserve-and-append-group",
+            "keep_name": true,
+            "keep_group": true,
+            "keep_enable": true,
+            "group": "extra",
+            "group_mode": "append"
+          },
+          {
+            "id": "replace-with-import-and-group",
+            "keep_name": false,
+            "keep_group": false,
+            "keep_enable": false,
+            "group": "replacement",
+            "group_mode": "replace"
+          }
+        ]
+      }
+    }
+  ]
+}
