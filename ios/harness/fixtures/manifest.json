@@ -79,6 +79,11 @@
       "sha256": "17d0415f5de979f56a2e7244889630518a7654293c837914b2b9920530f59a49"
     },
     {
+      "id": "rl-reader-content-display-normalization-001",
+      "path": "ios/harness/fixtures/runtime-lab/rl-reader-content-display-normalization-001",
+      "sha256": "6996945afc2a8fb7ceb10a9a3880603692f2c87900b384672c097b60870135c7"
+    },
+    {
       "id": "rl-reader-content-index-load-dedup-001",
       "path": "ios/harness/fixtures/runtime-lab/rl-reader-content-index-load-dedup-001",
       "sha256": "645f09a5fc26e45a34a4007bd82ff5e65bd75e837c1d70f34ba486f6915e0bcc"

@@ -39,6 +39,7 @@ import io.legado.app.data.entities.BookSource
 import io.legado.app.data.entities.Bookmark
 import io.legado.app.data.entities.BookProgress
 import io.legado.app.data.entities.ReadRecord
+import io.legado.app.data.entities.ReplaceRule
 import io.legado.app.data.entities.SearchBook
 import io.legado.app.data.entities.TxtTocRule
 import io.legado.app.data.entities.rule.ContentRule
@@ -49,6 +50,7 @@ import io.legado.app.exception.ConcurrentException
 import io.legado.app.help.CacheManager
 import io.legado.app.help.TTS
 import io.legado.app.help.book.BookHelp
+import io.legado.app.help.book.ContentProcessor
 import io.legado.app.help.book.addType
 import io.legado.app.help.book.getLocalUri
 import io.legado.app.help.book.isArchive
@@ -264,6 +266,8 @@ class LegadoOracleInstrumentedTest {
                 runReaderContentAcquisitionCases()
             "rl-reader-content-index-load-dedup-001" ->
                 runReaderIndexLoadDedupCases()
+            "rl-reader-content-display-normalization-001" ->
+                runReaderContentNormalizationCases()
             "rl-app-startup-first-use-and-restore-001" ->
                 runAppStartupCases()
             "sl-post-form-001" -> runPostFormCases()
@@ -6586,6 +6590,127 @@ class LegadoOracleInstrumentedTest {
             ) {
                 readerIndexLoadDedupProjection(arguments)
             }
+        }
+    }
+
+    private suspend fun runReaderContentNormalizationCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            require(
+                value.getString("operation") ==
+                    "reader_content_normalization"
+            ) {
+                "Unsupported reader content normalization operation"
+            }
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", "reader_content_normalization")
+                .put("arguments", JSONObject(arguments.toString()))
+            runCase(
+                value.getString("id"),
+                "reader_content_normalization",
+                stimulus
+            ) {
+                readerContentNormalizationProjection(
+                    value.getString("id"),
+                    arguments
+                )
+            }
+        }
+    }
+
+    private fun readerContentNormalizationProjection(
+        caseId: String,
+        arguments: JSONObject
+    ): JSONObject {
+        val book = Book(
+            bookUrl = "/android-runtime/content-normalization/$caseId",
+            origin = arguments.optString(
+                "book_origin",
+                "android-runtime://normalization/$caseId"
+            ),
+            originName = "Normalization Oracle",
+            name = arguments.optString("book_name", "归一化测试书"),
+            author = "RuntimeLab",
+            type = BookType.text
+        ).apply {
+            setUseReplaceRule(arguments.optBoolean("use_replace", true))
+            setReSegment(false)
+        }
+        val chapter = BookChapter(
+            url = "/android-runtime/content-normalization/$caseId/0",
+            title = arguments.getString("title"),
+            bookUrl = book.bookUrl,
+            index = 0
+        )
+        val rules = mutableListOf<ReplaceRule>()
+        val ruleValues = arguments.optJSONArray("rules") ?: JSONArray()
+        for (index in 0 until ruleValues.length()) {
+            val value = ruleValues.getJSONObject(index)
+            rules.add(
+                ReplaceRule(
+                    id = 9_100_000L + caseId.hashCode().toLong() * 10L + index,
+                    name = value.getString("name"),
+                    pattern = value.getString("pattern"),
+                    replacement = value.getString("replacement"),
+                    scope =
+                        if (value.isNull("scope")) null
+                        else value.getString("scope"),
+                    scopeTitle = value.optBoolean("scope_title", false),
+                    scopeContent = value.optBoolean("scope_content", true),
+                    isEnabled = value.optBoolean("enabled", true),
+                    isRegex = value.optBoolean("is_regex", false),
+                    order = value.optInt("order", index)
+                )
+            )
+        }
+        val previousConverter = AppConfig.chineseConverterType
+        val previousIndent = ReadBookConfig.paragraphIndent
+        return try {
+            AppConfig.chineseConverterType = 0
+            ReadBookConfig.paragraphIndent =
+                arguments.optString("paragraph_indent", "　　")
+            if (rules.isNotEmpty()) {
+                appDb.replaceRuleDao.insert(*rules.toTypedArray())
+            }
+            val processor = ContentProcessor.get(book)
+            val displayTitle = chapter.getDisplayTitle(
+                processor.getTitleReplaceRules(),
+                useReplace = book.getUseReplaceRule(),
+                chineseConvert = false
+            )
+            val normalized = processor.getContent(
+                book = book,
+                chapter = chapter,
+                content = arguments.getString("content"),
+                includeTitle = arguments.optBoolean("include_title", false),
+                chineseConvert = false,
+                reSegment = false
+            )
+            JSONObject()
+                .put("display_title", displayTitle)
+                .put("same_title_removed", normalized.sameTitleRemoved)
+                .put(
+                    "paragraphs",
+                    JSONArray().apply {
+                        normalized.textList.forEach { put(it) }
+                    }
+                )
+                .put("rendered_text", normalized.toString())
+                .put(
+                    "effective_rules",
+                    JSONArray().apply {
+                        normalized.effectiveReplaceRules
+                            ?.forEach { put(it.name) }
+                    }
+                )
+        } finally {
+            if (rules.isNotEmpty()) {
+                appDb.replaceRuleDao.delete(*rules.toTypedArray())
+            }
+            AppConfig.chineseConverterType = previousConverter
+            ReadBookConfig.paragraphIndent = previousIndent
         }
     }
 

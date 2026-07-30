@@ -2,8 +2,8 @@
   "schema_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
   "android_tree": "c81f5d383116e37c1eefee3eb86654514e82022b",
-  "control_sha256": "cc0a5d64b487237593ec5ed63b73a60e838f38cc458f32fad8e4a0844e22faa3",
-  "policy_sha256": "47d99da9b8fb0b7da54f778f83b937092e163c45f698a841d311c9bb7c4503c1",
+  "control_sha256": "1c4f8955841a9797dc3e66f86f1e50c9dd18a1d3c63ec2c7fe626d26758f904a",
+  "policy_sha256": "d7c6cd21c1a06e0d64f4d530e1fd081bfa82b8ab8ca7a98f7c361dca9ff21711",
   "facts": [
     {
       "id": "AF-ANALYZE-JSONPATH-GET-LIST",
@@ -1762,6 +1762,30 @@
         "body_semantic_sha256": "2d8a6c9942cfebf6eae46dd239fcf74e4e9bd1e5aa0fb820f19b1abdb98ce982"
       },
       "revision_sha256": "b6dd249d1907375eabedd97b3cd2e7682223e144cb39b6d85fcea095c52f6505",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-READ-CONTENT-PROCESSOR",
+      "fact_key": "reader.content.display-normalization",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.help.book.ContentProcessor/getContent",
+      "path": "app/src/main/java/io/legado/app/help/book/ContentProcessor.kt",
+      "git_blob": "1b2ee52192f45c04b8a3c49dd1f59c45671133f8",
+      "source_sha256": "c50da9696199d0b774ea88ca351f9a8d057b66d41aa5f734697b905f15dd90ca",
+      "start_line": 91,
+      "end_line": 204,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "getContent",
+        "signature": "fun getContent( book: Book, chapter: BookChapter, content: String, includeTitle: Boolean = true, useReplace: Boolean = true, chineseConvert: Boolean = true, reSegment: Boolean = true ): BookContent",
+        "body_semantic_sha256": "3dfd6af13c80fe18fbb743c3681f59a3ae8fe259e2cfe38c43479f02cb622514"
+      },
+      "revision_sha256": "97782f00f02b533c57a650c6807a7c3478baa04b39a56d35173842c5e835aea1",
       "maps_to": [
         "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
       ]

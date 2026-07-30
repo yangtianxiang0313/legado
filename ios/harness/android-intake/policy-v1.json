@@ -845,6 +845,18 @@
       "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
     },
     {
+      "fact_id": "AF-READ-CONTENT-PROCESSOR",
+      "fact_key": "reader.content.display-normalization",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/help/book/ContentProcessor.kt",
+      "symbol": "getContent",
+      "symbol_id": "kotlin://io.legado.app.help.book.ContentProcessor/getContent",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
       "fact_id": "AF-BOOK-HELP-GET-CONTENT",
       "fact_key": "reader.chapter-cache.get-content",
       "category": "production_entrypoint",

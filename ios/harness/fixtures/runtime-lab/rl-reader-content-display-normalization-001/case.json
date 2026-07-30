@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "kind": "android_runtime_scenario",
+  "id": "rl-reader-content-display-normalization-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "android_runtime",
+  "capabilities": [
+    "reader.content",
+    "reader.normalization",
+    "replace.rule"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": null,
+  "input": "input.json",
+  "transport": {
+    "mode": "none",
+    "external_network": "deny",
+    "responses": []
+  },
+  "coverage": [
+    {
+      "behavior": "reader.content.display-normalization",
+      "cases": [
+        {
+          "id": "plain-paragraph-normalization",
+          "role": "nominal",
+          "android_fact_refs": ["AF-READ-CONTENT-PROCESSOR"],
+          "branch_refs": ["trim lines, discard empty paragraphs and apply paragraph indent"]
+        },
+        {
+          "id": "ordered-literal-replacements",
+          "role": "nominal",
+          "android_fact_refs": ["AF-READ-CONTENT-PROCESSOR"],
+          "branch_refs": ["enabled content rules execute in sortOrder and report only effective rules"]
+        },
+        {
+          "id": "book-disabled-replacement",
+          "role": "boundary",
+          "android_fact_refs": ["AF-READ-CONTENT-PROCESSOR"],
+          "branch_refs": ["book useReplaceRule disables title and content replacement"]
+        },
+        {
+          "id": "matching-title-is-removed",
+          "role": "nominal",
+          "android_fact_refs": ["AF-READ-CONTENT-PROCESSOR"],
+          "branch_refs": ["raw chapter title at the content prefix is removed before paragraph projection"]
+        },
+        {
+          "id": "replaced-title-is-removed",
+          "role": "nominal",
+          "android_fact_refs": ["AF-READ-CONTENT-PROCESSOR"],
+          "branch_refs": ["content rules may transform the chapter title used by the duplicate-title fallback"]
+        },
+        {
+          "id": "scope-and-disabled-rules-are-filtered",
+          "role": "boundary",
+          "android_fact_refs": ["AF-READ-CONTENT-PROCESSOR"],
+          "branch_refs": ["DAO filters disabled and nonmatching scoped rules before processing"]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "not-observed",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 0,
+    "network_allowed": false,
+    "logical_origin": null,
+    "database_reset_per_case": true
+  },
+  "limits": {
+    "timeout_ms": 5000
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/model/ReadBook.kt#contentLoadFinish",
+      "app/src/main/java/io/legado/app/help/book/ContentProcessor.kt#getContent",
+      "app/src/main/java/io/legado/app/data/entities/BookChapter.kt#getDisplayTitle",
+      "app/src/main/java/io/legado/app/data/dao/ReplaceRuleDao.kt#findEnabledByContentScope"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-READER-CONTENT-DISPLAY-NORMALIZATION-001"
+  }
+}

@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "plain-paragraph-normalization",
+      "operation": "reader_content_normalization",
+      "arguments": {
+        "title": "第1章\r\n开始",
+        "content": "  第一段  \n\n　第二段　\n",
+        "include_title": true,
+        "use_replace": true,
+        "paragraph_indent": ">>",
+        "rules": []
+      }
+    },
+    {
+      "id": "ordered-literal-replacements",
+      "operation": "reader_content_normalization",
+      "arguments": {
+        "title": "旧标题",
+        "content": "alpha beta alpha",
+        "include_title": false,
+        "use_replace": true,
+        "paragraph_indent": ">",
+        "rules": [
+          {
+            "name": "alpha-to-beta",
+            "pattern": "alpha",
+            "replacement": "beta",
+            "scope_content": true,
+            "is_regex": false,
+            "order": 10
+          },
+          {
+            "name": "beta-to-final",
+            "pattern": "beta",
+            "replacement": "final",
+            "scope_content": true,
+            "is_regex": false,
+            "order": 20
+          },
+          {
+            "name": "unused",
+            "pattern": "absent",
+            "replacement": "ignored",
+            "scope_content": true,
+            "is_regex": false,
+            "order": 30
+          }
+        ]
+      }
+    },
+    {
+      "id": "book-disabled-replacement",
+      "operation": "reader_content_normalization",
+      "arguments": {
+        "title": "旧\r标题",
+        "content": "old body",
+        "include_title": true,
+        "use_replace": false,
+        "paragraph_indent": ">",
+        "rules": [
+          {
+            "name": "title-rule",
+            "pattern": "旧标题",
+            "replacement": "新标题",
+            "scope_title": true,
+            "scope_content": false,
+            "is_regex": false,
+            "order": 1
+          },
+          {
+            "name": "content-rule",
+            "pattern": "old",
+            "replacement": "new",
+            "scope_content": true,
+            "is_regex": false,
+            "order": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "matching-title-is-removed",
+      "operation": "reader_content_normalization",
+      "arguments": {
+        "book_name": "测试书",
+        "title": "第 2 章 标题",
+        "content": "测试书：第 2 章 标题\n正文",
+        "include_title": false,
+        "use_replace": true,
+        "paragraph_indent": ">",
+        "rules": []
+      }
+    },
+    {
+      "id": "replaced-title-is-removed",
+      "operation": "reader_content_normalization",
+      "arguments": {
+        "title": "第3章",
+        "content": "第三章\n内容",
+        "include_title": false,
+        "use_replace": true,
+        "paragraph_indent": ">",
+        "rules": [
+          {
+            "name": "title-shape",
+            "pattern": "第3章",
+            "replacement": "第三章",
+            "scope_content": true,
+            "is_regex": false,
+            "order": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "scope-and-disabled-rules-are-filtered",
+      "operation": "reader_content_normalization",
+      "arguments": {
+        "book_name": "目标书",
+        "book_origin": "android-runtime://target-source",
+        "title": "目标标题",
+        "content": "seed",
+        "include_title": false,
+        "use_replace": true,
+        "paragraph_indent": ">",
+        "rules": [
+          {
+            "name": "matching-scope",
+            "pattern": "seed",
+            "replacement": "accepted",
+            "scope": "目标书",
+            "scope_content": true,
+            "is_regex": false,
+            "order": 1
+          },
+          {
+            "name": "wrong-scope",
+            "pattern": "accepted",
+            "replacement": "wrong",
+            "scope": "另一书",
+            "scope_content": true,
+            "is_regex": false,
+            "order": 2
+          },
+          {
+            "name": "disabled",
+            "pattern": "accepted",
+            "replacement": "disabled",
+            "scope_content": true,
+            "enabled": false,
+            "is_regex": false,
+            "order": 3
+          }
+        ]
+      }
+    }
+  ]
+}
