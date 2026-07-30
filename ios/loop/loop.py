@@ -2679,13 +2679,19 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             },
         }
     source_anchors = delivery.get("source_anchors", [])
-    if not source_anchors:
+    if (
+        not source_anchors
+        and not target.startswith("IOS-DEPENDENCY-")
+    ):
         source_anchors = (
             migration.get("source_anchors", [])
             if isinstance(migration, dict)
             else []
         )
-    if not source_anchors:
+    if (
+        not source_anchors
+        and not target.startswith("IOS-DEPENDENCY-")
+    ):
         source_anchors = source_anchors_for_claims(root, claim_refs)
     android_baseline = (
         migration.get("android_baseline")
