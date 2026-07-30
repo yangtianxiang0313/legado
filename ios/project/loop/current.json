@@ -1,1 +1,1 @@
-{"active_task":null,"attempt":0,"last_completed":{"at":"2026-07-30T11:35:21Z","sequence":273,"task_id":"IOS-CHARACTERIZE-UI-READER-TOC-RESULT-001"},"schema_version":2,"status":"idle","verification":null}
+{"active_task":"IOS-APP-NAVIGATION-READER-CONTENT-001","attempt":0,"last_completed":{"at":"2026-07-30T11:35:21Z","sequence":273,"task_id":"IOS-CHARACTERIZE-UI-READER-TOC-RESULT-001"},"schema_version":2,"status":"running","verification":null}
