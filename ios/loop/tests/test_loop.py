@@ -1021,6 +1021,13 @@ class MinimalLoopTests(unittest.TestCase):
                 "rl",
             ),
         )
+        self.assertEqual(
+            "rl-reader-content-index-load-dedup-001",
+            loop.characterization_fixture_id(
+                "reader.session.late-result-risk",
+                "rl",
+            ),
+        )
 
     def test_completed_lightweight_characterization_becomes_delivery(self):
         with tempfile.TemporaryDirectory() as directory:
