@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P0-USABLE-READING-001",
+  "status": "completed",
+  "completed_at": "2026-07-30T14:29:14Z",
+  "title": "P0 可阅读主链路",
+  "objective": "用户可从书源搜索获得一本书，进入详情并加入书架，加载目录与正文，在阅读器连续阅读，并在重启后恢复进度。",
+  "completion_evidence": [
+    {
+      "claim": "搜索、入架、目录、正文、切章和重启恢复形成单一 iPhone 主链路",
+      "status": "verified",
+      "evidence": ".harness-runtime/loop/IOS-APP-NAVIGATION-READER-PROGRESS-RESTORE-001/attempt-5"
+    },
+    {
+      "claim": "阅读器主菜单、外观、更多和文本选区结构可由 iPhone 访问",
+      "status": "verified",
+      "evidence": ".harness-runtime/loop/IOS-APP-NAVIGATION-READER-MULTILEVEL-MENU-001/attempt-4"
+    },
+    {
+      "claim": "搜索、目录、正文、切章、进度保存和目录重映射具有 Android 真源语义",
+      "status": "verified",
+      "evidence": [
+        "ios/harness/goldens/android-legado-v1/sl-source-pipeline-search-runtime-001.json",
+        "ios/harness/goldens/android-legado-v1/rl-library-book-detail-staging-runtime-001.json",
+        "ios/harness/goldens/android-legado-v1/rl-library-chapter-toc-update-runtime-001.json",
+        "ios/harness/goldens/android-legado-v1/rl-reader-content-cache-first-acquisition-001.json",
+        "ios/harness/goldens/android-legado-v1/rl-reader-content-display-normalization-001.json",
+        "ios/harness/goldens/android-legado-v1/rl-reader-session-chapter-navigation-001.json",
+        "ios/harness/goldens/android-legado-v1/rl-reader-progress-save-runtime-001.json",
+        "ios/harness/goldens/android-legado-v1/rl-reader-progress-toc-remap-001.json"
+      ]
+    },
+    {
+      "claim": "GRDB 在 repository 重开后保留章节索引和字符坐标",
+      "status": "verified",
+      "evidence": "DatabaseGRDBTests.testReadingProgressSurvivesRepositoryReopen"
+    }
+  ],
+  "known_limits": [
+    "P0 证明远程书源搜索路径；本地文件导入留给后续独立能力。",
+    "字符坐标持久化已打通，当前滚动阅读 UI 尚未把任意滚动位置换算为字符坐标。",
+    "阅读器长尾菜单叶子保留结构但尚未全部接入业务实现。"
+  ]
+}
