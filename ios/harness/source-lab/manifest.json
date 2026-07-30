@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "logical_origin": "http://sourcelab.test",
-  "control_sha256": "9dabf2f70440d0c12867e5dcbd81723e1bd943504d93e3da495bf947983c7e52",
+  "control_sha256": "c44647e9fdd1883e2efaacdd83c498d1947bc3206a89940324712e22f8707808",
   "scenarios": [
     {
       "id": "il-integration-backup-webdav-001",
@@ -20,6 +20,12 @@
       "status": "candidate",
       "path": "ios/harness/fixtures/integration-lab/il-integration-system-text-to-speech-001",
       "sha256": "e6a802208d98c50ecf6748cd1e373eb7ef7a14cc27580a976622e7b7201c1828"
+    },
+    {
+      "id": "rl-app-source-import-runtime-001",
+      "status": "candidate",
+      "path": "ios/harness/fixtures/runtime-lab/rl-app-source-import-runtime-001",
+      "sha256": "fe6596bc6318149129aba6e033a642be7cd1881945249eac16b6b536af2e088e"
     },
     {
       "id": "rl-app-startup-first-use-and-restore-001",
@@ -44,6 +50,12 @@
       "status": "candidate",
       "path": "ios/harness/fixtures/runtime-lab/rl-library-book-import-channel-runtime-001",
       "sha256": "ad4647eaaa29b945f2335746b8f10ac004d1ae44a8e8fc34bc3b7c844647d51d"
+    },
+    {
+      "id": "rl-library-book-source-switch-migration-runtime-001",
+      "status": "candidate",
+      "path": "ios/harness/fixtures/runtime-lab/rl-library-book-source-switch-migration-runtime-001",
+      "sha256": "338aa2eef4d08a7e797f23f18fdbf36c6ca2d3123805e6cc265f2952b4ac0cdd"
     },
     {
       "id": "rl-library-chapter-toc-update-runtime-001",
@@ -178,6 +190,12 @@
       "sha256": "103863942e973fc1f9796d685dfa56cec24f7d7f3b3cf8494a9c13dad5bcea0c"
     },
     {
+      "id": "rl-ui-source-editor-debug-routes-001",
+      "status": "candidate",
+      "path": "ios/harness/fixtures/runtime-lab/rl-ui-source-editor-debug-routes-001",
+      "sha256": "004a19481a096564ed1e1258ad4eaf4ed4c4ed6cade4fc48e756b6a398485bee"
+    },
+    {
       "id": "sl-content-cache-queue-completion-runtime-001",
       "status": "candidate",
       "path": "ios/harness/fixtures/source-lab/sl-content-cache-queue-completion-runtime-001",
@@ -200,6 +218,12 @@
       "status": "candidate",
       "path": "ios/harness/fixtures/source-lab/sl-source-cookie-persistent-session-merge-runtime-001",
       "sha256": "40613e5b7953b2a992d57c3188943a63b4525927ee74b5c9c64da10203339f04"
+    },
+    {
+      "id": "sl-source-pipeline-explore-runtime-001",
+      "status": "candidate",
+      "path": "ios/harness/fixtures/source-lab/sl-source-pipeline-explore-runtime-001",
+      "sha256": "322ad8ffab0e3e39a2fe640661f51b9027c86a8ae0a2d006a79386f57506e991"
     },
     {
       "id": "sl-source-pipeline-search-runtime-001",
@@ -254,6 +278,12 @@
       "status": "candidate",
       "path": "ios/harness/fixtures/source-lab/sl-source-rule-jsonpath-regex-backends-001",
       "sha256": "88e813c9cebd902af5a1ccabf3a620e85f38708d1aae8accc9501eacb6d6ecb5"
+    },
+    {
+      "id": "sl-source-rule-url-normalization-runtime-001",
+      "status": "candidate",
+      "path": "ios/harness/fixtures/source-lab/sl-source-rule-url-normalization-runtime-001",
+      "sha256": "cdf7c36313d77ae4d89b4d08e60f269cb6fb8459df94c2d7e9c1aed56587ed10"
     },
     {
       "id": "sl-source-session-rate-limit-shared-state-001",

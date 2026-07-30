@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "kind": "source_lab_scenario",
+  "id": "sl-source-pipeline-explore-runtime-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "source_lab_site",
+  "capabilities": [
+    "CAP-RUNTIME-PORTS",
+    "CAP-CONFORMANCE",
+    "CAP-SOURCE-FORMAT"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": "source.template.json",
+  "input": "input.json",
+  "transport": {
+    "mode": "fixture_and_loopback",
+    "external_network": "deny",
+    "responses": [
+      {
+        "id": "fantasy-page-two",
+        "match": {
+          "method": "GET",
+          "path": "/pipeline/explore/2",
+          "query": {
+            "category": "fantasy"
+          }
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "body_file": "responses/fantasy-page-two.html"
+        }
+      }
+    ]
+  },
+  "coverage": [
+    {
+      "behavior": "pipeline.explore-html",
+      "cases": [
+        {
+          "id": "fantasy-page-two",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-EXPLORE-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "WebBook.exploreBookAwait compiles the selected category URL with page before transport",
+            "BookList.analyzeBookList selects ruleExplore when its bookList is nonblank",
+            "A leading minus on ruleExplore.bookList reverses the parsed result order"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "2026-01-01T00:00:00Z",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 59,
+    "network_allowed": false,
+    "logical_origin": "http://sourcelab.test"
+  },
+  "limits": {
+    "timeout_ms": 1000,
+    "max_response_bytes": 1048576,
+    "max_request_body_bytes": 65536,
+    "max_requests": 2,
+    "max_concurrency": 1
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
+      "app/src/main/java/io/legado/app/model/webBook/BookList.kt",
+      "app/src/main/java/io/legado/app/help/source/BookSourceExtensions.kt"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-SOURCE-PIPELINE-EXPLORE-RUNTIME-001"
+  }
+}

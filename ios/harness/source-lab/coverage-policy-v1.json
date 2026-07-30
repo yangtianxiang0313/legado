@@ -4,6 +4,7 @@
   "behaviors": [
     {"id": "transport.get-query", "status": "active", "required_roles": ["nominal"], "min_cases_per_role": 1, "phase": 1},
     {"id": "pipeline.search-html", "status": "active", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 1},
+    {"id": "pipeline.explore-html", "status": "planned", "required_roles": ["nominal"], "min_cases_per_role": 1, "phase": 1},
     {"id": "pipeline.book-info-html", "status": "active", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 1},
     {"id": "pipeline.toc-html", "status": "active", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 1},
     {"id": "pipeline.content-html", "status": "active", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 1},

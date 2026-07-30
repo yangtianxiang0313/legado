@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "fantasy-page-two",
+      "operation": "explore_pipeline",
+      "arguments": {
+        "url": "${SOURCE_LAB_ORIGIN}/pipeline/explore/{{page}}?category=fantasy",
+        "page": 2
+      },
+      "request": {
+        "method": "GET",
+        "target": "/pipeline/explore/2?category=fantasy"
+      }
+    }
+  ]
+}

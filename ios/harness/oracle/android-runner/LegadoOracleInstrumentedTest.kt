@@ -321,6 +321,8 @@ class LegadoOracleInstrumentedTest {
                 runJSONPathRegexBackendCases()
             "sl-source-pipeline-search-runtime-001" ->
                 runSearchPipelineCases()
+            "sl-source-pipeline-explore-runtime-001" ->
+                runExplorePipelineCases()
             "sl-content-cache-queue-completion-runtime-001" ->
                 runContentCacheQueueCompletionCases()
             else -> {
@@ -8632,6 +8634,38 @@ class LegadoOracleInstrumentedTest {
             ) {
                 searchPipelineProjection(
                     WebBook.searchBookAwait(caseSource, keyword, page)
+                )
+            }
+        }
+    }
+
+    private suspend fun runExplorePipelineCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            require(value.getString("operation") == "explore_pipeline") {
+                "Explore pipeline scenario only accepts explore_pipeline stimuli"
+            }
+            val arguments = value.getJSONObject("arguments")
+            val url = arguments
+                .getString("url")
+                .replace("\${SOURCE_LAB_ORIGIN}", deviceOrigin)
+            val page = arguments.getInt("page")
+            val analyze = AnalyzeUrl(
+                mUrl = url,
+                page = page,
+                baseUrl = source.bookSourceUrl,
+                source = source,
+                ruleData = RuleData(),
+                headerMapF = source.getHeaderMap(true)
+            )
+            runCase(
+                value.getString("id"),
+                "explore_pipeline",
+                request(analyze.url)
+            ) {
+                searchPipelineProjection(
+                    WebBook.exploreBookAwait(source, url, page)
                 )
             }
         }

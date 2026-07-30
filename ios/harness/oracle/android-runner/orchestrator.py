@@ -494,6 +494,15 @@ SCENARIO_CONTRACTS = {
             "page-one-deduplicate",
         }),
     },
+    "sl-source-pipeline-explore-runtime-001": {
+        "status": "candidate",
+        "expected_cases": (
+            ("fantasy-page-two", "explore_pipeline"),
+        ),
+        "nominal_cases": frozenset({
+            "fantasy-page-two",
+        }),
+    },
     "sl-content-cache-queue-completion-runtime-001": {
         "status": "candidate",
         "expected_cases": (
