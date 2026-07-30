@@ -1,11 +1,27 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P21-SINGLE-SOURCE-SEARCH-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P21 书源编辑器单源搜索闭环",
   "objective": "依据冻结 Android BookSourceEditActivity 与 SearchActivity 源码，把 iOS 书源编辑器的单源搜索占位页接入既有 SearchSession，并保持 scope 固定为当前书源，搜索结果可继续进入书籍详情。",
   "validation_policy": "复用已验证的搜索主链，仅执行一次 App 构建；不重复运行模拟器矩阵。",
+  "completion_evidence": [
+    "SearchEnvironment.makeSession 支持注入初始 SearchScopeSelection",
+    "书源编辑器单源搜索以 sourceURL 固定当前书源，不按显示名模糊过滤",
+    "搜索结果复用 SearchSession，并可继续进入既有 BookDetail 路由"
+  ],
+  "final_verification": {
+    "kind": "single_app_build",
+    "completed_at": "2026-07-31T05:25:33+08:00",
+    "commands": [
+      "xcodebuild -project ios/Apps/Legado/Legado.xcodeproj -scheme LegadoApp -destination generic/platform=iOS Simulator CODE_SIGNING_ALLOWED=NO build"
+    ],
+    "result": "App 构建通过；未重复运行模拟器或全量回归。",
+    "evidence": [
+      ".harness-runtime/loop/IOS-APP-NAVIGATION-SINGLE-SOURCE-SEARCH-001/attempt-1"
+    ]
+  },
   "stages": [
     {
       "id": "P21-S1",
