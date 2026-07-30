@@ -66,6 +66,7 @@ import io.legado.app.model.analyzeRule.AnalyzeRule
 import io.legado.app.model.analyzeRule.AnalyzeUrl
 import io.legado.app.model.analyzeRule.RuleData
 import io.legado.app.model.webBook.WebBook
+import io.legado.app.model.webBook.SearchModel
 import io.legado.app.model.localBook.LocalBook
 import io.legado.app.service.WebService
 import io.legado.app.service.BaseReadAloudService
@@ -82,6 +83,7 @@ import io.legado.app.ui.book.changesource.ChangeChapterSourceViewModel
 import io.legado.app.ui.main.MainActivity
 import io.legado.app.ui.main.bookshelf.BookshelfViewModel
 import io.legado.app.ui.book.import.local.ImportBookViewModel
+import io.legado.app.ui.book.search.SearchScope
 import io.legado.app.ui.welcome.WelcomeActivity
 import io.legado.app.ui.widget.dialog.TextDialog
 import io.legado.app.utils.GSON
@@ -93,6 +95,7 @@ import io.legado.app.web.HttpServer
 import io.legado.app.web.WebSocketServer
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.coroutineScope
@@ -123,6 +126,11 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
+import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
+import kotlin.coroutines.coroutineContext
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
 import okhttp3.OkHttpClient
 import okhttp3.Headers
 import okhttp3.Protocol
@@ -204,6 +212,8 @@ class LegadoOracleInstrumentedTest {
                 runBookGroupBoundaryCases()
             "rl-library-local-book-relocation-runtime-001" ->
                 runLocalBookRelocationCases()
+            "rl-discovery-search-book-persistence-lifecycle-001" ->
+                runSearchBookLifecycleCases()
             "rl-library-book-import-channel-runtime-001" ->
                 runBookImportChannelCases()
             "rl-reader-chapter-source-override-runtime-001" ->
@@ -1143,6 +1153,37 @@ class LegadoOracleInstrumentedTest {
         }
     }
 
+    private suspend fun runSearchBookLifecycleCases() {
+        val values = input.getJSONArray("cases")
+        val supported = setOf(
+            "search_book_merge",
+            "search_book_room_replace",
+            "search_book_source_cascade",
+            "search_book_ttl_cleanup"
+        )
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            val operation = value.getString("operation")
+            require(operation in supported) {
+                "Unsupported search-book lifecycle operation: $operation"
+            }
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", operation)
+                .put("arguments", JSONObject(arguments.toString()))
+            runCase(
+                value.getString("id"),
+                operation,
+                stimulus
+            ) {
+                searchBookLifecycleProjection(
+                    operation,
+                    arguments
+                )
+            }
+        }
+    }
+
     private suspend fun runBookImportChannelCases() {
         val server = OracleBookInfoServer()
         server.start(5_000, true)
@@ -1580,6 +1621,256 @@ class LegadoOracleInstrumentedTest {
                 body
             )
         }
+    }
+
+    private suspend fun searchBookLifecycleProjection(
+        operation: String,
+        arguments: JSONObject
+    ): JSONObject =
+        when (operation) {
+            "search_book_merge" ->
+                searchBookMergeProjection(arguments)
+            "search_book_room_replace" ->
+                searchBookReplaceProjection(arguments)
+            "search_book_source_cascade" ->
+                searchBookCascadeProjection(arguments)
+            "search_book_ttl_cleanup" ->
+                searchBookTTLProjection(arguments)
+            else -> error(
+                "Unsupported search-book lifecycle operation: $operation"
+            )
+        }
+
+    private suspend fun searchBookMergeProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val model = SearchModel(
+            CoroutineScope(coroutineContext),
+            object : SearchModel.CallBack {
+                override fun getSearchScope() =
+                    SearchScope(emptyList<String>())
+
+                override fun onSearchStart() = Unit
+
+                override fun onSearchSuccess(
+                    searchBooks: List<SearchBook>
+                ) = Unit
+
+                override fun onSearchFinish(isEmpty: Boolean) = Unit
+
+                override fun onSearchCancel(exception: Throwable?) = Unit
+            }
+        )
+        searchModelField("searchKey").set(
+            model,
+            arguments.getString("keyword")
+        )
+        val precision = arguments.getBoolean("precision")
+        val batches = arguments.getJSONArray("batches")
+        for (index in 0 until batches.length()) {
+            val values = batches.getJSONArray(index)
+            val books = ArrayList<SearchBook>()
+            for (bookIndex in 0 until values.length()) {
+                books += searchBook(values.getJSONObject(bookIndex))
+            }
+            invokeSearchBookMerge(model, books, precision)
+        }
+        @Suppress("UNCHECKED_CAST")
+        val merged = searchModelField("searchBooks").get(model)
+            as ArrayList<SearchBook>
+        return JSONObject()
+            .put("count", merged.size)
+            .put(
+                "books",
+                JSONArray().apply {
+                    merged.forEach { book ->
+                        put(
+                            JSONObject()
+                                .put("name", book.name)
+                                .put("author", book.author)
+                                .put("book_url", book.bookUrl)
+                                .put("representative_origin", book.origin)
+                                .put("origin_order", book.originOrder)
+                                .put(
+                                    "origins",
+                                    JSONArray().apply {
+                                        book.origins.forEach(::put)
+                                    }
+                                )
+                        )
+                    }
+                }
+            )
+    }
+
+    private suspend fun invokeSearchBookMerge(
+        model: SearchModel,
+        books: List<SearchBook>,
+        precision: Boolean
+    ) {
+        val method = SearchModel::class.java.declaredMethods
+            .single {
+                it.name.startsWith("mergeItems") &&
+                    it.parameterTypes.size == 3
+            }
+            .apply { isAccessible = true }
+        suspendCoroutine<Unit> { continuation ->
+            try {
+                val result = method.invoke(
+                    model,
+                    books,
+                    precision,
+                    continuation
+                )
+                if (result !== COROUTINE_SUSPENDED) {
+                    continuation.resume(Unit)
+                }
+            } catch (error: InvocationTargetException) {
+                continuation.resumeWithException(
+                    error.targetException ?: error
+                )
+            } catch (error: Throwable) {
+                continuation.resumeWithException(error)
+            }
+        }
+    }
+
+    private fun searchModelField(name: String) =
+        SearchModel::class.java.getDeclaredField(name).apply {
+            isAccessible = true
+        }
+
+    private fun searchBook(value: JSONObject) =
+        SearchBook(
+            name = value.getString("name"),
+            author = value.getString("author"),
+            bookUrl = value.getString("book_url"),
+            origin = value.getString("origin"),
+            originName = value.getString("origin"),
+            originOrder = value.getInt("origin_order")
+        )
+
+    private fun searchBookReplaceProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val origin = arguments.getString("origin")
+        val bookURL = arguments.getString("book_url")
+        prepareSearchBookSource(origin)
+        return try {
+            val dao = appDb.searchBookDao
+            val first = SearchBook(
+                bookUrl = bookURL,
+                origin = origin,
+                originName = origin,
+                name = arguments.getString("first_name"),
+                author = "Oracle"
+            )
+            val second = first.copy(
+                name = arguments.getString("second_name")
+            )
+            val insertResults = JSONArray().apply {
+                dao.insert(first).forEach(::put)
+                dao.insert(second).forEach(::put)
+            }
+            val stored = requireNotNull(dao.getSearchBook(bookURL))
+            JSONObject()
+                .put("insert_results", insertResults)
+                .put("stored_name", stored.name)
+                .put("stored_origin", stored.origin)
+        } finally {
+            clearSearchBookFixture(origin)
+        }
+    }
+
+    private fun searchBookCascadeProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val origin = arguments.getString("origin")
+        val bookURL = arguments.getString("book_url")
+        prepareSearchBookSource(origin)
+        return try {
+            appDb.searchBookDao.insert(
+                SearchBook(
+                    bookUrl = bookURL,
+                    origin = origin,
+                    originName = origin,
+                    name = "Cascade",
+                    author = "Oracle"
+                )
+            )
+            val before = appDb.searchBookDao
+                .getSearchBook(bookURL) != null
+            appDb.bookSourceDao.delete(origin)
+            val after = appDb.searchBookDao
+                .getSearchBook(bookURL) != null
+            JSONObject()
+                .put("exists_before_source_delete", before)
+                .put("exists_after_source_delete", after)
+        } finally {
+            clearSearchBookFixture(origin)
+        }
+    }
+
+    private fun searchBookTTLProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val origin = arguments.getString("origin")
+        val threshold = arguments.getLong("threshold")
+        val rows = listOf(
+            "stale" to arguments.getLong("stale_time"),
+            "boundary" to arguments.getLong("boundary_time"),
+            "fresh" to arguments.getLong("fresh_time")
+        )
+        prepareSearchBookSource(origin)
+        return try {
+            val dao = appDb.searchBookDao
+            rows.forEach { (label, time) ->
+                dao.insert(
+                    SearchBook(
+                        bookUrl = "book://ttl/$label",
+                        origin = origin,
+                        originName = origin,
+                        name = label,
+                        author = "Oracle",
+                        time = time
+                    )
+                )
+            }
+            dao.clearExpired(threshold)
+            JSONObject()
+                .put("threshold", threshold)
+                .put(
+                    "remaining",
+                    JSONArray().apply {
+                        rows.forEach { (label, _) ->
+                            if (
+                                dao.getSearchBook(
+                                    "book://ttl/$label"
+                                ) != null
+                            ) {
+                                put(label)
+                            }
+                        }
+                    }
+                )
+        } finally {
+            clearSearchBookFixture(origin)
+        }
+    }
+
+    private fun prepareSearchBookSource(origin: String) {
+        clearSearchBookFixture(origin)
+        appDb.bookSourceDao.insert(
+            BookSource(
+                bookSourceUrl = origin,
+                bookSourceName = "Oracle $origin",
+                customOrder = 1
+            )
+        )
+    }
+
+    private fun clearSearchBookFixture(origin: String) {
+        appDb.bookSourceDao.delete(origin)
     }
 
     private suspend fun localBookRelocationProjection(

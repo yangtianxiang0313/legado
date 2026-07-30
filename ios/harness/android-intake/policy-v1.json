@@ -100,6 +100,54 @@
       "maps_to": ["REQ-ANDROID-SOURCE-PIPELINE-001"]
     },
     {
+      "fact_id": "AF-SEARCH-BOOK-ENTITY",
+      "fact_key": "discovery.search-book.entity",
+      "category": "data_contract",
+      "evidence_level": "L1",
+      "support_state": "declaration_only",
+      "extractor": "kotlin_primary_constructor",
+      "path": "app/src/main/java/io/legado/app/data/entities/SearchBook.kt",
+      "symbol": "SearchBook",
+      "symbol_id": "kotlin://io.legado.app.data.entities/SearchBook/primary-constructor",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-SEARCH-MODEL-MERGE",
+      "fact_key": "discovery.search-book.merge-results",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/model/webBook/SearchModel.kt",
+      "symbol": "mergeItems",
+      "symbol_id": "kotlin://io.legado.app.model.webBook/SearchModel/mergeItems",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-SEARCH-BOOK-DAO",
+      "fact_key": "discovery.search-book.clear-expired",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_room_query",
+      "path": "app/src/main/java/io/legado/app/data/dao/SearchBookDao.kt",
+      "symbol": "clearExpired",
+      "symbol_id": "kotlin://io.legado.app.data.dao/SearchBookDao/clearExpired",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-APP-STARTUP-SEARCH-CLEANUP",
+      "fact_key": "app.startup.search-book-cleanup",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/App.kt",
+      "symbol": "onCreate",
+      "symbol_id": "kotlin://io.legado.app/App/onCreate",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
       "fact_id": "AF-WEBBOOK-EXPLORE-ENTRYPOINT",
       "fact_key": "book-source.pipeline.explore",
       "category": "production_entrypoint",

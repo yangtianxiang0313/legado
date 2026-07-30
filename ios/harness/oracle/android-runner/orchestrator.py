@@ -620,6 +620,49 @@ SCENARIO_CONTRACTS = {
             "failed-resolution-cache-is-sticky",
         }),
     },
+    "rl-discovery-search-book-persistence-lifecycle-001": {
+        "status": "candidate",
+        "fixture_kind": "android_runtime_scenario",
+        "result_type": "library_runtime",
+        "stage_names": (
+            "fixture_setup",
+            "search_result_merge",
+            "database_write",
+            "room_query",
+            "cascade_cleanup",
+            "ttl_cleanup",
+            "result_mapping",
+        ),
+        "expected_cases": (
+            (
+                "merge-across-origins-preserves-first",
+                "search_book_merge",
+            ),
+            (
+                "precision-drops-unrelated",
+                "search_book_merge",
+            ),
+            (
+                "book-url-replace-conflict",
+                "search_book_room_replace",
+            ),
+            (
+                "source-delete-cascades-search-books",
+                "search_book_source_cascade",
+            ),
+            (
+                "ttl-cleanup-strict-boundary",
+                "search_book_ttl_cleanup",
+            ),
+        ),
+        "nominal_cases": frozenset({
+            "merge-across-origins-preserves-first",
+            "precision-drops-unrelated",
+            "book-url-replace-conflict",
+            "source-delete-cascades-search-books",
+            "ttl-cleanup-strict-boundary",
+        }),
+    },
     "rl-library-book-import-channel-runtime-001": {
         "status": "candidate",
         "fixture_kind": "android_runtime_scenario",

@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "kind": "android_runtime_scenario",
+  "id": "rl-discovery-search-book-persistence-lifecycle-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "android_runtime",
+  "capabilities": [
+    "android.room",
+    "discovery.search",
+    "library.book-identity"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": null,
+  "input": "input.json",
+  "transport": {
+    "mode": "none",
+    "external_network": "deny",
+    "responses": []
+  },
+  "coverage": [
+    {
+      "behavior": "discovery.search-book.persistence-lifecycle",
+      "cases": [
+        {
+          "id": "merge-across-origins-preserves-first",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-SEARCH-BOOK-ENTITY",
+            "AF-SEARCH-MODEL-MERGE"
+          ],
+          "branch_refs": [
+            "SearchModel.mergeItems groups exact, contains, and unrelated results",
+            "same name and author across sources adds origin to the first SearchBook",
+            "groups sort by descending origin count while retaining stable first representatives"
+          ]
+        },
+        {
+          "id": "precision-drops-unrelated",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-SEARCH-MODEL-MERGE"
+          ],
+          "branch_refs": [
+            "precision search omits results whose name and author neither equal nor contain the search key"
+          ]
+        },
+        {
+          "id": "book-url-replace-conflict",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-SEARCH-BOOK-ENTITY",
+            "AF-SEARCH-BOOK-DAO"
+          ],
+          "branch_refs": [
+            "SearchBook bookUrl is the Room primary key and insert uses REPLACE"
+          ]
+        },
+        {
+          "id": "source-delete-cascades-search-books",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-SEARCH-BOOK-ENTITY",
+            "AF-SEARCH-BOOK-DAO"
+          ],
+          "branch_refs": [
+            "SearchBook.origin references BookSource.bookSourceUrl with ON DELETE CASCADE"
+          ]
+        },
+        {
+          "id": "ttl-cleanup-strict-boundary",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-SEARCH-BOOK-DAO",
+            "AF-APP-STARTUP-SEARCH-CLEANUP"
+          ],
+          "branch_refs": [
+            "startup computes current time minus one day",
+            "clearExpired removes rows whose time is strictly less than the threshold"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "fixture_arguments",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 61,
+    "network_allowed": false,
+    "logical_origin": null,
+    "database_reset_per_case": true
+  },
+  "limits": {
+    "timeout_ms": 5000
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/data/entities/SearchBook.kt",
+      "app/src/main/java/io/legado/app/data/dao/SearchBookDao.kt",
+      "app/src/main/java/io/legado/app/model/webBook/SearchModel.kt",
+      "app/src/main/java/io/legado/app/App.kt"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-DISCOVERY-SEARCH-BOOK-PERSISTENCE-LIFECYCLE-001"
+  }
+}

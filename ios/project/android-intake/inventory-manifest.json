@@ -2,8 +2,8 @@
   "schema_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
   "android_tree": "c81f5d383116e37c1eefee3eb86654514e82022b",
-  "control_sha256": "5942d7e93860cc5633a8610c31cde751c425a4d9cd7505143b93716d00b694e5",
-  "policy_sha256": "28d005ee9ad0d0e0eaeb0a3b93d7e073651d7ef3abb03f038559eb10a73e048c",
+  "control_sha256": "a6c3be20a5141e7b79470eb49218a5e07f7b1d63084c1cc12088dea597391113",
+  "policy_sha256": "4f09071a764106755f1cc359c47af614e436ce1dd0dab226fd591976d613a21a",
   "facts": [
     {
       "id": "AF-ANALYZE-JSONPATH-GET-LIST",
@@ -217,6 +217,30 @@
         "body_semantic_sha256": "a42025607b7d31befaf05307881fd09444ca55b91f641e0fae1887ebf85e87fc"
       },
       "revision_sha256": "543ee75933f9cdb84e6338baf78a1231709d00787f57f68e8637b53bbb968372",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-APP-STARTUP-SEARCH-CLEANUP",
+      "fact_key": "app.startup.search-book-cleanup",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app/App/onCreate",
+      "path": "app/src/main/java/io/legado/app/App.kt",
+      "git_blob": "0ca2e8ffbcdecaef8e2000e10a7e303deba0f74c",
+      "source_sha256": "9fa26f094182937c04c6da77324cc2fa2700e8db8587a7c34bce392f56edf332",
+      "start_line": 50,
+      "end_line": 97,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "onCreate",
+        "signature": "fun onCreate()",
+        "body_semantic_sha256": "a48495bb59ee04270ddcc45a3735c81ee619e09dae324fa340e2dd665f119de9"
+      },
+      "revision_sha256": "ded58a5b800d9723fb511148080a331f61a60d350a55f3fb2d66256a23150cd0",
       "maps_to": [
         "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
       ]
@@ -1642,6 +1666,168 @@
       "revision_sha256": "f81b7e38e3afe5b24cfd6171ee7257786bdb2fa2e86dd086b3807c72e988ca9c",
       "maps_to": [
         "REQ-ANDROID-BOOKSOURCE-SCHEMA-001"
+      ]
+    },
+    {
+      "id": "AF-SEARCH-BOOK-DAO",
+      "fact_key": "discovery.search-book.clear-expired",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_room_query",
+      "symbol_id": "kotlin://io.legado.app.data.dao/SearchBookDao/clearExpired",
+      "path": "app/src/main/java/io/legado/app/data/dao/SearchBookDao.kt",
+      "git_blob": "9444a09644d5b90f3eea76ebbeea28f35bc3c911",
+      "source_sha256": "49c1b438967425ec626d4f521375b6b6223597ad7f4d4d4fb3cbd392b039c601",
+      "start_line": 65,
+      "end_line": 66,
+      "payload": {
+        "kind": "kotlin_room_query",
+        "symbol": "clearExpired",
+        "signature": "fun clearExpired(time: Long)",
+        "sql": "delete from searchBooks where time < :time"
+      },
+      "revision_sha256": "d920684c8fe1d38b0703f246c0be7037c14cf2fbacbd1f095ca7eda48d6652b0",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-SEARCH-BOOK-ENTITY",
+      "fact_key": "discovery.search-book.entity",
+      "category": "data_contract",
+      "evidence_level": "L1",
+      "support_state": "declaration_only",
+      "extractor": "kotlin_primary_constructor",
+      "symbol_id": "kotlin://io.legado.app.data.entities/SearchBook/primary-constructor",
+      "path": "app/src/main/java/io/legado/app/data/entities/SearchBook.kt",
+      "git_blob": "1b054cb732405956a6e9a48b83cd0a99adc5fda7",
+      "source_sha256": "c9fa33f6c234b752f30f77a34f4511537b7237ed369ebed2299ad9d85f34dd02",
+      "start_line": 25,
+      "end_line": 50,
+      "payload": {
+        "kind": "kotlin_primary_constructor",
+        "symbol": "SearchBook",
+        "properties": [
+          {
+            "name": "bookUrl",
+            "type": "String",
+            "default": "\"\""
+          },
+          {
+            "name": "origin",
+            "type": "String",
+            "default": "\"\""
+          },
+          {
+            "name": "originName",
+            "type": "String",
+            "default": "\"\""
+          },
+          {
+            "name": "type",
+            "type": "Int",
+            "default": "BookType.text"
+          },
+          {
+            "name": "name",
+            "type": "String",
+            "default": "\"\""
+          },
+          {
+            "name": "author",
+            "type": "String",
+            "default": "\"\""
+          },
+          {
+            "name": "kind",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "coverUrl",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "intro",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "wordCount",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "latestChapterTitle",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "tocUrl",
+            "type": "String",
+            "default": "\"\""
+          },
+          {
+            "name": "time",
+            "type": "Long",
+            "default": "System.currentTimeMillis()"
+          },
+          {
+            "name": "variable",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "originOrder",
+            "type": "Int",
+            "default": "0"
+          },
+          {
+            "name": "chapterWordCountText",
+            "type": "String?",
+            "default": "null"
+          },
+          {
+            "name": "chapterWordCount",
+            "type": "Int",
+            "default": "-1"
+          },
+          {
+            "name": "respondTime",
+            "type": "Int",
+            "default": "-1"
+          }
+        ]
+      },
+      "revision_sha256": "28cad30eea162cffff2c1b09ef1cc3cef193cd9eab651cbb2a75120fc340cd46",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-SEARCH-MODEL-MERGE",
+      "fact_key": "discovery.search-book.merge-results",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.webBook/SearchModel/mergeItems",
+      "path": "app/src/main/java/io/legado/app/model/webBook/SearchModel.kt",
+      "git_blob": "50b811063ab13636744dadf2a2c862834de9d5c3",
+      "source_sha256": "0fd436c2b2379e2162f84091d51acc4a5353ffa157c1ec21e3d79b007ff7345f",
+      "start_line": 102,
+      "end_line": 167,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "mergeItems",
+        "signature": "suspend fun mergeItems(newDataS: List<SearchBook>, precision: Boolean)",
+        "body_semantic_sha256": "8694a6a5748fb53b9be61d944c2dfcb3300b99dbfe16d4844b0210c9a86c9fb0"
+      },
+      "revision_sha256": "09d7f287e0d061209dfa402f1e94667bbc71a6315a55945b7263c2b7bbbe779b",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
       ]
     },
     {
