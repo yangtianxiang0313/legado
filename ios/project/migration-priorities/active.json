@@ -38,6 +38,38 @@
           "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook/searchBookAwait"
         }
       ]
+    },
+    {
+      "target": "IOS-SOURCE-RUNTIME-PRODUCT-COOKIE-SESSION-INTEGRATION-001",
+      "title": "将导入书源 Cookie 会话接入全部请求流水线",
+      "fixture_id": "source-product-cookie-session-integration-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [
+        "IOS-SOURCE-RUNTIME-PRODUCT-HEADER-INTEGRATION-001"
+      ],
+      "validation": "tests",
+      "test_filter": "SourceProductRequestIntegrationTests",
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+        "ios/Apps/Legado/App/SearchEnvironment.swift",
+        "ios/Apps/Legado/App/SourceCatalogEnvironment.swift",
+        "ios/Apps/Legado/App/LegadoApp.swift"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da",
+          "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+          "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/setCookie"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "fbd720ca3df874038f6d8e232a671958e5217632",
+          "path": "app/src/main/java/io/legado/app/help/http/CookieManager.kt",
+          "symbol_id": "kotlin://io.legado.app.help.http.CookieManager/loadRequest"
+        }
+      ]
     }
   ],
   "stages": [
@@ -50,6 +82,19 @@
           "id": "SOURCE-PRODUCT-HEADER-INTEGRATION",
           "task_ids": [
             "IOS-SOURCE-RUNTIME-PRODUCT-HEADER-INTEGRATION-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P12-02-COOKIE-SESSION-INTEGRATION",
+      "title": "共享且可恢复的书源 Cookie 会话",
+      "outcome": "enabledCookieJar 书源在四段流水线共享 CookieStore，响应 Set-Cookie 可用于后续请求并通过 App 端口跨启动恢复。",
+      "selectors": [
+        {
+          "id": "SOURCE-PRODUCT-COOKIE-SESSION-INTEGRATION",
+          "task_ids": [
+            "IOS-SOURCE-RUNTIME-PRODUCT-COOKIE-SESSION-INTEGRATION-001"
           ]
         }
       ]
