@@ -52,15 +52,18 @@ public struct SourceReaderContentLoader:
   private let sources: [SearchSourceDescriptor]
   private let transport: any HTTPTransport
   private let cookieStore: SourceCookieStore
+  private let dynamicWebPagePort: (any SourceDynamicWebPagePort)?
 
   public init(
     sources: [SearchSourceDescriptor],
     transport: any HTTPTransport,
-    cookieStore: SourceCookieStore = SourceCookieStore()
+    cookieStore: SourceCookieStore = SourceCookieStore(),
+    dynamicWebPagePort: (any SourceDynamicWebPagePort)? = nil
   ) {
     self.sources = sources
     self.transport = transport
     self.cookieStore = cookieStore
+    self.dynamicWebPagePort = dynamicWebPagePort
   }
 
   public func load(
@@ -107,7 +110,8 @@ public struct SourceReaderContentLoader:
     let execution = try await SourceContentPipeline(
       definition: source.definition,
       transport: transport,
-      cookieStore: cookieStore
+      cookieStore: cookieStore,
+      dynamicWebPagePort: dynamicWebPagePort
     ).content(
       chapterURL: chapter.requestExpression,
       nextChapterURL: nextChapter?.requestExpression,

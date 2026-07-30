@@ -2,12 +2,14 @@ import AppUseCases
 import Foundation
 import LibraryDomain
 import SourceRuntime
+import WebKit
 
 @MainActor
 enum SearchEnvironment {
     private static let cookieStore = SourceCookieStore(
         persistence: UserDefaultsSourceCookiePersistence()
     )
+    private static let dynamicWebPagePort = WKSourceDynamicWebPagePort()
 
     static func makeSession(
         persistedSources: [BookSourceDraft] = []
@@ -26,7 +28,8 @@ enum SearchEnvironment {
             executor: SourceSearchBooksExecutor(
                 sources: sources,
                 transport: transport,
-                cookieStore: cookieStore
+                cookieStore: cookieStore,
+                dynamicWebPagePort: dynamicWebPagePort
             )
         )
     }
@@ -106,7 +109,9 @@ enum SearchEnvironment {
         }
         let executor = SourceExploreBooksExecutor(
             descriptors: descriptors,
-            transport: makeTransport(externalBaseURL: externalBaseURL)
+            transport: makeTransport(externalBaseURL: externalBaseURL),
+            cookieStore: cookieStore,
+            dynamicWebPagePort: dynamicWebPagePort
         )
         let summary = executor.sources.first(where: {
             $0.id == sourceID
@@ -132,7 +137,8 @@ enum SearchEnvironment {
                 includeDisabled: true
             ),
             transport: makeTransport(externalBaseURL: externalBaseURL),
-            cookieStore: cookieStore
+            cookieStore: cookieStore,
+            dynamicWebPagePort: dynamicWebPagePort
         )
     }
 
@@ -150,7 +156,8 @@ enum SearchEnvironment {
                 includeDisabled: true
             ),
             transport: makeTransport(externalBaseURL: externalBaseURL),
-            cookieStore: cookieStore
+            cookieStore: cookieStore,
+            dynamicWebPagePort: dynamicWebPagePort
         )
     }
 
@@ -210,7 +217,8 @@ enum SearchEnvironment {
         let execution = try await SourceBookInfoPipeline(
             definition: selected.definition,
             transport: makeTransport(externalBaseURL: externalBaseURL),
-            cookieStore: cookieStore
+            cookieStore: cookieStore,
+            dynamicWebPagePort: dynamicWebPagePort
         ).load(
             book: SourceBook(
                 name: "",
@@ -268,7 +276,8 @@ enum SearchEnvironment {
                 transport: makeTransport(
                     externalBaseURL: externalBaseURL
                 ),
-                cookieStore: cookieStore
+                cookieStore: cookieStore,
+                dynamicWebPagePort: dynamicWebPagePort
             )
         )
         await toc.load(book: item, force: true)
@@ -306,7 +315,8 @@ enum SearchEnvironment {
         let results = try await SourceSearchBooksExecutor(
             sources: [descriptor],
             transport: transport,
-            cookieStore: cookieStore
+            cookieStore: cookieStore,
+            dynamicWebPagePort: dynamicWebPagePort
         ).search(
             query: current.candidate.name,
             scope: .source(
@@ -345,7 +355,8 @@ enum SearchEnvironment {
         let chapters = try await SourceBookChapterLoader(
             sources: [descriptor],
             transport: transport,
-            cookieStore: cookieStore
+            cookieStore: cookieStore,
+            dynamicWebPagePort: dynamicWebPagePort
         ).load(book: transient).chapters
         return (candidate, chapters)
     }
@@ -938,6 +949,280 @@ private struct URLSessionBookSourceTransport: HTTPTransport {
             throw failure
         } catch {
             throw HTTPTransportFailure.connectionFailed
+        }
+    }
+}
+
+private enum WKSourceDynamicWebError: Error {
+    case invalidURL
+    case navigationFailed
+    case javaScriptTimedOut
+}
+
+private final class WKSourceDynamicWebPagePort:
+    @unchecked Sendable, SourceDynamicWebPagePort
+{
+    func execute(
+        _ request: SourceDynamicWebPageRequest
+    ) async throws -> SourceDynamicWebPageResult {
+        try await Task { @MainActor in
+            let runner = WKSourceDynamicWebPageRunner(request: request)
+            return try await runner.run()
+        }.value
+    }
+}
+
+@MainActor
+private final class WKSourceDynamicWebPageRunner:
+    NSObject, WKNavigationDelegate
+{
+    private let request: SourceDynamicWebPageRequest
+    private let webView: WKWebView
+    private var continuation:
+        CheckedContinuation<SourceDynamicWebPageResult, any Error>?
+    private var completionTask: Task<Void, Never>?
+
+    init(request: SourceDynamicWebPageRequest) {
+        self.request = request
+        let configuration = WKWebViewConfiguration()
+        configuration.defaultWebpagePreferences.allowsContentJavaScript = true
+        configuration.websiteDataStore = .nonPersistent()
+        webView = WKWebView(frame: .zero, configuration: configuration)
+        super.init()
+        webView.navigationDelegate = self
+        webView.customUserAgent = request.userAgent
+    }
+
+    func run() async throws -> SourceDynamicWebPageResult {
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                self.continuation = continuation
+                Task { @MainActor in
+                    await seedRequestCookies()
+                    startNavigation()
+                }
+            }
+        } onCancel: {
+            Task { @MainActor [weak self] in
+                self?.finish(throwing: CancellationError())
+            }
+        }
+    }
+
+    private func startNavigation() {
+        guard let url = URL(string: request.url.absoluteString) else {
+            finish(throwing: WKSourceDynamicWebError.invalidURL)
+            return
+        }
+        switch request.mode {
+        case .loadURL:
+            var urlRequest = URLRequest(url: url)
+            for header in request.headers.fields {
+                urlRequest.addValue(
+                    header.value,
+                    forHTTPHeaderField: header.name
+                )
+            }
+            webView.load(urlRequest)
+        case .injectHTML:
+            webView.loadHTMLString(request.html ?? "", baseURL: url)
+        }
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        didFinish navigation: WKNavigation!
+    ) {
+        guard completionTask == nil else { return }
+        completionTask = Task { @MainActor [weak self] in
+            await self?.resolvePage()
+        }
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        didFail navigation: WKNavigation!,
+        withError error: any Error
+    ) {
+        finish(throwing: error)
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        didFailProvisionalNavigation navigation: WKNavigation!,
+        withError error: any Error
+    ) {
+        finish(throwing: error)
+    }
+
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        finish(throwing: WKSourceDynamicWebError.navigationFailed)
+    }
+
+    private func resolvePage() async {
+        try? await Task.sleep(for: .seconds(1))
+        for attempt in 0...30 {
+            if Task.isCancelled { return }
+            if
+                let sourceRegex = request.sourceRegex,
+                let resource = await matchingResource(sourceRegex)
+            {
+                await finish(value: resource, kind: .resource)
+                return
+            }
+            do {
+                let result = try await webView.evaluateJavaScript(
+                    request.javaScript
+                )
+                if let value = javaScriptString(result), !value.isEmpty {
+                    await finish(value: value, kind: .javaScript)
+                    return
+                }
+            } catch {
+                if attempt == 30 {
+                    finish(throwing: error)
+                    return
+                }
+            }
+            if attempt < 30 {
+                try? await Task.sleep(for: .seconds(1))
+            }
+        }
+        finish(throwing: WKSourceDynamicWebError.javaScriptTimedOut)
+    }
+
+    private func matchingResource(_ pattern: String) async -> String? {
+        guard
+            let values = try? await webView.evaluateJavaScript(
+                """
+                performance.getEntriesByType('resource').map(
+                  function(entry) { return entry.name; }
+                )
+                """
+            ) as? [String]
+        else {
+            return nil
+        }
+        return values.first { fullMatch($0, pattern: pattern) }
+    }
+
+    private func fullMatch(_ value: String, pattern: String) -> Bool {
+        guard let expression = try? NSRegularExpression(pattern: pattern)
+        else {
+            return false
+        }
+        let range = NSRange(value.startIndex..., in: value)
+        return expression.firstMatch(in: value, range: range)?.range == range
+    }
+
+    private func javaScriptString(_ value: Any?) -> String? {
+        guard let value, !(value is NSNull) else { return nil }
+        if let value = value as? String { return value }
+        if JSONSerialization.isValidJSONObject(value),
+           let data = try? JSONSerialization.data(withJSONObject: value),
+           let text = String(data: data, encoding: .utf8)
+        {
+            return text
+        }
+        return String(describing: value)
+    }
+
+    private func finish(
+        value: String,
+        kind: SourceDynamicWebCompletionKind
+    ) async {
+        let finalValue = webView.url?.absoluteString
+            ?? request.url.absoluteString
+        guard let finalURL = try? HTTPURL(finalValue) else {
+            finish(throwing: WKSourceDynamicWebError.invalidURL)
+            return
+        }
+        let cookie = await serializedCookies()
+        finish(
+            returning: SourceDynamicWebPageResult(
+                finalURL: finalURL,
+                value: value,
+                completionKind: kind,
+                webCookie: cookie
+            )
+        )
+    }
+
+    private func finish(returning result: SourceDynamicWebPageResult) {
+        guard let continuation else { return }
+        self.continuation = nil
+        completionTask?.cancel()
+        completionTask = nil
+        webView.stopLoading()
+        continuation.resume(returning: result)
+    }
+
+    private func finish(throwing error: any Error) {
+        guard let continuation else { return }
+        self.continuation = nil
+        completionTask?.cancel()
+        completionTask = nil
+        webView.stopLoading()
+        continuation.resume(throwing: error)
+    }
+
+    private func seedRequestCookies() async {
+        guard
+            let url = URL(string: request.url.absoluteString),
+            let host = url.host
+        else {
+            return
+        }
+        let header = request.headers.values(for: "cookie")
+            .joined(separator: "; ")
+        for segment in header.split(separator: ";") {
+            let pair = segment.split(
+                separator: "=",
+                maxSplits: 1,
+                omittingEmptySubsequences: false
+            )
+            guard pair.count == 2 else { continue }
+            let name = pair[0].trimmingCharacters(in: .whitespaces)
+            guard !name.isEmpty else { continue }
+            let properties: [HTTPCookiePropertyKey: Any] = [
+                .name: name,
+                .value: String(pair[1]),
+                .domain: host,
+                .path: "/",
+                .secure: url.scheme == "https" ? "TRUE" : "FALSE",
+            ]
+            if let cookie = HTTPCookie(properties: properties) {
+                await webView.configuration.websiteDataStore.httpCookieStore
+                    .setCookieAsync(cookie)
+            }
+        }
+    }
+
+    private func serializedCookies() async -> String? {
+        let cookies = await webView.configuration.websiteDataStore
+            .httpCookieStore.allCookiesAsync()
+        let value = cookies
+            .sorted { lhs, rhs in lhs.name < rhs.name }
+            .map { "\($0.name)=\($0.value)" }
+            .joined(separator: "; ")
+        return value.isEmpty ? nil : value
+    }
+}
+
+private extension WKHTTPCookieStore {
+    func allCookiesAsync() async -> [HTTPCookie] {
+        await withCheckedContinuation { continuation in
+            getAllCookies {
+                continuation.resume(returning: $0)
+            }
+        }
+    }
+
+    func setCookieAsync(_ cookie: HTTPCookie) async {
+        await withCheckedContinuation { continuation in
+            setCookie(cookie) {
+                continuation.resume()
+            }
         }
     }
 }

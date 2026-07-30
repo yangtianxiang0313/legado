@@ -70,13 +70,19 @@ public struct SourceExploreBooksExecutor:
 {
   private let descriptors: [ExploreSourceDescriptor]
   private let transport: any HTTPTransport
+  private let cookieStore: SourceCookieStore
+  private let dynamicWebPagePort: (any SourceDynamicWebPagePort)?
 
   public init(
     descriptors: [ExploreSourceDescriptor],
-    transport: any HTTPTransport
+    transport: any HTTPTransport,
+    cookieStore: SourceCookieStore = SourceCookieStore(),
+    dynamicWebPagePort: (any SourceDynamicWebPagePort)? = nil
   ) {
     self.descriptors = descriptors
     self.transport = transport
+    self.cookieStore = cookieStore
+    self.dynamicWebPagePort = dynamicWebPagePort
   }
 
   public var sources: [ExploreSourceSummary] {
@@ -95,7 +101,9 @@ public struct SourceExploreBooksExecutor:
     }
     return try SourceExplorePipeline(
       definition: descriptor.definition,
-      transport: transport
+      transport: transport,
+      cookieStore: cookieStore,
+      dynamicWebPagePort: dynamicWebPagePort
     ).categories().enumerated().map { index, category in
       ExploreCategoryItem(
         id: "\(sourceID)#\(index)#\(category.title)",
@@ -119,7 +127,9 @@ public struct SourceExploreBooksExecutor:
     }
     let execution = try await SourceExplorePipeline(
       definition: descriptor.definition,
-      transport: transport
+      transport: transport,
+      cookieStore: cookieStore,
+      dynamicWebPagePort: dynamicWebPagePort
     ).explore(
       SourceExploreInput(
         category: SourceExploreCategory(

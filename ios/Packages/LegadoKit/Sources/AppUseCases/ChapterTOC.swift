@@ -26,15 +26,18 @@ public struct SourceBookChapterLoader: BookChapterLoading, Sendable {
   private let sources: [SearchSourceDescriptor]
   private let transport: any HTTPTransport
   private let cookieStore: SourceCookieStore
+  private let dynamicWebPagePort: (any SourceDynamicWebPagePort)?
 
   public init(
     sources: [SearchSourceDescriptor],
     transport: any HTTPTransport,
-    cookieStore: SourceCookieStore = SourceCookieStore()
+    cookieStore: SourceCookieStore = SourceCookieStore(),
+    dynamicWebPagePort: (any SourceDynamicWebPagePort)? = nil
   ) {
     self.sources = sources
     self.transport = transport
     self.cookieStore = cookieStore
+    self.dynamicWebPagePort = dynamicWebPagePort
   }
 
   public func load(
@@ -55,7 +58,8 @@ public struct SourceBookChapterLoader: BookChapterLoading, Sendable {
     let execution = try await SourceTOCPipeline(
       definition: source.definition,
       transport: transport,
-      cookieStore: cookieStore
+      cookieStore: cookieStore,
+      dynamicWebPagePort: dynamicWebPagePort
     ).chapters(
       book: SourceBook(
         name: candidate.name,
