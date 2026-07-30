@@ -1,4 +1,5 @@
 import Foundation
+import LegadoCore
 
 public struct HTMLCSSRule: Sendable, Equatable {
   public enum Value: String, Sendable {
@@ -385,6 +386,16 @@ public struct HTMLCSSSourceRuntime: Sendable {
   }
 
   public func chapters(html: String, tocURL: URL) throws -> [SourceChapter] {
+    if usesStructuredRules(
+      content: html,
+      rules: [
+        HTMLCSSRule(definition.toc.list),
+        definition.toc.name,
+        definition.toc.url,
+      ]
+    ) {
+      return try structuredChapters(content: html, tocURL: tocURL)
+    }
     let document = try parse(html)
     let nodes = try document.select(
       HTMLCSSRule(definition.toc.list).cssSelector
@@ -651,6 +662,53 @@ public struct HTMLCSSSourceRuntime: Sendable {
         URL(string: $0, relativeTo: baseURL)?.absoluteURL
       } ?? baseURL
     )
+  }
+
+  private func structuredChapters(
+    content: String,
+    tocURL: URL
+  ) throws -> [SourceChapter] {
+    let elements = try SourceRuleConsumerEvaluator(
+      content: content
+    ).getElements(definition.toc.list)
+    guard !elements.isEmpty else {
+      throw SourceRuntimeIssue(
+        stage: .fieldEvaluation,
+        code: .ruleFailed
+      )
+    }
+    return try elements.enumerated().map { index, element in
+      let data = try JSONValueCodec.encode(element)
+      let localContent = String(decoding: data, as: UTF8.self)
+      let evaluator = SourceRuleConsumerEvaluator(content: localContent)
+      guard
+        let title = try structuredValue(
+          definition.toc.name,
+          evaluator: evaluator
+        ),
+        let rawURL = try structuredValue(
+          definition.toc.url,
+          evaluator: evaluator
+        ),
+        let url = URL(
+          string: rawURL,
+          relativeTo: tocURL
+        )?.absoluteURL
+      else {
+        throw SourceRuntimeIssue(
+          stage: .fieldEvaluation,
+          code: .ruleFailed
+        )
+      }
+      return SourceChapter(
+        index: index,
+        title: title,
+        url: url,
+        isPay: false,
+        isVIP: false,
+        isVolume: false
+      )
+    }
   }
 
   private func structuredValue(

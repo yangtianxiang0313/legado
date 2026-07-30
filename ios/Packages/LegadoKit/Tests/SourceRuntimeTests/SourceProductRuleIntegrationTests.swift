@@ -225,6 +225,90 @@ final class SourceProductRuleIntegrationTests: XCTestCase {
       "http://sourcelab.test/books/star-river/chapters"
     )
   }
+
+  func testJSONPathImportedSourceFlowsThroughTOCPipeline() async throws {
+    let definition = SourceSearchDefinition(
+      sourceURL: "http://sourcelab.test",
+      sourceName: "JSON 书源",
+      originOrder: 9,
+      runtime: HTMLCSSSourceDefinition(
+        searchURLTemplate: "http://sourcelab.test/api/search",
+        search: SearchRules(
+          list: "@Json:$.books[*]",
+          name: HTMLCSSRule("@Json:$.name"),
+          author: .optional(nil),
+          intro: .optional(nil),
+          kind: .optional(nil),
+          lastChapter: .optional(nil),
+          bookURL: HTMLCSSRule("@Json:$.url", value: .href),
+          coverURL: .optional(nil, value: .src)
+        ),
+        bookInfo: BookInfoRules(
+          name: HTMLCSSRule("@Json:$.name"),
+          author: .optional(nil),
+          intro: .optional(nil),
+          kind: .optional(nil),
+          lastChapter: .optional(nil),
+          coverURL: .optional(nil, value: .src),
+          tocURL: HTMLCSSRule("@Json:$.toc", value: .href)
+        ),
+        toc: TOCRules(
+          list: "@Json:$.chapters[*]",
+          name: HTMLCSSRule("@Json:$.name"),
+          url: HTMLCSSRule("@Json:$.url", value: .href)
+        ),
+        content: ContentRules(
+          content: HTMLCSSRule("@Json:$.content")
+        )
+      )
+    )
+    let bookURL = URL(
+      string: "http://sourcelab.test/books/star-river"
+    )!
+    let transport = RoutedJSONTransport(
+      bodies: [
+        "/books/star-river": """
+          {"name":"星河纪事","toc":"chapters"}
+          """,
+        "/books/chapters": """
+          {
+            "chapters": [
+              {"name":"第一章 启航","url":"chapter-1"},
+              {"name":"第二章 回声","url":"/content/chapter-2"}
+            ]
+          }
+          """,
+      ]
+    )
+
+    let execution = try await SourceTOCPipeline(
+      definition: definition,
+      transport: transport
+    ).chapters(
+      book: SourceBook(
+        name: "星河纪事",
+        author: nil,
+        intro: nil,
+        kind: nil,
+        lastChapter: nil,
+        bookURL: bookURL,
+        coverURL: nil,
+        tocURL: nil
+      )
+    )
+
+    XCTAssertEqual(execution.chapters.map(\.title), [
+      "第一章 启航",
+      "第二章 回声",
+    ])
+    XCTAssertEqual(
+      execution.chapters.map(\.url.absoluteString),
+      [
+        "http://sourcelab.test/books/chapter-1",
+        "http://sourcelab.test/content/chapter-2",
+      ]
+    )
+  }
 }
 
 private actor JSONSearchTransport: HTTPTransport {
@@ -236,6 +320,28 @@ private actor JSONSearchTransport: HTTPTransport {
 
   func execute(_ request: HTTPRequest) async throws -> HTTPResponse {
     try HTTPResponse(
+      statusCode: 200,
+      effectiveURL: request.url,
+      body: HTTPBody(Data(body.utf8))
+    )
+  }
+}
+
+private actor RoutedJSONTransport: HTTPTransport {
+  let bodies: [String: String]
+
+  init(bodies: [String: String]) {
+    self.bodies = bodies
+  }
+
+  func execute(_ request: HTTPRequest) async throws -> HTTPResponse {
+    guard
+      let path = URL(string: request.url.absoluteString)?.path,
+      let body = bodies[path]
+    else {
+      throw HTTPTransportFailure.connectionFailed
+    }
+    return try HTTPResponse(
       statusCode: 200,
       effectiveURL: request.url,
       body: HTTPBody(Data(body.utf8))
