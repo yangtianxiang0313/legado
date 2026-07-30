@@ -147,6 +147,118 @@ enum SearchEnvironment {
         )
     }
 
+    static func importBookURL(
+        _ rawValue: String,
+        library: ShelfLibrary,
+        persistedSources: [BookSourceDraft] = []
+    ) async throws -> ShelfBookItem {
+        let value = rawValue.trimmingCharacters(
+            in: .whitespacesAndNewlines
+        )
+        guard let bookURL = URL(string: value),
+              let baseURL = originBaseURL(bookURL)
+        else {
+            throw BookURLImportEnvironmentError.invalidURL
+        }
+        if let existing = await library.item(forURL: value) {
+            return existing
+        }
+
+        let externalBaseURL = ProcessInfo.processInfo.environment[
+            "LEGADO_SEARCH_BASE_URL"
+        ]
+        let environmentBaseURL = externalBaseURL ?? "http://legado.local"
+        let sources = makeSources(
+            baseURL: environmentBaseURL,
+            persistedSources: persistedSources,
+            includeDisabled: true
+        )
+        let matches = sources.map { source in
+            RemoteBookSourceCandidate(
+                sourceID: source.id,
+                sourceName: source.name,
+                match: source.definition.sourceURL == baseURL
+                    ? .exactBase
+                    : patternMatch(
+                        source.definition.bookURLPattern,
+                        value: value
+                    )
+            )
+        }
+        guard
+            let selectedIndex = matches.firstIndex(where: {
+                $0.match == .exactBase
+            }) ?? matches.firstIndex(where: {
+                $0.match == .pattern
+            })
+        else {
+            throw BookURLImportEnvironmentError.sourceNotFound
+        }
+        let selected = sources[selectedIndex]
+        let execution = try await SourceBookInfoPipeline(
+            definition: selected.definition,
+            transport: makeTransport(externalBaseURL: externalBaseURL)
+        ).load(
+            book: SourceBook(
+                name: "",
+                author: nil,
+                intro: nil,
+                kind: nil,
+                lastChapter: nil,
+                bookURL: bookURL,
+                coverURL: nil,
+                tocURL: nil
+            )
+        )
+        let resolved = RemoteBookImporter.resolve(
+            existingBook: nil,
+            orderedSources: matches,
+            fetchedBook: ImportedBook(
+                id: LibraryDomain.BookID(rawValue: value),
+                name: execution.book.name,
+                author: normalizedAuthor(execution.book.author ?? ""),
+                originName: selected.name,
+                originKind: matches[selectedIndex].match == .exactBase
+                    ? .exactBase
+                    : .pattern,
+                isLocal: false,
+                isArchive: false,
+                chapterCount: 0
+            )
+        )
+        guard resolved.outcome == .added else {
+            throw BookURLImportEnvironmentError.fetchFailed
+        }
+        let candidate = ShelfBookCandidate(
+            name: execution.book.name,
+            author: normalizedAuthor(execution.book.author ?? ""),
+            kind: execution.book.kind ?? "",
+            lastChapter: execution.book.lastChapter ?? "",
+            intro: execution.book.intro ?? "",
+            bookURL: value,
+            coverURL: execution.book.coverURL?.absoluteString,
+            originName: selected.name,
+            sourceID: selected.id
+        )
+        await library.add(candidate)
+        guard let item = await library.item(forURL: value) else {
+            throw BookURLImportEnvironmentError.persistenceFailed
+        }
+        let toc = library.chapterSession(
+            loader: SourceBookChapterLoader(
+                sources: [selected],
+                transport: makeTransport(
+                    externalBaseURL: externalBaseURL
+                )
+            )
+        )
+        await toc.load(book: item, force: true)
+        guard let reloaded = await library.item(forURL: value) else {
+            throw BookURLImportEnvironmentError.persistenceFailed
+        }
+        return reloaded
+    }
+
     static func resolveSourceSwitch(
         current: ShelfBookItem,
         target: BookSourceDraft,
@@ -352,6 +464,7 @@ enum SearchEnvironment {
             originOrder: Int(
                 draft.importMetadata?.customOrder ?? 0
             ),
+            bookURLPattern: string(root, "bookUrlPattern"),
             runtime: runtime
         )
         let catalog = (
@@ -428,6 +541,10 @@ enum SearchEnvironment {
             sourceURL: id,
             sourceName: name,
             originOrder: order,
+            bookURLPattern:
+                #"^"# + NSRegularExpression.escapedPattern(
+                    for: baseURL
+                ) + #"/books/"#,
             runtime: HTMLCSSSourceDefinition(
                 searchURLTemplate:
                     "\(baseURL)/search?source=\(group)&q={{key}}",
@@ -490,11 +607,46 @@ enum SearchEnvironment {
             )
         )
     }
+
+    private static func originBaseURL(_ url: URL) -> String? {
+        guard let scheme = url.scheme, let host = url.host else {
+            return nil
+        }
+        var value = "\(scheme)://\(host)"
+        if let port = url.port {
+            value += ":\(port)"
+        }
+        return value
+    }
+
+    private static func patternMatch(
+        _ pattern: String?,
+        value: String
+    ) -> RemoteBookSourceMatch {
+        guard let pattern, !pattern.isEmpty else { return .none }
+        do {
+            let expression = try NSRegularExpression(pattern: pattern)
+            let range = NSRange(value.startIndex..., in: value)
+            return expression.firstMatch(
+                in: value,
+                range: range
+            ) == nil ? .none : .pattern
+        } catch {
+            return .invalidPattern
+        }
+    }
 }
 
 private enum SourceSwitchEnvironmentError: Error {
     case unsupportedSource
     case bookNotFound
+}
+
+private enum BookURLImportEnvironmentError: Error {
+    case invalidURL
+    case sourceNotFound
+    case fetchFailed
+    case persistenceFailed
 }
 
 private actor LocalBookSourceTransport: HTTPTransport {

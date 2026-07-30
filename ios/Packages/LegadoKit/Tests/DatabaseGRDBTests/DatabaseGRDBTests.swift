@@ -223,6 +223,64 @@ final class DatabaseGRDBTests: XCTestCase {
     XCTAssertEqual(preserved?.candidate.sourceID, "source://test")
   }
 
+  func testLocalTextImportPersistsContentAndKeepsIdentityOnReimport()
+    async throws
+  {
+    let path = temporaryDatabasePath()
+    let repository = try GRDBBookShelfRepository(path: path)
+    let library = ShelfLibrary(repository: repository)
+    let reference = "file:///managed/imported/local.txt"
+
+    let first = await library.importLocalText(
+      fileName: "《本地书》作者：林舟.txt",
+      managedReference: reference,
+      data: Data(
+        """
+        第一章 启程
+        第一版正文
+        第二章 回声
+        回声落下
+        """.utf8
+      )
+    )
+    let imported = try XCTUnwrap(first)
+    XCTAssertEqual(imported.candidate.name, "本地书")
+    XCTAssertEqual(imported.candidate.author, "林舟")
+    XCTAssertEqual(imported.chapterCount, 2)
+
+    let chapters = try await repository.chapters(bookID: imported.id)
+    XCTAssertEqual(chapters.map(\.title), ["第一章 启程", "第二章 回声"])
+    let firstContent = try await repository.chapterContent(
+      bookID: imported.id,
+      chapterID: chapters[0].id
+    )
+    XCTAssertEqual(firstContent, "第一版正文")
+
+    let reopened = try GRDBBookShelfRepository(path: path)
+    let reopenedLibrary = ShelfLibrary(repository: reopened)
+    let updated = await reopenedLibrary.importLocalText(
+      fileName: "《本地书》作者：林舟.txt",
+      managedReference: reference,
+      data: Data(
+        """
+        第一章 启程
+        更新后的正文
+        """.utf8
+      )
+    )
+    let reimported = try XCTUnwrap(updated)
+    XCTAssertEqual(reimported.id, imported.id)
+    XCTAssertEqual(reimported.chapterCount, 1)
+    let updatedChapters = try await reopened.chapters(
+      bookID: imported.id
+    )
+    let updatedContent = try await reopened.chapterContent(
+      bookID: imported.id,
+      chapterID: updatedChapters[0].id
+    )
+    XCTAssertEqual(updatedContent, "更新后的正文")
+  }
+
   private func temporaryDatabasePath() -> String {
     FileManager.default.temporaryDirectory
       .appendingPathComponent(UUID().uuidString)

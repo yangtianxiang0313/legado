@@ -40,8 +40,10 @@ struct ReaderContentView: View {
         self.openSourceEditor = openSourceEditor
         _session = State(
             initialValue: ReaderContentSession(
-                loader: SearchEnvironment.makeReaderContentLoader(
-                    persistedSources: persistedSources
+                loader: library.readerContentLoader(
+                    fallback: SearchEnvironment.makeReaderContentLoader(
+                        persistedSources: persistedSources
+                    )
                 )
             )
         )

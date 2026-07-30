@@ -53,6 +53,50 @@ public struct SourceReaderContentLoader: ReaderContentLoading, Sendable {
   }
 }
 
+public struct RepositoryReaderContentLoader:
+  ReaderContentLoading, Sendable
+{
+  private let repository: any BookShelfRepository
+  private let fallback: any ReaderContentLoading
+
+  public init(
+    repository: any BookShelfRepository,
+    fallback: any ReaderContentLoading
+  ) {
+    self.repository = repository
+    self.fallback = fallback
+  }
+
+  public func load(
+    book: ShelfBookItem,
+    chapter: LibraryDomain.BookChapter,
+    characterOffset: Int
+  ) async throws -> ReaderDocument {
+    if
+      let content = try await repository.chapterContent(
+        bookID: book.id,
+        chapterID: chapter.id
+      )
+    {
+      return ReaderDocument(
+        position: ReaderPosition(
+          bookID: book.id,
+          chapterID: chapter.id,
+          chapterIndex: chapter.index,
+          characterOffset: max(0, characterOffset)
+        ),
+        title: chapter.title,
+        content: content
+      )
+    }
+    return try await fallback.load(
+      book: book,
+      chapter: chapter,
+      characterOffset: characterOffset
+    )
+  }
+}
+
 public enum ReaderContentLoadingState: Equatable, Sendable {
   case idle
   case loading

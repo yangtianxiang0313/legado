@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "scenario_id": "ui-book-import-milestone-v1",
+  "profile": "store_safe",
+  "simulators": [
+    {
+      "simulator_id": "SIM-PHONE-COMPACT-001",
+      "projection": "compactStack",
+      "imported_book": "本地旅程",
+      "url_book": "星河纪事",
+      "url_imported": true,
+      "chapter_count": 3,
+      "opened_chapter": "第一章 启程",
+      "content_visible": true,
+      "managed_copy": true,
+      "persisted_after_relaunch": true
+    }
+  ]
+}

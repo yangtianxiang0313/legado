@@ -100,6 +100,13 @@ public enum ShelfMutationFailure: Error, Equatable, Sendable {
   case missingBook
 }
 
+public enum BookImportFailure: Error, Equatable, Sendable {
+  case unsupportedRepository
+  case unsupportedFileType
+  case emptyFile
+  case unreadableText
+}
+
 public protocol BookShelfRepository: Sendable {
   func stage(_ candidate: ShelfBookCandidate) async throws -> ShelfBookItem
   func add(
@@ -139,6 +146,14 @@ public protocol BookShelfRepository: Sendable {
   func setShelfOrder(
     _ bookIDs: [LibraryDomain.BookID]
   ) async throws
+  func importLocalText(
+    candidate: ShelfBookCandidate,
+    chapters: [LocalTextChapter]
+  ) async throws -> ShelfBookItem
+  func chapterContent(
+    bookID: LibraryDomain.BookID,
+    chapterID: LibraryDomain.ChapterID
+  ) async throws -> String?
   func reset() async throws
 }
 
@@ -169,6 +184,20 @@ public extension BookShelfRepository {
   func setShelfOrder(
     _ bookIDs: [LibraryDomain.BookID]
   ) async throws {}
+
+  func importLocalText(
+    candidate: ShelfBookCandidate,
+    chapters: [LocalTextChapter]
+  ) async throws -> ShelfBookItem {
+    throw BookImportFailure.unsupportedRepository
+  }
+
+  func chapterContent(
+    bookID: LibraryDomain.BookID,
+    chapterID: LibraryDomain.ChapterID
+  ) async throws -> String? {
+    nil
+  }
 }
 
 @MainActor
@@ -241,6 +270,69 @@ public final class ShelfLibrary {
 
   public func item(id: LibraryDomain.BookID) async -> ShelfBookItem? {
     try? await repository.book(id: id)
+  }
+
+  @discardableResult
+  public func importLocalText(
+    fileName: String,
+    managedReference: String,
+    data: Data
+  ) async -> ShelfBookItem? {
+    guard fileName.lowercased().hasSuffix(".txt") else {
+      errorMessage = "当前只支持真实可解析的 TXT 文件"
+      return nil
+    }
+    let metadata = LocalBookImporter.importDocument(
+      LocalBookImportInput(
+        opaqueReference: managedReference,
+        fileName: fileName,
+        byteCount: data.count,
+        existingBook: nil
+      )
+    )
+    guard let imported = metadata.books.first else {
+      errorMessage = metadata.exception == .emptyFile
+        ? "不能导入空文件"
+        : "无法识别本地书籍"
+      return nil
+    }
+    do {
+      let document = try LocalTextBookParser.parse(data)
+      let item = try await repository.importLocalText(
+        candidate: ShelfBookCandidate(
+          name: imported.name,
+          author: imported.author,
+          kind: "本地 TXT",
+          lastChapter: document.chapters.last?.title ?? "",
+          intro: document.chapters.first?.content.prefix(500)
+            .description ?? "",
+          bookURL: managedReference,
+          coverURL: nil,
+          originName: fileName,
+          sourceID: "local-file"
+        ),
+        chapters: document.chapters
+      )
+      await reload()
+      errorMessage = nil
+      return item
+    } catch LocalTextBookFailure.emptyFile {
+      errorMessage = "不能导入空文件"
+    } catch LocalTextBookFailure.unsupportedEncoding {
+      errorMessage = "无法识别 TXT 编码"
+    } catch {
+      errorMessage = "本地书籍导入失败"
+    }
+    return nil
+  }
+
+  public func readerContentLoader(
+    fallback: any ReaderContentLoading
+  ) -> any ReaderContentLoading {
+    RepositoryReaderContentLoader(
+      repository: repository,
+      fallback: fallback
+    )
   }
 
   public func chapterSession(

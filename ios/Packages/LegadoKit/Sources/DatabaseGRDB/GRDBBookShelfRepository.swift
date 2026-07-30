@@ -380,6 +380,79 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
     }
   }
 
+  public func importLocalText(
+    candidate: ShelfBookCandidate,
+    chapters: [LocalTextChapter]
+  ) async throws -> ShelfBookItem {
+    try await database.write { db in
+      var record =
+        try BookRecord
+          .filter(Column("bookURL") == candidate.bookURL)
+          .fetchOne(db)
+        ?? BookRecord(
+          bookID: UUID().uuidString.lowercased(),
+          candidate: candidate,
+          membership: .member(groupID: 0),
+          orderValue:
+            (try Int64.fetchOne(
+              db,
+              sql: "SELECT MIN(orderValue) FROM books"
+            ) ?? 0) - 1,
+          chapterCount: 0
+        )
+      record.apply(candidate)
+      record.inBookshelf = true
+      record.chapterCount = chapters.count
+      record.lastChapter = chapters.last?.title ?? ""
+      record.updateError = false
+      record.latestCheckCount = 0
+      try record.save(db)
+
+      _ = try ChapterRecord
+        .filter(Column("bookID") == record.bookID)
+        .deleteAll(db)
+      _ = try ChapterContentRecord
+        .filter(Column("bookID") == record.bookID)
+        .deleteAll(db)
+      for (index, chapter) in chapters.enumerated() {
+        let chapterURL = "\(candidate.bookURL)#chapter-\(index)"
+        let value = LibraryDomain.BookChapter(
+          id: LibraryDomain.ChapterID(
+            sourceID: "local-file",
+            chapterURL: chapterURL
+          ),
+          bookID: LibraryDomain.BookID(rawValue: record.bookID),
+          sourceID: "local-file",
+          index: index,
+          title: chapter.title,
+          url: chapterURL
+        )
+        var chapterRecord = ChapterRecord(chapter: value)
+        try chapterRecord.insert(db)
+        var contentRecord = ChapterContentRecord(
+          bookID: record.bookID,
+          chapterID: value.id.rawValue,
+          content: chapter.content
+        )
+        try contentRecord.insert(db)
+      }
+      return record.item
+    }
+  }
+
+  public func chapterContent(
+    bookID: LibraryDomain.BookID,
+    chapterID: LibraryDomain.ChapterID
+  ) async throws -> String? {
+    try await database.read { db in
+      try ChapterContentRecord
+        .filter(Column("bookID") == bookID.rawValue)
+        .filter(Column("chapterID") == chapterID.rawValue)
+        .fetchOne(db)?
+        .content
+    }
+  }
+
   public func reset() async throws {
     try await database.write { db in
       _ = try ChapterContentRecord.deleteAll(db)

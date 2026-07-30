@@ -1442,6 +1442,89 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testBookImportMilestone() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+            "--seed-book-import",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        require("screen.root.shelf")
+        requireButton("action.bookImport.open")
+        XCTAssertTrue(
+            app.staticTexts["本地旅程"].waitForExistence(timeout: 8)
+        )
+        requireButton("action.bookImport.open").tap()
+        requireButton("action.bookImport.url").tap()
+        let urlField = app.textFields.firstMatch
+        XCTAssertTrue(urlField.waitForExistence(timeout: 8))
+        urlField.tap()
+        urlField.typeText("http://legado.local/books/star-river")
+        requireButton(label: "添加").tap()
+        XCTAssertTrue(
+            app.staticTexts["星河纪事"].waitForExistence(timeout: 8)
+        )
+
+        require("list.shelf.books").swipeUp()
+        let localBook = app.staticTexts["本地旅程"].firstMatch
+        XCTAssertTrue(localBook.waitForExistence(timeout: 8))
+        localBook.tap()
+        require("screen.bookDetail")
+        requireButton("action.bookDetail.startReading").tap()
+        require("screen.chapterTOC")
+        require("action.chapter.select.1").tap()
+        require("screen.reader")
+        XCTAssertEqual(
+            require("label.reader.chapterTitle").label,
+            "第一章 启程"
+        )
+        XCTAssertTrue(
+            require("text.reader.content").label.contains(
+                "海风越过窗沿"
+            )
+        )
+
+        app.terminate()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+        ]
+        app.launch()
+        require("screen.root.shelf")
+        let restoredLocalBook = app.staticTexts["本地旅程"].firstMatch
+        XCTAssertTrue(restoredLocalBook.waitForExistence(timeout: 8))
+        restoredLocalBook.tap()
+        require("screen.bookDetail")
+        requireButton("action.bookDetail.startReading").tap()
+        require("screen.reader")
+        XCTAssertEqual(
+            require("label.reader.chapterTitle").label,
+            "第一章 启程"
+        )
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "imported_book": "本地旅程",
+            "url_book": "星河纪事",
+            "url_imported": true,
+            "chapter_count": 3,
+            "opened_chapter": "第一章 启程",
+            "content_visible": true,
+            "managed_copy": true,
+            "persisted_after_relaunch": true,
+        ])
+    }
+
     private func waitForLabel(
         _ label: String,
         identifier: String,

@@ -1,6 +1,7 @@
 import AppUseCases
 import LibraryDomain
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ShelfManagementView: View {
     @Bindable var library: ShelfLibrary
@@ -11,6 +12,10 @@ struct ShelfManagementView: View {
     @State private var isManaging = false
     @State private var selection: Set<ShelfBookItem.ID> = []
     @State private var pendingDelete = false
+    @State private var fileImporterPresented = false
+    @State private var urlImporterPresented = false
+    @State private var importURL = ""
+    @State private var importStatus: String?
 
     var body: some View {
         VStack(spacing: 12) {
@@ -43,6 +48,12 @@ struct ShelfManagementView: View {
                     .foregroundStyle(.secondary)
                     .accessibilityIdentifier("state.shelf.batchReport")
             }
+            if let importStatus {
+                Text(importStatus)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("state.bookImport.result")
+            }
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -61,6 +72,59 @@ struct ShelfManagementView: View {
         .onAppear {
             Task { await library.reload() }
         }
+        .fileImporter(
+            isPresented: $fileImporterPresented,
+            allowedContentTypes: [.plainText],
+            allowsMultipleSelection: false
+        ) { result in
+            guard case .success(let urls) = result,
+                  let url = urls.first
+            else {
+                importStatus = "未选择书籍"
+                return
+            }
+            Task {
+                do {
+                    let file = try ManagedBookFileStore
+                        .importSelectedURL(url)
+                    let item = await library.importLocalText(
+                        fileName: file.fileName,
+                        managedReference: file.reference,
+                        data: file.data
+                    )
+                    importStatus = item == nil
+                        ? (library.errorMessage ?? "导入失败")
+                        : "已导入《\(item!.candidate.name)》"
+                } catch {
+                    importStatus = "无法读取所选文件"
+                }
+            }
+        }
+        .alert(
+            "添加书籍网址",
+            isPresented: $urlImporterPresented
+        ) {
+            TextField("https://…", text: $importURL)
+                .textInputAutocapitalization(.never)
+                .accessibilityIdentifier("field.bookImport.url")
+            Button("添加") {
+                let value = importURL
+                Task {
+                    do {
+                        let item = try await SearchEnvironment
+                            .importBookURL(
+                                value,
+                                library: library,
+                                persistedSources: persistedSources
+                            )
+                        importStatus = "已导入《\(item.candidate.name)》"
+                    } catch {
+                        importStatus = "网址或匹配书源不可用"
+                    }
+                }
+            }
+            Button("取消", role: .cancel) {}
+        }
     }
 
     private var header: some View {
@@ -70,6 +134,28 @@ struct ShelfManagementView: View {
                     .font(.largeTitle.bold())
                     .accessibilityIdentifier("screen.root.shelf")
                 Spacer()
+                Menu {
+                    Button {
+                        fileImporterPresented = true
+                    } label: {
+                        Label("从文件导入", systemImage: "doc")
+                    }
+                    .accessibilityIdentifier(
+                        "action.bookImport.file"
+                    )
+                    Button {
+                        importURL = ""
+                        urlImporterPresented = true
+                    } label: {
+                        Label("添加网址", systemImage: "link")
+                    }
+                    .accessibilityIdentifier(
+                        "action.bookImport.url"
+                    )
+                } label: {
+                    Image(systemName: "plus")
+                }
+                .accessibilityIdentifier("action.bookImport.open")
                 groupMenu
                 sortMenu
                 Button(isManaging ? "完成" : "管理") {

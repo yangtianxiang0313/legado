@@ -39,6 +39,11 @@ struct RootShellView: View {
             ) {
                 await seedShelfManagement()
             }
+            if ProcessInfo.processInfo.arguments.contains(
+                "--seed-book-import"
+            ) {
+                await seedBookImport()
+            }
         }
     }
 
@@ -368,6 +373,28 @@ struct RootShellView: View {
             )
         }
         await library.reload()
+    }
+
+    private func seedBookImport() async {
+        guard library.books.isEmpty else { return }
+        let text = """
+        这是一段导入后的前言。
+        第一章 启程
+        海风越过窗沿，旅人翻开了第一封信。
+        第二章 回声
+        山谷把遥远的回答送回灯塔。
+        """
+        guard
+            let file = try? ManagedBookFileStore.persist(
+                data: Data(text.utf8),
+                fileName: "《本地旅程》作者：林舟.txt"
+            )
+        else { return }
+        _ = await library.importLocalText(
+            fileName: file.fileName,
+            managedReference: file.reference,
+            data: file.data
+        )
     }
 }
 
