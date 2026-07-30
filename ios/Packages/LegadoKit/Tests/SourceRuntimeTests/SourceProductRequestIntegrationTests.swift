@@ -157,6 +157,47 @@ final class SourceProductRequestIntegrationTests: XCTestCase {
     XCTAssertNil(snapshot.sessionCookie)
   }
 
+  func testProductRetryStopsAfterSuccess() async throws {
+    let definition = try makeDefinition(
+      searchURL:
+        #"http://sourcelab.test/search?q={{key}},{"retry":2}"#,
+      sourceHeaders: []
+    )
+    let transport = RetryRecordingTransport(
+      statusCodes: [503, 200, 503]
+    )
+
+    let execution = try await SourceSearchPipeline(
+      definition: definition,
+      transport: transport
+    ).search(SourceSearchInput(keyword: "星河", page: 1))
+
+    XCTAssertEqual(execution.books.map(\.name), ["星河纪事"])
+    let requestCount = await transport.requestCount()
+    XCTAssertEqual(requestCount, 2)
+  }
+
+  func testProductRetryUsesInitialAttemptPlusConfiguredRetries()
+    async throws
+  {
+    let definition = try makeDefinition(
+      searchURL:
+        #"http://sourcelab.test/search?q={{key}},{"retry":2}"#,
+      sourceHeaders: []
+    )
+    let transport = RetryRecordingTransport(
+      statusCodes: [503, 503, 503, 200]
+    )
+
+    _ = try await SourceSearchPipeline(
+      definition: definition,
+      transport: transport
+    ).search(SourceSearchInput(keyword: "星河", page: 1))
+
+    let requestCount = await transport.requestCount()
+    XCTAssertEqual(requestCount, 3)
+  }
+
   private func makeDefinition(
     searchURL: String,
     sourceHeaders: [SourceHeaderField]
@@ -313,5 +354,40 @@ private actor CookieRecordingTransport: HTTPTransport {
 
   func requests() -> [HTTPRequest] {
     recorded
+  }
+}
+
+private actor RetryRecordingTransport: HTTPTransport {
+  private let statusCodes: [Int]
+  private var count = 0
+
+  init(statusCodes: [Int]) {
+    self.statusCodes = statusCodes
+  }
+
+  func execute(_ request: HTTPRequest) async throws -> HTTPResponse {
+    let index = min(count, statusCodes.count - 1)
+    let statusCode = statusCodes[index]
+    count += 1
+    return try HTTPResponse(
+      statusCode: statusCode,
+      effectiveURL: request.url,
+      body: HTTPBody(
+        Data(
+          """
+          <html><body>
+            <article class="book">
+              <span class="name">星河纪事</span>
+              <a href="/book"></a>
+            </article>
+          </body></html>
+          """.utf8
+        )
+      )
+    )
+  }
+
+  func requestCount() -> Int {
+    count
   }
 }
