@@ -721,9 +721,8 @@ def direct_characterization_deliveries(
     """
     completed = completed_task_ids(root)
     characterized = characterized_claim_refs(root)
-    ledger_claims = {
-        (entry.get("claim_ref", {}).get("id"),
-         entry.get("claim_ref", {}).get("revision"))
+    ledger_claim_ids = {
+        entry.get("claim_ref", {}).get("id")
         for _, ledger in relative_jsons(
             root,
             "ios/project/business-knowledge/coverage",
@@ -756,7 +755,7 @@ def direct_characterization_deliveries(
                 or not isinstance(revision, int)
                 or isinstance(revision, bool)
                 or claim_ref not in characterized
-                or claim_ref in ledger_claims
+                or claim_id in ledger_claim_ids
             ):
                 continue
             domain = characterization_contract(claim)
