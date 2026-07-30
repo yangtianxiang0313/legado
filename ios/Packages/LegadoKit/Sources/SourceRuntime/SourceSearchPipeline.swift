@@ -5,6 +5,7 @@ public struct SourceSearchDefinition: Sendable, Equatable {
   public let sourceName: String
   public let originOrder: Int
   public let bookURLPattern: String?
+  public let sourceHeaders: [SourceHeaderField]
   public let runtime: HTMLCSSSourceDefinition
 
   public init(
@@ -12,13 +13,53 @@ public struct SourceSearchDefinition: Sendable, Equatable {
     sourceName: String,
     originOrder: Int,
     bookURLPattern: String? = nil,
+    sourceHeaders: [SourceHeaderField] = [],
     runtime: HTMLCSSSourceDefinition
   ) {
     self.sourceURL = sourceURL
     self.sourceName = sourceName
     self.originOrder = originOrder
     self.bookURLPattern = bookURLPattern
+    self.sourceHeaders = sourceHeaders
     self.runtime = runtime
+  }
+
+  func prepare(_ plan: SourceRequestPlan) throws -> SourceRequestPlan {
+    let optionHeaders: [SourceHeaderField]
+    if !plan.optionHeaders.isEmpty {
+      optionHeaders = plan.optionHeaders
+    } else {
+      optionHeaders = try plan.request.headers.fields.map {
+        try SourceHeaderField(name: $0.name, value: $0.value)
+      }
+    }
+    let prepared = try SourceRequestPreparer.prepare(
+      request: plan.request,
+      inheritedHeaders: sourceHeaders,
+      optionHeaders: optionHeaders,
+      persistentCookie: "",
+      enabledCookieJar: false,
+      retry: plan.retry
+    )
+    return SourceRequestPlan(
+      request: prepared.constructedRequest,
+      body: plan.body,
+      formFields: plan.formFields,
+      optionHeaders: optionHeaders,
+      retry: plan.retry
+    )
+  }
+
+  func prepare(_ request: HTTPRequest) throws -> HTTPRequest {
+    try prepare(
+      SourceRequestPlan(
+        request: request,
+        body: request.body.map {
+          String(decoding: $0.bytes, as: UTF8.self)
+        },
+        formFields: []
+      )
+    ).request
   }
 }
 
@@ -164,8 +205,9 @@ public struct SourceSearchPipeline: Sendable {
         baseURL: definition.sourceURL
       )
     )
+    let requestPlan = try definition.prepare(compilation.plan)
     let networkResponse = try await transport.execute(
-      compilation.plan.request
+      requestPlan.request
     )
     guard
       let body = String(
@@ -185,7 +227,7 @@ public struct SourceSearchPipeline: Sendable {
     )
     let books = try parse(response: checked)
     return SourceSearchExecution(
-      requestPlan: compilation.plan,
+      requestPlan: requestPlan,
       response: checked,
       books: books
     )

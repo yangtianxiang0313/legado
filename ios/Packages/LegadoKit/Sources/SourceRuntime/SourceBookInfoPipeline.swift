@@ -83,7 +83,9 @@ public struct SourceBookInfoPipeline: Sendable {
         body: infoHTML
       )
     } else {
-      let request = try runtime.request(for: book.bookURL)
+      let request = try definition.prepare(
+        runtime.request(for: book.bookURL)
+      )
       requestPlan = SourceRequestPlan(
         request: request,
         body: nil,

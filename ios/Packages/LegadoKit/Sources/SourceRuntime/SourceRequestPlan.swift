@@ -14,17 +14,20 @@ public struct SourceRequestPlan: Equatable, Sendable {
   public let request: HTTPRequest
   public let body: String?
   public let formFields: [HTTPFormField]
+  public let optionHeaders: [SourceHeaderField]
   public let retry: Int
 
   public init(
     request: HTTPRequest,
     body: String?,
     formFields: [HTTPFormField],
+    optionHeaders: [SourceHeaderField] = [],
     retry: Int = 0
   ) {
     self.request = request
     self.body = body
     self.formFields = formFields
+    self.optionHeaders = optionHeaders
     self.retry = retry
   }
 }
@@ -86,22 +89,29 @@ public enum SourceRequestCompiler {
     guard retry >= 0, retry < Int.max else {
       throw SourceRequestPreparationError.invalidRetry
     }
-    let headers = try configuredHeaders(option.headers ?? option.header)
+    var headers = try configuredHeaders(option.headers ?? option.header)
     guard option.method?.caseInsensitiveCompare("POST") == .orderedSame else {
       let compiled = try compiledGET(parts.url, charset: option.charset)
       return SourceRequestPlan(
         request: HTTPRequest(
           method: .get,
           url: compiled.url,
-          headers: HTTPHeaders(headers)
+          headers: HTTPHeaders(
+            try headers.map {
+              try HTTPHeader(name: $0.name, value: $0.value)
+            }
+          )
         ),
         body: nil,
         formFields: compiled.fields,
+        optionHeaders: headers,
         retry: retry
       )
     }
     let body = option.body ?? ""
-    let contentType = headers.first(where: { $0.name == "content-type" })?.value
+    let contentType = headers.first(where: {
+      $0.name.caseInsensitiveCompare("content-type") == .orderedSame
+    })?.value
     let formFields =
       contentType == nil && !looksLikeJSONOrXML(body)
       ? try SourceFieldCompiler.compile(body, charset: option.charset)
@@ -110,21 +120,30 @@ public enum SourceRequestCompiler {
       formFields.isEmpty && !body.isEmpty
       ? body
       : formFields.map { "\($0.key)=\($0.value)" }.joined(separator: "&")
-    var requestHeaders = headers
-    if !requestHeaders.contains(where: { $0.name == "user-agent" }) {
-      requestHeaders.append(
-        try HTTPHeader(name: "user-agent", value: androidDefaultUserAgent)
+    if !headers.contains(where: {
+      $0.name.caseInsensitiveCompare("user-agent") == .orderedSame
+    }) {
+      headers.append(
+        try SourceHeaderField(
+          name: "user-agent",
+          value: androidDefaultUserAgent
+        )
       )
     }
     return SourceRequestPlan(
       request: HTTPRequest(
         method: .post,
         url: try validatedURL(parts.url),
-        headers: HTTPHeaders(requestHeaders),
+        headers: HTTPHeaders(
+          try headers.map {
+            try HTTPHeader(name: $0.name, value: $0.value)
+          }
+        ),
         body: HTTPBody(Data(canonicalBody.utf8))
       ),
       body: canonicalBody,
       formFields: formFields,
+      optionHeaders: headers,
       retry: retry
     )
   }
@@ -158,12 +177,14 @@ public enum SourceRequestCompiler {
 
   private static func configuredHeaders(
     _ values: [String: String]?
-  ) throws -> [HTTPHeader] {
+  ) throws -> [SourceHeaderField] {
     try (values ?? [:]).sorted { lhs, rhs in
       let left = lhs.key.lowercased()
       let right = rhs.key.lowercased()
       return left == right ? lhs.key < rhs.key : left < right
-    }.map { try HTTPHeader(name: $0.key, value: $0.value) }
+    }.map {
+      try SourceHeaderField(name: $0.key, value: $0.value)
+    }
   }
 
   private static func compiledGET(

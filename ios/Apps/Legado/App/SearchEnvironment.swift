@@ -471,6 +471,7 @@ enum SearchEnvironment {
                 draft.importMetadata?.customOrder ?? 0
             ),
             bookURLPattern: string(root, "bookUrlPattern"),
+            sourceHeaders: sourceHeaders(root),
             runtime: runtime
         )
         let catalog = (
@@ -528,6 +529,32 @@ enum SearchEnvironment {
         guard let value = object[key] as? String else { return nil }
         return value
             .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private static func sourceHeaders(
+        _ object: [String: Any]
+    ) -> [SourceHeaderField] {
+        let values: [String: Any]
+        if let direct = object["header"] as? [String: Any] {
+            values = direct
+        } else if
+            let raw = object["header"] as? String,
+            let data = raw.data(using: .utf8),
+            let decoded = try? JSONSerialization.jsonObject(with: data)
+                as? [String: Any]
+        {
+            values = decoded
+        } else {
+            return []
+        }
+        return values.compactMap { name, value in
+            guard let string = value as? String else { return nil }
+            return try? SourceHeaderField(name: name, value: string)
+        }.sorted {
+            let left = $0.name.lowercased()
+            let right = $1.name.lowercased()
+            return left == right ? $0.name < $1.name : left < right
+        }
     }
 
     private static func normalizedAuthor(_ value: String) -> String {

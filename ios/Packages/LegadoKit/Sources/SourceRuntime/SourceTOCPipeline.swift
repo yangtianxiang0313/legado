@@ -85,7 +85,9 @@ public struct SourceTOCPipeline: Sendable {
       )
     }
 
-    let tocRequest = try runtime.request(for: tocURL)
+    let tocRequest = try definition.prepare(
+      runtime.request(for: tocURL)
+    )
     requests.append(tocRequest)
     let tocResponse = try await transport.execute(tocRequest)
     let tocResponseURL = try responseURL(tocResponse)

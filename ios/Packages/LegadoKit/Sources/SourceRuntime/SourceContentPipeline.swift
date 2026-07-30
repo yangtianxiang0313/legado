@@ -29,7 +29,7 @@ public struct SourceContentPipeline: Sendable {
       throw SourceRuntimeIssue(stage: .urlTemplate, code: .invalidURL)
     }
     let runtime = HTMLCSSSourceRuntime(definition: definition.runtime)
-    let request = try runtime.request(for: url)
+    let request = try definition.prepare(runtime.request(for: url))
     let response = try await transport.execute(request)
     guard
       let effectiveURL = URL(string: response.effectiveURL.absoluteString),
