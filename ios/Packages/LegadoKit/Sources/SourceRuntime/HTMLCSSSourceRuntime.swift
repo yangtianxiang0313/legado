@@ -420,6 +420,26 @@ public struct HTMLCSSSourceRuntime: Sendable {
   }
 
   public func content(html: String, chapterURL: URL) throws -> SourceContent {
+    if usesStructuredRules(
+      content: html,
+      rules: [definition.content.content]
+    ) {
+      let evaluator = SourceRuleConsumerEvaluator(content: html)
+      let value = try evaluator.getString(
+        definition.content.content.selector
+      )
+      guard
+        !value.trimmingCharacters(
+          in: .whitespacesAndNewlines
+        ).isEmpty
+      else {
+        throw SourceRuntimeIssue(
+          stage: .fieldEvaluation,
+          code: .ruleFailed
+        )
+      }
+      return SourceContent(chapterURL: chapterURL, content: value)
+    }
     let document = try parse(html)
     guard
       let node = try document.select(

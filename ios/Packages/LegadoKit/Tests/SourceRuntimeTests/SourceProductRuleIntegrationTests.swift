@@ -309,6 +309,64 @@ final class SourceProductRuleIntegrationTests: XCTestCase {
       ]
     )
   }
+
+  func testJSONPathAndRegexFlowThroughContentPipeline() async throws {
+    let definition = SourceSearchDefinition(
+      sourceURL: "http://sourcelab.test",
+      sourceName: "JSON 书源",
+      originOrder: 9,
+      runtime: HTMLCSSSourceDefinition(
+        searchURLTemplate: "http://sourcelab.test/api/search",
+        search: SearchRules(
+          list: "@Json:$.books[*]",
+          name: HTMLCSSRule("@Json:$.name"),
+          author: .optional(nil),
+          intro: .optional(nil),
+          kind: .optional(nil),
+          lastChapter: .optional(nil),
+          bookURL: HTMLCSSRule("@Json:$.url", value: .href),
+          coverURL: .optional(nil, value: .src)
+        ),
+        bookInfo: BookInfoRules(
+          name: HTMLCSSRule("@Json:$.name"),
+          author: .optional(nil),
+          intro: .optional(nil),
+          kind: .optional(nil),
+          lastChapter: .optional(nil),
+          coverURL: .optional(nil, value: .src),
+          tocURL: HTMLCSSRule("@Json:$.toc", value: .href)
+        ),
+        toc: TOCRules(
+          list: "@Json:$.chapters[*]",
+          name: HTMLCSSRule("@Json:$.name"),
+          url: HTMLCSSRule("@Json:$.url", value: .href)
+        ),
+        content: ContentRules(
+          content: HTMLCSSRule(
+            "@Json:$.content##<script[^>]*>[\\s\\S]*?</script>##"
+          )
+        )
+      )
+    )
+    let chapterURL =
+      "http://sourcelab.test/content/chapter-1"
+    let body = """
+      {"content":"第一段<script>window.bad=true</script>\\n第二段"}
+      """
+
+    let execution = try await SourceContentPipeline(
+      definition: definition,
+      transport: JSONSearchTransport(body: body)
+    ).content(chapterURL: chapterURL)
+
+    XCTAssertEqual(
+      execution.content,
+      SourceContent(
+        chapterURL: URL(string: chapterURL)!,
+        content: "第一段\n第二段"
+      )
+    )
+  }
 }
 
 private actor JSONSearchTransport: HTTPTransport {
