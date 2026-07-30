@@ -132,16 +132,24 @@ public enum SourceExploreCatalog {
 public struct SourceExplorePipeline: Sendable {
   private let definition: SourceExploreDefinition
   private let transport: any HTTPTransport
+  private let responseSession: SourceStringResponseSession
   private let responseChecker: any SourceExploreResponseChecking
 
   public init(
     definition: SourceExploreDefinition,
     transport: any HTTPTransport,
+    cookieStore: SourceCookieStore = SourceCookieStore(),
+    dynamicWebPagePort: (any SourceDynamicWebPagePort)? = nil,
     responseChecker: any SourceExploreResponseChecking =
       IdentitySourceExploreResponseChecker()
   ) {
     self.definition = definition
     self.transport = transport
+    self.responseSession = SourceStringResponseSession(
+      transport: transport,
+      cookieStore: cookieStore,
+      dynamicWebPagePort: dynamicWebPagePort
+    )
     self.responseChecker = responseChecker
   }
 
@@ -175,21 +183,15 @@ public struct SourceExplorePipeline: Sendable {
         )
       )
     )
-    let networkResponse = try await transport.execute(
-      compilation.plan.request
+    let requestPlan = try definition.source.prepare(compilation.plan)
+    let networkResponse = try await responseSession.load(
+      requestPlan,
+      enabledCookieJar: definition.source.enabledCookieJar
     )
-    guard
-      let body = String(
-        data: networkResponse.body.bytes,
-        encoding: .utf8
-      )
-    else {
-      throw SourceSearchPipelineError.invalidResponseEncoding
-    }
     let checked = try await responseChecker.check(
       SourceSearchResponse(
-        url: networkResponse.effectiveURL.absoluteString,
-        body: body
+        url: networkResponse.finalURL.absoluteString,
+        body: networkResponse.body
       ),
       source: definition,
       input: input
@@ -207,7 +209,7 @@ public struct SourceExplorePipeline: Sendable {
       allowsDetailPattern: false
     )
     return SourceSearchExecution(
-      requestPlan: compilation.plan,
+      requestPlan: requestPlan,
       response: checked,
       books: books
     )

@@ -183,18 +183,25 @@ public struct SourceSearchPipeline: Sendable {
   private let definition: SourceSearchDefinition
   private let transport: any HTTPTransport
   private let cookieStore: SourceCookieStore
+  private let responseSession: SourceStringResponseSession
   private let responseChecker: any SourceSearchResponseChecking
 
   public init(
     definition: SourceSearchDefinition,
     transport: any HTTPTransport,
     cookieStore: SourceCookieStore = SourceCookieStore(),
+    dynamicWebPagePort: (any SourceDynamicWebPagePort)? = nil,
     responseChecker: any SourceSearchResponseChecking =
       IdentitySourceSearchResponseChecker()
   ) {
     self.definition = definition
     self.transport = transport
     self.cookieStore = cookieStore
+    self.responseSession = SourceStringResponseSession(
+      transport: transport,
+      cookieStore: cookieStore,
+      dynamicWebPagePort: dynamicWebPagePort
+    )
     self.responseChecker = responseChecker
   }
 
@@ -229,25 +236,14 @@ public struct SourceSearchPipeline: Sendable {
       )
     )
     let requestPlan = try definition.prepare(compilation.plan)
-    let networkResponse = try await SourceRequestSession(
-      transport: transport,
-      cookieStore: cookieStore
-    ).execute(
+    let networkResponse = try await responseSession.load(
       requestPlan,
       enabledCookieJar: definition.enabledCookieJar
-    ).response
-    guard
-      let body = String(
-        data: networkResponse.body.bytes,
-        encoding: .utf8
-      )
-    else {
-      throw SourceSearchPipelineError.invalidResponseEncoding
-    }
+    )
     let checked = try await responseChecker.check(
       SourceSearchResponse(
-        url: networkResponse.effectiveURL.absoluteString,
-        body: body
+        url: networkResponse.finalURL.absoluteString,
+        body: networkResponse.body
       ),
       source: definition,
       input: input

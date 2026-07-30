@@ -20,6 +20,8 @@ public struct SourceTOCPipeline: Sendable {
   private let definition: SourceSearchDefinition
   private let transport: any HTTPTransport
   private let cookieStore: SourceCookieStore
+  private let dynamicWebPagePort: (any SourceDynamicWebPagePort)?
+  private let responseSession: SourceStringResponseSession
   private let bookInfoResponseChecker:
     any SourceBookInfoResponseChecking
 
@@ -27,12 +29,19 @@ public struct SourceTOCPipeline: Sendable {
     definition: SourceSearchDefinition,
     transport: any HTTPTransport,
     cookieStore: SourceCookieStore = SourceCookieStore(),
+    dynamicWebPagePort: (any SourceDynamicWebPagePort)? = nil,
     bookInfoResponseChecker: any SourceBookInfoResponseChecking =
       IdentitySourceBookInfoResponseChecker()
   ) {
     self.definition = definition
     self.transport = transport
     self.cookieStore = cookieStore
+    self.dynamicWebPagePort = dynamicWebPagePort
+    self.responseSession = SourceStringResponseSession(
+      transport: transport,
+      cookieStore: cookieStore,
+      dynamicWebPagePort: dynamicWebPagePort
+    )
     self.bookInfoResponseChecker = bookInfoResponseChecker
   }
 
@@ -68,6 +77,7 @@ public struct SourceTOCPipeline: Sendable {
       definition: definition,
       transport: transport,
       cookieStore: cookieStore,
+      dynamicWebPagePort: dynamicWebPagePort,
       responseChecker: bookInfoResponseChecker
     ).load(
       book: book,
@@ -163,17 +173,13 @@ public struct SourceTOCPipeline: Sendable {
         )
       )
     )
-    let response = try await SourceRequestSession(
-      transport: transport,
-      cookieStore: cookieStore
-    ).execute(
+    let response = try await responseSession.load(
       plan,
       enabledCookieJar: definition.enabledCookieJar
-    ).response
+    )
     guard
-      let body = String(data: response.body.bytes, encoding: .utf8),
       let effectiveURL = URL(
-        string: response.effectiveURL.absoluteString
+        string: response.finalURL.absoluteString
       )
     else {
       throw SourceSearchPipelineError.invalidResponseEncoding
@@ -181,7 +187,7 @@ public struct SourceTOCPipeline: Sendable {
     return (
       plan.request,
       try await runtime.chapterPage(
-        html: body,
+        html: response.body,
         tocEndpoint: .plain(effectiveURL),
         variableStore: variableStore
       )

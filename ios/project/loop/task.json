@@ -1,1 +1,103 @@
-{"acceptance":{"commands":[{"argv":["swift","test","--package-path","ios/Packages/LegadoKit","--disable-automatic-resolution","--filter","SourceDynamicWebProductIntegrationTests"],"id":"focused-swift-tests","required_output_pattern":"Executed [1-9][0-9]* tests?, with 0 failures","timeout_seconds":600}],"profile":"slice"},"architecture":{"owner":"SourceRuntime","refs":["ARCH-001","ARCH-005","ARCH-008","ARCH-011","ARCH-017","ARCH-018"],"rule":"SourceRuntime 生成确定性 RequestPlan；Transport 只执行，UI/Domain 不解释请求语义。"},"base_commit":"6e6dd1feec3263e6d5e7afe9b79a5f654ae74fad","goal":"按照冻结 Android 运行结果，在独立 SourceRuntime 中实现该书源能力；源码对齐为主，结构化测试为辅。","id":"IOS-SOURCE-RUNTIME-DYNAMIC-WEB-PRODUCT-INTEGRATION-001","kind":"delivery","knowledge_updates":{"required_on_completion":["summary","current_status","architecture_change","pitfalls","next_step"]},"priority":20,"requirements":["REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01"],"schema_version":2,"scope":{"allowed_paths":["ios/Packages/LegadoKit/Sources/SourceRuntime/**","ios/Packages/LegadoKit/Tests/SourceRuntimeTests/**","ios/Packages/LegadoKit/Sources/ConformanceCLI/**","ios/Packages/LegadoKit/Tests/ConformanceCLITests/**","ios/Packages/LegadoKit/Sources/TestSupport/FixtureModel.swift"],"forbidden":["Android golden","accepted Requirement","架构依赖边","三方依赖","切片级 Simulator fixture"]},"selection":{"milestone_id":"MILESTONE-P16-DYNAMIC-WEB-PRODUCT-INTEGRATION-001","selector_id":"SOURCE-DYNAMIC-WEB-PRODUCT-INTEGRATION","stage_id":"P16-02-DYNAMIC-WEB-PIPELINES","stage_title":"四段产品流水线选择动态响应"},"source":{"anchors":[{"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt","symbol_id":"kotlin://io.legado.app.model.analyzeRule.AnalyzeUrl/getStrResponseAwait"},{"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/model/webBook/WebBook.kt","symbol_id":"kotlin://io.legado.app.model.webBook.WebBook/getContentAwait"}],"authority":"android_source_contract","fixture_id":"source-dynamic-web-product-integration-v1","knowledge":{"claims":[],"coverage":"ios/project/migration-priorities/active.json","driver":null,"packets":[]},"source_contract":{"fixture_id":"source-dynamic-web-product-integration-v1","path":"ios/project/migration-priorities/active.json","test_filter":"SourceDynamicWebProductIntegrationTests","validation":"tests"}},"status":"in_progress","title":"统一四段流水线的 HTTP 与 Dynamic Web 响应加载"}
+{
+  "acceptance": {
+    "commands": [
+      {
+        "argv": [
+          "swift",
+          "test",
+          "--package-path",
+          "ios/Packages/LegadoKit",
+          "--disable-automatic-resolution",
+          "--filter",
+          "SourceDynamicWebProductIntegrationTests"
+        ],
+        "id": "focused-swift-tests",
+        "required_output_pattern": "Executed [1-9][0-9]* tests?, with 0 failures",
+        "timeout_seconds": 600
+      }
+    ],
+    "profile": "slice"
+  },
+  "architecture": {
+    "owner": "SourceRuntime",
+    "refs": [
+      "ARCH-001",
+      "ARCH-005",
+      "ARCH-008",
+      "ARCH-011",
+      "ARCH-017",
+      "ARCH-018"
+    ],
+    "rule": "SourceRuntime 生成确定性 RequestPlan；Transport 只执行，UI/Domain 不解释请求语义。"
+  },
+  "base_commit": "88e167ab28522fc289d0a3f80955efb8558f0d5e",
+  "goal": "按照冻结 Android 运行结果，在独立 SourceRuntime 中实现该书源能力；源码对齐为主，结构化测试为辅。",
+  "id": "IOS-SOURCE-RUNTIME-DYNAMIC-WEB-PRODUCT-INTEGRATION-001",
+  "kind": "delivery",
+  "knowledge_updates": {
+    "required_on_completion": [
+      "summary",
+      "current_status",
+      "architecture_change",
+      "pitfalls",
+      "next_step"
+    ]
+  },
+  "priority": 20,
+  "requirements": [
+    "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01"
+  ],
+  "schema_version": 2,
+  "scope": {
+    "allowed_paths": [
+      "ios/Packages/LegadoKit/Sources/SourceRuntime/**",
+      "ios/Packages/LegadoKit/Tests/SourceRuntimeTests/**",
+      "ios/Packages/LegadoKit/Sources/ConformanceCLI/**",
+      "ios/Packages/LegadoKit/Tests/ConformanceCLITests/**",
+      "ios/Packages/LegadoKit/Sources/TestSupport/FixtureModel.swift"
+    ],
+    "forbidden": [
+      "Android golden",
+      "accepted Requirement",
+      "架构依赖边",
+      "三方依赖",
+      "切片级 Simulator fixture"
+    ]
+  },
+  "selection": {
+    "milestone_id": "MILESTONE-P16-DYNAMIC-WEB-PRODUCT-INTEGRATION-001",
+    "selector_id": "SOURCE-DYNAMIC-WEB-PRODUCT-INTEGRATION",
+    "stage_id": "P16-02-DYNAMIC-WEB-PIPELINES",
+    "stage_title": "四段产品流水线选择动态响应"
+  },
+  "source": {
+    "anchors": [
+      {
+        "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+        "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+        "symbol_id": "kotlin://io.legado.app.model.analyzeRule.AnalyzeUrl/getStrResponseAwait"
+      },
+      {
+        "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+        "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
+        "symbol_id": "kotlin://io.legado.app.model.webBook.WebBook/getContentAwait"
+      }
+    ],
+    "authority": "android_source_contract",
+    "fixture_id": "source-dynamic-web-product-integration-v1",
+    "knowledge": {
+      "claims": [],
+      "coverage": "ios/project/migration-priorities/active.json",
+      "driver": null,
+      "packets": []
+    },
+    "source_contract": {
+      "fixture_id": "source-dynamic-web-product-integration-v1",
+      "path": "ios/project/migration-priorities/active.json",
+      "test_filter": "SourceDynamicWebProductIntegrationTests",
+      "validation": "tests"
+    }
+  },
+  "status": "in_progress",
+  "title": "统一四段流水线的 HTTP 与 Dynamic Web 响应加载"
+}

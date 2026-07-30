@@ -55,18 +55,25 @@ public struct SourceBookInfoPipeline: Sendable {
   private let definition: SourceSearchDefinition
   private let transport: any HTTPTransport
   private let cookieStore: SourceCookieStore
+  private let responseSession: SourceStringResponseSession
   private let responseChecker: any SourceBookInfoResponseChecking
 
   public init(
     definition: SourceSearchDefinition,
     transport: any HTTPTransport,
     cookieStore: SourceCookieStore = SourceCookieStore(),
+    dynamicWebPagePort: (any SourceDynamicWebPagePort)? = nil,
     responseChecker: any SourceBookInfoResponseChecking =
       IdentitySourceBookInfoResponseChecker()
   ) {
     self.definition = definition
     self.transport = transport
     self.cookieStore = cookieStore
+    self.responseSession = SourceStringResponseSession(
+      transport: transport,
+      cookieStore: cookieStore,
+      dynamicWebPagePort: dynamicWebPagePort
+    )
     self.responseChecker = responseChecker
   }
 
@@ -102,20 +109,13 @@ public struct SourceBookInfoPipeline: Sendable {
         )
       )
       requestPlan = plan
-      let networkResponse = try await SourceRequestSession(
-        transport: transport,
-        cookieStore: cookieStore
-      ).execute(
+      let networkResponse = try await responseSession.load(
         plan,
         enabledCookieJar: definition.enabledCookieJar
-      ).response
+      )
       guard
-        let body = String(
-          data: networkResponse.body.bytes,
-          encoding: .utf8
-        ),
         let effectiveURL = URL(
-          string: networkResponse.effectiveURL.absoluteString
+          string: networkResponse.finalURL.absoluteString
         )
       else {
         throw SourceSearchPipelineError.invalidResponseEncoding
@@ -123,7 +123,7 @@ public struct SourceBookInfoPipeline: Sendable {
       response = try await responseChecker.check(
         SourceBookInfoResponse(
           url: effectiveURL,
-          body: body
+          body: networkResponse.body
         ),
         source: definition,
         book: book

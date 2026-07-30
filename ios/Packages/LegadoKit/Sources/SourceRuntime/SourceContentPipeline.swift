@@ -27,15 +27,22 @@ public struct SourceContentPipeline: Sendable {
   private let definition: SourceSearchDefinition
   private let transport: any HTTPTransport
   private let cookieStore: SourceCookieStore
+  private let responseSession: SourceStringResponseSession
 
   public init(
     definition: SourceSearchDefinition,
     transport: any HTTPTransport,
-    cookieStore: SourceCookieStore = SourceCookieStore()
+    cookieStore: SourceCookieStore = SourceCookieStore(),
+    dynamicWebPagePort: (any SourceDynamicWebPagePort)? = nil
   ) {
     self.definition = definition
     self.transport = transport
     self.cookieStore = cookieStore
+    self.responseSession = SourceStringResponseSession(
+      transport: transport,
+      cookieStore: cookieStore,
+      dynamicWebPagePort: dynamicWebPagePort
+    )
   }
 
   public func content(
@@ -161,25 +168,23 @@ public struct SourceContentPipeline: Sendable {
         )
       )
     )
-    let response = try await SourceRequestSession(
-      transport: transport,
-      cookieStore: cookieStore
-    ).execute(
+    let response = try await responseSession.load(
       plan,
-      enabledCookieJar: definition.enabledCookieJar
-    ).response
+      enabledCookieJar: definition.enabledCookieJar,
+      javaScript: definition.runtime.content.webJS,
+      sourceRegex: definition.runtime.content.sourceRegex
+    )
     guard
       let effectiveURL = URL(
-        string: response.effectiveURL.absoluteString
-      ),
-      let html = String(data: response.body.bytes, encoding: .utf8)
+        string: response.finalURL.absoluteString
+      )
     else {
       throw SourceSearchPipelineError.invalidResponseEncoding
     }
     return (
       plan.request,
       try await runtime.contentPage(
-        html: html,
+        html: response.body,
         chapterEndpoint: .plain(effectiveURL),
         bookVariables: await bookStore.snapshot(),
         chapterVariables: await chapterStore.snapshot()
