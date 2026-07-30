@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-READER-LAYOUT-PAGE-PROJECTION-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "reader.layout.page-projection-golden",
+  "title": "受保护 Android Golden 验证的字符锚点与页面投影边界",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "70bed8108a0ee0d04851dceff2d1f23bf492163c1906f4f28a208cf20f558d72"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "reader.layout",
+      "reader.progress"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-CORE"
+    ],
+    "subject_keys": [
+      "reader.layout",
+      "reader.progress"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-RD-LAYOUT-PROJECTION-001",
+      "revision": 2,
+      "semantic_key": "reader.layout.page-projection",
+      "kind": "runtime_behavior",
+      "topic": "字符锚点与页面投影",
+      "statement": "在 rl-reader-layout-page-projection-001 的 5 个固定 Android 场景中，TextChapter 以各页首行 chapterPosition 作为页起点：空布局把任意字符位置投影为 -1，getReadLength(-1) 返回 0，但非负页索引会抛出 IndexOutOfBoundsException；完整布局把过大的页索引钳制到末页起点，前后页导航返回相邻页的字符起点而非页码。未完成布局只在字符位置严格大于末页起点加 charSize 时返回 -1，因此精确末端仍投影到末页、但 TextPage.containPos 已判为 false；再后一个字符投影为 -1，而 getNextPageLength 会因该 -1 投影返回首个已排版页起点。部分布局对首个已排版页之前和已排版尾部之后的字符位置同样返回 -1。固定重排样例中，相同的 13 个字符锚点有 7 个在页面边界变化后落到不同页码，字符位置本身不变。由此，阅读位置的可迁移业务身份应是章节内字符锚点，页码只能是当前排版的派生投影；空布局异常、精确末端包含差异和无投影时的首屏回绕属于 Android 兼容风险，不授权 iOS 领域模型直接复制。",
+      "subject_keys": [
+        "reader.layout",
+        "reader.progress"
+      ],
+      "depends_on": [],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [
+          {
+            "id": "AF-TEXT-CHAPTER-GET-READ-LENGTH",
+            "revision_sha256": "1966865f4cb02cf8e63ca7b55bdab908a7125b7fd4b1d77a93578257e643c19b"
+          },
+          {
+            "id": "AF-TEXT-CHAPTER-GET-PAGE-INDEX",
+            "revision_sha256": "d2e3fb8a1cb416694f73c373e8b1d47646e6bcb1e52be962926c75d911f03bf4"
+          }
+        ],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "eb8524f5b531f076e5708cad56cfe9a592a55d7a",
+            "path": "app/src/main/java/io/legado/app/ui/book/read/page/entities/TextChapter.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.read.page.entities.TextChapter/getReadLength"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "eb8524f5b531f076e5708cad56cfe9a592a55d7a",
+            "path": "app/src/main/java/io/legado/app/ui/book/read/page/entities/TextChapter.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.read.page.entities.TextChapter/getPageIndexByCharIndex"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/rl-reader-layout-page-projection-001.json",
+            "artifact_sha256": "6aa3b0d7538dda6917306661d4124489d0063e63a24c04263b2400c142038a64",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "fcfd2556cd88e5c7ab7aff23d71a01ed0ef7f9106fdfb02b2f7d066be037e31d",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "036bce8dc8cb66a6337fbd9831a71fddabba12321e7b15edfeaf9c4153ad3650",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-RD-LAYOUT-PROJECTION-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-READER-LAYOUT-PAGE-PROJECTION-001"
+}

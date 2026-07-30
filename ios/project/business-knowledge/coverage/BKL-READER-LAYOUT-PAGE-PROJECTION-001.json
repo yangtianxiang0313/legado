@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgeCoverageLedger",
+  "id": "BKL-READER-LAYOUT-PAGE-PROJECTION-001",
+  "revision": 1,
+  "status": "current",
+  "packet_refs": [
+    {
+      "id": "BKP-READER-LAYOUT-PAGE-PROJECTION-001",
+      "revision": 1,
+      "sha256": "e94cee50794477c9f9f6a546feeb6ae721263383017dab4d363f4116135020d7"
+    }
+  ],
+  "generated_from": {
+    "knowledge_authority_sha256": "cdf0a1c4823a42d864cf4c955643f81b2cf5dcb59448738e599287c4404f8930",
+    "requirement_catalog_sha256": "3d967d43d5b0ef309fc4f58ba6e316140bc732846ead107a553f6f51f1a05301",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "entries": [
+    {
+      "id": "BKE-READER-LAYOUT-PAGE-PROJECTION-001",
+      "claim_ref": {
+        "id": "BKC-RD-LAYOUT-PROJECTION-001",
+        "revision": 2
+      },
+      "validation": {
+        "required": "android_runtime",
+        "state": "verified",
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-reader-layout-page-projection-001-30504731189-1.json",
+          "ios/harness/goldens/android-legado-v1/rl-reader-layout-page-projection-001.json#/artifact/result/value/portable_known_projection"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "covered_by_requirement",
+        "refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "reason": "当前 Requirement 覆盖 Android 页面投影事实与风险的知识闭环，不表示 iOS 要复制空布局异常、精确末端包含差异或无投影时回到首屏。受保护 Golden 为后续 ReaderCore Requirement 提供了字符锚点模型的证据；本任务不批准产品实现、架构依赖边或第三方库。",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "planned",
+        "requirement_refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "work_item_refs": [
+          "IOS-CHARACTERIZE-READER-LAYOUT-PAGE-PROJECTION-001"
+        ],
+        "capability_refs": [
+          "CAP-CONFORMANCE",
+          "CAP-CORE"
+        ],
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-reader-layout-page-projection-001-30504731189-1.json"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    }
+  ],
+  "updated_by": "IOS-CHARACTERIZE-READER-LAYOUT-PAGE-PROJECTION-001",
+  "updated_at": "2026-07-30T01:21:08Z"
+}

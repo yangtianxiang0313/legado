@@ -5,8 +5,8 @@
   "inventory_control_sha256": "70bed8108a0ee0d04851dceff2d1f23bf492163c1906f4f28a208cf20f558d72",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "cdf0a1c4823a42d864cf4c955643f81b2cf5dcb59448738e599287c4404f8930",
-  "coverage_sha256": "6daaa2d5b17e2018c1b92ab1e12872cfee8cabb1bf223493dc74434b7407319d",
+  "authority_sha256": "b7f6d4525b89463d1742b7c7597e729516317e811c7ca942d88820ffbc830b59",
+  "coverage_sha256": "d3b2d1ca74c755119657eda8e40717787c34870cf174c3e9dd90ab19db7e802e",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -149,6 +149,19 @@
       "claim_refs": [
         {
           "id": "BKC-BOOK-READ-RECORD-RISK-001",
+          "revision": 2
+        }
+      ]
+    },
+    {
+      "id": "BKP-READER-LAYOUT-PAGE-PROJECTION-001",
+      "revision": 1,
+      "semantic_key": "reader.layout.page-projection-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-READER-LAYOUT-PAGE-PROJECTION-001/r0001.json",
+      "record_sha256": "e94cee50794477c9f9f6a546feeb6ae721263383017dab4d363f4116135020d7",
+      "claim_refs": [
+        {
+          "id": "BKC-RD-LAYOUT-PROJECTION-001",
           "revision": 2
         }
       ]
@@ -742,6 +755,15 @@
       "record_sha256": "59d109e4052491af903e82a8d7bcf79a4f98b284a6ab5d61d954829429c8032f",
       "entry_ids": [
         "BKE-READER-HISTORY-READ-RECORD-RUNTIME-RISK-001"
+      ]
+    },
+    {
+      "id": "BKL-READER-LAYOUT-PAGE-PROJECTION-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-READER-LAYOUT-PAGE-PROJECTION-001.json",
+      "record_sha256": "00970279f874e762bf991b74c03a6723180d4de19afa3cb6bf9a6c1659244335",
+      "entry_ids": [
+        "BKE-READER-LAYOUT-PAGE-PROJECTION-001"
       ]
     },
     {
