@@ -159,7 +159,7 @@ enum ReaderIndexLoadDedupConformanceRunner {
     case "remove_retry":
       let token = registry.acquire(chapterIndex: index)!
       accepted.append(true)
-      _ = registry.finish(token)
+      _ = registry.admit(token, currentChapterIndex: index)
       accepted.append(acquire(index))
     case "different_indices":
       accepted = [
@@ -174,13 +174,16 @@ enum ReaderIndexLoadDedupConformanceRunner {
       registry.beginSession()
       accepted.append(acquire(index))
       if mode == "stale_removal", let oldToken {
-        let staleRemovedReplacement = registry.finish(oldToken)
+        let admission = registry.admit(
+          oldToken,
+          currentChapterIndex: index
+        )
         accepted.append(acquire(index))
         return .object([
           "attempt_results": .array(accepted.map(JSONValue.bool)),
           "active_indices": integers(registry.activeChapterIndices),
           "stale_removal_erased_replacement":
-            .bool(staleRemovedReplacement),
+            .bool(admission != .rejectedStale),
         ])
       }
     default:

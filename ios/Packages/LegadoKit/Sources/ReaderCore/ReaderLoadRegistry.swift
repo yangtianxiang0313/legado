@@ -24,6 +24,18 @@ public struct ReaderLoadToken: Equatable, Hashable, Sendable {
   }
 }
 
+public enum ReaderLoadSlot: Equatable, Sendable {
+  case previous
+  case current
+  case next
+}
+
+public enum ReaderLoadAdmission: Equatable, Sendable {
+  case accepted(ReaderLoadSlot)
+  case rejectedStale
+  case rejectedOutsideWindow
+}
+
 public struct ReaderLoadRegistry: Equatable, Sendable {
   public private(set) var generation: ReaderLoadGeneration
   private var activeByIndex: [Int: ReaderLoadToken]
@@ -65,6 +77,29 @@ public struct ReaderLoadRegistry: Equatable, Sendable {
     }
     activeByIndex[token.chapterIndex] = nil
     return true
+  }
+
+  public mutating func admit(
+    _ token: ReaderLoadToken,
+    currentChapterIndex: Int
+  ) -> ReaderLoadAdmission {
+    guard finish(token) else {
+      return .rejectedStale
+    }
+    if token.chapterIndex == currentChapterIndex {
+      return .accepted(.current)
+    }
+    if currentChapterIndex != Int.min,
+      token.chapterIndex == currentChapterIndex - 1
+    {
+      return .accepted(.previous)
+    }
+    if currentChapterIndex != Int.max,
+      token.chapterIndex == currentChapterIndex + 1
+    {
+      return .accepted(.next)
+    }
+    return .rejectedOutsideWindow
   }
 
   public func activeToken(
