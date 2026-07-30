@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import SourceFormat
 
 public struct BookSourceImportMetadata: Codable, Equatable, Sendable {
   public var enabled: Bool
@@ -88,6 +89,69 @@ public struct BookSourceDraft: Codable, Equatable, Identifiable, Sendable {
     self.contentRule = contentRule
     self.importMetadata = importMetadata
     self.rawDefinition = rawDefinition
+  }
+}
+
+public enum SourceDraftDefinitionCodec {
+  public static func hydrate(
+    _ source: BookSourceDraft
+  ) -> BookSourceDraft {
+    guard
+      let rawDefinition = source.rawDefinition,
+      let edit = try? BookSourceEditorCodec.project(
+        rawDefinition
+      )
+    else {
+      return source
+    }
+    var hydrated = source
+    if hydrated.searchRule.isEmpty {
+      hydrated.searchRule = edit.searchRule
+    }
+    if hydrated.exploreRule.isEmpty {
+      hydrated.exploreRule = edit.exploreRule
+    }
+    if hydrated.bookInfoRule.isEmpty {
+      hydrated.bookInfoRule = edit.bookInfoRule
+    }
+    if hydrated.tocRule.isEmpty {
+      hydrated.tocRule = edit.tocRule
+    }
+    if hydrated.contentRule.isEmpty {
+      hydrated.contentRule = edit.contentRule
+    }
+    return hydrated
+  }
+
+  public static func synchronize(
+    _ source: BookSourceDraft
+  ) throws -> BookSourceDraft {
+    let metadata = source.importMetadata ?? .init()
+    let edit = BookSourceEditableDefinition(
+      sourceURL: source.sourceURL,
+      name: source.name,
+      group: source.group,
+      comment: source.comment,
+      loginURL: source.loginURL,
+      searchURL: source.searchURL,
+      exploreURL: source.exploreURL,
+      searchRule: source.searchRule,
+      exploreRule: source.exploreRule,
+      bookInfoRule: source.bookInfoRule,
+      tocRule: source.tocRule,
+      contentRule: source.contentRule,
+      enabled: metadata.enabled,
+      enabledExplore: metadata.enabledExplore,
+      lastUpdateTime: metadata.lastUpdateTime,
+      customOrder: metadata.customOrder
+    )
+    var synchronized = source
+    synchronized.rawDefinition =
+      try BookSourceEditorCodec.applying(
+        edit,
+        to: source.rawDefinition
+      )
+    return synchronized
   }
 }
 
@@ -291,6 +355,9 @@ public final class SourceCatalog {
       var loaded = try await repository.loadSources()
       let variables = try await repository.loadSourceUserVariables()
       for index in loaded.indices {
+        loaded[index] = SourceDraftDefinitionCodec.hydrate(
+          loaded[index]
+        )
         loaded[index].userVariable =
           variables[loaded[index].sourceURL] ?? ""
       }
@@ -334,7 +401,9 @@ public final class SourceCatalog {
   @discardableResult
   public func save(_ source: BookSourceDraft) async -> Bool {
     do {
-      try await repository.saveSource(source)
+      try await repository.saveSource(
+        try SourceDraftDefinitionCodec.synchronize(source)
+      )
       await reload()
       return true
     } catch {
@@ -346,7 +415,11 @@ public final class SourceCatalog {
   @discardableResult
   public func importSources(_ sources: [BookSourceDraft]) async -> Bool {
     do {
-      try await repository.saveSources(sources)
+      try await repository.saveSources(
+        try sources.map(
+          SourceDraftDefinitionCodec.synchronize
+        )
+      )
       await reload()
       return true
     } catch {
@@ -366,8 +439,11 @@ public final class SourceCatalog {
         to: sources,
         selectedIDs: selectedIDs
       )
-      try await repository.replaceSources(updated)
-      sources = updated
+      let synchronized = try updated.map(
+        SourceDraftDefinitionCodec.synchronize
+      )
+      try await repository.replaceSources(synchronized)
+      sources = synchronized
       errorMessage = nil
       return true
     } catch {

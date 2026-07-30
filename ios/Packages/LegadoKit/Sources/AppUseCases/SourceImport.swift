@@ -54,25 +54,32 @@ public enum SourceDefinitionImport {
     guard let first = definitions.first else {
       return []
     }
-    guard !first.bookSourceUrl.stringValue.isEmpty else {
+    let firstEdit = try BookSourceEditorCodec.project(first)
+    guard !firstEdit.sourceURL.isEmpty else {
       throw SourceImportError.notSource
     }
     return try definitions.map { definition in
+      let edit = try BookSourceEditorCodec.project(
+        definition
+      )
       BookSourceDraft(
-        sourceURL: definition.bookSourceUrl.stringValue,
-        name: definition.bookSourceName.stringValue,
-        loginURL: definition.loginUrl.stringValue,
-        group: definition.bookSourceGroup.stringValue,
-        comment: definition.bookSourceComment.stringValue,
-        searchURL: definition.searchUrl.stringValue,
-        exploreURL: definition.exploreUrl.stringValue,
+        sourceURL: edit.sourceURL,
+        name: edit.name,
+        loginURL: edit.loginURL,
+        group: edit.group,
+        comment: edit.comment,
+        searchURL: edit.searchURL,
+        exploreURL: edit.exploreURL,
+        searchRule: edit.searchRule,
+        exploreRule: edit.exploreRule,
+        bookInfoRule: edit.bookInfoRule,
+        tocRule: edit.tocRule,
+        contentRule: edit.contentRule,
         importMetadata: BookSourceImportMetadata(
-          enabled: definition.enabled.boolValue(default: true),
-          enabledExplore: definition.enabledExplore.boolValue(
-            default: true
-          ),
-          lastUpdateTime: definition.lastUpdateTime.int64Value,
-          customOrder: definition.customOrder.int32Value
+          enabled: edit.enabled,
+          enabledExplore: edit.enabledExplore,
+          lastUpdateTime: edit.lastUpdateTime,
+          customOrder: edit.customOrder
         ),
         rawDefinition: try BookSourceCodec.encode(definition)
       )
@@ -161,33 +168,5 @@ public enum SourceImportPolicy {
       }
       source.group = groups.joined(separator: ",")
     }
-  }
-}
-
-private extension SourceField where Value == String {
-  var stringValue: String {
-    guard case .value(let value) = self else { return "" }
-    return value
-  }
-}
-
-private extension SourceField where Value == Bool {
-  func boolValue(default fallback: Bool) -> Bool {
-    guard case .value(let value) = self else { return fallback }
-    return value
-  }
-}
-
-private extension SourceField where Value == Int64 {
-  var int64Value: Int64 {
-    guard case .value(let value) = self else { return 0 }
-    return value
-  }
-}
-
-private extension SourceField where Value == Int32 {
-  var int32Value: Int32 {
-    guard case .value(let value) = self else { return 0 }
-    return value
   }
 }

@@ -120,6 +120,11 @@ UI 定制只能依赖书源 Package 的公开产品，书源 Package 禁止反�
 允许缺失的 rule 对象按空规则继续存在，因此单个阶段规则缺失不能导致整条书源被
 App 丢弃；失败应发生在真正执行该能力时，并携带对应运行阶段。
 
+书源编辑同样不得绕开 lossless 模型：`SourceFormat.BookSourceEditorCodec` 负责将
+规则对象投影为规范 JSON 文本，并在保存时补丁回原始定义。补丁必须保留根对象和
+未修改规则内的未知字段；`BookSourceDraft` 只是 UI 编辑缓存，所有 Repository 写入
+前必须同步 `rawDefinition`，旧数据载入时则从原始定义补齐尚未持久化的规则文本。
+
 ### 3.1 内核 Target
 
 | Target | 职责 | 允许的项目依赖 |
