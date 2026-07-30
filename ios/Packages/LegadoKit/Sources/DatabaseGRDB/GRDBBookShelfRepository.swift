@@ -152,6 +152,23 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
     try await database.write { db in
       switch update {
       case .replaced(_, let chapters):
+        guard var book = try BookRecord
+          .filter(Column("bookID") == bookID.rawValue)
+          .fetchOne(db)
+        else {
+          throw ShelfMutationFailure.missingBook
+        }
+        var status = ShelfChapterStatus(
+          totalChapterCount: book.chapterCount,
+          currentChapterIndex: book.progressChapterIndex ?? 0,
+          latestCheckCount: book.latestCheckCount,
+          latestChapterTime: book.latestChapterTime,
+          lastReadTime: book.progressUpdatedAt ?? 0
+        )
+        _ = status.observeTOC(
+          chapterCount: chapters.count,
+          at: Int64(Date().timeIntervalSince1970 * 1_000)
+        )
         _ = try ChapterRecord
           .filter(Column("bookID") == bookID.rawValue)
           .deleteAll(db)
@@ -159,14 +176,12 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
           var record = ChapterRecord(chapter: chapter)
           try record.insert(db)
         }
-        try db.execute(
-          sql: """
-            UPDATE books
-            SET chapterCount = ?, updateError = 0
-            WHERE bookID = ?
-            """,
-          arguments: [chapters.count, bookID.rawValue]
-        )
+        book.chapterCount = status.totalChapterCount
+        book.latestCheckCount = status.latestCheckCount
+        book.latestChapterTime = status.latestChapterTime
+        book.lastChapter = chapters.last?.title ?? book.lastChapter
+        book.updateError = false
+        try book.update(db)
       case .preserved:
         try db.execute(
           sql: "UPDATE books SET updateError = 1 WHERE bookID = ?",
@@ -192,7 +207,8 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
           SET progressChapterIndex = ?,
               progressCharacterOffset = ?,
               progressChapterTitle = ?,
-              progressUpdatedAt = ?
+              progressUpdatedAt = ?,
+              latestCheckCount = 0
           WHERE bookID = ?
           """,
         arguments: [
@@ -246,6 +262,7 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
         progress.position.characterOffset
       record.progressChapterTitle = progress.chapterTitle
       record.progressUpdatedAt = progress.updatedAtMilliseconds
+      record.latestCheckCount = 0
       try record.update(db)
       _ = try ChapterRecord
         .filter(Column("bookID") == bookID.rawValue)
@@ -269,10 +286,106 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
     }
   }
 
+  public func shelfSortMode(
+    groupID: Int?
+  ) async throws -> ShelfSortMode {
+    try await database.read { db in
+      let global = try Int.fetchOne(
+        db,
+        sql: "SELECT sortMode FROM shelfPreferences WHERE groupID = -1"
+      ) ?? ShelfSortMode.recentlyRead.rawValue
+      let rawValue: Int
+      if let groupID {
+        rawValue = try Int.fetchOne(
+          db,
+          sql: """
+            SELECT sortMode FROM shelfPreferences WHERE groupID = ?
+            """,
+          arguments: [groupID]
+        ) ?? global
+      } else {
+        rawValue = global
+      }
+      return ShelfSortMode(rawValue: rawValue) ?? .recentlyRead
+    }
+  }
+
+  public func setShelfSortMode(
+    _ mode: ShelfSortMode,
+    groupID: Int?
+  ) async throws {
+    try await database.write { db in
+      try db.execute(
+        sql: """
+          INSERT INTO shelfPreferences (groupID, sortMode)
+          VALUES (?, ?)
+          ON CONFLICT(groupID) DO UPDATE SET sortMode = excluded.sortMode
+          """,
+        arguments: [groupID ?? -1, mode.rawValue]
+      )
+    }
+  }
+
+  public func applyShelfMutation(
+    _ mutation: ShelfBatchMutation,
+    bookID: LibraryDomain.BookID
+  ) async throws {
+    try await database.write { db in
+      let exists = try Bool.fetchOne(
+        db,
+        sql: "SELECT EXISTS(SELECT 1 FROM books WHERE bookID = ?)",
+        arguments: [bookID.rawValue]
+      ) ?? false
+      guard exists else {
+        throw ShelfMutationFailure.missingBook
+      }
+      switch mutation {
+      case .delete:
+        _ = try BookRecord
+          .filter(Column("bookID") == bookID.rawValue)
+          .deleteAll(db)
+      case .clearCache:
+        _ = try ChapterContentRecord
+          .filter(Column("bookID") == bookID.rawValue)
+          .deleteAll(db)
+      case .setCanUpdate(let canUpdate):
+        try db.execute(
+          sql: """
+            UPDATE books
+            SET canUpdate = ?,
+                updateError = CASE WHEN ? THEN updateError ELSE 0 END
+            WHERE bookID = ?
+            """,
+          arguments: [canUpdate, canUpdate, bookID.rawValue]
+        )
+      case .moveToGroup(let groupID):
+        try db.execute(
+          sql: "UPDATE books SET groupID = ? WHERE bookID = ?",
+          arguments: [max(0, groupID), bookID.rawValue]
+        )
+      }
+    }
+  }
+
+  public func setShelfOrder(
+    _ bookIDs: [LibraryDomain.BookID]
+  ) async throws {
+    try await database.write { db in
+      for (index, bookID) in bookIDs.enumerated() {
+        try db.execute(
+          sql: "UPDATE books SET orderValue = ? WHERE bookID = ?",
+          arguments: [index, bookID.rawValue]
+        )
+      }
+    }
+  }
+
   public func reset() async throws {
     try await database.write { db in
+      _ = try ChapterContentRecord.deleteAll(db)
       _ = try ChapterRecord.deleteAll(db)
       _ = try BookRecord.deleteAll(db)
+      try db.execute(sql: "DELETE FROM shelfPreferences")
     }
   }
 
@@ -333,6 +446,38 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
         table.add(column: "progressUpdatedAt", .integer)
       }
     }
+    migrator.registerMigration("addShelfManagement") { db in
+      try db.alter(table: "books") { table in
+        table.add(
+          column: "latestChapterTime",
+          .integer
+        ).notNull().defaults(to: 0)
+        table.add(
+          column: "latestCheckCount",
+          .integer
+        ).notNull().defaults(to: 0)
+        table.add(
+          column: "canUpdate",
+          .boolean
+        ).notNull().defaults(to: true)
+      }
+      try db.create(table: "shelfPreferences") { table in
+        table.column("groupID", .integer).primaryKey()
+        table.column("sortMode", .integer).notNull()
+      }
+      try db.create(table: "chapterContentCache") { table in
+        table.column("bookID", .text).notNull()
+        table.column("chapterID", .text).notNull()
+        table.column("content", .text).notNull()
+        table.primaryKey(["bookID", "chapterID"])
+        table.foreignKey(
+          ["bookID"],
+          references: "books",
+          columns: ["bookID"],
+          onDelete: .cascade
+        )
+      }
+    }
     return migrator
   }
 }
@@ -361,6 +506,9 @@ private struct BookRecord:
   var progressCharacterOffset: Int?
   var progressChapterTitle: String?
   var progressUpdatedAt: Int64?
+  var latestChapterTime: Int64
+  var latestCheckCount: Int
+  var canUpdate: Bool
 
   init(
     bookID: String,
@@ -388,6 +536,9 @@ private struct BookRecord:
     self.progressCharacterOffset = nil
     self.progressChapterTitle = nil
     self.progressUpdatedAt = nil
+    self.latestChapterTime = 0
+    self.latestCheckCount = 0
+    self.canUpdate = true
   }
 
   mutating func apply(_ candidate: ShelfBookCandidate) {
@@ -421,7 +572,10 @@ private struct BookRecord:
         : .staged,
       order: orderValue,
       chapterCount: chapterCount,
-      progress: readingProgress
+      progress: readingProgress,
+      latestChapterTime: latestChapterTime,
+      latestCheckCount: latestCheckCount,
+      canUpdate: canUpdate
     )
   }
 
@@ -442,6 +596,16 @@ private struct BookRecord:
       updatedAtMilliseconds: progressUpdatedAt
     )
   }
+}
+
+private struct ChapterContentRecord:
+  Codable, FetchableRecord, MutablePersistableRecord
+{
+  static let databaseTableName = "chapterContentCache"
+
+  var bookID: String
+  var chapterID: String
+  var content: String
 }
 
 private struct ChapterRecord:

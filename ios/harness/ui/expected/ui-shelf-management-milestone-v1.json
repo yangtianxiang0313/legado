@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "scenario_id": "ui-shelf-management-milestone-v1",
+  "profile": "store_safe",
+  "simulators": [
+    {
+      "simulator_id": "SIM-PHONE-COMPACT-001",
+      "projection": "compactStack",
+      "initial_order": [
+        "星河纪事",
+        "星河之外"
+      ],
+      "manual_order": [
+        "星河之外",
+        "星河纪事"
+      ],
+      "new_chapter_badge": "新增 3 章",
+      "read_badge": "未读 1 章",
+      "batch_update_committed": 2,
+      "batch_group_committed": 2,
+      "cache_clear_committed": 2,
+      "source_switch_available": true,
+      "persisted_after_relaunch": true
+    }
+  ]
+}

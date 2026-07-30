@@ -47,6 +47,30 @@ enum SearchEnvironment {
         }
     }
 
+    static func sourceSwitchTargets(
+        persistedSources: [BookSourceDraft] = []
+    ) -> [BookSourceDraft] {
+        let baseURL = ProcessInfo.processInfo.environment[
+            "LEGADO_SEARCH_BASE_URL"
+        ] ?? "http://legado.local"
+        let builtIn = [
+            BookSourceDraft(
+                sourceURL: "\(baseURL)/source/science-fiction",
+                name: "本地科幻书源",
+                group: "科幻"
+            ),
+            BookSourceDraft(
+                sourceURL: "\(baseURL)/source/fantasy",
+                name: "本地奇幻书源",
+                group: "奇幻"
+            ),
+        ]
+        let builtInIDs = Set(builtIn.map(\.sourceURL))
+        return builtIn + persistedSources.filter {
+            !builtInIDs.contains($0.sourceURL)
+        }
+    }
+
     static func makeExploreSession(
         sourceID: String,
         persistedSources: [BookSourceDraft] = []

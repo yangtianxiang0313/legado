@@ -1325,6 +1325,139 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testShelfManagementMilestone() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+            "--seed-shelf-management",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        require("screen.root.shelf")
+        let shelfList = require("list.shelf.books")
+        let readBook = app.staticTexts["星河纪事"].firstMatch
+        let newBook = app.staticTexts["星河之外"].firstMatch
+        XCTAssertTrue(readBook.waitForExistence(timeout: 8))
+        XCTAssertTrue(
+            requireFirst("action.shelf.openBook").label
+                .contains("星河纪事")
+        )
+        XCTAssertTrue(
+            app.staticTexts["未读 1 章"].waitForExistence(timeout: 8)
+        )
+        shelfList.swipeUp()
+        XCTAssertTrue(newBook.waitForExistence(timeout: 8))
+        XCTAssertTrue(
+            app.staticTexts["新增 3 章"].waitForExistence(timeout: 8)
+        )
+        shelfList.swipeDown()
+
+        requireButton("action.shelf.sort").tap()
+        requireButton(label: "手动").tap()
+        let manualDeadline = Date().addingTimeInterval(8)
+        while
+            !requireFirst("action.shelf.openBook").label
+                .contains("星河之外"),
+            Date() < manualDeadline
+        {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+        }
+        XCTAssertTrue(
+            requireFirst("action.shelf.openBook").label
+                .contains("星河之外")
+        )
+
+        requireButton("action.shelf.manage").tap()
+        requireButton("action.shelf.selectAll").tap()
+        XCTAssertEqual(
+            require("state.shelf.selection").label,
+            "已选择 2 本"
+        )
+
+        requireButton("action.shelf.batch.update").tap()
+        requireButton(label: "停止更新").tap()
+        waitForLabel("已选择 0 本", identifier: "state.shelf.selection")
+        let firstReport = require("state.shelf.batchReport")
+        XCTAssertEqual(firstReport.label, "已完成 2，失败 0，取消 0")
+        XCTAssertTrue(app.staticTexts["不更新"].waitForExistence(timeout: 8))
+
+        requireButton("action.shelf.selectAll").tap()
+        requireButton("action.shelf.batch.group").tap()
+        requireButton(label: "移到分组 1").tap()
+        waitForLabel("已选择 0 本", identifier: "state.shelf.selection")
+        XCTAssertEqual(
+            require("state.shelf.batchReport").label,
+            "已完成 2，失败 0，取消 0"
+        )
+
+        requireButton("action.shelf.selectAll").tap()
+        requireButton("action.shelf.batch.more").tap()
+        requireButton(label: "清除缓存").tap()
+        waitForLabel("已选择 0 本", identifier: "state.shelf.selection")
+        XCTAssertEqual(
+            require("state.shelf.batchReport").label,
+            "已完成 2，失败 0，取消 0"
+        )
+        requireButton("action.shelf.batch.source")
+        requireButton("action.shelf.manage").tap()
+
+        app.terminate()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+        ]
+        app.launch()
+        require("screen.root.shelf")
+        let restoredReadBook = app.staticTexts["星河纪事"].firstMatch
+        let restoredNewBook = app.staticTexts["星河之外"].firstMatch
+        XCTAssertTrue(restoredNewBook.waitForExistence(timeout: 8))
+        XCTAssertTrue(
+            requireFirst("action.shelf.openBook").label
+                .contains("星河之外")
+        )
+        XCTAssertTrue(app.staticTexts["不更新"].waitForExistence(timeout: 8))
+        require("list.shelf.books").swipeUp()
+        XCTAssertTrue(restoredReadBook.waitForExistence(timeout: 8))
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "initial_order": ["星河纪事", "星河之外"],
+            "manual_order": ["星河之外", "星河纪事"],
+            "new_chapter_badge": "新增 3 章",
+            "read_badge": "未读 1 章",
+            "batch_update_committed": 2,
+            "batch_group_committed": 2,
+            "cache_clear_committed": 2,
+            "source_switch_available": true,
+            "persisted_after_relaunch": true,
+        ])
+    }
+
+    private func waitForLabel(
+        _ label: String,
+        identifier: String,
+        timeout: TimeInterval = 8
+    ) {
+        let value = element(identifier)
+        let expectation = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "label == %@", label),
+            object: value
+        )
+        XCTAssertEqual(
+            XCTWaiter.wait(for: [expectation], timeout: timeout),
+            .completed
+        )
+    }
+
     private func observeStartupCase(
         id: String,
         initial: String,

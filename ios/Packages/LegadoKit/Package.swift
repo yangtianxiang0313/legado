@@ -113,7 +113,11 @@ let package = Package(
         ),
         .testTarget(
             name: "DatabaseGRDBTests",
-            dependencies: ["DatabaseGRDB"]
+            dependencies: [
+                "LibraryDomain",
+                "AppUseCases",
+                "DatabaseGRDB",
+            ]
         ),
     ],
     swiftLanguageModes: [.v6]

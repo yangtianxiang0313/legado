@@ -34,6 +34,11 @@ struct RootShellView: View {
             }
             await library.reload()
             await sourceCatalog.reload()
+            if ProcessInfo.processInfo.arguments.contains(
+                "--seed-shelf-management"
+            ) {
+                await seedShelfManagement()
+            }
         }
     }
 
@@ -77,6 +82,10 @@ struct RootShellView: View {
         NavigationStack(path: pathBinding(for: root)) {
             RootContentView(
                 root: root,
+                library: library,
+                persistedSources: SearchEnvironment.sourceSwitchTargets(
+                    persistedSources: sourceCatalog.sources
+                ),
                 openSearch: {
                     router.push(.searchBooks, on: .shelf)
                 },
@@ -311,10 +320,61 @@ struct RootShellView: View {
             set: { router.setPath($0, for: root) }
         )
     }
+
+    private func seedShelfManagement() async {
+        guard library.books.isEmpty else { return }
+        let session = SearchEnvironment.makeSession(
+            persistedSources: sourceCatalog.sources
+        )
+        session.query = "星河"
+        session.selectGroup("科幻")
+        session.search()
+        while session.loadingState == .loading {
+            try? await Task.sleep(for: .milliseconds(20))
+        }
+        let candidates = session.results.prefix(2).map {
+            ShelfBookCandidate(
+                name: $0.name,
+                author: $0.author,
+                kind: $0.kind,
+                lastChapter: $0.lastChapter,
+                intro: $0.intro,
+                bookURL: $0.bookURL,
+                coverURL: $0.coverURL,
+                originName: $0.originName,
+                sourceID: $0.origin
+            )
+        }
+        for (index, candidate) in candidates.enumerated() {
+            await library.add(candidate, groupID: index)
+            guard let item = await library.item(forURL: candidate.bookURL)
+            else { continue }
+            let toc = library.chapterSession(
+                loader: SearchEnvironment.makeChapterLoader(
+                    persistedSources: sourceCatalog.sources
+                )
+            )
+            await toc.load(book: item, force: true)
+        }
+        if
+            let first = candidates.first,
+            let item = await library.item(forURL: first.bookURL)
+        {
+            await library.saveReadingProgress(
+                bookID: item.id,
+                chapterIndex: 1,
+                characterOffset: 0,
+                chapterTitle: "第二章 回声"
+            )
+        }
+        await library.reload()
+    }
 }
 
 private struct RootContentView: View {
     let root: RootRoute
+    @Bindable var library: ShelfLibrary
+    let persistedSources: [BookSourceDraft]
     let openSearch: () -> Void
     let openSources: () -> Void
     let openExploreSource: (ExploreSourceSummary) -> Void
@@ -323,6 +383,19 @@ private struct RootContentView: View {
     let exploreSources: () -> [ExploreSourceSummary]
 
     var body: some View {
+        if root == .shelf {
+            ShelfManagementView(
+                library: library,
+                persistedSources: persistedSources,
+                openSearch: openSearch,
+                openBook: openBook
+            )
+        } else {
+            genericRoot
+        }
+    }
+
+    private var genericRoot: some View {
         VStack(spacing: 20) {
             Image(systemName: root.systemImage)
                 .font(.system(size: 44, weight: .semibold))
@@ -336,38 +409,7 @@ private struct RootContentView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
 
-            if root == .shelf {
-                if books().isEmpty {
-                    Text("书架还是空的")
-                        .foregroundStyle(.secondary)
-                        .accessibilityIdentifier("state.shelf.empty")
-                } else {
-                    List(books()) { book in
-                        Button {
-                            openBook(book)
-                        } label: {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(book.candidate.name)
-                                    .font(.headline)
-                                Text("作者：\(book.candidate.author)")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        .accessibilityIdentifier(
-                            "action.shelf.openBook"
-                        )
-                    }
-                    .accessibilityIdentifier("list.shelf.books")
-                    .frame(maxHeight: 320)
-                }
-
-                Button(action: openSearch) {
-                    Label("搜索书籍", systemImage: "magnifyingglass")
-                }
-                .buttonStyle(.borderedProminent)
-                .accessibilityIdentifier("action.shelf.openSearch")
-            } else if root == .explore {
+            if root == .explore {
                 if exploreSources().isEmpty {
                     ContentUnavailableView {
                         Label("没有发现书源", systemImage: "safari")

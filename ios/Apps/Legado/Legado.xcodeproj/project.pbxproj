@@ -17,6 +17,7 @@
 		E1A98B56D9C34F74A21B0137 /* SearchEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2A98B56D9C34F74A21B0137 /* SearchEnvironment.swift */; };
 		A10CE0015A0CE0015A0CE001 /* SourceCatalogEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10CE0015A0CE0015A0CE001 /* SourceCatalogEnvironment.swift */; };
 		A10CE0025A0CE0025A0CE002 /* SourceManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10CE0025A0CE0025A0CE002 /* SourceManagementView.swift */; };
+		A10CE0035A0CE0035A0CE003 /* ShelfManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10CE0035A0CE0035A0CE003 /* ShelfManagementView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -42,6 +43,7 @@
 		E2A98B56D9C34F74A21B0137 /* SearchEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchEnvironment.swift; sourceTree = "<group>"; };
 		B10CE0015A0CE0015A0CE001 /* SourceCatalogEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceCatalogEnvironment.swift; sourceTree = "<group>"; };
 		B10CE0025A0CE0025A0CE002 /* SourceManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceManagementView.swift; sourceTree = "<group>"; };
+		B10CE0035A0CE0035A0CE003 /* ShelfManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShelfManagementView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -67,6 +69,7 @@
 				E2A98B56D9C34F74A21B0137 /* SearchEnvironment.swift */,
 				B10CE0015A0CE0015A0CE001 /* SourceCatalogEnvironment.swift */,
 				B10CE0025A0CE0025A0CE002 /* SourceManagementView.swift */,
+				B10CE0035A0CE0035A0CE003 /* ShelfManagementView.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -204,6 +207,7 @@
 				E1A98B56D9C34F74A21B0137 /* SearchEnvironment.swift in Sources */,
 				A10CE0015A0CE0015A0CE001 /* SourceCatalogEnvironment.swift in Sources */,
 				A10CE0025A0CE0025A0CE002 /* SourceManagementView.swift in Sources */,
+				A10CE0035A0CE0035A0CE003 /* ShelfManagementView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
