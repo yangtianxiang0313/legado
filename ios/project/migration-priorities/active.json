@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P46-URLSESSION-GZIP-NORMALIZATION-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "title": "P46 生产 URLSession gzip 透明解压归一化",
+  "objective": "依据冻结 Android ResponseBody.text 与响应解码 Golden，在 NetworkFoundation 边界识别 URLSession 已透明解压但仍保留 Content-Encoding:gzip 的响应，移除失效编码元数据，避免 SourceStringResponseNormalizer 二次解压；仍保留真正压缩 Fixture 的可测试解压路径。",
+  "validation_policy": "只运行 ProductionGZIPIntegrationTests 聚焦测试；修改仅位于既有 NetworkFoundation 响应适配边界，不重复 App 构建、不跑全量 Harness 或模拟器。",
+  "stages": [
+    {
+      "id": "P46-S1",
+      "title": "URLSession 响应解压状态归一化",
+      "selectors": [
+        {
+          "id": "P46-S1-GZIP",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-SOURCE-RUNTIME-PRODUCTION-GZIP-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-SOURCE-RUNTIME-PRODUCTION-GZIP-001",
+      "title": "阻止生产 gzip 响应二次解压",
+      "fixture_id": "source-production-gzip-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [
+        "IOS-SOURCE-RUNTIME-PRODUCTION-PROXY-001"
+      ],
+      "validation": "tests",
+      "package_path": "ios/Packages/LegadoSourceKit",
+      "test_filter": "ProductionGZIPIntegrationTests",
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoSourceKit/**",
+        "ios/docs/architecture.md",
+        "ios/project/migration-priorities/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "b4ead2bb5a02cebe9e5bf7e42fbced5f67785485",
+          "path": "app/src/main/java/io/legado/app/help/http/OkHttpUtils.kt",
+          "symbol_id": "kotlin://io.legado.app.help.http/ResponseBody.text"
+        }
+      ]
+    }
+  ]
+}
