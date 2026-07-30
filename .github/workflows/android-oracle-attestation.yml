@@ -98,14 +98,14 @@ jobs:
             | sudo tee /etc/udev/rules.d/99-kvm4all.rules >/dev/null
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
+          sudo chmod 0666 /dev/kvm
           if ! test -r /dev/kvm || ! test -w /dev/kvm; then
-            echo "::warning::Current Runner cannot access /dev/kvm; using the Android emulator software accelerator"
+            echo "::error::Current Runner cannot access /dev/kvm after permission repair"
             ls -l /dev/kvm || true
             id
-            printf 'EMULATOR_ACCEL=off\n' >>"${GITHUB_ENV}"
-          else
-            printf 'EMULATOR_ACCEL=on\n' >>"${GITHUB_ENV}"
+            exit 1
           fi
+          printf 'EMULATOR_ACCEL=on\n' >>"${GITHUB_ENV}"
 
       - name: Validate frozen controls
         shell: bash
@@ -232,20 +232,11 @@ jobs:
             done
             return 1
           }
-          if wait_for_emulator 240; then
+          if wait_for_emulator 360; then
             ready=true
           fi
-          if test "${ready}" != true && test "${EMULATOR_ACCEL}" = "off"; then
-            if wait_for_emulator 360; then
-              ready=true
-            fi
-          fi
           if test "${ready}" != true; then
-            if test "${EMULATOR_ACCEL}" = "off"; then
-              echo "::error::Android emulator did not boot within 600 seconds"
-            else
-              echo "::error::Android emulator did not boot within 240 seconds"
-            fi
+            echo "::error::Android emulator did not boot within 360 seconds"
             timeout 10s "${ADB}" devices -l || true
             tail -n 200 "${ORACLE_TEMP}/emulator.log" || true
             exit 1

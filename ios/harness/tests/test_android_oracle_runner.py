@@ -1352,8 +1352,8 @@ class AndroidOracleRunnerTests(unittest.TestCase):
         self.assertIn("wait_for_emulator()", workflow)
         self.assertIn("while (( SECONDS - started_at < deadline_seconds ))", workflow)
         self.assertIn('timeout 5s "${ADB}" -s "${AVD_SERIAL}" get-state', workflow)
-        self.assertIn("if wait_for_emulator 240; then", workflow)
         self.assertIn("if wait_for_emulator 360; then", workflow)
+        self.assertNotIn('printf \'EMULATOR_ACCEL=off', workflow)
 
     def test_doctor_binds_frozen_android_tree_and_exposes_no_authority(self):
         report = runner.doctor(ROOT)
