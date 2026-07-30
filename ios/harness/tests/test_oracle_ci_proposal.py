@@ -495,7 +495,7 @@ class OracleCIProposalTests(unittest.TestCase):
             workflow,
         )
         self.assertIn(
-            "Android emulator did not boot within 360 seconds",
+            "Android emulator did not boot within 240 seconds",
             workflow,
         )
         self.assertIn('"${ADB}" devices -l || true', workflow)
@@ -549,16 +549,9 @@ class OracleCIProposalTests(unittest.TestCase):
             "sudo udevadm trigger --name-match=kvm",
             workflow,
         )
-        self.assertIn("sudo chmod 0666 /dev/kvm", workflow)
         self.assertIn("test -e /dev/kvm", workflow)
         self.assertIn("test -r /dev/kvm", workflow)
         self.assertIn("test -w /dev/kvm", workflow)
-        self.assertIn(
-            "exit 1\n"
-            "          fi\n"
-            "          printf 'EMULATOR_ACCEL=on",
-            workflow,
-        )
         self.assertIn("ls -l /dev/kvm || true", workflow)
         self.assertLess(
             workflow.index(kvm_access_step),

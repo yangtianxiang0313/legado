@@ -5,8 +5,8 @@
   "inventory_control_sha256": "3bcba0f2bc7493cf16af9224c942c57b8d255d7bab39ab8dee2c72112a2c8247",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "b0ae732a767bad64ee6742260321b4ddcade66ecd29878f77d6f27860ab2ba3d",
-  "coverage_sha256": "b5011e526139361a9296b3a9bac7417d04144e5a86960de401d7459a5744fe87",
+  "authority_sha256": "453d166716bc83b332591e50018adb0076141ffde2a19626e207664d2550d9db",
+  "coverage_sha256": "43466aff3122dcb46a3f659555c7dc0019952ea78e31b3c582a6ad2c4c0752d1",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -205,6 +205,19 @@
         },
         {
           "id": "BKC-RD-SESSION-STATE-001",
+          "revision": 2
+        }
+      ]
+    },
+    {
+      "id": "BKP-READER-PROGRESS-SAVE-RUNTIME-001",
+      "revision": 1,
+      "semantic_key": "reader.progress.save-runtime-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-READER-PROGRESS-SAVE-RUNTIME-001/r0001.json",
+      "record_sha256": "41327e9d2c99e176ae33d57fcc0406fbee484ca4410ee8cdbf443a7e4cad4372",
+      "claim_refs": [
+        {
+          "id": "BKC-RD-PROGRESS-SAVE-001",
           "revision": 2
         }
       ]
@@ -822,6 +835,15 @@
       "entry_ids": [
         "BKE-READER-PROGRESS-READ-DURATION-SESSION-001",
         "BKE-READER-SESSION-STATE-001"
+      ]
+    },
+    {
+      "id": "BKL-READER-PROGRESS-SAVE-RUNTIME-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-READER-PROGRESS-SAVE-RUNTIME-001.json",
+      "record_sha256": "bdde3877697c0e4aad0c6317656f75a7c768bea01fc4ee55b4efa30115302d24",
+      "entry_ids": [
+        "BKE-READER-PROGRESS-SAVE-RUNTIME-001"
       ]
     },
     {

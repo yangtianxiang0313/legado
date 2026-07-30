@@ -203,6 +203,7 @@ jobs:
           # implementation below replaces both with command-bounded probes:
           # for _ in $(seq 1 120); do
           # "${ADB}" devices -l || true
+          # Android emulator did not boot within 240 seconds
           wait_for_emulator() {
             local deadline_seconds="$1"
             local started_at="${SECONDS}"

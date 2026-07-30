@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-READER-PROGRESS-SAVE-RUNTIME-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "reader.progress.save-runtime-golden",
+  "title": "受保护 Android Golden 验证的阅读进度异步保存与迟到写入边界",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "3bcba0f2bc7493cf16af9224c942c57b8d255d7bab39ab8dee2c72112a2c8247"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "reader.progress",
+      "reader.session"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-CORE"
+    ],
+    "subject_keys": [
+      "reader.progress",
+      "reader.session"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-RD-PROGRESS-SAVE-001",
+      "revision": 2,
+      "semantic_key": "reader.progress.save-runtime",
+      "kind": "runtime_behavior",
+      "topic": "阅读进度保存的执行时绑定与持久化窗口",
+      "statement": "在 rl-reader-progress-save-runtime-001 的 6 个固定 Android 场景中，ReadBook.saveRead 只把闭包排入 appDbWrite executor，不在调用时捕获 Book、章节索引、字符位置或标题。任务真正执行时才读取进程级 ReadBook.book 及其当前字段：排队后继续翻页会保存执行时进度而非调用时进度；排队后切书会把旧调用重定向到新书且不更新旧书；执行前清空会话则静默丢弃保存；连续排入的多个任务都会观察最终共享状态，不能保留各自调用快照。目标章节不存在时仍写入章节索引与字符位置并保留 Book 原标题。任务仍在队列时 Room 完全不变，只有 executor 执行后才持久化，因此 onPause 调用 saveRead 也存在进程终止前未落盘窗口。iOS ReaderCore 不应复制这种全局共享状态的迟绑定；每次保存触发应生成包含 BookID、ReaderSession generation、稳定 TextCursor、标题决策和时间的不可变 ProgressSaveCommand，由存储端口按 identity 幂等提交并拒绝迟到 generation，进入后台或关闭阅读会话时还需具备可验证的 flush 或 journal 策略。",
+      "subject_keys": [
+        "reader.progress",
+        "reader.session"
+      ],
+      "depends_on": [],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [
+          {
+            "id": "AF-READ-BOOK-SAVE-READ",
+            "revision_sha256": "e2cf510cd44c6777d41065be5a56fb906a95d0ff26a16308dda8f854763879d6"
+          },
+          {
+            "id": "AF-READ-ACTIVITY-ON-PAUSE",
+            "revision_sha256": "afc6894fef46e05b916d9476c91c84b20db94b493457cb1f0df52c03298147a0"
+          }
+        ],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d",
+            "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+            "symbol_id": "kotlin://io.legado.app.model.ReadBook/saveRead"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "b116c77fa2d48c9d1a1013e60a92236f71bea1bc",
+            "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.read.ReadBookActivity/onPause"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/rl-reader-progress-save-runtime-001.json",
+            "artifact_sha256": "75210384f76b2dbd98264f403b9371eb0b685e032626020f541016f0e3e114b9",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "f2a788ef11d7c829a4e2804652b7666437c0e17ab0f1e0ae0047bfac3bb10811",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "0a1867cbbca6913bf5bcbaf842697856cc34b1b6cf26e657c52482b8bdd7df22",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-RD-PROGRESS-SAVE-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-READER-PROGRESS-SAVE-RUNTIME-001"
+}

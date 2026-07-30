@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgeCoverageLedger",
+  "id": "BKL-READER-PROGRESS-SAVE-RUNTIME-001",
+  "revision": 1,
+  "status": "current",
+  "packet_refs": [
+    {
+      "id": "BKP-READER-PROGRESS-SAVE-RUNTIME-001",
+      "revision": 1,
+      "sha256": "41327e9d2c99e176ae33d57fcc0406fbee484ca4410ee8cdbf443a7e4cad4372"
+    }
+  ],
+  "generated_from": {
+    "knowledge_authority_sha256": "453d166716bc83b332591e50018adb0076141ffde2a19626e207664d2550d9db",
+    "requirement_catalog_sha256": "2de1e193755031763bb49d7e228345114aa09c12c33f4feb5afa090629c94d83",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "entries": [
+    {
+      "id": "BKE-READER-PROGRESS-SAVE-RUNTIME-001",
+      "claim_ref": {
+        "id": "BKC-RD-PROGRESS-SAVE-001",
+        "revision": 2
+      },
+      "validation": {
+        "required": "android_runtime",
+        "state": "verified",
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-reader-progress-save-runtime-001-30512136706-1.json",
+          "ios/harness/goldens/android-legado-v1/rl-reader-progress-save-runtime-001.json#/artifact/result/value/portable_known_projection"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "covered_by_requirement",
+        "refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "reason": "当前 Requirement 已闭环 Android saveRead 的执行时状态读取、跨书迟到写入、清空会话丢弃、重复排队、缺章标题保留和异步落盘窗口；这些事实约束后续 ReaderCore 使用不可变 ProgressSaveCommand、session generation、幂等存储端口和生命周期 flush，不表示 iOS 应复制 Android 的进程级共享状态竞态。",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "planned",
+        "requirement_refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "work_item_refs": [
+          "IOS-READER-CORE-PROGRESS-SAVE-RUNTIME-001"
+        ],
+        "capability_refs": [
+          "CAP-CONFORMANCE",
+          "CAP-CORE"
+        ],
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-reader-progress-save-runtime-001-30512136706-1.json"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    }
+  ],
+  "updated_by": "IOS-CHARACTERIZE-READER-PROGRESS-SAVE-RUNTIME-001",
+  "updated_at": "2026-07-30T04:01:25Z"
+}
