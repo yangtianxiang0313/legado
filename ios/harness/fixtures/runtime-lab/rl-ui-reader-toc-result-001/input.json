@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "cancel-discards-payload",
+      "operation": "toc_result_contract",
+      "arguments": {
+        "completion_code": "canceled",
+        "producer": "chapter",
+        "selected_index": 4,
+        "current_index": 1
+      }
+    },
+    {
+      "id": "ok-null-intent-is-null",
+      "operation": "toc_result_contract",
+      "arguments": {
+        "completion_code": "ok",
+        "producer": "null_intent"
+      }
+    },
+    {
+      "id": "ok-empty-intent-uses-defaults",
+      "operation": "toc_result_contract",
+      "arguments": {
+        "completion_code": "ok",
+        "producer": "empty_intent"
+      }
+    },
+    {
+      "id": "same-chapter-selection",
+      "operation": "toc_result_contract",
+      "arguments": {
+        "completion_code": "ok",
+        "producer": "chapter",
+        "selected_index": 2,
+        "current_index": 2
+      }
+    },
+    {
+      "id": "different-chapter-selection",
+      "operation": "toc_result_contract",
+      "arguments": {
+        "completion_code": "ok",
+        "producer": "chapter",
+        "selected_index": 5,
+        "current_index": 2
+      }
+    },
+    {
+      "id": "bookmark-selection-preserves-offset",
+      "operation": "toc_result_contract",
+      "arguments": {
+        "completion_code": "ok",
+        "producer": "bookmark",
+        "selected_index": 3,
+        "chapter_pos": 128
+      }
+    },
+    {
+      "id": "reverse-result-resets-offset",
+      "operation": "toc_result_contract",
+      "arguments": {
+        "completion_code": "ok",
+        "producer": "reverse",
+        "current_index": 6
+      }
+    }
+  ]
+}

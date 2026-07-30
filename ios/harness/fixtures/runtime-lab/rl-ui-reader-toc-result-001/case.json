@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "kind": "android_runtime_scenario",
+  "id": "rl-ui-reader-toc-result-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "android_runtime",
+  "capabilities": [
+    "android.activity-result",
+    "ui.toc",
+    "reader.navigation"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": null,
+  "input": "input.json",
+  "transport": {
+    "mode": "none",
+    "external_network": "deny",
+    "responses": []
+  },
+  "determinism": {
+    "clock": "state_projection",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 0,
+    "network_allowed": false,
+    "logical_origin": null,
+    "database_reset_per_case": true
+  },
+  "limits": {
+    "timeout_ms": 5000
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/ui/book/toc/TocActivityResult.kt#parseResult",
+      "app/src/main/java/io/legado/app/ui/book/toc/ChapterListFragment.kt#openChapter",
+      "app/src/main/java/io/legado/app/ui/book/toc/BookmarkFragment.kt#onClick",
+      "app/src/main/java/io/legado/app/ui/book/toc/TocActivity.kt#onCompatOptionsItemSelected",
+      "app/src/main/java/io/legado/app/ui/book/info/BookInfoActivity.kt#tocActivityResult",
+      "app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt#tocActivity"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-UI-READER-TOC-RESULT-001"
+  },
+  "coverage": [
+    {
+      "behavior": "ui.reader.toc-result",
+      "cases": [
+        {
+          "id": "cancel-discards-payload",
+          "role": "denied",
+          "android_fact_refs": [
+            "AF-TOC-ACTIVITY-RESULT-PARSE"
+          ],
+          "branch_refs": [
+            "Any non-RESULT_OK result returns null even when an Intent contains chapter extras"
+          ]
+        },
+        {
+          "id": "ok-null-intent-is-null",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-TOC-ACTIVITY-RESULT-PARSE"
+          ],
+          "branch_refs": [
+            "RESULT_OK without an Intent returns null"
+          ]
+        },
+        {
+          "id": "ok-empty-intent-uses-defaults",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-TOC-ACTIVITY-RESULT-PARSE"
+          ],
+          "branch_refs": [
+            "Missing index, chapterPos and chapterChanged extras decode as 0, 0 and false"
+          ]
+        },
+        {
+          "id": "same-chapter-selection",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-CHAPTER-LIST-OPEN-CHAPTER",
+            "AF-TOC-ACTIVITY-RESULT-PARSE"
+          ],
+          "branch_refs": [
+            "Selecting the current chapter returns its index with chapterChanged false"
+          ]
+        },
+        {
+          "id": "different-chapter-selection",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-CHAPTER-LIST-OPEN-CHAPTER",
+            "AF-TOC-ACTIVITY-RESULT-PARSE"
+          ],
+          "branch_refs": [
+            "Selecting another chapter returns its index with chapterChanged true"
+          ]
+        },
+        {
+          "id": "bookmark-selection-preserves-offset",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-BOOKMARK-FRAGMENT-CLICK",
+            "AF-TOC-ACTIVITY-RESULT-PARSE"
+          ],
+          "branch_refs": [
+            "Selecting a bookmark returns chapter index and character offset without a chapterChanged extra"
+          ]
+        },
+        {
+          "id": "reverse-result-resets-offset",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-TOC-ACTIVITY-REVERSE-RESULT",
+            "AF-TOC-ACTIVITY-RESULT-PARSE"
+          ],
+          "branch_refs": [
+            "Reversing the TOC returns the current chapter index and resets chapterPos to zero"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -83,6 +83,7 @@ import io.legado.app.ui.book.read.page.entities.TextPage
 import io.legado.app.ui.book.read.page.provider.ChapterProvider
 import io.legado.app.ui.book.read.ReadBookActivity
 import io.legado.app.ui.book.read.ReadBookViewModel
+import io.legado.app.ui.book.toc.TocActivityResult
 import io.legado.app.ui.book.info.BookInfoActivity
 import io.legado.app.ui.book.info.BookInfoViewModel
 import io.legado.app.ui.book.changesource.ChangeChapterSourceViewModel
@@ -230,6 +231,8 @@ class LegadoOracleInstrumentedTest {
                 runBookDetailStagingCases()
             "rl-library-chapter-toc-update-runtime-001" ->
                 runChapterTocUpdateCases()
+            "rl-ui-reader-toc-result-001" ->
+                runTocActivityResultCases()
             "rl-reader-chapter-source-override-runtime-001" ->
                 runChapterSourceOverrideCases()
             "rl-reader-bookmark-search-runtime-risk-001" ->
@@ -4835,6 +4838,80 @@ class LegadoOracleInstrumentedTest {
             }
         }
         clearChapterTocUpdateState()
+    }
+
+    private suspend fun runTocActivityResultCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            val operation = value.getString("operation")
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", operation)
+                .put("arguments", JSONObject(arguments.toString()))
+            runCase(value.getString("id"), operation, stimulus) {
+                when (operation) {
+                    "toc_result_contract" ->
+                        tocActivityResultProjection(arguments)
+                    else -> error(
+                        "Unsupported TOC result operation: $operation"
+                    )
+                }
+            }
+        }
+    }
+
+    private fun tocActivityResultProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val producer = arguments.getString("producer")
+        val intent = when (producer) {
+            "null_intent" -> null
+            "empty_intent" -> Intent()
+            "chapter" -> Intent().apply {
+                val selected = arguments.getInt("selected_index")
+                val current = arguments.getInt("current_index")
+                putExtra("index", selected)
+                putExtra("chapterChanged", selected != current)
+            }
+            "bookmark" -> Intent().apply {
+                putExtra("index", arguments.getInt("selected_index"))
+                putExtra("chapterPos", arguments.getInt("chapter_pos"))
+            }
+            "reverse" -> Intent().apply {
+                putExtra("index", arguments.getInt("current_index"))
+                putExtra("chapterPos", 0)
+            }
+            else -> error("Unsupported TOC result producer: $producer")
+        }
+        val resultCode =
+            if (arguments.getString("completion_code") == "ok") {
+                Activity.RESULT_OK
+            } else {
+                Activity.RESULT_CANCELED
+            }
+        val parsed = TocActivityResult().parseResult(resultCode, intent)
+        return JSONObject()
+            .put("producer", producer)
+            .put("result_present", parsed != null)
+            .put("chapter_index", parsed?.first ?: JSONObject.NULL)
+            .put("chapter_pos", parsed?.second ?: JSONObject.NULL)
+            .put("chapter_changed", parsed?.third ?: JSONObject.NULL)
+            .put(
+                "reader_open_arguments",
+                parsed?.let {
+                    JSONArray().put(it.first).put(it.second)
+                } ?: JSONObject.NULL
+            )
+            .put(
+                "detail_progress_write",
+                parsed?.let {
+                    JSONObject()
+                        .put("dur_chapter_index", it.first)
+                        .put("dur_chapter_pos", it.second)
+                        .put("chapter_changed", it.third)
+                } ?: JSONObject.NULL
+            )
     }
 
     private suspend fun shelfTocQueueProjection(

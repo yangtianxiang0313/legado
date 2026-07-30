@@ -2,8 +2,8 @@
   "schema_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
   "android_tree": "c81f5d383116e37c1eefee3eb86654514e82022b",
-  "control_sha256": "0c4d54d6666a2dd64936faaa9306cdbe1748cfb7c195e51f1f2fbeeb34e834a8",
-  "policy_sha256": "0f8e2206900fb1ac3476b77586e5fb5db898f686094a7c3dc2066d06c64ea6ed",
+  "control_sha256": "822755c0b0cd5555b959fd4da3a6d18c833f9e9ab9252dbbf15c91a02a407d04",
+  "policy_sha256": "9ce7629b043fef66313aae8c6a0dfb073b7f48b04f8e454e6aa940c076619083",
   "facts": [
     {
       "id": "AF-ANALYZE-JSONPATH-GET-LIST",
@@ -802,6 +802,30 @@
       ]
     },
     {
+      "id": "AF-BOOKMARK-FRAGMENT-CLICK",
+      "fact_key": "reader.navigation.bookmark-selection",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.ui.book.toc.BookmarkFragment/onClick",
+      "path": "app/src/main/java/io/legado/app/ui/book/toc/BookmarkFragment.kt",
+      "git_blob": "a69b2669ad4a89fed1cdbd53a34b26168e1438c5",
+      "source_sha256": "b257fe99a3754777cea823633affa7884062378000c21c890dbcffee21a19e82",
+      "start_line": 80,
+      "end_line": 88,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "onClick",
+        "signature": "fun onClick(bookmark: Bookmark)",
+        "body_semantic_sha256": "b7f18661c3af4931ed8f4ee7555cd67c2aa2c4d86d3ef8751d9bed24d802845b"
+      },
+      "revision_sha256": "f9f55c3dab5b933a4b0ccd0af811f0221d402302f772ccc6a207b134859b0bb6",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
       "id": "AF-BOOKSHELF-ADD-BOOK-BY-URL",
       "fact_key": "library.book-import.add-by-url",
       "category": "production_entrypoint",
@@ -997,6 +1021,30 @@
       "revision_sha256": "cdbdd9cea0b5d2a18b4f9043590e87e60512b83627704112106de534f0c58365",
       "maps_to": [
         "REQ-ANDROID-BOOKSOURCE-SCHEMA-001"
+      ]
+    },
+    {
+      "id": "AF-CHAPTER-LIST-OPEN-CHAPTER",
+      "fact_key": "reader.navigation.chapter-list-selection",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.ui.book.toc.ChapterListFragment/openChapter",
+      "path": "app/src/main/java/io/legado/app/ui/book/toc/ChapterListFragment.kt",
+      "git_blob": "2f76982c3bfcf536939dee5af97097b4b93ebc32",
+      "source_sha256": "e4fe695787d296aec49a5b03a835292fda1c25aef72c6c71c5ca00422f882af3",
+      "start_line": 164,
+      "end_line": 172,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "openChapter",
+        "signature": "fun openChapter(bookChapter: BookChapter)",
+        "body_semantic_sha256": "a06d7d7f51f82cee8304f135517987b8ab5c94a88fe5255d7b17250290c44142"
+      },
+      "revision_sha256": "79753eef3c7139d6d53f6670eb644f50ffd7ce5aa256e3433ff7ccd03339f68b",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
       ]
     },
     {
@@ -2337,6 +2385,54 @@
         "body_semantic_sha256": "1d91f964b390bc973f608fad28ccd91b3af83b8e13748d193a609ca3dee621a8"
       },
       "revision_sha256": "1966865f4cb02cf8e63ca7b55bdab908a7125b7fd4b1d77a93578257e643c19b",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-TOC-ACTIVITY-RESULT-PARSE",
+      "fact_key": "reader.navigation.toc-result-parse",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.ui.book.toc.TocActivityResult/parseResult",
+      "path": "app/src/main/java/io/legado/app/ui/book/toc/TocActivityResult.kt",
+      "git_blob": "8cd5d47b078ff330a4b871ec74d4c4403bffb8b4",
+      "source_sha256": "cddc80e0200e339d61ab69afaa69bd3fb8b4694799df472c268675afcc40bb21",
+      "start_line": 15,
+      "end_line": 26,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "parseResult",
+        "signature": "fun parseResult(resultCode: Int, intent: Intent?): Triple<Int, Int, Boolean>?",
+        "body_semantic_sha256": "9df6b6134b2add68594f687b94e02ec4339d5db57ccd3d9f9b9b80164703569a"
+      },
+      "revision_sha256": "182a9b2639f0ed3c94f7b84a78698da878656a2a827b568cefcb37dd13230efe",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-TOC-ACTIVITY-REVERSE-RESULT",
+      "fact_key": "reader.navigation.toc-reverse-result",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.ui.book.toc.TocActivity/onCompatOptionsItemSelected",
+      "path": "app/src/main/java/io/legado/app/ui/book/toc/TocActivity.kt",
+      "git_blob": "5f62f1bf0d6956bcb525490fd8b8075446e880a8",
+      "source_sha256": "6f85a9c0e8c864fa65110bf26bfec5cfd508d3ee3139a6da712fc9add234e2c0",
+      "start_line": 140,
+      "end_line": 179,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "onCompatOptionsItemSelected",
+        "signature": "fun onCompatOptionsItemSelected(item: MenuItem): Boolean",
+        "body_semantic_sha256": "2c1e7643d0990ee31d8e8ae9c00074b4274dd72562a170d542f09a74a2b36980"
+      },
+      "revision_sha256": "f26fd279d222a30609fc9dfe6a52ffa908be88a8921e6ce409e92629c5b769d9",
       "maps_to": [
         "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
       ]

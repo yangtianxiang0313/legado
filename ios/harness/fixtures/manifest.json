@@ -119,6 +119,11 @@
       "sha256": "de4bebd2acbff079fc930bb97d724e95188dfd65e1dea3306b4d67c1915c6c3d"
     },
     {
+      "id": "rl-ui-reader-toc-result-001",
+      "path": "ios/harness/fixtures/runtime-lab/rl-ui-reader-toc-result-001",
+      "sha256": "a357b02730b066c783996068a883235b4f3caf7dd0e27973c631217aecf8f009"
+    },
+    {
       "id": "sl-content-cache-queue-completion-runtime-001",
       "path": "ios/harness/fixtures/source-lab/sl-content-cache-queue-completion-runtime-001",
       "sha256": "1172d2ca2d61315b604e338ac3e86cb9c7b6d3de0265c923e70da670d1414b98"

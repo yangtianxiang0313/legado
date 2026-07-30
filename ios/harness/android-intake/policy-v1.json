@@ -988,6 +988,54 @@
       "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
     },
     {
+      "fact_id": "AF-TOC-ACTIVITY-RESULT-PARSE",
+      "fact_key": "reader.navigation.toc-result-parse",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/ui/book/toc/TocActivityResult.kt",
+      "symbol": "parseResult",
+      "symbol_id": "kotlin://io.legado.app.ui.book.toc.TocActivityResult/parseResult",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-CHAPTER-LIST-OPEN-CHAPTER",
+      "fact_key": "reader.navigation.chapter-list-selection",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/ui/book/toc/ChapterListFragment.kt",
+      "symbol": "openChapter",
+      "symbol_id": "kotlin://io.legado.app.ui.book.toc.ChapterListFragment/openChapter",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-BOOKMARK-FRAGMENT-CLICK",
+      "fact_key": "reader.navigation.bookmark-selection",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/ui/book/toc/BookmarkFragment.kt",
+      "symbol": "onClick",
+      "symbol_id": "kotlin://io.legado.app.ui.book.toc.BookmarkFragment/onClick",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-TOC-ACTIVITY-REVERSE-RESULT",
+      "fact_key": "reader.navigation.toc-reverse-result",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/ui/book/toc/TocActivity.kt",
+      "symbol": "onCompatOptionsItemSelected",
+      "symbol_id": "kotlin://io.legado.app.ui.book.toc.TocActivity/onCompatOptionsItemSelected",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
       "fact_id": "AF-BOOK-GET-LOCAL-URI",
       "fact_key": "library.local-book.resolve-uri",
       "category": "production_entrypoint",
