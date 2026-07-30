@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P13-SOURCE-ENDPOINT-REQUEST-OPTIONS-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "title": "P13 详情目录正文请求表达式保真",
+  "objective": "对齐 Android BookChapter.getAbsoluteURL 与 AnalyzeUrl 的职责分离：领域身份使用逻辑绝对 URL，请求层同时保留逗号后的 method/body/header/retry option，使详情、目录和正文不再被强制降级为 GET。",
+  "completion_evidence": [
+    "SourceRuntime 端点值同时保存逻辑绝对 URL 与原始请求表达式",
+    "只对 option 前的 URL 部分做相对地址补全，option 原样保留",
+    "详情、目录、正文通过 SourceRequestCompiler 构建 RequestPlan",
+    "后续产品持久化不会把请求表达式压缩成 Foundation URL"
+  ],
+  "deferred_policy": "先建立端点值和 SourceRuntime 流水线；随后再贯通 SearchResult、ShelfBookCandidate、BookChapter 与 GRDB。动态 WebView、下一页目录和下一页正文不混入首阶段。",
+  "deliveries": [
+    {
+      "target": "IOS-SOURCE-RUNTIME-ENDPOINT-REQUEST-EXPRESSION-001",
+      "title": "建立保留 URL option 的书源端点值与请求计划",
+      "fixture_id": "source-endpoint-request-expression-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-04",
+      "prerequisite_task_ids": [],
+      "validation": "tests",
+      "test_filter": "SourceEndpointRequestExpressionTests",
+      "additional_allowed_paths": [],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "3c962707818d3ad976867221a2f76da20e001e11",
+          "path": "app/src/main/java/io/legado/app/data/entities/BookChapter.kt",
+          "symbol_id": "kotlin://io.legado.app.data.entities.BookChapter/getAbsoluteURL"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "af03cf51cef2eb31f54b8240c39e868ceabdba54",
+          "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
+          "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook/getContentAwait"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da",
+          "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+          "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/analyzeUrl"
+        }
+      ]
+    }
+  ],
+  "stages": [
+    {
+      "id": "P13-01-SOURCE-ENDPOINT-VALUE",
+      "title": "端点值保留逻辑 URL 与请求 option",
+      "outcome": "SourceRuntime 可对相对 URL 补全后保留 option，并为非搜索阶段生成 POST/Header/Retry RequestPlan。",
+      "selectors": [
+        {
+          "id": "SOURCE-ENDPOINT-REQUEST-EXPRESSION",
+          "task_ids": [
+            "IOS-SOURCE-RUNTIME-ENDPOINT-REQUEST-EXPRESSION-001"
+          ]
+        }
+      ]
+    }
+  ]
+}
