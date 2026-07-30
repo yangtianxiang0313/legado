@@ -61,6 +61,33 @@
           "symbol_id": "kotlin://io.legado.app.model.webBook/BookContent/analyzeContent"
         }
       ]
+    },
+    {
+      "target": "IOS-SOURCE-RUNTIME-MULTIPAGE-READER-BOUNDARY-001",
+      "title": "将下一章边界接入阅读与离线缓存",
+      "fixture_id": "source-multipage-reader-boundary-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-04",
+      "prerequisite_task_ids": [
+        "IOS-SOURCE-RUNTIME-MULTIPAGE-PIPELINE-001"
+      ],
+      "validation": "tests",
+      "test_filter": "ReaderContentPaginationBoundaryTests",
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
+          "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook/getContentAwait"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/model/webBook/BookContent.kt",
+          "symbol_id": "kotlin://io.legado.app.model.webBook/BookContent/analyzeContent"
+        }
+      ]
     }
   ],
   "stages": [
@@ -86,6 +113,19 @@
           "id": "SOURCE-MULTIPAGE-PIPELINE",
           "task_ids": [
             "IOS-SOURCE-RUNTIME-MULTIPAGE-PIPELINE-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P14-03-READER-NEXT-CHAPTER-BOUNDARY",
+      "title": "阅读主链提供下一章边界",
+      "outcome": "在线阅读和离线缓存把目录中的下一章端点交给正文分页，避免把下一章正文拼入当前章。",
+      "selectors": [
+        {
+          "id": "SOURCE-MULTIPAGE-READER-BOUNDARY",
+          "task_ids": [
+            "IOS-SOURCE-RUNTIME-MULTIPAGE-READER-BOUNDARY-001"
           ]
         }
       ]
