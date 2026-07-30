@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P48-SOURCE-EDITOR-LOSSLESS-WRITEBACK-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "title": "P48 书源编辑器 lossless 写回运行时定义",
+  "objective": "依据冻结 Android BookSource/Rule 对象模型，在独立 SourceFormat 中建立书源编辑投影与补丁 Codec：导入时把五段规则对象投影为可编辑 JSON，保存时将基础字段、启用状态和规则修改写回 rawDefinition，同时保留未编辑字段与未知扩展；确保编辑器保存、调试和后续运行读取的是同一份定义。",
+  "validation_policy": "只运行 BookSourceEditorCodecTests 聚焦测试，并执行一次 LegadoApp 构建证明导入/保存接线；不跑全量 Harness、全量 Swift 测试或模拟器。",
+  "stages": [
+    {
+      "id": "P48-S1",
+      "title": "编辑投影、lossless 补丁与 AppUseCases 保存接线",
+      "selectors": [
+        {
+          "id": "P48-S1-WRITEBACK",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-SOURCE-EDITOR-LOSSLESS-WRITEBACK-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-SOURCE-EDITOR-LOSSLESS-WRITEBACK-001",
+      "title": "让书源编辑值真正进入独立运行时定义",
+      "fixture_id": "source-editor-lossless-writeback-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [
+        "IOS-SOURCE-RUNTIME-DEFINITION-COMPILER-001"
+      ],
+      "validation": "tests",
+      "package_path": "ios/Packages/LegadoSourceKit",
+      "test_filter": "BookSourceEditorCodecTests",
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoSourceKit/**",
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+        "ios/Apps/Legado/**",
+        "ios/docs/architecture.md",
+        "ios/project/migration-priorities/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "d2ac6002cbaabe508f72a77e138f95b376c424c4",
+          "path": "app/src/main/java/io/legado/app/data/entities/BookSource.kt",
+          "symbol_id": "kotlin://io.legado.app.data.entities.BookSource"
+        }
+      ]
+    }
+  ]
+}
