@@ -422,6 +422,59 @@ final class DatabaseGRDBTests: XCTestCase {
     XCTAssertEqual(report.failedCount, 0)
   }
 
+  func testOfflineCacheHonorsSelectedChapterRange() async throws {
+    let repository = try GRDBBookShelfRepository(
+      path: temporaryDatabasePath()
+    )
+    let item = try await repository.add(
+      candidate(name: "范围缓存", suffix: "offline-range"),
+      groupID: 0
+    )
+    let chapters = (0..<4).map { index in
+      BookChapter(
+        id: ChapterID(
+          sourceID: item.candidate.sourceID,
+          chapterURL: "\(item.candidate.bookURL)/\(index)"
+        ),
+        bookID: item.id,
+        sourceID: item.candidate.sourceID,
+        index: index,
+        title: "第\(index + 1)章",
+        url: "\(item.candidate.bookURL)/\(index)"
+      )
+    }
+    _ = try await repository.applyTOCUpdate(
+      bookID: item.id,
+      update: .replaced(previousCount: 0, chapters: chapters)
+    )
+    let library = ShelfLibrary(repository: repository)
+    let loader = RetryingReaderLoader(failuresBeforeSuccess: 0)
+
+    let report = await library.cacheOffline(
+      bookID: item.id,
+      chapterIndexes: 1...2,
+      loader: loader
+    )
+
+    XCTAssertEqual(report.requestedCount, 2)
+    XCTAssertEqual(report.cachedCount, 2)
+    XCTAssertEqual(report.skippedCount, 0)
+    XCTAssertEqual(report.failedCount, 0)
+    var cachedContents: [String?] = []
+    for chapter in chapters {
+      cachedContents.append(
+        try await repository.chapterContent(
+          bookID: item.id,
+          chapterID: chapter.id
+        )
+      )
+    }
+    XCTAssertNil(cachedContents[0])
+    XCTAssertEqual(cachedContents[1], "离线正文 1")
+    XCTAssertEqual(cachedContents[2], "离线正文 2")
+    XCTAssertNil(cachedContents[3])
+  }
+
   func testBookmarksAndFullTextSearchSurviveRepositoryReopen()
     async throws
   {

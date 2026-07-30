@@ -34,6 +34,10 @@ struct ReaderContentView: View {
         ChapterSourceResolution?
     @State private var loadingChapterSource = false
     @State private var chapterSourceMessage: String?
+    @State private var offlineCacheStartChapter = 1
+    @State private var offlineCacheEndChapter = 1
+    @State private var cachingOffline = false
+    @State private var offlineCacheReport: OfflineCacheReport?
     @State private var replacementDraft: ReaderReplacementRule?
 
     init(
@@ -136,6 +140,14 @@ struct ReaderContentView: View {
                     }
                     return lhs.index < rhs.index
                 }
+            let currentPosition = chapters.firstIndex {
+                $0.id == target.chapterID
+            } ?? chapters.startIndex
+            offlineCacheStartChapter = min(
+                max(1, currentPosition + 1),
+                max(1, chapters.count)
+            )
+            offlineCacheEndChapter = max(1, chapters.count)
             sourceID = book.candidate.sourceID.isEmpty
                 ? nil
                 : book.candidate.sourceID
@@ -202,6 +214,8 @@ struct ReaderContentView: View {
                             bookSourceMenu
                         case .chapterSource:
                             chapterSourceMenu
+                        case .offlineCache:
+                            offlineCacheMenu
                         case .primary, .textSelection:
                             EmptyView()
                         }
@@ -622,10 +636,15 @@ struct ReaderContentView: View {
                     ReaderMenuAction.refreshAll
                         .accessibilityIdentifier
                 )
-                menuPlaceholder(
-                    .cacheOffline,
-                    title: "离线缓存",
-                    systemImage: "arrow.down.circle"
+                NavigationLink(value: ReaderMenuLayer.offlineCache) {
+                    Label(
+                        "离线缓存",
+                        systemImage: "arrow.down.circle"
+                    )
+                }
+                .disabled(chapters.isEmpty)
+                .accessibilityIdentifier(
+                    ReaderMenuAction.cacheOffline.accessibilityIdentifier
                 )
             }
             Section("阅读工具") {
@@ -829,6 +848,96 @@ struct ReaderContentView: View {
         .navigationTitle("章节换源")
         .navigationBarTitleDisplayMode(.inline)
         .accessibilityIdentifier("overlay.reader.chapterSource")
+    }
+
+    private var offlineCacheMenu: some View {
+        Form {
+            Section("章节范围") {
+                Stepper(
+                    "起始：第 \(offlineCacheStartChapter) 章",
+                    value: $offlineCacheStartChapter,
+                    in: 1...max(1, offlineCacheEndChapter)
+                )
+                .disabled(cachingOffline)
+                .accessibilityIdentifier(
+                    "input.reader.offlineCache.start"
+                )
+
+                Stepper(
+                    "结束：第 \(offlineCacheEndChapter) 章",
+                    value: $offlineCacheEndChapter,
+                    in: min(
+                        offlineCacheStartChapter,
+                        max(1, chapters.count)
+                    )...max(1, chapters.count)
+                )
+                .disabled(cachingOffline)
+                .accessibilityIdentifier(
+                    "input.reader.offlineCache.end"
+                )
+
+                Text(
+                    "默认从当前章节缓存到末章，共 "
+                        + "\(offlineCacheSelectedCount) 章"
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+
+            Section {
+                Button {
+                    startOfflineCache()
+                } label: {
+                    Label(
+                        cachingOffline ? "正在缓存…" : "开始缓存",
+                        systemImage: "arrow.down.circle"
+                    )
+                }
+                .disabled(cachingOffline || chapters.isEmpty)
+                .accessibilityIdentifier(
+                    "action.reader.offlineCache.start"
+                )
+
+                if cachingOffline {
+                    ProgressView(
+                        value: Double(library.offlineCacheProgress),
+                        total: Double(max(1, offlineCacheSelectedCount))
+                    )
+                    .accessibilityIdentifier(
+                        "state.reader.offlineCache.progress"
+                    )
+                }
+            }
+
+            if let offlineCacheReport {
+                Section("缓存结果") {
+                    LabeledContent(
+                        "成功",
+                        value: "\(offlineCacheReport.cachedCount)"
+                    )
+                    LabeledContent(
+                        "已存在",
+                        value: "\(offlineCacheReport.skippedCount)"
+                    )
+                    LabeledContent(
+                        "失败",
+                        value: "\(offlineCacheReport.failedCount)"
+                    )
+                    if offlineCacheReport.cancelledCount > 0 {
+                        LabeledContent(
+                            "取消",
+                            value: "\(offlineCacheReport.cancelledCount)"
+                        )
+                    }
+                }
+                .accessibilityIdentifier(
+                    "state.reader.offlineCache.result"
+                )
+            }
+        }
+        .navigationTitle("离线缓存")
+        .navigationBarTitleDisplayMode(.inline)
+        .accessibilityIdentifier("overlay.reader.offlineCache")
     }
 
     private var searchMenu: some View {
@@ -1065,6 +1174,33 @@ struct ReaderContentView: View {
             "\(currentChapterPosition + 1)/\(chapters.count)"
             + " · 位置 \(currentReaderOffset)"
         )
+    }
+
+    private var offlineCacheSelectedCount: Int {
+        max(
+            0,
+            offlineCacheEndChapter - offlineCacheStartChapter + 1
+        )
+    }
+
+    private func startOfflineCache() {
+        guard
+            !cachingOffline,
+            !chapters.isEmpty,
+            offlineCacheStartChapter <= offlineCacheEndChapter
+        else { return }
+        let chapterIndexes: ClosedRange<Int> =
+            (offlineCacheStartChapter - 1)...(offlineCacheEndChapter - 1)
+        cachingOffline = true
+        offlineCacheReport = nil
+        Task {
+            offlineCacheReport = await library.cacheOffline(
+                bookID: target.bookID,
+                chapterIndexes: chapterIndexes,
+                loader: contentLoader
+            )
+            cachingOffline = false
+        }
     }
 
     private func openRelativeChapter(

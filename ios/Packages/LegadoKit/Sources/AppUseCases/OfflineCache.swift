@@ -31,6 +31,19 @@ public struct OfflineCacheReport: Equatable, Sendable {
   }
 }
 
+public struct OfflineCacheRequest: Equatable, Sendable {
+  public let bookID: LibraryDomain.BookID
+  public let chapterIndexes: ClosedRange<Int>?
+
+  public init(
+    bookID: LibraryDomain.BookID,
+    chapterIndexes: ClosedRange<Int>? = nil
+  ) {
+    self.bookID = bookID
+    self.chapterIndexes = chapterIndexes
+  }
+}
+
 private enum OfflineCacheFailure: Error {
   case emptyContent
 }
@@ -42,6 +55,34 @@ public extension ShelfLibrary {
     bookIDs: [LibraryDomain.BookID],
     loader: any ReaderContentLoading
   ) async -> OfflineCacheReport {
+    await cacheOffline(
+      requests: bookIDs.map { OfflineCacheRequest(bookID: $0) },
+      loader: loader
+    )
+  }
+
+  @discardableResult
+  func cacheOffline(
+    bookID: LibraryDomain.BookID,
+    chapterIndexes: ClosedRange<Int>,
+    loader: any ReaderContentLoading
+  ) async -> OfflineCacheReport {
+    await cacheOffline(
+      requests: [
+        OfflineCacheRequest(
+          bookID: bookID,
+          chapterIndexes: chapterIndexes
+        )
+      ],
+      loader: loader
+    )
+  }
+
+  @discardableResult
+  func cacheOffline(
+    requests: [OfflineCacheRequest],
+    loader: any ReaderContentLoading
+  ) async -> OfflineCacheReport {
     offlineCacheState = .caching
     offlineCacheProgress = 0
     let registry = SourceCacheQueueRegistry()
@@ -51,13 +92,16 @@ public extension ShelfLibrary {
     var failedCount = 0
     var cancelledCount = 0
 
-    for bookID in bookIDs {
-      guard let book = try? await repository.book(id: bookID) else {
+    for request in requests {
+      guard let book = try? await repository.book(id: request.bookID) else {
         continue
       }
-      let chapters =
-        ((try? await repository.chapters(bookID: bookID)) ?? [])
+      let allChapters =
+        ((try? await repository.chapters(bookID: request.bookID)) ?? [])
         .sorted { $0.index < $1.index }
+      let chapters = allChapters.filter { chapter in
+        request.chapterIndexes?.contains(chapter.index) ?? true
+      }
       requestedCount += chapters.count
       if book.candidate.sourceID == "local-file" {
         skippedCount += chapters.count
@@ -101,10 +145,14 @@ public extension ShelfLibrary {
               let boundaryLoader =
                 loader as? any ChapterBoundaryReaderContentLoading
             {
-              let nextChapter =
-                chapters.indices.contains(offset + 1)
-                ? chapters[offset + 1]
-                : chapters.first
+              let chapterPosition = allChapters.firstIndex {
+                $0.id == chapter.id
+              }
+              let nextChapter = chapterPosition.flatMap { position in
+                allChapters.indices.contains(position + 1)
+                  ? allChapters[position + 1]
+                  : allChapters.first
+              }
               document = try await boundaryLoader.load(
                 book: book,
                 chapter: chapter,

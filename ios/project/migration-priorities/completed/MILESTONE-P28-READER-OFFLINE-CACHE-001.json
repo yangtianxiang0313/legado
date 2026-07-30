@@ -1,11 +1,26 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P28-READER-OFFLINE-CACHE-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P28 阅读器按章节范围离线缓存",
   "objective": "依据冻结 Android BaseReadBookActivity.showDownloadDialog 与 CacheBook 源码，把阅读器离线缓存入口接到既有缓存能力：默认从当前章节缓存到末章，允许用户选择起止章节，并展示结构化完成结果。",
   "validation_policy": "仅运行一个章节范围聚焦测试并执行一次 App 构建；不启动模拟器，不新增 Android Golden。",
+  "completion_evidence": [
+    "阅读器更多设置中的离线缓存入口不再是禁用占位",
+    "默认范围由当前章节开始并延伸到末章，起止章节可调整",
+    "AppUseCases 仅缓存所选稳定章节索引，范围外正文缓存保持不变",
+    "正文加载的 nextChapter 仍从完整目录计算，不受选择范围截断",
+    "界面展示缓存进度以及成功、已存在、失败、取消结构化计数"
+  ],
+  "final_verification": {
+    "kind": "focused_test_and_single_app_build",
+    "completed_at": "2026-07-31T05:52:13+08:00",
+    "result": "1 个章节范围聚焦测试与 App 构建通过；未启动模拟器，未新增 Android Golden。",
+    "evidence": [
+      ".harness-runtime/loop/IOS-APP-NAVIGATION-READER-OFFLINE-CACHE-001/attempt-1"
+    ]
+  },
   "stages": [
     {
       "id": "P28-S1",
