@@ -28,6 +28,15 @@ public struct SourceRuleConsumerEvaluator: Sendable {
     return stringValue(current)
   }
 
+  public func getString(
+    _ rule: String?,
+    isURL: Bool,
+    urlContext: SourceRuleURLContext
+  ) throws -> String {
+    let value = try getString(rule)
+    return isURL ? urlContext.absoluteString(value) : value
+  }
+
   public func getStringList(
     _ rule: String?,
     isURL: Bool = false,
@@ -67,6 +76,15 @@ public struct SourceRuleConsumerEvaluator: Sendable {
       result.append(resolved)
     }
     return result
+  }
+
+  public func getStringList(
+    _ rule: String?,
+    isURL: Bool,
+    urlContext: SourceRuleURLContext
+  ) throws -> [String]? {
+    guard let values = try getStringList(rule) else { return nil }
+    return isURL ? urlContext.absoluteList(values) : values
   }
 
   public func getElement(_ rule: String) throws -> JSONValue? {

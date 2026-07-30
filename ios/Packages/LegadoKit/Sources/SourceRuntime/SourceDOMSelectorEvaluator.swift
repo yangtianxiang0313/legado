@@ -67,7 +67,7 @@ public struct SourceDOMSelectorEvaluator: Sendable {
     isURL: Bool = false,
     redirectURL: URL? = nil
   ) throws -> [String] {
-    let values = try stringValues(rule)
+    let values = try stringValues(rule).filter { !$0.isEmpty }
     guard isURL else { return values }
     guard let redirectURL else {
       throw SourceDOMSelectorError.missingRedirectURL
@@ -75,6 +75,24 @@ public struct SourceDOMSelectorEvaluator: Sendable {
     return stableUnique(
       try values.map { try resolve($0, relativeTo: redirectURL) }
     )
+  }
+
+  public func getString(
+    _ rule: String,
+    isURL: Bool,
+    urlContext: SourceRuleURLContext
+  ) throws -> String {
+    let value = try stringValues(rule).first ?? ""
+    return isURL ? urlContext.absoluteString(value) : value
+  }
+
+  public func getStringList(
+    _ rule: String,
+    isURL: Bool,
+    urlContext: SourceRuleURLContext
+  ) throws -> [String] {
+    let values = try stringValues(rule).filter { !$0.isEmpty }
+    return isURL ? urlContext.absoluteList(values) : values
   }
 
   public func getElements(_ rule: String) throws -> [SourceDOMNodeProjection] {

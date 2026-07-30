@@ -9,6 +9,8 @@ struct SourceDOMSelectorConformanceRun: Sendable {
 
 enum SourceDOMSelectorConformanceRunner {
   static let fixtureID = "sl-source-rule-dom-selector-backends-001"
+  static let urlNormalizationFixtureID =
+    "sl-source-rule-url-normalization-runtime-001"
 
   static func run(
     fixtureDirectory: URL
@@ -21,7 +23,8 @@ enum SourceDOMSelectorConformanceRunner {
     )
     guard
       case .object(let caseRoot) = caseDocument,
-      caseRoot["id"] == .string(fixtureID),
+      case .string(let activeFixtureID)? = caseRoot["id"],
+      [fixtureID, urlNormalizationFixtureID].contains(activeFixtureID),
       case .object(let determinism)? = caseRoot["determinism"],
       case .string(let origin)? = determinism["logical_origin"],
       case .object(let inputRoot) = inputDocument,
@@ -59,7 +62,7 @@ enum SourceDOMSelectorConformanceRunner {
     let canonicalPlans = JSONValue.array(plans)
     let artifact = JSONValue.object([
       "schema_version": .number(JSONNumber(1)),
-      "fixture_id": .string(fixtureID),
+      "fixture_id": .string(activeFixtureID),
       "engine": .object([
         "platform": .string("ios"),
         "revision": .string("conformance-source-runtime-v2"),
@@ -105,6 +108,8 @@ enum SourceDOMSelectorConformanceRunner {
       return try stringMatrix(arguments, labels: ["and", "or", "percent"])
     case "css_url":
       return try cssURL(arguments)
+    case "url_context":
+      return try urlContext(arguments)
     case "css_failure":
       return try cssFailure(arguments)
     case "xpath_strings":
@@ -234,6 +239,93 @@ enum SourceDOMSelectorConformanceRunner {
         },
       ]),
     ])
+  }
+
+  private static func urlContext(
+    _ arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    guard case .array(let steps)? = arguments["steps"] else {
+      throw SourcePipelineConformanceError.invalidSourceDefinition
+    }
+    var context = SourceRuleURLContext()
+    var content: String?
+    var result: [JSONValue] = []
+
+    for value in steps {
+      guard
+        case .object(let step) = value,
+        case .string(let id)? = step["id"],
+        case .object(let rules)? = step["rules"]
+      else {
+        throw SourcePipelineConformanceError.invalidSourceDefinition
+      }
+      if case .string(let value)? = step["content"] {
+        content = value
+      } else if step["content"] != nil {
+        throw SourcePipelineConformanceError.invalidSourceDefinition
+      }
+      guard let content else {
+        throw SourcePipelineConformanceError.invalidSourceDefinition
+      }
+      if case .string(let value)? = step["base_url"] {
+        context.setBaseURL(value)
+      } else if step["base_url"] != nil {
+        throw SourcePipelineConformanceError.invalidSourceDefinition
+      }
+      if let explicitBase = step["set_base_url"] {
+        switch explicitBase {
+        case .null:
+          context.setBaseURL(nil)
+        case .string(let value):
+          context.setBaseURL(value)
+        default:
+          throw SourcePipelineConformanceError.invalidSourceDefinition
+        }
+      }
+      if case .string(let value)? = step["redirect_url"] {
+        context.setRedirectURL(value)
+      } else if step["redirect_url"] != nil {
+        throw SourcePipelineConformanceError.invalidSourceDefinition
+      }
+
+      let evaluator = SourceDOMSelectorEvaluator(content: content)
+      var projectedValues: [String: JSONValue] = [:]
+      for label in rules.keys.sorted() {
+        guard case .string(let rule)? = rules[label] else {
+          throw SourcePipelineConformanceError.invalidSourceDefinition
+        }
+        projectedValues[label] = .object([
+          "raw_string": .string(try evaluator.getString(rule)),
+          "raw_list": stringList(try evaluator.getStringList(rule)),
+          "absolute_string": .string(
+            try evaluator.getString(
+              rule,
+              isURL: true,
+              urlContext: context
+            )
+          ),
+          "absolute_list": stringList(
+            try evaluator.getStringList(
+              rule,
+              isURL: true,
+              urlContext: context
+            )
+          ),
+        ])
+      }
+      result.append(
+        .object([
+          "id": .string(id),
+          "base_url": context.baseURL.map(JSONValue.string) ?? .null,
+          "redirect_url":
+            context.redirectURL.map {
+              .string($0.absoluteString)
+            } ?? .null,
+          "values": .object(projectedValues),
+        ])
+      )
+    }
+    return .object(["steps": .array(result)])
   }
 
   private static func xpathStrings(

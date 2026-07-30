@@ -1,1 +1,1 @@
-{"active_task":"IOS-SOURCE-RUNTIME-RULE-URL-NORMALIZATION-RUNTIME-001","attempt":0,"last_completed":{"at":"2026-07-30T14:45:59Z","sequence":355,"task_id":"IOS-CHARACTERIZE-SOURCE-RULE-URL-NORMALIZATION-RUNTIME-001"},"schema_version":2,"status":"running","verification":null}
+{"active_task":"IOS-CHARACTERIZE-UI-SOURCE-EDITOR-DEBUG-ROUTES-001","attempt":0,"last_completed":{"at":"2026-07-30T14:50:55Z","sequence":358,"task_id":"IOS-SOURCE-RUNTIME-RULE-URL-NORMALIZATION-RUNTIME-001"},"schema_version":2,"status":"running","verification":null}

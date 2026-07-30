@@ -87,6 +87,43 @@ final class SourceRuleConsumerEvaluatorTests: XCTestCase {
     )
   }
 
+  func testURLContextRetainsAndMatchesAndroidBaseRedirectRoles() throws {
+    var context = SourceRuleURLContext()
+    context.setBaseURL("https://base.example.test/path/page.html")
+    context.setRedirectURL("https://redirect.example.test/catalog/list.html")
+
+    XCTAssertEqual(
+      context.absoluteString("../book/1"),
+      "https://redirect.example.test/book/1"
+    )
+    XCTAssertEqual(
+      context.absoluteString(""),
+      "https://base.example.test/path/page.html"
+    )
+    XCTAssertEqual(
+      context.absoluteList(["../book/1", "../book/1", "data:text/plain,x"]),
+      [
+        "https://redirect.example.test/book/1",
+        "data:text/plain,x",
+      ]
+    )
+
+    context.setBaseURL(nil)
+    context.setRedirectURL("::invalid::")
+    XCTAssertEqual(
+      context.redirectURL?.absoluteString,
+      "https://redirect.example.test/catalog/list.html"
+    )
+
+    var baseOnly = SourceRuleURLContext()
+    baseOnly.setBaseURL("https://base-only.example.test/path/page.html")
+    XCTAssertEqual(baseOnly.absoluteString("relative"), "relative")
+    XCTAssertEqual(
+      baseOnly.absoluteString(""),
+      "https://base-only.example.test/path/page.html"
+    )
+  }
+
   func testElementShapesAndScriptFailureStayTyped() throws {
     let evaluator = SourceRuleConsumerEvaluator(
       content:

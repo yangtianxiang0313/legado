@@ -388,7 +388,10 @@ public enum MinimalTaskConformanceRunner {
         root: root
       )
     }
-    if fixtureID == SourceDOMSelectorConformanceRunner.fixtureID {
+    if fixtureID == SourceDOMSelectorConformanceRunner.fixtureID
+      || fixtureID
+        == SourceDOMSelectorConformanceRunner.urlNormalizationFixtureID
+    {
       let run = try SourceDOMSelectorConformanceRunner.run(
         fixtureDirectory: fixtureDirectory
       )
