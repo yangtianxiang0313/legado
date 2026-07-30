@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P8-READER-PREFERENCES-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "title": "P8 阅读外观与设置持久化主链路",
+  "objective": "用户调整阅读器的深色主题、亮度、字号、行距和自动翻页开关后，设置立即作用于正文，并在退出阅读器及重启应用后恢复。",
+  "completion_evidence": [
+    "ReaderPreferences 是独立、可校验的项目值类型，不把 SwiftUI Binding、UserDefaults 或 Android Config 对象带入核心",
+    "AppUseCases 通过 ReaderPreferencesRepository 端口加载和保存设置，App composition root 提供平台持久化实现",
+    "字号与行距有明确上下界，损坏或越界的持久值会归一化",
+    "Reader UI 从共享设置状态投影深色主题、亮度、字号、行距和自动翻页开关，不再持有五份临时 @State",
+    "导航离开并重启应用后，阅读设置仍保持上次用户选择",
+    "完整修改设置到重启恢复只运行一次 iPhone Simulator"
+  ],
+  "deferred_policy": "字体文件、字重、字间距、段距与缩进编辑、标题布局、页边距、背景图片、E-Ink、状态栏/导航栏隐藏、翻页动画和自动翻页计时器不在本里程碑伪实现；先让当前已可操作的五项设置可靠持久化。",
+  "deliveries": [
+    {
+      "target": "IOS-APP-NAVIGATION-READER-PREFERENCES-MILESTONE-001",
+      "title": "阅读设置持久化里程碑",
+      "prerequisite_task_ids": [
+        "IOS-APP-NAVIGATION-READER-TOOLS-MILESTONE-001",
+        "IOS-APP-NAVIGATION-SYSTEM-READ-ALOUD-MILESTONE-001"
+      ],
+      "requirement_ref": "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01",
+      "fixture_id": "milestone-reader-preferences-v1",
+      "validation": "simulator",
+      "ui_contract": {
+        "goal": "把 Android 已明确的阅读配置持久化语义按 iOS 原生模型接入现有 Reader：ReaderCore 定义设置值与范围，AppUseCases 管理共享状态和存储端口，SwiftUI 只绑定设置并即时投影。",
+        "scenario_id": "ui-reader-preferences-milestone-v1",
+        "test_method": "testReaderPreferencesMilestone"
+      },
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Package.swift",
+        "ios/Packages/LegadoKit/Sources/ReaderCore/**",
+        "ios/Packages/LegadoKit/Tests/ReaderCoreTests/**",
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "fe4e2e16f1c9e2f22c4d86cb0b547d87fb0705a2",
+          "path": "app/src/main/java/io/legado/app/help/config/ReadBookConfig.kt",
+          "symbol_id": "kotlin://io.legado.app.help.config/ReadBookConfig/Config"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "2773f69c7ed150cde068533d4b2a39cacd0ffb33",
+          "path": "app/src/main/java/io/legado/app/help/config/AppConfig.kt",
+          "symbol_id": "kotlin://io.legado.app.help.config/AppConfig/readBrightness"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "e111cacaf2c1d9421cdb63ac8e146572e8b87c7e",
+          "path": "app/src/main/java/io/legado/app/ui/book/read/ReadMenu.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.read/ReadMenu/initView"
+        }
+      ]
+    }
+  ],
+  "stages": [
+    {
+      "id": "P8-01-READER-PREFERENCES-MILESTONE",
+      "title": "接通阅读设置持久化纵向主链路",
+      "outcome": "现有 Reader 外观控件通过 ReaderCore、AppUseCases 和平台存储形成可恢复的用户设置能力。",
+      "selectors": [
+        {
+          "id": "READER-PREFERENCES-MILESTONE",
+          "task_ids": [
+            "IOS-APP-NAVIGATION-READER-PREFERENCES-MILESTONE-001"
+          ]
+        }
+      ]
+    }
+  ]
+}
