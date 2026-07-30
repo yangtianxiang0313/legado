@@ -35,6 +35,13 @@ actor UserDefaultsSourceCatalogRepository: SourceCatalogRepository {
         )
     }
 
+    func replaceSources(_ sources: [BookSourceDraft]) async throws {
+        defaults.set(
+            try JSONEncoder().encode(sources),
+            forKey: storageKey
+        )
+    }
+
     func resetSources() async throws {
         defaults.removeObject(forKey: storageKey)
     }

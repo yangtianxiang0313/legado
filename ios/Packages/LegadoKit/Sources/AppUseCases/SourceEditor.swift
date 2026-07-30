@@ -228,6 +228,7 @@ public protocol SourceCatalogRepository: Sendable {
   func loadSources() async throws -> [BookSourceDraft]
   func saveSource(_ source: BookSourceDraft) async throws
   func saveSources(_ sources: [BookSourceDraft]) async throws
+  func replaceSources(_ sources: [BookSourceDraft]) async throws
   func resetSources() async throws
 }
 
@@ -254,7 +255,6 @@ public final class SourceCatalog {
   public func reload() async {
     do {
       sources = try await repository.loadSources()
-        .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
       errorMessage = nil
     } catch {
       errorMessage = "无法读取书源"
@@ -288,6 +288,50 @@ public final class SourceCatalog {
       errorMessage = "无法导入书源"
       return false
     }
+  }
+
+  @discardableResult
+  public func apply(
+    _ mutation: SourceBulkMutation,
+    selectedIDs: Set<String>
+  ) async -> Bool {
+    do {
+      let updated = SourceManagementPolicy.applying(
+        mutation,
+        to: sources,
+        selectedIDs: selectedIDs
+      )
+      try await repository.replaceSources(updated)
+      sources = updated
+      errorMessage = nil
+      return true
+    } catch {
+      errorMessage = "无法更新书源"
+      return false
+    }
+  }
+
+  @discardableResult
+  public func delete(selectedIDs: Set<String>) async -> Bool {
+    do {
+      let updated = sources.filter {
+        !selectedIDs.contains($0.sourceURL)
+      }
+      try await repository.replaceSources(updated)
+      sources = updated
+      errorMessage = nil
+      return true
+    } catch {
+      errorMessage = "无法删除书源"
+      return false
+    }
+  }
+
+  public func exportData(selectedIDs: Set<String>) throws -> Data {
+    try SourceManagementPolicy.exportData(
+      sources,
+      selectedIDs: selectedIDs
+    )
   }
 
   public func reset() async {

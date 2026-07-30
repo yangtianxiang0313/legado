@@ -105,7 +105,7 @@ let package = Package(
         ),
         .testTarget(
             name: "AppNavigationTests",
-            dependencies: ["AppNavigation"]
+            dependencies: ["AppNavigation", "AppUseCases"]
         ),
         .testTarget(
             name: "DatabaseGRDBTests",

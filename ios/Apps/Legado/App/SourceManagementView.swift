@@ -6,9 +6,62 @@ struct SourceManagementView: View {
     @Bindable var catalog: SourceCatalog
     let openEditor: (String?) -> Void
     @State private var showsImport = false
+    @State private var query = ""
+    @State private var filter: SourceManagementFilter = .all
+    @State private var sort: SourceManagementSort = .defaultOrder
+    @State private var ascending = true
+    @State private var selection: Set<String> = []
+    @State private var editMode: EditMode = .inactive
+    @State private var groupName = ""
+    @State private var groupMutation: SourceBulkMutation?
+    @State private var showsDeleteConfirmation = false
+    @State private var exportDocument = SourceJSONDocument()
+    @State private var showsExporter = false
+
+    private var visibleSources: [BookSourceDraft] {
+        SourceManagementPolicy.visibleSources(
+            catalog.sources,
+            query: query,
+            filter: filter,
+            sort: sort,
+            ascending: ascending
+        )
+    }
+
+    private var visibleIDs: [String] {
+        visibleSources.map(\.sourceURL)
+    }
+
+    private var groups: [String] {
+        Array(Set(catalog.sources.flatMap {
+            $0.group.split(separator: ",").map {
+                $0.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+        })).filter { !$0.isEmpty }.sorted()
+    }
+
+    private var sharePayload: String {
+        guard
+            let data = try? catalog.exportData(selectedIDs: selection),
+            let value = String(data: data, encoding: .utf8)
+        else { return "[]" }
+        return value
+    }
+
+    private var groupDialogTitle: String {
+        guard let groupMutation else { return "修改分组" }
+        switch groupMutation {
+        case .addGroup:
+            return "添加分组"
+        case .removeGroup:
+            return "移除分组"
+        default:
+            return "修改分组"
+        }
+    }
 
     var body: some View {
-        List {
+        List(selection: $selection) {
             if catalog.sources.isEmpty {
                 ContentUnavailableView {
                     Label("还没有书源", systemImage: "tray")
@@ -22,29 +75,54 @@ struct SourceManagementView: View {
                 }
                 .accessibilityIdentifier("state.source.empty")
             } else {
-                Section("书源") {
-                    ForEach(catalog.sources) { source in
+                Section {
+                    ForEach(visibleSources) { source in
                         Button {
-                            openEditor(source.sourceURL)
+                            if editMode == .active {
+                                if selection.contains(source.sourceURL) {
+                                    selection.remove(source.sourceURL)
+                                } else {
+                                    selection.insert(source.sourceURL)
+                                }
+                            } else {
+                                openEditor(source.sourceURL)
+                            }
                         } label: {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(source.name)
-                                    .font(.headline)
-                                Text(source.sourceURL)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(1)
-                                if !source.group.isEmpty {
-                                    Text(source.group)
-                                        .font(.caption2)
-                                        .foregroundStyle(.tertiary)
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(source.name)
+                                        .font(.headline)
+                                    Text(source.sourceURL)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
+                                    if !source.group.isEmpty {
+                                        Text(source.group)
+                                            .font(.caption2)
+                                            .foregroundStyle(.tertiary)
+                                    }
+                                }
+                                Spacer()
+                                let metadata = source.importMetadata ?? .init()
+                                Image(systemName: metadata.enabled
+                                    ? "checkmark.circle.fill"
+                                    : "pause.circle")
+                                    .foregroundStyle(
+                                        metadata.enabled ? .green : .secondary
+                                    )
+                                if metadata.enabledExplore {
+                                    Image(systemName: "safari")
+                                        .foregroundStyle(.blue)
                                 }
                             }
                         }
+                        .tag(source.sourceURL)
                         .accessibilityIdentifier(
                             "action.source.open.\(source.sourceURL)"
                         )
                     }
+                } header: {
+                    Text("书源（\(visibleSources.count)）")
                 }
                 .accessibilityIdentifier("list.source.catalog")
             }
@@ -56,22 +134,51 @@ struct SourceManagementView: View {
             }
         }
         .navigationTitle("书源管理")
+        .searchable(text: $query, prompt: "名称、地址或分组")
+        .environment(\.editMode, $editMode)
         .accessibilityIdentifier("screen.source.management")
         .toolbar {
+            ToolbarItemGroup(placement: .topBarLeading) {
+                filterMenu
+                sortMenu
+            }
             ToolbarItemGroup(placement: .topBarTrailing) {
-                Button {
-                    showsImport = true
-                } label: {
-                    Label("导入书源", systemImage: "square.and.arrow.down")
-                }
-                .accessibilityIdentifier("action.source.import")
+                if editMode == .inactive {
+                    Button {
+                        showsImport = true
+                    } label: {
+                        Label(
+                            "导入书源",
+                            systemImage: "square.and.arrow.down"
+                        )
+                    }
+                    .accessibilityIdentifier("action.source.import")
 
-                Button {
-                    openEditor(nil)
-                } label: {
-                    Label("添加书源", systemImage: "plus")
+                    Button {
+                        openEditor(nil)
+                    } label: {
+                        Label("添加书源", systemImage: "plus")
+                    }
+                    .accessibilityIdentifier("action.source.add")
                 }
-                .accessibilityIdentifier("action.source.add")
+                Button {
+                    withAnimation {
+                        if editMode == .active {
+                            editMode = .inactive
+                            selection.removeAll()
+                        } else {
+                            editMode = .active
+                        }
+                    }
+                } label: {
+                    Text(editMode == .active ? "完成" : "选择")
+                }
+                .accessibilityIdentifier("action.source.selection")
+            }
+        }
+        .safeAreaInset(edge: .bottom) {
+            if editMode == .active {
+                selectionBar
             }
         }
         .sheet(isPresented: $showsImport) {
@@ -84,6 +191,231 @@ struct SourceManagementView: View {
         .task {
             await catalog.reload()
         }
+        .onChange(of: visibleIDs) { _, ids in
+            selection.formIntersection(ids)
+        }
+        .alert(
+            groupDialogTitle,
+            isPresented: Binding(
+                get: { groupMutation != nil },
+                set: { if !$0 { groupMutation = nil } }
+            )
+        ) {
+            TextField("分组名称", text: $groupName)
+            Button("取消", role: .cancel) {
+                groupMutation = nil
+            }
+            Button("确定") {
+                guard let mutation = groupMutation else { return }
+                let final: SourceBulkMutation
+                switch mutation {
+                case .addGroup:
+                    final = .addGroup(groupName)
+                case .removeGroup:
+                    final = .removeGroup(groupName)
+                default:
+                    return
+                }
+                apply(final)
+                groupMutation = nil
+            }
+        }
+        .confirmationDialog(
+            "删除选中的 \(selection.count) 个书源？",
+            isPresented: $showsDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("删除", role: .destructive) {
+                let selected = selection
+                Task {
+                    if await catalog.delete(selectedIDs: selected) {
+                        selection.removeAll()
+                    }
+                }
+            }
+            Button("取消", role: .cancel) {}
+        }
+        .fileExporter(
+            isPresented: $showsExporter,
+            document: exportDocument,
+            contentType: .json,
+            defaultFilename: "bookSource.json"
+        ) { _ in }
+    }
+
+    private var filterMenu: some View {
+        Menu {
+            filterButton("全部", value: .all)
+            filterButton("已启用", value: .enabled)
+            filterButton("已停用", value: .disabled)
+            filterButton("发现已启用", value: .exploreEnabled)
+            filterButton("发现已停用", value: .exploreDisabled)
+            filterButton("无分组", value: .ungrouped)
+            if !groups.isEmpty {
+                Divider()
+                ForEach(groups, id: \.self) { group in
+                    filterButton(group, value: .group(group))
+                }
+            }
+        } label: {
+            Label("筛选", systemImage: "line.3.horizontal.decrease.circle")
+        }
+    }
+
+    private var sortMenu: some View {
+        Menu {
+            sortButton("默认顺序", value: .defaultOrder)
+            sortButton("名称", value: .name)
+            sortButton("地址", value: .url)
+            sortButton("更新时间", value: .updated)
+            sortButton("启用状态", value: .enabled)
+            Divider()
+            Button {
+                ascending.toggle()
+            } label: {
+                Label(
+                    ascending ? "升序" : "降序",
+                    systemImage: ascending
+                        ? "arrow.up"
+                        : "arrow.down"
+                )
+            }
+        } label: {
+            Label("排序", systemImage: "arrow.up.arrow.down")
+        }
+    }
+
+    private var selectionBar: some View {
+        HStack(spacing: 14) {
+            Menu {
+                Button("全选") {
+                    selection = SourceManagementPolicy.selectAll(
+                        visibleIDs: visibleIDs
+                    )
+                }
+                Button("反选") {
+                    selection = SourceManagementPolicy.invertSelection(
+                        selection,
+                        visibleIDs: visibleIDs
+                    )
+                }
+                Button("补全选择区间") {
+                    selection = SourceManagementPolicy.fillSelectionInterval(
+                        selection,
+                        visibleIDs: visibleIDs
+                    )
+                }
+            } label: {
+                Label("\(selection.count) 项", systemImage: "checklist")
+            }
+
+            Spacer()
+
+            Menu {
+                Button("启用") { apply(.setEnabled(true)) }
+                Button("停用") { apply(.setEnabled(false)) }
+                Button("启用发现") { apply(.setExploreEnabled(true)) }
+                Button("停用发现") { apply(.setExploreEnabled(false)) }
+                Divider()
+                Button("置顶") { apply(.moveToTop) }
+                Button("置底") { apply(.moveToBottom) }
+                Button("添加分组") {
+                    groupName = ""
+                    groupMutation = .addGroup("")
+                }
+                Button("移除分组") {
+                    groupName = ""
+                    groupMutation = .removeGroup("")
+                }
+                Divider()
+                Button("导出 JSON") {
+                    guard
+                        let data = try? catalog.exportData(
+                            selectedIDs: selection
+                        )
+                    else { return }
+                    exportDocument = SourceJSONDocument(data: data)
+                    showsExporter = true
+                }
+                ShareLink(
+                    item: sharePayload,
+                    subject: Text("书源"),
+                    message: Text("Legado 书源 JSON")
+                ) {
+                    Label("分享", systemImage: "square.and.arrow.up")
+                }
+            } label: {
+                Label("批量操作", systemImage: "ellipsis.circle")
+            }
+            .disabled(selection.isEmpty)
+
+            Button(role: .destructive) {
+                showsDeleteConfirmation = true
+            } label: {
+                Label("删除", systemImage: "trash")
+            }
+            .disabled(selection.isEmpty)
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 10)
+        .background(.bar)
+        .accessibilityIdentifier("bar.source.selection")
+    }
+
+    @ViewBuilder
+    private func filterButton(
+        _ title: String,
+        value: SourceManagementFilter
+    ) -> some View {
+        Button {
+            filter = value
+        } label: {
+            if filter == value {
+                Label(title, systemImage: "checkmark")
+            } else {
+                Text(title)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func sortButton(
+        _ title: String,
+        value: SourceManagementSort
+    ) -> some View {
+        Button {
+            sort = value
+        } label: {
+            if sort == value {
+                Label(title, systemImage: "checkmark")
+            } else {
+                Text(title)
+            }
+        }
+    }
+
+    private func apply(_ mutation: SourceBulkMutation) {
+        let selected = selection
+        Task {
+            _ = await catalog.apply(mutation, selectedIDs: selected)
+        }
+    }
+}
+
+private struct SourceJSONDocument: FileDocument {
+    static let readableContentTypes: [UTType] = [.json]
+    var data: Data = Data("[]".utf8)
+
+    init(data: Data = Data("[]".utf8)) {
+        self.data = data
+    }
+
+    init(configuration: ReadConfiguration) throws {
+        data = configuration.file.regularFileContents ?? Data("[]".utf8)
+    }
+
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        FileWrapper(regularFileWithContents: data)
     }
 }
 
