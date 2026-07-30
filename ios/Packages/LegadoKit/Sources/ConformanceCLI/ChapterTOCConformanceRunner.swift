@@ -1,6 +1,7 @@
 import Foundation
 import LegadoCore
 import LibraryDomain
+import ReaderCore
 
 struct ChapterTOCConformanceRun: Sendable {
   let artifact: JSONValue
@@ -41,19 +42,21 @@ enum ChapterTOCConformanceRunner {
         else {
           throw MinimalTaskConformanceError.invalidFixture
         }
-        plans.append(.object([
-          "operation": .string(operation),
-          "arguments": .object(arguments),
-        ]))
-        projections.append(.object([
-          "id": .string(id),
-          "operation": .string(operation),
-          "result": try execute(
-            operation: operation,
-            arguments: arguments
-          ),
-          "issue": .null,
-        ]))
+        plans.append(
+          .object([
+            "operation": .string(operation),
+            "arguments": .object(arguments),
+          ]))
+        projections.append(
+          .object([
+            "id": .string(id),
+            "operation": .string(operation),
+            "result": try execute(
+              operation: operation,
+              arguments: arguments
+            ),
+            "issue": .null,
+          ]))
       }
 
       return ChapterTOCConformanceRun(
@@ -158,23 +161,34 @@ enum ChapterTOCConformanceRunner {
     let oldCount = try int("old_chapter_count", in: arguments)
     let newCount = try int("new_chapter_count", in: arguments)
     let existing = chapters(count: oldCount)
-    let decision = ReaderTOCRefreshPolicy.decide(
-      existing: existing,
-      fetched: chapters(count: newCount),
-      elapsedSinceLastCheck:
-        mode == "throttled"
-          ? ReaderTOCRefreshPolicy.throttleSeconds - 1
-          : ReaderTOCRefreshPolicy.throttleSeconds
+    let bookID = LibraryDomain.BookID(rawValue: "book-1")
+    let now = AndroidReaderTOCRefreshRuntime.throttleMilliseconds
+    let start = AndroidReaderTOCRefreshRuntime.begin(
+      bookID: bookID,
+      hasSource: true,
+      canUpdate: true,
+      nowMilliseconds: now,
+      lastCheckMilliseconds: mode == "throttled" ? 1 : 0
     )
-    let stored = decision.acceptedChapters ?? existing
+    let outcome = start.request.map {
+      AndroidReaderTOCRefreshRuntime.finish(
+        request: $0,
+        activeBookID: bookID,
+        fetched: chapters(count: newCount),
+        currentChapterCount: existing.count,
+        currentChapterIndex: max(existing.count - 1, 0),
+        nextChapterIsLoaded: false
+      )
+    }
+    let stored = outcome?.acceptedChapters ?? existing
     return .object([
       "chapter_size_after": integer(stored.count),
       "chapter_size_before": integer(oldCount),
-      "growth_accepted": .bool(decision.acceptedChapters != nil),
+      "growth_accepted": .bool(outcome?.acceptedChapters != nil),
       "non_growth_rejected": .bool(
-        mode == "non_growth" && decision.acceptedChapters == nil
+        mode == "non_growth" && outcome?.acceptedChapters == nil
       ),
-      "request_count": integer(decision.shouldRequest ? 1 : 0),
+      "request_count": integer(start.request == nil ? 0 : 1),
       "stored_chapter_count": integer(stored.count),
     ])
   }
