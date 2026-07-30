@@ -194,7 +194,7 @@ def completed_task_ids(root: Path) -> set[str]:
     completed = {
         str(event["task_id"])
         for event in load_events(root)
-        if event["event"] in {"task_completed", "task_superseded"}
+        if event["event"] == "task_completed"
         and isinstance(event.get("task_id"), str)
     }
     for event in load_events(root):
