@@ -69,6 +69,11 @@
       "sha256": "25c94f7df76048a07620f20f41040bd0beaf54d9b908ebfaff646c3b3a63b9c0"
     },
     {
+      "id": "rl-reader-progress-read-duration-session-001",
+      "path": "ios/harness/fixtures/runtime-lab/rl-reader-progress-read-duration-session-001",
+      "sha256": "32de06bc9eacff268f64bb9b9492f95eac1c6105932da2e9713ad4c710445c07"
+    },
+    {
       "id": "rl-reader-progress-toc-remap-001",
       "path": "ios/harness/fixtures/runtime-lab/rl-reader-progress-toc-remap-001",
       "sha256": "89cfd89fab19e169e9263f98fecc7ca0a804769e7b8dfc4e47052dd339e63a77"

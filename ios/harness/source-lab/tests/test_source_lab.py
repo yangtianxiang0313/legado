@@ -302,6 +302,40 @@ class SourceLabTests(unittest.TestCase):
         self.assertEqual("none", case["transport"]["mode"])
         self.assertFalse(case["determinism"]["network_allowed"])
 
+    def test_reader_duration_session_covers_executor_and_config_boundaries(self):
+        scenario = "rl-reader-progress-read-duration-session-001"
+        directory, case, inputs = source_lab.load_scenario(
+            REPO_ROOT,
+            scenario,
+        )
+        self.assertEqual(
+            [],
+            source_lab.validate_scenario(REPO_ROOT, directory, case),
+        )
+        self.assertEqual("android_runtime_scenario", case["kind"])
+        self.assertEqual(7, len(inputs["cases"]))
+        self.assertEqual(
+            {
+                "read_duration_single",
+                "read_duration_repeated",
+                "read_duration_disabled_gap",
+                "read_duration_config_race",
+                "read_duration_reset_race",
+                "read_duration_durability_window",
+            },
+            {value["operation"] for value in inputs["cases"]},
+        )
+        self.assertEqual(
+            {"nominal", "boundary", "denied"},
+            {
+                value["role"]
+                for coverage in case["coverage"]
+                for value in coverage["cases"]
+            },
+        )
+        self.assertEqual("none", case["transport"]["mode"])
+        self.assertFalse(case["determinism"]["network_allowed"])
+
     def test_reader_layout_page_projection_covers_reflow_and_boundaries(self):
         scenario = "rl-reader-layout-page-projection-001"
         directory, case, inputs = source_lab.load_scenario(

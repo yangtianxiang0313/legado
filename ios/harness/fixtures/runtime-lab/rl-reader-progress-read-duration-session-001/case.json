@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "kind": "android_runtime_scenario",
+  "id": "rl-reader-progress-read-duration-session-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "android_runtime",
+  "capabilities": ["android.room", "reader.session", "reader.progress"],
+  "compatibility_profile": "android-legado-v1",
+  "source": null,
+  "input": "input.json",
+  "transport": {
+    "mode": "none",
+    "external_network": "deny",
+    "responses": []
+  },
+  "coverage": [
+    {
+      "behavior": "reader.progress-read-duration-session",
+      "cases": [
+        {
+          "id": "enabled-settlement-advances-session-clock",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-READ-BOOK-UP-READ-TIME",
+            "AF-READ-RECORD-CONSTRUCTOR"
+          ],
+          "branch_refs": [
+            "ReadBook.upReadTime: enabled execution accumulates elapsed wall time, advances readStartTime and persists lastRead"
+          ]
+        },
+        {
+          "id": "consecutive-settlements-accumulate-monotonically",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-READ-BOOK-UP-READ-TIME",
+            "AF-READ-RECORD-CONSTRUCTOR"
+          ],
+          "branch_refs": [
+            "ReadBook.upReadTime: repeated executor tasks replace the same record while retaining accumulated duration"
+          ]
+        },
+        {
+          "id": "disabled-gap-is-caught-up-after-reenable",
+          "role": "boundary",
+          "android_fact_refs": ["AF-READ-BOOK-UP-READ-TIME"],
+          "branch_refs": [
+            "ReadBook.upReadTime: disabled execution returns without advancing readStartTime, so a later enabled execution includes the gap"
+          ]
+        },
+        {
+          "id": "enabled-at-call-disabled-at-execution-is-skipped",
+          "role": "denied",
+          "android_fact_refs": ["AF-READ-BOOK-UP-READ-TIME"],
+          "branch_refs": [
+            "ReadBook.upReadTime: enableReadRecord is evaluated inside the queued executor task"
+          ]
+        },
+        {
+          "id": "disabled-at-call-enabled-at-execution-is-settled",
+          "role": "boundary",
+          "android_fact_refs": ["AF-READ-BOOK-UP-READ-TIME"],
+          "branch_refs": [
+            "ReadBook.upReadTime: invocation does not capture enableReadRecord"
+          ]
+        },
+        {
+          "id": "queued-settlement-observes-reset-book",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-READ-BOOK-RESET-DATA",
+            "AF-READ-BOOK-UP-READ-TIME",
+            "AF-READ-RECORD-CONSTRUCTOR"
+          ],
+          "branch_refs": [
+            "ReadBook.upReadTime: queued closure reads the shared mutable readRecord only when it executes"
+          ]
+        },
+        {
+          "id": "queued-settlement-is-not-durable-before-execution",
+          "role": "boundary",
+          "android_fact_refs": ["AF-READ-BOOK-UP-READ-TIME"],
+          "branch_refs": [
+            "ReadBook.upReadTime: persistence is asynchronous on the single global executor"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "relational_projection",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 0,
+    "network_allowed": false,
+    "logical_origin": null,
+    "database_reset_per_case": true,
+    "executor_barrier": "count_down_latch"
+  },
+  "limits": {"timeout_ms": 5000},
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/model/ReadBook.kt#resetData",
+      "app/src/main/java/io/legado/app/model/ReadBook.kt#upReadTime",
+      "app/src/main/java/io/legado/app/data/entities/ReadRecord.kt"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-READER-PROGRESS-READ-DURATION-SESSION-001"
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "enabled-settlement-advances-session-clock",
+      "operation": "read_duration_single",
+      "arguments": {
+        "book_name": "星河纪事·单次结算",
+        "baseline_read_time": 120,
+        "elapsed_before_call_ms": 4000
+      }
+    },
+    {
+      "id": "consecutive-settlements-accumulate-monotonically",
+      "operation": "read_duration_repeated",
+      "arguments": {
+        "book_name": "星河纪事·连续结算",
+        "baseline_read_time": 300,
+        "elapsed_before_call_ms": 4000,
+        "between_calls_ms": 25
+      }
+    },
+    {
+      "id": "disabled-gap-is-caught-up-after-reenable",
+      "operation": "read_duration_disabled_gap",
+      "arguments": {
+        "book_name": "星河纪事·记录开关",
+        "baseline_read_time": 80,
+        "elapsed_before_call_ms": 4000
+      }
+    },
+    {
+      "id": "enabled-at-call-disabled-at-execution-is-skipped",
+      "operation": "read_duration_config_race",
+      "arguments": {
+        "book_name": "星河纪事·调用开执行关",
+        "baseline_read_time": 60,
+        "elapsed_before_call_ms": 4000,
+        "enabled_at_call": true,
+        "enabled_at_execution": false
+      }
+    },
+    {
+      "id": "disabled-at-call-enabled-at-execution-is-settled",
+      "operation": "read_duration_config_race",
+      "arguments": {
+        "book_name": "星河纪事·调用关执行开",
+        "baseline_read_time": 70,
+        "elapsed_before_call_ms": 4000,
+        "enabled_at_call": false,
+        "enabled_at_execution": true
+      }
+    },
+    {
+      "id": "queued-settlement-observes-reset-book",
+      "operation": "read_duration_reset_race",
+      "arguments": {
+        "from_book_name": "星河纪事·旧会话",
+        "to_book_name": "星河纪事·新会话",
+        "elapsed_before_call_ms": 4000
+      }
+    },
+    {
+      "id": "queued-settlement-is-not-durable-before-execution",
+      "operation": "read_duration_durability_window",
+      "arguments": {
+        "book_name": "星河纪事·持久化窗口",
+        "baseline_read_time": 50,
+        "elapsed_before_call_ms": 4000
+      }
+    }
+  ]
+}

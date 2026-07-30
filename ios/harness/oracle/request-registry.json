@@ -171,6 +171,15 @@
       "status": "candidate"
     },
     {
+      "id": "IOS-ANDROID-READER-PROGRESS-READ-DURATION-SESSION-ATTESTATION-001",
+      "scenario_id": "rl-reader-progress-read-duration-session-001",
+      "fixture_ids": [
+        "rl-reader-progress-read-duration-session-001"
+      ],
+      "authority": "android_oracle_candidate_only",
+      "status": "candidate"
+    },
+    {
       "id": "IOS-ANDROID-READER-LAYOUT-INCREMENTAL-STREAM-ATTESTATION-001",
       "scenario_id": "rl-reader-layout-incremental-stream-001",
       "fixture_ids": [

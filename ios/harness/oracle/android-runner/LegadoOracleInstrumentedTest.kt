@@ -187,6 +187,8 @@ class LegadoOracleInstrumentedTest {
                 runBookmarkRuntimeCases()
             "rl-reader-history-read-record-runtime-risk-001" ->
                 runReadRecordRuntimeCases()
+            "rl-reader-progress-read-duration-session-001" ->
+                runReadDurationSessionCases()
             "rl-reader-layout-incremental-stream-001" ->
                 runReaderLayoutIncrementalStreamCases()
             "rl-reader-layout-page-projection-001" ->
@@ -2055,6 +2057,326 @@ class LegadoOracleInstrumentedTest {
             .put("book_name", value.bookName)
             .put("read_time", value.readTime)
             .put("last_read", value.lastRead)
+
+    private suspend fun runReadDurationSessionCases() {
+        val values = input.getJSONArray("cases")
+        val supported = setOf(
+            "read_duration_single",
+            "read_duration_repeated",
+            "read_duration_disabled_gap",
+            "read_duration_config_race",
+            "read_duration_reset_race",
+            "read_duration_durability_window"
+        )
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            val operation = value.getString("operation")
+            require(operation in supported) {
+                "Unsupported read-duration session operation: $operation"
+            }
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", operation)
+                .put("arguments", JSONObject(arguments.toString()))
+            runCase(
+                value.getString("id"),
+                operation,
+                stimulus
+            ) {
+                readDurationSessionProjection(operation, arguments)
+            }
+        }
+    }
+
+    private fun readDurationSessionProjection(
+        operation: String,
+        arguments: JSONObject
+    ): JSONObject {
+        clearReadRecords()
+        val previousEnabled = AppConfig.enableReadRecord
+        return try {
+            when (operation) {
+                "read_duration_single" ->
+                    readDurationSingleProjection(arguments)
+                "read_duration_repeated" ->
+                    readDurationRepeatedProjection(arguments)
+                "read_duration_disabled_gap" ->
+                    readDurationDisabledGapProjection(arguments)
+                "read_duration_config_race" ->
+                    readDurationConfigRaceProjection(arguments)
+                "read_duration_reset_race" ->
+                    readDurationResetRaceProjection(arguments)
+                "read_duration_durability_window" ->
+                    readDurationDurabilityWindowProjection(arguments)
+                else -> error("Unsupported read-duration session operation")
+            }
+        } finally {
+            drainReadBookExecutor()
+            AppConfig.enableReadRecord = previousEnabled
+            ReadBook.book = null
+            clearReadRecords()
+        }
+    }
+
+    private fun readDurationSingleProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val bookName = arguments.getString("book_name")
+        val baseline = arguments.getLong("baseline_read_time")
+        prepareReadDurationSession(bookName, baseline)
+        val fixedStart = elapsedSessionStart(arguments)
+        val session = currentSessionReadRecord()
+        AppConfig.enableReadRecord = true
+        ReadBook.readStartTime = fixedStart
+        ReadBook.upReadTime()
+        drainReadBookExecutor()
+        val persisted = requireNotNull(readRecordFor("", bookName))
+        return JSONObject()
+            .put("one_persisted_record", readRecordRows().size == 1)
+            .put("duration_increased", session.readTime > baseline)
+            .put(
+                "requested_elapsed_was_included",
+                session.readTime - baseline >=
+                    arguments.getLong("elapsed_before_call_ms")
+            )
+            .put(
+                "session_start_advanced",
+                ReadBook.readStartTime > fixedStart
+            )
+            .put(
+                "last_read_not_before_session_start",
+                session.lastRead >= ReadBook.readStartTime
+            )
+            .put(
+                "persisted_matches_session",
+                persisted.readTime == session.readTime &&
+                    persisted.lastRead == session.lastRead
+            )
+    }
+
+    private fun readDurationRepeatedProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val bookName = arguments.getString("book_name")
+        val baseline = arguments.getLong("baseline_read_time")
+        prepareReadDurationSession(bookName, baseline)
+        AppConfig.enableReadRecord = true
+        ReadBook.readStartTime = elapsedSessionStart(arguments)
+        ReadBook.upReadTime()
+        drainReadBookExecutor()
+        val firstReadTime = currentSessionReadRecord().readTime
+        val firstStart = ReadBook.readStartTime
+        val firstLastRead = currentSessionReadRecord().lastRead
+        Thread.sleep(arguments.getLong("between_calls_ms"))
+        ReadBook.upReadTime()
+        drainReadBookExecutor()
+        val session = currentSessionReadRecord()
+        val persisted = requireNotNull(readRecordFor("", bookName))
+        return JSONObject()
+            .put("first_settlement_increased_duration", firstReadTime > baseline)
+            .put(
+                "second_settlement_increased_duration",
+                session.readTime > firstReadTime
+            )
+            .put(
+                "session_start_advanced_twice",
+                ReadBook.readStartTime > firstStart
+            )
+            .put(
+                "last_read_monotonic",
+                session.lastRead >= firstLastRead
+            )
+            .put("replacement_kept_one_record", readRecordRows().size == 1)
+            .put(
+                "persisted_matches_latest_session",
+                persisted.readTime == session.readTime &&
+                    persisted.lastRead == session.lastRead
+            )
+    }
+
+    private fun readDurationDisabledGapProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val bookName = arguments.getString("book_name")
+        val baseline = arguments.getLong("baseline_read_time")
+        prepareReadDurationSession(bookName, baseline)
+        val fixedStart = elapsedSessionStart(arguments)
+        ReadBook.readStartTime = fixedStart
+        AppConfig.enableReadRecord = false
+        ReadBook.upReadTime()
+        drainReadBookExecutor()
+        val afterDisabled = requireNotNull(readRecordFor("", bookName))
+        val disabledPreservedStart = ReadBook.readStartTime == fixedStart
+        val disabledPreservedDuration = afterDisabled.readTime == baseline
+        AppConfig.enableReadRecord = true
+        ReadBook.upReadTime()
+        drainReadBookExecutor()
+        val afterEnabled = requireNotNull(readRecordFor("", bookName))
+        return JSONObject()
+            .put("disabled_preserved_session_start", disabledPreservedStart)
+            .put("disabled_preserved_duration", disabledPreservedDuration)
+            .put(
+                "reenabled_settlement_included_disabled_gap",
+                afterEnabled.readTime - baseline >=
+                    arguments.getLong("elapsed_before_call_ms")
+            )
+            .put(
+                "reenabled_settlement_advanced_start",
+                ReadBook.readStartTime > fixedStart
+            )
+            .put("replacement_kept_one_record", readRecordRows().size == 1)
+    }
+
+    private fun readDurationConfigRaceProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val bookName = arguments.getString("book_name")
+        val baseline = arguments.getLong("baseline_read_time")
+        prepareReadDurationSession(bookName, baseline)
+        val fixedStart = elapsedSessionStart(arguments)
+        ReadBook.readStartTime = fixedStart
+        val enabledAtCall = arguments.getBoolean("enabled_at_call")
+        val enabledAtExecution =
+            arguments.getBoolean("enabled_at_execution")
+        val release = startReadBookExecutorBarrier()
+        try {
+            AppConfig.enableReadRecord = enabledAtCall
+            ReadBook.upReadTime()
+            AppConfig.enableReadRecord = enabledAtExecution
+        } finally {
+            release.countDown()
+        }
+        drainReadBookExecutor()
+        val persisted = requireNotNull(readRecordFor("", bookName))
+        val settled = persisted.readTime > baseline
+        return JSONObject()
+            .put("enabled_at_call", enabledAtCall)
+            .put("enabled_at_execution", enabledAtExecution)
+            .put("settlement_executed", settled)
+            .put(
+                "execution_time_config_decided",
+                settled == enabledAtExecution
+            )
+            .put(
+                "session_start_advanced",
+                ReadBook.readStartTime > fixedStart
+            )
+            .put("replacement_kept_one_record", readRecordRows().size == 1)
+    }
+
+    private fun readDurationResetRaceProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val fromBook = arguments.getString("from_book_name")
+        val toBook = arguments.getString("to_book_name")
+        AppConfig.enableReadRecord = true
+        ReadBook.resetData(readRecordBook(fromBook, "queued-from"))
+        val fixedStart = elapsedSessionStart(arguments)
+        ReadBook.readStartTime = fixedStart
+        val release = startReadBookExecutorBarrier()
+        try {
+            ReadBook.upReadTime()
+            ReadBook.resetData(readRecordBook(toBook, "queued-to"))
+        } finally {
+            release.countDown()
+        }
+        drainReadBookExecutor()
+        val fromRecord = readRecordFor("", fromBook)
+        val toRecord = readRecordFor("", toBook)
+        return JSONObject()
+            .put("old_book_record_absent", fromRecord == null)
+            .put("new_book_record_present", toRecord != null)
+            .put(
+                "elapsed_duration_was_written_to_new_book",
+                toRecord != null &&
+                    toRecord.readTime >=
+                    arguments.getLong("elapsed_before_call_ms")
+            )
+            .put(
+                "session_record_now_names_new_book",
+                currentSessionReadRecord().bookName == toBook
+            )
+            .put(
+                "queued_call_captured_original_book",
+                fromRecord != null && toRecord == null
+            )
+    }
+
+    private fun readDurationDurabilityWindowProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val bookName = arguments.getString("book_name")
+        val baseline = arguments.getLong("baseline_read_time")
+        prepareReadDurationSession(bookName, baseline)
+        AppConfig.enableReadRecord = true
+        ReadBook.readStartTime = elapsedSessionStart(arguments)
+        val release = startReadBookExecutorBarrier()
+        val beforeExecution: ReadRecord
+        try {
+            ReadBook.upReadTime()
+            beforeExecution = requireNotNull(readRecordFor("", bookName))
+        } finally {
+            release.countDown()
+        }
+        drainReadBookExecutor()
+        val afterExecution = requireNotNull(readRecordFor("", bookName))
+        return JSONObject()
+            .put(
+                "persisted_duration_unchanged_while_queued",
+                beforeExecution.readTime == baseline
+            )
+            .put(
+                "persisted_duration_increased_after_execution",
+                afterExecution.readTime > baseline
+            )
+            .put(
+                "queued_write_has_durability_window",
+                beforeExecution.readTime == baseline &&
+                    afterExecution.readTime > baseline
+            )
+            .put("replacement_kept_one_record", readRecordRows().size == 1)
+    }
+
+    private fun prepareReadDurationSession(
+        bookName: String,
+        baselineReadTime: Long
+    ) {
+        appDb.readRecordDao.insert(
+            ReadRecord(
+                deviceId = "",
+                bookName = bookName,
+                readTime = baselineReadTime,
+                lastRead = 1L
+            )
+        )
+        ReadBook.resetData(readRecordBook(bookName, "duration"))
+    }
+
+    private fun elapsedSessionStart(arguments: JSONObject): Long =
+        System.currentTimeMillis() -
+            arguments.getLong("elapsed_before_call_ms")
+
+    private fun readRecordFor(
+        deviceId: String,
+        bookName: String
+    ): ReadRecord? = readRecordRows().firstOrNull {
+        it.deviceId == deviceId && it.bookName == bookName
+    }
+
+    private fun startReadBookExecutorBarrier(): CountDownLatch {
+        val started = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        ReadBook.executor.execute {
+            started.countDown()
+            check(release.await(5, TimeUnit.SECONDS)) {
+                "ReadBook executor barrier timed out"
+            }
+        }
+        check(started.await(5, TimeUnit.SECONDS)) {
+            "ReadBook executor barrier did not start"
+        }
+        return release
+    }
 
     private suspend fun runReaderLayoutIncrementalStreamCases() {
         val values = input.getJSONArray("cases")

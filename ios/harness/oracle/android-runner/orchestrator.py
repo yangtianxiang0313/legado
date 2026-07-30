@@ -642,6 +642,57 @@ SCENARIO_CONTRACTS = {
             "composite-key-replace-isolated-by-device",
         }),
     },
+    "rl-reader-progress-read-duration-session-001": {
+        "status": "candidate",
+        "fixture_kind": "android_runtime_scenario",
+        "result_type": "reader_runtime",
+        "stage_names": (
+            "fixture_setup",
+            "session_configuration",
+            "executor_queue",
+            "database_observation",
+            "result_mapping",
+        ),
+        "expected_cases": (
+            (
+                "enabled-settlement-advances-session-clock",
+                "read_duration_single",
+            ),
+            (
+                "consecutive-settlements-accumulate-monotonically",
+                "read_duration_repeated",
+            ),
+            (
+                "disabled-gap-is-caught-up-after-reenable",
+                "read_duration_disabled_gap",
+            ),
+            (
+                "enabled-at-call-disabled-at-execution-is-skipped",
+                "read_duration_config_race",
+            ),
+            (
+                "disabled-at-call-enabled-at-execution-is-settled",
+                "read_duration_config_race",
+            ),
+            (
+                "queued-settlement-observes-reset-book",
+                "read_duration_reset_race",
+            ),
+            (
+                "queued-settlement-is-not-durable-before-execution",
+                "read_duration_durability_window",
+            ),
+        ),
+        "nominal_cases": frozenset({
+            "enabled-settlement-advances-session-clock",
+            "consecutive-settlements-accumulate-monotonically",
+            "disabled-gap-is-caught-up-after-reenable",
+            "enabled-at-call-disabled-at-execution-is-skipped",
+            "disabled-at-call-enabled-at-execution-is-settled",
+            "queued-settlement-observes-reset-book",
+            "queued-settlement-is-not-durable-before-execution",
+        }),
+    },
     "rl-reader-layout-incremental-stream-001": {
         "status": "candidate",
         "fixture_kind": "android_runtime_scenario",
