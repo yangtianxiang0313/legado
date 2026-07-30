@@ -1,11 +1,26 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P24-SOURCE-USER-VARIABLE-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P24 书源用户变量闭环",
   "objective": "依据冻结 Android BaseSource 与 BookInfoActivity 源码，将书源用户变量按 sourceURL 独立于书源定义持久化，接通详情编辑入口，并让搜索、发现、详情、目录与正文 JavaScript 通过 source.getVariable() 读取当前值。",
   "validation_policy": "执行独立存储与 JavaScript facade 聚焦测试，再执行一次 App 构建；不启动模拟器，不运行全量书源验收。",
+  "completion_evidence": [
+    "SourceCatalogRepository 按 sourceURL 独立读写用户变量，BookSourceDraft 编码时不包含该状态",
+    "重新导入或替换书源定义后，用户变量保持不变",
+    "书籍详情的设置书源变量入口已接通真实编辑和保存",
+    "搜索、发现、详情、目录和正文管线均显式携带 sourceUserVariable",
+    "JavaScriptCore 的 source.getVariable() 与 book.getVariable(name) facade 读取不可变快照"
+  ],
+  "final_verification": {
+    "kind": "focused_tests_and_single_app_build",
+    "completed_at": "2026-07-31T05:36:43+08:00",
+    "result": "2 个聚焦测试和一次 App 构建通过；未运行模拟器。",
+    "evidence": [
+      ".harness-runtime/loop/IOS-APP-NAVIGATION-SOURCE-USER-VARIABLE-001/attempt-1"
+    ]
+  },
   "stages": [
     {
       "id": "P24-S1",
