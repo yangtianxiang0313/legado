@@ -1143,9 +1143,9 @@ class MinimalLoopTests(unittest.TestCase):
                     "path": policy_path,
                     "validation": "tests",
                     "test_filter": "HTMLSwiftSoupTests",
+                    "package_path": "ios/Packages/LegadoSourceKit",
                 },
             }
-
             task = loop.build_task(root, delivery)
 
             self.assertEqual(
@@ -1155,6 +1155,10 @@ class MinimalLoopTests(unittest.TestCase):
             self.assertEqual([], task["source"]["anchors"])
             self.assertNotIn("android_golden", task["source"])
             self.assertNotIn("android_baseline", task["source"])
+            self.assertEqual(
+                "ios/Packages/LegadoSourceKit",
+                task["acceptance"]["commands"][0]["argv"][3],
+            )
             loop.validate_task(root, task)
 
     def test_verified_candidate_evidence_satisfies_dependency(self):

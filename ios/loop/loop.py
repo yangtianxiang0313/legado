@@ -1466,6 +1466,18 @@ def priority_policy_deliveries(
                     ),
                     **(
                         {
+                            "package_path": str(
+                                declaration["package_path"]
+                            )
+                        }
+                        if isinstance(
+                            declaration.get("package_path"),
+                            str,
+                        )
+                        else {}
+                    ),
+                    **(
+                        {
                             "test_filter": str(
                                 declaration["test_filter"]
                             )
@@ -2843,13 +2855,19 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
                 allowed_paths.append(path)
         if source_validation in {"build", "tests"}:
             if source_validation == "tests":
+                package_path = str(
+                    source_contract.get(
+                        "package_path",
+                        "ios/Packages/LegadoKit",
+                    )
+                )
                 acceptance_command = {
                     "id": "focused-swift-tests",
                     "argv": [
                         "swift",
                         "test",
                         "--package-path",
-                        "ios/Packages/LegadoKit",
+                        package_path,
                         "--disable-automatic-resolution",
                         "--filter",
                         source_contract["test_filter"],
@@ -3596,6 +3614,14 @@ def validate_task(root: Path, task: Mapping[str, Any]) -> None:
         source_contract = source.get("source_contract")
         anchors = source.get("anchors")
         ui_acceptance = source.get("ui_acceptance")
+        package_path = (
+            source_contract.get(
+                "package_path",
+                "ios/Packages/LegadoKit",
+            )
+            if isinstance(source_contract, dict)
+            else None
+        )
         if (
             task.get("kind") != "delivery"
             or not isinstance(source_contract, dict)
@@ -3603,6 +3629,9 @@ def validate_task(root: Path, task: Mapping[str, Any]) -> None:
             or not (root / source_contract["path"]).is_file()
             or not isinstance(anchors, list)
             or not anchors
+            or not isinstance(package_path, str)
+            or not package_path.startswith("ios/Packages/")
+            or ".." in Path(package_path).parts
             or (
                 ui_acceptance is not None
                 and (
@@ -3620,6 +3649,14 @@ def validate_task(root: Path, task: Mapping[str, Any]) -> None:
         source_contract = source.get("source_contract")
         anchors = source.get("anchors")
         architecture = task.get("architecture")
+        package_path = (
+            source_contract.get(
+                "package_path",
+                "ios/Packages/LegadoKit",
+            )
+            if isinstance(source_contract, dict)
+            else None
+        )
         if (
             task.get("kind") != "delivery"
             or not isinstance(architecture, dict)
@@ -3629,6 +3666,9 @@ def validate_task(root: Path, task: Mapping[str, Any]) -> None:
             or not (root / source_contract["path"]).is_file()
             or not isinstance(anchors, list)
             or anchors
+            or not isinstance(package_path, str)
+            or not package_path.startswith("ios/Packages/")
+            or ".." in Path(package_path).parts
             or "android_golden" in source
             or "android_baseline" in source
         ):
