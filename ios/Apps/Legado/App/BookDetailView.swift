@@ -65,6 +65,11 @@ extension BookDetailActionSnapshot {
     )
 }
 
+enum BookSourceSwitchOutcome {
+    case success(ShelfBookItem)
+    case failure(String)
+}
+
 enum BookDetailAcceptanceCase: String, CaseIterable {
     case remoteSourceLoginUnshelved = "remote-source-login-unshelved"
     case remoteSourceNoLoginShelved = "remote-source-no-login-shelved"
@@ -169,8 +174,14 @@ struct BookDetailView: View {
     let library: ShelfLibrary?
     let openReading: ((ShelfBookItem) async -> Void)?
     let editSource: ((String) -> Void)?
+    let availableSources: [BookSourceDraft]
+    let switchSource:
+        ((ShelfBookItem, BookSourceDraft) async -> BookSourceSwitchOutcome)?
 
     @State private var storedItem: ShelfBookItem?
+    @State private var showsSourceSwitch = false
+    @State private var switchingSource = false
+    @State private var sourceSwitchMessage: String?
 
     init(
         snapshot: BookDetailActionSnapshot,
@@ -182,6 +193,8 @@ struct BookDetailView: View {
         self.library = nil
         self.openReading = nil
         self.editSource = nil
+        self.availableSources = []
+        self.switchSource = nil
         _storedItem = State(initialValue: nil)
     }
 
@@ -189,7 +202,13 @@ struct BookDetailView: View {
         candidate: ShelfBookCandidate,
         library: ShelfLibrary,
         openReading: @escaping (ShelfBookItem) async -> Void,
-        editSource: @escaping (String) -> Void
+        editSource: @escaping (String) -> Void,
+        availableSources: [BookSourceDraft],
+        switchSource:
+            @escaping (
+                ShelfBookItem,
+                BookSourceDraft
+            ) async -> BookSourceSwitchOutcome
     ) {
         self.snapshot = .remoteSourceLoginUnshelved
         self.display = BookDetailDisplay(candidate: candidate)
@@ -197,7 +216,23 @@ struct BookDetailView: View {
         self.library = library
         self.openReading = openReading
         self.editSource = editSource
+        self.availableSources = availableSources
+        self.switchSource = switchSource
         _storedItem = State(initialValue: nil)
+    }
+
+    private var activeDisplay: BookDetailDisplay {
+        storedItem.map { BookDetailDisplay(candidate: $0.candidate) }
+            ?? display
+    }
+
+    private var switchableSources: [BookSourceDraft] {
+        let currentSourceID =
+            storedItem?.candidate.sourceID ?? candidate?.sourceID
+        return availableSources.filter {
+            $0.sourceURL != currentSourceID
+                && ($0.importMetadata?.enabled ?? true)
+        }
     }
 
     private var availability: BookDetailActionAvailability {
@@ -221,7 +256,7 @@ struct BookDetailView: View {
             VStack(alignment: .leading, spacing: 22) {
                 HStack(alignment: .top, spacing: 18) {
                     AsyncImage(
-                        url: display.coverURL.flatMap(URL.init(string:))
+                        url: activeDisplay.coverURL.flatMap(URL.init(string:))
                     ) { image in
                         image.resizable().scaledToFill()
                     } placeholder: {
@@ -236,24 +271,27 @@ struct BookDetailView: View {
                         )
 
                     VStack(alignment: .leading, spacing: 9) {
-                        Text(display.name)
+                        Text(activeDisplay.name)
                             .font(.title.bold())
-                        Text("作者：\(display.author)")
+                        Text("作者：\(activeDisplay.author)")
                             .foregroundStyle(.secondary)
-                        Text(display.kind)
+                        Text(activeDisplay.kind)
                             .foregroundStyle(.secondary)
-                        Text("最新：\(display.lastChapter)")
+                        Text("最新：\(activeDisplay.lastChapter)")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
-                        Text("书源：\(display.originName)")
+                        Text("书源：\(activeDisplay.originName)")
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                            .accessibilityIdentifier(
+                                "label.bookDetail.source"
+                            )
                     }
                 }
 
                 Divider()
 
-                Text(display.intro)
+                Text(activeDisplay.intro)
                     .font(.body)
 
                 Button {
@@ -292,6 +330,56 @@ struct BookDetailView: View {
             } else {
                 storedItem = await library.stage(candidate)
             }
+        }
+        .sheet(isPresented: $showsSourceSwitch) {
+            NavigationStack {
+                List(switchableSources) { source in
+                    Button {
+                        performSourceSwitch(source)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text(source.name)
+                            Text(source.sourceURL)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .disabled(switchingSource)
+                    .accessibilityIdentifier(
+                        "action.bookDetail.switchSource.\(source.sourceURL)"
+                    )
+                }
+                .overlay {
+                    if switchingSource {
+                        ProgressView("正在切换书源…")
+                            .padding()
+                            .background(
+                                .regularMaterial,
+                                in: .rect(cornerRadius: 12)
+                            )
+                    }
+                }
+                .navigationTitle("切换书源")
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("取消") {
+                            showsSourceSwitch = false
+                        }
+                    }
+                }
+                .accessibilityIdentifier("screen.bookSource.switch")
+            }
+        }
+        .alert(
+            "换源失败",
+            isPresented: Binding(
+                get: { sourceSwitchMessage != nil },
+                set: { if !$0 { sourceSwitchMessage = nil } }
+            )
+        ) {
+            Button("好", role: .cancel) {}
+        } message: {
+            Text(sourceSwitchMessage ?? "")
         }
     }
 
@@ -338,6 +426,21 @@ struct BookDetailView: View {
                     Label("编辑书源", systemImage: "pencil")
                 }
                 .accessibilityIdentifier("action.bookDetail.edit")
+            }
+            if
+                storedItem != nil,
+                switchSource != nil,
+                !switchableSources.isEmpty
+            {
+                Button {
+                    showsSourceSwitch = true
+                } label: {
+                    Label(
+                        "切换书源",
+                        systemImage: "arrow.triangle.2.circlepath"
+                    )
+                }
+                .accessibilityIdentifier("action.bookDetail.switchSource")
             }
             if availability.actions.login {
                 action("登录书源", id: "login", systemImage: "person.badge.key")
@@ -386,6 +489,22 @@ struct BookDetailView: View {
             Image(systemName: "ellipsis.circle")
         }
         .accessibilityIdentifier("action.bookDetail.more")
+    }
+
+    private func performSourceSwitch(_ source: BookSourceDraft) {
+        guard let storedItem, let switchSource else { return }
+        switchingSource = true
+        Task {
+            let outcome = await switchSource(storedItem, source)
+            switchingSource = false
+            switch outcome {
+            case .success(let switched):
+                self.storedItem = switched
+                showsSourceSwitch = false
+            case .failure(let message):
+                sourceSwitchMessage = message
+            }
+        }
     }
 
     private func action(

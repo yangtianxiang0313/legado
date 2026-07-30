@@ -77,6 +77,7 @@ struct SourceManagementView: View {
             } else {
                 Section {
                     ForEach(visibleSources) { source in
+                        let metadata = source.importMetadata ?? .init()
                         Button {
                             if editMode == .active {
                                 if selection.contains(source.sourceURL) {
@@ -103,12 +104,18 @@ struct SourceManagementView: View {
                                     }
                                 }
                                 Spacer()
-                                let metadata = source.importMetadata ?? .init()
                                 Image(systemName: metadata.enabled
                                     ? "checkmark.circle.fill"
                                     : "pause.circle")
                                     .foregroundStyle(
                                         metadata.enabled ? .green : .secondary
+                                    )
+                                    .accessibilityIdentifier(
+                                        "state.source."
+                                            + (metadata.enabled
+                                                ? "enabled."
+                                                : "disabled.")
+                                            + source.sourceURL
                                     )
                                 if metadata.enabledExplore {
                                     Image(systemName: "safari")
@@ -144,22 +151,27 @@ struct SourceManagementView: View {
             }
             ToolbarItemGroup(placement: .topBarTrailing) {
                 if editMode == .inactive {
-                    Button {
-                        showsImport = true
-                    } label: {
-                        Label(
-                            "导入书源",
-                            systemImage: "square.and.arrow.down"
-                        )
-                    }
-                    .accessibilityIdentifier("action.source.import")
+                    Menu {
+                        Button {
+                            showsImport = true
+                        } label: {
+                            Label(
+                                "导入书源",
+                                systemImage: "square.and.arrow.down"
+                            )
+                        }
+                        .accessibilityIdentifier("action.source.import")
 
-                    Button {
-                        openEditor(nil)
+                        Button {
+                            openEditor(nil)
+                        } label: {
+                            Label("新建书源", systemImage: "plus")
+                        }
+                        .accessibilityIdentifier("action.source.add")
                     } label: {
-                        Label("添加书源", systemImage: "plus")
+                        Label("添加", systemImage: "plus")
                     }
-                    .accessibilityIdentifier("action.source.add")
+                    .accessibilityIdentifier("action.source.create")
                 }
                 Button {
                     withAnimation {
@@ -308,12 +320,15 @@ struct SourceManagementView: View {
             } label: {
                 Label("\(selection.count) 项", systemImage: "checklist")
             }
+            .accessibilityIdentifier("action.source.selectionOptions")
 
             Spacer()
 
             Menu {
                 Button("启用") { apply(.setEnabled(true)) }
+                    .accessibilityIdentifier("action.source.batch.enable")
                 Button("停用") { apply(.setEnabled(false)) }
+                    .accessibilityIdentifier("action.source.batch.disable")
                 Button("启用发现") { apply(.setExploreEnabled(true)) }
                 Button("停用发现") { apply(.setExploreEnabled(false)) }
                 Divider()
@@ -348,6 +363,7 @@ struct SourceManagementView: View {
                 Label("批量操作", systemImage: "ellipsis.circle")
             }
             .disabled(selection.isEmpty)
+            .accessibilityIdentifier("action.source.batch")
 
             Button(role: .destructive) {
                 showsDeleteConfirmation = true

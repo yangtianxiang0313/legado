@@ -1,18 +1,24 @@
 import AppUseCases
 import Foundation
+import LibraryDomain
 import SourceRuntime
 
 @MainActor
 enum SearchEnvironment {
-    static func makeSession() -> SearchSession {
+    static func makeSession(
+        persistedSources: [BookSourceDraft] = []
+    ) -> SearchSession {
         let externalBaseURL = ProcessInfo.processInfo.environment[
             "LEGADO_SEARCH_BASE_URL"
         ]
         let baseURL = externalBaseURL ?? "http://legado.local"
         let transport = makeTransport(externalBaseURL: externalBaseURL)
-        let sources = makeSources(baseURL: baseURL)
+        let sources = makeSources(
+            baseURL: baseURL,
+            persistedSources: persistedSources
+        )
         return SearchSession(
-            groups: ["科幻", "奇幻"],
+            groups: Array(Set(sources.map(\.group))).sorted(),
             executor: SourceSearchBooksExecutor(
                 sources: sources,
                 transport: transport
@@ -20,26 +26,101 @@ enum SearchEnvironment {
         )
     }
 
-    static func makeChapterLoader() -> any BookChapterLoading {
+    static func makeChapterLoader(
+        persistedSources: [BookSourceDraft] = []
+    ) -> any BookChapterLoading {
         let externalBaseURL = ProcessInfo.processInfo.environment[
             "LEGADO_SEARCH_BASE_URL"
         ]
         let baseURL = externalBaseURL ?? "http://legado.local"
         return SourceBookChapterLoader(
-            sources: makeSources(baseURL: baseURL),
+            sources: makeSources(
+                baseURL: baseURL,
+                persistedSources: persistedSources
+            ),
             transport: makeTransport(externalBaseURL: externalBaseURL)
         )
     }
 
-    static func makeReaderContentLoader() -> any ReaderContentLoading {
+    static func makeReaderContentLoader(
+        persistedSources: [BookSourceDraft] = []
+    ) -> any ReaderContentLoading {
         let externalBaseURL = ProcessInfo.processInfo.environment[
             "LEGADO_SEARCH_BASE_URL"
         ]
         let baseURL = externalBaseURL ?? "http://legado.local"
         return SourceReaderContentLoader(
-            sources: makeSources(baseURL: baseURL),
+            sources: makeSources(
+                baseURL: baseURL,
+                persistedSources: persistedSources
+            ),
             transport: makeTransport(externalBaseURL: externalBaseURL)
         )
+    }
+
+    static func resolveSourceSwitch(
+        current: ShelfBookItem,
+        target: BookSourceDraft,
+        persistedSources: [BookSourceDraft]
+    ) async throws -> (
+        candidate: ShelfBookCandidate,
+        chapters: [LibraryDomain.BookChapter]
+    ) {
+        let externalBaseURL = ProcessInfo.processInfo.environment[
+            "LEGADO_SEARCH_BASE_URL"
+        ]
+        let baseURL = externalBaseURL ?? "http://legado.local"
+        let sources = makeSources(
+            baseURL: baseURL,
+            persistedSources: persistedSources
+        )
+        guard let descriptor = sources.first(where: {
+            $0.id == target.sourceURL
+        }) else {
+            throw SourceSwitchEnvironmentError.unsupportedSource
+        }
+        let transport = makeTransport(externalBaseURL: externalBaseURL)
+        let results = try await SourceSearchBooksExecutor(
+            sources: [descriptor],
+            transport: transport
+        ).search(
+            query: current.candidate.name,
+            scope: .source(
+                name: descriptor.name,
+                identifier: descriptor.id
+            )
+        )
+        guard let result = results.first(where: {
+            $0.name == current.candidate.name
+                && normalizedAuthor($0.author)
+                    == normalizedAuthor(current.candidate.author)
+        }) ?? results.first else {
+            throw SourceSwitchEnvironmentError.bookNotFound
+        }
+        let candidate = ShelfBookCandidate(
+            name: result.name,
+            author: result.author,
+            kind: result.kind,
+            lastChapter: result.lastChapter,
+            intro: result.intro,
+            bookURL: result.bookURL,
+            coverURL: result.coverURL,
+            originName: result.originName,
+            sourceID: descriptor.id
+        )
+        let transient = ShelfBookItem(
+            id: current.id,
+            candidate: candidate,
+            membership: current.membership,
+            order: current.order,
+            chapterCount: current.chapterCount,
+            progress: current.progress
+        )
+        let chapters = try await SourceBookChapterLoader(
+            sources: [descriptor],
+            transport: transport
+        ).load(book: transient)
+        return (candidate, chapters)
     }
 
     private static func makeTransport(
@@ -51,9 +132,10 @@ enum SearchEnvironment {
     }
 
     private static func makeSources(
-        baseURL: String
+        baseURL: String,
+        persistedSources: [BookSourceDraft] = []
     ) -> [SearchSourceDescriptor] {
-        [
+        var values = [
             source(
                 baseURL: baseURL,
                 id: "\(baseURL)/source/science-fiction",
@@ -69,6 +151,134 @@ enum SearchEnvironment {
                 order: 1
             ),
         ]
+        for draft in persistedSources {
+            guard
+                draft.importMetadata?.enabled ?? true,
+                let descriptor = persistedSource(draft)
+            else { continue }
+            if let index = values.firstIndex(where: {
+                $0.id == descriptor.id
+            }) {
+                values[index] = descriptor
+            } else {
+                values.append(descriptor)
+            }
+        }
+        return values
+    }
+
+    private static func persistedSource(
+        _ draft: BookSourceDraft
+    ) -> SearchSourceDescriptor? {
+        guard
+            let data = draft.rawDefinition,
+            let root = try? JSONSerialization.jsonObject(with: data)
+                as? [String: Any],
+            let search = root["ruleSearch"] as? [String: Any],
+            let info = root["ruleBookInfo"] as? [String: Any],
+            let toc = root["ruleToc"] as? [String: Any],
+            let content = root["ruleContent"] as? [String: Any],
+            let searchURL = string(root, "searchUrl"),
+            !searchURL.isEmpty,
+            let list = string(search, "bookList"),
+            let searchName = string(search, "name"),
+            let searchAuthor = string(search, "author"),
+            let searchBookURL = string(search, "bookUrl"),
+            let infoName = string(info, "name"),
+            let infoAuthor = string(info, "author"),
+            let tocURL = string(info, "tocUrl"),
+            let chapterList = string(toc, "chapterList"),
+            let chapterName = string(toc, "chapterName"),
+            let chapterURL = string(toc, "chapterUrl"),
+            let contentRule = string(content, "content")
+        else {
+            return nil
+        }
+        let sourceURL = draft.sourceURL
+        return SearchSourceDescriptor(
+            id: sourceURL,
+            name: draft.name,
+            group: draft.group,
+            definition: SourceSearchDefinition(
+                sourceURL: sourceURL,
+                sourceName: draft.name,
+                originOrder: Int(
+                    draft.importMetadata?.customOrder ?? 0
+                ),
+                runtime: HTMLCSSSourceDefinition(
+                    searchURLTemplate: searchURL,
+                    search: SearchRules(
+                        list: list,
+                        name: HTMLCSSRule(searchName),
+                        author: HTMLCSSRule(searchAuthor),
+                        intro: .optional(
+                            string(search, "intro")
+                        ),
+                        kind: .optional(
+                            string(search, "kind")
+                        ),
+                        wordCount: .optional(
+                            string(search, "wordCount")
+                        ),
+                        lastChapter: .optional(
+                            string(search, "lastChapter")
+                        ),
+                        bookURL: HTMLCSSRule(
+                            searchBookURL,
+                            value: .href
+                        ),
+                        coverURL: .optional(
+                            string(search, "coverUrl"),
+                            value: .src
+                        )
+                    ),
+                    bookInfo: BookInfoRules(
+                        name: HTMLCSSRule(infoName),
+                        author: HTMLCSSRule(infoAuthor),
+                        intro: .optional(
+                            string(info, "intro")
+                        ),
+                        kind: .optional(
+                            string(info, "kind")
+                        ),
+                        lastChapter: .optional(
+                            string(info, "lastChapter")
+                        ),
+                        coverURL: .optional(
+                            string(info, "coverUrl"),
+                            value: .src
+                        ),
+                        tocURL: HTMLCSSRule(tocURL, value: .href)
+                    ),
+                    toc: TOCRules(
+                        list: chapterList,
+                        name: HTMLCSSRule(chapterName),
+                        url: HTMLCSSRule(chapterURL, value: .href)
+                    ),
+                    content: ContentRules(
+                        content: HTMLCSSRule(
+                            contentRule,
+                            value: .html
+                        )
+                    )
+                )
+            )
+        )
+    }
+
+    private static func string(
+        _ object: [String: Any],
+        _ key: String
+    ) -> String? {
+        guard let value = object[key] as? String else { return nil }
+        return value
+            .replacingOccurrences(of: "@css:", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private static func normalizedAuthor(_ value: String) -> String {
+        value.replacingOccurrences(of: "作者：", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private static func source(
@@ -136,6 +346,11 @@ enum SearchEnvironment {
             )
         )
     }
+}
+
+private enum SourceSwitchEnvironmentError: Error {
+    case unsupportedSource
+    case bookNotFound
 }
 
 private actor LocalBookSourceTransport: HTTPTransport {

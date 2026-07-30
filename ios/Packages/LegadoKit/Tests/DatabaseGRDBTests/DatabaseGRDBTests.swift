@@ -25,4 +25,12 @@ final class DatabaseGRDBTests: XCTestCase {
       try await DatabaseGRDBRuntime.verifyProgressPersistenceAcrossReopen()
     XCTAssertTrue(verified)
   }
+
+  func testSourceSwitchAtomicallyPreservesStableIdentityAndProgress()
+    async throws
+  {
+    let verified =
+      try await DatabaseGRDBRuntime.verifyAtomicSourceSwitchAcrossReopen()
+    XCTAssertTrue(verified)
+  }
 }

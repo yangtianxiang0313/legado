@@ -6,14 +6,13 @@ import SwiftUI
 struct ReaderContentView: View {
     let target: ReaderRoute
     @Bindable var library: ShelfLibrary
+    let persistedSources: [BookSourceDraft]
     let openTOC: () -> Void
     let openChapter: (ChapterID) -> Void
     let openSourceEditor: (String?) -> Void
 
     @Environment(\.scenePhase) private var scenePhase
-    @State private var session = ReaderContentSession(
-        loader: SearchEnvironment.makeReaderContentLoader()
-    )
+    @State private var session: ReaderContentSession
     @State private var menuPresented = false
     @State private var menuPath: [ReaderMenuLayer] = []
     @State private var chapters: [BookChapter] = []
@@ -24,6 +23,29 @@ struct ReaderContentView: View {
     @State private var autoPageEnabled = false
     @State private var bookmarked = false
     @State private var sourceID: String?
+
+    init(
+        target: ReaderRoute,
+        library: ShelfLibrary,
+        persistedSources: [BookSourceDraft],
+        openTOC: @escaping () -> Void,
+        openChapter: @escaping (ChapterID) -> Void,
+        openSourceEditor: @escaping (String?) -> Void
+    ) {
+        self.target = target
+        self.library = library
+        self.persistedSources = persistedSources
+        self.openTOC = openTOC
+        self.openChapter = openChapter
+        self.openSourceEditor = openSourceEditor
+        _session = State(
+            initialValue: ReaderContentSession(
+                loader: SearchEnvironment.makeReaderContentLoader(
+                    persistedSources: persistedSources
+                )
+            )
+        )
+    }
 
     var body: some View {
         Group {

@@ -982,7 +982,7 @@ final class LegadoAppUITests: XCTestCase {
         require("screen.source.management")
         require("state.source.empty")
 
-        require("action.source.add").tap()
+        require("action.source.add.empty").tap()
         require("screen.source.editor")
         let name = require("field.source.name")
         name.tap()
@@ -1049,7 +1049,8 @@ final class LegadoAppUITests: XCTestCase {
         selectRoot("root.settings", label: "我的")
         require("action.settings.openSources").tap()
         require("screen.source.management")
-        require("action.source.import").tap()
+        requireFirst("action.source.create").tap()
+        requireButton("action.source.import").tap()
         require("screen.source.import")
 
         let definition = require("field.source.import.text")
@@ -1088,6 +1089,149 @@ final class LegadoAppUITests: XCTestCase {
                 "source.import",
                 "source.management",
             ],
+        ])
+    }
+
+    func testSourceManagementMilestone() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+            "--reset-sources",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        selectRoot("root.settings", label: "我的")
+        require("action.settings.openSources").tap()
+        require("screen.source.management")
+        requireFirst("action.source.create").tap()
+        requireButton("action.source.import").tap()
+        require("screen.source.import")
+
+        let sourceURL = "http://legado.local/source/milestone"
+        let definition = require("field.source.import.text")
+        definition.tap()
+        definition.typeText(
+            """
+            {"bookSourceUrl":"\(sourceURL)",\
+            "bookSourceName":"Milestone Source","bookSourceGroup":"科幻",\
+            "searchUrl":"http://legado.local/search?source=科幻&q={{key}}",\
+            "enabled":true,"enabledExplore":true,"customOrder":99,\
+            "ruleSearch":{"bookList":".book-item","name":".book-name",\
+            "author":".book-author","intro":".book-intro",\
+            "kind":".book-kind","lastChapter":".book-last-chapter",\
+            "bookUrl":"a.book-link","coverUrl":"img.book-cover"},\
+            "ruleBookInfo":{"name":"h1.book-name","author":".book-author",\
+            "intro":".book-intro","kind":".book-kind",\
+            "lastChapter":".book-last-chapter",\
+            "coverUrl":"img.book-cover","tocUrl":"a.toc-link"},\
+            "ruleToc":{"chapterList":".chapter","chapterName":"a",\
+            "chapterUrl":"a"},\
+            "ruleContent":{"content":"#content"}}
+            """
+        )
+        requireButton("action.source.import.parse").tap()
+        require("toggle.source.import.candidate.0")
+        requireButton("action.source.import.commit").tap()
+
+        require("screen.source.management")
+        XCTAssertTrue(
+            app.staticTexts["Milestone Source"].waitForExistence(timeout: 8)
+        )
+        let enabledStateID = "state.source.enabled.\(sourceURL)"
+        let disabledStateID = "state.source.disabled.\(sourceURL)"
+        require(enabledStateID)
+
+        requireButton(label: "选择").tap()
+        requireButton(label: "0 项").tap()
+        requireButton(label: "全选").tap()
+        requireButton(label: "批量操作").tap()
+        requireButton(label: "停用").tap()
+        require(disabledStateID)
+
+        requireButton(label: "批量操作").tap()
+        requireButton(label: "启用").tap()
+        require(enabledStateID)
+        requireButton(label: "完成").tap()
+
+        selectRoot("root.shelf", label: "书架")
+        require("action.shelf.openSearch").tap()
+        require("screen.search.books")
+        let searchField = app.searchFields.firstMatch
+        XCTAssertTrue(searchField.waitForExistence(timeout: 8))
+        searchField.tap()
+        searchField.typeText("星河纪事\n")
+        let searchResult = app.staticTexts["星河纪事"].firstMatch
+        XCTAssertTrue(searchResult.waitForExistence(timeout: 8))
+        searchResult.tap()
+
+        require("screen.bookDetail")
+        requireButton("action.bookDetail.shelf.add").tap()
+        require("action.bookDetail.shelf.remove")
+        let start = requireButton("action.bookDetail.startReading")
+        let startDeadline = Date().addingTimeInterval(8)
+        while !start.isEnabled && Date() < startDeadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+        }
+        XCTAssertTrue(start.isEnabled)
+        start.tap()
+
+        require("screen.chapterTOC")
+        requireButton("action.chapter.select.1").tap()
+        require("screen.reader")
+        XCTAssertEqual(
+            require("label.reader.chapterTitle").label,
+            "第二章 回声"
+        )
+
+        app.navigationBars.buttons.firstMatch.tap()
+        require("screen.chapterTOC")
+        app.navigationBars.buttons.firstMatch.tap()
+        require("screen.bookDetail")
+        requireButton("action.bookDetail.more").tap()
+        requireButton("action.bookDetail.switchSource").tap()
+        require("screen.bookSource.switch")
+        requireButton("action.bookDetail.switchSource.\(sourceURL)").tap()
+
+        let failureAlert = app.alerts["换源失败"].firstMatch
+        if failureAlert.waitForExistence(timeout: 2) {
+            XCTFail(
+                "Source switch failed: "
+                    + failureAlert.staticTexts.allElementsBoundByIndex
+                        .map(\.label)
+                        .joined(separator: " | ")
+            )
+        }
+        let sourceLabel = require("label.bookDetail.source")
+        let switchDeadline = Date().addingTimeInterval(12)
+        while
+            !sourceLabel.label.contains("Milestone Source"),
+            Date() < switchDeadline
+        {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+        }
+        XCTAssertTrue(sourceLabel.label.contains("Milestone Source"))
+
+        requireButton("action.bookDetail.startReading").tap()
+        require("screen.reader")
+        let restoredTitle = require("label.reader.chapterTitle")
+        XCTAssertEqual(restoredTitle.label, "第二章 回声")
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "managed_source": "Milestone Source",
+            "source_enabled": true,
+            "bulk_enable_cycle": true,
+            "switched_source": "Milestone Source",
+            "preserved_chapter": "第二章 回声",
         ])
     }
 
@@ -1158,6 +1302,47 @@ final class LegadoAppUITests: XCTestCase {
 
     private func element(_ identifier: String) -> XCUIElement {
         app.descendants(matching: .any)[identifier]
+    }
+
+    @discardableResult
+    private func requireFirst(
+        _ identifier: String,
+        timeout: TimeInterval = 8
+    ) -> XCUIElement {
+        let candidate = app.descendants(matching: .any)
+            .matching(identifier: identifier)
+            .firstMatch
+        XCTAssertTrue(
+            candidate.waitForExistence(timeout: timeout),
+            "Missing UI element \(identifier)"
+        )
+        return candidate
+    }
+
+    @discardableResult
+    private func requireButton(
+        _ identifier: String,
+        timeout: TimeInterval = 8
+    ) -> XCUIElement {
+        let candidate = app.buttons[identifier].firstMatch
+        XCTAssertTrue(
+            candidate.waitForExistence(timeout: timeout),
+            "Missing UI button \(identifier)"
+        )
+        return candidate
+    }
+
+    @discardableResult
+    private func requireButton(
+        label: String,
+        timeout: TimeInterval = 8
+    ) -> XCUIElement {
+        let candidate = app.buttons[label].firstMatch
+        XCTAssertTrue(
+            candidate.waitForExistence(timeout: timeout),
+            "Missing UI button labelled \(label)"
+        )
+        return candidate
     }
 
     @discardableResult

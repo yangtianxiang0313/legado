@@ -1,6 +1,7 @@
 import Foundation
 import LibraryDomain
 import Observation
+import ReaderCore
 
 public struct ShelfBookCandidate: Equatable, Sendable {
   public let name: String
@@ -81,6 +82,13 @@ public protocol BookShelfRepository: Sendable {
     bookID: LibraryDomain.BookID,
     progress: ReadingProgress
   ) async throws
+  func applySourceSwitch(
+    bookID: LibraryDomain.BookID,
+    candidate: ShelfBookCandidate,
+    chapters: [LibraryDomain.BookChapter],
+    progress: ReadingProgress,
+    persist: Bool
+  ) async throws -> ShelfBookItem
   func reset() async throws
 }
 
@@ -207,9 +215,91 @@ public final class ShelfLibrary {
     }
   }
 
+  @discardableResult
+  public func switchSource(
+    current: ShelfBookItem,
+    candidate: ShelfBookCandidate,
+    chapters: [LibraryDomain.BookChapter]
+  ) async -> ShelfBookItem? {
+    do {
+      let latest = try await repository.book(id: current.id) ?? current
+      let oldBook = SourceMigrationBook(
+        id: latest.id,
+        sourceURL: latest.candidate.sourceID,
+        title: latest.candidate.name,
+        author: latest.candidate.author,
+        progress: latest.progress,
+        totalChapterCount: latest.chapterCount,
+        userState: SourceMigrationUserState(
+          groupID: Int64(latest.membership.groupID),
+          order: latest.order
+        )
+      )
+      let target = SourceMigrationBook(
+        id: latest.id,
+        sourceURL: candidate.sourceID,
+        title: candidate.name,
+        author: candidate.author,
+        totalChapterCount: chapters.count
+      )
+      let targetChapters = chapters.map {
+        SourceMigrationChapter(
+          id: $0.id,
+          title: $0.title,
+          index: $0.index
+        )
+      }
+      let migration = try AndroidBookSourceMigrationPolicy.migrate(
+        oldBook: oldBook,
+        candidate: target,
+        targetChapters: targetChapters,
+        inBookshelf: latest.membership.isInBookshelf
+      )
+      guard let progress = migration.book.progress else {
+        throw BookSourceSwitchFailure.missingMigratedProgress
+      }
+      let normalizedChapters = chapters.map {
+        LibraryDomain.BookChapter(
+          id: $0.id,
+          bookID: latest.id,
+          sourceID: candidate.sourceID,
+          index: $0.index,
+          title: $0.title,
+          url: $0.url,
+          isPay: $0.isPay,
+          isVIP: $0.isVIP,
+          isVolume: $0.isVolume
+        )
+      }
+      let item = try await repository.applySourceSwitch(
+        bookID: latest.id,
+        candidate: candidate,
+        chapters: normalizedChapters,
+        progress: progress,
+        persist: latest.membership.isInBookshelf
+      )
+      if latest.membership.isInBookshelf {
+        books = try await repository.shelfBooks()
+      }
+      errorMessage = nil
+      return item
+    } catch BookSourceMigrationError.emptyTargetTableOfContents {
+      errorMessage = "目标书源目录为空，未执行换源"
+      return nil
+    } catch {
+      errorMessage = "无法切换书源"
+      return nil
+    }
+  }
+
   public func reset() async {
     try? await repository.reset()
     books = []
     errorMessage = nil
   }
+}
+
+public enum BookSourceSwitchFailure: Error, Equatable, Sendable {
+  case missingBook
+  case missingMigratedProgress
 }

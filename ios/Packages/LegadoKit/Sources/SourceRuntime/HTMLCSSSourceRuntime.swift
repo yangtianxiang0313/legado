@@ -11,6 +11,18 @@ public struct HTMLCSSRule: Sendable, Equatable {
   public let selector: String
   public let value: Value
 
+  public static func optional(
+    _ selector: String?,
+    value: Value = .text
+  ) -> HTMLCSSRule {
+    let normalized = selector?
+      .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    return HTMLCSSRule(
+      normalized.isEmpty ? "__legado_missing__" : normalized,
+      value: value
+    )
+  }
+
   public init(_ selector: String, value: Value = .text) {
     self.selector = selector
     self.value = value
@@ -34,7 +46,7 @@ public struct SearchRules: Sendable, Equatable {
     author: HTMLCSSRule,
     intro: HTMLCSSRule,
     kind: HTMLCSSRule,
-    wordCount: HTMLCSSRule = HTMLCSSRule("__legado_missing__"),
+    wordCount: HTMLCSSRule = .optional(nil),
     lastChapter: HTMLCSSRule,
     bookURL: HTMLCSSRule,
     coverURL: HTMLCSSRule
@@ -66,7 +78,7 @@ public struct BookInfoRules: Sendable, Equatable {
     author: HTMLCSSRule,
     intro: HTMLCSSRule,
     kind: HTMLCSSRule,
-    wordCount: HTMLCSSRule = HTMLCSSRule("__legado_missing__"),
+    wordCount: HTMLCSSRule = .optional(nil),
     lastChapter: HTMLCSSRule,
     coverURL: HTMLCSSRule,
     tocURL: HTMLCSSRule

@@ -106,7 +106,9 @@ struct RootShellView: View {
     ) -> some View {
         switch route {
         case .searchBooks:
-            SearchBooksView { result in
+            SearchBooksView(
+                persistedSources: sourceCatalog.sources
+            ) { result in
                 router.push(
                     .bookDetail(
                         SearchBookRoute(
@@ -176,12 +178,41 @@ struct RootShellView: View {
                             on: root
                         )
                     }
+                },
+                availableSources: sourceCatalog.sources,
+                switchSource: { current, source in
+                    do {
+                        let resolved = try await SearchEnvironment
+                            .resolveSourceSwitch(
+                                current: current,
+                                target: source,
+                                persistedSources: sourceCatalog.sources
+                            )
+                        let switched = await library.switchSource(
+                            current: current,
+                            candidate: resolved.candidate,
+                            chapters: resolved.chapters
+                        )
+                        guard let switched else {
+                            return .failure(
+                                library.errorMessage
+                                    ?? "目标书源目录无法迁移"
+                            )
+                        }
+                        return .success(switched)
+                    } catch {
+                        return .failure(
+                            "目标书源解析失败："
+                                + String(reflecting: error)
+                        )
+                    }
                 }
             )
         case .chapterTOC(let bookID):
             ChapterTOCView(
                 bookID: bookID,
                 library: library,
+                persistedSources: sourceCatalog.sources,
                 openReader: { chapter in
                     router.push(
                         .reader(
@@ -198,6 +229,7 @@ struct RootShellView: View {
             ReaderContentView(
                 target: target,
                 library: library,
+                persistedSources: sourceCatalog.sources,
                 openTOC: {
                     router.push(.chapterTOC(target.bookID), on: .shelf)
                 },
@@ -355,10 +387,15 @@ private struct SearchBooksView: View {
     let openBookDetail: (SearchResult) -> Void
     @State private var session: SearchSession
 
-    init(openBookDetail: @escaping (SearchResult) -> Void) {
+    init(
+        persistedSources: [BookSourceDraft],
+        openBookDetail: @escaping (SearchResult) -> Void
+    ) {
         self.openBookDetail = openBookDetail
         _session = State(
-            initialValue: SearchEnvironment.makeSession()
+            initialValue: SearchEnvironment.makeSession(
+                persistedSources: persistedSources
+            )
         )
     }
 

@@ -5,6 +5,7 @@ import SwiftUI
 struct ChapterTOCView: View {
     let bookID: LibraryDomain.BookID
     @Bindable var library: ShelfLibrary
+    let persistedSources: [BookSourceDraft]
     let openReader: (LibraryDomain.BookChapter) -> Void
 
     @State private var book: ShelfBookItem?
@@ -31,7 +32,9 @@ struct ChapterTOCView: View {
             else { return }
             book = item
             let value = library.chapterSession(
-                loader: SearchEnvironment.makeChapterLoader()
+                loader: SearchEnvironment.makeChapterLoader(
+                    persistedSources: persistedSources
+                )
             )
             session = value
             await value.load(book: item)

@@ -206,6 +206,69 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
     }
   }
 
+  public func applySourceSwitch(
+    bookID: LibraryDomain.BookID,
+    candidate: ShelfBookCandidate,
+    chapters: [LibraryDomain.BookChapter],
+    progress: ReadingProgress,
+    persist: Bool
+  ) async throws -> ShelfBookItem {
+    try await database.write { db in
+      guard var record = try BookRecord
+        .filter(Column("bookID") == bookID.rawValue)
+        .fetchOne(db)
+      else {
+        throw BookSourceSwitchFailure.missingBook
+      }
+      let membership: ShelfMembership = record.inBookshelf
+        ? .member(groupID: record.groupID)
+        : .staged
+      let order = record.orderValue
+      if !persist {
+        _ = try BookRecord
+          .filter(Column("bookID") == bookID.rawValue)
+          .deleteAll(db)
+        return ShelfBookItem(
+          id: bookID,
+          candidate: candidate,
+          membership: .staged,
+          order: order,
+          chapterCount: chapters.count,
+          progress: progress
+        )
+      }
+
+      record.apply(candidate)
+      record.chapterCount = chapters.count
+      record.updateError = false
+      record.progressChapterIndex = progress.position.chapterIndex
+      record.progressCharacterOffset =
+        progress.position.characterOffset
+      record.progressChapterTitle = progress.chapterTitle
+      record.progressUpdatedAt = progress.updatedAtMilliseconds
+      try record.update(db)
+      _ = try ChapterRecord
+        .filter(Column("bookID") == bookID.rawValue)
+        .deleteAll(db)
+      for chapter in chapters {
+        var chapterRecord = ChapterRecord(chapter: chapter)
+        try chapterRecord.insert(db)
+      }
+      var item = record.item
+      if item.membership != membership {
+        item = ShelfBookItem(
+          id: item.id,
+          candidate: item.candidate,
+          membership: membership,
+          order: item.order,
+          chapterCount: item.chapterCount,
+          progress: item.progress
+        )
+      }
+      return item
+    }
+  }
+
   public func reset() async throws {
     try await database.write { db in
       _ = try ChapterRecord.deleteAll(db)

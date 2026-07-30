@@ -7,17 +7,10 @@
       "simulator_id": "SIM-PHONE-COMPACT-001",
       "projection": "compactStack",
       "managed_source": "Milestone Source",
-      "source_enabled": false,
-      "source_switched": true,
-      "progress_preserved": true,
-      "route_trace": [
-        "source.management",
-        "source.import",
-        "source.management",
-        "book.detail",
-        "book.source.switch",
-        "reader"
-      ]
+      "source_enabled": true,
+      "bulk_enable_cycle": true,
+      "switched_source": "Milestone Source",
+      "preserved_chapter": "第二章 回声"
     }
   ]
 }
