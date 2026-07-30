@@ -78,6 +78,9 @@ characterization owner，并由只绑定 loopback 的 `IntegrationLab` 固定协
 
 ```mermaid
 flowchart LR
+  COREPKG["LegadoCoreKit"] --> SOURCEPKG["LegadoSourceKit"]
+  COREPKG --> APPPKG["LegadoKit"]
+  SOURCEPKG --> APPPKG
   F["Feature*"] --> U["AppUseCases"]
   U --> D["LibraryDomain / LegadoCore"]
   U --> S["SourceRuntime"]
@@ -98,6 +101,17 @@ flowchart LR
   APP --> WEB
 ```
 
+三个 Swift Package 的边界是架构约束，而不只是目录组织：
+
+- `LegadoCoreKit`：跨域基础值，不依赖其他项目 Package；
+- `LegadoSourceKit`：完整书源格式、规则、流水线与 HTML/JS 适配器，只依赖
+  `LegadoCoreKit`，可脱离 App、UI、数据库和阅读器独立构建；
+- `LegadoKit`：领域、阅读、用例、持久化与 App 组装，通过
+  `SourceRuntimeComposition` / `SourceScriptComposition` 选择书源适配器。
+
+UI 定制只能依赖书源 Package 的公开产品，书源 Package 禁止反向依赖
+`LibraryDomain`、`ReaderCore`、`AppUseCases`、数据库或 App。
+
 ### 3.1 内核 Target
 
 | Target | 职责 | 允许的项目依赖 |
@@ -106,7 +120,7 @@ flowchart LR
 | `LibraryDomain` | Book、Chapter、Progress、Bookmark 等领域值 | Core |
 | `SourceFormat` | Android 书源 JSON DTO、校验、版本兼容、未知字段 | Core |
 | `RuleRuntime` | 规则 parser/AST、CSS/XPath/JSONPath/Regex/JS 编排与 ports | Core |
-| `SourceRuntime` | 搜索、发现、详情、目录、正文流水线与策略 | Core、Domain、SourceFormat、RuleRuntime |
+| `SourceRuntime` | 搜索、发现、详情、目录、正文流水线与策略 | Core、SourceFormat、RuleRuntime |
 | `ReaderCore` | 正文归一化、语义锚点、分页、预取策略 | Core、Domain |
 | `IntegrationKit` | WebDAV 等外部集成的稳定值、请求计划、错误阶段与消费方 ports；不含 live I/O 或 secret | Core |
 | `AppUseCases` | 书架、搜索、加书、换源、进度、备份编排与 Repository ports | Core、Domain、SourceRuntime、ReaderCore、IntegrationKit |

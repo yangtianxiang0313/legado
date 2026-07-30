@@ -15,7 +15,7 @@ let package = Package(
                 "AppUseCases",
                 "AppNavigation",
                 "DatabaseGRDB",
-                "HTMLSwiftSoup",
+                "SourceRuntimeComposition",
             ]
         ),
         .library(
@@ -24,64 +24,75 @@ let package = Package(
                 "AppUseCases",
                 "AppNavigation",
                 "DatabaseGRDB",
-                "ScriptJavaScriptCore",
-                "HTMLSwiftSoup",
+                "SourceRuntimeComposition",
+                "SourceScriptComposition",
             ]
         ),
         .executable(name: "ConformanceCLI", targets: ["ConformanceCLI"]),
     ],
     dependencies: [
+        .package(path: "../LegadoCoreKit"),
+        .package(path: "../LegadoSourceKit"),
         .package(
             url: "https://github.com/groue/GRDB.swift.git",
             exact: "7.11.1"
         ),
-        .package(
-            url: "https://github.com/scinfu/SwiftSoup.git",
-            exact: "2.13.6"
-        ),
     ],
     targets: [
-        .target(name: "LegadoCore"),
-        .target(name: "LibraryDomain", dependencies: ["LegadoCore"]),
-        .target(name: "SourceFormat", dependencies: ["LegadoCore"]),
-        .target(name: "RuleRuntime", dependencies: ["LegadoCore"]),
         .target(
-            name: "HTMLSwiftSoup",
+            name: "LibraryDomain",
             dependencies: [
-                "LegadoCore",
-                "RuleRuntime",
-                .product(name: "SwiftSoup", package: "SwiftSoup"),
+                .product(name: "LegadoCoreKit", package: "LegadoCoreKit"),
             ]
         ),
         .target(
-            name: "SourceRuntime",
-            dependencies: ["LegadoCore", "LibraryDomain", "SourceFormat", "RuleRuntime"]
+            name: "SourceRuntimeComposition",
+            dependencies: [
+                .product(
+                    name: "LegadoHTMLSwiftSoupKit",
+                    package: "LegadoSourceKit"
+                ),
+            ]
         ),
         .target(
-            name: "ScriptJavaScriptCore",
-            dependencies: ["SourceRuntime"],
-            linkerSettings: [.linkedFramework("JavaScriptCore")]
+            name: "SourceScriptComposition",
+            dependencies: [
+                .product(
+                    name: "LegadoScriptJavaScriptCoreKit",
+                    package: "LegadoSourceKit"
+                ),
+            ]
         ),
-        .target(name: "ReaderCore", dependencies: ["LegadoCore", "LibraryDomain"]),
+        .target(
+            name: "ReaderCore",
+            dependencies: [
+                .product(name: "LegadoCoreKit", package: "LegadoCoreKit"),
+                "LibraryDomain",
+            ]
+        ),
         .target(
             name: "AppUseCases",
             dependencies: [
-                "LegadoCore",
+                .product(name: "LegadoCoreKit", package: "LegadoCoreKit"),
+                .product(
+                    name: "LegadoSourceRuntimeKit",
+                    package: "LegadoSourceKit"
+                ),
                 "LibraryDomain",
-                "SourceFormat",
-                "SourceRuntime",
-                "RuleRuntime",
                 "ReaderCore",
             ]
         ),
         .target(
             name: "AppNavigation",
-            dependencies: ["LegadoCore", "LibraryDomain"]
+            dependencies: [
+                .product(name: "LegadoCoreKit", package: "LegadoCoreKit"),
+                "LibraryDomain",
+            ]
         ),
         .target(
             name: "DatabaseGRDB",
             dependencies: [
-                "LegadoCore",
+                .product(name: "LegadoCoreKit", package: "LegadoCoreKit"),
                 "LibraryDomain",
                 "AppUseCases",
                 .product(name: "GRDB", package: "GRDB.swift"),
@@ -90,11 +101,12 @@ let package = Package(
         .target(
             name: "TestSupport",
             dependencies: [
-                "LegadoCore",
+                .product(name: "LegadoCoreKit", package: "LegadoCoreKit"),
+                .product(
+                    name: "LegadoSourceRuntimeKit",
+                    package: "LegadoSourceKit"
+                ),
                 "LibraryDomain",
-                "SourceFormat",
-                "RuleRuntime",
-                "SourceRuntime",
                 "ReaderCore",
                 "AppUseCases",
             ]
@@ -102,28 +114,15 @@ let package = Package(
         .executableTarget(
             name: "ConformanceCLI",
             dependencies: [
-                "LegadoCore",
+                .product(name: "LegadoCoreKit", package: "LegadoCoreKit"),
+                .product(
+                    name: "LegadoSourceFullCompatKit",
+                    package: "LegadoSourceKit"
+                ),
                 "LibraryDomain",
                 "ReaderCore",
-                "SourceFormat",
-                "RuleRuntime",
-                "SourceRuntime",
-                "HTMLSwiftSoup",
                 "TestSupport",
             ]
-        ),
-        .testTarget(name: "LegadoCoreTests", dependencies: ["LegadoCore"]),
-        .testTarget(
-            name: "SourceRuntimeTests",
-            dependencies: ["LegadoCore", "SourceRuntime", "TestSupport"]
-        ),
-        .testTarget(
-            name: "HTMLSwiftSoupTests",
-            dependencies: ["HTMLSwiftSoup", "RuleRuntime"]
-        ),
-        .testTarget(
-            name: "ScriptJavaScriptCoreTests",
-            dependencies: ["ScriptJavaScriptCore", "SourceRuntime"]
         ),
         .testTarget(
             name: "ReaderCoreTests",
@@ -135,15 +134,18 @@ let package = Package(
         ),
         .testTarget(
             name: "TestSupportTests",
-            dependencies: ["LegadoCore", "TestSupport"]
+            dependencies: [
+                .product(name: "LegadoCoreKit", package: "LegadoCoreKit"),
+                "TestSupport",
+            ]
         ),
         .testTarget(
             name: "ConformanceCLITests",
-            dependencies: ["LegadoCore", "ConformanceCLI", "TestSupport"]
-        ),
-        .testTarget(
-            name: "SourceFormatTests",
-            dependencies: ["LegadoCore", "SourceFormat", "TestSupport"]
+            dependencies: [
+                .product(name: "LegadoCoreKit", package: "LegadoCoreKit"),
+                "ConformanceCLI",
+                "TestSupport",
+            ]
         ),
         .testTarget(
             name: "AppNavigationTests",

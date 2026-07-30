@@ -18,9 +18,13 @@ REQUIRED_SOURCE_TARGETS = {
     "SourceFormat",
     "RuleRuntime",
     "SourceRuntime",
+    "HTMLSwiftSoup",
+    "ScriptJavaScriptCore",
     "ReaderCore",
     "AppUseCases",
     "AppNavigation",
+    "SourceRuntimeComposition",
+    "SourceScriptComposition",
     "DatabaseGRDB",
     "TestSupport",
     "ConformanceCLI",
@@ -28,6 +32,8 @@ REQUIRED_SOURCE_TARGETS = {
 REQUIRED_TEST_TARGETS = {
     "LegadoCoreTests",
     "SourceRuntimeTests",
+    "HTMLSwiftSoupTests",
+    "ScriptJavaScriptCoreTests",
     "TestSupportTests",
     "ConformanceCLITests",
     "SourceFormatTests",
@@ -35,6 +41,12 @@ REQUIRED_TEST_TARGETS = {
     "DatabaseGRDBTests",
 }
 REQUIRED_LIBRARY_PRODUCTS = {
+    "LegadoCoreKit",
+    "LegadoSourceRuntimeKit",
+    "LegadoHTMLSwiftSoupKit",
+    "LegadoScriptJavaScriptCoreKit",
+    "LegadoSourceStoreSafeKit",
+    "LegadoSourceFullCompatKit",
     "LegadoStoreSafeKit",
     "LegadoFullCompatKit",
 }
@@ -74,7 +86,13 @@ def target_closure(root_targets, dependencies):
     return result
 
 
-def architecture_issues(package_root, package, policy):
+def architecture_issues(
+    package_root,
+    package,
+    policy,
+    target_roots=None,
+    all_products=None,
+):
     errors = []
     if not isinstance(policy, dict) or policy.get("schema_version") != 1:
         return ["architecture-rules.json schema_version 无效"]
@@ -94,6 +112,13 @@ def architecture_issues(package_root, package, policy):
         for target in package.get("targets", [])
         if isinstance(target, dict) and isinstance(target.get("name"), str)
     }
+    if target_roots is None:
+        target_roots = {name: package_root for name in package_targets}
+    products = all_products or {
+        product.get("name"): product
+        for product in package.get("products", [])
+        if isinstance(product, dict) and isinstance(product.get("name"), str)
+    }
     for name, target in package_targets.items():
         target_type = target.get("type")
         if target_type == "test" and name not in test_rules:
@@ -103,11 +128,22 @@ def architecture_issues(package_root, package, policy):
 
     dependencies = {}
     for name, target in package_targets.items():
-        dependencies[name] = {
-            dependency
-            for dependency in map(dependency_name, target.get("dependencies", []))
-            if isinstance(dependency, str) and dependency in known_project
-        }
+        dependencies[name] = set()
+        for dependency in map(
+            dependency_name,
+            target.get("dependencies", []),
+        ):
+            if not isinstance(dependency, str):
+                continue
+            if dependency in known_project:
+                dependencies[name].add(dependency)
+            product = products.get(dependency)
+            if isinstance(product, dict):
+                dependencies[name].update(
+                    target_name
+                    for target_name in product.get("targets", [])
+                    if target_name in known_project
+                )
 
     for name, rules in {**target_rules, **test_rules}.items():
         target = package_targets.get(name)
@@ -121,9 +157,10 @@ def architecture_issues(package_root, package, policy):
             )
 
         source_parent = "Tests" if name in test_rules else "Sources"
-        directory = package_root / source_parent / name
+        owner_root = target_roots.get(name, package_root)
+        directory = owner_root / source_parent / name
         for path in sorted(directory.rglob("*.swift")) if directory.exists() else []:
-            relative = path.relative_to(package_root).as_posix()
+            relative = path.relative_to(owner_root).as_posix()
             text = path.read_text(encoding="utf-8")
             imports = swift_imports(text)
             forbidden = imports & set(rules.get("forbidden_imports", []))
@@ -163,11 +200,6 @@ def architecture_issues(package_root, package, policy):
                         f"{relative}: 命中 {entry.get('id', 'banned-pattern')}"
                     )
 
-    products = {
-        product.get("name"): product
-        for product in package.get("products", [])
-        if isinstance(product, dict) and isinstance(product.get("name"), str)
-    }
     for profile_name, profile in profiles.items():
         if not isinstance(profile, dict):
             errors.append(f"profile {profile_name} 无效")
@@ -196,42 +228,98 @@ def main() -> int:
     parser.add_argument("--root", type=Path, required=True)
     args = parser.parse_args()
     root = args.root.resolve()
-    package_root = root / "ios/Packages/LegadoKit"
-    manifest_path = package_root / "Package.swift"
+    package_roots = [
+        root / "ios/Packages/LegadoCoreKit",
+        root / "ios/Packages/LegadoSourceKit",
+        root / "ios/Packages/LegadoKit",
+    ]
     errors = []
-    if not manifest_path.exists():
-        print("PACKAGE_CONTRACT: 缺少 Package.swift", file=sys.stderr)
-        return 1
-    text = manifest_path.read_text(encoding="utf-8")
-    first_line = text.splitlines()[0] if text.splitlines() else ""
-    if not re.fullmatch(r"//\s*swift-tools-version:\s*6\.2", first_line):
-        errors.append("swift-tools-version 必须精确为 6.2")
-    if not re.search(r"\.iOS\s*\(\s*\.v17\s*\)", text):
-        errors.append("Package 必须显式声明 iOS 17")
-    if not re.search(r"\.macOS\s*\(\s*\.v14\s*\)", text):
-        errors.append("Package 必须显式声明 macOS 14")
-    if not re.search(r"swiftLanguageModes\s*:\s*\[\s*\.v6\s*\]", text):
-        errors.append("Package 必须显式声明 swiftLanguageModes: [.v6]")
+    packages = []
+    target_roots = {}
+    for package_root in package_roots:
+        manifest_path = package_root / "Package.swift"
+        if not manifest_path.exists():
+            errors.append(
+                f"{package_root.name}: 缺少 Package.swift"
+            )
+            continue
+        text = manifest_path.read_text(encoding="utf-8")
+        first_line = text.splitlines()[0] if text.splitlines() else ""
+        if not re.fullmatch(
+            r"//\s*swift-tools-version:\s*6\.2",
+            first_line,
+        ):
+            errors.append(
+                f"{package_root.name}: swift-tools-version 必须精确为 6.2"
+            )
+        if not re.search(r"\.iOS\s*\(\s*\.v17\s*\)", text):
+            errors.append(
+                f"{package_root.name}: 必须显式声明 iOS 17"
+            )
+        if not re.search(r"\.macOS\s*\(\s*\.v14\s*\)", text):
+            errors.append(
+                f"{package_root.name}: 必须显式声明 macOS 14"
+            )
+        if not re.search(
+            r"swiftLanguageModes\s*:\s*\[\s*\.v6\s*\]",
+            text,
+        ):
+            errors.append(
+                f"{package_root.name}: 必须显式声明 Swift 6"
+            )
 
-    format_path = package_root / ".swift-format"
-    if not format_path.exists():
-        errors.append("缺少受版本控制的 .swift-format")
-    else:
-        try:
-            json.loads(format_path.read_text(encoding="utf-8"))
-        except json.JSONDecodeError as error:
-            errors.append(f".swift-format 不是有效 JSON：{error}")
+        format_path = package_root / ".swift-format"
+        if not format_path.exists():
+            errors.append(
+                f"{package_root.name}: 缺少受版本控制的 .swift-format"
+            )
+        else:
+            try:
+                json.loads(format_path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError as error:
+                errors.append(
+                    f"{package_root.name}: .swift-format 无效：{error}"
+                )
 
-    result = dump_package(package_root, cwd=root, timeout=60)
-    if result.returncode != 0:
-        errors.append("swift package dump-package 失败：" + (result.stderr or result.stdout)[-1000:])
-    else:
+        result = dump_package(package_root, cwd=root, timeout=60)
+        if result.returncode != 0:
+            errors.append(
+                f"{package_root.name}: dump-package 失败："
+                + (result.stderr or result.stdout)[-1000:]
+            )
+            continue
         try:
             package = json.loads(result.stdout)
         except json.JSONDecodeError as error:
-            errors.append(f"dump-package 输出不是 JSON：{error}")
-            package = {}
-        targets = {target.get("name"): target for target in package.get("targets", [])}
+            errors.append(
+                f"{package_root.name}: dump-package 输出无效：{error}"
+            )
+            continue
+        packages.append(package)
+        for target in package.get("targets", []):
+            name = target.get("name")
+            if isinstance(name, str):
+                if name in target_roots:
+                    errors.append(f"Target 重复声明：{name}")
+                target_roots[name] = package_root
+
+    if packages:
+        merged = {
+            "targets": [
+                target
+                for package in packages
+                for target in package.get("targets", [])
+            ],
+            "products": [
+                product
+                for package in packages
+                for product in package.get("products", [])
+            ],
+        }
+        targets = {
+            target.get("name"): target
+            for target in merged["targets"]
+        }
         missing_sources = sorted(REQUIRED_SOURCE_TARGETS - set(targets))
         missing_tests = sorted(REQUIRED_TEST_TARGETS - set(targets))
         if missing_sources:
@@ -243,7 +331,7 @@ def main() -> int:
         for name in REQUIRED_TEST_TARGETS:
             if name in targets and targets[name].get("type") != "test":
                 errors.append(f"{name} 必须是 test target")
-        products = package.get("products", [])
+        products = merged["products"]
         if not any(
             product.get("name") == "ConformanceCLI"
             and isinstance(product.get("type"), dict)
@@ -268,15 +356,47 @@ def main() -> int:
         except (OSError, json.JSONDecodeError) as error:
             errors.append(f"architecture-rules.json 无效：{error}")
         else:
-            errors.extend(architecture_issues(package_root, package, architecture))
+            all_products = {
+                product.get("name"): product
+                for product in products
+                if isinstance(product, dict)
+                and isinstance(product.get("name"), str)
+            }
+            errors.extend(
+                architecture_issues(
+                    root / "ios/Packages/LegadoKit",
+                    merged,
+                    architecture,
+                    target_roots=target_roots,
+                    all_products=all_products,
+                )
+            )
 
     for name in sorted(REQUIRED_SOURCE_TARGETS):
-        directory = package_root / "Sources" / name
-        if not directory.exists() or not any(directory.rglob("*.swift")):
+        package_root = target_roots.get(name)
+        directory = (
+            package_root / "Sources" / name
+            if package_root is not None
+            else None
+        )
+        if (
+            directory is None
+            or not directory.exists()
+            or not any(directory.rglob("*.swift"))
+        ):
             errors.append(f"{name} 缺少可编译 Swift 源码")
     for name in sorted(REQUIRED_TEST_TARGETS):
-        directory = package_root / "Tests" / name
-        if not directory.exists() or not any(directory.rglob("*.swift")):
+        package_root = target_roots.get(name)
+        directory = (
+            package_root / "Tests" / name
+            if package_root is not None
+            else None
+        )
+        if (
+            directory is None
+            or not directory.exists()
+            or not any(directory.rglob("*.swift"))
+        ):
             errors.append(f"{name} 缺少 Swift 测试源码")
 
     if errors:

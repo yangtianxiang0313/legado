@@ -87,8 +87,10 @@ def main() -> int:
     args = parser.parse_args()
     root = args.root.resolve()
     policy_path = root / "ios/harness/dependency-policy.json"
-    package_root = root / "ios/Packages/LegadoKit"
-    package_path = package_root / "Package.swift"
+    package_roots = [
+        root / "ios/Packages/LegadoSourceKit",
+        root / "ios/Packages/LegadoKit",
+    ]
     baseline_path = root / "ios/project/baseline.json"
     errors: List[str] = []
 
@@ -121,52 +123,90 @@ def main() -> int:
         if entry.get("traits") != []:
             errors.append(f"{identity}: traits 必须为空")
 
-    if not package_path.exists():
+    if not all(
+        (package_root / "Package.swift").exists()
+        for package_root in package_roots
+    ):
         if any(entry.get("status") == "enabled" for entry in packages if isinstance(entry, dict)):
             errors.append("存在 enabled dependency，但 Package.swift 尚未创建")
     else:
-        result = dump_package(package_root, cwd=root, timeout=60)
-        if result.returncode != 0:
-            errors.append("swift package dump-package 失败：" + (result.stderr or result.stdout)[-1000:])
-            package = {}
-        else:
+        manifests = []
+        for package_root in package_roots:
+            result = dump_package(package_root, cwd=root, timeout=60)
+            if result.returncode != 0:
+                errors.append(
+                    f"{package_root.name}: swift package dump-package 失败："
+                    + (result.stderr or result.stdout)[-1000:]
+                )
+                continue
             try:
-                package = json.loads(result.stdout)
+                manifests.append(json.loads(result.stdout))
             except json.JSONDecodeError as error:
-                errors.append(f"dump-package 输出不是 JSON：{error}")
-                package = {}
+                errors.append(
+                    f"{package_root.name}: dump-package 输出不是 JSON：{error}"
+                )
 
         found: Set[str] = set()
-        for dependency in package.get("dependencies", []):
-            entry = dependency_policy_match(dependency, packages)
-            if entry is None:
-                errors.append("Package.swift 包含未登记 dependency：" + json.dumps(dependency, sort_keys=True))
-                continue
-            identity = entry["identity"]
-            found.add(identity)
-            if entry.get("status") != "enabled":
-                errors.append(f"{identity}: policy 状态不是 enabled，禁止出现在 Package.swift")
-            exact_nodes = list(keyed_values(dependency, "exact"))
-            if not exact_nodes or entry.get("exact_version") not in set(strings(exact_nodes)):
-                errors.append(f"{identity}: 必须使用 exact {entry.get('exact_version')}")
+        for package in manifests:
+            for dependency in package.get("dependencies", []):
+                if (
+                    isinstance(dependency, dict)
+                    and "fileSystem" in dependency
+                ):
+                    continue
+                entry = dependency_policy_match(dependency, packages)
+                if entry is None:
+                    errors.append(
+                        "Package.swift 包含未登记 dependency："
+                        + json.dumps(dependency, sort_keys=True)
+                    )
+                    continue
+                identity = entry["identity"]
+                found.add(identity)
+                if entry.get("status") != "enabled":
+                    errors.append(
+                        f"{identity}: policy 状态不是 enabled，禁止出现在 Package.swift"
+                    )
+                exact_nodes = list(keyed_values(dependency, "exact"))
+                if (
+                    not exact_nodes
+                    or entry.get("exact_version")
+                    not in set(strings(exact_nodes))
+                ):
+                    errors.append(
+                        f"{identity}: 必须使用 exact {entry.get('exact_version')}"
+                    )
         for entry in packages:
             if isinstance(entry, dict) and entry.get("status") == "enabled" and entry.get("identity") not in found:
                 errors.append(f"{entry.get('identity')}: policy enabled 但 Package.swift 未引用")
 
-        for target in package.get("targets", []):
-            if not isinstance(target, dict):
-                continue
-            target_name = target.get("name")
-            target_type = target.get("type")
-            if target_type in {"binary", "plugin", "macro"}:
-                errors.append(f"禁止 {target_type} target：{target_name}")
-            for product in package_product_dependencies(target):
-                entry = products.get(product)
-                if entry is not None and target_name not in entry.get("allowed_targets", []):
-                    errors.append(f"外部 product {product} 未获准用于 Target {target_name}")
+        for package in manifests:
+            for target in package.get("targets", []):
+                if not isinstance(target, dict):
+                    continue
+                target_name = target.get("name")
+                target_type = target.get("type")
+                if target_type in {"binary", "plugin", "macro"}:
+                    errors.append(
+                        f"禁止 {target_type} target：{target_name}"
+                    )
+                for product in package_product_dependencies(target):
+                    entry = products.get(product)
+                    if (
+                        entry is not None
+                        and target_name not in entry.get(
+                            "allowed_targets",
+                            [],
+                        )
+                    ):
+                        errors.append(
+                            f"外部 product {product} 未获准用于 Target {target_name}"
+                        )
 
         enabled = [entry for entry in packages if isinstance(entry, dict) and entry.get("status") == "enabled"]
-        lock_path = package_root / "Package.resolved"
+        lock_path = (
+            root / "ios/Packages/LegadoKit/Package.resolved"
+        )
         if enabled and not lock_path.exists():
             errors.append("存在 enabled dependency，但缺少 Package.resolved")
         elif enabled:

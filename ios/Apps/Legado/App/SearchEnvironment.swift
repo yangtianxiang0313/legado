@@ -1,9 +1,9 @@
 import AppUseCases
 import Foundation
-import HTMLSwiftSoup
 import LibraryDomain
 import ReaderCore
-import ScriptJavaScriptCore
+import SourceRuntimeComposition
+import SourceScriptComposition
 import SourceRuntime
 import WebKit
 
@@ -14,9 +14,9 @@ enum SearchEnvironment {
     )
     private static let dynamicWebPagePort = WKSourceDynamicWebPagePort()
     private static let scriptRuntime =
-        JavaScriptCoreSourceScriptRuntime()
+        SourceScriptComposition.makeScriptRuntime()
     private static let htmlSelectorBackend =
-        SwiftSoupHTMLSelectorBackend()
+        SourceRuntimeComposition.makeHTMLSelectorBackend()
 
     static func makeWebLoginSession(
         source: BookSourceDraft
