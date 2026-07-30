@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-LIBRARY-BOOK-DETAIL-STAGING-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "library.book.detail-staging-runtime",
+  "title": "以稳定书籍身份和显式成员资格驱动详情到持久书架纵切",
+  "claim_refs": [
+    {
+      "id": "BKC-BOOK-DETAIL-STAGING-001",
+      "revision": 2
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "domain_integrity",
+      "scenario": "候选实体可能因目录或阅读被暂存，但只有明确入架或正数分组才拥有书架成员资格；任何查询都不得用 Book 行是否存在替代 ShelfMembership。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "durability",
+      "scenario": "入架必须原子写入稳定 BookID、书籍元数据、成员资格和已加载章节，App 被杀死并重启后仍能从书架重新打开同一本书。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "architecture",
+      "scenario": "LibraryDomain 定义不可变领域值与状态转换，AppUseCases 定义仓储端口和事务用例，DatabaseGRDB 独占 Record、SQL 和 migration，SwiftUI 只投影会话状态。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "supply_chain",
+      "scenario": "SQLite 适配必须启用已批准但尚未物化的 GRDB.swift 7.11.1，精确锁定版本和 revision，三方类型不得越过 DatabaseGRDB。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "vertical_delivery",
+      "scenario": "该阶段以模拟器完成搜索、详情、入架、终止重启、书架重开为结束条件；目录与正文由下一 P0 阶段承接。",
+      "criticality": "critical"
+    }
+  ],
+  "decision_questions": [
+    "如何从搜索候选生成跨重启稳定且不依赖 Android bookUrl 主键细节的 BookID？",
+    "如何在同一数据库事务中区分 staged 与 shelved，并保证移除暂存数据不会误删已入架书？",
+    "如何让 AppUseCases 通过仓储端口驱动详情与书架，同时让 SwiftUI 在 compact 和 regular 布局共享状态？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002",
+      "ADR-0004"
+    ],
+    "work_item_refs": [
+      "IOS-DEPENDENCY-GRDB-PERSISTENCE-001",
+      "IOS-LIBRARY-DOMAIN-BOOK-DETAIL-STAGING-RUNTIME-001",
+      "IOS-APP-NAVIGATION-BOOK-DETAIL-STAGING-001"
+    ]
+  },
+  "supersedes": null,
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30531171129/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "created_by": "IOS-CHARACTERIZE-LIBRARY-BOOK-DETAIL-STAGING-RUNTIME-001"
+}

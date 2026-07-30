@@ -2,11 +2,11 @@
   "schema_version": 1,
   "contract_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-  "inventory_control_sha256": "4ea414c4db13508729603b97e83481010c5b83945170af1d1de24f0085239ff1",
+  "inventory_control_sha256": "d3e835f51b97b0ad5cb3411e88a2d93f44a951498af794e2c3d38b514230fc4c",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "f65be43919b82682c085b0978dae01629fe08092b5c742eb5e119e3525ce3ba6",
-  "coverage_sha256": "a17d451f0018bae573f005b4b6b089a46610c3bba5a9de6bad63ff606fb0bd79",
+  "authority_sha256": "7a94311241bd2c69c2fdcce9c358f209269fa965be9de27c384416684d287727",
+  "coverage_sha256": "165ac42a4649e42e0ec1d3c57c85bd3517127c2317af74ac6b6eee3371581f5b",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -85,6 +85,19 @@
         {
           "id": "BKC-INTEGRATION-WEBDAV-DEPENDENCY-001",
           "revision": 3
+        }
+      ]
+    },
+    {
+      "id": "BKP-LIBRARY-BOOK-DETAIL-STAGING-RUNTIME-001",
+      "revision": 1,
+      "semantic_key": "library.book.detail-staging-runtime-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-LIBRARY-BOOK-DETAIL-STAGING-RUNTIME-001/r0001.json",
+      "record_sha256": "987e67eeb6bd2582f40a34e11c3718f6dfd96fd2f96a0dae753e6d0b0db996b6",
+      "claim_refs": [
+        {
+          "id": "BKC-BOOK-DETAIL-STAGING-001",
+          "revision": 2
         }
       ]
     },
@@ -602,6 +615,14 @@
       "resolution_state": "resolved"
     },
     {
+      "id": "DRV-LIBRARY-BOOK-DETAIL-STAGING-001",
+      "revision": 1,
+      "semantic_key": "library.book.detail-staging-runtime",
+      "path": "ios/project/business-knowledge/drivers/published/DRV-LIBRARY-BOOK-DETAIL-STAGING-001/r0001.json",
+      "record_sha256": "59e94d87e6507df251b2345a9c80e6c3d9c01353d18ef7da5e2c74cd31e2ad0b",
+      "resolution_state": "resolved"
+    },
+    {
       "id": "DRV-LIBRARY-BOOK-IMPORT-CHANNEL-001",
       "revision": 1,
       "semantic_key": "library.book.import-channel-boundary",
@@ -880,6 +901,15 @@
       "record_sha256": "5405a88cee04682007bf32a726c3ac9387773407cc0cf5ae14c24e0ef75db2b8",
       "entry_ids": [
         "BKE-INTEGRATION-WEBDAV-DEPENDENCY-DECISION-001"
+      ]
+    },
+    {
+      "id": "BKL-LIBRARY-BOOK-DETAIL-STAGING-RUNTIME-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-LIBRARY-BOOK-DETAIL-STAGING-RUNTIME-001.json",
+      "record_sha256": "910f98276a39e111c58bdab071d06876381e1489e00f5a7fcadfa405116b4f92",
+      "entry_ids": [
+        "BKE-LIBRARY-BOOK-DETAIL-STAGING-RUNTIME-001"
       ]
     },
     {

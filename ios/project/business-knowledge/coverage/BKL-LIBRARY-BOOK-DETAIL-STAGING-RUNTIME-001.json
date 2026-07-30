@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgeCoverageLedger",
+  "id": "BKL-LIBRARY-BOOK-DETAIL-STAGING-RUNTIME-001",
+  "revision": 1,
+  "status": "current",
+  "packet_refs": [
+    {
+      "id": "BKP-LIBRARY-BOOK-DETAIL-STAGING-RUNTIME-001",
+      "revision": 1,
+      "sha256": "987e67eeb6bd2582f40a34e11c3718f6dfd96fd2f96a0dae753e6d0b0db996b6"
+    }
+  ],
+  "generated_from": {
+    "knowledge_authority_sha256": "f65be43919b82682c085b0978dae01629fe08092b5c742eb5e119e3525ce3ba6",
+    "requirement_catalog_sha256": "0fab83b57c86f3109b7835c59ba9336b35296e094246b7394db472ae64210b5f",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "entries": [
+    {
+      "id": "BKE-LIBRARY-BOOK-DETAIL-STAGING-RUNTIME-001",
+      "claim_ref": {
+        "id": "BKC-BOOK-DETAIL-STAGING-001",
+        "revision": 2
+      },
+      "validation": {
+        "required": "android_runtime",
+        "state": "verified",
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-library-book-detail-staging-runtime-001-30530407356-1.json",
+          "ios/harness/goldens/android-legado-v1/rl-library-book-detail-staging-runtime-001.json#/artifact/result/value/portable_known_projection"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "covered_by_requirement",
+        "refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "reason": "受保护 Android Golden 已冻结候选保存、目录暂存、明确入架、分组提交和阅读丢弃语义；iOS 由 LibraryDomain、AppUseCases、DatabaseGRDB 与 AppShell 按层实现同一可观察业务结果。",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "planned",
+        "requirement_refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "work_item_refs": [
+          "IOS-DEPENDENCY-GRDB-PERSISTENCE-001",
+          "IOS-LIBRARY-DOMAIN-BOOK-DETAIL-STAGING-RUNTIME-001",
+          "IOS-APP-NAVIGATION-BOOK-DETAIL-STAGING-001"
+        ],
+        "capability_refs": [
+          "CAP-CONFORMANCE",
+          "CAP-CORE"
+        ],
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-library-book-detail-staging-runtime-001-30530407356-1.json"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    }
+  ],
+  "updated_by": "IOS-CHARACTERIZE-LIBRARY-BOOK-DETAIL-STAGING-RUNTIME-001",
+  "updated_at": "2026-07-30T09:35:16Z"
+}
