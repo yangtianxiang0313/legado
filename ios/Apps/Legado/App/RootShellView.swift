@@ -315,6 +315,12 @@ struct RootShellView: View {
                         on: root
                     )
                 },
+                openBookInfo: { item in
+                    router.push(
+                        .bookDetail(SearchBookRoute(item: item)),
+                        on: root
+                    )
+                },
                 openSourceEditor: { sourceID in
                     router.push(
                         .sourceEditor(sourceID),

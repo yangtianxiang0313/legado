@@ -13,6 +13,7 @@ struct ReaderContentView: View {
     @Bindable var replacementRules: ReaderReplacementRuleStore
     let openTOC: () -> Void
     let openChapter: (ChapterID, Int) -> Void
+    let openBookInfo: (ShelfBookItem) -> Void
     let openSourceEditor: (String?) -> Void
     private let contentLoader: any ReaderContentLoading
 
@@ -49,6 +50,7 @@ struct ReaderContentView: View {
         replacementRules: ReaderReplacementRuleStore,
         openTOC: @escaping () -> Void,
         openChapter: @escaping (ChapterID, Int) -> Void,
+        openBookInfo: @escaping (ShelfBookItem) -> Void,
         openSourceEditor: @escaping (String?) -> Void
     ) {
         self.target = target
@@ -59,6 +61,7 @@ struct ReaderContentView: View {
         self.replacementRules = replacementRules
         self.openTOC = openTOC
         self.openChapter = openChapter
+        self.openBookInfo = openBookInfo
         self.openSourceEditor = openSourceEditor
         let loader = library.readerContentLoader(
             fallback: SearchEnvironment.makeReaderContentLoader(
@@ -351,7 +354,9 @@ struct ReaderContentView: View {
         List {
             Section {
                 Button {
+                    guard let readerBook else { return }
                     menuPresented = false
+                    openBookInfo(readerBook)
                 } label: {
                     Label(
                         session.document?.title ?? "书籍信息",
@@ -361,6 +366,7 @@ struct ReaderContentView: View {
                 .accessibilityIdentifier(
                     ReaderMenuAction.openBookInfo.accessibilityIdentifier
                 )
+                .disabled(readerBook == nil)
             }
 
             Section("章节") {

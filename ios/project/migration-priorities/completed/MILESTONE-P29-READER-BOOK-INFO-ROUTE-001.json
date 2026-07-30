@@ -1,11 +1,24 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P29-READER-BOOK-INFO-ROUTE-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P29 阅读器返回书籍详情导航",
   "objective": "依据冻结 Android ReadMenu 标题栏点击行为，让阅读器主菜单的书籍信息入口打开当前书籍详情，并保持返回后仍位于原阅读会话。",
   "validation_policy": "仅执行一次 App 构建；这是既有导航栈上的结构性续接，不启动模拟器，不新增 Golden。",
+  "completion_evidence": [
+    "阅读器书籍信息按钮要求当前 ShelfBookItem 已加载",
+    "点击后关闭菜单并将既有 book.detail Route 压入当前根导航栈",
+    "详情页返回时仍保留原 reader Route 与章节字符位置"
+  ],
+  "final_verification": {
+    "kind": "single_app_build",
+    "completed_at": "2026-07-31T05:53:40+08:00",
+    "result": "一次 App 构建通过；未启动模拟器，未新增 Golden。",
+    "evidence": [
+      ".harness-runtime/loop/IOS-APP-NAVIGATION-READER-BOOK-INFO-001/attempt-1"
+    ]
+  },
   "stages": [
     {
       "id": "P29-S1",
