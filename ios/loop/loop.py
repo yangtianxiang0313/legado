@@ -194,7 +194,7 @@ def completed_task_ids(root: Path) -> set[str]:
     completed = {
         str(event["task_id"])
         for event in load_events(root)
-        if event["event"] == "task_completed"
+        if event["event"] in {"task_completed", "task_superseded"}
         and isinstance(event.get("task_id"), str)
     }
     for event in load_events(root):
@@ -2335,6 +2335,32 @@ def project_current(
                     "at": event["at"],
                 },
             }
+        elif event_name == "task_superseded":
+            details = event.get("details")
+            if (
+                state["status"] not in {"running", "verified"}
+                or state["active_task"] != task_id
+                or not isinstance(task_id, str)
+                or not isinstance(details, dict)
+                or not isinstance(details.get("reason"), str)
+                or not details["reason"].strip()
+                or not isinstance(details.get("replacement"), str)
+                or not details["replacement"].strip()
+            ):
+                raise LoopError(f"EVENT_TRANSITION_INVALID:{sequence}")
+            state = {
+                "schema_version": SCHEMA_VERSION,
+                "status": "idle",
+                "active_task": None,
+                "attempt": 0,
+                "verification": None,
+                "last_completed": {
+                    "task_id": task_id,
+                    "sequence": sequence,
+                    "at": event["at"],
+                    "outcome": "superseded",
+                },
+            }
     return state
 
 
@@ -3171,6 +3197,44 @@ def complete(
     return event
 
 
+def supersede(
+    root: Path,
+    *,
+    reason: str,
+    replacement: str,
+) -> Mapping[str, Any]:
+    if not reason.strip() or not replacement.strip():
+        raise LoopError("SUPERSEDE_REASON_INVALID")
+    reconcile(root)
+    state = current(root)
+    if state["status"] not in {"running", "verified"}:
+        raise LoopError("NO_ACTIVE_TASK")
+    task = read_json(root / TASK_PATH)
+    details: dict[str, Any] = {
+        "reason": reason.strip(),
+        "replacement": replacement.strip(),
+    }
+    knowledge_updates = task.get("knowledge_updates")
+    if isinstance(knowledge_updates, dict):
+        candidate_refs = knowledge_updates.get("candidate_claim_refs")
+        if isinstance(candidate_refs, list) and candidate_refs:
+            details["knowledge"] = {
+                "candidate_claim_refs": candidate_refs,
+            }
+    event = append_event(
+        root,
+        "task_superseded",
+        task_id=str(task["id"]),
+        details=details,
+    )
+    (root / TASK_PATH).unlink()
+    write_json(
+        root / CURRENT_PATH,
+        project_current(load_events(root)),
+    )
+    return event
+
+
 def advance(
     root: Path,
     *,
@@ -3345,6 +3409,12 @@ def dispatch(root: Path, args: argparse.Namespace) -> Mapping[str, Any]:
             pitfall=args.pitfall,
             next_step=args.next_step,
         )
+    if args.command == "supersede":
+        return supersede(
+            root,
+            reason=args.reason,
+            replacement=args.replacement,
+        )
     if args.command == "advance":
         return advance(
             root,
@@ -3373,6 +3443,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     complete_parser.add_argument("--architecture-change", required=True)
     complete_parser.add_argument("--pitfall", action="append", default=[])
     complete_parser.add_argument("--next-step", required=True)
+    supersede_parser = subparsers.add_parser("supersede")
+    supersede_parser.add_argument("--reason", required=True)
+    supersede_parser.add_argument("--replacement", required=True)
     advance_parser = subparsers.add_parser("advance")
     advance_parser.add_argument("--summary")
     advance_parser.add_argument("--current-status")
@@ -3387,6 +3460,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "verify",
             "reconcile",
             "complete",
+            "supersede",
             "advance",
         }:
             with exclusive_lock(root):

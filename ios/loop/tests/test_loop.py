@@ -71,6 +71,63 @@ class MinimalLoopTests(unittest.TestCase):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(loop.canonical(value))
 
+    def test_superseded_task_is_terminal_and_projection_returns_idle(self):
+        events = [
+            {
+                "schema_version": 2,
+                "sequence": 1,
+                "at": "2026-07-30T00:00:00Z",
+                "event": "task_started",
+                "task_id": "IOS-OLD-001",
+            },
+            {
+                "schema_version": 2,
+                "sequence": 2,
+                "at": "2026-07-30T00:01:00Z",
+                "event": "task_superseded",
+                "task_id": "IOS-OLD-001",
+                "details": {
+                    "reason": "验证粒度已调整",
+                    "replacement": "按完整 UI 能力切片验收",
+                },
+            },
+        ]
+
+        projected = loop.project_current(events)
+
+        self.assertEqual("idle", projected["status"])
+        self.assertEqual("IOS-OLD-001", projected["last_completed"]["task_id"])
+        self.assertEqual(
+            "superseded",
+            projected["last_completed"]["outcome"],
+        )
+
+    def test_completed_task_ids_include_superseded_tasks(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            events_path = root / "ios/project/loop/events.jsonl"
+            events_path.parent.mkdir(parents=True)
+            events_path.write_bytes(
+                loop.canonical(
+                    {
+                        "schema_version": 2,
+                        "sequence": 1,
+                        "at": "2026-07-30T00:00:00Z",
+                        "event": "task_superseded",
+                        "task_id": "IOS-OLD-001",
+                        "details": {
+                            "reason": "验证粒度已调整",
+                            "replacement": "按完整 UI 能力切片验收",
+                        },
+                    }
+                )
+            )
+
+            self.assertEqual(
+                {"IOS-OLD-001"},
+                loop.completed_task_ids(root),
+            )
+
     def fixture(self, root: Path) -> None:
         self.write(
             root,

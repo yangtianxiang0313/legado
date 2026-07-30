@@ -53,7 +53,9 @@ python3 -B ios/loop/loop.py advance \
   --next-step "下一步"
 ```
 
-`doctor/next/start/verify/complete/reconcile` 保留为诊断原语。`advance` 会先从
+`doctor/next/start/verify/complete/supersede/reconcile` 保留为诊断原语。
+当需求策略变化使当前任务失去价值时，`supersede` 记录原因和替代路径后直接
+回到 idle；它不要求为旧任务伪造验证产物，也不会让该任务再次入队。`advance` 会先从
 `events.jsonl` 重建并对齐 `current.json`，可以续接控制文件写入中断；它不会在
 仓库内再次启动另一个 AI 进程，AI Executor 由当前 Codex 任务承担。
 
