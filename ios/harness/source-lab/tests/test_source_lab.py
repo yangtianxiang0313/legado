@@ -408,6 +408,41 @@ class SourceLabTests(unittest.TestCase):
         self.assertEqual("none", case["transport"]["mode"])
         self.assertFalse(case["determinism"]["network_allowed"])
 
+    def test_local_book_relocation_covers_identity_and_cache_boundaries(self):
+        scenario = "rl-library-local-book-relocation-runtime-001"
+        directory, case, inputs = source_lab.load_scenario(
+            REPO_ROOT,
+            scenario,
+        )
+        self.assertEqual(
+            [],
+            source_lab.validate_scenario(REPO_ROOT, directory, case),
+        )
+        self.assertEqual("android_runtime_scenario", case["kind"])
+        self.assertEqual(5, len(inputs["cases"]))
+        self.assertEqual(
+            {"local_book_uri_resolution"},
+            {value["operation"] for value in inputs["cases"]},
+        )
+        self.assertEqual(
+            {"nominal", "boundary", "denied"},
+            {
+                value["role"]
+                for coverage in case["coverage"]
+                for value in coverage["cases"]
+            },
+        )
+        self.assertTrue(
+            any(
+                value["arguments"][
+                    "create_default_match_after_first_resolution"
+                ]
+                for value in inputs["cases"]
+            )
+        )
+        self.assertEqual("none", case["transport"]["mode"])
+        self.assertFalse(case["determinism"]["network_allowed"])
+
     def test_reader_layout_page_projection_covers_reflow_and_boundaries(self):
         scenario = "rl-reader-layout-page-projection-001"
         directory, case, inputs = source_lab.load_scenario(

@@ -208,7 +208,11 @@ def extract_constructor(text: str, symbol: str) -> Tuple[Dict[str, Any], int, in
 
 
 def extract_function(text: str, symbol: str) -> Tuple[Dict[str, Any], int, int]:
-    match = re.search(rf"\b(?:suspend\s+)?fun\s+{re.escape(symbol)}\s*\(", text)
+    match = re.search(
+        rf"\b(?:suspend\s+)?fun\s+(?:[A-Za-z_][A-Za-z0-9_.<>?]*\.)?"
+        rf"{re.escape(symbol)}\s*\(",
+        text,
+    )
     if match is None:
         raise IntakeError(f"找不到 Kotlin function：{symbol}")
     opening = text.find("(", match.start())

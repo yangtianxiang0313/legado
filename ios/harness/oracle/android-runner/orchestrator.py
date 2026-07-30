@@ -568,6 +568,45 @@ SCENARIO_CONTRACTS = {
             "min-value-selection-and-membership",
         }),
     },
+    "rl-library-local-book-relocation-runtime-001": {
+        "status": "candidate",
+        "fixture_kind": "android_runtime_scenario",
+        "result_type": "library_runtime",
+        "stage_names": (
+            "fixture_setup",
+            "filesystem_resolution",
+            "book_identity_write",
+            "chapter_reload",
+            "uri_cache_observation",
+            "result_mapping",
+        ),
+        "expected_cases": (
+            ("valid-original-path", "local_book_uri_resolution"),
+            (
+                "default-directory-relocation",
+                "local_book_uri_resolution",
+            ),
+            (
+                "import-directory-fallback",
+                "local_book_uri_resolution",
+            ),
+            (
+                "missing-file-keeps-identity",
+                "local_book_uri_resolution",
+            ),
+            (
+                "failed-resolution-cache-is-sticky",
+                "local_book_uri_resolution",
+            ),
+        ),
+        "nominal_cases": frozenset({
+            "valid-original-path",
+            "default-directory-relocation",
+            "import-directory-fallback",
+            "missing-file-keeps-identity",
+            "failed-resolution-cache-is-sticky",
+        }),
+    },
     "rl-reader-chapter-source-override-runtime-001": {
         "status": "candidate",
         "fixture_kind": "android_runtime_scenario",

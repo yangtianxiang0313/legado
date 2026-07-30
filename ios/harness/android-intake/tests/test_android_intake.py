@@ -246,5 +246,21 @@ class AndroidIntakeTests(unittest.TestCase):
             },
         )
 
+    def test_local_book_relocation_has_extension_and_reload_anchors(self):
+        inventory = android_intake.inventory_value(REPO_ROOT)
+        facts = {entry["id"]: entry for entry in inventory["facts"]}
+        self.assertEqual(
+            "getLocalUri",
+            facts["AF-BOOK-GET-LOCAL-URI"]["payload"]["symbol"],
+        )
+        self.assertIn(
+            "fun Book.getLocalUri",
+            facts["AF-BOOK-GET-LOCAL-URI"]["payload"]["signature"],
+        )
+        self.assertEqual(
+            "loadChapterList",
+            facts["AF-READ-BOOK-LOAD-CHAPTER-LIST"]["payload"]["symbol"],
+        )
+
 if __name__ == "__main__":
     unittest.main()

@@ -1513,6 +1513,14 @@ class AndroidOracleRunnerTests(unittest.TestCase):
             "rl-library-shelf-group-bit-boundary-risk-001",
             book_group_runtime["scenario_id"],
         )
+        local_book_relocation = runner.doctor(
+            ROOT,
+            "rl-library-local-book-relocation-runtime-001",
+        )
+        self.assertEqual(
+            "rl-library-local-book-relocation-runtime-001",
+            local_book_relocation["scenario_id"],
+        )
         chapter_source_override = runner.doctor(
             ROOT,
             "rl-reader-chapter-source-override-runtime-001",

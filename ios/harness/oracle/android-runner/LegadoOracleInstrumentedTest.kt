@@ -36,12 +36,15 @@ import io.legado.app.data.entities.BookSource
 import io.legado.app.data.entities.Bookmark
 import io.legado.app.data.entities.ReadRecord
 import io.legado.app.data.entities.SearchBook
+import io.legado.app.data.entities.TxtTocRule
 import io.legado.app.data.entities.rule.ContentRule
 import io.legado.app.data.appDb
 import io.legado.app.exception.ConcurrentException
 import io.legado.app.help.CacheManager
 import io.legado.app.help.TTS
 import io.legado.app.help.book.BookHelp
+import io.legado.app.help.book.getLocalUri
+import io.legado.app.help.book.removeLocalUriCache
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.config.LocalConfig
 import io.legado.app.help.config.ReadBookConfig
@@ -186,6 +189,8 @@ class LegadoOracleInstrumentedTest {
                 runSystemTextToSpeechIntegrationCases()
             "rl-library-shelf-group-bit-boundary-risk-001" ->
                 runBookGroupBoundaryCases()
+            "rl-library-local-book-relocation-runtime-001" ->
+                runLocalBookRelocationCases()
             "rl-reader-chapter-source-override-runtime-001" ->
                 runChapterSourceOverrideCases()
             "rl-reader-bookmark-search-runtime-risk-001" ->
@@ -1093,6 +1098,321 @@ class LegadoOracleInstrumentedTest {
             ) {
                 bookGroupBoundaryProjection(operation, arguments)
             }
+        }
+    }
+
+    private suspend fun runLocalBookRelocationCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            val operation = value.getString("operation")
+            require(operation == "local_book_uri_resolution") {
+                "Unsupported local-book relocation operation: $operation"
+            }
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", operation)
+                .put("arguments", JSONObject(arguments.toString()))
+            runCase(
+                value.getString("id"),
+                operation,
+                stimulus
+            ) {
+                localBookRelocationProjection(
+                    value.getString("id"),
+                    arguments
+                )
+            }
+        }
+    }
+
+    private suspend fun localBookRelocationProjection(
+        caseId: String,
+        arguments: JSONObject
+    ): JSONObject {
+        val target =
+            InstrumentationRegistry.getInstrumentation().targetContext
+        val root = File(
+            target.filesDir,
+            "oracle-local-book-relocation/$caseId"
+        )
+        root.deleteRecursively()
+        require(root.mkdirs()) {
+            "Unable to create local-book relocation fixture root"
+        }
+        val originalDir = File(root, "original").apply {
+            require(mkdirs())
+        }
+        val defaultDir = File(root, "default").apply {
+            require(mkdirs())
+        }
+        val importDir = File(root, "import").apply {
+            require(mkdirs())
+        }
+        val originName = "oracle-book.txt"
+        val originalFile = File(originalDir, originName)
+        val defaultFile = File(defaultDir, originName)
+        val importFile = File(importDir, originName)
+        val content = "第一章 起点\n这是迁移后的本地正文。\n第二章 继续\n结束。"
+        if (arguments.getBoolean("original_exists")) {
+            originalFile.writeText(content)
+        }
+        configureRelocationDirectory(
+            defaultDir,
+            defaultFile,
+            arguments.getString("default_directory"),
+            content
+        )
+        configureRelocationDirectory(
+            importDir,
+            importFile,
+            arguments.getString("import_directory"),
+            content
+        )
+
+        val oldBookUrl = originalFile.absolutePath
+        val book = Book(
+            bookUrl = oldBookUrl,
+            tocUrl = "",
+            origin = BookType.localTag,
+            originName = originName,
+            name = "Oracle Relocation $caseId",
+            author = "Oracle",
+            type = BookType.local
+        )
+        val previousDefaultDirectory = AppConfig.defaultBookTreeUri
+        val previousImportDirectory = AppConfig.importBookPath
+        val previousTxtTocRules =
+            appDb.txtTocRuleDao.all.map { it.copy() }
+        clearLocalBookRelocationState()
+        book.removeLocalUriCache()
+        appDb.bookDao.insert(book)
+        appDb.bookChapterDao.insert(
+            BookChapter(
+                url = "$oldBookUrl#old",
+                title = "旧目录",
+                bookUrl = oldBookUrl,
+                index = 0
+            )
+        )
+        AppConfig.defaultBookTreeUri =
+            relocationDirectoryValue(
+                defaultDir,
+                arguments.getString("default_directory")
+            )
+        AppConfig.importBookPath =
+            relocationDirectoryValue(
+                importDir,
+                arguments.getString("import_directory")
+            )
+
+        return try {
+            val firstUri = book.getLocalUri()
+            val relocatedBookUrl = book.bookUrl
+            val firstLocation = relocationLocation(
+                firstUri.path,
+                originalFile,
+                defaultFile,
+                importFile
+            )
+            val databaseAfterResolution = JSONObject()
+                .put(
+                    "old_book_exists",
+                    appDb.bookDao.has(oldBookUrl) == true
+                )
+                .put(
+                    "current_book_exists",
+                    appDb.bookDao.has(relocatedBookUrl) == true
+                )
+                .put(
+                    "old_chapter_count",
+                    appDb.bookChapterDao
+                        .getChapterCount(oldBookUrl)
+                )
+                .put(
+                    "current_chapter_count",
+                    appDb.bookChapterDao
+                        .getChapterCount(relocatedBookUrl)
+                )
+
+            var chapterReload = JSONObject.NULL
+            if (arguments.getBoolean("load_chapter_list")) {
+                replaceTxtTocRulesForRelocation()
+                ReadBook.resetData(book)
+                val viewModel = ReadBookViewModel(
+                    target.applicationContext as Application
+                )
+                viewModel.loadChapterList(book)
+                withTimeout(5_000) {
+                    while (
+                        appDb.bookChapterDao
+                            .getChapterCount(book.bookUrl) == 0
+                    ) {
+                        delay(20)
+                    }
+                }
+                chapterReload = JSONObject()
+                    .put(
+                        "book_exists",
+                        appDb.bookDao.has(book.bookUrl) == true
+                    )
+                    .put(
+                        "chapter_count",
+                        appDb.bookChapterDao
+                            .getChapterCount(book.bookUrl)
+                    )
+                    .put(
+                        "old_chapter_count",
+                        appDb.bookChapterDao
+                            .getChapterCount(oldBookUrl)
+                    )
+                    .put(
+                        "read_book_identity_is_current",
+                        ReadBook.book?.bookUrl == book.bookUrl
+                    )
+            }
+
+            var secondLocation: Any = JSONObject.NULL
+            var secondBookUrlState: Any = JSONObject.NULL
+            if (
+                arguments.getBoolean(
+                    "create_default_match_after_first_resolution"
+                )
+            ) {
+                defaultFile.writeText(content)
+                val secondUri = book.getLocalUri()
+                secondLocation = relocationLocation(
+                    secondUri.path,
+                    originalFile,
+                    defaultFile,
+                    importFile
+                )
+                secondBookUrlState =
+                    if (book.bookUrl == oldBookUrl) {
+                        "unchanged"
+                    } else {
+                        "relocated"
+                    }
+            }
+
+            JSONObject()
+                .put("first_location", firstLocation)
+                .put(
+                    "book_url_state",
+                    when (book.bookUrl) {
+                        oldBookUrl -> "unchanged"
+                        defaultFile.absolutePath ->
+                            "relocated_to_default"
+                        importFile.absolutePath ->
+                            "relocated_to_import"
+                        else -> "other"
+                    }
+                )
+                .put(
+                    "returned_uri_readable",
+                    firstUri.path?.let { File(it).isFile } == true
+                )
+                .put(
+                    "database_after_resolution",
+                    databaseAfterResolution
+                )
+                .put("chapter_reload", chapterReload)
+                .put("second_location", secondLocation)
+                .put(
+                    "second_book_url_state",
+                    secondBookUrlState
+                )
+        } finally {
+            AppConfig.defaultBookTreeUri = previousDefaultDirectory
+            AppConfig.importBookPath = previousImportDirectory
+            Book(bookUrl = oldBookUrl).removeLocalUriCache()
+            Book(bookUrl = defaultFile.absolutePath)
+                .removeLocalUriCache()
+            Book(bookUrl = importFile.absolutePath)
+                .removeLocalUriCache()
+            restoreTxtTocRules(previousTxtTocRules)
+            ReadBook.book = null
+            clearLocalBookRelocationState()
+            root.deleteRecursively()
+        }
+    }
+
+    private fun configureRelocationDirectory(
+        directory: File,
+        matchingFile: File,
+        state: String,
+        content: String
+    ) {
+        when (state) {
+            "absent" -> Unit
+            "matching" -> matchingFile.writeText(content)
+            "nonmatching" ->
+                File(directory, "another-book.txt")
+                    .writeText(content)
+            else -> error(
+                "Unsupported relocation directory state: $state"
+            )
+        }
+    }
+
+    private fun relocationDirectoryValue(
+        directory: File,
+        state: String
+    ): String? = if (state == "absent") {
+        null
+    } else {
+        directory.absolutePath
+    }
+
+    private fun relocationLocation(
+        path: String?,
+        originalFile: File,
+        defaultFile: File,
+        importFile: File
+    ): String = when (path) {
+        originalFile.absolutePath -> "original"
+        defaultFile.absolutePath -> "default"
+        importFile.absolutePath -> "import"
+        else -> "other"
+    }
+
+    private fun clearLocalBookRelocationState() {
+        appDb.bookDao.all
+            .filter {
+                it.name.startsWith("Oracle Relocation ")
+            }
+            .forEach {
+                appDb.bookDao.delete(it)
+            }
+    }
+
+    private fun replaceTxtTocRulesForRelocation() {
+        val dao = appDb.txtTocRuleDao
+        val existing = dao.all
+        if (existing.isNotEmpty()) {
+            dao.delete(*existing.toTypedArray())
+        }
+        dao.insert(
+            TxtTocRule(
+                id = 9_223_372_036_854_775_000L,
+                name = "Oracle relocation headings",
+                rule = "^第[一二]章.{0,30}$",
+                serialNumber = 0,
+                enable = true
+            )
+        )
+    }
+
+    private fun restoreTxtTocRules(
+        previous: List<TxtTocRule>
+    ) {
+        val dao = appDb.txtTocRuleDao
+        val current = dao.all
+        if (current.isNotEmpty()) {
+            dao.delete(*current.toTypedArray())
+        }
+        if (previous.isNotEmpty()) {
+            dao.insert(*previous.toTypedArray())
         }
     }
 

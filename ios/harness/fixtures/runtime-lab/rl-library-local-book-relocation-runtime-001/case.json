@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "kind": "android_runtime_scenario",
+  "id": "rl-library-local-book-relocation-runtime-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "android_runtime",
+  "capabilities": [
+    "android.filesystem",
+    "android.room",
+    "library.local-book"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": null,
+  "input": "input.json",
+  "transport": {
+    "mode": "none",
+    "external_network": "deny",
+    "responses": []
+  },
+  "coverage": [
+    {
+      "behavior": "library.local-book.relocation-runtime",
+      "cases": [
+        {
+          "id": "valid-original-path",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-BOOK-GET-LOCAL-URI"
+          ],
+          "branch_refs": [
+            "Book.getLocalUri returns a readable original URI before consulting configured directories"
+          ]
+        },
+        {
+          "id": "default-directory-relocation",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-BOOK-GET-LOCAL-URI",
+            "AF-READ-BOOK-LOAD-CHAPTER-LIST"
+          ],
+          "branch_refs": [
+            "Book.getLocalUri finds originName below defaultBookTreeUri, mutates bookUrl, and saves",
+            "ReadBookViewModel.loadChapterList replaces chapters under the relocated book identity"
+          ]
+        },
+        {
+          "id": "import-directory-fallback",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-BOOK-GET-LOCAL-URI"
+          ],
+          "branch_refs": [
+            "Book.getLocalUri searches importBookPath only after the default directory misses and the two paths differ"
+          ]
+        },
+        {
+          "id": "missing-file-keeps-identity",
+          "role": "denied",
+          "android_fact_refs": [
+            "AF-BOOK-GET-LOCAL-URI"
+          ],
+          "branch_refs": [
+            "Book.getLocalUri returns the unreadable original URI and keeps bookUrl when no configured directory contains originName"
+          ]
+        },
+        {
+          "id": "failed-resolution-cache-is-sticky",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-BOOK-GET-LOCAL-URI"
+          ],
+          "branch_refs": [
+            "Book.getLocalUri caches the unresolved URI, so the same bookUrl does not search again after a matching file later appears"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "state_projection",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 0,
+    "network_allowed": false,
+    "logical_origin": null,
+    "database_reset_per_case": true
+  },
+  "limits": {
+    "timeout_ms": 5000
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/help/book/BookExtensions.kt#getLocalUri",
+      "app/src/main/java/io/legado/app/ui/book/read/ReadBookViewModel.kt#loadChapterList",
+      "app/src/main/java/io/legado/app/ui/book/read/BaseReadBookActivity.kt#selectBookFolderResult"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-LIBRARY-LOCAL-BOOK-RELOCATION-RUNTIME-001"
+  }
+}

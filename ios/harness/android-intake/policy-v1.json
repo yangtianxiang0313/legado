@@ -818,6 +818,30 @@
       "symbol": "upTvBookshelf",
       "symbol_id": "kotlin://io.legado.app.ui.book.info.BookInfoActivity/upTvBookshelf",
       "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-BOOK-GET-LOCAL-URI",
+      "fact_key": "library.local-book.resolve-uri",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/help/book/BookExtensions.kt",
+      "symbol": "getLocalUri",
+      "symbol_id": "kotlin://io.legado.app.help.book/BookExtensions/getLocalUri",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-READ-BOOK-LOAD-CHAPTER-LIST",
+      "fact_key": "reader.local-book.load-chapter-list",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookViewModel.kt",
+      "symbol": "loadChapterList",
+      "symbol_id": "kotlin://io.legado.app.ui.book.read/ReadBookViewModel/loadChapterList",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
     }
   ]
 }

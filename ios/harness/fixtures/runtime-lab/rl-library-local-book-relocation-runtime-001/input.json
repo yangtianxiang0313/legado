@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "valid-original-path",
+      "operation": "local_book_uri_resolution",
+      "arguments": {
+        "original_exists": true,
+        "default_directory": "absent",
+        "import_directory": "absent",
+        "load_chapter_list": false,
+        "create_default_match_after_first_resolution": false
+      }
+    },
+    {
+      "id": "default-directory-relocation",
+      "operation": "local_book_uri_resolution",
+      "arguments": {
+        "original_exists": false,
+        "default_directory": "matching",
+        "import_directory": "absent",
+        "load_chapter_list": true,
+        "create_default_match_after_first_resolution": false
+      }
+    },
+    {
+      "id": "import-directory-fallback",
+      "operation": "local_book_uri_resolution",
+      "arguments": {
+        "original_exists": false,
+        "default_directory": "nonmatching",
+        "import_directory": "matching",
+        "load_chapter_list": false,
+        "create_default_match_after_first_resolution": false
+      }
+    },
+    {
+      "id": "missing-file-keeps-identity",
+      "operation": "local_book_uri_resolution",
+      "arguments": {
+        "original_exists": false,
+        "default_directory": "nonmatching",
+        "import_directory": "nonmatching",
+        "load_chapter_list": false,
+        "create_default_match_after_first_resolution": false
+      }
+    },
+    {
+      "id": "failed-resolution-cache-is-sticky",
+      "operation": "local_book_uri_resolution",
+      "arguments": {
+        "original_exists": false,
+        "default_directory": "nonmatching",
+        "import_directory": "absent",
+        "load_chapter_list": false,
+        "create_default_match_after_first_resolution": true
+      }
+    }
+  ]
+}

@@ -153,6 +153,15 @@
       "status": "candidate"
     },
     {
+      "id": "IOS-ANDROID-LIBRARY-LOCAL-BOOK-RELOCATION-ATTESTATION-001",
+      "scenario_id": "rl-library-local-book-relocation-runtime-001",
+      "fixture_ids": [
+        "rl-library-local-book-relocation-runtime-001"
+      ],
+      "authority": "android_oracle_candidate_only",
+      "status": "candidate"
+    },
+    {
       "id": "IOS-ANDROID-READER-CHAPTER-SOURCE-OVERRIDE-ATTESTATION-001",
       "scenario_id": "rl-reader-chapter-source-override-runtime-001",
       "fixture_ids": [

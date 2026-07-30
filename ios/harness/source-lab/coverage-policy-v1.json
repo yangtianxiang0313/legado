@@ -44,6 +44,7 @@
     {"id": "reader.cache-prefetch-policy", "status": "planned", "required_roles": ["nominal", "boundary", "denied"], "min_cases_per_role": 1, "phase": 2},
     {"id": "reader.progress-toc-remap", "status": "planned", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 2},
     {"id": "app.startup-first-use-and-restore", "status": "planned", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 2},
+    {"id": "library.local-book.relocation-runtime", "status": "planned", "required_roles": ["nominal", "boundary", "denied"], "min_cases_per_role": 1, "phase": 2},
     {"id": "library.shelf-group-bit-boundary-risk", "status": "planned", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 2},
     {"id": "reader.chapter-source-override-runtime", "status": "planned", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 2},
     {"id": "ui.book.detail-conditional-actions", "status": "planned", "required_roles": ["nominal", "boundary", "denied"], "min_cases_per_role": 1, "phase": 2}
