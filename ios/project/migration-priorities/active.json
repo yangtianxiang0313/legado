@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P20-SOURCE-WEB-LOGIN-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "title": "P20 书源 Web 登录进入 Cookie 主链",
+  "objective": "依据冻结 Android WebViewLoginFragment 与 CookieStore 源码，在独立 SourceRuntime 中定义普通 Web 登录会话，并由 iOS WKWebView 登录页把浏览器 Cookie 回写到搜索、发现、详情、目录和正文共用的 SourceCookieStore。",
+  "validation_policy": "每个交付项只执行聚焦测试或一次构建；本地网站与单台 iPhone 模拟器仅在里程碑收尾时执行一次。",
+  "deferred_policy": "loginUi 自定义表单及其 JavaScript login() 调用属于独立能力，不与普通 Web 登录混写。",
+  "stages": [
+    {
+      "id": "P20-S1",
+      "title": "冻结 Web 登录会话合同",
+      "selectors": [
+        {
+          "id": "P20-S1-WEB-LOGIN-SESSION",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-SOURCE-RUNTIME-WEB-LOGIN-SESSION-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P20-S2",
+      "title": "接入 iOS 可交互登录页",
+      "selectors": [
+        {
+          "id": "P20-S2-WEBKIT-LOGIN",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-APP-NAVIGATION-SOURCE-WEB-LOGIN-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-SOURCE-RUNTIME-WEB-LOGIN-SESSION-001",
+      "title": "定义普通 Web 登录会话与 Cookie 桥接合同",
+      "fixture_id": "source-web-login-session-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [],
+      "validation": "tests",
+      "test_filter": "SourceWebLoginSessionTests",
+      "additional_allowed_paths": [],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/ui/login/WebViewLoginFragment.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.login.WebViewLoginFragment/initWebView"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/help/http/CookieStore.kt",
+          "symbol_id": "kotlin://io.legado.app.help.http.CookieStore/setCookie"
+        }
+      ]
+    },
+    {
+      "target": "IOS-APP-NAVIGATION-SOURCE-WEB-LOGIN-001",
+      "title": "接入 WKWebView 书源登录页并回写共享 Cookie",
+      "fixture_id": "source-web-login-app-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [
+        "IOS-SOURCE-RUNTIME-WEB-LOGIN-SESSION-001"
+      ],
+      "validation": "build",
+      "additional_allowed_paths": [],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/ui/login/SourceLoginActivity.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.login.SourceLoginActivity/initView"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/ui/login/WebViewLoginFragment.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.login.WebViewLoginFragment"
+        }
+      ]
+    }
+  ]
+}
