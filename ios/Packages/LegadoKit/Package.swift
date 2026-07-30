@@ -33,12 +33,24 @@ let package = Package(
             url: "https://github.com/groue/GRDB.swift.git",
             exact: "7.11.1"
         ),
+        .package(
+            url: "https://github.com/scinfu/SwiftSoup.git",
+            exact: "2.13.6"
+        ),
     ],
     targets: [
         .target(name: "LegadoCore"),
         .target(name: "LibraryDomain", dependencies: ["LegadoCore"]),
         .target(name: "SourceFormat", dependencies: ["LegadoCore"]),
         .target(name: "RuleRuntime", dependencies: ["LegadoCore"]),
+        .target(
+            name: "HTMLSwiftSoup",
+            dependencies: [
+                "LegadoCore",
+                "RuleRuntime",
+                .product(name: "SwiftSoup", package: "SwiftSoup"),
+            ]
+        ),
         .target(
             name: "SourceRuntime",
             dependencies: ["LegadoCore", "LibraryDomain", "SourceFormat", "RuleRuntime"]
@@ -100,6 +112,10 @@ let package = Package(
         .testTarget(
             name: "SourceRuntimeTests",
             dependencies: ["LegadoCore", "SourceRuntime", "TestSupport"]
+        ),
+        .testTarget(
+            name: "HTMLSwiftSoupTests",
+            dependencies: ["HTMLSwiftSoup", "RuleRuntime"]
         ),
         .testTarget(
             name: "ScriptJavaScriptCoreTests",

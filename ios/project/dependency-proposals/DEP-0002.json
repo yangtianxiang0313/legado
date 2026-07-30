@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "id": "DEP-0002",
+  "identity": "swiftsoup",
+  "from_version": null,
+  "to_exact_version": "2.13.6",
+  "products": [
+    "SwiftSoup"
+  ],
+  "allowed_targets": [
+    "HTMLSwiftSoup"
+  ],
+  "expected_revision": "ead56133a693d0184d8c2db1a6d6394410cacfd6",
+  "adr": "ADR-0001",
+  "reason": "Android 书源以 jsoup 的容错 HTML DOM 与 CSS selector 语义为业务事实；现有轻量解析器不足以可靠覆盖损坏 HTML、组合选择器和元素投影。SwiftSoup 提供接近 jsoup 的 Swift 实现，并被隔离在可替换适配层内。",
+  "alternatives": [
+    "继续扩展项目内轻量解析器：短期无依赖，但会重复实现 HTML5 容错树构建与完整 CSS selector，迁移风险和维护成本更高。",
+    "使用 WKWebView DOM：浏览器兼容性好，但引入主线程、进程和异步生命周期，不适合作为确定性的独立书源解析 package。",
+    "使用 Kanna：适合 XML/XPath，但不作为默认 CSS 后端；Kanna 保持批准但未启用。"
+  ],
+  "transitive_dependencies": [],
+  "license": "MIT",
+  "privacy_manifest": "SwiftSoup 2.13.6 为纯 Swift 源码解析库，不收集数据、不访问网络，也未声明 required-reason API；当前仅处理调用方提供的 HTML 字符串。",
+  "security_review": "官方 HTTPS Git 仓库与精确 tag/revision；SwiftPM 源码 Target，无 binary target、plugin、macro 或 traits；SwiftSoup 只允许 HTMLSwiftSoup import。",
+  "size_delta_bytes": 0,
+  "exit_plan": "SwiftSoup 的 Document、Element、Elements 与错误类型全部终止于 HTMLSwiftSoup；RuleRuntime 仅暴露 HTMLSelectorBackend 和值类型投影，替换时只需重写 adapter。",
+  "owner": "iOS Source Runtime",
+  "required_checks": [
+    "dependency-boundary",
+    "html-swiftsoup-focused-tests"
+  ],
+  "status": "applied"
+}

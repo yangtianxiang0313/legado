@@ -1,11 +1,27 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P39-SWIFTSOUP-DEPENDENCY-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P39 启用 SwiftSoup HTML 适配层",
   "objective": "按照已批准的依赖白名单，一次只启用 SwiftSoup 2.13.6：精确锁定 SwiftPM revision，新增只允许 import SwiftSoup 的 HTMLSwiftSoup target，以库中立投影证明复杂 CSS 和容错 HTML 可解析；本里程碑不顺带改写 SourceRuntime 产品管线，也不引入 Kanna。",
   "validation_policy": "只运行 HTMLSwiftSoup 聚焦测试与轻量依赖边界检查；当前 adapter 尚未接入 App，App 构建不能证明该风险，因此不运行 App 构建、全量 Harness、全量 Swift 测试或模拟器。",
+  "completion_evidence": [
+    "SwiftSoup 2.13.6 精确锁定到 revision ead56133a693d0184d8c2db1a6d6394410cacfd6",
+    "RuleRuntime 仅公开 HTMLSelectorBackend 与 HTMLSelectionProjection，不暴露 SwiftSoup 类型",
+    "HTMLSwiftSoup 是唯一允许 import SwiftSoup 的 adapter target",
+    "复杂 CSS selector 与浏览器式损坏 HTML 修复测试通过",
+    "无效 selector 被映射为稳定的 adapter 错误",
+    "依赖边界检查通过；未运行无证明力的 App 构建或模拟器"
+  ],
+  "final_verification": {
+    "kind": "focused_adapter_tests_and_dependency_boundary",
+    "completed_at": "2026-07-31T06:40:23+08:00",
+    "result": "HTMLSwiftSoupTests 2 项通过，dependency contract 通过；未运行 App 构建、全量 Harness 或模拟器。",
+    "evidence": [
+      ".harness-runtime/loop/IOS-DEPENDENCY-SWIFTSOUP-HTML-001/attempt-1"
+    ]
+  },
   "stages": [
     {
       "id": "P39-S1",

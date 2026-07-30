@@ -1,0 +1,39 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "name": "Legado-iOS-SwiftSoup-2.13.6",
+  "documentNamespace": "https://legado.example.invalid/spdx/swiftsoup-2.13.6-ead56133a693d0184d8c2db1a6d6394410cacfd6",
+  "creationInfo": {
+    "created": "2026-07-31T00:00:00Z",
+    "creators": [
+      "Tool: Legado Loop v2"
+    ]
+  },
+  "packages": [
+    {
+      "name": "SwiftSoup",
+      "SPDXID": "SPDXRef-Package-SwiftSoup",
+      "versionInfo": "2.13.6",
+      "downloadLocation": "git+https://github.com/scinfu/SwiftSoup.git@ead56133a693d0184d8c2db1a6d6394410cacfd6",
+      "filesAnalyzed": false,
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "copyrightText": "Copyright (c) 2009-2025 Jonathan Hedley; Copyright (c) 2016-2025 Nabil Chatbi (Swift port)",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:swift/swiftsoup@2.13.6?vcs_url=git%2Bhttps%3A%2F%2Fgithub.com%2Fscinfu%2FSwiftSoup.git%40ead56133a693d0184d8c2db1a6d6394410cacfd6"
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-SwiftSoup"
+    }
+  ]
+}
