@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P43-PRODUCTION-REQUEST-DEFAULTS-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "title": "P43 对齐生产书源默认请求头",
+  "objective": "依据冻结 Android HttpHelper，把缺失 User-Agent 时补默认浏览器 UA、显式 User-Agent:null 时删除 UA，以及 Keep-Alive、Connection、Cache-Control 默认头接入 NetworkFoundation；避免真实书源因当前 CFNetwork 默认请求指纹而拒绝访问。",
+  "validation_policy": "仅运行 NetworkFoundationTests 聚焦测试组，再执行一次 LegadoApp 编译；不新增 Golden、不跑全量 Harness 或模拟器。",
+  "stages": [
+    {
+      "id": "P43-S1",
+      "title": "生产请求默认头",
+      "selectors": [
+        {
+          "id": "P43-S1-REQUEST-DEFAULTS",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-SOURCE-RUNTIME-PRODUCTION-REQUEST-DEFAULTS-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-SOURCE-RUNTIME-PRODUCTION-REQUEST-DEFAULTS-001",
+      "title": "对齐 Android HttpHelper 默认请求头",
+      "fixture_id": "source-production-request-defaults-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [
+        "IOS-SOURCE-RUNTIME-PRODUCTION-NETWORK-001"
+      ],
+      "validation": "tests",
+      "package_path": "ios/Packages/LegadoSourceKit",
+      "test_filter": "NetworkFoundationTests",
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoSourceKit/**",
+        "ios/Packages/LegadoKit/**",
+        "ios/Apps/Legado/**",
+        "ios/docs/architecture.md",
+        "ios/project/migration-priorities/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "9c104f66bfd9fa638afaf01e1f687ecf9a0a0749",
+          "path": "app/src/main/java/io/legado/app/help/http/HttpHelper.kt",
+          "symbol_id": "kotlin://io.legado.app.help.http/okHttpClient"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "2773f69c7ed150cde068533d4b2a39cacd0ffb33",
+          "path": "app/src/main/java/io/legado/app/help/config/AppConfig.kt",
+          "symbol_id": "kotlin://io.legado.app.help.config.AppConfig/getPrefUserAgent"
+        }
+      ]
+    }
+  ]
+}
