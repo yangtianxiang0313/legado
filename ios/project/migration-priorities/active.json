@@ -67,6 +67,11 @@
         "IOS-SOURCE-RUNTIME-WEB-LOGIN-SESSION-001"
       ],
       "validation": "build",
+      "ui_contract": {
+        "goal": "用 iOS 原生导航承载可交互书源 Web 登录页，并把浏览器 Cookie 回写给独立 SourceRuntime 会话。",
+        "scenario_id": "source-web-login-app-v1",
+        "test_method": "testSourceWebLoginMilestone"
+      },
       "additional_allowed_paths": [],
       "source_anchors": [
         {
