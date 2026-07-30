@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgeCoverageLedger",
+  "id": "BKL-UI-BOOK-DETAIL-CONDITIONAL-ACTIONS-001",
+  "revision": 1,
+  "status": "current",
+  "packet_refs": [
+    {
+      "id": "BKP-UI-BOOK-DETAIL-CONDITIONAL-ACTIONS-001",
+      "revision": 1,
+      "sha256": "993965b8b8d37627d66d91fb6a73d9fdb7b1419aad6574e37e161ab0385c7736"
+    }
+  ],
+  "generated_from": {
+    "knowledge_authority_sha256": "453d166716bc83b332591e50018adb0076141ffde2a19626e207664d2550d9db",
+    "requirement_catalog_sha256": "6075c2bc7aa71b6cbe1753f32ffc24f5fed374a1de8b5a19aff8db24fa205b8b",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "entries": [
+    {
+      "id": "BKE-UI-BOOK-DETAIL-CONDITIONAL-ACTIONS-001",
+      "claim_ref": {
+        "id": "BKC-UI-DETAIL-CONDITIONAL-ACTIONS-001",
+        "revision": 4
+      },
+      "validation": {
+        "required": "android_runtime",
+        "state": "verified",
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-ui-book-detail-conditional-actions-001-30514209889-1.json",
+          "ios/harness/goldens/android-legado-v1/rl-ui-book-detail-conditional-actions-001.json#/artifact/result/value/portable_known_projection"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "covered_by_requirement",
+        "refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "reason": "Android 真源已固定详情页的入架、书源、登录、本地格式及 checked 状态矩阵；iOS 应在 AppNavigation/AppUseCases 中以纯可用性模型实现，并由原生 SwiftUI 菜单投影，而不是复刻 Android Activity 或 MenuItem。",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "planned",
+        "requirement_refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "work_item_refs": [
+          "IOS-APP-NAVIGATION-BOOK-DETAIL-CONDITIONAL-ACTIONS-001"
+        ],
+        "capability_refs": [
+          "CAP-CONFORMANCE",
+          "CAP-CORE"
+        ],
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-ui-book-detail-conditional-actions-001-30514209889-1.json"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    }
+  ],
+  "updated_by": "IOS-CHARACTERIZE-UI-BOOK-DETAIL-CONDITIONAL-ACTIONS-001",
+  "updated_at": "2026-07-30T04:47:17Z"
+}

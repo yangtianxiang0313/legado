@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-UI-BOOK-DETAIL-CONDITIONAL-ACTIONS-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "ui.book.detail-conditional-actions-golden",
+  "title": "受保护 Android Golden 验证的图书详情动作可用性矩阵",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "b28f98aad7db9d86e80afd6d266d76462b56941414668783193f9be6e7155cca"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "ui.book-detail",
+      "ui.navigation"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-CORE"
+    ],
+    "subject_keys": [
+      "ui.action",
+      "ui.state"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-UI-DETAIL-CONDITIONAL-ACTIONS-001",
+      "revision": 4,
+      "semantic_key": "ui.book.detail-conditional-actions",
+      "kind": "runtime_behavior",
+      "topic": "详情动作可见性与选中状态",
+      "statement": "在 rl-ui-book-detail-conditional-actions-001 的 6 个固定 Android Activity 场景中，BookInfoActivity 具有彼此独立的动作可用性维度：inBookshelf=false 时主动作是加入书架且编辑隐藏，inBookshelf=true 时主动作是移出书架且编辑显示；存在 BookSource 时书源变量、书籍变量和允许更新显示，不存在时三者隐藏；登录只在 loginUrl 非 null、非空且非纯空白时显示，因此空串和空白串都隐藏登录但不影响其他书源动作；远程书不显示拆分长章节或上传，本地 TXT 同时显示拆分长章节和上传，其他本地格式只显示上传。canUpdate、splitLongChapter 与 deleteAlert 的 checked 值始终分别投影 Book.canUpdate、Book.getSplitLongChapter() 和 LocalConfig.bookInfoDeleteAlert，即使对应动作当前隐藏也保留状态。iOS 应以稳定 ActionID 和纯 BookDetailActionAvailability 状态机表达该矩阵，SwiftUI 的 Menu、Toolbar 与原生控件只负责平台投影；不能把隐藏动作误当成状态清除，也不能让登录可见性控制其他书源动作。",
+      "subject_keys": [
+        "ui.action",
+        "ui.state"
+      ],
+      "depends_on": [],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [
+          {
+            "id": "AF-BOOK-INFO-MENU-OPENED",
+            "revision_sha256": "14e5a5902fba073469b9d3f0a94c36b93093e71e18de1beb7d63f51987bb7896"
+          },
+          {
+            "id": "AF-BOOK-INFO-UP-BOOKSHELF",
+            "revision_sha256": "a8713f787efdf46c6e4d8feb1216a701312999d42df54c85412c79a1c27fb8ff"
+          }
+        ],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "611ce1a9a56ed26ce71ca482eea0e908c7634857",
+            "path": "app/src/main/java/io/legado/app/ui/book/info/BookInfoActivity.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.info.BookInfoActivity/onMenuOpened"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "611ce1a9a56ed26ce71ca482eea0e908c7634857",
+            "path": "app/src/main/java/io/legado/app/ui/book/info/BookInfoActivity.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.info.BookInfoActivity/upTvBookshelf"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/rl-ui-book-detail-conditional-actions-001.json",
+            "artifact_sha256": "b48ba0546042571854672005170260a6efd85c3b9df302d8a9a89f21e0d9c451",
+            "projection_pointer": "/artifact/result/value/portable_known_projection",
+            "observed_sha256": "ba4d493ab8dc8f085e8bae223d0f1b68e8d324b189dfb338b6a2cac759de7497",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "df664c4a9a61af69c11b24bdaf86a1971b4a4a870a4575fa70ebbd998fe8c883",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-UI-DETAIL-CONDITIONAL-ACTIONS-001",
+        "revision": 3
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-UI-BOOK-DETAIL-CONDITIONAL-ACTIONS-001"
+}

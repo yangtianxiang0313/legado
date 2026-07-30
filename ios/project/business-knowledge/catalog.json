@@ -2,11 +2,11 @@
   "schema_version": 1,
   "contract_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-  "inventory_control_sha256": "3bcba0f2bc7493cf16af9224c942c57b8d255d7bab39ab8dee2c72112a2c8247",
+  "inventory_control_sha256": "b28f98aad7db9d86e80afd6d266d76462b56941414668783193f9be6e7155cca",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "453d166716bc83b332591e50018adb0076141ffde2a19626e207664d2550d9db",
-  "coverage_sha256": "43466aff3122dcb46a3f659555c7dc0019952ea78e31b3c582a6ad2c4c0752d1",
+  "authority_sha256": "7ae072493390fbf8c19896af515a5851df6a7474a50607791619ffde6d01dd44",
+  "coverage_sha256": "4c40660a1714086f07db6836ef3b616c617ea5442b466f36ac8a0a9a8a23b21e",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -469,6 +469,19 @@
         {
           "id": "BKC-SR-RESPONSE-XML-NORMALIZATION-001",
           "revision": 2
+        }
+      ]
+    },
+    {
+      "id": "BKP-UI-BOOK-DETAIL-CONDITIONAL-ACTIONS-001",
+      "revision": 1,
+      "semantic_key": "ui.book.detail-conditional-actions-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-UI-BOOK-DETAIL-CONDITIONAL-ACTIONS-001/r0001.json",
+      "record_sha256": "993965b8b8d37627d66d91fb6a73d9fdb7b1419aad6574e37e161ab0385c7736",
+      "claim_refs": [
+        {
+          "id": "BKC-UI-DETAIL-CONDITIONAL-ACTIONS-001",
+          "revision": 4
         }
       ]
     },
@@ -1010,6 +1023,15 @@
       "record_sha256": "18445cc594c25a866e0b7df29b2a9b587e8e31aff98cf1e7abb394703f16c058",
       "entry_ids": [
         "BKE-SR-RESPONSE-XML-NORMALIZATION-001"
+      ]
+    },
+    {
+      "id": "BKL-UI-BOOK-DETAIL-CONDITIONAL-ACTIONS-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-UI-BOOK-DETAIL-CONDITIONAL-ACTIONS-001.json",
+      "record_sha256": "c45580d9c30e2e2a029e072c8ce82b33485a92ec6280e058b131dbe289094bed",
+      "entry_ids": [
+        "BKE-UI-BOOK-DETAIL-CONDITIONAL-ACTIONS-001"
       ]
     },
     {
