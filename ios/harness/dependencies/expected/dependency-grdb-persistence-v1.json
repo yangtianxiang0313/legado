@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "fixture_id": "dependency-grdb-persistence-v1",
+  "package_identity": "grdb.swift",
+  "exact_version": "7.11.1",
+  "target": "DatabaseGRDB",
+  "first_divergence": null
+}

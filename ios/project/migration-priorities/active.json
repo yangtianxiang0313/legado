@@ -38,7 +38,25 @@
           ]
         },
         {
-          "id": "BOOK-DETAIL-STAGING",
+          "id": "BOOK-DETAIL-STAGING-GRDB",
+          "task_ids": [
+            "IOS-DEPENDENCY-GRDB-PERSISTENCE-001"
+          ]
+        },
+        {
+          "id": "BOOK-DETAIL-STAGING-DOMAIN",
+          "task_ids": [
+            "IOS-LIBRARY-DOMAIN-BOOK-DETAIL-STAGING-RUNTIME-001"
+          ]
+        },
+        {
+          "id": "BOOK-DETAIL-STAGING-UI",
+          "task_ids": [
+            "IOS-APP-NAVIGATION-BOOK-DETAIL-STAGING-001"
+          ]
+        },
+        {
+          "id": "BOOK-DETAIL-STAGING-CHARACTERIZATION",
           "claim_ids": [
             "BKC-BOOK-DETAIL-STAGING-001",
             "BKC-BOOK-DETAIL-001",

@@ -450,6 +450,39 @@ def source_anchors_for_claims(
 
 
 def owner_contract(target: str) -> Mapping[str, Any]:
+    if target == "IOS-DEPENDENCY-GRDB-PERSISTENCE-001":
+        return {
+            "owner": "DependencyControl",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-002",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/Packages/LegadoKit/Package.swift",
+                "ios/Packages/LegadoKit/Package.resolved",
+                "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+                "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+                "ios/harness/dependency-policy.json",
+                "ios/harness/architecture-rules.json",
+                "ios/harness/probes/dependency_contract.py",
+                "ios/harness/probes/dependency_activation.py",
+                "ios/harness/probes/package_contract.py",
+                "ios/harness/dependencies/expected/"
+                "dependency-grdb-persistence-v1.json",
+                "ios/harness/tests/test_dependency_contract.py",
+                "ios/harness/tests/test_package_contract.py",
+                "ios/project/baseline.json",
+                "ios/project/dependency-proposals/**",
+                "ios/docs/dependencies.md",
+                "ios/docs/third-party-notices.md",
+                "ios/project/sbom/**",
+            ],
+        }
     if target == "IOS-INTEGRATION-WEBDAV-ARCHITECTURE-001":
         return {
             "owner": "ArchitectureControl",
@@ -1158,6 +1191,19 @@ def app_navigation_delivery_contract(
             ),
             "test_method": "testDiscoverySearchFlow",
         },
+        "rl-library-book-detail-staging-runtime-001": {
+            "goal": (
+                "把稳定书籍身份、显式书架成员资格与 DatabaseGRDB 仓储接入"
+                "详情和书架页面，在真实搜索结果上完成入架、终止重启与重开。"
+            ),
+            "acceptance_id": "structured-book-detail-staging-acceptance",
+            "scenario_id": "ui-book-detail-staging-v1",
+            "expected": (
+                "ios/harness/ui/expected/"
+                "ui-book-detail-staging-v1.json"
+            ),
+            "test_method": "testBookDetailStagingPersistence",
+        },
     }
     feature = features.get(fixture_id)
     if feature is None:
@@ -1528,6 +1574,7 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
         if isinstance(android_commit, str):
             android_baseline = {"android_commit": android_commit}
     delivery_contracts = {
+        "DependencyControl": {},
         "SourceRuntime": {
             "goal": (
                 "按照冻结 Android 运行结果，在独立 SourceRuntime 中实现该书源能力；"
@@ -1590,6 +1637,126 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "claims": claim_refs,
         },
     }
+    if architecture["owner"] == "DependencyControl":
+        expected = (
+            "ios/harness/dependencies/expected/"
+            "dependency-grdb-persistence-v1.json"
+        )
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "id": target,
+            "kind": "delivery",
+            "title": title,
+            "status": "ready",
+            "priority": 100,
+            "goal": (
+                "只启用已批准的 GRDB.swift 7.11.1：精确锁定 revision，"
+                "物化 DatabaseGRDB 边界和最小冒烟测试，并更新 dependency "
+                "policy、lock、baseline、SBOM 与 notices；不实现书架业务。"
+            ),
+            "source": source,
+            "requirements": requirement_refs,
+            "architecture": {
+                "owner": "DependencyControl",
+                "refs": architecture["architecture_refs"],
+                "rule": (
+                    "本任务只允许一个外部包 GRDB.swift；GRDB 类型只能存在于"
+                    " DatabaseGRDB，领域、用例、UI 和 ConformanceCLI 不得导入。"
+                ),
+            },
+            "scope": {
+                "allowed_paths": architecture["allowed_paths"],
+                "forbidden": [
+                    "Android golden",
+                    "accepted Requirement",
+                    "书架业务实现",
+                    "除 GRDB.swift 外的三方依赖",
+                ],
+            },
+            "acceptance": {
+                "commands": [
+                    {
+                        "id": "dependency-contract",
+                        "argv": [
+                            "python3",
+                            "-B",
+                            "ios/harness/probes/dependency_contract.py",
+                            "--root",
+                            ".",
+                        ],
+                        "timeout_seconds": 180,
+                    },
+                    {
+                        "id": "package-contract",
+                        "argv": [
+                            "python3",
+                            "-B",
+                            "ios/harness/probes/package_contract.py",
+                            "--root",
+                            ".",
+                        ],
+                        "timeout_seconds": 180,
+                    },
+                    {
+                        "id": "database-grdb-tests",
+                        "argv": [
+                            "swift",
+                            "test",
+                            "--package-path",
+                            "ios/Packages/LegadoKit",
+                            "--disable-automatic-resolution",
+                            "--filter",
+                            "DatabaseGRDBTests",
+                        ],
+                        "required_output_pattern": (
+                            r"Executed [1-9][0-9]* tests?, with 0 failures"
+                        ),
+                        "timeout_seconds": 600,
+                    },
+                    {
+                        "id": "dependency-activation-acceptance",
+                        "argv": [
+                            "python3",
+                            "-B",
+                            "ios/harness/probes/dependency_activation.py",
+                            "--root",
+                            ".",
+                        ],
+                        "timeout_seconds": 180,
+                    },
+                ],
+                "structured_output": {
+                    "mode": "command_json",
+                    "command_id": "dependency-activation-acceptance",
+                    "fixture_id": "dependency-grdb-persistence-v1",
+                    "expected": expected,
+                    "required_fields": [
+                        "package_identity",
+                        "exact_version",
+                        "target",
+                        "resolved_revision",
+                        "first_divergence",
+                    ],
+                    "expected_values": {
+                        "fixture_id": "dependency-grdb-persistence-v1",
+                        "status": "equal",
+                        "package_identity": "grdb.swift",
+                        "exact_version": "7.11.1",
+                        "target": "DatabaseGRDB",
+                        "first_divergence": None,
+                    },
+                },
+            },
+            "knowledge_updates": {
+                "required_on_completion": [
+                    "summary",
+                    "current_status",
+                    "architecture_change",
+                    "pitfalls",
+                    "next_step",
+                ]
+            },
+        }
     commands = [
         {
             "id": "package-contract",

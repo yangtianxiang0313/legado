@@ -1876,6 +1876,74 @@ class MinimalLoopTests(unittest.TestCase):
                 next_step="",
             )
 
+    def test_detail_staging_delivery_order_and_contracts_are_explicit(self):
+        policy = {
+            "id": "MILESTONE-P0",
+            "stages": [
+                {
+                    "id": "P0-BOOK",
+                    "title": "Book",
+                    "selectors": [
+                        {
+                            "id": "GRDB",
+                            "task_ids": [
+                                "IOS-DEPENDENCY-GRDB-PERSISTENCE-001"
+                            ],
+                        },
+                        {
+                            "id": "DOMAIN",
+                            "task_ids": [
+                                (
+                                    "IOS-LIBRARY-DOMAIN-BOOK-DETAIL-"
+                                    "STAGING-RUNTIME-001"
+                                )
+                            ],
+                        },
+                        {
+                            "id": "UI",
+                            "task_ids": [
+                                (
+                                    "IOS-APP-NAVIGATION-BOOK-DETAIL-"
+                                    "STAGING-001"
+                                )
+                            ],
+                        },
+                    ],
+                }
+            ],
+        }
+        expected = [
+            ("IOS-DEPENDENCY-GRDB-PERSISTENCE-001", "GRDB"),
+            (
+                "IOS-LIBRARY-DOMAIN-BOOK-DETAIL-STAGING-RUNTIME-001",
+                "DOMAIN",
+            ),
+            (
+                "IOS-APP-NAVIGATION-BOOK-DETAIL-STAGING-001",
+                "UI",
+            ),
+        ]
+        for task_id, selector_id in expected:
+            match = loop.priority_match(
+                policy,
+                task_id=task_id,
+                claim_ids={"BKC-BOOK-DETAIL-STAGING-001"},
+            )
+            self.assertIsNotNone(match)
+            self.assertEqual(selector_id, match[3]["id"])
+
+        dependency = loop.owner_contract(
+            "IOS-DEPENDENCY-GRDB-PERSISTENCE-001"
+        )
+        self.assertEqual("DependencyControl", dependency["owner"])
+        ui = loop.app_navigation_delivery_contract(
+            "rl-library-book-detail-staging-runtime-001"
+        )
+        self.assertEqual(
+            "testBookDetailStagingPersistence",
+            ui["ui_acceptance"]["test_method"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
