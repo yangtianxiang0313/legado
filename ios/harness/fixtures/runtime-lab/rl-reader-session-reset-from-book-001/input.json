@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "remote-book-restores-session-and-source",
+      "operation": "reader_session_reset",
+      "arguments": {
+        "chapter_count": 3,
+        "stored_chapter_index": 1,
+        "stored_chapter_pos": 42,
+        "book_kind": "remote",
+        "source_mode": "present",
+        "book_image_style": null,
+        "source_image_style": "FULL",
+        "read_times": [120, 80]
+      }
+    },
+    {
+      "id": "oversized-index-clamps-without-writing-book",
+      "operation": "reader_session_reset",
+      "arguments": {
+        "chapter_count": 3,
+        "stored_chapter_index": 99,
+        "stored_chapter_pos": 777,
+        "book_kind": "remote",
+        "source_mode": "present",
+        "book_image_style": "",
+        "source_image_style": "CENTER",
+        "read_times": [9, 1]
+      }
+    },
+    {
+      "id": "empty-toc-clamps-index-to-zero",
+      "operation": "reader_session_reset",
+      "arguments": {
+        "chapter_count": 0,
+        "stored_chapter_index": 9,
+        "stored_chapter_pos": 33,
+        "book_kind": "remote",
+        "source_mode": "present",
+        "book_image_style": null,
+        "source_image_style": "FULL",
+        "read_times": []
+      }
+    },
+    {
+      "id": "local-book-clears-stale-remote-source",
+      "operation": "reader_session_reset",
+      "arguments": {
+        "chapter_count": 2,
+        "stored_chapter_index": -4,
+        "stored_chapter_pos": 12,
+        "book_kind": "local",
+        "source_mode": "present",
+        "book_image_style": null,
+        "source_image_style": "FULL",
+        "read_times": [5]
+      }
+    },
+    {
+      "id": "missing-remote-source-fails-closed",
+      "operation": "reader_session_reset",
+      "arguments": {
+        "chapter_count": 2,
+        "stored_chapter_index": 1,
+        "stored_chapter_pos": 64,
+        "book_kind": "remote",
+        "source_mode": "missing",
+        "book_image_style": null,
+        "source_image_style": "FULL",
+        "read_times": [7]
+      }
+    },
+    {
+      "id": "explicit-book-image-style-is-preserved",
+      "operation": "reader_session_reset",
+      "arguments": {
+        "chapter_count": 2,
+        "stored_chapter_index": 0,
+        "stored_chapter_pos": 18,
+        "book_kind": "remote",
+        "source_mode": "present",
+        "book_image_style": "BOOK_STYLE",
+        "source_image_style": "SOURCE_STYLE",
+        "read_times": [11]
+      }
+    }
+  ]
+}

@@ -109,6 +109,11 @@
       "sha256": "89cfd89fab19e169e9263f98fecc7ca0a804769e7b8dfc4e47052dd339e63a77"
     },
     {
+      "id": "rl-reader-session-reset-from-book-001",
+      "path": "ios/harness/fixtures/runtime-lab/rl-reader-session-reset-from-book-001",
+      "sha256": "b6d93ca0e17dc4f85b5a46429ff92b13e08f4dd2fa4b4ec4342106965e44f065"
+    },
+    {
       "id": "rl-ui-book-detail-conditional-actions-001",
       "path": "ios/harness/fixtures/runtime-lab/rl-ui-book-detail-conditional-actions-001",
       "sha256": "63d6a21ec26371a669c9eafe8b20e324991fc4853f945ea03f81b75d4211edfa"

@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "kind": "android_runtime_scenario",
+  "id": "rl-reader-session-reset-from-book-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "android_runtime",
+  "capabilities": [
+    "reader.lifecycle",
+    "reader.progress",
+    "reader.navigation",
+    "android.room"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": null,
+  "input": "input.json",
+  "transport": {
+    "mode": "none",
+    "external_network": "deny",
+    "responses": []
+  },
+  "coverage": [
+    {
+      "behavior": "reader.session.reset-from-book",
+      "cases": [
+        {
+          "id": "remote-book-restores-session-and-source",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-READ-BOOK-RESET-DATA"
+          ],
+          "branch_refs": [
+            "resetData restores chapter count, persisted character position, read-time aggregate, content processor, and an existing remote source",
+            "a blank per-book image style inherits the source content-rule image style"
+          ]
+        },
+        {
+          "id": "oversized-index-clamps-without-writing-book",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-READ-BOOK-RESET-DATA"
+          ],
+          "branch_refs": [
+            "the in-memory chapter index is clamped to chapterSize - 1",
+            "the passed Book retains its oversized persisted index until a later save"
+          ]
+        },
+        {
+          "id": "empty-toc-clamps-index-to-zero",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-READ-BOOK-RESET-DATA"
+          ],
+          "branch_refs": [
+            "chapterSize - 1 is negative for an empty TOC",
+            "coerceAtLeast(0) still produces runtime chapter index zero"
+          ]
+        },
+        {
+          "id": "local-book-clears-stale-remote-source",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-READ-BOOK-RESET-DATA"
+          ],
+          "branch_refs": [
+            "local books set isLocalBook and force bookSource to null",
+            "negative persisted chapter indices are clamped to zero"
+          ]
+        },
+        {
+          "id": "missing-remote-source-fails-closed",
+          "role": "denied",
+          "android_fact_refs": [
+            "AF-READ-BOOK-RESET-DATA"
+          ],
+          "branch_refs": [
+            "a remote book whose origin is absent from Room clears any stale runtime bookSource"
+          ]
+        },
+        {
+          "id": "explicit-book-image-style-is-preserved",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-READ-BOOK-RESET-DATA"
+          ],
+          "branch_refs": [
+            "source image style is copied only when the book image style is null or blank"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "fixed-database-values-and-callback-order",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 0,
+    "network_allowed": false,
+    "logical_origin": null,
+    "database_reset_per_case": true
+  },
+  "limits": {
+    "timeout_ms": 5000
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/model/ReadBook.kt#resetData",
+      "app/src/main/java/io/legado/app/model/ReadBook.kt#upWebBook",
+      "app/src/main/java/io/legado/app/model/ReadBook.kt#clearTextChapter"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-READER-SESSION-RESET-FROM-BOOK-001"
+  }
+}

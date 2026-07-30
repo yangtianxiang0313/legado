@@ -1214,6 +1214,53 @@ SCENARIO_CONTRACTS = {
             "reverse-result-resets-offset",
         }),
     },
+    "rl-reader-session-reset-from-book-001": {
+        "status": "candidate",
+        "fixture_kind": "android_runtime_scenario",
+        "result_type": "reader_runtime",
+        "stage_names": (
+            "fixture_setup",
+            "database_seed",
+            "reset_data",
+            "source_resolution",
+            "volatile_state_reset",
+            "result_mapping",
+        ),
+        "expected_cases": (
+            (
+                "remote-book-restores-session-and-source",
+                "reader_session_reset",
+            ),
+            (
+                "oversized-index-clamps-without-writing-book",
+                "reader_session_reset",
+            ),
+            (
+                "empty-toc-clamps-index-to-zero",
+                "reader_session_reset",
+            ),
+            (
+                "local-book-clears-stale-remote-source",
+                "reader_session_reset",
+            ),
+            (
+                "missing-remote-source-fails-closed",
+                "reader_session_reset",
+            ),
+            (
+                "explicit-book-image-style-is-preserved",
+                "reader_session_reset",
+            ),
+        ),
+        "nominal_cases": frozenset({
+            "remote-book-restores-session-and-source",
+            "oversized-index-clamps-without-writing-book",
+            "empty-toc-clamps-index-to-zero",
+            "local-book-clears-stale-remote-source",
+            "missing-remote-source-fails-closed",
+            "explicit-book-image-style-is-preserved",
+        }),
+    },
     "rl-reader-cache-prefetch-policy-001": {
         "status": "candidate",
         "fixture_kind": "android_runtime_scenario",

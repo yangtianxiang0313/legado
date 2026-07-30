@@ -37,6 +37,7 @@ import io.legado.app.data.entities.BookChapter
 import io.legado.app.data.entities.BookGroup
 import io.legado.app.data.entities.BookSource
 import io.legado.app.data.entities.Bookmark
+import io.legado.app.data.entities.BookProgress
 import io.legado.app.data.entities.ReadRecord
 import io.legado.app.data.entities.SearchBook
 import io.legado.app.data.entities.TxtTocRule
@@ -257,6 +258,8 @@ class LegadoOracleInstrumentedTest {
                 runReaderPrefetchPolicyCases()
             "rl-reader-progress-toc-remap-001" ->
                 runReaderProgressTocRemapCases()
+            "rl-reader-session-reset-from-book-001" ->
+                runReaderSessionResetCases()
             "rl-app-startup-first-use-and-restore-001" ->
                 runAppStartupCases()
             "sl-post-form-001" -> runPostFormCases()
@@ -6503,6 +6506,242 @@ class LegadoOracleInstrumentedTest {
                 )
             }
         }
+    }
+
+    private suspend fun runReaderSessionResetCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            require(
+                value.getString("operation") == "reader_session_reset"
+            ) {
+                "Unsupported reader session reset operation"
+            }
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", "reader_session_reset")
+                .put("arguments", JSONObject(arguments.toString()))
+            runCase(
+                value.getString("id"),
+                "reader_session_reset",
+                stimulus
+            ) {
+                readerSessionResetProjection(
+                    value.getString("id"),
+                    arguments
+                )
+            }
+        }
+    }
+
+    private fun readerSessionResetProjection(
+        caseId: String,
+        arguments: JSONObject
+    ): JSONObject {
+        val local = arguments.getString("book_kind") == "local"
+        val origin =
+            if (local) BookType.localTag
+            else "android-runtime://reader-session/source/$caseId"
+        val book = Book(
+            bookUrl = "/android-runtime/reader-session/$caseId.txt",
+            origin = origin,
+            originName = "Oracle Session Source",
+            name = "Oracle Session $caseId",
+            author = "RuntimeLab",
+            type = if (local) BookType.local else BookType.text,
+            durChapterIndex = arguments.getInt("stored_chapter_index"),
+            durChapterPos = arguments.getInt("stored_chapter_pos")
+        )
+        val imageStyle =
+            if (arguments.isNull("book_image_style")) null
+            else arguments.getString("book_image_style")
+        book.setImageStyle(imageStyle)
+        val callback = LayoutStreamCallback("none")
+        return try {
+            seedReaderSessionReset(
+                book = book,
+                caseId = caseId,
+                arguments = arguments
+            )
+            ReadBook.callBack = callback
+            ReadBook.bookSource = BookSource(
+                bookSourceUrl = "stale://reader-session",
+                bookSourceName = "Stale Source"
+            )
+            ReadBook.lastBookPress = BookProgress(book)
+            ReadBook.webBookProgress = BookProgress(book)
+            ReadBook.prevTextChapter =
+                sessionResetTextChapter(book, -1)
+            ReadBook.curTextChapter =
+                sessionResetTextChapter(book, 0)
+            ReadBook.nextTextChapter =
+                sessionResetTextChapter(book, 1)
+            synchronized(ReadBook) {
+                prefetchLoadingList().addAll(listOf(7, 8))
+            }
+            ReadBook.downloadedChapters.add(91)
+            ReadBook.downloadFailChapters[92] = 2
+
+            ReadBook.resetData(book)
+
+            val sessionRecord = currentSessionReadRecord()
+            val callbackEvents = JSONArray().apply {
+                val snapshot = callback.snapshot()
+                for (eventIndex in 0 until snapshot.length()) {
+                    val event = snapshot.getJSONObject(eventIndex)
+                    put(
+                        JSONObject()
+                            .put("type", event.getString("type"))
+                            .apply {
+                                if (event.has("up_recorder")) {
+                                    put(
+                                        "up_recorder",
+                                        event.getBoolean("up_recorder")
+                                    )
+                                }
+                            }
+                    )
+                }
+            }
+            JSONObject()
+                .put("book_identity", ReadBook.book?.bookUrl)
+                .put("chapter_size", ReadBook.chapterSize)
+                .put("runtime_chapter_index", ReadBook.durChapterIndex)
+                .put("runtime_chapter_pos", ReadBook.durChapterPos)
+                .put("stored_chapter_index", book.durChapterIndex)
+                .put("stored_chapter_pos", book.durChapterPos)
+                .put("is_local_book", ReadBook.isLocalBook)
+                .put(
+                    "book_source_url",
+                    ReadBook.bookSource?.bookSourceUrl ?: JSONObject.NULL
+                )
+                .put(
+                    "content_processor_present",
+                    ReadBook.contentProcessor != null
+                )
+                .put(
+                    "book_image_style",
+                    book.getImageStyle() ?: JSONObject.NULL
+                )
+                .put("read_record_book_name", sessionRecord.bookName)
+                .put("read_record_time", sessionRecord.readTime)
+                .put(
+                    "text_chapters_cleared",
+                    ReadBook.prevTextChapter == null &&
+                        ReadBook.curTextChapter == null &&
+                        ReadBook.nextTextChapter == null
+                )
+                .put(
+                    "temporary_progress_cleared",
+                    ReadBook.lastBookPress == null &&
+                        ReadBook.webBookProgress == null
+                )
+                .put(
+                    "loading_chapters_cleared",
+                    prefetchLoadingList().isEmpty()
+                )
+                .put(
+                    "download_state_preserved",
+                    91 in ReadBook.downloadedChapters &&
+                        ReadBook.downloadFailChapters[92] == 2
+                )
+                .put("callback_events", callbackEvents)
+        } finally {
+            clearReaderSessionResetState(book, origin)
+        }
+    }
+
+    private fun seedReaderSessionReset(
+        book: Book,
+        caseId: String,
+        arguments: JSONObject
+    ) {
+        clearReaderSessionResetState(book, book.origin)
+        appDb.bookDao.insert(book)
+        val chapterCount = arguments.getInt("chapter_count")
+        val chapters = (0 until chapterCount).map { index ->
+            BookChapter(
+                url = "/android-runtime/reader-session/$caseId/$index",
+                title = "Session Chapter $index",
+                bookUrl = book.bookUrl,
+                index = index
+            )
+        }
+        if (chapters.isNotEmpty()) {
+            appDb.bookChapterDao.insert(*chapters.toTypedArray())
+        }
+        if (
+            !book.isLocal &&
+            arguments.getString("source_mode") == "present"
+        ) {
+            appDb.bookSourceDao.insert(
+                BookSource(
+                    bookSourceUrl = book.origin,
+                    bookSourceName = "Oracle Session Source",
+                    ruleContent = ContentRule(
+                        content = "@CSS:#content@text",
+                        imageStyle =
+                            arguments.getString("source_image_style")
+                    )
+                )
+            )
+        }
+        val readTimes = arguments.getJSONArray("read_times")
+        for (index in 0 until readTimes.length()) {
+            appDb.readRecordDao.insert(
+                ReadRecord(
+                    deviceId = "session-device-$index",
+                    bookName = book.name,
+                    readTime = readTimes.getLong(index),
+                    lastRead = 100L + index
+                )
+            )
+        }
+    }
+
+    private fun sessionResetTextChapter(
+        book: Book,
+        position: Int
+    ): TextChapter = TextChapter(
+        chapter = BookChapter(
+            url = "${book.bookUrl}/stale/$position",
+            title = "Stale Chapter $position",
+            bookUrl = book.bookUrl,
+            index = position.coerceAtLeast(0)
+        ),
+        position = position,
+        title = "Stale Chapter $position",
+        chaptersSize = 3,
+        sameTitleRemoved = false,
+        isVip = false,
+        isPay = false,
+        effectiveReplaceRules = null
+    )
+
+    private fun clearReaderSessionResetState(
+        book: Book,
+        origin: String
+    ) {
+        ReadBook.callBack = null
+        ReadBook.clearTextChapter()
+        ReadBook.book = null
+        ReadBook.bookSource = null
+        ReadBook.contentProcessor = null
+        ReadBook.lastBookPress = null
+        ReadBook.webBookProgress = null
+        ReadBook.downloadedChapters.clear()
+        ReadBook.downloadFailChapters.clear()
+        synchronized(ReadBook) {
+            prefetchLoadingList().clear()
+        }
+        appDb.bookChapterDao.delByBook(book.bookUrl)
+        appDb.bookDao.getBook(book.bookUrl)?.let {
+            appDb.bookDao.delete(it)
+        }
+        appDb.bookSourceDao.getBookSource(origin)?.let {
+            appDb.bookSourceDao.delete(it)
+        }
+        appDb.readRecordDao.clear()
     }
 
     private suspend fun readerPrefetchPolicyProjection(
