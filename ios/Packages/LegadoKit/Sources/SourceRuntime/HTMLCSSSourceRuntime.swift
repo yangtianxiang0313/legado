@@ -118,19 +118,31 @@ public struct TOCRules: Sendable, Equatable {
   public let list: String
   public let name: HTMLCSSRule
   public let url: HTMLCSSRule
+  public let nextTocURL: HTMLCSSRule?
 
-  public init(list: String, name: HTMLCSSRule, url: HTMLCSSRule) {
+  public init(
+    list: String,
+    name: HTMLCSSRule,
+    url: HTMLCSSRule,
+    nextTocURL: HTMLCSSRule? = nil
+  ) {
     self.list = list
     self.name = name
     self.url = url
+    self.nextTocURL = nextTocURL
   }
 }
 
 public struct ContentRules: Sendable, Equatable {
   public let content: HTMLCSSRule
+  public let nextContentURL: HTMLCSSRule?
 
-  public init(content: HTMLCSSRule) {
+  public init(
+    content: HTMLCSSRule,
+    nextContentURL: HTMLCSSRule? = nil
+  ) {
     self.content = content
+    self.nextContentURL = nextContentURL
   }
 }
 

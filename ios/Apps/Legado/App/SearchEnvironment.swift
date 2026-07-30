@@ -478,12 +478,20 @@ enum SearchEnvironment {
                     toc: TOCRules(
                         list: chapterList,
                         name: HTMLCSSRule(chapterName),
-                        url: HTMLCSSRule(chapterURL, value: .href)
+                        url: HTMLCSSRule(chapterURL, value: .href),
+                        nextTocURL: paginationRule(
+                            toc,
+                            key: "nextTocUrl"
+                        )
                     ),
                     content: ContentRules(
                         content: HTMLCSSRule(
                             contentRule,
                             value: .html
+                        ),
+                        nextContentURL: paginationRule(
+                            content,
+                            key: "nextContentUrl"
                         )
                     )
                 )
@@ -553,6 +561,19 @@ enum SearchEnvironment {
         guard let value = object[key] as? String else { return nil }
         return value
             .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private static func paginationRule(
+        _ object: [String: Any],
+        key: String
+    ) -> HTMLCSSRule? {
+        guard
+            let value = string(object, key),
+            !value.isEmpty
+        else {
+            return nil
+        }
+        return HTMLCSSRule(value, value: .href)
     }
 
     private static func sourceHeaders(
