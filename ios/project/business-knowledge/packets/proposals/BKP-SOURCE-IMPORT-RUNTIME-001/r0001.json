@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-SOURCE-IMPORT-RUNTIME-001",
+  "revision": 1,
+  "status": "candidate",
+  "semantic_key": "app.source.import-runtime",
+  "title": "书源导入与冲突合并源码合同",
+  "scope": {
+    "bounded_contexts": [
+      "source.management"
+    ],
+    "capability_refs": [
+      "CAP-RUNTIME-PORTS",
+      "CAP-CONFORMANCE"
+    ],
+    "subject_keys": [
+      "app.source.import",
+      "source.definition"
+    ]
+  },
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122"
+  },
+  "claims": [
+    {
+      "id": "BKC-SOURCE-IMPORT-RUNTIME-001",
+      "revision": 1,
+      "semantic_key": "app.source.import-runtime",
+      "kind": "runtime_behavior",
+      "topic": "书源定义导入与冲突合并",
+      "statement": "Android 书源导入接受单个 JSON 对象、JSON 数组、远程 URL、content/file URI 以及包含 sourceUrls 的订阅对象；导入预览按 URL 对比现有书源并默认选择新增项和更新时间更晚的更新项。提交时可保留现有名称、分组与启停状态，并支持替换或追加指定分组。需要用真实 Android runner 固定格式判定、预选状态、冲突合并与错误分类；iOS 应把定义 codec 和合并策略放在独立 Package 边界，DocumentPicker 与网络读取仅作适配器。",
+      "subject_keys": [
+        "app.source.import",
+        "source.definition"
+      ],
+      "depends_on": [],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "e419826ee3981b1b5ecf714f9f261b0f8a5ebb0b",
+            "path": "app/src/main/java/io/legado/app/ui/association/ImportBookSourceViewModel.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.association.ImportBookSourceViewModel/importSource"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "e419826ee3981b1b5ecf714f9f261b0f8a5ebb0b",
+            "path": "app/src/main/java/io/legado/app/ui/association/ImportBookSourceViewModel.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.association.ImportBookSourceViewModel/importSelect"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "4def14d01973cbc3f063451bf054bc60a00cdd52",
+            "path": "app/src/main/java/io/legado/app/ui/book/source/edit/BookSourceEditViewModel.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.source.edit.BookSourceEditViewModel/importSource"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "ef168fc86a99afe783b326003451de56fb0ffc99",
+            "path": "app/src/main/java/io/legado/app/ui/book/source/manage/BookSourceActivity.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.source.manage.BookSourceActivity/showImportDialog"
+          }
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": null
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-ANDROID-SOURCE-IMPORT-INTAKE-001"
+}

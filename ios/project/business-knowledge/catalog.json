@@ -2,12 +2,12 @@
   "schema_version": 1,
   "contract_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-  "inventory_control_sha256": "822755c0b0cd5555b959fd4da3a6d18c833f9e9ab9252dbbf15c91a02a407d04",
+  "inventory_control_sha256": "bfe8a9ee77e70953ac00834a190849d3e0d508dfb6531b4cc4c322ca9cc5df9c",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
-  "control_sha256": "5902da4a6d8a74335342166c7e42fca483c092734a07a1977d4d8058bce54ed4",
-  "authority_sha256": "72ce72fc49f75a320341285a47eda383a3d7d07634215d38731f58643132ba6d",
+  "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
+  "authority_sha256": "393519a8689f2976bc329d93f0940007a37f4149ed803a7bb8c948e899f93bfc",
   "coverage_sha256": "69dc664e94138742e73d68387d59da1512c030bf4e4ddd053752bfc19316b313",
-  "proposal_sha256": "eb9ec2ab3e11deff4f705c49ce621283a64329406a75ad1cf974704d4d2fc96c",
+  "proposal_sha256": "f5af27fb849f05afa9b9a1a508bc03f5ec07b8b6e68031ce2c3bda90882a848e",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
     {
@@ -1405,6 +1405,12 @@
       "revision": 1,
       "path": "ios/project/business-knowledge/packets/proposals/BKP-READER-LIFECYCLE-001/r0001.json",
       "sha256": "054d8d312e4a85a17293e6e10e53a2e8783ea19724cac8e76637ea0f552702c6"
+    },
+    {
+      "id": "BKP-SOURCE-IMPORT-RUNTIME-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/packets/proposals/BKP-SOURCE-IMPORT-RUNTIME-001/r0001.json",
+      "sha256": "1d885337ea355ea09e762a9f6f851409df4506b06dedfb13b49879646f3bc582"
     },
     {
       "id": "BKP-SOURCE-REQUEST-OPTIONS-001",

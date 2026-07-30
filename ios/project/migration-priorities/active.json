@@ -39,9 +39,9 @@
           ]
         },
         {
-          "id": "SOURCE-IMPORT-EXPORT",
+          "id": "SOURCE-IMPORT",
           "claim_ids": [
-            "BKC-SOURCE-MANAGEMENT-001"
+            "BKC-SOURCE-IMPORT-RUNTIME-001"
           ]
         }
       ]
