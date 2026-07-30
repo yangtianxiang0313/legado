@@ -11,6 +11,7 @@ public enum RootRoute: String, CaseIterable, Codable, Hashable, Identifiable, Se
 
 public enum AppRoute: String, Codable, Hashable, Identifiable, Sendable {
     case searchBooks = "search.books"
+    case bookDetail = "book.detail"
 
     public var id: String {
         rawValue

@@ -1,0 +1,189 @@
+{
+  "schema_version": 1,
+  "scenario_id": "ui-book-detail-conditional-actions-v1",
+  "profile": "store_safe",
+  "simulators": [
+    {
+      "simulator_id": "SIM-PAD-REGULAR-001",
+      "projection": "regularSplit",
+      "cases": [
+        {
+          "id": "remote-source-login-unshelved",
+          "screen": "screen.bookDetail",
+          "shelf_action": "add",
+          "visible_actions": [
+            "canUpdate",
+            "deleteAlert",
+            "login",
+            "setBookVariable",
+            "setSourceVariable"
+          ],
+          "checked": {
+            "canUpdate": false,
+            "deleteAlert": true
+          }
+        },
+        {
+          "id": "remote-source-no-login-shelved",
+          "screen": "screen.bookDetail",
+          "shelf_action": "remove",
+          "visible_actions": [
+            "canUpdate",
+            "deleteAlert",
+            "edit",
+            "setBookVariable",
+            "setSourceVariable"
+          ],
+          "checked": {
+            "canUpdate": true,
+            "deleteAlert": false
+          }
+        },
+        {
+          "id": "remote-source-whitespace-login",
+          "screen": "screen.bookDetail",
+          "shelf_action": "add",
+          "visible_actions": [
+            "canUpdate",
+            "deleteAlert",
+            "setBookVariable",
+            "setSourceVariable"
+          ],
+          "checked": {
+            "canUpdate": true,
+            "deleteAlert": true
+          }
+        },
+        {
+          "id": "remote-missing-source",
+          "screen": "screen.bookDetail",
+          "shelf_action": "add",
+          "visible_actions": [
+            "deleteAlert"
+          ],
+          "checked": {
+            "deleteAlert": false
+          }
+        },
+        {
+          "id": "local-txt-shelved",
+          "screen": "screen.bookDetail",
+          "shelf_action": "remove",
+          "visible_actions": [
+            "deleteAlert",
+            "edit",
+            "splitLongChapter",
+            "upload"
+          ],
+          "checked": {
+            "deleteAlert": true,
+            "splitLongChapter": true
+          }
+        },
+        {
+          "id": "local-non-txt-unshelved",
+          "screen": "screen.bookDetail",
+          "shelf_action": "add",
+          "visible_actions": [
+            "deleteAlert",
+            "upload"
+          ],
+          "checked": {
+            "deleteAlert": false
+          }
+        }
+      ]
+    },
+    {
+      "simulator_id": "SIM-PHONE-COMPACT-001",
+      "projection": "compactStack",
+      "cases": [
+        {
+          "id": "remote-source-login-unshelved",
+          "screen": "screen.bookDetail",
+          "shelf_action": "add",
+          "visible_actions": [
+            "canUpdate",
+            "deleteAlert",
+            "login",
+            "setBookVariable",
+            "setSourceVariable"
+          ],
+          "checked": {
+            "canUpdate": false,
+            "deleteAlert": true
+          }
+        },
+        {
+          "id": "remote-source-no-login-shelved",
+          "screen": "screen.bookDetail",
+          "shelf_action": "remove",
+          "visible_actions": [
+            "canUpdate",
+            "deleteAlert",
+            "edit",
+            "setBookVariable",
+            "setSourceVariable"
+          ],
+          "checked": {
+            "canUpdate": true,
+            "deleteAlert": false
+          }
+        },
+        {
+          "id": "remote-source-whitespace-login",
+          "screen": "screen.bookDetail",
+          "shelf_action": "add",
+          "visible_actions": [
+            "canUpdate",
+            "deleteAlert",
+            "setBookVariable",
+            "setSourceVariable"
+          ],
+          "checked": {
+            "canUpdate": true,
+            "deleteAlert": true
+          }
+        },
+        {
+          "id": "remote-missing-source",
+          "screen": "screen.bookDetail",
+          "shelf_action": "add",
+          "visible_actions": [
+            "deleteAlert"
+          ],
+          "checked": {
+            "deleteAlert": false
+          }
+        },
+        {
+          "id": "local-txt-shelved",
+          "screen": "screen.bookDetail",
+          "shelf_action": "remove",
+          "visible_actions": [
+            "deleteAlert",
+            "edit",
+            "splitLongChapter",
+            "upload"
+          ],
+          "checked": {
+            "deleteAlert": true,
+            "splitLongChapter": true
+          }
+        },
+        {
+          "id": "local-non-txt-unshelved",
+          "screen": "screen.bookDetail",
+          "shelf_action": "add",
+          "visible_actions": [
+            "deleteAlert",
+            "upload"
+          ],
+          "checked": {
+            "deleteAlert": false
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -8,7 +8,11 @@ struct LegadoApp: App {
 
     var body: some Scene {
         WindowGroup {
-            if let startupCase = StartupAcceptanceCase(
+            if let bookDetailCase = BookDetailAcceptanceCase(
+                processArguments: ProcessInfo.processInfo.arguments
+            ) {
+                BookDetailAcceptanceView(acceptanceCase: bookDetailCase)
+            } else if let startupCase = StartupAcceptanceCase(
                 processArguments: ProcessInfo.processInfo.arguments
             ) {
                 StartupAcceptanceView(

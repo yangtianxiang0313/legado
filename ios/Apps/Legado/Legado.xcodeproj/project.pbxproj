@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		77A808F091EA8A7F43C7112F /* LegadoAppUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35F4A6E9B82AF44A887F2980 /* LegadoAppUITests.swift */; };
 		7CF2EBDB0B65A2B3E697C3BD /* LegadoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB97AF8062C9ACB83622DB4D /* LegadoApp.swift */; };
+		8C9B2045210D4D12A72EDB80 /* BookDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F643378684698E56A60BB42 /* BookDetailView.swift */; };
 		9AEB7EA85E118BCDEF1BC722 /* RootShellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AA56687558EF2C28A2F526F /* RootShellView.swift */; };
 		DACC0FDD44450CF8A823AC81 /* LegadoStoreSafeKit in Frameworks */ = {isa = PBXBuildFile; productRef = 752C493A99E434E7A062F2B3 /* LegadoStoreSafeKit */; };
 /* End PBXBuildFile section */
@@ -29,6 +30,7 @@
 		35F4A6E9B82AF44A887F2980 /* LegadoAppUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegadoAppUITests.swift; sourceTree = "<group>"; };
 		41F121F4FC3DD3B968A18419 /* LegadoApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = LegadoApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7347A313DD725C4724AF05DC /* LegadoKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = LegadoKit; path = ../../Packages/LegadoKit; sourceTree = SOURCE_ROOT; };
+		8F643378684698E56A60BB42 /* BookDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookDetailView.swift; sourceTree = "<group>"; };
 		DB97AF8062C9ACB83622DB4D /* LegadoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegadoApp.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -47,6 +49,7 @@
 		2A805717CBB3DE17E51458F1 /* App */ = {
 			isa = PBXGroup;
 			children = (
+				8F643378684698E56A60BB42 /* BookDetailView.swift */,
 				DB97AF8062C9ACB83622DB4D /* LegadoApp.swift */,
 				1AA56687558EF2C28A2F526F /* RootShellView.swift */,
 			);
@@ -178,6 +181,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8C9B2045210D4D12A72EDB80 /* BookDetailView.swift in Sources */,
 				7CF2EBDB0B65A2B3E697C3BD /* LegadoApp.swift in Sources */,
 				9AEB7EA85E118BCDEF1BC722 /* RootShellView.swift in Sources */,
 			);

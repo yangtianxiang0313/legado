@@ -47,6 +47,7 @@ public enum MinimalTaskConformanceRunner {
         || fixtureID == ReaderPrefetchConformanceRunner.fixtureID
         || fixtureID == ReaderTOCRemapConformanceRunner.fixtureID
         || fixtureID == AppStartupConformanceRunner.fixtureID
+        || fixtureID == BookDetailActionConformanceRunner.fixtureID
       ? "runtime-lab"
       : "source-lab"
     let fixtureDirectory = try resolve(
@@ -133,6 +134,19 @@ public enum MinimalTaskConformanceRunner {
     }
     if fixtureID == AppStartupConformanceRunner.fixtureID {
       let run = try AppStartupConformanceRunner.run(
+        fixtureDirectory: fixtureDirectory
+      )
+      return try finish(
+        taskID: taskID,
+        fixtureID: fixtureID,
+        goldenPath: goldenPath,
+        actualArtifact: run.artifact,
+        canonicalPlans: run.requestPlan,
+        root: root
+      )
+    }
+    if fixtureID == BookDetailActionConformanceRunner.fixtureID {
+      let run = try BookDetailActionConformanceRunner.run(
         fixtureDirectory: fixtureDirectory
       )
       return try finish(
@@ -682,7 +696,8 @@ public enum MinimalTaskConformanceRunner {
       case .object(let result)? = artifact["result"],
       result["type"] == .string("source_pipeline")
         || result["type"] == .string("reader_runtime")
-        || result["type"] == .string("app_runtime"),
+        || result["type"] == .string("app_runtime")
+        || result["type"] == .string("ui_runtime"),
       case .object(let value)? = result["value"],
       let projection = value["portable_known_projection"]
     else {
