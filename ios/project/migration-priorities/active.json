@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P28-READER-OFFLINE-CACHE-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "title": "P28 阅读器按章节范围离线缓存",
+  "objective": "依据冻结 Android BaseReadBookActivity.showDownloadDialog 与 CacheBook 源码，把阅读器离线缓存入口接到既有缓存能力：默认从当前章节缓存到末章，允许用户选择起止章节，并展示结构化完成结果。",
+  "validation_policy": "仅运行一个章节范围聚焦测试并执行一次 App 构建；不启动模拟器，不新增 Android Golden。",
+  "stages": [
+    {
+      "id": "P28-S1",
+      "title": "接通阅读器范围缓存",
+      "selectors": [
+        {
+          "id": "P28-S1-READER-OFFLINE-CACHE",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-APP-NAVIGATION-READER-OFFLINE-CACHE-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-APP-NAVIGATION-READER-OFFLINE-CACHE-001",
+      "title": "从阅读器选择章节范围并离线缓存",
+      "fixture_id": "reader-offline-cache-app-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [
+        "IOS-APP-NAVIGATION-OFFLINE-CACHE-MILESTONE-001",
+        "IOS-APP-NAVIGATION-READER-CONTENT-REFRESH-001"
+      ],
+      "validation": "tests",
+      "test_filter": "DatabaseGRDBTests.testOfflineCacheHonorsSelectedChapterRange",
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+        "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "8496ae09111fce34dee650d73ce7949735f7327e",
+          "path": "app/src/main/java/io/legado/app/ui/book/read/BaseReadBookActivity.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.read.BaseReadBookActivity/showDownloadDialog"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "cdcbbf5696c1d2b018e25c2819c0461e8c667866",
+          "path": "app/src/main/java/io/legado/app/model/CacheBook.kt",
+          "symbol_id": "kotlin://io.legado.app.model.CacheBook/start"
+        }
+      ]
+    }
+  ]
+}

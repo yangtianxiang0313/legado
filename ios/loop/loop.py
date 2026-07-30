@@ -2301,6 +2301,19 @@ def app_navigation_delivery_contract(
             ),
             "test_method": "testOfflineCacheMilestone",
         },
+        "reader-offline-cache-app-v1": {
+            "goal": (
+                "按照冻结 Android 阅读器离线缓存入口语义，复用既有"
+                " AppUseCases 缓存编排，从当前章节到末章作为默认范围，"
+                "允许用户选择起止章节并展示结构化完成结果；AppShell "
+                "不得复制下载队列或正文抓取逻辑。"
+            ),
+            "acceptance_id":
+                "focused-reader-offline-cache-acceptance",
+            "scenario_id": "reader-offline-cache-app-v1",
+            "expected": "",
+            "test_method": "testReaderOfflineCacheFlow",
+        },
     }
     feature = features.get(fixture_id)
     if feature is None:
