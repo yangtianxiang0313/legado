@@ -70,6 +70,32 @@
           "symbol_id": "kotlin://io.legado.app.help.http.CookieManager/loadRequest"
         }
       ]
+    },
+    {
+      "target": "IOS-SOURCE-RUNTIME-PRODUCT-RETRY-INTEGRATION-001",
+      "title": "验证 URL option Retry 已进入产品请求会话",
+      "fixture_id": "source-product-retry-integration-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [
+        "IOS-SOURCE-RUNTIME-PRODUCT-COOKIE-SESSION-INTEGRATION-001"
+      ],
+      "validation": "tests",
+      "test_filter": "SourceProductRequestIntegrationTests",
+      "additional_allowed_paths": [],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da",
+          "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+          "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/analyzeUrl"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "b4ead2bb5a02cebe9e5bf7e42fbced5f67785485",
+          "path": "app/src/main/java/io/legado/app/help/http/OkHttpUtils.kt",
+          "symbol_id": "kotlin://io.legado.app.help.http/newCallResponse"
+        }
+      ]
     }
   ],
   "stages": [
@@ -95,6 +121,19 @@
           "id": "SOURCE-PRODUCT-COOKIE-SESSION-INTEGRATION",
           "task_ids": [
             "IOS-SOURCE-RUNTIME-PRODUCT-COOKIE-SESSION-INTEGRATION-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P12-03-RETRY-INTEGRATION",
+      "title": "URL option Retry 进入产品执行会话",
+      "outcome": "retry=2 对失败响应最多执行三次，请求成功时立即停止，Pipeline 返回最终响应。",
+      "selectors": [
+        {
+          "id": "SOURCE-PRODUCT-RETRY-INTEGRATION",
+          "task_ids": [
+            "IOS-SOURCE-RUNTIME-PRODUCT-RETRY-INTEGRATION-001"
           ]
         }
       ]
