@@ -63,6 +63,10 @@ final class SourceScriptRuntimeContractTests: XCTestCase {
       .getVariable(name: "token"),
       sessionID: sessionID
     )
+    let snapshot = try await host.execute(
+      .snapshotVariables,
+      sessionID: sessionID
+    )
     let written = try await host.execute(
       .putVariable(name: "token", value: "chapter"),
       sessionID: sessionID
@@ -75,6 +79,7 @@ final class SourceScriptRuntimeContractTests: XCTestCase {
     let bookToken = await book.get("token")
 
     XCTAssertEqual(.string("book"), inherited)
+    XCTAssertEqual(.object(["token": .string("book")]), snapshot)
     XCTAssertEqual(.string("chapter"), written)
     XCTAssertEqual(.string("chapter"), resolved)
     XCTAssertEqual("chapter", chapterToken)

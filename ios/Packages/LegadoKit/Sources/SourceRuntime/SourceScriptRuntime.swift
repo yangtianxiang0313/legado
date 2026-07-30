@@ -50,6 +50,7 @@ public struct SourceScriptRequest: Equatable, Sendable {
 /// Android characterization and policy decision instead of exposing a Swift
 /// product object directly to JavaScript.
 public enum SourceScriptHostCommand: Equatable, Sendable {
+  case snapshotVariables
   case getVariable(name: String)
   case putVariable(name: String, value: String)
 }
@@ -111,6 +112,10 @@ public struct SourceVariableScriptHost: SourceScriptHosting {
     sessionID: SourceScriptSessionID
   ) async throws -> SourceScriptValue {
     switch command {
+    case .snapshotVariables:
+      return .object(
+        await resolver.snapshot().mapValues(SourceScriptValue.string)
+      )
     case .getVariable(let name):
       return .string(await resolver.get(name))
     case .putVariable(let name, let value):

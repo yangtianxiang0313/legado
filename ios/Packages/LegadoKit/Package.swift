@@ -23,6 +23,7 @@ let package = Package(
                 "AppUseCases",
                 "AppNavigation",
                 "DatabaseGRDB",
+                "ScriptJavaScriptCore",
             ]
         ),
         .executable(name: "ConformanceCLI", targets: ["ConformanceCLI"]),
@@ -41,6 +42,11 @@ let package = Package(
         .target(
             name: "SourceRuntime",
             dependencies: ["LegadoCore", "LibraryDomain", "SourceFormat", "RuleRuntime"]
+        ),
+        .target(
+            name: "ScriptJavaScriptCore",
+            dependencies: ["SourceRuntime"],
+            linkerSettings: [.linkedFramework("JavaScriptCore")]
         ),
         .target(name: "ReaderCore", dependencies: ["LegadoCore", "LibraryDomain"]),
         .target(
@@ -94,6 +100,10 @@ let package = Package(
         .testTarget(
             name: "SourceRuntimeTests",
             dependencies: ["LegadoCore", "SourceRuntime", "TestSupport"]
+        ),
+        .testTarget(
+            name: "ScriptJavaScriptCoreTests",
+            dependencies: ["ScriptJavaScriptCore", "SourceRuntime"]
         ),
         .testTarget(
             name: "ReaderCoreTests",

@@ -160,6 +160,22 @@ public struct SourceVariableResolver: Sendable {
     return value
   }
 
+  public func snapshot() async -> [String: String] {
+    var result: [String: String] = [:]
+    for store in readOrder.reversed() {
+      for (key, value) in await store.snapshot() where !value.isEmpty {
+        result[key] = value
+      }
+    }
+    if let bookName = scopes.bookName {
+      result["bookName"] = bookName
+    }
+    if let chapterTitle = scopes.chapterTitle {
+      result["title"] = chapterTitle
+    }
+    return result
+  }
+
   private var readOrder: [SourceVariableStore] {
     switch role {
     case .rule:
