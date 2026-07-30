@@ -1,1 +1,1 @@
-{"active_task":"IOS-LIBRARY-DOMAIN-BOOK-IMPORT-CHANNEL-RUNTIME-001","attempt":0,"last_completed":{"at":"2026-07-30T06:44:15Z","sequence":215,"task_id":"IOS-CHARACTERIZE-LIBRARY-BOOK-IMPORT-CHANNEL-RUNTIME-001"},"schema_version":2,"status":"running","verification":null}
+{"active_task":null,"attempt":0,"last_completed":{"at":"2026-07-30T06:51:01Z","sequence":219,"task_id":"IOS-LIBRARY-DOMAIN-BOOK-IMPORT-CHANNEL-RUNTIME-001"},"schema_version":2,"status":"idle","verification":null}

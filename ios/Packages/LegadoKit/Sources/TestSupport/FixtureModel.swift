@@ -3267,3 +3267,564 @@ public enum LocalBookRelocationFixtureProjection {
     .number(JSONNumber(Int64(value)))
   }
 }
+
+public struct BookImportDomainObservation: Equatable, Sendable {
+  public let outcome: String
+  public let sourceSelection: String?
+  public let networkRequestCount: Int
+  public let names: [String]
+  public let authors: [String]
+  public let chapterCounts: [Int]
+  public let isArchive: [Bool]
+  public let exception: String?
+  public let batchCount: Int
+
+  public init(
+    outcome: String,
+    sourceSelection: String? = nil,
+    networkRequestCount: Int = 0,
+    names: [String] = [],
+    authors: [String] = [],
+    chapterCounts: [Int] = [],
+    isArchive: [Bool] = [],
+    exception: String? = nil,
+    batchCount: Int = 0
+  ) {
+    self.outcome = outcome
+    self.sourceSelection = sourceSelection
+    self.networkRequestCount = networkRequestCount
+    self.names = names
+    self.authors = authors
+    self.chapterCounts = chapterCounts
+    self.isArchive = isArchive
+    self.exception = exception
+    self.batchCount = batchCount
+  }
+}
+
+public enum BookImportDomainProbe {
+  public static func existingRemoteBook()
+    -> BookImportDomainObservation
+  {
+    observe(
+      RemoteBookImporter.resolve(
+        existingBook: existingRemote(),
+        orderedSources: [
+          source(name: "unused", match: .exactBase)
+        ],
+        fetchedBook: fetchedRemote(id: "unused")
+      )
+    )
+  }
+
+  public static func patternAfterInvalid()
+    -> BookImportDomainObservation
+  {
+    observe(
+      RemoteBookImporter.resolve(
+        existingBook: nil,
+        orderedSources: [
+          source(name: "invalid", match: .invalidPattern),
+          source(name: "pattern", match: .pattern),
+        ],
+        fetchedBook: fetchedRemote(id: "pattern")
+      )
+    )
+  }
+
+  public static func unmatchedRemoteBook()
+    -> BookImportDomainObservation
+  {
+    observe(
+      RemoteBookImporter.resolve(
+        existingBook: nil,
+        orderedSources: [
+          source(name: "none", match: .none)
+        ],
+        fetchedBook: nil
+      )
+    )
+  }
+
+  public static func chineseFileName()
+    -> BookImportDomainObservation
+  {
+    observe(
+      LocalBookImporter.importDocument(
+        LocalBookImportInput(
+          opaqueReference: "file://chinese",
+          fileName: "前缀《星河》作者：甲.txt",
+          byteCount: 10
+        )
+      )
+    )
+  }
+
+  public static func reimport()
+    -> BookImportDomainObservation
+  {
+    observe(
+      LocalBookImporter.importDocument(
+        LocalBookImportInput(
+          opaqueReference: "file://reimport",
+          fileName: "银河 by Bob.txt",
+          byteCount: 10,
+          existingBook: ImportedBook(
+            id: BookID(rawValue: "stable"),
+            name: "old",
+            author: "old",
+            originName: "银河 by Bob.txt",
+            originKind: .localFile,
+            isLocal: true,
+            isArchive: false,
+            chapterCount: 3
+          )
+        )
+      )
+    )
+  }
+
+  public static func emptyFile()
+    -> BookImportDomainObservation
+  {
+    observe(
+      LocalBookImporter.importDocument(
+        LocalBookImportInput(
+          opaqueReference: "file://empty",
+          fileName: "空书.txt",
+          byteCount: 0
+        )
+      )
+    )
+  }
+
+  public static func archive()
+    -> BookImportDomainObservation
+  {
+    observe(
+      LocalBookImporter.importDocument(
+        LocalBookImportInput(
+          opaqueReference: "file://archive",
+          fileName: "合集.zip",
+          byteCount: 20,
+          archiveEntries: [
+            .init(name: "压缩《远方》作者：乙.txt", byteCount: 10),
+            .init(name: "ignore.md", byteCount: 10),
+          ]
+        )
+      )
+    )
+  }
+
+  public static func recursiveScan()
+    -> BookImportDomainObservation
+  {
+    let result = LocalBookScanner.scan(scanTree())
+    return BookImportDomainObservation(
+      outcome: "scanned",
+      names: result.discoveredNames,
+      batchCount: result.batches.count
+    )
+  }
+
+  private static func observe(
+    _ result: RemoteBookImportResult
+  ) -> BookImportDomainObservation {
+    BookImportDomainObservation(
+      outcome: result.outcome.rawValue,
+      sourceSelection: result.sourceSelection.rawValue,
+      networkRequestCount: result.networkRequestCount,
+      names: result.book.map { [$0.name] } ?? [],
+      authors: result.book.map { [$0.author] } ?? [],
+      chapterCounts: result.book.map { [$0.chapterCount] } ?? [],
+      isArchive: result.book.map { [$0.isArchive] } ?? []
+    )
+  }
+
+  private static func observe(
+    _ result: LocalBookImportResult
+  ) -> BookImportDomainObservation {
+    BookImportDomainObservation(
+      outcome: result.outcome.rawValue,
+      names: result.books.map(\.name),
+      authors: result.books.map(\.author),
+      chapterCounts: result.books.map(\.chapterCount),
+      isArchive: result.books.map(\.isArchive),
+      exception: result.exception?.rawValue
+    )
+  }
+
+  private static func existingRemote() -> ImportedBook {
+    ImportedBook(
+      id: BookID(rawValue: "existing"),
+      name: "Existing Oracle Book",
+      author: "Seed",
+      originName: "Oracle Existing",
+      originKind: .existingShortCircuit,
+      isLocal: false,
+      isArchive: false,
+      chapterCount: 0
+    )
+  }
+
+  private static func fetchedRemote(id: String) -> ImportedBook {
+    ImportedBook(
+      id: BookID(rawValue: id),
+      name: "Fetched \(id)",
+      author: "Oracle Author",
+      originName: "",
+      originKind: .pattern,
+      isLocal: false,
+      isArchive: false,
+      chapterCount: 0
+    )
+  }
+
+  private static func source(
+    name: String,
+    match: RemoteBookSourceMatch
+  ) -> RemoteBookSourceCandidate {
+    RemoteBookSourceCandidate(
+      sourceID: name,
+      sourceName: name,
+      match: match
+    )
+  }
+
+  fileprivate static func scanTree() -> LocalBookScanNode {
+    .directory(
+      name: "root",
+      children: [
+        .file(name: ".hidden.txt"),
+        .file(name: "bundle.zip"),
+        .file(name: "visible.txt"),
+        .directory(
+          name: "nested",
+          children: [
+            .file(name: "inner.epub")
+          ]
+        ),
+        .directory(
+          name: "private",
+          children: [
+            .file(name: "secret.pdf"),
+            .file(name: "ignored.md"),
+          ]
+        ),
+      ]
+    )
+  }
+}
+
+public enum BookImportFixtureProjectionError: Error, Sendable {
+  case invalidFixture
+}
+
+public struct BookImportFixtureProjectionRun: Sendable {
+  public let artifact: JSONValue
+  public let requestPlan: JSONValue
+
+  public init(artifact: JSONValue, requestPlan: JSONValue) {
+    self.artifact = artifact
+    self.requestPlan = requestPlan
+  }
+}
+
+public enum BookImportFixtureProjection {
+  public static let fixtureID =
+    "rl-library-book-import-channel-runtime-001"
+
+  public static func run(
+    caseData: Data,
+    inputData: Data
+  ) throws -> BookImportFixtureProjectionRun {
+    let caseDocument: JSONValue
+    let inputDocument: JSONValue
+    do {
+      caseDocument = try JSONValueCodec.decode(caseData)
+      inputDocument = try JSONValueCodec.decode(inputData)
+    } catch {
+      throw BookImportFixtureProjectionError.invalidFixture
+    }
+    guard
+      case .object(let caseRoot) = caseDocument,
+      caseRoot["id"] == .string(fixtureID),
+      caseRoot["kind"] == .string("android_runtime_scenario"),
+      caseRoot["operation"] == .string("android_runtime"),
+      case .object(let inputRoot) = inputDocument,
+      inputRoot["schema_version"] == number(1),
+      case .array(let inputCases)? = inputRoot["cases"]
+    else {
+      throw BookImportFixtureProjectionError.invalidFixture
+    }
+
+    var identifiers: Set<String> = []
+    var plans: [JSONValue] = []
+    var cases: [JSONValue] = []
+    for value in inputCases {
+      guard
+        case .object(let inputCase) = value,
+        case .string(let id)? = inputCase["id"],
+        identifiers.insert(id).inserted,
+        case .string(let operation)? = inputCase["operation"],
+        case .object(let arguments)? = inputCase["arguments"]
+      else {
+        throw BookImportFixtureProjectionError.invalidFixture
+      }
+      plans.append(
+        .object([
+          "operation": .string(operation),
+          "arguments": .object(arguments),
+        ])
+      )
+      cases.append(
+        .object([
+          "id": .string(id),
+          "operation": .string(operation),
+          "result": try result(
+            id: id,
+            operation: operation,
+            arguments: arguments
+          ),
+          "issue": .null,
+        ])
+      )
+    }
+
+    let requestPlan = JSONValue.array(plans)
+    return BookImportFixtureProjectionRun(
+      artifact: .object([
+        "schema_version": number(1),
+        "fixture_id": .string(fixtureID),
+        "engine": .object([
+          "platform": .string("ios"),
+          "revision": .string("library-book-import-channel-v1"),
+          "compatibility_profile": .string("android-legado-v1"),
+        ]),
+        "request_plan": requestPlan,
+        "decode": .null,
+        "stages": .array([]),
+        "result": .object([
+          "type": .string("library_runtime"),
+          "value": .object([
+            "portable_known_projection": .object([
+              "cases": .array(cases)
+            ])
+          ]),
+        ]),
+        "issues": .array([]),
+      ]),
+      requestPlan: requestPlan
+    )
+  }
+
+  private static func result(
+    id: String,
+    operation: String,
+    arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    switch operation {
+    case "url_book_import":
+      return try remoteResult(id: id, arguments: arguments)
+    case "local_file_import":
+      return try localResult(arguments: arguments)
+    case "local_directory_scan":
+      return scanResult()
+    default:
+      throw BookImportFixtureProjectionError.invalidFixture
+    }
+  }
+
+  private static func remoteResult(
+    id: String,
+    arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    guard case .string(let mode)? = arguments["source_mode"] else {
+      throw BookImportFixtureProjectionError.invalidFixture
+    }
+    let existing: ImportedBook?
+    let sources: [RemoteBookSourceCandidate]
+    let fetched: ImportedBook?
+    switch mode {
+    case "existing":
+      existing = ImportedBook(
+        id: BookID(rawValue: "existing"),
+        name: "Existing Oracle Book",
+        author: "Seed",
+        originName: "Oracle Existing",
+        originKind: .existingShortCircuit,
+        isLocal: false,
+        isArchive: false,
+        chapterCount: 0
+      )
+      sources = []
+      fetched = nil
+    case "exact_base":
+      existing = nil
+      sources = [
+        source(
+          name: "Oracle Exact Source",
+          match: .exactBase
+        )
+      ]
+      fetched = fetchedBook(id: id)
+    case "pattern_after_invalid":
+      existing = nil
+      sources = [
+        source(name: "Invalid", match: .invalidPattern),
+        source(
+          name: "Oracle Pattern Source",
+          match: .pattern
+        ),
+      ]
+      fetched = fetchedBook(id: id)
+    case "none":
+      existing = nil
+      sources = [
+        source(name: "Unmatched", match: .none)
+      ]
+      fetched = nil
+    default:
+      throw BookImportFixtureProjectionError.invalidFixture
+    }
+    let result = RemoteBookImporter.resolve(
+      existingBook: existing,
+      orderedSources: sources,
+      fetchedBook: fetched
+    )
+    return .object([
+      "channel": .string("url"),
+      "network_request_count": number(result.networkRequestCount),
+      "outcome": .string(result.outcome.rawValue),
+      "source_selection": .string(result.sourceSelection.rawValue),
+      "stored_book": result.book.map(bookValue) ?? .null,
+    ])
+  }
+
+  private static func localResult(
+    arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    guard
+      case .string(let mode)? = arguments["mode"],
+      case .string(let fileName)? = arguments["file_name"]
+    else {
+      throw BookImportFixtureProjectionError.invalidFixture
+    }
+    let input: LocalBookImportInput
+    switch mode {
+    case "new_file":
+      input = .init(
+        opaqueReference: "file://new",
+        fileName: fileName,
+        byteCount: 10
+      )
+    case "reimport":
+      input = .init(
+        opaqueReference: "file://reimport",
+        fileName: fileName,
+        byteCount: 10,
+        existingBook: ImportedBook(
+          id: BookID(rawValue: "reimport"),
+          name: "old",
+          author: "old",
+          originName: fileName,
+          originKind: .localFile,
+          isLocal: true,
+          isArchive: false,
+          chapterCount: 2
+        )
+      )
+    case "empty":
+      input = .init(
+        opaqueReference: "file://empty",
+        fileName: fileName,
+        byteCount: 0
+      )
+    case "archive":
+      guard
+        case .string(let entry)? = arguments["book_entry"],
+        case .string(let ignored)? = arguments["ignored_entry"]
+      else {
+        throw BookImportFixtureProjectionError.invalidFixture
+      }
+      input = .init(
+        opaqueReference: "file://archive",
+        fileName: fileName,
+        byteCount: 20,
+        archiveEntries: [
+          .init(name: entry, byteCount: 10),
+          .init(name: ignored, byteCount: 10),
+        ]
+      )
+    default:
+      throw BookImportFixtureProjectionError.invalidFixture
+    }
+    let result = LocalBookImporter.importDocument(input)
+    return .object([
+      "books": .array(result.books.map(bookValue)),
+      "channel": .string("local_file"),
+      "database_contains_input":
+        .bool(result.databaseContainsInput),
+      "exception":
+        result.exception.map { .string($0.rawValue) } ?? .null,
+      "imported_count": number(result.books.count),
+      "outcome": .string(result.outcome.rawValue),
+    ])
+  }
+
+  private static func scanResult() -> JSONValue {
+    let result = LocalBookScanner.scan(
+      BookImportDomainProbe.scanTree()
+    )
+    return .object([
+      "add_batch_count": number(result.batches.count),
+      "channel": .string("local_scan"),
+      "clear_count": number(1),
+      "discovered_count": number(result.discoveredNames.count),
+      "discovered_names": .array(
+        result.discoveredNames.map(JSONValue.string)
+      ),
+      "finally_count": number(1),
+    ])
+  }
+
+  private static func source(
+    name: String,
+    match: RemoteBookSourceMatch
+  ) -> RemoteBookSourceCandidate {
+    RemoteBookSourceCandidate(
+      sourceID: name,
+      sourceName: name,
+      match: match
+    )
+  }
+
+  private static func fetchedBook(id: String) -> ImportedBook {
+    ImportedBook(
+      id: BookID(rawValue: id),
+      name: "Fetched \(id)",
+      author: "Oracle Author",
+      originName: "",
+      originKind: .pattern,
+      isLocal: false,
+      isArchive: false,
+      chapterCount: 0
+    )
+  }
+
+  private static func bookValue(_ book: ImportedBook) -> JSONValue {
+    .object([
+      "author": .string(book.author),
+      "chapter_count": number(book.chapterCount),
+      "is_archive": .bool(book.isArchive),
+      "is_local": .bool(book.isLocal),
+      "name": .string(book.name),
+      "origin_kind": .string(book.originKind.rawValue),
+      "origin_name": .string(book.originName),
+    ])
+  }
+
+  private static func number(_ value: Int) -> JSONValue {
+    .number(JSONNumber(Int64(value)))
+  }
+}

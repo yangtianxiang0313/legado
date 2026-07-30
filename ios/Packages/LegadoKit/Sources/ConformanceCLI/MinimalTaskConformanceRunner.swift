@@ -49,6 +49,7 @@ public enum MinimalTaskConformanceRunner {
         || fixtureID == AppStartupConformanceRunner.fixtureID
         || fixtureID == BookDetailActionConformanceRunner.fixtureID
         || fixtureID == LocalBookRelocationConformanceRunner.fixtureID
+        || fixtureID == BookImportConformanceRunner.fixtureID
       ? "runtime-lab"
       : "source-lab"
     let fixtureDirectory = try resolve(
@@ -161,6 +162,19 @@ public enum MinimalTaskConformanceRunner {
     }
     if fixtureID == LocalBookRelocationConformanceRunner.fixtureID {
       let run = try LocalBookRelocationConformanceRunner.run(
+        fixtureDirectory: fixtureDirectory
+      )
+      return try finish(
+        taskID: taskID,
+        fixtureID: fixtureID,
+        goldenPath: goldenPath,
+        actualArtifact: run.artifact,
+        canonicalPlans: run.requestPlan,
+        root: root
+      )
+    }
+    if fixtureID == BookImportConformanceRunner.fixtureID {
+      let run = try BookImportConformanceRunner.run(
         fixtureDirectory: fixtureDirectory
       )
       return try finish(
