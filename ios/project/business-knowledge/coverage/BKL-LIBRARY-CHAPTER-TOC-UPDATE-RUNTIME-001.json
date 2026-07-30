@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgeCoverageLedger",
+  "id": "BKL-LIBRARY-CHAPTER-TOC-UPDATE-RUNTIME-001",
+  "revision": 1,
+  "status": "current",
+  "packet_refs": [
+    {
+      "id": "BKP-LIBRARY-CHAPTER-TOC-UPDATE-RUNTIME-001",
+      "revision": 1,
+      "sha256": "36480669271de061f0f8e8df6e9d6a07b3dc7fc2436c0518bb18f0659acad5b8"
+    }
+  ],
+  "generated_from": {
+    "knowledge_authority_sha256": "de8041d91548f4149a9be13b1b8c91e393b564bc19ef93e53cc5359bd3f4bed1",
+    "requirement_catalog_sha256": "856931ac9a75d3fdf1b038b017b31a61a7b2109542fb966eb8eb82395c0eadd2",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "entries": [
+    {
+      "id": "BKE-LIBRARY-CHAPTER-TOC-UPDATE-RUNTIME-001",
+      "claim_ref": {
+        "id": "BKC-BOOK-TOC-UPDATE-001",
+        "revision": 2
+      },
+      "validation": {
+        "required": "android_runtime",
+        "state": "verified",
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-library-chapter-toc-update-runtime-001-30534176269-1.json",
+          "ios/harness/goldens/android-legado-v1/rl-library-chapter-toc-update-runtime-001.json#/artifact/result/value/portable_known_projection"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "covered_by_requirement",
+        "refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "reason": "受保护 Android Golden 已冻结目录过滤、成功事务替换、失败保留和阅读刷新增长策略；iOS 以一个详情到目录纵向 Delivery 接通 Domain、SourceRuntime、UseCase、GRDB 与 SwiftUI。",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "planned",
+        "requirement_refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "work_item_refs": [
+          "IOS-APP-NAVIGATION-CHAPTER-TOC-001"
+        ],
+        "capability_refs": [
+          "CAP-CONFORMANCE",
+          "CAP-CORE"
+        ],
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-library-chapter-toc-update-runtime-001-30534176269-1.json"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    }
+  ],
+  "updated_by": "IOS-CHARACTERIZE-LIBRARY-CHAPTER-TOC-UPDATE-RUNTIME-001",
+  "updated_at": "2026-07-30T10:33:50Z"
+}

@@ -2,11 +2,11 @@
   "schema_version": 1,
   "contract_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-  "inventory_control_sha256": "d3e835f51b97b0ad5cb3411e88a2d93f44a951498af794e2c3d38b514230fc4c",
+  "inventory_control_sha256": "0c4d54d6666a2dd64936faaa9306cdbe1748cfb7c195e51f1f2fbeeb34e834a8",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "7a94311241bd2c69c2fdcce9c358f209269fa965be9de27c384416684d287727",
-  "coverage_sha256": "165ac42a4649e42e0ec1d3c57c85bd3517127c2317af74ac6b6eee3371581f5b",
+  "authority_sha256": "c599f47186441055893a0ec0dd8a7985c85ecd74512ced97df0ad60dc794710e",
+  "coverage_sha256": "22aa76923c2e625d3f25e7e8ed5c64f914ca71f69bdc363b93401aa5a5744c3b",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -110,6 +110,19 @@
       "claim_refs": [
         {
           "id": "BKC-BOOK-IMPORT-CHANNELS-001",
+          "revision": 2
+        }
+      ]
+    },
+    {
+      "id": "BKP-LIBRARY-CHAPTER-TOC-UPDATE-RUNTIME-001",
+      "revision": 1,
+      "semantic_key": "library.chapter.toc-update-runtime-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-LIBRARY-CHAPTER-TOC-UPDATE-RUNTIME-001/r0001.json",
+      "record_sha256": "36480669271de061f0f8e8df6e9d6a07b3dc7fc2436c0518bb18f0659acad5b8",
+      "claim_refs": [
+        {
+          "id": "BKC-BOOK-TOC-UPDATE-001",
           "revision": 2
         }
       ]
@@ -631,6 +644,14 @@
       "resolution_state": "resolved"
     },
     {
+      "id": "DRV-LIBRARY-CHAPTER-TOC-UPDATE-001",
+      "revision": 1,
+      "semantic_key": "library.chapter.toc-update-runtime",
+      "path": "ios/project/business-knowledge/drivers/published/DRV-LIBRARY-CHAPTER-TOC-UPDATE-001/r0001.json",
+      "record_sha256": "e6d738891ade5d951fb2bd8d7e881c9213d7a15ac2ef9c2743ae1bdd287a4df6",
+      "resolution_state": "resolved"
+    },
+    {
       "id": "DRV-LIBRARY-LOCAL-BOOK-RELOCATION-001",
       "revision": 1,
       "semantic_key": "library.local-book.relocation-boundary",
@@ -919,6 +940,15 @@
       "record_sha256": "b138be3b859422ac045830e6ae26ecd6e189f0db56ba197dd617e02c57d246e6",
       "entry_ids": [
         "BKE-LIBRARY-BOOK-IMPORT-CHANNEL-RUNTIME-001"
+      ]
+    },
+    {
+      "id": "BKL-LIBRARY-CHAPTER-TOC-UPDATE-RUNTIME-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-LIBRARY-CHAPTER-TOC-UPDATE-RUNTIME-001.json",
+      "record_sha256": "9d5bdf19fbae95cdc3e8461045dac055c202679a915e6256827d262b39885e04",
+      "entry_ids": [
+        "BKE-LIBRARY-CHAPTER-TOC-UPDATE-RUNTIME-001"
       ]
     },
     {

@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-LIBRARY-CHAPTER-TOC-UPDATE-RUNTIME-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "library.chapter.toc-update-runtime-golden",
+  "title": "受保护 Android Golden 验证的目录更新、保留与阅读刷新语义",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "0c4d54d6666a2dd64936faaa9306cdbe1748cfb7c195e51f1f2fbeeb34e834a8"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "library.chapter",
+      "library.shelf",
+      "reader.progress"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-CORE"
+    ],
+    "subject_keys": [
+      "library.chapter",
+      "library.shelf",
+      "reader.progress"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-BOOK-TOC-UPDATE-001",
+      "revision": 2,
+      "semantic_key": "library.chapter.toc-update-runtime",
+      "kind": "runtime_behavior",
+      "topic": "目录更新、失败保留与阅读中增长刷新",
+      "statement": "在 rl-library-chapter-toc-update-runtime-001 的七个固定场景中，Android 的书架目录更新只接纳非本地且允许更新的书，并按 bookUrl 折叠重复请求；成功取得非空目录时以新章节集合替换旧章节、同步章节总数并清除 updateError；缺失书源或返回空目录时保留旧章节和原章节总数并设置 updateError。阅读中的自动刷新在十分钟窗口内不发请求，窗口外也只在远端目录数量严格增长时接纳新目录，非增长结果不替换已存章节。iOS 必须以 BookID、SourceID 和稳定 ChapterID 建模同一可观察结果，在仓储事务中原子替换目录并保留失败前快照；节流与增长策略属于用例或 ReaderCore，不复制 Android MainViewModel、ReadBook、Room 或全局单例。",
+      "subject_keys": [
+        "library.chapter",
+        "library.shelf",
+        "reader.progress"
+      ],
+      "depends_on": [
+        {
+          "id": "BKC-BOOK-DETAIL-STAGING-001",
+          "revision": 2
+        }
+      ],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [
+          {
+            "id": "AF-MAIN-VIEW-MODEL-UP-TOC",
+            "revision_sha256": "7cc48d05e2f0fef6b5b23de463b0a0fc1c3be1b691f4adc79ca84088d3ad9afd"
+          },
+          {
+            "id": "AF-MAIN-VIEW-MODEL-UPDATE-TOC",
+            "revision_sha256": "0dafee7040db8255f51071b2de90099a6fae991107e595559124d439cd09cc65"
+          },
+          {
+            "id": "AF-READ-BOOK-UP-TOC",
+            "revision_sha256": "b6dd249d1907375eabedd97b3cd2e7682223e144cb39b6d85fcea095c52f6505"
+          },
+          {
+            "id": "AF-BOOK-CHAPTER-LIST-ANALYZE",
+            "revision_sha256": "9280ebdded20b8f6734d8620c40d5cd498f8c23b753a7da15db49e829ca27e99"
+          }
+        ],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "ed8efcdfff50c8e9a7eb10eaf901705a5997828d",
+            "path": "app/src/main/java/io/legado/app/ui/main/MainViewModel.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.main.MainViewModel/upToc"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "ed8efcdfff50c8e9a7eb10eaf901705a5997828d",
+            "path": "app/src/main/java/io/legado/app/ui/main/MainViewModel.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.main.MainViewModel/updateToc"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d",
+            "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+            "symbol_id": "kotlin://io.legado.app.model.ReadBook/upToc"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "6f1b758fed28cb7212d748e1270d64c13463800a",
+            "path": "app/src/main/java/io/legado/app/model/webBook/BookChapterList.kt",
+            "symbol_id": "kotlin://io.legado.app.model.webBook.BookChapterList/analyzeChapterList"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/rl-library-chapter-toc-update-runtime-001.json",
+            "artifact_sha256": "039da29554556ea74ac61c1ee7668f977b4138cb75af72b998d9f5b83838bb9f",
+            "projection_pointer": "/artifact/result/value/portable_known_projection",
+            "observed_sha256": "227f455bbdf1a617d0e23b1a0a488dc949973efafe6e9b539e0f0e7a5857406a",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "96167baa941be84de5533b6ea8809caf9389bad142f8eebe179026f65020e3eb",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-BOOK-TOC-UPDATE-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-LIBRARY-CHAPTER-TOC-UPDATE-RUNTIME-001"
+}
