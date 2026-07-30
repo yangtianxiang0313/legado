@@ -5,9 +5,11 @@ import SourceRuntime
 public actor JavaScriptCoreSourceScriptRuntime: SourceScriptRuntime {
   private final class Session {
     let context: JSContext
+    let library: SourceScriptLibrary?
 
-    init() {
+    init(library: SourceScriptLibrary?) {
       context = JSContext()!
+      self.library = library
     }
   }
 
@@ -19,7 +21,7 @@ public actor JavaScriptCoreSourceScriptRuntime: SourceScriptRuntime {
     _ request: SourceScriptRequest,
     host: (any SourceScriptHosting)?
   ) async throws -> SourceScriptValue {
-    let session = session(for: request.sessionID)
+    let session = try session(for: request)
     let context = session.context
     context.exception = nil
 
@@ -80,12 +82,27 @@ public actor JavaScriptCoreSourceScriptRuntime: SourceScriptRuntime {
     )
   }
 
-  private func session(for id: SourceScriptSessionID) -> Session {
-    if let session = sessions[id] {
+  private func session(
+    for request: SourceScriptRequest
+  ) throws -> Session {
+    if
+      let session = sessions[request.sessionID],
+      session.library == request.library
+    {
       return session
     }
-    let session = Session()
-    sessions[id] = session
+    let session = Session(library: request.library)
+    if let library = request.library {
+      switch library.kind {
+      case .inline:
+        session.context.evaluateScript(library.source)
+      }
+      guard session.context.exception == nil else {
+        session.context.exception = nil
+        throw SourceScriptIssue(code: .executionFailed)
+      }
+    }
+    sessions[request.sessionID] = session
     return session
   }
 
