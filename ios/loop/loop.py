@@ -584,6 +584,19 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                     "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
                 ]
             )
+        if target == "IOS-APP-NAVIGATION-READER-CONTENT-001":
+            allowed_paths.extend(
+                [
+                    "ios/Packages/LegadoKit/Sources/LibraryDomain/**",
+                    "ios/Packages/LegadoKit/Tests/LibraryDomainTests/**",
+                    "ios/Packages/LegadoKit/Sources/SourceRuntime/**",
+                    "ios/Packages/LegadoKit/Tests/SourceRuntimeTests/**",
+                    "ios/Packages/LegadoKit/Sources/ReaderCore/**",
+                    "ios/Packages/LegadoKit/Tests/ReaderCoreTests/**",
+                    "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+                    "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+                ]
+            )
         return {
             "owner": "AppNavigation",
             "architecture_refs": [
@@ -1236,6 +1249,20 @@ def app_navigation_delivery_contract(
             ),
             "test_method": "testChapterTOCFlow",
         },
+        "rl-ui-reader-toc-result-001": {
+            "goal": (
+                "按照冻结 Android 目录选择结果，把稳定章节身份和字符偏移"
+                "从 AppNavigation 交给 AppUseCases，接通 SourceRuntime 正文"
+                "抓取、ReaderCore 阅读文档与原生 iPhone/iPad Reader 页面。"
+            ),
+            "acceptance_id": "structured-reader-content-acceptance",
+            "scenario_id": "ui-reader-content-v1",
+            "expected": (
+                "ios/harness/ui/expected/"
+                "ui-reader-content-v1.json"
+            ),
+            "test_method": "testReaderContentFlow",
+        },
     }
     feature = features.get(fixture_id)
     if feature is None:
@@ -1841,6 +1868,13 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
         extra_test_filters = [
             ("library-domain-tests", "LibraryDomainTests"),
             ("source-runtime-tests", "SourceRuntimeTests"),
+            ("database-grdb-tests", "DatabaseGRDBTests"),
+        ]
+    elif target == "IOS-APP-NAVIGATION-READER-CONTENT-001":
+        extra_test_filters = [
+            ("library-domain-tests", "LibraryDomainTests"),
+            ("source-runtime-tests", "SourceRuntimeTests"),
+            ("reader-core-tests", "ReaderCoreTests"),
             ("database-grdb-tests", "DatabaseGRDBTests"),
         ]
     for command_id, test_filter in reversed(extra_test_filters):

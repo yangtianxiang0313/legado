@@ -1035,6 +1035,9 @@ class MinimalLoopTests(unittest.TestCase):
         toc = loop.app_navigation_delivery_contract(
             "rl-library-chapter-toc-update-runtime-001"
         )
+        reader = loop.app_navigation_delivery_contract(
+            "rl-ui-reader-toc-result-001"
+        )
 
         self.assertEqual(
             "testStartupFirstUseAndRestore",
@@ -1053,6 +1056,10 @@ class MinimalLoopTests(unittest.TestCase):
             toc["ui_acceptance"]["test_method"],
         )
         self.assertEqual(
+            "testReaderContentFlow",
+            reader["ui_acceptance"]["test_method"],
+        )
+        self.assertEqual(
             (
                 "ios/harness/ui/expected/"
                 "ui-book-detail-conditional-actions-v1.json"
@@ -1062,6 +1069,7 @@ class MinimalLoopTests(unittest.TestCase):
         self.assertIn("书籍详情操作矩阵", detail["goal"])
         self.assertIn("移除静态样例", search["goal"])
         self.assertIn("目录抓取", toc["goal"])
+        self.assertIn("正文", reader["goal"])
         with self.assertRaisesRegex(
             loop.LoopError,
             "APP_NAVIGATION_UI_CONTRACT_NOT_MAPPED",
@@ -1979,6 +1987,24 @@ class MinimalLoopTests(unittest.TestCase):
             "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
         ):
             self.assertIn(path, toc_owner["allowed_paths"])
+
+        reader_ui = loop.app_navigation_delivery_contract(
+            "rl-ui-reader-toc-result-001"
+        )
+        self.assertEqual(
+            "testReaderContentFlow",
+            reader_ui["ui_acceptance"]["test_method"],
+        )
+        reader_owner = loop.owner_contract(
+            "IOS-APP-NAVIGATION-READER-CONTENT-001"
+        )
+        for path in (
+            "ios/Packages/LegadoKit/Sources/LibraryDomain/**",
+            "ios/Packages/LegadoKit/Sources/SourceRuntime/**",
+            "ios/Packages/LegadoKit/Sources/ReaderCore/**",
+            "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+        ):
+            self.assertIn(path, reader_owner["allowed_paths"])
 
 
 if __name__ == "__main__":
