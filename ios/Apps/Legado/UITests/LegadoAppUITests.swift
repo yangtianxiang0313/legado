@@ -1,3 +1,4 @@
+import Network
 import XCTest
 
 @MainActor
@@ -1416,6 +1417,99 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testSourceWebLoginMilestone() throws {
+        let server = try SourceLoginHTTPServer()
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: ProcessInfo.processInfo.environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-sources",
+        ]
+        app.launchEnvironment["LEGADO_SEARCH_BASE_URL"] = server.origin
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        selectRoot("root.settings", label: "我的")
+        require("action.settings.openSources").tap()
+        require("screen.source.management")
+        requireFirst("action.source.create").tap()
+        requireButton("action.source.import").tap()
+        require("screen.source.import")
+
+        let definition = require("field.source.import.text")
+        definition.tap()
+        definition.typeText(
+            """
+            {"bookSourceUrl":"\(server.origin)",\
+            "bookSourceName":"登录测试书源",\
+            "bookSourceGroup":"SourceLogin","enabled":true,\
+            "enabledCookieJar":true,\
+            "loginUrl":"\(server.origin)/login",\
+            "searchUrl":"\(server.origin)/search?q={{key}}",\
+            "ruleSearch":{"bookList":".book",\
+            "name":".name","author":".author","bookUrl":"a"},\
+            "ruleBookInfo":{"name":"h1.name",\
+            "author":".author","tocUrl":"a.toc"},\
+            "ruleToc":{"chapterList":".chapter",\
+            "chapterName":"a","chapterUrl":"a"},\
+            "ruleContent":{"content":"#content"}}
+            """
+        )
+        requireButton("action.source.import.parse").tap()
+        require("toggle.source.import.candidate.0")
+        requireButton("action.source.import.commit").tap()
+        require("screen.source.management")
+        XCTAssertTrue(
+            app.staticTexts["登录测试书源"].waitForExistence(timeout: 8)
+        )
+
+        app.staticTexts["登录测试书源"].tap()
+        require("screen.source.editor")
+        requireButton("action.source.editor.more").tap()
+        requireButton("action.source.editor.login").tap()
+        require("screen.source.login")
+        XCTAssertTrue(
+            app.staticTexts["登录完成"].waitForExistence(timeout: 12)
+        )
+        requireButton("action.source.login.complete").tap()
+        require("screen.source.editor", timeout: 12)
+
+        selectRoot("root.shelf", label: "书架")
+        require("action.shelf.openSearch").tap()
+        require("screen.search.books")
+        let searchField = app.searchFields.firstMatch
+        XCTAssertTrue(searchField.waitForExistence(timeout: 8))
+        searchField.tap()
+        searchField.typeText("密钥\n")
+        XCTAssertTrue(
+            app.staticTexts["登录后书籍"].waitForExistence(timeout: 12)
+        )
+        XCTAssertTrue(
+            app.staticTexts["Cookie 作者"].waitForExistence(timeout: 8)
+        )
+        XCTAssertTrue(server.observedAuthenticatedSearch)
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "scenario": "source-web-login-app-v1",
+            "login_page_loaded": true,
+            "cookie_observed_by_search": true,
+            "parsed_book": "登录后书籍",
+            "route_trace": [
+                "source.management",
+                "source.import",
+                "source.editor",
+                "source.login",
+                "search.books",
+            ],
+        ])
+    }
+
     func testShelfManagementMilestone() throws {
         let environment = ProcessInfo.processInfo.environment
         let contract = try XCTUnwrap(
@@ -2302,4 +2396,180 @@ private struct SimulatorContract {
             return nil
         }
     }
+}
+
+private final class SourceLoginHTTPServer: @unchecked Sendable {
+    private let listener: NWListener
+    private let queue = DispatchQueue(label: "SourceLoginHTTPServer")
+    private let stateLock = NSLock()
+    private var authenticatedSearch = false
+    private var startupPort: NWEndpoint.Port?
+    private var startupError: NWError?
+
+    private(set) var origin = ""
+
+    var observedAuthenticatedSearch: Bool {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return authenticatedSearch
+    }
+
+    init() throws {
+        listener = try NWListener(using: .tcp, on: .any)
+        let ready = DispatchSemaphore(value: 0)
+        listener.stateUpdateHandler = { [weak self] state in
+            guard let self else { return }
+            switch state {
+            case .ready:
+                self.stateLock.lock()
+                self.startupPort = self.listener.port
+                self.stateLock.unlock()
+                ready.signal()
+            case .failed(let error):
+                self.stateLock.lock()
+                self.startupError = error
+                self.stateLock.unlock()
+                ready.signal()
+            default:
+                break
+            }
+        }
+        listener.newConnectionHandler = { [weak self] connection in
+            self?.accept(connection)
+        }
+        listener.start(queue: queue)
+        guard ready.wait(timeout: .now() + 5) == .success else {
+            listener.cancel()
+            throw SourceLoginHTTPServerError.startTimedOut
+        }
+        stateLock.lock()
+        let resolvedPort = startupPort
+        let resolvedError = startupError
+        stateLock.unlock()
+        if let resolvedError {
+            listener.cancel()
+            throw resolvedError
+        }
+        guard let resolvedPort else {
+            listener.cancel()
+            throw SourceLoginHTTPServerError.portUnavailable
+        }
+        origin = "http://127.0.0.1:\(resolvedPort.rawValue)"
+    }
+
+    deinit {
+        listener.cancel()
+    }
+
+    private func accept(_ connection: NWConnection) {
+        connection.start(queue: queue)
+        receiveRequest(from: connection, accumulated: Data())
+    }
+
+    private func receiveRequest(
+        from connection: NWConnection,
+        accumulated: Data
+    ) {
+        connection.receive(
+            minimumIncompleteLength: 1,
+            maximumLength: 64 * 1024
+        ) { [weak self] content, _, isComplete, error in
+            guard let self else {
+                connection.cancel()
+                return
+            }
+            var request = accumulated
+            if let content {
+                request.append(content)
+            }
+            if
+                request.range(of: Data("\r\n\r\n".utf8)) != nil
+                    || isComplete
+                    || error != nil
+            {
+                respond(to: request, on: connection)
+            } else {
+                receiveRequest(
+                    from: connection,
+                    accumulated: request
+                )
+            }
+        }
+    }
+
+    private func respond(
+        to requestData: Data,
+        on connection: NWConnection
+    ) {
+        let request = String(decoding: requestData, as: UTF8.self)
+        let firstLine = request.components(separatedBy: "\r\n").first ?? ""
+        let target = firstLine.split(separator: " ").dropFirst().first ?? "/"
+        let path = target.split(separator: "?").first.map(String.init) ?? "/"
+        let hasAuthentication = request
+            .lowercased()
+            .contains("cookie: auth=source-login")
+        let status: String
+        let extraHeaders: [String]
+        let body: String
+
+        switch path {
+        case "/login":
+            status = "200 OK"
+            extraHeaders = [
+                "Set-Cookie: auth=source-login; Path=/",
+            ]
+            body = """
+                <html><body>
+                <h1>登录完成</h1>
+                <p>Cookie 已由本地书源网站写入。</p>
+                </body></html>
+                """
+        case "/search":
+            if hasAuthentication {
+                stateLock.lock()
+                authenticatedSearch = true
+                stateLock.unlock()
+                status = "200 OK"
+                extraHeaders = []
+                body = """
+                    <html><body>
+                    <div class="book">
+                      <span class="name">登录后书籍</span>
+                      <span class="author">Cookie 作者</span>
+                      <a href="/book">详情</a>
+                    </div>
+                    </body></html>
+                    """
+            } else {
+                status = "401 Unauthorized"
+                extraHeaders = []
+                body = "<html><body><p>需要登录</p></body></html>"
+            }
+        default:
+            status = "404 Not Found"
+            extraHeaders = []
+            body = "<html><body>not found</body></html>"
+        }
+
+        let bodyData = Data(body.utf8)
+        let headers = [
+            "HTTP/1.1 \(status)",
+            "Content-Type: text/html; charset=utf-8",
+            "Content-Length: \(bodyData.count)",
+            "Connection: close",
+        ] + extraHeaders + ["", ""]
+        var response = Data(headers.joined(separator: "\r\n").utf8)
+        response.append(bodyData)
+        connection.send(
+            content: response,
+            completion: .contentProcessed { _ in
+                connection.cancel()
+            }
+        )
+    }
+}
+
+private enum SourceLoginHTTPServerError: Error {
+    case startTimedOut
+    case portUnavailable
 }

@@ -10,6 +10,7 @@
 		1A247BC9DA1F87E2A09B5044 /* ShelfManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1461305771304D0B5A9934B5 /* ShelfManagementView.swift */; };
 		26C1753D9C50964A3EA59600 /* ChapterTOCView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 148BB4F7EFBC9D40BED6769D /* ChapterTOCView.swift */; };
 		682ADA9807FEE6DA793B5B45 /* SourceManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C9DD517B1446521069518EC /* SourceManagementView.swift */; };
+		6CA4C2449D674B518896C424 /* SourceLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C3D6A5A1D184704A75CC5EF /* SourceLoginView.swift */; };
 		77A808F091EA8A7F43C7112F /* LegadoAppUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35F4A6E9B82AF44A887F2980 /* LegadoAppUITests.swift */; };
 		7CF2EBDB0B65A2B3E697C3BD /* LegadoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB97AF8062C9ACB83622DB4D /* LegadoApp.swift */; };
 		81816E12EB45F89D6C820242 /* ManagedBookFileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F888FA69C591B5A9AC6E9D5B /* ManagedBookFileStore.swift */; };
@@ -34,6 +35,7 @@
 /* Begin PBXFileReference section */
 		03D812586C316D23E78AB8E6 /* LegadoAppUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = LegadoAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0E3179602790AC70DE65BB59 /* SearchEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchEnvironment.swift; sourceTree = "<group>"; };
+		0C3D6A5A1D184704A75CC5EF /* SourceLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceLoginView.swift; sourceTree = "<group>"; };
 		1461305771304D0B5A9934B5 /* ShelfManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShelfManagementView.swift; sourceTree = "<group>"; };
 		148BB4F7EFBC9D40BED6769D /* ChapterTOCView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChapterTOCView.swift; sourceTree = "<group>"; };
 		1AA56687558EF2C28A2F526F /* RootShellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootShellView.swift; sourceTree = "<group>"; };
@@ -72,6 +74,7 @@
 				0E3179602790AC70DE65BB59 /* SearchEnvironment.swift */,
 				1461305771304D0B5A9934B5 /* ShelfManagementView.swift */,
 				7C9B37DC68383564F773D013 /* SourceCatalogEnvironment.swift */,
+				0C3D6A5A1D184704A75CC5EF /* SourceLoginView.swift */,
 				1C9DD517B1446521069518EC /* SourceManagementView.swift */,
 			);
 			path = App;
@@ -211,6 +214,7 @@
 				F6215ABC51AF3EDE56196855 /* SearchEnvironment.swift in Sources */,
 				1A247BC9DA1F87E2A09B5044 /* ShelfManagementView.swift in Sources */,
 				D8AD017203A6DBD627D4F11B /* SourceCatalogEnvironment.swift in Sources */,
+				6CA4C2449D674B518896C424 /* SourceLoginView.swift in Sources */,
 				682ADA9807FEE6DA793B5B45 /* SourceManagementView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

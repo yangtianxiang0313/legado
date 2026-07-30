@@ -889,20 +889,6 @@ struct SourceDebugView: View {
     }
 }
 
-struct SourceLoginView: View {
-    let source: BookSourceDraft
-
-    var body: some View {
-        ContentUnavailableView {
-            Label("书源登录", systemImage: "person.badge.key")
-        } description: {
-            Text(source.loginURL)
-        }
-        .navigationTitle(source.name)
-        .accessibilityIdentifier("screen.source.login")
-    }
-}
-
 struct SourceSingleSearchView: View {
     let source: BookSourceDraft
     @State private var query = ""

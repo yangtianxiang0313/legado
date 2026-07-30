@@ -14,6 +14,26 @@ enum SearchEnvironment {
     private static let scriptRuntime =
         JavaScriptCoreSourceScriptRuntime()
 
+    static func makeWebLoginSession(
+        source: BookSourceDraft
+    ) -> SourceWebLoginSession {
+        let root = source.rawDefinition.flatMap {
+            try? JSONSerialization.jsonObject(with: $0)
+                as? [String: Any]
+        }
+        let headers = HTTPHeaders(
+            (root.map(sourceHeaders) ?? []).compactMap {
+                try? HTTPHeader(name: $0.name, value: $0.value)
+            }
+        )
+        return SourceWebLoginSession(
+            sourceURL: source.sourceURL,
+            loginURL: source.loginURL,
+            headers: headers,
+            cookieStore: cookieStore
+        )
+    }
+
     static func makeSession(
         persistedSources: [BookSourceDraft] = []
     ) -> SearchSession {
