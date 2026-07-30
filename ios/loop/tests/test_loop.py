@@ -1032,6 +1032,9 @@ class MinimalLoopTests(unittest.TestCase):
         search = loop.app_navigation_delivery_contract(
             "rl-ui-discovery-search-flow-001"
         )
+        toc = loop.app_navigation_delivery_contract(
+            "rl-library-chapter-toc-update-runtime-001"
+        )
 
         self.assertEqual(
             "testStartupFirstUseAndRestore",
@@ -1046,6 +1049,10 @@ class MinimalLoopTests(unittest.TestCase):
             search["ui_acceptance"]["test_method"],
         )
         self.assertEqual(
+            "testChapterTOCFlow",
+            toc["ui_acceptance"]["test_method"],
+        )
+        self.assertEqual(
             (
                 "ios/harness/ui/expected/"
                 "ui-book-detail-conditional-actions-v1.json"
@@ -1054,6 +1061,7 @@ class MinimalLoopTests(unittest.TestCase):
         )
         self.assertIn("书籍详情操作矩阵", detail["goal"])
         self.assertIn("移除静态样例", search["goal"])
+        self.assertIn("目录抓取", toc["goal"])
         with self.assertRaisesRegex(
             loop.LoopError,
             "APP_NAVIGATION_UI_CONTRACT_NOT_MAPPED",
@@ -1954,6 +1962,23 @@ class MinimalLoopTests(unittest.TestCase):
             "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
             ui_owner["allowed_paths"],
         )
+
+        toc_ui = loop.app_navigation_delivery_contract(
+            "rl-library-chapter-toc-update-runtime-001"
+        )
+        self.assertEqual(
+            "testChapterTOCFlow",
+            toc_ui["ui_acceptance"]["test_method"],
+        )
+        toc_owner = loop.owner_contract(
+            "IOS-APP-NAVIGATION-CHAPTER-TOC-001"
+        )
+        for path in (
+            "ios/Packages/LegadoKit/Sources/LibraryDomain/**",
+            "ios/Packages/LegadoKit/Sources/SourceRuntime/**",
+            "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+        ):
+            self.assertIn(path, toc_owner["allowed_paths"])
 
 
 if __name__ == "__main__":

@@ -573,6 +573,17 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                     "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
                 ]
             )
+        if target == "IOS-APP-NAVIGATION-CHAPTER-TOC-001":
+            allowed_paths.extend(
+                [
+                    "ios/Packages/LegadoKit/Sources/LibraryDomain/**",
+                    "ios/Packages/LegadoKit/Tests/LibraryDomainTests/**",
+                    "ios/Packages/LegadoKit/Sources/SourceRuntime/**",
+                    "ios/Packages/LegadoKit/Tests/SourceRuntimeTests/**",
+                    "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+                    "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+                ]
+            )
         return {
             "owner": "AppNavigation",
             "architecture_refs": [
@@ -1212,6 +1223,19 @@ def app_navigation_delivery_contract(
             ),
             "test_method": "testBookDetailStagingPersistence",
         },
+        "rl-library-chapter-toc-update-runtime-001": {
+            "goal": (
+                "把稳定书源与章节身份、目录抓取、失败保留和 GRDB 原子替换"
+                "接入详情与目录页面，在真实搜索结果上完成目录加载和章节选择。"
+            ),
+            "acceptance_id": "structured-chapter-toc-acceptance",
+            "scenario_id": "ui-chapter-toc-v1",
+            "expected": (
+                "ios/harness/ui/expected/"
+                "ui-chapter-toc-v1.json"
+            ),
+            "test_method": "testChapterTOCFlow",
+        },
     }
     feature = features.get(fixture_id)
     if feature is None:
@@ -1808,11 +1832,22 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "timeout_seconds": 300,
         },
     ]
+    extra_test_filters = []
     if target == "IOS-APP-NAVIGATION-BOOK-DETAIL-STAGING-001":
+        extra_test_filters = [
+            ("database-grdb-tests", "DatabaseGRDBTests")
+        ]
+    elif target == "IOS-APP-NAVIGATION-CHAPTER-TOC-001":
+        extra_test_filters = [
+            ("library-domain-tests", "LibraryDomainTests"),
+            ("source-runtime-tests", "SourceRuntimeTests"),
+            ("database-grdb-tests", "DatabaseGRDBTests"),
+        ]
+    for command_id, test_filter in reversed(extra_test_filters):
         commands.insert(
             2,
             {
-                "id": "database-grdb-tests",
+                "id": command_id,
                 "argv": [
                     "swift",
                     "test",
@@ -1820,7 +1855,7 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
                     "ios/Packages/LegadoKit",
                     "--disable-automatic-resolution",
                     "--filter",
-                    "DatabaseGRDBTests",
+                    test_filter,
                 ],
                 "required_output_pattern": (
                     r"Executed [1-9][0-9]* tests?, with 0 failures"
