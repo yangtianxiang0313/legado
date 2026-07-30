@@ -1013,6 +1013,15 @@ class MinimalLoopTests(unittest.TestCase):
             delivery["allowed_paths"],
         )
 
+    def test_characterization_reuses_existing_android_runtime_fixture(self):
+        self.assertEqual(
+            "rl-library-chapter-toc-update-runtime-001",
+            loop.characterization_fixture_id(
+                "reader.session.toc-refresh",
+                "rl",
+            ),
+        )
+
     def test_completed_lightweight_characterization_becomes_delivery(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

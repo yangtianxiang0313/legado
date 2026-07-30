@@ -1271,6 +1271,12 @@ def characterization_fixture_id(
     semantic_key: str,
     fixture_prefix: str = "sl",
 ) -> str:
+    reusable_fixtures = {
+        "reader.session.toc-refresh":
+            "rl-library-chapter-toc-update-runtime-001",
+    }
+    if semantic_key in reusable_fixtures:
+        return reusable_fixtures[semantic_key]
     slug = re.sub(r"[^a-z0-9]+", "-", semantic_key.lower()).strip("-")
     return f"{fixture_prefix}-{slug}-001"
 
