@@ -529,6 +529,7 @@ enum SearchEnvironment {
             bookURLPattern: string(root, "bookUrlPattern"),
             sourceHeaders: sourceHeaders(root),
             enabledCookieJar: root["enabledCookieJar"] as? Bool ?? false,
+            loginCheckScript: string(root, "loginCheckJs"),
             runtime: runtime
         )
         let catalog = (

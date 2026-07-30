@@ -179,11 +179,26 @@ public struct SourceContentPipeline: Sendable {
         )
       )
     )
-    let response = try await responseSession.load(
+    let networkResponse = try await responseSession.load(
       plan,
       enabledCookieJar: definition.enabledCookieJar,
       javaScript: definition.runtime.content.webJS,
       sourceRegex: definition.runtime.content.sourceRegex
+    )
+    let response = try await SourceLoginCheckEvaluator(
+      definition: definition,
+      scriptRuntime: scriptRuntime,
+      scriptSessionID: scriptSessionID
+    ).evaluate(
+      networkResponse,
+      resolver: SourceVariableResolver(
+        role: .rule,
+        scopes: SourceVariableScopes(
+          chapter: chapterStore,
+          book: bookStore,
+          ruleData: bookStore
+        )
+      )
     )
     guard
       let effectiveURL = URL(

@@ -124,9 +124,24 @@ public struct SourceBookInfoPipeline: Sendable {
         plan,
         enabledCookieJar: definition.enabledCookieJar
       )
+      let loginChecked = try await SourceLoginCheckEvaluator(
+        definition: definition,
+        scriptRuntime: scriptRuntime,
+        scriptSessionID: scriptSessionID
+      ).evaluate(
+        networkResponse,
+        resolver: SourceVariableResolver(
+          role: .rule,
+          scopes: SourceVariableScopes(
+            book: variableStore,
+            ruleData: variableStore,
+            bookName: book.name
+          )
+        )
+      )
       guard
         let effectiveURL = URL(
-          string: networkResponse.finalURL.absoluteString
+          string: loginChecked.finalURL.absoluteString
         )
       else {
         throw SourceSearchPipelineError.invalidResponseEncoding
@@ -134,7 +149,7 @@ public struct SourceBookInfoPipeline: Sendable {
       response = try await responseChecker.check(
         SourceBookInfoResponse(
           url: effectiveURL,
-          body: networkResponse.body
+          body: loginChecked.body
         ),
         source: definition,
         book: book

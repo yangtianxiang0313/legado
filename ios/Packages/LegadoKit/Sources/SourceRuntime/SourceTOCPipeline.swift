@@ -185,9 +185,20 @@ public struct SourceTOCPipeline: Sendable {
         )
       )
     )
-    let response = try await responseSession.load(
+    let networkResponse = try await responseSession.load(
       plan,
       enabledCookieJar: definition.enabledCookieJar
+    )
+    let response = try await SourceLoginCheckEvaluator(
+      definition: definition,
+      scriptRuntime: scriptRuntime,
+      scriptSessionID: scriptSessionID
+    ).evaluate(
+      networkResponse,
+      resolver: SourceVariableResolver(
+        role: .rule,
+        scopes: SourceVariableScopes(ruleData: variableStore)
+      )
     )
     guard
       let effectiveURL = URL(

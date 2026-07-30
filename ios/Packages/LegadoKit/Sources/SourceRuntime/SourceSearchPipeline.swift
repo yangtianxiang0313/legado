@@ -7,6 +7,7 @@ public struct SourceSearchDefinition: Sendable, Equatable {
   public let bookURLPattern: String?
   public let sourceHeaders: [SourceHeaderField]
   public let enabledCookieJar: Bool
+  public let loginCheckScript: String?
   public let runtime: HTMLCSSSourceDefinition
 
   public init(
@@ -16,6 +17,7 @@ public struct SourceSearchDefinition: Sendable, Equatable {
     bookURLPattern: String? = nil,
     sourceHeaders: [SourceHeaderField] = [],
     enabledCookieJar: Bool = false,
+    loginCheckScript: String? = nil,
     runtime: HTMLCSSSourceDefinition
   ) {
     self.sourceURL = sourceURL
@@ -24,6 +26,7 @@ public struct SourceSearchDefinition: Sendable, Equatable {
     self.bookURLPattern = bookURLPattern
     self.sourceHeaders = sourceHeaders
     self.enabledCookieJar = enabledCookieJar
+    self.loginCheckScript = loginCheckScript
     self.runtime = runtime
   }
 
@@ -247,10 +250,21 @@ public struct SourceSearchPipeline: Sendable {
       requestPlan,
       enabledCookieJar: definition.enabledCookieJar
     )
+    let loginChecked = try await SourceLoginCheckEvaluator(
+      definition: definition,
+      scriptRuntime: scriptRuntime,
+      scriptSessionID: scriptSessionID
+    ).evaluate(
+      networkResponse,
+      resolver: SourceVariableResolver(
+        role: .rule,
+        scopes: SourceVariableScopes(ruleData: variableStore)
+      )
+    )
     let checked = try await responseChecker.check(
       SourceSearchResponse(
-        url: networkResponse.finalURL.absoluteString,
-        body: networkResponse.body
+        url: loginChecked.finalURL.absoluteString,
+        body: loginChecked.body
       ),
       source: definition,
       input: input

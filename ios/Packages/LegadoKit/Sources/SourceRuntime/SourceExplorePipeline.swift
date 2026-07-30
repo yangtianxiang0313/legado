@@ -195,10 +195,21 @@ public struct SourceExplorePipeline: Sendable {
       requestPlan,
       enabledCookieJar: definition.source.enabledCookieJar
     )
+    let loginChecked = try await SourceLoginCheckEvaluator(
+      definition: definition.source,
+      scriptRuntime: scriptRuntime,
+      scriptSessionID: scriptSessionID
+    ).evaluate(
+      networkResponse,
+      resolver: SourceVariableResolver(
+        role: .rule,
+        scopes: SourceVariableScopes(ruleData: variableStore)
+      )
+    )
     let checked = try await responseChecker.check(
       SourceSearchResponse(
-        url: networkResponse.finalURL.absoluteString,
-        body: networkResponse.body
+        url: loginChecked.finalURL.absoluteString,
+        body: loginChecked.body
       ),
       source: definition,
       input: input
