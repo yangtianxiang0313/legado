@@ -150,6 +150,29 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
     }
   }
 
+  public func updateBookMetadata(
+    bookID: LibraryDomain.BookID,
+    update: BookMetadataUpdate
+  ) async throws -> ShelfBookItem {
+    try await database.write { db in
+      guard var record = try BookRecord
+        .filter(Column("bookID") == bookID.rawValue)
+        .fetchOne(db)
+      else {
+        throw ShelfMutationFailure.missingBook
+      }
+      record.name = update.name
+      record.author = update.author
+      record.customCoverURL =
+        update.coverURL == record.coverURL
+        ? nil
+        : update.coverURL
+      record.customIntro = update.intro
+      try record.update(db)
+      return record.item
+    }
+  }
+
   public func chapters(
     bookID: LibraryDomain.BookID
   ) async throws -> [LibraryDomain.BookChapter] {
@@ -928,6 +951,12 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
         table.add(column: "tocURL", .text)
       }
     }
+    migrator.registerMigration("addBookMetadataOverrides") { db in
+      try db.alter(table: "books") { table in
+        table.add(column: "customCoverURL", .text)
+        table.add(column: "customIntro", .text)
+      }
+    }
     return migrator
   }
 }
@@ -960,6 +989,8 @@ private struct BookRecord:
   var lastChapter: String
   var intro: String
   var coverURL: String?
+  var customCoverURL: String?
+  var customIntro: String?
   var originName: String
   var sourceID: String
   var variablesJSON: String
@@ -994,6 +1025,8 @@ private struct BookRecord:
     self.lastChapter = candidate.lastChapter
     self.intro = candidate.intro
     self.coverURL = candidate.coverURL
+    self.customCoverURL = candidate.customCoverURL
+    self.customIntro = candidate.customIntro
     self.originName = candidate.originName
     self.sourceID = candidate.sourceID
     self.variablesJSON = SourceVariableJSON.encode(candidate.variables)
@@ -1024,6 +1057,12 @@ private struct BookRecord:
     lastChapter = candidate.lastChapter
     intro = candidate.intro
     coverURL = candidate.coverURL
+    if let candidateCustomCoverURL = candidate.customCoverURL {
+      customCoverURL = candidateCustomCoverURL
+    }
+    if let candidateCustomIntro = candidate.customIntro {
+      customIntro = candidateCustomIntro
+    }
     originName = candidate.originName
     sourceID = candidate.sourceID
     variablesJSON = SourceVariableJSON.encode(candidate.variables)
@@ -1042,6 +1081,8 @@ private struct BookRecord:
         tocURL: tocURL,
         bookRequestExpression: bookRequestExpression,
         coverURL: coverURL,
+        customCoverURL: customCoverURL,
+        customIntro: customIntro,
         originName: originName,
         sourceID: sourceID,
         variables: SourceVariableJSON.decode(variablesJSON)

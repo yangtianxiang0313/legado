@@ -1,11 +1,27 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P37-BOOK-METADATA-EDIT-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P37 编辑书籍元数据",
   "objective": "依据冻结 Android BookInfoEditActivity、BookInfoEditViewModel 与 Book 源码，让已暂存或入架书籍可编辑书名、作者、封面和简介；书名作者直接更新，封面与简介作为独立用户覆盖层持久化，后续书源详情刷新保留覆盖层。",
   "validation_policy": "运行一个元数据覆盖层、重开持久化与书源刷新保持性的聚焦测试，再执行一次 App 构建；不启动模拟器，不新增 Android Golden。",
+  "completion_evidence": [
+    "ShelfBookCandidate 与 SearchBookRoute 区分书源 coverURL/intro 和用户 customCoverURL/customIntro",
+    "BookMetadataUpdate 支持直接修改书名作者并设置封面简介覆盖值",
+    "GRDB 新增覆盖层迁移，数据库重开后仍保留",
+    "SourceBookInfoLoader 刷新书源原始字段时显式携带用户覆盖层",
+    "详情页展示优先用户封面和简介，并提供原生编辑表单",
+    "聚焦持久化与刷新保持性测试、一次 LegadoApp 构建通过"
+  ],
+  "final_verification": {
+    "kind": "focused_metadata_override_test_and_single_app_build",
+    "completed_at": "2026-07-31T06:25:01+08:00",
+    "result": "聚焦测试 attempt-1 与 LegadoApp 构建通过；未启动模拟器，未新增 Android Golden。",
+    "evidence": [
+      ".harness-runtime/loop/IOS-APP-NAVIGATION-BOOK-METADATA-EDIT-001/attempt-1"
+    ]
+  },
   "stages": [
     {
       "id": "P37-S1",

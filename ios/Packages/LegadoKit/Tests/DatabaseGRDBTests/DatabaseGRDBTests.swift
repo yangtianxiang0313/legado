@@ -145,6 +145,85 @@ final class DatabaseGRDBTests: XCTestCase {
     XCTAssertEqual(reopenedChapters, [newChapter])
   }
 
+  func testBookMetadataOverridesPersistAcrossRefresh() async throws {
+    let path = temporaryDatabasePath()
+    let repository = try GRDBBookShelfRepository(path: path)
+    let sourceCandidate = ShelfBookCandidate(
+      name: "源书名",
+      author: "源作者",
+      kind: "测试",
+      lastChapter: "第一章",
+      intro: "源简介",
+      bookURL: "https://source.test/books/metadata",
+      coverURL: "https://source.test/cover-original.png",
+      originName: "测试源",
+      sourceID: "source://test"
+    )
+    let stored = try await repository.add(sourceCandidate, groupID: 0)
+    let library = ShelfLibrary(repository: repository)
+
+    let edited = await library.updateBookMetadata(
+      bookID: stored.id,
+      update: BookMetadataUpdate(
+        name: "用户书名",
+        author: "用户作者",
+        coverURL: "file:///managed/custom-cover.png",
+        intro: "用户简介"
+      )
+    )
+
+    XCTAssertEqual(edited?.candidate.name, "用户书名")
+    XCTAssertEqual(edited?.candidate.author, "用户作者")
+    XCTAssertEqual(
+      edited?.candidate.coverURL,
+      "https://source.test/cover-original.png"
+    )
+    XCTAssertEqual(
+      edited?.candidate.displayCoverURL,
+      "file:///managed/custom-cover.png"
+    )
+    XCTAssertEqual(edited?.candidate.displayIntro, "用户简介")
+
+    let reopened = try GRDBBookShelfRepository(path: path)
+    let persisted = try await reopened.book(id: stored.id)
+    let persistedCandidate = try XCTUnwrap(persisted?.candidate)
+    let refreshedSourceCandidate = ShelfBookCandidate(
+      name: "刷新后的源书名",
+      author: "刷新后的源作者",
+      kind: persistedCandidate.kind,
+      lastChapter: "第二章",
+      intro: "刷新后的源简介",
+      bookURL: persistedCandidate.bookURL,
+      tocURL: persistedCandidate.tocURL,
+      bookRequestExpression:
+        persistedCandidate.bookRequestExpression,
+      coverURL: "https://source.test/cover-refreshed.png",
+      customCoverURL: persistedCandidate.customCoverURL,
+      customIntro: persistedCandidate.customIntro,
+      originName: persistedCandidate.originName,
+      sourceID: persistedCandidate.sourceID,
+      variables: persistedCandidate.variables
+    )
+    _ = try await reopened.updateBookInfo(
+      bookID: stored.id,
+      candidate: refreshedSourceCandidate
+    )
+
+    let afterRefresh = try await reopened.book(id: stored.id)
+    XCTAssertEqual(afterRefresh?.candidate.name, "刷新后的源书名")
+    XCTAssertEqual(afterRefresh?.candidate.author, "刷新后的源作者")
+    XCTAssertEqual(
+      afterRefresh?.candidate.coverURL,
+      "https://source.test/cover-refreshed.png"
+    )
+    XCTAssertEqual(
+      afterRefresh?.candidate.displayCoverURL,
+      "file:///managed/custom-cover.png"
+    )
+    XCTAssertEqual(afterRefresh?.candidate.intro, "刷新后的源简介")
+    XCTAssertEqual(afterRefresh?.candidate.displayIntro, "用户简介")
+  }
+
   func testReaderReplacementRulesSurviveReopenAndRetainOrder()
     async throws
   {

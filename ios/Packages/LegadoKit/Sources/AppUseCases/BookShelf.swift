@@ -13,6 +13,8 @@ public struct ShelfBookCandidate: Equatable, Sendable {
   public let tocURL: String?
   public let bookRequestExpression: String
   public let coverURL: String?
+  public let customCoverURL: String?
+  public let customIntro: String?
   public let originName: String
   public let sourceID: String
   public let variables: [String: String]
@@ -27,6 +29,8 @@ public struct ShelfBookCandidate: Equatable, Sendable {
     tocURL: String? = nil,
     bookRequestExpression: String? = nil,
     coverURL: String?,
+    customCoverURL: String? = nil,
+    customIntro: String? = nil,
     originName: String,
     sourceID: String = "",
     variables: [String: String] = [:]
@@ -40,9 +44,44 @@ public struct ShelfBookCandidate: Equatable, Sendable {
     self.tocURL = tocURL
     self.bookRequestExpression = bookRequestExpression ?? bookURL
     self.coverURL = coverURL
+    self.customCoverURL = customCoverURL
+    self.customIntro = customIntro
     self.originName = originName
     self.sourceID = sourceID
     self.variables = variables
+  }
+
+  public var displayCoverURL: String? {
+    guard let customCoverURL, !customCoverURL.isEmpty else {
+      return coverURL
+    }
+    return customCoverURL
+  }
+
+  public var displayIntro: String {
+    guard let customIntro, !customIntro.isEmpty else {
+      return intro
+    }
+    return customIntro
+  }
+}
+
+public struct BookMetadataUpdate: Equatable, Sendable {
+  public let name: String
+  public let author: String
+  public let coverURL: String
+  public let intro: String
+
+  public init(
+    name: String,
+    author: String,
+    coverURL: String,
+    intro: String
+  ) {
+    self.name = name
+    self.author = author
+    self.coverURL = coverURL
+    self.intro = intro
   }
 }
 
@@ -141,6 +180,10 @@ public protocol BookShelfRepository:
     bookID: LibraryDomain.BookID,
     candidate: ShelfBookCandidate
   ) async throws -> ShelfBookItem
+  func updateBookMetadata(
+    bookID: LibraryDomain.BookID,
+    update: BookMetadataUpdate
+  ) async throws -> ShelfBookItem
   func chapters(bookID: LibraryDomain.BookID) async throws
     -> [LibraryDomain.BookChapter]
   func applyTOCUpdate(
@@ -214,6 +257,38 @@ public extension BookShelfRepository {
     candidate: ShelfBookCandidate
   ) async throws -> ShelfBookItem {
     try await stage(candidate)
+  }
+
+  func updateBookMetadata(
+    bookID: LibraryDomain.BookID,
+    update: BookMetadataUpdate
+  ) async throws -> ShelfBookItem {
+    guard let current = try await book(id: bookID) else {
+      throw ShelfMutationFailure.missingBook
+    }
+    let candidate = current.candidate
+    return try await updateBookInfo(
+      bookID: bookID,
+      candidate: ShelfBookCandidate(
+        name: update.name,
+        author: update.author,
+        kind: candidate.kind,
+        lastChapter: candidate.lastChapter,
+        intro: candidate.intro,
+        bookURL: candidate.bookURL,
+        tocURL: candidate.tocURL,
+        bookRequestExpression: candidate.bookRequestExpression,
+        coverURL: candidate.coverURL,
+        customCoverURL:
+          update.coverURL == candidate.coverURL
+          ? nil
+          : update.coverURL,
+        customIntro: update.intro,
+        originName: candidate.originName,
+        sourceID: candidate.sourceID,
+        variables: candidate.variables
+      )
+    )
   }
 
   func applyTOCUpdate(
@@ -436,6 +511,27 @@ public final class ShelfLibrary {
       return refreshed
     } catch {
       errorMessage = "书籍信息刷新失败"
+      return nil
+    }
+  }
+
+  @discardableResult
+  public func updateBookMetadata(
+    bookID: LibraryDomain.BookID,
+    update: BookMetadataUpdate
+  ) async -> ShelfBookItem? {
+    do {
+      let updated = try await repository.updateBookMetadata(
+        bookID: bookID,
+        update: update
+      )
+      if updated.membership.isInBookshelf {
+        await reload()
+      }
+      errorMessage = nil
+      return updated
+    } catch {
+      errorMessage = "无法保存书籍信息"
       return nil
     }
   }

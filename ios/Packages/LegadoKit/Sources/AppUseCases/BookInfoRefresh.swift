@@ -79,6 +79,8 @@ public struct SourceBookInfoLoader: BookInfoLoading, Sendable {
         refreshed.bookEndpoint.requestExpression,
       coverURL:
         refreshed.coverURL?.absoluteString ?? candidate.coverURL,
+      customCoverURL: candidate.customCoverURL,
+      customIntro: candidate.customIntro,
       originName: source.name,
       sourceID: source.id,
       variables: refreshed.variables

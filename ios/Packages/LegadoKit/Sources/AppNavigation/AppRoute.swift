@@ -21,6 +21,8 @@ public struct SearchBookRoute: Codable, Hashable, Sendable {
     public let tocURL: String?
     public let bookRequestExpression: String
     public let coverURL: String?
+    public let customCoverURL: String?
+    public let customIntro: String?
     public let originName: String
     public let sourceID: String
     public let variables: [String: String]
@@ -35,6 +37,8 @@ public struct SearchBookRoute: Codable, Hashable, Sendable {
         tocURL: String? = nil,
         bookRequestExpression: String? = nil,
         coverURL: String?,
+        customCoverURL: String? = nil,
+        customIntro: String? = nil,
         originName: String,
         sourceID: String = "",
         variables: [String: String] = [:]
@@ -48,6 +52,8 @@ public struct SearchBookRoute: Codable, Hashable, Sendable {
         self.tocURL = tocURL
         self.bookRequestExpression = bookRequestExpression ?? bookURL
         self.coverURL = coverURL
+        self.customCoverURL = customCoverURL
+        self.customIntro = customIntro
         self.originName = originName
         self.sourceID = sourceID
         self.variables = variables
@@ -66,6 +72,8 @@ public struct SearchBookRoute: Codable, Hashable, Sendable {
             && lhs.tocURL == rhs.tocURL
             && lhs.bookRequestExpression == rhs.bookRequestExpression
             && lhs.coverURL == rhs.coverURL
+            && lhs.customCoverURL == rhs.customCoverURL
+            && lhs.customIntro == rhs.customIntro
             && lhs.originName == rhs.originName
             && lhs.sourceID == rhs.sourceID
             && lhs.variables == rhs.variables
@@ -81,6 +89,8 @@ public struct SearchBookRoute: Codable, Hashable, Sendable {
         hasher.combine(tocURL)
         hasher.combine(bookRequestExpression)
         hasher.combine(coverURL)
+        hasher.combine(customCoverURL)
+        hasher.combine(customIntro)
         hasher.combine(originName)
         hasher.combine(sourceID)
         for key in variables.keys.sorted() {

@@ -197,6 +197,12 @@ struct RootShellView: View {
                             )
                     )
                 },
+                updateMetadata: { bookID, update in
+                    await library.updateBookMetadata(
+                        bookID: bookID,
+                        update: update
+                    )
+                },
                 openReading: { item in
                     let chapters = await library.chapters(
                         bookID: item.id
@@ -657,6 +663,8 @@ private extension SearchBookRoute {
             bookRequestExpression:
                 candidate.bookRequestExpression,
             coverURL: candidate.coverURL,
+            customCoverURL: candidate.customCoverURL,
+            customIntro: candidate.customIntro,
             originName: candidate.originName,
             sourceID: candidate.sourceID,
             variables: candidate.variables
@@ -674,6 +682,8 @@ private extension SearchBookRoute {
             tocURL: nil,
             bookRequestExpression: result.bookRequestExpression,
             coverURL: result.coverURL,
+            customCoverURL: nil,
+            customIntro: nil,
             originName: result.originName,
             sourceID: result.origin,
             variables: result.variables

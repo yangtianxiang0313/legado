@@ -28,8 +28,14 @@ struct BookDetailDisplay: Equatable {
             author: route.author,
             kind: route.kind,
             lastChapter: route.lastChapter,
-            intro: route.intro,
-            coverURL: route.coverURL,
+            intro:
+                route.customIntro.flatMap {
+                    $0.isEmpty ? nil : $0
+                } ?? route.intro,
+            coverURL:
+                route.customCoverURL.flatMap {
+                    $0.isEmpty ? nil : $0
+                } ?? route.coverURL,
             originName: route.originName
         )
     }
@@ -176,6 +182,8 @@ struct BookDetailView: View {
     let copyToClipboard: ((String) -> Void)?
     let refreshBookInfo:
         ((ShelfBookItem) async -> ShelfBookItem?)?
+    let updateMetadata:
+        ((BookID, BookMetadataUpdate) async -> ShelfBookItem?)?
     let openReading: ((ShelfBookItem) async -> Void)?
     let editSource: ((String) -> Void)?
     let loginSource: ((String) -> Void)?
@@ -202,6 +210,12 @@ struct BookDetailView: View {
     @State private var copiedMessage: String?
     @State private var refreshingBookInfo = false
     @State private var refreshMessage: String?
+    @State private var showsMetadataEditor = false
+    @State private var metadataName = ""
+    @State private var metadataAuthor = ""
+    @State private var metadataCoverURL = ""
+    @State private var metadataIntro = ""
+    @State private var savingMetadata = false
     @State private var showsDeleteConfirmation = false
     @State private var rebuildingLocalText = false
 
@@ -216,6 +230,7 @@ struct BookDetailView: View {
         self.preferences = nil
         self.copyToClipboard = nil
         self.refreshBookInfo = nil
+        self.updateMetadata = nil
         self.openReading = nil
         self.editSource = nil
         self.loginSource = nil
@@ -233,6 +248,11 @@ struct BookDetailView: View {
         copyToClipboard: @escaping (String) -> Void,
         refreshBookInfo:
             @escaping (ShelfBookItem) async -> ShelfBookItem?,
+        updateMetadata:
+            @escaping (
+                BookID,
+                BookMetadataUpdate
+            ) async -> ShelfBookItem?,
         openReading: @escaping (ShelfBookItem) async -> Void,
         editSource: @escaping (String) -> Void,
         loginSource: @escaping (String) -> Void,
@@ -253,6 +273,7 @@ struct BookDetailView: View {
         self.preferences = preferences
         self.copyToClipboard = copyToClipboard
         self.refreshBookInfo = refreshBookInfo
+        self.updateMetadata = updateMetadata
         self.openReading = openReading
         self.editSource = editSource
         self.loginSource = loginSource
@@ -472,6 +493,17 @@ struct BookDetailView: View {
                 save: saveSourceUserVariable
             )
         }
+        .sheet(isPresented: $showsMetadataEditor) {
+            BookMetadataEditorSheet(
+                name: $metadataName,
+                author: $metadataAuthor,
+                coverURL: $metadataCoverURL,
+                intro: $metadataIntro,
+                isSaving: savingMetadata,
+                cancel: { showsMetadataEditor = false },
+                save: saveMetadata
+            )
+        }
         .alert(
             "换源失败",
             isPresented: Binding(
@@ -570,11 +602,24 @@ struct BookDetailView: View {
         Menu {
             if availability.actions.edit {
                 Button {
+                    openMetadataEditor()
+                } label: {
+                    Label("编辑书籍信息", systemImage: "book.and.wrench")
+                }
+                .disabled(storedItem == nil || updateMetadata == nil)
+                .accessibilityIdentifier(
+                    "action.bookDetail.editMetadata"
+                )
+            }
+            if availability.actions.edit {
+                Button {
                     editSource?(activeCandidate?.sourceID ?? "")
                 } label: {
                     Label("编辑书源", systemImage: "pencil")
                 }
-                .accessibilityIdentifier("action.bookDetail.edit")
+                .accessibilityIdentifier(
+                    "action.bookDetail.editSource"
+                )
             }
             if
                 storedItem != nil,
@@ -815,6 +860,36 @@ struct BookDetailView: View {
         }
     }
 
+    private func openMetadataEditor() {
+        guard let candidate = activeCandidate else { return }
+        metadataName = candidate.name
+        metadataAuthor = candidate.author
+        metadataCoverURL = candidate.displayCoverURL ?? ""
+        metadataIntro = candidate.displayIntro
+        showsMetadataEditor = true
+    }
+
+    private func saveMetadata() {
+        guard
+            let bookID = storedItem?.id,
+            let updateMetadata
+        else { return }
+        savingMetadata = true
+        let update = BookMetadataUpdate(
+            name: metadataName,
+            author: metadataAuthor,
+            coverURL: metadataCoverURL,
+            intro: metadataIntro
+        )
+        Task {
+            if let updated = await updateMetadata(bookID, update) {
+                storedItem = updated
+                showsMetadataEditor = false
+            }
+            savingMetadata = false
+        }
+    }
+
     private func performSourceSwitch(_ source: BookSourceDraft) {
         guard let storedItem, let switchSource else { return }
         switchingSource = true
@@ -1002,6 +1077,68 @@ struct BookDetailView: View {
     }
 }
 
+private struct BookMetadataEditorSheet: View {
+    @Binding var name: String
+    @Binding var author: String
+    @Binding var coverURL: String
+    @Binding var intro: String
+    let isSaving: Bool
+    let cancel: () -> Void
+    let save: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("基本信息") {
+                    TextField("书名", text: $name)
+                        .accessibilityIdentifier(
+                            "field.bookDetail.metadata.name"
+                        )
+                    TextField("作者", text: $author)
+                        .accessibilityIdentifier(
+                            "field.bookDetail.metadata.author"
+                        )
+                }
+                Section("封面") {
+                    TextField("封面 URL 或本地路径", text: $coverURL)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .accessibilityIdentifier(
+                            "field.bookDetail.metadata.coverURL"
+                        )
+                }
+                Section("简介") {
+                    TextEditor(text: $intro)
+                        .frame(minHeight: 180)
+                        .accessibilityIdentifier(
+                            "field.bookDetail.metadata.intro"
+                        )
+                }
+            }
+            .navigationTitle("编辑书籍信息")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消", action: cancel)
+                        .disabled(isSaving)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("保存", action: save)
+                        .disabled(isSaving)
+                        .accessibilityIdentifier(
+                            "action.bookDetail.metadata.save"
+                        )
+                }
+            }
+            .overlay {
+                if isSaving {
+                    ProgressView("正在保存…")
+                }
+            }
+            .accessibilityIdentifier("screen.bookDetail.metadata")
+        }
+    }
+}
+
 private struct VariableEditorSheet: View {
     let title: String
     let comment: String
@@ -1061,8 +1198,8 @@ private extension BookDetailDisplay {
             author: candidate.author,
             kind: candidate.kind,
             lastChapter: candidate.lastChapter,
-            intro: candidate.intro,
-            coverURL: candidate.coverURL,
+            intro: candidate.displayIntro,
+            coverURL: candidate.displayCoverURL,
             originName: candidate.originName
         )
     }
@@ -1080,6 +1217,8 @@ extension ShelfBookCandidate {
             tocURL: route.tocURL,
             bookRequestExpression: route.bookRequestExpression,
             coverURL: route.coverURL,
+            customCoverURL: route.customCoverURL,
+            customIntro: route.customIntro,
             originName: route.originName,
             sourceID: route.sourceID,
             variables: route.variables
