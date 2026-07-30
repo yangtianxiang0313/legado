@@ -131,6 +131,71 @@ final class ConformanceCLITests: XCTestCase {
     )
   }
 
+  func testMinimalTaskRunnerMatchesLocalBookRelocationAndroidGolden()
+    async throws
+  {
+    let temporaryRoot = FileManager.default.temporaryDirectory
+      .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryRoot) }
+    let fixtureID = LocalBookRelocationConformanceRunner.fixtureID
+    let fixturePath =
+      "ios/harness/fixtures/runtime-lab/\(fixtureID)"
+    let goldenPath =
+      "ios/harness/goldens/android-legado-v1/\(fixtureID).json"
+    let taskPath = "ios/project/loop/task.json"
+    for relative in [fixturePath, goldenPath, taskPath] {
+      try FileManager.default.createDirectory(
+        at:
+          temporaryRoot
+          .appendingPathComponent(relative)
+          .deletingLastPathComponent(),
+        withIntermediateDirectories: true
+      )
+    }
+    try FileManager.default.copyItem(
+      at: repositoryRoot.appendingPathComponent(fixturePath),
+      to: temporaryRoot.appendingPathComponent(fixturePath)
+    )
+    try FileManager.default.copyItem(
+      at: repositoryRoot.appendingPathComponent(goldenPath),
+      to: temporaryRoot.appendingPathComponent(goldenPath)
+    )
+    try JSONSerialization.data(
+      withJSONObject: [
+        "schema_version": 2,
+        "id":
+          "IOS-LIBRARY-DOMAIN-LOCAL-BOOK-RELOCATION-RUNTIME-001",
+        "source": [
+          "fixture_id": fixtureID,
+          "android_golden": goldenPath,
+        ],
+      ],
+      options: [.sortedKeys]
+    ).write(to: temporaryRoot.appendingPathComponent(taskPath))
+
+    let first = try await MinimalTaskConformanceRunner.run(
+      taskPath: taskPath,
+      repositoryRoot: temporaryRoot
+    )
+    let second = try await MinimalTaskConformanceRunner.run(
+      taskPath: taskPath,
+      repositoryRoot: temporaryRoot
+    )
+    let text = String(decoding: first.data, as: UTF8.self)
+
+    XCTAssertTrue(first.passed)
+    XCTAssertEqual(first.data, second.data)
+    XCTAssertTrue(text.contains(#""first_divergence":null"#))
+    XCTAssertTrue(text.contains(#""status":"equal""#))
+    XCTAssertTrue(
+      text.contains(#""book_url_state":"relocated_to_default""#)
+    )
+    XCTAssertTrue(text.contains(#""chapter_count":2"#))
+    XCTAssertTrue(
+      text.contains(#""second_book_url_state":"unchanged""#)
+    )
+  }
+
   func testMinimalTaskRunnerMatchesDOMSelectorAndroidGolden() async throws {
     let temporaryRoot = FileManager.default.temporaryDirectory
       .appendingPathComponent(UUID().uuidString, isDirectory: true)

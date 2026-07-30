@@ -2789,3 +2789,481 @@ public enum BookDetailActionFixtureProjection {
     ])
   }
 }
+
+public enum LocalBookRelocationFixtureProjectionError:
+  Error, Sendable
+{
+  case invalidFixture
+}
+
+public struct LocalBookRelocationFixtureProjectionRun: Sendable {
+  public let artifact: JSONValue
+  public let requestPlan: JSONValue
+
+  public init(artifact: JSONValue, requestPlan: JSONValue) {
+    self.artifact = artifact
+    self.requestPlan = requestPlan
+  }
+}
+
+public struct LocalBookRelocationDomainObservation:
+  Equatable, Sendable
+{
+  public let identityPreserved: Bool
+  public let location: String
+  public let chapterCount: Int
+  public let returnedLocationIsReadable: Bool
+  public let retiredOriginal: Bool
+  public let failureCached: Bool
+
+  public init(
+    identityPreserved: Bool,
+    location: String,
+    chapterCount: Int,
+    returnedLocationIsReadable: Bool,
+    retiredOriginal: Bool,
+    failureCached: Bool
+  ) {
+    self.identityPreserved = identityPreserved
+    self.location = location
+    self.chapterCount = chapterCount
+    self.returnedLocationIsReadable = returnedLocationIsReadable
+    self.retiredOriginal = retiredOriginal
+    self.failureCached = failureCached
+  }
+}
+
+public enum LocalBookRelocationDomainProbe {
+  public static func readableOriginal()
+    -> LocalBookRelocationDomainObservation
+  {
+    observe(
+      LocalBookRelocator.resolve(
+        book: originalBook(),
+        originalLocationIsReadable: true,
+        orderedCandidates: [],
+        cache: .init()
+      )
+    )
+  }
+
+  public static func defaultRelocation()
+    -> LocalBookRelocationDomainObservation
+  {
+    observe(
+      LocalBookRelocator.resolve(
+        book: originalBook(),
+        originalLocationIsReadable: false,
+        orderedCandidates: [
+          .init(
+            location: location(.defaultDirectory),
+            matchesOriginalFileName: true
+          ),
+          .init(
+            location: location(.importDirectory),
+            matchesOriginalFileName: true
+          ),
+        ],
+        cache: .init()
+      )
+    )
+  }
+
+  public static func importFallback()
+    -> LocalBookRelocationDomainObservation
+  {
+    observe(
+      LocalBookRelocator.resolve(
+        book: originalBook(),
+        originalLocationIsReadable: false,
+        orderedCandidates: [
+          .init(
+            location: location(.defaultDirectory),
+            matchesOriginalFileName: false
+          ),
+          .init(
+            location: location(.importDirectory),
+            matchesOriginalFileName: true
+          ),
+        ],
+        cache: .init()
+      )
+    )
+  }
+
+  public static func missingFile()
+    -> LocalBookRelocationDomainObservation
+  {
+    observe(
+      LocalBookRelocator.resolve(
+        book: originalBook(),
+        originalLocationIsReadable: false,
+        orderedCandidates: [],
+        cache: .init()
+      )
+    )
+  }
+
+  public static func stickyFailure()
+    -> LocalBookRelocationDomainObservation
+  {
+    let first = LocalBookRelocator.resolve(
+      book: originalBook(),
+      originalLocationIsReadable: false,
+      orderedCandidates: [],
+      cache: .init()
+    )
+    return observe(
+      LocalBookRelocator.resolve(
+        book: first.book,
+        originalLocationIsReadable: false,
+        orderedCandidates: [
+          .init(
+            location: location(.defaultDirectory),
+            matchesOriginalFileName: true
+          )
+        ],
+        cache: first.cache
+      )
+    )
+  }
+
+  public static func reloadedDefault()
+    -> LocalBookRelocationDomainObservation
+  {
+    let relocated = LocalBookRelocator.resolve(
+      book: originalBook(),
+      originalLocationIsReadable: false,
+      orderedCandidates: [
+        .init(
+          location: location(.defaultDirectory),
+          matchesOriginalFileName: true
+        )
+      ],
+      cache: .init()
+    )
+    let reloaded = LocalBookChapterReload.rebuild(
+      book: relocated.book,
+      chapters: [
+        .init(rawValue: "chapter-0"),
+        .init(rawValue: "chapter-1"),
+      ]
+    )
+    return observation(
+      book: reloaded,
+      result: relocated
+    )
+  }
+
+  private static func observe(
+    _ result: LocalBookRelocationResult
+  ) -> LocalBookRelocationDomainObservation {
+    observation(book: result.book, result: result)
+  }
+
+  private static func observation(
+    book: LocalBook,
+    result: LocalBookRelocationResult
+  ) -> LocalBookRelocationDomainObservation {
+    let original = originalBook()
+    return LocalBookRelocationDomainObservation(
+      identityPreserved: book.id == original.id,
+      location: locationName(book.location.kind),
+      chapterCount: book.chapters.count,
+      returnedLocationIsReadable:
+        result.returnedLocationIsReadable,
+      retiredOriginal: result.retiredLocation == original.location,
+      failureCached:
+        result.cache.failedLocations.contains(original.location)
+    )
+  }
+
+  private static func originalBook() -> LocalBook {
+    LocalBook(
+      id: BookID(rawValue: "stable-book-id"),
+      location: location(.original),
+      chapters: [.init(rawValue: "old-chapter")]
+    )
+  }
+
+  private static func location(
+    _ kind: LocalBookLocationKind
+  ) -> LocalBookLocationReference {
+    LocalBookLocationReference(
+      kind: kind,
+      opaqueReference: kind.rawValue
+    )
+  }
+
+  private static func locationName(
+    _ kind: LocalBookLocationKind
+  ) -> String {
+    switch kind {
+    case .original:
+      return "original"
+    case .defaultDirectory:
+      return "default"
+    case .importDirectory:
+      return "import"
+    }
+  }
+}
+
+public enum LocalBookRelocationFixtureProjection {
+  public static let fixtureID =
+    "rl-library-local-book-relocation-runtime-001"
+
+  public static func run(
+    caseData: Data,
+    inputData: Data
+  ) throws -> LocalBookRelocationFixtureProjectionRun {
+    let caseDocument: JSONValue
+    let inputDocument: JSONValue
+    do {
+      caseDocument = try JSONValueCodec.decode(caseData)
+      inputDocument = try JSONValueCodec.decode(inputData)
+    } catch {
+      throw LocalBookRelocationFixtureProjectionError.invalidFixture
+    }
+    guard
+      case .object(let caseRoot) = caseDocument,
+      caseRoot["id"] == .string(fixtureID),
+      caseRoot["kind"] == .string("android_runtime_scenario"),
+      caseRoot["operation"] == .string("android_runtime"),
+      case .object(let inputRoot) = inputDocument,
+      inputRoot["schema_version"] == .number(JSONNumber(1)),
+      case .array(let inputCases)? = inputRoot["cases"]
+    else {
+      throw LocalBookRelocationFixtureProjectionError.invalidFixture
+    }
+
+    var identifiers: Set<String> = []
+    var plans: [JSONValue] = []
+    var cases: [JSONValue] = []
+    for value in inputCases {
+      guard
+        case .object(let inputCase) = value,
+        case .string(let id)? = inputCase["id"],
+        identifiers.insert(id).inserted,
+        case .string(let operation)? = inputCase["operation"],
+        operation == "local_book_uri_resolution",
+        case .object(let arguments)? = inputCase["arguments"]
+      else {
+        throw LocalBookRelocationFixtureProjectionError.invalidFixture
+      }
+      plans.append(
+        .object([
+          "operation": .string(operation),
+          "arguments": .object(arguments),
+        ])
+      )
+      cases.append(
+        .object([
+          "id": .string(id),
+          "operation": .string(operation),
+          "result": try result(arguments),
+          "issue": .null,
+        ])
+      )
+    }
+
+    let requestPlan = JSONValue.array(plans)
+    return LocalBookRelocationFixtureProjectionRun(
+      artifact: .object([
+        "schema_version": number(1),
+        "fixture_id": .string(fixtureID),
+        "engine": .object([
+          "platform": .string("ios"),
+          "revision": .string("library-local-book-relocation-v1"),
+          "compatibility_profile": .string("android-legado-v1"),
+        ]),
+        "request_plan": requestPlan,
+        "decode": .null,
+        "stages": .array([]),
+        "result": .object([
+          "type": .string("library_runtime"),
+          "value": .object([
+            "portable_known_projection": .object([
+              "cases": .array(cases)
+            ])
+          ]),
+        ]),
+        "issues": .array([]),
+      ]),
+      requestPlan: requestPlan
+    )
+  }
+
+  private static func result(
+    _ arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    guard
+      case .bool(let originalExists)? =
+        arguments["original_exists"],
+      case .bool(let loadChapterList)? =
+        arguments["load_chapter_list"],
+      case .bool(let createMatchAfterFirst)? =
+        arguments["create_default_match_after_first_resolution"]
+    else {
+      throw LocalBookRelocationFixtureProjectionError.invalidFixture
+    }
+    let original = LocalBook(
+      id: BookID(rawValue: "fixture-stable-book-id"),
+      location: location(.original),
+      chapters: [.init(rawValue: "old-chapter")]
+    )
+    let first = LocalBookRelocator.resolve(
+      book: original,
+      originalLocationIsReadable: originalExists,
+      orderedCandidates: try candidates(arguments),
+      cache: .init()
+    )
+    let chapterReload: JSONValue
+    if loadChapterList {
+      let reloaded = LocalBookChapterReload.rebuild(
+        book: first.book,
+        chapters: [
+          .init(rawValue: "chapter-0"),
+          .init(rawValue: "chapter-1"),
+        ]
+      )
+      chapterReload = .object([
+        "book_exists": .bool(true),
+        "chapter_count": number(reloaded.chapters.count),
+        "old_chapter_count": number(
+          first.isRelocated ? 0 : original.chapters.count
+        ),
+        "read_book_identity_is_current": .bool(
+          reloaded.id == original.id
+            && reloaded.location == first.returnedLocation
+        ),
+      ])
+    } else {
+      chapterReload = .null
+    }
+
+    let second: LocalBookRelocationResult?
+    if createMatchAfterFirst {
+      second = LocalBookRelocator.resolve(
+        book: first.book,
+        originalLocationIsReadable: false,
+        orderedCandidates: [
+          .init(
+            location: location(.defaultDirectory),
+            matchesOriginalFileName: true
+          )
+        ],
+        cache: first.cache
+      )
+    } else {
+      second = nil
+    }
+
+    return .object([
+      "book_url_state": .string(bookURLState(first)),
+      "chapter_reload": chapterReload,
+      "database_after_resolution": .object([
+        "current_book_exists": .bool(true),
+        "current_chapter_count": number(
+          first.isRelocated ? 0 : first.book.chapters.count
+        ),
+        "old_book_exists": .bool(!first.isRelocated),
+        "old_chapter_count": number(
+          first.isRelocated ? 0 : original.chapters.count
+        ),
+      ]),
+      "first_location": .string(locationName(first.returnedLocation)),
+      "returned_uri_readable": .bool(
+        first.returnedLocationIsReadable
+      ),
+      "second_book_url_state":
+        second.map { .string(bookURLState($0)) } ?? .null,
+      "second_location":
+        second.map {
+          .string(locationName($0.returnedLocation))
+        } ?? .null,
+    ])
+  }
+
+  private static func candidates(
+    _ arguments: [String: JSONValue]
+  ) throws -> [LocalBookLocationCandidate] {
+    var values: [LocalBookLocationCandidate] = []
+    if let candidate = try candidate(
+      key: "default_directory",
+      kind: .defaultDirectory,
+      in: arguments
+    ) {
+      values.append(candidate)
+    }
+    if let candidate = try candidate(
+      key: "import_directory",
+      kind: .importDirectory,
+      in: arguments
+    ) {
+      values.append(candidate)
+    }
+    return values
+  }
+
+  private static func candidate(
+    key: String,
+    kind: LocalBookLocationKind,
+    in arguments: [String: JSONValue]
+  ) throws -> LocalBookLocationCandidate? {
+    guard case .string(let state)? = arguments[key] else {
+      throw LocalBookRelocationFixtureProjectionError.invalidFixture
+    }
+    switch state {
+    case "absent":
+      return nil
+    case "nonmatching", "matching":
+      return LocalBookLocationCandidate(
+        location: location(kind),
+        matchesOriginalFileName: state == "matching"
+      )
+    default:
+      throw LocalBookRelocationFixtureProjectionError.invalidFixture
+    }
+  }
+
+  private static func bookURLState(
+    _ result: LocalBookRelocationResult
+  ) -> String {
+    guard result.isRelocated else { return "unchanged" }
+    switch result.returnedLocation.kind {
+    case .original:
+      return "unchanged"
+    case .defaultDirectory:
+      return "relocated_to_default"
+    case .importDirectory:
+      return "relocated_to_import"
+    }
+  }
+
+  private static func locationName(
+    _ value: LocalBookLocationReference
+  ) -> String {
+    switch value.kind {
+    case .original:
+      return "original"
+    case .defaultDirectory:
+      return "default"
+    case .importDirectory:
+      return "import"
+    }
+  }
+
+  private static func location(
+    _ kind: LocalBookLocationKind
+  ) -> LocalBookLocationReference {
+    LocalBookLocationReference(
+      kind: kind,
+      opaqueReference: kind.rawValue
+    )
+  }
+
+  private static func number(_ value: Int) -> JSONValue {
+    .number(JSONNumber(Int64(value)))
+  }
+}
