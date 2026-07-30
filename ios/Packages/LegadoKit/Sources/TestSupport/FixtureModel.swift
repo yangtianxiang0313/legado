@@ -1,5 +1,5 @@
-import Foundation
 import AppUseCases
+import Foundation
 import LegadoCore
 import LibraryDomain
 import ReaderCore
@@ -1278,6 +1278,614 @@ public enum ReaderProgressFixtureProjection {
 
   private static func number(_ value: Int) -> JSONValue {
     .number(JSONNumber(Int64(value)))
+  }
+}
+
+public enum ReaderProgressSaveFixtureProjectionError:
+  Error, Sendable
+{
+  case invalidFixture
+}
+
+public struct ReaderProgressSaveFixtureProjectionRun: Sendable {
+  public let artifact: JSONValue
+  public let requestPlan: JSONValue
+
+  public init(artifact: JSONValue, requestPlan: JSONValue) {
+    self.artifact = artifact
+    self.requestPlan = requestPlan
+  }
+}
+
+public enum ReaderProgressSaveFixtureProjection {
+  public static let fixtureID =
+    "rl-reader-progress-save-runtime-001"
+
+  public static func run(
+    caseData: Data,
+    inputData: Data
+  ) throws -> ReaderProgressSaveFixtureProjectionRun {
+    let caseDocument: JSONValue
+    let inputDocument: JSONValue
+    do {
+      caseDocument = try JSONValueCodec.decode(caseData)
+      inputDocument = try JSONValueCodec.decode(inputData)
+    } catch {
+      throw ReaderProgressSaveFixtureProjectionError.invalidFixture
+    }
+    guard
+      case .object(let caseRoot) = caseDocument,
+      caseRoot["id"] == .string(fixtureID),
+      caseRoot["kind"] == .string("android_runtime_scenario"),
+      caseRoot["operation"] == .string("android_runtime"),
+      case .object(let inputRoot) = inputDocument,
+      case .array(let inputCases)? = inputRoot["cases"]
+    else {
+      throw ReaderProgressSaveFixtureProjectionError.invalidFixture
+    }
+
+    var plans: [JSONValue] = []
+    var cases: [JSONValue] = []
+    var identifiers: Set<String> = []
+    for value in inputCases {
+      guard
+        case .object(let inputCase) = value,
+        case .string(let id)? = inputCase["id"],
+        identifiers.insert(id).inserted,
+        case .string(let operation)? = inputCase["operation"],
+        case .object(let arguments)? = inputCase["arguments"]
+      else {
+        throw ReaderProgressSaveFixtureProjectionError.invalidFixture
+      }
+      plans.append(
+        .object([
+          "operation": .string(operation),
+          "arguments": .object(arguments),
+        ])
+      )
+      let result: JSONValue
+      switch operation {
+      case "save_runtime_execution_state":
+        result = try executionState(arguments)
+      case "save_runtime_book_switch":
+        result = try bookSwitch(arguments)
+      case "save_runtime_session_clear":
+        result = try sessionClear(arguments)
+      case "save_runtime_multi_queue":
+        result = try multipleQueued(arguments)
+      case "save_runtime_missing_chapter":
+        result = try missingChapter(arguments)
+      case "save_runtime_durability_window":
+        result = try durabilityWindow(arguments)
+      default:
+        throw ReaderProgressSaveFixtureProjectionError.invalidFixture
+      }
+      cases.append(
+        .object([
+          "id": .string(id),
+          "operation": .string(operation),
+          "result": result,
+          "issue": .null,
+        ])
+      )
+    }
+
+    let requestPlan = JSONValue.array(plans)
+    return ReaderProgressSaveFixtureProjectionRun(
+      artifact: .object([
+        "schema_version": number(1),
+        "fixture_id": .string(fixtureID),
+        "engine": .object([
+          "platform": .string("ios"),
+          "revision": .string("reader-progress-save-runtime-v1"),
+          "compatibility_profile": .string("android-legado-v1"),
+        ]),
+        "request_plan": requestPlan,
+        "decode": .null,
+        "stages": .array([]),
+        "result": .object([
+          "type": .string("reader_runtime"),
+          "value": .object([
+            "portable_known_projection": .object([
+              "cases": .array(cases)
+            ])
+          ]),
+        ]),
+        "issues": .array([]),
+      ]),
+      requestPlan: requestPlan
+    )
+  }
+
+  private static func executionState(
+    _ arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    let stored = snapshot(
+      chapterIndex: try integer("stored_chapter_index", in: arguments),
+      characterOffset: try integer("stored_chapter_pos", in: arguments),
+      chapterTitle: "第一章"
+    )
+    let callPosition = try position(
+      chapterKey: "call_chapter_index",
+      offsetKey: "call_chapter_pos",
+      in: arguments
+    )
+    let executionPosition = try position(
+      chapterKey: "execution_chapter_index",
+      offsetKey: "execution_chapter_pos",
+      in: arguments
+    )
+    let queued = AndroidQueuedReaderProgressSave(event: .lifecycle)
+    guard
+      let persisted = queued.execute(
+        runtime: AndroidReaderProgressRuntimeState(
+          bookID: "book-a",
+          position: executionPosition
+        ),
+        stored: stored,
+        nowMilliseconds: 2,
+        resolvedChapterTitle: title(
+          executionPosition.chapterIndex
+        )
+      )
+    else {
+      throw ReaderProgressSaveFixtureProjectionError.invalidFixture
+    }
+    return .object([
+      "last_check_count": number(
+        persisted.snapshot.contentCheckCount
+      ),
+      "persisted_call_time_progress": .bool(
+        persisted.snapshot.progress.position == callPosition
+      ),
+      "persisted_chapter_title": nullable(
+        persisted.snapshot.progress.chapterTitle
+      ),
+      "persisted_execution_time_progress": .bool(
+        persisted.snapshot.progress.position == executionPosition
+      ),
+      "persisted_unchanged_while_queued": .bool(
+        stored.progress.position
+          != persisted.snapshot.progress.position
+      ),
+    ])
+  }
+
+  private static func bookSwitch(
+    _ arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    let fromPosition = try position(
+      chapterKey: "from_chapter_index",
+      offsetKey: "from_chapter_pos",
+      in: arguments
+    )
+    let toPosition = try position(
+      chapterKey: "to_chapter_index",
+      offsetKey: "to_chapter_pos",
+      in: arguments
+    )
+    let oldStored = snapshot(
+      chapterIndex: fromPosition.chapterIndex,
+      characterOffset: fromPosition.characterOffset,
+      chapterTitle: "第二章"
+    )
+    let newStored = snapshot(
+      chapterIndex: 0,
+      characterOffset: 5,
+      chapterTitle: "第一章"
+    )
+    let queued = AndroidQueuedReaderProgressSave(event: .lifecycle)
+    guard
+      let persisted = queued.execute(
+        runtime: AndroidReaderProgressRuntimeState(
+          bookID: "book-b",
+          position: toPosition
+        ),
+        stored: newStored,
+        nowMilliseconds: 2,
+        resolvedChapterTitle: title(toPosition.chapterIndex)
+      )
+    else {
+      throw ReaderProgressSaveFixtureProjectionError.invalidFixture
+    }
+    return .object([
+      "new_book_chapter_title": nullable(
+        persisted.snapshot.progress.chapterTitle
+      ),
+      "new_book_received_queued_save": .bool(
+        persisted.bookID == "book-b"
+          && persisted.snapshot.progress.position == toPosition
+      ),
+      "old_book_progress_unchanged": .bool(
+        oldStored.progress.position == fromPosition
+      ),
+      "queued_save_captured_original_book": .bool(
+        persisted.bookID == "book-a"
+      ),
+    ])
+  }
+
+  private static func sessionClear(
+    _ arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    _ = try position(
+      chapterKey: "runtime_chapter_index",
+      offsetKey: "runtime_chapter_pos",
+      in: arguments
+    )
+    let stored = snapshot()
+    let persisted = AndroidQueuedReaderProgressSave(
+      event: .lifecycle
+    ).execute(
+      runtime: nil,
+      stored: stored,
+      nowMilliseconds: 2,
+      resolvedChapterTitle: nil
+    )
+    return .object([
+      "last_check_count_unchanged": .bool(
+        stored.contentCheckCount == 7
+      ),
+      "queued_save_was_dropped": .bool(persisted == nil),
+      "runtime_book_is_null": .bool(true),
+    ])
+  }
+
+  private static func multipleQueued(
+    _ arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    let firstPosition = try position(
+      chapterKey: "first_chapter_index",
+      offsetKey: "first_chapter_pos",
+      in: arguments
+    )
+    _ = try position(
+      chapterKey: "second_chapter_index",
+      offsetKey: "second_chapter_pos",
+      in: arguments
+    )
+    let finalPosition = try position(
+      chapterKey: "final_chapter_index",
+      offsetKey: "final_chapter_pos",
+      in: arguments
+    )
+    let runtime = AndroidReaderProgressRuntimeState(
+      bookID: "book-a",
+      position: finalPosition
+    )
+    let stored = snapshot()
+    let first = AndroidQueuedReaderProgressSave(
+      event: .lifecycle
+    ).execute(
+      runtime: runtime,
+      stored: stored,
+      nowMilliseconds: 2,
+      resolvedChapterTitle: title(finalPosition.chapterIndex)
+    )
+    let second = AndroidQueuedReaderProgressSave(
+      event: .lifecycle
+    ).execute(
+      runtime: runtime,
+      stored: first?.snapshot ?? stored,
+      nowMilliseconds: 3,
+      resolvedChapterTitle: title(finalPosition.chapterIndex)
+    )
+    return .object([
+      "first_call_snapshot_was_preserved": .bool(
+        first?.snapshot.progress.position == firstPosition
+      ),
+      "first_queued_save_observed_final_state": .bool(
+        first?.snapshot.progress.position == finalPosition
+      ),
+      "second_queued_save_observed_final_state": .bool(
+        second?.snapshot.progress.position == finalPosition
+      ),
+    ])
+  }
+
+  private static func missingChapter(
+    _ arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    let runtimePosition = try position(
+      chapterKey: "runtime_chapter_index",
+      offsetKey: "runtime_chapter_pos",
+      in: arguments
+    )
+    let existingTitle = try string("existing_title", in: arguments)
+    guard
+      let persisted = AndroidQueuedReaderProgressSave(
+        event: .lifecycle
+      ).execute(
+        runtime: AndroidReaderProgressRuntimeState(
+          bookID: "book-a",
+          position: runtimePosition
+        ),
+        stored: snapshot(chapterTitle: existingTitle),
+        nowMilliseconds: 2,
+        resolvedChapterTitle: nil
+      )
+    else {
+      throw ReaderProgressSaveFixtureProjectionError.invalidFixture
+    }
+    return .object([
+      "missing_chapter_preserved_title": .bool(
+        persisted.snapshot.progress.chapterTitle == existingTitle
+      ),
+      "persisted_chapter_index": number(
+        persisted.snapshot.progress.position.chapterIndex
+      ),
+      "persisted_chapter_title": nullable(
+        persisted.snapshot.progress.chapterTitle
+      ),
+      "persisted_char_position": number(
+        persisted.snapshot.progress.position.characterOffset
+      ),
+    ])
+  }
+
+  private static func durabilityWindow(
+    _ arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    let runtimePosition = try position(
+      chapterKey: "runtime_chapter_index",
+      offsetKey: "runtime_chapter_pos",
+      in: arguments
+    )
+    let before = snapshot()
+    var database = before
+    let unchangedWhileQueued = database == before
+    let persisted = AndroidQueuedReaderProgressSave(
+      event: .lifecycle
+    ).execute(
+      runtime: AndroidReaderProgressRuntimeState(
+        bookID: "book-a",
+        position: runtimePosition
+      ),
+      stored: database,
+      nowMilliseconds: 2,
+      resolvedChapterTitle: title(runtimePosition.chapterIndex)
+    )
+    if let persisted {
+      database = persisted.snapshot
+    }
+    return .object([
+      "database_unchanged_while_save_queued": .bool(
+        unchangedWhileQueued
+      ),
+      "database_updated_after_executor": .bool(database != before),
+      "queued_save_has_durability_window": .bool(
+        unchangedWhileQueued && database != before
+      ),
+    ])
+  }
+
+  private static func snapshot(
+    chapterIndex: Int = 0,
+    characterOffset: Int = 5,
+    chapterTitle: String? = "第一章"
+  ) -> ReaderProgressSnapshot {
+    ReaderProgressSnapshot(
+      progress: ReadingProgress(
+        position: ReadingPosition(
+          chapterIndex: chapterIndex,
+          characterOffset: characterOffset
+        ),
+        chapterTitle: chapterTitle,
+        updatedAtMilliseconds: 1
+      ),
+      contentCheckCount: 7
+    )
+  }
+
+  private static func position(
+    chapterKey: String,
+    offsetKey: String,
+    in arguments: [String: JSONValue]
+  ) throws -> ReadingPosition {
+    ReadingPosition(
+      chapterIndex: try integer(chapterKey, in: arguments),
+      characterOffset: try integer(offsetKey, in: arguments)
+    )
+  }
+
+  private static func title(_ chapterIndex: Int) -> String? {
+    ["第一章", "第二章", "第三章"].indices.contains(chapterIndex)
+      ? ["第一章", "第二章", "第三章"][chapterIndex]
+      : nil
+  }
+
+  private static func integer(
+    _ key: String,
+    in arguments: [String: JSONValue]
+  ) throws -> Int {
+    guard
+      case .number(let number)? = arguments[key],
+      let value = Int(number.rawToken)
+    else {
+      throw ReaderProgressSaveFixtureProjectionError.invalidFixture
+    }
+    return value
+  }
+
+  private static func string(
+    _ key: String,
+    in arguments: [String: JSONValue]
+  ) throws -> String {
+    guard case .string(let value)? = arguments[key] else {
+      throw ReaderProgressSaveFixtureProjectionError.invalidFixture
+    }
+    return value
+  }
+
+  private static func nullable(_ value: String?) -> JSONValue {
+    value.map(JSONValue.string) ?? .null
+  }
+
+  private static func number(_ value: Int) -> JSONValue {
+    .number(JSONNumber(Int64(value)))
+  }
+}
+
+public struct ReaderProgressSaveCaptureProbeResult:
+  Equatable, Sendable
+{
+  public let firstCommandStayedFrozen: Bool
+  public let identityStayedBoundToOriginalBook: Bool
+  public let firstSequence: UInt64
+  public let secondSequence: UInt64
+
+  public init(
+    firstCommandStayedFrozen: Bool,
+    identityStayedBoundToOriginalBook: Bool,
+    firstSequence: UInt64,
+    secondSequence: UInt64
+  ) {
+    self.firstCommandStayedFrozen = firstCommandStayedFrozen
+    self.identityStayedBoundToOriginalBook =
+      identityStayedBoundToOriginalBook
+    self.firstSequence = firstSequence
+    self.secondSequence = secondSequence
+  }
+}
+
+public enum ReaderProgressSaveProductProbe {
+  public static func captureCommands()
+    -> ReaderProgressSaveCaptureProbeResult
+  {
+    var session = ReaderProgressSessionState(
+      identity: identity(bookID: "book-a", generation: 7),
+      snapshot: snapshot()
+    )
+    let first = session.captureSave(
+      runtimePosition: position(1, 111),
+      event: .pageChanged,
+      nowMilliseconds: 10,
+      resolvedChapterTitle: "第二章"
+    )
+    let second = session.captureSave(
+      runtimePosition: position(2, 222),
+      event: .lifecycle,
+      nowMilliseconds: 20,
+      resolvedChapterTitle: "第三章"
+    )
+    return ReaderProgressSaveCaptureProbeResult(
+      firstCommandStayedFrozen:
+        first.snapshot.progress.position == position(1, 111),
+      identityStayedBoundToOriginalBook:
+        first.identity.bookID == "book-a"
+        && first.identity.generation.rawValue == 7,
+      firstSequence: first.sequence,
+      secondSequence: second.sequence
+    )
+  }
+
+  public static func rejectsStaleGeneration() async throws -> Bool {
+    let store = ReaderProgressSaveProbeStore()
+    let oldIdentity = identity(bookID: "book", generation: 1)
+    let currentIdentity = identity(bookID: "book", generation: 2)
+    await store.activate(currentIdentity)
+    var session = ReaderProgressSessionState(
+      identity: oldIdentity,
+      snapshot: snapshot()
+    )
+    let command = session.captureSave(
+      runtimePosition: position(1, 160),
+      event: .lifecycle,
+      nowMilliseconds: 10,
+      resolvedChapterTitle: "第二章"
+    )
+    let disposition = try await ReaderProgressSaveExecutor(
+      persistence: store
+    ).persist(command)
+    let persisted = await store.persistedCommand()
+    return disposition
+      == .rejectedStaleGeneration(
+        current: currentIdentity.generation
+      )
+      && persisted == nil
+  }
+
+  public static func flushesExactIdentity() async throws -> Bool {
+    let store = ReaderProgressSaveProbeStore()
+    let currentIdentity = identity(bookID: "book", generation: 3)
+    await store.activate(currentIdentity)
+    try await ReaderProgressSaveExecutor(
+      persistence: store
+    ).flush(currentIdentity)
+    return await store.flushedIdentity() == currentIdentity
+  }
+
+  private static func identity(
+    bookID: String,
+    generation: UInt64
+  ) -> ReaderProgressSessionIdentity {
+    ReaderProgressSessionIdentity(
+      bookID: bookID,
+      sessionID: "session-\(generation)",
+      generation: ReaderSessionGeneration(rawValue: generation)
+    )
+  }
+
+  private static func snapshot() -> ReaderProgressSnapshot {
+    ReaderProgressSnapshot(
+      progress: ReadingProgress(
+        position: position(0, 5),
+        chapterTitle: "第一章",
+        updatedAtMilliseconds: 1
+      ),
+      contentCheckCount: 7
+    )
+  }
+
+  private static func position(
+    _ chapterIndex: Int,
+    _ characterOffset: Int
+  ) -> ReadingPosition {
+    ReadingPosition(
+      chapterIndex: chapterIndex,
+      characterOffset: characterOffset
+    )
+  }
+}
+
+private actor ReaderProgressSaveProbeStore:
+  ReaderProgressPersistencePort
+{
+  private var active: ReaderProgressSessionIdentity?
+  private var persisted: ReaderProgressSaveCommand?
+  private var flushed: ReaderProgressSessionIdentity?
+
+  func activate(_ identity: ReaderProgressSessionIdentity) {
+    active = identity
+  }
+
+  func persist(
+    _ command: ReaderProgressSaveCommand
+  ) -> ReaderProgressSaveDisposition {
+    guard active == command.identity else {
+      return .rejectedStaleGeneration(
+        current: active?.generation
+      )
+    }
+    persisted = command
+    return .persisted
+  }
+
+  func flush(
+    _ identity: ReaderProgressSessionIdentity
+  ) {
+    guard active == identity else {
+      return
+    }
+    flushed = identity
+  }
+
+  func persistedCommand() -> ReaderProgressSaveCommand? {
+    persisted
+  }
+
+  func flushedIdentity() -> ReaderProgressSessionIdentity? {
+    flushed
   }
 }
 

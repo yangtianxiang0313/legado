@@ -1101,6 +1101,31 @@ final class ReaderCoreTests: XCTestCase {
     XCTAssertTrue(result.contains(#""persisted_char_position":777"#))
   }
 
+  func testSaveCommandFreezesIdentityAndProgressAtTriggerTime() {
+    let result = ReaderProgressSaveProductProbe.captureCommands()
+
+    XCTAssertTrue(result.firstCommandStayedFrozen)
+    XCTAssertTrue(result.identityStayedBoundToOriginalBook)
+    XCTAssertEqual(result.firstSequence, 1)
+    XCTAssertEqual(result.secondSequence, 2)
+  }
+
+  func testProgressPersistenceRejectsStaleGeneration() async throws {
+    let rejected =
+      try await ReaderProgressSaveProductProbe
+      .rejectsStaleGeneration()
+
+    XCTAssertTrue(rejected)
+  }
+
+  func testProgressFlushUsesExactSessionIdentity() async throws {
+    let flushed =
+      try await ReaderProgressSaveProductProbe
+      .flushesExactIdentity()
+
+    XCTAssertTrue(flushed)
+  }
+
   func testPrefetchProjectionContainsAllEightGoldenCases() throws {
     let text = try prefetchProjectionText()
 
