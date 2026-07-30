@@ -1829,6 +1829,73 @@ final class LegadoAppUITests: XCTestCase {
         )
     }
 
+    func testNativePaginationMilestone() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+            "--seed-offline-cache",
+            "--seed-pagination-cache",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        openSeededReader()
+        let firstProgress = require("label.reader.pageProgress").label
+        let pageCount = try XCTUnwrap(
+            Int(firstProgress.split(separator: "/").last ?? "")
+        )
+        XCTAssertGreaterThan(pageCount, 1)
+        XCTAssertEqual(firstProgress, "1/\(pageCount)")
+
+        requireButton("action.reader.page.next").tap()
+        waitForLabel(
+            "2/\(pageCount)",
+            identifier: "label.reader.pageProgress"
+        )
+
+        app.terminate()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+        ]
+        app.launch()
+        openSeededReader()
+        waitForLabel(
+            "2/\(pageCount)",
+            identifier: "label.reader.pageProgress"
+        )
+
+        if pageCount > 2 {
+            for page in 3...pageCount {
+                requireButton("action.reader.page.next").tap()
+                waitForLabel(
+                    "\(page)/\(pageCount)",
+                    identifier: "label.reader.pageProgress"
+                )
+            }
+        }
+        requireButton("action.reader.page.next").tap()
+        waitForLabel(
+            "第二章 回声",
+            identifier: "label.reader.chapterTitle"
+        )
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "page_count": pageCount,
+            "page_turn_persisted_after_relaunch": true,
+            "crossed_to_next_chapter": true,
+        ])
+    }
+
     private func openSeededReader() {
         let book = app.staticTexts["星河纪事"].firstMatch
         XCTAssertTrue(book.waitForExistence(timeout: 8))

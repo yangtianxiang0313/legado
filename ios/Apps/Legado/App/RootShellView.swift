@@ -51,6 +51,11 @@ struct RootShellView: View {
             ) {
                 await seedOfflineCache()
             }
+            if ProcessInfo.processInfo.arguments.contains(
+                "--seed-pagination-cache"
+            ) {
+                await seedPaginationCache()
+            }
         }
     }
 
@@ -440,6 +445,30 @@ struct RootShellView: View {
         )
         await toc.load(book: item, force: true)
         await library.reload()
+    }
+
+    private func seedPaginationCache() async {
+        guard let book = library.books.first else { return }
+        let chapters = await library.chapters(bookID: book.id)
+            .sorted { $0.index < $1.index }
+        guard let chapter = chapters.first else { return }
+        let paragraph = """
+        星港的晨光沿着舷窗缓缓移动，远处的航标逐个熄灭。\
+        林舟重新核对航线，把尚未寄出的信放回口袋。
+        """
+        let content = Array(repeating: paragraph, count: 5)
+            .joined(separator: "\n\n")
+        await library.cacheChapterContent(
+            content,
+            bookID: book.id,
+            chapterID: chapter.id
+        )
+        await library.saveReadingProgress(
+            bookID: book.id,
+            chapterIndex: chapter.index,
+            characterOffset: 0,
+            chapterTitle: chapter.title
+        )
     }
 }
 

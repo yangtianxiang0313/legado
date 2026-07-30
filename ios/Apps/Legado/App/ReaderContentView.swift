@@ -17,6 +17,7 @@ struct ReaderContentView: View {
 
     @Environment(\.scenePhase) private var scenePhase
     @State private var session: ReaderContentSession
+    @State private var pagination: ReaderPaginationSession
     @State private var menuPresented = false
     @State private var menuPath: [ReaderMenuLayer] = []
     @State private var chapters: [BookChapter] = []
@@ -55,36 +56,17 @@ struct ReaderContentView: View {
                 loader: loader
             )
         )
+        _pagination = State(
+            initialValue: ReaderPaginationSession(
+                paginator: NativeTextPaginator()
+            )
+        )
     }
 
     var body: some View {
         Group {
             if let document = session.document {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
-                        Text(document.title)
-                            .font(.title2.bold())
-                            .accessibilityIdentifier("label.reader.chapterTitle")
-                        Text(document.content)
-                            .font(
-                                .system(
-                                    size: readerPreferences.value.fontSize
-                                )
-                            )
-                            .lineSpacing(
-                                readerPreferences.value.lineSpacing
-                            )
-                            .textSelection(.enabled)
-                            .contextMenu {
-                                textSelectionMenu
-                            }
-                            .accessibilityIdentifier("text.reader.content")
-                    }
-                    .frame(maxWidth: 720, alignment: .leading)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 28)
-                }
-                .accessibilityIdentifier("scroll.reader.content")
+                pagedContent(document)
             } else if session.state == .failed {
                 ContentUnavailableView(
                     "正文加载失败",
@@ -155,7 +137,6 @@ struct ReaderContentView: View {
                     requestNextChapter: requestNextReadAloudChapter
                 )
             }
-            await saveProgress(chapter: chapter)
         }
         .onChange(of: readAloud.characterOffset) { _, offset in
             guard
@@ -199,6 +180,114 @@ struct ReaderContentView: View {
             }
             .presentationDetents([.medium, .large])
         }
+    }
+
+    private func pagedContent(_ document: ReaderDocument) -> some View {
+        GeometryReader { proxy in
+            let viewport = ReaderViewport(
+                width: max(1, proxy.size.width - 48),
+                height: max(1, proxy.size.height - 132)
+            )
+            VStack(alignment: .leading, spacing: 16) {
+                Text(document.title)
+                    .font(.title2.bold())
+                    .accessibilityIdentifier("label.reader.chapterTitle")
+
+                Group {
+                    if pagination.state == .ready {
+                        Text(pagination.currentPageText)
+                            .font(
+                                .system(
+                                    size: readerPreferences.value.fontSize
+                                )
+                            )
+                            .lineSpacing(
+                                readerPreferences.value.lineSpacing
+                            )
+                            .textSelection(.enabled)
+                            .contextMenu {
+                                textSelectionMenu
+                            }
+                    } else {
+                        ProgressView("正在分页…")
+                    }
+                }
+                .frame(
+                    maxWidth: .infinity,
+                    maxHeight: .infinity,
+                    alignment: .topLeading
+                )
+                .accessibilityIdentifier("text.reader.content")
+
+                HStack {
+                    Button {
+                        movePagedReader(by: -1)
+                    } label: {
+                        Label("上一页", systemImage: "chevron.left")
+                    }
+                    .disabled(
+                        pagination.currentPageIndex == 0
+                            && !canOpenPreviousChapter
+                    )
+                    .accessibilityIdentifier("action.reader.page.previous")
+
+                    Spacer()
+
+                    Text(
+                        pagination.pageCount > 0
+                            ? "\(pagination.currentPageIndex + 1)"
+                                + "/\(pagination.pageCount)"
+                            : "—"
+                    )
+                    .monospacedDigit()
+                    .accessibilityIdentifier("label.reader.pageProgress")
+
+                    Spacer()
+
+                    Button {
+                        movePagedReader(by: 1)
+                    } label: {
+                        Label("下一页", systemImage: "chevron.right")
+                    }
+                    .disabled(
+                        pagination.pageCount > 0
+                            && pagination.currentPageIndex
+                                == pagination.pageCount - 1
+                            && !canOpenNextChapter
+                    )
+                    .accessibilityIdentifier("action.reader.page.next")
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
+            .task(
+                id: ReaderPaginationRenderKey(
+                    chapterID: document.position.chapterID.rawValue,
+                    contentHash: document.content.hashValue,
+                    width: Int(viewport.width.rounded()),
+                    height: Int(viewport.height.rounded()),
+                    fontSize: readerPreferences.value.fontSize,
+                    lineSpacing: readerPreferences.value.lineSpacing
+                )
+            ) {
+                pagination.layout(
+                    document: document,
+                    viewport: viewport,
+                    typography: ReaderTypography(
+                        fontSize: readerPreferences.value.fontSize,
+                        lineSpacing: readerPreferences.value.lineSpacing
+                    )
+                )
+                await savePaginationProgress()
+                refreshBookmarkState()
+            }
+        }
+    }
+
+    private var currentReaderOffset: Int {
+        pagination.state == .ready
+            ? pagination.currentCharacterOffset
+            : target.characterOffset
     }
 
     private var currentChapterPosition: Int? {
@@ -254,7 +343,7 @@ struct ReaderContentView: View {
                                 .accessibilityIdentifier
                         )
                         .accessibilityValue(
-                            "characterOffset=\(target.characterOffset)"
+                            "characterOffset=\(currentReaderOffset)"
                         )
 
                     Spacer()
@@ -627,20 +716,37 @@ struct ReaderContentView: View {
         }
         return (
             "\(currentChapterPosition + 1)/\(chapters.count)"
-            + " · 位置 \(target.characterOffset)"
+            + " · 位置 \(currentReaderOffset)"
         )
     }
 
-    private func openRelativeChapter(_ offset: Int) {
+    private func openRelativeChapter(
+        _ offset: Int,
+        characterOffset: Int = 0
+    ) {
         guard let currentChapterPosition else { return }
         let destination = currentChapterPosition + offset
         guard chapters.indices.contains(destination) else { return }
         let chapter = chapters[destination]
         menuPresented = false
         Task {
-            await saveProgress(chapter: chapter)
-            openChapter(chapter.id, 0)
+            await saveCurrentProgress()
+            openChapter(chapter.id, characterOffset)
         }
+    }
+
+    private func movePagedReader(by delta: Int) {
+        if pagination.movePage(by: delta) != nil {
+            Task {
+                await savePaginationProgress()
+                refreshBookmarkState()
+            }
+            return
+        }
+        openRelativeChapter(
+            delta,
+            characterOffset: delta < 0 ? Int.max : 0
+        )
     }
 
     private func toggleCurrentBookmark() {
@@ -654,7 +760,7 @@ struct ReaderContentView: View {
             bookmarked = await library.toggleBookmark(
                 bookID: target.bookID,
                 chapter: chapter,
-                characterOffset: target.characterOffset,
+                characterOffset: currentReaderOffset,
                 content: document.content
             )
         }
@@ -665,7 +771,7 @@ struct ReaderContentView: View {
             bookmarked = await library.isBookmarked(
                 bookID: target.bookID,
                 chapterID: target.chapterID,
-                characterOffset: target.characterOffset
+                characterOffset: currentReaderOffset
             )
         }
     }
@@ -697,10 +803,19 @@ struct ReaderContentView: View {
             bookID: target.bookID,
             chapterIndex: chapter.index,
             characterOffset: chapter.id == target.chapterID
-                ? target.characterOffset
+                ? currentReaderOffset
                 : 0,
             chapterTitle: chapter.title
         )
+    }
+
+    private func savePaginationProgress() async {
+        guard
+            let chapter = chapters.first(where: {
+                $0.id == target.chapterID
+            })
+        else { return }
+        await saveProgress(chapter: chapter)
     }
 
     @ViewBuilder
@@ -832,4 +947,13 @@ struct ReaderContentView: View {
         .disabled(true)
         .accessibilityIdentifier(action.accessibilityIdentifier)
     }
+}
+
+private struct ReaderPaginationRenderKey: Hashable {
+    let chapterID: String
+    let contentHash: Int
+    let width: Int
+    let height: Int
+    let fontSize: Double
+    let lineSpacing: Double
 }

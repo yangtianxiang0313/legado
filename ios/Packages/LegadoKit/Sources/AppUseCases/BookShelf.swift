@@ -391,6 +391,23 @@ public final class ShelfLibrary {
     (try? await repository.chapters(bookID: bookID)) ?? []
   }
 
+  public func cacheChapterContent(
+    _ content: String,
+    bookID: LibraryDomain.BookID,
+    chapterID: LibraryDomain.ChapterID
+  ) async {
+    do {
+      try await repository.saveChapterContent(
+        content,
+        bookID: bookID,
+        chapterID: chapterID
+      )
+      errorMessage = nil
+    } catch {
+      errorMessage = "无法缓存章节正文"
+    }
+  }
+
   public func saveReadingProgress(
     bookID: LibraryDomain.BookID,
     chapterIndex: Int,

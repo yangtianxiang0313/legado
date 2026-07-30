@@ -5,6 +5,7 @@ import DatabaseGRDB
 import Foundation
 import ReaderCore
 import SwiftUI
+import UIKit
 
 @main
 struct LegadoApp: App {
@@ -134,6 +135,72 @@ private final class UITestSystemSpeechSynthesizer:
     func pause() {}
     func resume() {}
     func stop() {}
+}
+
+@MainActor
+final class NativeTextPaginator: ReaderPaginating {
+    func pages(
+        content: String,
+        viewport: ReaderViewport,
+        typography: ReaderTypography
+    ) -> [ReaderLayoutPage] {
+        let source = content as NSString
+        guard source.length > 0 else { return [] }
+
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.lineSpacing = typography.lineSpacing
+        let attributed = NSAttributedString(
+            string: content,
+            attributes: [
+                .font: UIFont.systemFont(
+                    ofSize: typography.fontSize
+                ),
+                .paragraphStyle: paragraph,
+            ]
+        )
+        let storage = NSTextStorage(attributedString: attributed)
+        let layout = NSLayoutManager()
+        storage.addLayoutManager(layout)
+        var result: [ReaderLayoutPage] = []
+        var consumed = 0
+
+        while consumed < source.length {
+            let container = NSTextContainer(
+                size: CGSize(
+                    width: viewport.width,
+                    height: viewport.height
+                )
+            )
+            container.lineFragmentPadding = 0
+            layout.addTextContainer(container)
+            let glyphRange = layout.glyphRange(for: container)
+            let characterRange = layout.characterRange(
+                forGlyphRange: glyphRange,
+                actualGlyphRange: nil
+            )
+            guard
+                characterRange.length > 0,
+                characterRange.location >= consumed
+            else { break }
+            result.append(
+                ReaderLayoutPage(
+                    startCharacterOffset: characterRange.location,
+                    characterCount: characterRange.length
+                )
+            )
+            consumed = NSMaxRange(characterRange)
+        }
+
+        if result.isEmpty {
+            return [
+                ReaderLayoutPage(
+                    startCharacterOffset: 0,
+                    characterCount: source.length
+                )
+            ]
+        }
+        return result
+    }
 }
 
 @MainActor
