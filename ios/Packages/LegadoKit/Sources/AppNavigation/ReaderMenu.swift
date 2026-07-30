@@ -4,6 +4,7 @@ public enum ReaderMenuLayer: String, CaseIterable, Codable, Hashable, Sendable {
     case more
     case search
     case replacementRules
+    case bookSource
     case textSelection
 }
 
@@ -104,6 +105,8 @@ public enum ReaderMenuCatalog {
         case .search:
             []
         case .replacementRules:
+            []
+        case .bookSource:
             []
         case .textSelection:
             textSelection

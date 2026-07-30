@@ -27,6 +27,9 @@ struct ReaderContentView: View {
     @State private var searchResults: [ReaderSearchResult] = []
     @State private var isSearching = false
     @State private var sourceID: String?
+    @State private var readerBook: ShelfBookItem?
+    @State private var switchingBookSource = false
+    @State private var bookSourceSwitchMessage: String?
     @State private var replacementDraft: ReaderReplacementRule?
 
     init(
@@ -132,6 +135,7 @@ struct ReaderContentView: View {
             sourceID = book.candidate.sourceID.isEmpty
                 ? nil
                 : book.candidate.sourceID
+            readerBook = book
             bookmarked = await library.isBookmarked(
                 bookID: target.bookID,
                 chapterID: chapter.id,
@@ -190,6 +194,8 @@ struct ReaderContentView: View {
                             searchMenu
                         case .replacementRules:
                             replacementRulesMenu
+                        case .bookSource:
+                            bookSourceMenu
                         case .primary, .textSelection:
                             EmptyView()
                         }
@@ -389,10 +395,15 @@ struct ReaderContentView: View {
             }
 
             Section("阅读") {
-                menuPlaceholder(
-                    .openBookSource,
-                    title: "书籍换源",
-                    systemImage: "books.vertical"
+                NavigationLink(value: ReaderMenuLayer.bookSource) {
+                    Label("书籍换源", systemImage: "books.vertical")
+                }
+                .disabled(
+                    readerBook == nil || switchableBookSources.isEmpty
+                )
+                .accessibilityIdentifier(
+                    ReaderMenuAction.openBookSource
+                        .accessibilityIdentifier
                 )
                 menuPlaceholder(
                     .openChapterSource,
@@ -643,6 +654,66 @@ struct ReaderContentView: View {
         .navigationTitle("更多设置")
         .navigationBarTitleDisplayMode(.inline)
         .accessibilityIdentifier("overlay.reader.more")
+    }
+
+    private var bookSourceMenu: some View {
+        List {
+            if let bookSourceSwitchMessage {
+                Section {
+                    Text(bookSourceSwitchMessage)
+                        .foregroundStyle(.red)
+                        .accessibilityIdentifier(
+                            "state.reader.bookSource.error"
+                        )
+                }
+            }
+            Section("可用书源") {
+                if switchableBookSources.isEmpty {
+                    Text("没有其他已启用书源")
+                        .foregroundStyle(.secondary)
+                        .accessibilityIdentifier(
+                            "state.reader.bookSource.empty"
+                        )
+                }
+                ForEach(switchableBookSources) { source in
+                    Button {
+                        switchReaderBookSource(to: source)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(source.name)
+                            Text(source.sourceURL)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .disabled(switchingBookSource)
+                    .accessibilityIdentifier(
+                        "action.reader.bookSource."
+                            + source.sourceURL
+                    )
+                }
+            }
+        }
+        .overlay {
+            if switchingBookSource {
+                ProgressView("正在搜索并迁移目录…")
+                    .padding()
+                    .background(
+                        .regularMaterial,
+                        in: .rect(cornerRadius: 12)
+                    )
+            }
+        }
+        .navigationTitle("书籍换源")
+        .navigationBarTitleDisplayMode(.inline)
+        .accessibilityIdentifier("overlay.reader.bookSource")
+    }
+
+    private var switchableBookSources: [BookSourceDraft] {
+        persistedSources.filter {
+            $0.sourceURL != sourceID
+                && ($0.importMetadata?.enabled ?? true)
+        }
     }
 
     private var searchMenu: some View {
@@ -986,6 +1057,60 @@ struct ReaderContentView: View {
                 scope: scope
             ) else { return }
             await reloadCurrentContent()
+        }
+    }
+
+    private func switchReaderBookSource(to source: BookSourceDraft) {
+        guard let readerBook else { return }
+        switchingBookSource = true
+        bookSourceSwitchMessage = nil
+        Task {
+            do {
+                let resolved = try await SearchEnvironment
+                    .resolveSourceSwitch(
+                        current: readerBook,
+                        target: source,
+                        persistedSources: persistedSources
+                    )
+                guard
+                    let switched = await library.switchSource(
+                        current: readerBook,
+                        candidate: resolved.candidate,
+                        chapters: resolved.chapters
+                    )
+                else {
+                    bookSourceSwitchMessage =
+                        library.errorMessage ?? "目标书源无法迁移"
+                    switchingBookSource = false
+                    return
+                }
+                let migratedChapters = await library.chapters(
+                    bookID: switched.id
+                ).sorted { $0.index < $1.index }
+                guard
+                    let progress = switched.progress,
+                    let chapter = migratedChapters.first(where: {
+                        $0.index == progress.position.chapterIndex
+                    })
+                else {
+                    bookSourceSwitchMessage = "换源后无法定位映射章节"
+                    switchingBookSource = false
+                    return
+                }
+                self.readerBook = switched
+                sourceID = switched.candidate.sourceID
+                chapters = migratedChapters
+                switchingBookSource = false
+                menuPresented = false
+                openChapter(
+                    chapter.id,
+                    progress.position.characterOffset
+                )
+            } catch {
+                bookSourceSwitchMessage =
+                    "目标书源解析失败：\(String(reflecting: error))"
+                switchingBookSource = false
+            }
         }
     }
 
