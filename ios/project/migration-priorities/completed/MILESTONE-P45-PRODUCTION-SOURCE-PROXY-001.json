@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P45-PRODUCTION-SOURCE-PROXY-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P45 生产书源代理进入真实网络链路",
   "objective": "依据冻结 Android AnalyzeUrl/getProxyClient，将书源 header 中的 proxy 控制字段从普通请求头剥离，作为 HTTPRequest 的显式网络策略传入 URLSession；支持 Android 的 HTTP、SOCKS4/SOCKS5 及可选账号密码语法，并保证 Cookie、重试和重定向重建请求时策略不丢失。",
