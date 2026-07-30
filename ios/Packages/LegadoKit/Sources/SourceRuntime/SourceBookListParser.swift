@@ -4,6 +4,20 @@ import LegadoCore
 struct SourceBookListParser {
   let definition: SourceSearchDefinition
   let variableStore: SourceVariableStore
+  let scriptRuntime: (any SourceScriptRuntime)?
+  let scriptSessionID: SourceScriptSessionID?
+
+  init(
+    definition: SourceSearchDefinition,
+    variableStore: SourceVariableStore,
+    scriptRuntime: (any SourceScriptRuntime)? = nil,
+    scriptSessionID: SourceScriptSessionID? = nil
+  ) {
+    self.definition = definition
+    self.variableStore = variableStore
+    self.scriptRuntime = scriptRuntime
+    self.scriptSessionID = scriptSessionID
+  }
 
   func parse(
     response: SourceSearchResponse,
@@ -302,7 +316,10 @@ struct SourceBookListParser {
     {
       let result = try await SourceVariableRuleEvaluator(
         content: node.normalizedText,
-        resolver: resolver
+        resolver: resolver,
+        scriptRuntime: scriptRuntime,
+        scriptSessionID: scriptSessionID,
+        baseURL: definition.sourceURL
       ).getString(plan.executionRule)
       return result.isEmpty ? nil : result
     }
@@ -438,7 +455,10 @@ struct SourceBookListParser {
   ) async throws -> [SourceSearchBook] {
     let elements = try await SourceVariableRuleEvaluator(
       content: response.body,
-      resolver: sharedResolver
+      resolver: sharedResolver,
+      scriptRuntime: scriptRuntime,
+      scriptSessionID: scriptSessionID,
+      baseURL: response.url
     ).getElements(rules.list)
     var seen: Set<String> = []
     var books: [SourceSearchBook] = []
@@ -457,7 +477,10 @@ struct SourceBookListParser {
             book: store,
             ruleData: store
           )
-        )
+        ),
+        scriptRuntime: scriptRuntime,
+        scriptSessionID: scriptSessionID,
+        baseURL: response.url
       )
       let name = try await structuredValue(
         rules.name,

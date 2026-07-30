@@ -185,12 +185,15 @@ public struct SourceSearchPipeline: Sendable {
   private let cookieStore: SourceCookieStore
   private let responseSession: SourceStringResponseSession
   private let responseChecker: any SourceSearchResponseChecking
+  private let scriptRuntime: (any SourceScriptRuntime)?
+  private let scriptSessionID: SourceScriptSessionID
 
   public init(
     definition: SourceSearchDefinition,
     transport: any HTTPTransport,
     cookieStore: SourceCookieStore = SourceCookieStore(),
     dynamicWebPagePort: (any SourceDynamicWebPagePort)? = nil,
+    scriptRuntime: (any SourceScriptRuntime)? = nil,
     responseChecker: any SourceSearchResponseChecking =
       IdentitySourceSearchResponseChecker()
   ) {
@@ -203,6 +206,10 @@ public struct SourceSearchPipeline: Sendable {
       dynamicWebPagePort: dynamicWebPagePort
     )
     self.responseChecker = responseChecker
+    self.scriptRuntime = scriptRuntime
+    self.scriptSessionID = SourceScriptSessionID(
+      rawValue: definition.sourceURL
+    )
   }
 
   public func search(_ input: SourceSearchInput) async throws
@@ -265,7 +272,9 @@ public struct SourceSearchPipeline: Sendable {
   ) async throws -> [SourceSearchBook] {
     try await SourceBookListParser(
       definition: definition,
-      variableStore: variableStore
+      variableStore: variableStore,
+      scriptRuntime: scriptRuntime,
+      scriptSessionID: scriptSessionID
     ).parse(
       response: response,
       rules: definition.runtime.search,

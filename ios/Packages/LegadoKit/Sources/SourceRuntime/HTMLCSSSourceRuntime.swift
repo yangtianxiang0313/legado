@@ -383,9 +383,17 @@ public struct SourceRuntimeIssue: Error, Sendable, Equatable {
 
 public struct HTMLCSSSourceRuntime: Sendable {
   public let definition: HTMLCSSSourceDefinition
+  public let scriptRuntime: (any SourceScriptRuntime)?
+  public let scriptSessionID: SourceScriptSessionID?
 
-  public init(definition: HTMLCSSSourceDefinition) {
+  public init(
+    definition: HTMLCSSSourceDefinition,
+    scriptRuntime: (any SourceScriptRuntime)? = nil,
+    scriptSessionID: SourceScriptSessionID? = nil
+  ) {
     self.definition = definition
+    self.scriptRuntime = scriptRuntime
+    self.scriptSessionID = scriptSessionID
   }
 
   public func searchRequest(keyword: String) throws -> HTTPRequest {
@@ -572,7 +580,10 @@ public struct HTMLCSSSourceRuntime: Sendable {
     ) {
       let evaluator = SourceVariableRuleEvaluator(
         content: html,
-        resolver: resolver
+        resolver: resolver,
+        scriptRuntime: scriptRuntime,
+        scriptSessionID: scriptSessionID,
+        baseURL: redirectURL.absoluteString
       )
       strings = { rule in
         let value = try await evaluator.getString(rule.selector)
@@ -584,7 +595,10 @@ public struct HTMLCSSSourceRuntime: Sendable {
       let evaluator = SourceVariableHTMLRuleEvaluator(
         document: document,
         node: document.root,
-        resolver: resolver
+        resolver: resolver,
+        scriptRuntime: scriptRuntime,
+        scriptSessionID: scriptSessionID,
+        baseURL: redirectURL.absoluteString
       )
       strings = { rule in
         try await evaluator.string(rule)
@@ -693,7 +707,10 @@ public struct HTMLCSSSourceRuntime: Sendable {
     ) {
       let listEvaluator = SourceVariableRuleEvaluator(
         content: html,
-        resolver: bookResolver
+        resolver: bookResolver,
+        scriptRuntime: scriptRuntime,
+        scriptSessionID: scriptSessionID,
+        baseURL: tocEndpoint.logicalURL.absoluteString
       )
       let elements = try await listEvaluator.getElements(rules.list)
       chapters = try await elements.enumerated().asyncMap {
@@ -710,7 +727,10 @@ public struct HTMLCSSSourceRuntime: Sendable {
               book: variableStore,
               ruleData: variableStore
             )
-          )
+          ),
+          scriptRuntime: scriptRuntime,
+          scriptSessionID: scriptSessionID,
+          baseURL: tocEndpoint.logicalURL.absoluteString
         )
         let title = try await evaluator.getString(
           rules.name.selector
@@ -750,7 +770,10 @@ public struct HTMLCSSSourceRuntime: Sendable {
       let listEvaluator = SourceVariableHTMLRuleEvaluator(
         document: document,
         node: document.root,
-        resolver: bookResolver
+        resolver: bookResolver,
+        scriptRuntime: scriptRuntime,
+        scriptSessionID: scriptSessionID,
+        baseURL: tocEndpoint.logicalURL.absoluteString
       )
       let nodes = try await listEvaluator.elements(rules.list)
       chapters = try await nodes.enumerated().asyncMap {
@@ -766,7 +789,10 @@ public struct HTMLCSSSourceRuntime: Sendable {
               book: variableStore,
               ruleData: variableStore
             )
-          )
+          ),
+          scriptRuntime: scriptRuntime,
+          scriptSessionID: scriptSessionID,
+          baseURL: tocEndpoint.logicalURL.absoluteString
         )
         guard
           let title = try await evaluator.string(rules.name),
@@ -904,7 +930,10 @@ public struct HTMLCSSSourceRuntime: Sendable {
     ) {
       let evaluator = SourceVariableRuleEvaluator(
         content: html,
-        resolver: resolver
+        resolver: resolver,
+        scriptRuntime: scriptRuntime,
+        scriptSessionID: scriptSessionID,
+        baseURL: chapterEndpoint.logicalURL.absoluteString
       )
       value = try await evaluator.getString(
         rules.content.selector
@@ -922,7 +951,10 @@ public struct HTMLCSSSourceRuntime: Sendable {
       let evaluator = SourceVariableHTMLRuleEvaluator(
         document: document,
         node: document.root,
-        resolver: resolver
+        resolver: resolver,
+        scriptRuntime: scriptRuntime,
+        scriptSessionID: scriptSessionID,
+        baseURL: chapterEndpoint.logicalURL.absoluteString
       )
       let executionRule = try await evaluator.prepare(
         rules.content

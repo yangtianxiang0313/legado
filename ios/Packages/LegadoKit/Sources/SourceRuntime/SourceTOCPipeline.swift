@@ -22,6 +22,8 @@ public struct SourceTOCPipeline: Sendable {
   private let cookieStore: SourceCookieStore
   private let dynamicWebPagePort: (any SourceDynamicWebPagePort)?
   private let responseSession: SourceStringResponseSession
+  private let scriptRuntime: (any SourceScriptRuntime)?
+  private let scriptSessionID: SourceScriptSessionID
   private let bookInfoResponseChecker:
     any SourceBookInfoResponseChecking
 
@@ -30,6 +32,7 @@ public struct SourceTOCPipeline: Sendable {
     transport: any HTTPTransport,
     cookieStore: SourceCookieStore = SourceCookieStore(),
     dynamicWebPagePort: (any SourceDynamicWebPagePort)? = nil,
+    scriptRuntime: (any SourceScriptRuntime)? = nil,
     bookInfoResponseChecker: any SourceBookInfoResponseChecking =
       IdentitySourceBookInfoResponseChecker()
   ) {
@@ -43,6 +46,10 @@ public struct SourceTOCPipeline: Sendable {
       dynamicWebPagePort: dynamicWebPagePort
     )
     self.bookInfoResponseChecker = bookInfoResponseChecker
+    self.scriptRuntime = scriptRuntime
+    self.scriptSessionID = SourceScriptSessionID(
+      rawValue: definition.sourceURL
+    )
   }
 
   public func chapters(bookURL: String) async throws -> SourceTOCExecution {
@@ -72,12 +79,17 @@ public struct SourceTOCPipeline: Sendable {
     infoHTML: String? = nil,
     canRename: Bool = true
   ) async throws -> SourceTOCExecution {
-    let runtime = HTMLCSSSourceRuntime(definition: definition.runtime)
+    let runtime = HTMLCSSSourceRuntime(
+      definition: definition.runtime,
+      scriptRuntime: scriptRuntime,
+      scriptSessionID: scriptSessionID
+    )
     let detail = try await SourceBookInfoPipeline(
       definition: definition,
       transport: transport,
       cookieStore: cookieStore,
       dynamicWebPagePort: dynamicWebPagePort,
+      scriptRuntime: scriptRuntime,
       responseChecker: bookInfoResponseChecker
     ).load(
       book: book,

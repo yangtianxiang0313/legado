@@ -27,17 +27,20 @@ public struct SourceBookChapterLoader: BookChapterLoading, Sendable {
   private let transport: any HTTPTransport
   private let cookieStore: SourceCookieStore
   private let dynamicWebPagePort: (any SourceDynamicWebPagePort)?
+  private let scriptRuntime: (any SourceScriptRuntime)?
 
   public init(
     sources: [SearchSourceDescriptor],
     transport: any HTTPTransport,
     cookieStore: SourceCookieStore = SourceCookieStore(),
-    dynamicWebPagePort: (any SourceDynamicWebPagePort)? = nil
+    dynamicWebPagePort: (any SourceDynamicWebPagePort)? = nil,
+    scriptRuntime: (any SourceScriptRuntime)? = nil
   ) {
     self.sources = sources
     self.transport = transport
     self.cookieStore = cookieStore
     self.dynamicWebPagePort = dynamicWebPagePort
+    self.scriptRuntime = scriptRuntime
   }
 
   public func load(
@@ -59,7 +62,8 @@ public struct SourceBookChapterLoader: BookChapterLoading, Sendable {
       definition: source.definition,
       transport: transport,
       cookieStore: cookieStore,
-      dynamicWebPagePort: dynamicWebPagePort
+      dynamicWebPagePort: dynamicWebPagePort,
+      scriptRuntime: scriptRuntime
     ).chapters(
       book: SourceBook(
         name: candidate.name,

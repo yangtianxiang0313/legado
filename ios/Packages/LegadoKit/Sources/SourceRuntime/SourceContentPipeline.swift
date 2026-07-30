@@ -28,16 +28,23 @@ public struct SourceContentPipeline: Sendable {
   private let transport: any HTTPTransport
   private let cookieStore: SourceCookieStore
   private let responseSession: SourceStringResponseSession
+  private let scriptRuntime: (any SourceScriptRuntime)?
+  private let scriptSessionID: SourceScriptSessionID
 
   public init(
     definition: SourceSearchDefinition,
     transport: any HTTPTransport,
     cookieStore: SourceCookieStore = SourceCookieStore(),
-    dynamicWebPagePort: (any SourceDynamicWebPagePort)? = nil
+    dynamicWebPagePort: (any SourceDynamicWebPagePort)? = nil,
+    scriptRuntime: (any SourceScriptRuntime)? = nil
   ) {
     self.definition = definition
     self.transport = transport
     self.cookieStore = cookieStore
+    self.scriptRuntime = scriptRuntime
+    self.scriptSessionID = SourceScriptSessionID(
+      rawValue: definition.sourceURL
+    )
     self.responseSession = SourceStringResponseSession(
       transport: transport,
       cookieStore: cookieStore,
@@ -81,7 +88,11 @@ public struct SourceContentPipeline: Sendable {
   ) async throws
     -> SourceContentExecution
   {
-    let runtime = HTMLCSSSourceRuntime(definition: definition.runtime)
+    let runtime = HTMLCSSSourceRuntime(
+      definition: definition.runtime,
+      scriptRuntime: scriptRuntime,
+      scriptSessionID: scriptSessionID
+    )
     let first = try await fetchPage(
       endpoint: endpoint,
       runtime: runtime,

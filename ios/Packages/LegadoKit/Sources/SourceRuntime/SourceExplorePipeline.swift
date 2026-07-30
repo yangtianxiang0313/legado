@@ -134,12 +134,15 @@ public struct SourceExplorePipeline: Sendable {
   private let transport: any HTTPTransport
   private let responseSession: SourceStringResponseSession
   private let responseChecker: any SourceExploreResponseChecking
+  private let scriptRuntime: (any SourceScriptRuntime)?
+  private let scriptSessionID: SourceScriptSessionID
 
   public init(
     definition: SourceExploreDefinition,
     transport: any HTTPTransport,
     cookieStore: SourceCookieStore = SourceCookieStore(),
     dynamicWebPagePort: (any SourceDynamicWebPagePort)? = nil,
+    scriptRuntime: (any SourceScriptRuntime)? = nil,
     responseChecker: any SourceExploreResponseChecking =
       IdentitySourceExploreResponseChecker()
   ) {
@@ -151,6 +154,10 @@ public struct SourceExplorePipeline: Sendable {
       dynamicWebPagePort: dynamicWebPagePort
     )
     self.responseChecker = responseChecker
+    self.scriptRuntime = scriptRuntime
+    self.scriptSessionID = SourceScriptSessionID(
+      rawValue: definition.source.sourceURL
+    )
   }
 
   public func categories() throws -> [SourceExploreCategory] {
@@ -201,7 +208,9 @@ public struct SourceExplorePipeline: Sendable {
       ?? definition.source.runtime.search
     let books = try await SourceBookListParser(
       definition: definition.source,
-      variableStore: variableStore
+      variableStore: variableStore,
+      scriptRuntime: scriptRuntime,
+      scriptSessionID: scriptSessionID
     ).parse(
       response: checked,
       rules: rules,

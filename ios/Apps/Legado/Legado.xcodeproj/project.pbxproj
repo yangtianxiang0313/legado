@@ -16,7 +16,7 @@
 		8C9B2045210D4D12A72EDB80 /* BookDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F643378684698E56A60BB42 /* BookDetailView.swift */; };
 		9AEB7EA85E118BCDEF1BC722 /* RootShellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AA56687558EF2C28A2F526F /* RootShellView.swift */; };
 		D8AD017203A6DBD627D4F11B /* SourceCatalogEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C9B37DC68383564F773D013 /* SourceCatalogEnvironment.swift */; };
-		DACC0FDD44450CF8A823AC81 /* LegadoStoreSafeKit in Frameworks */ = {isa = PBXBuildFile; productRef = 752C493A99E434E7A062F2B3 /* LegadoStoreSafeKit */; };
+		DACC0FDD44450CF8A823AC81 /* LegadoFullCompatKit in Frameworks */ = {isa = PBXBuildFile; productRef = 752C493A99E434E7A062F2B3 /* LegadoFullCompatKit */; };
 		EE6ACF282E27D4D151647C16 /* ReaderContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF7E0504B02B52095E37595C /* ReaderContentView.swift */; };
 		F6215ABC51AF3EDE56196855 /* SearchEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E3179602790AC70DE65BB59 /* SearchEnvironment.swift */; };
 /* End PBXBuildFile section */
@@ -53,7 +53,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				DACC0FDD44450CF8A823AC81 /* LegadoStoreSafeKit in Frameworks */,
+				DACC0FDD44450CF8A823AC81 /* LegadoFullCompatKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -128,7 +128,7 @@
 			);
 			name = LegadoApp;
 			packageProductDependencies = (
-				752C493A99E434E7A062F2B3 /* LegadoStoreSafeKit */,
+				752C493A99E434E7A062F2B3 /* LegadoFullCompatKit */,
 			);
 			productName = LegadoApp;
 			productReference = 41F121F4FC3DD3B968A18419 /* LegadoApp.app */;
@@ -455,9 +455,9 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		752C493A99E434E7A062F2B3 /* LegadoStoreSafeKit */ = {
+		752C493A99E434E7A062F2B3 /* LegadoFullCompatKit */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = LegadoStoreSafeKit;
+			productName = LegadoFullCompatKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

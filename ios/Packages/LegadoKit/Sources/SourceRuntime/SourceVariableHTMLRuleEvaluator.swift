@@ -4,6 +4,25 @@ struct SourceVariableHTMLRuleEvaluator {
   let document: HTMLDocument
   let node: HTMLNode
   let resolver: SourceVariableResolver
+  let scriptRuntime: (any SourceScriptRuntime)?
+  let scriptSessionID: SourceScriptSessionID?
+  let baseURL: String?
+
+  init(
+    document: HTMLDocument,
+    node: HTMLNode,
+    resolver: SourceVariableResolver,
+    scriptRuntime: (any SourceScriptRuntime)? = nil,
+    scriptSessionID: SourceScriptSessionID? = nil,
+    baseURL: String? = nil
+  ) {
+    self.document = document
+    self.node = node
+    self.resolver = resolver
+    self.scriptRuntime = scriptRuntime
+    self.scriptSessionID = scriptSessionID
+    self.baseURL = baseURL
+  }
 
   func string(_ rule: HTMLCSSRule) async throws -> String? {
     (try await strings(rule)).first
@@ -18,7 +37,10 @@ struct SourceVariableHTMLRuleEvaluator {
     {
       let value = try await SourceVariableRuleEvaluator(
         content: node.normalizedText,
-        resolver: resolver
+        resolver: resolver,
+        scriptRuntime: scriptRuntime,
+        scriptSessionID: scriptSessionID,
+        baseURL: baseURL
       ).getString(executionRule)
       return value.isEmpty ? [] : [value]
     }

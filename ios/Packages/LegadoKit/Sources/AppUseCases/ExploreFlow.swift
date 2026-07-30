@@ -72,17 +72,20 @@ public struct SourceExploreBooksExecutor:
   private let transport: any HTTPTransport
   private let cookieStore: SourceCookieStore
   private let dynamicWebPagePort: (any SourceDynamicWebPagePort)?
+  private let scriptRuntime: (any SourceScriptRuntime)?
 
   public init(
     descriptors: [ExploreSourceDescriptor],
     transport: any HTTPTransport,
     cookieStore: SourceCookieStore = SourceCookieStore(),
-    dynamicWebPagePort: (any SourceDynamicWebPagePort)? = nil
+    dynamicWebPagePort: (any SourceDynamicWebPagePort)? = nil,
+    scriptRuntime: (any SourceScriptRuntime)? = nil
   ) {
     self.descriptors = descriptors
     self.transport = transport
     self.cookieStore = cookieStore
     self.dynamicWebPagePort = dynamicWebPagePort
+    self.scriptRuntime = scriptRuntime
   }
 
   public var sources: [ExploreSourceSummary] {
@@ -103,7 +106,8 @@ public struct SourceExploreBooksExecutor:
       definition: descriptor.definition,
       transport: transport,
       cookieStore: cookieStore,
-      dynamicWebPagePort: dynamicWebPagePort
+      dynamicWebPagePort: dynamicWebPagePort,
+      scriptRuntime: scriptRuntime
     ).categories().enumerated().map { index, category in
       ExploreCategoryItem(
         id: "\(sourceID)#\(index)#\(category.title)",
@@ -129,7 +133,8 @@ public struct SourceExploreBooksExecutor:
       definition: descriptor.definition,
       transport: transport,
       cookieStore: cookieStore,
-      dynamicWebPagePort: dynamicWebPagePort
+      dynamicWebPagePort: dynamicWebPagePort,
+      scriptRuntime: scriptRuntime
     ).explore(
       SourceExploreInput(
         category: SourceExploreCategory(

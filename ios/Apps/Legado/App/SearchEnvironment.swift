@@ -1,6 +1,7 @@
 import AppUseCases
 import Foundation
 import LibraryDomain
+import ScriptJavaScriptCore
 import SourceRuntime
 import WebKit
 
@@ -10,6 +11,8 @@ enum SearchEnvironment {
         persistence: UserDefaultsSourceCookiePersistence()
     )
     private static let dynamicWebPagePort = WKSourceDynamicWebPagePort()
+    private static let scriptRuntime =
+        JavaScriptCoreSourceScriptRuntime()
 
     static func makeSession(
         persistedSources: [BookSourceDraft] = []
@@ -29,7 +32,8 @@ enum SearchEnvironment {
                 sources: sources,
                 transport: transport,
                 cookieStore: cookieStore,
-                dynamicWebPagePort: dynamicWebPagePort
+                dynamicWebPagePort: dynamicWebPagePort,
+                scriptRuntime: scriptRuntime
             )
         )
     }
@@ -111,7 +115,8 @@ enum SearchEnvironment {
             descriptors: descriptors,
             transport: makeTransport(externalBaseURL: externalBaseURL),
             cookieStore: cookieStore,
-            dynamicWebPagePort: dynamicWebPagePort
+            dynamicWebPagePort: dynamicWebPagePort,
+            scriptRuntime: scriptRuntime
         )
         let summary = executor.sources.first(where: {
             $0.id == sourceID
@@ -138,7 +143,8 @@ enum SearchEnvironment {
             ),
             transport: makeTransport(externalBaseURL: externalBaseURL),
             cookieStore: cookieStore,
-            dynamicWebPagePort: dynamicWebPagePort
+            dynamicWebPagePort: dynamicWebPagePort,
+            scriptRuntime: scriptRuntime
         )
     }
 
@@ -157,7 +163,8 @@ enum SearchEnvironment {
             ),
             transport: makeTransport(externalBaseURL: externalBaseURL),
             cookieStore: cookieStore,
-            dynamicWebPagePort: dynamicWebPagePort
+            dynamicWebPagePort: dynamicWebPagePort,
+            scriptRuntime: scriptRuntime
         )
     }
 
@@ -277,7 +284,8 @@ enum SearchEnvironment {
                     externalBaseURL: externalBaseURL
                 ),
                 cookieStore: cookieStore,
-                dynamicWebPagePort: dynamicWebPagePort
+                dynamicWebPagePort: dynamicWebPagePort,
+                scriptRuntime: scriptRuntime
             )
         )
         await toc.load(book: item, force: true)
@@ -316,7 +324,8 @@ enum SearchEnvironment {
             sources: [descriptor],
             transport: transport,
             cookieStore: cookieStore,
-            dynamicWebPagePort: dynamicWebPagePort
+            dynamicWebPagePort: dynamicWebPagePort,
+            scriptRuntime: scriptRuntime
         ).search(
             query: current.candidate.name,
             scope: .source(
@@ -356,7 +365,8 @@ enum SearchEnvironment {
             sources: [descriptor],
             transport: transport,
             cookieStore: cookieStore,
-            dynamicWebPagePort: dynamicWebPagePort
+            dynamicWebPagePort: dynamicWebPagePort,
+            scriptRuntime: scriptRuntime
         ).load(book: transient).chapters
         return (candidate, chapters)
     }

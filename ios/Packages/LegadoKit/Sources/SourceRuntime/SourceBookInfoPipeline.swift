@@ -57,12 +57,15 @@ public struct SourceBookInfoPipeline: Sendable {
   private let cookieStore: SourceCookieStore
   private let responseSession: SourceStringResponseSession
   private let responseChecker: any SourceBookInfoResponseChecking
+  private let scriptRuntime: (any SourceScriptRuntime)?
+  private let scriptSessionID: SourceScriptSessionID
 
   public init(
     definition: SourceSearchDefinition,
     transport: any HTTPTransport,
     cookieStore: SourceCookieStore = SourceCookieStore(),
     dynamicWebPagePort: (any SourceDynamicWebPagePort)? = nil,
+    scriptRuntime: (any SourceScriptRuntime)? = nil,
     responseChecker: any SourceBookInfoResponseChecking =
       IdentitySourceBookInfoResponseChecker()
   ) {
@@ -75,6 +78,10 @@ public struct SourceBookInfoPipeline: Sendable {
       dynamicWebPagePort: dynamicWebPagePort
     )
     self.responseChecker = responseChecker
+    self.scriptRuntime = scriptRuntime
+    self.scriptSessionID = SourceScriptSessionID(
+      rawValue: definition.sourceURL
+    )
   }
 
   public func load(
@@ -82,7 +89,11 @@ public struct SourceBookInfoPipeline: Sendable {
     infoHTML: String? = nil,
     canRename: Bool = true
   ) async throws -> SourceBookInfoExecution {
-    let runtime = HTMLCSSSourceRuntime(definition: definition.runtime)
+    let runtime = HTMLCSSSourceRuntime(
+      definition: definition.runtime,
+      scriptRuntime: scriptRuntime,
+      scriptSessionID: scriptSessionID
+    )
     let variableStore = SourceVariableStore(
       policy: .androidRuleData,
       values: book.variables

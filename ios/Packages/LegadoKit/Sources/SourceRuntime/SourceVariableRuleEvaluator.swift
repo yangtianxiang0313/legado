@@ -49,13 +49,22 @@ public struct SourceVariableRulePlan: Sendable, Equatable {
 public struct SourceVariableRuleEvaluator: Sendable {
   public let content: String
   public let resolver: SourceVariableResolver
+  public let scriptRuntime: (any SourceScriptRuntime)?
+  public let scriptSessionID: SourceScriptSessionID?
+  public let baseURL: String?
 
   public init(
     content: String,
-    resolver: SourceVariableResolver
+    resolver: SourceVariableResolver,
+    scriptRuntime: (any SourceScriptRuntime)? = nil,
+    scriptSessionID: SourceScriptSessionID? = nil,
+    baseURL: String? = nil
   ) {
     self.content = content
     self.resolver = resolver
+    self.scriptRuntime = scriptRuntime
+    self.scriptSessionID = scriptSessionID
+    self.baseURL = baseURL
   }
 
   public func getString(_ rule: String?) async throws -> String {
@@ -66,12 +75,12 @@ public struct SourceVariableRuleEvaluator: Sendable {
       _ = await resolver.put(key, value: value)
     }
     if
-      let value = try await variableScript(
+      let value = try await scriptValue(
         plan.executionRule,
         current: content
       )
     {
-      return value
+      return stringValue(value)
     }
     return try SourceRuleConsumerEvaluator(
       content: content
@@ -88,12 +97,12 @@ public struct SourceVariableRuleEvaluator: Sendable {
       _ = await resolver.put(key, value: value)
     }
     if
-      let value = try await variableScript(
+      let value = try await scriptValue(
         plan.executionRule,
         current: content
       )
     {
-      return [value]
+      return listValue(value)
     }
     return try SourceRuleConsumerEvaluator(
       content: content
@@ -106,26 +115,67 @@ public struct SourceVariableRuleEvaluator: Sendable {
       let value = try await getString(plan.writes[key])
       _ = await resolver.put(key, value: value)
     }
+    if
+      let value = try await scriptValue(
+        plan.executionRule,
+        current: content
+      )
+    {
+      switch value {
+      case .array(let values):
+        return try values.map(jsonValue)
+      case .undefined, .null:
+        return []
+      default:
+        return [try jsonValue(value)]
+      }
+    }
     return try SourceRuleConsumerEvaluator(
       content: content
     ).getElements(plan.executionRule)
   }
 
-  private func variableScript(
+  private func scriptValue(
     _ rawRule: String,
     current: String
-  ) async throws -> String? {
-    let script: String
+  ) async throws -> SourceScriptValue? {
+    guard let script = scriptBody(rawRule) else {
+      return nil
+    }
+    if
+      let scriptRuntime,
+      let scriptSessionID
+    {
+      return try await scriptRuntime.evaluate(
+        SourceScriptRequest(
+          sessionID: scriptSessionID,
+          script: script,
+          result: .string(current),
+          baseURL: baseURL
+        ),
+        host: SourceVariableScriptHost(resolver: resolver)
+      )
+    }
+    return try await legacyScriptValue(script, current: current)
+      .map(SourceScriptValue.string)
+  }
+
+  private func scriptBody(_ rawRule: String) -> String? {
     if rawRule.lowercased().hasPrefix("@js:") {
-      script = String(rawRule.dropFirst(4))
+      return String(rawRule.dropFirst(4))
     } else if
       rawRule.lowercased().hasPrefix("<js>"),
       rawRule.lowercased().hasSuffix("</js>")
     {
-      script = String(rawRule.dropFirst(4).dropLast(5))
-    } else {
-      return nil
+      return String(rawRule.dropFirst(4).dropLast(5))
     }
+    return nil
+  }
+
+  private func legacyScriptValue(
+    _ script: String,
+    current: String
+  ) async throws -> String? {
     let normalized = script.trimmingCharacters(
       in: .whitespacesAndNewlines
     )
@@ -171,6 +221,65 @@ public struct SourceVariableRuleEvaluator: Sendable {
       )
     }
     return await resolver.put(key, value: value)
+  }
+
+  private func stringValue(_ value: SourceScriptValue) -> String {
+    switch value {
+    case .undefined, .null:
+      return ""
+    case .bool(let value):
+      return String(value)
+    case .number(let value):
+      return numberString(value)
+    case .string(let value):
+      return value
+    case .array(let values):
+      return values.map(stringValue).joined(separator: "\n")
+    case .object:
+      return ""
+    }
+  }
+
+  private func listValue(_ value: SourceScriptValue) -> [String] {
+    switch value {
+    case .undefined, .null:
+      return []
+    case .array(let values):
+      return values.map(stringValue)
+    default:
+      return [stringValue(value)]
+    }
+  }
+
+  private func jsonValue(
+    _ value: SourceScriptValue
+  ) throws -> JSONValue {
+    switch value {
+    case .undefined, .null:
+      return .null
+    case .bool(let value):
+      return .bool(value)
+    case .number(let value):
+      return .number(
+        try JSONNumber(validating: numberString(value))
+      )
+    case .string(let value):
+      return .string(value)
+    case .array(let values):
+      return .array(try values.map(jsonValue))
+    case .object(let values):
+      return .object(try values.mapValues(jsonValue))
+    }
+  }
+
+  private func numberString(_ value: Double) -> String {
+    if value.rounded() == value,
+      value >= Double(Int64.min),
+      value <= Double(Int64.max)
+    {
+      return String(Int64(value))
+    }
+    return String(value)
   }
 
   private func quotedLiteral(_ value: String) -> String? {
