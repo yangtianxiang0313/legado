@@ -542,6 +542,46 @@ final class ConformanceCLITests: XCTestCase {
     XCTAssertFalse(text.contains("run_started_at"))
   }
 
+  func testBookDetailProjectionKeepsLocalFormatActions() throws {
+    let run = try BookDetailActionConformanceRunner.run(
+      fixtureDirectory: fixture(
+        "ios/harness/fixtures/runtime-lab/"
+          + "rl-ui-book-detail-conditional-actions-001"
+      )
+    )
+    guard
+      case .object(let artifact) = run.artifact,
+      case .object(let result)? = artifact["result"],
+      result["type"] == .string("ui_runtime"),
+      case .object(let value)? = result["value"],
+      case .object(let projection)? =
+        value["portable_known_projection"],
+      case .array(let cases)? = projection["cases"],
+      cases.count == 6,
+      case .object(let localTXT) = cases[4],
+      case .object(let localTXTResult)? = localTXT["result"],
+      case .object(let localTXTActions)? =
+        localTXTResult["actions"],
+      case .object(let localEPUB) = cases[5],
+      case .object(let localEPUBResult)? = localEPUB["result"],
+      case .object(let localEPUBActions)? =
+        localEPUBResult["actions"]
+    else {
+      return XCTFail("Invalid book detail projection")
+    }
+
+    XCTAssertEqual(
+      localTXTActions["split_long_chapter"],
+      .bool(true)
+    )
+    XCTAssertEqual(localTXTActions["upload"], .bool(true))
+    XCTAssertEqual(
+      localEPUBActions["split_long_chapter"],
+      .bool(false)
+    )
+    XCTAssertEqual(localEPUBActions["upload"], .bool(true))
+  }
+
   func testRunnerProducesDeterministicSourceLabTranscriptWithoutSocketDetails() async throws {
     let fixture = sourceLabFixture
 
