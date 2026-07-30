@@ -32,6 +32,10 @@ CONTROL_PATHS = {
     CURRENT_PATH.as_posix(),
     EVENTS_PATH.as_posix(),
 }
+KNOWLEDGE_PATH_PREFIXES = (
+    "ios/docs/",
+    "ios/project/",
+)
 ANDROID_CHARACTERIZATION_REQUIREMENT_ID = (
     "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
 )
@@ -3934,6 +3938,8 @@ def workspace_digest(root: Path, paths: Sequence[str]) -> str:
         for path in paths
         if path not in CONTROL_PATHS
         and not path.startswith(".harness-runtime/")
+        and not path.startswith(KNOWLEDGE_PATH_PREFIXES)
+        and not path.endswith(".md")
     ):
         path = root / relative
         if path.is_symlink():

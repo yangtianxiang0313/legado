@@ -838,22 +838,28 @@ class MinimalLoopTests(unittest.TestCase):
                 },
             )
 
-            task = loop.next_task(root)
+            candidates = loop.pending_characterizations(root)
+            deferred_task = loop.build_characterization_task(
+                root,
+                candidates[0],
+            )
 
-            self.assertEqual("characterization", task["kind"])
+            self.assertIsNone(loop.next_task(root))
             self.assertEqual(
                 "BKC-XML-001",
-                task["source"]["knowledge"]["candidate_claim"]["id"],
+                candidates[0]["claim"]["id"],
             )
             self.assertEqual(
                 "sl-source-response-xml-normalization-001",
-                task["source"]["fixture_id"],
+                deferred_task["source"]["fixture_id"],
             )
             self.assertFalse(
-                (root / task["source"]["android_golden"]).exists()
+                (root / deferred_task["source"]["android_golden"]).exists()
             )
-            loop.validate_task(root, task)
-            self.assertLess(len(loop.canonical(task)), 8_000)
+            self.assertEqual(
+                len(candidates),
+                loop.queue_status(root)["deferred_characterization_count"],
+            )
 
     def test_next_characterization_uses_latest_packet_revision(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -908,17 +914,18 @@ class MinimalLoopTests(unittest.TestCase):
                     },
                 )
 
-            task = loop.next_task(root)
+            candidates = loop.pending_characterizations(root)
 
+            self.assertIsNone(loop.next_task(root))
             self.assertEqual(
                 2,
-                task["source"]["knowledge"]["packet"]["revision"],
+                candidates[0]["packet"]["revision"],
             )
             self.assertEqual(
                 2,
-                task["source"]["knowledge"]["candidate_claim"]["revision"],
+                candidates[0]["claim"]["revision"],
             )
-            self.assertEqual("Revision 2", task["title"])
+            self.assertEqual("Revision 2", candidates[0]["claim"]["topic"])
 
     def test_new_packet_claim_suppresses_older_runtime_revision(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -1390,13 +1397,12 @@ class MinimalLoopTests(unittest.TestCase):
                 },
             )
 
-            task = loop.next_task(root)
+            candidates = loop.pending_characterizations(root)
 
-            self.assertIsNotNone(task)
-            self.assertEqual("characterization", task["kind"])
+            self.assertIsNone(loop.next_task(root))
             self.assertEqual(
                 "BKC-RUNTIME-TEMPLATE-001",
-                task["source"]["knowledge"]["candidate_claim"]["id"],
+                candidates[0]["claim"]["id"],
             )
 
     def test_project_charter_continues_unclaimed_android_candidate(self):
@@ -1446,15 +1452,18 @@ class MinimalLoopTests(unittest.TestCase):
                 },
             )
 
-            task = loop.next_task(root)
+            candidates = loop.pending_characterizations(root)
 
-            self.assertIsNotNone(task)
-            self.assertEqual("characterization", task["kind"])
+            self.assertIsNone(loop.next_task(root))
+            self.assertEqual(1, len(candidates))
             self.assertEqual(
-                ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"],
-                task["requirements"],
+                "BKC-UNCLAIMED-RUNTIME-001",
+                candidates[0]["claim"]["id"],
             )
-            loop.validate_task(root, task)
+            self.assertEqual(
+                1,
+                loop.queue_status(root)["deferred_characterization_count"],
+            )
 
     def test_reader_characterization_routes_to_runtime_lab_and_reader_core(self):
         claim = {
@@ -2136,6 +2145,26 @@ class MinimalLoopTests(unittest.TestCase):
             second = loop.workspace_digest(root, ["ios/value.txt"])
 
             self.assertNotEqual(first, second)
+
+    def test_workspace_digest_ignores_knowledge_only_changes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            documentation = root / "ios/docs/architecture.md"
+            milestone = root / "ios/project/migration-priorities/active.json"
+            documentation.parent.mkdir(parents=True)
+            milestone.parent.mkdir(parents=True)
+            documentation.write_text("before")
+            milestone.write_text('{"status":"before"}')
+            paths = [
+                "ios/docs/architecture.md",
+                "ios/project/migration-priorities/active.json",
+            ]
+            first = loop.workspace_digest(root, paths)
+            documentation.write_text("after")
+            milestone.write_text('{"status":"after"}')
+            second = loop.workspace_digest(root, paths)
+
+            self.assertEqual(first, second)
 
     def test_acceptance_requires_nonzero_test_count(self):
         for count, expected in ((0, False), (36, True)):
