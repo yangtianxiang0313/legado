@@ -1559,7 +1559,10 @@ def active_priority_policy(root: Path) -> Mapping[str, Any] | None:
                 for value in delivery["prerequisite_task_ids"]
             )
             or not isinstance(delivery.get("source_anchors"), list)
-            or not delivery["source_anchors"]
+            or (
+                not delivery["source_anchors"]
+                and not delivery["target"].startswith("IOS-DEPENDENCY-")
+            )
             or delivery.get("validation", "tests")
             not in {"build", "tests", "simulator"}
             or not isinstance(
