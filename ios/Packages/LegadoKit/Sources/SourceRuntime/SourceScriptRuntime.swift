@@ -29,9 +29,24 @@ public enum SourceScriptPurpose: String, Equatable, Sendable {
   case responseCheck
 }
 
+public struct SourceScriptLibrary: Equatable, Sendable {
+  public enum Kind: String, Equatable, Sendable {
+    case inline
+  }
+
+  public let kind: Kind
+  public let source: String
+
+  public init(kind: Kind = .inline, source: String) {
+    self.kind = kind
+    self.source = source
+  }
+}
+
 public struct SourceScriptRequest: Equatable, Sendable {
   public let sessionID: SourceScriptSessionID
   public let purpose: SourceScriptPurpose
+  public let library: SourceScriptLibrary?
   public let script: String
   public let result: SourceScriptValue
   public let baseURL: String?
@@ -40,6 +55,7 @@ public struct SourceScriptRequest: Equatable, Sendable {
   public init(
     sessionID: SourceScriptSessionID,
     purpose: SourceScriptPurpose = .rule,
+    library: SourceScriptLibrary? = nil,
     script: String,
     result: SourceScriptValue = .undefined,
     baseURL: String? = nil,
@@ -47,6 +63,7 @@ public struct SourceScriptRequest: Equatable, Sendable {
   ) {
     self.sessionID = sessionID
     self.purpose = purpose
+    self.library = library
     self.script = script
     self.result = result
     self.baseURL = baseURL
