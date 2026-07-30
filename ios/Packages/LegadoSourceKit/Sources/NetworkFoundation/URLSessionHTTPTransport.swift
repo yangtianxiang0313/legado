@@ -1,14 +1,27 @@
 import Foundation
+import os
 import SourceRuntime
 
-public protocol URLSessionDataLoading: Sendable {
-    func data(for request: URLRequest) async throws -> (
-        Data,
-        URLResponse
-    )
+public struct URLSessionLoadResult: Sendable {
+    public let data: Data
+    public let response: URLResponse
+    public let responseCookies: [HTTPResponseCookie]
+
+    public init(
+        data: Data,
+        response: URLResponse,
+        responseCookies: [HTTPResponseCookie] = []
+    ) {
+        self.data = data
+        self.response = response
+        self.responseCookies = responseCookies
+    }
 }
 
-extension URLSession: URLSessionDataLoading {}
+public protocol URLSessionDataLoading: Sendable {
+    func data(for request: URLRequest) async throws
+        -> URLSessionLoadResult
+}
 
 public actor URLSessionHTTPTransport: HTTPTransport {
     public static let defaultMaximumResponseBytes = 32 * 1_024 * 1_024
@@ -34,7 +47,9 @@ public actor URLSessionHTTPTransport: HTTPTransport {
         isolated.requestCachePolicy = .reloadIgnoringLocalCacheData
         isolated.timeoutIntervalForRequest = 15
         isolated.timeoutIntervalForResource = 60
-        self.loader = URLSession(configuration: isolated)
+        self.loader = FoundationURLSessionDataLoader(
+            configuration: isolated
+        )
         self.maximumResponseBytes = max(0, maximumResponseBytes)
         self.defaultUserAgent = defaultUserAgent
     }
@@ -99,12 +114,12 @@ public actor URLSessionHTTPTransport: HTTPTransport {
         }
 
         do {
-            let (data, response) = try await loader.data(for: urlRequest)
+            let result = try await loader.data(for: urlRequest)
             try Task.checkCancellation()
-            guard data.count <= maximumResponseBytes else {
+            guard result.data.count <= maximumResponseBytes else {
                 throw HTTPTransportFailure.responseTooLarge
             }
-            guard let http = response as? HTTPURLResponse else {
+            guard let http = result.response as? HTTPURLResponse else {
                 throw HTTPTransportFailure.invalidResponse
             }
             let responseHeaders = HTTPHeaders(
@@ -127,7 +142,8 @@ public actor URLSessionHTTPTransport: HTTPTransport {
                         ?? request.url.absoluteString
                 ),
                 headers: responseHeaders,
-                body: HTTPBody(data)
+                body: HTTPBody(result.data),
+                responseCookies: result.responseCookies
             )
         } catch let cancellation as CancellationError {
             throw cancellation
@@ -148,6 +164,98 @@ public actor URLSessionHTTPTransport: HTTPTransport {
         } catch {
             try Task.checkCancellation()
             throw HTTPTransportFailure.connectionFailed
+        }
+    }
+}
+
+private actor FoundationURLSessionDataLoader:
+    URLSessionDataLoading
+{
+    private let session: URLSession
+
+    init(configuration: URLSessionConfiguration) {
+        self.session = URLSession(configuration: configuration)
+    }
+
+    func data(
+        for request: URLRequest
+    ) async throws -> URLSessionLoadResult {
+        let collector = RedirectCookieCollector()
+        let (data, response) = try await session.data(
+            for: request,
+            delegate: collector
+        )
+        var cookies = collector.snapshot()
+        if let http = response as? HTTPURLResponse {
+            cookies.append(
+                contentsOf:
+                    URLSessionResponseCookieExtractor.cookies(
+                        from: http
+                    )
+            )
+        }
+        return URLSessionLoadResult(
+            data: data,
+            response: response,
+            responseCookies: cookies
+        )
+    }
+}
+
+final class RedirectCookieCollector:
+    NSObject,
+    URLSessionTaskDelegate
+{
+    private let storage = OSAllocatedUnfairLock(
+        initialState: [HTTPResponseCookie]()
+    )
+
+    func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        willPerformHTTPRedirection response: HTTPURLResponse,
+        newRequest request: URLRequest,
+        completionHandler: @escaping (URLRequest?) -> Void
+    ) {
+        let cookies = URLSessionResponseCookieExtractor.cookies(
+            from: response
+        )
+        storage.withLock {
+            $0.append(contentsOf: cookies)
+        }
+        completionHandler(request)
+    }
+
+    func snapshot() -> [HTTPResponseCookie] {
+        storage.withLock { $0 }
+    }
+}
+
+enum URLSessionResponseCookieExtractor {
+    static func cookies(
+        from response: HTTPURLResponse
+    ) -> [HTTPResponseCookie] {
+        guard
+            let url = response.url,
+            let originURL = try? HTTPURL(url.absoluteString)
+        else {
+            return []
+        }
+        var fields: [String: String] = [:]
+        for (rawName, rawValue) in response.allHeaderFields {
+            guard let name = rawName as? String else { continue }
+            fields[name] = String(describing: rawValue)
+        }
+        return HTTPCookie.cookies(
+            withResponseHeaderFields: fields,
+            for: url
+        ).map {
+            HTTPResponseCookie(
+                originURL: originURL,
+                name: $0.name,
+                value: $0.value,
+                isPersistent: !$0.isSessionOnly
+            )
         }
     }
 }

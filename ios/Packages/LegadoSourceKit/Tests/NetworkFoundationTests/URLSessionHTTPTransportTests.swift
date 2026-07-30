@@ -222,16 +222,18 @@ final class URLSessionHTTPTransportTests: XCTestCase {
 }
 
 private actor RecordingLoader: URLSessionDataLoading {
-    private let result: Result<(Data, URLResponse), any Error>
+    private let result: Result<URLSessionLoadResult, any Error>
     private var observedRequest: URLRequest?
 
     init(result: Result<(Data, URLResponse), any Error>) {
-        self.result = result
+        self.result = result.map {
+            URLSessionLoadResult(data: $0.0, response: $0.1)
+        }
     }
 
     func data(
         for request: URLRequest
-    ) async throws -> (Data, URLResponse) {
+    ) async throws -> URLSessionLoadResult {
         observedRequest = request
         return try result.get()
     }

@@ -85,13 +85,20 @@ private struct SourceDynamicBootstrapTransport: HTTPTransport {
     let execution = try await SourceRequestExecutor(
       transport: transport
     ).execute(request, retry: retry)
-    try await cookieStore.saveResponse(
-      setCookieHeaders: execution.response.headers.values(
-        for: "set-cookie"
-      ),
-      for: execution.effectiveURL,
-      enabledCookieJar: enabledCookieJar
-    )
+    if execution.response.responseCookies.isEmpty {
+      try await cookieStore.saveResponse(
+        setCookieHeaders: execution.response.headers.values(
+          for: "set-cookie"
+        ),
+        for: execution.effectiveURL,
+        enabledCookieJar: enabledCookieJar
+      )
+    } else {
+      try await cookieStore.saveResponse(
+        cookies: execution.response.responseCookies,
+        enabledCookieJar: enabledCookieJar
+      )
+    }
     return execution.response
   }
 }

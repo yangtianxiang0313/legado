@@ -158,6 +158,13 @@ HTTP/HTTPS 站点，App 明确声明 ATS 任意网络加载；请求头、Cookie
 `Cache-Control: no-cache`；默认 request/resource timeout 分别为 15/60 秒。
 书源显式提供的非空 UA 优先于默认值。
 
+URLSession 使用禁用共享 `HTTPCookieStorage` 的私有会话。重定向 delegate 必须逐跳
+解析响应 Cookie，并以 `{originURL,name,value,isPersistent}` 事件附着到
+`HTTPResponse`；`SourceRequestSession` 再按每个响应 URL 的 domain 分别写入
+`SourceCookieStore`。禁止只读取最终响应的 `Set-Cookie`，也禁止把跨域跳转中产生的
+Cookie 全部归到最终 URL。没有结构化 Cookie 事件的 FixtureTransport 仍可使用最终
+响应原始 Header，保持离线测试兼容。
+
 WebDAV 的具体边界由 [ADR-0008](adr/0008-integrationkit-webdav-boundary.md) 固定：
 首版不引入 WebDAV 三方库，`IntegrationKit` 只依赖 `LegadoCore`，
 `WebDAVFoundation` 只依赖 `LegadoCore` 与 `IntegrationKit`，`AppUseCases`

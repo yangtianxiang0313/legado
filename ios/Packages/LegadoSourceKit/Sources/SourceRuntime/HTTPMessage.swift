@@ -147,6 +147,25 @@ public struct HTTPBody: Codable, Equatable, Sendable {
   }
 }
 
+public struct HTTPResponseCookie: Codable, Equatable, Sendable {
+  public let originURL: HTTPURL
+  public let name: String
+  public let value: String
+  public let isPersistent: Bool
+
+  public init(
+    originURL: HTTPURL,
+    name: String,
+    value: String,
+    isPersistent: Bool
+  ) {
+    self.originURL = originURL
+    self.name = name
+    self.value = value
+    self.isPersistent = isPersistent
+  }
+}
+
 public struct HTTPTimeout: Codable, Equatable, Sendable {
   public let milliseconds: UInt64
 
@@ -193,12 +212,14 @@ public struct HTTPResponse: Codable, Equatable, Sendable {
   public let effectiveURL: HTTPURL
   public let headers: HTTPHeaders
   public let body: HTTPBody
+  public let responseCookies: [HTTPResponseCookie]
 
   public init(
     statusCode: Int,
     effectiveURL: HTTPURL,
     headers: HTTPHeaders = HTTPHeaders(),
-    body: HTTPBody
+    body: HTTPBody,
+    responseCookies: [HTTPResponseCookie] = []
   ) throws {
     guard (100...599).contains(statusCode) else {
       throw HTTPMessageValidationError.invalidStatusCode
@@ -207,6 +228,7 @@ public struct HTTPResponse: Codable, Equatable, Sendable {
     self.effectiveURL = effectiveURL
     self.headers = headers
     self.body = body
+    self.responseCookies = responseCookies
   }
 
   private enum CodingKeys: String, CodingKey {
@@ -214,6 +236,7 @@ public struct HTTPResponse: Codable, Equatable, Sendable {
     case effectiveURL
     case headers
     case body
+    case responseCookies
   }
 
   public init(from decoder: any Decoder) throws {
@@ -222,7 +245,11 @@ public struct HTTPResponse: Codable, Equatable, Sendable {
       statusCode: container.decode(Int.self, forKey: .statusCode),
       effectiveURL: container.decode(HTTPURL.self, forKey: .effectiveURL),
       headers: container.decode(HTTPHeaders.self, forKey: .headers),
-      body: container.decode(HTTPBody.self, forKey: .body)
+      body: container.decode(HTTPBody.self, forKey: .body),
+      responseCookies: try container.decodeIfPresent(
+        [HTTPResponseCookie].self,
+        forKey: .responseCookies
+      ) ?? []
     )
   }
 }

@@ -193,6 +193,43 @@ public actor SourceCookieStore {
     }
   }
 
+  public func saveResponse(
+    cookies: [HTTPResponseCookie],
+    enabledCookieJar: Bool
+  ) async throws {
+    guard enabledCookieJar else { return }
+    var persistentDomains: Set<String> = []
+    for cookie in cookies {
+      guard !cookie.name.isEmpty, !cookie.value.isEmpty else {
+        continue
+      }
+      let domain = try SourceCookieDomain.normalized(
+        for: cookie.originURL
+      )
+      try await loadPersistentCookieIfNeeded(for: domain)
+      let pair = SourceCookiePair(
+        name: cookie.name,
+        value: cookie.value
+      )
+      if cookie.isPersistent {
+        persistent[domain] = SourceCookieParser.merge([
+          persistent[domain] ?? [],
+          [pair],
+        ])
+        persistentDomains.insert(domain)
+      } else {
+        session[domain] = SourceCookieParser.merge([
+          session[domain] ?? [],
+          [pair],
+        ])
+        initializedSessionDomains.insert(domain)
+      }
+    }
+    for domain in persistentDomains.sorted() {
+      try await persist(domain: domain)
+    }
+  }
+
   public func snapshot(
     for url: HTTPURL
   ) async throws -> SourceCookieSnapshot {
@@ -395,13 +432,20 @@ public struct SourceRequestSession: Sendable {
     let execution = try await SourceRequestExecutor(
       transport: transport
     ).execute(preparation.networkRequest, retry: plan.retry)
-    try await cookieStore.saveResponse(
-      setCookieHeaders: execution.response.headers.values(
-        for: "set-cookie"
-      ),
-      for: execution.effectiveURL,
-      enabledCookieJar: enabledCookieJar
-    )
+    if execution.response.responseCookies.isEmpty {
+      try await cookieStore.saveResponse(
+        setCookieHeaders: execution.response.headers.values(
+          for: "set-cookie"
+        ),
+        for: execution.effectiveURL,
+        enabledCookieJar: enabledCookieJar
+      )
+    } else {
+      try await cookieStore.saveResponse(
+        cookies: execution.response.responseCookies,
+        enabledCookieJar: enabledCookieJar
+      )
+    }
     return execution
   }
 }
