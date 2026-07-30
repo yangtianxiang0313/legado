@@ -72,6 +72,7 @@ public struct BookInfoRules: Sendable, Equatable {
   public let lastChapter: HTMLCSSRule
   public let coverURL: HTMLCSSRule
   public let tocURL: HTMLCSSRule
+  public let allowsRename: Bool
 
   public init(
     name: HTMLCSSRule,
@@ -81,7 +82,8 @@ public struct BookInfoRules: Sendable, Equatable {
     wordCount: HTMLCSSRule = .optional(nil),
     lastChapter: HTMLCSSRule,
     coverURL: HTMLCSSRule,
-    tocURL: HTMLCSSRule
+    tocURL: HTMLCSSRule,
+    allowsRename: Bool = false
   ) {
     self.name = name
     self.author = author
@@ -91,6 +93,7 @@ public struct BookInfoRules: Sendable, Equatable {
     self.lastChapter = lastChapter
     self.coverURL = coverURL
     self.tocURL = tocURL
+    self.allowsRename = allowsRename
   }
 }
 
@@ -141,10 +144,33 @@ public struct SourceBook: Sendable, Equatable {
   public let author: String?
   public let intro: String?
   public let kind: String?
+  public let wordCount: String?
   public let lastChapter: String?
   public let bookURL: URL
   public let coverURL: URL?
   public let tocURL: URL?
+
+  public init(
+    name: String,
+    author: String?,
+    intro: String?,
+    kind: String?,
+    wordCount: String? = nil,
+    lastChapter: String?,
+    bookURL: URL,
+    coverURL: URL?,
+    tocURL: URL?
+  ) {
+    self.name = name
+    self.author = author
+    self.intro = intro
+    self.kind = kind
+    self.wordCount = wordCount
+    self.lastChapter = lastChapter
+    self.bookURL = bookURL
+    self.coverURL = coverURL
+    self.tocURL = tocURL
+  }
 }
 
 public struct SourceChapter: Sendable, Equatable {
@@ -221,19 +247,102 @@ public struct HTMLCSSSourceRuntime: Sendable {
   }
 
   public func bookInfo(html: String, bookURL: URL) throws -> SourceBook {
+    try bookInfo(
+      html: html,
+      baseURL: bookURL,
+      redirectURL: bookURL,
+      existing: SourceBook(
+        name: "",
+        author: nil,
+        intro: nil,
+        kind: nil,
+        lastChapter: nil,
+        bookURL: bookURL,
+        coverURL: nil,
+        tocURL: nil
+      ),
+      canRename: true
+    )
+  }
+
+  public func bookInfo(
+    html: String,
+    baseURL: URL,
+    redirectURL: URL,
+    existing: SourceBook,
+    canRename: Bool
+  ) throws -> SourceBook {
     let document = try parse(html)
-    guard
-      let name = try value(definition.bookInfo.name, in: document.root, document: document),
-      let toc = try resolved(definition.bookInfo.tocURL, in: document.root, document: document, base: bookURL)
-    else { throw SourceRuntimeIssue(stage: .fieldEvaluation, code: .ruleFailed) }
+    let parsedName = normalizeName(
+      try value(
+        definition.bookInfo.name,
+        in: document.root,
+        document: document
+      )
+    )
+    let parsedAuthor = normalizeAuthor(
+      try value(
+        definition.bookInfo.author,
+        in: document.root,
+        document: document
+      )
+    )
+    let mayRename = canRename && definition.bookInfo.allowsRename
+    let name = replacement(
+      existing: existing.name,
+      parsed: parsedName,
+      mayReplaceExisting: mayRename
+    )
+    guard !name.isEmpty else {
+      throw SourceRuntimeIssue(
+        stage: .fieldEvaluation,
+        code: .ruleFailed
+      )
+    }
+    let author = replacement(
+      existing: existing.author,
+      parsed: parsedAuthor,
+      mayReplaceExisting: mayRename
+    )
+    let toc =
+      try resolved(
+        definition.bookInfo.tocURL,
+        in: document.root,
+        document: document,
+        base: baseURL
+      ) ?? baseURL
     return SourceBook(
       name: name,
-      author: try value(definition.bookInfo.author, in: document.root, document: document),
-      intro: try value(definition.bookInfo.intro, in: document.root, document: document),
-      kind: try value(definition.bookInfo.kind, in: document.root, document: document),
-      lastChapter: try value(definition.bookInfo.lastChapter, in: document.root, document: document),
-      bookURL: bookURL,
-      coverURL: try resolved(definition.bookInfo.coverURL, in: document.root, document: document, base: bookURL),
+      author: author,
+      intro: optionalValue(
+        definition.bookInfo.intro,
+        in: document,
+        fallback: existing.intro
+      ),
+      kind: optionalValue(
+        definition.bookInfo.kind,
+        in: document,
+        fallback: existing.kind
+      ),
+      wordCount: normalizeWordCount(
+        optionalValue(
+          definition.bookInfo.wordCount,
+          in: document,
+          fallback: existing.wordCount
+        )
+      ),
+      lastChapter: optionalValue(
+        definition.bookInfo.lastChapter,
+        in: document,
+        fallback: existing.lastChapter
+      ),
+      bookURL: existing.bookURL,
+      coverURL: optionalURL(
+        definition.bookInfo.coverURL,
+        in: document,
+        base: redirectURL,
+        fallback: existing.coverURL
+      ),
       tocURL: toc
     )
   }
@@ -323,5 +432,105 @@ public struct HTMLCSSSourceRuntime: Sendable {
   ) throws -> URL? {
     guard let raw = try value(rule, in: node, document: document) else { return nil }
     return URL(string: raw, relativeTo: base)?.absoluteURL
+  }
+
+  private func optionalValue(
+    _ rule: HTMLCSSRule,
+    in document: HTMLDocument,
+    fallback: String?
+  ) -> String? {
+    do {
+      return try value(
+        rule,
+        in: document.root,
+        document: document
+      ) ?? fallback
+    } catch {
+      return fallback
+    }
+  }
+
+  private func optionalURL(
+    _ rule: HTMLCSSRule,
+    in document: HTMLDocument,
+    base: URL,
+    fallback: URL?
+  ) -> URL? {
+    do {
+      return try resolved(
+        rule,
+        in: document.root,
+        document: document,
+        base: base
+      ) ?? fallback
+    } catch {
+      return fallback
+    }
+  }
+
+  private func replacement(
+    existing: String,
+    parsed: String?,
+    mayReplaceExisting: Bool
+  ) -> String {
+    guard
+      let parsed,
+      !parsed.isEmpty,
+      mayReplaceExisting || existing.isEmpty
+    else {
+      return existing
+    }
+    return parsed
+  }
+
+  private func replacement(
+    existing: String?,
+    parsed: String?,
+    mayReplaceExisting: Bool
+  ) -> String? {
+    guard
+      let parsed,
+      !parsed.isEmpty,
+      mayReplaceExisting || existing?.isEmpty != false
+    else {
+      return existing
+    }
+    return parsed
+  }
+
+  private func normalizeName(_ value: String?) -> String? {
+    value?
+      .replacingOccurrences(of: "书名：", with: "")
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+  }
+
+  private func normalizeAuthor(_ value: String?) -> String? {
+    value?
+      .replacingOccurrences(of: "作者：", with: "")
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+  }
+
+  private func normalizeWordCount(_ value: String?) -> String? {
+    guard
+      let value,
+      let count = Double(
+        value.replacingOccurrences(
+          of: #"[^0-9.]"#,
+          with: "",
+          options: .regularExpression
+        )
+      )
+    else {
+      return value
+    }
+    if count >= 10_000 {
+      let units = count / 10_000
+      let formatted =
+        units.rounded() == units
+        ? String(Int(units))
+        : String(format: "%.1f", units)
+      return "\(formatted)万字"
+    }
+    return "\(Int(count))字"
   }
 }

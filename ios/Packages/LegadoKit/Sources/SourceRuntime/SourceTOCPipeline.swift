@@ -19,36 +19,74 @@ public struct SourceTOCExecution: Sendable, Equatable {
 public struct SourceTOCPipeline: Sendable {
   private let definition: SourceSearchDefinition
   private let transport: any HTTPTransport
+  private let bookInfoResponseChecker:
+    any SourceBookInfoResponseChecking
 
   public init(
     definition: SourceSearchDefinition,
-    transport: any HTTPTransport
+    transport: any HTTPTransport,
+    bookInfoResponseChecker: any SourceBookInfoResponseChecking =
+      IdentitySourceBookInfoResponseChecker()
   ) {
     self.definition = definition
     self.transport = transport
+    self.bookInfoResponseChecker = bookInfoResponseChecker
   }
 
   public func chapters(bookURL: String) async throws -> SourceTOCExecution {
     guard let requestedBookURL = URL(string: bookURL) else {
       throw SourceRuntimeIssue(stage: .urlTemplate, code: .invalidURL)
     }
-    let runtime = HTMLCSSSourceRuntime(definition: definition.runtime)
-    let bookRequest = try runtime.request(for: requestedBookURL)
-    let bookResponse = try await transport.execute(bookRequest)
-    let bookResponseURL = try responseURL(bookResponse)
-    let bookHTML = try responseBody(bookResponse)
-    let book = try runtime.bookInfo(
-      html: bookHTML,
-      bookURL: bookResponseURL
+    return try await chapters(
+      book: SourceBook(
+        name: "",
+        author: nil,
+        intro: nil,
+        kind: nil,
+        lastChapter: nil,
+        bookURL: requestedBookURL,
+        coverURL: nil,
+        tocURL: nil
+      )
     )
-    guard let tocURL = book.tocURL else {
+  }
+
+  public func chapters(
+    book: SourceBook,
+    infoHTML: String? = nil,
+    canRename: Bool = true
+  ) async throws -> SourceTOCExecution {
+    let runtime = HTMLCSSSourceRuntime(definition: definition.runtime)
+    let detail = try await SourceBookInfoPipeline(
+      definition: definition,
+      transport: transport,
+      responseChecker: bookInfoResponseChecker
+    ).load(
+      book: book,
+      infoHTML: infoHTML,
+      canRename: canRename
+    )
+    guard let tocURL = detail.book.tocURL else {
       throw SourceRuntimeIssue(
         stage: .fieldEvaluation,
         code: .ruleFailed
       )
     }
 
+    var requests = detail.requestPlan.map { [$0.request] } ?? []
+    if let tocHTML = detail.tocHTML {
+      return SourceTOCExecution(
+        requests: requests,
+        book: detail.book,
+        chapters: try runtime.chapters(
+          html: tocHTML,
+          tocURL: tocURL
+        )
+      )
+    }
+
     let tocRequest = try runtime.request(for: tocURL)
+    requests.append(tocRequest)
     let tocResponse = try await transport.execute(tocRequest)
     let tocResponseURL = try responseURL(tocResponse)
     let tocHTML = try responseBody(tocResponse)
@@ -57,8 +95,8 @@ public struct SourceTOCPipeline: Sendable {
       tocURL: tocResponseURL
     )
     return SourceTOCExecution(
-      requests: [bookRequest, tocRequest],
-      book: book,
+      requests: requests,
+      book: detail.book,
       chapters: chapters
     )
   }
