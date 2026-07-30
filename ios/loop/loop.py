@@ -3152,7 +3152,6 @@ def validate_task(root: Path, task: Mapping[str, Any]) -> None:
                 and (
                     not isinstance(ui_acceptance, dict)
                     or not isinstance(expected, str)
-                    or not (root / expected).is_file()
                 )
             )
         ):

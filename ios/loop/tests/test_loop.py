@@ -941,6 +941,15 @@ class MinimalLoopTests(unittest.TestCase):
                 "source-ui-discovery-explore-flow-v1",
                 deliveries[0]["source_contract"]["fixture_id"],
             )
+            task = loop.build_task(root, deliveries[0])
+            self.assertFalse(
+                (
+                    root
+                    / "ios/harness/ui/expected/"
+                    "ui-discovery-explore-flow-v1.json"
+                ).exists()
+            )
+            loop.validate_task(root, task)
 
     def test_verified_candidate_evidence_satisfies_dependency(self):
         with tempfile.TemporaryDirectory() as directory:
