@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-UI-READER-TOC-RESULT-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "ui.reader.toc-result-golden",
+  "title": "受保护 Android Golden 验证的目录选择到阅读位置交接",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "822755c0b0cd5555b959fd4da3a6d18c833f9e9ab9252dbbf15c91a02a407d04"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "ui.toc",
+      "reader.navigation",
+      "reader.progress"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-CORE"
+    ],
+    "subject_keys": [
+      "ui.navigation",
+      "ui.result",
+      "ui.state"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-UI-TOC-RESULT-001",
+      "revision": 3,
+      "semantic_key": "ui.reader.toc-result",
+      "kind": "runtime_behavior",
+      "topic": "目录选择结果与阅读位置交接",
+      "statement": "在 rl-ui-reader-toc-result-001 的 7 个固定 Android 场景中，TocActivityResult 只有在 RESULT_OK 且 Intent 非空时产生结果；取消与空 Intent 均不触发阅读跳转。有效结果是 (chapterIndex, chapterCharOffset, chapterChangedFlag)：缺失字段分别回退为 0、0、false；普通章节选择返回目标章节索引并把字符偏移归零，只有目标索引与当前索引不同时 chapterChanged=true；书签选择保留书签字符偏移且 chapterChanged=false；目录倒序操作返回当前章节索引、偏移归零且 chapterChanged=false。详情消费者把三元组写回书籍进度后进入阅读，阅读器消费者以 chapterIndex 和 chapterCharOffset 打开位置。iOS 不复制 Activity Result 或以数组索引作为持久身份：AppNavigation 应传递稳定 BookID/ChapterID 与非负字符偏移，AppUseCases 在边界处解析为当前目录坐标，ReaderCore 消费显式阅读位置；取消必须保持现有会话不变。",
+      "subject_keys": [
+        "ui.navigation",
+        "ui.result",
+        "ui.state"
+      ],
+      "depends_on": [
+        {
+          "id": "BKC-BOOK-DETAIL-STAGING-001",
+          "revision": 2
+        }
+      ],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [
+          {
+            "id": "AF-TOC-ACTIVITY-RESULT-PARSE",
+            "revision_sha256": "182a9b2639f0ed3c94f7b84a78698da878656a2a827b568cefcb37dd13230efe"
+          },
+          {
+            "id": "AF-CHAPTER-LIST-OPEN-CHAPTER",
+            "revision_sha256": "79753eef3c7139d6d53f6670eb644f50ffd7ce5aa256e3433ff7ccd03339f68b"
+          },
+          {
+            "id": "AF-BOOKMARK-FRAGMENT-CLICK",
+            "revision_sha256": "f9f55c3dab5b933a4b0ccd0af811f0221d402302f772ccc6a207b134859b0bb6"
+          },
+          {
+            "id": "AF-TOC-ACTIVITY-REVERSE-RESULT",
+            "revision_sha256": "f26fd279d222a30609fc9dfe6a52ffa908be88a8921e6ce409e92629c5b769d9"
+          }
+        ],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "8cd5d47b078ff330a4b871ec74d4c4403bffb8b4",
+            "path": "app/src/main/java/io/legado/app/ui/book/toc/TocActivityResult.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.toc.TocActivityResult/parseResult"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "2f76982c3bfcf536939dee5af97097b4b93ebc32",
+            "path": "app/src/main/java/io/legado/app/ui/book/toc/ChapterListFragment.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.toc.ChapterListFragment/openChapter"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "a69b2669ad4a89fed1cdbd53a34b26168e1438c5",
+            "path": "app/src/main/java/io/legado/app/ui/book/toc/BookmarkFragment.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.toc.BookmarkFragment/onClick"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "5f62f1bf0d6956bcb525490fd8b8075446e880a8",
+            "path": "app/src/main/java/io/legado/app/ui/book/toc/TocActivity.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.toc.TocActivity/onCompatOptionsItemSelected"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "611ce1a9a56ed26ce71ca482eea0e908c7634857",
+            "path": "app/src/main/java/io/legado/app/ui/book/info/BookInfoActivity.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.info.BookInfoActivity/tocActivityResult"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "b116c77fa2d48c9d1a1013e60a92236f71bea1bc",
+            "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.read.ReadBookActivity/tocActivity"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/rl-ui-reader-toc-result-001.json",
+            "artifact_sha256": "43a534b591d912ef0f1e937cb37436517f94e39f61a640e93f15e0c7ab3fd1f5",
+            "projection_pointer": "/artifact/result/value/portable_known_projection",
+            "observed_sha256": "2eb46e5dd8149b88ca15f8c667eb205a415bfce7e630f412dd0c4e87231bf847",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "9e9006de59f315504fcacc88e257eae13fe2dbeb1e94c4213790614d5c0e9a4a",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-UI-TOC-RESULT-001",
+        "revision": 2
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-UI-READER-TOC-RESULT-001"
+}

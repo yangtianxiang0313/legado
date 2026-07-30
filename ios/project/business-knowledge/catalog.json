@@ -2,12 +2,12 @@
   "schema_version": 1,
   "contract_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-  "inventory_control_sha256": "0c4d54d6666a2dd64936faaa9306cdbe1748cfb7c195e51f1f2fbeeb34e834a8",
+  "inventory_control_sha256": "822755c0b0cd5555b959fd4da3a6d18c833f9e9ab9252dbbf15c91a02a407d04",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
-  "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "c599f47186441055893a0ec0dd8a7985c85ecd74512ced97df0ad60dc794710e",
-  "coverage_sha256": "22aa76923c2e625d3f25e7e8ed5c64f914ca71f69bdc363b93401aa5a5744c3b",
-  "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
+  "control_sha256": "5902da4a6d8a74335342166c7e42fca483c092734a07a1977d4d8058bce54ed4",
+  "authority_sha256": "72ce72fc49f75a320341285a47eda383a3d7d07634215d38731f58643132ba6d",
+  "coverage_sha256": "2d20f7e035b091dcaee02ec1904cc22fc6ece8a2b4f490bc3ddb6012e8c216ad",
+  "proposal_sha256": "eb9ec2ab3e11deff4f705c49ce621283a64329406a75ad1cf974704d4d2fc96c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
     {
@@ -592,6 +592,19 @@
           "revision": 4
         }
       ]
+    },
+    {
+      "id": "BKP-UI-READER-TOC-RESULT-001",
+      "revision": 1,
+      "semantic_key": "ui.reader.toc-result-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-UI-READER-TOC-RESULT-001/r0001.json",
+      "record_sha256": "d7d79d44ad562ab2573de50b46b1bcf02c64cf151713b4b4de1e392f3d0e3b31",
+      "claim_refs": [
+        {
+          "id": "BKC-UI-TOC-RESULT-001",
+          "revision": 3
+        }
+      ]
     }
   ],
   "architecture_drivers": [
@@ -857,6 +870,14 @@
       "semantic_key": "ui.discovery.search-flow",
       "path": "ios/project/business-knowledge/drivers/published/DRV-UI-DISCOVERY-SEARCH-FLOW-001/r0001.json",
       "record_sha256": "60dbee53f22501f90607d20a7e47bacb68c3d6aa703d96d522a4d1132fd98c22",
+      "resolution_state": "resolved"
+    },
+    {
+      "id": "DRV-UI-READER-TOC-HANDOFF-001",
+      "revision": 1,
+      "semantic_key": "ui.reader.toc-result",
+      "path": "ios/project/business-knowledge/drivers/published/DRV-UI-READER-TOC-HANDOFF-001/r0001.json",
+      "record_sha256": "782870e5e8c9d1c7ebb219001e79e3d09585d66f6a133825bcfa147fc4591a85",
       "resolution_state": "resolved"
     }
   ],
@@ -1253,6 +1274,15 @@
       "entry_ids": [
         "BKE-UI-DISCOVERY-SEARCH-FLOW-001"
       ]
+    },
+    {
+      "id": "BKL-UI-READER-TOC-RESULT-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-UI-READER-TOC-RESULT-001.json",
+      "record_sha256": "885ed76b991bb458a40f70fd689d9bacfbe47bd83f081d145e6969e9f3a73017",
+      "entry_ids": [
+        "BKE-UI-READER-TOC-RESULT-001"
+      ]
     }
   ],
   "proposals": [
@@ -1314,7 +1344,7 @@
       "id": "BKP-UI-TOPOLOGY-001",
       "revision": 3,
       "path": "ios/project/business-knowledge/packets/proposals/BKP-UI-TOPOLOGY-001/r0003.json",
-      "sha256": "9b04ebc4198a793bc4fbfcf3e3cdb5bd7e9ae72f02a053913e44b8e7d9dcfa68"
+      "sha256": "f6e2229132a9879f1a22f2edf55686f480ebb6b1a664e8324785c73a97fa9f64"
     },
     {
       "id": "DRV-BOOK-IDENTITY-001",

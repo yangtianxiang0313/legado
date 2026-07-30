@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-UI-READER-TOC-HANDOFF-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "ui.reader.toc-result",
+  "title": "以稳定章节身份驱动目录到阅读器的纵向交接",
+  "claim_refs": [
+    {
+      "id": "BKC-UI-TOC-RESULT-001",
+      "revision": 3
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "vertical_delivery",
+      "scenario": "目录选择必须直接进入真实正文加载与 Reader 页面，不能止于选中标记或只验证导航值。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "identity",
+      "scenario": "跨层路由使用稳定 BookID/ChapterID；Android chapterIndex 只在当前目录快照边界解析，不能成为持久身份。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "progress_fidelity",
+      "scenario": "普通章节选择偏移归零，书签保留字符偏移，取消不改变当前阅读会话；这些结果必须与受保护 Android Golden 一致。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "architecture",
+      "scenario": "AppNavigation 只承载稳定阅读目标，AppUseCases 编排目录与正文，SourceRuntime 解析内容，ReaderCore 消费阅读文档，SwiftUI 只投影状态。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "platform_fidelity",
+      "scenario": "iOS 使用原生 NavigationStack 与阅读页面结构，保持 Android 的页面层级和菜单入口，不复制 Activity Result 或像素细节。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "如何在 ChapterID 与当前目录 index 之间建立单向边界映射，而不把 index 泄漏为持久身份？",
+    "如何让目录选择立即触发正文抓取并进入 Reader，同时让取消保持已有会话？",
+    "如何让字符偏移贯穿路由、正文状态和后续进度持久化而不依赖平台 UI 类型？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002",
+      "ADR-0004"
+    ],
+    "work_item_refs": [
+      "IOS-APP-NAVIGATION-READER-CONTENT-001"
+    ]
+  },
+  "supersedes": null,
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30538784152/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "created_by": "IOS-CHARACTERIZE-UI-READER-TOC-RESULT-001"
+}

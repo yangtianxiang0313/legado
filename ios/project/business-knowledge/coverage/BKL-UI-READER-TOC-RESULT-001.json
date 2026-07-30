@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgeCoverageLedger",
+  "id": "BKL-UI-READER-TOC-RESULT-001",
+  "revision": 1,
+  "status": "current",
+  "packet_refs": [
+    {
+      "id": "BKP-UI-READER-TOC-RESULT-001",
+      "revision": 1,
+      "sha256": "d7d79d44ad562ab2573de50b46b1bcf02c64cf151713b4b4de1e392f3d0e3b31"
+    }
+  ],
+  "generated_from": {
+    "knowledge_authority_sha256": "b081f01951f26c45ed212f8e83741e39adda25cffb6507f7b2f36320f1623625",
+    "requirement_catalog_sha256": "f2c283f8c6b5e2a272174fc1ac73eb856f87af3abac139f96f280ea9732e7905",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "entries": [
+    {
+      "id": "BKE-UI-READER-TOC-RESULT-001",
+      "claim_ref": {
+        "id": "BKC-UI-TOC-RESULT-001",
+        "revision": 3
+      },
+      "validation": {
+        "required": "android_runtime",
+        "state": "verified",
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-ui-reader-toc-result-001-30537979127-1.json",
+          "ios/harness/goldens/android-legado-v1/rl-ui-reader-toc-result-001.json#/artifact/result/value/portable_known_projection"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "covered_by_requirement",
+        "refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "reason": "受保护 Android Golden 已固定目录结果的取消、默认值、章节切换、书签偏移与倒序语义；iOS 以稳定章节身份和字符偏移接通目录、正文与 Reader，不复制 Activity Result。",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "planned",
+        "requirement_refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "work_item_refs": [
+          "IOS-APP-NAVIGATION-READER-CONTENT-001"
+        ],
+        "capability_refs": [
+          "CAP-CONFORMANCE",
+          "CAP-CORE"
+        ],
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-ui-reader-toc-result-001-30537979127-1.json"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    }
+  ],
+  "updated_by": "IOS-CHARACTERIZE-UI-READER-TOC-RESULT-001",
+  "updated_at": "2026-07-30T11:32:21Z"
+}
