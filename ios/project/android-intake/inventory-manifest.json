@@ -2,8 +2,8 @@
   "schema_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
   "android_tree": "c81f5d383116e37c1eefee3eb86654514e82022b",
-  "control_sha256": "a6c3be20a5141e7b79470eb49218a5e07f7b1d63084c1cc12088dea597391113",
-  "policy_sha256": "4f09071a764106755f1cc359c47af614e436ce1dd0dab226fd591976d613a21a",
+  "control_sha256": "4ea414c4db13508729603b97e83481010c5b83945170af1d1de24f0085239ff1",
+  "policy_sha256": "599df40355b4b844425bdbd18448226899ed30a7e60d80f757aac9f1e155163c",
   "facts": [
     {
       "id": "AF-ANALYZE-JSONPATH-GET-LIST",
@@ -1669,6 +1669,78 @@
       ]
     },
     {
+      "id": "AF-SEARCH-ACTIVITY-DETAIL-NAVIGATION",
+      "fact_key": "ui.discovery.search-detail-navigation",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.ui.book.search/SearchActivity/showBookInfo",
+      "path": "app/src/main/java/io/legado/app/ui/book/search/SearchActivity.kt",
+      "git_blob": "002332b999dfb9d8a04308bac8d559f9d5073719",
+      "source_sha256": "afde2a2c6f81b60dc85bc3017c03273de82a68fae01f06a8357eaa0f8286bc02",
+      "start_line": 428,
+      "end_line": 434,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "showBookInfo",
+        "signature": "fun showBookInfo(name: String, author: String, bookUrl: String)",
+        "body_semantic_sha256": "74fe04d8433d8508d1ff0b8814ebbe037287a86722e6d128d9f6aeb65acddaba"
+      },
+      "revision_sha256": "9924f78f16d802dbe50bcf5c7df70ba1384fa8b15ff76726f280a7a38ee32d25",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-SEARCH-ACTIVITY-LOADING",
+      "fact_key": "ui.discovery.search-loading-controls",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.ui.book.search/SearchActivity/startSearch",
+      "path": "app/src/main/java/io/legado/app/ui/book/search/SearchActivity.kt",
+      "git_blob": "002332b999dfb9d8a04308bac8d559f9d5073719",
+      "source_sha256": "afde2a2c6f81b60dc85bc3017c03273de82a68fae01f06a8357eaa0f8286bc02",
+      "start_line": 383,
+      "end_line": 387,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "startSearch",
+        "signature": "fun startSearch()",
+        "body_semantic_sha256": "77facf224b831521ec900e6c1f90d1e3628daec84a4f0e5b43bda12c5a50fee8"
+      },
+      "revision_sha256": "95657e9530e5821ef2bc9ad8312dd8e655489a79a3fa747fe0e9483a253c0a49",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-SEARCH-ACTIVITY-SCOPE-MENU",
+      "fact_key": "ui.discovery.search-scope-menu",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.ui.book.search/SearchActivity/onMenuOpened",
+      "path": "app/src/main/java/io/legado/app/ui/book/search/SearchActivity.kt",
+      "git_blob": "002332b999dfb9d8a04308bac8d559f9d5073719",
+      "source_sha256": "afde2a2c6f81b60dc85bc3017c03273de82a68fae01f06a8357eaa0f8286bc02",
+      "start_line": 108,
+      "end_line": 144,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "onMenuOpened",
+        "signature": "fun onMenuOpened(featureId: Int, menu: Menu): Boolean",
+        "body_semantic_sha256": "20b4c79d6fed446850767753fe2f5eda7c94294798537e3f0c10a55272769ba8"
+      },
+      "revision_sha256": "8f330fae5a27c28ea3e8d3e541025e2310c0bb564882fcbeb8efff3631d9eb80",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
       "id": "AF-SEARCH-BOOK-DAO",
       "fact_key": "discovery.search-book.clear-expired",
       "category": "production_entrypoint",
@@ -1826,6 +1898,30 @@
         "body_semantic_sha256": "8694a6a5748fb53b9be61d944c2dfcb3300b99dbfe16d4844b0210c9a86c9fb0"
       },
       "revision_sha256": "09d7f287e0d061209dfa402f1e94667bbc71a6315a55945b7263c2b7bbbe779b",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-SEARCH-SCOPE-STATE",
+      "fact_key": "ui.discovery.search-scope-state",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.ui.book.search/SearchScope/remove",
+      "path": "app/src/main/java/io/legado/app/ui/book/search/SearchScope.kt",
+      "git_blob": "7490b62f632a21c243132604954521afbca71ad4",
+      "source_sha256": "bb6b7904e585d2e5900f9ba7c47022d718f5c7c044496ec6aeb28756f4544139",
+      "start_line": 83,
+      "end_line": 99,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "remove",
+        "signature": "fun remove(scope: String)",
+        "body_semantic_sha256": "55e15daaa521d9d826dcab93e54d0e090f836462382ba49bad2275030768c7e6"
+      },
+      "revision_sha256": "f012f687b8a11c1d2bedd3fc8685a949e991a379e963fd26a01f83dfd4ffa297",
       "maps_to": [
         "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
       ]

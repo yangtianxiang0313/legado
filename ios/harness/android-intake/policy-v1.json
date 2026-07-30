@@ -962,6 +962,54 @@
       "symbol": "scanDoc",
       "symbol_id": "kotlin://io.legado.app.ui.book.import.local.ImportBookViewModel/scanDoc",
       "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-SEARCH-SCOPE-STATE",
+      "fact_key": "ui.discovery.search-scope-state",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/ui/book/search/SearchScope.kt",
+      "symbol": "remove",
+      "symbol_id": "kotlin://io.legado.app.ui.book.search/SearchScope/remove",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-SEARCH-ACTIVITY-SCOPE-MENU",
+      "fact_key": "ui.discovery.search-scope-menu",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/ui/book/search/SearchActivity.kt",
+      "symbol": "onMenuOpened",
+      "symbol_id": "kotlin://io.legado.app.ui.book.search/SearchActivity/onMenuOpened",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-SEARCH-ACTIVITY-LOADING",
+      "fact_key": "ui.discovery.search-loading-controls",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/ui/book/search/SearchActivity.kt",
+      "symbol": "startSearch",
+      "symbol_id": "kotlin://io.legado.app.ui.book.search/SearchActivity/startSearch",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-SEARCH-ACTIVITY-DETAIL-NAVIGATION",
+      "fact_key": "ui.discovery.search-detail-navigation",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/ui/book/search/SearchActivity.kt",
+      "symbol": "showBookInfo",
+      "symbol_id": "kotlin://io.legado.app.ui.book.search/SearchActivity/showBookInfo",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
     }
   ]
 }

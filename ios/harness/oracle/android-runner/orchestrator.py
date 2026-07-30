@@ -1083,6 +1083,46 @@ SCENARIO_CONTRACTS = {
             "local-non-txt-unshelved",
         }),
     },
+    "rl-ui-discovery-search-flow-001": {
+        "status": "candidate",
+        "fixture_kind": "android_runtime_scenario",
+        "result_type": "ui_runtime",
+        "stage_names": (
+            "fixture_setup",
+            "activity_launch",
+            "state_projection",
+            "menu_observation",
+            "navigation_observation",
+            "result_mapping",
+        ),
+        "expected_cases": (
+            ("all-scope", "search_scope_projection"),
+            ("group-scope-remove", "search_scope_projection"),
+            ("source-scope-remove", "search_scope_projection"),
+            ("valid-group-menu", "search_activity_scope_menu"),
+            (
+                "stale-group-menu-falls-back-all",
+                "search_activity_scope_menu",
+            ),
+            (
+                "loading-controls",
+                "search_activity_loading_projection",
+            ),
+            (
+                "detail-roundtrip-preserves-query",
+                "search_activity_detail_roundtrip",
+            ),
+        ),
+        "nominal_cases": frozenset({
+            "all-scope",
+            "group-scope-remove",
+            "source-scope-remove",
+            "valid-group-menu",
+            "stale-group-menu-falls-back-all",
+            "loading-controls",
+            "detail-roundtrip-preserves-query",
+        }),
+    },
     "rl-reader-cache-prefetch-policy-001": {
         "status": "candidate",
         "fixture_kind": "android_runtime_scenario",

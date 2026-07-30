@@ -12,8 +12,10 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.util.Base64
 import android.util.Log
+import android.view.View
 import android.widget.TextView
 import androidx.appcompat.view.menu.MenuBuilder
+import androidx.appcompat.widget.SearchView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ActivityScenario
@@ -83,7 +85,9 @@ import io.legado.app.ui.book.changesource.ChangeChapterSourceViewModel
 import io.legado.app.ui.main.MainActivity
 import io.legado.app.ui.main.bookshelf.BookshelfViewModel
 import io.legado.app.ui.book.import.local.ImportBookViewModel
+import io.legado.app.ui.book.search.SearchActivity
 import io.legado.app.ui.book.search.SearchScope
+import io.legado.app.ui.book.search.SearchViewModel
 import io.legado.app.ui.welcome.WelcomeActivity
 import io.legado.app.ui.widget.dialog.TextDialog
 import io.legado.app.utils.GSON
@@ -234,6 +238,8 @@ class LegadoOracleInstrumentedTest {
                 runReaderProgressSaveRuntimeCases()
             "rl-ui-book-detail-conditional-actions-001" ->
                 runBookDetailConditionalActionCases()
+            "rl-ui-discovery-search-flow-001" ->
+                runSearchFlowCases()
             "rl-reader-cache-prefetch-policy-001" ->
                 runReaderPrefetchPolicyCases()
             "rl-reader-progress-toc-remap-001" ->
@@ -4582,6 +4588,258 @@ class LegadoOracleInstrumentedTest {
             scenario.close()
         }
     }
+
+    private suspend fun runSearchFlowCases() {
+        val values = input.getJSONArray("cases")
+        val target =
+            InstrumentationRegistry.getInstrumentation().targetContext
+        val previousScope = AppConfig.searchScope
+        AppConfig.searchScope = ""
+        val scenario = ActivityScenario.launch<SearchActivity>(
+            Intent(target, SearchActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+        var activity: SearchActivity? = null
+        scenario.onActivity { activity = it }
+        try {
+            for (index in 0 until values.length()) {
+                val value = values.getJSONObject(index)
+                val operation = value.getString("operation")
+                val arguments = value.getJSONObject("arguments")
+                val stimulus = JSONObject()
+                    .put("operation", operation)
+                    .put(
+                        "arguments",
+                        JSONObject(arguments.toString())
+                    )
+                runCase(
+                    value.getString("id"),
+                    operation,
+                    stimulus
+                ) {
+                    when (operation) {
+                        "search_scope_projection" ->
+                            searchScopeProjection(arguments)
+                        "search_activity_scope_menu" ->
+                            searchScopeMenuProjection(
+                                requireNotNull(activity),
+                                arguments
+                            )
+                        "search_activity_loading_projection" ->
+                            searchLoadingProjection(
+                                requireNotNull(activity)
+                            )
+                        "search_activity_detail_roundtrip" ->
+                            searchDetailRoundtripProjection(
+                                scenario,
+                                requireNotNull(activity),
+                                arguments
+                            )
+                        else -> error(
+                            "Unsupported search UI operation: $operation"
+                        )
+                    }
+                }
+            }
+        } finally {
+            AppConfig.searchScope = previousScope
+            finishTargetActivities()
+            if (scenario.state != Lifecycle.State.DESTROYED) {
+                scenario.close()
+            }
+        }
+    }
+
+    private fun searchScopeProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val scope = SearchScope(arguments.getString("scope"))
+        if (!arguments.isNull("remove")) {
+            scope.remove(arguments.getString("remove"))
+        }
+        return JSONObject()
+            .put("serialized_scope", scope.toString())
+            .put("display_names", JSONArray(scope.displayNames))
+            .put("is_source", scope.isSource())
+            .put("is_all", scope.isAll())
+    }
+
+    private fun searchScopeMenuProjection(
+        activity: SearchActivity,
+        arguments: JSONObject
+    ): JSONObject = onMainThread {
+        val viewModel = ViewModelProvider(activity)[
+            SearchViewModel::class.java
+        ]
+        viewModel.searchScope.update(
+            arguments.getString("scope"),
+            false
+        )
+        val groups = arguments.getJSONArray("groups")
+        val values = ArrayList<String>(groups.length())
+        for (index in 0 until groups.length()) {
+            values.add(groups.getString(index))
+        }
+        SearchActivity::class.java
+            .getDeclaredField("groups")
+            .apply { isAccessible = true }
+            .set(activity, values)
+
+        val menu = MenuBuilder(activity)
+        activity.onCompatCreateOptionsMenu(menu)
+        activity.onMenuOpened(0, menu)
+        val selected = JSONArray()
+        val available = JSONArray()
+        for (index in 0 until menu.size()) {
+            val item = menu.getItem(index)
+            when (item.groupId) {
+                R.id.menu_group_1 -> if (item.isChecked) {
+                    selected.put(item.title.toString())
+                }
+                R.id.menu_group_2 -> if (
+                    item.itemId != R.id.menu_1
+                ) {
+                    available.put(item.title.toString())
+                }
+            }
+        }
+        JSONObject()
+            .put(
+                "serialized_scope",
+                viewModel.searchScope.toString()
+            )
+            .put("is_all", viewModel.searchScope.isAll())
+            .put("selected", selected)
+            .put("available", available)
+            .put(
+                "all_checked",
+                menu.findItem(R.id.menu_1).isChecked
+            )
+    }
+
+    private fun searchLoadingProjection(
+        activity: SearchActivity
+    ): JSONObject = onMainThread {
+        invokeSearchActivityPrivate(activity, "startSearch")
+        val started = JSONObject()
+            .put(
+                "progress",
+                visibilityName(
+                    activity.findViewById(
+                        R.id.refresh_progress_bar
+                    )
+                )
+            )
+            .put(
+                "stop",
+                visibilityName(
+                    activity.findViewById(R.id.fb_stop)
+                )
+            )
+        invokeSearchActivityPrivate(activity, "searchFinally")
+        JSONObject()
+            .put("started", started)
+            .put(
+                "finished",
+                JSONObject()
+                    .put(
+                        "progress",
+                        visibilityName(
+                            activity.findViewById(
+                                R.id.refresh_progress_bar
+                            )
+                        )
+                    )
+                    .put(
+                        "stop",
+                        visibilityName(
+                            activity.findViewById(R.id.fb_stop)
+                        )
+                    )
+            )
+    }
+
+    private fun searchDetailRoundtripProjection(
+        scenario: ActivityScenario<SearchActivity>,
+        activity: SearchActivity,
+        arguments: JSONObject
+    ): JSONObject {
+        val instrumentation =
+            InstrumentationRegistry.getInstrumentation()
+        val monitor = instrumentation.addMonitor(
+            BookInfoActivity::class.java.name,
+            null,
+            false
+        )
+        try {
+            onMainThread {
+                activity.findViewById<SearchView>(
+                    R.id.search_view
+                ).setQuery(
+                    arguments.getString("query"),
+                    false
+                )
+                activity.showBookInfo(
+                    arguments.getString("name"),
+                    arguments.getString("author"),
+                    arguments.getString("book_url")
+                )
+            }
+            val detail = requireNotNull(
+                instrumentation.waitForMonitorWithTimeout(
+                    monitor,
+                    5_000
+                )
+            ) {
+                "BookInfoActivity did not start"
+            }
+            val intent = detail.intent
+            val destination =
+                if (detail is BookInfoActivity) {
+                    "book_detail"
+                } else {
+                    detail::class.java.name
+                }
+            onMainThread { detail.finish() }
+            instrumentation.waitForIdleSync()
+            scenario.moveToState(Lifecycle.State.RESUMED)
+            var query = ""
+            scenario.onActivity {
+                query = it.findViewById<SearchView>(
+                    R.id.search_view
+                ).query.toString()
+            }
+            return JSONObject()
+                .put("destination", destination)
+                .put("name", intent.getStringExtra("name"))
+                .put("author", intent.getStringExtra("author"))
+                .put(
+                    "book_url",
+                    intent.getStringExtra("bookUrl")
+                )
+                .put("query_after_return", query)
+        } finally {
+            instrumentation.removeMonitor(monitor)
+        }
+    }
+
+    private fun invokeSearchActivityPrivate(
+        activity: SearchActivity,
+        name: String
+    ) {
+        SearchActivity::class.java
+            .getDeclaredMethod(name)
+            .apply { isAccessible = true }
+            .invoke(activity)
+    }
+
+    private fun visibilityName(view: View): String =
+        when (view.visibility) {
+            View.VISIBLE -> "visible"
+            View.INVISIBLE -> "invisible"
+            View.GONE -> "gone"
+            else -> "unknown"
+        }
 
     private fun bookDetailConditionalActionProjection(
         activity: BookInfoActivity,

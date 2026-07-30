@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "all-scope",
+      "operation": "search_scope_projection",
+      "arguments": {
+        "scope": "",
+        "remove": null
+      }
+    },
+    {
+      "id": "group-scope-remove",
+      "operation": "search_scope_projection",
+      "arguments": {
+        "scope": "奇幻,科幻",
+        "remove": "奇幻"
+      }
+    },
+    {
+      "id": "source-scope-remove",
+      "operation": "search_scope_projection",
+      "arguments": {
+        "scope": "真源::source.test",
+        "remove": "真源"
+      }
+    },
+    {
+      "id": "valid-group-menu",
+      "operation": "search_activity_scope_menu",
+      "arguments": {
+        "scope": "奇幻",
+        "groups": [
+          "奇幻",
+          "科幻"
+        ]
+      }
+    },
+    {
+      "id": "stale-group-menu-falls-back-all",
+      "operation": "search_activity_scope_menu",
+      "arguments": {
+        "scope": "失效分组",
+        "groups": [
+          "奇幻",
+          "科幻"
+        ]
+      }
+    },
+    {
+      "id": "loading-controls",
+      "operation": "search_activity_loading_projection",
+      "arguments": {}
+    },
+    {
+      "id": "detail-roundtrip-preserves-query",
+      "operation": "search_activity_detail_roundtrip",
+      "arguments": {
+        "query": "星河",
+        "name": "星河纪事",
+        "author": "林舟",
+        "book_url": "book://android-runtime/search/detail"
+      }
+    }
+  ]
+}

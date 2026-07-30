@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "kind": "android_runtime_scenario",
+  "id": "rl-ui-discovery-search-flow-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "android_runtime",
+  "capabilities": [
+    "android.activity",
+    "android.menu",
+    "ui.search"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": null,
+  "input": "input.json",
+  "transport": {
+    "mode": "none",
+    "external_network": "deny",
+    "responses": []
+  },
+  "determinism": {
+    "clock": "state_projection",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 0,
+    "network_allowed": false,
+    "logical_origin": null,
+    "database_reset_per_case": true
+  },
+  "limits": {
+    "timeout_ms": 5000
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/ui/book/search/SearchActivity.kt#onMenuOpened",
+      "app/src/main/java/io/legado/app/ui/book/search/SearchActivity.kt#startSearch",
+      "app/src/main/java/io/legado/app/ui/book/search/SearchActivity.kt#showBookInfo",
+      "app/src/main/java/io/legado/app/ui/book/search/SearchScope.kt"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-UI-DISCOVERY-SEARCH-FLOW-001"
+  },
+  "coverage": [
+    {
+      "behavior": "ui.discovery.search-flow",
+      "cases": [
+        {
+          "id": "all-scope",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-SEARCH-SCOPE-STATE"
+          ],
+          "branch_refs": [
+            "An empty persisted scope represents all enabled sources"
+          ]
+        },
+        {
+          "id": "group-scope-remove",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-SEARCH-SCOPE-STATE"
+          ],
+          "branch_refs": [
+            "Removing one group preserves the remaining ordered group scope"
+          ]
+        },
+        {
+          "id": "source-scope-remove",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-SEARCH-SCOPE-STATE"
+          ],
+          "branch_refs": [
+            "Removing the selected source resets the scope to all"
+          ]
+        },
+        {
+          "id": "valid-group-menu",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-SEARCH-ACTIVITY-SCOPE-MENU"
+          ],
+          "branch_refs": [
+            "The current group is checked while all and other groups remain selectable"
+          ]
+        },
+        {
+          "id": "stale-group-menu-falls-back-all",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-SEARCH-ACTIVITY-SCOPE-MENU"
+          ],
+          "branch_refs": [
+            "A persisted group absent from enabled groups falls back to all sources"
+          ]
+        },
+        {
+          "id": "loading-controls",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-SEARCH-ACTIVITY-LOADING"
+          ],
+          "branch_refs": [
+            "Search start and finish project deterministic progress and stop control visibility"
+          ]
+        },
+        {
+          "id": "detail-roundtrip-preserves-query",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-SEARCH-ACTIVITY-DETAIL-NAVIGATION"
+          ],
+          "branch_refs": [
+            "Selecting a result routes name author and bookUrl to detail and returning preserves the query"
+          ]
+        }
+      ]
+    }
+  ]
+}
