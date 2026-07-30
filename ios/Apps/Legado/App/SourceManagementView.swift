@@ -891,7 +891,26 @@ struct SourceDebugView: View {
 
 struct SourceSingleSearchView: View {
     let source: BookSourceDraft
-    @State private var query = ""
+    let openBookDetail: (SearchResult) -> Void
+    @State private var session: SearchSession
+
+    init(
+        source: BookSourceDraft,
+        persistedSources: [BookSourceDraft],
+        openBookDetail: @escaping (SearchResult) -> Void
+    ) {
+        self.source = source
+        self.openBookDetail = openBookDetail
+        _session = State(
+            initialValue: SearchEnvironment.makeSession(
+                persistedSources: persistedSources,
+                scope: .source(
+                    name: source.name,
+                    identifier: source.sourceURL
+                )
+            )
+        )
+    }
 
     var body: some View {
         List {
@@ -902,14 +921,94 @@ struct SourceSingleSearchView: View {
                     .foregroundStyle(.secondary)
             }
             Section("搜索") {
-                TextField("书名或作者", text: $query)
+                TextField("书名或作者", text: $session.query)
+                    .submitLabel(.search)
+                    .onSubmit(session.search)
                     .accessibilityIdentifier("field.source.search.query")
-                Button("搜索") {}
-                    .disabled(query.isEmpty)
+                Button("搜索", action: session.search)
+                    .disabled(
+                        session.query.trimmingCharacters(
+                            in: .whitespacesAndNewlines
+                        ).isEmpty
+                    )
                     .accessibilityIdentifier("action.source.search.submit")
+            }
+
+            if !session.results.isEmpty {
+                Section("搜索结果 · \(session.results.count)") {
+                    ForEach(session.results) { result in
+                        Button {
+                            openBookDetail(result)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 5) {
+                                Text(result.name)
+                                    .font(.headline)
+                                Text(
+                                    [result.author, result.kind]
+                                        .filter { !$0.isEmpty }
+                                        .joined(separator: " · ")
+                                )
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                if !result.lastChapter.isEmpty {
+                                    Text(result.lastChapter)
+                                        .font(.caption)
+                                        .foregroundStyle(.tertiary)
+                                }
+                            }
+                            .frame(
+                                maxWidth: .infinity,
+                                alignment: .leading
+                            )
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier(
+                            "action.source.search.openBook.\(result.id)"
+                        )
+                    }
+                }
+            } else if
+                !session.query.trimmingCharacters(
+                    in: .whitespacesAndNewlines
+                ).isEmpty,
+                session.loadingState == .idle,
+                session.errorMessage == nil
+            {
+                ContentUnavailableView(
+                    "没有找到结果",
+                    systemImage: "books.vertical",
+                    description: Text("当前书源没有返回匹配书籍。")
+                )
+                .accessibilityIdentifier("state.source.search.empty")
+            }
+
+            if let errorMessage = session.errorMessage {
+                Section {
+                    Label(
+                        errorMessage,
+                        systemImage: "exclamationmark.triangle"
+                    )
+                    .foregroundStyle(.red)
+                }
+                .accessibilityIdentifier("state.source.search.error")
             }
         }
         .navigationTitle("单源搜索")
+        .overlay {
+            if session.loadingState.showsProgress {
+                ProgressView("正在搜索…")
+                    .padding()
+                    .background(
+                        .regularMaterial,
+                        in: .rect(cornerRadius: 12)
+                    )
+                    .accessibilityIdentifier("state.source.search.loading")
+            }
+        }
+        .onDisappear {
+            session.stop()
+        }
         .accessibilityIdentifier("screen.source.search")
     }
 }

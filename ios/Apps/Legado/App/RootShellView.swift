@@ -333,7 +333,15 @@ struct RootShellView: View {
         case .sourceLogin(let sourceID):
             SourceLoginView(source: sourceDraft(id: sourceID))
         case .sourceSearch(let sourceID):
-            SourceSingleSearchView(source: sourceDraft(id: sourceID))
+            SourceSingleSearchView(
+                source: sourceDraft(id: sourceID),
+                persistedSources: sourceCatalog.sources
+            ) { result in
+                router.push(
+                    .bookDetail(SearchBookRoute(result: result)),
+                    on: root
+                )
+            }
         }
     }
 

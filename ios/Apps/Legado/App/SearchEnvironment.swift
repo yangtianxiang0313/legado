@@ -35,7 +35,8 @@ enum SearchEnvironment {
     }
 
     static func makeSession(
-        persistedSources: [BookSourceDraft] = []
+        persistedSources: [BookSourceDraft] = [],
+        scope: SearchScopeSelection = .all
     ) -> SearchSession {
         let externalBaseURL = ProcessInfo.processInfo.environment[
             "LEGADO_SEARCH_BASE_URL"
@@ -47,6 +48,7 @@ enum SearchEnvironment {
             persistedSources: persistedSources
         )
         return SearchSession(
+            scope: scope,
             groups: Array(Set(sources.map(\.group))).sorted(),
             executor: SourceSearchBooksExecutor(
                 sources: sources,
