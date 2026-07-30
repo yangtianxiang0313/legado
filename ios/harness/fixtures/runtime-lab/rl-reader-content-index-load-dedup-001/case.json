@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "kind": "android_runtime_scenario",
+  "id": "rl-reader-content-index-load-dedup-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "android_runtime",
+  "capabilities": [
+    "reader.content",
+    "reader.lifecycle",
+    "runtime.cancellation"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": null,
+  "input": "input.json",
+  "transport": {
+    "mode": "none",
+    "external_network": "deny",
+    "responses": []
+  },
+  "coverage": [
+    {
+      "behavior": "reader.content.index-load-dedup",
+      "cases": [
+        {
+          "id": "same-index-is-deduplicated",
+          "role": "nominal",
+          "android_fact_refs": ["AF-READ-BOOK-ADD-LOADING"],
+          "branch_refs": [
+            "addLoading rejects an index already present in loadingChapters"
+          ]
+        },
+        {
+          "id": "remove-releases-index",
+          "role": "nominal",
+          "android_fact_refs": ["AF-READ-BOOK-ADD-LOADING"],
+          "branch_refs": [
+            "removeLoading releases the integer key for a later attempt"
+          ]
+        },
+        {
+          "id": "different-indices-are-independent",
+          "role": "nominal",
+          "android_fact_refs": ["AF-READ-BOOK-ADD-LOADING"],
+          "branch_refs": [
+            "loadingChapters deduplicates by exact chapter index"
+          ]
+        },
+        {
+          "id": "negative-index-is-not-rejected",
+          "role": "boundary",
+          "android_fact_refs": ["AF-READ-BOOK-ADD-LOADING"],
+          "branch_refs": [
+            "addLoading itself applies no chapter index range check"
+          ]
+        },
+        {
+          "id": "session-update-clears-active-index",
+          "role": "boundary",
+          "android_fact_refs": ["AF-READ-BOOK-ADD-LOADING"],
+          "branch_refs": [
+            "ReadBook.upData clears loadingChapters when the active book changes"
+          ]
+        },
+        {
+          "id": "stale-removal-erases-replacement",
+          "role": "denied",
+          "android_fact_refs": ["AF-READ-BOOK-ADD-LOADING"],
+          "branch_refs": [
+            "the loading key contains no book identity or generation",
+            "a late removeLoading for the old session can remove a replacement with the same index"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "not-observed",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 0,
+    "network_allowed": false,
+    "logical_origin": null,
+    "database_reset_per_case": true
+  },
+  "limits": {
+    "timeout_ms": 5000
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/model/ReadBook.kt#addLoading",
+      "app/src/main/java/io/legado/app/model/ReadBook.kt#removeLoading",
+      "app/src/main/java/io/legado/app/model/ReadBook.kt#upData"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-READER-CONTENT-INDEX-LOAD-DEDUP-001"
+  }
+}

@@ -1308,6 +1308,46 @@ SCENARIO_CONTRACTS = {
             "missing-chapter-clears-loading",
         }),
     },
+    "rl-reader-content-index-load-dedup-001": {
+        "status": "candidate",
+        "fixture_kind": "android_runtime_scenario",
+        "result_type": "reader_runtime",
+        "stage_names": (
+            "fixture_setup",
+            "dedup_attempt",
+            "session_replacement",
+            "stale_completion",
+            "result_mapping",
+        ),
+        "expected_cases": (
+            ("same-index-is-deduplicated", "reader_index_load_dedup"),
+            ("remove-releases-index", "reader_index_load_dedup"),
+            (
+                "different-indices-are-independent",
+                "reader_index_load_dedup",
+            ),
+            (
+                "negative-index-is-not-rejected",
+                "reader_index_load_dedup",
+            ),
+            (
+                "session-update-clears-active-index",
+                "reader_index_load_dedup",
+            ),
+            (
+                "stale-removal-erases-replacement",
+                "reader_index_load_dedup",
+            ),
+        ),
+        "nominal_cases": frozenset({
+            "same-index-is-deduplicated",
+            "remove-releases-index",
+            "different-indices-are-independent",
+            "negative-index-is-not-rejected",
+            "session-update-clears-active-index",
+            "stale-removal-erases-replacement",
+        }),
+    },
     "rl-reader-cache-prefetch-policy-001": {
         "status": "candidate",
         "fixture_kind": "android_runtime_scenario",

@@ -1,1 +1,1 @@
-{"active_task":null,"attempt":0,"last_completed":{"at":"2026-07-30T13:04:49Z","sequence":286,"task_id":"IOS-READER-CORE-CONTENT-CACHE-FIRST-ACQUISITION-001"},"schema_version":2,"status":"idle","verification":null}
+{"active_task":null,"attempt":0,"last_completed":{"at":"2026-07-30T13:14:33Z","sequence":289,"task_id":"IOS-CHARACTERIZE-READER-CONTENT-INDEX-LOAD-DEDUP-001"},"schema_version":2,"status":"idle","verification":null}

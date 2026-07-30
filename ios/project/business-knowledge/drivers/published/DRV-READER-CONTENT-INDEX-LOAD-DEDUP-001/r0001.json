@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-READER-CONTENT-INDEX-LOAD-DEDUP-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "reader.content.index-load-dedup-boundary",
+  "title": "用会话 generation token 隔离章节加载去重",
+  "claim_refs": [
+    {
+      "id": "BKC-RD-LOAD-DEDUP-001",
+      "revision": 2
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "ReaderCore 保留 Android 的同索引拒绝、显式完成后可重试和不同索引并行语义。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "state_isolation",
+      "scenario": "活动加载必须由 session generation、章节索引和唯一 token 标识；旧 token 完成不得删除 replacement。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "modularity",
+      "scenario": "ReaderCore 只管理 Sendable token 状态，Room、网络任务和 UI 生命周期由 AppUseCases 端口编排。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "如何让 acquire 返回稳定 token，并让 finish 只删除完全匹配的 token？",
+    "新阅读会话如何原子切换 generation，同时使旧完成变成无害 no-op？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": ["ADR-0001", "ADR-0002"],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-READER-CONTENT-INDEX-LOAD-DEDUP-001",
+      "IOS-READER-CORE-CONTENT-INDEX-LOAD-DEDUP-001"
+    ]
+  },
+  "promotion": {
+    "approval_ref": "local-android-runner:d25e3f3ccdae898b3efa0d0ee88e52fca6522b84d8abcb8c2fe29c4062b5bca7",
+    "approved_by": "loop-v2:real-android-runner"
+  },
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-READER-CONTENT-INDEX-LOAD-DEDUP-001"
+}

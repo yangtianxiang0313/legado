@@ -262,6 +262,8 @@ class LegadoOracleInstrumentedTest {
                 runReaderSessionResetCases()
             "rl-reader-content-cache-first-acquisition-001" ->
                 runReaderContentAcquisitionCases()
+            "rl-reader-content-index-load-dedup-001" ->
+                runReaderIndexLoadDedupCases()
             "rl-app-startup-first-use-and-restore-001" ->
                 runAppStartupCases()
             "sl-post-form-001" -> runPostFormCases()
@@ -6561,6 +6563,116 @@ class LegadoOracleInstrumentedTest {
                 )
             }
         }
+    }
+
+    private suspend fun runReaderIndexLoadDedupCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            require(
+                value.getString("operation") ==
+                    "reader_index_load_dedup"
+            ) {
+                "Unsupported reader index load dedup operation"
+            }
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", "reader_index_load_dedup")
+                .put("arguments", JSONObject(arguments.toString()))
+            runCase(
+                value.getString("id"),
+                "reader_index_load_dedup",
+                stimulus
+            ) {
+                readerIndexLoadDedupProjection(arguments)
+            }
+        }
+    }
+
+    private fun readerIndexLoadDedupProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val index = arguments.getInt("index")
+        val attempts = JSONArray()
+        var staleRemovalErasedReplacement = false
+        synchronized(ReadBook) {
+            prefetchLoadingList().clear()
+        }
+        try {
+            when (arguments.getString("mode")) {
+                "duplicate" -> {
+                    attempts.put(invokeAddLoading(index))
+                    attempts.put(invokeAddLoading(index))
+                }
+                "remove_retry" -> {
+                    attempts.put(invokeAddLoading(index))
+                    ReadBook.removeLoading(index)
+                    attempts.put(invokeAddLoading(index))
+                }
+                "different_indices" -> {
+                    attempts.put(invokeAddLoading(index))
+                    attempts.put(
+                        invokeAddLoading(
+                            arguments.getInt("other_index")
+                        )
+                    )
+                }
+                "single" -> attempts.put(invokeAddLoading(index))
+                "session_replacement", "stale_removal" -> {
+                    val firstBook = readerDedupBook("first")
+                    val replacementBook = readerDedupBook("replacement")
+                    ReadBook.upData(firstBook)
+                    attempts.put(invokeAddLoading(index))
+                    ReadBook.upData(replacementBook)
+                    attempts.put(invokeAddLoading(index))
+                    if (arguments.getString("mode") == "stale_removal") {
+                        ReadBook.removeLoading(index)
+                        val replacementWasRemoved =
+                            index !in prefetchLoadingIndices()
+                        attempts.put(invokeAddLoading(index))
+                        staleRemovalErasedReplacement =
+                            replacementWasRemoved &&
+                                attempts.getBoolean(2)
+                    }
+                }
+                else -> error("Unsupported reader dedup mode")
+            }
+            return JSONObject()
+                .put("attempt_results", attempts)
+                .put(
+                    "active_indices",
+                    intProjection(prefetchLoadingIndices())
+                )
+                .put(
+                    "stale_removal_erased_replacement",
+                    staleRemovalErasedReplacement
+                )
+        } finally {
+            synchronized(ReadBook) {
+                prefetchLoadingList().clear()
+            }
+            ReadBook.book = null
+            ReadBook.bookSource = null
+        }
+    }
+
+    private fun readerDedupBook(label: String): Book =
+        Book(
+            bookUrl = "/android-runtime/reader-dedup/$label.txt",
+            origin = BookType.localTag,
+            originName = "Local",
+            name = "Reader Dedup $label",
+            author = "RuntimeLab",
+            type = BookType.local
+        )
+
+    private fun invokeAddLoading(index: Int): Boolean {
+        val method = ReadBook::class.java.getDeclaredMethod(
+            "addLoading",
+            Int::class.javaPrimitiveType
+        )
+        method.isAccessible = true
+        return method.invoke(ReadBook, index) as Boolean
     }
 
     private suspend fun readerContentAcquisitionProjection(

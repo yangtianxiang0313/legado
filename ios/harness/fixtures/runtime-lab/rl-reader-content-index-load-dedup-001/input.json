@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "same-index-is-deduplicated",
+      "operation": "reader_index_load_dedup",
+      "arguments": {
+        "mode": "duplicate",
+        "index": 4
+      }
+    },
+    {
+      "id": "remove-releases-index",
+      "operation": "reader_index_load_dedup",
+      "arguments": {
+        "mode": "remove_retry",
+        "index": 4
+      }
+    },
+    {
+      "id": "different-indices-are-independent",
+      "operation": "reader_index_load_dedup",
+      "arguments": {
+        "mode": "different_indices",
+        "index": 4,
+        "other_index": 5
+      }
+    },
+    {
+      "id": "negative-index-is-not-rejected",
+      "operation": "reader_index_load_dedup",
+      "arguments": {
+        "mode": "single",
+        "index": -1
+      }
+    },
+    {
+      "id": "session-update-clears-active-index",
+      "operation": "reader_index_load_dedup",
+      "arguments": {
+        "mode": "session_replacement",
+        "index": 7
+      }
+    },
+    {
+      "id": "stale-removal-erases-replacement",
+      "operation": "reader_index_load_dedup",
+      "arguments": {
+        "mode": "stale_removal",
+        "index": 7
+      }
+    }
+  ]
+}

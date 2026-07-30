@@ -297,6 +297,15 @@
       "status": "candidate"
     },
     {
+      "id": "IOS-ANDROID-READER-CONTENT-INDEX-LOAD-DEDUP-ATTESTATION-001",
+      "scenario_id": "rl-reader-content-index-load-dedup-001",
+      "fixture_ids": [
+        "rl-reader-content-index-load-dedup-001"
+      ],
+      "authority": "android_oracle_candidate_only",
+      "status": "candidate"
+    },
+    {
       "id": "IOS-ANDROID-READER-CACHE-PREFETCH-POLICY-ATTESTATION-001",
       "scenario_id": "rl-reader-cache-prefetch-policy-001",
       "fixture_ids": [

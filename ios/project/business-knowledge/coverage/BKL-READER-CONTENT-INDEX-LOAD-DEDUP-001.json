@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgeCoverageLedger",
+  "id": "BKL-READER-CONTENT-INDEX-LOAD-DEDUP-001",
+  "revision": 1,
+  "status": "current",
+  "packet_refs": [
+    {
+      "id": "BKP-READER-CONTENT-INDEX-LOAD-DEDUP-001",
+      "revision": 1,
+      "sha256": "006431d5fca4d8ebdb539e37c63431916a88ed221b7fa93f00348e8ef04c1ba2"
+    }
+  ],
+  "generated_from": {
+    "knowledge_authority_sha256": "e0aa6b0993868ef42ebe57b34480e2232eb524cae2d2664ad35ba89153cb77d5",
+    "requirement_catalog_sha256": "68a26ca565a5ae8943997ca76a92e23f7734554915d4a29d5a26b9af978507f8",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "entries": [
+    {
+      "id": "BKE-READER-CONTENT-INDEX-LOAD-DEDUP-001",
+      "claim_ref": {
+        "id": "BKC-RD-LOAD-DEDUP-001",
+        "revision": 2
+      },
+      "validation": {
+        "required": "android_runtime",
+        "state": "verified",
+        "evidence_refs": [
+          "ios/harness/goldens/android-legado-v1/rl-reader-content-index-load-dedup-001.json#/artifact/result/value"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "covered_by_requirement",
+        "refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "reason": "真实 Android runner 已冻结索引去重、会话清空和迟到 remove 风险；iOS 用 generation token 保留正常行为并隔离旧完成",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "planned",
+        "requirement_refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "work_item_refs": [
+          "IOS-READER-CORE-CONTENT-INDEX-LOAD-DEDUP-001"
+        ],
+        "capability_refs": ["CAP-CONFORMANCE", "CAP-CORE"],
+        "evidence_refs": [
+          "ios/harness/goldens/android-legado-v1/rl-reader-content-index-load-dedup-001.json"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    }
+  ],
+  "updated_by": "IOS-CHARACTERIZE-READER-CONTENT-INDEX-LOAD-DEDUP-001",
+  "updated_at": "2026-07-30T13:10:00Z"
+}

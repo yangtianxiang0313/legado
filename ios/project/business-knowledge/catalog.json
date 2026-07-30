@@ -6,7 +6,7 @@
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "5902da4a6d8a74335342166c7e42fca483c092734a07a1977d4d8058bce54ed4",
   "authority_sha256": "72ce72fc49f75a320341285a47eda383a3d7d07634215d38731f58643132ba6d",
-  "coverage_sha256": "e94373814f039e08494e22ee97f49e3e4052eab978951fcf5baf9734fa0f7e1e",
+  "coverage_sha256": "69dc664e94138742e73d68387d59da1512c030bf4e4ddd053752bfc19316b313",
   "proposal_sha256": "eb9ec2ab3e11deff4f705c49ce621283a64329406a75ad1cf974704d4d2fc96c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -214,6 +214,19 @@
       "claim_refs": [
         {
           "id": "BKC-RD-CONTENT-ACQUISITION-001",
+          "revision": 2
+        }
+      ]
+    },
+    {
+      "id": "BKP-READER-CONTENT-INDEX-LOAD-DEDUP-001",
+      "revision": 1,
+      "semantic_key": "reader.content.index-load-dedup-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-READER-CONTENT-INDEX-LOAD-DEDUP-001/r0001.json",
+      "record_sha256": "006431d5fca4d8ebdb539e37c63431916a88ed221b7fa93f00348e8ef04c1ba2",
+      "claim_refs": [
+        {
+          "id": "BKC-RD-LOAD-DEDUP-001",
           "revision": 2
         }
       ]
@@ -723,6 +736,14 @@
       "resolution_state": "resolved"
     },
     {
+      "id": "DRV-READER-CONTENT-INDEX-LOAD-DEDUP-001",
+      "revision": 1,
+      "semantic_key": "reader.content.index-load-dedup-boundary",
+      "path": "ios/project/business-knowledge/drivers/published/DRV-READER-CONTENT-INDEX-LOAD-DEDUP-001/r0001.json",
+      "record_sha256": "7da3e4f1ad94e47da4deafef8fd042dd404955e1aab90169338173c4769f6928",
+      "resolution_state": "resolved"
+    },
+    {
       "id": "DRV-READER-HISTORY-READ-RECORD-RUNTIME-RISK-001",
       "revision": 1,
       "semantic_key": "reader.history.read-record-compatibility-boundary",
@@ -1066,6 +1087,15 @@
       "record_sha256": "9d5d3fa14ab67e93cb117628ad312a6c4a9104e38945d37858b0ac464139cf26",
       "entry_ids": [
         "BKE-READER-CONTENT-CACHE-FIRST-ACQUISITION-001"
+      ]
+    },
+    {
+      "id": "BKL-READER-CONTENT-INDEX-LOAD-DEDUP-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-READER-CONTENT-INDEX-LOAD-DEDUP-001.json",
+      "record_sha256": "781a9a14a9de3c1e0b42282accdcf8a9953ea3355ee5e4cd3b10448a15cba646",
+      "entry_ids": [
+        "BKE-READER-CONTENT-INDEX-LOAD-DEDUP-001"
       ]
     },
     {

@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-READER-CONTENT-INDEX-LOAD-DEDUP-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "reader.content.index-load-dedup-golden",
+  "title": "真实 Android runner 验证的章节索引加载去重语义",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "cc0a5d64b487237593ec5ed63b73a60e838f38cc458f32fad8e4a0844e22faa3"
+  },
+  "scope": {
+    "bounded_contexts": ["reader.content", "reader.session"],
+    "capability_refs": ["CAP-CONFORMANCE", "CAP-CORE"],
+    "subject_keys": ["reader.content", "reader.session"]
+  },
+  "claims": [
+    {
+      "id": "BKC-RD-LOAD-DEDUP-001",
+      "revision": 2,
+      "semantic_key": "reader.content.index-load-dedup",
+      "kind": "runtime_behavior",
+      "topic": "章节加载去重",
+      "statement": "在 rl-reader-content-index-load-dedup-001 的 6 个真实 Android 场景中，ReadBook.addLoading 仅以 Int 章节索引去重：同一索引第二次加入被拒绝，removeLoading 后可重试，不同索引互不影响，addLoading 自身也接受负索引。ReadBook.upData 清空活动索引，因此新会话可以重新加入同一索引；但 key 不含 Book 身份或 generation，旧会话迟到的 removeLoading 会删除新会话同索引的 replacement，随后第三次加入被接受。iOS 必须保留正常去重行为，同时使用会话 generation/token 阻止该迟到删除风险；本结论不外推到 Room 查询、正文下载、排版或取消传播。",
+      "subject_keys": ["reader.content", "reader.session"],
+      "depends_on": [
+        {
+          "id": "BKC-RD-CONTENT-ACQUISITION-001",
+          "revision": 2
+        }
+      ],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [
+          {
+            "id": "AF-READ-BOOK-ADD-LOADING",
+            "revision_sha256": "f2a2bcbb458891b6e2a2b108a98597c27a62450f9572473f01cc9505b9f4d12b"
+          }
+        ],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d",
+            "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+            "symbol_id": "kotlin://io.legado.app.model.ReadBook/addLoading"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/rl-reader-content-index-load-dedup-001.json",
+            "artifact_sha256": "49bd21247bdf7cff024368ed8014310a3a5d53d2c7deb071ef13008898eb5f45",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "39ccaeb97d9050df00bee62362b7a6aa446653cd5544ef22a88299991fe6c989",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "974e8b48eaadd0ab03f32a2c468ae2e35f25fd1b9c74758d3a9a60105e3fb5ea",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-RD-LOAD-DEDUP-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-READER-CONTENT-INDEX-LOAD-DEDUP-001"
+}
