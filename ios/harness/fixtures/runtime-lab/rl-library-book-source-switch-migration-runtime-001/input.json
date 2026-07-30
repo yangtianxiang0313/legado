@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "migrate-copies-user-state",
+      "operation": "book_source_migrate"
+    },
+    {
+      "id": "empty-toc-fails-before-migration",
+      "operation": "book_source_migrate_empty_toc"
+    },
+    {
+      "id": "detail-shelf-switch-replaces-storage",
+      "operation": "book_detail_source_switch",
+      "arguments": {
+        "in_bookshelf": true
+      }
+    },
+    {
+      "id": "detail-candidate-switch-stays-transient",
+      "operation": "book_detail_source_switch",
+      "arguments": {
+        "in_bookshelf": false
+      }
+    }
+  ]
+}

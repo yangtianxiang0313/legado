@@ -238,6 +238,8 @@ class LegadoOracleInstrumentedTest {
                 runBookImportChannelCases()
             "rl-library-book-detail-staging-runtime-001" ->
                 runBookDetailStagingCases()
+            "rl-library-book-source-switch-migration-runtime-001" ->
+                runBookSourceMigrationCases()
             "rl-library-chapter-toc-update-runtime-001" ->
                 runChapterTocUpdateCases()
             "rl-ui-reader-toc-result-001" ->
@@ -4627,6 +4629,226 @@ class LegadoOracleInstrumentedTest {
             LocalConfig.bookInfoDeleteAlert = previousDeleteAlert
             scenario.close()
         }
+    }
+
+    private suspend fun runBookSourceMigrationCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            val operation = value.getString("operation")
+            val stimulus = JSONObject()
+                .put("operation", operation)
+                .put(
+                    "arguments",
+                    value.optJSONObject("arguments") ?: JSONObject()
+                )
+            runCase(value.getString("id"), operation, stimulus) {
+                when (operation) {
+                    "book_source_migrate" ->
+                        bookSourceMigrateProjection(value.getString("id"))
+                    "book_source_migrate_empty_toc" ->
+                        bookSourceEmptyTocProjection(value.getString("id"))
+                    "book_detail_source_switch" ->
+                        bookDetailSourceSwitchProjection(
+                            value.getString("id"),
+                            value.getJSONObject("arguments")
+                                .getBoolean("in_bookshelf")
+                        )
+                    else -> error(
+                        "Unsupported book source migration operation: $operation"
+                    )
+                }
+            }
+        }
+        clearBookSourceMigrationState()
+    }
+
+    private fun bookSourceMigrateProjection(caseId: String): JSONObject {
+        val oldBook = sourceMigrationOldBook(caseId)
+        val newBook = sourceMigrationNewBook(caseId)
+        val toc = sourceMigrationToc(newBook)
+
+        oldBook.migrateTo(newBook, toc)
+
+        return sourceMigrationProjection(oldBook, newBook)
+            .put("target_chapter_count", toc.size)
+    }
+
+    private fun bookSourceEmptyTocProjection(caseId: String): JSONObject {
+        val oldBook = sourceMigrationOldBook(caseId)
+        val newBook = sourceMigrationNewBook(caseId)
+        var error: String? = null
+        try {
+            oldBook.migrateTo(newBook, emptyList())
+        } catch (throwable: Throwable) {
+            error = throwable::class.java.simpleName
+        }
+        return JSONObject()
+            .put("error", error ?: JSONObject.NULL)
+            .put("target_progress_index", newBook.durChapterIndex)
+            .put("target_progress_title", newBook.durChapterTitle)
+            .put("target_progress_position", newBook.durChapterPos)
+    }
+
+    private suspend fun bookDetailSourceSwitchProjection(
+        caseId: String,
+        inBookshelf: Boolean
+    ): JSONObject {
+        clearBookSourceMigrationState()
+        val oldBook = sourceMigrationOldBook(caseId)
+        val newBook = sourceMigrationNewBook(caseId).apply {
+            addType(BookType.updateError)
+        }
+        val oldToc = sourceMigrationToc(oldBook)
+        val newToc = sourceMigrationToc(newBook)
+        if (inBookshelf) {
+            appDb.bookDao.insert(oldBook)
+            appDb.bookChapterDao.insert(*oldToc.toTypedArray())
+        }
+        val application = InstrumentationRegistry
+            .getInstrumentation()
+            .targetContext
+            .applicationContext as Application
+        val viewModel = BookInfoViewModel(application)
+        onMainThread {
+            viewModel.bookData.value = oldBook
+            viewModel.chapterListData.value = oldToc
+            viewModel.inBookshelf = inBookshelf
+        }
+        viewModel.changeTo(
+            BookSource(
+                bookSourceUrl = newBook.origin,
+                bookSourceName = newBook.originName
+            ),
+            newBook,
+            newToc
+        )
+        withTimeout(10_000) {
+            while (
+                viewModel.bookData.value?.bookUrl != newBook.bookUrl
+                || (
+                    inBookshelf
+                        && appDb.bookDao.getBook(newBook.bookUrl) == null
+                )
+            ) {
+                delay(25)
+            }
+        }
+        if (inBookshelf) {
+            withTimeout(10_000) {
+                while (
+                    appDb.bookChapterDao.getChapterCount(newBook.bookUrl)
+                        != newToc.size
+                ) {
+                    delay(25)
+                }
+            }
+        }
+        val stored = appDb.bookDao.getBook(newBook.bookUrl)
+        val projected = sourceMigrationProjection(
+            oldBook,
+            viewModel.bookData.value ?: newBook
+        )
+            .put("in_bookshelf", viewModel.inBookshelf)
+            .put(
+                "old_book_persisted",
+                appDb.bookDao.getBook(oldBook.bookUrl) != null
+            )
+            .put("new_book_persisted", stored != null)
+            .put(
+                "old_chapter_count",
+                appDb.bookChapterDao.getChapterCount(oldBook.bookUrl)
+            )
+            .put(
+                "new_chapter_count",
+                appDb.bookChapterDao.getChapterCount(newBook.bookUrl)
+            )
+            .put(
+                "view_model_chapter_count",
+                viewModel.chapterListData.value?.size ?: 0
+            )
+            .put(
+                "update_error_removed",
+                !((stored ?: newBook).isUpError)
+            )
+        clearBookSourceMigrationState()
+        return projected
+    }
+
+    private fun sourceMigrationOldBook(caseId: String): Book =
+        Book(
+            bookUrl = "/android-runtime/source-migration/$caseId/old",
+            tocUrl = "/android-runtime/source-migration/$caseId/old/toc",
+            origin = "android-runtime://source-migration-old",
+            originName = "Old Source",
+            name = "Oracle Migration Book",
+            author = "Oracle Author",
+            durChapterIndex = 1,
+            durChapterTitle = "Chapter 1",
+            durChapterPos = 37,
+            durChapterTime = 123456789L,
+            totalChapterNum = 3,
+            group = 5L,
+            order = -7,
+            customCoverUrl = "cover://custom",
+            customIntro = "custom intro",
+            customTag = "custom tag",
+            canUpdate = false
+        ).apply {
+            setReverseToc(true)
+        }
+
+    private fun sourceMigrationNewBook(caseId: String): Book =
+        Book(
+            bookUrl = "/android-runtime/source-migration/$caseId/new",
+            tocUrl = "/android-runtime/source-migration/$caseId/new/toc",
+            origin = "android-runtime://source-migration-new",
+            originName = "New Source",
+            name = "Oracle Migration Book",
+            author = "Oracle Author",
+            totalChapterNum = 3
+        )
+
+    private fun sourceMigrationToc(book: Book): List<BookChapter> =
+        (0 until 3).map { index ->
+            BookChapter(
+                url = "${book.bookUrl}/chapter/$index",
+                title = "Chapter $index",
+                bookUrl = book.bookUrl,
+                index = index
+            )
+        }
+
+    private fun sourceMigrationProjection(
+        oldBook: Book,
+        newBook: Book
+    ): JSONObject = JSONObject()
+        .put("source_identity_changed", oldBook.origin != newBook.origin)
+        .put("target_book_url", newBook.bookUrl)
+        .put("target_origin", newBook.origin)
+        .put("progress_index", newBook.durChapterIndex)
+        .put("progress_title", newBook.durChapterTitle)
+        .put("progress_position", newBook.durChapterPos)
+        .put("progress_time", newBook.durChapterTime)
+        .put("group", newBook.group)
+        .put("order", newBook.order)
+        .put("custom_cover", newBook.customCoverUrl)
+        .put("custom_intro", newBook.customIntro)
+        .put("custom_tag", newBook.customTag)
+        .put("can_update", newBook.canUpdate)
+        .put("reverse_toc", newBook.getReverseToc())
+
+    private fun clearBookSourceMigrationState() {
+        appDb.bookDao.all
+            .filter {
+                it.bookUrl.startsWith(
+                    "/android-runtime/source-migration/"
+                )
+            }
+            .forEach {
+                appDb.bookChapterDao.delByBook(it.bookUrl)
+                appDb.bookDao.delete(it)
+            }
     }
 
     private suspend fun runBookDetailStagingCases() {

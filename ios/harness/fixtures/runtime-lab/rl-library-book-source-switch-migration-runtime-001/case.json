@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "kind": "android_runtime_scenario",
+  "id": "rl-library-book-source-switch-migration-runtime-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "android_runtime",
+  "capabilities": [
+    "android.room",
+    "library.book",
+    "reader.progress",
+    "content.source-switch"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": null,
+  "input": "input.json",
+  "transport": {
+    "mode": "none",
+    "external_network": "deny",
+    "responses": []
+  },
+  "determinism": {
+    "clock": "fixed_input",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 0,
+    "network_allowed": false,
+    "logical_origin": null,
+    "database_reset_per_case": true
+  },
+  "limits": {
+    "timeout_ms": 10000
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/data/entities/Book.kt#migrateTo",
+      "app/src/main/java/io/legado/app/ui/book/info/BookInfoViewModel.kt#changeTo"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-LIBRARY-BOOK-SOURCE-SWITCH-MIGRATION-RUNTIME-001"
+  },
+  "coverage": [
+    {
+      "behavior": "library.book.source-switch-migration-runtime",
+      "cases": [
+        {
+          "id": "migrate-copies-user-state",
+          "role": "nominal",
+          "android_fact_refs": [],
+          "branch_refs": [
+            "Book.migrateTo keeps the candidate source identity while copying remapped progress and user-owned fields"
+          ]
+        },
+        {
+          "id": "empty-toc-fails-before-migration",
+          "role": "boundary",
+          "android_fact_refs": [],
+          "branch_refs": [
+            "Book.migrateTo indexes the remapped chapter and therefore does not accept an empty target TOC"
+          ]
+        },
+        {
+          "id": "detail-shelf-switch-replaces-storage",
+          "role": "nominal",
+          "android_fact_refs": [],
+          "branch_refs": [
+            "The shelved detail path deletes the old book, inserts the migrated candidate and writes the target TOC"
+          ]
+        },
+        {
+          "id": "detail-candidate-switch-stays-transient",
+          "role": "boundary",
+          "android_fact_refs": [],
+          "branch_refs": [
+            "The unshelved detail path updates in-memory book and TOC state without persisting either identity"
+          ]
+        }
+      ]
+    }
+  ]
+}

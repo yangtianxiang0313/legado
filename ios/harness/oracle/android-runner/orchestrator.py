@@ -1208,6 +1208,37 @@ SCENARIO_CONTRACTS = {
             "reader-discard-removes-staged-book",
         }),
     },
+    "rl-library-book-source-switch-migration-runtime-001": {
+        "status": "candidate",
+        "fixture_kind": "android_runtime_scenario",
+        "result_type": "library_runtime",
+        "stage_names": (
+            "fixture_setup",
+            "migration",
+            "database_observation",
+            "result_mapping",
+        ),
+        "expected_cases": (
+            ("migrate-copies-user-state", "book_source_migrate"),
+            (
+                "empty-toc-fails-before-migration",
+                "book_source_migrate_empty_toc",
+            ),
+            (
+                "detail-shelf-switch-replaces-storage",
+                "book_detail_source_switch",
+            ),
+            (
+                "detail-candidate-switch-stays-transient",
+                "book_detail_source_switch",
+            ),
+        ),
+        "nominal_cases": frozenset({
+            "migrate-copies-user-state",
+            "detail-shelf-switch-replaces-storage",
+            "detail-candidate-switch-stays-transient",
+        }),
+    },
     "rl-library-chapter-toc-update-runtime-001": {
         "status": "candidate",
         "fixture_kind": "android_runtime_scenario",
