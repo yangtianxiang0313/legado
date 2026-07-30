@@ -120,6 +120,7 @@ public struct ContentRules: Sendable, Equatable {
 public struct HTMLCSSSourceDefinition: Sendable, Equatable {
   public let searchURLTemplate: String
   public let search: SearchRules
+  public let explore: SearchRules?
   public let bookInfo: BookInfoRules
   public let toc: TOCRules
   public let content: ContentRules
@@ -127,12 +128,14 @@ public struct HTMLCSSSourceDefinition: Sendable, Equatable {
   public init(
     searchURLTemplate: String,
     search: SearchRules,
+    explore: SearchRules? = nil,
     bookInfo: BookInfoRules,
     toc: TOCRules,
     content: ContentRules
   ) {
     self.searchURLTemplate = searchURLTemplate
     self.search = search
+    self.explore = explore
     self.bookInfo = bookInfo
     self.toc = toc
     self.content = content
