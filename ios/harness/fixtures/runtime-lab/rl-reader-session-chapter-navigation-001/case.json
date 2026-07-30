@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "kind": "android_runtime_scenario",
+  "id": "rl-reader-session-chapter-navigation-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "android_runtime",
+  "capabilities": [
+    "reader.navigation",
+    "reader.progress",
+    "reader.chapter-window"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": null,
+  "input": "input.json",
+  "transport": {
+    "mode": "none",
+    "external_network": "deny",
+    "responses": []
+  },
+  "coverage": [
+    {
+      "behavior": "reader.session.chapter-navigation",
+      "cases": [
+        {"id": "next-page-advances-to-page-start", "role": "nominal", "android_fact_refs": ["AF-READ-BOOK-MOVE-NEXT-PAGE"], "branch_refs": ["next page start becomes durable character position"]},
+        {"id": "next-page-at-end-is-denied", "role": "boundary", "android_fact_refs": ["AF-READ-BOOK-MOVE-NEXT-PAGE"], "branch_refs": ["last laid-out page has no next page"]},
+        {"id": "previous-page-returns-to-page-start", "role": "nominal", "android_fact_refs": ["AF-READ-BOOK-MOVE-PREV-PAGE"], "branch_refs": ["previous page start becomes durable character position"]},
+        {"id": "previous-page-at-start-is-denied", "role": "boundary", "android_fact_refs": ["AF-READ-BOOK-MOVE-PREV-PAGE"], "branch_refs": ["first page has no previous page"]},
+        {"id": "next-chapter-rotates-preloaded-window", "role": "nominal", "android_fact_refs": ["AF-READ-BOOK-MOVE-NEXT-CHAPTER"], "branch_refs": ["next chapter starts at zero and rotates current into previous"]},
+        {"id": "previous-chapter-uses-preloaded-last-page", "role": "nominal", "android_fact_refs": ["AF-READ-BOOK-MOVE-PREV-CHAPTER"], "branch_refs": ["preloaded previous chapter supplies its final page start"]},
+        {"id": "missing-previous-chapter-requests-max-position", "role": "boundary", "android_fact_refs": ["AF-READ-BOOK-MOVE-PREV-CHAPTER"], "branch_refs": ["missing previous layout uses Int.MAX_VALUE as end request"]},
+        {"id": "last-chapter-cannot-advance", "role": "boundary", "android_fact_refs": ["AF-READ-BOOK-MOVE-NEXT-CHAPTER"], "branch_refs": ["last chapter boundary preserves state"]},
+        {"id": "first-chapter-cannot-retreat", "role": "boundary", "android_fact_refs": ["AF-READ-BOOK-MOVE-PREV-CHAPTER"], "branch_refs": ["first chapter boundary preserves state"]}
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "not-observed",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 0,
+    "network_allowed": false,
+    "logical_origin": null,
+    "database_reset_per_case": true
+  },
+  "limits": {"timeout_ms": 5000},
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/model/ReadBook.kt#moveToNextPage",
+      "app/src/main/java/io/legado/app/model/ReadBook.kt#moveToPrevPage",
+      "app/src/main/java/io/legado/app/model/ReadBook.kt#moveToNextChapter",
+      "app/src/main/java/io/legado/app/model/ReadBook.kt#moveToPrevChapter"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-READER-SESSION-CHAPTER-NAVIGATION-001"
+  }
+}

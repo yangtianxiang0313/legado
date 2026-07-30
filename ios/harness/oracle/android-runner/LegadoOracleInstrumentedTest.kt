@@ -268,6 +268,8 @@ class LegadoOracleInstrumentedTest {
                 runReaderIndexLoadDedupCases()
             "rl-reader-content-display-normalization-001" ->
                 runReaderContentNormalizationCases()
+            "rl-reader-session-chapter-navigation-001" ->
+                runReaderChapterNavigationCases()
             "rl-app-startup-first-use-and-restore-001" ->
                 runAppStartupCases()
             "sl-post-form-001" -> runPostFormCases()
@@ -6711,6 +6713,215 @@ class LegadoOracleInstrumentedTest {
             }
             AppConfig.chineseConverterType = previousConverter
             ReadBookConfig.paragraphIndent = previousIndent
+        }
+    }
+
+    private suspend fun runReaderChapterNavigationCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            require(
+                value.getString("operation") ==
+                    "reader_chapter_navigation"
+            ) {
+                "Unsupported reader chapter navigation operation"
+            }
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", "reader_chapter_navigation")
+                .put("arguments", JSONObject(arguments.toString()))
+            runCase(
+                value.getString("id"),
+                "reader_chapter_navigation",
+                stimulus
+            ) {
+                readerChapterNavigationProjection(
+                    value.getString("id"),
+                    arguments
+                )
+            }
+        }
+    }
+
+    private fun readerChapterNavigationProjection(
+        caseId: String,
+        arguments: JSONObject
+    ): JSONObject {
+        val action = arguments.getString("action")
+        val chapterIndex = arguments.getInt("chapter_index")
+        val chapterSize = arguments.getInt("chapter_size")
+        val chapterPosition = arguments.getInt("chapter_position")
+        val book = Book(
+            bookUrl = "/android-runtime/chapter-navigation/$caseId.txt",
+            origin = BookType.localTag,
+            originName = "Local",
+            name = "Navigation $caseId",
+            author = "RuntimeLab",
+            type = BookType.local,
+            durChapterIndex = chapterIndex,
+            durChapterPos = chapterPosition
+        ).apply {
+            setUseReplaceRule(false)
+            setReSegment(false)
+        }
+        val callback = LayoutStreamCallback("none")
+        val previousReadRecord = AppConfig.enableReadRecord
+        clearReaderChapterNavigationState()
+        return try {
+            AppConfig.enableReadRecord = false
+            ReadBook.book = book
+            ReadBook.chapterSize = chapterSize
+            ReadBook.durChapterIndex = chapterIndex
+            ReadBook.durChapterPos = chapterPosition
+            ReadBook.callBack = callback
+            ReadBook.prevTextChapter = navigationTextChapter(
+                arguments.optJSONArray("previous_page_starts"),
+                chapterIndex - 1,
+                chapterSize
+            )
+            ReadBook.curTextChapter = navigationTextChapter(
+                arguments.optJSONArray("current_page_starts"),
+                chapterIndex,
+                chapterSize
+            )
+            ReadBook.nextTextChapter = navigationTextChapter(
+                arguments.optJSONArray("next_page_starts"),
+                chapterIndex + 1,
+                chapterSize
+            )
+
+            val moved = when (action) {
+                "next_page" -> ReadBook.moveToNextPage()
+                "previous_page" -> ReadBook.moveToPrevPage()
+                "next_chapter" ->
+                    ReadBook.moveToNextChapter(
+                        upContent = true,
+                        upContentInPlace = true
+                    )
+                "previous_chapter" ->
+                    ReadBook.moveToPrevChapter(
+                        upContent = true,
+                        toLast = arguments.optBoolean("to_last", true),
+                        upContentInPlace = true
+                    )
+                else -> error("Unsupported navigation action")
+            }
+            drainReadBookExecutor()
+            val events = JSONArray().apply {
+                val snapshot = callback.snapshot()
+                for (eventIndex in 0 until snapshot.length()) {
+                    val event = snapshot.getJSONObject(eventIndex)
+                    val type = event.getString("type")
+                    if (
+                        type == "up_content" ||
+                        type == "up_menu" ||
+                        type == "page_changed"
+                    ) {
+                        put(
+                            JSONObject()
+                                .put("type", type)
+                                .apply {
+                                    if (type == "up_content") {
+                                        put(
+                                            "reset_page_offset",
+                                            event.getBoolean(
+                                                "reset_page_offset"
+                                            )
+                                        )
+                                    }
+                                }
+                        )
+                    }
+                }
+            }
+            JSONObject()
+                .put("moved", moved)
+                .put("runtime_chapter_index", ReadBook.durChapterIndex)
+                .put("runtime_chapter_position", ReadBook.durChapterPos)
+                .put("stored_chapter_index", book.durChapterIndex)
+                .put("stored_chapter_position", book.durChapterPos)
+                .put(
+                    "previous_window_position",
+                    ReadBook.prevTextChapter?.position ?: JSONObject.NULL
+                )
+                .put(
+                    "current_window_position",
+                    ReadBook.curTextChapter?.position ?: JSONObject.NULL
+                )
+                .put(
+                    "next_window_position",
+                    ReadBook.nextTextChapter?.position ?: JSONObject.NULL
+                )
+                .put("events", events)
+        } finally {
+            AppConfig.enableReadRecord = previousReadRecord
+            clearReaderChapterNavigationState()
+        }
+    }
+
+    private fun navigationTextChapter(
+        starts: JSONArray?,
+        position: Int,
+        chapterSize: Int
+    ): TextChapter? {
+        if (starts == null) return null
+        val chapter = TextChapter(
+            chapter = BookChapter(
+                url = "/android-runtime/chapter-navigation/$position",
+                title = "Navigation Chapter $position",
+                bookUrl = "/android-runtime/chapter-navigation/book.txt",
+                index = position.coerceAtLeast(0)
+            ),
+            position = position,
+            title = "Navigation Chapter $position",
+            chaptersSize = chapterSize,
+            sameTitleRemoved = false,
+            isVip = false,
+            isPay = false,
+            effectiveReplaceRules = null
+        )
+        val field = TextChapter::class.java.getDeclaredField("textPages")
+        field.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        val pages = field.get(chapter) as ArrayList<TextPage>
+        for (index in 0 until starts.length()) {
+            val start = starts.getInt(index)
+            val text = "Page $index"
+            val page = TextPage(
+                index = index,
+                text = text,
+                title = chapter.title,
+                chapterSize = chapterSize,
+                chapterIndex = position
+            )
+            page.addLine(
+                TextLine(
+                    text = text,
+                    chapterPosition = start
+                )
+            )
+            page.textChapter = chapter
+            pages.add(page)
+        }
+        chapter.isCompleted = true
+        return chapter
+    }
+
+    private fun clearReaderChapterNavigationState() {
+        ReadBook.coroutineContext.cancelChildren()
+        ReadBook.downloadScope.coroutineContext.cancelChildren()
+        drainReadBookExecutor()
+        ReadBook.callBack = null
+        ReadBook.book = null
+        ReadBook.bookSource = null
+        ReadBook.chapterSize = 0
+        ReadBook.durChapterIndex = 0
+        ReadBook.durChapterPos = 0
+        ReadBook.prevTextChapter = null
+        ReadBook.curTextChapter = null
+        ReadBook.nextTextChapter = null
+        synchronized(ReadBook) {
+            prefetchLoadingList().clear()
         }
     }
 

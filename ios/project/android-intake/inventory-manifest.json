@@ -2,8 +2,8 @@
   "schema_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
   "android_tree": "c81f5d383116e37c1eefee3eb86654514e82022b",
-  "control_sha256": "1c4f8955841a9797dc3e66f86f1e50c9dd18a1d3c63ec2c7fe626d26758f904a",
-  "policy_sha256": "d7c6cd21c1a06e0d64f4d530e1fd081bfa82b8ab8ca7a98f7c361dca9ff21711",
+  "control_sha256": "bfe8a9ee77e70953ac00834a190849d3e0d508dfb6531b4cc4c322ca9cc5df9c",
+  "policy_sha256": "c113423cc980d1da3c9991e0bed2eb7982a5a5499b421f8f69fceeb3d4282de7",
   "facts": [
     {
       "id": "AF-ANALYZE-JSONPATH-GET-LIST",
@@ -1594,6 +1594,102 @@
         "body_semantic_sha256": "56236ed13d71e64eb38b86c1e7c67bd8f319dd8daffa5f79822e7e1010066fc6"
       },
       "revision_sha256": "a8ad06499816f1443735af5c0935b3564e5194d2b4f69061388aa2b87a81b3ed",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-READ-BOOK-MOVE-NEXT-CHAPTER",
+      "fact_key": "reader.session.move-next-chapter",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.ReadBook/moveToNextChapter",
+      "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+      "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d",
+      "source_sha256": "c6fa38c435f0075555e61bc397a6ef81baadd7a5c434e79d424f3d0e1abfef12",
+      "start_line": 230,
+      "end_line": 256,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "moveToNextChapter",
+        "signature": "fun moveToNextChapter(upContent: Boolean, upContentInPlace: Boolean = true): Boolean",
+        "body_semantic_sha256": "2d5e70637b2954cb49ef73de8cf738beefd0d1f16058a98a558a8ea40a631850"
+      },
+      "revision_sha256": "43b85f4262cc52b8df4bbb640d164d67c1f934cb0833b3cb33335276a68f0dfe",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-READ-BOOK-MOVE-NEXT-PAGE",
+      "fact_key": "reader.session.move-next-page",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.ReadBook/moveToNextPage",
+      "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+      "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d",
+      "source_sha256": "c6fa38c435f0075555e61bc397a6ef81baadd7a5c434e79d424f3d0e1abfef12",
+      "start_line": 201,
+      "end_line": 214,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "moveToNextPage",
+        "signature": "fun moveToNextPage(): Boolean",
+        "body_semantic_sha256": "0725da5c0be00afdb47d4ed70b82015f831212a97d9e888874fb8b9973663021"
+      },
+      "revision_sha256": "9a464785e300ef2a1382b0633f84903a6fdb643c4fb68739add2dad4382dbb2b",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-READ-BOOK-MOVE-PREV-CHAPTER",
+      "fact_key": "reader.session.move-previous-chapter",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.ReadBook/moveToPrevChapter",
+      "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+      "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d",
+      "source_sha256": "c6fa38c435f0075555e61bc397a6ef81baadd7a5c434e79d424f3d0e1abfef12",
+      "start_line": 258,
+      "end_line": 284,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "moveToPrevChapter",
+        "signature": "fun moveToPrevChapter( upContent: Boolean, toLast: Boolean = true, upContentInPlace: Boolean = true ): Boolean",
+        "body_semantic_sha256": "8b39466f3178a0af723d562539ee065676cdcec7ff263cd7dcbfa5d19b89670b"
+      },
+      "revision_sha256": "9480bd7c51f7ea3fd8863f884acff921b17707abb7fa244d423f4ff0e013e7ba",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-READ-BOOK-MOVE-PREV-PAGE",
+      "fact_key": "reader.session.move-previous-page",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.ReadBook/moveToPrevPage",
+      "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+      "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d",
+      "source_sha256": "c6fa38c435f0075555e61bc397a6ef81baadd7a5c434e79d424f3d0e1abfef12",
+      "start_line": 216,
+      "end_line": 228,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "moveToPrevPage",
+        "signature": "fun moveToPrevPage(): Boolean",
+        "body_semantic_sha256": "d0e03adcef1dd81b0d2c9583725587d216c1b47b2c1e0722e58cca9c959c9afb"
+      },
+      "revision_sha256": "8a60a75de54d455150b8d63c17fc67e341ed9a93979e984b2924a387d82f5da8",
       "maps_to": [
         "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
       ]

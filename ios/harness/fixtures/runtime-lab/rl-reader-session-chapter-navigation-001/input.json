@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {"id": "next-page-advances-to-page-start", "operation": "reader_chapter_navigation", "arguments": {"action": "next_page", "chapter_index": 1, "chapter_size": 3, "chapter_position": 0, "current_page_starts": [0, 100, 220]}},
+    {"id": "next-page-at-end-is-denied", "operation": "reader_chapter_navigation", "arguments": {"action": "next_page", "chapter_index": 1, "chapter_size": 3, "chapter_position": 220, "current_page_starts": [0, 100, 220]}},
+    {"id": "previous-page-returns-to-page-start", "operation": "reader_chapter_navigation", "arguments": {"action": "previous_page", "chapter_index": 1, "chapter_size": 3, "chapter_position": 220, "current_page_starts": [0, 100, 220]}},
+    {"id": "previous-page-at-start-is-denied", "operation": "reader_chapter_navigation", "arguments": {"action": "previous_page", "chapter_index": 1, "chapter_size": 3, "chapter_position": 0, "current_page_starts": [0, 100, 220]}},
+    {"id": "next-chapter-rotates-preloaded-window", "operation": "reader_chapter_navigation", "arguments": {"action": "next_chapter", "chapter_index": 1, "chapter_size": 3, "chapter_position": 100, "previous_page_starts": [0, 80], "current_page_starts": [0, 100], "next_page_starts": [0, 90]}},
+    {"id": "previous-chapter-uses-preloaded-last-page", "operation": "reader_chapter_navigation", "arguments": {"action": "previous_chapter", "chapter_index": 1, "chapter_size": 3, "chapter_position": 100, "to_last": true, "previous_page_starts": [0, 90, 180], "current_page_starts": [0, 100], "next_page_starts": [0, 70]}},
+    {"id": "missing-previous-chapter-requests-max-position", "operation": "reader_chapter_navigation", "arguments": {"action": "previous_chapter", "chapter_index": 1, "chapter_size": 3, "chapter_position": 100, "to_last": true, "current_page_starts": [0, 100], "next_page_starts": [0, 70]}},
+    {"id": "last-chapter-cannot-advance", "operation": "reader_chapter_navigation", "arguments": {"action": "next_chapter", "chapter_index": 2, "chapter_size": 3, "chapter_position": 90, "previous_page_starts": [0], "current_page_starts": [0, 90]}},
+    {"id": "first-chapter-cannot-retreat", "operation": "reader_chapter_navigation", "arguments": {"action": "previous_chapter", "chapter_index": 0, "chapter_size": 3, "chapter_position": 90, "current_page_starts": [0, 90], "next_page_starts": [0]}}
+  ]
+}

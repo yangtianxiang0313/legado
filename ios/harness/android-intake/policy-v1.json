@@ -857,6 +857,54 @@
       "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
     },
     {
+      "fact_id": "AF-READ-BOOK-MOVE-NEXT-PAGE",
+      "fact_key": "reader.session.move-next-page",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+      "symbol": "moveToNextPage",
+      "symbol_id": "kotlin://io.legado.app.model.ReadBook/moveToNextPage",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-READ-BOOK-MOVE-PREV-PAGE",
+      "fact_key": "reader.session.move-previous-page",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+      "symbol": "moveToPrevPage",
+      "symbol_id": "kotlin://io.legado.app.model.ReadBook/moveToPrevPage",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-READ-BOOK-MOVE-NEXT-CHAPTER",
+      "fact_key": "reader.session.move-next-chapter",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+      "symbol": "moveToNextChapter",
+      "symbol_id": "kotlin://io.legado.app.model.ReadBook/moveToNextChapter",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-READ-BOOK-MOVE-PREV-CHAPTER",
+      "fact_key": "reader.session.move-previous-chapter",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+      "symbol": "moveToPrevChapter",
+      "symbol_id": "kotlin://io.legado.app.model.ReadBook/moveToPrevChapter",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
       "fact_id": "AF-BOOK-HELP-GET-CONTENT",
       "fact_key": "reader.chapter-cache.get-content",
       "category": "production_entrypoint",

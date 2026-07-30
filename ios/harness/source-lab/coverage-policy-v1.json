@@ -57,6 +57,7 @@
     {"id": "reader.session.reset-from-book", "status": "planned", "required_roles": ["nominal", "boundary", "denied"], "min_cases_per_role": 1, "phase": 2},
     {"id": "reader.content.cache-first-acquisition", "status": "planned", "required_roles": ["nominal", "boundary", "denied"], "min_cases_per_role": 1, "phase": 2},
     {"id": "reader.content.index-load-dedup", "status": "planned", "required_roles": ["nominal", "boundary", "denied"], "min_cases_per_role": 1, "phase": 2},
-    {"id": "reader.content.display-normalization", "status": "planned", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 2}
+    {"id": "reader.content.display-normalization", "status": "planned", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 2},
+    {"id": "reader.session.chapter-navigation", "status": "planned", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 2}
   ]
 }
