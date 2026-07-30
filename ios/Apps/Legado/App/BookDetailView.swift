@@ -164,6 +164,10 @@ struct BookDetailAcceptanceView: View {
 struct BookDetailView: View {
     let snapshot: BookDetailActionSnapshot
     let display: BookDetailDisplay
+    let candidate: ShelfBookCandidate?
+    let library: ShelfLibrary?
+
+    @State private var storedItem: ShelfBookItem?
 
     init(
         snapshot: BookDetailActionSnapshot,
@@ -171,10 +175,36 @@ struct BookDetailView: View {
     ) {
         self.snapshot = snapshot
         self.display = display
+        self.candidate = nil
+        self.library = nil
+        _storedItem = State(initialValue: nil)
+    }
+
+    init(
+        candidate: ShelfBookCandidate,
+        library: ShelfLibrary
+    ) {
+        self.snapshot = .remoteSourceLoginUnshelved
+        self.display = BookDetailDisplay(candidate: candidate)
+        self.candidate = candidate
+        self.library = library
+        _storedItem = State(initialValue: nil)
     }
 
     private var availability: BookDetailActionAvailability {
-        BookDetailActionAvailability(snapshot: snapshot)
+        BookDetailActionAvailability(
+            snapshot: BookDetailActionSnapshot(
+                isInBookshelf:
+                    storedItem?.membership.isInBookshelf
+                    ?? snapshot.isInBookshelf,
+                sourceState: snapshot.sourceState,
+                loginURLState: snapshot.loginURLState,
+                bookKind: snapshot.bookKind,
+                canUpdate: snapshot.canUpdate,
+                splitsLongChapters: snapshot.splitsLongChapters,
+                confirmsDeletion: snapshot.confirmsDeletion
+            )
+        )
     }
 
     var body: some View {
@@ -239,10 +269,33 @@ struct BookDetailView: View {
         .safeAreaInset(edge: .bottom) {
             shelfButton
         }
+        .task(id: candidate?.bookURL) {
+            guard let candidate, let library else { return }
+            if let existing = await library.item(
+                forURL: candidate.bookURL
+            ) {
+                storedItem = existing
+            } else {
+                storedItem = await library.stage(candidate)
+            }
+        }
     }
 
     private var shelfButton: some View {
         Button {
+            guard let candidate, let library else { return }
+            Task {
+                if let storedItem,
+                   storedItem.membership.isInBookshelf
+                {
+                    await library.remove(storedItem)
+                } else {
+                    await library.add(candidate)
+                }
+                self.storedItem = await library.item(
+                    forURL: candidate.bookURL
+                )
+            }
         } label: {
             Label(
                 availability.shelfAction == .add
@@ -340,5 +393,34 @@ struct BookDetailView: View {
             )
         }
         .accessibilityIdentifier("action.bookDetail.\(id)")
+    }
+}
+
+private extension BookDetailDisplay {
+    init(candidate: ShelfBookCandidate) {
+        self.init(
+            name: candidate.name,
+            author: candidate.author,
+            kind: candidate.kind,
+            lastChapter: candidate.lastChapter,
+            intro: candidate.intro,
+            coverURL: candidate.coverURL,
+            originName: candidate.originName
+        )
+    }
+}
+
+extension ShelfBookCandidate {
+    init(route: SearchBookRoute) {
+        self.init(
+            name: route.name,
+            author: route.author,
+            kind: route.kind,
+            lastChapter: route.lastChapter,
+            intro: route.intro,
+            bookURL: route.bookURL,
+            coverURL: route.coverURL,
+            originName: route.originName
+        )
     }
 }

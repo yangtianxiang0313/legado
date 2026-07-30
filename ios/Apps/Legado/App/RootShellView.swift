@@ -4,15 +4,29 @@ import SwiftUI
 
 struct RootShellView: View {
     @Bindable var router: AppRouter
+    @Bindable var library: ShelfLibrary
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @State private var didLoadLibrary = false
 
     var body: some View {
-        if horizontalSizeClass == .regular {
-            regularShell
-                .accessibilityIdentifier("projection.regularSplit")
-        } else {
-            compactShell
-                .accessibilityIdentifier("projection.compactStack")
+        Group {
+            if horizontalSizeClass == .regular {
+                regularShell
+                    .accessibilityIdentifier("projection.regularSplit")
+            } else {
+                compactShell
+                    .accessibilityIdentifier("projection.compactStack")
+            }
+        }
+        .task {
+            guard !didLoadLibrary else { return }
+            didLoadLibrary = true
+            if ProcessInfo.processInfo.arguments.contains(
+                "--reset-library"
+            ) {
+                await library.reset()
+            }
+            await library.reload()
         }
     }
 
@@ -54,9 +68,21 @@ struct RootShellView: View {
 
     private func navigationStack(for root: RootRoute) -> some View {
         NavigationStack(path: pathBinding(for: root)) {
-            RootContentView(root: root) {
-                router.push(.searchBooks, on: .shelf)
-            }
+            RootContentView(
+                root: root,
+                openSearch: {
+                    router.push(.searchBooks, on: .shelf)
+                },
+                openBook: { item in
+                    router.push(
+                        .bookDetail(SearchBookRoute(item: item)),
+                        on: .shelf
+                    )
+                },
+                books: {
+                    library.books
+                }
+            )
             .navigationDestination(for: AppRoute.self) { route in
                 destination(for: route)
             }
@@ -86,8 +112,8 @@ struct RootShellView: View {
             }
         case .bookDetail(let book):
             BookDetailView(
-                snapshot: .remoteSourceLoginUnshelved,
-                display: BookDetailDisplay(route: book)
+                candidate: ShelfBookCandidate(route: book),
+                library: library
             )
         }
     }
@@ -103,6 +129,8 @@ struct RootShellView: View {
 private struct RootContentView: View {
     let root: RootRoute
     let openSearch: () -> Void
+    let openBook: (ShelfBookItem) -> Void
+    let books: () -> [ShelfBookItem]
 
     var body: some View {
         VStack(spacing: 20) {
@@ -119,6 +147,31 @@ private struct RootContentView: View {
                 .multilineTextAlignment(.center)
 
             if root == .shelf {
+                if books().isEmpty {
+                    Text("书架还是空的")
+                        .foregroundStyle(.secondary)
+                        .accessibilityIdentifier("state.shelf.empty")
+                } else {
+                    List(books()) { book in
+                        Button {
+                            openBook(book)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(book.candidate.name)
+                                    .font(.headline)
+                                Text("作者：\(book.candidate.author)")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .accessibilityIdentifier(
+                            "action.shelf.openBook"
+                        )
+                    }
+                    .accessibilityIdentifier("list.shelf.books")
+                    .frame(maxHeight: 320)
+                }
+
                 Button(action: openSearch) {
                     Label("搜索书籍", systemImage: "magnifyingglass")
                 }
@@ -130,6 +183,22 @@ private struct RootContentView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(uiColor: .systemGroupedBackground))
         .navigationTitle(root.title)
+    }
+}
+
+private extension SearchBookRoute {
+    init(item: ShelfBookItem) {
+        let candidate = item.candidate
+        self.init(
+            name: candidate.name,
+            author: candidate.author,
+            kind: candidate.kind,
+            lastChapter: candidate.lastChapter,
+            intro: candidate.intro,
+            bookURL: candidate.bookURL,
+            coverURL: candidate.coverURL,
+            originName: candidate.originName
+        )
     }
 }
 
@@ -467,6 +536,7 @@ enum StartupAcceptanceCase: String {
 
 struct StartupAcceptanceView: View {
     @Bindable var router: AppRouter
+    @Bindable var library: ShelfLibrary
     let startupCase: StartupAcceptanceCase
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -502,7 +572,7 @@ struct StartupAcceptanceView: View {
                 identifier: "screen.reader.startup"
             )
         } else {
-            RootShellView(router: router)
+            RootShellView(router: router, library: library)
         }
     }
 

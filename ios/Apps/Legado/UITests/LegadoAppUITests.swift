@@ -409,6 +409,94 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testBookDetailStagingPersistence() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = contract.projection == "regularSplit"
+            ? .landscapeLeft
+            : .portrait
+
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        require("action.shelf.openSearch").tap()
+        require("screen.search.books")
+        let searchField = app.searchFields.firstMatch
+        XCTAssertTrue(searchField.waitForExistence(timeout: 8))
+        searchField.tap()
+        searchField.typeText("星河纪事\n")
+        let result = app.staticTexts["星河纪事"].firstMatch
+        XCTAssertTrue(result.waitForExistence(timeout: 8))
+        result.tap()
+
+        require("screen.bookDetail")
+        require("action.bookDetail.shelf.add").tap()
+        require("action.bookDetail.shelf.remove")
+
+        app.terminate()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        require("screen.root.shelf")
+        require("list.shelf.books")
+        let persisted = app.staticTexts["星河纪事"].firstMatch
+        XCTAssertTrue(persisted.waitForExistence(timeout: 8))
+        require("action.shelf.openBook").tap()
+        require("screen.bookDetail")
+        require("action.bookDetail.shelf.remove")
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "phases": [
+                [
+                    "id": "search_detail_add",
+                    "screen": "screen.bookDetail",
+                    "book": "星河纪事",
+                    "shelf_action_after": "remove",
+                ],
+                [
+                    "id": "terminate_relaunch",
+                    "screen": "screen.root.shelf",
+                    "shelf_books": ["星河纪事"],
+                ],
+                [
+                    "id": "reopen_from_shelf",
+                    "screen": "screen.bookDetail",
+                    "book": "星河纪事",
+                    "shelf_action": "remove",
+                ],
+            ],
+            "route_trace": [
+                ["operation": "push", "route_id": "search.books"],
+                [
+                    "operation": "push",
+                    "route_id":
+                        "book.detail:http://legado.local/books/star-river",
+                ],
+                ["operation": "terminate", "route_id": "process"],
+                ["operation": "launch", "route_id": "root.shelf"],
+                [
+                    "operation": "push",
+                    "route_id":
+                        "book.detail:http://legado.local/books/star-river",
+                ],
+            ],
+        ])
+    }
+
     private func observeStartupCase(
         id: String,
         initial: String,

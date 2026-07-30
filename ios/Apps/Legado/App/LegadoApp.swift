@@ -1,10 +1,26 @@
 import AppNavigation
+import AppUseCases
+import DatabaseGRDB
 import Foundation
 import SwiftUI
 
 @main
 struct LegadoApp: App {
     @State private var router = AppRouter()
+    @State private var library: ShelfLibrary
+
+    init() {
+        do {
+            _library = State(
+                initialValue: ShelfLibrary(
+                    repository: try GRDBBookShelfRepository
+                        .applicationSupport()
+                )
+            )
+        } catch {
+            fatalError("Unable to initialize library database: \(error)")
+        }
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -17,10 +33,11 @@ struct LegadoApp: App {
             ) {
                 StartupAcceptanceView(
                     router: router,
+                    library: library,
                     startupCase: startupCase
                 )
             } else {
-                RootShellView(router: router)
+                RootShellView(router: router, library: library)
             }
         }
     }

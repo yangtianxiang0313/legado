@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "scenario_id": "ui-book-detail-staging-v1",
+  "profile": "store_safe",
+  "simulators": [
+    {
+      "simulator_id": "SIM-PAD-REGULAR-001",
+      "projection": "regularSplit",
+      "phases": [
+        {
+          "id": "search_detail_add",
+          "screen": "screen.bookDetail",
+          "book": "星河纪事",
+          "shelf_action_after": "remove"
+        },
+        {
+          "id": "terminate_relaunch",
+          "screen": "screen.root.shelf",
+          "shelf_books": [
+            "星河纪事"
+          ]
+        },
+        {
+          "id": "reopen_from_shelf",
+          "screen": "screen.bookDetail",
+          "book": "星河纪事",
+          "shelf_action": "remove"
+        }
+      ],
+      "route_trace": [
+        {
+          "operation": "push",
+          "route_id": "search.books"
+        },
+        {
+          "operation": "push",
+          "route_id": "book.detail:http://legado.local/books/star-river"
+        },
+        {
+          "operation": "terminate",
+          "route_id": "process"
+        },
+        {
+          "operation": "launch",
+          "route_id": "root.shelf"
+        },
+        {
+          "operation": "push",
+          "route_id": "book.detail:http://legado.local/books/star-river"
+        }
+      ]
+    },
+    {
+      "simulator_id": "SIM-PHONE-COMPACT-001",
+      "projection": "compactStack",
+      "phases": [
+        {
+          "id": "search_detail_add",
+          "screen": "screen.bookDetail",
+          "book": "星河纪事",
+          "shelf_action_after": "remove"
+        },
+        {
+          "id": "terminate_relaunch",
+          "screen": "screen.root.shelf",
+          "shelf_books": [
+            "星河纪事"
+          ]
+        },
+        {
+          "id": "reopen_from_shelf",
+          "screen": "screen.bookDetail",
+          "book": "星河纪事",
+          "shelf_action": "remove"
+        }
+      ],
+      "route_trace": [
+        {
+          "operation": "push",
+          "route_id": "search.books"
+        },
+        {
+          "operation": "push",
+          "route_id": "book.detail:http://legado.local/books/star-river"
+        },
+        {
+          "operation": "terminate",
+          "route_id": "process"
+        },
+        {
+          "operation": "launch",
+          "route_id": "root.shelf"
+        },
+        {
+          "operation": "push",
+          "route_id": "book.detail:http://legado.local/books/star-river"
+        }
+      ]
+    }
+  ]
+}

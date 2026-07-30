@@ -7,4 +7,10 @@ final class DatabaseGRDBTests: XCTestCase {
       try DatabaseGRDBRuntime.verifyInMemoryDatabase()
     )
   }
+
+  func testStagedBookIsNotShelfMembershipAndAddSurvivesReopen() async throws {
+    let verified = try await DatabaseGRDBRuntime
+      .verifyShelfPersistenceAcrossReopen()
+    XCTAssertTrue(verified)
+  }
 }
