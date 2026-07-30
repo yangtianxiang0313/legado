@@ -878,6 +878,70 @@ class MinimalLoopTests(unittest.TestCase):
 
             self.assertEqual([], loop.pending_characterizations(root))
 
+    def test_allowlisted_source_ui_flow_skips_android_ui_runner(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.write(
+                root,
+                "ios/project/requirements/accepted/"
+                "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001.json",
+                {
+                    "id": "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001",
+                    "revision": 1,
+                    "status": "accepted",
+                    "origin": {
+                        "kind": "ios_product_decision",
+                        "baseline_commit": "a" * 40,
+                        "admission": "policy_auto",
+                    },
+                    "clauses": [{"id": "RC-01"}],
+                },
+            )
+            self.write(
+                root,
+                "ios/project/business-knowledge/packets/proposals/"
+                "BKP-UI-TOPOLOGY-001/r0001.json",
+                {
+                    "id": "BKP-UI-TOPOLOGY-001",
+                    "revision": 1,
+                    "status": "candidate",
+                    "baseline": {"android_commit": "a" * 40},
+                    "claims": [
+                        {
+                            "id": "BKC-UI-EXPLORE-FLOW-001",
+                            "revision": 1,
+                            "semantic_key": "ui.discovery.explore-flow",
+                            "topic": "发现流程",
+                            "kind": "runtime_behavior",
+                            "subject_keys": ["ui.root"],
+                            "depends_on": [],
+                            "support": {
+                                "state": "candidate_source_anchored",
+                                "runtime_requirement": (
+                                    "android_characterization"
+                                ),
+                                "source_anchors": [
+                                    {"path": "ExploreFragment.kt"},
+                                    {"path": "ExploreShowActivity.kt"},
+                                ],
+                            },
+                        }
+                    ],
+                },
+            )
+
+            self.assertEqual([], loop.pending_characterizations(root))
+            deliveries = loop.direct_source_ui_deliveries(root)
+            self.assertEqual(1, len(deliveries))
+            self.assertEqual(
+                "IOS-APP-NAVIGATION-DISCOVERY-EXPLORE-FLOW-001",
+                deliveries[0]["target"],
+            )
+            self.assertEqual(
+                "source-ui-discovery-explore-flow-v1",
+                deliveries[0]["source_contract"]["fixture_id"],
+            )
+
     def test_verified_candidate_evidence_satisfies_dependency(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -1370,6 +1434,9 @@ class MinimalLoopTests(unittest.TestCase):
         source_management = loop.app_navigation_delivery_contract(
             "source-ui-source-bulk-management-v1"
         )
+        explore = loop.app_navigation_delivery_contract(
+            "source-ui-discovery-explore-flow-v1"
+        )
         progress_restore = loop.app_navigation_delivery_contract(
             "milestone-reader-progress-restore-v1"
         )
@@ -1403,6 +1470,10 @@ class MinimalLoopTests(unittest.TestCase):
             source_management["acceptance_id"],
         )
         self.assertEqual(
+            "testDiscoveryExploreFlow",
+            explore["ui_acceptance"]["test_method"],
+        )
+        self.assertEqual(
             "testReaderProgressPersistsAcrossRelaunch",
             progress_restore["ui_acceptance"]["test_method"],
         )
@@ -1418,6 +1489,7 @@ class MinimalLoopTests(unittest.TestCase):
         self.assertIn("目录抓取", toc["goal"])
         self.assertIn("正文", reader["goal"])
         self.assertIn("主操作层", reader_menu["goal"])
+        self.assertIn("分类", explore["goal"])
         self.assertIn("App 重启后恢复", progress_restore["goal"])
         with self.assertRaisesRegex(
             loop.LoopError,

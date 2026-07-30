@@ -42,6 +42,23 @@ NON_RUNTIME_CLAIM_KINDS = frozenset(
         "composite_static_fact",
     }
 )
+SOURCE_UI_DELIVERY_CONTRACTS = {
+    "ui.reader.multilevel-menu": {
+        "target": "IOS-APP-NAVIGATION-READER-MULTILEVEL-MENU-001",
+        "fixture_id": "source-ui-reader-multilevel-menu-v1",
+        "validation": "simulator",
+    },
+    "ui.source.bulk-selection-menu": {
+        "target": "IOS-APP-NAVIGATION-SOURCE-BULK-MANAGEMENT-001",
+        "fixture_id": "source-ui-source-bulk-management-v1",
+        "validation": "build",
+    },
+    "ui.discovery.explore-flow": {
+        "target": "IOS-APP-NAVIGATION-DISCOVERY-EXPLORE-FLOW-001",
+        "fixture_id": "source-ui-discovery-explore-flow-v1",
+        "validation": "simulator",
+    },
+}
 
 
 class LoopError(RuntimeError):
@@ -962,18 +979,6 @@ def direct_source_ui_deliveries(
     current claim explicitly declares ``runtime_requirement=none``. Simulator
     acceptance remains opt-in for complete visible flows.
     """
-    contracts = {
-        "ui.reader.multilevel-menu": {
-            "target": "IOS-APP-NAVIGATION-READER-MULTILEVEL-MENU-001",
-            "fixture_id": "source-ui-reader-multilevel-menu-v1",
-            "validation": "simulator",
-        },
-        "ui.source.bulk-selection-menu": {
-            "target": "IOS-APP-NAVIGATION-SOURCE-BULK-MANAGEMENT-001",
-            "fixture_id": "source-ui-source-bulk-management-v1",
-            "validation": "build",
-        },
-    }
     completed = completed_task_ids(root)
     characterized = characterized_claim_refs(root)
     deliveries: list[Mapping[str, Any]] = []
@@ -987,15 +992,12 @@ def direct_source_ui_deliveries(
             if not isinstance(claim, dict):
                 continue
             claim_ref = (claim.get("id"), claim.get("revision"))
-            contract = contracts.get(str(claim.get("semantic_key")))
-            support = claim.get("support")
+            contract = SOURCE_UI_DELIVERY_CONTRACTS.get(
+                str(claim.get("semantic_key"))
+            )
             source_ready = (
                 claim_ref in characterized
-                or (
-                    isinstance(support, dict)
-                    and support.get("state") == "candidate_source_anchored"
-                    and support.get("runtime_requirement") == "none"
-                )
+                or is_direct_source_ui_claim(claim)
             )
             if (
                 contract is None
@@ -1519,6 +1521,7 @@ def pending_characterizations(root: Path) -> list[Mapping[str, Any]]:
                 or candidate_revisions.get(claim_id, 0) > revision
                 or (claim_id, revision) in characterized
                 or (claim_id, revision) in reused
+                or is_direct_source_ui_claim(claim)
             ):
                 continue
             dependencies = {
@@ -1559,6 +1562,23 @@ def pending_characterizations(root: Path) -> list[Mapping[str, Any]]:
 def characterization_task_id(semantic_key: str) -> str:
     slug = re.sub(r"[^A-Z0-9]+", "-", semantic_key.upper()).strip("-")
     return f"IOS-CHARACTERIZE-{slug}-001"
+
+
+def is_direct_source_ui_claim(claim: Mapping[str, Any]) -> bool:
+    """Whether an explicit UI contract can be implemented from frozen source.
+
+    This is intentionally allow-listed. It prevents a broad "all UI is static"
+    shortcut while avoiding an Android instrumented runner for topology whose
+    implementation anchors are already frozen and content parsing is verified
+    separately by SourceRuntime.
+    """
+    support = claim.get("support")
+    return (
+        str(claim.get("semantic_key")) in SOURCE_UI_DELIVERY_CONTRACTS
+        and isinstance(support, dict)
+        and support.get("state") == "candidate_source_anchored"
+        and bool(support.get("source_anchors"))
+    )
 
 
 def characterization_contract(claim: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -1872,6 +1892,20 @@ def app_navigation_delivery_contract(
                 "ui-source-management-milestone-v1.json"
             ),
             "test_method": "testSourceManagementMilestone",
+        },
+        "source-ui-discovery-explore-flow-v1": {
+            "goal": (
+                "按照冻结 Android 发现页源码拓扑，把已启用发现的书源、分类、"
+                "分页书单和稳定书籍详情路由接成完整主路径；书源解析继续由"
+                "独立 SourceRuntime 承担，AppShell 只投影 iOS 原生界面。"
+            ),
+            "acceptance_id": "structured-discovery-explore-acceptance",
+            "scenario_id": "ui-discovery-explore-flow-v1",
+            "expected": (
+                "ios/harness/ui/expected/"
+                "ui-discovery-explore-flow-v1.json"
+            ),
+            "test_method": "testDiscoveryExploreFlow",
         },
         "milestone-reader-progress-restore-v1": {
             "goal": (
