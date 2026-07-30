@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P19-INLINE-JSLIB-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "title": "P19 内联 jsLib 进入 FullCompat 脚本主链",
+  "objective": "依据冻结 Android SharedJsScope、AnalyzeRule 和 AnalyzeUrl 源码，把非 JSON 的内联 jsLib 作为书源会话共享脚本装入 JavaScriptCore，再让普通规则与 loginCheckJs 复用其中函数；SourceRuntime 只传递不透明库源码和稳定身份，不承担 JavaScript 编译、缓存或平台对象暴露。",
+  "completion_evidence": [
+    "SourceScriptRequest 可携带不透明共享库描述，SourceRuntime 不导入 JavaScriptCore 或实现脚本缓存",
+    "JavaScriptCore 按 SourceSession 和库内容身份至多装载一次内联 jsLib，失败返回稳定 executionFailed",
+    "不同书源会话的共享库状态隔离，库兼容命名空间不跨会话泄漏",
+    "BookSource.jsLib 被产品 Definition 保留，并同时进入字段规则与 loginCheckJs 执行",
+    "本地 FullCompat 书源可在搜索至正文链路调用 jsLib 定义的函数"
+  ],
+  "deferred_policy": "Android SharedJsScope 对 JSON 对象中的绝对 URL 执行同步下载和磁盘缓存；该网络与缓存副作用不在本里程碑实现，必须经独立 SourceLab/Android characterization 后通过受限库加载端口加入。",
+  "deliveries": [
+    {
+      "target": "IOS-SOURCE-RUNTIME-SCRIPT-LIBRARY-CONTRACT-001",
+      "title": "定义不透明共享脚本库合同",
+      "fixture_id": "source-script-library-contract-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [],
+      "validation": "tests",
+      "test_filter": "SourceScriptLibraryContractTests",
+      "additional_allowed_paths": [],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/model/SharedJsScope.kt",
+          "symbol_id": "kotlin://io.legado.app.model.SharedJsScope/getScope"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/data/entities/BaseSource.kt",
+          "symbol_id": "kotlin://io.legado.app.data.entities.BaseSource/getShareScope"
+        }
+      ]
+    },
+    {
+      "target": "IOS-SOURCE-RUNTIME-JAVASCRIPTCORE-INLINE-LIBRARY-001",
+      "title": "按书源会话装载内联 jsLib",
+      "fixture_id": "source-javascriptcore-inline-library-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [
+        "IOS-SOURCE-RUNTIME-SCRIPT-LIBRARY-CONTRACT-001"
+      ],
+      "validation": "tests",
+      "test_filter": "JavaScriptCoreInlineLibraryTests",
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/ScriptJavaScriptCore/**",
+        "ios/Packages/LegadoKit/Tests/ScriptJavaScriptCoreTests/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/model/SharedJsScope.kt",
+          "symbol_id": "kotlin://io.legado.app.model.SharedJsScope"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt",
+          "symbol_id": "kotlin://io.legado.app.model.analyzeRule.AnalyzeRule/evalJS"
+        }
+      ]
+    },
+    {
+      "target": "IOS-SOURCE-RUNTIME-JSLIB-PRODUCT-INTEGRATION-001",
+      "title": "把 jsLib 接入规则和响应脚本产品链",
+      "fixture_id": "source-jslib-product-integration-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [
+        "IOS-SOURCE-RUNTIME-JAVASCRIPTCORE-INLINE-LIBRARY-001"
+      ],
+      "validation": "tests",
+      "test_filter": "SourceJSLibraryProductIntegrationTests",
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Tests/ScriptJavaScriptCoreTests/**",
+        "ios/Apps/Legado/App/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt",
+          "symbol_id": "kotlin://io.legado.app.model.analyzeRule.AnalyzeRule/evalJS"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+          "symbol_id": "kotlin://io.legado.app.model.analyzeRule.AnalyzeUrl/evalJS"
+        }
+      ]
+    }
+  ],
+  "stages": [
+    {
+      "id": "P19-01-SCRIPT-LIBRARY-CONTRACT",
+      "title": "共享脚本库合同",
+      "outcome": "脚本请求可声明内联共享库，但核心层不解释或执行其内容。",
+      "selectors": [
+        {
+          "id": "SOURCE-SCRIPT-LIBRARY-CONTRACT",
+          "task_ids": [
+            "IOS-SOURCE-RUNTIME-SCRIPT-LIBRARY-CONTRACT-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P19-02-JAVASCRIPTCORE-INLINE-LIBRARY",
+      "title": "JavaScriptCore 会话库",
+      "outcome": "内联库按内容身份在单个书源会话装载一次，并与其他会话隔离。",
+      "selectors": [
+        {
+          "id": "SOURCE-JAVASCRIPTCORE-INLINE-LIBRARY",
+          "task_ids": [
+            "IOS-SOURCE-RUNTIME-JAVASCRIPTCORE-INLINE-LIBRARY-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P19-03-JSLIB-PRODUCT",
+      "title": "规则与响应脚本接线",
+      "outcome": "导入书源的 jsLib 可被搜索至正文规则和 loginCheckJs 共同调用。",
+      "selectors": [
+        {
+          "id": "SOURCE-JSLIB-PRODUCT-INTEGRATION",
+          "task_ids": [
+            "IOS-SOURCE-RUNTIME-JSLIB-PRODUCT-INTEGRATION-001"
+          ]
+        }
+      ]
+    }
+  ]
+}
