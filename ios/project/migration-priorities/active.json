@@ -1,28 +1,61 @@
 {
   "schema_version": 1,
-  "id": "MILESTONE-P11A-SOURCE-POST-FORM-SELECTION-001",
+  "id": "MILESTONE-P11-SOURCE-RULE-PRODUCT-INTEGRATION-001",
   "status": "active",
   "mode": "critical_path_only",
-  "title": "P11A 书源 POST Form 真源特征化",
-  "objective": "由固定 Android Runner 对本地确定性站点执行 POST 请求，结构化固定 URL option 何时选择 form 字段路径，为 iOS 请求计划实现提供权威 expected。",
+  "title": "P11 通用书源规则接入产品主链",
+  "objective": "复用已经由 Android 真源固定并在独立 SourceRuntime 实现的规则内核，使导入书源不再被限制为纯 CSS，而能沿搜索、详情、目录、正文主链执行 JSONPath 等通用规则。",
   "completion_evidence": [
-    "Android Runner 实际执行 method=POST 的大小写、空 body、普通字段、JSON、XML 与显式 Content-Type 场景",
-    "本地站点回显 method、URL、headers、字段和原始 body，不依赖外网可用性",
-    "Golden 绑定固定 Android commit、Runner digest 和 fixture，结构化输出可被 iOS ConformanceCLI 直接比较",
-    "只运行一次真实 Android characterization，不为同一语义重复创建 fixture 或 Golden"
+    "导入书源保留原始规则前缀，不再在 App composition root 删除 @css 等语义",
+    "JSONPath bookList 与字段规则可通过现有 SourceSearchPipeline 产出搜索结果",
+    "复用既有 Android Golden 与 SourceRuleConsumerEvaluator，不创建重复 Characterization",
+    "本阶段只运行聚焦 Swift 测试，不运行 Android 或 Simulator"
   ],
-  "deferred_policy": "本阶段只冻结 POST 到 form 字段路径的选择条件；raw Content-Type body、JSON body、字段编码、Cookie/retry 与 XML 响应规范化按同一 P11 主链逐个续接，不在一个超大 Golden 中混验。",
-  "deliveries": [],
+  "deferred_policy": "搜索接通后按产品主链依次接详情、目录和正文；JavaScript、WebView 与长尾方言只在对应主链断点出现时续接。",
+  "deliveries": [
+    {
+      "target": "IOS-SOURCE-RUNTIME-PRODUCT-SEARCH-RULE-INTEGRATION-001",
+      "title": "将 JSONPath 规则内核接入导入书源搜索主链",
+      "fixture_id": "source-product-search-rule-integration-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [],
+      "validation": "tests",
+      "test_filter": "SourceProductRuleIntegrationTests",
+      "additional_allowed_paths": [
+        "ios/Apps/Legado/App/SearchEnvironment.swift"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "af03cf51cef2eb31f54b8240c39e868ceabdba54",
+          "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
+          "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook/searchBookAwait"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "d9f233dcf30a370d34e75c080a4d822f2eeb6754",
+          "path": "app/src/main/java/io/legado/app/model/webBook/BookList.kt",
+          "symbol_id": "kotlin://io.legado.app.model.webBook/BookList/analyzeBookList"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "71d9006ce17a96f2e9db9c9288047f2a66bf2c28",
+          "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByJSonPath.kt",
+          "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeByJSonPath"
+        }
+      ]
+    }
+  ],
   "stages": [
     {
-      "id": "P11A-01-POST-FORM-SELECTION-CHARACTERIZATION",
-      "title": "固定 POST body 到 form 字段路径的 Android 可观察结果",
-      "outcome": "BKC-SR-POST-FORM-SELECTION-001 从源码锚定候选升级为 Android runtime verified，随后可直接生成 iOS Delivery。",
+      "id": "P11-01-SEARCH-RULE-INTEGRATION",
+      "title": "导入书源通用规则进入搜索流水线",
+      "outcome": "现有搜索页面能够消费带 JSONPath 规则的导入书源，而不是只支持被降级后的 CSS 选择器。",
       "selectors": [
         {
-          "id": "SOURCE-POST-FORM-SELECTION",
+          "id": "SOURCE-PRODUCT-SEARCH-RULE-INTEGRATION",
           "task_ids": [
-            "IOS-CHARACTERIZE-SOURCE-REQUEST-POST-FORM-SELECTION-001"
+            "IOS-SOURCE-RUNTIME-PRODUCT-SEARCH-RULE-INTEGRATION-001"
           ]
         }
       ]

@@ -1403,6 +1403,18 @@ def priority_policy_deliveries(
                     "validation": str(
                         declaration.get("validation", "tests")
                     ),
+                    **(
+                        {
+                            "test_filter": str(
+                                declaration["test_filter"]
+                            )
+                        }
+                        if isinstance(
+                            declaration.get("test_filter"),
+                            str,
+                        )
+                        else {}
+                    ),
                 },
                 **(
                     {"ui_contract": declaration["ui_contract"]}
