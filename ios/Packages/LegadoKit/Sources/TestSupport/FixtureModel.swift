@@ -4336,3 +4336,158 @@ public enum SearchUIFlowFixtureProjection {
     ])
   }
 }
+
+public enum SourceEditorDebugFixtureProjectionError: Error, Sendable {
+  case invalidFixture
+}
+
+public enum SourceEditorDebugFixtureProjection {
+  public static func project(
+    operation: String,
+    arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    switch operation {
+    case "source_editor_action_matrix":
+      guard case .array(let actions)? = arguments["actions"] else {
+        throw SourceEditorDebugFixtureProjectionError.invalidFixture
+      }
+      return .object([
+        "actions": .array(
+          try actions.map { value in
+            guard
+              case .object(let item) = value,
+              case .string(let id)? = item["id"],
+              case .string(let actionText)? = item["action"],
+              let action = SourceEditorAction(rawValue: actionText),
+              case .string(let nameState)? = item["name_state"],
+              case .string(let loginState)? = item["login_url_state"],
+              case .bool(let changed)? = item["changed"]
+            else {
+              throw SourceEditorDebugFixtureProjectionError.invalidFixture
+            }
+            let sourceURL = "android-runtime://source-editor/\(id)"
+            let original = BookSourceDraft(
+              sourceURL: sourceURL,
+              name: "Oracle Source \(id)",
+              loginURL: {
+                switch loginState {
+                case "nonblank":
+                  "https://login.example.test/\(id)"
+                case "whitespace":
+                  " \n "
+                default:
+                  ""
+                }
+              }()
+            )
+            var draft = original
+            if changed {
+              draft.comment = "changed"
+            }
+            if nameState == "blank" {
+              draft.name = ""
+            }
+            let transition = SourceEditorPolicy.transition(
+              action: action,
+              original: original,
+              draft: draft
+            )
+            return .object([
+              "id": .string(id),
+              "action": .string(action.rawValue),
+              "login_visible": .bool(transition.loginVisible),
+              "dirty": .bool(transition.dirty),
+              "save_succeeded": .bool(transition.saveSucceeded),
+              "requires_discard_confirmation":
+                .bool(transition.requiresDiscardConfirmation),
+              "destination":
+                transition.destination.map {
+                  .string($0.rawValue)
+                } ?? .null,
+              "result_code":
+                transition.resultCode.map {
+                  .string($0.rawValue)
+                } ?? .null,
+              "origin":
+                transition.origin.map(JSONValue.string) ?? .null,
+            ])
+          }
+        )
+      ])
+    case "source_debug_key_matrix":
+      guard case .array(let keys)? = arguments["keys"] else {
+        throw SourceEditorDebugFixtureProjectionError.invalidFixture
+      }
+      return .object([
+        "keys": .array(
+          try keys.map { value in
+            guard
+              case .object(let item) = value,
+              case .string(let id)? = item["id"],
+              case .string(let kind)? = item["kind"],
+              case .string(let payload)? = item["payload"]
+            else {
+              throw SourceEditorDebugFixtureProjectionError.invalidFixture
+            }
+            let key: String
+            switch kind {
+            case "detail":
+              key = "http://127.0.0.1/\(payload)"
+            case "explore":
+              key = "发现::\(payload)"
+            case "toc":
+              key = "++\(payload)"
+            case "content":
+              key = "--\(payload)"
+            case "search":
+              key = payload
+            default:
+              throw SourceEditorDebugFixtureProjectionError.invalidFixture
+            }
+            let route = SourceDebugRouter.route(for: key)
+            return .object([
+              "id": .string(id),
+              "kind": .string(kind),
+              "payload": .string(payload),
+              "route": .string(route.kind.rawValue),
+              "first_log_event": .string(route.firstLogEvent),
+            ])
+          }
+        )
+      ])
+    case "source_editor_result_matrix":
+      guard case .array(let results)? = arguments["results"] else {
+        throw SourceEditorDebugFixtureProjectionError.invalidFixture
+      }
+      return .object([
+        "results": .array(
+          try results.map { value in
+            guard
+              case .object(let item) = value,
+              case .string(let id)? = item["id"],
+              case .string(let callerText)? = item["caller"],
+              let caller = SourceEditCaller(rawValue: callerText),
+              case .string(let resultText)? = item["result"],
+              let result = SourceEditorResultCode(rawValue: resultText)
+            else {
+              throw SourceEditorDebugFixtureProjectionError.invalidFixture
+            }
+            return .object([
+              "id": .string(id),
+              "caller": .string(caller.rawValue),
+              "result": .string(result.rawValue),
+              "effects": .array(
+                SourceEditResultPolicy.effects(
+                  caller: caller,
+                  result: result
+                ).map { .string($0.rawValue) }
+              ),
+            ])
+          }
+        )
+      ])
+    default:
+      throw SourceEditorDebugFixtureProjectionError.invalidFixture
+    }
+  }
+}

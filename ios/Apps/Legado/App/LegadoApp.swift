@@ -8,6 +8,7 @@ import SwiftUI
 struct LegadoApp: App {
     @State private var router = AppRouter()
     @State private var library: ShelfLibrary
+    @State private var sourceCatalog: SourceCatalog
 
     init() {
         do {
@@ -15,6 +16,11 @@ struct LegadoApp: App {
                 initialValue: ShelfLibrary(
                     repository: try GRDBBookShelfRepository
                         .applicationSupport()
+                )
+            )
+            _sourceCatalog = State(
+                initialValue: SourceCatalog(
+                    repository: UserDefaultsSourceCatalogRepository()
                 )
             )
         } catch {
@@ -34,10 +40,15 @@ struct LegadoApp: App {
                 StartupAcceptanceView(
                     router: router,
                     library: library,
+                    sourceCatalog: sourceCatalog,
                     startupCase: startupCase
                 )
             } else {
-                RootShellView(router: router, library: library)
+                RootShellView(
+                    router: router,
+                    library: library,
+                    sourceCatalog: sourceCatalog
+                )
             }
         }
     }

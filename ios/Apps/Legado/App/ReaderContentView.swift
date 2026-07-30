@@ -8,6 +8,7 @@ struct ReaderContentView: View {
     @Bindable var library: ShelfLibrary
     let openTOC: () -> Void
     let openChapter: (ChapterID) -> Void
+    let openSourceEditor: (String?) -> Void
 
     @Environment(\.scenePhase) private var scenePhase
     @State private var session = ReaderContentSession(
@@ -22,6 +23,7 @@ struct ReaderContentView: View {
     @State private var lineSpacing = 8.0
     @State private var autoPageEnabled = false
     @State private var bookmarked = false
+    @State private var sourceID: String?
 
     var body: some View {
         Group {
@@ -88,6 +90,9 @@ struct ReaderContentView: View {
                     }
                     return lhs.index < rhs.index
                 }
+            sourceID = book.candidate.sourceID.isEmpty
+                ? nil
+                : book.candidate.sourceID
             await session.load(
                 book: book,
                 chapter: chapter,
@@ -291,6 +296,14 @@ struct ReaderContentView: View {
     private var moreMenu: some View {
         List {
             Section("查找与替换") {
+                Button {
+                    menuPresented = false
+                    openSourceEditor(sourceID)
+                } label: {
+                    Label("编辑书源", systemImage: "pencil")
+                }
+                .accessibilityIdentifier("action.reader.editSource")
+
                 menuPlaceholder(
                     .openSearch,
                     title: "全文搜索",

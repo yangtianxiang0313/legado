@@ -1,1 +1,1 @@
-{"active_task":null,"attempt":0,"last_completed":{"at":"2026-07-30T15:00:06Z","sequence":361,"task_id":"IOS-CHARACTERIZE-UI-SOURCE-EDITOR-DEBUG-ROUTES-001"},"schema_version":2,"status":"idle","verification":null}
+{"active_task":"IOS-CHARACTERIZE-INTEGRATION-TRANSFER-IMPORT-EXPORT-001","attempt":0,"last_completed":{"at":"2026-07-30T15:18:45Z","sequence":364,"task_id":"IOS-APP-NAVIGATION-UI-SOURCE-EDITOR-DEBUG-ROUTES-001"},"schema_version":2,"status":"running","verification":null}

@@ -5,6 +5,7 @@ import SwiftUI
 struct RootShellView: View {
     @Bindable var router: AppRouter
     @Bindable var library: ShelfLibrary
+    @Bindable var sourceCatalog: SourceCatalog
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var didLoadLibrary = false
 
@@ -26,7 +27,13 @@ struct RootShellView: View {
             ) {
                 await library.reset()
             }
+            if ProcessInfo.processInfo.arguments.contains(
+                "--reset-sources"
+            ) {
+                await sourceCatalog.reset()
+            }
             await library.reload()
+            await sourceCatalog.reload()
         }
     }
 
@@ -73,6 +80,9 @@ struct RootShellView: View {
                 openSearch: {
                     router.push(.searchBooks, on: .shelf)
                 },
+                openSources: {
+                    router.push(.sourceManagement, on: .settings)
+                },
                 openBook: { item in
                     router.push(
                         .bookDetail(SearchBookRoute(item: item)),
@@ -84,13 +94,16 @@ struct RootShellView: View {
                 }
             )
             .navigationDestination(for: AppRoute.self) { route in
-                destination(for: route)
+                destination(for: route, on: root)
             }
         }
     }
 
     @ViewBuilder
-    private func destination(for route: AppRoute) -> some View {
+    private func destination(
+        for route: AppRoute,
+        on root: RootRoute
+    ) -> some View {
         switch route {
         case .searchBooks:
             SearchBooksView { result in
@@ -139,6 +152,30 @@ struct RootShellView: View {
                     } else {
                         router.push(.chapterTOC(item.id), on: .shelf)
                     }
+                },
+                editSource: { sourceID in
+                    Task {
+                        let normalizedID = sourceID.isEmpty
+                            ? book.sourceID
+                            : sourceID
+                        if
+                            !normalizedID.isEmpty,
+                            sourceCatalog.source(id: normalizedID) == nil
+                        {
+                            _ = await sourceCatalog.save(
+                                BookSourceDraft(
+                                    sourceURL: normalizedID,
+                                    name: book.originName
+                                )
+                            )
+                        }
+                        router.push(
+                            .sourceEditor(
+                                normalizedID.isEmpty ? nil : normalizedID
+                            ),
+                            on: root
+                        )
+                    }
                 }
             )
         case .chapterTOC(let bookID):
@@ -174,9 +211,52 @@ struct RootShellView: View {
                         ),
                         on: .shelf
                     )
+                },
+                openSourceEditor: { sourceID in
+                    router.push(
+                        .sourceEditor(sourceID),
+                        on: root
+                    )
                 }
             )
+        case .sourceManagement:
+            SourceManagementView(catalog: sourceCatalog) { sourceID in
+                router.push(.sourceEditor(sourceID), on: root)
+            }
+        case .sourceEditor(let sourceID):
+            SourceEditorView(
+                source: sourceCatalog.source(id: sourceID),
+                catalog: sourceCatalog,
+                navigate: { destination, savedSourceID in
+                    let route: AppRoute
+                    switch destination {
+                    case .sourceDebug:
+                        route = .sourceDebug(savedSourceID)
+                    case .sourceLogin:
+                        route = .sourceLogin(savedSourceID)
+                    case .singleSourceSearch:
+                        route = .sourceSearch(savedSourceID)
+                    case .dismiss, .discardConfirmation:
+                        return
+                    }
+                    router.push(route, on: root)
+                },
+                dismiss: {
+                    _ = router.pop(on: root)
+                }
+            )
+        case .sourceDebug(let sourceID):
+            SourceDebugView(source: sourceDraft(id: sourceID))
+        case .sourceLogin(let sourceID):
+            SourceLoginView(source: sourceDraft(id: sourceID))
+        case .sourceSearch(let sourceID):
+            SourceSingleSearchView(source: sourceDraft(id: sourceID))
         }
+    }
+
+    private func sourceDraft(id: String) -> BookSourceDraft {
+        sourceCatalog.source(id: id)
+            ?? BookSourceDraft(sourceURL: id, name: id)
     }
 
     private func pathBinding(for root: RootRoute) -> Binding<[AppRoute]> {
@@ -190,6 +270,7 @@ struct RootShellView: View {
 private struct RootContentView: View {
     let root: RootRoute
     let openSearch: () -> Void
+    let openSources: () -> Void
     let openBook: (ShelfBookItem) -> Void
     let books: () -> [ShelfBookItem]
 
@@ -238,6 +319,12 @@ private struct RootContentView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .accessibilityIdentifier("action.shelf.openSearch")
+            } else if root == .settings {
+                Button(action: openSources) {
+                    Label("书源管理", systemImage: "network")
+                }
+                .buttonStyle(.borderedProminent)
+                .accessibilityIdentifier("action.settings.openSources")
             }
         }
         .padding()
@@ -600,6 +687,7 @@ enum StartupAcceptanceCase: String {
 struct StartupAcceptanceView: View {
     @Bindable var router: AppRouter
     @Bindable var library: ShelfLibrary
+    @Bindable var sourceCatalog: SourceCatalog
     let startupCase: StartupAcceptanceCase
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -635,7 +723,11 @@ struct StartupAcceptanceView: View {
                 identifier: "screen.reader.startup"
             )
         } else {
-            RootShellView(router: router, library: library)
+            RootShellView(
+                router: router,
+                library: library,
+                sourceCatalog: sourceCatalog
+            )
         }
     }
 

@@ -119,4 +119,22 @@ final class AppRouterTests: XCTestCase {
         )
     }
 
+    @MainActor
+    func testSourceManagementRoutesKeepStableSourceIdentity() {
+        let router = AppRouter(selectedRoot: .settings)
+
+        router.push(.sourceManagement)
+        router.push(.sourceEditor("source://primary"))
+        router.push(.sourceDebug("source://primary"))
+
+        XCTAssertEqual(
+            router.path(for: .settings).map(\.id),
+            [
+                "source.management",
+                "source.editor:source://primary",
+                "source.debug:source://primary",
+            ]
+        )
+    }
+
 }

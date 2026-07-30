@@ -962,6 +962,75 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testSourceEditorDebugRoutes() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-sources",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        selectRoot("root.settings", label: "我的")
+        require("action.settings.openSources").tap()
+        require("screen.source.management")
+        require("state.source.empty")
+
+        require("action.source.add").tap()
+        require("screen.source.editor")
+        let name = require("field.source.name")
+        name.tap()
+        name.typeText("本地测试书源")
+        let url = require("field.source.url")
+        url.tap()
+        url.typeText("source://ui-test")
+
+        require("action.source.editor.more").tap()
+        require("action.source.editor.debug").tap()
+        require("screen.source.debug")
+        require("action.source.debug.start").tap()
+        XCTAssertEqual(
+            requireByScrolling(
+                "label.source.debug.route",
+                in: "screen.source.debug"
+            ).label,
+            "search"
+        )
+
+        app.navigationBars.buttons.firstMatch.tap()
+        require("screen.source.editor")
+        let cancel = app.buttons[
+            "action.source.editor.cancel"
+        ].firstMatch
+        XCTAssertTrue(cancel.waitForExistence(timeout: 8))
+        cancel.tap()
+        require("screen.source.management")
+        require("list.source.catalog")
+        XCTAssertTrue(
+            app.staticTexts["本地测试书源"].waitForExistence(timeout: 8)
+        )
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "saved_source": "本地测试书源",
+            "debug_route": "search",
+            "route_trace": [
+                "source.management",
+                "source.editor",
+                "source.debug",
+                "source.editor",
+                "source.management",
+            ],
+        ])
+    }
+
     private func observeStartupCase(
         id: String,
         initial: String,

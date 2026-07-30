@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "scenario_id": "ui-source-editor-debug-routes-v1",
+  "profile": "store_safe",
+  "simulators": [
+    {
+      "simulator_id": "SIM-PHONE-COMPACT-001",
+      "projection": "compactStack",
+      "saved_source": "本地测试书源",
+      "debug_route": "search",
+      "route_trace": [
+        "source.management",
+        "source.editor",
+        "source.debug",
+        "source.editor",
+        "source.management"
+      ]
+    }
+  ]
+}

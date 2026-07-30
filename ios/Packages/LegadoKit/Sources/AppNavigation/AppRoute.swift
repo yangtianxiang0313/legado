@@ -62,10 +62,15 @@ public struct ReaderRoute: Codable, Hashable, Sendable {
 }
 
 public enum AppRoute: Codable, Hashable, Identifiable, Sendable {
-    case searchBooks
-    case bookDetail(SearchBookRoute)
-    case chapterTOC(LibraryDomain.BookID)
-    case reader(ReaderRoute)
+  case searchBooks
+  case bookDetail(SearchBookRoute)
+  case chapterTOC(LibraryDomain.BookID)
+  case reader(ReaderRoute)
+  case sourceManagement
+  case sourceEditor(String?)
+  case sourceDebug(String)
+  case sourceLogin(String)
+  case sourceSearch(String)
 
     public var id: String {
         switch self {
@@ -75,10 +80,20 @@ public enum AppRoute: Codable, Hashable, Identifiable, Sendable {
             "book.detail:\(book.bookURL)"
         case .chapterTOC(let bookID):
             "book.toc:\(bookID.rawValue)"
-        case .reader(let target):
-            "reader:\(target.bookID.rawValue):\(target.chapterID.rawValue)"
-        }
+    case .reader(let target):
+      "reader:\(target.bookID.rawValue):\(target.chapterID.rawValue)"
+    case .sourceManagement:
+      "source.management"
+    case .sourceEditor(let sourceID):
+      "source.editor:\(sourceID ?? "new")"
+    case .sourceDebug(let sourceID):
+      "source.debug:\(sourceID)"
+    case .sourceLogin(let sourceID):
+      "source.login:\(sourceID)"
+    case .sourceSearch(let sourceID):
+      "source.search:\(sourceID)"
     }
+  }
 }
 
 public enum AppNavigationProjection: String, Codable, Hashable, Sendable {

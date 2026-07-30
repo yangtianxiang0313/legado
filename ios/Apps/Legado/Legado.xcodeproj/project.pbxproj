@@ -15,6 +15,8 @@
 		9AEB7EA85E118BCDEF1BC722 /* RootShellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AA56687558EF2C28A2F526F /* RootShellView.swift */; };
 		DACC0FDD44450CF8A823AC81 /* LegadoStoreSafeKit in Frameworks */ = {isa = PBXBuildFile; productRef = 752C493A99E434E7A062F2B3 /* LegadoStoreSafeKit */; };
 		E1A98B56D9C34F74A21B0137 /* SearchEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2A98B56D9C34F74A21B0137 /* SearchEnvironment.swift */; };
+		A10CE0015A0CE0015A0CE001 /* SourceCatalogEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10CE0015A0CE0015A0CE001 /* SourceCatalogEnvironment.swift */; };
+		A10CE0025A0CE0025A0CE002 /* SourceManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10CE0025A0CE0025A0CE002 /* SourceManagementView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -38,6 +40,8 @@
 		9C38E772DA644EC4AF99CB15 /* ReaderContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderContentView.swift; sourceTree = "<group>"; };
 		DB97AF8062C9ACB83622DB4D /* LegadoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegadoApp.swift; sourceTree = "<group>"; };
 		E2A98B56D9C34F74A21B0137 /* SearchEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchEnvironment.swift; sourceTree = "<group>"; };
+		B10CE0015A0CE0015A0CE001 /* SourceCatalogEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceCatalogEnvironment.swift; sourceTree = "<group>"; };
+		B10CE0025A0CE0025A0CE002 /* SourceManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceManagementView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -61,6 +65,8 @@
 				DB97AF8062C9ACB83622DB4D /* LegadoApp.swift */,
 				1AA56687558EF2C28A2F526F /* RootShellView.swift */,
 				E2A98B56D9C34F74A21B0137 /* SearchEnvironment.swift */,
+				B10CE0015A0CE0015A0CE001 /* SourceCatalogEnvironment.swift */,
+				B10CE0025A0CE0025A0CE002 /* SourceManagementView.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -196,6 +202,8 @@
 				7CF2EBDB0B65A2B3E697C3BD /* LegadoApp.swift in Sources */,
 				9AEB7EA85E118BCDEF1BC722 /* RootShellView.swift in Sources */,
 				E1A98B56D9C34F74A21B0137 /* SearchEnvironment.swift in Sources */,
+				A10CE0015A0CE0015A0CE001 /* SourceCatalogEnvironment.swift in Sources */,
+				A10CE0025A0CE0025A0CE002 /* SourceManagementView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

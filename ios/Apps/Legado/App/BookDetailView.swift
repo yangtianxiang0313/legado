@@ -168,6 +168,7 @@ struct BookDetailView: View {
     let candidate: ShelfBookCandidate?
     let library: ShelfLibrary?
     let openReading: ((ShelfBookItem) async -> Void)?
+    let editSource: ((String) -> Void)?
 
     @State private var storedItem: ShelfBookItem?
 
@@ -180,19 +181,22 @@ struct BookDetailView: View {
         self.candidate = nil
         self.library = nil
         self.openReading = nil
+        self.editSource = nil
         _storedItem = State(initialValue: nil)
     }
 
     init(
         candidate: ShelfBookCandidate,
         library: ShelfLibrary,
-        openReading: @escaping (ShelfBookItem) async -> Void
+        openReading: @escaping (ShelfBookItem) async -> Void,
+        editSource: @escaping (String) -> Void
     ) {
         self.snapshot = .remoteSourceLoginUnshelved
         self.display = BookDetailDisplay(candidate: candidate)
         self.candidate = candidate
         self.library = library
         self.openReading = openReading
+        self.editSource = editSource
         _storedItem = State(initialValue: nil)
     }
 
@@ -328,7 +332,12 @@ struct BookDetailView: View {
     private var actionMenu: some View {
         Menu {
             if availability.actions.edit {
-                action("编辑", id: "edit", systemImage: "pencil")
+                Button {
+                    editSource?(candidate?.sourceID ?? "")
+                } label: {
+                    Label("编辑书源", systemImage: "pencil")
+                }
+                .accessibilityIdentifier("action.bookDetail.edit")
             }
             if availability.actions.login {
                 action("登录书源", id: "login", systemImage: "person.badge.key")
