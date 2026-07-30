@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P46-URLSESSION-GZIP-NORMALIZATION-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P46 生产 URLSession gzip 透明解压归一化",
   "objective": "依据冻结 Android ResponseBody.text 与响应解码 Golden，在 NetworkFoundation 边界识别 URLSession 已透明解压但仍保留 Content-Encoding:gzip 的响应，移除失效编码元数据，避免 SourceStringResponseNormalizer 二次解压；仍保留真正压缩 Fixture 的可测试解压路径。",
