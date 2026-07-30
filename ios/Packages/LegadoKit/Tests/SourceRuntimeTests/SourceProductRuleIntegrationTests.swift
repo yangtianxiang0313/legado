@@ -138,6 +138,93 @@ final class SourceProductRuleIntegrationTests: XCTestCase {
       "http://sourcelab.test/books/css"
     )
   }
+
+  func testJSONPathImportedSourceFlowsThroughBookInfoPipeline()
+    async throws
+  {
+    let bookURL = URL(
+      string: "http://sourcelab.test/books/star-river"
+    )!
+    let definition = SourceSearchDefinition(
+      sourceURL: "http://sourcelab.test",
+      sourceName: "JSON 书源",
+      originOrder: 9,
+      runtime: HTMLCSSSourceDefinition(
+        searchURLTemplate: "http://sourcelab.test/api/search",
+        search: SearchRules(
+          list: "@Json:$.books[*]",
+          name: HTMLCSSRule("@Json:$.name"),
+          author: HTMLCSSRule("@Json:$.author"),
+          intro: .optional(nil),
+          kind: .optional(nil),
+          lastChapter: .optional(nil),
+          bookURL: HTMLCSSRule("@Json:$.url", value: .href),
+          coverURL: .optional(nil, value: .src)
+        ),
+        bookInfo: BookInfoRules(
+          name: HTMLCSSRule("@Json:$.name"),
+          author: HTMLCSSRule("@Json:$.author"),
+          intro: HTMLCSSRule("@Json:$.intro"),
+          kind: HTMLCSSRule("@Json:$.kind"),
+          wordCount: HTMLCSSRule("@Json:$.wordCount"),
+          lastChapter: HTMLCSSRule("@Json:$.lastChapter"),
+          coverURL: HTMLCSSRule("@Json:$.cover", value: .src),
+          tocURL: HTMLCSSRule("@Json:$.toc", value: .href),
+          allowsRename: true
+        ),
+        toc: TOCRules(
+          list: "@Json:$.chapters[*]",
+          name: HTMLCSSRule("@Json:$.name"),
+          url: HTMLCSSRule("@Json:$.url", value: .href)
+        ),
+        content: ContentRules(
+          content: HTMLCSSRule("@Json:$.content")
+        )
+      )
+    )
+    let body = """
+      {
+        "name": "星河纪事·详情",
+        "author": "作者：林舟",
+        "intro": "详情接口简介",
+        "kind": "科幻,冒险",
+        "wordCount": 36000,
+        "lastChapter": "第三章 归途",
+        "cover": "/covers/detail.png",
+        "toc": "/books/star-river/chapters"
+      }
+      """
+    let existing = SourceBook(
+      name: "星河纪事",
+      author: "旧作者",
+      intro: nil,
+      kind: nil,
+      lastChapter: nil,
+      bookURL: bookURL,
+      coverURL: nil,
+      tocURL: nil
+    )
+
+    let execution = try await SourceBookInfoPipeline(
+      definition: definition,
+      transport: JSONSearchTransport(body: body)
+    ).load(book: existing)
+
+    XCTAssertEqual(execution.book.name, "星河纪事·详情")
+    XCTAssertEqual(execution.book.author, "林舟")
+    XCTAssertEqual(execution.book.intro, "详情接口简介")
+    XCTAssertEqual(execution.book.kind, "科幻,冒险")
+    XCTAssertEqual(execution.book.wordCount, "3.6万字")
+    XCTAssertEqual(execution.book.lastChapter, "第三章 归途")
+    XCTAssertEqual(
+      execution.book.coverURL?.absoluteString,
+      "http://sourcelab.test/covers/detail.png"
+    )
+    XCTAssertEqual(
+      execution.book.tocURL?.absoluteString,
+      "http://sourcelab.test/books/star-river/chapters"
+    )
+  }
 }
 
 private actor JSONSearchTransport: HTTPTransport {

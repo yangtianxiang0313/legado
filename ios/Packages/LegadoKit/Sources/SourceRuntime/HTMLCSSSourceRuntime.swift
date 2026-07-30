@@ -293,6 +293,22 @@ public struct HTMLCSSSourceRuntime: Sendable {
     existing: SourceBook,
     canRename: Bool
   ) throws -> SourceBook {
+    if usesStructuredRules(
+      content: html,
+      rules: [
+        definition.bookInfo.name,
+        definition.bookInfo.author,
+        definition.bookInfo.tocURL,
+      ]
+    ) {
+      return try structuredBookInfo(
+        content: html,
+        baseURL: baseURL,
+        redirectURL: redirectURL,
+        existing: existing,
+        canRename: canRename
+      )
+    }
     let document = try parse(html)
     let parsedName = normalizeName(
       try value(
@@ -564,5 +580,117 @@ public struct HTMLCSSSourceRuntime: Sendable {
       return "\(formatted)万字"
     }
     return "\(Int(count))字"
+  }
+
+  private func structuredBookInfo(
+    content: String,
+    baseURL: URL,
+    redirectURL: URL,
+    existing: SourceBook,
+    canRename: Bool
+  ) throws -> SourceBook {
+    let evaluator = SourceRuleConsumerEvaluator(content: content)
+    let rules = definition.bookInfo
+    let parsedName = normalizeName(
+      try structuredValue(rules.name, evaluator: evaluator)
+    )
+    let parsedAuthor = normalizeAuthor(
+      try structuredValue(rules.author, evaluator: evaluator)
+    )
+    let mayRename = canRename && rules.allowsRename
+    let name = replacement(
+      existing: existing.name,
+      parsed: parsedName,
+      mayReplaceExisting: mayRename
+    )
+    guard !name.isEmpty else {
+      throw SourceRuntimeIssue(
+        stage: .fieldEvaluation,
+        code: .ruleFailed
+      )
+    }
+    let rawTOC = try structuredValue(rules.tocURL, evaluator: evaluator)
+    let rawCover = try structuredValue(
+      rules.coverURL,
+      evaluator: evaluator
+    )
+    return SourceBook(
+      name: name,
+      author: replacement(
+        existing: existing.author,
+        parsed: parsedAuthor,
+        mayReplaceExisting: mayRename
+      ),
+      intro: try structuredOptionalValue(
+        rules.intro,
+        evaluator: evaluator,
+        fallback: existing.intro
+      ),
+      kind: try structuredOptionalValue(
+        rules.kind,
+        evaluator: evaluator,
+        fallback: existing.kind
+      ),
+      wordCount: normalizeWordCount(
+        try structuredOptionalValue(
+          rules.wordCount,
+          evaluator: evaluator,
+          fallback: existing.wordCount
+        )
+      ),
+      lastChapter: try structuredOptionalValue(
+        rules.lastChapter,
+        evaluator: evaluator,
+        fallback: existing.lastChapter
+      ),
+      bookURL: existing.bookURL,
+      coverURL: rawCover.flatMap {
+        URL(string: $0, relativeTo: redirectURL)?.absoluteURL
+      } ?? existing.coverURL,
+      tocURL: rawTOC.flatMap {
+        URL(string: $0, relativeTo: baseURL)?.absoluteURL
+      } ?? baseURL
+    )
+  }
+
+  private func structuredValue(
+    _ rule: HTMLCSSRule,
+    evaluator: SourceRuleConsumerEvaluator
+  ) throws -> String? {
+    let raw = rule.selector.trimmingCharacters(
+      in: .whitespacesAndNewlines
+    )
+    guard raw != "__legado_missing__", !raw.isEmpty else {
+      return nil
+    }
+    let value = try evaluator.getString(raw).trimmingCharacters(
+      in: .whitespacesAndNewlines
+    )
+    return value.isEmpty ? nil : value
+  }
+
+  private func structuredOptionalValue(
+    _ rule: HTMLCSSRule,
+    evaluator: SourceRuleConsumerEvaluator,
+    fallback: String?
+  ) throws -> String? {
+    try structuredValue(rule, evaluator: evaluator) ?? fallback
+  }
+
+  private func usesStructuredRules(
+    content: String,
+    rules: [HTMLCSSRule]
+  ) -> Bool {
+    if rules.contains(where: {
+      let value = $0.selector.trimmingCharacters(
+        in: .whitespacesAndNewlines
+      )
+      return value.lowercased().hasPrefix("@json:")
+        || value.hasPrefix("$")
+    }) {
+      return true
+    }
+    guard let data = content.data(using: .utf8) else { return false }
+    return (try? JSONSerialization.jsonObject(with: data)) != nil
   }
 }
