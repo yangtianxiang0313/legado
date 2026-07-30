@@ -183,17 +183,20 @@ public struct SearchSourceDescriptor: Sendable, Equatable {
   public let name: String
   public let group: String
   public let definition: SourceSearchDefinition
+  public let exploreDefinition: SourceExploreDefinition?
 
   public init(
     id: String,
     name: String,
     group: String,
-    definition: SourceSearchDefinition
+    definition: SourceSearchDefinition,
+    exploreDefinition: SourceExploreDefinition? = nil
   ) {
     self.id = id
     self.name = name
     self.group = group
     self.definition = definition
+    self.exploreDefinition = exploreDefinition
   }
 }
 

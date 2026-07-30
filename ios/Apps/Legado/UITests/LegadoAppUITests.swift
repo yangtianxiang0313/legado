@@ -409,6 +409,96 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testDiscoveryExploreFlow() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        selectRoot("root.explore", label: "发现")
+        require("screen.root.explore")
+        require("list.explore.sources")
+
+        let sourceID =
+            "action.explore.openSource."
+            + "http://legado.local/source/science-fiction"
+        require(sourceID).tap()
+        require("screen.explore.source")
+        require("list.explore.categories")
+        require(
+            "action.explore.category."
+                + "http://legado.local/source/science-fiction"
+                + "#0#科幻精选"
+        )
+
+        let firstBookID =
+            "action.explore.openBook."
+            + "http://legado.local/books/star-river"
+        require(firstBookID).tap()
+        require("screen.bookDetail")
+        XCTAssertTrue(app.staticTexts["星河纪事"].exists)
+        XCTAssertTrue(app.staticTexts["作者：林舟"].exists)
+
+        let back = app.navigationBars.buttons.element(boundBy: 0)
+        XCTAssertTrue(back.waitForExistence(timeout: 8))
+        back.tap()
+        require("screen.explore.source")
+        require(firstBookID)
+
+        let nextPage = require("action.explore.loadNextPage")
+        nextPage.tap()
+        XCTAssertTrue(nextPage.waitForNonExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["星河纪事"].exists)
+        XCTAssertTrue(app.staticTexts["星河之外"].exists)
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "screen": "screen.explore.source",
+            "source": "本地科幻书源",
+            "categories": ["科幻精选"],
+            "result_names": ["星河纪事", "星河之外"],
+            "empty_next_page_preserved_results": true,
+            "detail": [
+                "screen": "screen.bookDetail",
+                "name": "星河纪事",
+                "author": "林舟",
+            ],
+            "route_trace": [
+                [
+                    "operation": "selectRoot",
+                    "route_id": "root.explore",
+                ],
+                [
+                    "operation": "push",
+                    "route_id":
+                        "explore.source:"
+                        + "http://legado.local/source/science-fiction",
+                ],
+                [
+                    "operation": "push",
+                    "route_id":
+                        "book.detail:"
+                        + "http://legado.local/books/star-river",
+                ],
+                [
+                    "operation": "pop",
+                    "route_id":
+                        "explore.source:"
+                        + "http://legado.local/source/science-fiction",
+                ],
+            ],
+        ])
+    }
+
     func testBookDetailStagingPersistence() throws {
         let environment = ProcessInfo.processInfo.environment
         let contract = try XCTUnwrap(

@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "scenario_id": "ui-discovery-explore-flow-v1",
+  "profile": "store_safe",
+  "simulators": [
+    {
+      "simulator_id": "SIM-PHONE-COMPACT-001",
+      "projection": "compactStack",
+      "screen": "screen.explore.source",
+      "source": "本地科幻书源",
+      "categories": [
+        "科幻精选"
+      ],
+      "result_names": [
+        "星河纪事",
+        "星河之外"
+      ],
+      "empty_next_page_preserved_results": true,
+      "detail": {
+        "screen": "screen.bookDetail",
+        "name": "星河纪事",
+        "author": "林舟"
+      },
+      "route_trace": [
+        {
+          "operation": "selectRoot",
+          "route_id": "root.explore"
+        },
+        {
+          "operation": "push",
+          "route_id": "explore.source:http://legado.local/source/science-fiction"
+        },
+        {
+          "operation": "push",
+          "route_id": "book.detail:http://legado.local/books/star-river"
+        },
+        {
+          "operation": "pop",
+          "route_id": "explore.source:http://legado.local/source/science-fiction"
+        }
+      ]
+    }
+  ]
+}

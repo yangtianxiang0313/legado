@@ -83,6 +83,17 @@ struct RootShellView: View {
                 openSources: {
                     router.push(.sourceManagement, on: .settings)
                 },
+                openExploreSource: { source in
+                    router.push(
+                        .exploreSource(
+                            ExploreSourceRoute(
+                                sourceID: source.id,
+                                title: source.name
+                            )
+                        ),
+                        on: .explore
+                    )
+                },
                 openBook: { item in
                     router.push(
                         .bookDetail(SearchBookRoute(item: item)),
@@ -91,6 +102,11 @@ struct RootShellView: View {
                 },
                 books: {
                     library.books
+                },
+                exploreSources: {
+                    SearchEnvironment.exploreSources(
+                        persistedSources: sourceCatalog.sources
+                    )
                 }
             )
             .navigationDestination(for: AppRoute.self) { route in
@@ -110,20 +126,18 @@ struct RootShellView: View {
                 persistedSources: sourceCatalog.sources
             ) { result in
                 router.push(
-                    .bookDetail(
-                        SearchBookRoute(
-                            name: result.name,
-                            author: result.author,
-                            kind: result.kind,
-                            lastChapter: result.lastChapter,
-                            intro: result.intro,
-                            bookURL: result.bookURL,
-                            coverURL: result.coverURL,
-                            originName: result.originName,
-                            sourceID: result.origin
-                        )
-                    ),
+                    .bookDetail(SearchBookRoute(result: result)),
                     on: .shelf
+                )
+            }
+        case .exploreSource(let source):
+            ExploreSourceView(
+                source: source,
+                persistedSources: sourceCatalog.sources
+            ) { result in
+                router.push(
+                    .bookDetail(SearchBookRoute(result: result)),
+                    on: .explore
                 )
             }
         case .bookDetail(let book):
@@ -149,10 +163,10 @@ struct RootShellView: View {
                                         progress.position.characterOffset
                                 )
                             ),
-                            on: .shelf
+                            on: root
                         )
                     } else {
-                        router.push(.chapterTOC(item.id), on: .shelf)
+                        router.push(.chapterTOC(item.id), on: root)
                     }
                 },
                 editSource: { sourceID in
@@ -221,7 +235,7 @@ struct RootShellView: View {
                                 chapterID: chapter.id
                             )
                         ),
-                        on: .shelf
+                        on: root
                     )
                 }
             )
@@ -231,7 +245,7 @@ struct RootShellView: View {
                 library: library,
                 persistedSources: sourceCatalog.sources,
                 openTOC: {
-                    router.push(.chapterTOC(target.bookID), on: .shelf)
+                    router.push(.chapterTOC(target.bookID), on: root)
                 },
                 openChapter: { chapterID in
                     router.replaceTop(
@@ -241,7 +255,7 @@ struct RootShellView: View {
                                 chapterID: chapterID
                             )
                         ),
-                        on: .shelf
+                        on: root
                     )
                 },
                 openSourceEditor: { sourceID in
@@ -303,8 +317,10 @@ private struct RootContentView: View {
     let root: RootRoute
     let openSearch: () -> Void
     let openSources: () -> Void
+    let openExploreSource: (ExploreSourceSummary) -> Void
     let openBook: (ShelfBookItem) -> Void
     let books: () -> [ShelfBookItem]
+    let exploreSources: () -> [ExploreSourceSummary]
 
     var body: some View {
         VStack(spacing: 20) {
@@ -351,6 +367,41 @@ private struct RootContentView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .accessibilityIdentifier("action.shelf.openSearch")
+            } else if root == .explore {
+                if exploreSources().isEmpty {
+                    ContentUnavailableView {
+                        Label("没有发现书源", systemImage: "safari")
+                    } description: {
+                        Text("请在书源管理中导入并启用发现。")
+                    }
+                    .accessibilityIdentifier("state.explore.empty")
+                } else {
+                    List(exploreSources()) { source in
+                        Button {
+                            openExploreSource(source)
+                        } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(source.name)
+                                        .font(.headline)
+                                    if !source.group.isEmpty {
+                                        Text(source.group)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .foregroundStyle(.tertiary)
+                            }
+                        }
+                        .accessibilityIdentifier(
+                            "action.explore.openSource.\(source.id)"
+                        )
+                    }
+                    .accessibilityIdentifier("list.explore.sources")
+                    .frame(maxHeight: 360)
+                }
             } else if root == .settings {
                 Button(action: openSources) {
                     Label("书源管理", systemImage: "network")
@@ -380,6 +431,152 @@ private extension SearchBookRoute {
             originName: candidate.originName,
             sourceID: candidate.sourceID
         )
+    }
+
+    init(result: SearchResult) {
+        self.init(
+            name: result.name,
+            author: result.author,
+            kind: result.kind,
+            lastChapter: result.lastChapter,
+            intro: result.intro,
+            bookURL: result.bookURL,
+            coverURL: result.coverURL,
+            originName: result.originName,
+            sourceID: result.origin
+        )
+    }
+}
+
+private struct ExploreSourceView: View {
+    let openBookDetail: (SearchResult) -> Void
+    @State private var session: ExploreSession
+
+    init(
+        source: ExploreSourceRoute,
+        persistedSources: [BookSourceDraft],
+        openBookDetail: @escaping (SearchResult) -> Void
+    ) {
+        self.openBookDetail = openBookDetail
+        _session = State(
+            initialValue: SearchEnvironment.makeExploreSession(
+                sourceID: source.sourceID,
+                persistedSources: persistedSources
+            )
+        )
+    }
+
+    var body: some View {
+        List {
+            if !session.categories.isEmpty {
+                Section("分类") {
+                    ScrollView(.horizontal) {
+                        HStack {
+                            ForEach(session.categories) { category in
+                                Button(category.title) {
+                                    session.selectCategory(category)
+                                }
+                                .buttonStyle(.bordered)
+                                .tint(
+                                    session.selectedCategory == category
+                                        ? .accentColor
+                                        : .secondary
+                                )
+                                .accessibilityIdentifier(
+                                    "action.explore.category.\(category.id)"
+                                )
+                            }
+                        }
+                    }
+                    .scrollIndicators(.hidden)
+                    .accessibilityIdentifier("list.explore.categories")
+                }
+            }
+
+            if session.results.isEmpty,
+                session.loadingState == .idle
+            {
+                ContentUnavailableView {
+                    Label(
+                        session.errorMessage == nil
+                            ? "暂无书籍"
+                            : "加载失败",
+                        systemImage: "books.vertical"
+                    )
+                } description: {
+                    Text(
+                        session.errorMessage
+                            ?? "这个分类暂时没有返回书籍。"
+                    )
+                } actions: {
+                    if session.errorMessage != nil {
+                        Button("重试", action: session.retry)
+                            .accessibilityIdentifier(
+                                "action.explore.retry"
+                            )
+                    }
+                }
+                .accessibilityIdentifier("state.explore.results.empty")
+            } else {
+                Section("书单") {
+                    ForEach(session.results) { result in
+                        Button {
+                            openBookDetail(result)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 5) {
+                                Text(result.name)
+                                    .font(.headline)
+                                Text(
+                                    [result.author, result.kind]
+                                        .filter { !$0.isEmpty }
+                                        .joined(separator: " · ")
+                                )
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                if !result.lastChapter.isEmpty {
+                                    Text(result.lastChapter)
+                                        .font(.caption)
+                                        .foregroundStyle(.tertiary)
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier(
+                            "action.explore.openBook.\(result.id)"
+                        )
+                    }
+
+                    if session.canLoadMore, !session.results.isEmpty {
+                        Button("加载下一页", action: session.loadNextPage)
+                            .frame(maxWidth: .infinity)
+                            .accessibilityIdentifier(
+                                "action.explore.loadNextPage"
+                            )
+                    }
+                }
+            }
+        }
+        .navigationTitle(session.source.name)
+        .accessibilityIdentifier("screen.explore.source")
+        .overlay {
+            if session.loadingState.showsProgress {
+                ProgressView("正在加载书单…")
+                    .padding()
+                    .background(
+                        .regularMaterial,
+                        in: .rect(cornerRadius: 12)
+                    )
+                    .accessibilityIdentifier("state.explore.loading")
+            }
+        }
+        .task {
+            session.start()
+        }
+        .onDisappear {
+            session.stop()
+        }
     }
 }
 

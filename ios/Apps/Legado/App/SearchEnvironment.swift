@@ -26,6 +26,69 @@ enum SearchEnvironment {
         )
     }
 
+    static func exploreSources(
+        persistedSources: [BookSourceDraft] = []
+    ) -> [ExploreSourceSummary] {
+        makeSources(
+            baseURL: ProcessInfo.processInfo.environment[
+                "LEGADO_SEARCH_BASE_URL"
+            ] ?? "http://legado.local",
+            persistedSources: persistedSources,
+            includeDisabled: true
+        ).compactMap { descriptor in
+            guard descriptor.exploreDefinition?.enabled == true else {
+                return nil
+            }
+            return ExploreSourceSummary(
+                id: descriptor.id,
+                name: descriptor.name,
+                group: descriptor.group
+            )
+        }
+    }
+
+    static func makeExploreSession(
+        sourceID: String,
+        persistedSources: [BookSourceDraft] = []
+    ) -> ExploreSession {
+        let externalBaseURL = ProcessInfo.processInfo.environment[
+            "LEGADO_SEARCH_BASE_URL"
+        ]
+        let baseURL = externalBaseURL ?? "http://legado.local"
+        let descriptors = makeSources(
+            baseURL: baseURL,
+            persistedSources: persistedSources,
+            includeDisabled: true
+        ).compactMap { source -> ExploreSourceDescriptor? in
+            guard
+                let definition = source.exploreDefinition,
+                definition.enabled
+            else {
+                return nil
+            }
+            return ExploreSourceDescriptor(
+                summary: ExploreSourceSummary(
+                    id: source.id,
+                    name: source.name,
+                    group: source.group
+                ),
+                definition: definition
+            )
+        }
+        let executor = SourceExploreBooksExecutor(
+            descriptors: descriptors,
+            transport: makeTransport(externalBaseURL: externalBaseURL)
+        )
+        let summary = executor.sources.first(where: {
+            $0.id == sourceID
+        }) ?? ExploreSourceSummary(
+            id: sourceID,
+            name: sourceID,
+            group: ""
+        )
+        return ExploreSession(source: summary, executor: executor)
+    }
+
     static func makeChapterLoader(
         persistedSources: [BookSourceDraft] = []
     ) -> any BookChapterLoading {
@@ -36,7 +99,8 @@ enum SearchEnvironment {
         return SourceBookChapterLoader(
             sources: makeSources(
                 baseURL: baseURL,
-                persistedSources: persistedSources
+                persistedSources: persistedSources,
+                includeDisabled: true
             ),
             transport: makeTransport(externalBaseURL: externalBaseURL)
         )
@@ -52,7 +116,8 @@ enum SearchEnvironment {
         return SourceReaderContentLoader(
             sources: makeSources(
                 baseURL: baseURL,
-                persistedSources: persistedSources
+                persistedSources: persistedSources,
+                includeDisabled: true
             ),
             transport: makeTransport(externalBaseURL: externalBaseURL)
         )
@@ -72,7 +137,8 @@ enum SearchEnvironment {
         let baseURL = externalBaseURL ?? "http://legado.local"
         let sources = makeSources(
             baseURL: baseURL,
-            persistedSources: persistedSources
+            persistedSources: persistedSources,
+            includeDisabled: true
         )
         guard let descriptor = sources.first(where: {
             $0.id == target.sourceURL
@@ -133,7 +199,8 @@ enum SearchEnvironment {
 
     private static func makeSources(
         baseURL: String,
-        persistedSources: [BookSourceDraft] = []
+        persistedSources: [BookSourceDraft] = [],
+        includeDisabled: Bool = false
     ) -> [SearchSourceDescriptor] {
         var values = [
             source(
@@ -153,7 +220,8 @@ enum SearchEnvironment {
         ]
         for draft in persistedSources {
             guard
-                draft.importMetadata?.enabled ?? true,
+                includeDisabled
+                    || (draft.importMetadata?.enabled ?? true),
                 let descriptor = persistedSource(draft)
             else { continue }
             if let index = values.firstIndex(where: {
@@ -195,17 +263,7 @@ enum SearchEnvironment {
             return nil
         }
         let sourceURL = draft.sourceURL
-        return SearchSourceDescriptor(
-            id: sourceURL,
-            name: draft.name,
-            group: draft.group,
-            definition: SourceSearchDefinition(
-                sourceURL: sourceURL,
-                sourceName: draft.name,
-                originOrder: Int(
-                    draft.importMetadata?.customOrder ?? 0
-                ),
-                runtime: HTMLCSSSourceDefinition(
+        let runtime = HTMLCSSSourceDefinition(
                     searchURLTemplate: searchURL,
                     search: SearchRules(
                         list: list,
@@ -232,6 +290,8 @@ enum SearchEnvironment {
                             value: .src
                         )
                     ),
+                    explore: (root["ruleExplore"] as? [String: Any])
+                        .flatMap(exploreRules),
                     bookInfo: BookInfoRules(
                         name: HTMLCSSRule(infoName),
                         author: HTMLCSSRule(infoAuthor),
@@ -262,6 +322,58 @@ enum SearchEnvironment {
                         )
                     )
                 )
+        let searchDefinition = SourceSearchDefinition(
+            sourceURL: sourceURL,
+            sourceName: draft.name,
+            originOrder: Int(
+                draft.importMetadata?.customOrder ?? 0
+            ),
+            runtime: runtime
+        )
+        let catalog = (
+            string(root, "exploreUrl") ?? draft.exploreURL
+        ).trimmingCharacters(in: .whitespacesAndNewlines)
+        let exploreDefinition = catalog.isEmpty
+            ? nil
+            : SourceExploreDefinition(
+                source: searchDefinition,
+                enabled: draft.importMetadata?.enabledExplore ?? true,
+                catalog: catalog
+            )
+        return SearchSourceDescriptor(
+            id: sourceURL,
+            name: draft.name,
+            group: draft.group,
+            definition: searchDefinition,
+            exploreDefinition: exploreDefinition
+        )
+    }
+
+    private static func exploreRules(
+        _ object: [String: Any]
+    ) -> SearchRules? {
+        guard
+            let list = string(object, "bookList"),
+            !list.isEmpty,
+            let name = string(object, "name"),
+            !name.isEmpty,
+            let bookURL = string(object, "bookUrl"),
+            !bookURL.isEmpty
+        else {
+            return nil
+        }
+        return SearchRules(
+            list: list,
+            name: HTMLCSSRule(name),
+            author: .optional(string(object, "author")),
+            intro: .optional(string(object, "intro")),
+            kind: .optional(string(object, "kind")),
+            wordCount: .optional(string(object, "wordCount")),
+            lastChapter: .optional(string(object, "lastChapter")),
+            bookURL: HTMLCSSRule(bookURL, value: .href),
+            coverURL: .optional(
+                string(object, "coverUrl"),
+                value: .src
             )
         )
     }
@@ -288,61 +400,69 @@ enum SearchEnvironment {
         group: String,
         order: Int
     ) -> SearchSourceDescriptor {
-        SearchSourceDescriptor(
+        let definition = SourceSearchDefinition(
+            sourceURL: id,
+            sourceName: name,
+            originOrder: order,
+            runtime: HTMLCSSSourceDefinition(
+                searchURLTemplate:
+                    "\(baseURL)/search?source=\(group)&q={{key}}",
+                search: SearchRules(
+                    list: ".book-item",
+                    name: HTMLCSSRule(".book-name"),
+                    author: HTMLCSSRule(".book-author"),
+                    intro: HTMLCSSRule(".book-intro"),
+                    kind: HTMLCSSRule(".book-kind"),
+                    wordCount: HTMLCSSRule(".book-word-count"),
+                    lastChapter: HTMLCSSRule(".book-last-chapter"),
+                    bookURL: HTMLCSSRule(
+                        "a.book-link",
+                        value: .href
+                    ),
+                    coverURL: HTMLCSSRule(
+                        "img.book-cover",
+                        value: .src
+                    )
+                ),
+                bookInfo: BookInfoRules(
+                    name: HTMLCSSRule("h1.book-name"),
+                    author: HTMLCSSRule(".book-author"),
+                    intro: HTMLCSSRule(".book-intro"),
+                    kind: HTMLCSSRule(".book-kind"),
+                    lastChapter: HTMLCSSRule(".book-last-chapter"),
+                    coverURL: HTMLCSSRule(
+                        "img.book-cover",
+                        value: .src
+                    ),
+                    tocURL: HTMLCSSRule(
+                        "a.toc-link",
+                        value: .href
+                    )
+                ),
+                toc: TOCRules(
+                    list: ".chapter",
+                    name: HTMLCSSRule("a"),
+                    url: HTMLCSSRule("a", value: .href)
+                ),
+                content: ContentRules(
+                    content: HTMLCSSRule(
+                        "#content",
+                        value: .html
+                    )
+                )
+            )
+        )
+        return SearchSourceDescriptor(
             id: id,
             name: name,
             group: group,
-            definition: SourceSearchDefinition(
-                sourceURL: id,
-                sourceName: name,
-                originOrder: order,
-                runtime: HTMLCSSSourceDefinition(
-                    searchURLTemplate:
-                        "\(baseURL)/search?source=\(group)&q={{key}}",
-                    search: SearchRules(
-                        list: ".book-item",
-                        name: HTMLCSSRule(".book-name"),
-                        author: HTMLCSSRule(".book-author"),
-                        intro: HTMLCSSRule(".book-intro"),
-                        kind: HTMLCSSRule(".book-kind"),
-                        wordCount: HTMLCSSRule(".book-word-count"),
-                        lastChapter: HTMLCSSRule(".book-last-chapter"),
-                        bookURL: HTMLCSSRule(
-                            "a.book-link",
-                            value: .href
-                        ),
-                        coverURL: HTMLCSSRule(
-                            "img.book-cover",
-                            value: .src
-                        )
-                    ),
-                    bookInfo: BookInfoRules(
-                        name: HTMLCSSRule("h1.book-name"),
-                        author: HTMLCSSRule(".book-author"),
-                        intro: HTMLCSSRule(".book-intro"),
-                        kind: HTMLCSSRule(".book-kind"),
-                        lastChapter: HTMLCSSRule(".book-last-chapter"),
-                        coverURL: HTMLCSSRule(
-                            "img.book-cover",
-                            value: .src
-                        ),
-                        tocURL: HTMLCSSRule(
-                            "a.toc-link",
-                            value: .href
-                        )
-                    ),
-                    toc: TOCRules(
-                        list: ".chapter",
-                        name: HTMLCSSRule("a"),
-                        url: HTMLCSSRule("a", value: .href)
-                    ),
-                    content: ContentRules(
-                        content: HTMLCSSRule(
-                            "#content",
-                            value: .html
-                        )
-                    )
-                )
+            definition: definition,
+            exploreDefinition: SourceExploreDefinition(
+                source: definition,
+                enabled: true,
+                catalog:
+                    "\(group)精选::\(baseURL)/explore/"
+                    + "{{page}}?source=\(group)"
             )
         )
     }
@@ -360,7 +480,12 @@ private actor LocalBookSourceTransport: HTTPTransport {
         )
         let path = components?.path ?? ""
         let body: String
-        if let book = Self.books.first(where: { $0.path == path }) {
+        if path.hasPrefix("/explore/") {
+            body = exploreHTML(
+                path: path,
+                components: components
+            )
+        } else if let book = Self.books.first(where: { $0.path == path }) {
             body = book.detailHTML
         } else if let book = Self.books.first(
             where: { "\($0.path)/toc" == path }
@@ -395,6 +520,22 @@ private actor LocalBookSourceTransport: HTTPTransport {
         }
         let html = books.map(\.html).joined(separator: "\n")
         return "<html><body>\(html)</body></html>"
+    }
+
+    private func exploreHTML(
+        path: String,
+        components: URLComponents?
+    ) -> String {
+        let page = Int(path.split(separator: "/").last ?? "") ?? 1
+        let group = components?.queryItems?.first {
+            $0.name == "source"
+        }?.value ?? ""
+        let books = page == 1
+            ? Self.books.filter { group.isEmpty || $0.group == group }
+            : []
+        return "<html><body>"
+            + books.map(\.html).joined(separator: "\n")
+            + "</body></html>"
     }
 
     private static let books = [

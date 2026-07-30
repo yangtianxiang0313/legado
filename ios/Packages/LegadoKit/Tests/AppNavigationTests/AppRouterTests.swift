@@ -15,10 +15,22 @@ final class AppRouterTests: XCTestCase {
         let router = AppRouter()
 
         router.push(.searchBooks, on: .shelf)
+        router.push(
+            .exploreSource(
+                ExploreSourceRoute(
+                    sourceID: "source://explore",
+                    title: "发现源"
+                )
+            ),
+            on: .explore
+        )
         router.selectRoot(.explore)
 
         XCTAssertEqual(router.path(for: .shelf), [.searchBooks])
-        XCTAssertEqual(router.path(for: .explore), [])
+        XCTAssertEqual(
+            router.path(for: .explore).map(\.id),
+            ["explore.source:source://explore"]
+        )
     }
 
     @MainActor
