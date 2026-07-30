@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgeCoverageLedger",
+  "id": "BKL-LIBRARY-SHELF-GROUP-BIT-BOUNDARY-RISK-001",
+  "revision": 1,
+  "status": "current",
+  "packet_refs": [
+    {
+      "id": "BKP-LIBRARY-SHELF-GROUP-BIT-BOUNDARY-RISK-001",
+      "revision": 1,
+      "sha256": "96e3ee13dd57eea13f84f8364e6de34e34253841b38bc10575665c551ab2b758"
+    }
+  ],
+  "generated_from": {
+    "knowledge_authority_sha256": "0cfdb437aa777229739bf536571c3bd757d96fbec15b38320a0ac8f253d4a6a4",
+    "requirement_catalog_sha256": "3c4a371377a72abd42122107629f4d4f79905da153fd5ae99dcff02cda33a5e2",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "entries": [
+    {
+      "id": "BKE-LIBRARY-SHELF-GROUP-BIT-BOUNDARY-RISK-001",
+      "claim_ref": {
+        "id": "BKC-BOOK-GROUP-BOUNDARY-RISK-001",
+        "revision": 2
+      },
+      "validation": {
+        "required": "android_runtime",
+        "state": "verified",
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-library-shelf-group-bit-boundary-risk-001-30502119697-1.json",
+          "ios/harness/goldens/android-legado-v1/rl-library-shelf-group-bit-boundary-risk-001.json#/artifact/result/value/portable_known_projection"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "covered_by_requirement",
+        "refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "reason": "当前 Requirement 覆盖的是 Android 风险识别与知识闭环，不表示 iOS 要复制 Long.MIN_VALUE 漏选和重复分配。受保护 Golden 已为后续 LibraryDomain Requirement 提供决策证据；本任务不批准产品实现、64 组上限、架构依赖边或第三方库。",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "planned",
+        "requirement_refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "work_item_refs": [
+          "IOS-CHARACTERIZE-LIBRARY-SHELF-GROUP-BIT-BOUNDARY-RISK-001"
+        ],
+        "capability_refs": [
+          "CAP-CONFORMANCE",
+          "CAP-CORE"
+        ],
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-library-shelf-group-bit-boundary-risk-001-30502119697-1.json"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    }
+  ],
+  "updated_by": "IOS-CHARACTERIZE-LIBRARY-SHELF-GROUP-BIT-BOUNDARY-RISK-001",
+  "updated_at": "2026-07-30T00:31:41Z"
+}

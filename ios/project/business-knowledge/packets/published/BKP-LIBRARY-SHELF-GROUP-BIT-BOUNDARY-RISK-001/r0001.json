@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-LIBRARY-SHELF-GROUP-BIT-BOUNDARY-RISK-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "library.shelf.group-bit-boundary-risk-golden",
+  "title": "受保护 Android Golden 验证的书架分组第 64 位边界风险",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "43bbf78cb631319d2bd508cce92b76851c4d44473ee24dea64eff05c3d8505cb"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "library.group",
+      "library.shelf"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-CORE"
+    ],
+    "subject_keys": [
+      "library.group",
+      "library.shelf"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-BOOK-GROUP-BOUNDARY-RISK-001",
+      "revision": 2,
+      "semantic_key": "library.shelf.group-bit-boundary-risk",
+      "kind": "risk_or_anomaly",
+      "topic": "分组位边界风险",
+      "statement": "在 rl-library-shelf-group-bit-boundary-risk-001 的 3 个固定 Android Room 场景中，已有 62 个正 one-hot 分组时，getUnusedId 返回最后一个正位 0x4000000000000000，该分组可由 flowSelect 展示且可由 getGroupNames 识别；已有 63 个正分组时，canAddGroup 仍允许新增，getUnusedId 则返回 Long.MIN_VALUE（0x8000000000000000），isInRules 仍把它判为合法 one-hot。插入该第 64 个分组后，canAddGroup 变为 false，但 flowSelect 因 groupId >= 0 排除它，getGroupNames 因 groupId > 0 且位交集 > 0 无法识别它；混合掩码只返回正位分组。由于 idsSum 同样排除负值，再次调用 getUnusedId 会重复返回 Long.MIN_VALUE，形成主键替换/碰撞风险。该现象是 Android 兼容风险而非应复制的产品要求；iOS 后续 LibraryDomain 应以平台无关的稳定分组标识和显式成员集合承载业务语义，是否保留 64 组上限须由后续产品 Requirement 决定，本 characterization 不授权产品实现或架构依赖边。",
+      "subject_keys": [
+        "library.group",
+        "library.shelf"
+      ],
+      "depends_on": [],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [
+          {
+            "id": "AF-BOOK-GROUP-UNUSED-ID",
+            "revision_sha256": "731c7810d4a1dc68b6c2ef6d038bc47a49fc423b722df33603a4c2fb057fe6fe"
+          },
+          {
+            "id": "AF-BOOK-GROUP-FLOW-SELECT",
+            "revision_sha256": "45e7a213f6b6575af1b24eeffa3d9836d11ca905718fa098d18792c6b632c95f"
+          },
+          {
+            "id": "AF-BOOK-GROUP-NAMES",
+            "revision_sha256": "d7b3ace7971118c473e58fbf6fc2580f01f40dac58f8f81eddfd0ea1e18fe1dc"
+          },
+          {
+            "id": "AF-GROUP-SELECT-MEMBERSHIP",
+            "revision_sha256": "270493515529c6e074c396f51822c22ab1db5538de2199ac9227056732b9217b"
+          }
+        ],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "0c3fd7fc1224e8ec87ac6a61b6cd6ae7cc2f5d0d",
+            "path": "app/src/main/java/io/legado/app/data/dao/BookGroupDao.kt",
+            "symbol_id": "kotlin://io.legado.app.data.dao/BookGroupDao/getUnusedId"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "0c3fd7fc1224e8ec87ac6a61b6cd6ae7cc2f5d0d",
+            "path": "app/src/main/java/io/legado/app/data/dao/BookGroupDao.kt",
+            "symbol_id": "kotlin://io.legado.app.data.dao/BookGroupDao/flowSelect"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "0c3fd7fc1224e8ec87ac6a61b6cd6ae7cc2f5d0d",
+            "path": "app/src/main/java/io/legado/app/data/dao/BookGroupDao.kt",
+            "symbol_id": "kotlin://io.legado.app.data.dao/BookGroupDao/getGroupNames"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "e153d81b2a5c82efb802b8c9380fef64d6cc7290",
+            "path": "app/src/main/java/io/legado/app/ui/book/group/GroupSelectDialog.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.group/GroupSelectDialog/GroupAdapter/convert"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/rl-library-shelf-group-bit-boundary-risk-001.json",
+            "artifact_sha256": "e277ba10b1f87ddda304ccd90becb5f1f5488ec7b7ec576e0905b58411b5bcce",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "52c8165e46c633ae2d3f5bb5c0456d99d64e2c697f03e6dd37279ff6f5a4b97f",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "262f2b412c39232a0f10d8c9cbd957aa85baa97d9a664396e0dfd337ec82ba5c",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-BOOK-GROUP-BOUNDARY-RISK-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-LIBRARY-SHELF-GROUP-BIT-BOUNDARY-RISK-001"
+}
