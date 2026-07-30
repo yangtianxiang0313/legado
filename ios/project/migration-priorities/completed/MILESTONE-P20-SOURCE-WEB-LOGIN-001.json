@@ -1,12 +1,33 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P20-SOURCE-WEB-LOGIN-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P20 书源 Web 登录进入 Cookie 主链",
   "objective": "依据冻结 Android WebViewLoginFragment 与 CookieStore 源码，在独立 SourceRuntime 中定义普通 Web 登录会话，并由 iOS WKWebView 登录页把浏览器 Cookie 回写到搜索、发现、详情、目录和正文共用的 SourceCookieStore。",
   "validation_policy": "每个交付项只执行聚焦测试或一次构建；本地网站与单台 iPhone 模拟器仅在里程碑收尾时执行一次。",
   "deferred_policy": "loginUi 自定义表单及其 JavaScript login() 调用属于独立能力，不与普通 Web 登录混写。",
+  "completion_evidence": [
+    "SourceRuntime 的 SourceWebLoginSession 独立解析登录 URL、准备 Header/Cookie、同步和清理 Cookie，不依赖 WebKit",
+    "AppShell 的 WKWebView 使用非持久网站存储，从共享 SourceCookieStore 注入 Cookie，并在页面开始和完成时回写",
+    "登录完成操作重新加载登录地址，Cookie 同步完成后返回书源编辑页",
+    "单台 iPhone 模拟器上，本地网站 Set-Cookie 后，正常书源搜索请求携带该 Cookie 并解析出登录后书籍"
+  ],
+  "final_verification": {
+    "kind": "focused_tests_plus_single_build_and_single_simulator_flow",
+    "completed_at": "2026-07-31T05:23:06+08:00",
+    "commands": [
+      "swift test --package-path ios/Packages/LegadoKit --disable-automatic-resolution --filter SourceWebLoginSessionTests",
+      "xcodebuild -project ios/Apps/Legado/Legado.xcodeproj -scheme LegadoApp -destination generic/platform=iOS Simulator CODE_SIGNING_ALLOWED=NO build",
+      "xcodebuild test -project ios/Apps/Legado/Legado.xcodeproj -scheme LegadoApp -destination id=22AE8581-312A-46EA-9805-6DC9EF34D5C3 -parallel-testing-enabled NO -only-testing:LegadoAppUITests/LegadoAppUITests/testSourceWebLoginMilestone"
+    ],
+    "result": "4 个聚焦合同测试通过；App 构建通过；单台 iPhone 上的导入书源、Web 登录、本地网站 Cookie、正常搜索与结构化书籍解析链路通过。",
+    "evidence": [
+      ".harness-runtime/loop/IOS-SOURCE-RUNTIME-WEB-LOGIN-SESSION-001/attempt-3",
+      ".harness-runtime/loop/IOS-APP-NAVIGATION-SOURCE-WEB-LOGIN-001/attempt-3",
+      ".harness-runtime/ui/DerivedData/Logs/Test/Test-LegadoApp-2026.07.31_05-21-44-+0800.xcresult"
+    ]
+  },
   "stages": [
     {
       "id": "P20-S1",
