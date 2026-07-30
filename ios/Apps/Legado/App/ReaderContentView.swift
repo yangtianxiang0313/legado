@@ -39,6 +39,7 @@ struct ReaderContentView: View {
     @State private var offlineCacheEndChapter = 1
     @State private var cachingOffline = false
     @State private var offlineCacheReport: OfflineCacheReport?
+    @State private var contentEditorDraft: ReaderContentEditorDraft?
     @State private var replacementDraft: ReaderReplacementRule?
 
     init(
@@ -225,6 +226,20 @@ struct ReaderContentView: View {
                     }
             }
             .presentationDetents([.medium, .large])
+        }
+        .sheet(item: $contentEditorDraft) { draft in
+            ReaderContentEditor(
+                draft: draft,
+                save: { content in
+                    saveEditedContent(content)
+                },
+                reset: {
+                    resetEditedContent()
+                },
+                cancel: {
+                    contentEditorDraft = nil
+                }
+            )
         }
     }
 
@@ -673,10 +688,28 @@ struct ReaderContentView: View {
                     title: "朗读设置",
                     systemImage: "slider.horizontal.3"
                 )
-                menuPlaceholder(
-                    .editContent,
-                    title: "编辑正文",
-                    systemImage: "pencil"
+                Button {
+                    guard let document = session.document else {
+                        return
+                    }
+                    let draft = ReaderContentEditorDraft(
+                        chapterID: target.chapterID,
+                        title: document.title,
+                        content: document.content,
+                        canReset:
+                            readerBook?.candidate.sourceID != "local-file"
+                    )
+                    menuPresented = false
+                    Task {
+                        await Task.yield()
+                        contentEditorDraft = draft
+                    }
+                } label: {
+                    Label("编辑正文", systemImage: "pencil")
+                }
+                .disabled(session.document == nil)
+                .accessibilityIdentifier(
+                    ReaderMenuAction.editContent.accessibilityIdentifier
                 )
                 menuPlaceholder(
                     .configurePageAnimation,
@@ -1209,6 +1242,30 @@ struct ReaderContentView: View {
         }
     }
 
+    private func saveEditedContent(_ content: String) {
+        contentEditorDraft = nil
+        Task {
+            await library.cacheChapterContent(
+                content,
+                bookID: target.bookID,
+                chapterID: target.chapterID
+            )
+            await reloadCurrentContent()
+        }
+    }
+
+    private func resetEditedContent() {
+        contentEditorDraft = nil
+        Task {
+            guard await library.invalidateReaderContent(
+                bookID: target.bookID,
+                currentChapterID: target.chapterID,
+                scope: .current
+            ) else { return }
+            await reloadCurrentContent()
+        }
+    }
+
     private func openRelativeChapter(
         _ offset: Int,
         characterOffset: Int = 0
@@ -1602,6 +1659,73 @@ private struct ReaderPaginationRenderKey: Hashable {
     let height: Int
     let fontSize: Double
     let lineSpacing: Double
+}
+
+private struct ReaderContentEditorDraft: Identifiable {
+    let chapterID: ChapterID
+    let title: String
+    let content: String
+    let canReset: Bool
+
+    var id: String {
+        chapterID.rawValue
+    }
+}
+
+private struct ReaderContentEditor: View {
+    @State private var content: String
+    let draft: ReaderContentEditorDraft
+    let save: (String) -> Void
+    let reset: () -> Void
+    let cancel: () -> Void
+
+    init(
+        draft: ReaderContentEditorDraft,
+        save: @escaping (String) -> Void,
+        reset: @escaping () -> Void,
+        cancel: @escaping () -> Void
+    ) {
+        self.draft = draft
+        _content = State(initialValue: draft.content)
+        self.save = save
+        self.reset = reset
+        self.cancel = cancel
+    }
+
+    var body: some View {
+        NavigationStack {
+            TextEditor(text: $content)
+                .font(.body)
+                .padding(.horizontal)
+                .accessibilityIdentifier(
+                    "input.reader.contentEditor.body"
+                )
+                .navigationTitle(draft.title)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("取消", action: cancel)
+                            .accessibilityIdentifier(
+                                "action.reader.contentEditor.cancel"
+                            )
+                    }
+                    ToolbarItemGroup(placement: .confirmationAction) {
+                        Button("重置", action: reset)
+                            .disabled(!draft.canReset)
+                            .accessibilityIdentifier(
+                                "action.reader.contentEditor.reset"
+                            )
+                        Button("保存") {
+                            save(content)
+                        }
+                        .accessibilityIdentifier(
+                            "action.reader.contentEditor.save"
+                        )
+                    }
+                }
+        }
+        .accessibilityIdentifier("overlay.reader.contentEditor")
+    }
 }
 
 private struct ReaderReplacementRuleEditor: View {

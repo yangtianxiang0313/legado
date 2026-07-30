@@ -628,6 +628,57 @@ final class DatabaseGRDBTests: XCTestCase {
     }
   }
 
+  func testEditedChapterContentPersistsAndCanBeReset() async throws {
+    let path = temporaryDatabasePath()
+    let repository = try GRDBBookShelfRepository(path: path)
+    let item = try await repository.add(
+      candidate(name: "正文编辑", suffix: "content-edit"),
+      groupID: 0
+    )
+    let chapter = BookChapter(
+      id: ChapterID(
+        sourceID: item.candidate.sourceID,
+        chapterURL: "\(item.candidate.bookURL)/1"
+      ),
+      bookID: item.id,
+      sourceID: item.candidate.sourceID,
+      index: 0,
+      title: "第一章",
+      url: "\(item.candidate.bookURL)/1"
+    )
+    _ = try await repository.applyTOCUpdate(
+      bookID: item.id,
+      update: .replaced(previousCount: 0, chapters: [chapter])
+    )
+    let library = ShelfLibrary(repository: repository)
+
+    await library.cacheChapterContent(
+      "用户编辑后的正文",
+      bookID: item.id,
+      chapterID: chapter.id
+    )
+
+    let reopened = try GRDBBookShelfRepository(path: path)
+    let editedContent = try await reopened.chapterContent(
+      bookID: item.id,
+      chapterID: chapter.id
+    )
+    XCTAssertEqual(editedContent, "用户编辑后的正文")
+
+    let reopenedLibrary = ShelfLibrary(repository: reopened)
+    let invalidated = await reopenedLibrary.invalidateReaderContent(
+      bookID: item.id,
+      currentChapterID: chapter.id,
+      scope: .current
+    )
+    XCTAssertTrue(invalidated)
+    let resetContent = try await reopened.chapterContent(
+      bookID: item.id,
+      chapterID: chapter.id
+    )
+    XCTAssertNil(resetContent)
+  }
+
   func testChapterSourceContentReplacesOnlyCurrentCache()
     async throws
   {

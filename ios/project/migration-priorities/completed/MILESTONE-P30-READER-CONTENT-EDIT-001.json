@@ -1,11 +1,26 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P30-READER-CONTENT-EDIT-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P30 阅读器正文编辑",
   "objective": "依据冻结 Android ContentEditDialog 与 BookHelp.saveText 源码，让用户在阅读器中编辑当前章节正文、保存为当前章节缓存，或清除编辑结果并重新从原书源加载；标题编辑与平台剪贴板作为后续独立切片。",
   "validation_policy": "运行一个正文持久化聚焦测试并执行一次 App 构建；不启动模拟器，不新增 Android Golden。",
+  "completion_evidence": [
+    "阅读器编辑正文入口不再是禁用占位",
+    "编辑器以当前章节标题和已显示正文初始化",
+    "保存只覆盖当前 bookID/chapterID 的持久正文缓存并原位置重载",
+    "远程书重置会清除当前章节缓存并重新经过原书源加载",
+    "本地书显式禁用重置，避免删除其当前唯一正文副本"
+  ],
+  "final_verification": {
+    "kind": "focused_test_and_single_app_build",
+    "completed_at": "2026-07-31T05:56:12+08:00",
+    "result": "1 个正文持久化聚焦测试与一次 App 构建通过；未启动模拟器，未新增 Android Golden。",
+    "evidence": [
+      ".harness-runtime/loop/IOS-APP-NAVIGATION-READER-CONTENT-EDIT-001/attempt-1"
+    ]
+  },
   "stages": [
     {
       "id": "P30-S1",
