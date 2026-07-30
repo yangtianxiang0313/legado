@@ -171,6 +171,15 @@
       "status": "candidate"
     },
     {
+      "id": "IOS-ANDROID-READER-LAYOUT-PAGE-PROJECTION-ATTESTATION-001",
+      "scenario_id": "rl-reader-layout-page-projection-001",
+      "fixture_ids": [
+        "rl-reader-layout-page-projection-001"
+      ],
+      "authority": "android_oracle_candidate_only",
+      "status": "candidate"
+    },
+    {
       "id": "IOS-ANDROID-READER-PROGRESS-LAYOUT-SAVE-ATTESTATION-001",
       "scenario_id": "rl-reader-progress-layout-save-runtime-001",
       "fixture_ids": [

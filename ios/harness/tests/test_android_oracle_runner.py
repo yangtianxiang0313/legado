@@ -235,6 +235,41 @@ def chapter_source_override_raw_artifact():
     }
 
 
+def reader_layout_page_projection_raw_artifact():
+    scenario = "rl-reader-layout-page-projection-001"
+    contract = runner.SCENARIO_CONTRACTS[scenario]
+    requests = []
+    cases = []
+    for index, (case_id, operation) in enumerate(
+        contract["expected_cases"]
+    ):
+        request = {
+            "operation": operation,
+            "arguments": {"fixture_case": case_id},
+        }
+        requests.append(request)
+        cases.append(
+            {
+                "id": case_id,
+                "operation": operation,
+                "request": request,
+                "result": {
+                    "case_index": index,
+                    "character_anchor_preserved": True,
+                },
+                "issue": None,
+            }
+        )
+    return {
+        "schema_version": 1,
+        "scenario_id": scenario,
+        "device_origin": "android-runtime://local",
+        "logical_origin": "android-runtime://local",
+        "request_plan": requests,
+        "cases": cases,
+    }
+
+
 def read_record_runtime_raw_artifact():
     scenario = "rl-reader-history-read-record-runtime-risk-001"
     contract = runner.SCENARIO_CONTRACTS[scenario]
@@ -1352,6 +1387,14 @@ class AndroidOracleRunnerTests(unittest.TestCase):
             "rl-reader-chapter-source-override-runtime-001",
             chapter_source_override["scenario_id"],
         )
+        reader_layout_projection = runner.doctor(
+            ROOT,
+            "rl-reader-layout-page-projection-001",
+        )
+        self.assertEqual(
+            "rl-reader-layout-page-projection-001",
+            reader_layout_projection["scenario_id"],
+        )
         reader_prefetch_runtime = runner.doctor(
             ROOT,
             "rl-reader-cache-prefetch-policy-001",
@@ -1554,6 +1597,48 @@ class AndroidOracleRunnerTests(unittest.TestCase):
                     "portable_known_projection"
                 ]["cases"]
             )
+        )
+
+    def test_reader_layout_page_projection_binds_all_layout_boundaries(self):
+        scenario = "rl-reader-layout-page-projection-001"
+        runtime_bindings = {
+            **bindings(),
+            "fixture_kind": "android_runtime_scenario",
+            "fixture_path": (
+                "ios/harness/fixtures/runtime-lab/"
+                f"{scenario}"
+            ),
+        }
+        runtime_bindings.pop("source_template_sha256")
+        artifact = runner.normalize_raw_artifact(
+            reader_layout_page_projection_raw_artifact(),
+            runtime_bindings,
+            scenario,
+        )
+        self.assertEqual("reader_runtime", artifact["result"]["type"])
+        self.assertEqual(5 * 5, len(artifact["stages"]))
+        self.assertEqual(
+            [
+                case_id
+                for case_id, _ in
+                runner.SCENARIO_CONTRACTS[scenario]["expected_cases"]
+            ],
+            [
+                value["id"]
+                for value in artifact["result"]["value"][
+                    "portable_known_projection"
+                ]["cases"]
+            ],
+        )
+        self.assertEqual(
+            {
+                "layout_projection",
+                "layout_reflow_projection",
+            },
+            {
+                value["operation"]
+                for value in artifact["request_plan"]
+            },
         )
 
     def test_integration_fixture_uses_protocol_stimuli_and_redacted_observation(

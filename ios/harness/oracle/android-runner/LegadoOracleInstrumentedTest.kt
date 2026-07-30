@@ -185,6 +185,8 @@ class LegadoOracleInstrumentedTest {
                 runBookmarkRuntimeCases()
             "rl-reader-history-read-record-runtime-risk-001" ->
                 runReadRecordRuntimeCases()
+            "rl-reader-layout-page-projection-001" ->
+                runReaderLayoutPageProjectionCases()
             "rl-reader-progress-layout-save-runtime-001" ->
                 runReaderProgressRuntimeCases()
             "rl-reader-cache-prefetch-policy-001" ->
@@ -2049,6 +2051,224 @@ class LegadoOracleInstrumentedTest {
             .put("book_name", value.bookName)
             .put("read_time", value.readTime)
             .put("last_read", value.lastRead)
+
+    private suspend fun runReaderLayoutPageProjectionCases() {
+        val values = input.getJSONArray("cases")
+        val supported = setOf(
+            "layout_projection",
+            "layout_reflow_projection"
+        )
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            val operation = value.getString("operation")
+            require(operation in supported) {
+                "Unsupported reader layout projection operation: $operation"
+            }
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", operation)
+                .put("arguments", JSONObject(arguments.toString()))
+            runCase(value.getString("id"), operation, stimulus) {
+                when (operation) {
+                    "layout_projection" ->
+                        layoutProjection(arguments)
+                    "layout_reflow_projection" ->
+                        layoutReflowProjection(arguments)
+                    else -> error(
+                        "Unsupported reader layout projection operation"
+                    )
+                }
+            }
+        }
+    }
+
+    private fun layoutProjection(arguments: JSONObject): JSONObject {
+        val chapter = projectionTextChapter(
+            arguments.getJSONObject("layout"),
+            "single"
+        )
+        val charIndices = arguments.getJSONArray("char_indices")
+        val pageIndices = arguments.getJSONArray("page_indices")
+        return JSONObject()
+            .put("layout_completed", chapter.isCompleted)
+            .put("page_size", chapter.pageSize)
+            .put("page_starts", pageStarts(chapter))
+            .put(
+                "char_mappings",
+                JSONArray().apply {
+                    for (index in 0 until charIndices.length()) {
+                        val charIndex = charIndices.getInt(index)
+                        val pageIndex =
+                            chapter.getPageIndexByCharIndex(charIndex)
+                        val page = chapter.getPageByReadPos(charIndex)
+                        put(
+                            JSONObject()
+                                .put("char_index", charIndex)
+                                .put("page_index", pageIndex)
+                                .put(
+                                    "selected_page_start",
+                                    page?.lines?.firstOrNull()
+                                        ?.chapterPosition
+                                        ?: JSONObject.NULL
+                                )
+                                .put(
+                                    "selected_page_contains_position",
+                                    page?.containPos(charIndex)
+                                        ?: JSONObject.NULL
+                                )
+                                .put(
+                                    "previous_page_start",
+                                    chapter.getPrevPageLength(charIndex)
+                                )
+                                .put(
+                                    "next_page_start",
+                                    chapter.getNextPageLength(charIndex)
+                                )
+                        )
+                    }
+                }
+            )
+            .put(
+                "page_mappings",
+                JSONArray().apply {
+                    for (index in 0 until pageIndices.length()) {
+                        val pageIndex = pageIndices.getInt(index)
+                        put(readLengthProjection(chapter, pageIndex))
+                    }
+                }
+            )
+    }
+
+    private fun layoutReflowProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val before = projectionTextChapter(
+            arguments.getJSONObject("before_layout"),
+            "before"
+        )
+        val after = projectionTextChapter(
+            arguments.getJSONObject("after_layout"),
+            "after"
+        )
+        val charIndices = arguments.getJSONArray("char_indices")
+        return JSONObject()
+            .put("before_page_starts", pageStarts(before))
+            .put("after_page_starts", pageStarts(after))
+            .put(
+                "mappings",
+                JSONArray().apply {
+                    for (index in 0 until charIndices.length()) {
+                        val charIndex = charIndices.getInt(index)
+                        val beforePageIndex =
+                            before.getPageIndexByCharIndex(charIndex)
+                        val afterPageIndex =
+                            after.getPageIndexByCharIndex(charIndex)
+                        put(
+                            JSONObject()
+                                .put("char_index", charIndex)
+                                .put(
+                                    "before_page_index",
+                                    beforePageIndex
+                                )
+                                .put(
+                                    "before_page_start",
+                                    pageStart(before, beforePageIndex)
+                                )
+                                .put(
+                                    "after_page_index",
+                                    afterPageIndex
+                                )
+                                .put(
+                                    "after_page_start",
+                                    pageStart(after, afterPageIndex)
+                                )
+                                .put(
+                                    "page_index_changed",
+                                    beforePageIndex != afterPageIndex
+                                )
+                        )
+                    }
+                }
+            )
+    }
+
+    private fun projectionTextChapter(
+        layout: JSONObject,
+        suffix: String
+    ): TextChapter {
+        val starts = layout.getJSONArray("page_starts")
+        val texts = layout.getJSONArray("page_texts")
+        require(starts.length() == texts.length())
+        val chapter = TextChapter(
+            chapter = BookChapter(
+                url = "/android-runtime/reader-layout/$suffix",
+                title = "投影章节",
+                bookUrl = "/android-runtime/reader-layout/book.txt",
+                index = 0
+            ),
+            position = 0,
+            title = "投影章节",
+            chaptersSize = 1,
+            sameTitleRemoved = false,
+            isVip = false,
+            isPay = false,
+            effectiveReplaceRules = null
+        )
+        val field = TextChapter::class.java.getDeclaredField("textPages")
+        field.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        val pages = field.get(chapter) as ArrayList<TextPage>
+        for (index in 0 until starts.length()) {
+            val text = texts.getString(index)
+            val page = TextPage(
+                index = index,
+                text = text,
+                title = chapter.title,
+                chapterSize = 1,
+                chapterIndex = 0
+            )
+            page.addLine(
+                TextLine(
+                    text = text,
+                    chapterPosition = starts.getInt(index)
+                )
+            )
+            page.textChapter = chapter
+            pages.add(page)
+        }
+        chapter.isCompleted = layout.getBoolean("layout_completed")
+        return chapter
+    }
+
+    private fun pageStarts(chapter: TextChapter): JSONArray =
+        JSONArray().apply {
+            chapter.pages.forEach { page ->
+                put(page.lines.first().chapterPosition)
+            }
+        }
+
+    private fun pageStart(
+        chapter: TextChapter,
+        pageIndex: Int
+    ): Any =
+        chapter.getPage(pageIndex)?.lines?.firstOrNull()?.chapterPosition
+            ?: JSONObject.NULL
+
+    private fun readLengthProjection(
+        chapter: TextChapter,
+        pageIndex: Int
+    ): JSONObject =
+        try {
+            JSONObject()
+                .put("page_index", pageIndex)
+                .put("status", "value")
+                .put("read_length", chapter.getReadLength(pageIndex))
+        } catch (error: IndexOutOfBoundsException) {
+            JSONObject()
+                .put("page_index", pageIndex)
+                .put("status", "exception")
+                .put("exception_type", error.javaClass.name)
+        }
 
     private suspend fun runReaderProgressRuntimeCases() {
         val values = input.getJSONArray("cases")

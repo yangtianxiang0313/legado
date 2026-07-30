@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "empty-layout-has-no-character-projection",
+      "operation": "layout_projection",
+      "arguments": {
+        "layout": {
+          "page_starts": [],
+          "page_texts": [],
+          "layout_completed": false
+        },
+        "char_indices": [
+          -1,
+          0,
+          1
+        ],
+        "page_indices": [
+          -1,
+          0,
+          1
+        ]
+      }
+    },
+    {
+      "id": "completed-layout-projects-read-and-navigation-boundaries",
+      "operation": "layout_projection",
+      "arguments": {
+        "layout": {
+          "page_starts": [
+            0,
+            10,
+            25
+          ],
+          "page_texts": [
+            "0123456789",
+            "abcdefghijklmno",
+            "VWXYZ"
+          ],
+          "layout_completed": true
+        },
+        "char_indices": [
+          -1,
+          0,
+          9,
+          10,
+          24,
+          25,
+          29,
+          30,
+          100
+        ],
+        "page_indices": [
+          -2,
+          -1,
+          0,
+          1,
+          2,
+          3,
+          99
+        ]
+      }
+    },
+    {
+      "id": "incomplete-layout-accepts-exact-last-page-end",
+      "operation": "layout_projection",
+      "arguments": {
+        "layout": {
+          "page_starts": [
+            0,
+            10,
+            25
+          ],
+          "page_texts": [
+            "0123456789",
+            "abcdefghijklmno",
+            "VWXYZ"
+          ],
+          "layout_completed": false
+        },
+        "char_indices": [
+          24,
+          25,
+          29,
+          30,
+          31
+        ],
+        "page_indices": [
+          0,
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "id": "partial-layout-rejects-positions-before-first-page",
+      "operation": "layout_projection",
+      "arguments": {
+        "layout": {
+          "page_starts": [
+            40,
+            70
+          ],
+          "page_texts": [
+            "012345678901234567890123456789",
+            "abcdefghij"
+          ],
+          "layout_completed": false
+        },
+        "char_indices": [
+          -1,
+          0,
+          39,
+          40,
+          69,
+          70,
+          79,
+          80,
+          81
+        ],
+        "page_indices": [
+          -1,
+          0,
+          1,
+          2,
+          99
+        ]
+      }
+    },
+    {
+      "id": "same-character-anchor-reprojects-after-layout-change",
+      "operation": "layout_reflow_projection",
+      "arguments": {
+        "before_layout": {
+          "page_starts": [
+            0,
+            10,
+            25
+          ],
+          "page_texts": [
+            "0123456789",
+            "abcdefghijklmno",
+            "QRSTUVWXYZ"
+          ],
+          "layout_completed": true
+        },
+        "after_layout": {
+          "page_starts": [
+            0,
+            6,
+            18,
+            31
+          ],
+          "page_texts": [
+            "012345",
+            "abcdefghijkl",
+            "ABCDEFGHIJKLM",
+            "WXYZ"
+          ],
+          "layout_completed": true
+        },
+        "char_indices": [
+          0,
+          5,
+          6,
+          9,
+          10,
+          17,
+          18,
+          24,
+          25,
+          30,
+          31,
+          34,
+          100
+        ]
+      }
+    }
+  ]
+}

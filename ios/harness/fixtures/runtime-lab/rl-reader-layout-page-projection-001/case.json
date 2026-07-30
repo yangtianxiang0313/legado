@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "kind": "android_runtime_scenario",
+  "id": "rl-reader-layout-page-projection-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "android_runtime",
+  "capabilities": [
+    "reader.layout",
+    "reader.progress"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": null,
+  "input": "input.json",
+  "transport": {
+    "mode": "none",
+    "external_network": "deny",
+    "responses": []
+  },
+  "coverage": [
+    {
+      "behavior": "reader.layout-page-projection",
+      "cases": [
+        {
+          "id": "empty-layout-has-no-character-projection",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-TEXT-CHAPTER-GET-READ-LENGTH",
+            "AF-TEXT-CHAPTER-GET-PAGE-INDEX"
+          ],
+          "branch_refs": [
+            "getPageIndexByCharIndex returns -1 when pages is empty",
+            "getReadLength returns zero only for a negative page index; a non-negative index has no page to clamp to"
+          ]
+        },
+        {
+          "id": "completed-layout-projects-read-and-navigation-boundaries",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-TEXT-CHAPTER-GET-READ-LENGTH",
+            "AF-TEXT-CHAPTER-GET-PAGE-INDEX"
+          ],
+          "branch_refs": [
+            "getReadLength clamps oversized page indices to the last page start",
+            "getNextPageLength and getPrevPageLength return neighboring page starts rather than page numbers"
+          ]
+        },
+        {
+          "id": "incomplete-layout-accepts-exact-last-page-end",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-TEXT-CHAPTER-GET-PAGE-INDEX"
+          ],
+          "branch_refs": [
+            "an incomplete layout rejects charIndex only when it is greater than last page start plus charSize",
+            "the exact page-end character projects to the last page even though TextPage.containPos excludes that endpoint"
+          ]
+        },
+        {
+          "id": "partial-layout-rejects-positions-before-first-page",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-TEXT-CHAPTER-GET-PAGE-INDEX"
+          ],
+          "branch_refs": [
+            "binary-search insertion before the first laid-out page yields page index -1",
+            "an incomplete partial layout rejects positions after its laid-out tail"
+          ]
+        },
+        {
+          "id": "same-character-anchor-reprojects-after-layout-change",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-TEXT-CHAPTER-GET-READ-LENGTH",
+            "AF-TEXT-CHAPTER-GET-PAGE-INDEX"
+          ],
+          "branch_refs": [
+            "the same chapter character position resolves against each layout's page-start sequence",
+            "changing page boundaries changes page indices without changing the persisted character anchor"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "not-used",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 0,
+    "network_allowed": false,
+    "logical_origin": null,
+    "database_reset_per_case": true
+  },
+  "limits": {
+    "timeout_ms": 5000
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/ui/book/read/page/entities/TextChapter.kt#getReadLength",
+      "app/src/main/java/io/legado/app/ui/book/read/page/entities/TextChapter.kt#getPageIndexByCharIndex"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-READER-LAYOUT-PAGE-PROJECTION-001"
+  }
+}

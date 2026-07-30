@@ -642,6 +642,44 @@ SCENARIO_CONTRACTS = {
             "composite-key-replace-isolated-by-device",
         }),
     },
+    "rl-reader-layout-page-projection-001": {
+        "status": "candidate",
+        "fixture_kind": "android_runtime_scenario",
+        "result_type": "reader_runtime",
+        "stage_names": (
+            "fixture_setup",
+            "layout_materialization",
+            "character_projection",
+            "boundary_evaluation",
+            "result_mapping",
+        ),
+        "expected_cases": (
+            (
+                "empty-layout-has-no-character-projection",
+                "layout_projection",
+            ),
+            (
+                "completed-layout-projects-read-and-navigation-boundaries",
+                "layout_projection",
+            ),
+            (
+                "incomplete-layout-accepts-exact-last-page-end",
+                "layout_projection",
+            ),
+            (
+                "partial-layout-rejects-positions-before-first-page",
+                "layout_projection",
+            ),
+            (
+                "same-character-anchor-reprojects-after-layout-change",
+                "layout_reflow_projection",
+            ),
+        ),
+        "nominal_cases": frozenset({
+            "completed-layout-projects-read-and-navigation-boundaries",
+            "same-character-anchor-reprojects-after-layout-change",
+        }),
+    },
     "rl-reader-progress-layout-save-runtime-001": {
         "status": "candidate",
         "fixture_kind": "android_runtime_scenario",
