@@ -50,6 +50,7 @@
     {"id": "library.shelf-group-bit-boundary-risk", "status": "planned", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 2},
     {"id": "reader.chapter-source-override-runtime", "status": "planned", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 2},
     {"id": "ui.book.detail-conditional-actions", "status": "planned", "required_roles": ["nominal", "boundary", "denied"], "min_cases_per_role": 1, "phase": 2},
-    {"id": "ui.discovery.search-flow", "status": "planned", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 2}
+    {"id": "ui.discovery.search-flow", "status": "planned", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 2},
+    {"id": "library.book.detail-staging-runtime", "status": "planned", "required_roles": ["nominal", "boundary", "denied"], "min_cases_per_role": 1, "phase": 2}
   ]
 }

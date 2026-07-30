@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "candidate-save-copies-progress",
+      "operation": "detail_candidate_save",
+      "arguments": {
+        "seed_existing_progress": true,
+        "chapter_count": 0
+      }
+    },
+    {
+      "id": "explicit-add-persists-chapters",
+      "operation": "detail_explicit_add",
+      "arguments": {
+        "seed_existing_progress": false,
+        "chapter_count": 2
+      }
+    },
+    {
+      "id": "toc-stages-without-membership",
+      "operation": "detail_toc_stage",
+      "arguments": {
+        "seed_existing_progress": false,
+        "chapter_count": 2
+      }
+    },
+    {
+      "id": "zero-group-remains-candidate",
+      "operation": "detail_group_selection",
+      "arguments": {
+        "group_id": 0,
+        "chapter_count": 0
+      }
+    },
+    {
+      "id": "positive-group-commits",
+      "operation": "detail_group_selection",
+      "arguments": {
+        "group_id": 2,
+        "chapter_count": 0
+      }
+    },
+    {
+      "id": "reader-discard-removes-staged-book",
+      "operation": "reader_discard_staged",
+      "arguments": {
+        "seed_existing_progress": false,
+        "chapter_count": 2
+      }
+    }
+  ]
+}

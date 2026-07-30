@@ -868,6 +868,78 @@
       "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
     },
     {
+      "fact_id": "AF-BOOK-INFO-SAVE-CANDIDATE",
+      "fact_key": "library.book.detail-save-candidate",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/ui/book/info/BookInfoViewModel.kt",
+      "symbol": "saveBook",
+      "symbol_id": "kotlin://io.legado.app.ui.book.info.BookInfoViewModel/saveBook",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-BOOK-INFO-SAVE-CHAPTER-LIST",
+      "fact_key": "library.book.detail-save-chapter-list",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/ui/book/info/BookInfoViewModel.kt",
+      "symbol": "saveChapterList",
+      "symbol_id": "kotlin://io.legado.app.ui.book.info.BookInfoViewModel/saveChapterList",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-BOOK-INFO-ADD-TO-BOOKSHELF",
+      "fact_key": "library.book.detail-add-to-bookshelf",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/ui/book/info/BookInfoViewModel.kt",
+      "symbol": "addToBookshelf",
+      "symbol_id": "kotlin://io.legado.app.ui.book.info.BookInfoViewModel/addToBookshelf",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-BOOK-INFO-UP-GROUP",
+      "fact_key": "library.book.detail-group-commit",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/ui/book/info/BookInfoActivity.kt",
+      "symbol": "upGroup",
+      "symbol_id": "kotlin://io.legado.app.ui.book.info.BookInfoActivity/upGroup",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-READ-BOOK-REMOVE-STAGED",
+      "fact_key": "library.book.reader-remove-staged",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookViewModel.kt",
+      "symbol": "removeFromBookshelf",
+      "symbol_id": "kotlin://io.legado.app.ui.book.read.ReadBookViewModel/removeFromBookshelf",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-READ-BOOK-FINISH-STAGING",
+      "fact_key": "library.book.reader-finish-staging",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt",
+      "symbol": "finish",
+      "symbol_id": "kotlin://io.legado.app.ui.book.read.ReadBookActivity/finish",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
       "fact_id": "AF-BOOK-GET-LOCAL-URI",
       "fact_key": "library.local-book.resolve-uri",
       "category": "production_entrypoint",

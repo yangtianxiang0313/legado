@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "kind": "android_runtime_scenario",
+  "id": "rl-library-book-detail-staging-runtime-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "android_runtime",
+  "capabilities": [
+    "android.room",
+    "library.book",
+    "library.shelf"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": null,
+  "input": "input.json",
+  "transport": {
+    "mode": "none",
+    "external_network": "deny",
+    "responses": []
+  },
+  "determinism": {
+    "clock": "state_projection",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 0,
+    "network_allowed": false,
+    "logical_origin": null,
+    "database_reset_per_case": true
+  },
+  "limits": {
+    "timeout_ms": 5000
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/ui/book/info/BookInfoViewModel.kt#saveBook",
+      "app/src/main/java/io/legado/app/ui/book/info/BookInfoViewModel.kt#addToBookshelf",
+      "app/src/main/java/io/legado/app/ui/book/info/BookInfoActivity.kt#upGroup",
+      "app/src/main/java/io/legado/app/ui/book/read/ReadBookViewModel.kt#removeFromBookshelf",
+      "app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt#finish"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-LIBRARY-BOOK-DETAIL-STAGING-RUNTIME-001"
+  },
+  "coverage": [
+    {
+      "behavior": "library.book.detail-staging-runtime",
+      "cases": [
+        {
+          "id": "candidate-save-copies-progress",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-BOOK-INFO-SAVE-CANDIDATE"
+          ],
+          "branch_refs": [
+            "Saving a zero-order detail candidate assigns it before the previous minimum and copies progress from the same name and author without changing membership"
+          ]
+        },
+        {
+          "id": "explicit-add-persists-chapters",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-BOOK-INFO-ADD-TO-BOOKSHELF"
+          ],
+          "branch_refs": [
+            "Explicit add persists both the detail book and its loaded chapter list and commits inBookshelf"
+          ]
+        },
+        {
+          "id": "toc-stages-without-membership",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-BOOK-INFO-SAVE-CANDIDATE",
+            "AF-BOOK-INFO-SAVE-CHAPTER-LIST"
+          ],
+          "branch_refs": [
+            "Opening TOC for an unshelved candidate stages the book and chapters while membership remains false"
+          ]
+        },
+        {
+          "id": "zero-group-remains-candidate",
+          "role": "denied",
+          "android_fact_refs": [
+            "AF-BOOK-INFO-UP-GROUP"
+          ],
+          "branch_refs": [
+            "Selecting group zero updates the candidate group but does not add the unshelved book"
+          ]
+        },
+        {
+          "id": "positive-group-commits",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-BOOK-INFO-UP-GROUP",
+            "AF-BOOK-INFO-ADD-TO-BOOKSHELF"
+          ],
+          "branch_refs": [
+            "Selecting a positive group for an unshelved candidate commits it to the bookshelf"
+          ]
+        },
+        {
+          "id": "reader-discard-removes-staged-book",
+          "role": "denied",
+          "android_fact_refs": [
+            "AF-READ-BOOK-REMOVE-STAGED",
+            "AF-READ-BOOK-FINISH-STAGING"
+          ],
+          "branch_refs": [
+            "Discarding an unshelved reader session removes the temporarily staged Book"
+          ]
+        }
+      ]
+    }
+  ]
+}

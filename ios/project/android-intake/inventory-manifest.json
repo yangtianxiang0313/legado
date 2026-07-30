@@ -2,8 +2,8 @@
   "schema_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
   "android_tree": "c81f5d383116e37c1eefee3eb86654514e82022b",
-  "control_sha256": "4ea414c4db13508729603b97e83481010c5b83945170af1d1de24f0085239ff1",
-  "policy_sha256": "599df40355b4b844425bdbd18448226899ed30a7e60d80f757aac9f1e155163c",
+  "control_sha256": "d3e835f51b97b0ad5cb3411e88a2d93f44a951498af794e2c3d38b514230fc4c",
+  "policy_sha256": "388cd1084178b4cc6fe77e3b0b1d8e2b3e287092058263011909e3e39c582578",
   "facts": [
     {
       "id": "AF-ANALYZE-JSONPATH-GET-LIST",
@@ -462,6 +462,30 @@
       ]
     },
     {
+      "id": "AF-BOOK-INFO-ADD-TO-BOOKSHELF",
+      "fact_key": "library.book.detail-add-to-bookshelf",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.ui.book.info.BookInfoViewModel/addToBookshelf",
+      "path": "app/src/main/java/io/legado/app/ui/book/info/BookInfoViewModel.kt",
+      "git_blob": "a461b135ca389a687189b6661a0a02e04456c7f2",
+      "source_sha256": "5f5d07456de999afaedc26035a40fcb92a13291807609e71fc7f65377285c083",
+      "start_line": 424,
+      "end_line": 443,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "addToBookshelf",
+        "signature": "fun addToBookshelf(success: (() -> Unit)?)",
+        "body_semantic_sha256": "e821ab2ed6155e00a26fc287c5c1e340793bc1cfb91efb76dedd6150e0b71359"
+      },
+      "revision_sha256": "66b65e3b3e3b0600a2d81ab3de512f0ebcde1de6ef331ac14f773c37abaabe32",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
       "id": "AF-BOOK-INFO-MENU-OPENED",
       "fact_key": "ui.book.detail-conditional-menu-actions",
       "category": "production_entrypoint",
@@ -486,6 +510,54 @@
       ]
     },
     {
+      "id": "AF-BOOK-INFO-SAVE-CANDIDATE",
+      "fact_key": "library.book.detail-save-candidate",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.ui.book.info.BookInfoViewModel/saveBook",
+      "path": "app/src/main/java/io/legado/app/ui/book/info/BookInfoViewModel.kt",
+      "git_blob": "a461b135ca389a687189b6661a0a02e04456c7f2",
+      "source_sha256": "5f5d07456de999afaedc26035a40fcb92a13291807609e71fc7f65377285c083",
+      "start_line": 395,
+      "end_line": 412,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "saveBook",
+        "signature": "fun saveBook(book: Book?, success: (() -> Unit)? = null)",
+        "body_semantic_sha256": "328159ce04fb4356bfa0615bf4a79dab6f412257fcea8ecb0943eff2d67871cb"
+      },
+      "revision_sha256": "74d5fdc4f4c8f4d158aa5f37e2c6b9ec374adc67f8a403700313e18b7f2442ea",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-BOOK-INFO-SAVE-CHAPTER-LIST",
+      "fact_key": "library.book.detail-save-chapter-list",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.ui.book.info.BookInfoViewModel/saveChapterList",
+      "path": "app/src/main/java/io/legado/app/ui/book/info/BookInfoViewModel.kt",
+      "git_blob": "a461b135ca389a687189b6661a0a02e04456c7f2",
+      "source_sha256": "5f5d07456de999afaedc26035a40fcb92a13291807609e71fc7f65377285c083",
+      "start_line": 414,
+      "end_line": 422,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "saveChapterList",
+        "signature": "fun saveChapterList(success: (() -> Unit)?)",
+        "body_semantic_sha256": "f80dce1ca39ef2b37e74e0f7f63b33c3a66fcef1912cd619358b05a0f19ed9ce"
+      },
+      "revision_sha256": "91b7c45ed735955744faf9ba202a58e25d82e30a998e87dd7108189ae556a5eb",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
       "id": "AF-BOOK-INFO-UP-BOOKSHELF",
       "fact_key": "ui.book.detail-bookshelf-action",
       "category": "production_entrypoint",
@@ -505,6 +577,30 @@
         "body_semantic_sha256": "b9e1b54b4ffefcc8358d6df8374be79a417bdb33919ec89954a13c501401f347"
       },
       "revision_sha256": "a8713f787efdf46c6e4d8feb1216a701312999d42df54c85412c79a1c27fb8ff",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-BOOK-INFO-UP-GROUP",
+      "fact_key": "library.book.detail-group-commit",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.ui.book.info.BookInfoActivity/upGroup",
+      "path": "app/src/main/java/io/legado/app/ui/book/info/BookInfoActivity.kt",
+      "git_blob": "611ce1a9a56ed26ce71ca482eea0e908c7634857",
+      "source_sha256": "073db5dc1349b643acdf1c3c2870f17508a9b6753f3deb51c3efda69877ebee7",
+      "start_line": 364,
+      "end_line": 376,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "upGroup",
+        "signature": "fun upGroup(groupId: Long)",
+        "body_semantic_sha256": "e681cb43e117327f78d58d448ea8ec9fcc02edd2586d71cf8a10f9ef9644ac40"
+      },
+      "revision_sha256": "2c0baa5a82e502fc9d8f7fee72bd2026d59fe92121592e3231613b941e855cfe",
       "maps_to": [
         "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
       ]
@@ -1287,6 +1383,30 @@
       ]
     },
     {
+      "id": "AF-READ-BOOK-FINISH-STAGING",
+      "fact_key": "library.book.reader-finish-staging",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.ui.book.read.ReadBookActivity/finish",
+      "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt",
+      "git_blob": "b116c77fa2d48c9d1a1013e60a92236f71bea1bc",
+      "source_sha256": "ed783c597f6d76dda3c8b9c8788310a385a0bba16ed31441fad4bfac21a22334",
+      "start_line": 1449,
+      "end_line": 1468,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "finish",
+        "signature": "fun finish()",
+        "body_semantic_sha256": "2dd638da703bdda6dfd15104cabae0c57351aea751510e3bad48f40e7e6c4362"
+      },
+      "revision_sha256": "beacc48a168af8db72ef3dd85e8aae329973137390f10be416f746f4f384065f",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
       "id": "AF-READ-BOOK-LOAD-CHAPTER-LIST",
       "fact_key": "reader.local-book.load-chapter-list",
       "category": "production_entrypoint",
@@ -1330,6 +1450,30 @@
         "body_semantic_sha256": "af76fe2889da35a3f2c329bad9262b296eafe5857f8fa9806275424a0e5198ae"
       },
       "revision_sha256": "2aefd20b0d34ae877268ccf94152e950887e34c13d76af7feaef03f44df9cc38",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-READ-BOOK-REMOVE-STAGED",
+      "fact_key": "library.book.reader-remove-staged",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.ui.book.read.ReadBookViewModel/removeFromBookshelf",
+      "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookViewModel.kt",
+      "git_blob": "4426655e6bed8c4c3a874d57f47c917120406a1a",
+      "source_sha256": "6218158fe30481b5da810a238f6f32a65adf442b492136dfcef1d450d2c316bd",
+      "start_line": 314,
+      "end_line": 320,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "removeFromBookshelf",
+        "signature": "fun removeFromBookshelf(success: (() -> Unit)?)",
+        "body_semantic_sha256": "3a99f0db592898fd57d303cad943f55ac43b730248bd8cbb76ba7d8d39639cd8"
+      },
+      "revision_sha256": "9ce0750b6e1f649d18016ee0c6e0903924dbdbb38109c91319564849b0069a02",
       "maps_to": [
         "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
       ]

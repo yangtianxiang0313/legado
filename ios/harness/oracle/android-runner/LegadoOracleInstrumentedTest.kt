@@ -220,6 +220,8 @@ class LegadoOracleInstrumentedTest {
                 runSearchBookLifecycleCases()
             "rl-library-book-import-channel-runtime-001" ->
                 runBookImportChannelCases()
+            "rl-library-book-detail-staging-runtime-001" ->
+                runBookDetailStagingCases()
             "rl-reader-chapter-source-override-runtime-001" ->
                 runChapterSourceOverrideCases()
             "rl-reader-bookmark-search-runtime-risk-001" ->
@@ -4587,6 +4589,238 @@ class LegadoOracleInstrumentedTest {
             LocalConfig.bookInfoDeleteAlert = previousDeleteAlert
             scenario.close()
         }
+    }
+
+    private suspend fun runBookDetailStagingCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            val operation = value.getString("operation")
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", operation)
+                .put("arguments", JSONObject(arguments.toString()))
+            runCase(value.getString("id"), operation, stimulus) {
+                bookDetailStagingProjection(
+                    value.getString("id"),
+                    operation,
+                    arguments
+                )
+            }
+        }
+        clearBookDetailStagingState()
+    }
+
+    private suspend fun bookDetailStagingProjection(
+        caseId: String,
+        operation: String,
+        arguments: JSONObject
+    ): JSONObject {
+        clearBookDetailStagingState()
+        val application = InstrumentationRegistry
+            .getInstrumentation()
+            .targetContext
+            .applicationContext as Application
+        val viewModel = BookInfoViewModel(application)
+        val bookUrl =
+            "/android-runtime/book-detail-staging/$caseId/candidate"
+        val name = "Oracle Detail $caseId"
+        val book = Book(
+            bookUrl = bookUrl,
+            tocUrl = "$bookUrl/toc",
+            origin = "android-runtime://detail-staging-source",
+            originName = "Oracle Detail Source",
+            name = name,
+            author = "Oracle Author"
+        )
+        val chapters = (0 until arguments.getInt("chapter_count"))
+            .map { index ->
+                BookChapter(
+                    url = "$bookUrl/chapter/$index",
+                    title = "Chapter $index",
+                    bookUrl = bookUrl,
+                    index = index
+                )
+            }
+        var previousMinimum: Int? = null
+        if (arguments.optBoolean("seed_existing_progress", false)) {
+            val existing = Book(
+                bookUrl =
+                    "/android-runtime/book-detail-staging/$caseId/existing",
+                origin = "android-runtime://detail-staging-source",
+                originName = "Oracle Detail Source",
+                name = name,
+                author = "Oracle Author",
+                durChapterTitle = "Existing Progress",
+                durChapterPos = 23,
+                order = -8
+            )
+            appDb.bookDao.insert(existing)
+            previousMinimum = appDb.bookDao.minOrder
+        }
+        onMainThread {
+            viewModel.bookData.value = book
+            viewModel.chapterListData.value = chapters
+            viewModel.inBookshelf = false
+        }
+        var observedInBookshelf: Boolean? = null
+
+        when (operation) {
+            "detail_candidate_save" ->
+                awaitBookInfoAction { done ->
+                    viewModel.saveBook(book, done)
+                }
+            "detail_explicit_add" ->
+                awaitBookInfoAction { done ->
+                    viewModel.addToBookshelf(done)
+                }
+            "detail_toc_stage" -> {
+                awaitBookInfoAction { done ->
+                    viewModel.saveBook(book, done)
+                }
+                awaitBookInfoAction { done ->
+                    viewModel.saveChapterList(done)
+                }
+            }
+            "detail_group_selection" -> {
+                observedInBookshelf = runBookDetailGroupSelection(
+                    book,
+                    chapters,
+                    arguments.getLong("group_id")
+                )
+            }
+            "reader_discard_staged" -> {
+                awaitBookInfoAction { done ->
+                    viewModel.saveBook(book, done)
+                }
+                awaitBookInfoAction { done ->
+                    viewModel.saveChapterList(done)
+                }
+                ReadBook.book = appDb.bookDao.getBook(bookUrl)
+                val readViewModel = ReadBookViewModel(application)
+                awaitBookInfoAction { done ->
+                    readViewModel.removeFromBookshelf(done)
+                }
+            }
+            else -> error(
+                "Unsupported book detail staging operation: $operation"
+            )
+        }
+
+        val stored = appDb.bookDao.getBook(bookUrl)
+        val chapterCount =
+            appDb.bookChapterDao.getChapterCount(bookUrl)
+        return JSONObject()
+            .put("book_persisted", stored != null)
+            .put("chapter_count", chapterCount)
+            .put(
+                "in_bookshelf",
+                observedInBookshelf ?: viewModel.inBookshelf
+            )
+            .put(
+                "group",
+                stored?.group ?: book.group
+            )
+            .put(
+                "copied_progress",
+                stored?.let {
+                    it.durChapterPos == 23 &&
+                        it.durChapterTitle == "Existing Progress"
+                } ?: false
+            )
+            .put(
+                "order_before_previous_minimum",
+                if (previousMinimum == null || stored == null) {
+                    false
+                } else {
+                    stored.order == previousMinimum - 1
+                }
+            )
+    }
+
+    private suspend fun runBookDetailGroupSelection(
+        book: Book,
+        chapters: List<BookChapter>,
+        groupId: Long
+    ): Boolean {
+        val target =
+            InstrumentationRegistry.getInstrumentation().targetContext
+        val scenario = ActivityScenario.launch<BookInfoActivity>(
+            Intent(target, BookInfoActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+        var observed = false
+        try {
+            scenario.onActivity { activity ->
+                val activityViewModel = ViewModelProvider(activity)[
+                    BookInfoViewModel::class.java
+                ]
+                activityViewModel.bookData.value = book
+                activityViewModel.chapterListData.value = chapters
+                activityViewModel.inBookshelf = false
+                activity.upGroup(0, groupId)
+            }
+            if (groupId > 0) {
+                withTimeout(10_000) {
+                    while (appDb.bookDao.getBook(book.bookUrl) == null) {
+                        delay(25)
+                    }
+                }
+            } else {
+                InstrumentationRegistry
+                    .getInstrumentation()
+                    .waitForIdleSync()
+            }
+            scenario.onActivity { activity ->
+                observed = ViewModelProvider(activity)[
+                    BookInfoViewModel::class.java
+                ].inBookshelf
+            }
+        } finally {
+            finishTargetActivities()
+            if (scenario.state != Lifecycle.State.DESTROYED) {
+                scenario.close()
+            }
+        }
+        return observed
+    }
+
+    private suspend fun awaitBookInfoAction(
+        action: ((() -> Unit) -> Unit)
+    ) {
+        val completed = CompletableDeferred<Unit>()
+        onMainThread {
+            action { completed.complete(Unit) }
+        }
+        withTimeout(10_000) {
+            completed.await()
+        }
+    }
+
+    private fun clearBookDetailStagingState() {
+        ReadBook.book = null
+        listOf(
+            "candidate-save-copies-progress",
+            "explicit-add-persists-chapters",
+            "toc-stages-without-membership",
+            "zero-group-remains-candidate",
+            "positive-group-commits",
+            "reader-discard-removes-staged-book"
+        ).forEach { caseId ->
+            appDb.bookChapterDao.delByBook(
+                "/android-runtime/book-detail-staging/$caseId/candidate"
+            )
+        }
+        appDb.bookDao.all
+            .filter {
+                it.bookUrl.startsWith(
+                    "/android-runtime/book-detail-staging/"
+                )
+            }
+            .forEach {
+                appDb.bookChapterDao.delByBook(it.bookUrl)
+                appDb.bookDao.delete(it)
+            }
     }
 
     private suspend fun runSearchFlowCases() {

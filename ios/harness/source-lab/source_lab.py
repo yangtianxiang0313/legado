@@ -867,6 +867,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     root_argument(doctor_parser)
     manifest_parser = subparsers.add_parser("manifest")
     root_argument(manifest_parser)
+    manifest_parser.add_argument(
+        "--write",
+        action="store_true",
+        help="原子更新 SourceLab manifest，而不是只输出到 stdout",
+    )
     build_parser = subparsers.add_parser("build-source")
     root_argument(build_parser)
     build_parser.add_argument("--scenario", required=True)
@@ -891,7 +896,21 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             print("SOURCE_LAB: OK")
             return 0
         if args.command == "manifest":
-            print(json.dumps(manifest_value(root), ensure_ascii=False, indent=2))
+            value = (
+                json.dumps(
+                    manifest_value(root),
+                    ensure_ascii=False,
+                    indent=2,
+                )
+                + "\n"
+            )
+            if args.write:
+                path = root / CONTROL_ROOT / "manifest.json"
+                temporary = path.with_suffix(".json.tmp")
+                temporary.write_text(value, encoding="utf-8")
+                os.replace(temporary, path)
+            else:
+                sys.stdout.write(value)
             return 0
         if args.command == "build-source":
             value = json.dumps(build_source(root, args.scenario, args.origin), ensure_ascii=False, indent=2) + "\n"
