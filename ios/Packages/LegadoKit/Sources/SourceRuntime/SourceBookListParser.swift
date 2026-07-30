@@ -1,4 +1,5 @@
 import Foundation
+import LegadoCore
 
 struct SourceBookListParser {
   let definition: SourceSearchDefinition
@@ -9,6 +10,13 @@ struct SourceBookListParser {
     reverse: Bool,
     allowsDetailPattern: Bool
   ) throws -> [SourceSearchBook] {
+    if usesStructuredRules(response: response, rules: rules) {
+      return try parseStructured(
+        response: response,
+        rules: rules,
+        reverse: reverse
+      )
+    }
     let document: HTMLDocument
     do {
       document = try HTMLDocument(html: response.body)
@@ -36,7 +44,9 @@ struct SourceBookListParser {
       return [book]
     }
 
-    let nodes = try document.select(normalizedList(rules.list))
+    let nodes = try document.select(
+      HTMLCSSRule(normalizedList(rules.list)).cssSelector
+    )
     if nodes.isEmpty, definition.bookURLPattern?.isEmpty != false {
       if let detail = try book(
         node: document.root,
@@ -170,7 +180,10 @@ struct SourceBookListParser {
     document: HTMLDocument
   ) throws -> String? {
     guard
-      let match = try document.select(rule.selector, within: node).first
+      let match = try document.select(
+        rule.cssSelector,
+        within: node
+      ).first
     else {
       return nil
     }
@@ -252,5 +265,91 @@ struct SourceBookListParser {
     }
     guard let slash = base.lastIndex(of: "/") else { return raw }
     return String(base[...slash]) + raw
+  }
+
+  private func usesStructuredRules(
+    response: SourceSearchResponse,
+    rules: SearchRules
+  ) -> Bool {
+    let list = rules.list.trimmingCharacters(
+      in: .whitespacesAndNewlines
+    )
+    if list.lowercased().hasPrefix("@json:") || list.hasPrefix("$") {
+      return true
+    }
+    return (try? JSONValueCodec.decode(Data(response.body.utf8))) != nil
+  }
+
+  private func parseStructured(
+    response: SourceSearchResponse,
+    rules: SearchRules,
+    reverse: Bool
+  ) throws -> [SourceSearchBook] {
+    let elements = try SourceRuleConsumerEvaluator(
+      content: response.body
+    ).getElements(rules.list)
+    var seen: Set<String> = []
+    var books: [SourceSearchBook] = []
+    for element in elements {
+      let data = try JSONValueCodec.encode(element)
+      let content = String(decoding: data, as: UTF8.self)
+      let evaluator = SourceRuleConsumerEvaluator(content: content)
+      let name = try structuredValue(rules.name, evaluator: evaluator)
+      guard !name.isEmpty else { continue }
+      let rawBookURL = try structuredValue(
+        rules.bookURL,
+        evaluator: evaluator
+      )
+      let bookURL = rawBookURL.isEmpty
+        ? response.url
+        : resolve(rawBookURL, relativeTo: response.url)
+      guard seen.insert(bookURL).inserted else { continue }
+      let rawCoverURL = try structuredValue(
+        rules.coverURL,
+        evaluator: evaluator
+      )
+      books.append(
+        SourceSearchBook(
+          name: name,
+          author: normalizeAuthor(
+            try structuredValue(rules.author, evaluator: evaluator)
+          ),
+          kind: try structuredValue(rules.kind, evaluator: evaluator),
+          wordCount: normalizeWordCount(
+            try structuredValue(
+              rules.wordCount,
+              evaluator: evaluator
+            )
+          ),
+          intro: try structuredValue(rules.intro, evaluator: evaluator),
+          lastChapter: try structuredValue(
+            rules.lastChapter,
+            evaluator: evaluator
+          ),
+          bookURL: bookURL,
+          coverURL: rawCoverURL.isEmpty
+            ? nil
+            : resolve(rawCoverURL, relativeTo: response.url),
+          origin: definition.sourceURL,
+          originName: definition.sourceName,
+          originOrder: definition.originOrder,
+          infoHTML: bookURL == response.url ? response.body : nil
+        )
+      )
+    }
+    return reverse ? Array(books.reversed()) : books
+  }
+
+  private func structuredValue(
+    _ rule: HTMLCSSRule,
+    evaluator: SourceRuleConsumerEvaluator
+  ) throws -> String {
+    let raw = rule.selector.trimmingCharacters(
+      in: .whitespacesAndNewlines
+    )
+    guard raw != "__legado_missing__" else { return "" }
+    return try evaluator.getString(raw).trimmingCharacters(
+      in: .whitespacesAndNewlines
+    )
   }
 }

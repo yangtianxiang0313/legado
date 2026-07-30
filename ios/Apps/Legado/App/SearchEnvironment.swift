@@ -527,7 +527,6 @@ enum SearchEnvironment {
     ) -> String? {
         guard let value = object[key] as? String else { return nil }
         return value
-            .replacingOccurrences(of: "@css:", with: "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 

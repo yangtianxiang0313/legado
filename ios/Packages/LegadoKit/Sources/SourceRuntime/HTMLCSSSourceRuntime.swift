@@ -27,6 +27,22 @@ public struct HTMLCSSRule: Sendable, Equatable {
     self.selector = selector
     self.value = value
   }
+
+  var cssSelector: String {
+    var value = selector.trimmingCharacters(
+      in: .whitespacesAndNewlines
+    )
+    if value.lowercased().hasPrefix("@css:") {
+      value.removeFirst(5)
+    }
+    for suffix in ["@text", "@html", "@all", "@href", "@src"] {
+      if value.lowercased().hasSuffix(suffix) {
+        value.removeLast(suffix.count)
+        break
+      }
+    }
+    return value.trimmingCharacters(in: .whitespacesAndNewlines)
+  }
 }
 
 public struct SearchRules: Sendable, Equatable {
@@ -231,7 +247,9 @@ public struct HTMLCSSSourceRuntime: Sendable {
 
   public func search(html: String, responseURL: URL) throws -> [SourceBook] {
     let document = try parse(html)
-    return try document.select(definition.search.list).compactMap { node in
+    return try document.select(
+      HTMLCSSRule(definition.search.list).cssSelector
+    ).compactMap { node in
       guard
         let name = try value(definition.search.name, in: node, document: document),
         let book = try resolved(definition.search.bookURL, in: node, document: document, base: responseURL)
@@ -352,7 +370,9 @@ public struct HTMLCSSSourceRuntime: Sendable {
 
   public func chapters(html: String, tocURL: URL) throws -> [SourceChapter] {
     let document = try parse(html)
-    let nodes = try document.select(definition.toc.list)
+    let nodes = try document.select(
+      HTMLCSSRule(definition.toc.list).cssSelector
+    )
     guard !nodes.isEmpty else {
       throw SourceRuntimeIssue(stage: .fieldEvaluation, code: .ruleFailed)
     }
@@ -374,7 +394,11 @@ public struct HTMLCSSSourceRuntime: Sendable {
 
   public func content(html: String, chapterURL: URL) throws -> SourceContent {
     let document = try parse(html)
-    guard let node = try document.select(definition.content.content.selector).first else {
+    guard
+      let node = try document.select(
+        definition.content.content.cssSelector
+      ).first
+    else {
       throw SourceRuntimeIssue(stage: .fieldEvaluation, code: .ruleFailed)
     }
     let lines = node.children.compactMap { child -> String? in
@@ -416,7 +440,12 @@ public struct HTMLCSSSourceRuntime: Sendable {
     in node: HTMLNode,
     document: HTMLDocument
   ) throws -> String? {
-    guard let match = try document.select(rule.selector, within: node).first else { return nil }
+    guard
+      let match = try document.select(
+        rule.cssSelector,
+        within: node
+      ).first
+    else { return nil }
     let raw: String?
     switch rule.value {
     case .text, .html: raw = match.normalizedText
