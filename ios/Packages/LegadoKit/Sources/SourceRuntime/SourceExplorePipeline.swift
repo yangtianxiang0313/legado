@@ -221,7 +221,8 @@ public struct SourceExplorePipeline: Sendable {
       definition: definition.source,
       variableStore: variableStore,
       scriptRuntime: scriptRuntime,
-      scriptSessionID: scriptSessionID
+      scriptSessionID: scriptSessionID,
+      scriptLibrary: definition.source.scriptLibrary
     ).parse(
       response: checked,
       rules: rules,

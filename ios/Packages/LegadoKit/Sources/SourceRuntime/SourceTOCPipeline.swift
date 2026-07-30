@@ -82,7 +82,8 @@ public struct SourceTOCPipeline: Sendable {
     let runtime = HTMLCSSSourceRuntime(
       definition: definition.runtime,
       scriptRuntime: scriptRuntime,
-      scriptSessionID: scriptSessionID
+      scriptSessionID: scriptSessionID,
+      scriptLibrary: definition.scriptLibrary
     )
     let detail = try await SourceBookInfoPipeline(
       definition: definition,

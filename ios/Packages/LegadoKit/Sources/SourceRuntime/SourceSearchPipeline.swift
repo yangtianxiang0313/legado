@@ -8,6 +8,7 @@ public struct SourceSearchDefinition: Sendable, Equatable {
   public let sourceHeaders: [SourceHeaderField]
   public let enabledCookieJar: Bool
   public let loginCheckScript: String?
+  public let scriptLibrary: SourceScriptLibrary?
   public let runtime: HTMLCSSSourceDefinition
 
   public init(
@@ -18,6 +19,7 @@ public struct SourceSearchDefinition: Sendable, Equatable {
     sourceHeaders: [SourceHeaderField] = [],
     enabledCookieJar: Bool = false,
     loginCheckScript: String? = nil,
+    scriptLibrary: SourceScriptLibrary? = nil,
     runtime: HTMLCSSSourceDefinition
   ) {
     self.sourceURL = sourceURL
@@ -27,6 +29,7 @@ public struct SourceSearchDefinition: Sendable, Equatable {
     self.sourceHeaders = sourceHeaders
     self.enabledCookieJar = enabledCookieJar
     self.loginCheckScript = loginCheckScript
+    self.scriptLibrary = scriptLibrary
     self.runtime = runtime
   }
 
@@ -288,7 +291,8 @@ public struct SourceSearchPipeline: Sendable {
       definition: definition,
       variableStore: variableStore,
       scriptRuntime: scriptRuntime,
-      scriptSessionID: scriptSessionID
+      scriptSessionID: scriptSessionID,
+      scriptLibrary: definition.scriptLibrary
     ).parse(
       response: response,
       rules: definition.runtime.search,

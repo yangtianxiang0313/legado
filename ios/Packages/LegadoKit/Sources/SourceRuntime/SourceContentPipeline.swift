@@ -91,7 +91,8 @@ public struct SourceContentPipeline: Sendable {
     let runtime = HTMLCSSSourceRuntime(
       definition: definition.runtime,
       scriptRuntime: scriptRuntime,
-      scriptSessionID: scriptSessionID
+      scriptSessionID: scriptSessionID,
+      scriptLibrary: definition.scriptLibrary
     )
     let first = try await fetchPage(
       endpoint: endpoint,

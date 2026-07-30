@@ -530,6 +530,7 @@ enum SearchEnvironment {
             sourceHeaders: sourceHeaders(root),
             enabledCookieJar: root["enabledCookieJar"] as? Bool ?? false,
             loginCheckScript: string(root, "loginCheckJs"),
+            scriptLibrary: inlineScriptLibrary(root),
             runtime: runtime
         )
         let catalog = (
@@ -600,6 +601,25 @@ enum SearchEnvironment {
             return nil
         }
         return HTMLCSSRule(value, value: .href)
+    }
+
+    private static func inlineScriptLibrary(
+        _ object: [String: Any]
+    ) -> SourceScriptLibrary? {
+        guard
+            let source = string(object, "jsLib"),
+            !source.isEmpty
+        else {
+            return nil
+        }
+        if
+            let data = source.data(using: .utf8),
+            (try? JSONSerialization.jsonObject(with: data))
+                is [String: Any]
+        {
+            return nil
+        }
+        return SourceScriptLibrary(source: source)
     }
 
     private static func sourceHeaders(

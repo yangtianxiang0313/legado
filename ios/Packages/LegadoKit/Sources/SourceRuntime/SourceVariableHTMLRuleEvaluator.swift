@@ -6,6 +6,7 @@ struct SourceVariableHTMLRuleEvaluator {
   let resolver: SourceVariableResolver
   let scriptRuntime: (any SourceScriptRuntime)?
   let scriptSessionID: SourceScriptSessionID?
+  let scriptLibrary: SourceScriptLibrary?
   let baseURL: String?
 
   init(
@@ -14,6 +15,7 @@ struct SourceVariableHTMLRuleEvaluator {
     resolver: SourceVariableResolver,
     scriptRuntime: (any SourceScriptRuntime)? = nil,
     scriptSessionID: SourceScriptSessionID? = nil,
+    scriptLibrary: SourceScriptLibrary? = nil,
     baseURL: String? = nil
   ) {
     self.document = document
@@ -21,6 +23,7 @@ struct SourceVariableHTMLRuleEvaluator {
     self.resolver = resolver
     self.scriptRuntime = scriptRuntime
     self.scriptSessionID = scriptSessionID
+    self.scriptLibrary = scriptLibrary
     self.baseURL = baseURL
   }
 
@@ -40,6 +43,7 @@ struct SourceVariableHTMLRuleEvaluator {
         resolver: resolver,
         scriptRuntime: scriptRuntime,
         scriptSessionID: scriptSessionID,
+        scriptLibrary: scriptLibrary,
         baseURL: baseURL
       ).getString(executionRule)
       return value.isEmpty ? [] : [value]

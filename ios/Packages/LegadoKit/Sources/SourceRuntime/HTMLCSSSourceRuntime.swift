@@ -385,15 +385,18 @@ public struct HTMLCSSSourceRuntime: Sendable {
   public let definition: HTMLCSSSourceDefinition
   public let scriptRuntime: (any SourceScriptRuntime)?
   public let scriptSessionID: SourceScriptSessionID?
+  public let scriptLibrary: SourceScriptLibrary?
 
   public init(
     definition: HTMLCSSSourceDefinition,
     scriptRuntime: (any SourceScriptRuntime)? = nil,
-    scriptSessionID: SourceScriptSessionID? = nil
+    scriptSessionID: SourceScriptSessionID? = nil,
+    scriptLibrary: SourceScriptLibrary? = nil
   ) {
     self.definition = definition
     self.scriptRuntime = scriptRuntime
     self.scriptSessionID = scriptSessionID
+    self.scriptLibrary = scriptLibrary
   }
 
   public func searchRequest(keyword: String) throws -> HTTPRequest {
@@ -583,6 +586,7 @@ public struct HTMLCSSSourceRuntime: Sendable {
         resolver: resolver,
         scriptRuntime: scriptRuntime,
         scriptSessionID: scriptSessionID,
+        scriptLibrary: scriptLibrary,
         baseURL: redirectURL.absoluteString
       )
       strings = { rule in
@@ -598,6 +602,7 @@ public struct HTMLCSSSourceRuntime: Sendable {
         resolver: resolver,
         scriptRuntime: scriptRuntime,
         scriptSessionID: scriptSessionID,
+        scriptLibrary: scriptLibrary,
         baseURL: redirectURL.absoluteString
       )
       strings = { rule in
@@ -710,6 +715,7 @@ public struct HTMLCSSSourceRuntime: Sendable {
         resolver: bookResolver,
         scriptRuntime: scriptRuntime,
         scriptSessionID: scriptSessionID,
+        scriptLibrary: scriptLibrary,
         baseURL: tocEndpoint.logicalURL.absoluteString
       )
       let elements = try await listEvaluator.getElements(rules.list)
@@ -730,6 +736,7 @@ public struct HTMLCSSSourceRuntime: Sendable {
           ),
           scriptRuntime: scriptRuntime,
           scriptSessionID: scriptSessionID,
+          scriptLibrary: scriptLibrary,
           baseURL: tocEndpoint.logicalURL.absoluteString
         )
         let title = try await evaluator.getString(
@@ -773,6 +780,7 @@ public struct HTMLCSSSourceRuntime: Sendable {
         resolver: bookResolver,
         scriptRuntime: scriptRuntime,
         scriptSessionID: scriptSessionID,
+        scriptLibrary: scriptLibrary,
         baseURL: tocEndpoint.logicalURL.absoluteString
       )
       let nodes = try await listEvaluator.elements(rules.list)
@@ -792,6 +800,7 @@ public struct HTMLCSSSourceRuntime: Sendable {
           ),
           scriptRuntime: scriptRuntime,
           scriptSessionID: scriptSessionID,
+          scriptLibrary: scriptLibrary,
           baseURL: tocEndpoint.logicalURL.absoluteString
         )
         guard
@@ -933,6 +942,7 @@ public struct HTMLCSSSourceRuntime: Sendable {
         resolver: resolver,
         scriptRuntime: scriptRuntime,
         scriptSessionID: scriptSessionID,
+        scriptLibrary: scriptLibrary,
         baseURL: chapterEndpoint.logicalURL.absoluteString
       )
       value = try await evaluator.getString(
@@ -954,6 +964,7 @@ public struct HTMLCSSSourceRuntime: Sendable {
         resolver: resolver,
         scriptRuntime: scriptRuntime,
         scriptSessionID: scriptSessionID,
+        scriptLibrary: scriptLibrary,
         baseURL: chapterEndpoint.logicalURL.absoluteString
       )
       let executionRule = try await evaluator.prepare(

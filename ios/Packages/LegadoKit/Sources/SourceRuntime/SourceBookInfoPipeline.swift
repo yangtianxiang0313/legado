@@ -92,7 +92,8 @@ public struct SourceBookInfoPipeline: Sendable {
     let runtime = HTMLCSSSourceRuntime(
       definition: definition.runtime,
       scriptRuntime: scriptRuntime,
-      scriptSessionID: scriptSessionID
+      scriptSessionID: scriptSessionID,
+      scriptLibrary: definition.scriptLibrary
     )
     let variableStore = SourceVariableStore(
       policy: .androidRuleData,

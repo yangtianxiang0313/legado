@@ -51,6 +51,7 @@ public struct SourceVariableRuleEvaluator: Sendable {
   public let resolver: SourceVariableResolver
   public let scriptRuntime: (any SourceScriptRuntime)?
   public let scriptSessionID: SourceScriptSessionID?
+  public let scriptLibrary: SourceScriptLibrary?
   public let baseURL: String?
 
   public init(
@@ -58,12 +59,14 @@ public struct SourceVariableRuleEvaluator: Sendable {
     resolver: SourceVariableResolver,
     scriptRuntime: (any SourceScriptRuntime)? = nil,
     scriptSessionID: SourceScriptSessionID? = nil,
+    scriptLibrary: SourceScriptLibrary? = nil,
     baseURL: String? = nil
   ) {
     self.content = content
     self.resolver = resolver
     self.scriptRuntime = scriptRuntime
     self.scriptSessionID = scriptSessionID
+    self.scriptLibrary = scriptLibrary
     self.baseURL = baseURL
   }
 
@@ -149,6 +152,7 @@ public struct SourceVariableRuleEvaluator: Sendable {
       return try await scriptRuntime.evaluate(
         SourceScriptRequest(
           sessionID: scriptSessionID,
+          library: scriptLibrary,
           script: script,
           result: .string(current),
           baseURL: baseURL

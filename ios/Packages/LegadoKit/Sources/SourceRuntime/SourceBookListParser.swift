@@ -6,17 +6,20 @@ struct SourceBookListParser {
   let variableStore: SourceVariableStore
   let scriptRuntime: (any SourceScriptRuntime)?
   let scriptSessionID: SourceScriptSessionID?
+  let scriptLibrary: SourceScriptLibrary?
 
   init(
     definition: SourceSearchDefinition,
     variableStore: SourceVariableStore,
     scriptRuntime: (any SourceScriptRuntime)? = nil,
-    scriptSessionID: SourceScriptSessionID? = nil
+    scriptSessionID: SourceScriptSessionID? = nil,
+    scriptLibrary: SourceScriptLibrary? = nil
   ) {
     self.definition = definition
     self.variableStore = variableStore
     self.scriptRuntime = scriptRuntime
     self.scriptSessionID = scriptSessionID
+    self.scriptLibrary = scriptLibrary
   }
 
   func parse(
@@ -319,6 +322,7 @@ struct SourceBookListParser {
         resolver: resolver,
         scriptRuntime: scriptRuntime,
         scriptSessionID: scriptSessionID,
+        scriptLibrary: scriptLibrary,
         baseURL: definition.sourceURL
       ).getString(plan.executionRule)
       return result.isEmpty ? nil : result
@@ -458,6 +462,7 @@ struct SourceBookListParser {
       resolver: sharedResolver,
       scriptRuntime: scriptRuntime,
       scriptSessionID: scriptSessionID,
+      scriptLibrary: scriptLibrary,
       baseURL: response.url
     ).getElements(rules.list)
     var seen: Set<String> = []
@@ -480,6 +485,7 @@ struct SourceBookListParser {
         ),
         scriptRuntime: scriptRuntime,
         scriptSessionID: scriptSessionID,
+        scriptLibrary: scriptLibrary,
         baseURL: response.url
       )
       let name = try await structuredValue(

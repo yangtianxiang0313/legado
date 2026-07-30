@@ -21,7 +21,8 @@ struct SourceLoginCheckEvaluator: Sendable {
     }
     let transformed = try await SourceScriptResponseEvaluator(
       runtime: scriptRuntime,
-      sessionID: scriptSessionID
+      sessionID: scriptSessionID,
+      library: definition.scriptLibrary
     ).evaluate(
       script: script,
       response: SourceScriptResponse(

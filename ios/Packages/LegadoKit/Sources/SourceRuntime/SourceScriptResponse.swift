@@ -32,13 +32,16 @@ public struct SourceScriptResponse: Equatable, Sendable {
 public struct SourceScriptResponseEvaluator: Sendable {
   public let runtime: any SourceScriptRuntime
   public let sessionID: SourceScriptSessionID
+  public let library: SourceScriptLibrary?
 
   public init(
     runtime: any SourceScriptRuntime,
-    sessionID: SourceScriptSessionID
+    sessionID: SourceScriptSessionID,
+    library: SourceScriptLibrary? = nil
   ) {
     self.runtime = runtime
     self.sessionID = sessionID
+    self.library = library
   }
 
   public func evaluate(
@@ -55,6 +58,7 @@ public struct SourceScriptResponseEvaluator: Sendable {
       SourceScriptRequest(
         sessionID: sessionID,
         purpose: .responseCheck,
+        library: library,
         script: script,
         result: response.scriptValue,
         baseURL: response.url.absoluteString
