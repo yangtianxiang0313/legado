@@ -1,11 +1,28 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P22-BOOK-DETAIL-SOURCE-LOGIN-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P22 书籍详情登录书源闭环",
   "objective": "依据冻结 Android BookInfoActivity 源码，让 iOS 书籍详情根据当前真实书源的 loginUrl 决定登录入口可见性，并把点击动作导航到已实现的书源登录页；换源后入口随当前 sourceID 更新。",
   "validation_policy": "复用 P20 已通过的登录页与既有详情条件测试，仅执行聚焦测试和一次 App 构建，不重复本地网站模拟器验收。",
+  "completion_evidence": [
+    "详情登录入口按当前 activeCandidate.sourceID 查找真实书源",
+    "loginUrl 缺失、空串或纯空白时不显示登录入口",
+    "点击登录入口由 RootShell 推入稳定 sourceLogin(sourceID) 路由",
+    "换源后的 storedItem.candidate.sourceID 会重新驱动入口可见性与导航目标"
+  ],
+  "final_verification": {
+    "kind": "single_app_build",
+    "completed_at": "2026-07-31T05:27:52+08:00",
+    "commands": [
+      "xcodebuild -project ios/Apps/Legado/Legado.xcodeproj -scheme LegadoApp -destination generic/platform=iOS Simulator CODE_SIGNING_ALLOWED=NO build"
+    ],
+    "result": "App 构建通过；复用 P20 已通过的登录页，不重复运行模拟器。",
+    "evidence": [
+      ".harness-runtime/loop/IOS-APP-NAVIGATION-BOOK-DETAIL-SOURCE-LOGIN-001/attempt-1"
+    ]
+  },
   "stages": [
     {
       "id": "P22-S1",
