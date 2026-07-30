@@ -729,6 +729,17 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                     "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
                 ]
             )
+        if target == (
+            "IOS-APP-NAVIGATION-SHELF-MANAGEMENT-MILESTONE-001"
+        ):
+            allowed_paths.extend(
+                [
+                    "ios/Packages/LegadoKit/Sources/LibraryDomain/**",
+                    "ios/Packages/LegadoKit/Tests/LibraryDomainTests/**",
+                    "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+                    "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+                ]
+            )
         return {
             "owner": "AppNavigation",
             "architecture_refs": [
@@ -1230,6 +1241,100 @@ def source_management_milestone_deliveries(
     ]
 
 
+def shelf_management_milestone_deliveries(
+    root: Path,
+) -> list[Mapping[str, Any]]:
+    target = "IOS-APP-NAVIGATION-SHELF-MANAGEMENT-MILESTONE-001"
+    completed = completed_task_ids(root)
+    if target in completed:
+        return []
+    policy = active_priority_policy(root)
+    prerequisites = {
+        "IOS-LIBRARY-DOMAIN-SHELF-SORT-UNREAD-001",
+        "IOS-LIBRARY-DOMAIN-SHELF-BATCH-PARTIAL-COMMIT-001",
+    }
+    if (
+        not isinstance(policy, dict)
+        or policy.get("id") != "MILESTONE-P3-USABLE-SHELF-001"
+        or not prerequisites.issubset(completed)
+    ):
+        return []
+    requirement = "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+    return [
+        {
+            "target": target,
+            "title": "可排序、可识别新增章节的批量书架里程碑",
+            "ledger_path": "ios/project/migration-priorities/active.json",
+            "ledger": {"packet_refs": []},
+            "entries": [
+                {
+                    "validation": {
+                        "required": "milestone_integration",
+                        "state": "planned",
+                        "evidence_refs": [
+                            "ios/project/migration-priorities/active.json"
+                        ],
+                    },
+                    "delivery": {
+                        "state": "planned",
+                        "work_item_refs": [target],
+                        "requirement_refs": [requirement],
+                    },
+                }
+            ],
+            "source_anchors": [
+                {
+                    "android_commit":
+                        "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+                    "git_blob":
+                        "0bb1754bfa3eae7cb12ae1e30ddb72789bb05f90",
+                    "path": (
+                        "app/src/main/java/io/legado/app/ui/book/manage/"
+                        "BookshelfManageViewModel.kt"
+                    ),
+                    "symbol_id": (
+                        "kotlin://io.legado.app.ui.book.manage."
+                        "BookshelfManageViewModel"
+                    ),
+                },
+                {
+                    "android_commit":
+                        "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+                    "git_blob":
+                        "d0f564d8c17cceb37674e343e6fc2c1cef047bb5",
+                    "path": (
+                        "app/src/main/java/io/legado/app/ui/book/manage/"
+                        "BookshelfManageActivity.kt"
+                    ),
+                    "symbol_id": (
+                        "kotlin://io.legado.app.ui.book.manage."
+                        "BookshelfManageActivity"
+                    ),
+                },
+                {
+                    "android_commit":
+                        "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+                    "git_blob":
+                        "fe9977c72fd4506a4dce934a9b0a1491287860ed",
+                    "path": (
+                        "app/src/main/java/io/legado/app/ui/main/bookshelf/"
+                        "style1/books/BooksFragment.kt"
+                    ),
+                    "symbol_id": (
+                        "kotlin://io.legado.app.ui.main.bookshelf.style1."
+                        "books.BooksFragment/upRecyclerData"
+                    ),
+                },
+            ],
+            "source_contract": {
+                "path": "ios/project/migration-priorities/active.json",
+                "fixture_id": "milestone-shelf-management-v1",
+                "validation": "simulator",
+            },
+        }
+    ]
+
+
 def active_priority_policy(root: Path) -> Mapping[str, Any] | None:
     path = root / PRIORITY_PATH
     if not path.is_file():
@@ -1330,6 +1435,12 @@ def prioritized_work(
     deliveries.extend(
         value
         for value in source_management_milestone_deliveries(root)
+        if str(value["target"]) not in known_targets
+    )
+    known_targets = {str(value["target"]) for value in deliveries}
+    deliveries.extend(
+        value
+        for value in shelf_management_milestone_deliveries(root)
         if str(value["target"]) not in known_targets
     )
     characterizations = pending_characterizations(root)
@@ -1952,6 +2063,22 @@ def app_navigation_delivery_contract(
                 "ui-source-management-milestone-v1.json"
             ),
             "test_method": "testSourceManagementMilestone",
+        },
+        "milestone-shelf-management-v1": {
+            "goal": (
+                "把 LibraryDomain 已对齐的五种排序、新增章节状态和逐书"
+                "部分提交模型接入 AppUseCases 与 DatabaseGRDB，并由"
+                " AppShell 提供书架排序、未读提示和批量管理。完成后只在"
+                "一台主 iPhone Simulator 上验收完整书架管理主流程。"
+            ),
+            "acceptance_id":
+                "structured-shelf-management-milestone-acceptance",
+            "scenario_id": "ui-shelf-management-milestone-v1",
+            "expected": (
+                "ios/harness/ui/expected/"
+                "ui-shelf-management-milestone-v1.json"
+            ),
+            "test_method": "testShelfManagementMilestone",
         },
     }
     feature = features.get(fixture_id)
@@ -2988,6 +3115,12 @@ def queue_status(root: Path) -> Mapping[str, Any]:
     deliveries.extend(
         value
         for value in source_management_milestone_deliveries(root)
+        if str(value["target"]) not in known_targets
+    )
+    known_targets = {str(value["target"]) for value in deliveries}
+    deliveries.extend(
+        value
+        for value in shelf_management_milestone_deliveries(root)
         if str(value["target"]) not in known_targets
     )
     characterizations = pending_characterizations(root)

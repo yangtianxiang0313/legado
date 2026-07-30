@@ -40,6 +40,19 @@
           ]
         }
       ]
+    },
+    {
+      "id": "P3-03-SHELF-MANAGEMENT-MILESTONE",
+      "title": "接通可用书架纵向主链路",
+      "outcome": "排序、新增章节状态和批量管理通过持久化端口接入书架页面，并完成一次 iPhone Simulator 里程碑验收。",
+      "selectors": [
+        {
+          "id": "SHELF-MANAGEMENT-MILESTONE",
+          "task_ids": [
+            "IOS-APP-NAVIGATION-SHELF-MANAGEMENT-MILESTONE-001"
+          ]
+        }
+      ]
     }
   ]
 }

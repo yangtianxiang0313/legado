@@ -4,6 +4,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 
 LOOP_ROOT = Path(__file__).resolve().parents[1]
@@ -2438,6 +2439,35 @@ class MinimalLoopTests(unittest.TestCase):
             "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
         ):
             self.assertIn(path, reader_owner["allowed_paths"])
+
+    def test_shelf_milestone_follows_completed_domain_slices(self):
+        completed = {
+            "IOS-LIBRARY-DOMAIN-SHELF-SORT-UNREAD-001",
+            "IOS-LIBRARY-DOMAIN-SHELF-BATCH-PARTIAL-COMMIT-001",
+        }
+        policy = {"id": "MILESTONE-P3-USABLE-SHELF-001"}
+        with (
+            patch.object(loop, "completed_task_ids", return_value=completed),
+            patch.object(loop, "active_priority_policy", return_value=policy),
+        ):
+            deliveries = loop.shelf_management_milestone_deliveries(Path("."))
+
+        self.assertEqual(
+            "IOS-APP-NAVIGATION-SHELF-MANAGEMENT-MILESTONE-001",
+            deliveries[0]["target"],
+        )
+        contract = loop.app_navigation_delivery_contract(
+            "milestone-shelf-management-v1"
+        )
+        self.assertEqual(
+            "testShelfManagementMilestone",
+            contract["ui_acceptance"]["test_method"],
+        )
+        owner = loop.owner_contract(deliveries[0]["target"])
+        self.assertIn(
+            "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+            owner["allowed_paths"],
+        )
 
 
 if __name__ == "__main__":
