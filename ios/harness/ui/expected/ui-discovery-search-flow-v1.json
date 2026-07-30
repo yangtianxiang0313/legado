@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "scenario_id": "ui-discovery-search-flow-v1",
+  "profile": "store_safe",
+  "simulators": [
+    {
+      "simulator_id": "SIM-PAD-REGULAR-001",
+      "projection": "regularSplit",
+      "screen": "screen.search.books",
+      "query_after_return": "星河",
+      "scope": "科幻",
+      "result_names": [
+        "星河纪事",
+        "星河之外"
+      ],
+      "detail": {
+        "screen": "screen.bookDetail",
+        "name": "星河纪事",
+        "author": "林舟"
+      },
+      "route_trace": [
+        {
+          "operation": "push",
+          "route_id": "search.books"
+        },
+        {
+          "operation": "push",
+          "route_id": "book.detail:http://legado.local/books/star-river"
+        },
+        {
+          "operation": "pop",
+          "route_id": "search.books"
+        }
+      ]
+    },
+    {
+      "simulator_id": "SIM-PHONE-COMPACT-001",
+      "projection": "compactStack",
+      "screen": "screen.search.books",
+      "query_after_return": "星河",
+      "scope": "科幻",
+      "result_names": [
+        "星河纪事",
+        "星河之外"
+      ],
+      "detail": {
+        "screen": "screen.bookDetail",
+        "name": "星河纪事",
+        "author": "林舟"
+      },
+      "route_trace": [
+        {
+          "operation": "push",
+          "route_id": "search.books"
+        },
+        {
+          "operation": "push",
+          "route_id": "book.detail:http://legado.local/books/star-river"
+        },
+        {
+          "operation": "pop",
+          "route_id": "search.books"
+        }
+      ]
+    }
+  ]
+}

@@ -67,11 +67,28 @@ struct RootShellView: View {
     private func destination(for route: AppRoute) -> some View {
         switch route {
         case .searchBooks:
-            SearchBooksView {
-                router.push(.bookDetail, on: .shelf)
+            SearchBooksView { result in
+                router.push(
+                    .bookDetail(
+                        SearchBookRoute(
+                            name: result.name,
+                            author: result.author,
+                            kind: result.kind,
+                            lastChapter: result.lastChapter,
+                            intro: result.intro,
+                            bookURL: result.bookURL,
+                            coverURL: result.coverURL,
+                            originName: result.originName
+                        )
+                    ),
+                    on: .shelf
+                )
             }
-        case .bookDetail:
-            BookDetailView(snapshot: .remoteSourceLoginUnshelved)
+        case .bookDetail(let book):
+            BookDetailView(
+                snapshot: .remoteSourceLoginUnshelved,
+                display: BookDetailDisplay(route: book)
+            )
         }
     }
 
@@ -117,47 +134,209 @@ private struct RootContentView: View {
 }
 
 private struct SearchBooksView: View {
-    let openBookDetail: () -> Void
+    let openBookDetail: (SearchResult) -> Void
+    @State private var session: SearchSession
+
+    init(openBookDetail: @escaping (SearchResult) -> Void) {
+        self.openBookDetail = openBookDetail
+        _session = State(
+            initialValue: SearchEnvironment.makeSession()
+        )
+    }
 
     var body: some View {
         List {
-            Section {
-                Button(action: openBookDetail) {
-                    HStack(spacing: 14) {
-                        Image(systemName: "book.closed.fill")
-                            .font(.title2)
-                            .foregroundStyle(.tint)
-                            .frame(width: 42, height: 52)
-                            .background(
-                                Color.accentColor.opacity(0.12),
-                                in: RoundedRectangle(cornerRadius: 9)
-                            )
-                        VStack(alignment: .leading, spacing: 5) {
-                            Text("星河纪事")
-                                .font(.headline)
-                            Text("林舟 · 科幻,冒险")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                            Text("第二章 回声")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .foregroundStyle(.tertiary)
-                    }
-                    .contentShape(Rectangle())
+            if session.results.isEmpty {
+                ContentUnavailableView {
+                    Label(
+                        session.query.isEmpty
+                            ? "搜索书籍"
+                            : "没有找到结果",
+                        systemImage: "books.vertical"
+                    )
+                } description: {
+                    Text(
+                        session.query.isEmpty
+                            ? "输入书名或作者，从已选择的书源中搜索。"
+                            : "可以更换搜索范围或关键词后重试。"
+                    )
                 }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("action.search.openBookDetail")
-            } header: {
-                Text("本地书源模拟结果")
-            } footer: {
-                Text("当前切片用于验收详情动作；真实搜索执行将在后续切片接入。")
+                .accessibilityIdentifier("state.search.empty")
+            } else {
+                Section {
+                    ForEach(session.results) { result in
+                        Button {
+                            openBookDetail(result)
+                        } label: {
+                            searchResultRow(result)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier(
+                            "action.search.openBookDetail.\(result.id)"
+                        )
+                    }
+                } header: {
+                    Text(
+                        "搜索结果 · \(session.results.count)"
+                    )
+                } footer: {
+                    Text(scopeSummary)
+                }
+            }
+
+            if let error = session.errorMessage {
+                Section {
+                    Label(error, systemImage: "exclamationmark.triangle")
+                        .foregroundStyle(.red)
+                        .accessibilityIdentifier("state.search.error")
+                }
             }
         }
         .accessibilityIdentifier("screen.search.books")
         .navigationTitle("搜索")
+        .searchable(
+            text: $session.query,
+            placement: .navigationBarDrawer(displayMode: .always),
+            prompt: "书名或作者"
+        )
+        .onSubmit(of: .search) {
+            session.search()
+        }
+        .overlay {
+            if session.loadingState.showsProgress {
+                ProgressView("正在搜索…")
+                    .padding()
+                    .background(.regularMaterial, in: .rect(cornerRadius: 12))
+                    .accessibilityIdentifier("state.search.loading")
+            }
+        }
+        .toolbar {
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                Button {
+                    session.search()
+                } label: {
+                    Image(systemName: "magnifyingglass")
+                }
+                .disabled(
+                    session.query.trimmingCharacters(
+                        in: .whitespacesAndNewlines
+                    ).isEmpty
+                )
+                .accessibilityLabel("搜索")
+                .accessibilityIdentifier("action.search.submit")
+                if session.loadingState.showsStop {
+                    Button("停止", action: session.stop)
+                        .accessibilityIdentifier("action.search.stop")
+                }
+                scopeMenu
+            }
+        }
+    }
+
+    private var scopeSummary: String {
+        let names = session.scope.displayNames
+        return names.isEmpty
+            ? "范围：全部书源"
+            : "范围：\(names.joined(separator: "、"))"
+    }
+
+    private var scopeMenu: some View {
+        Menu {
+            Button {
+                session.selectAllSources()
+            } label: {
+                Label(
+                    "全部书源",
+                    systemImage: session.scopeMenu.allChecked
+                        ? "checkmark"
+                        : "circle"
+                )
+            }
+
+            if !session.scopeMenu.selected.isEmpty {
+                Section("当前范围") {
+                    ForEach(
+                        session.scopeMenu.selected,
+                        id: \.self
+                    ) { name in
+                        Button {
+                            session.removeScope(name)
+                        } label: {
+                            Label(
+                                name,
+                                systemImage: "checkmark"
+                            )
+                        }
+                    }
+                }
+            }
+
+            if !session.scopeMenu.available.isEmpty {
+                Section("分组") {
+                    ForEach(
+                        session.scopeMenu.available,
+                        id: \.self
+                    ) { group in
+                        Button(group) {
+                            session.selectGroup(group)
+                        }
+                    }
+                }
+            }
+        } label: {
+            Image(systemName: "line.3.horizontal.decrease.circle")
+        }
+        .accessibilityLabel("搜索范围")
+        .accessibilityIdentifier("action.search.scope")
+    }
+
+    private func searchResultRow(
+        _ result: SearchResult
+    ) -> some View {
+        HStack(spacing: 14) {
+            AsyncImage(url: result.coverURL.flatMap(URL.init(string:))) {
+                image in
+                image.resizable().scaledToFill()
+            } placeholder: {
+                Image(systemName: "book.closed.fill")
+                    .font(.title2)
+                    .foregroundStyle(.tint)
+            }
+            .frame(width: 42, height: 54)
+            .background(
+                Color.accentColor.opacity(0.12),
+                in: RoundedRectangle(cornerRadius: 9)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 9))
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text(result.name)
+                    .font(.headline)
+                Text(
+                    [result.author, result.kind]
+                        .filter { !$0.isEmpty }
+                        .joined(separator: " · ")
+                )
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                if !result.lastChapter.isEmpty {
+                    Text(result.lastChapter)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Text(
+                    result.originCount > 1
+                        ? "\(result.originCount) 个书源"
+                        : result.originName
+                )
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+            }
+            Spacer()
+            Image(systemName: "chevron.right")
+                .foregroundStyle(.tertiary)
+        }
+        .contentShape(Rectangle())
     }
 }
 

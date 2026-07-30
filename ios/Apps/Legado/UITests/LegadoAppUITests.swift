@@ -327,6 +327,88 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testDiscoverySearchFlow() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = contract.projection == "regularSplit"
+            ? .landscapeLeft
+            : .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        require("action.shelf.openSearch").tap()
+        require("screen.search.books")
+
+        let scopeButton = app.buttons[
+            "action.search.scope"
+        ].firstMatch
+        XCTAssertTrue(scopeButton.waitForExistence(timeout: 8))
+        scopeButton.tap()
+        let scienceFiction = app.buttons["科幻"].firstMatch
+        XCTAssertTrue(scienceFiction.waitForExistence(timeout: 8))
+        scienceFiction.tap()
+
+        let searchField = app.searchFields.firstMatch
+        XCTAssertTrue(searchField.waitForExistence(timeout: 8))
+        searchField.tap()
+        searchField.typeText("星河\n")
+
+        let firstResult = app.staticTexts["星河纪事"].firstMatch
+        XCTAssertTrue(firstResult.waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["星河之外"].firstMatch.exists)
+        XCTAssertFalse(app.staticTexts["奇幻星河"].firstMatch.exists)
+        XCTAssertTrue(
+            app.staticTexts["范围：科幻"].firstMatch
+                .waitForExistence(timeout: 8)
+        )
+
+        firstResult.tap()
+        require("screen.bookDetail")
+        XCTAssertTrue(app.staticTexts["星河纪事"].firstMatch.exists)
+        XCTAssertTrue(app.staticTexts["作者：林舟"].firstMatch.exists)
+
+        let back = app.navigationBars.buttons.element(boundBy: 0)
+        XCTAssertTrue(back.waitForExistence(timeout: 8))
+        back.tap()
+        require("screen.search.books")
+        let retainedQuery = try XCTUnwrap(
+            app.searchFields.firstMatch.value as? String
+        )
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "screen": "screen.search.books",
+            "query_after_return": retainedQuery,
+            "scope": "科幻",
+            "result_names": [
+                "星河纪事",
+                "星河之外",
+            ],
+            "detail": [
+                "screen": "screen.bookDetail",
+                "name": "星河纪事",
+                "author": "林舟",
+            ],
+            "route_trace": [
+                ["operation": "push", "route_id": "search.books"],
+                [
+                    "operation": "push",
+                    "route_id":
+                        "book.detail:http://legado.local/books/star-river",
+                ],
+                ["operation": "pop", "route_id": "search.books"],
+            ],
+        ])
+    }
+
     private func observeStartupCase(
         id: String,
         initial: String,

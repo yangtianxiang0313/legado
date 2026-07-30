@@ -12,6 +12,7 @@
 		8C9B2045210D4D12A72EDB80 /* BookDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F643378684698E56A60BB42 /* BookDetailView.swift */; };
 		9AEB7EA85E118BCDEF1BC722 /* RootShellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AA56687558EF2C28A2F526F /* RootShellView.swift */; };
 		DACC0FDD44450CF8A823AC81 /* LegadoStoreSafeKit in Frameworks */ = {isa = PBXBuildFile; productRef = 752C493A99E434E7A062F2B3 /* LegadoStoreSafeKit */; };
+		E1A98B56D9C34F74A21B0137 /* SearchEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2A98B56D9C34F74A21B0137 /* SearchEnvironment.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -32,6 +33,7 @@
 		7347A313DD725C4724AF05DC /* LegadoKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = LegadoKit; path = ../../Packages/LegadoKit; sourceTree = SOURCE_ROOT; };
 		8F643378684698E56A60BB42 /* BookDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookDetailView.swift; sourceTree = "<group>"; };
 		DB97AF8062C9ACB83622DB4D /* LegadoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegadoApp.swift; sourceTree = "<group>"; };
+		E2A98B56D9C34F74A21B0137 /* SearchEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchEnvironment.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -52,6 +54,7 @@
 				8F643378684698E56A60BB42 /* BookDetailView.swift */,
 				DB97AF8062C9ACB83622DB4D /* LegadoApp.swift */,
 				1AA56687558EF2C28A2F526F /* RootShellView.swift */,
+				E2A98B56D9C34F74A21B0137 /* SearchEnvironment.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -184,6 +187,7 @@
 				8C9B2045210D4D12A72EDB80 /* BookDetailView.swift in Sources */,
 				7CF2EBDB0B65A2B3E697C3BD /* LegadoApp.swift in Sources */,
 				9AEB7EA85E118BCDEF1BC722 /* RootShellView.swift in Sources */,
+				E1A98B56D9C34F74A21B0137 /* SearchEnvironment.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

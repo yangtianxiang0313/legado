@@ -51,6 +51,7 @@ public enum MinimalTaskConformanceRunner {
         || fixtureID == LocalBookRelocationConformanceRunner.fixtureID
         || fixtureID == BookImportConformanceRunner.fixtureID
         || fixtureID == SearchBookLifecycleConformanceRunner.fixtureID
+        || fixtureID == SearchUIFlowConformanceRunner.fixtureID
       ? "runtime-lab"
       : "source-lab"
     let fixtureDirectory = try resolve(
@@ -189,6 +190,19 @@ public enum MinimalTaskConformanceRunner {
     }
     if fixtureID == SearchBookLifecycleConformanceRunner.fixtureID {
       let run = try SearchBookLifecycleConformanceRunner.run(
+        fixtureDirectory: fixtureDirectory
+      )
+      return try finish(
+        taskID: taskID,
+        fixtureID: fixtureID,
+        goldenPath: goldenPath,
+        actualArtifact: run.artifact,
+        canonicalPlans: run.requestPlan,
+        root: root
+      )
+    }
+    if fixtureID == SearchUIFlowConformanceRunner.fixtureID {
+      let run = try SearchUIFlowConformanceRunner.run(
         fixtureDirectory: fixtureDirectory
       )
       return try finish(

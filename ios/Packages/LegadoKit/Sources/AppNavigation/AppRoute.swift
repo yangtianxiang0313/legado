@@ -9,12 +9,48 @@ public enum RootRoute: String, CaseIterable, Codable, Hashable, Identifiable, Se
     }
 }
 
-public enum AppRoute: String, Codable, Hashable, Identifiable, Sendable {
-    case searchBooks = "search.books"
-    case bookDetail = "book.detail"
+public struct SearchBookRoute: Codable, Hashable, Sendable {
+    public let name: String
+    public let author: String
+    public let kind: String
+    public let lastChapter: String
+    public let intro: String
+    public let bookURL: String
+    public let coverURL: String?
+    public let originName: String
+
+    public init(
+        name: String,
+        author: String,
+        kind: String,
+        lastChapter: String,
+        intro: String,
+        bookURL: String,
+        coverURL: String?,
+        originName: String
+    ) {
+        self.name = name
+        self.author = author
+        self.kind = kind
+        self.lastChapter = lastChapter
+        self.intro = intro
+        self.bookURL = bookURL
+        self.coverURL = coverURL
+        self.originName = originName
+    }
+}
+
+public enum AppRoute: Codable, Hashable, Identifiable, Sendable {
+    case searchBooks
+    case bookDetail(SearchBookRoute)
 
     public var id: String {
-        rawValue
+        switch self {
+        case .searchBooks:
+            "search.books"
+        case .bookDetail(let book):
+            "book.detail:\(book.bookURL)"
+        }
     }
 }
 

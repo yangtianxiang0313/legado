@@ -1,5 +1,56 @@
+import AppNavigation
 import AppUseCases
 import SwiftUI
+
+struct BookDetailDisplay: Equatable {
+    let name: String
+    let author: String
+    let kind: String
+    let lastChapter: String
+    let intro: String
+    let coverURL: String?
+    let originName: String
+
+    static let acceptance = BookDetailDisplay(
+        name: "星河纪事",
+        author: "林舟",
+        kind: "科幻 · 冒险",
+        lastChapter: "第二章 回声",
+        intro: "一段包含 & 与 <转义> 的简介。",
+        coverURL: nil,
+        originName: "本地书源"
+    )
+
+    init(route: SearchBookRoute) {
+        self.init(
+            name: route.name,
+            author: route.author,
+            kind: route.kind,
+            lastChapter: route.lastChapter,
+            intro: route.intro,
+            coverURL: route.coverURL,
+            originName: route.originName
+        )
+    }
+
+    init(
+        name: String,
+        author: String,
+        kind: String,
+        lastChapter: String,
+        intro: String,
+        coverURL: String?,
+        originName: String
+    ) {
+        self.name = name
+        self.author = author
+        self.kind = kind
+        self.lastChapter = lastChapter
+        self.intro = intro
+        self.coverURL = coverURL
+        self.originName = originName
+    }
+}
 
 extension BookDetailActionSnapshot {
     static let remoteSourceLoginUnshelved = BookDetailActionSnapshot(
@@ -112,6 +163,15 @@ struct BookDetailAcceptanceView: View {
 
 struct BookDetailView: View {
     let snapshot: BookDetailActionSnapshot
+    let display: BookDetailDisplay
+
+    init(
+        snapshot: BookDetailActionSnapshot,
+        display: BookDetailDisplay = .acceptance
+    ) {
+        self.snapshot = snapshot
+        self.display = display
+    }
 
     private var availability: BookDetailActionAvailability {
         BookDetailActionAvailability(snapshot: snapshot)
@@ -121,9 +181,15 @@ struct BookDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 HStack(alignment: .top, spacing: 18) {
-                    Image(systemName: "book.closed.fill")
-                        .font(.system(size: 46))
-                        .foregroundStyle(.tint)
+                    AsyncImage(
+                        url: display.coverURL.flatMap(URL.init(string:))
+                    ) { image in
+                        image.resizable().scaledToFill()
+                    } placeholder: {
+                        Image(systemName: "book.closed.fill")
+                            .font(.system(size: 46))
+                            .foregroundStyle(.tint)
+                    }
                         .frame(width: 104, height: 142)
                         .background(
                             Color.accentColor.opacity(0.12),
@@ -131,21 +197,24 @@ struct BookDetailView: View {
                         )
 
                     VStack(alignment: .leading, spacing: 9) {
-                        Text("星河纪事")
+                        Text(display.name)
                             .font(.title.bold())
-                        Text("作者：林舟")
+                        Text("作者：\(display.author)")
                             .foregroundStyle(.secondary)
-                        Text("科幻 · 冒险")
+                        Text(display.kind)
                             .foregroundStyle(.secondary)
-                        Text("最新：第二章 回声")
+                        Text("最新：\(display.lastChapter)")
                             .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        Text("书源：\(display.originName)")
+                            .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                 }
 
                 Divider()
 
-                Text("一段包含 & 与 <转义> 的简介。")
+                Text(display.intro)
                     .font(.body)
 
                 Button {

@@ -34,13 +34,23 @@ final class AppRouterTests: XCTestCase {
     @MainActor
     func testBookDetailCanFollowSearchOnShelfStack() {
         let router = AppRouter(selectedRoot: .shelf)
+        let book = SearchBookRoute(
+            name: "星河纪事",
+            author: "林舟",
+            kind: "科幻",
+            lastChapter: "第二章",
+            intro: "简介",
+            bookURL: "book://star-river",
+            coverURL: nil,
+            originName: "本地科幻书源"
+        )
 
         router.push(.searchBooks)
-        router.push(.bookDetail)
+        router.push(.bookDetail(book))
 
         XCTAssertEqual(
             router.path(for: .shelf),
-            [.searchBooks, .bookDetail]
+            [.searchBooks, .bookDetail(book)]
         )
     }
 }

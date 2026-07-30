@@ -4079,3 +4079,204 @@ public enum SearchBookLifecycleDomainProbe {
     )
   }
 }
+
+public enum SearchUIFlowFixtureProjectionError: Error, Sendable {
+  case invalidFixture
+}
+
+public struct SearchUIFlowFixtureProjectionRun: Sendable {
+  public let artifact: JSONValue
+  public let requestPlan: JSONValue
+
+  public init(artifact: JSONValue, requestPlan: JSONValue) {
+    self.artifact = artifact
+    self.requestPlan = requestPlan
+  }
+}
+
+public enum SearchUIFlowFixtureProjection {
+  public static let fixtureID = "rl-ui-discovery-search-flow-001"
+
+  public static func run(
+    caseData: Data,
+    inputData: Data
+  ) throws -> SearchUIFlowFixtureProjectionRun {
+    let caseDocument: JSONValue
+    let inputDocument: JSONValue
+    do {
+      caseDocument = try JSONValueCodec.decode(caseData)
+      inputDocument = try JSONValueCodec.decode(inputData)
+    } catch {
+      throw SearchUIFlowFixtureProjectionError.invalidFixture
+    }
+    guard
+      case .object(let caseRoot) = caseDocument,
+      caseRoot["id"] == .string(fixtureID),
+      caseRoot["kind"] == .string("android_runtime_scenario"),
+      caseRoot["operation"] == .string("android_runtime"),
+      case .object(let inputRoot) = inputDocument,
+      inputRoot["schema_version"] == .number(JSONNumber(1)),
+      case .array(let inputCases)? = inputRoot["cases"]
+    else {
+      throw SearchUIFlowFixtureProjectionError.invalidFixture
+    }
+
+    var identifiers: Set<String> = []
+    var plans: [JSONValue] = []
+    var cases: [JSONValue] = []
+    for inputValue in inputCases {
+      guard
+        case .object(let inputCase) = inputValue,
+        case .string(let id)? = inputCase["id"],
+        identifiers.insert(id).inserted,
+        case .string(let operation)? = inputCase["operation"],
+        case .object(let arguments)? = inputCase["arguments"]
+      else {
+        throw SearchUIFlowFixtureProjectionError.invalidFixture
+      }
+      plans.append(
+        .object([
+          "operation": .string(operation),
+          "arguments": .object(arguments),
+        ])
+      )
+      cases.append(
+        .object([
+          "id": .string(id),
+          "operation": .string(operation),
+          "result": try result(
+            operation: operation,
+            arguments: arguments
+          ),
+          "issue": .null,
+        ])
+      )
+    }
+
+    let requestPlan = JSONValue.array(plans)
+    return SearchUIFlowFixtureProjectionRun(
+      artifact: .object([
+        "schema_version": .number(JSONNumber(1)),
+        "fixture_id": .string(fixtureID),
+        "engine": .object([
+          "platform": .string("ios"),
+          "revision": .string("search-ui-flow-v1"),
+          "compatibility_profile": .string("android-legado-v1"),
+        ]),
+        "request_plan": requestPlan,
+        "result": .object([
+          "type": .string("ui_runtime"),
+          "value": .object([
+            "portable_known_projection": .object([
+              "cases": .array(cases)
+            ])
+          ]),
+        ]),
+        "issues": .array([]),
+      ]),
+      requestPlan: requestPlan
+    )
+  }
+
+  private static func result(
+    operation: String,
+    arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    switch operation {
+    case "search_scope_projection":
+      guard case .string(let serialized)? = arguments["scope"]
+      else {
+        throw SearchUIFlowFixtureProjectionError.invalidFixture
+      }
+      var scope = SearchScopeSelection(serialized: serialized)
+      if case .string(let name)? = arguments["remove"] {
+        scope.remove(displayName: name)
+      } else if arguments["remove"] != .null {
+        throw SearchUIFlowFixtureProjectionError.invalidFixture
+      }
+      return scopeValue(scope)
+    case "search_activity_scope_menu":
+      guard
+        case .string(let serialized)? = arguments["scope"],
+        case .array(let groupValues)? = arguments["groups"]
+      else {
+        throw SearchUIFlowFixtureProjectionError.invalidFixture
+      }
+      let groups = try groupValues.map {
+        guard case .string(let value) = $0 else {
+          throw SearchUIFlowFixtureProjectionError.invalidFixture
+        }
+        return value
+      }
+      let menu = SearchScopeMenuState(
+        scope: SearchScopeSelection(serialized: serialized),
+        groups: groups
+      )
+      return .object([
+        "serialized_scope": .string(menu.scope.serialized),
+        "is_all": .bool(menu.scope.isAll),
+        "selected": .array(menu.selected.map(JSONValue.string)),
+        "available": .array(menu.available.map(JSONValue.string)),
+        "all_checked": .bool(menu.allChecked),
+      ])
+    case "search_activity_loading_projection":
+      return .object([
+        "started": .object([
+          "progress": .string(
+            SearchLoadingState.loading.showsProgress
+              ? "visible"
+              : "gone"
+          ),
+          "stop": .string(
+            SearchLoadingState.loading.showsStop
+              ? "visible"
+              : "invisible"
+          ),
+        ]),
+        "finished": .object([
+          "progress": .string(
+            SearchLoadingState.idle.showsProgress
+              ? "visible"
+              : "gone"
+          ),
+          "stop": .string(
+            SearchLoadingState.idle.showsStop
+              ? "visible"
+              : "invisible"
+          ),
+        ]),
+      ])
+    case "search_activity_detail_roundtrip":
+      guard
+        case .string(let query)? = arguments["query"],
+        case .string(let name)? = arguments["name"],
+        case .string(let author)? = arguments["author"],
+        case .string(let bookURL)? = arguments["book_url"]
+      else {
+        throw SearchUIFlowFixtureProjectionError.invalidFixture
+      }
+      return .object([
+        "destination": .string("book_detail"),
+        "name": .string(name),
+        "author": .string(author),
+        "book_url": .string(bookURL),
+        "query_after_return": .string(query),
+      ])
+    default:
+      throw SearchUIFlowFixtureProjectionError.invalidFixture
+    }
+  }
+
+  private static func scopeValue(
+    _ scope: SearchScopeSelection
+  ) -> JSONValue {
+    .object([
+      "serialized_scope": .string(scope.serialized),
+      "display_names": .array(
+        scope.displayNames.map(JSONValue.string)
+      ),
+      "is_source": .bool(scope.isSource),
+      "is_all": .bool(scope.isAll),
+    ])
+  }
+}
