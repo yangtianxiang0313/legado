@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P3-USABLE-SHELF-001",
+  "status": "completed",
+  "completed_at": "2026-07-30T17:46:10Z",
+  "mode": "critical_path_only",
+  "title": "P3 可管理书架主链路",
+  "objective": "用户可按 Android 业务语义查看排序与新增章节状态，并对书架书籍执行可解释、可恢复的批量管理。",
+  "completion_evidence": [
+    {
+      "claim": "书架支持五种排序、分组覆盖和持久化手动顺序",
+      "status": "verified",
+      "evidence": ".harness-runtime/loop/IOS-LIBRARY-DOMAIN-SHELF-SORT-UNREAD-001/attempt-1"
+    },
+    {
+      "claim": "目录增长与阅读清零形成 Android 对齐的新增章节状态",
+      "status": "verified",
+      "evidence": ".harness-runtime/loop/IOS-LIBRARY-DOMAIN-SHELF-SORT-UNREAD-001/attempt-1"
+    },
+    {
+      "claim": "批量删除、清缓存、更新开关、分组与换源逐书返回部分提交结果",
+      "status": "verified",
+      "evidence": ".harness-runtime/loop/IOS-LIBRARY-DOMAIN-SHELF-BATCH-PARTIAL-COMMIT-001/attempt-1"
+    },
+    {
+      "claim": "排序、新增章节与批量管理已接入 GRDB 和真实书架页面",
+      "status": "verified",
+      "evidence": ".harness-runtime/loop/IOS-APP-NAVIGATION-SHELF-MANAGEMENT-MILESTONE-001/attempt-2"
+    }
+  ],
+  "known_limits": [
+    "书架分组当前采用单 groupID；Android 位掩码多分组语义仍是后续边界。",
+    "清缓存已接通操作语义，但离线正文缓存的实际生产链路尚未接入。",
+    "界面采用 iOS 原生控件和交互，不逐像素复刻 Android。"
+  ],
+  "stages": [
+    {
+      "id": "P3-01-SHELF-SORT-UNREAD",
+      "title": "实现排序与新增章节状态",
+      "outcome": "书架及分组采用确定的排序策略，并正确投影目录增长和已读清零状态。",
+      "selectors": [
+        {
+          "id": "SHELF-SORT-UNREAD",
+          "claim_ids": [
+            "BKC-SHELF-SORT-UNREAD-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P3-02-SHELF-BATCH-PARTIAL",
+      "title": "实现批量操作结果模型",
+      "outcome": "批量动作逐书执行并返回成功、失败、取消和部分提交的结构化结果。",
+      "selectors": [
+        {
+          "id": "SHELF-BATCH-PARTIAL",
+          "claim_ids": [
+            "BKC-SHELF-BATCH-PARTIAL-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P3-03-SHELF-MANAGEMENT-MILESTONE",
+      "title": "接通可用书架纵向主链路",
+      "outcome": "排序、新增章节状态和批量管理通过持久化端口接入书架页面，并完成一次 iPhone Simulator 里程碑验收。",
+      "selectors": [
+        {
+          "id": "SHELF-MANAGEMENT-MILESTONE",
+          "task_ids": [
+            "IOS-APP-NAVIGATION-SHELF-MANAGEMENT-MILESTONE-001"
+          ]
+        }
+      ]
+    }
+  ]
+}

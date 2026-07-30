@@ -740,6 +740,19 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                     "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
                 ]
             )
+        if target == (
+            "IOS-APP-NAVIGATION-BOOK-IMPORT-MILESTONE-001"
+        ):
+            allowed_paths.extend(
+                [
+                    "ios/Packages/LegadoKit/Sources/LibraryDomain/**",
+                    "ios/Packages/LegadoKit/Tests/LibraryDomainTests/**",
+                    "ios/Packages/LegadoKit/Sources/ReaderCore/**",
+                    "ios/Packages/LegadoKit/Tests/ReaderCoreTests/**",
+                    "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+                    "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+                ]
+            )
         return {
             "owner": "AppNavigation",
             "architecture_refs": [
@@ -1335,6 +1348,53 @@ def shelf_management_milestone_deliveries(
     ]
 
 
+def priority_policy_deliveries(
+    root: Path,
+) -> list[Mapping[str, Any]]:
+    policy = active_priority_policy(root)
+    if not isinstance(policy, dict):
+        return []
+    completed = completed_task_ids(root)
+    deliveries = []
+    for declaration in policy.get("deliveries", []):
+        target = str(declaration["target"])
+        prerequisites = set(declaration["prerequisite_task_ids"])
+        if target in completed or not prerequisites.issubset(completed):
+            continue
+        requirement = str(declaration["requirement_ref"])
+        deliveries.append(
+            {
+                "target": target,
+                "title": str(declaration["title"]),
+                "ledger_path": str(PRIORITY_PATH),
+                "ledger": {"packet_refs": []},
+                "entries": [
+                    {
+                        "validation": {
+                            "required": "milestone_integration",
+                            "state": "planned",
+                            "evidence_refs": [str(PRIORITY_PATH)],
+                        },
+                        "delivery": {
+                            "state": "planned",
+                            "work_item_refs": [target],
+                            "requirement_refs": [requirement],
+                        },
+                    }
+                ],
+                "source_anchors": declaration["source_anchors"],
+                "source_contract": {
+                    "path": str(PRIORITY_PATH),
+                    "fixture_id": str(declaration["fixture_id"]),
+                    "validation": str(
+                        declaration.get("validation", "tests")
+                    ),
+                },
+            }
+        )
+    return deliveries
+
+
 def active_priority_policy(root: Path) -> Mapping[str, Any] | None:
     path = root / PRIORITY_PATH
     if not path.is_file():
@@ -1381,6 +1441,34 @@ def active_priority_policy(root: Path) -> Mapping[str, Any] | None:
                 or any(not isinstance(value, str) for value in task_ids)
             ):
                 raise LoopError("PRIORITY_POLICY_INVALID")
+    deliveries = policy.get("deliveries", [])
+    if not isinstance(deliveries, list):
+        raise LoopError("PRIORITY_POLICY_INVALID")
+    delivery_targets: set[str] = set()
+    for delivery in deliveries:
+        if (
+            not isinstance(delivery, dict)
+            or not isinstance(delivery.get("target"), str)
+            or not delivery["target"]
+            or delivery["target"] in delivery_targets
+            or not isinstance(delivery.get("title"), str)
+            or not isinstance(delivery.get("fixture_id"), str)
+            or not isinstance(delivery.get("requirement_ref"), str)
+            or not isinstance(
+                delivery.get("prerequisite_task_ids"),
+                list,
+            )
+            or any(
+                not isinstance(value, str)
+                for value in delivery["prerequisite_task_ids"]
+            )
+            or not isinstance(delivery.get("source_anchors"), list)
+            or not delivery["source_anchors"]
+            or delivery.get("validation", "tests")
+            not in {"build", "tests", "simulator"}
+        ):
+            raise LoopError("PRIORITY_POLICY_INVALID")
+        delivery_targets.add(delivery["target"])
     return policy
 
 
@@ -1441,6 +1529,12 @@ def prioritized_work(
     deliveries.extend(
         value
         for value in shelf_management_milestone_deliveries(root)
+        if str(value["target"]) not in known_targets
+    )
+    known_targets = {str(value["target"]) for value in deliveries}
+    deliveries.extend(
+        value
+        for value in priority_policy_deliveries(root)
         if str(value["target"]) not in known_targets
     )
     characterizations = pending_characterizations(root)
@@ -2079,6 +2173,22 @@ def app_navigation_delivery_contract(
                 "ui-shelf-management-milestone-v1.json"
             ),
             "test_method": "testShelfManagementMilestone",
+        },
+        "milestone-book-import-v1": {
+            "goal": (
+                "把 LibraryDomain 已对齐的 URL、本地文件、归档和重复导入"
+                "语义接入 AppUseCases、应用管理文件目录与 DatabaseGRDB；"
+                "先以真实 TXT 完成导入、入架、目录、正文、阅读和重启恢复，"
+                "格式解析能力必须真实存在，不能只按扩展名宣称支持。"
+            ),
+            "acceptance_id":
+                "structured-book-import-milestone-acceptance",
+            "scenario_id": "ui-book-import-milestone-v1",
+            "expected": (
+                "ios/harness/ui/expected/"
+                "ui-book-import-milestone-v1.json"
+            ),
+            "test_method": "testBookImportMilestone",
         },
     }
     feature = features.get(fixture_id)
@@ -3121,6 +3231,12 @@ def queue_status(root: Path) -> Mapping[str, Any]:
     deliveries.extend(
         value
         for value in shelf_management_milestone_deliveries(root)
+        if str(value["target"]) not in known_targets
+    )
+    known_targets = {str(value["target"]) for value in deliveries}
+    deliveries.extend(
+        value
+        for value in priority_policy_deliveries(root)
         if str(value["target"]) not in known_targets
     )
     characterizations = pending_characterizations(root)

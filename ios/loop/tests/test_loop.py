@@ -2469,6 +2469,51 @@ class MinimalLoopTests(unittest.TestCase):
             owner["allowed_paths"],
         )
 
+    def test_priority_policy_declares_next_vertical_milestone(self):
+        policy = {
+            "id": "MILESTONE-P4-USABLE-BOOK-IMPORT-001",
+            "deliveries": [
+                {
+                    "target": "IOS-APP-NAVIGATION-BOOK-IMPORT-MILESTONE-001",
+                    "title": "导入主链路",
+                    "prerequisite_task_ids": ["IOS-DOMAIN-IMPORT-001"],
+                    "requirement_ref": "REQ-001@1#RC-01",
+                    "fixture_id": "milestone-book-import-v1",
+                    "validation": "simulator",
+                    "source_anchors": [{"path": "LocalBook.kt"}],
+                }
+            ],
+        }
+        with (
+            patch.object(
+                loop,
+                "completed_task_ids",
+                return_value={"IOS-DOMAIN-IMPORT-001"},
+            ),
+            patch.object(
+                loop,
+                "active_priority_policy",
+                return_value=policy,
+            ),
+        ):
+            deliveries = loop.priority_policy_deliveries(Path("."))
+
+        self.assertEqual(
+            "IOS-APP-NAVIGATION-BOOK-IMPORT-MILESTONE-001",
+            deliveries[0]["target"],
+        )
+        self.assertEqual(
+            "simulator",
+            deliveries[0]["source_contract"]["validation"],
+        )
+        contract = loop.app_navigation_delivery_contract(
+            "milestone-book-import-v1"
+        )
+        self.assertEqual(
+            "testBookImportMilestone",
+            contract["ui_acceptance"]["test_method"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

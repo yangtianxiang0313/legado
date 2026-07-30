@@ -1,55 +1,61 @@
 {
   "schema_version": 1,
-  "id": "MILESTONE-P3-USABLE-SHELF-001",
+  "id": "MILESTONE-P4-USABLE-BOOK-IMPORT-001",
   "status": "active",
   "mode": "critical_path_only",
-  "title": "P3 可管理书架主链路",
-  "objective": "用户可按 Android 业务语义查看排序与新增章节状态，并对书架书籍执行可解释、可恢复的批量管理。",
+  "title": "P4 可用书籍导入主链路",
+  "objective": "用户可从 URL 或 iOS 文件选择器导入书籍，持久化进入书架，并继续目录、正文、阅读与重启恢复主链路。",
   "completion_evidence": [
-    "书架支持最近阅读、最近更新、名称、手动与综合时间排序",
-    "分组排序可以覆盖全局排序，且不破坏稳定书籍身份",
-    "目录增长形成新增章节状态，进入阅读后按 Android 语义清零",
-    "批量管理明确表达逐书成功、失败、取消和部分提交结果",
-    "删除、清缓存、更新开关、分组和换源复用既有领域端口",
-    "完整书架管理主链路只在一个 iPhone Simulator 里程碑验收"
+    "URL 导入复用已有书短路与书源匹配顺序，不在 UI 层重新实现规则",
+    "本地文件通过安全作用域复制到应用管理目录，稳定书籍身份不依赖临时文件选择器 URL",
+    "TXT 文件可生成目录和正文，导入后可从书架进入阅读器",
+    "重复导入保持书籍身份并刷新本地目录，空文件返回可解释失败",
+    "完整导入到阅读主链路只在一个 iPhone Simulator 里程碑验收"
   ],
-  "deferred_policy": "离线缓存、远程书下载、WebDAV、朗读、跨应用导入导出和根入口可见性在书架管理主链路完成后再进入活动任务。",
+  "deferred_policy": "EPUB、UMD、PDF、MOBI、AZW3 与 ZIP 的实际格式解析器在 TXT 主链路完成后按源码能力逐项迁移；本里程碑不以扩展名声明代替真实解析能力。",
+  "deliveries": [
+    {
+      "target": "IOS-APP-NAVIGATION-BOOK-IMPORT-MILESTONE-001",
+      "title": "本地与 URL 书籍导入到阅读里程碑",
+      "prerequisite_task_ids": [
+        "IOS-LIBRARY-DOMAIN-BOOK-IMPORT-CHANNEL-RUNTIME-001",
+        "IOS-LIBRARY-DOMAIN-LOCAL-BOOK-RELOCATION-RUNTIME-001"
+      ],
+      "requirement_ref": "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01",
+      "fixture_id": "milestone-book-import-v1",
+      "validation": "simulator",
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "f371a8706a10ab9cc027a3ebe4b795973a57fc0c",
+          "path": "app/src/main/java/io/legado/app/ui/main/bookshelf/BaseBookshelfFragment.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.main.bookshelf.BaseBookshelfFragment/onCompatOptionsItemSelected"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "ef3977f03fcb1b639d53953c9c0131c4cf21d5ce",
+          "path": "app/src/main/java/io/legado/app/ui/book/import/local/ImportBookViewModel.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.import.local.ImportBookViewModel"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "0c0c50252d9c2590053fbf10cd39c49e314839e0",
+          "path": "app/src/main/java/io/legado/app/model/localBook/LocalBook.kt",
+          "symbol_id": "kotlin://io.legado.app.model.localBook.LocalBook/importFiles"
+        }
+      ]
+    }
+  ],
   "stages": [
     {
-      "id": "P3-01-SHELF-SORT-UNREAD",
-      "title": "实现排序与新增章节状态",
-      "outcome": "书架及分组采用确定的排序策略，并正确投影目录增长和已读清零状态。",
+      "id": "P4-01-BOOK-IMPORT-MILESTONE",
+      "title": "接通导入到阅读纵向主链路",
+      "outcome": "现有导入领域语义通过文件、数据库与导航适配器接入书架和阅读器。",
       "selectors": [
         {
-          "id": "SHELF-SORT-UNREAD",
-          "claim_ids": [
-            "BKC-SHELF-SORT-UNREAD-001"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "P3-02-SHELF-BATCH-PARTIAL",
-      "title": "实现批量操作结果模型",
-      "outcome": "批量动作逐书执行并返回成功、失败、取消和部分提交的结构化结果。",
-      "selectors": [
-        {
-          "id": "SHELF-BATCH-PARTIAL",
-          "claim_ids": [
-            "BKC-SHELF-BATCH-PARTIAL-001"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "P3-03-SHELF-MANAGEMENT-MILESTONE",
-      "title": "接通可用书架纵向主链路",
-      "outcome": "排序、新增章节状态和批量管理通过持久化端口接入书架页面，并完成一次 iPhone Simulator 里程碑验收。",
-      "selectors": [
-        {
-          "id": "SHELF-MANAGEMENT-MILESTONE",
+          "id": "BOOK-IMPORT-MILESTONE",
           "task_ids": [
-            "IOS-APP-NAVIGATION-SHELF-MANAGEMENT-MILESTONE-001"
+            "IOS-APP-NAVIGATION-BOOK-IMPORT-MILESTONE-001"
           ]
         }
       ]
