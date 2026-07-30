@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P42-PRODUCTION-SOURCE-NETWORK-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P42 真实书源进入生产网络主链",
   "objective": "修复正常启动仍使用 LocalBookSourceTransport 和内置演示书源的问题：在 LegadoSourceKit 建立独立 NetworkFoundation 适配器，正常产品默认通过 URLSession 执行导入书源的真实 HTTP/HTTPS 请求；本地书站与离线失败模式只允许由显式测试参数启用。",
