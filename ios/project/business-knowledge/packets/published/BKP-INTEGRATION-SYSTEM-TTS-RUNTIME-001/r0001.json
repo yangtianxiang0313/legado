@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-INTEGRATION-SYSTEM-TTS-RUNTIME-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "integration.system-text-to-speech-runtime-golden",
+  "title": "受保护 Android Golden 验证的系统朗读队列、生命周期与进度语义",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "adba6419fc0456866e7d4eb71e124a0017b8077fa226065dce0d1a358807e161"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "integration.permissions",
+      "integration.profiles"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE"
+    ],
+    "subject_keys": [
+      "integration.permissions",
+      "integration.profiles"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-INTEGRATION-TTS-001",
+      "revision": 3,
+      "semantic_key": "integration.system.text-to-speech",
+      "kind": "runtime_behavior",
+      "topic": "系统朗读",
+      "statement": "在 il-integration-system-text-to-speech-001 的 8 个固定 Android 场景中，TTS helper 按换行拆分文本，先提交一次空文本 QUEUE_FLUSH，忽略空白段，再用 legado_tts0、legado_tts1、legado_tts2 依次 QUEUE_ADD 三个非空段；引擎初始化期间的连续 speak 不下发队列，只保留最后一次文本。stop 仅停止并保留引擎引用，clear 则停止、shutdown 并清空引用。TTSReadAloudService 将自定义语速 7 写为约 1.2 且不重建引擎，跟随系统且不重置时不写语速；一次 utterance 完成后会跨过仅含标点的中间段，将 nowSpeak 推进到 2、readAloudNumber 推进到 7。固定 Android 运行环境中的系统引擎初始化成功，默认引擎为 com.google.android.tts，最大输入长度为 4000。引擎名称、安装列表和最大长度属于平台环境证据，不是跨平台产品要求；音频波形、发声时序与 Android TextToSpeech 对象不属于本次可移植合同。iOS 后续实现应保持队列、生命周期、语速和阅读进度语义与 AVSpeechSynthesizer 等平台对象隔离，本 characterization 任务不授权产品实现或新增依赖。",
+      "subject_keys": [
+        "integration.permissions",
+        "integration.profiles"
+      ],
+      "depends_on": [],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [
+          {
+            "id": "AF-TTS-HELPER-SPEAK",
+            "revision_sha256": "bb998b243e5b3a6013d35342ee2cebb95c9e3e1caa65c4ba64a25f623cddbabe"
+          },
+          {
+            "id": "AF-TTS-HELPER-CLEAR",
+            "revision_sha256": "11df43d6f857e04508622a316fa66cb55a838424570ef8cc0d05ec01ec998c68"
+          },
+          {
+            "id": "AF-TTS-SERVICE-INIT",
+            "revision_sha256": "22c2d55a61e6e51c980fe5e908264370e136c3e9ffea00467838a4b324d52a7c"
+          },
+          {
+            "id": "AF-TTS-SERVICE-SPEECH-RATE",
+            "revision_sha256": "233cab5334a7a5d0f4c478824a4fdc83059bfe9de00f9eaf4fa9f3bf7a1b4c91"
+          },
+          {
+            "id": "AF-TTS-SERVICE-UTTERANCE-DONE",
+            "revision_sha256": "b4b09f37d6abb8ccf4ba067bb8fa2056df01850bcfffc7ebf5800bc1c71ac94a"
+          }
+        ],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "3165bb3e80eff5db2f9e7d23a2b7f19e64c24054",
+            "path": "app/src/main/java/io/legado/app/help/TTS.kt",
+            "symbol_id": "kotlin://io.legado.app.help/TTS/speak"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "3165bb3e80eff5db2f9e7d23a2b7f19e64c24054",
+            "path": "app/src/main/java/io/legado/app/help/TTS.kt",
+            "symbol_id": "kotlin://io.legado.app.help/TTS/clearTts"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "2b2f5b096a5805d0b12dc38014144536f6d3333d",
+            "path": "app/src/main/java/io/legado/app/service/TTSReadAloudService.kt",
+            "symbol_id": "kotlin://io.legado.app.service/TTSReadAloudService/initTts"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "2b2f5b096a5805d0b12dc38014144536f6d3333d",
+            "path": "app/src/main/java/io/legado/app/service/TTSReadAloudService.kt",
+            "symbol_id": "kotlin://io.legado.app.service/TTSReadAloudService/upSpeechRate"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "2b2f5b096a5805d0b12dc38014144536f6d3333d",
+            "path": "app/src/main/java/io/legado/app/service/TTSReadAloudService.kt",
+            "symbol_id": "kotlin://io.legado.app.service/TTSReadAloudService/TTSUtteranceListener/onDone"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/il-integration-system-text-to-speech-001.json",
+            "artifact_sha256": "bb0531d3555a0e20d23aadf118df32f739caa064a9c06abb655a3606b6b81a42",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "18164e9ebf6ef1c81e45284e2c5b88a7faf08e25264ace08307dd479abff64ab",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "582578b05e2af1d87237cb342d594ffa3831c42f64984be525601e4949b5aad1",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-INTEGRATION-TTS-001",
+        "revision": 2
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-INTEGRATION-SYSTEM-TEXT-TO-SPEECH-001"
+}

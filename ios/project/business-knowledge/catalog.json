@@ -2,11 +2,11 @@
   "schema_version": 1,
   "contract_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-  "inventory_control_sha256": "c9d2d8201cb1d565259028cdd61a9d9c443569e560c225d603ed3825c33ef27a",
+  "inventory_control_sha256": "adba6419fc0456866e7d4eb71e124a0017b8077fa226065dce0d1a358807e161",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "ca67b2fc32269026c5dd9e1de8d2621ce284d82b99d0894b88a5ea4af788948d",
-  "coverage_sha256": "13e2c2f4c19c826349d8aa3fb5bbfd504854d3a8abbdc8309f4b572dda466b6b",
+  "authority_sha256": "0cfdb437aa777229739bf536571c3bd757d96fbec15b38320a0ac8f253d4a6a4",
+  "coverage_sha256": "0357163af71c26ed4cf83c9807af8bf9171f733412599d506659acd86621219e",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -58,6 +58,19 @@
       "claim_refs": [
         {
           "id": "BKC-INTEGRATION-REMOTE-SERVICE-001",
+          "revision": 3
+        }
+      ]
+    },
+    {
+      "id": "BKP-INTEGRATION-SYSTEM-TTS-RUNTIME-001",
+      "revision": 1,
+      "semantic_key": "integration.system-text-to-speech-runtime-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-INTEGRATION-SYSTEM-TTS-RUNTIME-001/r0001.json",
+      "record_sha256": "55dc26179488624004f2d14bdbd08f80aa7fe410761ae36484b3352aab5f59b1",
+      "claim_refs": [
+        {
+          "id": "BKC-INTEGRATION-TTS-001",
           "revision": 3
         }
       ]
@@ -640,6 +653,15 @@
       "record_sha256": "d604ddc318d653ba7a422295ccd8727ed0420785f795daf7be9f8e4c1301e82a",
       "entry_ids": [
         "BKE-INTEGRATION-REMOTE-MANAGEMENT-RUNTIME-001"
+      ]
+    },
+    {
+      "id": "BKL-INTEGRATION-SYSTEM-TTS-RUNTIME-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-INTEGRATION-SYSTEM-TTS-RUNTIME-001.json",
+      "record_sha256": "f9adc0d4d2b5cc2a6e5e8f900c68c0de204695ba71f55520fb5c4bba7c98de8c",
+      "entry_ids": [
+        "BKE-INTEGRATION-SYSTEM-TTS-RUNTIME-001"
       ]
     },
     {

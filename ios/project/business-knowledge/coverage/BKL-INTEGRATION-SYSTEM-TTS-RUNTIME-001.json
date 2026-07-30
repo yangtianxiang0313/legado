@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgeCoverageLedger",
+  "id": "BKL-INTEGRATION-SYSTEM-TTS-RUNTIME-001",
+  "revision": 1,
+  "status": "current",
+  "packet_refs": [
+    {
+      "id": "BKP-INTEGRATION-SYSTEM-TTS-RUNTIME-001",
+      "revision": 1,
+      "sha256": "55dc26179488624004f2d14bdbd08f80aa7fe410761ae36484b3352aab5f59b1"
+    }
+  ],
+  "generated_from": {
+    "knowledge_authority_sha256": "ca67b2fc32269026c5dd9e1de8d2621ce284d82b99d0894b88a5ea4af788948d",
+    "requirement_catalog_sha256": "585962b5f51340899037d75e93167e5329bc936b6382a0465985d07bd6ded51a",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "entries": [
+    {
+      "id": "BKE-INTEGRATION-SYSTEM-TTS-RUNTIME-001",
+      "claim_ref": {
+        "id": "BKC-INTEGRATION-TTS-001",
+        "revision": 3
+      },
+      "validation": {
+        "required": "android_runtime",
+        "state": "verified",
+        "evidence_refs": [
+          "ios/harness/goldens/releases/il-integration-system-text-to-speech-001-30500676558-1.json",
+          "ios/harness/goldens/android-legado-v1/il-integration-system-text-to-speech-001.json#/artifact/result/value/portable_known_projection"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "covered_by_requirement",
+        "refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "reason": "受保护 Android Golden 已冻结系统朗读的队列拆分、初始化保留、停止与清理、语速和段落进度语义，并明确平台引擎信息与音频时序不属于可移植合同；当前迁移 characterization Requirement 已覆盖这项知识闭环，但本任务不批准 iOS 产品实现、架构依赖边或第三方库。",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "planned",
+        "requirement_refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "work_item_refs": [
+          "IOS-CHARACTERIZE-INTEGRATION-SYSTEM-TEXT-TO-SPEECH-001"
+        ],
+        "capability_refs": [
+          "CAP-CONFORMANCE"
+        ],
+        "evidence_refs": [
+          "ios/harness/goldens/releases/il-integration-system-text-to-speech-001-30500676558-1.json"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    }
+  ],
+  "updated_by": "IOS-CHARACTERIZE-INTEGRATION-SYSTEM-TEXT-TO-SPEECH-001",
+  "updated_at": "2026-07-30T00:04:21Z"
+}
