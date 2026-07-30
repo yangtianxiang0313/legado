@@ -174,6 +174,7 @@ struct BookDetailView: View {
     let library: ShelfLibrary?
     let openReading: ((ShelfBookItem) async -> Void)?
     let editSource: ((String) -> Void)?
+    let loginSource: ((String) -> Void)?
     let availableSources: [BookSourceDraft]
     let switchSource:
         ((ShelfBookItem, BookSourceDraft) async -> BookSourceSwitchOutcome)?
@@ -193,6 +194,7 @@ struct BookDetailView: View {
         self.library = nil
         self.openReading = nil
         self.editSource = nil
+        self.loginSource = nil
         self.availableSources = []
         self.switchSource = nil
         _storedItem = State(initialValue: nil)
@@ -203,6 +205,7 @@ struct BookDetailView: View {
         library: ShelfLibrary,
         openReading: @escaping (ShelfBookItem) async -> Void,
         editSource: @escaping (String) -> Void,
+        loginSource: @escaping (String) -> Void,
         availableSources: [BookSourceDraft],
         switchSource:
             @escaping (
@@ -216,6 +219,7 @@ struct BookDetailView: View {
         self.library = library
         self.openReading = openReading
         self.editSource = editSource
+        self.loginSource = loginSource
         self.availableSources = availableSources
         self.switchSource = switchSource
         _storedItem = State(initialValue: nil)
@@ -224,6 +228,15 @@ struct BookDetailView: View {
     private var activeDisplay: BookDetailDisplay {
         storedItem.map { BookDetailDisplay(candidate: $0.candidate) }
             ?? display
+    }
+
+    private var activeCandidate: ShelfBookCandidate? {
+        storedItem?.candidate ?? candidate
+    }
+
+    private var activeSource: BookSourceDraft? {
+        guard let sourceID = activeCandidate?.sourceID else { return nil }
+        return availableSources.first { $0.sourceURL == sourceID }
     }
 
     private var switchableSources: [BookSourceDraft] {
@@ -236,13 +249,22 @@ struct BookDetailView: View {
     }
 
     private var availability: BookDetailActionAvailability {
-        BookDetailActionAvailability(
+        let sourceState: BookDetailSourceState
+        let loginURLState: BookDetailLoginURLState
+        if candidate == nil {
+            sourceState = snapshot.sourceState
+            loginURLState = snapshot.loginURLState
+        } else {
+            sourceState = activeSource == nil ? .missing : .present
+            loginURLState = Self.loginURLState(activeSource?.loginURL)
+        }
+        return BookDetailActionAvailability(
             snapshot: BookDetailActionSnapshot(
                 isInBookshelf:
                     storedItem?.membership.isInBookshelf
                     ?? snapshot.isInBookshelf,
-                sourceState: snapshot.sourceState,
-                loginURLState: snapshot.loginURLState,
+                sourceState: sourceState,
+                loginURLState: loginURLState,
                 bookKind: snapshot.bookKind,
                 canUpdate: snapshot.canUpdate,
                 splitsLongChapters: snapshot.splitsLongChapters,
@@ -421,7 +443,7 @@ struct BookDetailView: View {
         Menu {
             if availability.actions.edit {
                 Button {
-                    editSource?(candidate?.sourceID ?? "")
+                    editSource?(activeCandidate?.sourceID ?? "")
                 } label: {
                     Label("编辑书源", systemImage: "pencil")
                 }
@@ -443,7 +465,18 @@ struct BookDetailView: View {
                 .accessibilityIdentifier("action.bookDetail.switchSource")
             }
             if availability.actions.login {
-                action("登录书源", id: "login", systemImage: "person.badge.key")
+                Button {
+                    guard let sourceID = activeCandidate?.sourceID else {
+                        return
+                    }
+                    loginSource?(sourceID)
+                } label: {
+                    Label(
+                        "登录书源",
+                        systemImage: "person.badge.key"
+                    )
+                }
+                .accessibilityIdentifier("action.bookDetail.login")
             }
             if availability.actions.setSourceVariable {
                 action(
@@ -531,6 +564,19 @@ struct BookDetailView: View {
             )
         }
         .accessibilityIdentifier("action.bookDetail.\(id)")
+    }
+
+    private static func loginURLState(
+        _ value: String?
+    ) -> BookDetailLoginURLState {
+        guard let value else { return .absent }
+        if value.isEmpty { return .blank }
+        if value.trimmingCharacters(
+            in: .whitespacesAndNewlines
+        ).isEmpty {
+            return .whitespace
+        }
+        return .nonblank
     }
 }
 

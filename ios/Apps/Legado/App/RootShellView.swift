@@ -226,6 +226,20 @@ struct RootShellView: View {
                         )
                     }
                 },
+                loginSource: { sourceID in
+                    guard
+                        let source = sourceCatalog.source(id: sourceID),
+                        !source.loginURL.trimmingCharacters(
+                            in: .whitespacesAndNewlines
+                        ).isEmpty
+                    else {
+                        return
+                    }
+                    router.push(
+                        .sourceLogin(sourceID),
+                        on: root
+                    )
+                },
                 availableSources: sourceCatalog.sources,
                 switchSource: { current, source in
                     do {
