@@ -544,10 +544,6 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/Packages/LegadoKit/Tests/ConformanceCLITests/**",
                 "ios/harness/ui/ui_simulator.py",
                 "ios/harness/ui/tests/test_ui_simulator.py",
-                (
-                    "ios/harness/ui/expected/"
-                    "ui-app-startup-first-use-and-restore-v1.json"
-                ),
             ],
         }
     if "SOURCE-RUNTIME" in target:
@@ -954,6 +950,91 @@ def characterization_fixture_id(
     return f"{fixture_prefix}-{slug}-001"
 
 
+def app_ui_simulators() -> list[Mapping[str, str]]:
+    return [
+        {
+            "simulator_id": "SIM-PHONE-COMPACT-001",
+            "name": "Legado Loop iPhone SE (3rd generation)",
+            "device_type": (
+                "com.apple.CoreSimulator.SimDeviceType."
+                "iPhone-SE-3rd-generation"
+            ),
+            "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-26-0",
+            "projection": "compactStack",
+        },
+        {
+            "simulator_id": "SIM-PAD-REGULAR-001",
+            "name": "Legado Loop iPad Pro 13-inch (M4)",
+            "device_type": (
+                "com.apple.CoreSimulator.SimDeviceType."
+                "iPad-Pro-13-inch-M4-8GB"
+            ),
+            "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-26-0",
+            "projection": "regularSplit",
+        },
+    ]
+
+
+def app_navigation_delivery_contract(
+    fixture_id: str,
+) -> Mapping[str, Any]:
+    features = {
+        "rl-app-startup-first-use-and-restore-001": {
+            "goal": (
+                "按照冻结 Android 启动运行结果，在 AppNavigation/AppUseCases "
+                "中实现平台无关启动状态机与显式 effect，并由 AppShell 投影"
+                "为原生 iPhone/iPad 导航和对话框。"
+            ),
+            "acceptance_id": "structured-app-startup-acceptance",
+            "scenario_id": "ui-app-startup-first-use-and-restore-v1",
+            "expected": (
+                "ios/harness/ui/expected/"
+                "ui-app-startup-first-use-and-restore-v1.json"
+            ),
+            "test_method": "testStartupFirstUseAndRestore",
+        },
+        "rl-ui-book-detail-conditional-actions-001": {
+            "goal": (
+                "按照冻结 Android 书籍详情操作矩阵，在 AppNavigation/"
+                "AppUseCases 中实现平台无关的操作可用性，并由 AppShell "
+                "投影为原生 iPhone/iPad 详情菜单。"
+            ),
+            "acceptance_id": "structured-book-detail-actions-acceptance",
+            "scenario_id": "ui-book-detail-conditional-actions-v1",
+            "expected": (
+                "ios/harness/ui/expected/"
+                "ui-book-detail-conditional-actions-v1.json"
+            ),
+            "test_method": "testBookDetailConditionalActions",
+        },
+    }
+    feature = features.get(fixture_id)
+    if feature is None:
+        raise LoopError(
+            f"APP_NAVIGATION_UI_CONTRACT_NOT_MAPPED:{fixture_id}"
+        )
+    return {
+        "goal": feature["goal"],
+        "rule": (
+            "AppNavigation 只承载稳定 Route、启动快照、检查点与 effect；"
+            "AppUseCases 通过端口执行持久化，AppShell 只投影 UI，"
+            "Android Activity、Dialog 与平台 I/O 不进入核心。"
+        ),
+        "test_id": "app-navigation-tests",
+        "test_filter": "AppNavigationTests",
+        "acceptance_id": feature["acceptance_id"],
+        "ui_acceptance": {
+            "scenario_id": feature["scenario_id"],
+            "profile": "store_safe",
+            "expected": feature["expected"],
+            "project": "ios/Apps/Legado/Legado.xcodeproj",
+            "scheme": "LegadoApp",
+            "test_method": feature["test_method"],
+            "simulators": app_ui_simulators(),
+        },
+    }
+
+
 def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
     target = str(delivery["target"])
     ledger = delivery["ledger"]
@@ -1335,60 +1416,15 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_filter": "LibraryDomainTests",
             "acceptance_id": "structured-domain-acceptance",
         },
-        "AppNavigation": {
-            "goal": (
-                "按照冻结 Android 启动运行结果，在 AppNavigation/AppUseCases "
-                "中实现平台无关启动状态机与显式 effect，并由 AppShell 投影"
-                "为原生 iPhone/iPad 导航和对话框。"
-            ),
-            "rule": (
-                "AppNavigation 只承载稳定 Route、启动快照、检查点与 effect；"
-                "AppUseCases 通过端口执行持久化，AppShell 只投影 UI，"
-                "Android Activity、Dialog 与平台 I/O 不进入核心。"
-            ),
-            "test_id": "app-navigation-tests",
-            "test_filter": "AppNavigationTests",
-            "acceptance_id": "structured-app-startup-acceptance",
-            "ui_acceptance": {
-                "scenario_id": "ui-app-startup-first-use-and-restore-v1",
-                "profile": "store_safe",
-                "expected": (
-                    "ios/harness/ui/expected/"
-                    "ui-app-startup-first-use-and-restore-v1.json"
-                ),
-                "project": "ios/Apps/Legado/Legado.xcodeproj",
-                "scheme": "LegadoApp",
-                "test_method": "testStartupFirstUseAndRestore",
-                "simulators": [
-                    {
-                        "simulator_id": "SIM-PHONE-COMPACT-001",
-                        "name": "Legado Loop iPhone SE (3rd generation)",
-                        "device_type": (
-                            "com.apple.CoreSimulator.SimDeviceType."
-                            "iPhone-SE-3rd-generation"
-                        ),
-                        "runtime": (
-                            "com.apple.CoreSimulator.SimRuntime.iOS-26-0"
-                        ),
-                        "projection": "compactStack",
-                    },
-                    {
-                        "simulator_id": "SIM-PAD-REGULAR-001",
-                        "name": "Legado Loop iPad Pro 13-inch (M4)",
-                        "device_type": (
-                            "com.apple.CoreSimulator.SimDeviceType."
-                            "iPad-Pro-13-inch-M4-8GB"
-                        ),
-                        "runtime": (
-                            "com.apple.CoreSimulator.SimRuntime.iOS-26-0"
-                        ),
-                        "projection": "regularSplit",
-                    },
-                ],
-            },
-        },
     }
-    delivery_contract = delivery_contracts.get(str(architecture["owner"]))
+    if architecture["owner"] == "AppNavigation":
+        delivery_contract = app_navigation_delivery_contract(
+            str(fixture_id)
+        )
+    else:
+        delivery_contract = delivery_contracts.get(
+            str(architecture["owner"])
+        )
     if delivery_contract is None:
         raise LoopError(f"DELIVERY_CONTRACT_NOT_MAPPED:{architecture['owner']}")
     source = {
@@ -1447,8 +1483,15 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
         },
     ]
     ui_acceptance = delivery_contract.get("ui_acceptance")
+    allowed_paths = list(architecture["allowed_paths"])
     if isinstance(ui_acceptance, dict):
         source["ui_acceptance"] = ui_acceptance
+        expected_path = ui_acceptance.get("expected")
+        if (
+            isinstance(expected_path, str)
+            and expected_path not in allowed_paths
+        ):
+            allowed_paths.append(expected_path)
         commands.append(
             {
                 "id": "ui-simulator-acceptance",
@@ -1481,7 +1524,7 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "rule": delivery_contract["rule"],
         },
         "scope": {
-            "allowed_paths": architecture["allowed_paths"],
+            "allowed_paths": allowed_paths,
             "forbidden": [
                 "Android golden",
                 "accepted Requirement",

@@ -928,6 +928,36 @@ class MinimalLoopTests(unittest.TestCase):
         )
         self.assertIn("ARCH-010", contract["architecture_refs"])
 
+    def test_app_navigation_delivery_uses_feature_specific_ui_contract(self):
+        startup = loop.app_navigation_delivery_contract(
+            "rl-app-startup-first-use-and-restore-001"
+        )
+        detail = loop.app_navigation_delivery_contract(
+            "rl-ui-book-detail-conditional-actions-001"
+        )
+
+        self.assertEqual(
+            "testStartupFirstUseAndRestore",
+            startup["ui_acceptance"]["test_method"],
+        )
+        self.assertEqual(
+            "testBookDetailConditionalActions",
+            detail["ui_acceptance"]["test_method"],
+        )
+        self.assertEqual(
+            (
+                "ios/harness/ui/expected/"
+                "ui-book-detail-conditional-actions-v1.json"
+            ),
+            detail["ui_acceptance"]["expected"],
+        )
+        self.assertIn("书籍详情操作矩阵", detail["goal"])
+        with self.assertRaisesRegex(
+            loop.LoopError,
+            "APP_NAVIGATION_UI_CONTRACT_NOT_MAPPED",
+        ):
+            loop.app_navigation_delivery_contract("rl-unmapped-001")
+
     def test_integration_characterization_bootstraps_protocol_lab_only(self):
         claim = {
             "id": "BKC-INTEGRATION-WEBDAV-001",
