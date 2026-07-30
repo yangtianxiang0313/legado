@@ -2,11 +2,11 @@
   "schema_version": 1,
   "contract_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-  "inventory_control_sha256": "5942d7e93860cc5633a8610c31cde751c425a4d9cd7505143b93716d00b694e5",
+  "inventory_control_sha256": "a6c3be20a5141e7b79470eb49218a5e07f7b1d63084c1cc12088dea597391113",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "ab639ec50c56cdad8ccdecb615e9b81d05d64d0ff2e28280ef94a45c225df2e0",
-  "coverage_sha256": "a4076c383af9ac5d2500583776846814e40d13afd7a4fc16b5e6f8e4fb5dec56",
+  "authority_sha256": "188cec5873b8c177bedc5811878e9a79113efd11e4775ff82d64ff9ae9c842ed",
+  "coverage_sha256": "2234bf37880325f34a1a46d2b3e67acbddc2830a8eb2d5da35dbbda34ff082f2",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -110,6 +110,19 @@
       "claim_refs": [
         {
           "id": "BKC-LOCAL-BOOK-RELOCATION-001",
+          "revision": 2
+        }
+      ]
+    },
+    {
+      "id": "BKP-LIBRARY-SEARCH-BOOK-LIFECYCLE-001",
+      "revision": 1,
+      "semantic_key": "library.search-book-lifecycle-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-LIBRARY-SEARCH-BOOK-LIFECYCLE-001/r0001.json",
+      "record_sha256": "570731087838b6fbb3c24b44f399188f12a00690ea8198840233d4a683fc3f5d",
+      "claim_refs": [
+        {
+          "id": "BKC-SEARCH-BOOK-LIFECYCLE-001",
           "revision": 2
         }
       ]
@@ -560,6 +573,14 @@
       "resolution_state": "resolved"
     },
     {
+      "id": "DRV-DISCOVERY-SEARCH-BOOK-LIFECYCLE-001",
+      "revision": 1,
+      "semantic_key": "discovery.search-book-lifecycle",
+      "path": "ios/project/business-knowledge/drivers/published/DRV-DISCOVERY-SEARCH-BOOK-LIFECYCLE-001/r0001.json",
+      "record_sha256": "86520867142ace87df424a70088b44d5fe59e1dabe74a976b6b25c571c3f892d",
+      "resolution_state": "resolved"
+    },
+    {
       "id": "DRV-INTEGRATION-WEBDAV-RUNTIME-001",
       "revision": 3,
       "semantic_key": "integration.backup.webdav-runtime-boundary",
@@ -793,6 +814,15 @@
       "record_sha256": "0a282edb9e5003757a0dfde63fed77ff4e4049c7c753d1d0f644bf18d52fee66",
       "entry_ids": [
         "BKE-CONTENT-CACHE-QUEUE-COMPLETION-001"
+      ]
+    },
+    {
+      "id": "BKL-DISCOVERY-SEARCH-BOOK-LIFECYCLE-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-DISCOVERY-SEARCH-BOOK-LIFECYCLE-001.json",
+      "record_sha256": "4d87eb7aa364d88b81c03e47f40f779e19a2e29dfa6d7fc2fe73a13da74fdab1",
+      "entry_ids": [
+        "BKE-DISCOVERY-SEARCH-BOOK-LIFECYCLE-001"
       ]
     },
     {

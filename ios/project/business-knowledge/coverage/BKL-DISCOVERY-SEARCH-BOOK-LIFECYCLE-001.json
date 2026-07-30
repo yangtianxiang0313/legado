@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgeCoverageLedger",
+  "id": "BKL-DISCOVERY-SEARCH-BOOK-LIFECYCLE-001",
+  "revision": 1,
+  "status": "current",
+  "packet_refs": [
+    {
+      "id": "BKP-LIBRARY-SEARCH-BOOK-LIFECYCLE-001",
+      "revision": 1,
+      "sha256": "570731087838b6fbb3c24b44f399188f12a00690ea8198840233d4a683fc3f5d"
+    }
+  ],
+  "generated_from": {
+    "knowledge_authority_sha256": "ba88bda83c2641d0c70f6c729c0c696591976a78c577f2aa1c8869340c629ad9",
+    "requirement_catalog_sha256": "4e2dce101956486485e6746c6ffb1d559c5446d7138f477f56a0e3052e88cdb7",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "entries": [
+    {
+      "id": "BKE-DISCOVERY-SEARCH-BOOK-LIFECYCLE-001",
+      "claim_ref": {
+        "id": "BKC-SEARCH-BOOK-LIFECYCLE-001",
+        "revision": 2
+      },
+      "validation": {
+        "required": "android_runtime",
+        "state": "verified",
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-discovery-search-book-persistence-lifecycle-001-30524223920-1.json",
+          "ios/harness/goldens/android-legado-v1/rl-discovery-search-book-persistence-lifecycle-001.json#/artifact/result/value/portable_known_projection"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "covered_by_requirement",
+        "refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "reason": "受保护 Android Golden 已冻结搜索候选的跨源合并、精确过滤、首次代表项、bookUrl 替换写入、书源删除级联与严格一天 TTL 边界；后续由 LibraryDomain 实现并接入真实搜索产品链。",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "planned",
+        "requirement_refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "work_item_refs": [
+          "IOS-LIBRARY-DOMAIN-SEARCH-BOOK-LIFECYCLE-001"
+        ],
+        "capability_refs": [
+          "CAP-CONFORMANCE",
+          "CAP-CORE"
+        ],
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-discovery-search-book-persistence-lifecycle-001-30524223920-1.json"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    }
+  ],
+  "updated_by": "IOS-CHARACTERIZE-DISCOVERY-SEARCH-BOOK-PERSISTENCE-LIFECYCLE-001",
+  "updated_at": "2026-07-30T08:04:10Z"
+}

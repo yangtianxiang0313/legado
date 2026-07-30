@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-DISCOVERY-SEARCH-BOOK-LIFECYCLE-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "discovery.search-book-lifecycle",
+  "title": "将搜索候选生命周期隔离在 LibraryDomain 边界",
+  "claim_refs": [
+    {
+      "id": "BKC-SEARCH-BOOK-LIFECYCLE-001",
+      "revision": 2
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "跨书源候选的 name + author 合并、精确过滤、首次代表项保留、bookUrl 替换写入、书源级联和严格 TTL 边界必须与受保护 Android Golden 一致。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "identity",
+      "scenario": "SearchBook.bookUrl 是来源候选记录键，name + author 是 Android 展示聚合键；二者都不得直接充当 iOS 永久 BookID，进入详情与书架时必须经过显式身份升级。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "modularity",
+      "scenario": "SourceRuntime 只产生单源候选；跨源合并、候选存储和生命周期策略由 LibraryDomain 提供，SwiftUI 不得复制合并或 TTL 规则。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "determinism",
+      "scenario": "聚合结果必须保留批次和候选首次出现次序；后到来源只扩充来源集合，不允许根据到达后的 originOrder 隐式替换代表项。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "scope_control",
+      "scenario": "本切片只建立搜索候选生命周期；详情候选提交、加入书架与永久 BookID 由紧随其后的 P0 纵向切片处理。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "如何同时表达来源候选键、展示聚合键和后续永久 BookID，避免 name + author 的低置信度碰撞污染书架？",
+    "如何让真实搜索 UI 只消费 LibraryDomain 的稳定聚合状态，而不依赖 Android Room Record 或 SourceRuntime 内部类型？",
+    "如何在应用启动时执行确定性 TTL 清理，并让书源删除通过显式端口清除相应候选？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002"
+    ],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-DISCOVERY-SEARCH-BOOK-PERSISTENCE-LIFECYCLE-001"
+    ]
+  },
+  "supersedes": null,
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30524934356/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "created_by": "IOS-CHARACTERIZE-DISCOVERY-SEARCH-BOOK-PERSISTENCE-LIFECYCLE-001"
+}

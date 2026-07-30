@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-LIBRARY-SEARCH-BOOK-LIFECYCLE-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "library.search-book-lifecycle-golden",
+  "title": "受保护 Android Golden 验证的搜索结果合并与持久化生命周期",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "discovery.search",
+      "library.catalog"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-CORE"
+    ],
+    "subject_keys": [
+      "library.book",
+      "library.book-identity"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-SEARCH-BOOK-LIFECYCLE-001",
+      "revision": 2,
+      "semantic_key": "discovery.search-book.persistence-lifecycle",
+      "kind": "runtime_behavior",
+      "topic": "搜索结果暂存、跨源合并与清理",
+      "statement": "在 rl-discovery-search-book-persistence-lifecycle-001 的五个固定场景中，Android SearchModel.mergeItems 以 name + author 识别跨书源的同书候选，保留首次进入聚合结果的 SearchBook 作为代表项，并把后续候选的 origin 加入来源集合；代表项的 bookUrl、origin 与 originOrder 不会因后续较小的 originOrder 被替换。非精确搜索把书名等于关键字、包含关键字和不包含关键字的候选按该分组顺序输出，各组内部保持首次出现顺序；precision=true 时不包含关键字的候选被丢弃。SearchBook 的 Room 主键是 bookUrl，同一 bookUrl 后插入会以 REPLACE 语义覆盖先前字段。SearchBook 对 BookSource 使用 ON DELETE CASCADE，删除书源后其搜索记录消失。启动期 clearExpired 只删除 origin 最后更新时间严格小于 now-86400000 的记录，恰好位于阈值的记录保留。本结论只冻结这五个场景，不把 Android 的临时搜索记录主键直接提升为 iOS 永久 BookID，也不外推并发批次到达、取消、失败恢复、分页、详情候选提交或书架身份决策。",
+      "subject_keys": [
+        "library.book",
+        "library.book-identity"
+      ],
+      "depends_on": [],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [
+          {
+            "id": "AF-SEARCH-BOOK-ENTITY",
+            "revision_sha256": "28cad30eea162cffff2c1b09ef1cc3cef193cd9eab651cbb2a75120fc340cd46"
+          },
+          {
+            "id": "AF-SEARCH-MODEL-MERGE",
+            "revision_sha256": "09d7f287e0d061209dfa402f1e94667bbc71a6315a55945b7263c2b7bbbe779b"
+          },
+          {
+            "id": "AF-SEARCH-BOOK-DAO",
+            "revision_sha256": "d920684c8fe1d38b0703f246c0be7037c14cf2fbacbd1f095ca7eda48d6652b0"
+          },
+          {
+            "id": "AF-APP-STARTUP-SEARCH-CLEANUP",
+            "revision_sha256": "ded58a5b800d9723fb511148080a331f61a60d350a55f3fb2d66256a23150cd0"
+          }
+        ],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "1b054cb732405956a6e9a48b83cd0a99adc5fda7",
+            "path": "app/src/main/java/io/legado/app/data/entities/SearchBook.kt",
+            "symbol_id": "kotlin://io.legado.app.data.entities.SearchBook"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "50b811063ab13636744dadf2a2c862834de9d5c3",
+            "path": "app/src/main/java/io/legado/app/model/webBook/SearchModel.kt",
+            "symbol_id": "kotlin://io.legado.app.model.webBook.SearchModel/mergeItems"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9444a09644d5b90f3eea76ebbeea28f35bc3c911",
+            "path": "app/src/main/java/io/legado/app/data/dao/SearchBookDao.kt",
+            "symbol_id": "kotlin://io.legado.app.data.dao.SearchBookDao/clearExpired"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "0ca2e8ffbcdecaef8e2000e10a7e303deba0f74c",
+            "path": "app/src/main/java/io/legado/app/App.kt",
+            "symbol_id": "kotlin://io.legado.app.App/onCreate"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/rl-discovery-search-book-persistence-lifecycle-001.json",
+            "artifact_sha256": "0c4bd17460769cb894aad714519145d14e00556880278ec5387a4441d0529bc0",
+            "projection_pointer": "/artifact/result/value/portable_known_projection",
+            "observed_sha256": "ba566a2b24388bdfc98f08d60bb99bdd46dd196f10372d03bf018fdf800f21f7",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "1200044caf8093500bc2dc5ed94c889c082a14bcf57488278e6a31723236e036",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-SEARCH-BOOK-LIFECYCLE-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-DISCOVERY-SEARCH-BOOK-PERSISTENCE-LIFECYCLE-001"
+}
