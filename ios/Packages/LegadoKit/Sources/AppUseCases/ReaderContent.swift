@@ -89,11 +89,19 @@ public struct RepositoryReaderContentLoader:
         content: content
       )
     }
-    return try await fallback.load(
+    let document = try await fallback.load(
       book: book,
       chapter: chapter,
       characterOffset: characterOffset
     )
+    if !document.content.isEmpty {
+      try await repository.saveChapterContent(
+        document.content,
+        bookID: book.id,
+        chapterID: chapter.id
+      )
+    }
+    return document
   }
 }
 

@@ -1525,6 +1525,65 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testOfflineCacheMilestone() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+            "--seed-offline-cache",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        require("screen.root.shelf")
+        XCTAssertTrue(
+            app.staticTexts["星河纪事"].waitForExistence(timeout: 8)
+        )
+        requireButton("action.shelf.manage").tap()
+        requireButton("action.shelf.selectAll").tap()
+        requireButton("action.shelf.batch.more").tap()
+        requireButton("action.shelf.batch.offlineCache").tap()
+        waitForLabel(
+            "已缓存 3，跳过 0，失败 0，取消 0",
+            identifier: "state.shelf.offlineCacheReport",
+            timeout: 15
+        )
+        requireButton("action.shelf.manage").tap()
+
+        app.terminate()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--offline-source-transport",
+        ]
+        app.launch()
+        require("screen.root.shelf")
+        let book = app.staticTexts["星河纪事"].firstMatch
+        XCTAssertTrue(book.waitForExistence(timeout: 8))
+        book.tap()
+        require("screen.bookDetail")
+        requireButton("action.bookDetail.startReading").tap()
+        require("screen.chapterTOC")
+        require("action.chapter.select.0").tap()
+        require("screen.reader")
+        XCTAssertEqual(
+            require("label.reader.chapterTitle").label,
+            "第一章 启航"
+        )
+        XCTAssertTrue(
+            require("text.reader.content").label.contains(
+                "星港的晨光"
+            )
+        )
+
+    }
+
     private func waitForLabel(
         _ label: String,
         identifier: String,

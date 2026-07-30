@@ -453,6 +453,35 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
     }
   }
 
+  public func saveChapterContent(
+    _ content: String,
+    bookID: LibraryDomain.BookID,
+    chapterID: LibraryDomain.ChapterID
+  ) async throws {
+    guard !content.isEmpty else { return }
+    try await database.write { db in
+      let chapterExists = try Bool.fetchOne(
+        db,
+        sql: """
+          SELECT EXISTS(
+            SELECT 1 FROM chapters
+            WHERE bookID = ? AND chapterID = ?
+          )
+          """,
+        arguments: [bookID.rawValue, chapterID.rawValue]
+      ) ?? false
+      guard chapterExists else {
+        throw ShelfMutationFailure.missingBook
+      }
+      var record = ChapterContentRecord(
+        bookID: bookID.rawValue,
+        chapterID: chapterID.rawValue,
+        content: content
+      )
+      try record.save(db)
+    }
+  }
+
   public func reset() async throws {
     try await database.write { db in
       _ = try ChapterContentRecord.deleteAll(db)

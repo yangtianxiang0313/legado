@@ -328,9 +328,15 @@ enum SearchEnvironment {
     private static func makeTransport(
         externalBaseURL: String?
     ) -> any HTTPTransport {
-        externalBaseURL == nil
-            ? LocalBookSourceTransport()
-            : URLSessionBookSourceTransport()
+        if ProcessInfo.processInfo.arguments.contains(
+            "--offline-source-transport"
+        ) {
+            return OfflineBookSourceTransport()
+        }
+        if externalBaseURL == nil {
+            return LocalBookSourceTransport()
+        }
+        return URLSessionBookSourceTransport()
     }
 
     private static func makeSources(
@@ -647,6 +653,12 @@ private enum BookURLImportEnvironmentError: Error {
     case sourceNotFound
     case fetchFailed
     case persistenceFailed
+}
+
+private actor OfflineBookSourceTransport: HTTPTransport {
+    func execute(_ request: HTTPRequest) async throws -> HTTPResponse {
+        throw HTTPTransportFailure.connectionFailed
+    }
 }
 
 private actor LocalBookSourceTransport: HTTPTransport {

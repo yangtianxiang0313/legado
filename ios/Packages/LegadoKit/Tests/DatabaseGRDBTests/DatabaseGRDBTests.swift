@@ -1,6 +1,7 @@
 import AppUseCases
 import DatabaseGRDB
 import LibraryDomain
+import ReaderCore
 import XCTest
 
 @MainActor
@@ -281,6 +282,109 @@ final class DatabaseGRDBTests: XCTestCase {
     XCTAssertEqual(updatedContent, "更新后的正文")
   }
 
+  func testOfflineCacheRetriesPersistsSkipsAndReadsWithoutSource()
+    async throws
+  {
+    let path = temporaryDatabasePath()
+    let repository = try GRDBBookShelfRepository(path: path)
+    let item = try await repository.add(
+      candidate(name: "离线书", suffix: "offline"),
+      groupID: 0
+    )
+    let chapters = (0..<2).map { index in
+      BookChapter(
+        id: ChapterID(
+          sourceID: item.candidate.sourceID,
+          chapterURL: "\(item.candidate.bookURL)/\(index)"
+        ),
+        bookID: item.id,
+        sourceID: item.candidate.sourceID,
+        index: index,
+        title: "第\(index + 1)章",
+        url: "\(item.candidate.bookURL)/\(index)"
+      )
+    }
+    _ = try await repository.applyTOCUpdate(
+      bookID: item.id,
+      update: .replaced(previousCount: 0, chapters: chapters)
+    )
+    let library = ShelfLibrary(repository: repository)
+    await library.reload()
+    let source = RetryingReaderLoader(failuresBeforeSuccess: 2)
+
+    let first = await library.cacheOffline(
+      bookIDs: [item.id],
+      loader: source
+    )
+
+    XCTAssertEqual(first.requestedCount, 2)
+    XCTAssertEqual(first.cachedCount, 2)
+    XCTAssertEqual(first.skippedCount, 0)
+    XCTAssertEqual(first.failedCount, 0)
+    let attemptCount = await source.attemptCount
+    XCTAssertEqual(attemptCount, 6)
+
+    let second = await library.cacheOffline(
+      bookIDs: [item.id],
+      loader: UnavailableReaderLoader()
+    )
+    XCTAssertEqual(second.cachedCount, 0)
+    XCTAssertEqual(second.skippedCount, 2)
+
+    let reopened = try GRDBBookShelfRepository(path: path)
+    let reopenedLibrary = ShelfLibrary(repository: reopened)
+    let reopenedBook = try await reopened.book(id: item.id)
+    let storedBook = try XCTUnwrap(reopenedBook)
+    let storedChapters = try await reopened.chapters(bookID: item.id)
+    let offlineLoader = reopenedLibrary.readerContentLoader(
+      fallback: UnavailableReaderLoader()
+    )
+    let document = try await offlineLoader.load(
+      book: storedBook,
+      chapter: storedChapters[0],
+      characterOffset: 0
+    )
+    XCTAssertEqual(document.content, "离线正文 0")
+
+    try await reopened.applyShelfMutation(
+      .clearCache,
+      bookID: item.id
+    )
+    do {
+      _ = try await offlineLoader.load(
+        book: storedBook,
+        chapter: storedChapters[0],
+        characterOffset: 0
+      )
+      XCTFail("Cleared cache must fall back to unavailable source")
+    } catch {
+      XCTAssertTrue(error is TestFailure)
+    }
+  }
+
+  func testOfflineCacheSkipsLocalBookWithoutCallingRemoteLoader()
+    async throws
+  {
+    let repository = try GRDBBookShelfRepository(
+      path: temporaryDatabasePath()
+    )
+    let library = ShelfLibrary(repository: repository)
+    let item = await library.importLocalText(
+      fileName: "本地.txt",
+      managedReference: "file:///managed/local.txt",
+      data: Data("第一章 开始\n本地正文".utf8)
+    )
+    let local = try XCTUnwrap(item)
+    let report = await library.cacheOffline(
+      bookIDs: [local.id],
+      loader: UnavailableReaderLoader()
+    )
+
+    XCTAssertEqual(report.requestedCount, 1)
+    XCTAssertEqual(report.skippedCount, 1)
+    XCTAssertEqual(report.failedCount, 0)
+  }
+
   private func temporaryDatabasePath() -> String {
     FileManager.default.temporaryDirectory
       .appendingPathComponent(UUID().uuidString)
@@ -308,4 +412,46 @@ final class DatabaseGRDBTests: XCTestCase {
 
 private enum TestFailure: Error {
   case expected
+}
+
+private actor RetryingReaderLoader: ReaderContentLoading {
+  let failuresBeforeSuccess: Int
+  private(set) var attemptCount = 0
+  private var chapterAttempts: [ChapterID: Int] = [:]
+
+  init(failuresBeforeSuccess: Int) {
+    self.failuresBeforeSuccess = failuresBeforeSuccess
+  }
+
+  func load(
+    book: ShelfBookItem,
+    chapter: BookChapter,
+    characterOffset: Int
+  ) async throws -> ReaderDocument {
+    attemptCount += 1
+    chapterAttempts[chapter.id, default: 0] += 1
+    if chapterAttempts[chapter.id, default: 0] <= failuresBeforeSuccess {
+      throw TestFailure.expected
+    }
+    return ReaderDocument(
+      position: ReaderPosition(
+        bookID: book.id,
+        chapterID: chapter.id,
+        chapterIndex: chapter.index,
+        characterOffset: characterOffset
+      ),
+      title: chapter.title,
+      content: "离线正文 \(chapter.index)"
+    )
+  }
+}
+
+private struct UnavailableReaderLoader: ReaderContentLoading {
+  func load(
+    book: ShelfBookItem,
+    chapter: BookChapter,
+    characterOffset: Int
+  ) async throws -> ReaderDocument {
+    throw TestFailure.expected
+  }
 }

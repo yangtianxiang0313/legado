@@ -44,6 +44,11 @@ struct RootShellView: View {
             ) {
                 await seedBookImport()
             }
+            if ProcessInfo.processInfo.arguments.contains(
+                "--seed-offline-cache"
+            ) {
+                await seedOfflineCache()
+            }
         }
     }
 
@@ -395,6 +400,41 @@ struct RootShellView: View {
             managedReference: file.reference,
             data: file.data
         )
+    }
+
+    private func seedOfflineCache() async {
+        guard library.books.isEmpty else { return }
+        let session = SearchEnvironment.makeSession(
+            persistedSources: sourceCatalog.sources
+        )
+        session.query = "星河纪事"
+        session.selectGroup("科幻")
+        session.search()
+        while session.loadingState == .loading {
+            try? await Task.sleep(for: .milliseconds(20))
+        }
+        guard let result = session.results.first else { return }
+        let candidate = ShelfBookCandidate(
+            name: result.name,
+            author: result.author,
+            kind: result.kind,
+            lastChapter: result.lastChapter,
+            intro: result.intro,
+            bookURL: result.bookURL,
+            coverURL: result.coverURL,
+            originName: result.originName,
+            sourceID: result.origin
+        )
+        await library.add(candidate)
+        guard let item = await library.item(forURL: candidate.bookURL)
+        else { return }
+        let toc = library.chapterSession(
+            loader: SearchEnvironment.makeChapterLoader(
+                persistedSources: sourceCatalog.sources
+            )
+        )
+        await toc.load(book: item, force: true)
+        await library.reload()
     }
 }
 

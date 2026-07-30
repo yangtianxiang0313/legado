@@ -54,6 +54,18 @@ struct ShelfManagementView: View {
                     .foregroundStyle(.secondary)
                     .accessibilityIdentifier("state.bookImport.result")
             }
+            if let report = library.lastOfflineCacheReport {
+                Text(offlineCacheSummary(report))
+                    .font(.caption)
+                    .foregroundStyle(
+                        report.failedCount == 0
+                            ? Color.secondary
+                            : Color.red
+                    )
+                    .accessibilityIdentifier(
+                        "state.shelf.offlineCacheReport"
+                    )
+            }
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -349,6 +361,12 @@ struct ShelfManagementView: View {
                 sourceMenu
 
                 Menu {
+                    Button("离线缓存") {
+                        runOfflineCache()
+                    }
+                    .accessibilityIdentifier(
+                        "action.shelf.batch.offlineCache"
+                    )
                     Button("清除缓存") {
                         runBatch(.clearCache)
                     }
@@ -426,10 +444,32 @@ struct ShelfManagementView: View {
         }
     }
 
+    private func runOfflineCache() {
+        let selected = orderedSelection
+        Task {
+            _ = await library.cacheOffline(
+                bookIDs: selected,
+                loader: SearchEnvironment.makeReaderContentLoader(
+                    persistedSources: persistedSources
+                )
+            )
+            selection.removeAll()
+        }
+    }
+
     private func reportSummary(_ report: ShelfBatchReport) -> String {
         "已完成 \(report.committedBookIDs.count)，"
             + "失败 \(report.failedBookIDs.count)，"
             + "取消 \(report.cancelledBookIDs.count)"
+    }
+
+    private func offlineCacheSummary(
+        _ report: OfflineCacheReport
+    ) -> String {
+        "已缓存 \(report.cachedCount)，"
+            + "跳过 \(report.skippedCount)，"
+            + "失败 \(report.failedCount)，"
+            + "取消 \(report.cancelledCount)"
     }
 
     private func badge(

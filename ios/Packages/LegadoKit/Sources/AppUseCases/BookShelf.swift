@@ -154,6 +154,11 @@ public protocol BookShelfRepository: Sendable {
     bookID: LibraryDomain.BookID,
     chapterID: LibraryDomain.ChapterID
   ) async throws -> String?
+  func saveChapterContent(
+    _ content: String,
+    bookID: LibraryDomain.BookID,
+    chapterID: LibraryDomain.ChapterID
+  ) async throws
   func reset() async throws
 }
 
@@ -198,6 +203,14 @@ public extension BookShelfRepository {
   ) async throws -> String? {
     nil
   }
+
+  func saveChapterContent(
+    _ content: String,
+    bookID: LibraryDomain.BookID,
+    chapterID: LibraryDomain.ChapterID
+  ) async throws {
+    throw BookImportFailure.unsupportedRepository
+  }
 }
 
 @MainActor
@@ -208,8 +221,11 @@ public final class ShelfLibrary {
   public private(set) var selectedGroupID: Int?
   public private(set) var sortMode: ShelfSortMode = .recentlyRead
   public private(set) var lastBatchReport: ShelfBatchReport?
+  public internal(set) var offlineCacheState: OfflineCacheState = .idle
+  public internal(set) var offlineCacheProgress = 0
+  public internal(set) var lastOfflineCacheReport: OfflineCacheReport?
 
-  private let repository: any BookShelfRepository
+  let repository: any BookShelfRepository
   private var allBooks: [ShelfBookItem] = []
 
   public init(repository: any BookShelfRepository) {
