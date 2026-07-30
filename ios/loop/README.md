@@ -26,6 +26,22 @@ python3 -B ios/loop/loop.py advance
 
 它会按当前状态自动执行一个安全转换：空闲时派生并启动下一任务；产品发生变化时
 执行验收；相同失败工作区不会重复烧 attempt；验证通过后要求 AI 提交项目记忆。
+
+## P0 关键路径调度
+
+`ios/project/migration-priorities/active.json` 是当前迁移里程碑的可执行优先级，
+不是展示路线图。Loop 会先把 planned Delivery 和待 Characterization 映射到
+其中的 stage/selector，再按以下顺序选出唯一任务：
+
+1. 更靠前的主链路阶段；
+2. 同一 selector 下，已发布 Golden 的 Delivery 优先于新的 Characterization；
+3. 最后才用任务 ID 做稳定排序。
+
+`mode=critical_path_only` 时，未命中 selector 的候选只会被延后，不会丢失，也
+不会在 P0 完成前抢占活动任务。`next` 与 `doctor` 的 `queue` 字段会同时报告
+eligible 和 deferred 数量，防止“有大量候选却显示成迁移完成”的假性空队列。
+当前 P0 目标是可阅读主链路：获得书籍、目录、正文、阅读器、进度恢复，并最终
+以真实书源结构化验收和 iPhone Simulator 端到端 UI 验收收口。
 验证通过时可在同一次调用中完成当前项并启动下一项：
 
 ```bash

@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P0-USABLE-READING-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "title": "P0 可阅读主链路",
+  "objective": "用户可从书源搜索或本地导入获得一本书，进入详情并加入书架，加载目录与正文，在阅读器连续阅读，并在重启后恢复进度。",
+  "completion_evidence": [
+    "Android 真源结构化 Golden 覆盖每个领域边界",
+    "iOS ConformanceCLI 对领域结果逐字段相等",
+    "iPhone Simulator 端到端完成搜索或导入、详情、入架、目录、正文、翻章和重启恢复",
+    "UI 结构验收覆盖主页面、详情、目录和阅读器多级菜单"
+  ],
+  "deferred_policy": "未命中本里程碑 selector 的候选仍保留在业务知识库，但在 P0 完成前不进入活动任务。",
+  "stages": [
+    {
+      "id": "P0-01-ACQUIRE-BOOK",
+      "title": "获得书籍并进入书架",
+      "outcome": "真实书源搜索和本地导入至少各有一条路径能产生稳定书籍身份并进入书架。",
+      "selectors": [
+        {
+          "id": "SOURCE-SEARCH-PIPELINE",
+          "claim_ids": [
+            "BKC-SR-SEARCH-PIPELINE-001",
+            "BKC-DISCOVERY-SEARCH-001"
+          ]
+        },
+        {
+          "id": "SEARCH-RESULT-LIFECYCLE",
+          "claim_ids": [
+            "BKC-SEARCH-BOOK-LIFECYCLE-001"
+          ]
+        },
+        {
+          "id": "SEARCH-UI-FLOW",
+          "claim_ids": [
+            "BKC-UI-SEARCH-FLOW-001"
+          ]
+        },
+        {
+          "id": "BOOK-DETAIL-STAGING",
+          "claim_ids": [
+            "BKC-BOOK-DETAIL-STAGING-001",
+            "BKC-BOOK-DETAIL-001",
+            "BKC-UI-DETAIL-CONDITIONAL-ACTIONS-001"
+          ]
+        },
+        {
+          "id": "BOOK-IMPORT-CHANNELS",
+          "claim_ids": [
+            "BKC-BOOK-IMPORT-CHANNELS-001"
+          ],
+          "task_ids": [
+            "IOS-LIBRARY-DOMAIN-BOOK-IMPORT-CHANNEL-RUNTIME-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P0-02-LOAD-TOC",
+      "title": "加载并展示目录",
+      "outcome": "书架书籍能更新目录，详情页和阅读器能展示同一结构化目录并选择章节。",
+      "selectors": [
+        {
+          "id": "TOC-UPDATE",
+          "claim_ids": [
+            "BKC-BOOK-TOC-UPDATE-001"
+          ]
+        },
+        {
+          "id": "TOC-UI-RESULT",
+          "claim_ids": [
+            "BKC-UI-TOC-RESULT-001"
+          ]
+        },
+        {
+          "id": "CHAPTER-IDENTITY",
+          "claim_ids": [
+            "BKC-BOOK-CHAPTER-IDENTITY-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P0-03-LOAD-CONTENT",
+      "title": "获取并规范化正文",
+      "outcome": "在线书和本地书均能以缓存优先策略取得章节正文，并形成稳定的展示文档。",
+      "selectors": [
+        {
+          "id": "SOURCE-CONTENT-PIPELINE",
+          "claim_ids": [
+            "BKC-SR-CONTENT-PIPELINE-001",
+            "BKC-CONTENT-ACQUISITION-001"
+          ]
+        },
+        {
+          "id": "READER-CONTENT-ACQUISITION",
+          "claim_ids": [
+            "BKC-RD-CONTENT-ACQUISITION-001",
+            "BKC-RD-LOAD-DEDUP-001"
+          ]
+        },
+        {
+          "id": "CONTENT-NORMALIZATION",
+          "claim_ids": [
+            "BKC-RD-CONTENT-NORMALIZE-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P0-04-READ-AND-NAVIGATE",
+      "title": "排版、阅读与章节导航",
+      "outcome": "阅读器可从保存坐标恢复，完成排版、翻页、上一章和下一章，并正确处理迟到结果与关闭。",
+      "selectors": [
+        {
+          "id": "READER-SESSION",
+          "claim_ids": [
+            "BKC-READER-SESSION-001",
+            "BKC-RD-SESSION-RESET-001"
+          ]
+        },
+        {
+          "id": "READER-LAYOUT",
+          "claim_ids": [
+            "BKC-RD-LAYOUT-PROJECTION-001",
+            "BKC-RD-LAYOUT-STREAM-001"
+          ]
+        },
+        {
+          "id": "CHAPTER-NAVIGATION",
+          "claim_ids": [
+            "BKC-RD-CHAPTER-NAVIGATION-001",
+            "BKC-RD-TOC-REFRESH-001"
+          ]
+        },
+        {
+          "id": "SESSION-CANCELLATION",
+          "claim_ids": [
+            "BKC-RD-LATE-RESULT-RISK-001",
+            "BKC-RD-CANCELLATION-CLOSE-001"
+          ]
+        },
+        {
+          "id": "READER-UI-MENU",
+          "claim_ids": [
+            "BKC-UI-READER-MENU-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P0-05-RESTORE-PROGRESS",
+      "title": "持久化并恢复阅读进度",
+      "outcome": "翻页、切章、退后台和关闭均保存章节字符坐标，App 重启后恢复到等价阅读位置。",
+      "selectors": [
+        {
+          "id": "PROGRESS-MODEL",
+          "claim_ids": [
+            "BKC-BOOK-PROGRESS-MODEL-001",
+            "BKC-RD-PROGRESS-COORDINATE-001"
+          ]
+        },
+        {
+          "id": "PROGRESS-SAVE",
+          "claim_ids": [
+            "BKC-BOOK-PROGRESS-RUNTIME-001",
+            "BKC-RD-PROGRESS-SAVE-001"
+          ]
+        },
+        {
+          "id": "PROGRESS-REMAP",
+          "claim_ids": [
+            "BKC-BOOK-PROGRESS-REMAP-001",
+            "BKC-RD-PROGRESS-REMAP-001"
+          ]
+        }
+      ]
+    }
+  ]
+}

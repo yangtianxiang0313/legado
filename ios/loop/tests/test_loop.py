@@ -164,6 +164,100 @@ class MinimalLoopTests(unittest.TestCase):
             loop.validate_task(root, task)
             self.assertLess(len(loop.canonical(task)), 8_000)
 
+    def test_active_priority_policy_defers_unmapped_work(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            coverage_path = (
+                root
+                / "ios/project/business-knowledge/coverage/BKL-POST.json"
+            )
+            coverage = loop.read_json(coverage_path)
+            coverage["entries"].append(
+                {
+                    "claim_ref": {"id": "BKC-REMOTE-BOOK", "revision": 1},
+                    "delivery": {
+                        "state": "planned",
+                        "work_item_refs": [
+                            "IOS-LIBRARY-DOMAIN-REMOTE-BOOK-001"
+                        ],
+                        "requirement_refs": [
+                            "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01"
+                        ],
+                    },
+                    "validation": {"evidence_refs": []},
+                }
+            )
+            self.write(
+                root,
+                "ios/project/business-knowledge/coverage/BKL-POST.json",
+                coverage,
+            )
+            self.write(
+                root,
+                loop.PRIORITY_PATH.as_posix(),
+                {
+                    "schema_version": 1,
+                    "id": "MILESTONE-P0",
+                    "status": "active",
+                    "mode": "critical_path_only",
+                    "stages": [
+                        {
+                            "id": "P0-SEARCH",
+                            "title": "Search",
+                            "selectors": [
+                                {
+                                    "id": "POST",
+                                    "claim_ids": ["BKC-POST"],
+                                }
+                            ],
+                        }
+                    ],
+                },
+            )
+
+            task = loop.next_task(root)
+            queue = loop.queue_status(root)
+
+            self.assertEqual("IOS-SOURCE-RUNTIME-POST-FORM-001", task["id"])
+            self.assertEqual("MILESTONE-P0", task["selection"]["milestone_id"])
+            self.assertEqual("P0-SEARCH", task["selection"]["stage_id"])
+            self.assertEqual(1, queue["eligible_count"])
+            self.assertEqual(1, queue["priority_policy"]["deferred_count"])
+
+    def test_active_priority_policy_orders_stage_before_kind(self):
+        policy = {
+            "stages": [
+                {
+                    "id": "P0-FIRST",
+                    "title": "First",
+                    "selectors": [
+                        {"id": "FIRST", "claim_ids": ["BKC-FIRST"]}
+                    ],
+                },
+                {
+                    "id": "P0-LATER",
+                    "title": "Later",
+                    "selectors": [
+                        {"id": "LATER", "claim_ids": ["BKC-LATER"]}
+                    ],
+                },
+            ]
+        }
+        first = loop.priority_match(
+            policy,
+            task_id="IOS-CHARACTERIZE-FIRST",
+            claim_ids={"BKC-FIRST"},
+        )
+        later = loop.priority_match(
+            policy,
+            task_id="IOS-DELIVERY-LATER",
+            claim_ids={"BKC-LATER"},
+        )
+
+        self.assertEqual((0, 0), first[:2])
+        self.assertEqual((1, 0), later[:2])
+
     def test_completed_event_removes_delivery_from_queue(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

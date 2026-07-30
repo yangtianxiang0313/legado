@@ -24,6 +24,7 @@ LOOP_ROOT = Path("ios/project/loop")
 TASK_PATH = LOOP_ROOT / "task.json"
 CURRENT_PATH = LOOP_ROOT / "current.json"
 EVENTS_PATH = LOOP_ROOT / "events.jsonl"
+PRIORITY_PATH = Path("ios/project/migration-priorities/active.json")
 RUNTIME_ROOT = Path(".harness-runtime/loop")
 LOCK_PATH = RUNTIME_ROOT / "loop.lock"
 CONTROL_PATHS = {
@@ -641,6 +642,142 @@ def planned_deliveries(root: Path) -> list[Mapping[str, Any]]:
                 )
                 candidate["entries"].append(entry)
     return [deliveries[key] for key in sorted(deliveries)]
+
+
+def active_priority_policy(root: Path) -> Mapping[str, Any] | None:
+    path = root / PRIORITY_PATH
+    if not path.is_file():
+        return None
+    policy = read_json(path)
+    stages = policy.get("stages")
+    if (
+        policy.get("schema_version") != 1
+        or policy.get("status") != "active"
+        or policy.get("mode") != "critical_path_only"
+        or not isinstance(policy.get("id"), str)
+        or not isinstance(stages, list)
+        or not stages
+    ):
+        raise LoopError("PRIORITY_POLICY_INVALID")
+    stage_ids: set[str] = set()
+    for stage in stages:
+        if not isinstance(stage, dict):
+            raise LoopError("PRIORITY_POLICY_INVALID")
+        stage_id = stage.get("id")
+        selectors = stage.get("selectors")
+        if (
+            not isinstance(stage_id, str)
+            or not stage_id
+            or stage_id in stage_ids
+            or not isinstance(stage.get("title"), str)
+            or not isinstance(selectors, list)
+            or not selectors
+        ):
+            raise LoopError("PRIORITY_POLICY_INVALID")
+        stage_ids.add(stage_id)
+        for selector in selectors:
+            if not isinstance(selector, dict):
+                raise LoopError("PRIORITY_POLICY_INVALID")
+            claim_ids = selector.get("claim_ids", [])
+            task_ids = selector.get("task_ids", [])
+            if (
+                not isinstance(selector.get("id"), str)
+                or not isinstance(claim_ids, list)
+                or not isinstance(task_ids, list)
+                or not claim_ids
+                and not task_ids
+                or any(not isinstance(value, str) for value in claim_ids)
+                or any(not isinstance(value, str) for value in task_ids)
+            ):
+                raise LoopError("PRIORITY_POLICY_INVALID")
+    return policy
+
+
+def priority_match(
+    policy: Mapping[str, Any],
+    *,
+    task_id: str,
+    claim_ids: set[str],
+) -> tuple[int, int, Mapping[str, Any], Mapping[str, Any]] | None:
+    for stage_index, stage in enumerate(policy["stages"]):
+        for selector_index, selector in enumerate(stage["selectors"]):
+            if (
+                task_id in selector.get("task_ids", [])
+                or claim_ids.intersection(selector.get("claim_ids", []))
+            ):
+                return stage_index, selector_index, stage, selector
+    return None
+
+
+def prioritized_work(
+    root: Path,
+) -> list[
+    tuple[
+        tuple[int, int, int, str],
+        str,
+        Mapping[str, Any],
+        Mapping[str, Any] | None,
+    ]
+]:
+    deliveries = planned_deliveries(root)
+    characterizations = pending_characterizations(root)
+    policy = active_priority_policy(root)
+    if policy is None:
+        return [
+            ((0, 0, index, str(value["target"])), "delivery", value, None)
+            for index, value in enumerate(deliveries)
+        ] + [
+            (
+                (1, 0, index, str(value["task_id"])),
+                "characterization",
+                value,
+                None,
+            )
+            for index, value in enumerate(characterizations)
+        ]
+
+    ranked = []
+    for kind, values in (
+        ("delivery", deliveries),
+        ("characterization", characterizations),
+    ):
+        for value in values:
+            if kind == "delivery":
+                task_id = str(value["target"])
+                claim_ids = {
+                    str(entry.get("claim_ref", {}).get("id"))
+                    for entry in value.get("entries", [])
+                    if isinstance(entry, dict)
+                    and isinstance(entry.get("claim_ref"), dict)
+                    and isinstance(entry["claim_ref"].get("id"), str)
+                }
+            else:
+                task_id = str(value["task_id"])
+                claim_id = value.get("claim", {}).get("id")
+                claim_ids = {claim_id} if isinstance(claim_id, str) else set()
+            match = priority_match(
+                policy,
+                task_id=task_id,
+                claim_ids=claim_ids,
+            )
+            if match is None:
+                continue
+            stage_index, selector_index, stage, selector = match
+            kind_rank = 0 if kind == "delivery" else 1
+            ranked.append(
+                (
+                    (stage_index, selector_index, kind_rank, task_id),
+                    kind,
+                    value,
+                    {
+                        "milestone_id": policy["id"],
+                        "stage_id": stage["id"],
+                        "stage_title": stage["title"],
+                        "selector_id": selector["id"],
+                    },
+                )
+            )
+    return sorted(ranked, key=lambda item: item[0])
 
 
 def requirement_refs_for_claim(
@@ -1770,13 +1907,43 @@ def build_characterization_task(
 
 
 def next_task(root: Path) -> Mapping[str, Any] | None:
+    work = prioritized_work(root)
+    if not work:
+        return None
+    rank, kind, value, selection = work[0]
+    task = (
+        build_task(root, value)
+        if kind == "delivery"
+        else build_characterization_task(root, value)
+    )
+    if selection is None:
+        return task
+    return {
+        **task,
+        "priority": 10 + rank[0] * 10 + rank[1],
+        "selection": selection,
+    }
+
+
+def queue_status(root: Path) -> Mapping[str, Any]:
+    policy = active_priority_policy(root)
     deliveries = planned_deliveries(root)
-    if deliveries:
-        return build_task(root, deliveries[0])
     characterizations = pending_characterizations(root)
-    if characterizations:
-        return build_characterization_task(root, characterizations[0])
-    return None
+    eligible = prioritized_work(root)
+    result: dict[str, Any] = {
+        "delivery_count": len(deliveries),
+        "characterization_count": len(characterizations),
+        "eligible_count": len(eligible),
+    }
+    if policy is not None:
+        result["priority_policy"] = {
+            "id": policy["id"],
+            "mode": policy["mode"],
+            "deferred_count": (
+                len(deliveries) + len(characterizations) - len(eligible)
+            ),
+        }
+    return result
 
 
 def initial_current() -> Mapping[str, Any]:
@@ -2002,6 +2169,7 @@ def validate_task(root: Path, task: Mapping[str, Any]) -> None:
 
 
 def doctor(root: Path) -> Mapping[str, Any]:
+    active_priority_policy(root)
     state = current(root)
     events = load_events(root)
     projected = project_current(events)
@@ -2028,6 +2196,7 @@ def doctor(root: Path) -> Mapping[str, Any]:
         "status": "ok",
         "current": state,
         "event_count": len(events),
+        "queue": queue_status(root),
     }
 
 
@@ -2743,6 +2912,7 @@ def advance(
                 "schema_version": SCHEMA_VERSION,
                 "status": "queue_empty",
                 "action": "done",
+                "queue": queue_status(root),
                 "reconciliation": reconciliation,
             }
         started = start(root)
@@ -2802,6 +2972,7 @@ def advance(
                     "status": "queue_empty",
                     "action": "done",
                     "completed": completed,
+                    "queue": queue_status(root),
                     "reconciliation": reconciliation,
                 }
             started = start(root)
@@ -2879,6 +3050,7 @@ def dispatch(root: Path, args: argparse.Namespace) -> Mapping[str, Any]:
         return next_task(root) or {
             "schema_version": SCHEMA_VERSION,
             "status": "queue_empty",
+            "queue": queue_status(root),
         }
     if args.command == "start":
         return start(root)
