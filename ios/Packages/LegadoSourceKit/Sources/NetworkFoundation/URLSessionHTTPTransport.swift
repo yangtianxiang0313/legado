@@ -7,15 +7,18 @@ public struct URLSessionLoadResult: Sendable {
     public let data: Data
     public let response: URLResponse
     public let responseCookies: [HTTPResponseCookie]
+    public let bodyIsContentDecoded: Bool
 
     public init(
         data: Data,
         response: URLResponse,
-        responseCookies: [HTTPResponseCookie] = []
+        responseCookies: [HTTPResponseCookie] = [],
+        bodyIsContentDecoded: Bool = false
     ) {
         self.data = data
         self.response = response
         self.responseCookies = responseCookies
+        self.bodyIsContentDecoded = bodyIsContentDecoded
     }
 }
 
@@ -129,26 +132,33 @@ public actor URLSessionHTTPTransport: HTTPTransport {
             guard let http = result.response as? HTTPURLResponse else {
                 throw HTTPTransportFailure.invalidResponse
             }
-            let responseHeaders = HTTPHeaders(
+            let mappedHeaderFields: [HTTPHeader] =
                 http.allHeaderFields.compactMap { key, value in
                     guard let name = key as? String else { return nil }
                     return try? HTTPHeader(
                         name: name,
                         value: String(describing: value)
                     )
-                }.sorted {
+                }
+            var responseHeaderFields =
+                mappedHeaderFields.sorted {
                     $0.name == $1.name
                         ? $0.value < $1.value
                         : $0.name < $1.name
                 }
-            )
+            if result.bodyIsContentDecoded {
+                responseHeaderFields.removeAll {
+                    $0.name == "content-encoding"
+                        || $0.name == "content-length"
+                }
+            }
             return try HTTPResponse(
                 statusCode: http.statusCode,
                 effectiveURL: HTTPURL(
                     http.url?.absoluteString
                         ?? request.url.absoluteString
                 ),
-                headers: responseHeaders,
+                headers: HTTPHeaders(responseHeaderFields),
                 body: HTTPBody(result.data),
                 responseCookies: result.responseCookies
             )
@@ -211,7 +221,13 @@ private actor FoundationURLSessionDataLoader:
         return URLSessionLoadResult(
             data: data,
             response: response,
-            responseCookies: cookies
+            responseCookies: cookies,
+            bodyIsContentDecoded:
+                URLSessionContentEncodingNormalizer
+                .wasTransparentlyDecoded(
+                    data: data,
+                    response: response
+                )
         )
     }
 
@@ -231,6 +247,25 @@ private actor FoundationURLSessionDataLoader:
         let session = URLSession(configuration: configuration)
         proxySessions[proxy] = session
         return session
+    }
+}
+
+enum URLSessionContentEncodingNormalizer {
+    static func wasTransparentlyDecoded(
+        data: Data,
+        response: URLResponse
+    ) -> Bool {
+        guard
+            let http = response as? HTTPURLResponse,
+            http.value(
+                forHTTPHeaderField: "Content-Encoding"
+            )?.trimmingCharacters(
+                in: .whitespacesAndNewlines
+            ).caseInsensitiveCompare("gzip") == .orderedSame
+        else {
+            return false
+        }
+        return !data.starts(with: [0x1F, 0x8B])
     }
 }
 
