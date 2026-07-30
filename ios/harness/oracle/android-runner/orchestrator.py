@@ -642,6 +642,54 @@ SCENARIO_CONTRACTS = {
             "composite-key-replace-isolated-by-device",
         }),
     },
+    "rl-reader-layout-incremental-stream-001": {
+        "status": "candidate",
+        "fixture_kind": "android_runtime_scenario",
+        "result_type": "reader_runtime",
+        "stage_names": (
+            "fixture_setup",
+            "layout_configuration",
+            "content_processing",
+            "page_stream",
+            "callback_projection",
+            "result_mapping",
+        ),
+        "expected_cases": (
+            (
+                "current-page-mode-refreshes-when-anchor-becomes-available",
+                "current_layout_stream",
+            ),
+            (
+                "current-page-mode-falls-back-after-unavailable-anchor",
+                "current_layout_stream",
+            ),
+            (
+                "current-scroll-mode-refreshes-near-persisted-page",
+                "current_layout_stream",
+            ),
+            (
+                "previous-chapter-waits-for-full-layout",
+                "adjacent_layout_stream",
+            ),
+            (
+                "next-chapter-refreshes-only-first-two-pages",
+                "adjacent_layout_stream",
+            ),
+            (
+                "current-layout-cancelled-after-first-page",
+                "current_layout_stream",
+            ),
+            (
+                "current-consumer-callback-fails-after-first-page",
+                "current_layout_stream",
+            ),
+        ),
+        "nominal_cases": frozenset({
+            "current-page-mode-refreshes-when-anchor-becomes-available",
+            "current-scroll-mode-refreshes-near-persisted-page",
+            "next-chapter-refreshes-only-first-two-pages",
+        }),
+    },
     "rl-reader-layout-page-projection-001": {
         "status": "candidate",
         "fixture_kind": "android_runtime_scenario",

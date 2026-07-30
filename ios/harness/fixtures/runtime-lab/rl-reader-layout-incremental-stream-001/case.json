@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "kind": "android_runtime_scenario",
+  "id": "rl-reader-layout-incremental-stream-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "android_runtime",
+  "capabilities": [
+    "reader.layout",
+    "reader.lifecycle",
+    "reader.progress"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": null,
+  "input": "input.json",
+  "transport": {
+    "mode": "none",
+    "external_network": "deny",
+    "responses": []
+  },
+  "coverage": [
+    {
+      "behavior": "reader.layout-incremental-stream",
+      "cases": [
+        {
+          "id": "current-page-mode-refreshes-when-anchor-becomes-available",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-READ-BOOK-CONTENT-LOAD-FINISH",
+            "AF-TEXT-CHAPTER-CREATE-LAYOUT"
+          ],
+          "branch_refs": [
+            "the current chapter calls upContent before onLayoutPageCompleted for the first page containing durChapterPos",
+            "after the channel closes it sends a final upContent, pageChanged, contentLoadFinish, then success"
+          ]
+        },
+        {
+          "id": "current-page-mode-falls-back-after-unavailable-anchor",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-READ-BOOK-CONTENT-LOAD-FINISH"
+          ],
+          "branch_refs": [
+            "when no emitted page contains durChapterPos the current chapter defers its only content refresh until completion",
+            "the terminal refresh preserves resetPageOffset when availability was never reached"
+          ]
+        },
+        {
+          "id": "current-scroll-mode-refreshes-near-persisted-page",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-READ-BOOK-CONTENT-LOAD-FINISH",
+            "AF-TEXT-CHAPTER-CREATE-LAYOUT"
+          ],
+          "branch_refs": [
+            "scroll mode may refresh again while early pages near durPageIndex continue arriving",
+            "page completion callbacks remain ordered after any refreshes triggered by that page"
+          ]
+        },
+        {
+          "id": "previous-chapter-waits-for-full-layout",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-READ-BOOK-CONTENT-LOAD-FINISH"
+          ],
+          "branch_refs": [
+            "the previous chapter drains layoutChannel without page callbacks",
+            "the previous chapter refreshes once only after the channel completes"
+          ]
+        },
+        {
+          "id": "next-chapter-refreshes-only-first-two-pages",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-READ-BOOK-CONTENT-LOAD-FINISH"
+          ],
+          "branch_refs": [
+            "the next chapter emits content refreshes for page indices zero and one",
+            "pages after index one are drained without further refresh callbacks"
+          ]
+        },
+        {
+          "id": "current-layout-cancelled-after-first-page",
+          "role": "denied",
+          "android_fact_refs": [
+            "AF-READ-BOOK-CONTENT-LOAD-FINISH",
+            "AF-TEXT-CHAPTER-CANCEL-LAYOUT"
+          ],
+          "branch_refs": [
+            "cancelling TextChapterLayout closes its channel with cancellation",
+            "the current chapter keeps partial pages but skips terminal contentLoadFinish and success"
+          ]
+        },
+        {
+          "id": "current-consumer-callback-fails-after-first-page",
+          "role": "denied",
+          "android_fact_refs": [
+            "AF-READ-BOOK-CONTENT-LOAD-FINISH",
+            "AF-TEXT-CHAPTER-CREATE-LAYOUT"
+          ],
+          "branch_refs": [
+            "an exception from onLayoutPageCompleted aborts the ReadBook channel consumer",
+            "the independent layout may finish materializing pages while terminal ReadBook callbacks remain suppressed"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "event-order-and-bounded-coroutine-quiescence",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 0,
+    "network_allowed": false,
+    "logical_origin": null,
+    "database_reset_per_case": true
+  },
+  "limits": {
+    "timeout_ms": 5000
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/model/ReadBook.kt#contentLoadFinish",
+      "app/src/main/java/io/legado/app/ui/book/read/page/entities/TextChapter.kt#layoutChannel",
+      "app/src/main/java/io/legado/app/ui/book/read/page/entities/TextChapter.kt#cancelLayout",
+      "app/src/main/java/io/legado/app/ui/book/read/page/provider/TextChapterLayout.kt#onPageCompleted",
+      "app/src/main/java/io/legado/app/ui/book/read/page/provider/TextChapterLayout.kt#onCompleted",
+      "app/src/main/java/io/legado/app/ui/book/read/page/provider/TextChapterLayout.kt#onException"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-READER-LAYOUT-INCREMENTAL-STREAM-001"
+  }
+}

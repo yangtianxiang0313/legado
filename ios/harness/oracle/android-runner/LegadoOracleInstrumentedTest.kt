@@ -41,6 +41,7 @@ import io.legado.app.help.TTS
 import io.legado.app.help.book.BookHelp
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.config.LocalConfig
+import io.legado.app.help.config.ReadBookConfig
 import io.legado.app.help.http.CookieManager
 import io.legado.app.help.http.CookieStore
 import io.legado.app.help.http.StrResponse
@@ -61,6 +62,7 @@ import io.legado.app.service.TTSReadAloudService
 import io.legado.app.ui.book.read.page.entities.TextChapter
 import io.legado.app.ui.book.read.page.entities.TextLine
 import io.legado.app.ui.book.read.page.entities.TextPage
+import io.legado.app.ui.book.read.page.provider.ChapterProvider
 import io.legado.app.ui.book.read.ReadBookActivity
 import io.legado.app.ui.book.read.ReadBookViewModel
 import io.legado.app.ui.book.changesource.ChangeChapterSourceViewModel
@@ -185,6 +187,8 @@ class LegadoOracleInstrumentedTest {
                 runBookmarkRuntimeCases()
             "rl-reader-history-read-record-runtime-risk-001" ->
                 runReadRecordRuntimeCases()
+            "rl-reader-layout-incremental-stream-001" ->
+                runReaderLayoutIncrementalStreamCases()
             "rl-reader-layout-page-projection-001" ->
                 runReaderLayoutPageProjectionCases()
             "rl-reader-progress-layout-save-runtime-001" ->
@@ -2051,6 +2055,588 @@ class LegadoOracleInstrumentedTest {
             .put("book_name", value.bookName)
             .put("read_time", value.readTime)
             .put("last_read", value.lastRead)
+
+    private suspend fun runReaderLayoutIncrementalStreamCases() {
+        val values = input.getJSONArray("cases")
+        val supported = setOf(
+            "current_layout_stream",
+            "adjacent_layout_stream"
+        )
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            val operation = value.getString("operation")
+            require(operation in supported) {
+                "Unsupported reader layout stream operation: $operation"
+            }
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", operation)
+                .put("arguments", JSONObject(arguments.toString()))
+            runCase(value.getString("id"), operation, stimulus) {
+                readerLayoutIncrementalStreamProjection(
+                    value.getString("id"),
+                    operation,
+                    arguments
+                )
+            }
+        }
+    }
+
+    private suspend fun readerLayoutIncrementalStreamProjection(
+        caseId: String,
+        operation: String,
+        arguments: JSONObject
+    ): JSONObject {
+        clearLayoutStreamRuntimeState()
+        val previousConfig = ReadBookConfig.durConfig
+        val previousShareLayout = ReadBookConfig.shareLayout
+        val previousUseZhLayout = ReadBookConfig.useZhLayout
+        val previousReview = AppConfig.enableReview
+        val previousConverter = AppConfig.chineseConverterType
+        val previousReadRecord = AppConfig.enableReadRecord
+        val previousTypeface = AppConfig.systemTypefaces
+        val preferences =
+            InstrumentationRegistry.getInstrumentation()
+                .targetContext.defaultSharedPreferences
+        val doublePageKey = PreferKey.doublePageHorizontal
+        val hadDoublePagePreference = preferences.contains(doublePageKey)
+        val previousDoublePage = preferences.getString(
+            doublePageKey,
+            null
+        )
+        return try {
+            ReadBookConfig.shareLayout = false
+            ReadBookConfig.useZhLayout = false
+            ReadBookConfig.durConfig = previousConfig.copy(
+                textFont = "",
+                textBold = 0,
+                textSize = 18,
+                letterSpacing = 0f,
+                lineSpacingExtra = 10,
+                paragraphSpacing = 0,
+                titleMode = 2,
+                titleSize = 0,
+                titleTopSpacing = 0,
+                titleBottomSpacing = 0,
+                paragraphIndent = "",
+                paddingBottom = 8,
+                paddingLeft = 8,
+                paddingRight = 8,
+                paddingTop = 8
+            ).apply {
+                initColorInt()
+            }
+            AppConfig.enableReview = false
+            AppConfig.chineseConverterType = 0
+            AppConfig.enableReadRecord = false
+            AppConfig.systemTypefaces = 0
+            preferences.edit()
+                .putString(doublePageKey, "0")
+                .commit()
+            ChapterProvider.upStyle()
+            ChapterProvider.upViewSize(240, 180)
+
+            val offset = arguments.getInt("chapter_offset")
+            require(
+                (operation == "current_layout_stream" && offset == 0) ||
+                    (operation == "adjacent_layout_stream" &&
+                        offset in setOf(-1, 1))
+            )
+            val failureMode = arguments.getString("failure_mode")
+            require(
+                failureMode in setOf(
+                    "none",
+                    "cancel_after_first_page",
+                    "throw_after_first_page"
+                )
+            )
+            val callback = LayoutStreamCallback(failureMode)
+            val book = Book(
+                bookUrl = "/android-runtime/reader-layout-stream/$caseId.txt",
+                originName = "RuntimeLab",
+                name = "RuntimeLab 增量排版 $caseId",
+                author = "RuntimeLab"
+            ).apply {
+                setUseReplaceRule(false)
+                setReSegment(false)
+                setPageAnim(arguments.getInt("page_anim"))
+            }
+            val currentIndex = 1
+            val chapter = BookChapter(
+                url = "/android-runtime/reader-layout-stream/$caseId/" +
+                    (currentIndex + offset),
+                title = "第${currentIndex + offset + 1}章",
+                bookUrl = book.bookUrl,
+                index = currentIndex + offset
+            )
+            ReadBook.book = book
+            ReadBook.chapterSize = 3
+            ReadBook.durChapterIndex = currentIndex
+            ReadBook.durChapterPos =
+                arguments.getInt("dur_chapter_pos")
+            ReadBook.callBack = callback
+
+            ReadBook.contentLoadFinish(
+                book = book,
+                chapter = chapter,
+                content = layoutStreamContent(arguments),
+                upContent = arguments.getBoolean("up_content"),
+                resetPageOffset =
+                    arguments.getBoolean("reset_page_offset"),
+                success = callback::markSuccess
+            )
+
+            when (failureMode) {
+                "none" -> withTimeout(5_000) {
+                    callback.successSignal.await()
+                }
+                "cancel_after_first_page" -> {
+                    withTimeout(5_000) {
+                        callback.failureSignal.await()
+                    }
+                    awaitStableLayoutPages(offset)
+                }
+                "throw_after_first_page" -> {
+                    withTimeout(5_000) {
+                        callback.failureSignal.await()
+                        while (
+                            layoutStreamChapter(offset)
+                                ?.isCompleted != true
+                        ) {
+                            delay(10)
+                        }
+                    }
+                    awaitStableLayoutPages(offset)
+                }
+            }
+
+            val textChapter = requireNotNull(
+                layoutStreamChapter(offset)
+            )
+            val isFailure = failureMode != "none"
+            val schedulerDependentStream =
+                caseId == "current-scroll-mode-refreshes-near-persisted-page"
+            val cancellationStream =
+                failureMode == "cancel_after_first_page"
+            JSONObject()
+                .put("chapter_offset", offset)
+                .put("page_anim", arguments.getInt("page_anim"))
+                .put(
+                    "requested_character_anchor",
+                    arguments.getInt("dur_chapter_pos")
+                )
+                .put("failure_mode", failureMode)
+                .put("layout_completed", textChapter.isCompleted)
+                .put("has_materialized_pages", textChapter.pages.isNotEmpty())
+                .put(
+                    "materialized_page_count",
+                    if (isFailure) {
+                        JSONObject.NULL
+                    } else {
+                        textChapter.pageSize
+                    }
+                )
+                .put(
+                    "additional_pages_after_consumer_stop",
+                    if (cancellationStream) {
+                        JSONObject.NULL
+                    } else {
+                        textChapter.pageSize >
+                            callback.layoutPageCallbackCount.get()
+                    }
+                )
+                .put(
+                    "layout_page_callback_count",
+                    if (cancellationStream) {
+                        JSONObject.NULL
+                    } else {
+                        callback.layoutPageCallbackCount.get()
+                    }
+                )
+                .put(
+                    "layout_page_callbacks_before_cancel",
+                    if (cancellationStream) 1 else JSONObject.NULL
+                )
+                .put(
+                    "content_refresh_count",
+                    if (schedulerDependentStream) {
+                        JSONObject.NULL
+                    } else {
+                        callback.contentRefreshCount.get()
+                    }
+                )
+                .put(
+                    "content_refresh_count_is_scheduler_dependent",
+                    schedulerDependentStream
+                )
+                .put(
+                    "terminal_content_callback",
+                    callback.contentFinished.get()
+                )
+                .put(
+                    "success_callback",
+                    callback.successCalled.get()
+                )
+                .put(
+                    "events",
+                    projectLayoutStreamEvents(
+                        caseId,
+                        callback.snapshot()
+                    )
+                )
+        } finally {
+            clearLayoutStreamRuntimeState()
+            ReadBookConfig.durConfig = previousConfig
+            ReadBookConfig.shareLayout = previousShareLayout
+            ReadBookConfig.useZhLayout = previousUseZhLayout
+            AppConfig.enableReview = previousReview
+            AppConfig.chineseConverterType = previousConverter
+            AppConfig.enableReadRecord = previousReadRecord
+            AppConfig.systemTypefaces = previousTypeface
+            val editor = preferences.edit()
+            if (hadDoublePagePreference) {
+                editor.putString(doublePageKey, previousDoublePage)
+            } else {
+                editor.remove(doublePageKey)
+            }
+            editor.commit()
+            ChapterProvider.upStyle()
+        }
+    }
+
+    private fun layoutStreamContent(arguments: JSONObject): String {
+        val paragraphCount = arguments.getInt("paragraph_count")
+        val characterCount =
+            arguments.getInt("characters_per_paragraph")
+        require(paragraphCount > 0 && characterCount > 0)
+        val alphabet = "甲乙丙丁戊己庚辛壬癸"
+        return (0 until paragraphCount).joinToString("\n") { paragraph ->
+            buildString {
+                append("段")
+                append(paragraph)
+                append("：")
+                repeat(characterCount) { index ->
+                    append(
+                        alphabet[
+                            (paragraph + index) % alphabet.length
+                        ]
+                    )
+                }
+            }
+        }
+    }
+
+    private fun layoutStreamChapter(offset: Int): TextChapter? =
+        when (offset) {
+            -1 -> ReadBook.prevTextChapter
+            0 -> ReadBook.curTextChapter
+            1 -> ReadBook.nextTextChapter
+            else -> null
+        }
+
+    private suspend fun awaitStableLayoutPages(offset: Int) {
+        withTimeout(5_000) {
+            var previous = -1
+            var stableCount = 0
+            while (stableCount < 5) {
+                delay(20)
+                val current =
+                    layoutStreamChapter(offset)?.pageSize ?: -1
+                if (current == previous) {
+                    stableCount++
+                } else {
+                    previous = current
+                    stableCount = 0
+                }
+            }
+        }
+    }
+
+    private fun projectLayoutStreamEvents(
+        caseId: String,
+        events: JSONArray
+    ): JSONArray {
+        val values = (0 until events.length()).map {
+            events.getJSONObject(it)
+        }
+        return when (caseId) {
+            "current-scroll-mode-refreshes-near-persisted-page" ->
+                projectScrollLayoutStreamEvents(values)
+            "current-layout-cancelled-after-first-page" -> {
+                val cancelIndex = values.indexOfFirst {
+                    it.getString("type") == "cancel_requested"
+                }
+                require(cancelIndex >= 0)
+                layoutStreamEventProjection(
+                    values.subList(0, cancelIndex + 1)
+                )
+            }
+            else -> layoutStreamEventProjection(values)
+        }
+    }
+
+    private fun projectScrollLayoutStreamEvents(
+        events: List<JSONObject>
+    ): JSONArray {
+        val firstPageIndex = events.indexOfFirst {
+            it.getString("type") == "layout_page"
+        }
+        val anchorPageIndex = events.indexOfFirst {
+            it.getString("type") == "layout_page" &&
+                it.optBoolean("contains_character_anchor")
+        }
+        val lastPageIndex = events.indexOfLast {
+            it.getString("type") == "layout_page"
+        }
+        require(
+            firstPageIndex >= 0 &&
+                anchorPageIndex > firstPageIndex &&
+                lastPageIndex > anchorPageIndex
+        )
+        val anchorRefreshIndex = events.indexOfFirst {
+            it.getString("type") == "up_content" &&
+                it.optBoolean("reset_page_offset") &&
+                events.indexOf(it) < anchorPageIndex
+        }
+        val scrollAtAnchorIndex = events.indexOfLast {
+            it.getString("type") == "up_content" &&
+                !it.optBoolean("reset_page_offset") &&
+                events.indexOf(it) < anchorPageIndex
+        }
+        val scrollAfterAnchorIndex = events.indexOfFirst {
+            it.getString("type") == "up_content" &&
+                !it.optBoolean("reset_page_offset") &&
+                events.indexOf(it) > anchorPageIndex &&
+                events.indexOf(it) < lastPageIndex
+        }
+        val terminalRefreshIndex = events.indexOfFirst {
+            it.getString("type") == "up_content" &&
+                events.indexOf(it) > lastPageIndex
+        }
+        require(
+            anchorRefreshIndex >= 0 &&
+                scrollAtAnchorIndex > anchorRefreshIndex &&
+                scrollAfterAnchorIndex > anchorPageIndex &&
+                terminalRefreshIndex > lastPageIndex
+        )
+        val selected = listOf(
+            events.first { it.getString("type") == "up_menu" },
+            layoutStreamMilestone(
+                "first_layout_page",
+                events[firstPageIndex],
+                "page_index",
+                "page_start"
+            ),
+            layoutStreamMilestone(
+                "anchor_refresh",
+                events[anchorRefreshIndex],
+                "relative_position",
+                "reset_page_offset"
+            ),
+            layoutStreamMilestone(
+                "scroll_refresh_before_anchor_callback",
+                events[scrollAtAnchorIndex],
+                "relative_position",
+                "reset_page_offset"
+            ),
+            layoutStreamMilestone(
+                "anchor_layout_page",
+                events[anchorPageIndex],
+                "page_index",
+                "page_start",
+                "contains_character_anchor"
+            ),
+            layoutStreamMilestone(
+                "scroll_refresh_after_anchor_callback",
+                events[scrollAfterAnchorIndex],
+                "relative_position",
+                "reset_page_offset"
+            ),
+            layoutStreamMilestone(
+                "last_layout_page",
+                events[lastPageIndex],
+                "page_index",
+                "page_start"
+            ),
+            layoutStreamMilestone(
+                "terminal_refresh",
+                events[terminalRefreshIndex],
+                "relative_position",
+                "reset_page_offset"
+            ),
+            events.first { it.getString("type") == "page_changed" },
+            events.first {
+                it.getString("type") == "content_load_finish"
+            },
+            events.first { it.getString("type") == "success" }
+        )
+        return layoutStreamEventProjection(selected)
+    }
+
+    private fun layoutStreamMilestone(
+        type: String,
+        source: JSONObject,
+        vararg keys: String
+    ): JSONObject = JSONObject()
+        .put("type", type)
+        .apply {
+            keys.forEach { key ->
+                put(key, source.get(key))
+            }
+        }
+
+    private fun layoutStreamEventProjection(
+        events: List<JSONObject>
+    ): JSONArray = JSONArray().apply {
+        events.forEachIndexed { index, event ->
+            put(
+                JSONObject(event.toString())
+                    .put("sequence", index)
+            )
+        }
+    }
+
+    private suspend fun clearLayoutStreamRuntimeState() {
+        ReadBook.coroutineContext.cancelChildren()
+        ReadBook.clearTextChapter()
+        delay(20)
+        ReadBook.callBack = null
+        ReadBook.book = null
+        ReadBook.bookSource = null
+        ReadBook.contentProcessor = null
+        ReadBook.chapterSize = 0
+        ReadBook.durChapterIndex = 0
+        ReadBook.durChapterPos = 0
+    }
+
+    private class LayoutStreamCallback(
+        private val failureMode: String
+    ) : ReadBook.CallBack {
+        private val sequence = AtomicInteger()
+        private val events = arrayListOf<JSONObject>()
+        val layoutPageCallbackCount = AtomicInteger()
+        val contentRefreshCount = AtomicInteger()
+        val contentFinished = AtomicBoolean()
+        val successCalled = AtomicBoolean()
+        val failureSignal = CompletableDeferred<Unit>()
+        val successSignal = CompletableDeferred<Unit>()
+
+        private fun record(
+            type: String,
+            block: JSONObject.() -> Unit = {}
+        ) {
+            val event = JSONObject()
+                .put("sequence", sequence.getAndIncrement())
+                .put("type", type)
+                .apply(block)
+            synchronized(events) {
+                events.add(event)
+            }
+        }
+
+        fun markSuccess() {
+            successCalled.set(true)
+            record("success")
+            successSignal.complete(Unit)
+        }
+
+        fun snapshot(): JSONArray =
+            JSONArray().apply {
+                synchronized(events) {
+                    events.forEach {
+                        put(JSONObject(it.toString()))
+                    }
+                }
+            }
+
+        override fun upMenuView() {
+            record("up_menu")
+        }
+
+        override fun loadChapterList(book: Book) {
+            record("load_chapter_list")
+        }
+
+        override fun upContent(
+            relativePosition: Int,
+            resetPageOffset: Boolean,
+            success: (() -> Unit)?
+        ) {
+            contentRefreshCount.incrementAndGet()
+            record("up_content") {
+                put("relative_position", relativePosition)
+                put("reset_page_offset", resetPageOffset)
+                put("dur_page_index", ReadBook.durPageIndex)
+                put("layout_available", ReadBook.isLayoutAvailable)
+            }
+            success?.invoke()
+        }
+
+        override fun pageChanged() {
+            record("page_changed")
+        }
+
+        override fun contentLoadFinish() {
+            contentFinished.set(true)
+            record("content_load_finish")
+        }
+
+        override fun upPageAnim(upRecorder: Boolean) {
+            record("up_page_anim") {
+                put("up_recorder", upRecorder)
+            }
+        }
+
+        override fun notifyBookChanged() {
+            record("notify_book_changed")
+        }
+
+        override fun onLayoutPageCompleted(
+            index: Int,
+            page: TextPage
+        ) {
+            layoutPageCallbackCount.incrementAndGet()
+            val firstLine = page.lines.firstOrNull()
+            record("layout_page") {
+                put("page_index", index)
+                put(
+                    "page_start",
+                    firstLine?.chapterPosition ?: JSONObject.NULL
+                )
+                put(
+                    "contains_character_anchor",
+                    firstLine != null &&
+                        page.containPos(ReadBook.durChapterPos)
+                )
+            }
+            if (index == 0) {
+                when (failureMode) {
+                    "cancel_after_first_page" -> {
+                        record("cancel_requested")
+                        failureSignal.complete(Unit)
+                        ReadBook.curTextChapter?.cancelLayout()
+                    }
+                    "throw_after_first_page" -> {
+                        record("callback_exception")
+                        failureSignal.complete(Unit)
+                        throw IllegalStateException(
+                            "oracle layout callback failure"
+                        )
+                    }
+                }
+            }
+        }
+
+        override fun onLayoutCompleted() {
+            record("listener_layout_completed")
+        }
+
+        override fun onLayoutException(e: Throwable) {
+            record("listener_layout_exception") {
+                put("exception_type", e.javaClass.name)
+            }
+        }
+    }
 
     private suspend fun runReaderLayoutPageProjectionCases() {
         val values = input.getJSONArray("cases")

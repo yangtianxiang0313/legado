@@ -54,6 +54,11 @@
       "sha256": "9d8fdcf47ba610cc27c84a21383aa60e8755737fc5e7be1aa62db78db15b8f90"
     },
     {
+      "id": "rl-reader-layout-incremental-stream-001",
+      "path": "ios/harness/fixtures/runtime-lab/rl-reader-layout-incremental-stream-001",
+      "sha256": "6ace40bea0d8f30055fc2b359cada50439118f8f899919cdd84de799b32f0bd4"
+    },
+    {
       "id": "rl-reader-layout-page-projection-001",
       "path": "ios/harness/fixtures/runtime-lab/rl-reader-layout-page-projection-001",
       "sha256": "cc86af3600d29486a940c342d0caa9c27ebee0095b700f89ca9f8e27690ffa88"

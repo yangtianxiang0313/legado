@@ -275,6 +275,33 @@ class SourceLabTests(unittest.TestCase):
         self.assertEqual("none", case["transport"]["mode"])
         self.assertFalse(case["determinism"]["network_allowed"])
 
+    def test_reader_layout_incremental_stream_covers_terminal_failures(self):
+        scenario = "rl-reader-layout-incremental-stream-001"
+        directory, case, inputs = source_lab.load_scenario(
+            REPO_ROOT,
+            scenario,
+        )
+        self.assertEqual(
+            [],
+            source_lab.validate_scenario(REPO_ROOT, directory, case),
+        )
+        self.assertEqual("android_runtime_scenario", case["kind"])
+        self.assertEqual(7, len(inputs["cases"]))
+        self.assertEqual(
+            {"current_layout_stream", "adjacent_layout_stream"},
+            {value["operation"] for value in inputs["cases"]},
+        )
+        self.assertEqual(
+            {"nominal", "boundary", "denied"},
+            {
+                value["role"]
+                for coverage in case["coverage"]
+                for value in coverage["cases"]
+            },
+        )
+        self.assertEqual("none", case["transport"]["mode"])
+        self.assertFalse(case["determinism"]["network_allowed"])
+
     def test_reader_layout_page_projection_covers_reflow_and_boundaries(self):
         scenario = "rl-reader-layout-page-projection-001"
         directory, case, inputs = source_lab.load_scenario(

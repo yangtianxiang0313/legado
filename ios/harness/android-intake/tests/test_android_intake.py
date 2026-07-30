@@ -17,8 +17,17 @@ class AndroidIntakeTests(unittest.TestCase):
         second = android_intake.inventory_value(REPO_ROOT)
         self.assertEqual(first, second)
         baseline = json.loads((REPO_ROOT / "ios/project/baseline.json").read_text(encoding="utf-8"))
+        policy = json.loads(
+            (REPO_ROOT / "ios/harness/android-intake/policy-v1.json").read_text(
+                encoding="utf-8"
+            )
+        )
         self.assertEqual(baseline["android_oracle"]["git_commit"], first["android_git_commit"])
-        self.assertEqual(49, len(first["facts"]))
+        self.assertEqual(len(policy["sensors"]), len(first["facts"]))
+        self.assertEqual(
+            {sensor["fact_id"] for sensor in policy["sensors"]},
+            {fact["id"] for fact in first["facts"]},
+        )
 
     def test_book_source_fact_is_data_contract_not_runtime_proof(self):
         inventory = android_intake.inventory_value(REPO_ROOT)
@@ -144,6 +153,28 @@ class AndroidIntakeTests(unittest.TestCase):
         self.assertEqual(
             "saveRead",
             facts["AF-AUDIO-PLAY-SAVE-READ"]["payload"]["symbol"],
+        )
+
+    def test_reader_incremental_layout_has_stream_and_cancel_anchors(self):
+        inventory = android_intake.inventory_value(REPO_ROOT)
+        facts = {entry["id"]: entry for entry in inventory["facts"]}
+        self.assertEqual(
+            "contentLoadFinish",
+            facts["AF-READ-BOOK-CONTENT-LOAD-FINISH"][
+                "payload"
+            ]["symbol"],
+        )
+        self.assertEqual(
+            "createLayout",
+            facts["AF-TEXT-CHAPTER-CREATE-LAYOUT"][
+                "payload"
+            ]["symbol"],
+        )
+        self.assertEqual(
+            "cancelLayout",
+            facts["AF-TEXT-CHAPTER-CANCEL-LAYOUT"][
+                "payload"
+            ]["symbol"],
         )
 
     def test_reader_prefetch_runtime_has_policy_and_index_anchors(self):

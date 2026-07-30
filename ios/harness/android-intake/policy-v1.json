@@ -316,6 +316,18 @@
       "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
     },
     {
+      "fact_id": "AF-READ-BOOK-CONTENT-LOAD-FINISH",
+      "fact_key": "reader.layout.incremental-content-load-finish",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+      "symbol": "contentLoadFinish",
+      "symbol_id": "kotlin://io.legado.app.model.ReadBook/contentLoadFinish",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
       "fact_id": "AF-TEXT-CHAPTER-GET-READ-LENGTH",
       "fact_key": "reader.progress.page-to-char-position",
       "category": "production_entrypoint",
@@ -337,6 +349,30 @@
       "path": "app/src/main/java/io/legado/app/ui/book/read/page/entities/TextChapter.kt",
       "symbol": "getPageIndexByCharIndex",
       "symbol_id": "kotlin://io.legado.app.ui.book.read.page.entities.TextChapter/getPageIndexByCharIndex",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-TEXT-CHAPTER-CREATE-LAYOUT",
+      "fact_key": "reader.layout.create-incremental-layout",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/ui/book/read/page/entities/TextChapter.kt",
+      "symbol": "createLayout",
+      "symbol_id": "kotlin://io.legado.app.ui.book.read.page.entities.TextChapter/createLayout",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-TEXT-CHAPTER-CANCEL-LAYOUT",
+      "fact_key": "reader.layout.cancel-incremental-layout",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/ui/book/read/page/entities/TextChapter.kt",
+      "symbol": "cancelLayout",
+      "symbol_id": "kotlin://io.legado.app.ui.book.read.page.entities.TextChapter/cancelLayout",
       "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
     },
     {

@@ -2,8 +2,8 @@
   "schema_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
   "android_tree": "c81f5d383116e37c1eefee3eb86654514e82022b",
-  "control_sha256": "70bed8108a0ee0d04851dceff2d1f23bf492163c1906f4f28a208cf20f558d72",
-  "policy_sha256": "63c525cb60d486e9cd02d238303af90a7905aea2036bca95d4d66c57f7937115",
+  "control_sha256": "3bcba0f2bc7493cf16af9224c942c57b8d255d7bab39ab8dee2c72112a2c8247",
+  "policy_sha256": "b06815c8df920db6052ac7d8277223dc6db5d74ff448c07cddac370af2bfc25d",
   "facts": [
     {
       "id": "AF-ANALYZE-JSONPATH-GET-LIST",
@@ -999,6 +999,30 @@
       ]
     },
     {
+      "id": "AF-READ-BOOK-CONTENT-LOAD-FINISH",
+      "fact_key": "reader.layout.incremental-content-load-finish",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.ReadBook/contentLoadFinish",
+      "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+      "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d",
+      "source_sha256": "c6fa38c435f0075555e61bc397a6ef81baadd7a5c434e79d424f3d0e1abfef12",
+      "start_line": 525,
+      "end_line": 598,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "contentLoadFinish",
+        "signature": "fun contentLoadFinish( book: Book, chapter: BookChapter, content: String, upContent: Boolean = true, resetPageOffset: Boolean, success: (() -> Unit)? = null )",
+        "body_semantic_sha256": "e2d24677c6f6f65ad2bd40fcdfced3a4709d66da4732a9f7fdd6b9e8ddf8480d"
+      },
+      "revision_sha256": "8f156c70485d1fea1734473b11a5644a06beef7fe344130e6355cf33acde84e5",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
       "id": "AF-READ-BOOK-DOWNLOAD-INDEX",
       "fact_key": "reader.cache.prefetch-index-execution",
       "category": "production_entrypoint",
@@ -1457,6 +1481,54 @@
       "revision_sha256": "f89bd4c1afa4d1edfe7d85304609a72926b03e752f6e9a75f1a1ed330433ce06",
       "maps_to": [
         "REQ-ANDROID-BOOKSOURCE-SCHEMA-001"
+      ]
+    },
+    {
+      "id": "AF-TEXT-CHAPTER-CANCEL-LAYOUT",
+      "fact_key": "reader.layout.cancel-incremental-layout",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.ui.book.read.page.entities.TextChapter/cancelLayout",
+      "path": "app/src/main/java/io/legado/app/ui/book/read/page/entities/TextChapter.kt",
+      "git_blob": "eb8524f5b531f076e5708cad56cfe9a592a55d7a",
+      "source_sha256": "97305a41b9be1b1fb42c928fdb8e4bc713127df22764c1d8ea1dd5707b70ca55",
+      "start_line": 302,
+      "end_line": 305,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "cancelLayout",
+        "signature": "fun cancelLayout()",
+        "body_semantic_sha256": "47bef7c15ee02c76b79574a0d8bc66c13f9b23d78f6ebc798fee404aa242e637"
+      },
+      "revision_sha256": "4ffb1597faeee2f2cdc8f11b617a917c0ff845eac41f615fc727916a33f62937",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-TEXT-CHAPTER-CREATE-LAYOUT",
+      "fact_key": "reader.layout.create-incremental-layout",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.ui.book.read.page.entities.TextChapter/createLayout",
+      "path": "app/src/main/java/io/legado/app/ui/book/read/page/entities/TextChapter.kt",
+      "git_blob": "eb8524f5b531f076e5708cad56cfe9a592a55d7a",
+      "source_sha256": "97305a41b9be1b1fb42c928fdb8e4bc713127df22764c1d8ea1dd5707b70ca55",
+      "start_line": 264,
+      "end_line": 275,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "createLayout",
+        "signature": "fun createLayout(scope: CoroutineScope, book: Book, bookContent: BookContent)",
+        "body_semantic_sha256": "82d2beed3fcd28a22f7ae052bc9b64f78138ce3748db2ee72913d4b7a845f1a4"
+      },
+      "revision_sha256": "c5d5a8f65c8a427771c9ccc425d7a07e33c4a9c5309473787cff3c3321d39915",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
       ]
     },
     {

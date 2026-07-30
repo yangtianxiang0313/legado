@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "current-page-mode-refreshes-when-anchor-becomes-available",
+      "operation": "current_layout_stream",
+      "arguments": {
+        "chapter_offset": 0,
+        "page_anim": 0,
+        "dur_chapter_pos": 120,
+        "up_content": true,
+        "reset_page_offset": true,
+        "paragraph_count": 8,
+        "characters_per_paragraph": 40,
+        "failure_mode": "none"
+      }
+    },
+    {
+      "id": "current-page-mode-falls-back-after-unavailable-anchor",
+      "operation": "current_layout_stream",
+      "arguments": {
+        "chapter_offset": 0,
+        "page_anim": 0,
+        "dur_chapter_pos": 1000000,
+        "up_content": true,
+        "reset_page_offset": true,
+        "paragraph_count": 8,
+        "characters_per_paragraph": 40,
+        "failure_mode": "none"
+      }
+    },
+    {
+      "id": "current-scroll-mode-refreshes-near-persisted-page",
+      "operation": "current_layout_stream",
+      "arguments": {
+        "chapter_offset": 0,
+        "page_anim": 3,
+        "dur_chapter_pos": 120,
+        "up_content": true,
+        "reset_page_offset": true,
+        "paragraph_count": 8,
+        "characters_per_paragraph": 40,
+        "failure_mode": "none"
+      }
+    },
+    {
+      "id": "previous-chapter-waits-for-full-layout",
+      "operation": "adjacent_layout_stream",
+      "arguments": {
+        "chapter_offset": -1,
+        "page_anim": 0,
+        "dur_chapter_pos": 120,
+        "up_content": true,
+        "reset_page_offset": true,
+        "paragraph_count": 8,
+        "characters_per_paragraph": 40,
+        "failure_mode": "none"
+      }
+    },
+    {
+      "id": "next-chapter-refreshes-only-first-two-pages",
+      "operation": "adjacent_layout_stream",
+      "arguments": {
+        "chapter_offset": 1,
+        "page_anim": 0,
+        "dur_chapter_pos": 120,
+        "up_content": true,
+        "reset_page_offset": true,
+        "paragraph_count": 8,
+        "characters_per_paragraph": 40,
+        "failure_mode": "none"
+      }
+    },
+    {
+      "id": "current-layout-cancelled-after-first-page",
+      "operation": "current_layout_stream",
+      "arguments": {
+        "chapter_offset": 0,
+        "page_anim": 0,
+        "dur_chapter_pos": 0,
+        "up_content": true,
+        "reset_page_offset": true,
+        "paragraph_count": 200,
+        "characters_per_paragraph": 80,
+        "failure_mode": "cancel_after_first_page"
+      }
+    },
+    {
+      "id": "current-consumer-callback-fails-after-first-page",
+      "operation": "current_layout_stream",
+      "arguments": {
+        "chapter_offset": 0,
+        "page_anim": 0,
+        "dur_chapter_pos": 0,
+        "up_content": true,
+        "reset_page_offset": true,
+        "paragraph_count": 40,
+        "characters_per_paragraph": 80,
+        "failure_mode": "throw_after_first_page"
+      }
+    }
+  ]
+}
