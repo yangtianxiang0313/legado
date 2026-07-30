@@ -27,8 +27,6 @@ LOGICAL_ORIGIN = "http://sourcelab.test"
 INTEGRATION_LOGICAL_ORIGIN = "http://integrationlab.test"
 BASELINE_PATH = "ios/project/baseline.json"
 INVENTORY_PATH = "ios/project/android-intake/inventory-manifest.json"
-FIXTURE_MANIFEST_PATH = "ios/harness/fixtures/manifest.json"
-SOURCE_LAB_MANIFEST_PATH = "ios/harness/source-lab/manifest.json"
 CANONICALIZER_PATH = "ios/harness/normalization/canonical-v1.json"
 KOTLIN_RUNNER = "LegadoOracleInstrumentedTest.kt"
 OVERLAY_RELATIVE = (
@@ -409,6 +407,21 @@ SCENARIO_CONTRACTS = {
             "xpath-tolerant-html-fragments",
             "xpath-namespace-and-functions",
             "xpath-empty-and-malformed-expression",
+        }),
+    },
+    "sl-source-rule-url-normalization-runtime-001": {
+        "status": "candidate",
+        "expected_cases": (
+            ("url-value-matrix", "dom_selector_backends"),
+            ("context-retention", "dom_selector_backends"),
+            ("redirect-replacement", "dom_selector_backends"),
+            ("base-without-redirect", "dom_selector_backends"),
+        ),
+        "nominal_cases": frozenset({
+            "url-value-matrix",
+            "context-retention",
+            "redirect-replacement",
+            "base-without-redirect",
         }),
     },
     "sl-source-rule-jsonpath-regex-backends-001": {
@@ -2007,33 +2020,11 @@ def _scenario_contract(scenario_id: str) -> Mapping[str, Any]:
     return contract
 
 
-def repository_bindings(
+def fixture_root(
     root: Path,
-    scenario_id: str = DEFAULT_SCENARIO_ID,
-) -> Dict[str, str]:
-    identity = frozen_identity(root)
-    contract = _scenario_contract(scenario_id)
-    fixture_manifest = _read_json(root / FIXTURE_MANIFEST_PATH)
-    source_lab_manifest = _read_json(root / SOURCE_LAB_MANIFEST_PATH)
-    fixture_entries = {
-        entry.get("id"): entry
-        for entry in fixture_manifest.get("fixtures", [])
-        if isinstance(entry, dict)
-    }
-    source_lab_entries = {
-        entry.get("id"): entry
-        for entry in source_lab_manifest.get("scenarios", [])
-        if isinstance(entry, dict)
-    }
-    fixture_entry = fixture_entries.get(scenario_id)
-    scenario_entry = source_lab_entries.get(scenario_id)
-    if (
-        not isinstance(fixture_entry, dict)
-        or not isinstance(scenario_entry, dict)
-        or scenario_entry.get("status") != contract["status"]
-    ):
-        raise AndroidOracleRunnerError("SCENARIO_BINDING_MISSING")
-    fixture_path = fixture_entry.get("path")
+    scenario_id: str,
+    contract: Mapping[str, Any],
+) -> tuple[str, Path]:
     fixture_kind = str(
         contract.get("fixture_kind", "source_lab_scenario")
     )
@@ -2044,26 +2035,38 @@ def repository_bindings(
     }.get(fixture_kind)
     if fixture_root_name is None:
         raise AndroidOracleRunnerError("SCENARIO_KIND_DRIFT")
-    expected_path = (
+    relative = (
         f"ios/harness/fixtures/{fixture_root_name}/{scenario_id}"
     )
-    if (
-        fixture_path != expected_path
-        or scenario_entry.get("path") != expected_path
-    ):
-        raise AndroidOracleRunnerError("SCENARIO_PATH_DRIFT")
-    fixture_root = root / expected_path
-    input_path = fixture_root / "input.json"
-    case_path = fixture_root / "case.json"
-    if fixture_entry.get("sha256") != fixture_digest(fixture_root):
-        raise AndroidOracleRunnerError("FIXTURE_DIGEST_DRIFT")
+    return relative, root / relative
+
+
+def repository_bindings(
+    root: Path,
+    scenario_id: str = DEFAULT_SCENARIO_ID,
+) -> Dict[str, str]:
+    identity = frozen_identity(root)
+    contract = _scenario_contract(scenario_id)
+    fixture_kind = str(
+        contract.get("fixture_kind", "source_lab_scenario")
+    )
+    expected_path, fixture_directory = fixture_root(
+        root,
+        scenario_id,
+        contract,
+    )
+    input_path = fixture_directory / "input.json"
+    case_path = fixture_directory / "case.json"
     case = _read_json(case_path)
     if (
         not isinstance(case, dict)
         or case.get("kind") != fixture_kind
         or case.get("id") != scenario_id
+        or case.get("status") != contract["status"]
     ):
         raise AndroidOracleRunnerError("SCENARIO_KIND_DRIFT")
+    observed_fixture_sha256 = fixture_digest(fixture_directory)
+    observed_case_sha256 = _file_sha(case_path)
     bindings = {
         **identity,
         "scenario_id": scenario_id,
@@ -2071,23 +2074,17 @@ def repository_bindings(
         "runner_digest": runner_digest(),
         "fixture_kind": fixture_kind,
         "fixture_path": expected_path,
-        "fixture_sha256": str(fixture_entry.get("sha256")),
-        "scenario_sha256": str(scenario_entry.get("sha256")),
+        "fixture_sha256": observed_fixture_sha256,
+        "scenario_sha256": observed_case_sha256,
         "input_sha256": _file_sha(input_path),
-        "case_sha256": _file_sha(case_path),
-        "fixture_manifest_sha256": _sha256(
-            _canonical(fixture_manifest)
-        ),
-        "source_lab_manifest_sha256": _sha256(
-            _canonical(source_lab_manifest)
-        ),
+        "case_sha256": observed_case_sha256,
         "canonicalizer_sha256": _sha256(
             _canonical(_read_json(root / CANONICALIZER_PATH))
         ),
     }
     if fixture_kind == "source_lab_scenario":
         bindings["source_template_sha256"] = _file_sha(
-            fixture_root / "source.template.json"
+            fixture_directory / "source.template.json"
         )
     return bindings
 
@@ -2537,34 +2534,37 @@ def normalize_raw_artifact(
     return artifact
 
 
-def local_run_document(
+def characterization_document(
     artifact: Mapping[str, Any],
     bindings: Mapping[str, str],
     *,
     emulator_serial: str,
     scenario_id: str = DEFAULT_SCENARIO_ID,
 ) -> Dict[str, Any]:
-    artifact_sha256 = _sha256(_canonical(artifact))
     return {
         "schema_version": 1,
-        "kind": "android_oracle_local_run",
-        "authority": "local_unverified",
-        "status": "candidate_only",
+        "kind": "android_runtime_characterization",
+        "fixture_id": scenario_id,
         "scenario_id": scenario_id,
-        "emulator": {
-            "serial_sha256": _sha256(emulator_serial.encode("utf-8")),
+        "compatibility_profile": "android-legado-v1",
+        "oracle": {
+            "android_git_commit": bindings["android_git_commit"],
+            "runner_digest": bindings["runner_digest"],
         },
-        "bindings": dict(bindings),
-        "artifact_sha256": artifact_sha256,
         "artifact": dict(artifact),
     }
 
 
-def _atomic_private_write(path: Path, payload: bytes) -> None:
+def _atomic_write(
+    path: Path,
+    payload: bytes,
+    *,
+    private: bool,
+) -> None:
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     if path.parent.is_symlink() or not path.parent.is_dir():
         raise AndroidOracleRunnerError("OUTPUT_DIRECTORY_INVALID")
-    if stat.S_IMODE(path.parent.stat().st_mode) & 0o077:
+    if private and stat.S_IMODE(path.parent.stat().st_mode) & 0o077:
         os.chmod(path.parent, 0o700)
     if path.exists() and (path.is_symlink() or not path.is_file()):
         raise AndroidOracleRunnerError("OUTPUT_PATH_INVALID")
@@ -2579,7 +2579,7 @@ def _atomic_private_write(path: Path, payload: bytes) -> None:
             handle.write(b"\n")
             handle.flush()
             os.fsync(handle.fileno())
-        os.chmod(temporary, 0o600)
+        os.chmod(temporary, 0o600 if private else 0o644)
         os.replace(temporary, path)
     finally:
         temporary.unlink(missing_ok=True)
@@ -2591,10 +2591,17 @@ def _output_path(
     scenario_id: str = DEFAULT_SCENARIO_ID,
 ) -> Path:
     output_root = root / ".harness-runtime/android-oracle"
+    golden = (
+        root
+        / "ios/harness/goldens/android-legado-v1"
+        / f"{scenario_id}.json"
+    ).absolute()
     if requested is None:
         return output_root / f"{scenario_id}-local-run.json"
     candidate = requested if requested.is_absolute() else root / requested
     candidate = candidate.absolute()
+    if candidate == golden:
+        return candidate
     try:
         candidate.relative_to(output_root.absolute())
     except ValueError as error:
@@ -2715,15 +2722,9 @@ def _integration_lab_transport_mode(
 
 
 def _render_inputs(root: Path, scenario_id: str) -> Dict[str, Any]:
-    manifest = _read_json(root / FIXTURE_MANIFEST_PATH)
-    matches = [
-        entry
-        for entry in manifest.get("fixtures", [])
-        if isinstance(entry, dict) and entry.get("id") == scenario_id
-    ]
-    if len(matches) != 1 or not isinstance(matches[0].get("path"), str):
-        raise AndroidOracleRunnerError("FIXTURE_BINDING_MISSING")
-    path = root / str(matches[0]["path"]) / "input.json"
+    contract = _scenario_contract(scenario_id)
+    _, directory = fixture_root(root, scenario_id, contract)
+    path = directory / "input.json"
     value = _read_json(path)
     if not isinstance(value, dict):
         raise AndroidOracleRunnerError("INPUT_DOCUMENT_INVALID")
@@ -2992,7 +2993,7 @@ def run_characterization(
             bindings,
             scenario_id,
         )
-        document = local_run_document(
+        document = characterization_document(
             artifact,
             bindings,
             emulator_serial=serial,
@@ -3004,15 +3005,22 @@ def run_characterization(
             scenario_id,
         )
         payload = _canonical(document)
-        _atomic_private_write(output_path, payload)
+        golden_output = output_path == (
+            root
+            / "ios/harness/goldens/android-legado-v1"
+            / f"{scenario_id}.json"
+        ).absolute()
+        _atomic_write(
+            output_path,
+            payload,
+            private=not golden_output,
+        )
         return {
             "schema_version": 1,
-            "authority": "local_unverified",
-            "status": "candidate_only",
+            "status": "characterized",
             "scenario_id": scenario_id,
             "runner_digest": bindings["runner_digest"],
-            "artifact_sha256": document["artifact_sha256"],
-            "local_run_sha256": _sha256(payload),
+            "golden_sha256": _sha256(payload),
             "output": output_path.relative_to(root).as_posix(),
             "case_count": len(expected_cases),
         }

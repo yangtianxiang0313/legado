@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "kind": "source_lab_scenario",
+  "id": "sl-source-rule-url-normalization-runtime-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "source_lab_site",
+  "capabilities": [
+    "CAP-RUNTIME-PORTS",
+    "CAP-CONFORMANCE"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": "source.template.json",
+  "input": "input.json",
+  "transport": {
+    "mode": "fixture_and_loopback",
+    "external_network": "deny",
+    "responses": [
+      {
+        "id": "url-value-matrix",
+        "match": {
+          "method": "GET",
+          "path": "/url-normalization/value-matrix",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/ok.txt"
+        }
+      },
+      {
+        "id": "context-retention",
+        "match": {
+          "method": "GET",
+          "path": "/url-normalization/context-retention",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/ok.txt"
+        }
+      },
+      {
+        "id": "redirect-replacement",
+        "match": {
+          "method": "GET",
+          "path": "/url-normalization/redirect-replacement",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/ok.txt"
+        }
+      },
+      {
+        "id": "base-without-redirect",
+        "match": {
+          "method": "GET",
+          "path": "/url-normalization/base-without-redirect",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain; charset=utf-8"
+          },
+          "body_file": "responses/ok.txt"
+        }
+      }
+    ]
+  },
+  "coverage": [
+    {
+      "behavior": "url.relative-resolution",
+      "cases": [
+        {
+          "id": "url-value-matrix",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-ANALYZE-RULE-GET-STRING",
+            "AF-ANALYZE-RULE-GET-STRING-LIST"
+          ],
+          "branch_refs": [
+            "AnalyzeRule getString/getStringList isUrl with relative, root-relative, protocol-relative, absolute, data, escaped, blank and missing values"
+          ]
+        },
+        {
+          "id": "context-retention",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-ANALYZE-RULE-GET-STRING"
+          ],
+          "branch_refs": [
+            "AnalyzeRule setBaseUrl null retention, setRedirectUrl invalid retention and cross-content context reuse"
+          ]
+        },
+        {
+          "id": "redirect-replacement",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-ANALYZE-RULE-GET-STRING"
+          ],
+          "branch_refs": [
+            "AnalyzeRule valid redirect replacement"
+          ]
+        },
+        {
+          "id": "base-without-redirect",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-ANALYZE-RULE-GET-STRING"
+          ],
+          "branch_refs": [
+            "AnalyzeRule baseUrl without redirectUrl"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "2026-01-01T00:00:00Z",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 71,
+    "network_allowed": false,
+    "logical_origin": "http://sourcelab.test"
+  },
+  "limits": {
+    "timeout_ms": 1000,
+    "max_response_bytes": 1048576,
+    "max_request_body_bytes": 1048576,
+    "max_requests": 8,
+    "max_concurrency": 1
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt",
+      "app/src/main/java/io/legado/app/help/http/NetworkUtils.kt"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-SOURCE-RULE-URL-NORMALIZATION-RUNTIME-001"
+  }
+}

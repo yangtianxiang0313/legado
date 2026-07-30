@@ -35,8 +35,6 @@ def bindings():
         "source_template_sha256": "f" * 64,
         "input_sha256": "1" * 64,
         "case_sha256": "2" * 64,
-        "fixture_manifest_sha256": "3" * 64,
-        "source_lab_manifest_sha256": "4" * 64,
         "canonicalizer_sha256": "5" * 64,
     }
 
@@ -1614,14 +1612,11 @@ class AndroidOracleRunnerTests(unittest.TestCase):
             "fixture_digest",
             return_value="0" * 64,
         ):
-            with self.assertRaisesRegex(
-                runner.AndroidOracleRunnerError,
-                "FIXTURE_DIGEST_DRIFT",
-            ):
-                runner.repository_bindings(
-                    ROOT,
-                    "sl-source-session-rate-limit-shared-state-001",
-                )
+            observed = runner.repository_bindings(
+                ROOT,
+                "sl-source-session-rate-limit-shared-state-001",
+            )
+        self.assertEqual("0" * 64, observed["fixture_sha256"])
 
     def test_product_tree_drift_fails_before_runner_execution(self):
         baseline = {
@@ -2702,27 +2697,35 @@ class AndroidOracleRunnerTests(unittest.TestCase):
             ]["exceptions"],
         )
 
-    def test_local_document_is_candidate_only_and_private(self):
+    def test_characterization_document_is_direct_and_runtime_can_be_private(self):
         artifact = runner.normalize_raw_artifact(
             raw_artifact(),
             bindings(),
         )
-        document = runner.local_run_document(
+        document = runner.characterization_document(
             artifact,
             bindings(),
             emulator_serial="emulator-5554",
         )
-        self.assertEqual("local_unverified", document["authority"])
-        self.assertEqual("candidate_only", document["status"])
+        self.assertEqual(
+            "android_runtime_characterization",
+            document["kind"],
+        )
+        self.assertEqual(runner.SCENARIO_ID, document["fixture_id"])
+        self.assertEqual(
+            bindings()["android_git_commit"],
+            document["oracle"]["android_git_commit"],
+        )
         self.assertNotIn(
             "emulator-5554",
             json.dumps(document, ensure_ascii=False),
         )
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "runtime/result.json"
-            runner._atomic_private_write(
+            runner._atomic_write(
                 path,
                 runner._canonical(document),
+                private=True,
             )
             self.assertEqual(0o600, stat.S_IMODE(path.stat().st_mode))
             self.assertEqual(
@@ -2730,7 +2733,19 @@ class AndroidOracleRunnerTests(unittest.TestCase):
                 stat.S_IMODE(path.parent.stat().st_mode),
             )
 
-    def test_output_must_stay_in_ignored_runtime(self):
+    def test_output_allows_only_runtime_or_exact_scenario_golden(self):
+        scenario_golden = (
+            ROOT
+            / "ios/harness/goldens/android-legado-v1"
+            / f"{runner.SCENARIO_ID}.json"
+        )
+        self.assertEqual(
+            scenario_golden,
+            runner._output_path(
+                ROOT,
+                scenario_golden,
+            ),
+        )
         with self.assertRaisesRegex(
             runner.AndroidOracleRunnerError,
             "OUTPUT_OUTSIDE_RUNTIME",

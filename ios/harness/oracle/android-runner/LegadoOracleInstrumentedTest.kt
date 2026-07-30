@@ -304,6 +304,8 @@ class LegadoOracleInstrumentedTest {
                 runRuleCombinationCases()
             "sl-source-rule-dom-selector-backends-001" ->
                 runDOMSelectorBackendCases()
+            "sl-source-rule-url-normalization-runtime-001" ->
+                runDOMSelectorBackendCases()
             "sl-source-rule-jsonpath-regex-backends-001" ->
                 runJSONPathRegexBackendCases()
             "sl-source-pipeline-search-runtime-001" ->
@@ -8858,6 +8860,7 @@ class LegadoOracleInstrumentedTest {
         "css_indexing" -> cssIndexProjection(arguments)
         "css_combinations" -> cssCombinationProjection(arguments)
         "css_url" -> cssURLProjection(arguments)
+        "url_context" -> urlContextProjection(arguments)
         "css_failure" -> cssFailureProjection(arguments)
         "xpath_strings" -> xpathStringProjection(arguments)
         "xpath_nodes" -> xpathNodeProjection(arguments)
@@ -9177,6 +9180,113 @@ class LegadoOracleInstrumentedTest {
                 )
             }
         }
+    }
+
+    private fun urlContextProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val analyze = AnalyzeRule()
+        val steps = arguments.getJSONArray("steps")
+        return JSONObject().put(
+            "steps",
+            JSONArray().apply {
+                for (index in 0 until steps.length()) {
+                    val step = steps.getJSONObject(index)
+                    if (step.has("content")) {
+                        val baseURL = if (
+                            step.has("base_url") &&
+                            !step.isNull("base_url")
+                        ) {
+                            step.getString("base_url")
+                        } else {
+                            null
+                        }
+                        analyze.setContent(
+                            step.getString("content"),
+                            baseURL
+                        )
+                    }
+                    if (step.has("set_base_url")) {
+                        analyze.setBaseUrl(
+                            if (step.isNull("set_base_url")) {
+                                null
+                            } else {
+                                step.getString("set_base_url")
+                            }
+                        )
+                    }
+                    if (
+                        step.has("redirect_url") &&
+                        !step.isNull("redirect_url")
+                    ) {
+                        analyze.setRedirectUrl(
+                            step.getString("redirect_url")
+                        )
+                    }
+                    val rules = step.getJSONObject("rules")
+                    put(
+                        JSONObject()
+                            .put("id", step.getString("id"))
+                            .put(
+                                "base_url",
+                                nullable(analyze.baseUrl)
+                            )
+                            .put(
+                                "redirect_url",
+                                nullable(
+                                    analyze.redirectUrl?.toString()
+                                )
+                            )
+                            .put(
+                                "values",
+                                JSONObject().apply {
+                                    rules.keys()
+                                        .asSequence()
+                                        .toList()
+                                        .sorted()
+                                        .forEach { key ->
+                                            val rule = rules.getString(key)
+                                            put(
+                                                key,
+                                                JSONObject()
+                                                    .put(
+                                                        "raw_string",
+                                                        analyze.getString(rule)
+                                                    )
+                                                    .put(
+                                                        "absolute_string",
+                                                        analyze.getString(
+                                                            rule,
+                                                            isUrl = true
+                                                        )
+                                                    )
+                                                    .put(
+                                                        "raw_list",
+                                                        nullableStringList(
+                                                            analyze
+                                                                .getStringList(
+                                                                    rule
+                                                                )
+                                                        )
+                                                    )
+                                                    .put(
+                                                        "absolute_list",
+                                                        nullableStringList(
+                                                            analyze
+                                                                .getStringList(
+                                                                    rule,
+                                                                    isUrl = true
+                                                                )
+                                                        )
+                                                    )
+                                            )
+                                        }
+                                }
+                            )
+                    )
+                }
+            }
+        )
     }
 
     private fun urlAnalyzer(

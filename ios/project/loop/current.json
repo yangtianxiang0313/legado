@@ -1,1 +1,1 @@
-{"active_task":null,"attempt":0,"last_completed":{"at":"2026-07-30T14:29:14Z","sequence":352,"task_id":"IOS-APP-NAVIGATION-READER-PROGRESS-RESTORE-001"},"schema_version":2,"status":"idle","verification":null}
+{"active_task":"IOS-SOURCE-RUNTIME-RULE-URL-NORMALIZATION-RUNTIME-001","attempt":0,"last_completed":{"at":"2026-07-30T14:45:59Z","sequence":355,"task_id":"IOS-CHARACTERIZE-SOURCE-RULE-URL-NORMALIZATION-RUNTIME-001"},"schema_version":2,"status":"running","verification":null}

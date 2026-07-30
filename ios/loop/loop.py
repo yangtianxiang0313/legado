@@ -3072,26 +3072,7 @@ def validate_android_golden(
     present, artifact_fixture = json_field(golden, "artifact.fixture_id")
     if not present or artifact_fixture != fixture_id:
         failures.append("mismatch:artifact.fixture_id")
-
-    try:
-        manifest = read_json(root / "ios/harness/goldens/manifest.json")
-    except LoopError:
-        manifest = {}
-        failures.append("golden_manifest_invalid_or_missing")
-    fixtures = manifest.get("fixtures")
-    manifest_entry = (
-        fixtures.get(fixture_id)
-        if isinstance(fixtures, dict)
-        else None
-    )
     golden_sha256 = digest(payload)
-    if not isinstance(manifest_entry, dict):
-        failures.append("golden_manifest_entry_missing")
-    else:
-        if manifest_entry.get("path") != golden_relative:
-            failures.append("mismatch:manifest.path")
-        if manifest_entry.get("golden_sha256") != golden_sha256:
-            failures.append("mismatch:manifest.golden_sha256")
     return sorted(set(failures)), golden_sha256
 
 

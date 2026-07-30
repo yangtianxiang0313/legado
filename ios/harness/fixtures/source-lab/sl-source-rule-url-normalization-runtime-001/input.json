@@ -1,0 +1,125 @@
+{
+  "cases": [
+    {
+      "id": "url-value-matrix",
+      "operation": "dom_selector_backends",
+      "arguments": {
+        "mode": "url_context",
+        "steps": [
+          {
+            "id": "all-value-kinds",
+            "content": "<html><body><a class=\"relative\" href=\"../book/1\">relative</a><a class=\"root\" href=\"/book/2\">root</a><a class=\"protocol\" href=\"//cdn.example.test/c.png\">protocol</a><a class=\"absolute\" href=\"https://other.example.test/a\">absolute</a><a class=\"data\" href=\"data:text/plain,hello\">data</a><a class=\"escaped\" href=\"next?x=1&amp;y=2\">escaped</a><a class=\"blank\" href=\"\">blank</a></body></html>",
+            "base_url": "https://base.example.test/books/index.html",
+            "redirect_url": "https://redirect.example.test/catalog/list.html",
+            "rules": {
+              "relative": "@CSS:a.relative@href",
+              "root": "@CSS:a.root@href",
+              "protocol": "@CSS:a.protocol@href",
+              "absolute": "@CSS:a.absolute@href",
+              "data": "@CSS:a.data@href",
+              "escaped": "@CSS:a.escaped@href",
+              "blank": "@CSS:a.blank@href",
+              "missing": "@CSS:a.missing@href"
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "GET",
+        "target": "/url-normalization/value-matrix"
+      }
+    },
+    {
+      "id": "context-retention",
+      "operation": "dom_selector_backends",
+      "arguments": {
+        "mode": "url_context",
+        "steps": [
+          {
+            "id": "seed-context",
+            "content": "<html><body><a href=\"../one\">one</a></body></html>",
+            "base_url": "https://base.one.test/start/index.html",
+            "redirect_url": "https://redirect.one.test/catalog/page.html",
+            "rules": {
+              "link": "@CSS:a@href",
+              "missing": "@CSS:.missing@href"
+            }
+          },
+          {
+            "id": "new-content-retains-context",
+            "content": "<html><body><a href=\"two\">two</a></body></html>",
+            "rules": {
+              "link": "@CSS:a@href",
+              "missing": "@CSS:.missing@href"
+            }
+          },
+          {
+            "id": "null-base-invalid-redirect-retain-context",
+            "content": "<html><body><a href=\"three\">three</a></body></html>",
+            "set_base_url": null,
+            "redirect_url": "::invalid::",
+            "rules": {
+              "link": "@CSS:a@href",
+              "missing": "@CSS:.missing@href"
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "GET",
+        "target": "/url-normalization/context-retention"
+      }
+    },
+    {
+      "id": "redirect-replacement",
+      "operation": "dom_selector_backends",
+      "arguments": {
+        "mode": "url_context",
+        "steps": [
+          {
+            "id": "first-redirect",
+            "content": "<html><body><a href=\"chapter\">chapter</a></body></html>",
+            "base_url": "https://base.example.test/book",
+            "redirect_url": "https://first.example.test/path/page.html",
+            "rules": {
+              "link": "@CSS:a@href"
+            }
+          },
+          {
+            "id": "second-redirect",
+            "redirect_url": "https://second.example.test/other/page.html",
+            "rules": {
+              "link": "@CSS:a@href"
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "GET",
+        "target": "/url-normalization/redirect-replacement"
+      }
+    },
+    {
+      "id": "base-without-redirect",
+      "operation": "dom_selector_backends",
+      "arguments": {
+        "mode": "url_context",
+        "steps": [
+          {
+            "id": "base-only",
+            "content": "<html><body><a href=\"relative\">relative</a></body></html>",
+            "base_url": "https://base-only.example.test/path/page.html",
+            "rules": {
+              "link": "@CSS:a@href",
+              "missing": "@CSS:.missing@href"
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "GET",
+        "target": "/url-normalization/base-without-redirect"
+      }
+    }
+  ]
+}

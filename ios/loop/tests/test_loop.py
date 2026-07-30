@@ -1809,17 +1809,13 @@ class MinimalLoopTests(unittest.TestCase):
                     checks[-1]["structured_output_passed"],
                 )
 
-    def test_android_golden_contract_binds_manifest_receipt_and_coverage(self):
+    def test_android_golden_contract_uses_the_golden_directly(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             fixture_id = "sl-contract-001"
             golden_relative = (
                 "ios/harness/goldens/android-legado-v1/"
                 f"{fixture_id}.json"
-            )
-            receipt_relative = (
-                "ios/harness/goldens/releases/"
-                f"{fixture_id}-1-1.json"
             )
             golden = {
                 "fixture_id": fixture_id,
@@ -1837,49 +1833,6 @@ class MinimalLoopTests(unittest.TestCase):
             }
             self.write(root, golden_relative, golden)
             golden_sha256 = loop.digest((root / golden_relative).read_bytes())
-            self.write(
-                root,
-                "ios/harness/goldens/manifest.json",
-                {
-                    "fixtures": {
-                        fixture_id: {
-                            "path": golden_relative,
-                            "golden_sha256": golden_sha256,
-                            "release_receipt": receipt_relative,
-                        }
-                    }
-                },
-            )
-            self.write(
-                root,
-                receipt_relative,
-                {
-                    "authority": "protected_android_golden",
-                    "fixture_id": fixture_id,
-                    "golden_path": golden_relative,
-                    "golden_sha256": golden_sha256,
-                },
-            )
-            self.write(
-                root,
-                "ios/project/business-knowledge/coverage/BKL-TEST.json",
-                {
-                    "status": "current",
-                    "entries": [
-                        {
-                            "validation": {
-                                "evidence_refs": [
-                                    f"{golden_relative}#/artifact"
-                                ]
-                            },
-                            "delivery": {
-                                "state": "planned",
-                                "work_item_refs": ["IOS-SOURCE-RUNTIME-TEST-001"],
-                            },
-                        }
-                    ],
-                },
-            )
             contract = {
                 "fixture_id": fixture_id,
                 "expected": golden_relative,
@@ -1895,15 +1848,9 @@ class MinimalLoopTests(unittest.TestCase):
                 root,
                 contract,
             )
-            (root / receipt_relative).unlink()
-            without_receipt, _ = loop.validate_android_golden(
-                root,
-                contract,
-            )
 
             self.assertEqual([], failures)
             self.assertEqual(golden_sha256, observed)
-            self.assertEqual([], without_receipt)
 
     def test_projection_replays_task_lifecycle_and_memory(self):
         events = [

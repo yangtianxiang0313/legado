@@ -1,0 +1,31 @@
+{
+  "bookSourceUrl": "${SOURCE_LAB_ORIGIN}",
+  "bookSourceName": "SourceLab URL 归一化测试源",
+  "bookSourceGroup": "SourceLab",
+  "bookSourceType": 0,
+  "enabled": true,
+  "enabledExplore": false,
+  "searchUrl": "${SOURCE_LAB_ORIGIN}/url-normalization",
+  "ruleSearch": {
+    "bookList": "@CSS:.book-item",
+    "name": "@CSS:.book-name@text",
+    "author": "@CSS:.book-author@text",
+    "bookUrl": "@CSS:a.book-link@href"
+  },
+  "ruleBookInfo": {
+    "name": "@CSS:h1@text",
+    "tocUrl": "@CSS:a.toc@href"
+  },
+  "ruleToc": {
+    "chapterList": "@CSS:.chapter",
+    "chapterName": "@CSS:a@text",
+    "chapterUrl": "@CSS:a@href"
+  },
+  "ruleContent": {
+    "content": "@CSS:body@html"
+  },
+  "x-source-lab": {
+    "scenario": "sl-source-rule-url-normalization-runtime-001",
+    "logicalOrigin": "http://sourcelab.test"
+  }
+}
