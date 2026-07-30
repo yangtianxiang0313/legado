@@ -70,6 +70,32 @@
           "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeByJSonPath"
         }
       ]
+    },
+    {
+      "target": "IOS-SOURCE-RUNTIME-PRODUCT-TOC-RULE-INTEGRATION-001",
+      "title": "将通用规则内核接入导入书源目录主链",
+      "fixture_id": "source-product-toc-rule-integration-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-03",
+      "prerequisite_task_ids": [
+        "IOS-SOURCE-RUNTIME-PRODUCT-BOOK-INFO-RULE-INTEGRATION-001"
+      ],
+      "validation": "tests",
+      "test_filter": "SourceProductRuleIntegrationTests",
+      "additional_allowed_paths": [],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "af03cf51cef2eb31f54b8240c39e868ceabdba54",
+          "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
+          "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook/getChapterListAwait"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "71d9006ce17a96f2e9db9c9288047f2a66bf2c28",
+          "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByJSonPath.kt",
+          "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeByJSonPath"
+        }
+      ]
     }
   ],
   "stages": [
@@ -95,6 +121,19 @@
           "id": "SOURCE-PRODUCT-BOOK-INFO-RULE-INTEGRATION",
           "task_ids": [
             "IOS-SOURCE-RUNTIME-PRODUCT-BOOK-INFO-RULE-INTEGRATION-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P11-03-TOC-RULE-INTEGRATION",
+      "title": "导入书源通用规则进入目录流水线",
+      "outcome": "JSONPath chapterList、chapterName 和 chapterUrl 可生成有序章节并完成相对 URL 解析。",
+      "selectors": [
+        {
+          "id": "SOURCE-PRODUCT-TOC-RULE-INTEGRATION",
+          "task_ids": [
+            "IOS-SOURCE-RUNTIME-PRODUCT-TOC-RULE-INTEGRATION-001"
           ]
         }
       ]
