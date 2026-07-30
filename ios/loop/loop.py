@@ -1361,6 +1361,8 @@ def characterization_fixture_id(
     fixture_prefix: str = "sl",
 ) -> str:
     reusable_fixtures = {
+        "reader.progress.toc-remap-runtime":
+            "rl-reader-progress-toc-remap-001",
         "reader.session.late-result-risk":
             "rl-reader-content-index-load-dedup-001",
         "reader.session.toc-refresh":

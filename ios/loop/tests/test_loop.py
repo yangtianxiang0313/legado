@@ -1210,6 +1210,15 @@ class MinimalLoopTests(unittest.TestCase):
         )
         self.assertIn("ARCH-010", contract["architecture_refs"])
 
+    def test_duplicate_progress_remap_claim_reuses_android_golden(self):
+        self.assertEqual(
+            "rl-reader-progress-toc-remap-001",
+            loop.characterization_fixture_id(
+                "reader.progress.toc-remap-runtime",
+                "rl",
+            ),
+        )
+
     def test_app_navigation_delivery_uses_feature_specific_ui_contract(self):
         startup = loop.app_navigation_delivery_contract(
             "rl-app-startup-first-use-and-restore-001"
