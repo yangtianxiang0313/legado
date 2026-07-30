@@ -1015,6 +1015,111 @@ class MinimalLoopTests(unittest.TestCase):
             delivery["allowed_paths"],
         )
 
+    def test_completed_lightweight_characterization_becomes_delivery(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.write(
+                root,
+                "ios/project/requirements/accepted/"
+                "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001.json",
+                {
+                    "id": "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001",
+                    "revision": 1,
+                    "status": "accepted",
+                    "origin": {
+                        "kind": "ios_product_decision",
+                        "baseline_commit": "a" * 40,
+                        "admission": "policy_auto",
+                    },
+                    "clauses": [{"id": "RC-01"}],
+                },
+            )
+            self.write(
+                root,
+                "ios/project/business-knowledge/packets/proposals/"
+                "BKP-READER-001/r0001.json",
+                {
+                    "id": "BKP-READER-001",
+                    "revision": 1,
+                    "status": "candidate",
+                    "baseline": {"android_commit": "a" * 40},
+                    "claims": [
+                        {
+                            "id": "BKC-READER-NORMALIZE-001",
+                            "revision": 1,
+                            "semantic_key":
+                                "reader.content.display-normalization",
+                            "topic": "正文归一化",
+                            "subject_keys": ["reader.content"],
+                            "depends_on": [],
+                            "support": {
+                                "state": "candidate_source_anchored",
+                                "runtime_requirement":
+                                    "android_characterization",
+                                "source_anchors": [
+                                    {
+                                        "android_commit": "a" * 40,
+                                        "path": "ContentProcessor.kt",
+                                        "git_blob": "b" * 40,
+                                    }
+                                ],
+                            },
+                        }
+                    ],
+                },
+            )
+            self.write(
+                root,
+                "ios/harness/goldens/android-legado-v1/"
+                "rl-reader-content-display-normalization-001.json",
+                {
+                    "fixture_id":
+                        "rl-reader-content-display-normalization-001",
+                    "oracle": {"android_git_commit": "a" * 40},
+                },
+            )
+            self.write(
+                root,
+                loop.EVENTS_PATH.as_posix(),
+                {
+                    "schema_version": 2,
+                    "sequence": 1,
+                    "event": "task_completed",
+                    "task_id": (
+                        "IOS-CHARACTERIZE-READER-CONTENT-"
+                        "DISPLAY-NORMALIZATION-001"
+                    ),
+                    "details": {
+                        "knowledge": {
+                            "candidate_claim_refs": [
+                                {
+                                    "id": "BKC-READER-NORMALIZE-001",
+                                    "revision": 1,
+                                }
+                            ]
+                        }
+                    },
+                },
+            )
+
+            task = loop.next_task(root)
+
+            self.assertEqual(
+                "IOS-READER-CORE-CONTENT-DISPLAY-NORMALIZATION-001",
+                task["id"],
+            )
+            self.assertEqual("delivery", task["kind"])
+            self.assertEqual("ReaderCore", task["architecture"]["owner"])
+            self.assertEqual(
+                "rl-reader-content-display-normalization-001",
+                task["source"]["fixture_id"],
+            )
+            self.assertEqual(
+                "ContentProcessor.kt",
+                task["source"]["anchors"][0]["path"],
+            )
+            loop.validate_task(root, task)
+
     def test_app_characterization_routes_to_navigation_runtime_lab(self):
         claim = {
             "semantic_key": "app.startup.first-use-and-restore",

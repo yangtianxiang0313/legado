@@ -709,6 +709,134 @@ def planned_deliveries(root: Path) -> list[Mapping[str, Any]]:
     return [deliveries[key] for key in sorted(deliveries)]
 
 
+def direct_characterization_deliveries(
+    root: Path,
+) -> list[Mapping[str, Any]]:
+    """Turn a completed lightweight characterization directly into delivery.
+
+    Publishing a packet/driver/coverage trio is useful for cross-cutting
+    architecture decisions, but it must not be required for an ordinary
+    source-aligned slice. The completed event and checked-in Android Golden
+    already provide enough authority to implement the corresponding module.
+    """
+    completed = completed_task_ids(root)
+    characterized = characterized_claim_refs(root)
+    ledger_claims = {
+        (entry.get("claim_ref", {}).get("id"),
+         entry.get("claim_ref", {}).get("revision"))
+        for _, ledger in relative_jsons(
+            root,
+            "ios/project/business-knowledge/coverage",
+        )
+        for entry in ledger.get("entries", [])
+        if isinstance(entry, dict)
+        and isinstance(entry.get("claim_ref"), dict)
+    }
+    owner_prefix = {
+        "ReaderCore": "IOS-READER-CORE",
+        "SourceRuntime": "IOS-SOURCE-RUNTIME",
+        "LibraryDomain": "IOS-LIBRARY-DOMAIN",
+        "AppNavigation": "IOS-APP-NAVIGATION",
+    }
+    deliveries: list[Mapping[str, Any]] = []
+    for packet_path, packet in latest_json_revisions(
+        root,
+        "ios/project/business-knowledge/packets/proposals",
+    ):
+        if packet.get("status") != "candidate":
+            continue
+        for claim in packet.get("claims", []):
+            if not isinstance(claim, dict):
+                continue
+            claim_id = claim.get("id")
+            revision = claim.get("revision")
+            claim_ref = (claim_id, revision)
+            if (
+                not isinstance(claim_id, str)
+                or not isinstance(revision, int)
+                or isinstance(revision, bool)
+                or claim_ref not in characterized
+                or claim_ref in ledger_claims
+            ):
+                continue
+            domain = characterization_contract(claim)
+            prefix = owner_prefix.get(str(domain["owner"]))
+            if prefix is None:
+                continue
+            semantic_key = str(claim.get("semantic_key") or claim_id)
+            semantic_slug = re.sub(
+                r"[^A-Z0-9]+",
+                "-",
+                semantic_key.upper(),
+            ).strip("-")
+            domain_slug = {
+                "ReaderCore": "READER-",
+                "SourceRuntime": "SOURCE-",
+                "LibraryDomain": "LIBRARY-",
+                "AppNavigation": "APP-",
+            }[str(domain["owner"])]
+            if semantic_slug.startswith(domain_slug):
+                semantic_slug = semantic_slug[len(domain_slug):]
+            target = f"{prefix}-{semantic_slug}-001"
+            if target in completed:
+                continue
+            fixture_id = characterization_fixture_id(
+                semantic_key,
+                str(domain["fixture_prefix"]),
+            )
+            golden_path = (
+                "ios/harness/goldens/android-legado-v1/"
+                f"{fixture_id}.json"
+            )
+            if not (root / golden_path).is_file():
+                continue
+            requirements = requirement_refs_for_claim(
+                root,
+                packet,
+                claim,
+            )
+            if not requirements:
+                continue
+            entry = {
+                "claim_ref": {
+                    "id": claim_id,
+                    "revision": revision,
+                },
+                "validation": {
+                    "required": "android_runtime",
+                    "state": "verified",
+                    "evidence_refs": [golden_path],
+                },
+                "delivery": {
+                    "state": "planned",
+                    "work_item_refs": [target],
+                    "requirement_refs": requirements,
+                },
+            }
+            deliveries.append(
+                {
+                    "target": target,
+                    "title": str(claim.get("topic") or semantic_key),
+                    "ledger_path": "ios/project/loop/events.jsonl",
+                    "ledger": {
+                        "packet_refs": [
+                            {
+                                "id": packet.get("id"),
+                                "revision": packet.get("revision"),
+                                "path": packet_path,
+                            }
+                        ]
+                    },
+                    "entries": [entry],
+                    "source_anchors": claim.get("support", {}).get(
+                        "source_anchors",
+                        [],
+                    ),
+                }
+            )
+    return sorted(deliveries, key=lambda value: str(value["target"]))
+
+
 def active_priority_policy(root: Path) -> Mapping[str, Any] | None:
     path = root / PRIORITY_PATH
     if not path.is_file():
@@ -784,7 +912,15 @@ def prioritized_work(
         Mapping[str, Any] | None,
     ]
 ]:
-    deliveries = planned_deliveries(root)
+    published_deliveries = planned_deliveries(root)
+    published_targets = {
+        str(value["target"]) for value in published_deliveries
+    }
+    deliveries = published_deliveries + [
+        value
+        for value in direct_characterization_deliveries(root)
+        if str(value["target"]) not in published_targets
+    ]
     characterizations = pending_characterizations(root)
     policy = active_priority_policy(root)
     if policy is None:
@@ -1324,7 +1460,7 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
     if golden_path:
         fixture_id = read_json(root / golden_path).get("fixture_id")
     driver_ref = None
-    title = target
+    title = str(delivery.get("title") or target)
     if driver_match:
         driver_path, driver = driver_match
         driver_ref = {
@@ -1607,11 +1743,13 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
                 ]
             },
         }
-    source_anchors = (
-        migration.get("source_anchors", [])
-        if isinstance(migration, dict)
-        else []
-    )
+    source_anchors = delivery.get("source_anchors", [])
+    if not source_anchors:
+        source_anchors = (
+            migration.get("source_anchors", [])
+            if isinstance(migration, dict)
+            else []
+        )
     if not source_anchors:
         source_anchors = source_anchors_for_claims(root, claim_refs)
     android_baseline = (
@@ -2097,7 +2235,15 @@ def next_task(root: Path) -> Mapping[str, Any] | None:
 
 def queue_status(root: Path) -> Mapping[str, Any]:
     policy = active_priority_policy(root)
-    deliveries = planned_deliveries(root)
+    published_deliveries = planned_deliveries(root)
+    published_targets = {
+        str(value["target"]) for value in published_deliveries
+    }
+    deliveries = published_deliveries + [
+        value
+        for value in direct_characterization_deliveries(root)
+        if str(value["target"]) not in published_targets
+    ]
     characterizations = pending_characterizations(root)
     eligible = prioritized_work(root)
     result: dict[str, Any] = {
