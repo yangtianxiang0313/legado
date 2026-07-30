@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P29-READER-BOOK-INFO-ROUTE-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "title": "P29 阅读器返回书籍详情导航",
+  "objective": "依据冻结 Android ReadMenu 标题栏点击行为，让阅读器主菜单的书籍信息入口打开当前书籍详情，并保持返回后仍位于原阅读会话。",
+  "validation_policy": "仅执行一次 App 构建；这是既有导航栈上的结构性续接，不启动模拟器，不新增 Golden。",
+  "stages": [
+    {
+      "id": "P29-S1",
+      "title": "接通阅读器到书籍详情",
+      "selectors": [
+        {
+          "id": "P29-S1-READER-BOOK-INFO",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-APP-NAVIGATION-READER-BOOK-INFO-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-APP-NAVIGATION-READER-BOOK-INFO-001",
+      "title": "从阅读器打开当前书籍详情",
+      "fixture_id": "source-ui-reader-multilevel-menu-v1",
+      "requirement_ref": "REQ-IOS-UI-BOOTSTRAP-001@1#RC-01",
+      "prerequisite_task_ids": [
+        "IOS-APP-NAVIGATION-READER-CHAPTER-SOURCE-001"
+      ],
+      "validation": "build",
+      "additional_allowed_paths": [],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "e111cacaf2c1d9421cdb63ac8e146572e8b87c7e",
+          "path": "app/src/main/java/io/legado/app/ui/book/read/ReadMenu.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.read.ReadMenu/bindEvent"
+        }
+      ]
+    }
+  ]
+}
