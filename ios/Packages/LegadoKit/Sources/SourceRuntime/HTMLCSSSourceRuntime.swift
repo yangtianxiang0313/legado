@@ -289,6 +289,16 @@ public struct SourceContent: Sendable, Equatable {
   public let content: String
 }
 
+public struct SourceTOCPage: Sendable, Equatable {
+  public let chapters: [SourceChapter]
+  public let nextEndpoints: [SourceEndpoint]
+}
+
+public struct SourceContentPage: Sendable, Equatable {
+  public let content: SourceContent
+  public let nextEndpoints: [SourceEndpoint]
+}
+
 public struct SourceRuntimeIssue: Error, Sendable, Equatable {
   public enum Stage: String, Sendable {
     case urlTemplate = "url_template"
@@ -480,6 +490,33 @@ public struct HTMLCSSSourceRuntime: Sendable {
     html: String,
     tocEndpoint: SourceEndpoint
   ) throws -> [SourceChapter] {
+    try chapterPage(
+      html: html,
+      tocEndpoint: tocEndpoint
+    ).chapters
+  }
+
+  public func chapterPage(
+    html: String,
+    tocEndpoint: SourceEndpoint
+  ) throws -> SourceTOCPage {
+    SourceTOCPage(
+      chapters: try parsedChapters(
+        html: html,
+        tocEndpoint: tocEndpoint
+      ),
+      nextEndpoints: try paginationEndpoints(
+        html: html,
+        rule: definition.toc.nextTocURL,
+        currentEndpoint: tocEndpoint
+      )
+    )
+  }
+
+  private func parsedChapters(
+    html: String,
+    tocEndpoint: SourceEndpoint
+  ) throws -> [SourceChapter] {
     let tocURL = tocEndpoint.logicalURL
     if usesStructuredRules(
       content: html,
@@ -520,6 +557,33 @@ public struct HTMLCSSSourceRuntime: Sendable {
   }
 
   public func content(html: String, chapterURL: URL) throws -> SourceContent {
+    try contentPage(
+      html: html,
+      chapterEndpoint: .plain(chapterURL)
+    ).content
+  }
+
+  public func contentPage(
+    html: String,
+    chapterEndpoint: SourceEndpoint
+  ) throws -> SourceContentPage {
+    SourceContentPage(
+      content: try parsedContent(
+        html: html,
+        chapterURL: chapterEndpoint.logicalURL
+      ),
+      nextEndpoints: try paginationEndpoints(
+        html: html,
+        rule: definition.content.nextContentURL,
+        currentEndpoint: chapterEndpoint
+      )
+    )
+  }
+
+  private func parsedContent(
+    html: String,
+    chapterURL: URL
+  ) throws -> SourceContent {
     if usesStructuredRules(
       content: html,
       rules: [definition.content.content]
@@ -567,6 +631,48 @@ public struct HTMLCSSSourceRuntime: Sendable {
       throw SourceRuntimeIssue(stage: .fieldEvaluation, code: .ruleFailed)
     }
     return SourceContent(chapterURL: chapterURL, content: lines.joined(separator: "\n"))
+  }
+
+  private func paginationEndpoints(
+    html: String,
+    rule: HTMLCSSRule?,
+    currentEndpoint: SourceEndpoint
+  ) throws -> [SourceEndpoint] {
+    guard let rule else { return [] }
+    let rawValues: [String]
+    if usesStructuredRules(content: html, rules: [rule]) {
+      rawValues = try SourceRuleConsumerEvaluator(
+        content: html
+      ).getStringList(rule.selector) ?? []
+    } else {
+      let document = try parse(html)
+      rawValues = try document.select(rule.cssSelector).compactMap {
+        node in
+        switch rule.value {
+        case .text, .html:
+          let value = node.normalizedText
+          return value.isEmpty ? nil : value
+        case .href:
+          return node.attributes["href"]
+        case .src:
+          return node.attributes["src"]
+        }
+      }
+    }
+    var seen: Set<String> = []
+    return rawValues.compactMap { raw in
+      guard
+        let endpoint = try? SourceEndpoint(
+          resolving: raw,
+          relativeTo: currentEndpoint.logicalURL
+        ),
+        endpoint.requestExpression != currentEndpoint.requestExpression,
+        seen.insert(endpoint.requestExpression).inserted
+      else {
+        return nil
+      }
+      return endpoint
+    }
   }
 
   private func parse(_ html: String) throws -> HTMLDocument {

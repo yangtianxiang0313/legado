@@ -82,34 +82,55 @@ public struct SourceTOCPipeline: Sendable {
     }
 
     var requests = detail.requestPlan.map { [$0.request] } ?? []
+    let firstPage: SourceTOCPage
     if let tocHTML = detail.tocHTML {
-      return SourceTOCExecution(
-        requests: requests,
-        book: detail.book,
-        chapters: try runtime.chapters(
-          html: tocHTML,
-          tocEndpoint: tocEndpoint
-        )
+      firstPage = try runtime.chapterPage(
+        html: tocHTML,
+        tocEndpoint: tocEndpoint
       )
+    } else {
+      let fetched = try await fetchPage(
+        endpoint: tocEndpoint,
+        runtime: runtime
+      )
+      requests.append(fetched.request)
+      firstPage = fetched.page
     }
 
-    let tocPlan = try definition.prepare(
-      tocEndpoint.requestPlan()
-    )
-    requests.append(tocPlan.request)
-    let tocResponse = try await SourceRequestSession(
-      transport: transport,
-      cookieStore: cookieStore
-    ).execute(
-      tocPlan,
-      enabledCookieJar: definition.enabledCookieJar
-    ).response
-    let tocResponseURL = try responseURL(tocResponse)
-    let tocHTML = try responseBody(tocResponse)
-    let chapters = try runtime.chapters(
-      html: tocHTML,
-      tocEndpoint: .plain(tocResponseURL)
-    )
+    var chapters = firstPage.chapters
+    var visited = Set([tocEndpoint.requestExpression])
+    if firstPage.nextEndpoints.count == 1 {
+      var next = firstPage.nextEndpoints.first
+      while
+        let endpoint = next,
+        visited.insert(endpoint.requestExpression).inserted
+      {
+        let fetched = try await fetchPage(
+          endpoint: endpoint,
+          runtime: runtime
+        )
+        requests.append(fetched.request)
+        chapters.append(contentsOf: fetched.page.chapters)
+        next = fetched.page.nextEndpoints.first
+      }
+    } else {
+      for endpoint in firstPage.nextEndpoints
+      where visited.insert(endpoint.requestExpression).inserted {
+        let fetched = try await fetchPage(
+          endpoint: endpoint,
+          runtime: runtime
+        )
+        requests.append(fetched.request)
+        chapters.append(contentsOf: fetched.page.chapters)
+      }
+    }
+    chapters = normalized(chapters)
+    guard !chapters.isEmpty else {
+      throw SourceRuntimeIssue(
+        stage: .fieldEvaluation,
+        code: .ruleFailed
+      )
+    }
     return SourceTOCExecution(
       requests: requests,
       book: detail.book,
@@ -117,17 +138,59 @@ public struct SourceTOCPipeline: Sendable {
     )
   }
 
-  private func responseBody(_ response: HTTPResponse) throws -> String {
-    guard let value = String(data: response.body.bytes, encoding: .utf8) else {
+  private func fetchPage(
+    endpoint: SourceEndpoint,
+    runtime: HTMLCSSSourceRuntime
+  ) async throws -> (request: HTTPRequest, page: SourceTOCPage) {
+    let plan = try definition.prepare(endpoint.requestPlan())
+    let response = try await SourceRequestSession(
+      transport: transport,
+      cookieStore: cookieStore
+    ).execute(
+      plan,
+      enabledCookieJar: definition.enabledCookieJar
+    ).response
+    guard
+      let body = String(data: response.body.bytes, encoding: .utf8),
+      let effectiveURL = URL(
+        string: response.effectiveURL.absoluteString
+      )
+    else {
       throw SourceSearchPipelineError.invalidResponseEncoding
     }
-    return value
+    return (
+      plan.request,
+      try runtime.chapterPage(
+        html: body,
+        tocEndpoint: .plain(effectiveURL)
+      )
+    )
   }
 
-  private func responseURL(_ response: HTTPResponse) throws -> URL {
-    guard let value = URL(string: response.effectiveURL.absoluteString) else {
-      throw SourceRuntimeIssue(stage: .urlTemplate, code: .invalidURL)
+  private func normalized(
+    _ chapters: [SourceChapter]
+  ) -> [SourceChapter] {
+    var seen: Set<String> = []
+    var result: [SourceChapter] = []
+    for chapter in chapters {
+      guard
+        seen.insert(
+          chapter.endpoint.logicalURL.absoluteString
+        ).inserted
+      else {
+        continue
+      }
+      result.append(
+        SourceChapter(
+          index: result.count,
+          title: chapter.title,
+          endpoint: chapter.endpoint,
+          isPay: chapter.isPay,
+          isVIP: chapter.isVIP,
+          isVolume: chapter.isVolume
+        )
+      )
     }
-    return value
+    return result
   }
 }
