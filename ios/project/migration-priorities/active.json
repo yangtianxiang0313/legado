@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P47-SOURCE-DEFINITION-COMPILER-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "title": "P47 书源 DTO 到运行时定义的独立编译边界",
+  "objective": "依据冻结 Android BookSource 及其缺失 rule 自动补默认对象的行为，在 LegadoSourceKit 内建立 BookSourceDTO→SourceSearchDefinition/SourceExploreDefinition 的唯一产品编译器；App 只提供用户编辑后的元数据覆盖并消费编译结果，不再用 JSONSerialization 解释书源字段，也不因任一详情、目录或正文规则缺失而整源丢弃。",
+  "validation_policy": "只运行 BookSourceRuntimeCompilerTests 聚焦测试，并执行一次 LegadoApp 构建证明 App 重连；不跑全量 Harness、全量 Swift 测试或模拟器。",
+  "stages": [
+    {
+      "id": "P47-S1",
+      "title": "物化独立书源产品编译器并删除 App 重复解析",
+      "selectors": [
+        {
+          "id": "P47-S1-COMPILER",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-SOURCE-RUNTIME-DEFINITION-COMPILER-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-SOURCE-RUNTIME-DEFINITION-COMPILER-001",
+      "title": "由独立 Package 编译导入书源的完整运行时定义",
+      "fixture_id": "source-runtime-definition-compiler-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [
+        "IOS-SOURCE-RUNTIME-PRODUCTION-GZIP-001"
+      ],
+      "validation": "tests",
+      "package_path": "ios/Packages/LegadoSourceKit",
+      "test_filter": "BookSourceRuntimeCompilerTests",
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoSourceKit/**",
+        "ios/Apps/Legado/**",
+        "ios/docs/architecture.md",
+        "ios/project/migration-priorities/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "d2ac6002cbaabe508f72a77e138f95b376c424c4",
+          "path": "app/src/main/java/io/legado/app/data/entities/BookSource.kt",
+          "symbol_id": "kotlin://io.legado.app.data.entities.BookSource"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da",
+          "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+          "symbol_id": "kotlin://io.legado.app.model.analyzeRule.AnalyzeUrl"
+        }
+      ]
+    }
+  ]
+}
