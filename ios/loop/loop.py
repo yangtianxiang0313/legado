@@ -214,6 +214,8 @@ def completed_task_ids(root: Path) -> set[str]:
 def characterized_claim_refs(root: Path) -> set[tuple[str, int]]:
     result: set[tuple[str, int]] = set()
     for event in load_events(root):
+        if event.get("event") != "task_completed":
+            continue
         details = event.get("details")
         if not isinstance(details, dict):
             continue
