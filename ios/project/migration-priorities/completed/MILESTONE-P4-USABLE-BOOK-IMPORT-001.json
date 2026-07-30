@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P4-USABLE-BOOK-IMPORT-001",
+  "status": "completed",
+  "completed_at": "2026-07-30T18:01:42Z",
+  "mode": "critical_path_only",
+  "title": "P4 可用书籍导入主链路",
+  "objective": "用户可从 URL 或 iOS 文件选择器导入书籍，持久化进入书架，并继续目录、正文、阅读与重启恢复主链路。",
+  "completion_evidence": [
+    {
+      "claim": "URL 导入按已有书、base URL、bookUrlPattern 顺序复用真实书源运行时",
+      "status": "verified",
+      "evidence": ".harness-runtime/loop/IOS-APP-NAVIGATION-BOOK-IMPORT-MILESTONE-001/attempt-5"
+    },
+    {
+      "claim": "TXT 文件复制到应用管理目录并形成持久化书籍、目录和正文",
+      "status": "verified",
+      "evidence": [
+        "LocalTextBookTests: 3 passed",
+        "DatabaseGRDBTests: 9 passed"
+      ]
+    },
+    {
+      "claim": "本地书可阅读并在终止重启后恢复到同一章节",
+      "status": "verified",
+      "evidence": ".harness-runtime/loop/IOS-APP-NAVIGATION-BOOK-IMPORT-MILESTONE-001/attempt-5"
+    }
+  ],
+  "known_limits": [
+    "当前只宣称真实支持 TXT；EPUB、UMD、PDF、MOBI、AZW3 和 ZIP 需要各自解析器后才能开放。",
+    "URL 导入依赖已配置且可匹配的书源，不把网站可用性当作产品保证。",
+    "UI 使用 iOS 文件选择器，不复刻 Android 自建文件浏览器。"
+  ],
+  "stages": [
+    {
+      "id": "P4-01-BOOK-IMPORT-MILESTONE",
+      "title": "接通导入到阅读纵向主链路",
+      "outcome": "现有导入领域语义通过文件、数据库与导航适配器接入书架和阅读器。",
+      "selectors": [
+        {
+          "id": "BOOK-IMPORT-MILESTONE",
+          "task_ids": [
+            "IOS-APP-NAVIGATION-BOOK-IMPORT-MILESTONE-001"
+          ]
+        }
+      ]
+    }
+  ]
+}

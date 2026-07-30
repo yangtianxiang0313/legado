@@ -753,6 +753,20 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                     "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
                 ]
             )
+        if target == (
+            "IOS-APP-NAVIGATION-OFFLINE-CACHE-MILESTONE-001"
+        ):
+            allowed_paths.extend(
+                [
+                    "ios/Packages/LegadoKit/Sources/LibraryDomain/**",
+                    "ios/Packages/LegadoKit/Sources/ReaderCore/**",
+                    "ios/Packages/LegadoKit/Tests/ReaderCoreTests/**",
+                    "ios/Packages/LegadoKit/Sources/SourceRuntime/**",
+                    "ios/Packages/LegadoKit/Tests/SourceRuntimeTests/**",
+                    "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+                    "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+                ]
+            )
         return {
             "owner": "AppNavigation",
             "architecture_refs": [
@@ -2189,6 +2203,22 @@ def app_navigation_delivery_contract(
                 "ui-book-import-milestone-v1.json"
             ),
             "test_method": "testBookImportMilestone",
+        },
+        "milestone-offline-cache-v1": {
+            "goal": (
+                "复用 SourceRuntime 已对齐的缓存队列状态机和 ReaderCore "
+                "缓存优先策略，把远程正文成功结果写入 GRDB；由书架提供"
+                "批量离线缓存入口，并在书源不可用和 App 重启后从持久"
+                "缓存继续阅读。空正文、本地书和失败重试保持显式结果。"
+            ),
+            "acceptance_id":
+                "structured-offline-cache-milestone-acceptance",
+            "scenario_id": "ui-offline-cache-milestone-v1",
+            "expected": (
+                "ios/harness/ui/expected/"
+                "ui-offline-cache-milestone-v1.json"
+            ),
+            "test_method": "testOfflineCacheMilestone",
         },
     }
     feature = features.get(fixture_id)

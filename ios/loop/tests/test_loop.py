@@ -2513,6 +2513,20 @@ class MinimalLoopTests(unittest.TestCase):
             "testBookImportMilestone",
             contract["ui_acceptance"]["test_method"],
         )
+        offline = loop.app_navigation_delivery_contract(
+            "milestone-offline-cache-v1"
+        )
+        self.assertEqual(
+            "testOfflineCacheMilestone",
+            offline["ui_acceptance"]["test_method"],
+        )
+        owner = loop.owner_contract(
+            "IOS-APP-NAVIGATION-OFFLINE-CACHE-MILESTONE-001"
+        )
+        self.assertIn(
+            "ios/Packages/LegadoKit/Sources/SourceRuntime/**",
+            owner["allowed_paths"],
+        )
 
 
 if __name__ == "__main__":

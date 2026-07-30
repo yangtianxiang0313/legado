@@ -1,61 +1,63 @@
 {
   "schema_version": 1,
-  "id": "MILESTONE-P4-USABLE-BOOK-IMPORT-001",
+  "id": "MILESTONE-P5-OFFLINE-READING-001",
   "status": "active",
   "mode": "critical_path_only",
-  "title": "P4 可用书籍导入主链路",
-  "objective": "用户可从 URL 或 iOS 文件选择器导入书籍，持久化进入书架，并继续目录、正文、阅读与重启恢复主链路。",
+  "title": "P5 可用离线阅读主链路",
+  "objective": "用户可把远程书籍章节批量缓存到持久存储，并在书源网络不可用和 App 重启后继续阅读已缓存正文。",
   "completion_evidence": [
-    "URL 导入复用已有书短路与书源匹配顺序，不在 UI 层重新实现规则",
-    "本地文件通过安全作用域复制到应用管理目录，稳定书籍身份不依赖临时文件选择器 URL",
-    "TXT 文件可生成目录和正文，导入后可从书架进入阅读器",
-    "重复导入保持书籍身份并刷新本地目录，空文件返回可解释失败",
-    "完整导入到阅读主链路只在一个 iPhone Simulator 里程碑验收"
+    "离线缓存复用既有 SourceCacheQueueModel 的去重、停止与三次重试语义",
+    "远程正文成功获取后写入持久化章节缓存，空正文不形成缓存命中",
+    "本地书不进入远程离线下载队列",
+    "缓存操作返回已缓存、跳过、失败与取消的结构化结果",
+    "清缓存后正文重新走书源获取，断网时已缓存正文仍可阅读",
+    "完整缓存到断网阅读主链路只在一个 iPhone Simulator 里程碑验收"
   ],
-  "deferred_policy": "EPUB、UMD、PDF、MOBI、AZW3 与 ZIP 的实际格式解析器在 TXT 主链路完成后按源码能力逐项迁移；本里程碑不以扩展名声明代替真实解析能力。",
+  "deferred_policy": "后台下载、磁盘配额、图片完整缓存和进程中断后的队列恢复不在本里程碑伪实现；先完成前台可用的持久正文缓存主链。",
   "deliveries": [
     {
-      "target": "IOS-APP-NAVIGATION-BOOK-IMPORT-MILESTONE-001",
-      "title": "本地与 URL 书籍导入到阅读里程碑",
+      "target": "IOS-APP-NAVIGATION-OFFLINE-CACHE-MILESTONE-001",
+      "title": "远程正文缓存与断网阅读里程碑",
       "prerequisite_task_ids": [
-        "IOS-LIBRARY-DOMAIN-BOOK-IMPORT-CHANNEL-RUNTIME-001",
-        "IOS-LIBRARY-DOMAIN-LOCAL-BOOK-RELOCATION-RUNTIME-001"
+        "IOS-SOURCE-RUNTIME-CACHE-QUEUE-COMPLETION-001",
+        "IOS-READER-CORE-CONTENT-CACHE-FIRST-ACQUISITION-001",
+        "IOS-READER-CORE-CACHE-PREFETCH-POLICY-001"
       ],
       "requirement_ref": "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01",
-      "fixture_id": "milestone-book-import-v1",
+      "fixture_id": "milestone-offline-cache-v1",
       "validation": "simulator",
       "source_anchors": [
         {
           "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "git_blob": "f371a8706a10ab9cc027a3ebe4b795973a57fc0c",
-          "path": "app/src/main/java/io/legado/app/ui/main/bookshelf/BaseBookshelfFragment.kt",
-          "symbol_id": "kotlin://io.legado.app.ui.main.bookshelf.BaseBookshelfFragment/onCompatOptionsItemSelected"
+          "git_blob": "cdcbbf5696c1d2b018e25c2819c0461e8c667866",
+          "path": "app/src/main/java/io/legado/app/model/CacheBook.kt",
+          "symbol_id": "kotlin://io.legado.app.model.CacheBook"
         },
         {
           "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "git_blob": "ef3977f03fcb1b639d53953c9c0131c4cf21d5ce",
-          "path": "app/src/main/java/io/legado/app/ui/book/import/local/ImportBookViewModel.kt",
-          "symbol_id": "kotlin://io.legado.app.ui.book.import.local.ImportBookViewModel"
+          "git_blob": "4916633d8c891cbdb2fc28a66c93a9b4750fa938",
+          "path": "app/src/main/java/io/legado/app/service/CacheBookService.kt",
+          "symbol_id": "kotlin://io.legado.app.service.CacheBookService"
         },
         {
           "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "git_blob": "0c0c50252d9c2590053fbf10cd39c49e314839e0",
-          "path": "app/src/main/java/io/legado/app/model/localBook/LocalBook.kt",
-          "symbol_id": "kotlin://io.legado.app.model.localBook.LocalBook/importFiles"
+          "git_blob": "40f47f3a0f6bfa63cce79efb7a1518737b84dc45",
+          "path": "app/src/main/java/io/legado/app/help/book/BookHelp.kt",
+          "symbol_id": "kotlin://io.legado.app.help.book.BookHelp/hasContent"
         }
       ]
     }
   ],
   "stages": [
     {
-      "id": "P4-01-BOOK-IMPORT-MILESTONE",
-      "title": "接通导入到阅读纵向主链路",
-      "outcome": "现有导入领域语义通过文件、数据库与导航适配器接入书架和阅读器。",
+      "id": "P5-01-OFFLINE-CACHE-MILESTONE",
+      "title": "接通缓存到断网阅读纵向主链路",
+      "outcome": "既有缓存状态机通过 AppUseCases 与 GRDB 接入书架批量动作和阅读器缓存优先加载。",
       "selectors": [
         {
-          "id": "BOOK-IMPORT-MILESTONE",
+          "id": "OFFLINE-CACHE-MILESTONE",
           "task_ids": [
-            "IOS-APP-NAVIGATION-BOOK-IMPORT-MILESTONE-001"
+            "IOS-APP-NAVIGATION-OFFLINE-CACHE-MILESTONE-001"
           ]
         }
       ]
