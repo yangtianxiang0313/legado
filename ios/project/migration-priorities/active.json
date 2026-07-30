@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P26-READER-BOOK-SOURCE-SWITCH-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "title": "P26 阅读器整书换源闭环",
+  "objective": "依据冻结 Android ReadBookActivity、ReadBookViewModel 与 ChangeBookSourceDialog 源码，复用现有搜索、目录解析和原子迁移核心，从阅读器选择目标书源，迁移后打开映射章节并保留字符偏移。",
+  "validation_policy": "复用既有换源原子迁移聚焦测试并执行一次 App 构建；不启动模拟器，不重复详情页换源验收。",
+  "stages": [
+    {
+      "id": "P26-S1",
+      "title": "接通阅读器整书换源",
+      "selectors": [
+        {
+          "id": "P26-S1-READER-BOOK-SOURCE-SWITCH",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-APP-NAVIGATION-READER-BOOK-SOURCE-SWITCH-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-APP-NAVIGATION-READER-BOOK-SOURCE-SWITCH-001",
+      "title": "从阅读器选择书源并续接映射章节",
+      "fixture_id": "reader-book-source-switch-app-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [
+        "IOS-APP-NAVIGATION-SOURCE-MANAGEMENT-MILESTONE-001",
+        "IOS-APP-NAVIGATION-READER-CONTENT-001"
+      ],
+      "validation": "build",
+      "ui_contract": {
+        "goal": "阅读器可从已启用书源中选择目标源，完成搜索、目录解析和原子迁移后打开映射章节并保留字符偏移。",
+        "scenario_id": "reader-book-source-switch-app-v1",
+        "test_method": "testReaderBookSourceSwitchFlow"
+      },
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+        "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+        "ios/Packages/LegadoKit/Sources/ReaderCore/**",
+        "ios/Packages/LegadoKit/Tests/ReaderCoreTests/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.read.ReadBookActivity/changeTo"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookViewModel.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.read.ReadBookViewModel/changeTo"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/ui/book/changesource/ChangeBookSourceDialog.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.changesource.ChangeBookSourceDialog/changeTo"
+        }
+      ]
+    }
+  ]
+}
