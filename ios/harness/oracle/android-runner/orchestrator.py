@@ -539,6 +539,35 @@ SCENARIO_CONTRACTS = {
             "time-primary-key-replace",
         }),
     },
+    "rl-library-shelf-group-bit-boundary-risk-001": {
+        "status": "candidate",
+        "fixture_kind": "android_runtime_scenario",
+        "result_type": "library_runtime",
+        "stage_names": (
+            "fixture_setup",
+            "database_write",
+            "bit_allocation",
+            "room_query",
+            "membership_projection",
+            "result_mapping",
+        ),
+        "expected_cases": (
+            ("last-positive-bit-control", "book_group_allocation"),
+            (
+                "min-value-allocation-and-capacity",
+                "book_group_allocation",
+            ),
+            (
+                "min-value-selection-and-membership",
+                "book_group_selection",
+            ),
+        ),
+        "nominal_cases": frozenset({
+            "last-positive-bit-control",
+            "min-value-allocation-and-capacity",
+            "min-value-selection-and-membership",
+        }),
+    },
     "rl-reader-history-read-record-runtime-risk-001": {
         "status": "candidate",
         "fixture_kind": "android_runtime_scenario",

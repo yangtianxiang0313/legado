@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "kind": "android_runtime_scenario",
+  "id": "rl-library-shelf-group-bit-boundary-risk-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "android_runtime",
+  "capabilities": [
+    "android.room",
+    "library.group",
+    "library.shelf"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": null,
+  "input": "input.json",
+  "transport": {
+    "mode": "none",
+    "external_network": "deny",
+    "responses": []
+  },
+  "coverage": [
+    {
+      "behavior": "library.shelf-group-bit-boundary-risk",
+      "cases": [
+        {
+          "id": "last-positive-bit-control",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-BOOK-GROUP-UNUSED-ID",
+            "AF-BOOK-GROUP-FLOW-SELECT",
+            "AF-BOOK-GROUP-NAMES"
+          ],
+          "branch_refs": [
+            "BookGroupDao.getUnusedId: shifts across 62 occupied positive bits",
+            "BookGroupDao.flowSelect/getGroupNames: last positive one-hot remains visible and recognized"
+          ]
+        },
+        {
+          "id": "min-value-allocation-and-capacity",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-BOOK-GROUP-UNUSED-ID"
+          ],
+          "branch_refs": [
+            "BookGroupDao.getUnusedId: shift after 63 occupied positive bits",
+            "BookGroupDao.canAddGroup: explicitly counts Long.MIN_VALUE at the 64-group capacity boundary"
+          ]
+        },
+        {
+          "id": "min-value-selection-and-membership",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-BOOK-GROUP-FLOW-SELECT",
+            "AF-BOOK-GROUP-NAMES",
+            "AF-GROUP-SELECT-MEMBERSHIP"
+          ],
+          "branch_refs": [
+            "BookGroupDao.flowSelect: groupId >= 0",
+            "BookGroupDao.getGroupNames and GroupSelectDialog.GroupAdapter.convert: bit intersection > 0"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "fixture",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 0,
+    "network_allowed": false,
+    "logical_origin": null,
+    "database_reset_per_case": true
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/data/dao/BookGroupDao.kt",
+      "app/src/main/java/io/legado/app/ui/book/group/GroupSelectDialog.kt"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-LIBRARY-SHELF-GROUP-BIT-BOUNDARY-RISK-001"
+  },
+  "limits": {
+    "timeout_ms": 5000
+  }
+}

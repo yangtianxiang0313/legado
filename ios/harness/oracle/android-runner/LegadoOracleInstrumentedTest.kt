@@ -27,6 +27,7 @@ import io.legado.app.constant.BookType
 import io.legado.app.constant.PreferKey
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
+import io.legado.app.data.entities.BookGroup
 import io.legado.app.data.entities.BookSource
 import io.legado.app.data.entities.Bookmark
 import io.legado.app.data.entities.ReadRecord
@@ -172,6 +173,8 @@ class LegadoOracleInstrumentedTest {
                 runRemoteManagementIntegrationCases()
             "il-integration-system-text-to-speech-001" ->
                 runSystemTextToSpeechIntegrationCases()
+            "rl-library-shelf-group-bit-boundary-risk-001" ->
+                runBookGroupBoundaryCases()
             "rl-reader-bookmark-search-runtime-risk-001" ->
                 runBookmarkRuntimeCases()
             "rl-reader-history-read-record-runtime-risk-001" ->
@@ -1043,6 +1046,199 @@ class LegadoOracleInstrumentedTest {
         val queueMode: Int,
         val utteranceId: String?
     )
+
+    private suspend fun runBookGroupBoundaryCases() {
+        val values = input.getJSONArray("cases")
+        val supported = setOf(
+            "book_group_allocation",
+            "book_group_selection"
+        )
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            val operation = value.getString("operation")
+            require(operation in supported) {
+                "Unsupported book-group boundary operation: $operation"
+            }
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", operation)
+                .put("arguments", JSONObject(arguments.toString()))
+            runCase(
+                value.getString("id"),
+                operation,
+                stimulus
+            ) {
+                bookGroupBoundaryProjection(operation, arguments)
+            }
+        }
+    }
+
+    private suspend fun bookGroupBoundaryProjection(
+        operation: String,
+        arguments: JSONObject
+    ): JSONObject {
+        val dao = appDb.bookGroupDao
+        val previous = dao.all.map { it.copy() }
+        clearBookGroups()
+        return try {
+            when (operation) {
+                "book_group_allocation" ->
+                    bookGroupAllocationProjection(arguments)
+                "book_group_selection" ->
+                    bookGroupSelectionProjection(arguments)
+                else -> error(
+                    "Unsupported book-group boundary operation"
+                )
+            }
+        } finally {
+            clearBookGroups()
+            if (previous.isNotEmpty()) {
+                dao.insert(*previous.toTypedArray())
+            }
+        }
+    }
+
+    private suspend fun bookGroupAllocationProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val dao = appDb.bookGroupDao
+        val positiveBitCount =
+            arguments.getInt("positive_bit_count")
+        seedPositiveBookGroups(positiveBitCount)
+        val canAddBefore = dao.canAddGroup
+        val allocatedId = dao.getUnusedId()
+        val existingBeforeInsert = dao.getByID(allocatedId) != null
+        val inserted = arguments.getBoolean("insert_allocated")
+        if (inserted) {
+            dao.insert(
+                BookGroup(
+                    groupId = allocatedId,
+                    groupName = "allocated-boundary",
+                    order = positiveBitCount + 1
+                )
+            )
+        }
+        val visibleIds = dao.flowSelect().first().map { it.groupId }
+        val repeatedUnusedId = dao.getUnusedId()
+        return JSONObject()
+            .put("positive_bit_count", positiveBitCount)
+            .put("can_add_before", canAddBefore)
+            .put("allocated_id", allocatedId)
+            .put("allocated_hex", longHex(allocatedId))
+            .put("allocated_is_negative", allocatedId < 0)
+            .put(
+                "allocated_is_valid_one_hot",
+                dao.isInRules(allocatedId)
+            )
+            .put(
+                "allocated_existed_before_insert",
+                existingBeforeInsert
+            )
+            .put("inserted", inserted)
+            .put("can_add_after", dao.canAddGroup)
+            .put(
+                "allocated_visible_in_flow_select",
+                allocatedId in visibleIds
+            )
+            .put(
+                "allocated_group_names",
+                JSONArray(dao.getGroupNames(allocatedId))
+            )
+            .put("repeated_unused_id", repeatedUnusedId)
+            .put("repeated_unused_hex", longHex(repeatedUnusedId))
+            .put(
+                "repeated_id_collides_with_allocated",
+                inserted && repeatedUnusedId == allocatedId
+            )
+            .put("stored_group_count", dao.all.size)
+    }
+
+    private suspend fun bookGroupSelectionProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val dao = appDb.bookGroupDao
+        val positiveBitCount =
+            arguments.getInt("positive_bit_count")
+        seedPositiveBookGroups(positiveBitCount)
+        val includeMinValue =
+            arguments.getBoolean("include_min_value")
+        if (includeMinValue) {
+            dao.insert(
+                BookGroup(
+                    groupId = Long.MIN_VALUE,
+                    groupName = "bit-min-value",
+                    order = positiveBitCount + 1
+                )
+            )
+        }
+        val mixedPositiveBitIndex =
+            arguments.getInt("mixed_positive_bit_index")
+        require(
+            mixedPositiveBitIndex in 0 until positiveBitCount
+        ) {
+            "mixed_positive_bit_index must reference a seeded bit"
+        }
+        val positiveId = 1L shl mixedPositiveBitIndex
+        val boundaryMask = Long.MIN_VALUE
+        val mixedMask = boundaryMask or positiveId
+        val all = dao.all
+        val selectable = dao.flowSelect().first()
+        return JSONObject()
+            .put("positive_bit_count", positiveBitCount)
+            .put("stored_group_count", all.size)
+            .put("flow_select_count", selectable.size)
+            .put(
+                "boundary_present_in_all",
+                all.any { it.groupId == Long.MIN_VALUE }
+            )
+            .put(
+                "boundary_present_in_flow_select",
+                selectable.any { it.groupId == Long.MIN_VALUE }
+            )
+            .put(
+                "boundary_group_names",
+                JSONArray(dao.getGroupNames(boundaryMask))
+            )
+            .put(
+                "mixed_mask_group_names",
+                JSONArray(dao.getGroupNames(mixedMask))
+            )
+            .put("mixed_mask", mixedMask)
+            .put("mixed_mask_hex", longHex(mixedMask))
+            .put(
+                "boundary_is_valid_one_hot",
+                dao.isInRules(Long.MIN_VALUE)
+            )
+            .put("can_add_group", dao.canAddGroup)
+    }
+
+    private fun seedPositiveBookGroups(count: Int) {
+        require(count in 0..63) {
+            "positive_bit_count must be between 0 and 63"
+        }
+        if (count == 0) {
+            return
+        }
+        appDb.bookGroupDao.insert(
+            *(0 until count).map { index ->
+                BookGroup(
+                    groupId = 1L shl index,
+                    groupName = "bit-${index.toString().padStart(2, '0')}",
+                    order = index + 1
+                )
+            }.toTypedArray()
+        )
+    }
+
+    private fun clearBookGroups() {
+        val values = appDb.bookGroupDao.all
+        if (values.isNotEmpty()) {
+            appDb.bookGroupDao.delete(*values.toTypedArray())
+        }
+    }
+
+    private fun longHex(value: Long): String =
+        java.lang.Long.toUnsignedString(value, 16).padStart(16, '0')
 
     private suspend fun runBookmarkRuntimeCases() {
         val values = input.getJSONArray("cases")

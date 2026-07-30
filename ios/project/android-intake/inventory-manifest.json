@@ -2,8 +2,8 @@
   "schema_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
   "android_tree": "c81f5d383116e37c1eefee3eb86654514e82022b",
-  "control_sha256": "adba6419fc0456866e7d4eb71e124a0017b8077fa226065dce0d1a358807e161",
-  "policy_sha256": "6d808698483635b991c2447b0636c1b3332eeab2bf4902c603f3f176c6b83fc6",
+  "control_sha256": "43bbf78cb631319d2bd508cce92b76851c4d44473ee24dea64eff05c3d8505cb",
+  "policy_sha256": "bfdfaf15f0828dbe197d7a55aabc373c96343fab01e517eec84dc683a5604019",
   "facts": [
     {
       "id": "AF-ANALYZE-JSONPATH-GET-LIST",
@@ -241,6 +241,78 @@
         "body_semantic_sha256": "ccea761ddd0e294a1663b6ae0e057ec83a61190e4d99d926c875faefc5e23786"
       },
       "revision_sha256": "ae5104d5ba24bd44020d12e7139e43de303262d52eecc4da43a0d6e54ba0131b",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-BOOK-GROUP-FLOW-SELECT",
+      "fact_key": "library.shelf.group-select-query",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_room_query",
+      "symbol_id": "kotlin://io.legado.app.data.dao/BookGroupDao/flowSelect",
+      "path": "app/src/main/java/io/legado/app/data/dao/BookGroupDao.kt",
+      "git_blob": "0c3fd7fc1224e8ec87ac6a61b6cd6ae7cc2f5d0d",
+      "source_sha256": "169757c99b5286548cb2f6a226f973f81b595bae94b79198c19cf1dde1b5e8d3",
+      "start_line": 54,
+      "end_line": 55,
+      "payload": {
+        "kind": "kotlin_room_query",
+        "symbol": "flowSelect",
+        "signature": "fun flowSelect(): Flow<List<BookGroup>>",
+        "sql": "SELECT * FROM book_groups where groupId >= 0 ORDER BY `order`"
+      },
+      "revision_sha256": "45e7a213f6b6575af1b24eeffa3d9836d11ca905718fa098d18792c6b632c95f",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-BOOK-GROUP-NAMES",
+      "fact_key": "library.shelf.group-membership-query",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_room_query",
+      "symbol_id": "kotlin://io.legado.app.data.dao/BookGroupDao/getGroupNames",
+      "path": "app/src/main/java/io/legado/app/data/dao/BookGroupDao.kt",
+      "git_blob": "0c3fd7fc1224e8ec87ac6a61b6cd6ae7cc2f5d0d",
+      "source_sha256": "169757c99b5286548cb2f6a226f973f81b595bae94b79198c19cf1dde1b5e8d3",
+      "start_line": 72,
+      "end_line": 73,
+      "payload": {
+        "kind": "kotlin_room_query",
+        "symbol": "getGroupNames",
+        "signature": "fun getGroupNames(id: Long): List<String>",
+        "sql": "select groupName from book_groups where groupId > 0 and (groupId & :id) > 0"
+      },
+      "revision_sha256": "d7b3ace7971118c473e58fbf6fc2580f01f40dac58f8f81eddfd0ea1e18fe1dc",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-BOOK-GROUP-UNUSED-ID",
+      "fact_key": "library.shelf.group-unused-id",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.data.dao/BookGroupDao/getUnusedId",
+      "path": "app/src/main/java/io/legado/app/data/dao/BookGroupDao.kt",
+      "git_blob": "0c3fd7fc1224e8ec87ac6a61b6cd6ae7cc2f5d0d",
+      "source_sha256": "169757c99b5286548cb2f6a226f973f81b595bae94b79198c19cf1dde1b5e8d3",
+      "start_line": 91,
+      "end_line": 98,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "getUnusedId",
+        "signature": "fun getUnusedId(): Long",
+        "body_semantic_sha256": "ef686ccf22b0b40d59a9e8d5b85093eb7ee8914734aef1d53469e42231064499"
+      },
+      "revision_sha256": "731c7810d4a1dc68b6c2ef6d038bc47a49fc423b722df33603a4c2fb057fe6fe",
       "maps_to": [
         "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
       ]
@@ -756,6 +828,30 @@
       "revision_sha256": "bb0fa40fcd034a9984f17e7fd9b4548d23139a74743eb82ef1800fc6b5073405",
       "maps_to": [
         "REQ-ANDROID-BOOKSOURCE-SCHEMA-001"
+      ]
+    },
+    {
+      "id": "AF-GROUP-SELECT-MEMBERSHIP",
+      "fact_key": "library.shelf.group-select-membership",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.ui.book.group/GroupSelectDialog/GroupAdapter/convert",
+      "path": "app/src/main/java/io/legado/app/ui/book/group/GroupSelectDialog.kt",
+      "git_blob": "e153d81b2a5c82efb802b8c9380fef64d6cc7290",
+      "source_sha256": "02aa3d7181e878827a491b36932822fe76916c900dd6698635cc83739325c4f3",
+      "start_line": 115,
+      "end_line": 126,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "convert",
+        "signature": "fun convert( holder: ItemViewHolder, binding: ItemGroupSelectBinding, item: BookGroup, payloads: MutableList<Any> )",
+        "body_semantic_sha256": "87ff8266c96c5d4d4dcc3f4eebfc0c73a792e57f4597fbfec66ae9d8b346db98"
+      },
+      "revision_sha256": "270493515529c6e074c396f51822c22ab1db5538de2199ac9227056732b9217b",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
       ]
     },
     {

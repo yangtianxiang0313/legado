@@ -163,6 +163,42 @@ def bookmark_runtime_raw_artifact():
     }
 
 
+def book_group_runtime_raw_artifact():
+    scenario = "rl-library-shelf-group-bit-boundary-risk-001"
+    contract = runner.SCENARIO_CONTRACTS[scenario]
+    requests = []
+    cases = []
+    for index, (case_id, operation) in enumerate(
+        contract["expected_cases"]
+    ):
+        request = {
+            "operation": operation,
+            "arguments": {"fixture_case": case_id},
+        }
+        requests.append(request)
+        cases.append(
+            {
+                "id": case_id,
+                "operation": operation,
+                "request": request,
+                "result": {
+                    "case_index": index,
+                    "stored_group_count": 63 + index,
+                    "boundary_observed": index > 0,
+                },
+                "issue": None,
+            }
+        )
+    return {
+        "schema_version": 1,
+        "scenario_id": scenario,
+        "device_origin": "android-runtime://local",
+        "logical_origin": "android-runtime://local",
+        "request_plan": requests,
+        "cases": cases,
+    }
+
+
 def read_record_runtime_raw_artifact():
     scenario = "rl-reader-history-read-record-runtime-risk-001"
     contract = runner.SCENARIO_CONTRACTS[scenario]
@@ -1264,6 +1300,14 @@ class AndroidOracleRunnerTests(unittest.TestCase):
             "rl-reader-bookmark-search-runtime-risk-001",
             bookmark_runtime["scenario_id"],
         )
+        book_group_runtime = runner.doctor(
+            ROOT,
+            "rl-library-shelf-group-bit-boundary-risk-001",
+        )
+        self.assertEqual(
+            "rl-library-shelf-group-bit-boundary-risk-001",
+            book_group_runtime["scenario_id"],
+        )
         reader_prefetch_runtime = runner.doctor(
             ROOT,
             "rl-reader-cache-prefetch-policy-001",
@@ -1399,6 +1443,39 @@ class AndroidOracleRunnerTests(unittest.TestCase):
             all(
                 set(value) == {"operation", "arguments"}
                 for value in artifact["request_plan"]
+            )
+        )
+
+    def test_library_group_boundary_fixture_uses_room_runtime_projection(self):
+        scenario = "rl-library-shelf-group-bit-boundary-risk-001"
+        runtime_bindings = {
+            **bindings(),
+            "fixture_kind": "android_runtime_scenario",
+            "fixture_path": (
+                "ios/harness/fixtures/runtime-lab/"
+                f"{scenario}"
+            ),
+        }
+        runtime_bindings.pop("source_template_sha256")
+        artifact = runner.normalize_raw_artifact(
+            book_group_runtime_raw_artifact(),
+            runtime_bindings,
+            scenario,
+        )
+        self.assertEqual("library_runtime", artifact["result"]["type"])
+        self.assertEqual(3 * 6, len(artifact["stages"]))
+        self.assertEqual(
+            3,
+            artifact["result"]["value"]["android_characterization"][
+                "case_count"
+            ],
+        )
+        self.assertTrue(
+            all(
+                value["issue"] is None
+                for value in artifact["result"]["value"][
+                    "portable_known_projection"
+                ]["cases"]
             )
         )
 

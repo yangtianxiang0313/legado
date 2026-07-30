@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "last-positive-bit-control",
+      "operation": "book_group_allocation",
+      "arguments": {
+        "positive_bit_count": 62,
+        "insert_allocated": true
+      }
+    },
+    {
+      "id": "min-value-allocation-and-capacity",
+      "operation": "book_group_allocation",
+      "arguments": {
+        "positive_bit_count": 63,
+        "insert_allocated": true
+      }
+    },
+    {
+      "id": "min-value-selection-and-membership",
+      "operation": "book_group_selection",
+      "arguments": {
+        "positive_bit_count": 63,
+        "include_min_value": true,
+        "mixed_positive_bit_index": 0
+      }
+    }
+  ]
+}

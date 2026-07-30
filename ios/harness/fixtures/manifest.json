@@ -29,6 +29,11 @@
       "sha256": "3383cdf3d0667fe16f2cfb930849d704157a107880158115336adf69fb9a2b95"
     },
     {
+      "id": "rl-library-shelf-group-bit-boundary-risk-001",
+      "path": "ios/harness/fixtures/runtime-lab/rl-library-shelf-group-bit-boundary-risk-001",
+      "sha256": "b2ecb52fc78d117c8801e933e63800c722381be10887a2a4e59dd4defa67a035"
+    },
+    {
       "id": "rl-reader-bookmark-search-runtime-risk-001",
       "path": "ios/harness/fixtures/runtime-lab/rl-reader-bookmark-search-runtime-risk-001",
       "sha256": "5e470e57b4bc962a78a71d4198ea3e4d45e6c1cfd26cb5fef4a629bb035a49d6"

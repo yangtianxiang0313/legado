@@ -650,6 +650,54 @@
       "symbol": "onDone",
       "symbol_id": "kotlin://io.legado.app.service/TTSReadAloudService/TTSUtteranceListener/onDone",
       "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-BOOK-GROUP-UNUSED-ID",
+      "fact_key": "library.shelf.group-unused-id",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/data/dao/BookGroupDao.kt",
+      "symbol": "getUnusedId",
+      "symbol_id": "kotlin://io.legado.app.data.dao/BookGroupDao/getUnusedId",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-BOOK-GROUP-FLOW-SELECT",
+      "fact_key": "library.shelf.group-select-query",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_room_query",
+      "path": "app/src/main/java/io/legado/app/data/dao/BookGroupDao.kt",
+      "symbol": "flowSelect",
+      "symbol_id": "kotlin://io.legado.app.data.dao/BookGroupDao/flowSelect",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-BOOK-GROUP-NAMES",
+      "fact_key": "library.shelf.group-membership-query",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_room_query",
+      "path": "app/src/main/java/io/legado/app/data/dao/BookGroupDao.kt",
+      "symbol": "getGroupNames",
+      "symbol_id": "kotlin://io.legado.app.data.dao/BookGroupDao/getGroupNames",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-GROUP-SELECT-MEMBERSHIP",
+      "fact_key": "library.shelf.group-select-membership",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/ui/book/group/GroupSelectDialog.kt",
+      "symbol": "convert",
+      "symbol_id": "kotlin://io.legado.app.ui.book.group/GroupSelectDialog/GroupAdapter/convert",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
     }
   ]
 }
