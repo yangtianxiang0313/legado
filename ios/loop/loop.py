@@ -64,6 +64,12 @@ DIRECT_SOURCE_DELIVERY_CONTRACTS = {
         "validation": "tests",
         "test_filter": "LibraryDomainTests",
     },
+    "library.shelf.batch-partial-commit-runtime": {
+        "target": "IOS-LIBRARY-DOMAIN-SHELF-BATCH-PARTIAL-COMMIT-001",
+        "fixture_id": "source-library-shelf-batch-partial-v1",
+        "validation": "tests",
+        "test_filter": "LibraryDomainTests",
+    },
 }
 
 

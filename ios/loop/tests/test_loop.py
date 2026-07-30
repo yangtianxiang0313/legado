@@ -947,21 +947,42 @@ class MinimalLoopTests(unittest.TestCase):
                                 ],
                             },
                         },
+                        {
+                            "id": "BKC-SHELF-BATCH-PARTIAL-001",
+                            "revision": 1,
+                            "semantic_key": (
+                                "library.shelf."
+                                "batch-partial-commit-runtime"
+                            ),
+                            "topic": "书架批量操作部分提交",
+                            "kind": "runtime_behavior",
+                            "subject_keys": ["library.shelf"],
+                            "depends_on": [],
+                            "support": {
+                                "state": "candidate_source_anchored",
+                                "runtime_requirement": (
+                                    "android_characterization"
+                                ),
+                                "source_anchors": [
+                                    {"path": "BookshelfManageViewModel.kt"}
+                                ],
+                            },
+                        },
                     ],
                 },
             )
 
             self.assertEqual([], loop.pending_characterizations(root))
             deliveries = loop.direct_source_deliveries(root)
-            self.assertEqual(2, len(deliveries))
+            self.assertEqual(3, len(deliveries))
             ui = next(
                 value for value in deliveries
                 if value["target"].startswith("IOS-APP-NAVIGATION")
             )
-            domain = next(
+            domains = [
                 value for value in deliveries
                 if value["target"].startswith("IOS-LIBRARY-DOMAIN")
-            )
+            ]
             self.assertEqual(
                 "IOS-APP-NAVIGATION-DISCOVERY-EXPLORE-FLOW-001",
                 ui["target"],
@@ -979,16 +1000,18 @@ class MinimalLoopTests(unittest.TestCase):
                 ).exists()
             )
             loop.validate_task(root, task)
-            domain_task = loop.build_task(root, domain)
-            self.assertEqual(
-                "LibraryDomainTests",
-                domain_task["source"]["source_contract"]["test_filter"],
-            )
-            self.assertEqual(
-                "focused-swift-tests",
-                domain_task["acceptance"]["commands"][0]["id"],
-            )
-            loop.validate_task(root, domain_task)
+            self.assertEqual(2, len(domains))
+            for domain in domains:
+                domain_task = loop.build_task(root, domain)
+                self.assertEqual(
+                    "LibraryDomainTests",
+                    domain_task["source"]["source_contract"]["test_filter"],
+                )
+                self.assertEqual(
+                    "focused-swift-tests",
+                    domain_task["acceptance"]["commands"][0]["id"],
+                )
+                loop.validate_task(root, domain_task)
 
     def test_verified_candidate_evidence_satisfies_dependency(self):
         with tempfile.TemporaryDirectory() as directory:
