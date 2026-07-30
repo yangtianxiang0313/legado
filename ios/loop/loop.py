@@ -608,6 +608,13 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                     "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
                 ]
             )
+        if target == "IOS-APP-NAVIGATION-SOURCE-IMPORT-RUNTIME-001":
+            allowed_paths.extend(
+                [
+                    "ios/Packages/LegadoKit/Sources/SourceFormat/**",
+                    "ios/Packages/LegadoKit/Tests/SourceFormatTests/**",
+                ]
+            )
         return {
             "owner": "AppNavigation",
             "architecture_refs": [
@@ -1554,6 +1561,19 @@ def app_navigation_delivery_contract(
                 "ui-source-editor-debug-routes-v1.json"
             ),
             "test_method": "testSourceEditorDebugRoutes",
+        },
+        "rl-app-source-import-runtime-001": {
+            "goal": (
+                "按照冻结 Android 书源导入结果，在 SourceFormat 中实现"
+                "定义集合 codec，在 AppUseCases 中实现预选、冲突合并与"
+                "批量持久化，并由 AppShell 接入粘贴和文件导入。"
+            ),
+            "acceptance_id": "structured-source-import-acceptance",
+            "scenario_id": "ui-source-import-v1",
+            "expected": (
+                "ios/harness/ui/expected/ui-source-import-v1.json"
+            ),
+            "test_method": "testSourceImportFlow",
         },
         "rl-library-book-detail-staging-runtime-001": {
             "goal": (
