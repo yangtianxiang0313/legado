@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-SOURCE-RUNTIME-SEARCH-PIPELINE-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "source.execution.search-pipeline",
+  "title": "以独立 SourceRuntime 编排书源搜索纵切",
+  "claim_refs": [
+    {
+      "id": "BKC-SR-SEARCH-PIPELINE-001",
+      "revision": 2
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "SourceRuntime 必须逐字段复现受保护 Android Golden 中的 URL 编译、响应检查、列表/详情分支、候选过滤、按 bookUrl 首次去重、字段归一化与错误结果；expected 不得由 iOS 实现反向生成。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "modularity",
+      "scenario": "搜索流水线属于 SourceRuntime 应用编排；HTTP、脚本、规则求值通过显式端口注入，Discovery UI、LibraryDomain 与持久化不得复制书源解析逻辑。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "portability",
+      "scenario": "公共搜索请求、响应与候选书籍必须是 Sendable 的平台无关值；Android StrResponse、Coroutine、Room、Rhino 与具体解析库类型不得进入产品接口。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "identity",
+      "scenario": "单书源流水线仅复现 Android 按 bookUrl 去重并保留首次结果；跨书源聚合身份、name+author 合并和持久化生命周期由后续 Discovery/Library 切片负责。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "error_semantics",
+      "scenario": "空搜索 URL、传输、登录检查、规则与字段失败必须映射为稳定的 SourceRuntime stage/issue；产品调用方不得依赖 Android 异常类名。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "scope_control",
+      "scenario": "本切片只实现 Golden 覆盖的单源五场景；并发、分页调度、搜索结果数据库、跨源排序去重、取消和 UI 状态必须留给后续 P0 阶段。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "如何以端口组合 URL 编译、HTTP、loginCheck 脚本和规则求值，同时让主编排保持确定性、可取消且不依赖平台对象？",
+    "如何表达列表分支和详情页短路共享的候选书籍投影，并保留 infoHtml 与最终响应 URL 的所有权？",
+    "如何在单源兼容去重与后续跨源聚合身份之间建立明确边界，避免提前把 Android SearchBook 主键当作全局产品身份？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002"
+    ],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-SOURCE-PIPELINE-SEARCH-RUNTIME-001",
+      "IOS-SOURCE-RUNTIME-SEARCH-PIPELINE-001"
+    ]
+  },
+  "supersedes": null,
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30522967743/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "created_by": "IOS-CHARACTERIZE-SOURCE-PIPELINE-SEARCH-RUNTIME-001"
+}

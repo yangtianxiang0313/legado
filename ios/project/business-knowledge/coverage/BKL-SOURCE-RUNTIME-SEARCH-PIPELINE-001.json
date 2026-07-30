@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgeCoverageLedger",
+  "id": "BKL-SOURCE-RUNTIME-SEARCH-PIPELINE-001",
+  "revision": 1,
+  "status": "current",
+  "packet_refs": [
+    {
+      "id": "BKP-SOURCE-RUNTIME-SEARCH-PIPELINE-001",
+      "revision": 1,
+      "sha256": "456b469e8b65eb547ccb18fa31636e4afe7acf000d11bbb5a07cf078fabee1dd"
+    }
+  ],
+  "generated_from": {
+    "knowledge_authority_sha256": "ba88bda83c2641d0c70f6c729c0c696591976a78c577f2aa1c8869340c629ad9",
+    "requirement_catalog_sha256": "8b9647ff26d4738f0f877fd1bd7a31b1cbb2e58c134daf96ac1e4a5569489b64",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "entries": [
+    {
+      "id": "BKE-SR-SEARCH-PIPELINE-001",
+      "claim_ref": {
+        "id": "BKC-SR-SEARCH-PIPELINE-001",
+        "revision": 2
+      },
+      "validation": {
+        "required": "android_runtime",
+        "state": "verified",
+        "evidence_refs": [
+          "ios/harness/goldens/releases/sl-source-pipeline-search-runtime-001-30522290195-1.json",
+          "ios/harness/goldens/android-legado-v1/sl-source-pipeline-search-runtime-001.json#/artifact/result/value/portable_known_projection"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "covered_by_requirement",
+        "refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "reason": "受保护 Android Golden 已冻结单书源搜索的 URL 编译、响应检查、列表/详情分支、候选归一化、过滤去重和空 URL 失败边界，交由独立 SourceRuntime 实现",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "planned",
+        "requirement_refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "work_item_refs": [
+          "IOS-SOURCE-RUNTIME-SEARCH-PIPELINE-001"
+        ],
+        "capability_refs": [
+          "CAP-CONFORMANCE",
+          "CAP-RUNTIME-PORTS",
+          "CAP-SOURCE-FORMAT"
+        ],
+        "evidence_refs": [
+          "ios/harness/goldens/releases/sl-source-pipeline-search-runtime-001-30522290195-1.json"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    }
+  ],
+  "updated_by": "IOS-CHARACTERIZE-SOURCE-PIPELINE-SEARCH-RUNTIME-001",
+  "updated_at": "2026-07-30T07:28:22Z"
+}

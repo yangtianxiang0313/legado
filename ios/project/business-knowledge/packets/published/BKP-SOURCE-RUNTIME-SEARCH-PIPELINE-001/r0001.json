@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-SOURCE-RUNTIME-SEARCH-PIPELINE-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "source.search-pipeline-golden",
+  "title": "受保护 Android Golden 验证的书源搜索流水线语义",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "source.execution",
+      "discovery.search"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-RUNTIME-PORTS",
+      "CAP-SOURCE-FORMAT"
+    ],
+    "subject_keys": [
+      "source.pipeline",
+      "source.request",
+      "source.rule"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-SR-SEARCH-PIPELINE-001",
+      "revision": 2,
+      "semantic_key": "source.pipeline.search-runtime",
+      "kind": "runtime_behavior",
+      "topic": "搜索请求、响应检查与候选书籍投影",
+      "statement": "在 sl-source-pipeline-search-runtime-001 的 5 个固定场景中，Android WebBook.searchBookAwait 使用 keyword 与 page 编译 searchUrl 后发起请求，再把 loginCheckJs 返回的 StrResponse 作为后续解析的 URL 与正文。BookList 列表分支按文档顺序解析候选；书名为空的条目被丢弃，最终 LinkedHashSet 只按 SearchBook.bookUrl 去重并保留同 URL 的首次结果。作者缺失投影为空字符串；kind、wordCount、lastChapter 与 intro 缺失也投影为空字符串，coverUrl 缺失为 null。数字字数会经过 Android wordCountFormat，例如 120000 成为“12万字”。相对 bookUrl 与 coverUrl 均以最终响应 URL 为基准解析；bookUrl 缺失时回退到最终响应 URL，因为它与 baseUrl 相等，该候选同时保留完整 infoHtml。loginCheckJs 可替换响应正文，替换后的列表进入正常解析，同时新 StrResponse 的最终 URL 决定相对链接基准。若最终响应 URL 匹配 bookUrlPattern，搜索绕过列表规则，改用详情规则生成一个候选并保留 infoHtml。空白 searchUrl 在发起网络请求前抛 NoStackTraceException，结构化 Oracle 将其归一化为 rule_failed/field_evaluation。本结论只冻结这 5 个场景，不外推到跨书源并发、搜索结果持久化、跨源去重、下一页调度、登录失败、重定向检查、取消、超时、任意脚本返回类型、所有规则后端或 UI 排序。",
+      "subject_keys": [
+        "source.pipeline",
+        "source.request",
+        "source.rule"
+      ],
+      "depends_on": [
+        {
+          "id": "BKC-SR-URL-TEMPLATE-COMPILE-001",
+          "revision": 2
+        },
+        {
+          "id": "BKC-SR-RULE-COMBINATION-COERCION-001",
+          "revision": 2
+        }
+      ],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [
+          {
+            "id": "AF-WEBBOOK-SEARCH-ENTRYPOINT",
+            "revision_sha256": "43355d256cd1b62d485824d6216c386b836bb772877be40e7933b2adff9ab4cc"
+          }
+        ],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "af03cf51cef2eb31f54b8240c39e868ceabdba54",
+            "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
+            "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook/searchBookAwait"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "d9f233dcf30a370d34e75c080a4d822f2eeb6754",
+            "path": "app/src/main/java/io/legado/app/model/webBook/BookList.kt",
+            "symbol_id": "kotlin://io.legado.app.model.webBook/BookList/analyzeBookList"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/sl-source-pipeline-search-runtime-001.json",
+            "artifact_sha256": "8ca9256796eceeac7462af5ccab384f701e9b4007a981be7d3ee6afbd38b28da",
+            "projection_pointer": "/artifact/result/value/portable_known_projection",
+            "observed_sha256": "b5f5fb71538159d18c4cb23b7a90a7409234ec0fa24c11ef2e4ba55c77846f7c",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "acfe84090bc3d62794af92a5c605bddfe778b1e363fdc525c1ab0276ef8ed8b9",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-SR-SEARCH-PIPELINE-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-SOURCE-PIPELINE-SEARCH-RUNTIME-001"
+}

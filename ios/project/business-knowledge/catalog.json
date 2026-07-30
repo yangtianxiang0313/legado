@@ -5,8 +5,8 @@
   "inventory_control_sha256": "5942d7e93860cc5633a8610c31cde751c425a4d9cd7505143b93716d00b694e5",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "3c54bd4174ec1bacaef021ca1519cfa434ec7611157144fa8fcbf2cd441bc445",
-  "coverage_sha256": "474e40068bfc533267113e4351f3723adc637ff98cb8811334d2ffaee9185bde",
+  "authority_sha256": "ab639ec50c56cdad8ccdecb615e9b81d05d64d0ff2e28280ef94a45c225df2e0",
+  "coverage_sha256": "a4076c383af9ac5d2500583776846814e40d13afd7a4fc16b5e6f8e4fb5dec56",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -460,6 +460,19 @@
       ]
     },
     {
+      "id": "BKP-SOURCE-RUNTIME-SEARCH-PIPELINE-001",
+      "revision": 1,
+      "semantic_key": "source.search-pipeline-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-SOURCE-RUNTIME-SEARCH-PIPELINE-001/r0001.json",
+      "record_sha256": "456b469e8b65eb547ccb18fa31636e4afe7acf000d11bbb5a07cf078fabee1dd",
+      "claim_refs": [
+        {
+          "id": "BKC-SR-SEARCH-PIPELINE-001",
+          "revision": 2
+        }
+      ]
+    },
+    {
       "id": "BKP-SOURCE-RUNTIME-TRANSPORT-DISPATCH-001",
       "revision": 1,
       "semantic_key": "source.runtime-transport-dispatch-golden",
@@ -720,6 +733,14 @@
       "semantic_key": "source.execution.rule-variable-scope",
       "path": "ios/project/business-knowledge/drivers/published/DRV-SOURCE-RUNTIME-RULE-VARIABLE-SCOPE-001/r0001.json",
       "record_sha256": "4dcd7bdf9d2ba73c4b7b4bf78ade073d27c624436380c010d386804d27b85e2d",
+      "resolution_state": "resolved"
+    },
+    {
+      "id": "DRV-SOURCE-RUNTIME-SEARCH-PIPELINE-001",
+      "revision": 1,
+      "semantic_key": "source.execution.search-pipeline",
+      "path": "ios/project/business-knowledge/drivers/published/DRV-SOURCE-RUNTIME-SEARCH-PIPELINE-001/r0001.json",
+      "record_sha256": "d7d552e3b7bc700fcf5dd1e52346bcfec5aff659137b1b67e62633f8fc8a86bf",
       "resolution_state": "resolved"
     },
     {
@@ -1056,6 +1077,15 @@
       "record_sha256": "07e26ddd2a84381f4657e1893dc79d7f6b54aa8b772b0cf62bf0cf2ee9c0f730",
       "entry_ids": [
         "BKE-SR-RULE-VARIABLE-SCOPE-001"
+      ]
+    },
+    {
+      "id": "BKL-SOURCE-RUNTIME-SEARCH-PIPELINE-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-SOURCE-RUNTIME-SEARCH-PIPELINE-001.json",
+      "record_sha256": "3a390577627f234a0e43f1f6e5ae839ea2e15f7a8d3b6ffe431d82a641425b1e",
+      "entry_ids": [
+        "BKE-SR-SEARCH-PIPELINE-001"
       ]
     },
     {
