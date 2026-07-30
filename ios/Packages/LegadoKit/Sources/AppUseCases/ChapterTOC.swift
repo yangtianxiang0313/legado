@@ -6,7 +6,20 @@ import SourceRuntime
 public protocol BookChapterLoading: Sendable {
   func load(
     book: ShelfBookItem
-  ) async throws -> [LibraryDomain.BookChapter]
+  ) async throws -> BookChapterLoadResult
+}
+
+public struct BookChapterLoadResult: Equatable, Sendable {
+  public let chapters: [LibraryDomain.BookChapter]
+  public let bookVariables: [String: String]
+
+  public init(
+    chapters: [LibraryDomain.BookChapter],
+    bookVariables: [String: String]
+  ) {
+    self.chapters = chapters
+    self.bookVariables = bookVariables
+  }
 }
 
 public struct SourceBookChapterLoader: BookChapterLoading, Sendable {
@@ -26,7 +39,7 @@ public struct SourceBookChapterLoader: BookChapterLoading, Sendable {
 
   public func load(
     book: ShelfBookItem
-  ) async throws -> [LibraryDomain.BookChapter] {
+  ) async throws -> BookChapterLoadResult {
     let candidate = book.candidate
     guard
       let source = sources.first(where: {
@@ -36,12 +49,30 @@ public struct SourceBookChapterLoader: BookChapterLoading, Sendable {
     else {
       throw ChapterTOCFailure.missingSource
     }
+    guard let sourceURL = URL(string: source.definition.sourceURL) else {
+      throw ChapterTOCFailure.fetchFailed
+    }
     let execution = try await SourceTOCPipeline(
       definition: source.definition,
       transport: transport,
       cookieStore: cookieStore
-    ).chapters(bookURL: candidate.bookRequestExpression)
-    return execution.chapters.map {
+    ).chapters(
+      book: SourceBook(
+        name: candidate.name,
+        author: candidate.author,
+        intro: candidate.intro,
+        kind: candidate.kind,
+        lastChapter: candidate.lastChapter,
+        bookEndpoint: try SourceEndpoint(
+          resolving: candidate.bookRequestExpression,
+          relativeTo: sourceURL
+        ),
+        coverURL: candidate.coverURL.flatMap(URL.init(string:)),
+        tocEndpoint: nil,
+        variables: candidate.variables
+      )
+    )
+    let chapters = execution.chapters.map {
       LibraryDomain.BookChapter(
         id: LibraryDomain.ChapterID(
           sourceID: source.id,
@@ -55,9 +86,14 @@ public struct SourceBookChapterLoader: BookChapterLoading, Sendable {
         requestExpression: $0.endpoint.requestExpression,
         isPay: $0.isPay,
         isVIP: $0.isVIP,
-        isVolume: $0.isVolume
+        isVolume: $0.isVolume,
+        variables: $0.variables
       )
     }
+    return BookChapterLoadResult(
+      chapters: chapters,
+      bookVariables: execution.book.variables
+    )
   }
 }
 
@@ -101,11 +137,12 @@ public final class ChapterTOCSession {
       let fetched = try await loader.load(book: book)
       let update = ChapterTOCUpdatePolicy.shelfUpdate(
         existing: existing,
-        fetched: fetched
+        fetched: fetched.chapters
       )
       chapters = try await repository.applyTOCUpdate(
         bookID: book.id,
-        update: update
+        update: update,
+        bookVariables: fetched.bookVariables
       )
       state = update.updateError ? .failed : .loaded
       errorMessage = update.updateError ? "目录为空，已保留原目录" : nil

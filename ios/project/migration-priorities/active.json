@@ -54,8 +54,10 @@
       "additional_allowed_paths": [
         "ios/Packages/LegadoKit/Sources/LibraryDomain/**",
         "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Sources/AppNavigation/**",
         "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
-        "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**"
+        "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+        "ios/Apps/Legado/App/**"
       ],
       "source_anchors": [
         {

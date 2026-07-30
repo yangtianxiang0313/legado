@@ -147,9 +147,19 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
 
   public func applyTOCUpdate(
     bookID: LibraryDomain.BookID,
-    update: LibraryDomain.ChapterTOCUpdate
+    update: LibraryDomain.ChapterTOCUpdate,
+    bookVariables: [String: String]?
   ) async throws -> [LibraryDomain.BookChapter] {
     try await database.write { db in
+      if let bookVariables {
+        try db.execute(
+          sql: "UPDATE books SET variablesJSON = ? WHERE bookID = ?",
+          arguments: [
+            SourceVariableJSON.encode(bookVariables),
+            bookID.rawValue,
+          ]
+        )
+      }
       switch update {
       case .replaced(_, let chapters):
         guard var book = try BookRecord
@@ -482,6 +492,39 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
     }
   }
 
+  public func saveSourceVariables(
+    bookID: LibraryDomain.BookID,
+    bookVariables: [String: String]?,
+    chapterID: LibraryDomain.ChapterID?,
+    chapterVariables: [String: String]?
+  ) async throws {
+    try await database.write { db in
+      if let bookVariables {
+        try db.execute(
+          sql: "UPDATE books SET variablesJSON = ? WHERE bookID = ?",
+          arguments: [
+            SourceVariableJSON.encode(bookVariables),
+            bookID.rawValue,
+          ]
+        )
+      }
+      if let chapterID, let chapterVariables {
+        try db.execute(
+          sql: """
+            UPDATE chapters
+            SET variablesJSON = ?
+            WHERE bookID = ? AND chapterID = ?
+            """,
+          arguments: [
+            SourceVariableJSON.encode(chapterVariables),
+            bookID.rawValue,
+            chapterID.rawValue,
+          ]
+        )
+      }
+    }
+  }
+
   public func bookmarks(
     bookID: LibraryDomain.BookID
   ) async throws -> [ReadingBookmark] {
@@ -709,6 +752,20 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
           """
       )
     }
+    migrator.registerMigration("preserveSourceVariables") { db in
+      try db.alter(table: "books") { table in
+        table.add(
+          column: "variablesJSON",
+          .text
+        ).notNull().defaults(to: "{}")
+      }
+      try db.alter(table: "chapters") { table in
+        table.add(
+          column: "variablesJSON",
+          .text
+        ).notNull().defaults(to: "{}")
+      }
+    }
     return migrator
   }
 }
@@ -729,6 +786,7 @@ private struct BookRecord:
   var coverURL: String?
   var originName: String
   var sourceID: String
+  var variablesJSON: String
   var inBookshelf: Bool
   var groupID: Int
   var orderValue: Int64
@@ -760,6 +818,7 @@ private struct BookRecord:
     self.coverURL = candidate.coverURL
     self.originName = candidate.originName
     self.sourceID = candidate.sourceID
+    self.variablesJSON = SourceVariableJSON.encode(candidate.variables)
     self.inBookshelf = membership.isInBookshelf
     self.groupID = membership.groupID
     self.orderValue = orderValue
@@ -785,6 +844,7 @@ private struct BookRecord:
     coverURL = candidate.coverURL
     originName = candidate.originName
     sourceID = candidate.sourceID
+    variablesJSON = SourceVariableJSON.encode(candidate.variables)
   }
 
   var item: ShelfBookItem {
@@ -800,7 +860,8 @@ private struct BookRecord:
         bookRequestExpression: bookRequestExpression,
         coverURL: coverURL,
         originName: originName,
-        sourceID: sourceID
+        sourceID: sourceID,
+        variables: SourceVariableJSON.decode(variablesJSON)
       ),
       membership: inBookshelf
         ? .member(groupID: groupID)
@@ -945,6 +1006,7 @@ private struct ChapterRecord:
   var isPay: Bool
   var isVIP: Bool
   var isVolume: Bool
+  var variablesJSON: String
 
   init(chapter: LibraryDomain.BookChapter) {
     chapterID = chapter.id.rawValue
@@ -957,6 +1019,7 @@ private struct ChapterRecord:
     isPay = chapter.isPay
     isVIP = chapter.isVIP
     isVolume = chapter.isVolume
+    variablesJSON = SourceVariableJSON.encode(chapter.variables)
   }
 
   var chapter: LibraryDomain.BookChapter {
@@ -970,7 +1033,30 @@ private struct ChapterRecord:
       requestExpression: requestExpression,
       isPay: isPay,
       isVIP: isVIP,
-      isVolume: isVolume
+      isVolume: isVolume,
+      variables: SourceVariableJSON.decode(variablesJSON)
     )
+  }
+}
+
+private enum SourceVariableJSON {
+  static func encode(_ variables: [String: String]) -> String {
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = [.sortedKeys]
+    guard
+      let data = try? encoder.encode(variables),
+      let value = String(data: data, encoding: .utf8)
+    else {
+      return "{}"
+    }
+    return value
+  }
+
+  static func decode(_ value: String) -> [String: String] {
+    guard let data = value.data(using: .utf8) else { return [:] }
+    return (try? JSONDecoder().decode(
+      [String: String].self,
+      from: data
+    )) ?? [:]
   }
 }

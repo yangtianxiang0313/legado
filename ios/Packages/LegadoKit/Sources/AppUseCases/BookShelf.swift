@@ -14,6 +14,7 @@ public struct ShelfBookCandidate: Equatable, Sendable {
   public let coverURL: String?
   public let originName: String
   public let sourceID: String
+  public let variables: [String: String]
 
   public init(
     name: String,
@@ -25,7 +26,8 @@ public struct ShelfBookCandidate: Equatable, Sendable {
     bookRequestExpression: String? = nil,
     coverURL: String?,
     originName: String,
-    sourceID: String = ""
+    sourceID: String = "",
+    variables: [String: String] = [:]
   ) {
     self.name = name
     self.author = author
@@ -37,6 +39,7 @@ public struct ShelfBookCandidate: Equatable, Sendable {
     self.coverURL = coverURL
     self.originName = originName
     self.sourceID = sourceID
+    self.variables = variables
   }
 }
 
@@ -126,7 +129,8 @@ public protocol BookShelfRepository:
     -> [LibraryDomain.BookChapter]
   func applyTOCUpdate(
     bookID: LibraryDomain.BookID,
-    update: LibraryDomain.ChapterTOCUpdate
+    update: LibraryDomain.ChapterTOCUpdate,
+    bookVariables: [String: String]?
   ) async throws -> [LibraryDomain.BookChapter]
   func saveReadingProgress(
     bookID: LibraryDomain.BookID,
@@ -164,6 +168,12 @@ public protocol BookShelfRepository:
     bookID: LibraryDomain.BookID,
     chapterID: LibraryDomain.ChapterID
   ) async throws
+  func saveSourceVariables(
+    bookID: LibraryDomain.BookID,
+    bookVariables: [String: String]?,
+    chapterID: LibraryDomain.ChapterID?,
+    chapterVariables: [String: String]?
+  ) async throws
   func bookmarks(
     bookID: LibraryDomain.BookID
   ) async throws -> [ReadingBookmark]
@@ -173,6 +183,17 @@ public protocol BookShelfRepository:
 }
 
 public extension BookShelfRepository {
+  func applyTOCUpdate(
+    bookID: LibraryDomain.BookID,
+    update: LibraryDomain.ChapterTOCUpdate
+  ) async throws -> [LibraryDomain.BookChapter] {
+    try await applyTOCUpdate(
+      bookID: bookID,
+      update: update,
+      bookVariables: nil
+    )
+  }
+
   func saveReadingProgress(
     bookID: LibraryDomain.BookID,
     progress: ReadingProgress
@@ -221,6 +242,13 @@ public extension BookShelfRepository {
   ) async throws {
     throw BookImportFailure.unsupportedRepository
   }
+
+  func saveSourceVariables(
+    bookID: LibraryDomain.BookID,
+    bookVariables: [String: String]?,
+    chapterID: LibraryDomain.ChapterID?,
+    chapterVariables: [String: String]?
+  ) async throws {}
 
   func bookmarks(
     bookID: LibraryDomain.BookID
@@ -500,9 +528,11 @@ public final class ShelfLibrary {
           index: $0.index,
           title: $0.title,
           url: $0.url,
+          requestExpression: $0.requestExpression,
           isPay: $0.isPay,
           isVIP: $0.isVIP,
-          isVolume: $0.isVolume
+          isVolume: $0.isVolume,
+          variables: $0.variables
         )
       }
       let item = try await repository.applySourceSwitch(
@@ -727,9 +757,11 @@ public final class ShelfLibrary {
           index: $0.index,
           title: $0.title,
           url: $0.url,
+          requestExpression: $0.requestExpression,
           isPay: $0.isPay,
           isVIP: $0.isVIP,
-          isVolume: $0.isVolume
+          isVolume: $0.isVolume,
+          variables: $0.variables
         )
       }
     )

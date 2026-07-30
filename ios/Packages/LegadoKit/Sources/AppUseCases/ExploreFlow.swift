@@ -142,7 +142,8 @@ public struct SourceExploreBooksExecutor:
         coverURL: book.coverURL,
         origin: book.origin,
         originName: book.originName,
-        originCount: 1
+        originCount: 1,
+        variables: book.variables
       )
     }
   }

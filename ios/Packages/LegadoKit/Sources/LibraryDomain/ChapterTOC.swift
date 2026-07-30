@@ -23,6 +23,7 @@ public struct BookChapter: Identifiable, Hashable, Sendable {
   public let isPay: Bool
   public let isVIP: Bool
   public let isVolume: Bool
+  public let variables: [String: String]
 
   public init(
     id: ChapterID,
@@ -34,7 +35,8 @@ public struct BookChapter: Identifiable, Hashable, Sendable {
     requestExpression: String? = nil,
     isPay: Bool = false,
     isVIP: Bool = false,
-    isVolume: Bool = false
+    isVolume: Bool = false,
+    variables: [String: String] = [:]
   ) {
     self.id = id
     self.bookID = bookID
@@ -46,6 +48,38 @@ public struct BookChapter: Identifiable, Hashable, Sendable {
     self.isPay = isPay
     self.isVIP = isVIP
     self.isVolume = isVolume
+    self.variables = variables
+  }
+
+  public static func == (lhs: BookChapter, rhs: BookChapter) -> Bool {
+    lhs.id == rhs.id
+      && lhs.bookID == rhs.bookID
+      && lhs.sourceID == rhs.sourceID
+      && lhs.index == rhs.index
+      && lhs.title == rhs.title
+      && lhs.url == rhs.url
+      && lhs.requestExpression == rhs.requestExpression
+      && lhs.isPay == rhs.isPay
+      && lhs.isVIP == rhs.isVIP
+      && lhs.isVolume == rhs.isVolume
+      && lhs.variables == rhs.variables
+  }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine(id)
+    hasher.combine(bookID)
+    hasher.combine(sourceID)
+    hasher.combine(index)
+    hasher.combine(title)
+    hasher.combine(url)
+    hasher.combine(requestExpression)
+    hasher.combine(isPay)
+    hasher.combine(isVIP)
+    hasher.combine(isVolume)
+    for key in variables.keys.sorted() {
+      hasher.combine(key)
+      hasher.combine(variables[key])
+    }
   }
 }
 

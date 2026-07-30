@@ -371,7 +371,8 @@ struct RootShellView: View {
                 bookRequestExpression: $0.bookRequestExpression,
                 coverURL: $0.coverURL,
                 originName: $0.originName,
-                sourceID: $0.origin
+                sourceID: $0.origin,
+                variables: $0.variables
             )
         }
         for (index, candidate) in candidates.enumerated() {
@@ -443,7 +444,8 @@ struct RootShellView: View {
             bookRequestExpression: result.bookRequestExpression,
             coverURL: result.coverURL,
             originName: result.originName,
-            sourceID: result.origin
+            sourceID: result.origin,
+            variables: result.variables
         )
         await library.add(candidate)
         guard let item = await library.item(forURL: candidate.bookURL)
@@ -584,7 +586,8 @@ private extension SearchBookRoute {
                 candidate.bookRequestExpression,
             coverURL: candidate.coverURL,
             originName: candidate.originName,
-            sourceID: candidate.sourceID
+            sourceID: candidate.sourceID,
+            variables: candidate.variables
         )
     }
 
@@ -599,7 +602,8 @@ private extension SearchBookRoute {
             bookRequestExpression: result.bookRequestExpression,
             coverURL: result.coverURL,
             originName: result.originName,
-            sourceID: result.origin
+            sourceID: result.origin,
+            variables: result.variables
         )
     }
 }

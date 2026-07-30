@@ -253,7 +253,8 @@ enum SearchEnvironment {
                 execution.book.bookEndpoint.requestExpression,
             coverURL: execution.book.coverURL?.absoluteString,
             originName: selected.name,
-            sourceID: selected.id
+            sourceID: selected.id,
+            variables: execution.book.variables
         )
         await library.add(candidate)
         guard
@@ -330,7 +331,8 @@ enum SearchEnvironment {
             bookRequestExpression: result.bookRequestExpression,
             coverURL: result.coverURL,
             originName: result.originName,
-            sourceID: descriptor.id
+            sourceID: descriptor.id,
+            variables: result.variables
         )
         let transient = ShelfBookItem(
             id: current.id,
@@ -344,7 +346,7 @@ enum SearchEnvironment {
             sources: [descriptor],
             transport: transport,
             cookieStore: cookieStore
-        ).load(book: transient)
+        ).load(book: transient).chapters
         return (candidate, chapters)
     }
 

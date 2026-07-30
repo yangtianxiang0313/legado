@@ -151,6 +151,7 @@ public struct SearchResult: Identifiable, Hashable, Sendable {
   public let origin: String
   public let originName: String
   public let originCount: Int
+  public let variables: [String: String]
 
   public init(
     id: String,
@@ -164,7 +165,8 @@ public struct SearchResult: Identifiable, Hashable, Sendable {
     coverURL: String?,
     origin: String,
     originName: String,
-    originCount: Int
+    originCount: Int,
+    variables: [String: String] = [:]
   ) {
     self.id = id
     self.name = name
@@ -178,6 +180,42 @@ public struct SearchResult: Identifiable, Hashable, Sendable {
     self.origin = origin
     self.originName = originName
     self.originCount = originCount
+    self.variables = variables
+  }
+
+  public static func == (lhs: SearchResult, rhs: SearchResult) -> Bool {
+    lhs.id == rhs.id
+      && lhs.name == rhs.name
+      && lhs.author == rhs.author
+      && lhs.kind == rhs.kind
+      && lhs.lastChapter == rhs.lastChapter
+      && lhs.intro == rhs.intro
+      && lhs.bookURL == rhs.bookURL
+      && lhs.bookRequestExpression == rhs.bookRequestExpression
+      && lhs.coverURL == rhs.coverURL
+      && lhs.origin == rhs.origin
+      && lhs.originName == rhs.originName
+      && lhs.originCount == rhs.originCount
+      && lhs.variables == rhs.variables
+  }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine(id)
+    hasher.combine(name)
+    hasher.combine(author)
+    hasher.combine(kind)
+    hasher.combine(lastChapter)
+    hasher.combine(intro)
+    hasher.combine(bookURL)
+    hasher.combine(bookRequestExpression)
+    hasher.combine(coverURL)
+    hasher.combine(origin)
+    hasher.combine(originName)
+    hasher.combine(originCount)
+    for key in variables.keys.sorted() {
+      hasher.combine(key)
+      hasher.combine(variables[key])
+    }
   }
 }
 
@@ -282,7 +320,8 @@ public struct SourceSearchBooksExecutor: SearchBooksExecuting, Sendable {
         coverURL: sourceBook?.coverURL,
         origin: candidate.origin,
         originName: sourceBook?.originName ?? candidate.origin,
-        originCount: aggregate.origins.count
+        originCount: aggregate.origins.count,
+        variables: sourceBook?.variables ?? [:]
       )
     }
   }

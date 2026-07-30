@@ -22,6 +22,7 @@ public struct SearchBookRoute: Codable, Hashable, Sendable {
     public let coverURL: String?
     public let originName: String
     public let sourceID: String
+    public let variables: [String: String]
 
     public init(
         name: String,
@@ -33,7 +34,8 @@ public struct SearchBookRoute: Codable, Hashable, Sendable {
         bookRequestExpression: String? = nil,
         coverURL: String?,
         originName: String,
-        sourceID: String = ""
+        sourceID: String = "",
+        variables: [String: String] = [:]
     ) {
         self.name = name
         self.author = author
@@ -45,6 +47,41 @@ public struct SearchBookRoute: Codable, Hashable, Sendable {
         self.coverURL = coverURL
         self.originName = originName
         self.sourceID = sourceID
+        self.variables = variables
+    }
+
+    public static func == (
+        lhs: SearchBookRoute,
+        rhs: SearchBookRoute
+    ) -> Bool {
+        lhs.name == rhs.name
+            && lhs.author == rhs.author
+            && lhs.kind == rhs.kind
+            && lhs.lastChapter == rhs.lastChapter
+            && lhs.intro == rhs.intro
+            && lhs.bookURL == rhs.bookURL
+            && lhs.bookRequestExpression == rhs.bookRequestExpression
+            && lhs.coverURL == rhs.coverURL
+            && lhs.originName == rhs.originName
+            && lhs.sourceID == rhs.sourceID
+            && lhs.variables == rhs.variables
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(name)
+        hasher.combine(author)
+        hasher.combine(kind)
+        hasher.combine(lastChapter)
+        hasher.combine(intro)
+        hasher.combine(bookURL)
+        hasher.combine(bookRequestExpression)
+        hasher.combine(coverURL)
+        hasher.combine(originName)
+        hasher.combine(sourceID)
+        for key in variables.keys.sorted() {
+            hasher.combine(key)
+            hasher.combine(variables[key])
+        }
     }
 }
 

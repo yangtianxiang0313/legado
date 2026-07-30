@@ -560,7 +560,8 @@ extension ShelfBookCandidate {
             bookRequestExpression: route.bookRequestExpression,
             coverURL: route.coverURL,
             originName: route.originName,
-            sourceID: route.sourceID
+            sourceID: route.sourceID,
+            variables: route.variables
         )
     }
 }
