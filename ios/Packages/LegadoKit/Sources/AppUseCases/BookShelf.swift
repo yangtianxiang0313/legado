@@ -156,6 +156,12 @@ public final class ShelfLibrary {
     }
   }
 
+  public func chapters(
+    bookID: LibraryDomain.BookID
+  ) async -> [LibraryDomain.BookChapter] {
+    (try? await repository.chapters(bookID: bookID)) ?? []
+  }
+
   public func reset() async {
     try? await repository.reset()
     books = []

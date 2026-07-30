@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "scenario_id": "ui-reader-multilevel-menu-v1",
+  "profile": "store_safe",
+  "simulators": [
+    {
+      "simulator_id": "SIM-PHONE-COMPACT-001",
+      "projection": "compactStack",
+      "layers": [
+        {
+          "id": "primary",
+          "overlay": "overlay.reader.primaryMenu",
+          "actions": [
+            "action.reader.openBookInfo",
+            "action.reader.previousChapter",
+            "action.reader.seekProgress",
+            "action.reader.nextChapter",
+            "action.reader.openTOC",
+            "action.reader.openBookSource",
+            "action.reader.openChapterSource",
+            "action.reader.openAppearance",
+            "action.reader.openMore",
+            "action.reader.toggleAutoPage"
+          ]
+        },
+        {
+          "id": "appearance",
+          "overlay": "overlay.reader.appearance",
+          "actions": [
+            "action.reader.toggleTheme",
+            "action.reader.updateBrightness",
+            "action.reader.updateAppearance"
+          ]
+        },
+        {
+          "id": "more",
+          "overlay": "overlay.reader.more",
+          "actions": [
+            "action.reader.openSearch",
+            "action.reader.openReplaceRules",
+            "action.reader.refreshCurrent",
+            "action.reader.refreshAfter",
+            "action.reader.refreshAll",
+            "action.reader.cacheOffline",
+            "action.reader.addBookmark",
+            "action.reader.startReadAloud",
+            "action.reader.openReadAloudSettings",
+            "action.reader.editContent",
+            "action.reader.configurePageAnimation",
+            "action.reader.updateReadingSettings"
+          ]
+        },
+        {
+          "id": "textSelection",
+          "overlay": "system.contextMenu",
+          "actions": [
+            "action.reader.selection.readAloud",
+            "action.reader.selection.addBookmark",
+            "action.reader.selection.replace",
+            "action.reader.selection.searchFullText",
+            "action.reader.selection.lookupDictionary"
+          ]
+        }
+      ],
+      "route_trace": [
+        {
+          "operation": "push",
+          "route_id": "search.books"
+        },
+        {
+          "operation": "push",
+          "route_id": "book.detail:http://legado.local/books/star-river"
+        },
+        {
+          "operation": "push",
+          "route_id": "book.toc:current"
+        },
+        {
+          "operation": "push",
+          "route_id": "reader:http://legado.local/books/star-river/chapter-1@0"
+        }
+      ]
+    }
+  ]
+}

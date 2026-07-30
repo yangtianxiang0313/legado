@@ -665,6 +665,165 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testReaderMultilevelMenuFlow() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = contract.projection == "regularSplit"
+            ? .landscapeLeft
+            : .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        require("action.shelf.openSearch").tap()
+        require("screen.search.books")
+        let searchField = app.searchFields.firstMatch
+        XCTAssertTrue(searchField.waitForExistence(timeout: 8))
+        searchField.tap()
+        searchField.typeText("星河纪事\n")
+        let result = app.staticTexts["星河纪事"].firstMatch
+        XCTAssertTrue(result.waitForExistence(timeout: 8))
+        result.tap()
+        require("screen.bookDetail")
+        let start = require("action.bookDetail.startReading")
+        let deadline = Date().addingTimeInterval(8)
+        while !start.isEnabled && Date() < deadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+        }
+        XCTAssertTrue(start.isEnabled)
+        start.tap()
+        require("screen.chapterTOC")
+        require("action.chapter.select.0").tap()
+        require("screen.reader")
+        require("text.reader.content")
+
+        require("action.reader.openPrimaryMenu").tap()
+        require("overlay.reader.primaryMenu")
+        let primaryActions = [
+            "action.reader.openBookInfo",
+            "action.reader.previousChapter",
+            "action.reader.seekProgress",
+            "action.reader.nextChapter",
+            "action.reader.openTOC",
+            "action.reader.openBookSource",
+            "action.reader.openChapterSource",
+            "action.reader.openAppearance",
+            "action.reader.openMore",
+            "action.reader.toggleAutoPage",
+        ]
+        for action in primaryActions {
+            requireByScrolling(
+                action,
+                in: "overlay.reader.primaryMenu"
+            )
+        }
+
+        requireByScrolling(
+            "action.reader.openAppearance",
+            in: "overlay.reader.primaryMenu"
+        ).tap()
+        require("overlay.reader.appearance")
+        let appearanceActions = [
+            "action.reader.toggleTheme",
+            "action.reader.updateBrightness",
+            "action.reader.updateAppearance",
+        ]
+        for action in appearanceActions {
+            require(action)
+        }
+        app.navigationBars.buttons.firstMatch.tap()
+        require("overlay.reader.primaryMenu")
+
+        requireByScrolling(
+            "action.reader.openMore",
+            in: "overlay.reader.primaryMenu"
+        ).tap()
+        require("overlay.reader.more")
+        let moreActions = [
+            "action.reader.openSearch",
+            "action.reader.openReplaceRules",
+            "action.reader.refreshCurrent",
+            "action.reader.refreshAfter",
+            "action.reader.refreshAll",
+            "action.reader.cacheOffline",
+            "action.reader.addBookmark",
+            "action.reader.startReadAloud",
+            "action.reader.openReadAloudSettings",
+            "action.reader.editContent",
+            "action.reader.configurePageAnimation",
+            "action.reader.updateReadingSettings",
+        ]
+        for action in moreActions {
+            requireByScrolling(action, in: "overlay.reader.more")
+        }
+        app.navigationBars.buttons.firstMatch.tap()
+        let closeMenu = app.buttons["action.reader.closeMenu"].firstMatch
+        XCTAssertTrue(closeMenu.waitForExistence(timeout: 8))
+        closeMenu.tap()
+
+        let content = require("text.reader.content")
+        content.press(forDuration: 1.2)
+        let selectionActions = [
+            "action.reader.selection.readAloud",
+            "action.reader.selection.addBookmark",
+            "action.reader.selection.replace",
+            "action.reader.selection.searchFullText",
+            "action.reader.selection.lookupDictionary",
+        ]
+        for action in selectionActions {
+            require(action)
+        }
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "layers": [
+                [
+                    "id": "primary",
+                    "overlay": "overlay.reader.primaryMenu",
+                    "actions": primaryActions,
+                ],
+                [
+                    "id": "appearance",
+                    "overlay": "overlay.reader.appearance",
+                    "actions": appearanceActions,
+                ],
+                [
+                    "id": "more",
+                    "overlay": "overlay.reader.more",
+                    "actions": moreActions,
+                ],
+                [
+                    "id": "textSelection",
+                    "overlay": "system.contextMenu",
+                    "actions": selectionActions,
+                ],
+            ],
+            "route_trace": [
+                ["operation": "push", "route_id": "search.books"],
+                [
+                    "operation": "push",
+                    "route_id":
+                        "book.detail:http://legado.local/books/star-river",
+                ],
+                ["operation": "push", "route_id": "book.toc:current"],
+                [
+                    "operation": "push",
+                    "route_id":
+                        "reader:http://legado.local/books/star-river"
+                            + "/chapter-1@0",
+                ],
+            ],
+        ])
+    }
+
     private func observeStartupCase(
         id: String,
         initial: String,
@@ -732,6 +891,26 @@ final class LegadoAppUITests: XCTestCase {
 
     private func element(_ identifier: String) -> XCUIElement {
         app.descendants(matching: .any)[identifier]
+    }
+
+    @discardableResult
+    private func requireByScrolling(
+        _ identifier: String,
+        in containerIdentifier: String
+    ) -> XCUIElement {
+        let candidate = element(identifier)
+        if candidate.waitForExistence(timeout: 1) {
+            return candidate
+        }
+        let container = require(containerIdentifier)
+        for _ in 0..<6 {
+            container.swipeUp()
+            if candidate.waitForExistence(timeout: 1) {
+                return candidate
+            }
+        }
+        XCTFail("Missing UI element \(identifier)")
+        return candidate
     }
 
     private func observe(

@@ -69,4 +69,54 @@ final class AppRouterTests: XCTestCase {
         XCTAssertEqual(target.characterOffset, 128)
     }
 
+    @MainActor
+    func testReplacingReaderChapterDoesNotGrowNavigationStack() {
+        let first = ReaderRoute(
+            bookID: .init(rawValue: "book"),
+            chapterID: .init(rawValue: "chapter-1")
+        )
+        let second = ReaderRoute(
+            bookID: .init(rawValue: "book"),
+            chapterID: .init(rawValue: "chapter-2")
+        )
+        let router = AppRouter()
+        router.push(.searchBooks)
+        router.push(.reader(first))
+
+        router.replaceTop(with: .reader(second))
+
+        XCTAssertEqual(
+            router.path(for: .shelf),
+            [.searchBooks, .reader(second)]
+        )
+    }
+
+    func testReaderMenuCatalogKeepsSourceAlignedLayersDisjoint() {
+        let layers = ReaderMenuLayer.allCases.map {
+            Set(ReaderMenuCatalog.actions(in: $0))
+        }
+        let flattened = layers.reduce(into: Set<ReaderMenuAction>()) {
+            result,
+            actions in
+            XCTAssertTrue(result.isDisjoint(with: actions))
+            result.formUnion(actions)
+        }
+
+        XCTAssertEqual(flattened, Set(ReaderMenuAction.allCases))
+        XCTAssertTrue(
+            ReaderMenuCatalog.primary.contains(.openAppearance)
+        )
+        XCTAssertTrue(ReaderMenuCatalog.primary.contains(.openMore))
+        XCTAssertEqual(
+            ReaderMenuCatalog.textSelection,
+            [
+                .selectionReadAloud,
+                .selectionAddBookmark,
+                .selectionReplace,
+                .selectionSearchFullText,
+                .selectionLookupDictionary,
+            ]
+        )
+    }
+
 }

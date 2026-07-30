@@ -32,6 +32,20 @@ public final class AppRouter {
         rootPaths[destinationRoot, default: []].append(route)
     }
 
+    public func replaceTop(
+        with route: AppRoute,
+        on root: RootRoute? = nil
+    ) {
+        let destinationRoot = root ?? selectedRoot
+        var path = rootPaths[destinationRoot, default: []]
+        if path.isEmpty {
+            path.append(route)
+        } else {
+            path[path.index(before: path.endIndex)] = route
+        }
+        rootPaths[destinationRoot] = path
+    }
+
     @discardableResult
     public func pop(on root: RootRoute? = nil) -> AppRoute? {
         let destinationRoot = root ?? selectedRoot

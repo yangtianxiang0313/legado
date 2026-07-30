@@ -78,8 +78,8 @@ public final class ReaderContentSession {
     chapter: LibraryDomain.BookChapter,
     characterOffset: Int
   ) async {
-    guard state != .loading else { return }
     state = .loading
+    document = nil
     do {
       document = try await loader.load(
         book: book,
