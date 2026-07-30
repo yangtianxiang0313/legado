@@ -1,0 +1,33 @@
+{
+  "bookSourceUrl": "${SOURCE_LAB_ORIGIN}",
+  "bookSourceName": "iOS Dynamic Web Product Source",
+  "bookSourceGroup": "SourceLab",
+  "bookSourceType": 0,
+  "enabled": true,
+  "enabledExplore": false,
+  "enabledCookieJar": true,
+  "searchUrl": "${SOURCE_LAB_ORIGIN}/dynamic-product/search.html,{\"useWebView\":true}",
+  "ruleSearch": {
+    "bookList": "@CSS:.book-item",
+    "name": "@CSS:.book-name@text",
+    "author": "@CSS:.book-author@text",
+    "bookUrl": "@CSS:a.book-link@href"
+  },
+  "ruleBookInfo": {
+    "name": "@CSS:h1.book-name@text",
+    "author": "@CSS:.book-author@text",
+    "tocUrl": "@CSS:a.toc-link@href"
+  },
+  "ruleToc": {
+    "chapterList": "@CSS:#chapter-list > li.chapter",
+    "chapterName": "@CSS:a@text",
+    "chapterUrl": "@CSS:a@href"
+  },
+  "ruleContent": {
+    "content": "@CSS:#chapter-content@html"
+  },
+  "x-source-lab": {
+    "scenario": "sl-ios-dynamic-web-product-001",
+    "logicalOrigin": "http://sourcelab.test"
+  }
+}

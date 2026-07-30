@@ -1325,6 +1325,97 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testDynamicWebSourceMilestone() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let origin = try XCTUnwrap(
+            environment["LEGADO_DYNAMIC_WEB_ORIGIN"],
+            "Source Lab origin is required"
+        )
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+            "--reset-sources",
+        ]
+        app.launchEnvironment["LEGADO_SEARCH_BASE_URL"] = origin
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        selectRoot("root.settings", label: "我的")
+        require("action.settings.openSources").tap()
+        require("screen.source.management")
+        requireFirst("action.source.create").tap()
+        requireButton("action.source.import").tap()
+        require("screen.source.import")
+
+        let definition = require("field.source.import.text")
+        definition.tap()
+        definition.typeText(
+            """
+            {"bookSourceUrl":"\(origin)",\
+            "bookSourceName":"Dynamic Product Source",\
+            "bookSourceGroup":"SourceLab","enabled":true,\
+            "searchUrl":"\(origin)/dynamic-product/search.html,\
+            {\\"useWebView\\":true}",\
+            "ruleSearch":{"bookList":".book-item",\
+            "name":".book-name","author":".book-author",\
+            "bookUrl":"a.book-link"},\
+            "ruleBookInfo":{"name":"h1.book-name",\
+            "author":".book-author","tocUrl":"a.toc-link"},\
+            "ruleToc":{"chapterList":".chapter",\
+            "chapterName":"a","chapterUrl":"a"},\
+            "ruleContent":{"content":"#chapter-content"}}
+            """
+        )
+        requireButton("action.source.import.parse").tap()
+        require("toggle.source.import.candidate.0")
+        requireButton("action.source.import.commit").tap()
+        require("screen.source.management")
+        XCTAssertTrue(
+            app.staticTexts["Dynamic Product Source"]
+                .waitForExistence(timeout: 8)
+        )
+
+        selectRoot("root.shelf", label: "书架")
+        require("action.shelf.openSearch").tap()
+        require("screen.search.books")
+        let searchField = app.searchFields.firstMatch
+        XCTAssertTrue(searchField.waitForExistence(timeout: 8))
+        searchField.tap()
+        searchField.typeText("动态\n")
+        let result = app.staticTexts["动态主链书"].firstMatch
+        XCTAssertTrue(result.waitForExistence(timeout: 15))
+        XCTAssertTrue(
+            app.staticTexts["页面脚本"].firstMatch
+                .waitForExistence(timeout: 8)
+        )
+        result.tap()
+        require("screen.bookDetail")
+        XCTAssertEqual(
+            require("label.bookDetail.source").label,
+            "书源：Dynamic Product Source"
+        )
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "scenario": "sl-ios-dynamic-web-product-001",
+            "parsed_book": "动态主链书",
+            "parsed_author": "页面脚本",
+            "route_trace": [
+                "source.management",
+                "source.import",
+                "search.books",
+                "book.detail",
+            ],
+        ])
+    }
+
     func testShelfManagementMilestone() throws {
         let environment = ProcessInfo.processInfo.environment
         let contract = try XCTUnwrap(

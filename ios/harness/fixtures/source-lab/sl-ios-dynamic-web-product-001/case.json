@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "kind": "source_lab_scenario",
+  "id": "sl-ios-dynamic-web-product-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "source_lab_site",
+  "capabilities": [
+    "CAP-RUNTIME-PORTS",
+    "CAP-CONFORMANCE"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": "source.template.json",
+  "input": "input.json",
+  "transport": {
+    "mode": "fixture_and_loopback",
+    "external_network": "deny",
+    "responses": [
+      {
+        "id": "dynamic-product-search",
+        "match": {
+          "method": "GET",
+          "path": "/dynamic-product/search.html",
+          "query": {}
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/html; charset=utf-8",
+            "set-cookie": "dynamic_session=ios-simulator; Path=/"
+          },
+          "body_file": "responses/search.html"
+        }
+      }
+    ]
+  },
+  "coverage": [
+    {
+      "behavior": "runtime.dynamic-web.product-search",
+      "cases": [
+        {
+          "id": "ios-wkwebview-search",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl GET useWebView and BackstageWebView delayed outerHTML evaluation"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "2026-01-01T00:00:00Z",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 61,
+    "network_allowed": false,
+    "logical_origin": "http://sourcelab.test"
+  },
+  "limits": {
+    "timeout_ms": 5000,
+    "max_response_bytes": 1048576,
+    "max_request_body_bytes": 65536,
+    "max_requests": 8,
+    "max_concurrency": 1
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+      "app/src/main/java/io/legado/app/help/http/BackstageWebView.kt"
+    ],
+    "introduced_by": "IOS-SOURCE-RUNTIME-DYNAMIC-WEBKIT-ADAPTER-001"
+  }
+}

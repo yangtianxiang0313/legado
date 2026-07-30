@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "ios-wkwebview-search",
+      "operation": "dynamic_web",
+      "arguments": {
+        "option_use_webview": true,
+        "invocation_use_webview": true,
+        "web_js": null,
+        "source_regex": null
+      },
+      "request": {
+        "method": "GET",
+        "target": "/dynamic-product/search.html"
+      }
+    }
+  ]
+}

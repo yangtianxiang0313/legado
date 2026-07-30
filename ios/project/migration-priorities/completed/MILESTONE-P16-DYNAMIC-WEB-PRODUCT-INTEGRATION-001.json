@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P16-DYNAMIC-WEB-PRODUCT-INTEGRATION-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P16 动态网页书源进入真实产品主链",
   "objective": "把已对齐 Android 的 Dynamic Web 状态机接入真实书源执行：保留 URL option 的 useWebView/webJs，正文规则传入 webJs/sourceRegex，搜索、详情、目录和正文统一经可注入响应加载端口执行，并由 iOS WKWebView 适配器完成页面加载、脚本求值、资源命中与 Cookie 回灌。",
@@ -12,6 +12,31 @@
     "WebKit 类型只存在于 App 平台适配层，不进入 SourceRuntime、Domain 或 SwiftUI 状态",
     "本地动态书源在 iOS Simulator 上产生结构化搜索或正文结果"
   ],
+  "final_verification": {
+    "kind": "focused_tests_plus_single_boundary_simulator",
+    "status": "passed",
+    "at": "2026-07-30T20:33:18Z",
+    "policy": "能力切片只跑定向测试；App 编译每个里程碑一次；只有 UI 或平台集成边界才跑一个对应模拟器场景。",
+    "evidence": [
+      "SourceDynamicWebRequestOptionTests passed",
+      "SourceDynamicWebProductIntegrationTests passed",
+      "LegadoApp generic iOS Simulator build passed",
+      "Source Lab sl-ios-dynamic-web-product-001 verified",
+      "testDynamicWebSourceMilestone passed on SIM-PHONE-COMPACT-001"
+    ],
+    "structured_result": {
+      "scenario": "sl-ios-dynamic-web-product-001",
+      "source": "Dynamic Product Source",
+      "parsed_book": "动态主链书",
+      "parsed_author": "页面脚本",
+      "route_trace": [
+        "source.management",
+        "source.import",
+        "search.books",
+        "book.detail"
+      ]
+    }
+  },
   "deferred_policy": "本里程碑只接入已经由 Android Golden 冻结的页面加载、脚本、资源命中和 Cookie 行为；任意规则 JavaScript 引擎与登录检查脚本继续独立迁移。",
   "deliveries": [
     {
