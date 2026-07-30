@@ -1,81 +1,28 @@
 {
   "schema_version": 1,
-  "id": "MILESTONE-P10-READER-CONTENT-REPLACEMENT-001",
+  "id": "MILESTONE-P11A-SOURCE-POST-FORM-SELECTION-001",
   "status": "active",
   "mode": "critical_path_only",
-  "title": "P10 正文替换规则产品主链路",
-  "objective": "用户可持久化管理正文替换规则；Reader 每次从原始缓存或书源取得正文后按 Android 已固化语义生成显示正文，规则变化后保留字符锚点刷新当前章。",
+  "title": "P11A 书源 POST Form 真源特征化",
+  "objective": "由固定 Android Runner 对本地确定性站点执行 POST 请求，结构化固定 URL option 何时选择 form 字段路径，为 iOS 请求计划实现提供权威 expected。",
   "completion_evidence": [
-    "复用已由真实 Android Golden 验证的 AndroidReaderContentNormalizationPolicy，不在 App 或数据库层复制替换算法",
-    "原始章节缓存继续保存原文，归一化正文是按当前规则派生的显示文档；规则变化不重写原始缓存",
-    "规则持久化保留名称、模式、替换值、包含与排除作用域、标题/正文开关、启用状态、正则标记和稳定顺序",
-    "正文加载链对缓存命中与网络回退统一执行规则筛选、标题去重、顺序替换和段落投影",
-    "Reader 的替换规则入口可新增、编辑、启停和删除规则；保存后刷新当前章节并保留当前字符锚点",
-    "聚焦测试覆盖持久化和加载接线，完整规则管理到正文变化及重启恢复只运行一次 iPhone Simulator"
+    "Android Runner 实际执行 method=POST 的大小写、空 body、普通字段、JSON、XML 与显式 Content-Type 场景",
+    "本地站点回显 method、URL、headers、字段和原始 body，不依赖外网可用性",
+    "Golden 绑定固定 Android commit、Runner digest 和 fixture，结构化输出可被 iOS ConformanceCLI 直接比较",
+    "只运行一次真实 Android characterization，不为同一语义重复创建 fixture 或 Golden"
   ],
-  "deferred_policy": "规则分组、批量排序、在线导入导出、分享、正则超时自动禁用、全书独立开关、有效规则明细和替换后全文搜索不在本里程碑扩展；先接通持久规则影响当前阅读正文的主链。",
-  "deliveries": [
-    {
-      "target": "IOS-APP-NAVIGATION-READER-CONTENT-REPLACEMENT-MILESTONE-001",
-      "title": "正文替换规则产品接线里程碑",
-      "prerequisite_task_ids": [
-        "IOS-READER-CORE-CONTENT-DISPLAY-NORMALIZATION-001",
-        "IOS-APP-NAVIGATION-NATIVE-PAGINATION-MILESTONE-001"
-      ],
-      "requirement_ref": "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01",
-      "fixture_id": "milestone-reader-content-replacement-v1",
-      "validation": "simulator",
-      "ui_contract": {
-        "goal": "把已验证的 Android 正文归一化语义接入 iOS 产品：GRDB 保存用户规则，AppUseCases 组合原文加载与净化，Reader 菜单提供最小规则管理并在变更后按字符锚点刷新。",
-        "scenario_id": "ui-reader-content-replacement-milestone-v1",
-        "test_method": "testReaderContentReplacementMilestone"
-      },
-      "additional_allowed_paths": [
-        "ios/Packages/LegadoKit/Sources/ReaderCore/**",
-        "ios/Packages/LegadoKit/Tests/ReaderCoreTests/**",
-        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
-        "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
-        "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
-        "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**"
-      ],
-      "source_anchors": [
-        {
-          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "git_blob": "1b2ee52192f45c04b8a3c49dd1f59c45671133f8",
-          "path": "app/src/main/java/io/legado/app/help/book/ContentProcessor.kt",
-          "symbol_id": "kotlin://io.legado.app.help.book.ContentProcessor/getContent"
-        },
-        {
-          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "git_blob": "e3b87e31adce0787d479a64c2ed6c12a85b54bea",
-          "path": "app/src/main/java/io/legado/app/data/entities/ReplaceRule.kt",
-          "symbol_id": "kotlin://io.legado.app.data.entities.ReplaceRule"
-        },
-        {
-          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "git_blob": "09867c9b902dd0db30e5408a53fb0bc753d023f9",
-          "path": "app/src/main/java/io/legado/app/data/dao/ReplaceRuleDao.kt",
-          "symbol_id": "kotlin://io.legado.app.data.dao.ReplaceRuleDao/findEnabledByContentScope"
-        },
-        {
-          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "git_blob": "4426655e6bed8c4c3a874d57f47c917120406a1a",
-          "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookViewModel.kt",
-          "symbol_id": "kotlin://io.legado.app.ui.book.read.ReadBookViewModel/replaceRuleChanged"
-        }
-      ]
-    }
-  ],
+  "deferred_policy": "本阶段只冻结 POST 到 form 字段路径的选择条件；raw Content-Type body、JSON body、字段编码、Cookie/retry 与 XML 响应规范化按同一 P11 主链逐个续接，不在一个超大 Golden 中混验。",
+  "deliveries": [],
   "stages": [
     {
-      "id": "P10-01-READER-CONTENT-REPLACEMENT-MILESTONE",
-      "title": "接通替换规则持久化、正文净化与 Reader 管理纵向主链路",
-      "outcome": "Android 已验证的正文归一化能力从孤立 ReaderCore 算法变成用户可配置、可持久化且实际影响阅读正文的产品能力。",
+      "id": "P11A-01-POST-FORM-SELECTION-CHARACTERIZATION",
+      "title": "固定 POST body 到 form 字段路径的 Android 可观察结果",
+      "outcome": "BKC-SR-POST-FORM-SELECTION-001 从源码锚定候选升级为 Android runtime verified，随后可直接生成 iOS Delivery。",
       "selectors": [
         {
-          "id": "READER-CONTENT-REPLACEMENT-MILESTONE",
+          "id": "SOURCE-POST-FORM-SELECTION",
           "task_ids": [
-            "IOS-APP-NAVIGATION-READER-CONTENT-REPLACEMENT-MILESTONE-001"
+            "IOS-CHARACTERIZE-SOURCE-REQUEST-POST-FORM-SELECTION-001"
           ]
         }
       ]
