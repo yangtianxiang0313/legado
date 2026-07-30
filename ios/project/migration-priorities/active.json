@@ -1,21 +1,21 @@
 {
   "schema_version": 1,
-  "id": "MILESTONE-P41-SOURCE-PACKAGE-BOUNDARY-001",
+  "id": "MILESTONE-P42-PRODUCTION-SOURCE-NETWORK-001",
   "status": "active",
   "mode": "critical_path_only",
-  "title": "P41 将书源运行时拆为独立 Swift Package",
-  "objective": "依据已确认的业务边界，把跨域基础值移入 LegadoCoreKit，把 SourceFormat、RuleRuntime、SourceRuntime、HTMLSwiftSoup 与 ScriptJavaScriptCore 移入 LegadoSourceKit；LegadoSourceKit 只依赖 LegadoCoreKit 和白名单三方库，不反向依赖 App、UI、数据库、Reader 或原 LegadoKit，并让书源聚焦测试不再编译这些无关 Target。",
-  "validation_policy": "运行 LegadoSourceKit 内一个聚焦测试命令，利用 SwiftPM 构建闭包证明整个独立书源包可编译；随后仅执行一次 App 构建证明重连成功。不运行全量 Harness、全量测试或模拟器。",
+  "title": "P42 真实书源进入生产网络主链",
+  "objective": "修复正常启动仍使用 LocalBookSourceTransport 和内置演示书源的问题：在 LegadoSourceKit 建立独立 NetworkFoundation 适配器，正常产品默认通过 URLSession 执行导入书源的真实 HTTP/HTTPS 请求；本地书站与离线失败模式只允许由显式测试参数启用。",
+  "validation_policy": "运行 NetworkFoundationTests 一个聚焦测试组证明请求、响应、超时和错误映射，再仅执行一次 LegadoApp 编译；不运行全量 Harness 或模拟器。",
   "stages": [
     {
-      "id": "P41-S1",
-      "title": "拆分基础包与书源包并重连产品",
+      "id": "P42-S1",
+      "title": "生产网络适配器与 App composition root",
       "selectors": [
         {
-          "id": "P41-S1-SOURCE-PACKAGE",
+          "id": "P42-S1-PRODUCTION-NETWORK",
           "claim_ids": [],
           "task_ids": [
-            "IOS-SOURCE-RUNTIME-PACKAGE-BOUNDARY-001"
+            "IOS-SOURCE-RUNTIME-PRODUCTION-NETWORK-001"
           ]
         }
       ]
@@ -23,35 +23,37 @@
   ],
   "deliveries": [
     {
-      "target": "IOS-SOURCE-RUNTIME-PACKAGE-BOUNDARY-001",
-      "title": "建立可独立构建的 LegadoSourceKit",
-      "fixture_id": "source-package-boundary-v1",
+      "target": "IOS-SOURCE-RUNTIME-PRODUCTION-NETWORK-001",
+      "title": "让真实导入书源默认使用 URLSession",
+      "fixture_id": "source-production-network-v1",
       "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
       "prerequisite_task_ids": [
-        "IOS-SOURCE-RUNTIME-SWIFTSOUP-PRODUCT-001"
+        "IOS-SOURCE-RUNTIME-PACKAGE-BOUNDARY-001"
       ],
       "validation": "tests",
       "package_path": "ios/Packages/LegadoSourceKit",
-      "test_filter": "HTMLSwiftSoupTests",
+      "test_filter": "NetworkFoundationTests",
       "additional_allowed_paths": [
-        "ios/Packages/**",
+        "ios/Packages/LegadoSourceKit/**",
+        "ios/Packages/LegadoKit/**",
         "ios/Apps/Legado/**",
         "ios/harness/architecture-rules.json",
-        "ios/harness/dependency-policy.json",
         "ios/harness/probes/package_contract.py",
-        "ios/harness/probes/dependency_contract.py",
-        "ios/harness/tests/test_package_contract.py",
-        "ios/harness/tests/test_dependency_contract.py",
-        "ios/project/baseline.json",
         "ios/docs/architecture.md",
-        "ios/docs/dependencies.md"
+        "ios/project/migration-priorities/**"
       ],
       "source_anchors": [
         {
           "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "git_blob": "1ef7db8d36bf1cfcaf46a16121c76fe5fea9609c",
-          "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByJSoup.kt",
-          "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeByJSoup"
+          "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da",
+          "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+          "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "9c104f66bfd9fa638afaf01e1f687ecf9a0a0749",
+          "path": "app/src/main/java/io/legado/app/help/http/HttpHelper.kt",
+          "symbol_id": "kotlin://io.legado.app.help.http/okHttpClient"
         }
       ]
     }
