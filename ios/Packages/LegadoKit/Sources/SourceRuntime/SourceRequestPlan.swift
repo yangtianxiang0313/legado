@@ -16,19 +16,25 @@ public struct SourceRequestPlan: Equatable, Sendable {
   public let formFields: [HTTPFormField]
   public let optionHeaders: [SourceHeaderField]
   public let retry: Int
+  public let useWebView: Bool
+  public let webJS: String?
 
   public init(
     request: HTTPRequest,
     body: String?,
     formFields: [HTTPFormField],
     optionHeaders: [SourceHeaderField] = [],
-    retry: Int = 0
+    retry: Int = 0,
+    useWebView: Bool = false,
+    webJS: String? = nil
   ) {
     self.request = request
     self.body = body
     self.formFields = formFields
     self.optionHeaders = optionHeaders
     self.retry = retry
+    self.useWebView = useWebView
+    self.webJS = webJS
   }
 }
 
@@ -105,7 +111,9 @@ public enum SourceRequestCompiler {
         body: nil,
         formFields: compiled.fields,
         optionHeaders: headers,
-        retry: retry
+        retry: retry,
+        useWebView: option.useWebView ?? false,
+        webJS: option.webJs
       )
     }
     let body = option.body ?? ""
@@ -144,7 +152,9 @@ public enum SourceRequestCompiler {
       body: canonicalBody,
       formFields: formFields,
       optionHeaders: headers,
-      retry: retry
+      retry: retry,
+      useWebView: option.useWebView ?? false,
+      webJS: option.webJs
     )
   }
 
@@ -155,6 +165,8 @@ public enum SourceRequestCompiler {
     let headers: [String: String]?
     let retry: Int?
     let charset: String?
+    let useWebView: Bool?
+    let webJs: String?
   }
 
   static func splitURLAndOption(

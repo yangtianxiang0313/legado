@@ -49,7 +49,9 @@ public struct SourceSearchDefinition: Sendable, Equatable {
       body: plan.body,
       formFields: plan.formFields,
       optionHeaders: optionHeaders,
-      retry: plan.retry
+      retry: plan.retry,
+      useWebView: plan.useWebView,
+      webJS: plan.webJS
     )
   }
 

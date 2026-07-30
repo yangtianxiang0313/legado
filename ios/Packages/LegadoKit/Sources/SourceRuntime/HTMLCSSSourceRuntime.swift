@@ -136,6 +136,8 @@ public struct TOCRules: Sendable, Equatable {
 public struct ContentRules: Sendable, Equatable {
   public let content: HTMLCSSRule
   public let nextContentURL: HTMLCSSRule?
+  public let webJS: String?
+  public let sourceRegex: String?
 
   public init(
     content: HTMLCSSRule,
@@ -143,6 +145,20 @@ public struct ContentRules: Sendable, Equatable {
   ) {
     self.content = content
     self.nextContentURL = nextContentURL
+    self.webJS = nil
+    self.sourceRegex = nil
+  }
+
+  public init(
+    content: HTMLCSSRule,
+    nextContentURL: HTMLCSSRule?,
+    webJS: String?,
+    sourceRegex: String?
+  ) {
+    self.content = content
+    self.nextContentURL = nextContentURL
+    self.webJS = webJS
+    self.sourceRegex = sourceRegex
   }
 }
 

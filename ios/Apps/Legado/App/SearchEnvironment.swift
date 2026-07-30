@@ -494,7 +494,9 @@ enum SearchEnvironment {
                         nextContentURL: paginationRule(
                             content,
                             key: "nextContentUrl"
-                        )
+                        ),
+                        webJS: string(content, "webJs"),
+                        sourceRegex: string(content, "sourceRegex")
                     )
                 )
         let searchDefinition = SourceSearchDefinition(
