@@ -1,80 +1,82 @@
 {
   "schema_version": 1,
-  "id": "MILESTONE-P6-READER-TOOLS-001",
+  "id": "MILESTONE-P7-SYSTEM-READ-ALOUD-001",
   "status": "active",
   "mode": "critical_path_only",
-  "title": "P6 可用阅读工具主链路",
-  "objective": "用户可在阅读器中持久添加和删除书签，跨重启恢复书签，并对全书章节正文执行搜索后跳转到精确章节与字符位置。",
+  "title": "P7 系统朗读主链路",
+  "objective": "用户可从阅读器启动系统朗读，暂停、继续和停止朗读；朗读按净化后的正文段落推进，跳过空白与纯标点，并在当前章节完成后继续下一章。",
   "completion_evidence": [
-    "书签使用稳定 BookID、ChapterID 和字符位置持久化，不以书名作为产品主键",
-    "同一阅读位置重复添加保持幂等，删除只影响目标位置",
-    "全文搜索覆盖所有章节并返回章节标题、上下文摘要和字符位置",
-    "缺失正文通过现有 ReaderContentLoader 获取并写回缓存，不建立第二套抓取链路",
-    "搜索结果跳转复用 ReaderRoute 的 ChapterID 与 characterOffset",
-    "完整书签到重启恢复、全文搜索到结果跳转只运行一次 iPhone Simulator"
+    "朗读队列规划与平台 AVSpeechSynthesizer 对象隔离，ReaderCore 只输出项目自有的段落和位置值",
+    "正文按换行拆分，忽略空白和纯标点段，保留 UTF-16 阅读位置",
+    "开始、暂停、继续和停止具有显式状态，停止不会遗留活动朗读会话",
+    "段落完成后更新当前字符位置，章节完成后通过既有 ReaderContentLoader 进入下一章",
+    "平台 adapter 只存在于独立 SystemSpeechAVFoundation 边界或 App composition root，不进入 ReaderCore、AppUseCases 或 Feature",
+    "完整启动朗读、暂停、继续、停止路径只运行一次 iPhone Simulator"
   ],
-  "deferred_policy": "全局跨书书签页、书签备注编辑、正则搜索、繁简转换、替换规则参与搜索和阅读时长统计不在本里程碑伪实现；先完成当前书籍内可用工具主链。",
+  "deferred_policy": "锁屏与远程媒体控制、后台音频 entitlement、语音引擎和音色选择、定时停止、HTTP TTS、RSS 朗读、选中文本朗读以及真实音频波形不在本里程碑伪实现；先完成前台系统朗读主链。",
   "deliveries": [
     {
-      "target": "IOS-APP-NAVIGATION-READER-TOOLS-MILESTONE-001",
-      "title": "持久书签与全文搜索里程碑",
+      "target": "IOS-APP-NAVIGATION-SYSTEM-READ-ALOUD-MILESTONE-001",
+      "title": "前台系统朗读里程碑",
       "prerequisite_task_ids": [
-        "IOS-READER-CORE-BOOKMARK-SEARCH-001",
-        "IOS-APP-NAVIGATION-OFFLINE-CACHE-MILESTONE-001"
+        "IOS-CHARACTERIZE-INTEGRATION-SYSTEM-TEXT-TO-SPEECH-001",
+        "IOS-APP-NAVIGATION-READER-TOOLS-MILESTONE-001"
       ],
       "requirement_ref": "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01",
-      "fixture_id": "milestone-reader-tools-v1",
+      "fixture_id": "milestone-system-read-aloud-v1",
       "validation": "simulator",
       "ui_contract": {
-        "goal": "把 Android 已明确的书签与全文搜索业务语义接入现有 Reader：稳定身份由 iOS 领域模型负责，正文获取复用缓存优先加载器，GRDB 持久化书签，SwiftUI 提供添加、删除、搜索结果和精确跳转。",
-        "scenario_id": "ui-reader-tools-milestone-v1",
-        "test_method": "testReaderToolsMilestone"
+        "goal": "把 Android 已验证的系统朗读队列、生命周期和进度语义接入现有 Reader：ReaderCore 规划段落与位置，AppUseCases 持有会话状态，AVFoundation adapter 执行系统朗读，SwiftUI 提供开始、暂停、继续和停止。",
+        "scenario_id": "ui-system-read-aloud-milestone-v1",
+        "test_method": "testSystemReadAloudMilestone"
       },
       "additional_allowed_paths": [
-        "ios/Packages/LegadoKit/Sources/LibraryDomain/**",
+        "ios/Packages/LegadoKit/Package.swift",
         "ios/Packages/LegadoKit/Sources/ReaderCore/**",
         "ios/Packages/LegadoKit/Tests/ReaderCoreTests/**",
-        "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
-        "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**"
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+        "ios/Packages/LegadoKit/Sources/SystemSpeechAVFoundation/**",
+        "ios/Packages/LegadoKit/Tests/SystemSpeechAVFoundationTests/**"
       ],
       "source_anchors": [
         {
           "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "git_blob": "7940139ff5c87e977f4aeefa43064e733055ddca",
-          "path": "app/src/main/java/io/legado/app/data/dao/BookmarkDao.kt",
-          "symbol_id": "kotlin://io.legado.app.data.dao.BookmarkDao/flowSearch"
+          "git_blob": "3165bb3e80eff5db2f9e7d23a2b7f19e64c24054",
+          "path": "app/src/main/java/io/legado/app/help/TTS.kt",
+          "symbol_id": "kotlin://io.legado.app.help/TTS/speak"
         },
         {
           "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "git_blob": "1093970423bc64d7405a142a75befd23c09ec163",
-          "path": "app/src/main/java/io/legado/app/data/entities/Bookmark.kt",
-          "symbol_id": "kotlin://io.legado.app.data.entities.Bookmark"
+          "git_blob": "3165bb3e80eff5db2f9e7d23a2b7f19e64c24054",
+          "path": "app/src/main/java/io/legado/app/help/TTS.kt",
+          "symbol_id": "kotlin://io.legado.app.help/TTS/clearTts"
         },
         {
           "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "git_blob": "f5d774795238ea0f7dbdaccfe652ef68a1ebfa4e",
-          "path": "app/src/main/java/io/legado/app/ui/book/searchContent/SearchContentViewModel.kt",
-          "symbol_id": "kotlin://io.legado.app.ui.book.searchContent.SearchContentViewModel/searchChapter"
+          "git_blob": "2b2f5b096a5805d0b12dc38014144536f6d3333d",
+          "path": "app/src/main/java/io/legado/app/service/TTSReadAloudService.kt",
+          "symbol_id": "kotlin://io.legado.app.service/TTSReadAloudService/initTts"
         },
         {
           "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "git_blob": "4426655e6bed8c4c3a874d57f47c917120406a1a",
-          "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookViewModel.kt",
-          "symbol_id": "kotlin://io.legado.app.ui.book.read.ReadBookViewModel/searchResultPositions"
+          "git_blob": "2b2f5b096a5805d0b12dc38014144536f6d3333d",
+          "path": "app/src/main/java/io/legado/app/service/TTSReadAloudService.kt",
+          "symbol_id": "kotlin://io.legado.app.service/TTSReadAloudService/TTSUtteranceListener/onDone"
         }
       ]
     }
   ],
   "stages": [
     {
-      "id": "P6-01-READER-TOOLS-MILESTONE",
-      "title": "接通书签与全文搜索纵向主链路",
-      "outcome": "既有 ReaderCore 书签知识与正文缓存链通过 AppUseCases、GRDB 和 Reader UI 形成可用产品能力。",
+      "id": "P7-01-SYSTEM-READ-ALOUD-MILESTONE",
+      "title": "接通前台系统朗读纵向主链路",
+      "outcome": "Android 已验证的朗读队列与生命周期语义通过 ReaderCore、AppUseCases、AVFoundation adapter 和 Reader UI 形成可用产品能力。",
       "selectors": [
         {
-          "id": "READER-TOOLS-MILESTONE",
+          "id": "SYSTEM-READ-ALOUD-MILESTONE",
           "task_ids": [
-            "IOS-APP-NAVIGATION-READER-TOOLS-MILESTONE-001"
+            "IOS-APP-NAVIGATION-SYSTEM-READ-ALOUD-MILESTONE-001"
           ]
         }
       ]
