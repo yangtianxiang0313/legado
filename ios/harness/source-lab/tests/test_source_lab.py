@@ -443,6 +443,37 @@ class SourceLabTests(unittest.TestCase):
         self.assertEqual("none", case["transport"]["mode"])
         self.assertFalse(case["determinism"]["network_allowed"])
 
+    def test_book_import_channels_cover_url_file_archive_and_scan(self):
+        scenario = "rl-library-book-import-channel-runtime-001"
+        directory, case, inputs = source_lab.load_scenario(
+            REPO_ROOT,
+            scenario,
+        )
+        self.assertEqual(
+            [],
+            source_lab.validate_scenario(REPO_ROOT, directory, case),
+        )
+        self.assertEqual("android_runtime_scenario", case["kind"])
+        self.assertEqual(9, len(inputs["cases"]))
+        self.assertEqual(
+            {
+                "url_book_import",
+                "local_file_import",
+                "local_directory_scan",
+            },
+            {value["operation"] for value in inputs["cases"]},
+        )
+        self.assertEqual(
+            {"nominal", "boundary", "denied"},
+            {
+                value["role"]
+                for coverage in case["coverage"]
+                for value in coverage["cases"]
+            },
+        )
+        self.assertEqual("none", case["transport"]["mode"])
+        self.assertFalse(case["determinism"]["network_allowed"])
+
     def test_reader_layout_page_projection_covers_reflow_and_boundaries(self):
         scenario = "rl-reader-layout-page-projection-001"
         directory, case, inputs = source_lab.load_scenario(

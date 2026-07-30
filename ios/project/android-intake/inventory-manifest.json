@@ -2,8 +2,8 @@
   "schema_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
   "android_tree": "c81f5d383116e37c1eefee3eb86654514e82022b",
-  "control_sha256": "72fbb946d960a22c920a8f7a7264e78d819d9142a43c0dcf6e32b0b2c313f0cc",
-  "policy_sha256": "d2a80f328237f3c1e877e83d91d2e258528ebb04d97c93938849138a17548420",
+  "control_sha256": "5942d7e93860cc5633a8610c31cde751c425a4d9cd7505143b93716d00b694e5",
+  "policy_sha256": "28d005ee9ad0d0e0eaeb0a3b93d7e073651d7ef3abb03f038559eb10a73e048c",
   "facts": [
     {
       "id": "AF-ANALYZE-JSONPATH-GET-LIST",
@@ -658,6 +658,30 @@
       ]
     },
     {
+      "id": "AF-BOOKSHELF-ADD-BOOK-BY-URL",
+      "fact_key": "library.book-import.add-by-url",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.ui.main.bookshelf/BookshelfViewModel/addBookByUrl",
+      "path": "app/src/main/java/io/legado/app/ui/main/bookshelf/BookshelfViewModel.kt",
+      "git_blob": "5730590bffb6f8f6109ba66441a0937fdd10ec9b",
+      "source_sha256": "b957c98611be3ba13ab49a5dcd26411f90f38b57ab9944d15311a9ae925739ef",
+      "start_line": 40,
+      "end_line": 93,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "addBookByUrl",
+        "signature": "fun addBookByUrl(bookUrls: String)",
+        "body_semantic_sha256": "f1bd2217b769e8579eeacb76b8a00aaeaa0c570ceff3d9118808df656b9f0033"
+      },
+      "revision_sha256": "371af1936c444a33b90e3e7c9af87f0582b60fe3fcd03fea75ce294eb3fa3ec7",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
       "id": "AF-BOOKSOURCE-CONSTRUCTOR",
       "fact_key": "book-source.schema.book-source",
       "category": "data_contract",
@@ -1018,6 +1042,126 @@
         "body_semantic_sha256": "87ff8266c96c5d4d4dcc3f4eebfc0c73a792e57f4597fbfec66ae9d8b346db98"
       },
       "revision_sha256": "270493515529c6e074c396f51822c22ab1db5538de2199ac9227056732b9217b",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-IMPORT-BOOK-SCAN-DOC",
+      "fact_key": "library.book-import.recursive-scan",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.ui.book.import.local.ImportBookViewModel/scanDoc",
+      "path": "app/src/main/java/io/legado/app/ui/book/import/local/ImportBookViewModel.kt",
+      "git_blob": "ef3977f03fcb1b639d53953c9c0131c4cf21d5ce",
+      "source_sha256": "ba92f1a6acac27c2f1f12b5b37b2e1961aed04823b0a30d3001c28e80c12509f",
+      "start_line": 140,
+      "end_line": 181,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "scanDoc",
+        "signature": "suspend fun scanDoc( fileDoc: FileDoc, isRoot: Boolean, finally: (suspend () -> Unit)? = null )",
+        "body_semantic_sha256": "9f41d72b963e2f0fc64fd7cc30944f931f02cac68a7b19fef5901546aa6f7797"
+      },
+      "revision_sha256": "e8546132b8add4db363c56d7698efb862f7df4a2ab61e5afdbe3ae20d00f52ae",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-LOCAL-BOOK-ANALYZE-NAME-AUTHOR",
+      "fact_key": "library.book-import.filename-metadata",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.localBook/LocalBook/analyzeNameAuthor",
+      "path": "app/src/main/java/io/legado/app/model/localBook/LocalBook.kt",
+      "git_blob": "0c0c50252d9c2590053fbf10cd39c49e314839e0",
+      "source_sha256": "d1c63fb089e819bda11e0bc8b8fbdcab8a6da1df8cfc7a28cdb8c6226a5dd518",
+      "start_line": 266,
+      "end_line": 304,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "analyzeNameAuthor",
+        "signature": "fun analyzeNameAuthor(fileName: String): Pair<String, String>",
+        "body_semantic_sha256": "342c4f930734f0f2e9fbfa904d1d557f330869daae809d7081e132ec5015610b"
+      },
+      "revision_sha256": "f57629b287120adc15fe7ac524b4ab162c46220fafd5ace0440139600a1d5a08",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-LOCAL-BOOK-IMPORT-ARCHIVE",
+      "fact_key": "library.book-import.archive",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.localBook/LocalBook/importArchiveFile",
+      "path": "app/src/main/java/io/legado/app/model/localBook/LocalBook.kt",
+      "git_blob": "0c0c50252d9c2590053fbf10cd39c49e314839e0",
+      "source_sha256": "d1c63fb089e819bda11e0bc8b8fbdcab8a6da1df8cfc7a28cdb8c6226a5dd518",
+      "start_line": 207,
+      "end_line": 225,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "importArchiveFile",
+        "signature": "fun importArchiveFile( archiveFileUri: Uri, saveFileName: String? = null, filter: ((String) -> Boolean)? = null ): List<Book>",
+        "body_semantic_sha256": "599a2b664a1984fc69023409643afe1b0b5b813ac121bb06fe3da5b9e5214781"
+      },
+      "revision_sha256": "ec5588c47b72a98eaa725483ef7dc46609c7afcd45d400db77bf874372041729",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-LOCAL-BOOK-IMPORT-FILE",
+      "fact_key": "library.book-import.local-file",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.localBook/LocalBook/importFile",
+      "path": "app/src/main/java/io/legado/app/model/localBook/LocalBook.kt",
+      "git_blob": "0c0c50252d9c2590053fbf10cd39c49e314839e0",
+      "source_sha256": "d1c63fb089e819bda11e0bc8b8fbdcab8a6da1df8cfc7a28cdb8c6226a5dd518",
+      "start_line": 175,
+      "end_line": 204,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "importFile",
+        "signature": "fun importFile(uri: Uri): Book",
+        "body_semantic_sha256": "e7a62c2f572bcc5d4f50e122c8008e144394ce84b975f768fad57575f5a31e3b"
+      },
+      "revision_sha256": "9954c7ffb7fac333c8ad8e58625a0bd31d99f1deae6df3c8bd4f47e90dc94041",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-LOCAL-BOOK-IMPORT-FILES",
+      "fact_key": "library.book-import.local-files-dispatch",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.localBook/LocalBook/importFiles",
+      "path": "app/src/main/java/io/legado/app/model/localBook/LocalBook.kt",
+      "git_blob": "0c0c50252d9c2590053fbf10cd39c49e314839e0",
+      "source_sha256": "d1c63fb089e819bda11e0bc8b8fbdcab8a6da1df8cfc7a28cdb8c6226a5dd518",
+      "start_line": 228,
+      "end_line": 241,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "importFiles",
+        "signature": "fun importFiles(uri: Uri): List<Book>",
+        "body_semantic_sha256": "1b4cf3638ca2fbd3fb5de699114148d8a3e6c82cb51553c77ff4713945d7c1f8"
+      },
+      "revision_sha256": "e60c1a6a2268e4e4238e5a295c666e963e10f1d4e9ff324207e5b051b0c5920f",
       "maps_to": [
         "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
       ]

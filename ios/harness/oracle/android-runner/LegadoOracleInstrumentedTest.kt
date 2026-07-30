@@ -5,6 +5,7 @@ import android.app.Application
 import android.app.Instrumentation
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.os.SystemClock
 import android.speech.tts.TextToSpeech
@@ -38,12 +39,15 @@ import io.legado.app.data.entities.ReadRecord
 import io.legado.app.data.entities.SearchBook
 import io.legado.app.data.entities.TxtTocRule
 import io.legado.app.data.entities.rule.ContentRule
+import io.legado.app.data.entities.rule.BookInfoRule
 import io.legado.app.data.appDb
 import io.legado.app.exception.ConcurrentException
 import io.legado.app.help.CacheManager
 import io.legado.app.help.TTS
 import io.legado.app.help.book.BookHelp
 import io.legado.app.help.book.getLocalUri
+import io.legado.app.help.book.isArchive
+import io.legado.app.help.book.isLocal
 import io.legado.app.help.book.removeLocalUriCache
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.config.LocalConfig
@@ -62,6 +66,7 @@ import io.legado.app.model.analyzeRule.AnalyzeRule
 import io.legado.app.model.analyzeRule.AnalyzeUrl
 import io.legado.app.model.analyzeRule.RuleData
 import io.legado.app.model.webBook.WebBook
+import io.legado.app.model.localBook.LocalBook
 import io.legado.app.service.WebService
 import io.legado.app.service.BaseReadAloudService
 import io.legado.app.service.TTSReadAloudService
@@ -75,9 +80,12 @@ import io.legado.app.ui.book.info.BookInfoActivity
 import io.legado.app.ui.book.info.BookInfoViewModel
 import io.legado.app.ui.book.changesource.ChangeChapterSourceViewModel
 import io.legado.app.ui.main.MainActivity
+import io.legado.app.ui.main.bookshelf.BookshelfViewModel
+import io.legado.app.ui.book.import.local.ImportBookViewModel
 import io.legado.app.ui.welcome.WelcomeActivity
 import io.legado.app.ui.widget.dialog.TextDialog
 import io.legado.app.utils.GSON
+import io.legado.app.utils.FileDoc
 import io.legado.app.utils.NetworkUtils
 import io.legado.app.utils.defaultSharedPreferences
 import io.legado.app.utils.putPrefBoolean
@@ -98,7 +106,9 @@ import org.jsoup.nodes.Element
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.seimicrawler.xpath.JXNode
+import fi.iki.elonen.NanoHTTPD
 import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -110,6 +120,9 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 import okhttp3.OkHttpClient
 import okhttp3.Headers
 import okhttp3.Protocol
@@ -191,6 +204,8 @@ class LegadoOracleInstrumentedTest {
                 runBookGroupBoundaryCases()
             "rl-library-local-book-relocation-runtime-001" ->
                 runLocalBookRelocationCases()
+            "rl-library-book-import-channel-runtime-001" ->
+                runBookImportChannelCases()
             "rl-reader-chapter-source-override-runtime-001" ->
                 runChapterSourceOverrideCases()
             "rl-reader-bookmark-search-runtime-risk-001" ->
@@ -1123,6 +1138,445 @@ class LegadoOracleInstrumentedTest {
                     arguments
                 )
             }
+        }
+    }
+
+    private suspend fun runBookImportChannelCases() {
+        val server = OracleBookInfoServer()
+        server.start(5_000, true)
+        try {
+            val values = input.getJSONArray("cases")
+            val supported = setOf(
+                "url_book_import",
+                "local_file_import",
+                "local_directory_scan"
+            )
+            for (index in 0 until values.length()) {
+                val value = values.getJSONObject(index)
+                val operation = value.getString("operation")
+                require(operation in supported) {
+                    "Unsupported book-import operation: $operation"
+                }
+                val arguments = value.getJSONObject("arguments")
+                val stimulus = JSONObject()
+                    .put("operation", operation)
+                    .put(
+                        "arguments",
+                        JSONObject(arguments.toString())
+                    )
+                runCase(
+                    value.getString("id"),
+                    operation,
+                    stimulus
+                ) {
+                    bookImportChannelProjection(
+                        value.getString("id"),
+                        operation,
+                        arguments,
+                        server
+                    )
+                }
+            }
+        } finally {
+            server.stop()
+        }
+    }
+
+    private suspend fun bookImportChannelProjection(
+        caseId: String,
+        operation: String,
+        arguments: JSONObject,
+        server: OracleBookInfoServer
+    ): JSONObject {
+        val target =
+            InstrumentationRegistry.getInstrumentation().targetContext
+        val root = File(
+            target.filesDir,
+            "oracle-book-import/$caseId"
+        )
+        root.deleteRecursively()
+        require(root.mkdirs()) {
+            "Unable to create book-import fixture root"
+        }
+        val previousNameRule = AppConfig.bookImportFileName
+        val previousDefaultDirectory = AppConfig.defaultBookTreeUri
+        AppConfig.bookImportFileName = null
+        server.reset()
+        return try {
+            when (operation) {
+                "url_book_import" ->
+                    urlBookImportProjection(
+                        caseId,
+                        arguments,
+                        server,
+                        target.applicationContext as Application
+                    )
+                "local_file_import" ->
+                    localFileImportProjection(
+                        arguments,
+                        root
+                    )
+                "local_directory_scan" ->
+                    localDirectoryScanProjection(
+                        root,
+                        target.applicationContext as Application
+                    )
+                else -> error(
+                    "Unsupported book-import operation: $operation"
+                )
+            }
+        } finally {
+            AppConfig.bookImportFileName = previousNameRule
+            AppConfig.defaultBookTreeUri = previousDefaultDirectory
+            val rootPath = root.absolutePath
+            appDb.bookDao.all
+                .filter {
+                    it.bookUrl.startsWith(rootPath) ||
+                        it.bookUrl.contains("/book/$caseId")
+                }
+                .forEach { appDb.bookDao.delete(it) }
+            listOf(
+                server.baseUrl,
+                "oracle-pattern://invalid-$caseId",
+                "oracle-pattern://valid-$caseId"
+            ).forEach { appDb.bookSourceDao.delete(it) }
+            root.deleteRecursively()
+        }
+    }
+
+    private suspend fun urlBookImportProjection(
+        caseId: String,
+        arguments: JSONObject,
+        server: OracleBookInfoServer,
+        application: Application
+    ): JSONObject {
+        val sourceDao = appDb.bookSourceDao
+        val previousSources = sourceDao.all.map { it.copy() }
+        previousSources.forEach { sourceDao.delete(it) }
+        val bookUrl = "${server.baseUrl}/book/$caseId"
+        return try {
+            appDb.bookDao.getBook(bookUrl)?.let {
+                appDb.bookDao.delete(it)
+            }
+            val sourceMode = arguments.getString("source_mode")
+            val exactSource = importBookSource(
+                url = server.baseUrl,
+                name = "Oracle Exact Source",
+                pattern = null,
+                order = 0
+            )
+            val invalidSource = importBookSource(
+                url = "oracle-pattern://invalid-$caseId",
+                name = "Oracle Invalid Pattern",
+                pattern = "[",
+                order = 0
+            )
+            val patternSource = importBookSource(
+                url = "oracle-pattern://valid-$caseId",
+                name = "Oracle Pattern Source",
+                pattern = ".*/book/$caseId$",
+                order = 1
+            )
+            when (sourceMode) {
+                "existing" -> appDb.bookDao.insert(
+                    Book(
+                        bookUrl = bookUrl,
+                        origin = "oracle-existing://seed",
+                        originName = "Oracle Existing",
+                        name = "Existing Oracle Book",
+                        author = "Seed"
+                    )
+                )
+                "exact_base" -> sourceDao.insert(exactSource)
+                "pattern_after_invalid" ->
+                    sourceDao.insert(
+                        invalidSource,
+                        patternSource
+                    )
+                "none" -> Unit
+                else -> error(
+                    "Unsupported URL source mode: $sourceMode"
+                )
+            }
+            val inputValue =
+                if (
+                    arguments.getString("input_shape")
+                        == "blank_lines_and_trim"
+                ) {
+                    "\n  $bookUrl  \n\n"
+                } else {
+                    "  $bookUrl  "
+                }
+            val viewModel = BookshelfViewModel(application)
+            viewModel.addBookByUrl(inputValue)
+            withTimeout(10_000) {
+                while (
+                    viewModel.addBookJob == null ||
+                    viewModel.addBookJob?.isCompleted != true
+                ) {
+                    delay(20)
+                }
+            }
+            val stored = appDb.bookDao.getBook(bookUrl)
+            val selection = when (stored?.origin) {
+                "oracle-existing://seed" ->
+                    "existing_short_circuit"
+                exactSource.bookSourceUrl -> "exact_base"
+                patternSource.bookSourceUrl -> "pattern"
+                else -> "none"
+            }
+            JSONObject()
+                .put("channel", "url")
+                .put(
+                    "outcome",
+                    when (selection) {
+                        "existing_short_circuit" -> "existing"
+                        "exact_base", "pattern" -> "added"
+                        else -> "skipped"
+                    }
+                )
+                .put("source_selection", selection)
+                .put(
+                    "network_request_count",
+                    server.requestPaths.size
+                )
+                .put(
+                    "stored_book",
+                    stored?.let {
+                        importedBookProjection(it, selection)
+                    } ?: JSONObject.NULL
+                )
+        } finally {
+            sourceDao.all.forEach { sourceDao.delete(it) }
+            if (previousSources.isNotEmpty()) {
+                sourceDao.insert(*previousSources.toTypedArray())
+            }
+        }
+    }
+
+    private fun importBookSource(
+        url: String,
+        name: String,
+        pattern: String?,
+        order: Int
+    ): BookSource =
+        BookSource(
+            bookSourceUrl = url,
+            bookSourceName = name,
+            bookUrlPattern = pattern,
+            customOrder = order,
+            enabled = true,
+            ruleBookInfo = BookInfoRule(
+                name = "@CSS:h1.book-name@text",
+                author = "@CSS:.book-author@text",
+                intro = "@CSS:.book-intro@text",
+                tocUrl = "@CSS:a.toc-link@href"
+            )
+        )
+
+    private fun localFileImportProjection(
+        arguments: JSONObject,
+        root: File
+    ): JSONObject {
+        val mode = arguments.getString("mode")
+        val file = File(root, arguments.getString("file_name"))
+        val output = File(root, "output").apply {
+            require(mkdirs())
+        }
+        AppConfig.defaultBookTreeUri = output.absolutePath
+        var failure: Throwable? = null
+        val books = when (mode) {
+            "new_file" -> {
+                file.writeText("第一章\n正文")
+                listOf(LocalBook.importFile(Uri.fromFile(file)))
+            }
+            "reimport" -> {
+                file.writeText("第一章\n正文")
+                val first = LocalBook.importFile(Uri.fromFile(file))
+                appDb.bookChapterDao.insert(
+                    BookChapter(
+                        url = "${first.bookUrl}#old",
+                        title = "旧目录",
+                        bookUrl = first.bookUrl,
+                        index = 0
+                    )
+                )
+                listOf(LocalBook.importFile(Uri.fromFile(file)))
+            }
+            "empty" -> {
+                require(file.createNewFile())
+                kotlin.runCatching {
+                    LocalBook.importFile(Uri.fromFile(file))
+                }.onFailure {
+                    failure = it
+                }
+                emptyList()
+            }
+            "archive" -> {
+                createImportArchive(
+                    file,
+                    arguments.getString("book_entry"),
+                    arguments.getString("ignored_entry")
+                )
+                LocalBook.importFiles(Uri.fromFile(file))
+            }
+            else -> error("Unsupported local import mode: $mode")
+        }
+        return JSONObject()
+            .put("channel", "local_file")
+            .put(
+                "outcome",
+                when {
+                    failure != null -> "rejected"
+                    mode == "reimport" -> "updated"
+                    mode == "archive" -> "archive_added"
+                    else -> "added"
+                }
+            )
+            .put(
+                "exception",
+                failure?.javaClass?.simpleName ?: JSONObject.NULL
+            )
+            .put("imported_count", books.size)
+            .put(
+                "books",
+                JSONArray().apply {
+                    books.sortedBy { it.originName }.forEach {
+                        put(
+                            importedBookProjection(
+                                it,
+                                if (it.isArchive) {
+                                    "archive"
+                                } else {
+                                    "local_file"
+                                }
+                            )
+                        )
+                    }
+                }
+            )
+            .put(
+                "database_contains_input",
+                appDb.bookDao.has(file.absolutePath) == true
+            )
+    }
+
+    private fun createImportArchive(
+        archive: File,
+        bookEntry: String,
+        ignoredEntry: String
+    ) {
+        ZipOutputStream(FileOutputStream(archive)).use { output ->
+            listOf(
+                bookEntry to "第一章\n压缩正文",
+                ignoredEntry to "ignored"
+            ).forEach { (name, body) ->
+                output.putNextEntry(ZipEntry(name))
+                output.write(body.toByteArray(Charsets.UTF_8))
+                output.closeEntry()
+            }
+        }
+    }
+
+    private suspend fun localDirectoryScanProjection(
+        root: File,
+        application: Application
+    ): JSONObject {
+        File(root, "visible.txt").writeText("visible")
+        File(root, ".hidden.txt").writeText("hidden")
+        File(root, "bundle.zip").writeText("scan only")
+        File(root, "ignore.md").writeText("ignored")
+        val nested = File(root, "nested").apply {
+            require(mkdirs())
+        }
+        File(nested, "inner.epub").writeText("epub")
+        val hiddenDirectory = File(root, ".hidden-dir").apply {
+            require(mkdirs())
+        }
+        File(hiddenDirectory, "secret.pdf").writeText("pdf")
+
+        val discovered = mutableListOf<String>()
+        val batchSizes = mutableListOf<Int>()
+        var clearCount = 0
+        var finallyCount = 0
+        val viewModel = ImportBookViewModel(application)
+        viewModel.dataCallback =
+            object : ImportBookViewModel.DataCallback {
+                override fun setItems(fileDocs: List<FileDoc>) = Unit
+
+                override fun addItems(fileDocs: List<FileDoc>) {
+                    batchSizes += fileDocs.size
+                    discovered += fileDocs.map { it.name }
+                }
+
+                override fun clear() {
+                    clearCount++
+                }
+
+                override fun screen(key: String?) = Unit
+            }
+        viewModel.scanDoc(
+            FileDoc.fromFile(root),
+            true
+        ) {
+            finallyCount++
+        }
+        return JSONObject()
+            .put("channel", "local_scan")
+            .put(
+                "discovered_names",
+                JSONArray().apply {
+                    discovered.sorted().forEach { put(it) }
+                }
+            )
+            .put("discovered_count", discovered.size)
+            .put("add_batch_count", batchSizes.size)
+            .put("clear_count", clearCount)
+            .put("finally_count", finallyCount)
+    }
+
+    private fun importedBookProjection(
+        book: Book,
+        originKind: String
+    ): JSONObject =
+        JSONObject()
+            .put("name", book.name)
+            .put("author", book.author)
+            .put("origin_name", book.originName)
+            .put("origin_kind", originKind)
+            .put("is_local", book.isLocal)
+            .put("is_archive", book.isArchive)
+            .put(
+                "chapter_count",
+                appDb.bookChapterDao.getChapterCount(book.bookUrl)
+            )
+
+    private class OracleBookInfoServer : NanoHTTPD(0) {
+        val requestPaths = CopyOnWriteArrayList<String>()
+
+        val baseUrl: String
+            get() = "http://127.0.0.1:$listeningPort"
+
+        fun reset() {
+            requestPaths.clear()
+        }
+
+        override fun serve(session: IHTTPSession): Response {
+            requestPaths += session.uri
+            val caseId = session.uri.substringAfterLast('/')
+            val body = """
+                <html><body>
+                <h1 class="book-name">Fetched $caseId</h1>
+                <span class="book-author">Oracle Author</span>
+                <p class="book-intro">Offline import fixture</p>
+                <a class="toc-link" href="/toc/$caseId">目录</a>
+                </body></html>
+            """.trimIndent()
+            return newFixedLengthResponse(
+                Response.Status.OK,
+                "text/html; charset=utf-8",
+                body
+            )
         }
     }
 

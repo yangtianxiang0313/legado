@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "url-existing-book-short-circuits",
+      "operation": "url_book_import",
+      "arguments": {
+        "source_mode": "existing",
+        "input_shape": "trimmed_single"
+      }
+    },
+    {
+      "id": "url-exact-base-source-adds",
+      "operation": "url_book_import",
+      "arguments": {
+        "source_mode": "exact_base",
+        "input_shape": "blank_lines_and_trim"
+      }
+    },
+    {
+      "id": "url-pattern-fallback-skips-invalid-regex",
+      "operation": "url_book_import",
+      "arguments": {
+        "source_mode": "pattern_after_invalid",
+        "input_shape": "trimmed_single"
+      }
+    },
+    {
+      "id": "url-unmatched-source-skips",
+      "operation": "url_book_import",
+      "arguments": {
+        "source_mode": "none",
+        "input_shape": "trimmed_single"
+      }
+    },
+    {
+      "id": "local-new-file-parses-name-author",
+      "operation": "local_file_import",
+      "arguments": {
+        "mode": "new_file",
+        "file_name": "前缀《星河》作者：甲.txt"
+      }
+    },
+    {
+      "id": "local-reimport-clears-old-chapters",
+      "operation": "local_file_import",
+      "arguments": {
+        "mode": "reimport",
+        "file_name": "银河 by Bob.txt"
+      }
+    },
+    {
+      "id": "local-empty-file-rejected",
+      "operation": "local_file_import",
+      "arguments": {
+        "mode": "empty",
+        "file_name": "空书.txt"
+      }
+    },
+    {
+      "id": "local-archive-import-marks-origin",
+      "operation": "local_file_import",
+      "arguments": {
+        "mode": "archive",
+        "file_name": "合集.zip",
+        "book_entry": "压缩《远方》作者：乙.txt",
+        "ignored_entry": "ignore.md"
+      }
+    },
+    {
+      "id": "local-recursive-scan-includes-hidden-supported-files",
+      "operation": "local_directory_scan",
+      "arguments": {
+        "include_hidden": true,
+        "include_nested": true
+      }
+    }
+  ]
+}

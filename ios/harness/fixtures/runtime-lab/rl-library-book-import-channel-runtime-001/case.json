@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "kind": "android_runtime_scenario",
+  "id": "rl-library-book-import-channel-runtime-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "android_runtime",
+  "capabilities": [
+    "android.filesystem",
+    "android.room",
+    "library.book-import"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": null,
+  "input": "input.json",
+  "transport": {
+    "mode": "none",
+    "external_network": "deny",
+    "responses": []
+  },
+  "coverage": [
+    {
+      "behavior": "library.book.import-channel-runtime",
+      "cases": [
+        {
+          "id": "url-existing-book-short-circuits",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-BOOKSHELF-ADD-BOOK-BY-URL"
+          ],
+          "branch_refs": [
+            "BookshelfViewModel.addBookByUrl counts an existing bookUrl as success without source lookup or network fetch"
+          ]
+        },
+        {
+          "id": "url-exact-base-source-adds",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-BOOKSHELF-ADD-BOOK-BY-URL"
+          ],
+          "branch_refs": [
+            "BookshelfViewModel.addBookByUrl selects an enabled source whose bookSourceUrl equals the URL base, fetches book info, and saves the Book"
+          ]
+        },
+        {
+          "id": "url-pattern-fallback-skips-invalid-regex",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-BOOKSHELF-ADD-BOOK-BY-URL"
+          ],
+          "branch_refs": [
+            "BookshelfViewModel.addBookByUrl ignores a malformed bookUrlPattern and selects the next enabled matching source"
+          ]
+        },
+        {
+          "id": "url-unmatched-source-skips",
+          "role": "denied",
+          "android_fact_refs": [
+            "AF-BOOKSHELF-ADD-BOOK-BY-URL"
+          ],
+          "branch_refs": [
+            "BookshelfViewModel.addBookByUrl skips a valid absolute URL when neither base URL nor bookUrlPattern resolves a source"
+          ]
+        },
+        {
+          "id": "local-new-file-parses-name-author",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-LOCAL-BOOK-IMPORT-FILE",
+            "AF-LOCAL-BOOK-ANALYZE-NAME-AUTHOR"
+          ],
+          "branch_refs": [
+            "LocalBook.importFile creates a local text Book and analyzeNameAuthor parses the built-in Chinese filename pattern"
+          ]
+        },
+        {
+          "id": "local-reimport-clears-old-chapters",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-LOCAL-BOOK-IMPORT-FILE"
+          ],
+          "branch_refs": [
+            "LocalBook.importFile treats the same bookUrl as an update and deletes its existing chapter rows"
+          ]
+        },
+        {
+          "id": "local-empty-file-rejected",
+          "role": "denied",
+          "android_fact_refs": [
+            "AF-LOCAL-BOOK-IMPORT-FILE"
+          ],
+          "branch_refs": [
+            "LocalBook.importFile rejects a zero-byte FileDoc before inserting a Book"
+          ]
+        },
+        {
+          "id": "local-archive-import-marks-origin",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-LOCAL-BOOK-IMPORT-FILES",
+            "AF-LOCAL-BOOK-IMPORT-ARCHIVE",
+            "AF-LOCAL-BOOK-ANALYZE-NAME-AUTHOR"
+          ],
+          "branch_refs": [
+            "LocalBook.importFiles detects an archive, imports supported book entries, records the archive origin, and adds the archive type"
+          ]
+        },
+        {
+          "id": "local-recursive-scan-includes-hidden-supported-files",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-IMPORT-BOOK-SCAN-DOC"
+          ],
+          "branch_refs": [
+            "ImportBookViewModel.scanDoc recursively emits supported book and archive files without applying loadDoc's hidden-name filter"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "state_projection",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 0,
+    "network_allowed": false,
+    "logical_origin": null,
+    "database_reset_per_case": true
+  },
+  "limits": {
+    "timeout_ms": 5000
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/ui/main/bookshelf/BookshelfViewModel.kt#addBookByUrl",
+      "app/src/main/java/io/legado/app/model/localBook/LocalBook.kt#importFile",
+      "app/src/main/java/io/legado/app/model/localBook/LocalBook.kt#importFiles",
+      "app/src/main/java/io/legado/app/ui/book/import/local/ImportBookViewModel.kt#scanDoc"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-LIBRARY-BOOK-IMPORT-CHANNEL-RUNTIME-001"
+  }
+}

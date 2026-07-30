@@ -262,5 +262,24 @@ class AndroidIntakeTests(unittest.TestCase):
             facts["AF-READ-BOOK-LOAD-CHAPTER-LIST"]["payload"]["symbol"],
         )
 
+    def test_book_import_channels_have_url_file_archive_and_scan_anchors(self):
+        inventory = android_intake.inventory_value(REPO_ROOT)
+        facts = {entry["id"]: entry for entry in inventory["facts"]}
+        expected = {
+            "AF-BOOKSHELF-ADD-BOOK-BY-URL": "addBookByUrl",
+            "AF-LOCAL-BOOK-IMPORT-FILE": "importFile",
+            "AF-LOCAL-BOOK-IMPORT-FILES": "importFiles",
+            "AF-LOCAL-BOOK-IMPORT-ARCHIVE": "importArchiveFile",
+            "AF-LOCAL-BOOK-ANALYZE-NAME-AUTHOR": "analyzeNameAuthor",
+            "AF-IMPORT-BOOK-SCAN-DOC": "scanDoc",
+        }
+        self.assertEqual(
+            expected,
+            {
+                fact_id: facts[fact_id]["payload"]["symbol"]
+                for fact_id in expected
+            },
+        )
+
 if __name__ == "__main__":
     unittest.main()

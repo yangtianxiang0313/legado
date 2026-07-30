@@ -29,6 +29,11 @@
       "sha256": "3383cdf3d0667fe16f2cfb930849d704157a107880158115336adf69fb9a2b95"
     },
     {
+      "id": "rl-library-book-import-channel-runtime-001",
+      "path": "ios/harness/fixtures/runtime-lab/rl-library-book-import-channel-runtime-001",
+      "sha256": "c1d60389a936f5bcfdc6e3eedba3ab5ce413f132aa59753477d83705dda83cca"
+    },
+    {
       "id": "rl-library-local-book-relocation-runtime-001",
       "path": "ios/harness/fixtures/runtime-lab/rl-library-local-book-relocation-runtime-001",
       "sha256": "11a588001b3802927ab82c44bc5781d31724bd0c247ae5a0e6a6abc3d82b25e7"

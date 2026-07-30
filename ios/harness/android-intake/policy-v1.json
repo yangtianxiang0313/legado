@@ -842,6 +842,78 @@
       "symbol": "loadChapterList",
       "symbol_id": "kotlin://io.legado.app.ui.book.read/ReadBookViewModel/loadChapterList",
       "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-BOOKSHELF-ADD-BOOK-BY-URL",
+      "fact_key": "library.book-import.add-by-url",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/ui/main/bookshelf/BookshelfViewModel.kt",
+      "symbol": "addBookByUrl",
+      "symbol_id": "kotlin://io.legado.app.ui.main.bookshelf/BookshelfViewModel/addBookByUrl",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-LOCAL-BOOK-IMPORT-FILE",
+      "fact_key": "library.book-import.local-file",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/model/localBook/LocalBook.kt",
+      "symbol": "importFile",
+      "symbol_id": "kotlin://io.legado.app.model.localBook/LocalBook/importFile",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-LOCAL-BOOK-IMPORT-FILES",
+      "fact_key": "library.book-import.local-files-dispatch",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/model/localBook/LocalBook.kt",
+      "symbol": "importFiles",
+      "symbol_id": "kotlin://io.legado.app.model.localBook/LocalBook/importFiles",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-LOCAL-BOOK-IMPORT-ARCHIVE",
+      "fact_key": "library.book-import.archive",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/model/localBook/LocalBook.kt",
+      "symbol": "importArchiveFile",
+      "symbol_id": "kotlin://io.legado.app.model.localBook/LocalBook/importArchiveFile",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-LOCAL-BOOK-ANALYZE-NAME-AUTHOR",
+      "fact_key": "library.book-import.filename-metadata",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/model/localBook/LocalBook.kt",
+      "symbol": "analyzeNameAuthor",
+      "symbol_id": "kotlin://io.legado.app.model.localBook/LocalBook/analyzeNameAuthor",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-IMPORT-BOOK-SCAN-DOC",
+      "fact_key": "library.book-import.recursive-scan",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/ui/book/import/local/ImportBookViewModel.kt",
+      "symbol": "scanDoc",
+      "symbol_id": "kotlin://io.legado.app.ui.book.import.local.ImportBookViewModel/scanDoc",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
     }
   ]
 }

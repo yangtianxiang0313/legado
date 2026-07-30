@@ -607,6 +607,56 @@ SCENARIO_CONTRACTS = {
             "failed-resolution-cache-is-sticky",
         }),
     },
+    "rl-library-book-import-channel-runtime-001": {
+        "status": "candidate",
+        "fixture_kind": "android_runtime_scenario",
+        "result_type": "library_runtime",
+        "stage_names": (
+            "fixture_setup",
+            "source_selection",
+            "file_dispatch",
+            "persistence",
+            "scan_observation",
+            "result_mapping",
+        ),
+        "expected_cases": (
+            ("url-existing-book-short-circuits", "url_book_import"),
+            ("url-exact-base-source-adds", "url_book_import"),
+            (
+                "url-pattern-fallback-skips-invalid-regex",
+                "url_book_import",
+            ),
+            ("url-unmatched-source-skips", "url_book_import"),
+            (
+                "local-new-file-parses-name-author",
+                "local_file_import",
+            ),
+            (
+                "local-reimport-clears-old-chapters",
+                "local_file_import",
+            ),
+            ("local-empty-file-rejected", "local_file_import"),
+            (
+                "local-archive-import-marks-origin",
+                "local_file_import",
+            ),
+            (
+                "local-recursive-scan-includes-hidden-supported-files",
+                "local_directory_scan",
+            ),
+        ),
+        "nominal_cases": frozenset({
+            "url-existing-book-short-circuits",
+            "url-exact-base-source-adds",
+            "url-pattern-fallback-skips-invalid-regex",
+            "url-unmatched-source-skips",
+            "local-new-file-parses-name-author",
+            "local-reimport-clears-old-chapters",
+            "local-empty-file-rejected",
+            "local-archive-import-marks-origin",
+            "local-recursive-scan-includes-hidden-supported-files",
+        }),
+    },
     "rl-reader-chapter-source-override-runtime-001": {
         "status": "candidate",
         "fixture_kind": "android_runtime_scenario",

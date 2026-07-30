@@ -162,6 +162,15 @@
       "status": "candidate"
     },
     {
+      "id": "IOS-ANDROID-LIBRARY-BOOK-IMPORT-CHANNEL-ATTESTATION-001",
+      "scenario_id": "rl-library-book-import-channel-runtime-001",
+      "fixture_ids": [
+        "rl-library-book-import-channel-runtime-001"
+      ],
+      "authority": "android_oracle_candidate_only",
+      "status": "candidate"
+    },
+    {
       "id": "IOS-ANDROID-READER-CHAPTER-SOURCE-OVERRIDE-ATTESTATION-001",
       "scenario_id": "rl-reader-chapter-source-override-runtime-001",
       "fixture_ids": [

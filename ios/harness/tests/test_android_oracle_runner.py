@@ -1521,6 +1521,14 @@ class AndroidOracleRunnerTests(unittest.TestCase):
             "rl-library-local-book-relocation-runtime-001",
             local_book_relocation["scenario_id"],
         )
+        book_import_channel = runner.doctor(
+            ROOT,
+            "rl-library-book-import-channel-runtime-001",
+        )
+        self.assertEqual(
+            "rl-library-book-import-channel-runtime-001",
+            book_import_channel["scenario_id"],
+        )
         chapter_source_override = runner.doctor(
             ROOT,
             "rl-reader-chapter-source-override-runtime-001",
