@@ -1635,17 +1635,15 @@ def prioritized_work(
     characterizations = pending_characterizations(root)
     policy = active_priority_policy(root)
     if policy is None:
+        # A frozen Android repository contains far more characterizable
+        # behaviour than the iOS critical path needs next.  Do not let an
+        # idle queue turn that inventory into work automatically: a new
+        # source-aligned milestone must explicitly select the next feature.
+        # Characterization remains available when a priority policy selects
+        # a genuinely ambiguous runtime claim.
         return [
             ((0, 0, index, str(value["target"])), "delivery", value, None)
             for index, value in enumerate(deliveries)
-        ] + [
-            (
-                (1, 0, index, str(value["task_id"])),
-                "characterization",
-                value,
-                None,
-            )
-            for index, value in enumerate(characterizations)
         ]
 
     ranked = []
@@ -3343,6 +3341,14 @@ def queue_status(root: Path) -> Mapping[str, Any]:
         "delivery_count": len(deliveries),
         "characterization_count": len(characterizations),
         "eligible_count": len(eligible),
+        "deferred_characterization_count": (
+            len(characterizations)
+            - sum(
+                1
+                for _, kind, _, _ in eligible
+                if kind == "characterization"
+            )
+        ),
     }
     if policy is not None:
         result["priority_policy"] = {

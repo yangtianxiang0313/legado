@@ -411,6 +411,50 @@ class MinimalLoopTests(unittest.TestCase):
         self.assertEqual((0, 0), first[:2])
         self.assertEqual((1, 0), later[:2])
 
+    def test_characterization_inventory_is_not_started_without_priority_policy(
+        self,
+    ):
+        candidate = {
+            "task_id": "IOS-CHARACTERIZE-LONG-TAIL-001",
+            "claim": {"id": "BKC-LONG-TAIL"},
+        }
+        with (
+            patch.object(loop, "planned_deliveries", return_value=[]),
+            patch.object(
+                loop,
+                "direct_characterization_deliveries",
+                return_value=[],
+            ),
+            patch.object(loop, "direct_source_deliveries", return_value=[]),
+            patch.object(
+                loop,
+                "milestone_completion_deliveries",
+                return_value=[],
+            ),
+            patch.object(
+                loop,
+                "source_management_milestone_deliveries",
+                return_value=[],
+            ),
+            patch.object(
+                loop,
+                "shelf_management_milestone_deliveries",
+                return_value=[],
+            ),
+            patch.object(
+                loop,
+                "priority_policy_deliveries",
+                return_value=[],
+            ),
+            patch.object(
+                loop,
+                "pending_characterizations",
+                return_value=[candidate],
+            ),
+            patch.object(loop, "active_priority_policy", return_value=None),
+        ):
+            self.assertEqual([], loop.prioritized_work(Path(".")))
+
     def test_completed_event_removes_delivery_from_queue(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

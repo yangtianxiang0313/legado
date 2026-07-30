@@ -6,7 +6,7 @@ Loop v2 只保留一个当前任务、一个追加事件流和一个紧凑状态
 已发布业务知识 / 源码锚定 Candidate Claim
 → next（纯派生）
 → task.json（唯一活动任务）
-→ Android characterization 或 iOS Delivery
+→ 默认 iOS Delivery；仅语义不明确时显式选择 Android characterization
 → verify（结构化验收）
 → complete（摘要、踩坑、当前状态、下一步）
 → 下一任务
@@ -40,6 +40,10 @@ python3 -B ios/loop/loop.py advance
 `mode=critical_path_only` 时，未命中 selector 的候选只会被延后，不会丢失，也
 不会在 P0 完成前抢占活动任务。`next` 与 `doctor` 的 `queue` 字段会同时报告
 eligible 和 deferred 数量，防止“有大量候选却显示成迁移完成”的假性空队列。
+没有活动里程碑时，历史扫描得到的 Characterization 候选也只作为库存报告，
+不会被自动启动。AI 必须先从冻结 Android 源码确认下一条用户主链并声明一个
+可交付里程碑；只有该里程碑显式选择了运行时语义不明确的 Claim，Loop 才运行
+Characterization。这样“队列空”不会退化成批量生产 Golden。
 当前 P0 目标是可阅读主链路：获得书籍、目录、正文、阅读器、进度恢复，并最终
 以真实书源结构化验收和 iPhone Simulator 端到端 UI 验收收口。
 验证通过时可在同一次调用中完成当前项并启动下一项：
@@ -64,14 +68,15 @@ python3 -B ios/loop/loop.py advance \
 不进入 Git。旧 Harness 仅保留在 Git 历史；新的任务不得再生成 Recipe、
 WorkItem、Checkpoint 或 Evidence 副本。
 
-## 分层验证
+## 按风险验证
 
 Loop 不再让每个小切片重复承担发布级验证：
 
-- `slice`：只跑一次结构化跨端对齐；该命令同时编译受影响 Target；
-- `ui_slice`：在 `slice` 基础上只跑一台主 iPhone Simulator；
-- `checkpoint`：仅用于 UI 拓扑、依赖启用、P0 里程碑和发布检查，运行完整
-  Swift 测试、iPhone+iPad 矩阵与 Oracle/Publisher 基础设施回归。
+- 普通业务 Delivery：1～3 个相关聚焦测试；
+- 阶段里程碑：在聚焦测试之外只增加一次 App 构建；
+- 真实 UI 结构或平台边界变化：才运行一台主 iPhone Simulator；
+- Harness 自测、完整 Swift 测试、双设备矩阵与 Publisher 回归：仅在对应
+  基础设施被修改或发布检查时运行，不阻塞日常迁移。
 
 Android 真源 Golden 仍是迁移语义的权威。瘦身只移除重复验证，不把 iOS
 测试结果反向当作 Android expected。
