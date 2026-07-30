@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P12-SOURCE-REQUEST-PRODUCT-INTEGRATION-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P12 导入书源请求选项接入产品主链",
   "objective": "把独立 SourceRuntime 已实现的请求准备能力接入产品流水线，使导入书源的顶层 Header、Cookie 与重试语义真正作用于搜索、详情、目录和正文请求。",
@@ -11,6 +11,12 @@
     "搜索、详情、目录和正文共用同一请求准备边界",
     "复用既有 Android Header/Cookie/Retry Golden，只运行聚焦 Swift 测试"
   ],
+  "final_verification": {
+    "kind": "generic_app_build",
+    "status": "passed",
+    "at": "2026-07-30T19:40:55Z",
+    "command": "xcodebuild -project ios/Apps/Legado/Legado.xcodeproj -scheme LegadoApp -destination generic/platform=iOS Simulator CODE_SIGNING_ALLOWED=NO build"
+  },
   "deferred_policy": "先接影响真实源可用性的 Header；持久 Cookie、enabledCookieJar 与 retry 随后按同一主链续接。代理、动态 WebView 和长尾超时策略不混入首阶段。",
   "deliveries": [
     {
