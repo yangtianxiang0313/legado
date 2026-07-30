@@ -74,6 +74,39 @@
           "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/analyzeUrl"
         }
       ]
+    },
+    {
+      "target": "IOS-SOURCE-RUNTIME-ENDPOINT-PERSISTENCE-001",
+      "title": "贯通搜索书架章节与数据库的请求表达式",
+      "fixture_id": "source-endpoint-persistence-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-04",
+      "prerequisite_task_ids": [
+        "IOS-SOURCE-RUNTIME-ENDPOINT-PRODUCT-INTEGRATION-001"
+      ],
+      "validation": "tests",
+      "test_filter": "SourceEndpointPersistenceTests",
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/LibraryDomain/**",
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Sources/AppNavigation/**",
+        "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+        "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+        "ios/Apps/Legado/App/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "3c962707818d3ad976867221a2f76da20e001e11",
+          "path": "app/src/main/java/io/legado/app/data/entities/BookChapter.kt",
+          "symbol_id": "kotlin://io.legado.app.data.entities.BookChapter/getAbsoluteURL"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "af03cf51cef2eb31f54b8240c39e868ceabdba54",
+          "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
+          "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook/getContentAwait"
+        }
+      ]
     }
   ],
   "stages": [
@@ -99,6 +132,19 @@
           "id": "SOURCE-ENDPOINT-PRODUCT-INTEGRATION",
           "task_ids": [
             "IOS-SOURCE-RUNTIME-ENDPOINT-PRODUCT-INTEGRATION-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P13-03-SOURCE-ENDPOINT-PERSISTENCE",
+      "title": "请求表达式贯穿产品模型与持久化",
+      "outcome": "书籍和章节以逻辑 URL 建立身份，同时在导航、书架和 GRDB 中独立保存完整请求表达式。",
+      "selectors": [
+        {
+          "id": "SOURCE-ENDPOINT-PERSISTENCE",
+          "task_ids": [
+            "IOS-SOURCE-RUNTIME-ENDPOINT-PERSISTENCE-001"
           ]
         }
       ]
