@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-LIBRARY-BOOK-IMPORT-CHANNEL-RUNTIME-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "library.book.import-channel-runtime-golden",
+  "title": "受保护 Android Golden 验证的网址与本地书籍导入语义",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "content.import",
+      "library.catalog"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-CORE"
+    ],
+    "subject_keys": [
+      "content.import",
+      "library.book"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-BOOK-IMPORT-CHANNELS-001",
+      "revision": 2,
+      "semantic_key": "library.book.import-channel-runtime",
+      "kind": "runtime_behavior",
+      "topic": "网址与本地导入入口",
+      "statement": "在 rl-library-book-import-channel-runtime-001 的 9 个固定 Android 场景中，网址导入首先按 bookUrl 命中已有 Book，命中时不发网络请求；否则依次以书源 base URL 精确匹配和 bookUrlPattern 匹配选择书源，非法正则被忽略且不阻断后续候选，未匹配书源时不请求也不入库，匹配成功时拉取详情并新增 Book。本地单文件导入从文件名解析 name/author 并入库；同 URI 重导入会删除旧章节后更新 Book；空文件抛出 EmptyFileException 且不入库；ZIP 仅导入支持的书籍条目，生成的 Book 同时标记本地和压缩来源，压缩包 URI 自身不是 Book 主键。ImportBookViewModel.scanDoc 递归发现支持格式，包含隐藏文件和嵌套目录，并按批次回调且只各调用一次 clear/finally。内置中文文件名规则会把书名前缀并入作者，例如“前缀《星河》作者：甲.txt”得到 name=星河、author=前缀甲。本结论只覆盖 Golden 中的已有书短路、精确/模式书源选择、非法正则、未匹配、TXT 新增/重导/空文件、ZIP 条目与递归扫描；不外推并发导入、重复 name+author 冲突、文件权限、超大压缩包、其他编码、用户交互提示或真实站点可用性。iOS 应以统一 BookImportUseCase 表达导入结果，但把远程书源解析、本地文件读取、压缩归档、目录枚举和持久化隔离为端口，不复制 Android ViewModel、Room、Uri 或全局配置。",
+      "subject_keys": [
+        "content.import",
+        "library.book"
+      ],
+      "depends_on": [
+        {
+          "id": "BKC-LOCAL-BOOK-RELOCATION-001",
+          "revision": 2
+        }
+      ],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [
+          {
+            "id": "AF-BOOKSHELF-ADD-BOOK-BY-URL",
+            "revision_sha256": "371af1936c444a33b90e3e7c9af87f0582b60fe3fcd03fea75ce294eb3fa3ec7"
+          },
+          {
+            "id": "AF-IMPORT-BOOK-SCAN-DOC",
+            "revision_sha256": "e8546132b8add4db363c56d7698efb862f7df4a2ab61e5afdbe3ae20d00f52ae"
+          },
+          {
+            "id": "AF-LOCAL-BOOK-ANALYZE-NAME-AUTHOR",
+            "revision_sha256": "f57629b287120adc15fe7ac524b4ab162c46220fafd5ace0440139600a1d5a08"
+          },
+          {
+            "id": "AF-LOCAL-BOOK-IMPORT-ARCHIVE",
+            "revision_sha256": "ec5588c47b72a98eaa725483ef7dc46609c7afcd45d400db77bf874372041729"
+          },
+          {
+            "id": "AF-LOCAL-BOOK-IMPORT-FILE",
+            "revision_sha256": "9954c7ffb7fac333c8ad8e58625a0bd31d99f1deae6df3c8bd4f47e90dc94041"
+          },
+          {
+            "id": "AF-LOCAL-BOOK-IMPORT-FILES",
+            "revision_sha256": "e60c1a6a2268e4e4238e5a295c666e963e10f1d4e9ff324207e5b051b0c5920f"
+          }
+        ],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "5730590bffb6f8f6109ba66441a0937fdd10ec9b",
+            "path": "app/src/main/java/io/legado/app/ui/main/bookshelf/BookshelfViewModel.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.main.bookshelf/BookshelfViewModel/addBookByUrl"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "0c0c50252d9c2590053fbf10cd39c49e314839e0",
+            "path": "app/src/main/java/io/legado/app/model/localBook/LocalBook.kt",
+            "symbol_id": "kotlin://io.legado.app.model.localBook/LocalBook"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "ef3977f03fcb1b639d53953c9c0131c4cf21d5ce",
+            "path": "app/src/main/java/io/legado/app/ui/book/import/local/ImportBookViewModel.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.import.local/ImportBookViewModel/scanDoc"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/rl-library-book-import-channel-runtime-001.json",
+            "artifact_sha256": "6d55751e8b0dc90b7b495d0fd900ccfdcc9f35397b2f64ebc9a7326c09eba2a8",
+            "projection_pointer": "/artifact/result/value/portable_known_projection",
+            "observed_sha256": "23432b0a0e42b8be864ab9e08e582453cbf4c7388ea4cb04ddc1d64eeda0ecd3",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "7baf7d704c0e88d1e48108c41df4ea615a32afe50149757711dff6859c9650f1",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-BOOK-IMPORT-CHANNELS-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-LIBRARY-BOOK-IMPORT-CHANNEL-RUNTIME-001"
+}

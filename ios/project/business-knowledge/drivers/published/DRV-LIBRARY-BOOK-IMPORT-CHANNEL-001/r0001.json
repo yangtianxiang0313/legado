@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-LIBRARY-BOOK-IMPORT-CHANNEL-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "library.book.import-channel-boundary",
+  "title": "统一导入用例与远程、本地基础设施端口分离",
+  "claim_refs": [
+    {
+      "id": "BKC-BOOK-IMPORT-CHANNELS-001",
+      "revision": 2
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "LibraryDomain 必须复现受保护 Android Golden 中已有书短路、书源选择、文件名解析、重导清章、空文件拒绝、归档来源和递归扫描的可观察结果。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "modularity",
+      "scenario": "领域层统一表达 URL、本地文件、归档和目录扫描的导入意图与结果，但网络详情获取、文件读取、ZIP、目录枚举和数据库写入由消费方端口承担。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "data_integrity",
+      "scenario": "已有书短路、重导清理旧章节、拒绝空文件和归档条目身份必须成为显式原子决策，不能由 UI 回调顺序或数据库副作用偶然保证。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "security",
+      "scenario": "归档条目筛选、路径穿越、解压大小和目录访问权限必须停留在受控 Adapter；LibraryDomain 不接受未经规范化的归档路径作为稳定身份。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "determinism",
+      "scenario": "书源候选顺序、非法正则跳过、支持格式集合、目录发现顺序与文件名解析规则必须可注入并能在离线 Conformance 中复验。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "scope_control",
+      "scenario": "首个实现切片只覆盖九个 Golden 场景的纯领域决策和结构化输出；真实网络、文件选择器、持久数据库和 SwiftUI 接线由后续 P0 纵切完成。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "如何让 URL 与本地导入共享稳定的 BookImportResult，同时保留不同的来源选择、失败和持久化语义？",
+    "如何把已有书查询、书源解析、详情获取、文件/归档读取、章节失效和书籍保存组织为显式端口，而不把 Android ViewModel 迁入领域？",
+    "如何让扫描和归档策略可测试且安全，并为后续真实 iOS 文件权限和持久化 Adapter 留出边界？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002"
+    ],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-LIBRARY-BOOK-IMPORT-CHANNEL-RUNTIME-001",
+      "IOS-LIBRARY-DOMAIN-BOOK-IMPORT-CHANNEL-RUNTIME-001"
+    ]
+  },
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30520276343/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-LIBRARY-BOOK-IMPORT-CHANNEL-RUNTIME-001"
+}
