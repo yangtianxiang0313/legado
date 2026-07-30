@@ -1106,6 +1106,57 @@ class MinimalLoopTests(unittest.TestCase):
                 )
                 loop.validate_task(root, domain_task)
 
+    def test_dependency_source_contract_is_source_neutral(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            requirement = "REQ-ANDROID-SOURCE-PIPELINE-001"
+            self.write(
+                root,
+                f"ios/project/requirements/accepted/{requirement}.json",
+                {"id": requirement},
+            )
+            policy_path = "ios/project/migration-priorities/active.json"
+            self.write(root, policy_path, {"id": "MILESTONE-DEPENDENCY"})
+            ledger = {
+                "packet_refs": [],
+                "entries": [
+                    {
+                        "claim_ref": {"id": "BKC-SOURCE", "revision": 1},
+                        "delivery": {
+                            "requirement_refs": [
+                                f"{requirement}@1#RC-01"
+                            ]
+                        },
+                        "validation": {"evidence_refs": []},
+                    }
+                ],
+            }
+            delivery = {
+                "target": "IOS-DEPENDENCY-SWIFTSOUP-HTML-001",
+                "title": "SwiftSoup",
+                "ledger": ledger,
+                "ledger_path": policy_path,
+                "entries": ledger["entries"],
+                "source_anchors": [],
+                "source_contract": {
+                    "fixture_id": "dependency-swiftsoup-html-v1",
+                    "path": policy_path,
+                    "validation": "tests",
+                    "test_filter": "HTMLSwiftSoupTests",
+                },
+            }
+
+            task = loop.build_task(root, delivery)
+
+            self.assertEqual(
+                "dependency_policy",
+                task["source"]["authority"],
+            )
+            self.assertEqual([], task["source"]["anchors"])
+            self.assertNotIn("android_golden", task["source"])
+            self.assertNotIn("android_baseline", task["source"])
+            loop.validate_task(root, task)
+
     def test_verified_candidate_evidence_satisfies_dependency(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

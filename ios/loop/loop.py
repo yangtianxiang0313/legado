@@ -2822,7 +2822,11 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
         ):
             raise LoopError("SOURCE_VALIDATION_INVALID")
         source = {
-            "authority": "android_source_contract",
+            "authority": (
+                "dependency_policy"
+                if architecture["owner"] == "DependencyControl"
+                else "android_source_contract"
+            ),
             "anchors": source_anchors,
             "fixture_id": fixture_id,
             "source_contract": source_contract,
@@ -3612,6 +3616,23 @@ def validate_task(root: Path, task: Mapping[str, Any]) -> None:
             )
         ):
             raise LoopError("TASK_SOURCE_INVALID:android_source_contract")
+    elif authority == "dependency_policy":
+        source_contract = source.get("source_contract")
+        anchors = source.get("anchors")
+        architecture = task.get("architecture")
+        if (
+            task.get("kind") != "delivery"
+            or not isinstance(architecture, dict)
+            or architecture.get("owner") != "DependencyControl"
+            or not isinstance(source_contract, dict)
+            or not isinstance(source_contract.get("path"), str)
+            or not (root / source_contract["path"]).is_file()
+            or not isinstance(anchors, list)
+            or anchors
+            or "android_golden" in source
+            or "android_baseline" in source
+        ):
+            raise LoopError("TASK_SOURCE_INVALID:dependency_policy")
     else:
         raise LoopError("TASK_SOURCE_AUTHORITY_INVALID")
     acceptance = task.get("acceptance")
