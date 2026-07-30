@@ -554,6 +554,25 @@ def owner_contract(target: str) -> Mapping[str, Any]:
             ],
         }
     if "APP-NAVIGATION" in target:
+        allowed_paths = [
+            "ios/Apps/Legado/**",
+            "ios/Packages/LegadoKit/Package.swift",
+            "ios/Packages/LegadoKit/Sources/AppNavigation/**",
+            "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+            "ios/Packages/LegadoKit/Sources/ConformanceCLI/**",
+            "ios/Packages/LegadoKit/Sources/TestSupport/FixtureModel.swift",
+            "ios/Packages/LegadoKit/Tests/AppNavigationTests/**",
+            "ios/Packages/LegadoKit/Tests/ConformanceCLITests/**",
+            "ios/harness/ui/ui_simulator.py",
+            "ios/harness/ui/tests/test_ui_simulator.py",
+        ]
+        if target == "IOS-APP-NAVIGATION-BOOK-DETAIL-STAGING-001":
+            allowed_paths.extend(
+                [
+                    "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+                    "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+                ]
+            )
         return {
             "owner": "AppNavigation",
             "architecture_refs": [
@@ -567,18 +586,7 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ARCH-017",
                 "ARCH-018",
             ],
-            "allowed_paths": [
-                "ios/Apps/Legado/**",
-                "ios/Packages/LegadoKit/Package.swift",
-                "ios/Packages/LegadoKit/Sources/AppNavigation/**",
-                "ios/Packages/LegadoKit/Sources/AppUseCases/**",
-                "ios/Packages/LegadoKit/Sources/ConformanceCLI/**",
-                "ios/Packages/LegadoKit/Sources/TestSupport/FixtureModel.swift",
-                "ios/Packages/LegadoKit/Tests/AppNavigationTests/**",
-                "ios/Packages/LegadoKit/Tests/ConformanceCLITests/**",
-                "ios/harness/ui/ui_simulator.py",
-                "ios/harness/ui/tests/test_ui_simulator.py",
-            ],
+            "allowed_paths": allowed_paths,
         }
     if "SOURCE-RUNTIME" in target:
         return {
@@ -1800,6 +1808,26 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "timeout_seconds": 300,
         },
     ]
+    if target == "IOS-APP-NAVIGATION-BOOK-DETAIL-STAGING-001":
+        commands.insert(
+            2,
+            {
+                "id": "database-grdb-tests",
+                "argv": [
+                    "swift",
+                    "test",
+                    "--package-path",
+                    "ios/Packages/LegadoKit",
+                    "--disable-automatic-resolution",
+                    "--filter",
+                    "DatabaseGRDBTests",
+                ],
+                "required_output_pattern": (
+                    r"Executed [1-9][0-9]* tests?, with 0 failures"
+                ),
+                "timeout_seconds": 600,
+            },
+        )
     ui_acceptance = delivery_contract.get("ui_acceptance")
     allowed_paths = list(architecture["allowed_paths"])
     if isinstance(ui_acceptance, dict):

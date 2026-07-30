@@ -1943,6 +1943,17 @@ class MinimalLoopTests(unittest.TestCase):
             "testBookDetailStagingPersistence",
             ui["ui_acceptance"]["test_method"],
         )
+        ui_owner = loop.owner_contract(
+            "IOS-APP-NAVIGATION-BOOK-DETAIL-STAGING-001"
+        )
+        self.assertIn(
+            "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+            ui_owner["allowed_paths"],
+        )
+        self.assertIn(
+            "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+            ui_owner["allowed_paths"],
+        )
 
 
 if __name__ == "__main__":
