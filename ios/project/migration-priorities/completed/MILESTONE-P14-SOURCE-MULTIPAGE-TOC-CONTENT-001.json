@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P14-SOURCE-MULTIPAGE-TOC-CONTENT-001",
+  "status": "completed",
+  "mode": "critical_path_only",
+  "title": "P14 多页目录与多页正文",
+  "objective": "对齐 Android BookChapterList.nextTocUrl 与 BookContent.nextContentUrl：真实书源的目录和单章正文可沿规则解析出的下一页端点继续请求，按稳定顺序合并，并以已访问端点阻止循环。",
+  "completion_evidence": [
+    "导入书源保留 TocRule.nextTocUrl 与 ContentRule.nextContentUrl",
+    "目录流水线逐页请求并合并章节，重复端点停止",
+    "正文流水线逐页请求并合并正文，遇到下一章地址停止",
+    "分页端点继续复用 SourceEndpoint 的 method/body/header/retry 语义",
+    "产品目录和阅读主链消费合并后的最终结果"
+  ],
+  "final_verification": {
+    "kind": "focused_runtime_and_reader_tests_plus_generic_app_build",
+    "status": "passed",
+    "at": "2026-07-30T19:58:20Z",
+    "commands": [
+      "swift test --package-path ios/Packages/LegadoKit --disable-automatic-resolution --filter SourceMultipagePipelineTests",
+      "swift test --package-path ios/Packages/LegadoKit --disable-automatic-resolution --filter ReaderContentPaginationBoundaryTests",
+      "xcodebuild -project ios/Apps/Legado/Legado.xcodeproj -scheme LegadoApp -destination generic/platform=iOS Simulator CODE_SIGNING_ALLOWED=NO build"
+    ]
+  },
+  "deferred_policy": "先实现静态 HTML、JSONPath 与正则规则可确定解析的下一页；WebView/webJs、登录检测脚本和 preUpdateJs 另列后续能力，不阻塞静态真实源主链。",
+  "deliveries": [
+    {
+      "target": "IOS-SOURCE-RUNTIME-MULTIPAGE-RULE-IMPORT-001",
+      "title": "导入并建模目录与正文下一页规则",
+      "fixture_id": "source-multipage-rule-import-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-04",
+      "prerequisite_task_ids": [],
+      "validation": "tests",
+      "test_filter": "SourceMultipageRuleImportTests",
+      "additional_allowed_paths": [
+        "ios/Apps/Legado/App/SearchEnvironment.swift"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/data/entities/rule/TocRule.kt",
+          "symbol_id": "kotlin://io.legado.app.data.entities.rule/TocRule/nextTocUrl"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/data/entities/rule/ContentRule.kt",
+          "symbol_id": "kotlin://io.legado.app.data.entities.rule/ContentRule/nextContentUrl"
+        }
+      ]
+    },
+    {
+      "target": "IOS-SOURCE-RUNTIME-MULTIPAGE-PIPELINE-001",
+      "title": "贯通目录与正文多页请求合并",
+      "fixture_id": "source-multipage-pipeline-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-04",
+      "prerequisite_task_ids": [
+        "IOS-SOURCE-RUNTIME-MULTIPAGE-RULE-IMPORT-001"
+      ],
+      "validation": "tests",
+      "test_filter": "SourceMultipagePipelineTests",
+      "additional_allowed_paths": [],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/model/webBook/BookChapterList.kt",
+          "symbol_id": "kotlin://io.legado.app.model.webBook/BookChapterList/analyzeChapterList"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/model/webBook/BookContent.kt",
+          "symbol_id": "kotlin://io.legado.app.model.webBook/BookContent/analyzeContent"
+        }
+      ]
+    },
+    {
+      "target": "IOS-SOURCE-RUNTIME-MULTIPAGE-READER-BOUNDARY-001",
+      "title": "将下一章边界接入阅读与离线缓存",
+      "fixture_id": "source-multipage-reader-boundary-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-04",
+      "prerequisite_task_ids": [
+        "IOS-SOURCE-RUNTIME-MULTIPAGE-PIPELINE-001"
+      ],
+      "validation": "tests",
+      "test_filter": "ReaderContentPaginationBoundaryTests",
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
+          "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook/getContentAwait"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/model/webBook/BookContent.kt",
+          "symbol_id": "kotlin://io.legado.app.model.webBook/BookContent/analyzeContent"
+        }
+      ]
+    }
+  ],
+  "stages": [
+    {
+      "id": "P14-01-MULTIPAGE-RULE-IMPORT",
+      "title": "下一页规则进入 iOS 书源定义",
+      "outcome": "Android 书源 JSON 中的 nextTocUrl 与 nextContentUrl 不再在导入时丢失。",
+      "selectors": [
+        {
+          "id": "SOURCE-MULTIPAGE-RULE-IMPORT",
+          "task_ids": [
+            "IOS-SOURCE-RUNTIME-MULTIPAGE-RULE-IMPORT-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P14-02-MULTIPAGE-PIPELINE",
+      "title": "目录与正文按下一页规则持续请求",
+      "outcome": "SourceRuntime 在循环保护下合并多页目录与正文，并将最终结果交给产品主链。",
+      "selectors": [
+        {
+          "id": "SOURCE-MULTIPAGE-PIPELINE",
+          "task_ids": [
+            "IOS-SOURCE-RUNTIME-MULTIPAGE-PIPELINE-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P14-03-READER-NEXT-CHAPTER-BOUNDARY",
+      "title": "阅读主链提供下一章边界",
+      "outcome": "在线阅读和离线缓存把目录中的下一章端点交给正文分页，避免把下一章正文拼入当前章。",
+      "selectors": [
+        {
+          "id": "SOURCE-MULTIPAGE-READER-BOUNDARY",
+          "task_ids": [
+            "IOS-SOURCE-RUNTIME-MULTIPAGE-READER-BOUNDARY-001"
+          ]
+        }
+      ]
+    }
+  ]
+}
