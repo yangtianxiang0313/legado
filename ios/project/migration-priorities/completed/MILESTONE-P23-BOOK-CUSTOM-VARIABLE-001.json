@@ -1,11 +1,25 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P23-BOOK-CUSTOM-VARIABLE-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P23 书籍自定义变量闭环",
   "objective": "依据冻结 Android BaseBook 与 BookInfoActivity 源码，把书籍详情中的“设置书籍变量”从空动作接通为可编辑、持久化并重新进入目录与正文规则上下文的真实能力。",
   "validation_policy": "执行变量持久化聚焦测试和一次 App 构建；不启动模拟器，不重复完整书源或阅读主链路验收。",
+  "completion_evidence": [
+    "书籍详情的设置书籍变量入口打开真实编辑页并显示书源 variableComment",
+    "保存时将 custom 键合并进现有书籍变量，不覆盖解析阶段产生的其他键",
+    "ShelfLibrary 经 BookShelfRepository 端口保存并重新读取当前书籍",
+    "GRDB 重开后 custom 与既有规则变量均保持"
+  ],
+  "final_verification": {
+    "kind": "focused_test_and_single_app_build",
+    "completed_at": "2026-07-31T05:32:36+08:00",
+    "result": "1 个聚焦持久化测试和一次 App 构建通过；未运行模拟器。",
+    "evidence": [
+      ".harness-runtime/loop/IOS-APP-NAVIGATION-BOOK-CUSTOM-VARIABLE-001/attempt-1"
+    ]
+  },
   "stages": [
     {
       "id": "P23-S1",
