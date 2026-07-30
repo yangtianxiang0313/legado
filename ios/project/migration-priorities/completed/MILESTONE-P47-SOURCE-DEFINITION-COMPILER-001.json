@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P47-SOURCE-DEFINITION-COMPILER-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P47 书源 DTO 到运行时定义的独立编译边界",
   "objective": "依据冻结 Android BookSource 及其缺失 rule 自动补默认对象的行为，在 LegadoSourceKit 内建立 BookSourceDTO→SourceSearchDefinition/SourceExploreDefinition 的唯一产品编译器；App 只提供用户编辑后的元数据覆盖并消费编译结果，不再用 JSONSerialization 解释书源字段，也不因任一详情、目录或正文规则缺失而整源丢弃。",
