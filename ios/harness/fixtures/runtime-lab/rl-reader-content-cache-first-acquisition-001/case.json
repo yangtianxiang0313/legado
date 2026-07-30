@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "kind": "android_runtime_scenario",
+  "id": "rl-reader-content-cache-first-acquisition-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "android_runtime",
+  "capabilities": [
+    "reader.content",
+    "reader.lifecycle",
+    "content.cache",
+    "android.room"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": null,
+  "input": "input.json",
+  "transport": {
+    "mode": "none",
+    "external_network": "deny",
+    "responses": []
+  },
+  "coverage": [
+    {
+      "behavior": "reader.content.cache-first-acquisition",
+      "cases": [
+        {
+          "id": "remote-cache-hit-without-source",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-READ-BOOK-LOAD-CONTENT",
+            "AF-BOOK-HELP-GET-CONTENT"
+          ],
+          "branch_refs": [
+            "ReadBook.loadContent consumes BookHelp.getContent before consulting bookSource",
+            "a remote cached chapter loads even when no source is available"
+          ]
+        },
+        {
+          "id": "empty-save-remains-cache-miss",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-READ-BOOK-LOAD-CONTENT",
+            "AF-BOOK-HELP-GET-CONTENT"
+          ],
+          "branch_refs": [
+            "BookHelp.saveText with an empty String does not produce a readable cache entry",
+            "the subsequent acquisition follows the cache-miss path"
+          ]
+        },
+        {
+          "id": "remote-cache-miss-without-source",
+          "role": "denied",
+          "android_fact_refs": [
+            "AF-READ-BOOK-LOAD-CONTENT"
+          ],
+          "branch_refs": [
+            "a remote cache miss with null bookSource becomes the reader failure body for missing source"
+          ]
+        },
+        {
+          "id": "local-cache-miss-uses-local-book-fallback",
+          "role": "denied",
+          "android_fact_refs": [
+            "AF-READ-BOOK-LOAD-CONTENT",
+            "AF-BOOK-HELP-GET-CONTENT"
+          ],
+          "branch_refs": [
+            "BookHelp asks LocalBook after the shared cache miss",
+            "a non-null LocalBook result is consumed before the no-content failure branch"
+          ]
+        },
+        {
+          "id": "remote-cache-miss-delegates-to-source",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-READ-BOOK-LOAD-CONTENT"
+          ],
+          "branch_refs": [
+            "a remote cache miss with a source delegates to CacheBook/WebBook",
+            "a deterministic invalid chapter URL records a download failure and returns a source failure body"
+          ]
+        },
+        {
+          "id": "missing-chapter-clears-loading",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-READ-BOOK-LOAD-CONTENT"
+          ],
+          "branch_refs": [
+            "a missing Room chapter removes the in-flight index without producing reader content"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "not-observed",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 0,
+    "network_allowed": false,
+    "logical_origin": null,
+    "database_reset_per_case": true
+  },
+  "limits": {
+    "timeout_ms": 5000
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/model/ReadBook.kt#loadContent",
+      "app/src/main/java/io/legado/app/model/ReadBook.kt#download",
+      "app/src/main/java/io/legado/app/help/book/BookHelp.kt#getContent"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-READER-CONTENT-CACHE-FIRST-ACQUISITION-001"
+  }
+}

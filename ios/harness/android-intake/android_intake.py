@@ -207,14 +207,21 @@ def extract_constructor(text: str, symbol: str) -> Tuple[Dict[str, Any], int, in
     return payload, line_number(text, match.start()), line_number(text, closing)
 
 
-def extract_function(text: str, symbol: str) -> Tuple[Dict[str, Any], int, int]:
-    match = re.search(
+def extract_function(
+    text: str,
+    symbol: str,
+    occurrence: int = 1,
+) -> Tuple[Dict[str, Any], int, int]:
+    matches = list(re.finditer(
         rf"\b(?:suspend\s+)?fun\s+(?:[A-Za-z_][A-Za-z0-9_.<>?]*\.)?"
         rf"{re.escape(symbol)}\s*\(",
         text,
-    )
-    if match is None:
-        raise IntakeError(f"找不到 Kotlin function：{symbol}")
+    ))
+    if occurrence < 1 or occurrence > len(matches):
+        raise IntakeError(
+            f"找不到 Kotlin function：{symbol} occurrence={occurrence}"
+        )
+    match = matches[occurrence - 1]
     opening = text.find("(", match.start())
     closing = matching_delimiter(text, opening, "(", ")")
     body_open = text.find("{", closing)
@@ -336,7 +343,17 @@ def inventory_value(root: Path) -> Dict[str, Any]:
         if extractor == "kotlin_primary_constructor":
             payload, start_line, end_line = extract_constructor(text, symbol)
         elif extractor == "kotlin_function_entrypoint":
-            payload, start_line, end_line = extract_function(text, symbol)
+            occurrence = sensor.get("occurrence", 1)
+            if not isinstance(occurrence, int) or isinstance(
+                occurrence,
+                bool,
+            ):
+                raise IntakeError(f"{fact_id}: occurrence 必须是正整数")
+            payload, start_line, end_line = extract_function(
+                text,
+                symbol,
+                occurrence,
+            )
         elif extractor == "kotlin_room_query":
             payload, start_line, end_line = extract_room_query(text, symbol)
         else:

@@ -12,6 +12,18 @@ import android_intake  # noqa: E402
 
 
 class AndroidIntakeTests(unittest.TestCase):
+    def test_function_extractor_can_select_an_overload(self):
+        payload, start, end = android_intake.extract_function(
+            "fun loadContent(flag: Boolean) { Unit }\n"
+            "fun loadContent(index: Int, flag: Boolean) { Unit }\n",
+            "loadContent",
+            occurrence=2,
+        )
+
+        self.assertIn("index: Int", payload["signature"])
+        self.assertEqual(2, start)
+        self.assertEqual(2, end)
+
     def test_inventory_is_deterministic_and_bound_to_baseline(self):
         first = android_intake.inventory_value(REPO_ROOT)
         second = android_intake.inventory_value(REPO_ROOT)

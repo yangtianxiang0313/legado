@@ -74,6 +74,11 @@
       "sha256": "70d0c0c6cf7d3d6d18bcdc0579f5180b6e7a024d0ace620ad5dcf763c511a9a2"
     },
     {
+      "id": "rl-reader-content-cache-first-acquisition-001",
+      "path": "ios/harness/fixtures/runtime-lab/rl-reader-content-cache-first-acquisition-001",
+      "sha256": "17d0415f5de979f56a2e7244889630518a7654293c837914b2b9920530f59a49"
+    },
+    {
       "id": "rl-reader-history-read-record-runtime-risk-001",
       "path": "ios/harness/fixtures/runtime-lab/rl-reader-history-read-record-runtime-risk-001",
       "sha256": "9d8fdcf47ba610cc27c84a21383aa60e8755737fc5e7be1aa62db78db15b8f90"

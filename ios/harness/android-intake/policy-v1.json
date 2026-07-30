@@ -820,6 +820,19 @@
       "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
     },
     {
+      "fact_id": "AF-READ-BOOK-LOAD-CONTENT",
+      "fact_key": "reader.content.cache-first-load",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+      "symbol": "loadContent",
+      "occurrence": 2,
+      "symbol_id": "kotlin://io.legado.app.model.ReadBook/loadContent",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
       "fact_id": "AF-BOOK-HELP-GET-CONTENT",
       "fact_key": "reader.chapter-cache.get-content",
       "category": "production_entrypoint",

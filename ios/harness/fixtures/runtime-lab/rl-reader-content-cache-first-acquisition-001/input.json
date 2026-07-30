@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "remote-cache-hit-without-source",
+      "operation": "reader_content_acquisition",
+      "arguments": {
+        "book_kind": "remote",
+        "chapter_mode": "present",
+        "cache_mode": "text",
+        "cached_content": "缓存正文第一段\n缓存正文第二段",
+        "source_mode": "missing"
+      }
+    },
+    {
+      "id": "empty-save-remains-cache-miss",
+      "operation": "reader_content_acquisition",
+      "arguments": {
+        "book_kind": "remote",
+        "chapter_mode": "present",
+        "cache_mode": "empty",
+        "cached_content": "",
+        "source_mode": "missing"
+      }
+    },
+    {
+      "id": "remote-cache-miss-without-source",
+      "operation": "reader_content_acquisition",
+      "arguments": {
+        "book_kind": "remote",
+        "chapter_mode": "present",
+        "cache_mode": "missing",
+        "cached_content": "",
+        "source_mode": "missing"
+      }
+    },
+    {
+      "id": "local-cache-miss-uses-local-book-fallback",
+      "operation": "reader_content_acquisition",
+      "arguments": {
+        "book_kind": "local",
+        "chapter_mode": "present",
+        "cache_mode": "missing",
+        "cached_content": "",
+        "source_mode": "missing"
+      }
+    },
+    {
+      "id": "remote-cache-miss-delegates-to-source",
+      "operation": "reader_content_acquisition",
+      "arguments": {
+        "book_kind": "remote",
+        "chapter_mode": "present",
+        "cache_mode": "missing",
+        "cached_content": "",
+        "source_mode": "present_invalid_url"
+      }
+    },
+    {
+      "id": "missing-chapter-clears-loading",
+      "operation": "reader_content_acquisition",
+      "arguments": {
+        "book_kind": "remote",
+        "chapter_mode": "missing",
+        "cache_mode": "missing",
+        "cached_content": "",
+        "source_mode": "missing"
+      }
+    }
+  ]
+}

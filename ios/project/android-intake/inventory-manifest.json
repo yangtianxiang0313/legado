@@ -2,8 +2,8 @@
   "schema_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
   "android_tree": "c81f5d383116e37c1eefee3eb86654514e82022b",
-  "control_sha256": "822755c0b0cd5555b959fd4da3a6d18c833f9e9ab9252dbbf15c91a02a407d04",
-  "policy_sha256": "9ce7629b043fef66313aae8c6a0dfb073b7f48b04f8e454e6aa940c076619083",
+  "control_sha256": "b7cf2d92a166d8dd2bc750d0c353815dc647428436d751c23d6a8bb347ed0a30",
+  "policy_sha256": "62fe395f30710ee1f57dcaeac669007c89a310deae0a6f01e694285915c6d2b7",
   "facts": [
     {
       "id": "AF-ANALYZE-JSONPATH-GET-LIST",
@@ -1546,6 +1546,30 @@
         "body_semantic_sha256": "ff39971aae496c9b5bbf2595945364b5b66746df98bdb6285302d26cf2dcfa5d"
       },
       "revision_sha256": "8cd35b4781c7ac2204d348f46e3bc48b74a8b81cbae34d1e72734d6cddc027ce",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-READ-BOOK-LOAD-CONTENT",
+      "fact_key": "reader.content.cache-first-load",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.ReadBook/loadContent",
+      "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+      "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d",
+      "source_sha256": "c6fa38c435f0075555e61bc397a6ef81baadd7a5c434e79d424f3d0e1abfef12",
+      "start_line": 424,
+      "end_line": 454,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "loadContent",
+        "signature": "fun loadContent( index: Int, upContent: Boolean = true, resetPageOffset: Boolean = false, success: (() -> Unit)? = null )",
+        "body_semantic_sha256": "56236ed13d71e64eb38b86c1e7c67bd8f319dd8daffa5f79822e7e1010066fc6"
+      },
+      "revision_sha256": "a8ad06499816f1443735af5c0935b3564e5194d2b4f69061388aa2b87a81b3ed",
       "maps_to": [
         "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
       ]

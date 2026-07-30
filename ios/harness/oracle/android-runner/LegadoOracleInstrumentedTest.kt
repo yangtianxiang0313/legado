@@ -260,6 +260,8 @@ class LegadoOracleInstrumentedTest {
                 runReaderProgressTocRemapCases()
             "rl-reader-session-reset-from-book-001" ->
                 runReaderSessionResetCases()
+            "rl-reader-content-cache-first-acquisition-001" ->
+                runReaderContentAcquisitionCases()
             "rl-app-startup-first-use-and-restore-001" ->
                 runAppStartupCases()
             "sl-post-form-001" -> runPostFormCases()
@@ -6532,6 +6534,217 @@ class LegadoOracleInstrumentedTest {
                 )
             }
         }
+    }
+
+    private suspend fun runReaderContentAcquisitionCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            require(
+                value.getString("operation") ==
+                    "reader_content_acquisition"
+            ) {
+                "Unsupported reader content acquisition operation"
+            }
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", "reader_content_acquisition")
+                .put("arguments", JSONObject(arguments.toString()))
+            runCase(
+                value.getString("id"),
+                "reader_content_acquisition",
+                stimulus
+            ) {
+                readerContentAcquisitionProjection(
+                    value.getString("id"),
+                    arguments
+                )
+            }
+        }
+    }
+
+    private suspend fun readerContentAcquisitionProjection(
+        caseId: String,
+        arguments: JSONObject
+    ): JSONObject {
+        val local = arguments.getString("book_kind") == "local"
+        val origin =
+            if (local) BookType.localTag
+            else "android-runtime://reader-content/source/$caseId"
+        val book = Book(
+            bookUrl =
+                if (local) {
+                    "/android-runtime/missing-local/$caseId.txt"
+                } else {
+                    "/android-runtime/reader-content/$caseId"
+                },
+            origin = origin,
+            originName = "Oracle Content Source",
+            name = "Oracle Content $caseId",
+            author = "RuntimeLab",
+            type = if (local) BookType.local else BookType.text
+        ).apply {
+            setUseReplaceRule(false)
+            setReSegment(false)
+        }
+        val source = BookSource(
+            bookSourceUrl = origin,
+            bookSourceName = "Oracle Content Source",
+            ruleContent = ContentRule(content = "@CSS:body@text")
+        )
+        val chapter = BookChapter(
+            url =
+                if (
+                    arguments.getString("source_mode") ==
+                    "present_invalid_url"
+                ) {
+                    "unsupported://oracle-content/$caseId"
+                } else {
+                    "/android-runtime/reader-content/$caseId/0"
+                },
+            title = "Content Chapter",
+            bookUrl = book.bookUrl,
+            index = 0
+        )
+        clearReaderContentAcquisitionState(book, origin)
+        val callback = LayoutStreamCallback("none")
+        return try {
+            appDb.bookDao.insert(book)
+            if (arguments.getString("chapter_mode") == "present") {
+                appDb.bookChapterDao.insert(chapter)
+            }
+            if (
+                arguments.getString("source_mode") ==
+                "present_invalid_url"
+            ) {
+                appDb.bookSourceDao.insert(source)
+            }
+            when (arguments.getString("cache_mode")) {
+                "text", "empty" -> BookHelp.saveText(
+                    book,
+                    chapter,
+                    arguments.getString("cached_content")
+                )
+                "missing" -> Unit
+                else -> error("Unsupported reader cache mode")
+            }
+            val before = BookHelp.getContent(book, chapter)
+
+            ReadBook.book = book
+            ReadBook.bookSource =
+                if (
+                    arguments.getString("source_mode") ==
+                    "present_invalid_url"
+                ) {
+                    source
+                } else {
+                    null
+                }
+            ReadBook.chapterSize = 2
+            ReadBook.durChapterIndex = 1
+            ReadBook.durChapterPos = 0
+            ReadBook.callBack = callback
+            ReadBook.loadContent(
+                index = 0,
+                upContent = false,
+                resetPageOffset = false,
+                success = callback::markSuccess
+            )
+
+            when {
+                arguments.getString("chapter_mode") == "missing" ->
+                    withTimeout(5_000) {
+                        while (0 in prefetchLoadingList()) {
+                            delay(10)
+                        }
+                    }
+                arguments.getString("source_mode") ==
+                    "present_invalid_url" ->
+                    withTimeout(5_000) {
+                        while (
+                            (ReadBook.downloadFailChapters[0] ?: 0) == 0 ||
+                            ReadBook.prevTextChapter == null
+                        ) {
+                            delay(10)
+                        }
+                    }
+                else -> withTimeout(5_000) {
+                    while (
+                        ReadBook.prevTextChapter == null ||
+                        0 in prefetchLoadingList()
+                    ) {
+                        delay(10)
+                    }
+                }
+            }
+
+            val after = BookHelp.getContent(book, chapter)
+            JSONObject()
+                .put("initial_content_state", contentState(before))
+                .put("initial_content", nullable(before))
+                .put("cached_content_after_load", contentState(after))
+                .put("content_after_load", nullable(after))
+                .put("source_present", ReadBook.bookSource != null)
+                .put(
+                    "source_delegated",
+                    (ReadBook.downloadFailChapters[0] ?: 0) > 0
+                )
+                .put(
+                    "download_failure_count",
+                    ReadBook.downloadFailChapters[0] ?: 0
+                )
+                .put(
+                    "download_marked_success",
+                    0 in ReadBook.downloadedChapters
+                )
+                .put(
+                    "chapter_loaded",
+                    ReadBook.prevTextChapter != null
+                )
+                .put(
+                    "loading_cleared",
+                    0 !in prefetchLoadingList()
+                )
+        } finally {
+            clearReaderContentAcquisitionState(book, origin)
+        }
+    }
+
+    private fun contentState(value: String?): String =
+        when {
+            value == null -> "missing"
+            value.isEmpty() -> "empty"
+            else -> "text"
+        }
+
+    private suspend fun clearReaderContentAcquisitionState(
+        book: Book,
+        origin: String
+    ) {
+        ReadBook.coroutineContext.cancelChildren()
+        CacheBook.close()
+        ReadBook.callBack = null
+        ReadBook.clearTextChapter()
+        ReadBook.book = null
+        ReadBook.bookSource = null
+        ReadBook.contentProcessor = null
+        ReadBook.chapterSize = 0
+        ReadBook.durChapterIndex = 0
+        ReadBook.durChapterPos = 0
+        ReadBook.downloadedChapters.clear()
+        ReadBook.downloadFailChapters.clear()
+        synchronized(ReadBook) {
+            prefetchLoadingList().clear()
+        }
+        appDb.bookChapterDao.delByBook(book.bookUrl)
+        appDb.bookDao.getBook(book.bookUrl)?.let {
+            appDb.bookDao.delete(it)
+        }
+        appDb.bookSourceDao.getBookSource(origin)?.let {
+            appDb.bookSourceDao.delete(it)
+        }
+        BookHelp.clearCache(book)
+        delay(20)
     }
 
     private fun readerSessionResetProjection(

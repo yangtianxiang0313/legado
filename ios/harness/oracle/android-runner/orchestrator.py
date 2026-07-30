@@ -1261,6 +1261,53 @@ SCENARIO_CONTRACTS = {
             "explicit-book-image-style-is-preserved",
         }),
     },
+    "rl-reader-content-cache-first-acquisition-001": {
+        "status": "candidate",
+        "fixture_kind": "android_runtime_scenario",
+        "result_type": "reader_runtime",
+        "stage_names": (
+            "fixture_setup",
+            "database_seed",
+            "cache_probe",
+            "reader_load_content",
+            "source_fallback",
+            "result_mapping",
+        ),
+        "expected_cases": (
+            (
+                "remote-cache-hit-without-source",
+                "reader_content_acquisition",
+            ),
+            (
+                "empty-save-remains-cache-miss",
+                "reader_content_acquisition",
+            ),
+            (
+                "remote-cache-miss-without-source",
+                "reader_content_acquisition",
+            ),
+            (
+                "local-cache-miss-uses-local-book-fallback",
+                "reader_content_acquisition",
+            ),
+            (
+                "remote-cache-miss-delegates-to-source",
+                "reader_content_acquisition",
+            ),
+            (
+                "missing-chapter-clears-loading",
+                "reader_content_acquisition",
+            ),
+        ),
+        "nominal_cases": frozenset({
+            "remote-cache-hit-without-source",
+            "empty-save-remains-cache-miss",
+            "remote-cache-miss-without-source",
+            "local-cache-miss-uses-local-book-fallback",
+            "remote-cache-miss-delegates-to-source",
+            "missing-chapter-clears-loading",
+        }),
+    },
     "rl-reader-cache-prefetch-policy-001": {
         "status": "candidate",
         "fixture_kind": "android_runtime_scenario",
