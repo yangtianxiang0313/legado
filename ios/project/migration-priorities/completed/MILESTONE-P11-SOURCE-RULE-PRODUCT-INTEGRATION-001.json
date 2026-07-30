@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P11-SOURCE-RULE-PRODUCT-INTEGRATION-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P11 通用书源规则接入产品主链",
   "objective": "复用已经由 Android 真源固定并在独立 SourceRuntime 实现的规则内核，使导入书源不再被限制为纯 CSS，而能沿搜索、详情、目录、正文主链执行 JSONPath 等通用规则。",
