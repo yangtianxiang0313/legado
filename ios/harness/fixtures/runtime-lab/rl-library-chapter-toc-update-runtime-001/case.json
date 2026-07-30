@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "kind": "android_runtime_scenario",
+  "id": "rl-library-chapter-toc-update-runtime-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "android_runtime",
+  "capabilities": [
+    "android.room",
+    "library.toc",
+    "reader.toc"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": null,
+  "input": "input.json",
+  "transport": {
+    "mode": "none",
+    "external_network": "deny",
+    "responses": []
+  },
+  "determinism": {
+    "clock": "state_projection",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 0,
+    "network_allowed": false,
+    "logical_origin": null,
+    "database_reset_per_case": true
+  },
+  "limits": {
+    "timeout_ms": 5000
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/ui/main/MainViewModel.kt#upToc",
+      "app/src/main/java/io/legado/app/ui/main/MainViewModel.kt#updateToc",
+      "app/src/main/java/io/legado/app/model/ReadBook.kt#upToc",
+      "app/src/main/java/io/legado/app/model/webBook/BookChapterList.kt#analyzeChapterList"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-LIBRARY-CHAPTER-TOC-UPDATE-RUNTIME-001"
+  },
+  "coverage": [
+    {
+      "behavior": "library.chapter.toc-update-runtime",
+      "cases": [
+        {
+          "id": "shelf-filter-and-url-deduplicate",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-MAIN-VIEW-MODEL-UP-TOC"
+          ],
+          "branch_refs": [
+            "Shelf updates admit only remote updateable books and deduplicate by bookUrl while queued or running"
+          ]
+        },
+        {
+          "id": "shelf-success-replaces-chapters",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-MAIN-VIEW-MODEL-UPDATE-TOC",
+            "AF-BOOK-CHAPTER-LIST-ANALYZE"
+          ],
+          "branch_refs": [
+            "A successful shelf update replaces the old chapter rows and clears updateError"
+          ]
+        },
+        {
+          "id": "shelf-missing-source-marks-error",
+          "role": "denied",
+          "android_fact_refs": [
+            "AF-MAIN-VIEW-MODEL-UPDATE-TOC"
+          ],
+          "branch_refs": [
+            "A missing source marks updateError without deleting the existing chapter rows"
+          ]
+        },
+        {
+          "id": "shelf-empty-toc-preserves-old-and-marks-error",
+          "role": "malformed",
+          "android_fact_refs": [
+            "AF-MAIN-VIEW-MODEL-UPDATE-TOC",
+            "AF-BOOK-CHAPTER-LIST-ANALYZE"
+          ],
+          "branch_refs": [
+            "An empty TOC fails before replacement, preserves old rows, and marks updateError"
+          ]
+        },
+        {
+          "id": "reader-throttle-skips-request",
+          "role": "denied",
+          "android_fact_refs": [
+            "AF-READ-BOOK-UP-TOC"
+          ],
+          "branch_refs": [
+            "Reader TOC refresh is suppressed for ten minutes after lastCheckTime"
+          ]
+        },
+        {
+          "id": "reader-growth-is-accepted",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-READ-BOOK-UP-TOC",
+            "AF-BOOK-CHAPTER-LIST-ANALYZE"
+          ],
+          "branch_refs": [
+            "Reader refresh inserts the fetched list only when it grows beyond the current chapterSize"
+          ]
+        },
+        {
+          "id": "reader-non-growth-is-rejected",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-READ-BOOK-UP-TOC",
+            "AF-BOOK-CHAPTER-LIST-ANALYZE"
+          ],
+          "branch_refs": [
+            "Reader refresh does not replace stored chapters when the fetched list does not grow"
+          ]
+        }
+      ]
+    }
+  ]
+}

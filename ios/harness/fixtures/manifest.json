@@ -44,6 +44,11 @@
       "sha256": "c1d60389a936f5bcfdc6e3eedba3ab5ce413f132aa59753477d83705dda83cca"
     },
     {
+      "id": "rl-library-chapter-toc-update-runtime-001",
+      "path": "ios/harness/fixtures/runtime-lab/rl-library-chapter-toc-update-runtime-001",
+      "sha256": "d97df966ae102ded4ece9e68fa5ad650f1be8afe62b541c41c162f16197c8842"
+    },
+    {
       "id": "rl-library-local-book-relocation-runtime-001",
       "path": "ios/harness/fixtures/runtime-lab/rl-library-local-book-relocation-runtime-001",
       "sha256": "11a588001b3802927ab82c44bc5781d31724bd0c247ae5a0e6a6abc3d82b25e7"

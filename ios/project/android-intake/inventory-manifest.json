@@ -2,8 +2,8 @@
   "schema_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
   "android_tree": "c81f5d383116e37c1eefee3eb86654514e82022b",
-  "control_sha256": "d3e835f51b97b0ad5cb3411e88a2d93f44a951498af794e2c3d38b514230fc4c",
-  "policy_sha256": "388cd1084178b4cc6fe77e3b0b1d8e2b3e287092058263011909e3e39c582578",
+  "control_sha256": "0c4d54d6666a2dd64936faaa9306cdbe1748cfb7c195e51f1f2fbeeb34e834a8",
+  "policy_sha256": "0f8e2206900fb1ac3476b77586e5fb5db898f686094a7c3dc2066d06c64ea6ed",
   "facts": [
     {
       "id": "AF-ANALYZE-JSONPATH-GET-LIST",
@@ -265,6 +265,30 @@
         "body_semantic_sha256": "ccea761ddd0e294a1663b6ae0e057ec83a61190e4d99d926c875faefc5e23786"
       },
       "revision_sha256": "ae5104d5ba24bd44020d12e7139e43de303262d52eecc4da43a0d6e54ba0131b",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-BOOK-CHAPTER-LIST-ANALYZE",
+      "fact_key": "library.chapter.toc-analysis",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.webBook.BookChapterList/analyzeChapterList",
+      "path": "app/src/main/java/io/legado/app/model/webBook/BookChapterList.kt",
+      "git_blob": "6f1b758fed28cb7212d748e1270d64c13463800a",
+      "source_sha256": "62ba62a0b4d93c443910432623b7823d5252fb06644aa3e4d5ff7c0139adc141",
+      "start_line": 30,
+      "end_line": 155,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "analyzeChapterList",
+        "signature": "suspend fun analyzeChapterList( bookSource: BookSource, book: Book, baseUrl: String, redirectUrl: String, body: String? ): List<BookChapter>",
+        "body_semantic_sha256": "9a2802ff2561303f730f888642a4fd8788e7b18a550db800ded7115aae879f33"
+      },
+      "revision_sha256": "9280ebdded20b8f6734d8620c40d5cd498f8c23b753a7da15db49e829ca27e99",
       "maps_to": [
         "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
       ]
@@ -1311,6 +1335,54 @@
       ]
     },
     {
+      "id": "AF-MAIN-VIEW-MODEL-UP-TOC",
+      "fact_key": "library.chapter.shelf-toc-queue",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.ui.main.MainViewModel/upToc",
+      "path": "app/src/main/java/io/legado/app/ui/main/MainViewModel.kt",
+      "git_blob": "ed8efcdfff50c8e9a7eb10eaf901705a5997828d",
+      "source_sha256": "96bd01cde5ff8398bcc12b3afae5f314822e731dffff9394cfbe40d96aa60b79",
+      "start_line": 84,
+      "end_line": 92,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "upToc",
+        "signature": "fun upToc(books: List<Book>)",
+        "body_semantic_sha256": "3dbc855eabd193c35284d76754ef277985255ee508b8de53a517e60cbf9fb653"
+      },
+      "revision_sha256": "7cc48d05e2f0fef6b5b23de463b0a0fc1c3be1b691f4adc79ca84088d3ad9afd",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-MAIN-VIEW-MODEL-UPDATE-TOC",
+      "fact_key": "library.chapter.shelf-toc-update",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.ui.main.MainViewModel/updateToc",
+      "path": "app/src/main/java/io/legado/app/ui/main/MainViewModel.kt",
+      "git_blob": "ed8efcdfff50c8e9a7eb10eaf901705a5997828d",
+      "source_sha256": "96bd01cde5ff8398bcc12b3afae5f314822e731dffff9394cfbe40d96aa60b79",
+      "start_line": 137,
+      "end_line": 177,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "updateToc",
+        "signature": "suspend fun updateToc(bookUrl: String)",
+        "body_semantic_sha256": "3a73c5268aefe17cb3a41f5e08fedff02d3118751dc36c019d951c2ab1f910a5"
+      },
+      "revision_sha256": "0dafee7040db8255f51071b2de90099a6fae991107e595559124d439cd09cc65",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
       "id": "AF-READ-ACTIVITY-ON-PAUSE",
       "fact_key": "reader.lifecycle.pause",
       "category": "production_entrypoint",
@@ -1570,6 +1642,30 @@
         "body_semantic_sha256": "e5a59502fb647a0c03963bd21d8bba9ec388b07240711921a5c9893be6cc623e"
       },
       "revision_sha256": "97abbc3dfd09a3105d91f55f03883103adf20e54c2baf8da86e3d0a0b70d96de",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-READ-BOOK-UP-TOC",
+      "fact_key": "reader.chapter.toc-growth-update",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.model.ReadBook/upToc",
+      "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+      "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d",
+      "source_sha256": "c6fa38c435f0075555e61bc397a6ef81baadd7a5c434e79d424f3d0e1abfef12",
+      "start_line": 601,
+      "end_line": 616,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "upToc",
+        "signature": "fun upToc()",
+        "body_semantic_sha256": "2d8a6c9942cfebf6eae46dd239fcf74e4e9bd1e5aa0fb820f19b1abdb98ce982"
+      },
+      "revision_sha256": "b6dd249d1907375eabedd97b3cd2e7682223e144cb39b6d85fcea095c52f6505",
       "maps_to": [
         "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
       ]

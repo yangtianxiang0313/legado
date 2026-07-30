@@ -42,14 +42,17 @@ import io.legado.app.data.entities.SearchBook
 import io.legado.app.data.entities.TxtTocRule
 import io.legado.app.data.entities.rule.ContentRule
 import io.legado.app.data.entities.rule.BookInfoRule
+import io.legado.app.data.entities.rule.TocRule
 import io.legado.app.data.appDb
 import io.legado.app.exception.ConcurrentException
 import io.legado.app.help.CacheManager
 import io.legado.app.help.TTS
 import io.legado.app.help.book.BookHelp
+import io.legado.app.help.book.addType
 import io.legado.app.help.book.getLocalUri
 import io.legado.app.help.book.isArchive
 import io.legado.app.help.book.isLocal
+import io.legado.app.help.book.isUpError
 import io.legado.app.help.book.removeLocalUriCache
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.config.LocalConfig
@@ -68,6 +71,7 @@ import io.legado.app.model.analyzeRule.AnalyzeRule
 import io.legado.app.model.analyzeRule.AnalyzeUrl
 import io.legado.app.model.analyzeRule.RuleData
 import io.legado.app.model.webBook.WebBook
+import io.legado.app.model.webBook.BookChapterList
 import io.legado.app.model.webBook.SearchModel
 import io.legado.app.model.localBook.LocalBook
 import io.legado.app.service.WebService
@@ -83,6 +87,7 @@ import io.legado.app.ui.book.info.BookInfoActivity
 import io.legado.app.ui.book.info.BookInfoViewModel
 import io.legado.app.ui.book.changesource.ChangeChapterSourceViewModel
 import io.legado.app.ui.main.MainActivity
+import io.legado.app.ui.main.MainViewModel
 import io.legado.app.ui.main.bookshelf.BookshelfViewModel
 import io.legado.app.ui.book.import.local.ImportBookViewModel
 import io.legado.app.ui.book.search.SearchActivity
@@ -105,6 +110,7 @@ import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.json.JSONArray
@@ -222,6 +228,8 @@ class LegadoOracleInstrumentedTest {
                 runBookImportChannelCases()
             "rl-library-book-detail-staging-runtime-001" ->
                 runBookDetailStagingCases()
+            "rl-library-chapter-toc-update-runtime-001" ->
+                runChapterTocUpdateCases()
             "rl-reader-chapter-source-override-runtime-001" ->
                 runChapterSourceOverrideCases()
             "rl-reader-bookmark-search-runtime-risk-001" ->
@@ -4794,6 +4802,391 @@ class LegadoOracleInstrumentedTest {
         }
         withTimeout(10_000) {
             completed.await()
+        }
+    }
+
+    private suspend fun runChapterTocUpdateCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            val operation = value.getString("operation")
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", operation)
+                .put("arguments", JSONObject(arguments.toString()))
+            runCase(value.getString("id"), operation, stimulus) {
+                when (operation) {
+                    "shelf_toc_queue" ->
+                        shelfTocQueueProjection(value.getString("id"))
+                    "shelf_toc_update" ->
+                        shelfTocUpdateProjection(
+                            value.getString("id"),
+                            arguments
+                        )
+                    "reader_toc_update" ->
+                        readerTocUpdateProjection(
+                            value.getString("id"),
+                            arguments
+                        )
+                    else -> error(
+                        "Unsupported chapter TOC update operation: $operation"
+                    )
+                }
+            }
+        }
+        clearChapterTocUpdateState()
+    }
+
+    private suspend fun shelfTocQueueProjection(
+        caseId: String
+    ): JSONObject {
+        clearChapterTocUpdateState()
+        val application = InstrumentationRegistry
+            .getInstrumentation()
+            .targetContext
+            .applicationContext as Application
+        val viewModel = MainViewModel(application)
+        val guardJob = Job()
+        mainViewModelField("upTocJob").set(viewModel, guardJob)
+        val acceptedUrl = "/android-runtime/toc-update/$caseId/remote"
+        val values = listOf(
+            tocUpdateBook(
+                "$acceptedUrl/local",
+                local = true,
+                canUpdate = true
+            ),
+            tocUpdateBook(
+                "$acceptedUrl/disabled",
+                local = false,
+                canUpdate = false
+            ),
+            tocUpdateBook(
+                acceptedUrl,
+                local = false,
+                canUpdate = true
+            ),
+            tocUpdateBook(
+                acceptedUrl,
+                local = false,
+                canUpdate = true
+            )
+        )
+        try {
+            viewModel.upToc(values)
+            withTimeout(5_000) {
+                while (mainViewModelWaitQueue(viewModel).isEmpty()) {
+                    delay(10)
+                }
+            }
+            val queued = synchronized(viewModel) {
+                mainViewModelWaitQueue(viewModel).toList()
+            }
+            return JSONObject()
+                .put(
+                    "queued_urls",
+                    JSONArray().apply { queued.forEach(::put) }
+                )
+                .put("queued_count", queued.size)
+                .put(
+                    "local_filtered",
+                    !queued.contains("$acceptedUrl/local")
+                )
+                .put(
+                    "disabled_filtered",
+                    !queued.contains("$acceptedUrl/disabled")
+                )
+                .put(
+                    "duplicate_collapsed",
+                    queued.count { it == acceptedUrl } == 1
+                )
+        } finally {
+            guardJob.cancel()
+            clearMainViewModel(viewModel)
+        }
+    }
+
+    private suspend fun shelfTocUpdateProjection(
+        caseId: String,
+        arguments: JSONObject
+    ): JSONObject {
+        clearChapterTocUpdateState()
+        val mode = arguments.getString("mode")
+        val oldCount = arguments.getInt("old_chapter_count")
+        val newCount = arguments.getInt("new_chapter_count")
+        val server = OracleTocServer(newCount)
+        server.start(NanoHTTPD.SOCKET_READ_TIMEOUT, false)
+        val source = tocUpdateSource(server.baseUrl, caseId)
+        val book = tocUpdateBook(
+            "/android-runtime/toc-update/$caseId/book",
+            local = false,
+            canUpdate = true
+        ).apply {
+            origin = source.bookSourceUrl
+            originName = source.bookSourceName
+            tocUrl = "${server.baseUrl}/toc"
+            totalChapterNum = oldCount
+            if (mode == "success") {
+                addType(BookType.updateError)
+            }
+        }
+        seedTocUpdateBook(book, oldCount)
+        if (mode != "missing_source") {
+            appDb.bookSourceDao.insert(source)
+        }
+        val application = InstrumentationRegistry
+            .getInstrumentation()
+            .targetContext
+            .applicationContext as Application
+        val viewModel = MainViewModel(application)
+        try {
+            invokeMainViewModelUpdateToc(viewModel, book.bookUrl)
+            val stored = requireNotNull(appDb.bookDao.getBook(book.bookUrl))
+            val storedCount =
+                appDb.bookChapterDao.getChapterCount(book.bookUrl)
+            return JSONObject()
+                .put("request_count", server.requestPaths.size)
+                .put("chapter_count_before", oldCount)
+                .put("chapter_count_after", storedCount)
+                .put(
+                    "old_chapters_preserved",
+                    storedCount == oldCount
+                )
+                .put(
+                    "chapters_replaced",
+                    mode == "success" && storedCount == newCount
+                )
+                .put("update_error", stored.isUpError)
+                .put("last_check_count", stored.lastCheckCount)
+                .put("total_chapter_num", stored.totalChapterNum)
+        } finally {
+            clearMainViewModel(viewModel)
+            server.stop()
+            appDb.bookSourceDao.delete(source.bookSourceUrl)
+            clearChapterTocUpdateState()
+        }
+    }
+
+    private suspend fun readerTocUpdateProjection(
+        caseId: String,
+        arguments: JSONObject
+    ): JSONObject {
+        clearChapterTocUpdateState()
+        val mode = arguments.getString("mode")
+        val oldCount = arguments.getInt("old_chapter_count")
+        val newCount = arguments.getInt("new_chapter_count")
+        val server = OracleTocServer(newCount)
+        server.start(NanoHTTPD.SOCKET_READ_TIMEOUT, false)
+        val source = tocUpdateSource(server.baseUrl, caseId)
+        val book = tocUpdateBook(
+            "/android-runtime/toc-update/$caseId/book",
+            local = false,
+            canUpdate = true
+        ).apply {
+            origin = source.bookSourceUrl
+            originName = source.bookSourceName
+            tocUrl = "${server.baseUrl}/toc"
+            totalChapterNum = oldCount
+            lastCheckTime =
+                if (mode == "throttled") {
+                    System.currentTimeMillis()
+                } else {
+                    0
+                }
+        }
+        seedTocUpdateBook(book, oldCount)
+        ReadBook.book = book
+        ReadBook.bookSource = source
+        ReadBook.chapterSize = oldCount
+        ReadBook.nextTextChapter = null
+        try {
+            ReadBook.upToc()
+            if (mode == "throttled") {
+                delay(300)
+            } else {
+                withTimeout(10_000) {
+                    while (server.requestPaths.isEmpty()) {
+                        delay(10)
+                    }
+                    while (
+                        book.lastCheckTime == 0L
+                            || (newCount > oldCount
+                                && ReadBook.chapterSize != newCount)
+                    ) {
+                        delay(10)
+                    }
+                }
+                delay(100)
+            }
+            val storedCount =
+                appDb.bookChapterDao.getChapterCount(book.bookUrl)
+            return JSONObject()
+                .put("request_count", server.requestPaths.size)
+                .put("chapter_size_before", oldCount)
+                .put("chapter_size_after", ReadBook.chapterSize)
+                .put("stored_chapter_count", storedCount)
+                .put(
+                    "growth_accepted",
+                    newCount > oldCount
+                        && ReadBook.chapterSize == newCount
+                        && storedCount == newCount
+                )
+                .put(
+                    "non_growth_rejected",
+                    newCount <= oldCount
+                        && ReadBook.chapterSize == oldCount
+                        && storedCount == oldCount
+                )
+        } finally {
+            server.stop()
+            clearChapterTocUpdateState()
+        }
+    }
+
+    private fun tocUpdateBook(
+        bookUrl: String,
+        local: Boolean,
+        canUpdate: Boolean
+    ) = Book(
+        bookUrl = bookUrl,
+        origin =
+            if (local) BookType.localTag
+            else "android-runtime://toc-source",
+        originName = "Oracle TOC Source",
+        name = "Oracle TOC ${bookUrl.substringAfterLast('/')}",
+        author = "Oracle Author",
+        type = if (local) BookType.local else BookType.text,
+        canUpdate = canUpdate,
+        lastCheckTime = 0
+    )
+
+    private fun tocUpdateSource(
+        baseUrl: String,
+        caseId: String
+    ) = BookSource(
+        bookSourceUrl = "$baseUrl/source/$caseId",
+        bookSourceName = "Oracle TOC Source",
+        ruleToc = TocRule(
+            chapterList = "@CSS:#chapter-list > li.chapter",
+            chapterName = "@CSS:a@text",
+            chapterUrl = "@CSS:a@href"
+        )
+    )
+
+    private fun seedTocUpdateBook(book: Book, chapterCount: Int) {
+        appDb.bookChapterDao.delByBook(book.bookUrl)
+        appDb.bookDao.getBook(book.bookUrl)?.let {
+            appDb.bookDao.delete(it)
+        }
+        appDb.bookDao.insert(book)
+        val chapters = (0 until chapterCount).map { index ->
+            BookChapter(
+                url = "old://chapter/$index",
+                title = "Old Chapter $index",
+                bookUrl = book.bookUrl,
+                index = index
+            )
+        }
+        appDb.bookChapterDao.insert(*chapters.toTypedArray())
+    }
+
+    private suspend fun invokeMainViewModelUpdateToc(
+        viewModel: MainViewModel,
+        bookUrl: String
+    ) {
+        val method = MainViewModel::class.java.declaredMethods
+            .single {
+                it.name.startsWith("updateToc") &&
+                    it.parameterTypes.size == 2
+            }
+            .apply { isAccessible = true }
+        suspendCoroutine<Unit> { continuation ->
+            try {
+                val result = method.invoke(
+                    viewModel,
+                    bookUrl,
+                    continuation
+                )
+                if (result !== COROUTINE_SUSPENDED) {
+                    continuation.resume(Unit)
+                }
+            } catch (error: InvocationTargetException) {
+                continuation.resumeWithException(
+                    error.targetException ?: error
+                )
+            } catch (error: Throwable) {
+                continuation.resumeWithException(error)
+            }
+        }
+    }
+
+    private fun mainViewModelField(name: String) =
+        MainViewModel::class.java.getDeclaredField(name).apply {
+            isAccessible = true
+        }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun mainViewModelWaitQueue(
+        viewModel: MainViewModel
+    ): java.util.LinkedList<String> =
+        mainViewModelField("waitUpTocBooks").get(viewModel)
+            as java.util.LinkedList<String>
+
+    private fun clearMainViewModel(viewModel: MainViewModel) {
+        MainViewModel::class.java
+            .getDeclaredMethod("onCleared")
+            .apply { isAccessible = true }
+            .invoke(viewModel)
+    }
+
+    private fun clearChapterTocUpdateState() {
+        ReadBook.book = null
+        ReadBook.bookSource = null
+        ReadBook.chapterSize = 0
+        ReadBook.nextTextChapter = null
+        appDb.bookDao.all
+            .filter {
+                it.bookUrl.startsWith(
+                    "/android-runtime/toc-update/"
+                )
+            }
+            .forEach {
+                appDb.bookChapterDao.delByBook(it.bookUrl)
+                appDb.bookDao.delete(it)
+            }
+        appDb.bookSourceDao.all
+            .filter {
+                it.bookSourceUrl.contains("/source/")
+                    && it.bookSourceName == "Oracle TOC Source"
+            }
+            .forEach {
+                appDb.bookSourceDao.delete(it.bookSourceUrl)
+            }
+    }
+
+    private class OracleTocServer(
+        private val chapterCount: Int
+    ) : NanoHTTPD(0) {
+        val requestPaths = CopyOnWriteArrayList<String>()
+
+        val baseUrl: String
+            get() = "http://127.0.0.1:$listeningPort"
+
+        override fun serve(session: IHTTPSession): Response {
+            requestPaths += session.uri
+            val chapters = (0 until chapterCount).joinToString("\n") {
+                """
+                <li class="chapter">
+                  <a href="/chapter/$it">Chapter $it</a>
+                </li>
+                """.trimIndent()
+            }
+            val body =
+                "<html><body><ul id=\"chapter-list\">$chapters</ul></body></html>"
+            return newFixedLengthResponse(
+                Response.Status.OK,
+                "text/html; charset=utf-8",
+                body
+            )
         }
     }
 

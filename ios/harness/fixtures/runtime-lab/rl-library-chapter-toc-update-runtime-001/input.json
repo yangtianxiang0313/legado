@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "shelf-filter-and-url-deduplicate",
+      "operation": "shelf_toc_queue",
+      "arguments": {}
+    },
+    {
+      "id": "shelf-success-replaces-chapters",
+      "operation": "shelf_toc_update",
+      "arguments": {
+        "mode": "success",
+        "old_chapter_count": 1,
+        "new_chapter_count": 3
+      }
+    },
+    {
+      "id": "shelf-missing-source-marks-error",
+      "operation": "shelf_toc_update",
+      "arguments": {
+        "mode": "missing_source",
+        "old_chapter_count": 2,
+        "new_chapter_count": 0
+      }
+    },
+    {
+      "id": "shelf-empty-toc-preserves-old-and-marks-error",
+      "operation": "shelf_toc_update",
+      "arguments": {
+        "mode": "empty",
+        "old_chapter_count": 2,
+        "new_chapter_count": 0
+      }
+    },
+    {
+      "id": "reader-throttle-skips-request",
+      "operation": "reader_toc_update",
+      "arguments": {
+        "mode": "throttled",
+        "old_chapter_count": 2,
+        "new_chapter_count": 4
+      }
+    },
+    {
+      "id": "reader-growth-is-accepted",
+      "operation": "reader_toc_update",
+      "arguments": {
+        "mode": "growth",
+        "old_chapter_count": 2,
+        "new_chapter_count": 4
+      }
+    },
+    {
+      "id": "reader-non-growth-is-rejected",
+      "operation": "reader_toc_update",
+      "arguments": {
+        "mode": "non_growth",
+        "old_chapter_count": 3,
+        "new_chapter_count": 2
+      }
+    }
+  ]
+}
