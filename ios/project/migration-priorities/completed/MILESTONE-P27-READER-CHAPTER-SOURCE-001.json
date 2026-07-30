@@ -1,11 +1,27 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P27-READER-CHAPTER-SOURCE-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P27 阅读器章节换源闭环",
   "objective": "依据冻结 Android ChangeChapterSourceDialog、ChangeChapterSourceViewModel 与 ReadBookActivity 源码，从另一书源搜索同书、展示目标目录、手选章节并抓取正文，最终只替换当前书籍当前章节的正文缓存，不迁移整书来源或目录。",
   "validation_policy": "复用正文缓存持久化聚焦测试并执行一次 App 构建；不启动模拟器，不新增 Android Golden。",
+  "completion_evidence": [
+    "ReaderMenuLayer 增加章节换源两级页面，入口不再是禁用占位",
+    "目标源搜索和目录解析复用现有 SearchEnvironment/SourceRuntime",
+    "Android 目录重映射仅标记建议章节，用户仍可手动选择",
+    "目标正文使用目标书籍与章节变量上下文抓取",
+    "保存仅更新当前 bookID/chapterID 正文缓存，书源和目录保持不变",
+    "替换后在原字符位置重新加载当前章节"
+  ],
+  "final_verification": {
+    "kind": "focused_test_and_single_app_build",
+    "completed_at": "2026-07-31T05:46:04+08:00",
+    "result": "1 个正文覆盖范围聚焦测试和一次 App 构建通过；未运行模拟器。",
+    "evidence": [
+      ".harness-runtime/loop/IOS-APP-NAVIGATION-READER-CHAPTER-SOURCE-001/attempt-1"
+    ]
+  },
   "stages": [
     {
       "id": "P27-S1",
