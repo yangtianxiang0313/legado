@@ -15,7 +15,7 @@
           "id": "P23-S1-BOOK-CUSTOM-VARIABLE",
           "claim_ids": [],
           "task_ids": [
-            "IOS-APP-BOOK-CUSTOM-VARIABLE-001"
+            "IOS-APP-NAVIGATION-BOOK-CUSTOM-VARIABLE-001"
           ]
         }
       ]
@@ -23,7 +23,7 @@
   ],
   "deliveries": [
     {
-      "target": "IOS-APP-BOOK-CUSTOM-VARIABLE-001",
+      "target": "IOS-APP-NAVIGATION-BOOK-CUSTOM-VARIABLE-001",
       "title": "编辑并持久化书籍 custom 变量",
       "fixture_id": "book-custom-variable-app-v1",
       "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
@@ -34,7 +34,10 @@
         "scenario_id": "book-custom-variable-app-v1",
         "test_method": "testBookCustomVariableFlow"
       },
-      "additional_allowed_paths": [],
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+        "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**"
+      ],
       "source_anchors": [
         {
           "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
