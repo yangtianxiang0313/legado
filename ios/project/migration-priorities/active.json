@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P23-BOOK-CUSTOM-VARIABLE-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "title": "P23 书籍自定义变量闭环",
+  "objective": "依据冻结 Android BaseBook 与 BookInfoActivity 源码，把书籍详情中的“设置书籍变量”从空动作接通为可编辑、持久化并重新进入目录与正文规则上下文的真实能力。",
+  "validation_policy": "执行变量持久化聚焦测试和一次 App 构建；不启动模拟器，不重复完整书源或阅读主链路验收。",
+  "stages": [
+    {
+      "id": "P23-S1",
+      "title": "接通书籍 custom 变量",
+      "selectors": [
+        {
+          "id": "P23-S1-BOOK-CUSTOM-VARIABLE",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-APP-BOOK-CUSTOM-VARIABLE-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-APP-BOOK-CUSTOM-VARIABLE-001",
+      "title": "编辑并持久化书籍 custom 变量",
+      "fixture_id": "book-custom-variable-app-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [],
+      "validation": "build",
+      "ui_contract": {
+        "goal": "书籍详情可编辑当前书籍 custom 变量，保存后刷新当前书籍，并由既有目录与正文变量上下文继续消费。",
+        "scenario_id": "book-custom-variable-app-v1",
+        "test_method": "testBookCustomVariableFlow"
+      },
+      "additional_allowed_paths": [],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/data/entities/BaseBook.kt",
+          "symbol_id": "kotlin://io.legado.app.data.entities.BaseBook/putCustomVariable"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/ui/book/info/BookInfoActivity.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.info.BookInfoActivity/setBookVariable"
+        }
+      ]
+    }
+  ]
+}
