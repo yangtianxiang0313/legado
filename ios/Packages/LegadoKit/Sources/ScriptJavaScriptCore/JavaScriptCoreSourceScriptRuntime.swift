@@ -37,7 +37,11 @@ public actor JavaScriptCoreSourceScriptRuntime: SourceScriptRuntime {
     )
     context.setObject(
       foundationObject(request.result),
-      forKeyedSubscript: "result" as NSString
+      forKeyedSubscript: "__legadoRawResult" as NSString
+    )
+    context.setObject(
+      request.purpose.rawValue,
+      forKeyedSubscript: "__legadoPurpose" as NSString
     )
     context.setObject(
       request.baseURL,
@@ -67,7 +71,13 @@ public actor JavaScriptCoreSourceScriptRuntime: SourceScriptRuntime {
     guard exception == nil, let evaluated else {
       throw SourceScriptIssue(code: .executionFailed)
     }
-    return try sourceValue(evaluated)
+    return try sourceValue(
+      projectedResult(
+        evaluated,
+        purpose: request.purpose,
+        context: context
+      )
+    )
   }
 
   private func session(for id: SourceScriptSessionID) -> Session {
@@ -140,6 +150,26 @@ public actor JavaScriptCoreSourceScriptRuntime: SourceScriptRuntime {
     }
   }
 
+  private func projectedResult(
+    _ value: JSValue,
+    purpose: SourceScriptPurpose,
+    context: JSContext
+  ) throws -> JSValue {
+    guard purpose == .responseCheck else { return value }
+    context.setObject(
+      value,
+      forKeyedSubscript: "__legadoEvaluatedResult" as NSString
+    )
+    let projected = context.evaluateScript(
+      "__legadoProjectResponse(__legadoEvaluatedResult)"
+    )
+    guard context.exception == nil, let projected else {
+      context.exception = nil
+      throw SourceScriptIssue(code: .invalidResult)
+    }
+    return projected
+  }
+
   private func sourceValue(_ value: JSValue) throws -> SourceScriptValue {
     if value.isUndefined {
       return .undefined
@@ -189,6 +219,56 @@ public actor JavaScriptCoreSourceScriptRuntime: SourceScriptRuntime {
   }
 
   private static let hostPrelude = """
+    globalThis.Packages = undefined;
+    globalThis.__legadoProjectResponse = function(value) {
+      if (value && value.__legadoResponse === true) {
+        return {
+          url: String(value.url()),
+          body: String(value.body())
+        };
+      }
+      return value;
+    };
+    if (__legadoPurpose === "responseCheck") {
+      var __legadoMakeBody = function(value) {
+        var text = value == null ? "" : String(value);
+        return Object.freeze({
+          string: function() { return text; },
+          toString: function() { return text; }
+        });
+      };
+      var __legadoMakeResponse = function(url, body) {
+        var responseURL = url == null ? "" : String(url);
+        var responseBody = body == null ? "" : String(body);
+        return Object.freeze({
+          __legadoResponse: true,
+          url: function() { return responseURL; },
+          body: function() { return __legadoMakeBody(responseBody); }
+        });
+      };
+      var __legadoStrResponse = function(url, body) {
+        return __legadoMakeResponse(url, body);
+      };
+      globalThis.Packages = Object.freeze({
+        io: Object.freeze({
+          legado: Object.freeze({
+            app: Object.freeze({
+              help: Object.freeze({
+                http: Object.freeze({
+                  StrResponse: __legadoStrResponse
+                })
+              })
+            })
+          })
+        })
+      });
+      result = __legadoMakeResponse(
+        __legadoRawResult.url,
+        __legadoRawResult.body
+      );
+    } else {
+      result = __legadoRawResult;
+    }
     var java = Object.freeze({
       get: function(name) {
         var key = String(name);
