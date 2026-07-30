@@ -42,6 +42,38 @@
           "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/analyzeUrl"
         }
       ]
+    },
+    {
+      "target": "IOS-SOURCE-RUNTIME-ENDPOINT-PRODUCT-INTEGRATION-001",
+      "title": "贯通详情目录正文的端点请求表达式",
+      "fixture_id": "source-endpoint-product-integration-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-04",
+      "prerequisite_task_ids": [
+        "IOS-SOURCE-RUNTIME-ENDPOINT-REQUEST-EXPRESSION-001"
+      ],
+      "validation": "tests",
+      "test_filter": "SourceEndpointProductIntegrationTests",
+      "additional_allowed_paths": [],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "3c962707818d3ad976867221a2f76da20e001e11",
+          "path": "app/src/main/java/io/legado/app/data/entities/BookChapter.kt",
+          "symbol_id": "kotlin://io.legado.app.data.entities.BookChapter/getAbsoluteURL"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "af03cf51cef2eb31f54b8240c39e868ceabdba54",
+          "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
+          "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook/getContentAwait"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da",
+          "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+          "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/analyzeUrl"
+        }
+      ]
     }
   ],
   "stages": [
@@ -54,6 +86,19 @@
           "id": "SOURCE-ENDPOINT-REQUEST-EXPRESSION",
           "task_ids": [
             "IOS-SOURCE-RUNTIME-ENDPOINT-REQUEST-EXPRESSION-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P13-02-SOURCE-ENDPOINT-PRODUCT",
+      "title": "详情目录正文消费完整请求表达式",
+      "outcome": "SourceBook 与 SourceChapter 保留端点，详情、目录和正文按 URL option 发出 POST/body/header/retry 请求。",
+      "selectors": [
+        {
+          "id": "SOURCE-ENDPOINT-PRODUCT-INTEGRATION",
+          "task_ids": [
+            "IOS-SOURCE-RUNTIME-ENDPOINT-PRODUCT-INTEGRATION-001"
           ]
         }
       ]
