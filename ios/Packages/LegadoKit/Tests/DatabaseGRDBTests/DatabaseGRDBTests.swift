@@ -423,6 +423,96 @@ final class DatabaseGRDBTests: XCTestCase {
     XCTAssertEqual(updatedContent, "更新后的正文")
   }
 
+  func testLocalTextLongChapterPreferenceRebuildsAndPersists()
+    async throws
+  {
+    let path = temporaryDatabasePath()
+    let repository = try GRDBBookShelfRepository(path: path)
+    let library = ShelfLibrary(repository: repository)
+    let body = String(
+      repeating: "这是一段用于验证长章节拆分的正文。\n",
+      count: 4_000
+    )
+    let data = Data("第一章 开始\n\(body)".utf8)
+    let reference = "file:///managed/imported/long.txt"
+    let importedValue = await library.importLocalText(
+      fileName: "长章节.txt",
+      managedReference: reference,
+      data: data
+    )
+    let imported = try XCTUnwrap(importedValue)
+    let splitChapters = try await repository.chapters(
+      bookID: imported.id
+    )
+    XCTAssertTrue(imported.splitsLongChapters)
+    XCTAssertGreaterThan(splitChapters.count, 1)
+    XCTAssertTrue(
+      splitChapters.allSatisfy {
+        $0.title.hasPrefix("第一章 开始(")
+      }
+    )
+    var splitContents: [String] = []
+    for chapter in splitChapters {
+      let content = try await repository.chapterContent(
+        bookID: imported.id,
+        chapterID: chapter.id
+      )
+      splitContents.append(
+        try XCTUnwrap(content)
+      )
+    }
+    XCTAssertEqual(
+      splitContents.joined(separator: "\n"),
+      body.trimmingCharacters(in: .whitespacesAndNewlines)
+    )
+
+    let collapsedValue =
+      await library.setLocalTextLongChapterSplitting(
+        false,
+        bookID: imported.id,
+        data: data
+    )
+    let collapsed = try XCTUnwrap(collapsedValue)
+    XCTAssertFalse(collapsed.splitsLongChapters)
+    XCTAssertEqual(collapsed.chapterCount, 1)
+    let collapsedStoredChapters = try await repository.chapters(
+      bookID: imported.id
+    )
+    let collapsedContent = try await repository.chapterContent(
+      bookID: imported.id,
+      chapterID: try XCTUnwrap(collapsedStoredChapters.first).id
+    )
+    XCTAssertEqual(
+      collapsedContent,
+      body.trimmingCharacters(in: .whitespacesAndNewlines)
+    )
+
+    let reopened = try GRDBBookShelfRepository(path: path)
+    let persisted = try await reopened.book(id: imported.id)
+    XCTAssertEqual(persisted?.splitsLongChapters, false)
+    let collapsedChapters = try await reopened.chapters(
+      bookID: imported.id
+    )
+    XCTAssertEqual(collapsedChapters.count, 1)
+
+    let reopenedLibrary = ShelfLibrary(repository: reopened)
+    let rebuiltValue =
+      await reopenedLibrary.setLocalTextLongChapterSplitting(
+        true,
+        bookID: imported.id,
+        data: data
+    )
+    let rebuilt = try XCTUnwrap(rebuiltValue)
+    XCTAssertTrue(rebuilt.splitsLongChapters)
+    XCTAssertGreaterThan(rebuilt.chapterCount, 1)
+
+    let noTOC = try LocalTextBookParser.parse(
+      Data(body.utf8),
+      splitLongChapters: false
+    )
+    XCTAssertGreaterThan(noTOC.chapters.count, 1)
+  }
+
   func testOfflineCacheRetriesPersistsSkipsAndReadsWithoutSource()
     async throws
   {

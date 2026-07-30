@@ -450,6 +450,117 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
     }
   }
 
+  public func rebuildLocalText(
+    bookID: LibraryDomain.BookID,
+    chapters: [LocalTextChapter],
+    splitsLongChapters: Bool
+  ) async throws -> ShelfBookItem {
+    try await database.write { db in
+      guard
+        var record = try BookRecord
+          .filter(Column("bookID") == bookID.rawValue)
+          .fetchOne(db),
+        record.sourceID == "local-file"
+      else {
+        throw ShelfMutationFailure.missingBook
+      }
+      let previousChapters = try ChapterRecord
+        .filter(Column("bookID") == record.bookID)
+        .order(Column("chapterIndex").asc)
+        .fetchAll(db)
+      let previousContents = Dictionary(
+        uniqueKeysWithValues: try ChapterContentRecord
+          .filter(Column("bookID") == record.bookID)
+          .fetchAll(db)
+          .map { ($0.chapterID, $0.content) }
+      )
+      record.splitsLongChapters = splitsLongChapters
+      record.chapterCount = chapters.count
+      record.lastChapter = chapters.last?.title ?? ""
+      record.updateError = false
+      if
+        let progressIndex = record.progressChapterIndex,
+        !chapters.isEmpty
+      {
+        let oldIndex = min(
+          max(0, progressIndex),
+          max(0, previousChapters.count - 1)
+        )
+        let oldChapter = previousChapters.indices.contains(oldIndex)
+          ? previousChapters[oldIndex]
+          : nil
+        let baseTitle = localTextBaseTitle(
+          oldChapter?.title
+            ?? record.progressChapterTitle
+            ?? ""
+        )
+        let oldSiblings = previousChapters.filter {
+          localTextBaseTitle($0.title) == baseTitle
+        }
+        var absoluteOffset = max(
+          0,
+          record.progressCharacterOffset ?? 0
+        )
+        for sibling in oldSiblings {
+          guard sibling.chapterIndex < oldIndex else { break }
+          absoluteOffset += previousContents[
+            sibling.chapterID
+          ]?.count ?? 0
+        }
+        let newSiblings = chapters.enumerated().filter {
+          localTextBaseTitle($0.element.title) == baseTitle
+        }
+        var mappedIndex = min(oldIndex, chapters.count - 1)
+        var mappedOffset = 0
+        if !newSiblings.isEmpty {
+          var remaining = absoluteOffset
+          for (position, sibling) in newSiblings {
+            mappedIndex = position
+            mappedOffset = min(remaining, sibling.content.count)
+            if remaining <= sibling.content.count {
+              break
+            }
+            remaining -= sibling.content.count
+          }
+        }
+        record.progressChapterIndex = mappedIndex
+        record.progressCharacterOffset = mappedOffset
+        record.progressChapterTitle = chapters[mappedIndex].title
+      }
+      try record.update(db)
+
+      _ = try ChapterRecord
+        .filter(Column("bookID") == record.bookID)
+        .deleteAll(db)
+      _ = try ChapterContentRecord
+        .filter(Column("bookID") == record.bookID)
+        .deleteAll(db)
+      for (index, chapter) in chapters.enumerated() {
+        let chapterURL = "\(record.bookURL)#chapter-\(index)"
+        let value = LibraryDomain.BookChapter(
+          id: LibraryDomain.ChapterID(
+            sourceID: "local-file",
+            chapterURL: chapterURL
+          ),
+          bookID: bookID,
+          sourceID: "local-file",
+          index: index,
+          title: chapter.title,
+          url: chapterURL
+        )
+        var chapterRecord = ChapterRecord(chapter: value)
+        try chapterRecord.insert(db)
+        var contentRecord = ChapterContentRecord(
+          bookID: record.bookID,
+          chapterID: value.id.rawValue,
+          content: chapter.content
+        )
+        try contentRecord.insert(db)
+      }
+      return record.item
+    }
+  }
+
   public func chapterContent(
     bookID: LibraryDomain.BookID,
     chapterID: LibraryDomain.ChapterID
@@ -780,8 +891,29 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
         ).notNull().defaults(to: "{}")
       }
     }
+    migrator.registerMigration("addLocalTextChapterSplitting") { db in
+      try db.alter(table: "books") { table in
+        table.add(
+          column: "splitsLongChapters",
+          .boolean
+        ).notNull().defaults(to: true)
+      }
+    }
     return migrator
   }
+}
+
+private func localTextBaseTitle(_ title: String) -> String {
+  guard
+    title.hasSuffix(")"),
+    let opening = title.lastIndex(of: "("),
+    opening < title.index(before: title.endIndex),
+    Int(title[title.index(after: opening)..<title.index(before: title.endIndex)])
+      != nil
+  else {
+    return title
+  }
+  return String(title[..<opening])
 }
 
 private struct BookRecord:
@@ -813,6 +945,7 @@ private struct BookRecord:
   var latestChapterTime: Int64
   var latestCheckCount: Int
   var canUpdate: Bool
+  var splitsLongChapters: Bool
 
   init(
     bookID: String,
@@ -845,6 +978,7 @@ private struct BookRecord:
     self.latestChapterTime = 0
     self.latestCheckCount = 0
     self.canUpdate = true
+    self.splitsLongChapters = true
   }
 
   mutating func apply(_ candidate: ShelfBookCandidate) {
@@ -885,7 +1019,8 @@ private struct BookRecord:
       progress: readingProgress,
       latestChapterTime: latestChapterTime,
       latestCheckCount: latestCheckCount,
-      canUpdate: canUpdate
+      canUpdate: canUpdate,
+      splitsLongChapters: splitsLongChapters
     )
   }
 

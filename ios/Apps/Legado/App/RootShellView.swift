@@ -1,5 +1,6 @@
 import AppNavigation
 import AppUseCases
+import Foundation
 import SwiftUI
 
 struct RootShellView: View {
@@ -247,6 +248,23 @@ struct RootShellView: View {
                         variable,
                         sourceID: sourceID
                     )
+                },
+                setSplitLongChapters: { item, enabled in
+                    guard
+                        let url = URL(
+                            string: item.candidate.bookURL
+                        ),
+                        url.isFileURL,
+                        let data = try? Data(contentsOf: url)
+                    else {
+                        return nil
+                    }
+                    return await library
+                        .setLocalTextLongChapterSplitting(
+                            enabled,
+                            bookID: item.id,
+                            data: data
+                        )
                 },
                 availableSources: sourceCatalog.sources,
                 switchSource: { current, source in

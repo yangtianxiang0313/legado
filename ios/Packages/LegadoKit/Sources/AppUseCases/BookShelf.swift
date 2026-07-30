@@ -53,6 +53,7 @@ public struct ShelfBookItem: Identifiable, Equatable, Sendable {
   public let latestChapterTime: Int64
   public let latestCheckCount: Int
   public let canUpdate: Bool
+  public let splitsLongChapters: Bool
 
   public init(
     id: LibraryDomain.BookID,
@@ -63,7 +64,8 @@ public struct ShelfBookItem: Identifiable, Equatable, Sendable {
     progress: ReadingProgress? = nil,
     latestChapterTime: Int64 = 0,
     latestCheckCount: Int = 0,
-    canUpdate: Bool = true
+    canUpdate: Bool = true,
+    splitsLongChapters: Bool = true
   ) {
     self.id = id
     self.candidate = candidate
@@ -74,6 +76,7 @@ public struct ShelfBookItem: Identifiable, Equatable, Sendable {
     self.latestChapterTime = latestChapterTime
     self.latestCheckCount = max(0, latestCheckCount)
     self.canUpdate = canUpdate
+    self.splitsLongChapters = splitsLongChapters
   }
 
   public var unreadChapterCount: Int {
@@ -165,6 +168,11 @@ public protocol BookShelfRepository:
     candidate: ShelfBookCandidate,
     chapters: [LocalTextChapter]
   ) async throws -> ShelfBookItem
+  func rebuildLocalText(
+    bookID: LibraryDomain.BookID,
+    chapters: [LocalTextChapter],
+    splitsLongChapters: Bool
+  ) async throws -> ShelfBookItem
   func chapterContent(
     bookID: LibraryDomain.BookID,
     chapterID: LibraryDomain.ChapterID
@@ -234,6 +242,14 @@ public extension BookShelfRepository {
   func importLocalText(
     candidate: ShelfBookCandidate,
     chapters: [LocalTextChapter]
+  ) async throws -> ShelfBookItem {
+    throw BookImportFailure.unsupportedRepository
+  }
+
+  func rebuildLocalText(
+    bookID: LibraryDomain.BookID,
+    chapters: [LocalTextChapter],
+    splitsLongChapters: Bool
   ) async throws -> ShelfBookItem {
     throw BookImportFailure.unsupportedRepository
   }
@@ -439,6 +455,38 @@ public final class ShelfLibrary {
       errorMessage = "本地书籍导入失败"
     }
     return nil
+  }
+
+  @discardableResult
+  public func setLocalTextLongChapterSplitting(
+    _ enabled: Bool,
+    bookID: LibraryDomain.BookID,
+    data: Data
+  ) async -> ShelfBookItem? {
+    guard
+      let current = try? await repository.book(id: bookID),
+      current.candidate.sourceID == "local-file"
+    else {
+      errorMessage = "仅本地 TXT 支持拆分长章节"
+      return nil
+    }
+    do {
+      let document = try LocalTextBookParser.parse(
+        data,
+        splitLongChapters: enabled
+      )
+      let updated = try await repository.rebuildLocalText(
+        bookID: bookID,
+        chapters: document.chapters,
+        splitsLongChapters: enabled
+      )
+      await reload()
+      errorMessage = nil
+      return updated
+    } catch {
+      errorMessage = "无法重新解析本地 TXT"
+      return nil
+    }
   }
 
   public func readerContentLoader(

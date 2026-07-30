@@ -177,6 +177,8 @@ struct BookDetailView: View {
     let editSource: ((String) -> Void)?
     let loginSource: ((String) -> Void)?
     let setSourceVariable: ((String, String) async -> Bool)?
+    let setSplitLongChapters:
+        ((ShelfBookItem, Bool) async -> ShelfBookItem?)?
     let availableSources: [BookSourceDraft]
     let switchSource:
         ((ShelfBookItem, BookSourceDraft) async -> BookSourceSwitchOutcome)?
@@ -195,6 +197,7 @@ struct BookDetailView: View {
     @State private var clearingCache = false
     @State private var cacheMessage: String?
     @State private var showsDeleteConfirmation = false
+    @State private var rebuildingLocalText = false
 
     init(
         snapshot: BookDetailActionSnapshot,
@@ -209,6 +212,7 @@ struct BookDetailView: View {
         self.editSource = nil
         self.loginSource = nil
         self.setSourceVariable = nil
+        self.setSplitLongChapters = nil
         self.availableSources = []
         self.switchSource = nil
         _storedItem = State(initialValue: nil)
@@ -222,6 +226,8 @@ struct BookDetailView: View {
         editSource: @escaping (String) -> Void,
         loginSource: @escaping (String) -> Void,
         setSourceVariable: @escaping (String, String) async -> Bool,
+        setSplitLongChapters:
+            @escaping (ShelfBookItem, Bool) async -> ShelfBookItem?,
         availableSources: [BookSourceDraft],
         switchSource:
             @escaping (
@@ -238,6 +244,7 @@ struct BookDetailView: View {
         self.editSource = editSource
         self.loginSource = loginSource
         self.setSourceVariable = setSourceVariable
+        self.setSplitLongChapters = setSplitLongChapters
         self.availableSources = availableSources
         self.switchSource = switchSource
         _storedItem = State(initialValue: nil)
@@ -283,14 +290,29 @@ struct BookDetailView: View {
                     ?? snapshot.isInBookshelf,
                 sourceState: sourceState,
                 loginURLState: loginURLState,
-                bookKind: snapshot.bookKind,
+                bookKind:
+                    candidate == nil
+                    ? snapshot.bookKind
+                    : activeBookKind,
                 canUpdate: storedItem?.canUpdate ?? snapshot.canUpdate,
-                splitsLongChapters: snapshot.splitsLongChapters,
+                splitsLongChapters:
+                    storedItem?.splitsLongChapters
+                    ?? snapshot.splitsLongChapters,
                 confirmsDeletion:
                     preferences?.value.confirmsDeletion
                     ?? snapshot.confirmsDeletion
             )
         )
+    }
+
+    private var activeBookKind: BookDetailBookKind {
+        guard activeCandidate?.sourceID == "local-file" else {
+            return .remote
+        }
+        return activeCandidate?.kind
+            .localizedCaseInsensitiveContains("txt") == true
+            ? .localTXT
+            : .localEPUB
     }
 
     var body: some View {
@@ -607,10 +629,35 @@ struct BookDetailView: View {
                 )
             }
             if availability.actions.splitLongChapter {
-                checkedAction(
-                    "拆分长章节",
-                    id: "splitLongChapter",
-                    checked: availability.checked.splitLongChapter
+                Toggle(
+                    isOn: Binding(
+                        get: {
+                            availability.checked.splitLongChapter
+                        },
+                        set: { enabled in
+                            rebuildLocalText(
+                                splittingLongChapters: enabled
+                            )
+                        }
+                    )
+                ) {
+                    Label(
+                        rebuildingLocalText
+                            ? "正在重建目录…"
+                            : "拆分长章节",
+                        systemImage:
+                            availability.checked.splitLongChapter
+                            ? "checkmark.circle.fill"
+                            : "circle"
+                    )
+                }
+                .disabled(
+                    storedItem == nil
+                        || setSplitLongChapters == nil
+                        || rebuildingLocalText
+                )
+                .accessibilityIdentifier(
+                    "action.bookDetail.splitLongChapter"
                 )
             }
             if storedItem != nil {
@@ -757,6 +804,26 @@ struct BookDetailView: View {
         Task {
             await library.remove(storedItem)
             self.storedItem = await library.item(id: storedItem.id)
+        }
+    }
+
+    private func rebuildLocalText(
+        splittingLongChapters enabled: Bool
+    ) {
+        guard
+            let storedItem,
+            let setSplitLongChapters,
+            !rebuildingLocalText
+        else { return }
+        rebuildingLocalText = true
+        Task {
+            if let updated = await setSplitLongChapters(
+                storedItem,
+                enabled
+            ) {
+                self.storedItem = updated
+            }
+            rebuildingLocalText = false
         }
     }
 

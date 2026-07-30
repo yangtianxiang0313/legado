@@ -1,11 +1,27 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P34-LOCAL-TEXT-LONG-CHAPTER-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P34 本地 TXT 长章节拆分",
-  "objective": "依据冻结 Android TextFile、BookInfoActivity 与 Book 配置源码，为本地 TXT 保存拆分长章节偏好；开启时按有目录约 100 KiB、无目录约 10 KiB 的边界重切正文，切换后从托管原文件重新解析并原子替换目录和缓存。",
+  "objective": "依据冻结 Android TextFile、BookInfoActivity 与 Book 配置源码，为本地 TXT 保存拆分长章节偏好；有目录时仅在开启后按约 100 KiB 重切，无目录时始终按约 10 KiB 生成目录；切换后从托管原文件重新解析并原子替换目录和缓存。",
   "validation_policy": "运行一个解析、原子重建和重开持久化聚焦测试，再执行一次 App 构建；不启动模拟器，不新增 Android Golden。",
+  "completion_evidence": [
+    "LibraryDomain 纯解析器实现有目录 100 KiB 与无目录固定 10 KiB 分章",
+    "拆分后的正文重新拼接与原正文一致，无内容丢失",
+    "GRDB 保存 splitsLongChapters 并在单事务内替换目录与正文缓存",
+    "阅读进度按去除分段后缀的标题族映射到新目录",
+    "AppShell 从托管原文件读取 Data，详情 Toggle 只触发业务闭包",
+    "数据库重开后偏好与目录形态保持"
+  ],
+  "final_verification": {
+    "kind": "focused_integration_test_and_single_app_build",
+    "completed_at": "2026-07-31T06:10:18+08:00",
+    "result": "集成聚焦测试与一次 App 构建通过；首次测试编译问题修复后 attempt-3 为最终证据，未启动模拟器，未新增 Android Golden。",
+    "evidence": [
+      ".harness-runtime/loop/IOS-APP-NAVIGATION-LOCAL-TEXT-LONG-CHAPTER-001/attempt-3"
+    ]
+  },
   "stages": [
     {
       "id": "P34-S1",

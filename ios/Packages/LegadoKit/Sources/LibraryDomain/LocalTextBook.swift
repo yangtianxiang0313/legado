@@ -24,6 +24,9 @@ public enum LocalTextBookFailure: Error, Equatable, Sendable {
 }
 
 public enum LocalTextBookParser {
+  public static let maximumBytesWithoutTOC = 10 * 1_024
+  public static let maximumBytesWithTOC = 100 * 1_024
+
   private static let chapterPattern = try! NSRegularExpression(
     pattern: (
       #"^[ \t　]{0,4}(?:"# +
@@ -36,14 +39,31 @@ public enum LocalTextBookParser {
     options: [.caseInsensitive]
   )
 
-  public static func parse(_ data: Data) throws -> LocalTextBookDocument {
+  public static func parse(
+    _ data: Data,
+    splitLongChapters: Bool = true
+  ) throws -> LocalTextBookDocument {
     guard !data.isEmpty else {
       throw LocalTextBookFailure.emptyFile
     }
     guard let text = decode(data) else {
       throw LocalTextBookFailure.unsupportedEncoding
     }
-    return LocalTextBookDocument(chapters: chapters(in: text))
+    let hasTOC = containsChapterHeading(in: text)
+    let parsed = chapters(in: text)
+    let shouldSplit = !hasTOC || splitLongChapters
+    guard shouldSplit else {
+      return LocalTextBookDocument(chapters: parsed)
+    }
+    let maximumBytes =
+      hasTOC ? maximumBytesWithTOC : maximumBytesWithoutTOC
+    return LocalTextBookDocument(
+      chapters: split(
+        parsed,
+        maximumBytes: maximumBytes,
+        hasTOC: hasTOC
+      )
+    )
   }
 
   private static func decode(_ data: Data) -> String? {
@@ -111,5 +131,78 @@ public enum LocalTextBookParser {
       ]
     }
     return chapters
+  }
+
+  private static func containsChapterHeading(in text: String) -> Bool {
+    text.components(separatedBy: .newlines).contains { line in
+      let candidate = line.trimmingCharacters(
+        in: .whitespacesAndNewlines
+      )
+      guard !candidate.isEmpty else { return false }
+      let range = NSRange(candidate.startIndex..., in: candidate)
+      return chapterPattern.firstMatch(
+        in: candidate,
+        range: range
+      )?.range == range
+    }
+  }
+
+  private static func split(
+    _ chapters: [LocalTextChapter],
+    maximumBytes: Int,
+    hasTOC: Bool
+  ) -> [LocalTextChapter] {
+    chapters.flatMap { chapter in
+      let parts = splitContent(
+        chapter.content,
+        maximumBytes: maximumBytes
+      )
+      guard parts.count > 1 else {
+        return [chapter]
+      }
+      let baseTitle = hasTOC ? chapter.title : "第1章"
+      return parts.enumerated().map { index, content in
+        LocalTextChapter(
+          title: "\(baseTitle)(\(index + 1))",
+          content: content
+        )
+      }
+    }
+  }
+
+  private static func splitContent(
+    _ content: String,
+    maximumBytes: Int
+  ) -> [String] {
+    guard content.utf8.count > maximumBytes else {
+      return [content]
+    }
+    var parts: [String] = []
+    var current = ""
+    var byteCount = 0
+    for character in content {
+      current.append(character)
+      byteCount += String(character).utf8.count
+      if
+        byteCount >= maximumBytes,
+        character.isNewline || byteCount >= maximumBytes * 2
+      {
+        let value = current.trimmingCharacters(
+          in: .whitespacesAndNewlines
+        )
+        if !value.isEmpty {
+          parts.append(value)
+        }
+        current = ""
+        byteCount = 0
+      }
+    }
+    let tail = current.trimmingCharacters(
+      in: .whitespacesAndNewlines
+    )
+    if !tail.isEmpty {
+      parts.append(tail)
+    }
+    return parts.isEmpty ? [content] : parts
   }
 }
