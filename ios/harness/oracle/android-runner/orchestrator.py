@@ -468,6 +468,19 @@ SCENARIO_CONTRACTS = {
             "regex-malformed-boundaries",
         }),
     },
+    "sl-source-pipeline-search-runtime-001": {
+        "status": "candidate",
+        "expected_cases": (
+            ("page-one-deduplicate", "search_pipeline"),
+            ("page-two-partial-fields", "search_pipeline"),
+            ("login-check-body-transform", "search_pipeline"),
+            ("detail-pattern-shortcut", "search_pipeline"),
+            ("blank-search-url", "search_pipeline"),
+        ),
+        "nominal_cases": frozenset({
+            "page-one-deduplicate",
+        }),
+    },
     "sl-content-cache-queue-completion-runtime-001": {
         "status": "candidate",
         "expected_cases": (

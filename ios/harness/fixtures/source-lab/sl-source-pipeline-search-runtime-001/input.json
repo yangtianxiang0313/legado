@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "page-one-deduplicate",
+      "operation": "search_pipeline",
+      "arguments": {
+        "keyword": "星河",
+        "page": 1,
+        "mode": "list"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/pipeline/search/1?q=%E6%98%9F%E6%B2%B3"
+      }
+    },
+    {
+      "id": "page-two-partial-fields",
+      "operation": "search_pipeline",
+      "arguments": {
+        "keyword": "远方",
+        "page": 2,
+        "mode": "list"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/pipeline/search/2?q=%E8%BF%9C%E6%96%B9"
+      }
+    },
+    {
+      "id": "login-check-body-transform",
+      "operation": "search_pipeline",
+      "arguments": {
+        "keyword": "解锁",
+        "page": 3,
+        "mode": "login_check_transform"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/pipeline/search/3?q=%E8%A7%A3%E9%94%81"
+      }
+    },
+    {
+      "id": "detail-pattern-shortcut",
+      "operation": "search_pipeline",
+      "arguments": {
+        "keyword": "直达",
+        "page": 4,
+        "mode": "detail_pattern"
+      },
+      "request": {
+        "method": "GET",
+        "target": "/pipeline/search/4?q=%E7%9B%B4%E8%BE%BE"
+      }
+    },
+    {
+      "id": "blank-search-url",
+      "operation": "search_pipeline",
+      "arguments": {
+        "keyword": "无请求",
+        "page": 1,
+        "mode": "blank_url"
+      },
+      "request": {
+        "method": "NONE",
+        "target": null
+      }
+    }
+  ]
+}

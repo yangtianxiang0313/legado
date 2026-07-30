@@ -1,0 +1,174 @@
+{
+  "schema_version": 1,
+  "kind": "source_lab_scenario",
+  "id": "sl-source-pipeline-search-runtime-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "source_lab_site",
+  "capabilities": [
+    "CAP-RUNTIME-PORTS",
+    "CAP-CONFORMANCE",
+    "CAP-SOURCE-FORMAT"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": "source.template.json",
+  "input": "input.json",
+  "transport": {
+    "mode": "fixture_and_loopback",
+    "external_network": "deny",
+    "responses": [
+      {
+        "id": "page-one-deduplicate",
+        "match": {
+          "method": "GET",
+          "path": "/pipeline/search/1",
+          "query": {
+            "q": "星河"
+          }
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "body_file": "responses/page-one.html"
+        }
+      },
+      {
+        "id": "page-two-partial-fields",
+        "match": {
+          "method": "GET",
+          "path": "/pipeline/search/2",
+          "query": {
+            "q": "远方"
+          }
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "body_file": "responses/page-two.html"
+        }
+      },
+      {
+        "id": "login-check-body-transform",
+        "match": {
+          "method": "GET",
+          "path": "/pipeline/search/3",
+          "query": {
+            "q": "解锁"
+          }
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "body_file": "responses/login-transform.html"
+        }
+      },
+      {
+        "id": "detail-pattern-shortcut",
+        "match": {
+          "method": "GET",
+          "path": "/pipeline/search/4",
+          "query": {
+            "q": "直达"
+          }
+        },
+        "respond": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "body_file": "responses/direct-detail.html"
+        }
+      }
+    ]
+  },
+  "coverage": [
+    {
+      "behavior": "pipeline.search-html",
+      "cases": [
+        {
+          "id": "page-one-deduplicate",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "WebBook.searchBookAwait compiles keyword and page before transport",
+            "BookList.analyzeBookList removes duplicate SearchBook values by bookUrl while preserving first occurrence",
+            "BookList.getSearchItem drops rows whose parsed name is empty"
+          ]
+        },
+        {
+          "id": "page-two-partial-fields",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "AnalyzeUrl page template selects the second route",
+            "BookList.getSearchItem tolerates missing optional fields and falls back to response URL when bookUrl is empty"
+          ]
+        },
+        {
+          "id": "login-check-body-transform",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "WebBook.searchBookAwait applies loginCheckJs StrResponse replacement before BookList analysis"
+          ]
+        },
+        {
+          "id": "detail-pattern-shortcut",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "BookList.analyzeBookList treats a matching final URL as a detail page and preserves infoHtml"
+          ]
+        },
+        {
+          "id": "blank-search-url",
+          "role": "malformed",
+          "android_fact_refs": [
+            "AF-WEBBOOK-SEARCH-ENTRYPOINT"
+          ],
+          "branch_refs": [
+            "WebBook.searchBookAwait rejects a blank searchUrl before transport"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "2026-01-01T00:00:00Z",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 53,
+    "network_allowed": false,
+    "logical_origin": "http://sourcelab.test"
+  },
+  "limits": {
+    "timeout_ms": 1000,
+    "max_response_bytes": 1048576,
+    "max_request_body_bytes": 65536,
+    "max_requests": 8,
+    "max_concurrency": 1
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
+      "app/src/main/java/io/legado/app/model/webBook/BookList.kt",
+      "app/src/main/java/io/legado/app/data/entities/SearchBook.kt"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-SOURCE-PIPELINE-SEARCH-RUNTIME-001"
+  }
+}

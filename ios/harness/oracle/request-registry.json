@@ -279,6 +279,15 @@
       "status": "candidate"
     },
     {
+      "id": "IOS-ANDROID-SOURCE-PIPELINE-SEARCH-ATTESTATION-001",
+      "scenario_id": "sl-source-pipeline-search-runtime-001",
+      "fixture_ids": [
+        "sl-source-pipeline-search-runtime-001"
+      ],
+      "authority": "android_oracle_candidate_only",
+      "status": "candidate"
+    },
+    {
       "id": "IOS-ANDROID-INTEGRATION-WEBDAV-ATTESTATION-001",
       "scenario_id": "il-integration-backup-webdav-001",
       "fixture_ids": [

@@ -261,6 +261,8 @@ class LegadoOracleInstrumentedTest {
                 runDOMSelectorBackendCases()
             "sl-source-rule-jsonpath-regex-backends-001" ->
                 runJSONPathRegexBackendCases()
+            "sl-source-pipeline-search-runtime-001" ->
+                runSearchPipelineCases()
             "sl-content-cache-queue-completion-runtime-001" ->
                 runContentCacheQueueCompletionCases()
             else -> {
@@ -5523,6 +5525,114 @@ class LegadoOracleInstrumentedTest {
             }
         }
     }
+
+    private suspend fun runSearchPipelineCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            require(value.getString("operation") == "search_pipeline") {
+                "Search pipeline scenario only accepts search_pipeline stimuli"
+            }
+            val arguments = value.getJSONObject("arguments")
+            val keyword = arguments.getString("keyword")
+            val page = arguments.getInt("page")
+            val mode = arguments.getString("mode")
+            val caseSource = GSON.fromJson(
+                sourceJson,
+                BookSource::class.java
+            ).apply {
+                when (mode) {
+                    "blank_url" -> searchUrl = " "
+                    "login_check_transform" -> loginCheckJs = """
+                        new Packages.io.legado.app.help.http.StrResponse(
+                            result.url(),
+                            String(result.body()).replace(
+                                "locked-item",
+                                "book-item"
+                            )
+                        )
+                    """.trimIndent()
+                    "detail_pattern" -> bookUrlPattern =
+                        ".*/pipeline/search/4(?:\\?.*)?"
+                }
+            }
+            val plannedRequest =
+                if (!caseSource.searchUrl.isNullOrBlank()) {
+                val analyze = AnalyzeUrl(
+                    mUrl = requireNotNull(caseSource.searchUrl),
+                    key = keyword,
+                    page = page,
+                    baseUrl = caseSource.bookSourceUrl,
+                    source = caseSource,
+                    headerMapF = caseSource.getHeaderMap(true)
+                )
+                request(analyze.url)
+            } else {
+                request("$deviceOrigin/pipeline/no-request")
+            }
+            runCase(
+                value.getString("id"),
+                "search_pipeline",
+                plannedRequest
+            ) {
+                searchPipelineProjection(
+                    WebBook.searchBookAwait(caseSource, keyword, page)
+                )
+            }
+        }
+    }
+
+    private fun searchPipelineProjection(
+        values: List<SearchBook>
+    ): JSONObject =
+        JSONObject()
+            .put("book_count", values.size)
+            .put(
+                "books",
+                JSONArray().apply {
+                    values.forEach { value ->
+                        put(
+                            JSONObject()
+                                .put("name", value.name)
+                                .put("author", value.author)
+                                .put("kind", nullable(value.kind))
+                                .put(
+                                    "word_count",
+                                    nullable(value.wordCount)
+                                )
+                                .put("intro", nullable(value.intro))
+                                .put(
+                                    "last_chapter",
+                                    nullable(value.latestChapterTitle)
+                                )
+                                .put(
+                                    "book_url",
+                                    logical(value.bookUrl)
+                                )
+                                .put(
+                                    "cover_url",
+                                    nullableURL(value.coverUrl)
+                                )
+                                .put(
+                                    "origin",
+                                    logical(value.origin)
+                                )
+                                .put(
+                                    "origin_name",
+                                    value.originName
+                                )
+                                .put(
+                                    "origin_order",
+                                    value.originOrder
+                                )
+                                .put(
+                                    "info_html_present",
+                                    !value.infoHtml.isNullOrEmpty()
+                                )
+                        )
+                    }
+                }
+            )
 
     private suspend fun runXmlResponseCases() {
         val values = input.getJSONArray("cases")
