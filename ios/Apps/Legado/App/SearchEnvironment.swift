@@ -22,12 +22,19 @@ enum SearchEnvironment {
     static func makeWebLoginSession(
         source: BookSourceDraft
     ) -> SourceWebLoginSession {
-        let root = source.rawDefinition.flatMap {
-            try? JSONSerialization.jsonObject(with: $0)
-                as? [String: Any]
+        let compiled = source.rawDefinition.flatMap {
+            try? BookSourceRuntimeCompiler.compile(
+                $0,
+                overrides: BookSourceRuntimeOverrides(
+                    sourceURL: source.sourceURL,
+                    sourceName: source.name,
+                    group: source.group,
+                    sourceUserVariable: source.userVariable
+                )
+            )
         }
         let headers = HTTPHeaders(
-            (root.map(sourceHeaders) ?? []).compactMap {
+            (compiled?.definition.sourceHeaders ?? []).compactMap {
                 try? HTTPHeader(name: $0.name, value: $0.value)
             }
         )
@@ -553,9 +560,10 @@ enum SearchEnvironment {
         ] : []
         for draft in persistedSources {
             guard
-                includeDisabled
-                    || (draft.importMetadata?.enabled ?? true),
-                let descriptor = persistedSource(draft)
+                let descriptor = persistedSource(
+                    draft,
+                    includeDisabled: includeDisabled
+                )
             else { continue }
             if let index = values.firstIndex(where: {
                 $0.id == descriptor.id
@@ -585,229 +593,42 @@ enum SearchEnvironment {
     }
 
     private static func persistedSource(
-        _ draft: BookSourceDraft
+        _ draft: BookSourceDraft,
+        includeDisabled: Bool
     ) -> SearchSourceDescriptor? {
         guard
             let data = draft.rawDefinition,
-            let root = try? JSONSerialization.jsonObject(with: data)
-                as? [String: Any],
-            let search = root["ruleSearch"] as? [String: Any],
-            let info = root["ruleBookInfo"] as? [String: Any],
-            let toc = root["ruleToc"] as? [String: Any],
-            let content = root["ruleContent"] as? [String: Any],
-            let searchURL = string(root, "searchUrl"),
-            !searchURL.isEmpty,
-            let list = string(search, "bookList"),
-            let searchName = string(search, "name"),
-            let searchAuthor = string(search, "author"),
-            let searchBookURL = string(search, "bookUrl"),
-            let infoName = string(info, "name"),
-            let infoAuthor = string(info, "author"),
-            let tocURL = string(info, "tocUrl"),
-            let chapterList = string(toc, "chapterList"),
-            let chapterName = string(toc, "chapterName"),
-            let chapterURL = string(toc, "chapterUrl"),
-            let contentRule = string(content, "content")
-        else {
-            return nil
-        }
-        let sourceURL = draft.sourceURL
-        let runtime = HTMLCSSSourceDefinition(
-                    searchURLTemplate: searchURL,
-                    search: SearchRules(
-                        list: list,
-                        name: HTMLCSSRule(searchName),
-                        author: HTMLCSSRule(searchAuthor),
-                        intro: .optional(
-                            string(search, "intro")
-                        ),
-                        kind: .optional(
-                            string(search, "kind")
-                        ),
-                        wordCount: .optional(
-                            string(search, "wordCount")
-                        ),
-                        lastChapter: .optional(
-                            string(search, "lastChapter")
-                        ),
-                        bookURL: HTMLCSSRule(
-                            searchBookURL,
-                            value: .href
-                        ),
-                        coverURL: .optional(
-                            string(search, "coverUrl"),
-                            value: .src
-                        )
+            let compiled = try? BookSourceRuntimeCompiler.compile(
+                data,
+                overrides: BookSourceRuntimeOverrides(
+                    sourceURL: draft.sourceURL,
+                    sourceName: draft.name,
+                    group: draft.group,
+                    originOrder: Int(
+                        draft.importMetadata?.customOrder ?? 0
                     ),
-                    explore: (root["ruleExplore"] as? [String: Any])
-                        .flatMap(exploreRules),
-                    bookInfo: BookInfoRules(
-                        name: HTMLCSSRule(infoName),
-                        author: HTMLCSSRule(infoAuthor),
-                        intro: .optional(
-                            string(info, "intro")
-                        ),
-                        kind: .optional(
-                            string(info, "kind")
-                        ),
-                        lastChapter: .optional(
-                            string(info, "lastChapter")
-                        ),
-                        coverURL: .optional(
-                            string(info, "coverUrl"),
-                            value: .src
-                        ),
-                        tocURL: HTMLCSSRule(tocURL, value: .href)
-                    ),
-                    toc: TOCRules(
-                        list: chapterList,
-                        name: HTMLCSSRule(chapterName),
-                        url: HTMLCSSRule(chapterURL, value: .href),
-                        nextTocURL: paginationRule(
-                            toc,
-                            key: "nextTocUrl"
-                        )
-                    ),
-                    content: ContentRules(
-                        content: HTMLCSSRule(
-                            contentRule,
-                            value: .html
-                        ),
-                        nextContentURL: paginationRule(
-                            content,
-                            key: "nextContentUrl"
-                        ),
-                        webJS: string(content, "webJs"),
-                        sourceRegex: string(content, "sourceRegex")
-                    )
+                    enabled:
+                        draft.importMetadata?.enabled ?? true,
+                    enabledExplore:
+                        draft.importMetadata?.enabledExplore
+                        ?? true,
+                    exploreURL: draft.exploreURL,
+                    sourceUserVariable: draft.userVariable
                 )
-        let searchDefinition = SourceSearchDefinition(
-            sourceURL: sourceURL,
-            sourceName: draft.name,
-            originOrder: Int(
-                draft.importMetadata?.customOrder ?? 0
-            ),
-            bookURLPattern: string(root, "bookUrlPattern"),
-            sourceHeaders: sourceHeaders(root),
-            enabledCookieJar: root["enabledCookieJar"] as? Bool ?? false,
-            loginCheckScript: string(root, "loginCheckJs"),
-            scriptLibrary: inlineScriptLibrary(root),
-            sourceUserVariable: draft.userVariable,
-            runtime: runtime
-        )
-        let catalog = (
-            string(root, "exploreUrl") ?? draft.exploreURL
-        ).trimmingCharacters(in: .whitespacesAndNewlines)
-        let exploreDefinition = catalog.isEmpty
-            ? nil
-            : SourceExploreDefinition(
-                source: searchDefinition,
-                enabled: draft.importMetadata?.enabledExplore ?? true,
-                catalog: catalog
             )
+        else {
+            return nil
+        }
+        guard includeDisabled || compiled.enabled else {
+            return nil
+        }
         return SearchSourceDescriptor(
-            id: sourceURL,
-            name: draft.name,
-            group: draft.group,
-            definition: searchDefinition,
-            exploreDefinition: exploreDefinition
+            id: compiled.id,
+            name: compiled.name,
+            group: compiled.group,
+            definition: compiled.definition,
+            exploreDefinition: compiled.exploreDefinition
         )
-    }
-
-    private static func exploreRules(
-        _ object: [String: Any]
-    ) -> SearchRules? {
-        guard
-            let list = string(object, "bookList"),
-            !list.isEmpty,
-            let name = string(object, "name"),
-            !name.isEmpty,
-            let bookURL = string(object, "bookUrl"),
-            !bookURL.isEmpty
-        else {
-            return nil
-        }
-        return SearchRules(
-            list: list,
-            name: HTMLCSSRule(name),
-            author: .optional(string(object, "author")),
-            intro: .optional(string(object, "intro")),
-            kind: .optional(string(object, "kind")),
-            wordCount: .optional(string(object, "wordCount")),
-            lastChapter: .optional(string(object, "lastChapter")),
-            bookURL: HTMLCSSRule(bookURL, value: .href),
-            coverURL: .optional(
-                string(object, "coverUrl"),
-                value: .src
-            )
-        )
-    }
-
-    private static func string(
-        _ object: [String: Any],
-        _ key: String
-    ) -> String? {
-        guard let value = object[key] as? String else { return nil }
-        return value
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private static func paginationRule(
-        _ object: [String: Any],
-        key: String
-    ) -> HTMLCSSRule? {
-        guard
-            let value = string(object, key),
-            !value.isEmpty
-        else {
-            return nil
-        }
-        return HTMLCSSRule(value, value: .href)
-    }
-
-    private static func inlineScriptLibrary(
-        _ object: [String: Any]
-    ) -> SourceScriptLibrary? {
-        guard
-            let source = string(object, "jsLib"),
-            !source.isEmpty
-        else {
-            return nil
-        }
-        if
-            let data = source.data(using: .utf8),
-            (try? JSONSerialization.jsonObject(with: data))
-                is [String: Any]
-        {
-            return nil
-        }
-        return SourceScriptLibrary(source: source)
-    }
-
-    private static func sourceHeaders(
-        _ object: [String: Any]
-    ) -> [SourceHeaderField] {
-        let values: [String: Any]
-        if let direct = object["header"] as? [String: Any] {
-            values = direct
-        } else if
-            let raw = object["header"] as? String,
-            let data = raw.data(using: .utf8),
-            let decoded = try? JSONSerialization.jsonObject(with: data)
-                as? [String: Any]
-        {
-            values = decoded
-        } else {
-            return []
-        }
-        return values.compactMap { name, value in
-            guard let string = value as? String else { return nil }
-            return try? SourceHeaderField(name: name, value: string)
-        }.sorted {
-            let left = $0.name.lowercased()
-            let right = $1.name.lowercased()
-            return left == right ? $0.name < $1.name : left < right
-        }
     }
 
     private static func normalizedAuthor(_ value: String) -> String {

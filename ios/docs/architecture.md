@@ -113,6 +113,13 @@ flowchart LR
 UI 定制只能依赖书源 Package 的公开产品，书源 Package 禁止反向依赖
 `LibraryDomain`、`ReaderCore`、`AppUseCases`、数据库或 App。
 
+导入书源的 JSON 只能由 `SourceFormat.BookSourceCodec` 解码，再由
+`SourceRuntime.BookSourceRuntimeCompiler` 编译成搜索、发现、详情、目录和正文共用
+的运行时定义。App 可以覆盖用户编辑后的名称、分组、启用状态、排序和用户变量，但
+不得使用 `JSONSerialization`、字典下标或 UI Model 再次解释规则字段。Android
+允许缺失的 rule 对象按空规则继续存在，因此单个阶段规则缺失不能导致整条书源被
+App 丢弃；失败应发生在真正执行该能力时，并携带对应运行阶段。
+
 ### 3.1 内核 Target
 
 | Target | 职责 | 允许的项目依赖 |
