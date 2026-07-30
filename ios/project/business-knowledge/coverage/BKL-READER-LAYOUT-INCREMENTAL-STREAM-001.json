@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgeCoverageLedger",
+  "id": "BKL-READER-LAYOUT-INCREMENTAL-STREAM-001",
+  "revision": 1,
+  "status": "current",
+  "packet_refs": [
+    {
+      "id": "BKP-READER-LAYOUT-INCREMENTAL-STREAM-001",
+      "revision": 1,
+      "sha256": "51399214e75ef505d88ed5221cc749cbfc9d067f396e529f547be7f8880f3932"
+    }
+  ],
+  "generated_from": {
+    "knowledge_authority_sha256": "b7f6d4525b89463d1742b7c7597e729516317e811c7ca942d88820ffbc830b59",
+    "requirement_catalog_sha256": "2de1e193755031763bb49d7e228345114aa09c12c33f4feb5afa090629c94d83",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "entries": [
+    {
+      "id": "BKE-READER-LAYOUT-INCREMENTAL-STREAM-001",
+      "claim_ref": {
+        "id": "BKC-RD-LAYOUT-STREAM-001",
+        "revision": 2
+      },
+      "validation": {
+        "required": "android_runtime",
+        "state": "verified",
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-reader-layout-incremental-stream-001-30506921818-1.json",
+          "ios/harness/goldens/android-legado-v1/rl-reader-layout-incremental-stream-001.json#/artifact/result/value/portable_known_projection"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "covered_by_requirement",
+        "refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "reason": "当前 Requirement 覆盖 Android 增量排版流、邻章消费、取消与回调失败的知识闭环，不表示 iOS 要复制 Android 全局 ReadBook callback、设备相关页数或调度相关刷新总数。受保护 Golden 为后续 ReaderCore Requirement 提供字符锚点、异步页面流、layout generation、取消和终态事件的证据；本任务不批准产品实现、架构依赖边或第三方库。",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "planned",
+        "requirement_refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "work_item_refs": [
+          "IOS-CHARACTERIZE-READER-LAYOUT-INCREMENTAL-STREAM-001"
+        ],
+        "capability_refs": [
+          "CAP-CONFORMANCE",
+          "CAP-CORE"
+        ],
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-reader-layout-incremental-stream-001-30506921818-1.json"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    }
+  ],
+  "updated_by": "IOS-CHARACTERIZE-READER-LAYOUT-INCREMENTAL-STREAM-001",
+  "updated_at": "2026-07-30T02:08:30Z"
+}

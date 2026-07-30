@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-READER-LAYOUT-INCREMENTAL-STREAM-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "reader.layout.incremental-stream-golden",
+  "title": "受保护 Android Golden 验证的增量排版流与终止语义",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "3bcba0f2bc7493cf16af9224c942c57b8d255d7bab39ab8dee2c72112a2c8247"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "reader.layout",
+      "reader.session"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-CORE"
+    ],
+    "subject_keys": [
+      "reader.layout",
+      "reader.session"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-RD-LAYOUT-STREAM-001",
+      "revision": 2,
+      "semantic_key": "reader.layout.incremental-stream",
+      "kind": "runtime_behavior",
+      "topic": "增量排版可用性与终止语义",
+      "statement": "在 rl-reader-layout-incremental-stream-001 的 7 个固定 Android 场景中，当前章节逐页消费 TextChapter.layoutChannel：普通翻页模式在首个包含持久字符锚点的页面回调之前先刷新正文，排版完成后再执行一次终态刷新，随后依次通知 pageChanged、contentLoadFinish 和 success；目标锚点始终不可用时不提前刷新，只在完成后保留 resetPageOffset 做一次刷新。滚动模式的总刷新次数受生产者/消费者调度影响，不能冻结为跨运行常量，但稳定顺序是锚点刷新、锚点页回调前的滚动刷新、锚点页回调、后续滚动刷新、最后一页、终态刷新和完成通知。前一章会静默排空全部页面后只刷新一次；后一章只为页索引 0、1 刷新，之后页面继续排空但不再刷新。首个当前页回调中取消排版后，章节保留部分页面但不进入 layout completed、contentLoadFinish 或 success；首个页面回调抛错会终止 ReadBook 消费者并抑制终态回调，而独立排版生产者仍可完成并物化更多页面。受保护环境的同一刺激生成 5 页、本地设备生成 44 页，进一步证明精确页数和刷新总数是布局环境与调度派生值；iOS ReaderCore 应保存字符锚点，并用带 session/layout generation 的页面流、显式取消与终态事件表达这些关系，不复制 Android 全局 callback 或把页数写成业务常量。",
+      "subject_keys": [
+        "reader.layout",
+        "reader.session"
+      ],
+      "depends_on": [
+        {
+          "id": "BKC-RD-LAYOUT-PROJECTION-001",
+          "revision": 2
+        }
+      ],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [
+          {
+            "id": "AF-READ-BOOK-CONTENT-LOAD-FINISH",
+            "revision_sha256": "8f156c70485d1fea1734473b11a5644a06beef7fe344130e6355cf33acde84e5"
+          },
+          {
+            "id": "AF-TEXT-CHAPTER-CREATE-LAYOUT",
+            "revision_sha256": "c5d5a8f65c8a427771c9ccc425d7a07e33c4a9c5309473787cff3c3321d39915"
+          },
+          {
+            "id": "AF-TEXT-CHAPTER-CANCEL-LAYOUT",
+            "revision_sha256": "4ffb1597faeee2f2cdc8f11b617a917c0ff845eac41f615fc727916a33f62937"
+          }
+        ],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d",
+            "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+            "symbol_id": "kotlin://io.legado.app.model.ReadBook/contentLoadFinish"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "eb8524f5b531f076e5708cad56cfe9a592a55d7a",
+            "path": "app/src/main/java/io/legado/app/ui/book/read/page/entities/TextChapter.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.read.page.entities.TextChapter/layoutChannel"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "eb8524f5b531f076e5708cad56cfe9a592a55d7a",
+            "path": "app/src/main/java/io/legado/app/ui/book/read/page/entities/TextChapter.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.read.page.entities.TextChapter/createLayout"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "eb8524f5b531f076e5708cad56cfe9a592a55d7a",
+            "path": "app/src/main/java/io/legado/app/ui/book/read/page/entities/TextChapter.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.read.page.entities.TextChapter/cancelLayout"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/rl-reader-layout-incremental-stream-001.json",
+            "artifact_sha256": "2a867057f034b5021ee682a4258d5df0ac4a3ff1bdd39ba5b5f4dee04d7c760f",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "68f559484b4d95a86c1634df1ed3dfe388b6d371501a9c57341407714e0ef568",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "13162762b7c6e8e5b26760efca6a0da7b337e96dbea2458702ec86f94d9e876c",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-RD-LAYOUT-STREAM-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-READER-LAYOUT-INCREMENTAL-STREAM-001"
+}

@@ -2,11 +2,11 @@
   "schema_version": 1,
   "contract_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-  "inventory_control_sha256": "70bed8108a0ee0d04851dceff2d1f23bf492163c1906f4f28a208cf20f558d72",
+  "inventory_control_sha256": "3bcba0f2bc7493cf16af9224c942c57b8d255d7bab39ab8dee2c72112a2c8247",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "b7f6d4525b89463d1742b7c7597e729516317e811c7ca942d88820ffbc830b59",
-  "coverage_sha256": "d3b2d1ca74c755119657eda8e40717787c34870cf174c3e9dd90ab19db7e802e",
+  "authority_sha256": "c903b4c3224e2b553a51fa181f0c31ca0a39b254d8def0a316d2e97d29ea3097",
+  "coverage_sha256": "719299c2870e7563efd6e71544f76f9bc9fa32843975fbc52ea35211f46c2fdb",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -149,6 +149,19 @@
       "claim_refs": [
         {
           "id": "BKC-BOOK-READ-RECORD-RISK-001",
+          "revision": 2
+        }
+      ]
+    },
+    {
+      "id": "BKP-READER-LAYOUT-INCREMENTAL-STREAM-001",
+      "revision": 1,
+      "semantic_key": "reader.layout.incremental-stream-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-READER-LAYOUT-INCREMENTAL-STREAM-001/r0001.json",
+      "record_sha256": "51399214e75ef505d88ed5221cc749cbfc9d067f396e529f547be7f8880f3932",
+      "claim_refs": [
+        {
+          "id": "BKC-RD-LAYOUT-STREAM-001",
           "revision": 2
         }
       ]
@@ -755,6 +768,15 @@
       "record_sha256": "59d109e4052491af903e82a8d7bcf79a4f98b284a6ab5d61d954829429c8032f",
       "entry_ids": [
         "BKE-READER-HISTORY-READ-RECORD-RUNTIME-RISK-001"
+      ]
+    },
+    {
+      "id": "BKL-READER-LAYOUT-INCREMENTAL-STREAM-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-READER-LAYOUT-INCREMENTAL-STREAM-001.json",
+      "record_sha256": "d1bc340929dbca50153544795dcb2abd62705771383d1bd6bd2611af27bbfff3",
+      "entry_ids": [
+        "BKE-READER-LAYOUT-INCREMENTAL-STREAM-001"
       ]
     },
     {
