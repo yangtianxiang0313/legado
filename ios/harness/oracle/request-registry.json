@@ -216,6 +216,15 @@
       "status": "candidate"
     },
     {
+      "id": "IOS-ANDROID-UI-BOOK-DETAIL-CONDITIONAL-ACTIONS-ATTESTATION-001",
+      "scenario_id": "rl-ui-book-detail-conditional-actions-001",
+      "fixture_ids": [
+        "rl-ui-book-detail-conditional-actions-001"
+      ],
+      "authority": "android_oracle_candidate_only",
+      "status": "candidate"
+    },
+    {
       "id": "IOS-ANDROID-READER-CACHE-PREFETCH-POLICY-ATTESTATION-001",
       "scenario_id": "rl-reader-cache-prefetch-policy-001",
       "fixture_ids": [
