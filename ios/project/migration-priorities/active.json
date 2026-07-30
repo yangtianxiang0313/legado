@@ -1,87 +1,55 @@
 {
   "schema_version": 1,
-  "id": "MILESTONE-P1-SOURCE-MANAGEMENT-001",
+  "id": "MILESTONE-P2-DISCOVERY-EXPLORE-001",
   "status": "active",
   "mode": "critical_path_only",
-  "title": "P1 可管理真实书源",
-  "objective": "用户可导入、查看、编辑、调试和批量管理书源，并让搜索与换源使用持久化的用户书源。",
+  "title": "P2 可用发现主链路",
+  "objective": "用户可从持久化且启用发现的书源进入分类书单，经详情页加入书架并继续现有阅读主链路。",
   "completion_evidence": [
-    "书源 URL 与规则结果按 Android 语义归一化",
-    "iPhone Simulator 可导入书源、编辑并运行分阶段调试",
-    "书源列表可筛选、启停、选择并执行关键批量动作",
-    "已入架书籍可切换书源并保持稳定书籍身份、目录和阅读进度",
-    "书源模拟网站覆盖导入、搜索、详情、目录、正文和调试失败分支"
+    "书籍详情阶段按 Android 语义补全书籍字段和目录地址",
+    "发现 URL、分类和分页书单由独立 SourceRuntime 结构化解析",
+    "发现页只展示 enabledExplore 的持久化书源",
+    "用户可从发现书源进入分类、书单、详情并加入书架",
+    "本地书源网站覆盖分类、分页、空列表和失败分支",
+    "完整发现主链路只在一个 iPhone Simulator 里程碑验收"
   ],
-  "deferred_policy": "未命中本里程碑 selector 的候选继续保留；朗读、WebDAV、远程书下载、书架排序和发现页在真实书源管理闭环完成后再进入活动任务。",
+  "deferred_policy": "书架排序、离线缓存、远程书下载、WebDAV、朗读、导入导出和根入口可见性在发现主链路完成后再进入活动任务。",
   "stages": [
     {
-      "id": "P1-01-RULE-COMPATIBILITY",
-      "title": "补齐书源规则基础兼容",
-      "outcome": "用户书源产生的相对 URL、协议相对 URL 和重定向结果具有稳定跨端语义。",
+      "id": "P2-01-BOOK-INFO-PIPELINE",
+      "title": "补齐详情阶段流水线",
+      "outcome": "搜索或发现得到的候选书籍可通过真实书源补齐详情字段和目录地址。",
       "selectors": [
         {
-          "id": "SOURCE-URL-NORMALIZATION",
+          "id": "SOURCE-BOOK-INFO",
           "claim_ids": [
-            "BKC-SR-RULE-URL-NORMALIZATION-001"
+            "BKC-SR-BOOK-INFO-PIPELINE-001"
           ]
         }
       ]
     },
     {
-      "id": "P1-02-SOURCE-AUTHORING",
-      "title": "导入、编辑和调试书源",
-      "outcome": "书源定义可被用户导入、修改、保存，并针对本地模拟网站逐阶段调试。",
+      "id": "P2-02-EXPLORE-PIPELINE",
+      "title": "实现发现解析流水线",
+      "outcome": "启用发现的书源可产生分类和分页书单，并隔离单源失败。",
       "selectors": [
         {
-          "id": "SOURCE-EDITOR-DEBUG",
+          "id": "SOURCE-EXPLORE-PIPELINE",
           "claim_ids": [
-            "BKC-UI-SOURCE-EDITOR-DEBUG-001"
-          ]
-        },
-        {
-          "id": "SOURCE-IMPORT",
-          "claim_ids": [
-            "BKC-SOURCE-IMPORT-RUNTIME-001"
+            "BKC-SR-EXPLORE-PIPELINE-001"
           ]
         }
       ]
     },
     {
-      "id": "P1-03-SOURCE-LIST-MANAGEMENT",
-      "title": "筛选与批量管理书源",
-      "outcome": "书源列表具备稳定选择状态和关键批量操作。",
+      "id": "P2-03-EXPLORE-UI",
+      "title": "接通发现根页面",
+      "outcome": "发现根页、分类书单、详情和入架形成完整用户路径。",
       "selectors": [
         {
-          "id": "SOURCE-BULK-MENU",
+          "id": "DISCOVERY-EXPLORE-FLOW",
           "claim_ids": [
-            "BKC-UI-SOURCE-BULK-MENU-001"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "P1-04-SWITCH-BOOK-SOURCE",
-      "title": "整书换源并保持阅读状态",
-      "outcome": "已入架书籍切换书源后保留书籍身份，并按既有重映射策略迁移目录与进度。",
-      "selectors": [
-        {
-          "id": "BOOK-SOURCE-MIGRATION",
-          "claim_ids": [
-            "BKC-BOOK-SOURCE-MIGRATION-001"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "P1-05-SOURCE-MANAGEMENT-MILESTONE",
-      "title": "接通持久化换源并验收完整流程",
-      "outcome": "书源管理、书籍换源、目录和阅读进度通过真实持久化接通，并在一台 iPhone Simulator 上完成一次端到端验收。",
-      "selectors": [
-        {
-          "id": "SOURCE-MANAGEMENT-MILESTONE",
-          "claim_ids": [],
-          "task_ids": [
-            "IOS-APP-NAVIGATION-SOURCE-MANAGEMENT-MILESTONE-001"
+            "BKC-UI-EXPLORE-FLOW-001"
           ]
         }
       ]

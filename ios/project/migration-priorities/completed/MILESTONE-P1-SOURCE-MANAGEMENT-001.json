@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P1-SOURCE-MANAGEMENT-001",
+  "status": "completed",
+  "completed_at": "2026-07-30T16:48:15Z",
+  "mode": "critical_path_only",
+  "title": "P1 可管理真实书源",
+  "objective": "用户可导入、查看、编辑、调试和批量管理书源，并让搜索与换源使用持久化的用户书源。",
+  "completion_evidence": [
+    "书源 URL 与规则结果按 Android 语义归一化",
+    "iPhone Simulator 可导入书源、编辑并运行分阶段调试",
+    "书源列表可筛选、启停、选择并执行关键批量动作",
+    "已入架书籍可切换书源并保持稳定书籍身份、目录和阅读进度",
+    "书源模拟网站覆盖导入、搜索、详情、目录、正文和调试失败分支"
+  ],
+  "deferred_policy": "未命中本里程碑 selector 的候选继续保留；朗读、WebDAV、远程书下载、书架排序和发现页在真实书源管理闭环完成后再进入活动任务。",
+  "stages": [
+    {
+      "id": "P1-01-RULE-COMPATIBILITY",
+      "title": "补齐书源规则基础兼容",
+      "outcome": "用户书源产生的相对 URL、协议相对 URL 和重定向结果具有稳定跨端语义。",
+      "selectors": [
+        {
+          "id": "SOURCE-URL-NORMALIZATION",
+          "claim_ids": [
+            "BKC-SR-RULE-URL-NORMALIZATION-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P1-02-SOURCE-AUTHORING",
+      "title": "导入、编辑和调试书源",
+      "outcome": "书源定义可被用户导入、修改、保存，并针对本地模拟网站逐阶段调试。",
+      "selectors": [
+        {
+          "id": "SOURCE-EDITOR-DEBUG",
+          "claim_ids": [
+            "BKC-UI-SOURCE-EDITOR-DEBUG-001"
+          ]
+        },
+        {
+          "id": "SOURCE-IMPORT",
+          "claim_ids": [
+            "BKC-SOURCE-IMPORT-RUNTIME-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P1-03-SOURCE-LIST-MANAGEMENT",
+      "title": "筛选与批量管理书源",
+      "outcome": "书源列表具备稳定选择状态和关键批量操作。",
+      "selectors": [
+        {
+          "id": "SOURCE-BULK-MENU",
+          "claim_ids": [
+            "BKC-UI-SOURCE-BULK-MENU-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P1-04-SWITCH-BOOK-SOURCE",
+      "title": "整书换源并保持阅读状态",
+      "outcome": "已入架书籍切换书源后保留书籍身份，并按既有重映射策略迁移目录与进度。",
+      "selectors": [
+        {
+          "id": "BOOK-SOURCE-MIGRATION",
+          "claim_ids": [
+            "BKC-BOOK-SOURCE-MIGRATION-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P1-05-SOURCE-MANAGEMENT-MILESTONE",
+      "title": "接通持久化换源并验收完整流程",
+      "outcome": "书源管理、书籍换源、目录和阅读进度通过真实持久化接通，并在一台 iPhone Simulator 上完成一次端到端验收。",
+      "selectors": [
+        {
+          "id": "SOURCE-MANAGEMENT-MILESTONE",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-APP-NAVIGATION-SOURCE-MANAGEMENT-MILESTONE-001"
+          ]
+        }
+      ]
+    }
+  ]
+}
