@@ -1238,6 +1238,9 @@ class MinimalLoopTests(unittest.TestCase):
         reader_menu = loop.app_navigation_delivery_contract(
             "source-ui-reader-multilevel-menu-v1"
         )
+        progress_restore = loop.app_navigation_delivery_contract(
+            "milestone-reader-progress-restore-v1"
+        )
 
         self.assertEqual(
             "testStartupFirstUseAndRestore",
@@ -1264,6 +1267,10 @@ class MinimalLoopTests(unittest.TestCase):
             reader_menu["ui_acceptance"]["test_method"],
         )
         self.assertEqual(
+            "testReaderProgressPersistsAcrossRelaunch",
+            progress_restore["ui_acceptance"]["test_method"],
+        )
+        self.assertEqual(
             (
                 "ios/harness/ui/expected/"
                 "ui-book-detail-conditional-actions-v1.json"
@@ -1275,6 +1282,7 @@ class MinimalLoopTests(unittest.TestCase):
         self.assertIn("目录抓取", toc["goal"])
         self.assertIn("正文", reader["goal"])
         self.assertIn("主操作层", reader_menu["goal"])
+        self.assertIn("App 重启后恢复", progress_restore["goal"])
         with self.assertRaisesRegex(
             loop.LoopError,
             "APP_NAVIGATION_UI_CONTRACT_NOT_MAPPED",

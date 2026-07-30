@@ -597,6 +597,17 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                     "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
                 ]
             )
+        if target == "IOS-APP-NAVIGATION-READER-PROGRESS-RESTORE-001":
+            allowed_paths.extend(
+                [
+                    "ios/Packages/LegadoKit/Sources/LibraryDomain/**",
+                    "ios/Packages/LegadoKit/Tests/LibraryDomainTests/**",
+                    "ios/Packages/LegadoKit/Sources/ReaderCore/**",
+                    "ios/Packages/LegadoKit/Tests/ReaderCoreTests/**",
+                    "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+                    "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+                ]
+            )
         return {
             "owner": "AppNavigation",
             "architecture_refs": [
@@ -919,6 +930,79 @@ def direct_source_ui_deliveries(
     return sorted(deliveries, key=lambda value: str(value["target"]))
 
 
+def milestone_completion_deliveries(
+    root: Path,
+) -> list[Mapping[str, Any]]:
+    target = "IOS-APP-NAVIGATION-READER-PROGRESS-RESTORE-001"
+    if target in completed_task_ids(root):
+        return []
+    policy = active_priority_policy(root)
+    if (
+        not isinstance(policy, dict)
+        or policy.get("id") != "MILESTONE-P0-USABLE-READING-001"
+    ):
+        return []
+    requirement = (
+        "REQ-IOS-UI-BOOTSTRAP-001@1#RC-01"
+    )
+    return [
+        {
+            "target": target,
+            "title": "阅读进度持久化与重启恢复",
+            "ledger_path": "ios/project/migration-priorities/active.json",
+            "ledger": {
+                "packet_refs": [],
+            },
+            "entries": [
+                {
+                    "validation": {
+                        "required": "milestone_integration",
+                        "state": "planned",
+                        "evidence_refs": [
+                            "ios/project/migration-priorities/active.json"
+                        ],
+                    },
+                    "delivery": {
+                        "state": "planned",
+                        "work_item_refs": [target],
+                        "requirement_refs": [requirement],
+                    },
+                }
+            ],
+            "source_anchors": [
+                {
+                    "android_commit":
+                        "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+                    "git_blob":
+                        "9f03612aa904402fce4e1aabc2b176b23f4a6c2d",
+                    "path":
+                        "app/src/main/java/io/legado/app/model/ReadBook.kt",
+                    "symbol_id":
+                        "kotlin://io.legado.app.model.ReadBook/saveRead",
+                },
+                {
+                    "android_commit":
+                        "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+                    "git_blob":
+                        "b116c77fa2d48c9d1a1013e60a92236f71bea1bc",
+                    "path": (
+                        "app/src/main/java/io/legado/app/ui/book/read/"
+                        "ReadBookActivity.kt"
+                    ),
+                    "symbol_id": (
+                        "kotlin://io.legado.app.ui.book.read."
+                        "ReadBookActivity/onPause"
+                    ),
+                },
+            ],
+            "source_contract": {
+                "path": "ios/project/migration-priorities/active.json",
+                "fixture_id": "milestone-reader-progress-restore-v1",
+            },
+        }
+    ]
+
+
 def active_priority_policy(root: Path) -> Mapping[str, Any] | None:
     path = root / PRIORITY_PATH
     if not path.is_file():
@@ -1007,6 +1091,12 @@ def prioritized_work(
     deliveries.extend(
         value
         for value in direct_source_ui_deliveries(root)
+        if str(value["target"]) not in known_targets
+    )
+    known_targets = {str(value["target"]) for value in deliveries}
+    deliveries.extend(
+        value
+        for value in milestone_completion_deliveries(root)
         if str(value["target"]) not in known_targets
     )
     characterizations = pending_characterizations(root)
@@ -1503,6 +1593,20 @@ def app_navigation_delivery_contract(
                 "ui-reader-multilevel-menu-v1.json"
             ),
             "test_method": "testReaderMultilevelMenuFlow",
+        },
+        "milestone-reader-progress-restore-v1": {
+            "goal": (
+                "把 ReaderCore 已对齐的章节/字符坐标保存语义接入"
+                " AppUseCases 与 DatabaseGRDB；阅读器切章、退后台或终止时"
+                "持久化位置，App 重启后恢复到同一稳定章节和等价字符坐标。"
+            ),
+            "acceptance_id": "structured-reader-progress-restore-acceptance",
+            "scenario_id": "ui-reader-progress-restore-v1",
+            "expected": (
+                "ios/harness/ui/expected/"
+                "ui-reader-progress-restore-v1.json"
+            ),
+            "test_method": "testReaderProgressPersistsAcrossRelaunch",
         },
     }
     feature = features.get(fixture_id)
@@ -2440,6 +2544,12 @@ def queue_status(root: Path) -> Mapping[str, Any]:
     deliveries.extend(
         value
         for value in direct_source_ui_deliveries(root)
+        if str(value["target"]) not in known_targets
+    )
+    known_targets = {str(value["target"]) for value in deliveries}
+    deliveries.extend(
+        value
+        for value in milestone_completion_deliveries(root)
         if str(value["target"]) not in known_targets
     )
     characterizations = pending_characterizations(root)

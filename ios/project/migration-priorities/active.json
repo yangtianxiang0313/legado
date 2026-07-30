@@ -192,6 +192,12 @@
             "BKC-BOOK-PROGRESS-REMAP-001",
             "BKC-RD-PROGRESS-REMAP-001"
           ]
+        },
+        {
+          "id": "PROGRESS-RESTORE-INTEGRATION",
+          "task_ids": [
+            "IOS-APP-NAVIGATION-READER-PROGRESS-RESTORE-001"
+          ]
         }
       ]
     }
