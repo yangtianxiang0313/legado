@@ -787,6 +787,57 @@ class MinimalLoopTests(unittest.TestCase):
             )
             self.assertEqual("Revision 2", task["title"])
 
+    def test_new_packet_claim_suppresses_older_runtime_revision(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            old_claim = {
+                "id": "BKC-UI-001",
+                "revision": 1,
+                "semantic_key": "ui.source.bulk-selection-menu",
+                "subject_keys": ["ui.action"],
+                "depends_on": [],
+                "support": {
+                    "state": "candidate_source_anchored",
+                    "runtime_requirement": "android_characterization",
+                    "source_anchors": [{"path": "Old.kt"}],
+                },
+            }
+            self.write(
+                root,
+                "ios/project/business-knowledge/packets/proposals/"
+                "BKP-OLD/r0001.json",
+                {
+                    "id": "BKP-OLD",
+                    "revision": 1,
+                    "status": "candidate",
+                    "claims": [old_claim],
+                },
+            )
+            self.write(
+                root,
+                "ios/project/business-knowledge/packets/proposals/"
+                "BKP-NEW/r0001.json",
+                {
+                    "id": "BKP-NEW",
+                    "revision": 1,
+                    "status": "candidate",
+                    "claims": [
+                        {
+                            **old_claim,
+                            "revision": 2,
+                            "kind": "static_declaration",
+                            "support": {
+                                "state": "candidate_source_anchored",
+                                "runtime_requirement": "none",
+                                "source_anchors": [{"path": "New.kt"}],
+                            },
+                        }
+                    ],
+                },
+            )
+
+            self.assertEqual([], loop.pending_characterizations(root))
+
     def test_business_inference_never_becomes_android_runtime_task(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

@@ -305,6 +305,32 @@ def current_published_claim_revisions(root: Path) -> dict[str, int]:
     return result
 
 
+def current_candidate_claim_revisions(root: Path) -> dict[str, int]:
+    """Return the newest candidate revision for each claim across packets."""
+    result: dict[str, int] = {}
+    for _, packet in latest_json_revisions(
+        root,
+        "ios/project/business-knowledge/packets/proposals",
+    ):
+        if packet.get("status") != "candidate":
+            continue
+        for claim in packet.get("claims", []):
+            if not isinstance(claim, dict):
+                continue
+            identifier = claim.get("id")
+            revision = claim.get("revision")
+            if (
+                isinstance(identifier, str)
+                and isinstance(revision, int)
+                and not isinstance(revision, bool)
+            ):
+                result[identifier] = max(
+                    revision,
+                    result.get(identifier, 0),
+                )
+    return result
+
+
 def is_android_runtime_claim(claim: Mapping[str, Any]) -> bool:
     """Whether Android execution can legitimately decide this claim.
 
@@ -1297,6 +1323,7 @@ def pending_characterizations(root: Path) -> list[Mapping[str, Any]]:
     characterized = characterized_claim_refs(root)
     satisfied_dependencies = satisfied_dependency_claim_refs(root)
     published_revisions = current_published_claim_revisions(root)
+    candidate_revisions = current_candidate_claim_revisions(root)
     candidates: list[tuple[int, int, str, Mapping[str, Any]]] = []
     for packet_path, packet in latest_json_revisions(
         root,
@@ -1316,6 +1343,7 @@ def pending_characterizations(root: Path) -> list[Mapping[str, Any]]:
                 or isinstance(revision, bool)
                 or not is_android_runtime_claim(claim)
                 or published_revisions.get(claim_id, 0) >= revision
+                or candidate_revisions.get(claim_id, 0) > revision
                 or (claim_id, revision) in characterized
             ):
                 continue
