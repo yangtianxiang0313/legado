@@ -53,4 +53,5 @@ final class AppRouterTests: XCTestCase {
             [.searchBooks, .bookDetail(book)]
         )
     }
+
 }

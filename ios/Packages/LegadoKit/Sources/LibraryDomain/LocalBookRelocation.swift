@@ -1,4 +1,4 @@
-public struct BookID: Equatable, Hashable, Sendable {
+public struct BookID: Equatable, Hashable, Codable, Sendable {
   public let rawValue: String
 
   public init(rawValue: String) {

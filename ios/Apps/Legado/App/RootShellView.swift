@@ -104,7 +104,8 @@ struct RootShellView: View {
                             intro: result.intro,
                             bookURL: result.bookURL,
                             coverURL: result.coverURL,
-                            originName: result.originName
+                            originName: result.originName,
+                            sourceID: result.origin
                         )
                     ),
                     on: .shelf
@@ -113,8 +114,13 @@ struct RootShellView: View {
         case .bookDetail(let book):
             BookDetailView(
                 candidate: ShelfBookCandidate(route: book),
-                library: library
+                library: library,
+                openTOC: { bookID in
+                    router.push(.chapterTOC(bookID), on: .shelf)
+                }
             )
+        case .chapterTOC(let bookID):
+            ChapterTOCView(bookID: bookID, library: library)
         }
     }
 
@@ -197,7 +203,8 @@ private extension SearchBookRoute {
             intro: candidate.intro,
             bookURL: candidate.bookURL,
             coverURL: candidate.coverURL,
-            originName: candidate.originName
+            originName: candidate.originName,
+            sourceID: candidate.sourceID
         )
     }
 }

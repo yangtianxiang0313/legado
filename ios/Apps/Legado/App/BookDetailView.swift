@@ -1,5 +1,6 @@
 import AppNavigation
 import AppUseCases
+import LibraryDomain
 import SwiftUI
 
 struct BookDetailDisplay: Equatable {
@@ -166,6 +167,7 @@ struct BookDetailView: View {
     let display: BookDetailDisplay
     let candidate: ShelfBookCandidate?
     let library: ShelfLibrary?
+    let openTOC: ((LibraryDomain.BookID) -> Void)?
 
     @State private var storedItem: ShelfBookItem?
 
@@ -177,17 +179,20 @@ struct BookDetailView: View {
         self.display = display
         self.candidate = nil
         self.library = nil
+        self.openTOC = nil
         _storedItem = State(initialValue: nil)
     }
 
     init(
         candidate: ShelfBookCandidate,
-        library: ShelfLibrary
+        library: ShelfLibrary,
+        openTOC: @escaping (LibraryDomain.BookID) -> Void
     ) {
         self.snapshot = .remoteSourceLoginUnshelved
         self.display = BookDetailDisplay(candidate: candidate)
         self.candidate = candidate
         self.library = library
+        self.openTOC = openTOC
         _storedItem = State(initialValue: nil)
     }
 
@@ -248,11 +253,14 @@ struct BookDetailView: View {
                     .font(.body)
 
                 Button {
+                    guard let storedItem else { return }
+                    openTOC?(storedItem.id)
                 } label: {
                     Label("开始阅读", systemImage: "book.pages")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
+                .disabled(storedItem == nil || openTOC == nil)
                 .accessibilityIdentifier("action.bookDetail.startReading")
             }
             .padding()
@@ -420,7 +428,8 @@ extension ShelfBookCandidate {
             intro: route.intro,
             bookURL: route.bookURL,
             coverURL: route.coverURL,
-            originName: route.originName
+            originName: route.originName,
+            sourceID: route.sourceID
         )
     }
 }

@@ -497,6 +497,92 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testChapterTOCFlow() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = contract.projection == "regularSplit"
+            ? .landscapeLeft
+            : .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        require("action.shelf.openSearch").tap()
+        require("screen.search.books")
+        let searchField = app.searchFields.firstMatch
+        XCTAssertTrue(searchField.waitForExistence(timeout: 8))
+        searchField.tap()
+        searchField.typeText("星河纪事\n")
+        let result = app.staticTexts["星河纪事"].firstMatch
+        XCTAssertTrue(result.waitForExistence(timeout: 8))
+        result.tap()
+
+        require("screen.bookDetail")
+        let start = require("action.bookDetail.startReading")
+        XCTAssertTrue(
+            start.isEnabled || start.waitForExistence(timeout: 8),
+            "Start reading action never became available"
+        )
+        let deadline = Date().addingTimeInterval(8)
+        while !start.isEnabled && Date() < deadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+        }
+        XCTAssertTrue(start.isEnabled)
+        start.tap()
+
+        require("screen.chapterTOC")
+        let titles = ["第一章 启航", "第二章 回声", "第三章 归途"]
+        for (index, title) in titles.enumerated() {
+            let chapter = require("action.chapter.select.\(index)")
+            XCTAssertTrue(chapter.label.contains(title))
+        }
+        let firstChapter = require("action.chapter.select.0")
+        firstChapter.tap()
+        expectation(
+            for: NSPredicate(format: "isSelected == true"),
+            evaluatedWith: firstChapter
+        )
+        waitForExpectations(timeout: 8)
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "phases": [
+                [
+                    "id": "detail_start",
+                    "screen": "screen.bookDetail",
+                    "book": "星河纪事",
+                ],
+                [
+                    "id": "toc_loaded",
+                    "screen": "screen.chapterTOC",
+                    "chapters": titles,
+                ],
+                [
+                    "id": "chapter_selected",
+                    "screen": "screen.chapterTOC",
+                    "selected": "第一章 启航",
+                ],
+            ],
+            "route_trace": [
+                ["operation": "push", "route_id": "search.books"],
+                [
+                    "operation": "push",
+                    "route_id":
+                        "book.detail:http://legado.local/books/star-river",
+                ],
+                ["operation": "push", "route_id": "book.toc:current"],
+            ],
+        ])
+    }
+
     private func observeStartupCase(
         id: String,
         initial: String,

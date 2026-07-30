@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "scenario_id": "ui-chapter-toc-v1",
+  "profile": "store_safe",
+  "simulators": [
+    {
+      "simulator_id": "SIM-PAD-REGULAR-001",
+      "projection": "regularSplit",
+      "phases": [
+        {
+          "id": "detail_start",
+          "screen": "screen.bookDetail",
+          "book": "星河纪事"
+        },
+        {
+          "id": "toc_loaded",
+          "screen": "screen.chapterTOC",
+          "chapters": [
+            "第一章 启航",
+            "第二章 回声",
+            "第三章 归途"
+          ]
+        },
+        {
+          "id": "chapter_selected",
+          "screen": "screen.chapterTOC",
+          "selected": "第一章 启航"
+        }
+      ],
+      "route_trace": [
+        {
+          "operation": "push",
+          "route_id": "search.books"
+        },
+        {
+          "operation": "push",
+          "route_id": "book.detail:http://legado.local/books/star-river"
+        },
+        {
+          "operation": "push",
+          "route_id": "book.toc:current"
+        }
+      ]
+    },
+    {
+      "simulator_id": "SIM-PHONE-COMPACT-001",
+      "projection": "compactStack",
+      "phases": [
+        {
+          "id": "detail_start",
+          "screen": "screen.bookDetail",
+          "book": "星河纪事"
+        },
+        {
+          "id": "toc_loaded",
+          "screen": "screen.chapterTOC",
+          "chapters": [
+            "第一章 启航",
+            "第二章 回声",
+            "第三章 归途"
+          ]
+        },
+        {
+          "id": "chapter_selected",
+          "screen": "screen.chapterTOC",
+          "selected": "第一章 启航"
+        }
+      ],
+      "route_trace": [
+        {
+          "operation": "push",
+          "route_id": "search.books"
+        },
+        {
+          "operation": "push",
+          "route_id": "book.detail:http://legado.local/books/star-river"
+        },
+        {
+          "operation": "push",
+          "route_id": "book.toc:current"
+        }
+      ]
+    }
+  ]
+}

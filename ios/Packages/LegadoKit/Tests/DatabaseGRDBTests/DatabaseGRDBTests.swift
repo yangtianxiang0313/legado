@@ -13,4 +13,10 @@ final class DatabaseGRDBTests: XCTestCase {
       .verifyShelfPersistenceAcrossReopen()
     XCTAssertTrue(verified)
   }
+
+  func testTOCReplacementPersistsAndFailurePreservesOldSnapshot() async throws {
+    let verified =
+      try await DatabaseGRDBRuntime.verifyTOCPersistenceAcrossReopen()
+    XCTAssertTrue(verified)
+  }
 }

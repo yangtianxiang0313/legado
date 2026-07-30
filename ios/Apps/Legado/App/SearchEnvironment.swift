@@ -9,10 +9,40 @@ enum SearchEnvironment {
             "LEGADO_SEARCH_BASE_URL"
         ]
         let baseURL = externalBaseURL ?? "http://legado.local"
-        let transport: any HTTPTransport = externalBaseURL == nil
+        let transport = makeTransport(externalBaseURL: externalBaseURL)
+        let sources = makeSources(baseURL: baseURL)
+        return SearchSession(
+            groups: ["科幻", "奇幻"],
+            executor: SourceSearchBooksExecutor(
+                sources: sources,
+                transport: transport
+            )
+        )
+    }
+
+    static func makeChapterLoader() -> any BookChapterLoading {
+        let externalBaseURL = ProcessInfo.processInfo.environment[
+            "LEGADO_SEARCH_BASE_URL"
+        ]
+        let baseURL = externalBaseURL ?? "http://legado.local"
+        return SourceBookChapterLoader(
+            sources: makeSources(baseURL: baseURL),
+            transport: makeTransport(externalBaseURL: externalBaseURL)
+        )
+    }
+
+    private static func makeTransport(
+        externalBaseURL: String?
+    ) -> any HTTPTransport {
+        externalBaseURL == nil
             ? LocalBookSourceTransport()
             : URLSessionBookSourceTransport()
-        let sources = [
+    }
+
+    private static func makeSources(
+        baseURL: String
+    ) -> [SearchSourceDescriptor] {
+        [
             source(
                 baseURL: baseURL,
                 id: "\(baseURL)/source/science-fiction",
@@ -28,13 +58,6 @@ enum SearchEnvironment {
                 order: 1
             ),
         ]
-        return SearchSession(
-            groups: ["科幻", "奇幻"],
-            executor: SourceSearchBooksExecutor(
-                sources: sources,
-                transport: transport
-            )
-        )
     }
 
     private static func source(
@@ -109,6 +132,27 @@ private actor LocalBookSourceTransport: HTTPTransport {
         let components = URLComponents(
             string: request.url.absoluteString
         )
+        let path = components?.path ?? ""
+        let body: String
+        if let book = Self.books.first(where: { $0.path == path }) {
+            body = book.detailHTML
+        } else if let book = Self.books.first(
+            where: { "\($0.path)/toc" == path }
+        ) {
+            body = book.tocHTML
+        } else {
+            body = searchHTML(components: components)
+        }
+        return try HTTPResponse(
+            statusCode: 200,
+            effectiveURL: request.url,
+            body: HTTPBody(Data(body.utf8))
+        )
+    }
+
+    private func searchHTML(
+        components: URLComponents?
+    ) -> String {
         let query = components?.queryItems?.first {
             $0.name == "q"
         }?.value ?? ""
@@ -120,15 +164,7 @@ private actor LocalBookSourceTransport: HTTPTransport {
                 && (group.isEmpty || $0.group == group)
         }
         let html = books.map(\.html).joined(separator: "\n")
-        return try HTTPResponse(
-            statusCode: 200,
-            effectiveURL: request.url,
-            body: HTTPBody(
-                Data(
-                    "<html><body>\(html)</body></html>".utf8
-                )
-            )
-        )
+        return "<html><body>\(html)</body></html>"
     }
 
     private static let books = [
@@ -181,6 +217,29 @@ private struct LocalBook: Sendable {
           <span class="book-last-chapter">\(lastChapter)</span>
           <p class="book-intro">\(intro)</p>
         </article>
+        """
+    }
+
+    var detailHTML: String {
+        """
+        <html><body>
+          <h1 class="book-name">\(name)</h1>
+          <span class="book-author">作者：\(author)</span>
+          <span class="book-kind">\(kind)</span>
+          <span class="book-last-chapter">\(lastChapter)</span>
+          <p class="book-intro">\(intro)</p>
+          <a class="toc-link" href="\(path)/toc">目录</a>
+        </body></html>
+        """
+    }
+
+    var tocHTML: String {
+        """
+        <html><body>
+          <div class="chapter"><a href="\(path)/chapter-1">第一章 启航</a></div>
+          <div class="chapter"><a href="\(path)/chapter-2">第二章 回声</a></div>
+          <div class="chapter"><a href="\(path)/chapter-3">第三章 归途</a></div>
+        </body></html>
         """
     }
 }

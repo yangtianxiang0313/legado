@@ -1,3 +1,5 @@
+import LibraryDomain
+
 public enum RootRoute: String, CaseIterable, Codable, Hashable, Identifiable, Sendable {
     case shelf = "root.shelf"
     case explore = "root.explore"
@@ -18,6 +20,7 @@ public struct SearchBookRoute: Codable, Hashable, Sendable {
     public let bookURL: String
     public let coverURL: String?
     public let originName: String
+    public let sourceID: String
 
     public init(
         name: String,
@@ -27,7 +30,8 @@ public struct SearchBookRoute: Codable, Hashable, Sendable {
         intro: String,
         bookURL: String,
         coverURL: String?,
-        originName: String
+        originName: String,
+        sourceID: String = ""
     ) {
         self.name = name
         self.author = author
@@ -37,12 +41,14 @@ public struct SearchBookRoute: Codable, Hashable, Sendable {
         self.bookURL = bookURL
         self.coverURL = coverURL
         self.originName = originName
+        self.sourceID = sourceID
     }
 }
 
 public enum AppRoute: Codable, Hashable, Identifiable, Sendable {
     case searchBooks
     case bookDetail(SearchBookRoute)
+    case chapterTOC(LibraryDomain.BookID)
 
     public var id: String {
         switch self {
@@ -50,6 +56,8 @@ public enum AppRoute: Codable, Hashable, Identifiable, Sendable {
             "search.books"
         case .bookDetail(let book):
             "book.detail:\(book.bookURL)"
+        case .chapterTOC(let bookID):
+            "book.toc:\(bookID.rawValue)"
         }
     }
 }

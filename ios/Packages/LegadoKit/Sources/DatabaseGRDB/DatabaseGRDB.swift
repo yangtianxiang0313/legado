@@ -1,6 +1,7 @@
 import AppUseCases
 import Foundation
 import GRDB
+import LibraryDomain
 
 /// Keeps GRDB types behind the platform persistence adapter boundary.
 public enum DatabaseGRDBRuntime {
@@ -63,5 +64,56 @@ public enum DatabaseGRDBRuntime {
     return books.count == 1
       && books.first?.id == added.id
       && books.first?.candidate.name == "星河纪事"
+  }
+
+  public static func verifyTOCPersistenceAcrossReopen() async throws -> Bool {
+    let path = FileManager.default.temporaryDirectory
+      .appendingPathComponent(UUID().uuidString)
+      .appendingPathExtension("sqlite")
+      .path
+    let repository = try GRDBBookShelfRepository(path: path)
+    let book = try await repository.stage(
+      ShelfBookCandidate(
+        name: "星河纪事",
+        author: "林舟",
+        kind: "科幻",
+        lastChapter: "第三章",
+        intro: "",
+        bookURL: "http://sourcelab.test/books/star-river",
+        coverURL: nil,
+        originName: "测试源",
+        sourceID: "source://local"
+      )
+    )
+    let chapters = (0..<3).map { index in
+      BookChapter(
+        id: ChapterID(
+          sourceID: "source://local",
+          chapterURL: "http://sourcelab.test/chapters/\(index + 1)"
+        ),
+        bookID: book.id,
+        sourceID: "source://local",
+        index: index,
+        title: "第\(index + 1)章",
+        url: "http://sourcelab.test/chapters/\(index + 1)"
+      )
+    }
+    guard
+      try await repository.applyTOCUpdate(
+        bookID: book.id,
+        update: .replaced(previousCount: 0, chapters: chapters)
+      ) == chapters,
+      try await repository.applyTOCUpdate(
+        bookID: book.id,
+        update: .preserved(failure: .empty, chapters: chapters)
+      ) == chapters
+    else {
+      return false
+    }
+    let reopened = try GRDBBookShelfRepository(path: path)
+    let reopenedChapters = try await reopened.chapters(bookID: book.id)
+    let reopenedBook = try await reopened.book(id: book.id)
+    return reopenedChapters == chapters
+      && reopenedBook?.chapterCount == 3
   }
 }

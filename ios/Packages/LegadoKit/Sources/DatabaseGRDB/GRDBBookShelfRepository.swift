@@ -122,8 +122,68 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
     }
   }
 
+  public func book(
+    id: LibraryDomain.BookID
+  ) async throws -> ShelfBookItem? {
+    try await database.read { db in
+      try BookRecord
+        .filter(Column("bookID") == id.rawValue)
+        .fetchOne(db)?
+        .item
+    }
+  }
+
+  public func chapters(
+    bookID: LibraryDomain.BookID
+  ) async throws -> [LibraryDomain.BookChapter] {
+    try await database.read { db in
+      try ChapterRecord
+        .filter(Column("bookID") == bookID.rawValue)
+        .order(Column("chapterIndex").asc)
+        .fetchAll(db)
+        .map(\.chapter)
+    }
+  }
+
+  public func applyTOCUpdate(
+    bookID: LibraryDomain.BookID,
+    update: LibraryDomain.ChapterTOCUpdate
+  ) async throws -> [LibraryDomain.BookChapter] {
+    try await database.write { db in
+      switch update {
+      case .replaced(_, let chapters):
+        _ = try ChapterRecord
+          .filter(Column("bookID") == bookID.rawValue)
+          .deleteAll(db)
+        for chapter in chapters {
+          var record = ChapterRecord(chapter: chapter)
+          try record.insert(db)
+        }
+        try db.execute(
+          sql: """
+            UPDATE books
+            SET chapterCount = ?, updateError = 0
+            WHERE bookID = ?
+            """,
+          arguments: [chapters.count, bookID.rawValue]
+        )
+      case .preserved:
+        try db.execute(
+          sql: "UPDATE books SET updateError = 1 WHERE bookID = ?",
+          arguments: [bookID.rawValue]
+        )
+      }
+      return try ChapterRecord
+        .filter(Column("bookID") == bookID.rawValue)
+        .order(Column("chapterIndex").asc)
+        .fetchAll(db)
+        .map(\.chapter)
+    }
+  }
+
   public func reset() async throws {
     try await database.write { db in
+      _ = try ChapterRecord.deleteAll(db)
       _ = try BookRecord.deleteAll(db)
     }
   }
@@ -147,6 +207,36 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
         table.column("chapterCount", .integer).notNull()
       }
     }
+    migrator.registerMigration("addChapterTOCStorage") { db in
+      try db.alter(table: "books") { table in
+        table.add(
+          column: "sourceID",
+          .text
+        ).notNull().defaults(to: "")
+        table.add(
+          column: "updateError",
+          .boolean
+        ).notNull().defaults(to: false)
+      }
+      try db.create(table: "chapters") { table in
+        table.column("chapterID", .text).primaryKey()
+        table.column("bookID", .text).notNull().indexed()
+        table.column("sourceID", .text).notNull()
+        table.column("chapterIndex", .integer).notNull()
+        table.column("title", .text).notNull()
+        table.column("url", .text).notNull()
+        table.column("isPay", .boolean).notNull()
+        table.column("isVIP", .boolean).notNull()
+        table.column("isVolume", .boolean).notNull()
+        table.foreignKey(
+          ["bookID"],
+          references: "books",
+          columns: ["bookID"],
+          onDelete: .cascade
+        )
+        table.uniqueKey(["bookID", "chapterIndex"])
+      }
+    }
     return migrator
   }
 }
@@ -165,10 +255,12 @@ private struct BookRecord:
   var intro: String
   var coverURL: String?
   var originName: String
+  var sourceID: String
   var inBookshelf: Bool
   var groupID: Int
   var orderValue: Int64
   var chapterCount: Int
+  var updateError: Bool
 
   init(
     bookID: String,
@@ -186,10 +278,12 @@ private struct BookRecord:
     self.intro = candidate.intro
     self.coverURL = candidate.coverURL
     self.originName = candidate.originName
+    self.sourceID = candidate.sourceID
     self.inBookshelf = membership.isInBookshelf
     self.groupID = membership.groupID
     self.orderValue = orderValue
     self.chapterCount = chapterCount
+    self.updateError = false
   }
 
   mutating func apply(_ candidate: ShelfBookCandidate) {
@@ -201,6 +295,7 @@ private struct BookRecord:
     intro = candidate.intro
     coverURL = candidate.coverURL
     originName = candidate.originName
+    sourceID = candidate.sourceID
   }
 
   var item: ShelfBookItem {
@@ -214,13 +309,56 @@ private struct BookRecord:
         intro: intro,
         bookURL: bookURL,
         coverURL: coverURL,
-        originName: originName
+        originName: originName,
+        sourceID: sourceID
       ),
       membership: inBookshelf
         ? .member(groupID: groupID)
         : .staged,
       order: orderValue,
       chapterCount: chapterCount
+    )
+  }
+}
+
+private struct ChapterRecord:
+  Codable, FetchableRecord, MutablePersistableRecord
+{
+  static let databaseTableName = "chapters"
+
+  var chapterID: String
+  var bookID: String
+  var sourceID: String
+  var chapterIndex: Int
+  var title: String
+  var url: String
+  var isPay: Bool
+  var isVIP: Bool
+  var isVolume: Bool
+
+  init(chapter: LibraryDomain.BookChapter) {
+    chapterID = chapter.id.rawValue
+    bookID = chapter.bookID.rawValue
+    sourceID = chapter.sourceID
+    chapterIndex = chapter.index
+    title = chapter.title
+    url = chapter.url
+    isPay = chapter.isPay
+    isVIP = chapter.isVIP
+    isVolume = chapter.isVolume
+  }
+
+  var chapter: LibraryDomain.BookChapter {
+    LibraryDomain.BookChapter(
+      id: LibraryDomain.ChapterID(rawValue: chapterID),
+      bookID: LibraryDomain.BookID(rawValue: bookID),
+      sourceID: sourceID,
+      index: chapterIndex,
+      title: title,
+      url: url,
+      isPay: isPay,
+      isVIP: isVIP,
+      isVolume: isVolume
     )
   }
 }

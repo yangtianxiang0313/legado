@@ -11,6 +11,7 @@ public struct ShelfBookCandidate: Equatable, Sendable {
   public let bookURL: String
   public let coverURL: String?
   public let originName: String
+  public let sourceID: String
 
   public init(
     name: String,
@@ -20,7 +21,8 @@ public struct ShelfBookCandidate: Equatable, Sendable {
     intro: String,
     bookURL: String,
     coverURL: String?,
-    originName: String
+    originName: String,
+    sourceID: String = ""
   ) {
     self.name = name
     self.author = author
@@ -30,6 +32,7 @@ public struct ShelfBookCandidate: Equatable, Sendable {
     self.bookURL = bookURL
     self.coverURL = coverURL
     self.originName = originName
+    self.sourceID = sourceID
   }
 }
 
@@ -64,6 +67,13 @@ public protocol BookShelfRepository: Sendable {
   func remove(bookID: LibraryDomain.BookID) async throws
   func shelfBooks() async throws -> [ShelfBookItem]
   func book(forURL bookURL: String) async throws -> ShelfBookItem?
+  func book(id: LibraryDomain.BookID) async throws -> ShelfBookItem?
+  func chapters(bookID: LibraryDomain.BookID) async throws
+    -> [LibraryDomain.BookChapter]
+  func applyTOCUpdate(
+    bookID: LibraryDomain.BookID,
+    update: LibraryDomain.ChapterTOCUpdate
+  ) async throws -> [LibraryDomain.BookChapter]
   func reset() async throws
 }
 
@@ -125,6 +135,16 @@ public final class ShelfLibrary {
 
   public func item(forURL bookURL: String) async -> ShelfBookItem? {
     try? await repository.book(forURL: bookURL)
+  }
+
+  public func item(id: LibraryDomain.BookID) async -> ShelfBookItem? {
+    try? await repository.book(id: id)
+  }
+
+  public func chapterSession(
+    loader: any BookChapterLoading
+  ) -> ChapterTOCSession {
+    ChapterTOCSession(repository: repository, loader: loader)
   }
 
   public func reset() async {
