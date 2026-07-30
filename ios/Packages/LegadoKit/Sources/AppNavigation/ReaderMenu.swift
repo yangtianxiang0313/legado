@@ -29,6 +29,9 @@ public enum ReaderMenuAction: String, CaseIterable, Codable, Hashable, Sendable 
     case cacheOffline = "reader.cacheOffline"
     case addBookmark = "reader.addBookmark"
     case startReadAloud = "reader.startReadAloud"
+    case pauseReadAloud = "reader.pauseReadAloud"
+    case resumeReadAloud = "reader.resumeReadAloud"
+    case stopReadAloud = "reader.stopReadAloud"
     case editContent = "reader.editContent"
     case configurePageAnimation = "reader.configurePageAnimation"
     case openReadAloudSettings = "reader.openReadAloudSettings"
@@ -73,6 +76,9 @@ public enum ReaderMenuCatalog {
         .cacheOffline,
         .addBookmark,
         .startReadAloud,
+        .pauseReadAloud,
+        .resumeReadAloud,
+        .stopReadAloud,
         .editContent,
         .configurePageAnimation,
         .openReadAloudSettings,

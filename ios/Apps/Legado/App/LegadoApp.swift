@@ -1,7 +1,9 @@
+import AVFoundation
 import AppNavigation
 import AppUseCases
 import DatabaseGRDB
 import Foundation
+import ReaderCore
 import SwiftUI
 
 @main
@@ -9,6 +11,7 @@ struct LegadoApp: App {
     @State private var router = AppRouter()
     @State private var library: ShelfLibrary
     @State private var sourceCatalog: SourceCatalog
+    @State private var readAloud: ReadAloudSession
 
     init() {
         do {
@@ -21,6 +24,17 @@ struct LegadoApp: App {
             _sourceCatalog = State(
                 initialValue: SourceCatalog(
                     repository: UserDefaultsSourceCatalogRepository()
+                )
+            )
+            let synthesizer: any SystemSpeechSynthesizing =
+                ProcessInfo.processInfo.arguments.contains(
+                    "--system-read-aloud-test-double"
+                )
+                ? UITestSystemSpeechSynthesizer()
+                : AVSystemSpeechSynthesizer()
+            _readAloud = State(
+                initialValue: ReadAloudSession(
+                    synthesizer: synthesizer
                 )
             )
         } catch {
@@ -41,15 +55,120 @@ struct LegadoApp: App {
                     router: router,
                     library: library,
                     sourceCatalog: sourceCatalog,
+                    readAloud: readAloud,
                     startupCase: startupCase
                 )
             } else {
                 RootShellView(
                     router: router,
                     library: library,
-                    sourceCatalog: sourceCatalog
+                    sourceCatalog: sourceCatalog,
+                    readAloud: readAloud
                 )
             }
         }
+    }
+}
+
+@MainActor
+private final class UITestSystemSpeechSynthesizer:
+    SystemSpeechSynthesizing
+{
+    func speak(
+        _ segments: [ReadAloudSegment],
+        relativeRate: Float,
+        onEvent: @escaping @MainActor @Sendable (SystemSpeechEvent) -> Void
+    ) {
+        if let first = segments.first {
+            onEvent(.started(segmentID: first.id))
+        }
+    }
+
+    func pause() {}
+    func resume() {}
+    func stop() {}
+}
+
+@MainActor
+private final class AVSystemSpeechSynthesizer:
+    NSObject, SystemSpeechSynthesizing,
+    @preconcurrency AVSpeechSynthesizerDelegate
+{
+    private let synthesizer = AVSpeechSynthesizer()
+    private var segmentIDs: [ObjectIdentifier: String] = [:]
+    private var onEvent:
+        (@MainActor @Sendable (SystemSpeechEvent) -> Void)?
+
+    override init() {
+        super.init()
+        synthesizer.delegate = self
+    }
+
+    func speak(
+        _ segments: [ReadAloudSegment],
+        relativeRate: Float,
+        onEvent: @escaping @MainActor @Sendable (SystemSpeechEvent) -> Void
+    ) {
+        stop()
+        self.onEvent = onEvent
+        let rate = min(
+            AVSpeechUtteranceMaximumSpeechRate,
+            max(
+                AVSpeechUtteranceMinimumSpeechRate,
+                AVSpeechUtteranceDefaultSpeechRate * relativeRate
+            )
+        )
+        for segment in segments {
+            let utterance = AVSpeechUtterance(string: segment.text)
+            utterance.rate = rate
+            utterance.voice = AVSpeechSynthesisVoice(language: "zh-CN")
+            segmentIDs[ObjectIdentifier(utterance)] = segment.id
+            synthesizer.speak(utterance)
+        }
+    }
+
+    func pause() {
+        _ = synthesizer.pauseSpeaking(at: .word)
+    }
+
+    func resume() {
+        _ = synthesizer.continueSpeaking()
+    }
+
+    func stop() {
+        _ = synthesizer.stopSpeaking(at: .immediate)
+        segmentIDs.removeAll()
+    }
+
+    func speechSynthesizer(
+        _ synthesizer: AVSpeechSynthesizer,
+        didStart utterance: AVSpeechUtterance
+    ) {
+        guard let id = segmentIDs[ObjectIdentifier(utterance)] else { return }
+        onEvent?(.started(segmentID: id))
+    }
+
+    func speechSynthesizer(
+        _ synthesizer: AVSpeechSynthesizer,
+        didFinish utterance: AVSpeechUtterance
+    ) {
+        guard
+            let id = segmentIDs.removeValue(
+                forKey: ObjectIdentifier(utterance)
+            )
+        else { return }
+        onEvent?(.finished(segmentID: id))
+    }
+
+    func speechSynthesizer(
+        _ synthesizer: AVSpeechSynthesizer,
+        didCancel utterance: AVSpeechUtterance
+    ) {
+        guard
+            segmentIDs.removeValue(
+                forKey: ObjectIdentifier(utterance)
+            ) != nil
+        else { return }
+        onEvent?(.cancelled)
     }
 }

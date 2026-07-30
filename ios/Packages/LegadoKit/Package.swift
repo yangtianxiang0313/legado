@@ -11,11 +11,19 @@ let package = Package(
     products: [
         .library(
             name: "LegadoStoreSafeKit",
-            targets: ["AppUseCases", "AppNavigation", "DatabaseGRDB"]
+            targets: [
+                "AppUseCases",
+                "AppNavigation",
+                "DatabaseGRDB",
+            ]
         ),
         .library(
             name: "LegadoFullCompatKit",
-            targets: ["AppUseCases", "AppNavigation", "DatabaseGRDB"]
+            targets: [
+                "AppUseCases",
+                "AppNavigation",
+                "DatabaseGRDB",
+            ]
         ),
         .executable(name: "ConformanceCLI", targets: ["ConformanceCLI"]),
     ],
@@ -118,6 +126,10 @@ let package = Package(
                 "AppUseCases",
                 "DatabaseGRDB",
             ]
+        ),
+        .testTarget(
+            name: "AppUseCasesTests",
+            dependencies: ["AppUseCases", "ReaderCore"]
         ),
     ],
     swiftLanguageModes: [.v6]

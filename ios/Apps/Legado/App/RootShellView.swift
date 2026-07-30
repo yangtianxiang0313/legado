@@ -6,6 +6,7 @@ struct RootShellView: View {
     @Bindable var router: AppRouter
     @Bindable var library: ShelfLibrary
     @Bindable var sourceCatalog: SourceCatalog
+    @Bindable var readAloud: ReadAloudSession
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var didLoadLibrary = false
 
@@ -263,6 +264,7 @@ struct RootShellView: View {
                 target: target,
                 library: library,
                 persistedSources: sourceCatalog.sources,
+                readAloud: readAloud,
                 openTOC: {
                     router.push(.chapterTOC(target.bookID), on: root)
                 },
@@ -1032,6 +1034,7 @@ struct StartupAcceptanceView: View {
     @Bindable var router: AppRouter
     @Bindable var library: ShelfLibrary
     @Bindable var sourceCatalog: SourceCatalog
+    @Bindable var readAloud: ReadAloudSession
     let startupCase: StartupAcceptanceCase
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -1070,7 +1073,8 @@ struct StartupAcceptanceView: View {
             RootShellView(
                 router: router,
                 library: library,
-                sourceCatalog: sourceCatalog
+                sourceCatalog: sourceCatalog,
+                readAloud: readAloud
             )
         }
     }

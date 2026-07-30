@@ -7,6 +7,7 @@ struct ReaderContentView: View {
     let target: ReaderRoute
     @Bindable var library: ShelfLibrary
     let persistedSources: [BookSourceDraft]
+    @Bindable var readAloud: ReadAloudSession
     let openTOC: () -> Void
     let openChapter: (ChapterID, Int) -> Void
     let openSourceEditor: (String?) -> Void
@@ -32,6 +33,7 @@ struct ReaderContentView: View {
         target: ReaderRoute,
         library: ShelfLibrary,
         persistedSources: [BookSourceDraft],
+        readAloud: ReadAloudSession,
         openTOC: @escaping () -> Void,
         openChapter: @escaping (ChapterID, Int) -> Void,
         openSourceEditor: @escaping (String?) -> Void
@@ -39,6 +41,7 @@ struct ReaderContentView: View {
         self.target = target
         self.library = library
         self.persistedSources = persistedSources
+        self.readAloud = readAloud
         self.openTOC = openTOC
         self.openChapter = openChapter
         self.openSourceEditor = openSourceEditor
@@ -134,7 +137,34 @@ struct ReaderContentView: View {
                 chapter: chapter,
                 characterOffset: target.characterOffset
             )
+            if
+                readAloud.state == .awaitingNextChapter,
+                readAloud.bookID == target.bookID,
+                let document = session.document
+            {
+                readAloud.continueWithNextChapter(
+                    document: document,
+                    requestNextChapter: requestNextReadAloudChapter
+                )
+            }
             await saveProgress(chapter: chapter)
+        }
+        .onChange(of: readAloud.characterOffset) { _, offset in
+            guard
+                readAloud.bookID == target.bookID,
+                readAloud.chapterID == target.chapterID,
+                let chapter = chapters.first(where: {
+                    $0.id == target.chapterID
+                })
+            else { return }
+            Task {
+                await library.saveReadingProgress(
+                    bookID: target.bookID,
+                    chapterIndex: chapter.index,
+                    characterOffset: offset,
+                    chapterTitle: chapter.title
+                )
+            }
         }
         .onChange(of: scenePhase) { _, phase in
             guard phase != .active else { return }
@@ -390,11 +420,7 @@ struct ReaderContentView: View {
                 .accessibilityIdentifier(
                     ReaderMenuAction.addBookmark.accessibilityIdentifier
                 )
-                menuPlaceholder(
-                    .startReadAloud,
-                    title: "朗读",
-                    systemImage: "speaker.wave.2"
-                )
+                readAloudControls
                 menuPlaceholder(
                     .openReadAloudSettings,
                     title: "朗读设置",
@@ -607,6 +633,89 @@ struct ReaderContentView: View {
                 : 0,
             chapterTitle: chapter.title
         )
+    }
+
+    @ViewBuilder
+    private var readAloudControls: some View {
+        let ownsSession = readAloud.bookID == target.bookID
+        if ownsSession, readAloud.state == .speaking {
+            Button {
+                readAloud.pause()
+            } label: {
+                Label("暂停朗读", systemImage: "pause.circle")
+            }
+            .accessibilityIdentifier(
+                ReaderMenuAction.pauseReadAloud.accessibilityIdentifier
+            )
+        } else if ownsSession, readAloud.state == .paused {
+            Button {
+                readAloud.resume()
+            } label: {
+                Label("继续朗读", systemImage: "play.circle")
+            }
+            .accessibilityIdentifier(
+                ReaderMenuAction.resumeReadAloud.accessibilityIdentifier
+            )
+        } else {
+            Button {
+                guard let document = session.document else { return }
+                readAloud.start(
+                    document: document,
+                    requestNextChapter: requestNextReadAloudChapter
+                )
+            } label: {
+                Label("朗读", systemImage: "speaker.wave.2")
+            }
+            .disabled(session.document == nil)
+            .accessibilityIdentifier(
+                ReaderMenuAction.startReadAloud.accessibilityIdentifier
+            )
+        }
+
+        if ownsSession, readAloud.state != .idle {
+            Button(role: .destructive) {
+                readAloud.stop()
+            } label: {
+                Label("停止朗读", systemImage: "stop.circle")
+            }
+            .accessibilityIdentifier(
+                ReaderMenuAction.stopReadAloud.accessibilityIdentifier
+            )
+            Text(readAloudStatus)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .accessibilityIdentifier("state.reader.readAloud")
+        }
+    }
+
+    private var readAloudStatus: String {
+        switch readAloud.state {
+        case .idle:
+            return "未朗读"
+        case .speaking:
+            return "正在朗读"
+        case .paused:
+            return "已暂停"
+        case .awaitingNextChapter:
+            return "正在进入下一章"
+        case .finished:
+            return "已读完"
+        case .failed:
+            return readAloud.errorMessage ?? "朗读失败"
+        }
+    }
+
+    private func requestNextReadAloudChapter() {
+        guard
+            let currentChapterPosition,
+            chapters.indices.contains(currentChapterPosition + 1)
+        else {
+            readAloud.finishAtEndOfBook()
+            return
+        }
+        let next = chapters[currentChapterPosition + 1]
+        menuPresented = false
+        openChapter(next.id, 0)
     }
 
     private func menuPlaceholder(

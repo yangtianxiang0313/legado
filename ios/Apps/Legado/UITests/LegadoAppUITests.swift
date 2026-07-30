@@ -1702,6 +1702,72 @@ final class LegadoAppUITests: XCTestCase {
         XCTAssertEqual(progress.label, "1/3 · 位置 5")
     }
 
+    func testSystemReadAloudMilestone() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+            "--seed-offline-cache",
+            "--system-read-aloud-test-double",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        let book = app.staticTexts["星河纪事"].firstMatch
+        XCTAssertTrue(book.waitForExistence(timeout: 8))
+        book.tap()
+        require("screen.bookDetail")
+        requireButton("action.bookDetail.startReading").tap()
+        require("screen.chapterTOC")
+        require("action.chapter.select.0").tap()
+        require("screen.reader")
+        requireButton("action.reader.openPrimaryMenu").tap()
+        requireByScrolling(
+            "action.reader.openMore",
+            in: "overlay.reader.primaryMenu"
+        ).tap()
+        require("overlay.reader.more")
+
+        requireByScrolling(
+            "action.reader.startReadAloud",
+            in: "overlay.reader.more"
+        ).tap()
+        waitForLabel(
+            "正在朗读",
+            identifier: "state.reader.readAloud"
+        )
+        requireByScrolling(
+            "action.reader.pauseReadAloud",
+            in: "overlay.reader.more"
+        ).tap()
+        waitForLabel(
+            "已暂停",
+            identifier: "state.reader.readAloud"
+        )
+        requireByScrolling(
+            "action.reader.resumeReadAloud",
+            in: "overlay.reader.more"
+        ).tap()
+        waitForLabel(
+            "正在朗读",
+            identifier: "state.reader.readAloud"
+        )
+        requireByScrolling(
+            "action.reader.stopReadAloud",
+            in: "overlay.reader.more"
+        ).tap()
+        requireByScrolling(
+            "action.reader.startReadAloud",
+            in: "overlay.reader.more"
+        )
+    }
+
     private func waitForLabel(
         _ label: String,
         identifier: String,
