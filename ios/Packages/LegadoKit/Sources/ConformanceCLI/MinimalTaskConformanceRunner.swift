@@ -51,6 +51,8 @@ public enum MinimalTaskConformanceRunner {
           == ReaderContentNormalizationConformanceRunner.fixtureID
         || fixtureID == ReaderIndexLoadDedupConformanceRunner.fixtureID
         || fixtureID == ReaderSessionResetConformanceRunner.fixtureID
+        || fixtureID
+          == ReaderChapterNavigationConformanceRunner.fixtureID
         || fixtureID == ReaderTOCRemapConformanceRunner.fixtureID
         || fixtureID == AppStartupConformanceRunner.fixtureID
         || fixtureID == BookDetailActionConformanceRunner.fixtureID
@@ -177,6 +179,21 @@ public enum MinimalTaskConformanceRunner {
     }
     if fixtureID == ReaderSessionResetConformanceRunner.fixtureID {
       let run = try ReaderSessionResetConformanceRunner.run(
+        fixtureDirectory: fixtureDirectory
+      )
+      return try finish(
+        taskID: taskID,
+        fixtureID: fixtureID,
+        goldenPath: goldenPath,
+        actualArtifact: run.artifact,
+        canonicalPlans: run.requestPlan,
+        root: root
+      )
+    }
+    if fixtureID
+      == ReaderChapterNavigationConformanceRunner.fixtureID
+    {
+      let run = try ReaderChapterNavigationConformanceRunner.run(
         fixtureDirectory: fixtureDirectory
       )
       return try finish(

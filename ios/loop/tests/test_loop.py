@@ -153,7 +153,7 @@ class MinimalLoopTests(unittest.TestCase):
             source_runtime_check = next(
                 check
                 for check in task["acceptance"]["commands"]
-                if check["id"] == "source-runtime-tests"
+                if check["id"] == "structured-source-acceptance"
             )
             self.assertNotIn(
                 "package-contract",
@@ -162,10 +162,8 @@ class MinimalLoopTests(unittest.TestCase):
                     for check in task["acceptance"]["commands"]
                 },
             )
-            self.assertIn(
-                "[1-9]",
-                source_runtime_check["required_output_pattern"],
-            )
+            self.assertNotIn("required_output_pattern", source_runtime_check)
+            self.assertEqual(1, len(task["acceptance"]["commands"]))
             self.assertNotIn("recipe", task)
             self.assertNotIn("recovery", task)
             loop.validate_task(root, task)

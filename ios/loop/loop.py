@@ -1951,22 +1951,6 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
         }
     commands = [
         {
-            "id": delivery_contract["test_id"],
-            "argv": [
-                "swift",
-                "test",
-                "--package-path",
-                "ios/Packages/LegadoKit",
-                "--disable-automatic-resolution",
-                "--filter",
-                delivery_contract["test_filter"],
-            ],
-            "required_output_pattern": (
-                r"Executed [1-9][0-9]* tests?, with 0 failures"
-            ),
-            "timeout_seconds": 300,
-        },
-        {
             "id": delivery_contract["acceptance_id"],
             "argv": [
                 "swift",

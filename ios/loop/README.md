@@ -66,7 +66,7 @@ WorkItem、Checkpoint 或 Evidence 副本。
 
 Loop 不再让每个小切片重复承担发布级验证：
 
-- `slice`：只跑所属领域合同、聚焦测试和结构化跨端对齐；
+- `slice`：只跑一次结构化跨端对齐；该命令同时编译受影响 Target；
 - `ui_slice`：在 `slice` 基础上只跑一台主 iPhone Simulator；
 - `checkpoint`：仅用于 UI 拓扑、依赖启用、P0 里程碑和发布检查，运行完整
   Swift 测试、iPhone+iPad 矩阵与 Oracle/Publisher 基础设施回归。
@@ -78,5 +78,4 @@ Android 真源 Golden 仍是迁移语义的权威。瘦身只移除重复验证�
 Golden、manifest、Android commit 和 runner digest 的绑定；不再为每个业务
 切片重复执行全局 Source Lab/Business Knowledge Doctor，也不要求
 Oracle → Receipt → Publisher → Release 的多段发布往返。普通 Delivery 只跑
-所属模块的聚焦 Swift 测试和 ConformanceCLI 跨端比较；Package 全局合同留到
-checkpoint。
+ConformanceCLI 跨端比较；模块测试与 Package 全局合同留到 checkpoint。
