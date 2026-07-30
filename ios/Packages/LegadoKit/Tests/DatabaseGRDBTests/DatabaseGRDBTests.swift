@@ -575,6 +575,53 @@ final class DatabaseGRDBTests: XCTestCase {
     }
   }
 
+  func testChapterSourceContentReplacesOnlyCurrentCache()
+    async throws
+  {
+    let path = temporaryDatabasePath()
+    let repository = try GRDBBookShelfRepository(path: path)
+    let item = try await repository.add(
+      candidate(name: "章节换源", suffix: "chapter-source"),
+      groupID: 0
+    )
+    let chapter = BookChapter(
+      id: ChapterID(
+        sourceID: item.candidate.sourceID,
+        chapterURL: "\(item.candidate.bookURL)/current"
+      ),
+      bookID: item.id,
+      sourceID: item.candidate.sourceID,
+      index: 0,
+      title: "当前章",
+      url: "\(item.candidate.bookURL)/current"
+    )
+    _ = try await repository.applyTOCUpdate(
+      bookID: item.id,
+      update: .replaced(previousCount: 0, chapters: [chapter])
+    )
+    let library = ShelfLibrary(repository: repository)
+
+    await library.cacheChapterContent(
+      "来自另一书源的正文",
+      bookID: item.id,
+      chapterID: chapter.id
+    )
+
+    let reopened = try GRDBBookShelfRepository(path: path)
+    let restoredBook = try await reopened.book(id: item.id)
+    let restoredChapters = try await reopened.chapters(bookID: item.id)
+    let content = try await reopened.chapterContent(
+      bookID: item.id,
+      chapterID: chapter.id
+    )
+    XCTAssertEqual(
+      restoredBook?.candidate.sourceID,
+      item.candidate.sourceID
+    )
+    XCTAssertEqual(restoredChapters, [chapter])
+    XCTAssertEqual(content, "来自另一书源的正文")
+  }
+
   private func temporaryDatabasePath() -> String {
     FileManager.default.temporaryDirectory
       .appendingPathComponent(UUID().uuidString)

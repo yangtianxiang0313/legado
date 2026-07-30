@@ -30,6 +30,10 @@ struct ReaderContentView: View {
     @State private var readerBook: ShelfBookItem?
     @State private var switchingBookSource = false
     @State private var bookSourceSwitchMessage: String?
+    @State private var chapterSourceResolution:
+        ChapterSourceResolution?
+    @State private var loadingChapterSource = false
+    @State private var chapterSourceMessage: String?
     @State private var replacementDraft: ReaderReplacementRule?
 
     init(
@@ -196,6 +200,8 @@ struct ReaderContentView: View {
                             replacementRulesMenu
                         case .bookSource:
                             bookSourceMenu
+                        case .chapterSource:
+                            chapterSourceMenu
                         case .primary, .textSelection:
                             EmptyView()
                         }
@@ -405,10 +411,18 @@ struct ReaderContentView: View {
                     ReaderMenuAction.openBookSource
                         .accessibilityIdentifier
                 )
-                menuPlaceholder(
-                    .openChapterSource,
-                    title: "章节换源",
-                    systemImage: "arrow.triangle.2.circlepath"
+                NavigationLink(value: ReaderMenuLayer.chapterSource) {
+                    Label(
+                        "章节换源",
+                        systemImage: "arrow.triangle.2.circlepath"
+                    )
+                }
+                .disabled(
+                    readerBook == nil || switchableBookSources.isEmpty
+                )
+                .accessibilityIdentifier(
+                    ReaderMenuAction.openChapterSource
+                        .accessibilityIdentifier
                 )
 
                 NavigationLink(value: ReaderMenuLayer.appearance) {
@@ -714,6 +728,107 @@ struct ReaderContentView: View {
             $0.sourceURL != sourceID
                 && ($0.importMetadata?.enabled ?? true)
         }
+    }
+
+    private var chapterSourceMenu: some View {
+        List {
+            if let chapterSourceMessage {
+                Section {
+                    Text(chapterSourceMessage)
+                        .foregroundStyle(.red)
+                        .accessibilityIdentifier(
+                            "state.reader.chapterSource.error"
+                        )
+                }
+            }
+            if let resolution = chapterSourceResolution {
+                Section {
+                    Button {
+                        chapterSourceResolution = nil
+                        chapterSourceMessage = nil
+                    } label: {
+                        Label(
+                            "重新选择书源",
+                            systemImage: "chevron.backward"
+                        )
+                    }
+                    Text("目标书源：\(resolution.source.name)")
+                        .foregroundStyle(.secondary)
+                }
+                Section("选择目标章节") {
+                    ForEach(resolution.chapters) { chapter in
+                        Button {
+                            replaceCurrentChapterContent(
+                                with: chapter,
+                                resolution: resolution
+                            )
+                        } label: {
+                            HStack {
+                                VStack(
+                                    alignment: .leading,
+                                    spacing: 3
+                                ) {
+                                    Text(chapter.title)
+                                    Text("第 \(chapter.index + 1) 章")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                if
+                                    chapter.id
+                                        == resolution.suggestedChapterID
+                                {
+                                    Image(systemName: "checkmark.circle")
+                                        .foregroundStyle(.tint)
+                                }
+                            }
+                        }
+                        .disabled(loadingChapterSource)
+                        .accessibilityIdentifier(
+                            "action.reader.chapterSource.chapter."
+                                + chapter.id.rawValue
+                        )
+                    }
+                }
+            } else {
+                Section("选择书源") {
+                    ForEach(switchableBookSources) { source in
+                        Button {
+                            loadChapterSource(from: source)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(source.name)
+                                Text(source.sourceURL)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .disabled(loadingChapterSource)
+                        .accessibilityIdentifier(
+                            "action.reader.chapterSource.source."
+                                + source.sourceURL
+                        )
+                    }
+                }
+            }
+        }
+        .overlay {
+            if loadingChapterSource {
+                ProgressView(
+                    chapterSourceResolution == nil
+                        ? "正在搜索并加载目录…"
+                        : "正在抓取目标章节…"
+                )
+                .padding()
+                .background(
+                    .regularMaterial,
+                    in: .rect(cornerRadius: 12)
+                )
+            }
+        }
+        .navigationTitle("章节换源")
+        .navigationBarTitleDisplayMode(.inline)
+        .accessibilityIdentifier("overlay.reader.chapterSource")
     }
 
     private var searchMenu: some View {
@@ -1110,6 +1225,79 @@ struct ReaderContentView: View {
                 bookSourceSwitchMessage =
                     "目标书源解析失败：\(String(reflecting: error))"
                 switchingBookSource = false
+            }
+        }
+    }
+
+    private func loadChapterSource(from source: BookSourceDraft) {
+        guard
+            let readerBook,
+            let currentChapter = chapters.first(where: {
+                $0.id == target.chapterID
+            })
+        else { return }
+        loadingChapterSource = true
+        chapterSourceMessage = nil
+        Task {
+            do {
+                chapterSourceResolution =
+                    try await SearchEnvironment.resolveChapterSource(
+                        current: readerBook,
+                        currentChapter: currentChapter,
+                        target: source,
+                        persistedSources: persistedSources
+                    )
+            } catch {
+                chapterSourceMessage =
+                    "目标书源目录加载失败："
+                    + String(reflecting: error)
+            }
+            loadingChapterSource = false
+        }
+    }
+
+    private func replaceCurrentChapterContent(
+        with chapter: BookChapter,
+        resolution: ChapterSourceResolution
+    ) {
+        loadingChapterSource = true
+        chapterSourceMessage = nil
+        Task {
+            do {
+                let index = resolution.chapters.firstIndex {
+                    $0.id == chapter.id
+                }
+                let nextChapter = index.flatMap {
+                    resolution.chapters.indices.contains($0 + 1)
+                        ? resolution.chapters[$0 + 1]
+                        : nil
+                }
+                let content = try await SearchEnvironment
+                    .loadChapterSourceContent(
+                        book: resolution.book,
+                        chapter: chapter,
+                        nextChapter: nextChapter,
+                        persistedSources: persistedSources
+                    )
+                await library.cacheChapterContent(
+                    content,
+                    bookID: target.bookID,
+                    chapterID: target.chapterID
+                )
+                guard library.errorMessage == nil else {
+                    chapterSourceMessage =
+                        library.errorMessage ?? "无法保存目标正文"
+                    loadingChapterSource = false
+                    return
+                }
+                loadingChapterSource = false
+                menuPresented = false
+                await reloadCurrentContent()
+            } catch {
+                chapterSourceMessage =
+                    "目标章节正文加载失败："
+                    + String(reflecting: error)
+                loadingChapterSource = false
             }
         }
     }

@@ -1,6 +1,7 @@
 import AppUseCases
 import Foundation
 import LibraryDomain
+import ReaderCore
 import ScriptJavaScriptCore
 import SourceRuntime
 import WebKit
@@ -391,6 +392,75 @@ enum SearchEnvironment {
             scriptRuntime: scriptRuntime
         ).load(book: transient).chapters
         return (candidate, chapters)
+    }
+
+    static func resolveChapterSource(
+        current: ShelfBookItem,
+        currentChapter: LibraryDomain.BookChapter,
+        target: BookSourceDraft,
+        persistedSources: [BookSourceDraft]
+    ) async throws -> ChapterSourceResolution {
+        let resolved = try await resolveSourceSwitch(
+            current: current,
+            target: target,
+            persistedSources: persistedSources
+        )
+        let targetBook = ShelfBookItem(
+            id: current.id,
+            candidate: resolved.candidate,
+            membership: current.membership,
+            order: current.order,
+            chapterCount: resolved.chapters.count,
+            progress: current.progress
+        )
+        let remap = try AndroidReaderTOCRemapPolicy.remap(
+            ReaderTOCRemapInput(
+                oldChapterIndex: currentChapter.index,
+                oldChapterTitle: currentChapter.title,
+                oldChapterListSize: current.chapterCount,
+                newChapterTitles: resolved.chapters.map(\.title)
+            )
+        )
+        guard resolved.chapters.indices.contains(remap.selectedIndex) else {
+            throw SourceSwitchEnvironmentError.chapterNotFound
+        }
+        return ChapterSourceResolution(
+            source: target,
+            book: targetBook,
+            chapters: resolved.chapters,
+            suggestedChapterID:
+                resolved.chapters[remap.selectedIndex].id
+        )
+    }
+
+    static func loadChapterSourceContent(
+        book: ShelfBookItem,
+        chapter: LibraryDomain.BookChapter,
+        nextChapter: LibraryDomain.BookChapter?,
+        persistedSources: [BookSourceDraft]
+    ) async throws -> String {
+        let externalBaseURL = ProcessInfo.processInfo.environment[
+            "LEGADO_SEARCH_BASE_URL"
+        ]
+        let baseURL = externalBaseURL ?? "http://legado.local"
+        let sources = makeSources(
+            baseURL: baseURL,
+            persistedSources: persistedSources,
+            includeDisabled: true
+        )
+        let result = try await SourceReaderContentLoader(
+            sources: sources,
+            transport: makeTransport(externalBaseURL: externalBaseURL),
+            cookieStore: cookieStore,
+            dynamicWebPagePort: dynamicWebPagePort,
+            scriptRuntime: scriptRuntime
+        ).loadSourceContent(
+            book: book,
+            chapter: chapter,
+            nextChapter: nextChapter,
+            characterOffset: 0
+        )
+        return result.document.content
     }
 
     private static func makeTransport(
@@ -786,6 +856,14 @@ enum SearchEnvironment {
 private enum SourceSwitchEnvironmentError: Error {
     case unsupportedSource
     case bookNotFound
+    case chapterNotFound
+}
+
+struct ChapterSourceResolution {
+    let source: BookSourceDraft
+    let book: ShelfBookItem
+    let chapters: [LibraryDomain.BookChapter]
+    let suggestedChapterID: LibraryDomain.ChapterID
 }
 
 private enum BookURLImportEnvironmentError: Error {
