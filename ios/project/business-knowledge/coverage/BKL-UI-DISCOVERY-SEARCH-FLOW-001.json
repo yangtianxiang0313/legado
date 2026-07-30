@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgeCoverageLedger",
+  "id": "BKL-UI-DISCOVERY-SEARCH-FLOW-001",
+  "revision": 1,
+  "status": "current",
+  "packet_refs": [
+    {
+      "id": "BKP-UI-DISCOVERY-SEARCH-FLOW-001",
+      "revision": 1,
+      "sha256": "50fce646e70ab9647ae3e910abe7c7e18797834aca1569fe982e272ee9eef893"
+    }
+  ],
+  "generated_from": {
+    "knowledge_authority_sha256": "0433d04f8f5abc29a7366ba66e175cbb14db2e1982ed4ed863a9e06c47258867",
+    "requirement_catalog_sha256": "19ffa4bc80f76637c24aec936ae0c660f3cecfa703adb45e13f390c32223ef87",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "entries": [
+    {
+      "id": "BKE-UI-DISCOVERY-SEARCH-FLOW-001",
+      "claim_ref": {
+        "id": "BKC-UI-SEARCH-FLOW-001",
+        "revision": 4
+      },
+      "validation": {
+        "required": "android_runtime",
+        "state": "verified",
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-ui-discovery-search-flow-001-30527300135-1.json",
+          "ios/harness/goldens/android-legado-v1/rl-ui-discovery-search-flow-001.json#/artifact/result/value/portable_known_projection"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "covered_by_requirement",
+        "refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "reason": "受保护 Android Golden 已冻结搜索范围、范围菜单回退、加载状态及搜索结果到详情的往返语义；后续由 AppUseCases、AppNavigation 和 AppShell 接入真实 SourceRuntime 与 LibraryDomain 结果。",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "planned",
+        "requirement_refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "work_item_refs": [
+          "IOS-APP-NAVIGATION-SEARCH-UI-FLOW-001"
+        ],
+        "capability_refs": [
+          "CAP-CONFORMANCE",
+          "CAP-CORE"
+        ],
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-ui-discovery-search-flow-001-30527300135-1.json"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    }
+  ],
+  "updated_by": "IOS-CHARACTERIZE-UI-DISCOVERY-SEARCH-FLOW-001",
+  "updated_at": "2026-07-30T08:45:30Z"
+}

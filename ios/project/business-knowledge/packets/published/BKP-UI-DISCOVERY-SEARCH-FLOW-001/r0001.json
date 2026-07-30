@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-UI-DISCOVERY-SEARCH-FLOW-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "ui.discovery.search-flow-golden",
+  "title": "受保护 Android Golden 验证的搜索范围、加载状态与详情往返流程",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "discovery.search",
+      "ui.navigation"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-CORE"
+    ],
+    "subject_keys": [
+      "ui.action",
+      "ui.navigation",
+      "ui.result",
+      "ui.state"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-UI-SEARCH-FLOW-001",
+      "revision": 4,
+      "semantic_key": "ui.discovery.search-flow",
+      "kind": "runtime_behavior",
+      "topic": "搜索范围、加载状态与详情往返",
+      "statement": "在 rl-ui-discovery-search-flow-001 的七个固定场景中，Android SearchScope 以空串表示全部范围；逗号分隔的分组可逐项移除，移除单源范围后回到全部。SearchActivity 构造范围菜单时，仍存在的已选分组进入 selected，其他分组进入 available；持久化范围引用已失效分组时会清空范围并回退到全部。startSearch 使进度和停止控件可见，searchFinally 使进度控件 gone、停止控件 invisible。选择搜索结果会携带 name、author、bookUrl 进入 BookInfoActivity，详情关闭返回后搜索框查询词保持不变。本结论只冻结上述可观察状态，不要求 iOS 复制 Android 控件可见性枚举、Activity 生命周期或菜单视觉细节；搜索结果列表数据必须来自 SourceRuntime 与 LibraryDomain，不得继续使用静态样例。",
+      "subject_keys": [
+        "ui.action",
+        "ui.navigation",
+        "ui.result",
+        "ui.state"
+      ],
+      "depends_on": [
+        {
+          "id": "BKC-UI-SHELF-ROOT-001",
+          "revision": 4
+        }
+      ],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [
+          {
+            "id": "AF-SEARCH-SCOPE-STATE",
+            "revision_sha256": "f012f687b8a11c1d2bedd3fc8685a949e991a379e963fd26a01f83dfd4ffa297"
+          },
+          {
+            "id": "AF-SEARCH-ACTIVITY-SCOPE-MENU",
+            "revision_sha256": "8f330fae5a27c28ea3e8d3e541025e2310c0bb564882fcbeb8efff3631d9eb80"
+          },
+          {
+            "id": "AF-SEARCH-ACTIVITY-LOADING",
+            "revision_sha256": "95657e9530e5821ef2bc9ad8312dd8e655489a79a3fa747fe0e9483a253c0a49"
+          },
+          {
+            "id": "AF-SEARCH-ACTIVITY-DETAIL-NAVIGATION",
+            "revision_sha256": "9924f78f16d802dbe50bcf5c7df70ba1384fa8b15ff76726f280a7a38ee32d25"
+          }
+        ],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "7490b62f632a21c243132604954521afbca71ad4",
+            "path": "app/src/main/java/io/legado/app/ui/book/search/SearchScope.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.search/SearchScope/remove"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "002332b999dfb9d8a04308bac8d559f9d5073719",
+            "path": "app/src/main/java/io/legado/app/ui/book/search/SearchActivity.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.search/SearchActivity/onMenuOpened"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "002332b999dfb9d8a04308bac8d559f9d5073719",
+            "path": "app/src/main/java/io/legado/app/ui/book/search/SearchActivity.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.search/SearchActivity/startSearch"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "002332b999dfb9d8a04308bac8d559f9d5073719",
+            "path": "app/src/main/java/io/legado/app/ui/book/search/SearchActivity.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.search/SearchActivity/showBookInfo"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/rl-ui-discovery-search-flow-001.json",
+            "artifact_sha256": "e830842ea126ea423691d5d54834cbe4a9cb229d4cb88ccbf594dc0199048176",
+            "projection_pointer": "/artifact/result/value/portable_known_projection",
+            "observed_sha256": "27673938857f4abcc66b86987918b7ce47aa0c582843b136f5d7fbd7e47c4df8",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "dceae4a51baa7d733692ee8a1f8c21ca52a9a404175869948892008c56739cee",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-UI-SEARCH-FLOW-001",
+        "revision": 3
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-UI-DISCOVERY-SEARCH-FLOW-001"
+}

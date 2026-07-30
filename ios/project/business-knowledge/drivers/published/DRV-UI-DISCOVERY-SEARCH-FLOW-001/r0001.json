@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-UI-DISCOVERY-SEARCH-FLOW-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "ui.discovery.search-flow",
+  "title": "以 AppUseCases 搜索状态驱动平台搜索页面与详情导航",
+  "claim_refs": [
+    {
+      "id": "BKC-UI-SEARCH-FLOW-001",
+      "revision": 4
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "vertical_delivery",
+      "scenario": "搜索页面必须直接消费 SourceRuntime 搜索结果与 LibraryDomain 聚合状态，替换静态样例，并把选中候选传给真实详情路由。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "全部、分组、单源范围的移除与失效回退，以及加载开始、结束和详情返回后的查询保留，必须符合受保护 Android Golden。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "modularity",
+      "scenario": "AppUseCases 拥有搜索会话状态和动作，AppNavigation 只表达候选到详情的路由值，SwiftUI 只投影状态；Android Activity、Menu 和 View 可见性类型不得进入产品 Target。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "platform_fidelity",
+      "scenario": "iOS 使用原生 searchable、ProgressView、Menu 与 NavigationStack，保持整体结构和多级选择语义，不复制 Android 控件像素细节。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "scope_control",
+      "scenario": "当前切片止于真实搜索结果进入详情并保持查询；加入书架、永久 BookID、目录与阅读器由后续 P0 切片承接。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "如何用稳定的候选值路由承载 name、author、bookURL 与来源身份，而不是无参数 bookDetail 枚举？",
+    "如何把范围菜单和搜索会话状态放在 AppUseCases，使 iPhone 与 iPad 投影共享同一业务状态？",
+    "如何用本地书源模拟器提供确定性搜索结果，同时保留后续替换真实 HTTPTransport 的端口？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002",
+      "ADR-0004"
+    ],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-UI-DISCOVERY-SEARCH-FLOW-001",
+      "IOS-APP-NAVIGATION-SEARCH-UI-FLOW-001"
+    ]
+  },
+  "supersedes": null,
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30527911633/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "created_by": "IOS-CHARACTERIZE-UI-DISCOVERY-SEARCH-FLOW-001"
+}

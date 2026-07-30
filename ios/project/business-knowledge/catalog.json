@@ -2,11 +2,11 @@
   "schema_version": 1,
   "contract_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-  "inventory_control_sha256": "a6c3be20a5141e7b79470eb49218a5e07f7b1d63084c1cc12088dea597391113",
+  "inventory_control_sha256": "4ea414c4db13508729603b97e83481010c5b83945170af1d1de24f0085239ff1",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "188cec5873b8c177bedc5811878e9a79113efd11e4775ff82d64ff9ae9c842ed",
-  "coverage_sha256": "2234bf37880325f34a1a46d2b3e67acbddc2830a8eb2d5da35dbbda34ff082f2",
+  "authority_sha256": "f65be43919b82682c085b0978dae01629fe08092b5c742eb5e119e3525ce3ba6",
+  "coverage_sha256": "a17d451f0018bae573f005b4b6b089a46610c3bba5a9de6bad63ff606fb0bd79",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -553,6 +553,19 @@
           "revision": 4
         }
       ]
+    },
+    {
+      "id": "BKP-UI-DISCOVERY-SEARCH-FLOW-001",
+      "revision": 1,
+      "semantic_key": "ui.discovery.search-flow-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-UI-DISCOVERY-SEARCH-FLOW-001/r0001.json",
+      "record_sha256": "50fce646e70ab9647ae3e910abe7c7e18797834aca1569fe982e272ee9eef893",
+      "claim_refs": [
+        {
+          "id": "BKC-UI-SEARCH-FLOW-001",
+          "revision": 4
+        }
+      ]
     }
   ],
   "architecture_drivers": [
@@ -794,6 +807,14 @@
       "semantic_key": "ui.native-bootstrap-and-simulator",
       "path": "ios/project/business-knowledge/drivers/published/DRV-UI-BOOTSTRAP-001/r0001.json",
       "record_sha256": "6ca105ce7136d687eba5c1a6eabe1545c1cfa88917f4caec8dd6528af48acf5d",
+      "resolution_state": "resolved"
+    },
+    {
+      "id": "DRV-UI-DISCOVERY-SEARCH-FLOW-001",
+      "revision": 1,
+      "semantic_key": "ui.discovery.search-flow",
+      "path": "ios/project/business-knowledge/drivers/published/DRV-UI-DISCOVERY-SEARCH-FLOW-001/r0001.json",
+      "record_sha256": "60dbee53f22501f90607d20a7e47bacb68c3d6aa703d96d522a4d1132fd98c22",
       "resolution_state": "resolved"
     }
   ],
@@ -1162,6 +1183,15 @@
       "entry_ids": [
         "BKE-UI-ROOTS-001",
         "BKE-UI-SHELF-ROOT-001"
+      ]
+    },
+    {
+      "id": "BKL-UI-DISCOVERY-SEARCH-FLOW-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-UI-DISCOVERY-SEARCH-FLOW-001.json",
+      "record_sha256": "605c0d196dd1748eddcf742b6bb71fecc174ed1962a809300652f4352772bb73",
+      "entry_ids": [
+        "BKE-UI-DISCOVERY-SEARCH-FLOW-001"
       ]
     }
   ],
