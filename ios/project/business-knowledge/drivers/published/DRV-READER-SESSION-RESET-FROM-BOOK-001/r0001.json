@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-READER-SESSION-RESET-FROM-BOOK-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "reader.session.reset-from-book-compatibility-boundary",
+  "title": "用 ReaderCore 会话快照隔离 Android ReadBook 全局状态",
+  "claim_refs": [
+    {
+      "id": "BKC-RD-SESSION-RESET-001",
+      "revision": 2
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "ReaderCore 必须逐场景复现受保护 Android Golden 中的索引钳制、字符偏移、书源选择、图片样式继承、运行时集合清理和回调结果；expected 不得由 iOS 实现反向生成。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "modularity",
+      "scenario": "会话恢复规则属于 ReaderCore；Book、章节和书源通过稳定 Sendable 输入进入核心，Android 单例、Room、SwiftUI 与 Golden 文件不得进入产品实现。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "state_isolation",
+      "scenario": "iOS 使用显式 ReaderSessionSnapshot 表达每次打开书籍后的状态，不复制 Android ReadBook 全局可变对象，也不把预下载集合保留误解为跨进程持久化。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "scope_control",
+      "scenario": "本切片只实现 Golden 覆盖的 6 个同步重置场景；任务取消、并发打开、进程恢复与存储时序由后续真源任务扩张。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "如何用值类型表达运行时章节索引与持久 Book 索引的差异，避免钳制时隐式写回？",
+    "如何把书源可用性、远程/本地图书和图片样式继承建模为确定性输入？",
+    "如何让 AppUseCases 负责加载 Book、章节和书源，而 ReaderCore 只执行纯会话变换？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002"
+    ],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-READER-SESSION-RESET-FROM-BOOK-001",
+      "IOS-READER-CORE-SESSION-RESET-FROM-BOOK-001"
+    ]
+  },
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30541649098/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-READER-SESSION-RESET-FROM-BOOK-001"
+}

@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-READER-SESSION-RESET-FROM-BOOK-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "reader.session.reset-from-book-golden",
+  "title": "受保护 Android Golden 验证的阅读会话重置语义",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "822755c0b0cd5555b959fd4da3a6d18c833f9e9ab9252dbbf15c91a02a407d04"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "reader.session"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-CORE"
+    ],
+    "subject_keys": [
+      "reader.session"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-RD-SESSION-RESET-001",
+      "revision": 2,
+      "semantic_key": "reader.session.reset-from-book",
+      "kind": "runtime_behavior",
+      "topic": "从 Book 恢复或重置阅读会话",
+      "statement": "在 rl-reader-session-reset-from-book-001 的 6 个固定 Android 场景中，resetData 从 Book 与章节表恢复章节总数、字符偏移、书籍身份和累计阅读时长；章节索引只在运行时钳制，过大的已存索引不会被立即写回 Book，空目录的运行时索引为 0。远程书在书源存在时恢复书源和内容处理器，书籍图片样式为空时继承书源样式、显式样式保持不变；本地书或缺失书源时清除陈旧书源。重置会清空已排版章节、加载中章节和临时进度，并按 up_menu、up_page_anim(false) 的顺序回调，但已有预下载成功/失败集合保持不变。本结论只冻结上述 6 个场景，不外推到任务取消、并发重置、进程重启或持久化时序。",
+      "subject_keys": [
+        "reader.session"
+      ],
+      "depends_on": [],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [
+          {
+            "id": "AF-READ-BOOK-RESET-DATA",
+            "revision_sha256": "71cb776f8966882bf7a37e2a75094c9972ecebafa393de56ed03a094e892aefa"
+          }
+        ],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d",
+            "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+            "symbol_id": "kotlin://io.legado.app.model.ReadBook/resetData"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/rl-reader-session-reset-from-book-001.json",
+            "artifact_sha256": "a854ba1dfeaec91c85c16002cd4546e4d5d56b32270e5e49137390b3d7e731d2",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "4694d7ad2501f2f7d729ba7c048991139127ad9c70f8684c5dc783a7eedd3106",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "2a1e8d5e31ae33fea4573b65b0d9b463a8086fc9cbfe3ae5fc6fbd49299d3ae2",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-RD-SESSION-RESET-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-READER-SESSION-RESET-FROM-BOOK-001"
+}

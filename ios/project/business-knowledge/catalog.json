@@ -6,7 +6,7 @@
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "5902da4a6d8a74335342166c7e42fca483c092734a07a1977d4d8058bce54ed4",
   "authority_sha256": "72ce72fc49f75a320341285a47eda383a3d7d07634215d38731f58643132ba6d",
-  "coverage_sha256": "2d20f7e035b091dcaee02ec1904cc22fc6ece8a2b4f490bc3ddb6012e8c216ad",
+  "coverage_sha256": "2fe3cb66de0c9afa5d78b6aeec7e201e270a3b21f9564bf3291c05946e45afff",
   "proposal_sha256": "eb9ec2ab3e11deff4f705c49ce621283a64329406a75ad1cf974704d4d2fc96c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -296,6 +296,19 @@
       "claim_refs": [
         {
           "id": "BKC-RD-PROGRESS-REMAP-001",
+          "revision": 2
+        }
+      ]
+    },
+    {
+      "id": "BKP-READER-SESSION-RESET-FROM-BOOK-001",
+      "revision": 1,
+      "semantic_key": "reader.session.reset-from-book-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-READER-SESSION-RESET-FROM-BOOK-001/r0001.json",
+      "record_sha256": "bb4785d06330ac4d5c06a72bb83f0d1ea84eeee3594d92bf25644c5af3c7c633",
+      "claim_refs": [
+        {
+          "id": "BKC-RD-SESSION-RESET-001",
           "revision": 2
         }
       ]
@@ -713,6 +726,14 @@
       "resolution_state": "resolved"
     },
     {
+      "id": "DRV-READER-SESSION-RESET-FROM-BOOK-001",
+      "revision": 1,
+      "semantic_key": "reader.session.reset-from-book-compatibility-boundary",
+      "path": "ios/project/business-knowledge/drivers/published/DRV-READER-SESSION-RESET-FROM-BOOK-001/r0001.json",
+      "record_sha256": "d475250188fed2a21912cd532e418f38042633676485a241466ca17e3406dd6e",
+      "resolution_state": "resolved"
+    },
+    {
       "id": "DRV-SOURCE-RUNTIME-COOKIE-SESSION-001",
       "revision": 1,
       "semantic_key": "source.execution.cookie-session",
@@ -1079,6 +1100,15 @@
       "record_sha256": "d0d64aac9ea4f9dcace4a666b420e99186fc71b195c4037bfb6e61ad884d6505",
       "entry_ids": [
         "BKE-READER-PROGRESS-TOC-REMAP-001"
+      ]
+    },
+    {
+      "id": "BKL-READER-SESSION-RESET-FROM-BOOK-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-READER-SESSION-RESET-FROM-BOOK-001.json",
+      "record_sha256": "587969f33a661d8ca2cab885e7bc5c54663f719b6266e2b38d6a0e622a47b65c",
+      "entry_ids": [
+        "BKE-READER-SESSION-RESET-FROM-BOOK-001"
       ]
     },
     {

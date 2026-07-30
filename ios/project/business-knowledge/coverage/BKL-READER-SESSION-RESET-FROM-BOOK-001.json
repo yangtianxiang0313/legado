@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgeCoverageLedger",
+  "id": "BKL-READER-SESSION-RESET-FROM-BOOK-001",
+  "revision": 1,
+  "status": "current",
+  "packet_refs": [
+    {
+      "id": "BKP-READER-SESSION-RESET-FROM-BOOK-001",
+      "revision": 1,
+      "sha256": "bb4785d06330ac4d5c06a72bb83f0d1ea84eeee3594d92bf25644c5af3c7c633"
+    }
+  ],
+  "generated_from": {
+    "knowledge_authority_sha256": "20d6acce24a37799239daafdbf3d7e6e0ee76bc1a6e3521cf2170beed8ee434d",
+    "requirement_catalog_sha256": "f2c283f8c6b5e2a272174fc1ac73eb856f87af3abac139f96f280ea9732e7905",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "entries": [
+    {
+      "id": "BKE-READER-SESSION-RESET-FROM-BOOK-001",
+      "claim_ref": {
+        "id": "BKC-RD-SESSION-RESET-001",
+        "revision": 2
+      },
+      "validation": {
+        "required": "android_runtime",
+        "state": "verified",
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-reader-session-reset-from-book-001-30540852585-1.json",
+          "ios/harness/goldens/android-legado-v1/rl-reader-session-reset-from-book-001.json#/artifact/result/value"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "covered_by_requirement",
+        "refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "reason": "受保护 Android Golden 已冻结从 Book 重置阅读会话的索引钳制、书源与图片样式选择、运行时集合清理和回调语义，交由 ReaderCore 的显式会话快照实现",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "planned",
+        "requirement_refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "work_item_refs": [
+          "IOS-READER-CORE-SESSION-RESET-FROM-BOOK-001"
+        ],
+        "capability_refs": [
+          "CAP-CONFORMANCE",
+          "CAP-CORE"
+        ],
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-reader-session-reset-from-book-001-30540852585-1.json"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    }
+  ],
+  "updated_by": "IOS-CHARACTERIZE-READER-SESSION-RESET-FROM-BOOK-001",
+  "updated_at": "2026-07-30T11:30:00Z"
+}
