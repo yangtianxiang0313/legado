@@ -102,7 +102,7 @@ class MinimalLoopTests(unittest.TestCase):
             projected["last_completed"]["outcome"],
         )
 
-    def test_completed_task_ids_include_superseded_tasks(self):
+    def test_completed_task_ids_exclude_superseded_tasks(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             events_path = root / "ios/project/loop/events.jsonl"
@@ -124,7 +124,7 @@ class MinimalLoopTests(unittest.TestCase):
             )
 
             self.assertEqual(
-                {"IOS-OLD-001"},
+                set(),
                 loop.completed_task_ids(root),
             )
 
@@ -693,7 +693,7 @@ class MinimalLoopTests(unittest.TestCase):
                     "schema_version": 2,
                     "sequence": 1,
                     "at": "2026-07-29T00:00:00Z",
-                    "event": "knowledge_linked",
+                    "event": "task_completed",
                     "task_id": "IOS-PRIOR-001",
                     "details": {
                         "knowledge": {
@@ -1238,6 +1238,9 @@ class MinimalLoopTests(unittest.TestCase):
         reader_menu = loop.app_navigation_delivery_contract(
             "source-ui-reader-multilevel-menu-v1"
         )
+        source_management = loop.app_navigation_delivery_contract(
+            "source-ui-source-bulk-management-v1"
+        )
         progress_restore = loop.app_navigation_delivery_contract(
             "milestone-reader-progress-restore-v1"
         )
@@ -1265,6 +1268,10 @@ class MinimalLoopTests(unittest.TestCase):
         self.assertEqual(
             "testReaderMultilevelMenuFlow",
             reader_menu["ui_acceptance"]["test_method"],
+        )
+        self.assertEqual(
+            "source-bulk-management-build-acceptance",
+            source_management["acceptance_id"],
         )
         self.assertEqual(
             "testReaderProgressPersistsAcrossRelaunch",

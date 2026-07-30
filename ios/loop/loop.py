@@ -859,11 +859,23 @@ def direct_characterization_deliveries(
 def direct_source_ui_deliveries(
     root: Path,
 ) -> list[Mapping[str, Any]]:
-    """Turn a frozen Android UI topology into one simulator delivery."""
+    """Turn a frozen Android UI topology directly into an iOS delivery.
+
+    Static menus and deterministic state mutations do not need a dedicated
+    Android instrumented runner. They may be consumed from source when the
+    current claim explicitly declares ``runtime_requirement=none``. Simulator
+    acceptance remains opt-in for complete visible flows.
+    """
     contracts = {
         "ui.reader.multilevel-menu": {
             "target": "IOS-APP-NAVIGATION-READER-MULTILEVEL-MENU-001",
             "fixture_id": "source-ui-reader-multilevel-menu-v1",
+            "validation": "simulator",
+        },
+        "ui.source.bulk-selection-menu": {
+            "target": "IOS-APP-NAVIGATION-SOURCE-BULK-MANAGEMENT-001",
+            "fixture_id": "source-ui-source-bulk-management-v1",
+            "validation": "build",
         },
     }
     completed = completed_task_ids(root)
@@ -880,9 +892,18 @@ def direct_source_ui_deliveries(
                 continue
             claim_ref = (claim.get("id"), claim.get("revision"))
             contract = contracts.get(str(claim.get("semantic_key")))
+            support = claim.get("support")
+            source_ready = (
+                claim_ref in characterized
+                or (
+                    isinstance(support, dict)
+                    and support.get("state") == "candidate_source_anchored"
+                    and support.get("runtime_requirement") == "none"
+                )
+            )
             if (
                 contract is None
-                or claim_ref not in characterized
+                or not source_ready
                 or contract["target"] in completed
             ):
                 continue
@@ -933,6 +954,7 @@ def direct_source_ui_deliveries(
                             "revision": claim_ref[1],
                         },
                         "fixture_id": contract["fixture_id"],
+                        "validation": contract["validation"],
                     },
                 }
             )
@@ -1631,6 +1653,21 @@ def app_navigation_delivery_contract(
             ),
             "test_method": "testReaderMultilevelMenuFlow",
         },
+        "source-ui-source-bulk-management-v1": {
+            "goal": (
+                "按照冻结 Android 书源管理源码合同，在 AppUseCases 中实现"
+                "选择、启停、排序、分组、删除和导出策略，并由 AppShell "
+                "提供 iOS 原生批量操作界面。该切片只做编译验收，完整"
+                "书源管理流程在里程碑统一运行 Simulator。"
+            ),
+            "acceptance_id": "source-bulk-management-build-acceptance",
+            "scenario_id": "ui-source-management-milestone-v1",
+            "expected": (
+                "ios/harness/ui/expected/"
+                "ui-source-management-milestone-v1.json"
+            ),
+            "test_method": "testSourceManagementMilestone",
+        },
         "milestone-reader-progress-restore-v1": {
             "goal": (
                 "把 ReaderCore 已对齐的章节/字符坐标保存语义接入"
@@ -2088,9 +2125,18 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
         },
     }
     if isinstance(source_contract, dict):
-        ui_acceptance = delivery_contract.get("ui_acceptance")
-        if not isinstance(ui_acceptance, dict):
-            raise LoopError("SOURCE_UI_ACCEPTANCE_MISSING")
+        source_validation = source_contract.get("validation", "simulator")
+        ui_acceptance = (
+            delivery_contract.get("ui_acceptance")
+            if source_validation == "simulator"
+            else None
+        )
+        if (
+            source_validation not in {"build", "simulator"}
+            or source_validation == "simulator"
+            and not isinstance(ui_acceptance, dict)
+        ):
+            raise LoopError("SOURCE_VALIDATION_INVALID")
         source = {
             "authority": "android_source_contract",
             "anchors": source_anchors,
@@ -2102,9 +2148,65 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
                 "driver": driver_ref,
                 "claims": claim_refs,
             },
-            "ui_acceptance": ui_acceptance,
         }
         allowed_paths = list(architecture["allowed_paths"])
+        if source_validation == "build":
+            return {
+                "schema_version": SCHEMA_VERSION,
+                "id": target,
+                "kind": "delivery",
+                "title": title,
+                "status": "ready",
+                "priority": 100,
+                "goal": delivery_contract["goal"],
+                "source": source,
+                "requirements": requirement_refs,
+                "architecture": {
+                    "owner": architecture["owner"],
+                    "refs": architecture["architecture_refs"],
+                    "rule": delivery_contract["rule"],
+                },
+                "scope": {
+                    "allowed_paths": allowed_paths,
+                    "forbidden": [
+                        "Android golden",
+                        "accepted Requirement",
+                        "架构依赖边",
+                        "三方依赖",
+                        "切片级 Simulator fixture",
+                    ],
+                },
+                "acceptance": {
+                    "profile": "slice",
+                    "commands": [
+                        {
+                            "id": "ios-app-build",
+                            "argv": [
+                                "xcodebuild",
+                                "-project",
+                                "ios/Apps/Legado/Legado.xcodeproj",
+                                "-scheme",
+                                "LegadoApp",
+                                "-destination",
+                                "generic/platform=iOS Simulator",
+                                "CODE_SIGNING_ALLOWED=NO",
+                                "build",
+                            ],
+                            "timeout_seconds": 900,
+                        }
+                    ],
+                },
+                "knowledge_updates": {
+                    "required_on_completion": [
+                        "summary",
+                        "current_status",
+                        "architecture_change",
+                        "pitfalls",
+                        "next_step",
+                    ]
+                },
+            }
+        source["ui_acceptance"] = ui_acceptance
         expected_path = str(ui_acceptance["expected"])
         if expected_path not in allowed_paths:
             allowed_paths.append(expected_path)
@@ -2785,7 +2887,14 @@ def validate_task(root: Path, task: Mapping[str, Any]) -> None:
             or not (root / source_contract["path"]).is_file()
             or not isinstance(anchors, list)
             or not anchors
-            or not isinstance(expected, str)
+            or (
+                ui_acceptance is not None
+                and (
+                    not isinstance(ui_acceptance, dict)
+                    or not isinstance(expected, str)
+                    or not (root / expected).is_file()
+                )
+            )
         ):
             raise LoopError("TASK_SOURCE_INVALID:android_source_contract")
     else:
@@ -2816,7 +2925,10 @@ def validate_task(root: Path, task: Mapping[str, Any]) -> None:
                 and structured.get("mode") == "android_golden"
             )
         )
-        or not isinstance(structured, dict)
+    ):
+        raise LoopError("TASK_ACCEPTANCE_INVALID")
+    if structured is not None and (
+        not isinstance(structured, dict)
         or structured.get("mode")
         not in {
             "command_json",
@@ -2859,17 +2971,27 @@ def validate_task(root: Path, task: Mapping[str, Any]) -> None:
     if (
         task["kind"] == "delivery"
         and architecture_owner == "ArchitectureControl"
-        and structured["mode"] != "architecture_decision"
+        and (
+            not isinstance(structured, dict)
+            or structured.get("mode") != "architecture_decision"
+        )
     ) or (
         task["kind"] == "delivery"
         and architecture_owner != "ArchitectureControl"
-        and structured["mode"] != "command_json"
+        and isinstance(structured, dict)
+        and structured.get("mode") != "command_json"
     ) or (
         task["kind"] == "characterization"
-        and structured["mode"] != "android_golden"
+        and (
+            not isinstance(structured, dict)
+            or structured.get("mode") != "android_golden"
+        )
     ):
         raise LoopError("TASK_ACCEPTANCE_INVALID")
-    if structured["mode"] == "command_json":
+    if (
+        isinstance(structured, dict)
+        and structured.get("mode") == "command_json"
+    ):
         expected_values = structured.get("expected_values")
         if (
             structured.get("command_id") not in command_ids

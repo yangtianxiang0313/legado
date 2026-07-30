@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-SOURCE-BULK-MANAGEMENT-001",
+  "revision": 1,
+  "status": "candidate",
+  "semantic_key": "ui.source.bulk-selection-menu",
+  "title": "书源批量管理源码合同",
+  "scope": {
+    "bounded_contexts": [
+      "source.management"
+    ],
+    "capability_refs": [
+      "CAP-RUNTIME-PORTS"
+    ],
+    "subject_keys": [
+      "ui.action",
+      "ui.state",
+      "source.management"
+    ]
+  },
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122"
+  },
+  "claims": [
+    {
+      "id": "BKC-UI-SOURCE-BULK-MENU-001",
+      "revision": 4,
+      "semantic_key": "ui.source.bulk-selection-menu",
+      "kind": "static_declaration",
+      "topic": "书源批量选择与管理",
+      "statement": "Android 书源管理页直接暴露全选、反选和连续区间选择；选中书源可批量启停、启停发现、置顶、置底、增删分组、删除、导出与分享。置顶和置底保持选中项原有顺序，分组修改基于现有分组集合，导出只包含当前选择且保持当前筛选排序。上述确定性规则由冻结源码完整表达，不为该 UI 切片创建专用 Android runner 或 Golden；iOS 使用平台原生多选与分享界面，完整书源管理流程在里程碑统一运行 Simulator。",
+      "subject_keys": [
+        "ui.action",
+        "ui.state",
+        "source.management"
+      ],
+      "depends_on": [],
+      "support": {
+        "state": "candidate_source_anchored",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "ef168fc86a99afe783b326003451de56fb0ffc99",
+            "path": "app/src/main/java/io/legado/app/ui/book/source/manage/BookSourceActivity.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.source.manage.BookSourceActivity/onMenuItemClick"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "fdde64ff5e14d0c2efb00189469b456d528bf2af",
+            "path": "app/src/main/java/io/legado/app/ui/book/source/manage/BookSourceViewModel.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.source.manage.BookSourceViewModel"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "c39bea92f6846383c091e9aded24d57ec7739c9c",
+            "path": "app/src/main/java/io/legado/app/ui/book/source/manage/BookSourceAdapter.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.source.manage.BookSourceAdapter"
+          }
+        ],
+        "runtime_evidence": [],
+        "runtime_requirement": "none"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-UI-SOURCE-BULK-MENU-001",
+        "revision": 3
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-ANDROID-SOURCE-BULK-MANAGEMENT-INTAKE-001"
+}
