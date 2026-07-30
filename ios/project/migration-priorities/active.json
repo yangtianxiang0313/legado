@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P44-REDIRECT-COOKIE-CHAIN-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "title": "P44 重定向 Cookie 链进入生产书源会话",
+  "objective": "依据冻结 Android HttpHelper/CookieManager，捕获 URLSession 每个重定向响应和最终响应解析出的全部 Cookie，按响应 URL 与 persistent/session 属性交给 SourceCookieStore，并让后续请求复用；禁止依赖共享 HTTPCookieStorage 或把跨域 Cookie 错存到最终 URL。",
+  "validation_policy": "只运行 NetworkRedirectCookieTests 聚焦测试组，再执行一次 LegadoApp 编译；不新增 Android Golden、不跑全量 Harness 或模拟器。",
+  "stages": [
+    {
+      "id": "P44-S1",
+      "title": "重定向 Cookie 捕获与 Source 会话接线",
+      "selectors": [
+        {
+          "id": "P44-S1-REDIRECT-COOKIE",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-SOURCE-RUNTIME-REDIRECT-COOKIE-CHAIN-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-SOURCE-RUNTIME-REDIRECT-COOKIE-CHAIN-001",
+      "title": "保存重定向链全部响应 Cookie",
+      "fixture_id": "source-redirect-cookie-chain-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [
+        "IOS-SOURCE-RUNTIME-PRODUCTION-REQUEST-DEFAULTS-001"
+      ],
+      "validation": "tests",
+      "package_path": "ios/Packages/LegadoSourceKit",
+      "test_filter": "NetworkRedirectCookieTests",
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoSourceKit/**",
+        "ios/Packages/LegadoKit/**",
+        "ios/Apps/Legado/**",
+        "ios/docs/architecture.md",
+        "ios/project/migration-priorities/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "9c104f66bfd9fa638afaf01e1f687ecf9a0a0749",
+          "path": "app/src/main/java/io/legado/app/help/http/HttpHelper.kt",
+          "symbol_id": "kotlin://io.legado.app.help.http/okHttpClient"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "fbd720ca3df874038f6d8e232a671958e5217632",
+          "path": "app/src/main/java/io/legado/app/help/http/CookieManager.kt",
+          "symbol_id": "kotlin://io.legado.app.help.http.CookieManager/saveResponse"
+        }
+      ]
+    }
+  ]
+}
