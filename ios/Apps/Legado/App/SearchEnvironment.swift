@@ -3,6 +3,7 @@ import Foundation
 import LibraryDomain
 import ReaderCore
 import SourceRuntimeComposition
+import SourceNetworkComposition
 import SourceScriptComposition
 import SourceRuntime
 import WebKit
@@ -520,10 +521,13 @@ enum SearchEnvironment {
         ) {
             return OfflineBookSourceTransport()
         }
-        if externalBaseURL == nil {
+        if
+            externalBaseURL == nil,
+            localSourceDemoEnabled
+        {
             return LocalBookSourceTransport()
         }
-        return URLSessionBookSourceTransport()
+        return SourceNetworkComposition.makeTransport()
     }
 
     private static func makeSources(
@@ -531,7 +535,7 @@ enum SearchEnvironment {
         persistedSources: [BookSourceDraft] = [],
         includeDisabled: Bool = false
     ) -> [SearchSourceDescriptor] {
-        var values = [
+        var values = builtInSourcesEnabled ? [
             source(
                 baseURL: baseURL,
                 id: "\(baseURL)/source/science-fiction",
@@ -546,7 +550,7 @@ enum SearchEnvironment {
                 group: "奇幻",
                 order: 1
             ),
-        ]
+        ] : []
         for draft in persistedSources {
             guard
                 includeDisabled
@@ -562,6 +566,22 @@ enum SearchEnvironment {
             }
         }
         return values
+    }
+
+    private static var builtInSourcesEnabled: Bool {
+        ProcessInfo.processInfo.environment[
+            "LEGADO_SEARCH_BASE_URL"
+        ] != nil
+            || localSourceDemoEnabled
+    }
+
+    private static var localSourceDemoEnabled: Bool {
+        ProcessInfo.processInfo.environment[
+            "LEGADO_LOCAL_SOURCE_DEMO"
+        ] == "1"
+            || ProcessInfo.processInfo.arguments.contains(
+                "--local-source-demo"
+            )
     }
 
     private static func persistedSource(
@@ -1097,40 +1117,6 @@ private struct LocalBook: Sendable {
           <div id="content">\(paragraphs)</div>
         </body></html>
         """
-    }
-}
-
-private struct URLSessionBookSourceTransport: HTTPTransport {
-    func execute(_ request: HTTPRequest) async throws -> HTTPResponse {
-        guard let url = URL(string: request.url.absoluteString) else {
-            throw HTTPTransportFailure.invalidRequest
-        }
-        var value = URLRequest(url: url)
-        value.httpMethod = request.method.rawValue
-        for header in request.headers.fields {
-            value.addValue(header.value, forHTTPHeaderField: header.name)
-        }
-        value.httpBody = request.body?.bytes
-        do {
-            let (data, response) = try await URLSession.shared.data(
-                for: value
-            )
-            guard let http = response as? HTTPURLResponse else {
-                throw HTTPTransportFailure.invalidResponse
-            }
-            return try HTTPResponse(
-                statusCode: http.statusCode,
-                effectiveURL: HTTPURL(
-                    http.url?.absoluteString
-                        ?? request.url.absoluteString
-                ),
-                body: HTTPBody(data)
-            )
-        } catch let failure as HTTPTransportFailure {
-            throw failure
-        } catch {
-            throw HTTPTransportFailure.connectionFailed
-        }
     }
 }
 

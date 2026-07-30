@@ -7,6 +7,7 @@ final class LegadoAppUITests: XCTestCase {
 
     override func setUpWithError() throws {
         continueAfterFailure = false
+        app.launchEnvironment["LEGADO_LOCAL_SOURCE_DEMO"] = "1"
     }
 
     func testRootTopology() throws {

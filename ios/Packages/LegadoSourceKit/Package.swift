@@ -26,6 +26,10 @@ let package = Package(
             targets: ["ScriptJavaScriptCore"]
         ),
         .library(
+            name: "LegadoSourceNetworkKit",
+            targets: ["NetworkFoundation"]
+        ),
+        .library(
             name: "LegadoSourceStoreSafeKit",
             targets: [
                 "SourceFormat",
@@ -86,6 +90,10 @@ let package = Package(
             dependencies: ["SourceRuntime"],
             linkerSettings: [.linkedFramework("JavaScriptCore")]
         ),
+        .target(
+            name: "NetworkFoundation",
+            dependencies: ["SourceRuntime"]
+        ),
         .testTarget(
             name: "SourceFormatTests",
             dependencies: [
@@ -107,6 +115,10 @@ let package = Package(
         .testTarget(
             name: "ScriptJavaScriptCoreTests",
             dependencies: ["ScriptJavaScriptCore", "SourceRuntime"]
+        ),
+        .testTarget(
+            name: "NetworkFoundationTests",
+            dependencies: ["NetworkFoundation", "SourceRuntime"]
         ),
     ],
     swiftLanguageModes: [.v6]

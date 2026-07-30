@@ -24,6 +24,7 @@
     "AppNavigation",
     "SourceRuntimeComposition",
     "SourceScriptComposition",
+    "SourceNetworkComposition",
     "FeatureShelf",
     "FeatureSearch",
     "FeatureBookDetail",
@@ -66,6 +67,7 @@
     "AppNavigation": {"dependencies": ["LegadoCore", "LibraryDomain"], "external_imports": [], "forbidden_imports": ["GRDB", "WebKit"]},
     "SourceRuntimeComposition": {"dependencies": ["RuleRuntime", "HTMLSwiftSoup"], "external_imports": [], "forbidden_imports": ["SwiftUI", "UIKit", "WebKit", "GRDB"]},
     "SourceScriptComposition": {"dependencies": ["SourceRuntime", "ScriptJavaScriptCore"], "external_imports": [], "forbidden_imports": ["SwiftUI", "UIKit", "WebKit", "GRDB"]},
+    "SourceNetworkComposition": {"dependencies": ["SourceRuntime", "NetworkFoundation"], "external_imports": [], "forbidden_imports": ["SwiftUI", "UIKit", "WebKit", "GRDB"]},
     "FeatureShelf": {"dependencies": ["LibraryDomain", "AppUseCases", "DesignSystem"], "external_imports": [], "forbidden_imports": ["GRDB", "JavaScriptCore", "WebKit"]},
     "FeatureSearch": {"dependencies": ["LibraryDomain", "AppUseCases", "DesignSystem"], "external_imports": [], "forbidden_imports": ["GRDB", "JavaScriptCore", "WebKit"]},
     "FeatureBookDetail": {"dependencies": ["LibraryDomain", "AppUseCases", "DesignSystem"], "external_imports": [], "forbidden_imports": ["GRDB", "JavaScriptCore", "WebKit"]},
@@ -81,6 +83,7 @@
     "SourceRuntimeTests": {"dependencies": ["LegadoCore", "SourceRuntime"], "external_imports": []},
     "HTMLSwiftSoupTests": {"dependencies": ["HTMLSwiftSoup", "RuleRuntime"], "external_imports": []},
     "ScriptJavaScriptCoreTests": {"dependencies": ["ScriptJavaScriptCore", "SourceRuntime"], "external_imports": []},
+    "NetworkFoundationTests": {"dependencies": ["SourceRuntime", "NetworkFoundation"], "external_imports": []},
     "ReaderCoreTests": {"dependencies": ["LibraryDomain", "ReaderCore"], "external_imports": []},
     "LibraryDomainTests": {"dependencies": ["LibraryDomain"], "external_imports": []},
     "TestSupportTests": {"dependencies": ["LegadoCore", "TestSupport"], "external_imports": []},
@@ -120,12 +123,12 @@
   "profiles": {
     "store_safe": {
       "root_product": "LegadoStoreSafeKit",
-      "required_targets": ["LegadoCore", "LibraryDomain", "SourceFormat", "RuleRuntime", "SourceRuntime", "ReaderCore", "AppUseCases", "HTMLSwiftSoup", "SourceRuntimeComposition"],
+      "required_targets": ["LegadoCore", "LibraryDomain", "SourceFormat", "RuleRuntime", "SourceRuntime", "ReaderCore", "AppUseCases", "HTMLSwiftSoup", "NetworkFoundation", "SourceRuntimeComposition", "SourceNetworkComposition"],
       "forbidden_targets": ["ScriptJavaScriptCore", "WebRuntimeWebKit", "FeatureSourceDeveloper", "TestSupport", "ConformanceCLI"]
     },
     "full_compat": {
       "root_product": "LegadoFullCompatKit",
-      "required_targets": ["LegadoCore", "LibraryDomain", "SourceFormat", "RuleRuntime", "SourceRuntime", "ReaderCore", "AppUseCases", "HTMLSwiftSoup", "ScriptJavaScriptCore", "SourceRuntimeComposition", "SourceScriptComposition"],
+      "required_targets": ["LegadoCore", "LibraryDomain", "SourceFormat", "RuleRuntime", "SourceRuntime", "ReaderCore", "AppUseCases", "HTMLSwiftSoup", "ScriptJavaScriptCore", "NetworkFoundation", "SourceRuntimeComposition", "SourceScriptComposition", "SourceNetworkComposition"],
       "forbidden_targets": ["TestSupport", "ConformanceCLI"]
     }
   }

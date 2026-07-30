@@ -105,7 +105,8 @@ flowchart LR
 
 - `LegadoCoreKit`：跨域基础值，不依赖其他项目 Package；
 - `LegadoSourceKit`：完整书源格式、规则、流水线与 HTML/JS 适配器，只依赖
-  `LegadoCoreKit`，可脱离 App、UI、数据库和阅读器独立构建；
+  `LegadoCoreKit`，并以独立 Target 容纳 URLSession live adapter；可脱离 App、
+  UI、数据库和阅读器独立构建；
 - `LegadoKit`：领域、阅读、用例、持久化与 App 组装，通过
   `SourceRuntimeComposition` / `SourceScriptComposition` 选择书源适配器。
 
@@ -143,6 +144,13 @@ UI 定制只能依赖书源 Package 的公开产品，书源 Package 禁止反�
 | `ImageNuke` | 图片请求合并、解码、降采样、缓存和预取 |
 
 三方类型必须在适配器内终止。对外只允许项目自有、不可变、`Sendable` 的值类型。
+
+正常产品启动由 `SourceNetworkComposition` 注入 `URLSessionHTTPTransport`。内置演示
+书源和 `LocalBookSourceTransport` 只在 `--local-source-demo` 或
+`LEGADO_LOCAL_SOURCE_DEMO=1` 时启用；`LEGADO_SEARCH_BASE_URL` 用于显式的本地书站
+网络集成测试。生产配置不允许无参数回退到内存 HTML。由于 Android 书源允许任意
+HTTP/HTTPS 站点，App 明确声明 ATS 任意网络加载；请求头、Cookie、脚本和正文仍必须
+遵守 RuntimePolicy、脱敏与能力边界。
 
 WebDAV 的具体边界由 [ADR-0008](adr/0008-integrationkit-webdav-boundary.md) 固定：
 首版不引入 WebDAV 三方库，`IntegrationKit` 只依赖 `LegadoCore`，

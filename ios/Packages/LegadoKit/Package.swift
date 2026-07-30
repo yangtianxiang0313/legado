@@ -16,6 +16,7 @@ let package = Package(
                 "AppNavigation",
                 "DatabaseGRDB",
                 "SourceRuntimeComposition",
+                "SourceNetworkComposition",
             ]
         ),
         .library(
@@ -26,6 +27,7 @@ let package = Package(
                 "DatabaseGRDB",
                 "SourceRuntimeComposition",
                 "SourceScriptComposition",
+                "SourceNetworkComposition",
             ]
         ),
         .executable(name: "ConformanceCLI", targets: ["ConformanceCLI"]),
@@ -59,6 +61,15 @@ let package = Package(
             dependencies: [
                 .product(
                     name: "LegadoScriptJavaScriptCoreKit",
+                    package: "LegadoSourceKit"
+                ),
+            ]
+        ),
+        .target(
+            name: "SourceNetworkComposition",
+            dependencies: [
+                .product(
+                    name: "LegadoSourceNetworkKit",
                     package: "LegadoSourceKit"
                 ),
             ]
