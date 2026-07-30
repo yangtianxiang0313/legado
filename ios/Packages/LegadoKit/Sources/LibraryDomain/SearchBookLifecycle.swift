@@ -2,6 +2,7 @@ public struct SearchBookCandidate: Equatable, Sendable {
   public let name: String
   public let author: String
   public let bookURL: String
+  public let bookRequestExpression: String
   public let origin: String
   public let originOrder: Int
   public let observedAt: Int64
@@ -10,6 +11,7 @@ public struct SearchBookCandidate: Equatable, Sendable {
     name: String,
     author: String,
     bookURL: String,
+    bookRequestExpression: String? = nil,
     origin: String,
     originOrder: Int = 0,
     observedAt: Int64 = 0
@@ -17,6 +19,7 @@ public struct SearchBookCandidate: Equatable, Sendable {
     self.name = name
     self.author = author
     self.bookURL = bookURL
+    self.bookRequestExpression = bookRequestExpression ?? bookURL
     self.origin = origin
     self.originOrder = originOrder
     self.observedAt = observedAt

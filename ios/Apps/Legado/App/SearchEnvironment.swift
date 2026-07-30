@@ -162,12 +162,17 @@ enum SearchEnvironment {
         let value = rawValue.trimmingCharacters(
             in: .whitespacesAndNewlines
         )
-        guard let bookURL = URL(string: value),
-              let baseURL = originBaseURL(bookURL)
+        guard
+            let bookEndpoint = try? SourceEndpoint(
+                resolving: value,
+                relativeTo: URL(string: "http://legado.invalid")!
+            ),
+            let baseURL = originBaseURL(bookEndpoint.logicalURL)
         else {
             throw BookURLImportEnvironmentError.invalidURL
         }
-        if let existing = await library.item(forURL: value) {
+        let logicalBookURL = bookEndpoint.logicalURL.absoluteString
+        if let existing = await library.item(forURL: logicalBookURL) {
             return existing
         }
 
@@ -188,7 +193,7 @@ enum SearchEnvironment {
                     ? .exactBase
                     : patternMatch(
                         source.definition.bookURLPattern,
-                        value: value
+                        value: logicalBookURL
                     )
             )
         }
@@ -213,16 +218,16 @@ enum SearchEnvironment {
                 intro: nil,
                 kind: nil,
                 lastChapter: nil,
-                bookURL: bookURL,
+                bookEndpoint: bookEndpoint,
                 coverURL: nil,
-                tocURL: nil
+                tocEndpoint: nil
             )
         )
         let resolved = RemoteBookImporter.resolve(
             existingBook: nil,
             orderedSources: matches,
             fetchedBook: ImportedBook(
-                id: LibraryDomain.BookID(rawValue: value),
+                id: LibraryDomain.BookID(rawValue: logicalBookURL),
                 name: execution.book.name,
                 author: normalizedAuthor(execution.book.author ?? ""),
                 originName: selected.name,
@@ -243,13 +248,17 @@ enum SearchEnvironment {
             kind: execution.book.kind ?? "",
             lastChapter: execution.book.lastChapter ?? "",
             intro: execution.book.intro ?? "",
-            bookURL: value,
+            bookURL: execution.book.bookURL.absoluteString,
+            bookRequestExpression:
+                execution.book.bookEndpoint.requestExpression,
             coverURL: execution.book.coverURL?.absoluteString,
             originName: selected.name,
             sourceID: selected.id
         )
         await library.add(candidate)
-        guard let item = await library.item(forURL: value) else {
+        guard
+            let item = await library.item(forURL: logicalBookURL)
+        else {
             throw BookURLImportEnvironmentError.persistenceFailed
         }
         let toc = library.chapterSession(
@@ -262,7 +271,9 @@ enum SearchEnvironment {
             )
         )
         await toc.load(book: item, force: true)
-        guard let reloaded = await library.item(forURL: value) else {
+        guard
+            let reloaded = await library.item(forURL: logicalBookURL)
+        else {
             throw BookURLImportEnvironmentError.persistenceFailed
         }
         return reloaded
@@ -316,6 +327,7 @@ enum SearchEnvironment {
             lastChapter: result.lastChapter,
             intro: result.intro,
             bookURL: result.bookURL,
+            bookRequestExpression: result.bookRequestExpression,
             coverURL: result.coverURL,
             originName: result.originName,
             sourceID: descriptor.id

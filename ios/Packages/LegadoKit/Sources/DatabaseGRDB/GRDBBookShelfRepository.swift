@@ -681,6 +681,34 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
         table.column("orderValue", .integer).notNull().indexed()
       }
     }
+    migrator.registerMigration("preserveSourceRequestExpressions") { db in
+      try db.alter(table: "books") { table in
+        table.add(
+          column: "bookRequestExpression",
+          .text
+        ).notNull().defaults(to: "")
+      }
+      try db.execute(
+        sql: """
+          UPDATE books
+          SET bookRequestExpression = bookURL
+          WHERE bookRequestExpression = ''
+          """
+      )
+      try db.alter(table: "chapters") { table in
+        table.add(
+          column: "requestExpression",
+          .text
+        ).notNull().defaults(to: "")
+      }
+      try db.execute(
+        sql: """
+          UPDATE chapters
+          SET requestExpression = url
+          WHERE requestExpression = ''
+          """
+      )
+    }
     return migrator
   }
 }
@@ -692,6 +720,7 @@ private struct BookRecord:
 
   var bookID: String
   var bookURL: String
+  var bookRequestExpression: String
   var name: String
   var author: String
   var kind: String
@@ -722,6 +751,7 @@ private struct BookRecord:
   ) {
     self.bookID = bookID
     self.bookURL = candidate.bookURL
+    self.bookRequestExpression = candidate.bookRequestExpression
     self.name = candidate.name
     self.author = candidate.author
     self.kind = candidate.kind
@@ -746,6 +776,7 @@ private struct BookRecord:
 
   mutating func apply(_ candidate: ShelfBookCandidate) {
     bookURL = candidate.bookURL
+    bookRequestExpression = candidate.bookRequestExpression
     name = candidate.name
     author = candidate.author
     kind = candidate.kind
@@ -766,6 +797,7 @@ private struct BookRecord:
         lastChapter: lastChapter,
         intro: intro,
         bookURL: bookURL,
+        bookRequestExpression: bookRequestExpression,
         coverURL: coverURL,
         originName: originName,
         sourceID: sourceID
@@ -909,6 +941,7 @@ private struct ChapterRecord:
   var chapterIndex: Int
   var title: String
   var url: String
+  var requestExpression: String
   var isPay: Bool
   var isVIP: Bool
   var isVolume: Bool
@@ -920,6 +953,7 @@ private struct ChapterRecord:
     chapterIndex = chapter.index
     title = chapter.title
     url = chapter.url
+    requestExpression = chapter.requestExpression
     isPay = chapter.isPay
     isVIP = chapter.isVIP
     isVolume = chapter.isVolume
@@ -933,6 +967,7 @@ private struct ChapterRecord:
       index: chapterIndex,
       title: title,
       url: url,
+      requestExpression: requestExpression,
       isPay: isPay,
       isVIP: isVIP,
       isVolume: isVolume

@@ -138,6 +138,7 @@ public struct SourceExploreBooksExecutor:
         lastChapter: book.lastChapter,
         intro: book.intro,
         bookURL: book.bookURL,
+        bookRequestExpression: book.bookRequestExpression,
         coverURL: book.coverURL,
         origin: book.origin,
         originName: book.originName,

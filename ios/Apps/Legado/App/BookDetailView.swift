@@ -557,6 +557,7 @@ extension ShelfBookCandidate {
             lastChapter: route.lastChapter,
             intro: route.intro,
             bookURL: route.bookURL,
+            bookRequestExpression: route.bookRequestExpression,
             coverURL: route.coverURL,
             originName: route.originName,
             sourceID: route.sourceID

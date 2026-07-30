@@ -140,9 +140,19 @@ struct SourceBookListParser {
     let rawBookURL = try rules.bookURL.flatMap {
       try value($0, in: node, document: document)
     }
-    let bookURL = rawBookURL.map {
-      resolveRequestExpression($0, relativeTo: response.url)
-    } ?? fallbackBookURL
+    let resolvedBookEndpoint = rawBookURL.flatMap {
+      resolveEndpoint($0, relativeTo: response.url)
+    }
+    guard let bookEndpoint =
+      resolvedBookEndpoint
+        ?? resolveEndpoint(
+          fallbackBookURL,
+          relativeTo: response.url
+        )
+    else {
+      return nil
+    }
+    let bookURL = bookEndpoint.logicalURL.absoluteString
     let coverURL = try value(
       rules.coverURL,
       in: node,
@@ -163,6 +173,7 @@ struct SourceBookListParser {
       lastChapter:
         try value(rules.lastChapter, in: node, document: document) ?? "",
       bookURL: bookURL,
+      bookRequestExpression: bookEndpoint.requestExpression,
       coverURL: coverURL,
       origin: definition.sourceURL,
       originName: definition.sourceName,
@@ -267,10 +278,10 @@ struct SourceBookListParser {
     return String(base[...slash]) + raw
   }
 
-  private func resolveRequestExpression(
+  private func resolveEndpoint(
     _ raw: String,
     relativeTo base: String
-  ) -> String {
+  ) -> SourceEndpoint? {
     guard
       let baseURL = URL(
         string: SourceRequestCompiler.splitURLAndOption(base).url
@@ -280,9 +291,9 @@ struct SourceBookListParser {
         relativeTo: baseURL
       )
     else {
-      return resolve(raw, relativeTo: base)
+      return nil
     }
-    return endpoint.requestExpression
+    return endpoint
   }
 
   private func usesStructuredRules(
@@ -318,12 +329,15 @@ struct SourceBookListParser {
         rules.bookURL,
         evaluator: evaluator
       )
-      let bookURL = rawBookURL.isEmpty
-        ? response.url
-        : resolveRequestExpression(
-          rawBookURL,
+      guard
+        let bookEndpoint = resolveEndpoint(
+          rawBookURL.isEmpty ? response.url : rawBookURL,
           relativeTo: response.url
         )
+      else {
+        continue
+      }
+      let bookURL = bookEndpoint.logicalURL.absoluteString
       guard seen.insert(bookURL).inserted else { continue }
       let rawCoverURL = try structuredValue(
         rules.coverURL,
@@ -348,6 +362,7 @@ struct SourceBookListParser {
             evaluator: evaluator
           ),
           bookURL: bookURL,
+          bookRequestExpression: bookEndpoint.requestExpression,
           coverURL: rawCoverURL.isEmpty
             ? nil
             : resolve(rawCoverURL, relativeTo: response.url),

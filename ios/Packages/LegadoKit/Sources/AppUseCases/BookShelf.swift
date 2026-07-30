@@ -10,6 +10,7 @@ public struct ShelfBookCandidate: Equatable, Sendable {
   public let lastChapter: String
   public let intro: String
   public let bookURL: String
+  public let bookRequestExpression: String
   public let coverURL: String?
   public let originName: String
   public let sourceID: String
@@ -21,6 +22,7 @@ public struct ShelfBookCandidate: Equatable, Sendable {
     lastChapter: String,
     intro: String,
     bookURL: String,
+    bookRequestExpression: String? = nil,
     coverURL: String?,
     originName: String,
     sourceID: String = ""
@@ -31,6 +33,7 @@ public struct ShelfBookCandidate: Equatable, Sendable {
     self.lastChapter = lastChapter
     self.intro = intro
     self.bookURL = bookURL
+    self.bookRequestExpression = bookRequestExpression ?? bookURL
     self.coverURL = coverURL
     self.originName = originName
     self.sourceID = sourceID

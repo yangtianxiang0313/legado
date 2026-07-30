@@ -146,6 +146,7 @@ public struct SearchResult: Identifiable, Hashable, Sendable {
   public let lastChapter: String
   public let intro: String
   public let bookURL: String
+  public let bookRequestExpression: String
   public let coverURL: String?
   public let origin: String
   public let originName: String
@@ -159,6 +160,7 @@ public struct SearchResult: Identifiable, Hashable, Sendable {
     lastChapter: String,
     intro: String,
     bookURL: String,
+    bookRequestExpression: String? = nil,
     coverURL: String?,
     origin: String,
     originName: String,
@@ -171,6 +173,7 @@ public struct SearchResult: Identifiable, Hashable, Sendable {
     self.lastChapter = lastChapter
     self.intro = intro
     self.bookURL = bookURL
+    self.bookRequestExpression = bookRequestExpression ?? bookURL
     self.coverURL = coverURL
     self.origin = origin
     self.originName = originName
@@ -245,6 +248,7 @@ public struct SourceSearchBooksExecutor: SearchBooksExecuting, Sendable {
               name: $0.name,
               author: $0.author,
               bookURL: $0.bookURL,
+              bookRequestExpression: $0.bookRequestExpression,
               origin: $0.origin,
               originOrder: $0.originOrder
             )
@@ -273,6 +277,8 @@ public struct SourceSearchBooksExecutor: SearchBooksExecuting, Sendable {
         lastChapter: sourceBook?.lastChapter ?? "",
         intro: sourceBook?.intro ?? "",
         bookURL: candidate.bookURL,
+        bookRequestExpression:
+          candidate.bookRequestExpression,
         coverURL: sourceBook?.coverURL,
         origin: candidate.origin,
         originName: sourceBook?.originName ?? candidate.origin,

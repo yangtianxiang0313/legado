@@ -19,6 +19,7 @@ public struct BookChapter: Identifiable, Hashable, Sendable {
   public let index: Int
   public let title: String
   public let url: String
+  public let requestExpression: String
   public let isPay: Bool
   public let isVIP: Bool
   public let isVolume: Bool
@@ -30,6 +31,7 @@ public struct BookChapter: Identifiable, Hashable, Sendable {
     index: Int,
     title: String,
     url: String,
+    requestExpression: String? = nil,
     isPay: Bool = false,
     isVIP: Bool = false,
     isVolume: Bool = false
@@ -40,6 +42,7 @@ public struct BookChapter: Identifiable, Hashable, Sendable {
     self.index = max(0, index)
     self.title = title
     self.url = url
+    self.requestExpression = requestExpression ?? url
     self.isPay = isPay
     self.isVIP = isVIP
     self.isVolume = isVolume

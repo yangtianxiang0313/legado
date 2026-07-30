@@ -368,6 +368,7 @@ struct RootShellView: View {
                 lastChapter: $0.lastChapter,
                 intro: $0.intro,
                 bookURL: $0.bookURL,
+                bookRequestExpression: $0.bookRequestExpression,
                 coverURL: $0.coverURL,
                 originName: $0.originName,
                 sourceID: $0.origin
@@ -439,6 +440,7 @@ struct RootShellView: View {
             lastChapter: result.lastChapter,
             intro: result.intro,
             bookURL: result.bookURL,
+            bookRequestExpression: result.bookRequestExpression,
             coverURL: result.coverURL,
             originName: result.originName,
             sourceID: result.origin
@@ -578,6 +580,8 @@ private extension SearchBookRoute {
             lastChapter: candidate.lastChapter,
             intro: candidate.intro,
             bookURL: candidate.bookURL,
+            bookRequestExpression:
+                candidate.bookRequestExpression,
             coverURL: candidate.coverURL,
             originName: candidate.originName,
             sourceID: candidate.sourceID
@@ -592,6 +596,7 @@ private extension SearchBookRoute {
             lastChapter: result.lastChapter,
             intro: result.intro,
             bookURL: result.bookURL,
+            bookRequestExpression: result.bookRequestExpression,
             coverURL: result.coverURL,
             originName: result.originName,
             sourceID: result.origin

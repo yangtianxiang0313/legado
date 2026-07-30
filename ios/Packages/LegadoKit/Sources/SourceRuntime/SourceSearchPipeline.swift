@@ -116,6 +116,7 @@ public struct SourceSearchBook: Sendable, Equatable {
   public let intro: String
   public let lastChapter: String
   public let bookURL: String
+  public let bookRequestExpression: String
   public let coverURL: String?
   public let origin: String
   public let originName: String
@@ -130,6 +131,7 @@ public struct SourceSearchBook: Sendable, Equatable {
     intro: String,
     lastChapter: String,
     bookURL: String,
+    bookRequestExpression: String? = nil,
     coverURL: String?,
     origin: String,
     originName: String,
@@ -143,6 +145,7 @@ public struct SourceSearchBook: Sendable, Equatable {
     self.intro = intro
     self.lastChapter = lastChapter
     self.bookURL = bookURL
+    self.bookRequestExpression = bookRequestExpression ?? bookURL
     self.coverURL = coverURL
     self.origin = origin
     self.originName = originName

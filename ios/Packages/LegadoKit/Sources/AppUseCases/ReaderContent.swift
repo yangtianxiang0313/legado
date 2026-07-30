@@ -43,7 +43,7 @@ public struct SourceReaderContentLoader: ReaderContentLoading, Sendable {
       definition: source.definition,
       transport: transport,
       cookieStore: cookieStore
-    ).content(chapterURL: chapter.url)
+    ).content(chapterURL: chapter.requestExpression)
     return ReaderDocument(
       position: ReaderPosition(
         bookID: book.id,

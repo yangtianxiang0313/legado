@@ -40,7 +40,7 @@ public struct SourceBookChapterLoader: BookChapterLoading, Sendable {
       definition: source.definition,
       transport: transport,
       cookieStore: cookieStore
-    ).chapters(bookURL: candidate.bookURL)
+    ).chapters(bookURL: candidate.bookRequestExpression)
     return execution.chapters.map {
       LibraryDomain.BookChapter(
         id: LibraryDomain.ChapterID(
@@ -52,6 +52,7 @@ public struct SourceBookChapterLoader: BookChapterLoading, Sendable {
         index: $0.index,
         title: $0.title,
         url: $0.url.absoluteString,
+        requestExpression: $0.endpoint.requestExpression,
         isPay: $0.isPay,
         isVIP: $0.isVIP,
         isVolume: $0.isVolume
