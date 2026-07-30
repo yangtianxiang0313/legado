@@ -375,6 +375,41 @@ def read_duration_session_raw_artifact():
     }
 
 
+def progress_save_runtime_raw_artifact():
+    scenario = "rl-reader-progress-save-runtime-001"
+    contract = runner.SCENARIO_CONTRACTS[scenario]
+    requests = []
+    cases = []
+    for index, (case_id, operation) in enumerate(
+        contract["expected_cases"]
+    ):
+        request = {
+            "operation": operation,
+            "arguments": {"fixture_case": case_id},
+        }
+        requests.append(request)
+        cases.append(
+            {
+                "id": case_id,
+                "operation": operation,
+                "request": request,
+                "result": {
+                    "case_index": index,
+                    "late_write_relationships_projected": True,
+                },
+                "issue": None,
+            }
+        )
+    return {
+        "schema_version": 1,
+        "scenario_id": scenario,
+        "device_origin": "android-runtime://local",
+        "logical_origin": "android-runtime://local",
+        "request_plan": requests,
+        "cases": cases,
+    }
+
+
 def reader_prefetch_runtime_raw_artifact():
     scenario = "rl-reader-cache-prefetch-policy-001"
     contract = runner.SCENARIO_CONTRACTS[scenario]
@@ -1238,6 +1273,35 @@ def system_tts_integration_raw_artifact():
 
 
 class AndroidOracleRunnerTests(unittest.TestCase):
+    def test_git_helper_accepts_longer_cleanup_timeout(self):
+        with mock.patch.object(
+            runner,
+            "_run",
+            return_value=mock.Mock(stdout=b""),
+        ) as run:
+            runner._git(
+                ROOT,
+                "worktree",
+                "remove",
+                "--force",
+                "/tmp/example",
+                check=False,
+                timeout=300,
+            )
+
+        run.assert_called_once_with(
+            [
+                "git",
+                "worktree",
+                "remove",
+                "--force",
+                "/tmp/example",
+            ],
+            cwd=ROOT,
+            timeout=300,
+            check=False,
+        )
+
     def test_android_listener_instrumentation_receives_device_origin_without_source(
         self,
     ):
@@ -1464,6 +1528,14 @@ class AndroidOracleRunnerTests(unittest.TestCase):
         self.assertEqual(
             "rl-reader-progress-read-duration-session-001",
             read_duration_session["scenario_id"],
+        )
+        progress_save_runtime = runner.doctor(
+            ROOT,
+            "rl-reader-progress-save-runtime-001",
+        )
+        self.assertEqual(
+            "rl-reader-progress-save-runtime-001",
+            progress_save_runtime["scenario_id"],
         )
         reader_layout_stream = runner.doctor(
             ROOT,
@@ -1975,6 +2047,52 @@ class AndroidOracleRunnerTests(unittest.TestCase):
                 "read_duration_config_race",
                 "read_duration_reset_race",
                 "read_duration_durability_window",
+            },
+            {
+                value["operation"]
+                for value in artifact["request_plan"]
+            },
+        )
+
+    def test_progress_save_runtime_binds_late_write_boundaries(self):
+        scenario = "rl-reader-progress-save-runtime-001"
+        runtime_bindings = {
+            **bindings(),
+            "fixture_kind": "android_runtime_scenario",
+            "fixture_path": (
+                "ios/harness/fixtures/runtime-lab/"
+                f"{scenario}"
+            ),
+        }
+        runtime_bindings.pop("source_template_sha256")
+        artifact = runner.normalize_raw_artifact(
+            progress_save_runtime_raw_artifact(),
+            runtime_bindings,
+            scenario,
+        )
+        self.assertEqual("reader_runtime", artifact["result"]["type"])
+        self.assertEqual(6 * 5, len(artifact["stages"]))
+        self.assertEqual(
+            [
+                case_id
+                for case_id, _ in
+                runner.SCENARIO_CONTRACTS[scenario]["expected_cases"]
+            ],
+            [
+                value["id"]
+                for value in artifact["result"]["value"][
+                    "portable_known_projection"
+                ]["cases"]
+            ],
+        )
+        self.assertEqual(
+            {
+                "save_runtime_execution_state",
+                "save_runtime_book_switch",
+                "save_runtime_session_clear",
+                "save_runtime_multi_queue",
+                "save_runtime_missing_chapter",
+                "save_runtime_durability_window",
             },
             {
                 value["operation"]

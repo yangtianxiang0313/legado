@@ -846,6 +846,52 @@ SCENARIO_CONTRACTS = {
             "audio-save-refreshes-title-and-persists-book-fields",
         }),
     },
+    "rl-reader-progress-save-runtime-001": {
+        "status": "candidate",
+        "fixture_kind": "android_runtime_scenario",
+        "result_type": "reader_runtime",
+        "stage_names": (
+            "fixture_setup",
+            "session_configuration",
+            "executor_queue",
+            "database_observation",
+            "result_mapping",
+        ),
+        "expected_cases": (
+            (
+                "queued-save-uses-execution-progress",
+                "save_runtime_execution_state",
+            ),
+            (
+                "queued-save-retargets-current-book",
+                "save_runtime_book_switch",
+            ),
+            (
+                "queued-save-drops-after-session-cleared",
+                "save_runtime_session_clear",
+            ),
+            (
+                "multiple-queued-saves-observe-final-state",
+                "save_runtime_multi_queue",
+            ),
+            (
+                "missing-chapter-keeps-existing-title",
+                "save_runtime_missing_chapter",
+            ),
+            (
+                "queued-save-is-not-durable-before-execution",
+                "save_runtime_durability_window",
+            ),
+        ),
+        "nominal_cases": frozenset({
+            "queued-save-uses-execution-progress",
+            "queued-save-retargets-current-book",
+            "queued-save-drops-after-session-cleared",
+            "multiple-queued-saves-observe-final-state",
+            "missing-chapter-keeps-existing-title",
+            "queued-save-is-not-durable-before-execution",
+        }),
+    },
     "rl-reader-cache-prefetch-policy-001": {
         "status": "candidate",
         "fixture_kind": "android_runtime_scenario",
@@ -1300,11 +1346,16 @@ def _run(
     return result
 
 
-def _git(root: Path, *arguments: str, check: bool = True) -> bytes:
+def _git(
+    root: Path,
+    *arguments: str,
+    check: bool = True,
+    timeout: int = 60,
+) -> bytes:
     return _run(
         ["git", *arguments],
         cwd=root,
-        timeout=60,
+        timeout=timeout,
         check=check,
     ).stdout
 
@@ -2452,6 +2503,7 @@ def run_characterization(
                 "--force",
                 str(worktree),
                 check=False,
+                timeout=300,
             )
         if temporary_root.name.startswith("legado-android-oracle-"):
             shutil.rmtree(temporary_root, ignore_errors=True)

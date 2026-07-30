@@ -195,6 +195,8 @@ class LegadoOracleInstrumentedTest {
                 runReaderLayoutPageProjectionCases()
             "rl-reader-progress-layout-save-runtime-001" ->
                 runReaderProgressRuntimeCases()
+            "rl-reader-progress-save-runtime-001" ->
+                runReaderProgressSaveRuntimeCases()
             "rl-reader-cache-prefetch-policy-001" ->
                 runReaderPrefetchPolicyCases()
             "rl-reader-progress-toc-remap-001" ->
@@ -3463,6 +3465,363 @@ class LegadoOracleInstrumentedTest {
                 appDb.bookDao.delete(it)
             }
     }
+
+    private suspend fun runReaderProgressSaveRuntimeCases() {
+        val values = input.getJSONArray("cases")
+        val supported = setOf(
+            "save_runtime_execution_state",
+            "save_runtime_book_switch",
+            "save_runtime_session_clear",
+            "save_runtime_multi_queue",
+            "save_runtime_missing_chapter",
+            "save_runtime_durability_window"
+        )
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            val operation = value.getString("operation")
+            require(operation in supported) {
+                "Unsupported reader progress save operation: $operation"
+            }
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", operation)
+                .put("arguments", JSONObject(arguments.toString()))
+            runCase(value.getString("id"), operation, stimulus) {
+                readerProgressSaveRuntimeProjection(
+                    operation,
+                    arguments
+                )
+            }
+        }
+    }
+
+    private fun readerProgressSaveRuntimeProjection(
+        operation: String,
+        arguments: JSONObject
+    ): JSONObject {
+        clearProgressRuntimeState()
+        val previousReadRecordEnabled = AppConfig.enableReadRecord
+        AppConfig.enableReadRecord = false
+        return try {
+            when (operation) {
+                "save_runtime_execution_state" ->
+                    saveRuntimeExecutionStateProjection(arguments)
+                "save_runtime_book_switch" ->
+                    saveRuntimeBookSwitchProjection(arguments)
+                "save_runtime_session_clear" ->
+                    saveRuntimeSessionClearProjection(arguments)
+                "save_runtime_multi_queue" ->
+                    saveRuntimeMultiQueueProjection(arguments)
+                "save_runtime_missing_chapter" ->
+                    saveRuntimeMissingChapterProjection(arguments)
+                "save_runtime_durability_window" ->
+                    saveRuntimeDurabilityWindowProjection(arguments)
+                else -> error(
+                    "Unsupported reader progress save operation"
+                )
+            }
+        } finally {
+            drainReadBookExecutor()
+            AppConfig.enableReadRecord = previousReadRecordEnabled
+            clearProgressRuntimeState()
+        }
+    }
+
+    private fun saveRuntimeExecutionStateProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val book = progressSaveBook(
+            id = "execution-state",
+            chapterIndex = arguments.getInt("stored_chapter_index"),
+            chapterPos = arguments.getInt("stored_chapter_pos")
+        )
+        seedProgressBook(book)
+        ReadBook.resetData(book)
+        ReadBook.durChapterIndex =
+            arguments.getInt("call_chapter_index")
+        ReadBook.durChapterPos =
+            arguments.getInt("call_chapter_pos")
+        val release = startReadBookExecutorBarrier()
+        val persistedBefore: Book
+        try {
+            ReadBook.saveRead()
+            persistedBefore = requireNotNull(
+                appDb.bookDao.getBook(book.bookUrl)
+            )
+            ReadBook.durChapterIndex =
+                arguments.getInt("execution_chapter_index")
+            ReadBook.durChapterPos =
+                arguments.getInt("execution_chapter_pos")
+        } finally {
+            release.countDown()
+        }
+        drainReadBookExecutor()
+        val persisted = requireNotNull(appDb.bookDao.getBook(book.bookUrl))
+        return JSONObject()
+            .put(
+                "persisted_unchanged_while_queued",
+                persistedBefore.durChapterIndex ==
+                    arguments.getInt("stored_chapter_index") &&
+                    persistedBefore.durChapterPos ==
+                    arguments.getInt("stored_chapter_pos")
+            )
+            .put(
+                "persisted_call_time_progress",
+                persisted.durChapterIndex ==
+                    arguments.getInt("call_chapter_index") &&
+                    persisted.durChapterPos ==
+                    arguments.getInt("call_chapter_pos")
+            )
+            .put(
+                "persisted_execution_time_progress",
+                persisted.durChapterIndex ==
+                    arguments.getInt("execution_chapter_index") &&
+                    persisted.durChapterPos ==
+                    arguments.getInt("execution_chapter_pos")
+            )
+            .put("persisted_chapter_title", persisted.durChapterTitle)
+            .put("last_check_count", persisted.lastCheckCount)
+    }
+
+    private fun saveRuntimeBookSwitchProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val fromBook = progressSaveBook(
+            id = "switch-from",
+            name = "RuntimeLab 旧阅读会话"
+        )
+        val toBook = progressSaveBook(
+            id = "switch-to",
+            name = "RuntimeLab 新阅读会话"
+        )
+        seedProgressBook(fromBook)
+        seedProgressBook(toBook)
+        ReadBook.resetData(fromBook)
+        ReadBook.durChapterIndex =
+            arguments.getInt("from_chapter_index")
+        ReadBook.durChapterPos =
+            arguments.getInt("from_chapter_pos")
+        val release = startReadBookExecutorBarrier()
+        try {
+            ReadBook.saveRead()
+            ReadBook.resetData(toBook)
+            ReadBook.durChapterIndex =
+                arguments.getInt("to_chapter_index")
+            ReadBook.durChapterPos =
+                arguments.getInt("to_chapter_pos")
+        } finally {
+            release.countDown()
+        }
+        drainReadBookExecutor()
+        val persistedFrom = requireNotNull(
+            appDb.bookDao.getBook(fromBook.bookUrl)
+        )
+        val persistedTo = requireNotNull(
+            appDb.bookDao.getBook(toBook.bookUrl)
+        )
+        return JSONObject()
+            .put(
+                "old_book_progress_unchanged",
+                persistedFrom.durChapterIndex == 0 &&
+                    persistedFrom.durChapterPos == 0
+            )
+            .put(
+                "new_book_received_queued_save",
+                persistedTo.durChapterIndex ==
+                    arguments.getInt("to_chapter_index") &&
+                    persistedTo.durChapterPos ==
+                    arguments.getInt("to_chapter_pos")
+            )
+            .put(
+                "queued_save_captured_original_book",
+                persistedFrom.durChapterIndex ==
+                    arguments.getInt("from_chapter_index") &&
+                    persistedFrom.durChapterPos ==
+                    arguments.getInt("from_chapter_pos")
+            )
+            .put("new_book_chapter_title", persistedTo.durChapterTitle)
+    }
+
+    private fun saveRuntimeSessionClearProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val book = progressSaveBook(id = "session-clear")
+        seedProgressBook(book)
+        ReadBook.resetData(book)
+        ReadBook.durChapterIndex =
+            arguments.getInt("runtime_chapter_index")
+        ReadBook.durChapterPos =
+            arguments.getInt("runtime_chapter_pos")
+        val release = startReadBookExecutorBarrier()
+        try {
+            ReadBook.saveRead()
+            ReadBook.book = null
+        } finally {
+            release.countDown()
+        }
+        drainReadBookExecutor()
+        val persisted = requireNotNull(appDb.bookDao.getBook(book.bookUrl))
+        return JSONObject()
+            .put(
+                "queued_save_was_dropped",
+                persisted.durChapterIndex == 0 &&
+                    persisted.durChapterPos == 0 &&
+                    persisted.durChapterTime == 1L
+            )
+            .put("runtime_book_is_null", ReadBook.book == null)
+            .put("last_check_count_unchanged", persisted.lastCheckCount == 7)
+    }
+
+    private fun saveRuntimeMultiQueueProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val book = progressSaveBook(id = "multi-queue")
+        seedProgressBook(book)
+        ReadBook.resetData(book)
+        val afterFirst = AtomicReference<Book?>()
+        val markerCompleted = CountDownLatch(1)
+        val release = startReadBookExecutorBarrier()
+        try {
+            ReadBook.durChapterIndex =
+                arguments.getInt("first_chapter_index")
+            ReadBook.durChapterPos =
+                arguments.getInt("first_chapter_pos")
+            ReadBook.saveRead()
+            ReadBook.executor.execute {
+                afterFirst.set(appDb.bookDao.getBook(book.bookUrl))
+                markerCompleted.countDown()
+            }
+            ReadBook.durChapterIndex =
+                arguments.getInt("second_chapter_index")
+            ReadBook.durChapterPos =
+                arguments.getInt("second_chapter_pos")
+            ReadBook.saveRead()
+            ReadBook.durChapterIndex =
+                arguments.getInt("final_chapter_index")
+            ReadBook.durChapterPos =
+                arguments.getInt("final_chapter_pos")
+        } finally {
+            release.countDown()
+        }
+        check(markerCompleted.await(5, TimeUnit.SECONDS)) {
+            "Progress save marker did not complete"
+        }
+        drainReadBookExecutor()
+        val firstPersisted = requireNotNull(afterFirst.get())
+        val finalPersisted = requireNotNull(
+            appDb.bookDao.getBook(book.bookUrl)
+        )
+        val finalIndex = arguments.getInt("final_chapter_index")
+        val finalPos = arguments.getInt("final_chapter_pos")
+        return JSONObject()
+            .put(
+                "first_queued_save_observed_final_state",
+                firstPersisted.durChapterIndex == finalIndex &&
+                    firstPersisted.durChapterPos == finalPos
+            )
+            .put(
+                "second_queued_save_observed_final_state",
+                finalPersisted.durChapterIndex == finalIndex &&
+                    finalPersisted.durChapterPos == finalPos
+            )
+            .put(
+                "first_call_snapshot_was_preserved",
+                firstPersisted.durChapterIndex ==
+                    arguments.getInt("first_chapter_index") &&
+                    firstPersisted.durChapterPos ==
+                    arguments.getInt("first_chapter_pos")
+            )
+    }
+
+    private fun saveRuntimeMissingChapterProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val existingTitle = arguments.getString("existing_title")
+        val book = progressSaveBook(
+            id = "missing-chapter",
+            chapterTitle = existingTitle
+        )
+        seedProgressBook(book)
+        ReadBook.resetData(book)
+        ReadBook.durChapterIndex =
+            arguments.getInt("runtime_chapter_index")
+        ReadBook.durChapterPos =
+            arguments.getInt("runtime_chapter_pos")
+        ReadBook.saveRead()
+        drainReadBookExecutor()
+        val persisted = requireNotNull(appDb.bookDao.getBook(book.bookUrl))
+        return JSONObject()
+            .put("persisted_chapter_index", persisted.durChapterIndex)
+            .put("persisted_char_position", persisted.durChapterPos)
+            .put(
+                "missing_chapter_preserved_title",
+                persisted.durChapterTitle == existingTitle
+            )
+            .put("persisted_chapter_title", persisted.durChapterTitle)
+    }
+
+    private fun saveRuntimeDurabilityWindowProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        val book = progressSaveBook(id = "durability-window")
+        seedProgressBook(book)
+        ReadBook.resetData(book)
+        ReadBook.durChapterIndex =
+            arguments.getInt("runtime_chapter_index")
+        ReadBook.durChapterPos =
+            arguments.getInt("runtime_chapter_pos")
+        val release = startReadBookExecutorBarrier()
+        val beforeExecution: Book
+        try {
+            ReadBook.saveRead()
+            beforeExecution = requireNotNull(
+                appDb.bookDao.getBook(book.bookUrl)
+            )
+        } finally {
+            release.countDown()
+        }
+        drainReadBookExecutor()
+        val afterExecution = requireNotNull(
+            appDb.bookDao.getBook(book.bookUrl)
+        )
+        return JSONObject()
+            .put(
+                "database_unchanged_while_save_queued",
+                beforeExecution.durChapterIndex == 0 &&
+                    beforeExecution.durChapterPos == 0
+            )
+            .put(
+                "database_updated_after_executor",
+                afterExecution.durChapterIndex ==
+                    arguments.getInt("runtime_chapter_index") &&
+                    afterExecution.durChapterPos ==
+                    arguments.getInt("runtime_chapter_pos")
+            )
+            .put(
+                "queued_save_has_durability_window",
+                beforeExecution.durChapterTime == 1L &&
+                    afterExecution.durChapterTime > 1L
+            )
+    }
+
+    private fun progressSaveBook(
+        id: String,
+        name: String = "RuntimeLab 进度保存",
+        chapterIndex: Int = 0,
+        chapterPos: Int = 0,
+        chapterTitle: String = "既有标题"
+    ): Book = Book(
+        bookUrl = "/android-runtime/reader-progress/save-$id.txt",
+        originName = "RuntimeLab",
+        name = name,
+        author = "RuntimeLab",
+        totalChapterNum = 3,
+        durChapterTitle = chapterTitle,
+        durChapterIndex = chapterIndex,
+        durChapterPos = chapterPos,
+        durChapterTime = 1L,
+        lastCheckCount = 7
+    )
 
     private suspend fun runReaderProgressTocRemapCases() {
         val values = input.getJSONArray("cases")

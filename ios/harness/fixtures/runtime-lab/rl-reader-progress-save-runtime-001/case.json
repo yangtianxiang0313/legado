@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "kind": "android_runtime_scenario",
+  "id": "rl-reader-progress-save-runtime-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "android_runtime",
+  "capabilities": ["android.room", "reader.progress", "reader.session"],
+  "compatibility_profile": "android-legado-v1",
+  "source": null,
+  "input": "input.json",
+  "transport": {
+    "mode": "none",
+    "external_network": "deny",
+    "responses": []
+  },
+  "coverage": [
+    {
+      "behavior": "reader.progress-save-runtime",
+      "cases": [
+        {
+          "id": "queued-save-uses-execution-progress",
+          "role": "nominal",
+          "android_fact_refs": ["AF-READ-BOOK-SAVE-READ"],
+          "branch_refs": [
+            "ReadBook.saveRead reads durChapterIndex and durChapterPos inside the queued executor task"
+          ]
+        },
+        {
+          "id": "queued-save-retargets-current-book",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-READ-BOOK-RESET-DATA",
+            "AF-READ-BOOK-SAVE-READ"
+          ],
+          "branch_refs": [
+            "ReadBook.saveRead resolves the shared ReadBook.book only when the queued task executes"
+          ]
+        },
+        {
+          "id": "queued-save-drops-after-session-cleared",
+          "role": "denied",
+          "android_fact_refs": ["AF-READ-BOOK-SAVE-READ"],
+          "branch_refs": [
+            "ReadBook.saveRead returns from the executor task when ReadBook.book is null at execution"
+          ]
+        },
+        {
+          "id": "multiple-queued-saves-observe-final-state",
+          "role": "boundary",
+          "android_fact_refs": ["AF-READ-BOOK-SAVE-READ"],
+          "branch_refs": [
+            "Multiple queued saveRead calls do not capture independent progress snapshots"
+          ]
+        },
+        {
+          "id": "missing-chapter-keeps-existing-title",
+          "role": "boundary",
+          "android_fact_refs": ["AF-READ-BOOK-SAVE-READ"],
+          "branch_refs": [
+            "ReadBook.saveRead preserves durChapterTitle when the target chapter query returns null"
+          ]
+        },
+        {
+          "id": "queued-save-is-not-durable-before-execution",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-READ-ACTIVITY-ON-PAUSE",
+            "AF-READ-BOOK-SAVE-READ"
+          ],
+          "branch_refs": [
+            "ReadBookActivity.onPause enqueues saveRead without waiting for the global executor"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "relational_projection",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 0,
+    "network_allowed": false,
+    "logical_origin": null,
+    "database_reset_per_case": true,
+    "executor_barrier": "count_down_latch"
+  },
+  "limits": {"timeout_ms": 5000},
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/model/ReadBook.kt#saveRead",
+      "app/src/main/java/io/legado/app/model/ReadBook.kt#resetData",
+      "app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt#onPause"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-READER-PROGRESS-SAVE-RUNTIME-001"
+  }
+}

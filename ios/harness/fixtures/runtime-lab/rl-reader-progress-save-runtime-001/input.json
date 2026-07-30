@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "queued-save-uses-execution-progress",
+      "operation": "save_runtime_execution_state",
+      "arguments": {
+        "stored_chapter_index": 0,
+        "stored_chapter_pos": 5,
+        "call_chapter_index": 1,
+        "call_chapter_pos": 111,
+        "execution_chapter_index": 2,
+        "execution_chapter_pos": 222
+      }
+    },
+    {
+      "id": "queued-save-retargets-current-book",
+      "operation": "save_runtime_book_switch",
+      "arguments": {
+        "from_chapter_index": 1,
+        "from_chapter_pos": 120,
+        "to_chapter_index": 2,
+        "to_chapter_pos": 240
+      }
+    },
+    {
+      "id": "queued-save-drops-after-session-cleared",
+      "operation": "save_runtime_session_clear",
+      "arguments": {
+        "runtime_chapter_index": 1,
+        "runtime_chapter_pos": 135
+      }
+    },
+    {
+      "id": "multiple-queued-saves-observe-final-state",
+      "operation": "save_runtime_multi_queue",
+      "arguments": {
+        "first_chapter_index": 0,
+        "first_chapter_pos": 40,
+        "second_chapter_index": 1,
+        "second_chapter_pos": 140,
+        "final_chapter_index": 2,
+        "final_chapter_pos": 240
+      }
+    },
+    {
+      "id": "missing-chapter-keeps-existing-title",
+      "operation": "save_runtime_missing_chapter",
+      "arguments": {
+        "runtime_chapter_index": 9,
+        "runtime_chapter_pos": 900,
+        "existing_title": "保留的旧标题"
+      }
+    },
+    {
+      "id": "queued-save-is-not-durable-before-execution",
+      "operation": "save_runtime_durability_window",
+      "arguments": {
+        "runtime_chapter_index": 1,
+        "runtime_chapter_pos": 160
+      }
+    }
+  ]
+}
