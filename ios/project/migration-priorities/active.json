@@ -1,73 +1,81 @@
 {
   "schema_version": 1,
-  "id": "MILESTONE-P9-NATIVE-PAGINATION-001",
+  "id": "MILESTONE-P10-READER-CONTENT-REPLACEMENT-001",
   "status": "active",
   "mode": "critical_path_only",
-  "title": "P9 原生分页与翻页主链路",
-  "objective": "用户可在 Reader 中按当前设备尺寸和阅读设置查看单页正文，向前或向后翻页，跨越章节边界，并以字符锚点保存和恢复阅读位置。",
+  "title": "P10 正文替换规则产品主链路",
+  "objective": "用户可持久化管理正文替换规则；Reader 每次从原始缓存或书源取得正文后按 Android 已固化语义生成显示正文，规则变化后保留字符锚点刷新当前章。",
   "completion_evidence": [
-    "页范围由 iOS 原生文本布局根据正文、可用尺寸、字号和行距生成，不复制 Android 像素、页数或排版对象",
-    "ReaderCore 的 ReaderLayoutMap 与字符锚点是页索引、搜索跳转和进度恢复的唯一跨布局合同",
-    "上一页和下一页在当前章内移动字符锚点，到边界后复用既有章节加载链进入相邻章节",
-    "每次成功翻页保存当前页起始字符位置，页码本身不进入持久化模型",
-    "字号、行距或视口变化后重新分页，并按原字符锚点选择包含该位置的新页面",
-    "完整加载、章内翻页、跨章和重启恢复只运行一次 iPhone Simulator"
+    "复用已由真实 Android Golden 验证的 AndroidReaderContentNormalizationPolicy，不在 App 或数据库层复制替换算法",
+    "原始章节缓存继续保存原文，归一化正文是按当前规则派生的显示文档；规则变化不重写原始缓存",
+    "规则持久化保留名称、模式、替换值、包含与排除作用域、标题/正文开关、启用状态、正则标记和稳定顺序",
+    "正文加载链对缓存命中与网络回退统一执行规则筛选、标题去重、顺序替换和段落投影",
+    "Reader 的替换规则入口可新增、编辑、启停和删除规则；保存后刷新当前章节并保留当前字符锚点",
+    "聚焦测试覆盖持久化和加载接线，完整规则管理到正文变化及重启恢复只运行一次 iPhone Simulator"
   ],
-  "deferred_policy": "仿真翻页动画、覆盖动画、双栏 iPad、竖排、图片混排、脚注、选择跨页、预排相邻章和滚动/分页模式自由切换不在本里程碑伪实现；先完成可靠的单栏原生分页主链。",
+  "deferred_policy": "规则分组、批量排序、在线导入导出、分享、正则超时自动禁用、全书独立开关、有效规则明细和替换后全文搜索不在本里程碑扩展；先接通持久规则影响当前阅读正文的主链。",
   "deliveries": [
     {
-      "target": "IOS-APP-NAVIGATION-NATIVE-PAGINATION-MILESTONE-001",
-      "title": "原生分页与字符锚点翻页里程碑",
+      "target": "IOS-APP-NAVIGATION-READER-CONTENT-REPLACEMENT-MILESTONE-001",
+      "title": "正文替换规则产品接线里程碑",
       "prerequisite_task_ids": [
-        "IOS-READER-CORE-PROGRESS-LAYOUT-SAVE-001",
-        "IOS-APP-NAVIGATION-READER-PREFERENCES-MILESTONE-001"
+        "IOS-READER-CORE-CONTENT-DISPLAY-NORMALIZATION-001",
+        "IOS-APP-NAVIGATION-NATIVE-PAGINATION-MILESTONE-001"
       ],
       "requirement_ref": "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01",
-      "fixture_id": "milestone-native-pagination-v1",
+      "fixture_id": "milestone-reader-content-replacement-v1",
       "validation": "simulator",
       "ui_contract": {
-        "goal": "复用 Android 已验证的字符锚点与布局投影语义，用 iOS 原生文本布局接通当前 Reader 的单页展示、章内翻页、跨章和进度恢复。",
-        "scenario_id": "ui-native-pagination-milestone-v1",
-        "test_method": "testNativePaginationMilestone"
+        "goal": "把已验证的 Android 正文归一化语义接入 iOS 产品：GRDB 保存用户规则，AppUseCases 组合原文加载与净化，Reader 菜单提供最小规则管理并在变更后按字符锚点刷新。",
+        "scenario_id": "ui-reader-content-replacement-milestone-v1",
+        "test_method": "testReaderContentReplacementMilestone"
       },
       "additional_allowed_paths": [
         "ios/Packages/LegadoKit/Sources/ReaderCore/**",
         "ios/Packages/LegadoKit/Tests/ReaderCoreTests/**",
         "ios/Packages/LegadoKit/Sources/AppUseCases/**",
-        "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**"
+        "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+        "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+        "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**"
       ],
       "source_anchors": [
         {
           "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d",
-          "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
-          "symbol_id": "kotlin://io.legado.app.model.ReadBook/setPageIndex"
+          "git_blob": "1b2ee52192f45c04b8a3c49dd1f59c45671133f8",
+          "path": "app/src/main/java/io/legado/app/help/book/ContentProcessor.kt",
+          "symbol_id": "kotlin://io.legado.app.help.book.ContentProcessor/getContent"
         },
         {
           "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "git_blob": "eb8524f5b531f076e5708cad56cfe9a592a55d7a",
-          "path": "app/src/main/java/io/legado/app/ui/book/read/page/entities/TextChapter.kt",
-          "symbol_id": "kotlin://io.legado.app.ui.book.read.page.entities.TextChapter/layoutChannel"
+          "git_blob": "e3b87e31adce0787d479a64c2ed6c12a85b54bea",
+          "path": "app/src/main/java/io/legado/app/data/entities/ReplaceRule.kt",
+          "symbol_id": "kotlin://io.legado.app.data.entities.ReplaceRule"
         },
         {
           "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "git_blob": "eb8524f5b531f076e5708cad56cfe9a592a55d7a",
-          "path": "app/src/main/java/io/legado/app/ui/book/read/page/entities/TextChapter.kt",
-          "symbol_id": "kotlin://io.legado.app.ui.book.read.page.entities.TextChapter/getPageIndexByCharIndex"
+          "git_blob": "09867c9b902dd0db30e5408a53fb0bc753d023f9",
+          "path": "app/src/main/java/io/legado/app/data/dao/ReplaceRuleDao.kt",
+          "symbol_id": "kotlin://io.legado.app.data.dao.ReplaceRuleDao/findEnabledByContentScope"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "4426655e6bed8c4c3a874d57f47c917120406a1a",
+          "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookViewModel.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.read.ReadBookViewModel/replaceRuleChanged"
         }
       ]
     }
   ],
   "stages": [
     {
-      "id": "P9-01-NATIVE-PAGINATION-MILESTONE",
-      "title": "接通原生分页与字符锚点翻页纵向主链路",
-      "outcome": "既有 ReaderCore 布局投影合同通过 iOS 原生排版和 Reader UI 形成可用分页阅读能力。",
+      "id": "P10-01-READER-CONTENT-REPLACEMENT-MILESTONE",
+      "title": "接通替换规则持久化、正文净化与 Reader 管理纵向主链路",
+      "outcome": "Android 已验证的正文归一化能力从孤立 ReaderCore 算法变成用户可配置、可持久化且实际影响阅读正文的产品能力。",
       "selectors": [
         {
-          "id": "NATIVE-PAGINATION-MILESTONE",
+          "id": "READER-CONTENT-REPLACEMENT-MILESTONE",
           "task_ids": [
-            "IOS-APP-NAVIGATION-NATIVE-PAGINATION-MILESTONE-001"
+            "IOS-APP-NAVIGATION-READER-CONTENT-REPLACEMENT-MILESTONE-001"
           ]
         }
       ]
