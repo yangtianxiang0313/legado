@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P40-SWIFTSOUP-PRODUCT-INTEGRATION-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "title": "P40 将 SwiftSoup 接入书源解析主链",
+  "objective": "依据 Android AnalyzeByJSoup 源码与已冻结 sl-source-rule-dom-selector-backends-001 真源结果，把 HTMLSelectorBackend 作为端口贯穿搜索、发现、书籍详情、目录和正文解析，并由 App composition root 注入 SwiftSoup 实现；保留 XPath 独立边界，不让 SwiftSoup 类型进入 SourceRuntime、AppUseCases 或 UI。",
+  "validation_policy": "先运行一个 Android 真源结构化对齐测试；因为本里程碑首次改变 App 产品装配，再执行一次 App 构建。除此之外不运行全量 Harness、全量 Swift 测试或模拟器。",
+  "stages": [
+    {
+      "id": "P40-S1",
+      "title": "端口贯穿并接入产品组合根",
+      "selectors": [
+        {
+          "id": "P40-S1-SWIFTSOUP-PRODUCT",
+          "claim_ids": [
+            "BKC-SR-CSS-BACKEND-001"
+          ],
+          "task_ids": [
+            "IOS-SOURCE-RUNTIME-SWIFTSOUP-PRODUCT-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-SOURCE-RUNTIME-SWIFTSOUP-PRODUCT-001",
+      "title": "用 SwiftSoup 执行产品 CSS 书源规则",
+      "fixture_id": "sl-source-rule-dom-selector-backends-001",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [
+        "IOS-DEPENDENCY-SWIFTSOUP-HTML-001",
+        "IOS-SOURCE-RUNTIME-HTML-CSS-001"
+      ],
+      "validation": "tests",
+      "test_filter": "ConformanceCLITests.testMinimalTaskRunnerMatchesDOMSelectorAndroidGolden",
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Package.swift",
+        "ios/Packages/LegadoKit/Sources/RuleRuntime/**",
+        "ios/Packages/LegadoKit/Sources/HTMLSwiftSoup/**",
+        "ios/Packages/LegadoKit/Tests/HTMLSwiftSoupTests/**",
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Apps/Legado/**",
+        "ios/harness/architecture-rules.json"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "1ef7db8d36bf1cfcaf46a16121c76fe5fea9609c",
+          "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByJSoup.kt",
+          "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeByJSoup"
+        }
+      ]
+    }
+  ]
+}
