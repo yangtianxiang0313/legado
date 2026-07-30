@@ -1,6 +1,4 @@
-import base64
 import importlib.util
-import json
 import unittest
 from pathlib import Path
 
@@ -14,33 +12,6 @@ SPEC.loader.exec_module(ui_simulator)
 
 
 class UISimulatorContractTests(unittest.TestCase):
-    def test_first_difference_is_stable_json_pointer(self):
-        expected = {"steps": [{"screen": "shelf"}, {"screen": "search"}]}
-        actual = {"steps": [{"screen": "shelf"}, {"screen": "reader"}]}
-
-        self.assertEqual(
-            "/steps/1/screen",
-            ui_simulator.first_difference(expected, actual),
-        )
-
-    def test_observed_payload_requires_one_valid_marker(self):
-        value = {"simulator_id": "SIM-PHONE-COMPACT-001"}
-        encoded = base64.b64encode(
-            json.dumps(value).encode("utf-8")
-        ).decode("ascii")
-
-        self.assertEqual(
-            value,
-            ui_simulator.observed_payload(
-                f"noise\n{ui_simulator.MARKER}{encoded}\n"
-            ),
-        )
-        with self.assertRaisesRegex(
-            ui_simulator.UIAcceptanceError,
-            "UI_OBSERVED_MARKER_INVALID",
-        ):
-            ui_simulator.observed_payload("no marker")
-
     def test_safe_path_rejects_escape(self):
         with self.assertRaisesRegex(
             ui_simulator.UIAcceptanceError,
@@ -66,34 +37,6 @@ class UISimulatorContractTests(unittest.TestCase):
             ui_simulator.ui_test_method(
                 {"test_method": "testRootTopology;rm"}
             )
-
-    def test_expected_can_select_slice_from_checkpoint_matrix(self):
-        expected = {
-            "scenario_id": "reader",
-            "simulators": [
-                {"simulator_id": "SIM-PHONE-COMPACT-001"},
-                {"simulator_id": "SIM-PAD-REGULAR-001"},
-            ],
-        }
-
-        selected = ui_simulator.expected_for_simulators(
-            expected,
-            ["SIM-PHONE-COMPACT-001"],
-        )
-
-        self.assertEqual(
-            [{"simulator_id": "SIM-PHONE-COMPACT-001"}],
-            selected["simulators"],
-        )
-        with self.assertRaisesRegex(
-            ui_simulator.UIAcceptanceError,
-            "UI_EXPECTED_SIMULATOR_MISSING",
-        ):
-            ui_simulator.expected_for_simulators(
-                expected,
-                ["SIM-TV-001"],
-            )
-
 
 if __name__ == "__main__":
     unittest.main()

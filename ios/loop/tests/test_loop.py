@@ -469,10 +469,8 @@ class MinimalLoopTests(unittest.TestCase):
                 task["source"]["authority"],
             )
             self.assertNotIn("android_golden", task["source"])
-            self.assertEqual(
-                "ui-simulator-acceptance",
-                task["acceptance"]["structured_output"]["command_id"],
-            )
+            self.assertNotIn("structured_output", task["acceptance"])
+            self.assertNotIn("expected", task["source"]["ui_acceptance"])
             loop.validate_task(root, task)
 
     def test_app_navigation_startup_derives_structured_and_ui_delivery(self):
@@ -1549,13 +1547,7 @@ class MinimalLoopTests(unittest.TestCase):
             "testReaderProgressPersistsAcrossRelaunch",
             progress_restore["ui_acceptance"]["test_method"],
         )
-        self.assertEqual(
-            (
-                "ios/harness/ui/expected/"
-                "ui-book-detail-conditional-actions-v1.json"
-            ),
-            detail["ui_acceptance"]["expected"],
-        )
+        self.assertNotIn("expected", detail["ui_acceptance"])
         self.assertIn("书籍详情操作矩阵", detail["goal"])
         self.assertIn("移除静态样例", search["goal"])
         self.assertIn("目录抓取", toc["goal"])

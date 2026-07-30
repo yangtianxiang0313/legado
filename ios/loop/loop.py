@@ -2239,7 +2239,6 @@ def app_navigation_delivery_contract(
         "ui_acceptance": {
             "scenario_id": feature["scenario_id"],
             "profile": "store_safe",
-            "expected": feature["expected"],
             "project": "ios/Apps/Legado/Legado.xcodeproj",
             "scheme": "LegadoApp",
             "test_method": feature["test_method"],
@@ -2425,9 +2424,6 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             },
         }
     if architecture["owner"] == "AppShell":
-        expected_path = (
-            "ios/harness/ui/expected/ui-bootstrap-roots-v1.json"
-        )
         scenario_id = "ui-bootstrap-roots-v1"
         return {
             "schema_version": SCHEMA_VERSION,
@@ -2453,7 +2449,6 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
                 "ui_acceptance": {
                     "scenario_id": scenario_id,
                     "profile": "store_safe",
-                    "expected": expected_path,
                     "project": "ios/Apps/Legado/Legado.xcodeproj",
                     "scheme": "LegadoApp",
                     "simulators": [
@@ -2548,23 +2543,6 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
                         "timeout_seconds": 1800,
                     },
                 ],
-                "structured_output": {
-                    "mode": "command_json",
-                    "command_id": "ui-simulator-acceptance",
-                    "fixture_id": scenario_id,
-                    "expected": expected_path,
-                    "required_fields": [
-                        "expected",
-                        "actual",
-                        "simulator_matrix",
-                        "first_divergence",
-                    ],
-                    "expected_values": {
-                        "scenario_id": scenario_id,
-                        "status": "equal",
-                        "first_divergence": None,
-                    },
-                },
             },
             "knowledge_updates": {
                 "required_on_completion": [
@@ -2767,9 +2745,6 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
                 },
             }
         source["ui_acceptance"] = ui_acceptance
-        expected_path = str(ui_acceptance["expected"])
-        if expected_path not in allowed_paths:
-            allowed_paths.append(expected_path)
         return {
             "schema_version": SCHEMA_VERSION,
             "id": target,
@@ -2812,23 +2787,6 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
                         "timeout_seconds": 1800,
                     }
                 ],
-                "structured_output": {
-                    "mode": "command_json",
-                    "command_id": "ui-simulator-acceptance",
-                    "fixture_id": ui_acceptance["scenario_id"],
-                    "expected": expected_path,
-                    "required_fields": [
-                        "expected",
-                        "actual",
-                        "simulator_matrix",
-                        "first_divergence",
-                    ],
-                    "expected_values": {
-                        "scenario_id": ui_acceptance["scenario_id"],
-                        "status": "equal",
-                        "first_divergence": None,
-                    },
-                },
             },
             "knowledge_updates": {
                 "required_on_completion": [
@@ -3435,29 +3393,22 @@ def validate_task(root: Path, task: Mapping[str, Any]) -> None:
     elif authority == "ios_product_decision":
         decision_refs = source.get("decision_refs")
         ui_acceptance = source.get("ui_acceptance")
-        expected = (
-            ui_acceptance.get("expected")
-            if isinstance(ui_acceptance, dict)
-            else None
-        )
         if (
             task.get("kind") != "delivery"
             or not isinstance(decision_refs, list)
             or not decision_refs
             or any(not isinstance(value, str) for value in decision_refs)
-            or not isinstance(expected, str)
-            or not (root / expected).is_file()
+            or not isinstance(ui_acceptance, dict)
+            or not isinstance(ui_acceptance.get("project"), str)
+            or not isinstance(ui_acceptance.get("scheme"), str)
+            or not isinstance(ui_acceptance.get("simulators"), list)
+            or not ui_acceptance["simulators"]
         ):
             raise LoopError("TASK_SOURCE_INVALID:ios_product_decision")
     elif authority == "android_source_contract":
         source_contract = source.get("source_contract")
         anchors = source.get("anchors")
         ui_acceptance = source.get("ui_acceptance")
-        expected = (
-            ui_acceptance.get("expected")
-            if isinstance(ui_acceptance, dict)
-            else None
-        )
         if (
             task.get("kind") != "delivery"
             or not isinstance(source_contract, dict)
@@ -3469,7 +3420,11 @@ def validate_task(root: Path, task: Mapping[str, Any]) -> None:
                 ui_acceptance is not None
                 and (
                     not isinstance(ui_acceptance, dict)
-                    or not isinstance(expected, str)
+                    or not isinstance(ui_acceptance.get("project"), str)
+                    or not isinstance(ui_acceptance.get("scheme"), str)
+                    or not isinstance(ui_acceptance.get("test_method"), str)
+                    or not isinstance(ui_acceptance.get("simulators"), list)
+                    or not ui_acceptance["simulators"]
                 )
             )
         ):

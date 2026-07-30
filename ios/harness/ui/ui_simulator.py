@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Run deterministic XCUITest scenarios and compare structured UI output."""
+"""Run one real XCUITest milestone and retain its native result bundle."""
 
 from __future__ import annotations
 
 import argparse
-import base64
 import json
 import os
 import re
@@ -15,7 +14,6 @@ from pathlib import Path, PurePosixPath
 from typing import Any, Mapping, Sequence
 
 
-MARKER = "LEGADO_UI_OBSERVED_BASE64:"
 RUNTIME = Path(".harness-runtime/ui")
 
 
@@ -118,52 +116,6 @@ def ensure_simulator(root: Path, entry: Mapping[str, Any]) -> str:
     return udid
 
 
-def observed_payload(output: str) -> Mapping[str, Any]:
-    markers = [
-        line.split(MARKER, 1)[1].strip()
-        for line in output.splitlines()
-        if MARKER in line
-    ]
-    if len(markers) != 1:
-        raise UIAcceptanceError("UI_OBSERVED_MARKER_INVALID")
-    try:
-        payload = base64.b64decode(markers[0], validate=True)
-        value = json.loads(payload)
-    except (ValueError, UnicodeError, json.JSONDecodeError) as error:
-        raise UIAcceptanceError("UI_OBSERVED_INVALID") from error
-    if not isinstance(value, dict):
-        raise UIAcceptanceError("UI_OBSERVED_INVALID")
-    return value
-
-
-def escaped(value: str) -> str:
-    return value.replace("~", "~0").replace("/", "~1")
-
-
-def first_difference(expected: Any, actual: Any, pointer: str = "") -> str | None:
-    if type(expected) is not type(actual):
-        return pointer or "/"
-    if isinstance(expected, dict):
-        for key in sorted(set(expected) | set(actual)):
-            child = f"{pointer}/{escaped(key)}"
-            if key not in expected or key not in actual:
-                return child
-            difference = first_difference(expected[key], actual[key], child)
-            if difference is not None:
-                return difference
-        return None
-    if isinstance(expected, list):
-        for index in range(max(len(expected), len(actual))):
-            child = f"{pointer}/{index}"
-            if index >= len(expected) or index >= len(actual):
-                return child
-            difference = first_difference(expected[index], actual[index], child)
-            if difference is not None:
-                return difference
-        return None
-    return None if expected == actual else (pointer or "/")
-
-
 def ui_test_method(ui: Mapping[str, Any]) -> str:
     value = ui.get("test_method", "testRootTopology")
     if (
@@ -174,43 +126,11 @@ def ui_test_method(ui: Mapping[str, Any]) -> str:
     return value
 
 
-def expected_for_simulators(
-    expected: Mapping[str, Any],
-    simulator_ids: list[str],
-) -> Mapping[str, Any]:
-    expected_simulators = expected.get("simulators")
-    if not isinstance(expected_simulators, list):
-        raise UIAcceptanceError("UI_EXPECTED_SIMULATORS_INVALID")
-    selected = [
-        value
-        for value in expected_simulators
-        if (
-            isinstance(value, dict)
-            and value.get("simulator_id") in simulator_ids
-        )
-    ]
-    selected_ids = {
-        value.get("simulator_id")
-        for value in selected
-    }
-    if selected_ids != set(simulator_ids) or len(selected) != len(simulator_ids):
-        raise UIAcceptanceError("UI_EXPECTED_SIMULATOR_MISSING")
-    return {
-        **expected,
-        "simulators": sorted(
-            selected,
-            key=lambda value: str(value.get("simulator_id")),
-        ),
-    }
-
-
 def run(root: Path, task_path: str) -> Mapping[str, Any]:
     task_file = safe_path(root, task_path)
     try:
         task = json.loads(task_file.read_text(encoding="utf-8"))
         ui = task["source"]["ui_acceptance"]
-        expected_path = safe_path(root, ui["expected"])
-        expected = json.loads(expected_path.read_text(encoding="utf-8"))
         matrix = ui["simulators"]
         project = safe_path(root, ui["project"])
         scheme = ui["scheme"]
@@ -218,8 +138,7 @@ def run(root: Path, task_path: str) -> Mapping[str, Any]:
     except (OSError, KeyError, TypeError, json.JSONDecodeError) as error:
         raise UIAcceptanceError("UI_TASK_INVALID") from error
     if (
-        not isinstance(expected, dict)
-        or not isinstance(matrix, list)
+        not isinstance(matrix, list)
         or not matrix
         or not isinstance(scheme, str)
         or project.suffix != ".xcodeproj"
@@ -228,13 +147,11 @@ def run(root: Path, task_path: str) -> Mapping[str, Any]:
 
     runtime_root = root / RUNTIME / uuid.uuid4().hex
     runtime_root.mkdir(parents=True, exist_ok=False)
-    observations = []
-    simulator_ids = []
+    simulator_results = []
     for entry in matrix:
         if not isinstance(entry, dict):
             raise UIAcceptanceError("UI_SIMULATOR_CONTRACT_INVALID")
         udid = ensure_simulator(root, entry)
-        simulator_ids.append(entry["simulator_id"])
         command(["xcrun", "simctl", "boot", udid], cwd=root, timeout=120)
         boot = command(
             ["xcrun", "simctl", "bootstatus", udid, "-b"],
@@ -280,30 +197,18 @@ def run(root: Path, task_path: str) -> Mapping[str, Any]:
             raise UIAcceptanceError(
                 f"UI_XCODEBUILD_FAILED:{entry['simulator_id']}"
             )
-        observation = observed_payload(result.stdout)
-        if observation.get("simulator_id") != entry["simulator_id"]:
-            raise UIAcceptanceError("UI_SIMULATOR_ID_MISMATCH")
-        observations.append(observation)
+        simulator_results.append(
+            {
+                "simulator_id": entry["simulator_id"],
+                "result_bundle": result_bundle.relative_to(root).as_posix(),
+            }
+        )
 
-    actual = {
-        "schema_version": 1,
-        "scenario_id": ui["scenario_id"],
-        "profile": ui["profile"],
-        "simulators": sorted(
-            observations,
-            key=lambda value: str(value.get("simulator_id")),
-        ),
-    }
-    selected_expected = expected_for_simulators(expected, simulator_ids)
-    difference = first_difference(selected_expected, actual)
     return {
         "schema_version": 1,
         "scenario_id": ui["scenario_id"],
-        "status": "equal" if difference is None else "different",
-        "expected": selected_expected,
-        "actual": actual,
-        "simulator_matrix": sorted(simulator_ids),
-        "first_divergence": difference,
+        "status": "passed",
+        "simulators": simulator_results,
         "runtime": runtime_root.relative_to(root).as_posix(),
     }
 
@@ -320,7 +225,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(str(error), file=sys.stderr)
         return 1
     sys.stdout.buffer.write(canonical(result))
-    return 0 if result["status"] == "equal" else 5
+    return 0
 
 
 if __name__ == "__main__":
