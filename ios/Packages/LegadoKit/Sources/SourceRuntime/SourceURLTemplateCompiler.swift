@@ -47,11 +47,13 @@ public enum SourceURLTemplateCompiler {
   ) throws -> SourceURLTemplateCompilation {
     let scriptRendered = try renderScriptBlock(
       input.template,
-      key: input.key
+      key: input.key,
+      page: input.page
     )
     let expressionRendered = try renderExpressions(
       scriptRendered,
-      key: input.key
+      key: input.key,
+      page: input.page
     )
     let ruleURL = renderPage(expressionRendered, page: input.page)
     let parts = SourceRequestCompiler.splitURLAndOption(ruleURL)
@@ -96,7 +98,8 @@ public enum SourceURLTemplateCompiler {
 
   private static func renderScriptBlock(
     _ template: String,
-    key: String?
+    key: String?,
+    page: Int?
   ) throws -> String {
     let pattern = #"<js>([\s\S]*?)</js>"#
     let regex = try NSRegularExpression(
@@ -118,7 +121,8 @@ public enum SourceURLTemplateCompiler {
     }
     let result = try evaluate(
       String(template[scriptRange]),
-      key: key
+      key: key,
+      page: page
     )
     let suffix = String(template[wholeRange.upperBound...])
       .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -134,7 +138,8 @@ public enum SourceURLTemplateCompiler {
 
   private static func renderExpressions(
     _ template: String,
-    key: String?
+    key: String?,
+    page: Int?
   ) throws -> String {
     var output = ""
     var cursor = template.startIndex
@@ -148,7 +153,7 @@ public enum SourceURLTemplateCompiler {
       }
       let expression = String(template[start.upperBound..<end.lowerBound])
         .trimmingCharacters(in: .whitespacesAndNewlines)
-      output += try evaluate(expression, key: key)
+      output += try evaluate(expression, key: key, page: page)
       cursor = end.upperBound
     }
     output += template[cursor...]
@@ -197,10 +202,14 @@ public enum SourceURLTemplateCompiler {
 
   private static func evaluate(
     _ expression: String,
-    key: String?
+    key: String?,
+    page: Int?
   ) throws -> String {
     if expression == "key" {
       return key ?? ""
+    }
+    if expression == "page" {
+      return page.map(String.init) ?? ""
     }
     if expression == "null" {
       return ""

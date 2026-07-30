@@ -28,6 +28,26 @@ final class SourceURLTemplateCompilerTests: XCTestCase {
     XCTAssertEqual(output.plan.retry, 2)
   }
 
+  func testPageExpressionMatchesAndroidSearchTemplate() throws {
+    let output = try SourceURLTemplateCompiler.compile(
+      SourceURLTemplateInput(
+        template: "/pipeline/search/{{page}}?q={{key}}",
+        key: "远方",
+        page: 2,
+        baseURL: "http://sourcelab.test"
+      )
+    )
+
+    XCTAssertEqual(
+      output.logicalURL,
+      "http://sourcelab.test/pipeline/search/2?q=远方"
+    )
+    XCTAssertEqual(
+      output.plan.request.url.absoluteString,
+      "http://sourcelab.test/pipeline/search/2?q=%E8%BF%9C%E6%96%B9"
+    )
+  }
+
   func testScriptBlockAndResultSuffixMatchAndroid() throws {
     let output = try SourceURLTemplateCompiler.compile(
       SourceURLTemplateInput(

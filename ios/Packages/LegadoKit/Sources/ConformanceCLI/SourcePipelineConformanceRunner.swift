@@ -239,6 +239,7 @@ public enum SourcePipelineConformanceRunner {
         author: optionalRule(search, "author"),
         intro: optionalRule(search, "intro"),
         kind: optionalRule(search, "kind"),
+        wordCount: optionalRule(search, "wordCount"),
         lastChapter: optionalRule(search, "lastChapter"),
         bookURL: rule(search, "bookUrl"),
         coverURL: optionalRule(search, "coverUrl")
@@ -248,6 +249,7 @@ public enum SourcePipelineConformanceRunner {
         author: optionalRule(bookInfo, "author"),
         intro: optionalRule(bookInfo, "intro"),
         kind: optionalRule(bookInfo, "kind"),
+        wordCount: optionalRule(bookInfo, "wordCount"),
         lastChapter: optionalRule(bookInfo, "lastChapter"),
         coverURL: optionalRule(bookInfo, "coverUrl"),
         tocURL: rule(bookInfo, "tocUrl")

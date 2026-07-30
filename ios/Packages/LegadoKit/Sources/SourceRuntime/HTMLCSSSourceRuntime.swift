@@ -23,6 +23,7 @@ public struct SearchRules: Sendable, Equatable {
   public let author: HTMLCSSRule
   public let intro: HTMLCSSRule
   public let kind: HTMLCSSRule
+  public let wordCount: HTMLCSSRule
   public let lastChapter: HTMLCSSRule
   public let bookURL: HTMLCSSRule
   public let coverURL: HTMLCSSRule
@@ -33,6 +34,7 @@ public struct SearchRules: Sendable, Equatable {
     author: HTMLCSSRule,
     intro: HTMLCSSRule,
     kind: HTMLCSSRule,
+    wordCount: HTMLCSSRule = HTMLCSSRule("__legado_missing__"),
     lastChapter: HTMLCSSRule,
     bookURL: HTMLCSSRule,
     coverURL: HTMLCSSRule
@@ -42,6 +44,7 @@ public struct SearchRules: Sendable, Equatable {
     self.author = author
     self.intro = intro
     self.kind = kind
+    self.wordCount = wordCount
     self.lastChapter = lastChapter
     self.bookURL = bookURL
     self.coverURL = coverURL
@@ -53,6 +56,7 @@ public struct BookInfoRules: Sendable, Equatable {
   public let author: HTMLCSSRule
   public let intro: HTMLCSSRule
   public let kind: HTMLCSSRule
+  public let wordCount: HTMLCSSRule
   public let lastChapter: HTMLCSSRule
   public let coverURL: HTMLCSSRule
   public let tocURL: HTMLCSSRule
@@ -62,6 +66,7 @@ public struct BookInfoRules: Sendable, Equatable {
     author: HTMLCSSRule,
     intro: HTMLCSSRule,
     kind: HTMLCSSRule,
+    wordCount: HTMLCSSRule = HTMLCSSRule("__legado_missing__"),
     lastChapter: HTMLCSSRule,
     coverURL: HTMLCSSRule,
     tocURL: HTMLCSSRule
@@ -70,6 +75,7 @@ public struct BookInfoRules: Sendable, Equatable {
     self.author = author
     self.intro = intro
     self.kind = kind
+    self.wordCount = wordCount
     self.lastChapter = lastChapter
     self.coverURL = coverURL
     self.tocURL = tocURL

@@ -329,6 +329,19 @@ public enum MinimalTaskConformanceRunner {
         root: root
       )
     }
+    if fixtureID == SourceSearchPipelineConformanceRunner.fixtureID {
+      let run = try await SourceSearchPipelineConformanceRunner.run(
+        fixtureDirectory: fixtureDirectory
+      )
+      return try finish(
+        taskID: taskID,
+        fixtureID: fixtureID,
+        goldenPath: goldenPath,
+        actualArtifact: run.artifact,
+        canonicalPlans: run.requestPlan,
+        root: root
+      )
+    }
     let loaded = try loadFixtureForTask(from: fixtureDirectory)
     guard loaded.definition.id == fixtureID else {
       throw MinimalTaskConformanceError.invalidFixture
