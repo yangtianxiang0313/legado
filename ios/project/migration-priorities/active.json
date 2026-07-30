@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P25-READER-CONTENT-REFRESH-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "title": "P25 阅读正文刷新闭环",
+  "objective": "依据冻结 Android ReadBookActivity 与 ReadBookViewModel 源码，实现当前章、后续章节和全部章节的正文缓存失效，并在保留当前字符位置的前提下重新抓取当前章；加载失败页提供同语义重试。",
+  "validation_policy": "执行缓存范围聚焦测试和一次 App 构建；不启动模拟器，不运行全量阅读回归。",
+  "stages": [
+    {
+      "id": "P25-S1",
+      "title": "接通正文缓存失效与刷新",
+      "selectors": [
+        {
+          "id": "P25-S1-READER-CONTENT-REFRESH",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-APP-NAVIGATION-READER-CONTENT-REFRESH-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-APP-NAVIGATION-READER-CONTENT-REFRESH-001",
+      "title": "按范围失效正文缓存并重新加载",
+      "fixture_id": "reader-content-refresh-app-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [
+        "IOS-APP-NAVIGATION-READER-CONTENT-001"
+      ],
+      "validation": "build",
+      "ui_contract": {
+        "goal": "阅读器可刷新当前章、后续章节或全部章节；当前章重新从书源获取并保持当前位置，失败页可重试。",
+        "scenario_id": "reader-content-refresh-app-v1",
+        "test_method": "testReaderContentRefreshFlow"
+      },
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+        "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.read.ReadBookActivity/onCompatOptionsItemSelected"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookViewModel.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.read.ReadBookViewModel/refreshContentDur"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookViewModel.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.read.ReadBookViewModel/refreshContentAfter"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookViewModel.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.read.ReadBookViewModel/refreshContentAll"
+        }
+      ]
+    }
+  ]
+}
