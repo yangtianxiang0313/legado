@@ -92,7 +92,8 @@ public struct SourceContentPipeline: Sendable {
       definition: definition.runtime,
       scriptRuntime: scriptRuntime,
       scriptSessionID: scriptSessionID,
-      scriptLibrary: definition.scriptLibrary
+      scriptLibrary: definition.scriptLibrary,
+      sourceUserVariable: definition.sourceUserVariable
     )
     let first = try await fetchPage(
       endpoint: endpoint,
@@ -175,7 +176,8 @@ public struct SourceContentPipeline: Sendable {
           role: .url,
           scopes: SourceVariableScopes(
             chapter: chapterStore,
-            ruleData: bookStore
+            ruleData: bookStore,
+            sourceUserVariable: definition.sourceUserVariable
           )
         )
       )
@@ -197,7 +199,8 @@ public struct SourceContentPipeline: Sendable {
         scopes: SourceVariableScopes(
           chapter: chapterStore,
           book: bookStore,
-          ruleData: bookStore
+          ruleData: bookStore,
+          sourceUserVariable: definition.sourceUserVariable
         )
       )
     )

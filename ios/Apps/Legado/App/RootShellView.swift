@@ -240,6 +240,12 @@ struct RootShellView: View {
                         on: root
                     )
                 },
+                setSourceVariable: { sourceID, variable in
+                    await sourceCatalog.saveUserVariable(
+                        variable,
+                        sourceID: sourceID
+                    )
+                },
                 availableSources: sourceCatalog.sources,
                 switchSource: { current, source in
                     do {

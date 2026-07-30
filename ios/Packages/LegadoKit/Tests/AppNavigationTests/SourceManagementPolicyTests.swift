@@ -91,6 +91,39 @@ final class SourceManagementPolicyTests: XCTestCase {
     XCTAssertNotNil(values[0]["unknown"])
   }
 
+  @MainActor
+  func testSourceUserVariableSurvivesDefinitionReplacement()
+    async throws
+  {
+    let repository = SourceVariableCatalogRepository()
+    let catalog = SourceCatalog(repository: repository)
+    await catalog.reload()
+
+    let saved = await catalog.saveUserVariable(
+      "user-state",
+      sourceID: "source-1"
+    )
+    XCTAssertTrue(saved)
+    var replacement = BookSourceDraft(
+      sourceURL: "source-1",
+      name: "Reimported"
+    )
+    replacement.userVariable = "must-not-enter-definition"
+    try await repository.replaceSources([replacement])
+    await catalog.reload()
+
+    XCTAssertEqual(
+      catalog.source(id: "source-1")?.userVariable,
+      "user-state"
+    )
+    let encoded = try JSONEncoder().encode(replacement)
+    let object = try XCTUnwrap(
+      JSONSerialization.jsonObject(with: encoded)
+        as? [String: Any]
+    )
+    XCTAssertNil(object["userVariable"])
+  }
+
   private func source(_ id: String, order: Int32) -> BookSourceDraft {
     BookSourceDraft(
       sourceURL: id,
@@ -103,5 +136,53 @@ final class SourceManagementPolicyTests: XCTestCase {
         customOrder: order
       )
     )
+  }
+}
+
+private actor SourceVariableCatalogRepository:
+  SourceCatalogRepository
+{
+  private var sources = [
+    BookSourceDraft(sourceURL: "source-1", name: "Original")
+  ]
+  private var variables: [String: String] = [:]
+
+  func loadSources() async throws -> [BookSourceDraft] {
+    sources
+  }
+
+  func saveSource(_ source: BookSourceDraft) async throws {
+    try await saveSources([source])
+  }
+
+  func saveSources(_ incoming: [BookSourceDraft]) async throws {
+    for source in incoming {
+      if let index = sources.firstIndex(where: {
+        $0.sourceURL == source.sourceURL
+      }) {
+        sources[index] = source
+      } else {
+        sources.append(source)
+      }
+    }
+  }
+
+  func replaceSources(_ sources: [BookSourceDraft]) async throws {
+    self.sources = sources
+  }
+
+  func resetSources() async throws {
+    sources = []
+  }
+
+  func loadSourceUserVariables() async throws -> [String: String] {
+    variables
+  }
+
+  func saveSourceUserVariable(
+    _ variable: String?,
+    sourceID: String
+  ) async throws {
+    variables[sourceID] = variable
   }
 }

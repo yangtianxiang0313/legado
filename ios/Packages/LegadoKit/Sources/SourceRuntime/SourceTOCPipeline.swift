@@ -83,7 +83,8 @@ public struct SourceTOCPipeline: Sendable {
       definition: definition.runtime,
       scriptRuntime: scriptRuntime,
       scriptSessionID: scriptSessionID,
-      scriptLibrary: definition.scriptLibrary
+      scriptLibrary: definition.scriptLibrary,
+      sourceUserVariable: definition.sourceUserVariable
     )
     let detail = try await SourceBookInfoPipeline(
       definition: definition,
@@ -181,7 +182,8 @@ public struct SourceTOCPipeline: Sendable {
         resolver: SourceVariableResolver(
           role: .url,
           scopes: SourceVariableScopes(
-            ruleData: variableStore
+            ruleData: variableStore,
+            sourceUserVariable: definition.sourceUserVariable
           )
         )
       )
@@ -198,7 +200,10 @@ public struct SourceTOCPipeline: Sendable {
       networkResponse,
       resolver: SourceVariableResolver(
         role: .rule,
-        scopes: SourceVariableScopes(ruleData: variableStore)
+        scopes: SourceVariableScopes(
+          ruleData: variableStore,
+          sourceUserVariable: definition.sourceUserVariable
+        )
       )
     )
     guard

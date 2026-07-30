@@ -98,6 +98,7 @@ public struct SourceVariableScopes: Sendable {
   public let book: SourceVariableStore?
   public let ruleData: SourceVariableStore?
   public let source: SourceVariableStore?
+  public let sourceUserVariable: String
   public let bookName: String?
   public let chapterTitle: String?
 
@@ -106,6 +107,7 @@ public struct SourceVariableScopes: Sendable {
     book: SourceVariableStore? = nil,
     ruleData: SourceVariableStore? = nil,
     source: SourceVariableStore? = nil,
+    sourceUserVariable: String = "",
     bookName: String? = nil,
     chapterTitle: String? = nil
   ) {
@@ -113,6 +115,7 @@ public struct SourceVariableScopes: Sendable {
     self.book = book
     self.ruleData = ruleData
     self.source = source
+    self.sourceUserVariable = sourceUserVariable
     self.bookName = bookName
     self.chapterTitle = chapterTitle
   }
@@ -174,6 +177,17 @@ public struct SourceVariableResolver: Sendable {
       result["title"] = chapterTitle
     }
     return result
+  }
+
+  public func scriptBookVariables() async -> [String: String] {
+    if let book = scopes.book {
+      return await book.snapshot()
+    }
+    return await scopes.ruleData?.snapshot() ?? [:]
+  }
+
+  public var scriptSourceUserVariable: String {
+    scopes.sourceUserVariable
   }
 
   private var readOrder: [SourceVariableStore] {

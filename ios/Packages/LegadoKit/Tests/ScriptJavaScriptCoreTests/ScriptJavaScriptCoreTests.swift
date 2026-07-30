@@ -47,6 +47,32 @@ final class ScriptJavaScriptCoreTests: XCTestCase {
     XCTAssertEqual("old-new", storedToken)
   }
 
+  func testAndroidSourceAndBookVariableFacadesReadInjectedState()
+    async throws
+  {
+    let book = SourceVariableStore(
+      values: ["custom": "book-value"]
+    )
+    let value = try await SourceVariableRuleEvaluator(
+      content: "",
+      resolver: SourceVariableResolver(
+        role: .rule,
+        scopes: SourceVariableScopes(
+          book: book,
+          ruleData: book,
+          sourceUserVariable: "source-value"
+        )
+      ),
+      scriptRuntime: JavaScriptCoreSourceScriptRuntime(),
+      scriptSessionID: .init(rawValue: "source-facade")
+    ).getString(
+      "@js:source.getVariable() + '|'"
+        + " + book.getVariable('custom')"
+    )
+
+    XCTAssertEqual("source-value|book-value", value)
+  }
+
   func testWritesSurviveLaterScriptFailureLikeAndroid() async throws {
     let variables = SourceVariableStore()
     let host = SourceVariableScriptHost(

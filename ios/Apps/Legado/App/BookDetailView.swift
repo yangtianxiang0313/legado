@@ -175,6 +175,7 @@ struct BookDetailView: View {
     let openReading: ((ShelfBookItem) async -> Void)?
     let editSource: ((String) -> Void)?
     let loginSource: ((String) -> Void)?
+    let setSourceVariable: ((String, String) async -> Bool)?
     let availableSources: [BookSourceDraft]
     let switchSource:
         ((ShelfBookItem, BookSourceDraft) async -> BookSourceSwitchOutcome)?
@@ -186,6 +187,9 @@ struct BookDetailView: View {
     @State private var showsBookVariable = false
     @State private var bookVariableDraft = ""
     @State private var savingBookVariable = false
+    @State private var showsSourceVariable = false
+    @State private var sourceVariableDraft = ""
+    @State private var savingSourceVariable = false
 
     init(
         snapshot: BookDetailActionSnapshot,
@@ -198,6 +202,7 @@ struct BookDetailView: View {
         self.openReading = nil
         self.editSource = nil
         self.loginSource = nil
+        self.setSourceVariable = nil
         self.availableSources = []
         self.switchSource = nil
         _storedItem = State(initialValue: nil)
@@ -209,6 +214,7 @@ struct BookDetailView: View {
         openReading: @escaping (ShelfBookItem) async -> Void,
         editSource: @escaping (String) -> Void,
         loginSource: @escaping (String) -> Void,
+        setSourceVariable: @escaping (String, String) async -> Bool,
         availableSources: [BookSourceDraft],
         switchSource:
             @escaping (
@@ -223,6 +229,7 @@ struct BookDetailView: View {
         self.openReading = openReading
         self.editSource = editSource
         self.loginSource = loginSource
+        self.setSourceVariable = setSourceVariable
         self.availableSources = availableSources
         self.switchSource = switchSource
         _storedItem = State(initialValue: nil)
@@ -396,51 +403,29 @@ struct BookDetailView: View {
             }
         }
         .sheet(isPresented: $showsBookVariable) {
-            NavigationStack {
-                Form {
-                    Section {
-                        TextEditor(text: $bookVariableDraft)
-                            .frame(minHeight: 180)
-                            .accessibilityIdentifier(
-                                "field.bookDetail.bookVariable"
-                            )
-                    } header: {
-                        Text("变量内容")
-                    } footer: {
-                        Text(bookVariableComment)
-                    }
-                }
-                .navigationTitle("设置书籍变量")
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("取消") {
-                            showsBookVariable = false
-                        }
-                        .disabled(savingBookVariable)
-                    }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("保存") {
-                            saveBookVariable()
-                        }
-                        .disabled(
-                            savingBookVariable
-                                || storedItem == nil
-                                || library == nil
-                        )
-                        .accessibilityIdentifier(
-                            "action.bookDetail.bookVariable.save"
-                        )
-                    }
-                }
-                .overlay {
-                    if savingBookVariable {
-                        ProgressView("正在保存…")
-                    }
-                }
-                .accessibilityIdentifier(
-                    "screen.bookDetail.bookVariable"
-                )
-            }
+            VariableEditorSheet(
+                title: "设置书籍变量",
+                comment: bookVariableComment,
+                accessibilityName: "bookVariable",
+                value: $bookVariableDraft,
+                isSaving: savingBookVariable,
+                canSave: storedItem != nil && library != nil,
+                cancel: { showsBookVariable = false },
+                save: saveBookVariable
+            )
+        }
+        .sheet(isPresented: $showsSourceVariable) {
+            VariableEditorSheet(
+                title: "设置书源变量",
+                comment: sourceVariableComment,
+                accessibilityName: "sourceVariable",
+                value: $sourceVariableDraft,
+                isSaving: savingSourceVariable,
+                canSave:
+                    activeSource != nil && setSourceVariable != nil,
+                cancel: { showsSourceVariable = false },
+                save: saveSourceUserVariable
+            )
         }
         .alert(
             "换源失败",
@@ -529,10 +514,18 @@ struct BookDetailView: View {
                 .accessibilityIdentifier("action.bookDetail.login")
             }
             if availability.actions.setSourceVariable {
-                action(
-                    "设置书源变量",
-                    id: "setSourceVariable",
-                    systemImage: "slider.horizontal.3"
+                Button {
+                    sourceVariableDraft =
+                        activeSource?.userVariable ?? ""
+                    showsSourceVariable = true
+                } label: {
+                    Label(
+                        "设置书源变量",
+                        systemImage: "slider.horizontal.3"
+                    )
+                }
+                .accessibilityIdentifier(
+                    "action.bookDetail.setSourceVariable"
                 )
             }
             if availability.actions.setBookVariable {
@@ -617,9 +610,38 @@ struct BookDetailView: View {
         }
     }
 
+    private func saveSourceUserVariable() {
+        guard
+            let sourceID = activeSource?.sourceURL,
+            let setSourceVariable
+        else { return }
+        savingSourceVariable = true
+        Task {
+            if await setSourceVariable(
+                sourceID,
+                sourceVariableDraft
+            ) {
+                showsSourceVariable = false
+            }
+            savingSourceVariable = false
+        }
+    }
+
+    private var sourceVariableComment: String {
+        variableComment(
+            fallback:
+                "源变量可在 JS 中通过 source.getVariable() 获取"
+        )
+    }
+
     private var bookVariableComment: String {
-        let fallback =
-            "书籍变量可在 JS 中通过 book.getVariable(\"custom\") 获取"
+        variableComment(
+            fallback:
+                "书籍变量可在 JS 中通过 book.getVariable(\"custom\") 获取"
+        )
+    }
+
+    private func variableComment(fallback: String) -> String {
         guard
             let data = activeSource?.rawDefinition,
             let root = try? JSONSerialization.jsonObject(with: data)
@@ -671,6 +693,58 @@ struct BookDetailView: View {
             return .whitespace
         }
         return .nonblank
+    }
+}
+
+private struct VariableEditorSheet: View {
+    let title: String
+    let comment: String
+    let accessibilityName: String
+    @Binding var value: String
+    let isSaving: Bool
+    let canSave: Bool
+    let cancel: () -> Void
+    let save: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextEditor(text: $value)
+                        .frame(minHeight: 180)
+                        .accessibilityIdentifier(
+                            "field.bookDetail.\(accessibilityName)"
+                        )
+                } header: {
+                    Text("变量内容")
+                } footer: {
+                    Text(comment)
+                }
+            }
+            .navigationTitle(title)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消", action: cancel)
+                        .disabled(isSaving)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("保存", action: save)
+                        .disabled(isSaving || !canSave)
+                        .accessibilityIdentifier(
+                            "action.bookDetail."
+                                + "\(accessibilityName).save"
+                        )
+                }
+            }
+            .overlay {
+                if isSaving {
+                    ProgressView("正在保存…")
+                }
+            }
+            .accessibilityIdentifier(
+                "screen.bookDetail.\(accessibilityName)"
+            )
+        }
     }
 }
 

@@ -286,6 +286,28 @@ public actor JavaScriptCoreSourceScriptRuntime: SourceScriptRuntime {
     } else {
       result = __legadoRawResult;
     }
+    var source = Object.freeze({
+      getVariable: function() {
+        return typeof __legadoSourceUserVariable === "undefined"
+          ? ""
+          : String(__legadoSourceUserVariable);
+      }
+    });
+    var book = Object.freeze({
+      getVariable: function(name) {
+        var key = String(name);
+        if (
+          typeof __legadoBookVariables !== "undefined"
+          && Object.prototype.hasOwnProperty.call(
+            __legadoBookVariables,
+            key
+          )
+        ) {
+          return String(__legadoBookVariables[key]);
+        }
+        return "";
+      }
+    });
     var java = Object.freeze({
       get: function(name) {
         var key = String(name);

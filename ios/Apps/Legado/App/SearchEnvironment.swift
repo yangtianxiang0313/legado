@@ -553,6 +553,7 @@ enum SearchEnvironment {
             enabledCookieJar: root["enabledCookieJar"] as? Bool ?? false,
             loginCheckScript: string(root, "loginCheckJs"),
             scriptLibrary: inlineScriptLibrary(root),
+            sourceUserVariable: draft.userVariable,
             runtime: runtime
         )
         let catalog = (

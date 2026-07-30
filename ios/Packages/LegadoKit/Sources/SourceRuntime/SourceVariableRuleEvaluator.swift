@@ -155,7 +155,16 @@ public struct SourceVariableRuleEvaluator: Sendable {
           library: scriptLibrary,
           script: script,
           result: .string(current),
-          baseURL: baseURL
+          baseURL: baseURL,
+          bindings: [
+            "__legadoBookVariables": .object(
+              await resolver.scriptBookVariables()
+                .mapValues(SourceScriptValue.string)
+            ),
+            "__legadoSourceUserVariable": .string(
+              resolver.scriptSourceUserVariable
+            ),
+          ]
         ),
         host: SourceVariableScriptHost(resolver: resolver)
       )

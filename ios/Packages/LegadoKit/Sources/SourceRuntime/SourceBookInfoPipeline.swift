@@ -93,7 +93,8 @@ public struct SourceBookInfoPipeline: Sendable {
       definition: definition.runtime,
       scriptRuntime: scriptRuntime,
       scriptSessionID: scriptSessionID,
-      scriptLibrary: definition.scriptLibrary
+      scriptLibrary: definition.scriptLibrary,
+      sourceUserVariable: definition.sourceUserVariable
     )
     let variableStore = SourceVariableStore(
       policy: .androidRuleData,
@@ -115,6 +116,7 @@ public struct SourceBookInfoPipeline: Sendable {
             role: .url,
             scopes: SourceVariableScopes(
               ruleData: variableStore,
+              sourceUserVariable: definition.sourceUserVariable,
               bookName: book.name
             )
           )
@@ -136,6 +138,7 @@ public struct SourceBookInfoPipeline: Sendable {
           scopes: SourceVariableScopes(
             book: variableStore,
             ruleData: variableStore,
+            sourceUserVariable: definition.sourceUserVariable,
             bookName: book.name
           )
         )

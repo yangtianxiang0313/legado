@@ -186,7 +186,9 @@ public struct SourceExplorePipeline: Sendable {
       resolver: SourceVariableResolver(
         role: .url,
         scopes: SourceVariableScopes(
-          ruleData: variableStore
+          ruleData: variableStore,
+          sourceUserVariable:
+            definition.source.sourceUserVariable
         )
       )
     )
@@ -203,7 +205,11 @@ public struct SourceExplorePipeline: Sendable {
       networkResponse,
       resolver: SourceVariableResolver(
         role: .rule,
-        scopes: SourceVariableScopes(ruleData: variableStore)
+        scopes: SourceVariableScopes(
+          ruleData: variableStore,
+          sourceUserVariable:
+            definition.source.sourceUserVariable
+        )
       )
     )
     let checked = try await responseChecker.check(

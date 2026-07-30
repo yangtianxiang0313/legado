@@ -35,8 +35,28 @@ public struct BookSourceDraft: Codable, Equatable, Identifiable, Sendable {
   public var contentRule: String
   public var importMetadata: BookSourceImportMetadata?
   public var rawDefinition: Data?
+  /// Runtime user state. Kept outside the encoded source definition so
+  /// importing or replacing a source cannot overwrite it.
+  public var userVariable: String = ""
 
   public var id: String { sourceURL }
+
+  private enum CodingKeys: String, CodingKey {
+    case sourceURL
+    case name
+    case loginURL
+    case group
+    case comment
+    case searchURL
+    case exploreURL
+    case searchRule
+    case exploreRule
+    case bookInfoRule
+    case tocRule
+    case contentRule
+    case importMetadata
+    case rawDefinition
+  }
 
   public init(
     sourceURL: String = "",
@@ -230,6 +250,11 @@ public protocol SourceCatalogRepository: Sendable {
   func saveSources(_ sources: [BookSourceDraft]) async throws
   func replaceSources(_ sources: [BookSourceDraft]) async throws
   func resetSources() async throws
+  func loadSourceUserVariables() async throws -> [String: String]
+  func saveSourceUserVariable(
+    _ variable: String?,
+    sourceID: String
+  ) async throws
 }
 
 public extension SourceCatalogRepository {
@@ -238,6 +263,15 @@ public extension SourceCatalogRepository {
       try await saveSource(source)
     }
   }
+
+  func loadSourceUserVariables() async throws -> [String: String] {
+    [:]
+  }
+
+  func saveSourceUserVariable(
+    _ variable: String?,
+    sourceID: String
+  ) async throws {}
 }
 
 @MainActor
@@ -254,7 +288,13 @@ public final class SourceCatalog {
 
   public func reload() async {
     do {
-      sources = try await repository.loadSources()
+      var loaded = try await repository.loadSources()
+      let variables = try await repository.loadSourceUserVariables()
+      for index in loaded.indices {
+        loaded[index].userVariable =
+          variables[loaded[index].sourceURL] ?? ""
+      }
+      sources = loaded
       errorMessage = nil
     } catch {
       errorMessage = "无法读取书源"
@@ -264,6 +304,31 @@ public final class SourceCatalog {
   public func source(id: String?) -> BookSourceDraft? {
     guard let id else { return nil }
     return sources.first { $0.sourceURL == id }
+  }
+
+  @discardableResult
+  public func saveUserVariable(
+    _ variable: String,
+    sourceID: String
+  ) async -> Bool {
+    do {
+      try await repository.saveSourceUserVariable(
+        variable,
+        sourceID: sourceID
+      )
+      guard let index = sources.firstIndex(where: {
+        $0.sourceURL == sourceID
+      }) else {
+        errorMessage = "书源不存在"
+        return false
+      }
+      sources[index].userVariable = variable
+      errorMessage = nil
+      return true
+    } catch {
+      errorMessage = "无法保存书源变量"
+      return false
+    }
   }
 
   @discardableResult

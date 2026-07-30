@@ -386,17 +386,20 @@ public struct HTMLCSSSourceRuntime: Sendable {
   public let scriptRuntime: (any SourceScriptRuntime)?
   public let scriptSessionID: SourceScriptSessionID?
   public let scriptLibrary: SourceScriptLibrary?
+  public let sourceUserVariable: String
 
   public init(
     definition: HTMLCSSSourceDefinition,
     scriptRuntime: (any SourceScriptRuntime)? = nil,
     scriptSessionID: SourceScriptSessionID? = nil,
-    scriptLibrary: SourceScriptLibrary? = nil
+    scriptLibrary: SourceScriptLibrary? = nil,
+    sourceUserVariable: String = ""
   ) {
     self.definition = definition
     self.scriptRuntime = scriptRuntime
     self.scriptSessionID = scriptSessionID
     self.scriptLibrary = scriptLibrary
+    self.sourceUserVariable = sourceUserVariable
   }
 
   public func searchRequest(keyword: String) throws -> HTTPRequest {
@@ -572,6 +575,7 @@ public struct HTMLCSSSourceRuntime: Sendable {
       scopes: SourceVariableScopes(
         book: variableStore,
         ruleData: variableStore,
+        sourceUserVariable: sourceUserVariable,
         bookName: existing.name
       )
     )
@@ -696,7 +700,8 @@ public struct HTMLCSSSourceRuntime: Sendable {
       role: .rule,
       scopes: SourceVariableScopes(
         book: variableStore,
-        ruleData: variableStore
+        ruleData: variableStore,
+        sourceUserVariable: sourceUserVariable
       )
     )
     let rules = definition.toc
@@ -731,7 +736,8 @@ public struct HTMLCSSSourceRuntime: Sendable {
             scopes: SourceVariableScopes(
               chapter: chapterStore,
               book: variableStore,
-              ruleData: variableStore
+              ruleData: variableStore,
+              sourceUserVariable: sourceUserVariable
             )
           ),
           scriptRuntime: scriptRuntime,
@@ -795,7 +801,8 @@ public struct HTMLCSSSourceRuntime: Sendable {
             scopes: SourceVariableScopes(
               chapter: chapterStore,
               book: variableStore,
-              ruleData: variableStore
+              ruleData: variableStore,
+              sourceUserVariable: sourceUserVariable
             )
           ),
           scriptRuntime: scriptRuntime,
@@ -927,7 +934,8 @@ public struct HTMLCSSSourceRuntime: Sendable {
       scopes: SourceVariableScopes(
         chapter: chapterStore,
         book: bookStore,
-        ruleData: bookStore
+        ruleData: bookStore,
+        sourceUserVariable: sourceUserVariable
       )
     )
     let rules = definition.content

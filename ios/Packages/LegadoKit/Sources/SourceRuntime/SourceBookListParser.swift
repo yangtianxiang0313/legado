@@ -170,7 +170,8 @@ struct SourceBookListParser {
       role: .rule,
       scopes: SourceVariableScopes(
         book: store,
-        ruleData: store
+        ruleData: store,
+        sourceUserVariable: definition.sourceUserVariable
       )
     )
     let name =
@@ -267,7 +268,10 @@ struct SourceBookListParser {
   private var sharedResolver: SourceVariableResolver {
     SourceVariableResolver(
       role: .rule,
-      scopes: SourceVariableScopes(ruleData: variableStore)
+      scopes: SourceVariableScopes(
+        ruleData: variableStore,
+        sourceUserVariable: definition.sourceUserVariable
+      )
     )
   }
 
@@ -480,7 +484,8 @@ struct SourceBookListParser {
           role: .rule,
           scopes: SourceVariableScopes(
             book: store,
-            ruleData: store
+            ruleData: store,
+            sourceUserVariable: definition.sourceUserVariable
           )
         ),
         scriptRuntime: scriptRuntime,

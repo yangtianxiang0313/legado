@@ -5,6 +5,7 @@ import SourceRuntime
 actor UserDefaultsSourceCatalogRepository: SourceCatalogRepository {
     private let defaults: UserDefaults
     private let storageKey = "legado.bookSources.v1"
+    private let variableStorageKey = "legado.sourceVariables.v1"
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -45,6 +46,24 @@ actor UserDefaultsSourceCatalogRepository: SourceCatalogRepository {
 
     func resetSources() async throws {
         defaults.removeObject(forKey: storageKey)
+    }
+
+    func loadSourceUserVariables() async throws -> [String: String] {
+        defaults.dictionary(forKey: variableStorageKey)?
+            .compactMapValues { $0 as? String } ?? [:]
+    }
+
+    func saveSourceUserVariable(
+        _ variable: String?,
+        sourceID: String
+    ) async throws {
+        var values = try await loadSourceUserVariables()
+        if let variable {
+            values[sourceID] = variable
+        } else {
+            values.removeValue(forKey: sourceID)
+        }
+        defaults.set(values, forKey: variableStorageKey)
     }
 }
 
