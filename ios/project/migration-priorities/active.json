@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P34-LOCAL-TEXT-LONG-CHAPTER-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "title": "P34 本地 TXT 长章节拆分",
+  "objective": "依据冻结 Android TextFile、BookInfoActivity 与 Book 配置源码，为本地 TXT 保存拆分长章节偏好；开启时按有目录约 100 KiB、无目录约 10 KiB 的边界重切正文，切换后从托管原文件重新解析并原子替换目录和缓存。",
+  "validation_policy": "运行一个解析、原子重建和重开持久化聚焦测试，再执行一次 App 构建；不启动模拟器，不新增 Android Golden。",
+  "stages": [
+    {
+      "id": "P34-S1",
+      "title": "实现长章节重切闭环",
+      "selectors": [
+        {
+          "id": "P34-S1-LOCAL-TEXT-SPLIT",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-APP-NAVIGATION-LOCAL-TEXT-LONG-CHAPTER-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-APP-NAVIGATION-LOCAL-TEXT-LONG-CHAPTER-001",
+      "title": "切换本地 TXT 长章节拆分并重建目录",
+      "fixture_id": "rl-ui-book-detail-conditional-actions-001",
+      "requirement_ref": "REQ-IOS-UI-BOOTSTRAP-001@1#RC-01",
+      "prerequisite_task_ids": [
+        "IOS-APP-NAVIGATION-BOOK-DELETE-CONFIRMATION-001",
+        "IOS-APP-NAVIGATION-BOOK-IMPORT-MILESTONE-001"
+      ],
+      "validation": "tests",
+      "test_filter": "DatabaseGRDBTests.testLocalTextLongChapterPreferenceRebuildsAndPersists",
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/LibraryDomain/**",
+        "ios/Packages/LegadoKit/Tests/LibraryDomainTests/**",
+        "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+        "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "428c86dc57c5bdc6f40558bee10b8294ea5b0cc2",
+          "path": "app/src/main/java/io/legado/app/model/localBook/TextFile.kt",
+          "symbol_id": "kotlin://io.legado.app.model.localBook.TextFile/analyze"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "611ce1a9a56ed26ce71ca482eea0e908c7634857",
+          "path": "app/src/main/java/io/legado/app/ui/book/info/BookInfoActivity.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.info.BookInfoActivity/onCompatOptionsItemSelected"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "e1815f3c4bc90c77fe68aafeea8fc4d10c219a79",
+          "path": "app/src/main/java/io/legado/app/data/entities/Book.kt",
+          "symbol_id": "kotlin://io.legado.app.data.entities.Book/getSplitLongChapter"
+        }
+      ]
+    }
+  ]
+}
