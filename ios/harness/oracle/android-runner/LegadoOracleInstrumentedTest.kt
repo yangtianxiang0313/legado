@@ -1,6 +1,7 @@
 package io.legado.app.oracle
 
 import android.app.Activity
+import android.app.Application
 import android.app.Instrumentation
 import android.content.Context
 import android.content.Intent
@@ -32,6 +33,7 @@ import io.legado.app.data.entities.BookSource
 import io.legado.app.data.entities.Bookmark
 import io.legado.app.data.entities.ReadRecord
 import io.legado.app.data.entities.SearchBook
+import io.legado.app.data.entities.rule.ContentRule
 import io.legado.app.data.appDb
 import io.legado.app.exception.ConcurrentException
 import io.legado.app.help.CacheManager
@@ -60,6 +62,8 @@ import io.legado.app.ui.book.read.page.entities.TextChapter
 import io.legado.app.ui.book.read.page.entities.TextLine
 import io.legado.app.ui.book.read.page.entities.TextPage
 import io.legado.app.ui.book.read.ReadBookActivity
+import io.legado.app.ui.book.read.ReadBookViewModel
+import io.legado.app.ui.book.changesource.ChangeChapterSourceViewModel
 import io.legado.app.ui.main.MainActivity
 import io.legado.app.ui.welcome.WelcomeActivity
 import io.legado.app.ui.widget.dialog.TextDialog
@@ -175,6 +179,8 @@ class LegadoOracleInstrumentedTest {
                 runSystemTextToSpeechIntegrationCases()
             "rl-library-shelf-group-bit-boundary-risk-001" ->
                 runBookGroupBoundaryCases()
+            "rl-reader-chapter-source-override-runtime-001" ->
+                runChapterSourceOverrideCases()
             "rl-reader-bookmark-search-runtime-risk-001" ->
                 runBookmarkRuntimeCases()
             "rl-reader-history-read-record-runtime-risk-001" ->
@@ -1239,6 +1245,405 @@ class LegadoOracleInstrumentedTest {
 
     private fun longHex(value: Long): String =
         java.lang.Long.toUnsignedString(value, 16).padStart(16, '0')
+
+    private suspend fun runChapterSourceOverrideCases() {
+        val values = input.getJSONArray("cases")
+        val supported = setOf(
+            "chapter_source_fetch",
+            "chapter_source_replace",
+            "chapter_source_overwrite",
+            "chapter_source_invalidate_recover"
+        )
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            val operation = value.getString("operation")
+            require(operation in supported) {
+                "Unsupported chapter-source operation: $operation"
+            }
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", operation)
+                .put("arguments", JSONObject(arguments.toString()))
+            val caseId = value.getString("id")
+            runCase(caseId, operation, stimulus) {
+                chapterSourceOverrideProjection(
+                    caseId,
+                    operation,
+                    arguments
+                )
+            }
+        }
+    }
+
+    private suspend fun chapterSourceOverrideProjection(
+        caseId: String,
+        operation: String,
+        arguments: JSONObject
+    ): JSONObject {
+        val fixture = chapterSourceFixture(caseId, arguments)
+        clearChapterSourceFixture(fixture)
+        appDb.bookSourceDao.insert(
+            fixture.currentSource,
+            fixture.alternativeSource
+        )
+        appDb.bookDao.insert(fixture.currentBook)
+        appDb.bookChapterDao.insert(fixture.currentChapter)
+        return try {
+            when (operation) {
+                "chapter_source_fetch" ->
+                    chapterSourceFetchProjection(fixture)
+                "chapter_source_replace" ->
+                    chapterSourceReplaceProjection(fixture)
+                "chapter_source_overwrite" ->
+                    chapterSourceOverwriteProjection(
+                        fixture,
+                        arguments.getString(
+                            "existing_cache_content"
+                        )
+                    )
+                "chapter_source_invalidate_recover" ->
+                    chapterSourceRecoveryProjection(fixture)
+                else -> error(
+                    "Unsupported chapter-source operation"
+                )
+            }
+        } finally {
+            delay(100)
+            clearChapterSourceFixture(fixture)
+        }
+    }
+
+    private suspend fun chapterSourceFetchProjection(
+        fixture: ChapterSourceFixture
+    ): JSONObject {
+        val fetched = fetchAlternativeChapter(fixture)
+        return JSONObject()
+            .put("fetched_content", fetched)
+            .put(
+                "current_cache_content",
+                BookHelp.getContent(
+                    fixture.currentBook,
+                    fixture.currentChapter
+                ) ?: JSONObject.NULL
+            )
+            .put(
+                "alternative_cache_content",
+                BookHelp.getContent(
+                    fixture.alternativeBook,
+                    fixture.alternativeChapter
+                ) ?: JSONObject.NULL
+            )
+            .put(
+                "alternative_book_persisted",
+                appDb.bookDao.getBook(
+                    fixture.alternativeBook.bookUrl
+                ) != null
+            )
+            .put(
+                "alternative_chapter_persisted",
+                appDb.bookChapterDao.getChapter(
+                    fixture.alternativeBook.bookUrl,
+                    fixture.alternativeChapter.index
+                ) != null
+            )
+    }
+
+    private suspend fun chapterSourceReplaceProjection(
+        fixture: ChapterSourceFixture
+    ): JSONObject {
+        val fetched = fetchAlternativeChapter(fixture)
+        saveReplacementUnderCurrentIdentity(fixture, fetched)
+        val persistedBook = requireNotNull(
+            appDb.bookDao.getBook(fixture.currentBook.bookUrl)
+        )
+        val persistedChapter = requireNotNull(
+            appDb.bookChapterDao.getChapter(
+                fixture.currentBook.bookUrl,
+                fixture.currentChapter.index
+            )
+        )
+        return JSONObject()
+            .put("fetched_content", fetched)
+            .put(
+                "current_cache_content",
+                BookHelp.getContent(
+                    fixture.currentBook,
+                    fixture.currentChapter
+                ) ?: JSONObject.NULL
+            )
+            .put(
+                "alternative_cache_content",
+                BookHelp.getContent(
+                    fixture.alternativeBook,
+                    fixture.alternativeChapter
+                ) ?: JSONObject.NULL
+            )
+            .put("persisted_book_origin", persistedBook.origin)
+            .put(
+                "persisted_chapter_book_url",
+                persistedChapter.bookUrl
+            )
+            .put(
+                "persisted_chapter_url",
+                persistedChapter.url
+            )
+            .put(
+                "alternative_origin_persisted_in_current_book",
+                persistedBook.origin ==
+                    fixture.alternativeSource.bookSourceUrl
+            )
+            .put(
+                "alternative_book_persisted",
+                appDb.bookDao.getBook(
+                    fixture.alternativeBook.bookUrl
+                ) != null
+            )
+            .put(
+                "alternative_chapter_persisted",
+                appDb.bookChapterDao.getChapter(
+                    fixture.alternativeBook.bookUrl,
+                    fixture.alternativeChapter.index
+                ) != null
+            )
+    }
+
+    private suspend fun chapterSourceOverwriteProjection(
+        fixture: ChapterSourceFixture,
+        existingContent: String
+    ): JSONObject {
+        BookHelp.saveText(
+            fixture.currentBook,
+            fixture.currentChapter,
+            existingContent
+        )
+        val before = BookHelp.getContent(
+            fixture.currentBook,
+            fixture.currentChapter
+        )
+        val fetched = fetchAlternativeChapter(fixture)
+        saveReplacementUnderCurrentIdentity(fixture, fetched)
+        return JSONObject()
+            .put(
+                "existing_cache_before",
+                before ?: JSONObject.NULL
+            )
+            .put("fetched_content", fetched)
+            .put(
+                "current_cache_after",
+                BookHelp.getContent(
+                    fixture.currentBook,
+                    fixture.currentChapter
+                ) ?: JSONObject.NULL
+            )
+            .put(
+                "alternative_cache_content",
+                BookHelp.getContent(
+                    fixture.alternativeBook,
+                    fixture.alternativeChapter
+                ) ?: JSONObject.NULL
+            )
+    }
+
+    private suspend fun chapterSourceRecoveryProjection(
+        fixture: ChapterSourceFixture
+    ): JSONObject {
+        val fetched = fetchAlternativeChapter(fixture)
+        saveReplacementUnderCurrentIdentity(fixture, fetched)
+        val beforeInvalidation = BookHelp.getContent(
+            fixture.currentBook,
+            fixture.currentChapter
+        )
+        BookHelp.delContent(
+            fixture.currentBook,
+            fixture.currentChapter
+        )
+        val afterInvalidation = BookHelp.getContent(
+            fixture.currentBook,
+            fixture.currentChapter
+        )
+        val recovered = WebBook.getContentAwait(
+            fixture.currentSource,
+            fixture.currentBook,
+            fixture.currentChapter,
+            null,
+            true
+        )
+        return JSONObject()
+            .put(
+                "replacement_cache_before_invalidation",
+                beforeInvalidation ?: JSONObject.NULL
+            )
+            .put(
+                "cache_after_invalidation",
+                afterInvalidation ?: JSONObject.NULL
+            )
+            .put("recovered_content", recovered)
+            .put(
+                "cache_after_recovery",
+                BookHelp.getContent(
+                    fixture.currentBook,
+                    fixture.currentChapter
+                ) ?: JSONObject.NULL
+            )
+            .put(
+                "recovery_source_origin",
+                fixture.currentSource.bookSourceUrl
+            )
+            .put(
+                "alternative_cache_content",
+                BookHelp.getContent(
+                    fixture.alternativeBook,
+                    fixture.alternativeChapter
+                ) ?: JSONObject.NULL
+            )
+    }
+
+    private suspend fun fetchAlternativeChapter(
+        fixture: ChapterSourceFixture
+    ): String {
+        val application = InstrumentationRegistry
+            .getInstrumentation()
+            .targetContext
+            .applicationContext as Application
+        val deferred = CompletableDeferred<String>()
+        ChangeChapterSourceViewModel(application).getContent(
+            fixture.alternativeBook,
+            fixture.alternativeChapter,
+            null,
+            success = {
+                deferred.complete(it)
+            },
+            error = {
+                deferred.completeExceptionally(
+                    IllegalStateException(it)
+                )
+            }
+        )
+        return withTimeout(5_000) {
+            deferred.await()
+        }
+    }
+
+    private suspend fun saveReplacementUnderCurrentIdentity(
+        fixture: ChapterSourceFixture,
+        content: String
+    ) {
+        val application = InstrumentationRegistry
+            .getInstrumentation()
+            .targetContext
+            .applicationContext as Application
+        ReadBook.resetData(fixture.currentBook)
+        ReadBookViewModel(application).saveContent(
+            fixture.currentBook,
+            content
+        )
+        withTimeout(5_000) {
+            while (
+                BookHelp.getContent(
+                    fixture.currentBook,
+                    fixture.currentChapter
+                ) != content
+            ) {
+                delay(10)
+            }
+        }
+    }
+
+    private fun chapterSourceFixture(
+        caseId: String,
+        arguments: JSONObject
+    ): ChapterSourceFixture {
+        val currentSource = BookSource(
+            bookSourceUrl = "oracle-current://$caseId",
+            bookSourceName = "Oracle 当前书源 $caseId",
+            ruleContent = ContentRule(
+                content = "@CSS:#current-content@text"
+            )
+        )
+        val alternativeSource = BookSource(
+            bookSourceUrl = "oracle-alternative://$caseId",
+            bookSourceName = "Oracle 替代书源 $caseId",
+            ruleContent = ContentRule()
+        )
+        val currentBook = Book(
+            bookUrl = "oracle-current-book://$caseId",
+            tocUrl = "oracle-current-book://$caseId",
+            origin = currentSource.bookSourceUrl,
+            originName = currentSource.bookSourceName,
+            name = "Oracle 当前书 $caseId",
+            author = "Oracle",
+            totalChapterNum = 1,
+            durChapterIndex = 0
+        ).apply {
+            tocHtml = (
+                "<div id=\"current-content\">" +
+                    arguments.getString("current_content") +
+                    "</div>"
+            )
+        }
+        val alternativeBook = Book(
+            bookUrl = "oracle-alternative-book://$caseId",
+            tocUrl = "oracle-alternative-book://$caseId",
+            origin = alternativeSource.bookSourceUrl,
+            originName = alternativeSource.bookSourceName,
+            name = "Oracle 替代书 $caseId",
+            author = "Oracle"
+        )
+        val currentChapter = BookChapter(
+            url = currentBook.bookUrl,
+            title = "当前章节 $caseId",
+            baseUrl = currentBook.tocUrl,
+            bookUrl = currentBook.bookUrl,
+            index = 0
+        )
+        val alternativeChapter = BookChapter(
+            url = arguments.getString("alternative_content"),
+            title = "替代章节 $caseId",
+            baseUrl = alternativeBook.tocUrl,
+            bookUrl = alternativeBook.bookUrl,
+            index = 0
+        )
+        return ChapterSourceFixture(
+            currentSource,
+            alternativeSource,
+            currentBook,
+            alternativeBook,
+            currentChapter,
+            alternativeChapter
+        )
+    }
+
+    private fun clearChapterSourceFixture(
+        fixture: ChapterSourceFixture
+    ) {
+        ReadBook.clearTextChapter()
+        ReadBook.book = null
+        ReadBook.bookSource = null
+        ReadBook.chapterSize = 0
+        BookHelp.clearCache(fixture.currentBook)
+        BookHelp.clearCache(fixture.alternativeBook)
+        appDb.bookDao.getBook(fixture.currentBook.bookUrl)?.let {
+            appDb.bookDao.delete(it)
+        }
+        appDb.bookDao.getBook(fixture.alternativeBook.bookUrl)?.let {
+            appDb.bookDao.delete(it)
+        }
+        appDb.bookSourceDao.delete(
+            fixture.currentSource.bookSourceUrl
+        )
+        appDb.bookSourceDao.delete(
+            fixture.alternativeSource.bookSourceUrl
+        )
+    }
+
+    private data class ChapterSourceFixture(
+        val currentSource: BookSource,
+        val alternativeSource: BookSource,
+        val currentBook: Book,
+        val alternativeBook: Book,
+        val currentChapter: BookChapter,
+        val alternativeChapter: BookChapter
+    )
 
     private suspend fun runBookmarkRuntimeCases() {
         val values = input.getJSONArray("cases")

@@ -2,8 +2,8 @@
   "schema_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
   "android_tree": "c81f5d383116e37c1eefee3eb86654514e82022b",
-  "control_sha256": "43bbf78cb631319d2bd508cce92b76851c4d44473ee24dea64eff05c3d8505cb",
-  "policy_sha256": "bfdfaf15f0828dbe197d7a55aabc373c96343fab01e517eec84dc683a5604019",
+  "control_sha256": "70bed8108a0ee0d04851dceff2d1f23bf492163c1906f4f28a208cf20f558d72",
+  "policy_sha256": "63c525cb60d486e9cd02d238303af90a7905aea2036bca95d4d66c57f7937115",
   "facts": [
     {
       "id": "AF-ANALYZE-JSONPATH-GET-LIST",
@@ -318,6 +318,54 @@
       ]
     },
     {
+      "id": "AF-BOOK-HELP-DELETE-CONTENT",
+      "fact_key": "reader.chapter-cache.delete-content",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.help.book/BookHelp/delContent",
+      "path": "app/src/main/java/io/legado/app/help/book/BookHelp.kt",
+      "git_blob": "40f47f3a0f6bfa63cce79efb7a1518737b84dc45",
+      "source_sha256": "c779cc59c934274215a07fbed9a9e60e259833299d643d60a104550257cca54a",
+      "start_line": 361,
+      "end_line": 368,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "delContent",
+        "signature": "fun delContent(book: Book, bookChapter: BookChapter)",
+        "body_semantic_sha256": "b966ab0c78e1807e902775a676375437d0018f0ca120d1f122b496626eb33807"
+      },
+      "revision_sha256": "6b76312f821662f6d8b5539d259b705646389532174d04cd0c9fff91505c6b41",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-BOOK-HELP-GET-CONTENT",
+      "fact_key": "reader.chapter-cache.get-content",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.help.book/BookHelp/getContent",
+      "path": "app/src/main/java/io/legado/app/help/book/BookHelp.kt",
+      "git_blob": "40f47f3a0f6bfa63cce79efb7a1518737b84dc45",
+      "source_sha256": "c779cc59c934274215a07fbed9a9e60e259833299d643d60a104550257cca54a",
+      "start_line": 339,
+      "end_line": 356,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "getContent",
+        "signature": "fun getContent(book: Book, bookChapter: BookChapter): String?",
+        "body_semantic_sha256": "ca504d8f29e1f12d487dbaa2e3b9a1bf48b51f06d8bf32280c4ce9f28fefb3d6"
+      },
+      "revision_sha256": "e714af4597c4e8f1bd02b896f8126f077c7e9f0f4cdb84e0bbf74edb29adf7fd",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
       "id": "AF-BOOK-HELP-GET-DUR-CHAPTER",
       "fact_key": "reader.progress.toc-remap",
       "category": "production_entrypoint",
@@ -337,6 +385,30 @@
         "body_semantic_sha256": "5651009726c5dbf64486927b3e4f9a13d24ca7ee3ed12b68e4cc31d2071557db"
       },
       "revision_sha256": "dd3fb6a7a0deaf4e52ac4495a669cf5df2305a34f5adee46eb9be97913a6c869",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-BOOK-HELP-SAVE-TEXT",
+      "fact_key": "reader.chapter-cache.save-text",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.help.book/BookHelp/saveText",
+      "path": "app/src/main/java/io/legado/app/help/book/BookHelp.kt",
+      "git_blob": "40f47f3a0f6bfa63cce79efb7a1518737b84dc45",
+      "source_sha256": "c779cc59c934274215a07fbed9a9e60e259833299d643d60a104550257cca54a",
+      "start_line": 137,
+      "end_line": 150,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "saveText",
+        "signature": "fun saveText( book: Book, bookChapter: BookChapter, content: String )",
+        "body_semantic_sha256": "0e4c9747f0c57943a05a1a323f7946689d5a5a013a485ab92f912962b374d67e"
+      },
+      "revision_sha256": "e9b178d5feefdb949aa41615561b019a0dcfcefc9d61a7eb2e156d1dda1370f8",
       "maps_to": [
         "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
       ]
@@ -685,6 +757,30 @@
       "revision_sha256": "cdbdd9cea0b5d2a18b4f9043590e87e60512b83627704112106de534f0c58365",
       "maps_to": [
         "REQ-ANDROID-BOOKSOURCE-SCHEMA-001"
+      ]
+    },
+    {
+      "id": "AF-CHAPTER-SOURCE-GET-CONTENT",
+      "fact_key": "reader.chapter-source.fetch-content",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.ui.book.changesource/ChangeChapterSourceViewModel/getContent",
+      "path": "app/src/main/java/io/legado/app/ui/book/changesource/ChangeChapterSourceViewModel.kt",
+      "git_blob": "c97d0406de9e7b4a9fbd9025aee038306175bbc5",
+      "source_sha256": "3617d0f4d4c03de79fe2bb36791698cc229af3d151146965d5f1808cef21e49a",
+      "start_line": 28,
+      "end_line": 44,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "getContent",
+        "signature": "fun getContent( book: Book, chapter: BookChapter, nextChapterUrl: String?, success: (content: String) -> Unit, error: (msg: String) -> Unit )",
+        "body_semantic_sha256": "f1fb2a0cc2842f44a08a778f696dd02f153752a5b629baaaeb5b2647b6652973"
+      },
+      "revision_sha256": "fe923329c84b640424ccb869d0c1ab5662fa470b905cdd00afbcea15cb5c56b9",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
       ]
     },
     {
@@ -1110,6 +1206,30 @@
         ]
       },
       "revision_sha256": "e71a48f0f13f66185bd5a1f9f528b4e750a2a71457a16d861ac83294aec9a45d",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-READ-VIEW-MODEL-SAVE-CONTENT",
+      "fact_key": "reader.chapter-source.save-current-content",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.ui.book.read/ReadBookViewModel/saveContent",
+      "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookViewModel.kt",
+      "git_blob": "4426655e6bed8c4c3a874d57f47c917120406a1a",
+      "source_sha256": "6218158fe30481b5da810a238f6f32a65adf442b492136dfcef1d450d2c316bd",
+      "start_line": 365,
+      "end_line": 373,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "saveContent",
+        "signature": "fun saveContent(book: Book, content: String)",
+        "body_semantic_sha256": "7dc5ff267fe554c2fcfe4851deca67cfd578513d691549c4849c9567778fc6ce"
+      },
+      "revision_sha256": "7c271cce27fc36424f8ad3371c6302d374d936fe212d0c16106f5eadc9c6e598",
       "maps_to": [
         "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
       ]

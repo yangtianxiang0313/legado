@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "kind": "android_runtime_scenario",
+  "id": "rl-reader-chapter-source-override-runtime-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "android_runtime",
+  "capabilities": [
+    "android.room",
+    "reader.chapter-cache",
+    "reader.source-override"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": null,
+  "input": "input.json",
+  "transport": {
+    "mode": "none",
+    "external_network": "deny",
+    "responses": []
+  },
+  "coverage": [
+    {
+      "behavior": "reader.chapter-source-override-runtime",
+      "cases": [
+        {
+          "id": "alternative-fetch-is-cacheless",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-CHAPTER-SOURCE-GET-CONTENT",
+            "AF-BOOK-HELP-GET-CONTENT"
+          ],
+          "branch_refs": [
+            "ChangeChapterSourceViewModel.getContent: WebBook.getContentAwait(..., needSave=false)",
+            "BookHelp.getContent: cache identity remains empty for current and alternative books"
+          ]
+        },
+        {
+          "id": "replacement-uses-current-cache-identity",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-CHAPTER-SOURCE-GET-CONTENT",
+            "AF-READ-VIEW-MODEL-SAVE-CONTENT",
+            "AF-BOOK-HELP-SAVE-TEXT",
+            "AF-BOOK-HELP-GET-CONTENT"
+          ],
+          "branch_refs": [
+            "ReadBookViewModel.saveContent: resolves chapter by current bookUrl and ReadBook.durChapterIndex",
+            "BookHelp.saveText: writes content under current Book and current BookChapter cache identity"
+          ]
+        },
+        {
+          "id": "replacement-overwrites-existing-current-cache",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-READ-VIEW-MODEL-SAVE-CONTENT",
+            "AF-BOOK-HELP-SAVE-TEXT",
+            "AF-BOOK-HELP-GET-CONTENT"
+          ],
+          "branch_refs": [
+            "BookHelp.saveText: writeText replaces an existing current chapter cache file"
+          ]
+        },
+        {
+          "id": "invalidation-recovers-current-source",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-BOOK-HELP-DELETE-CONTENT",
+            "AF-BOOK-HELP-GET-CONTENT",
+            "AF-BOOK-HELP-SAVE-TEXT"
+          ],
+          "branch_refs": [
+            "BookHelp.delContent: invalidates only the current cache identity",
+            "WebBook current-source fetch after invalidation has no persisted alternative-source provenance"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "fixture",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 0,
+    "network_allowed": false,
+    "logical_origin": null,
+    "database_reset_per_case": true
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/ui/book/changesource/ChangeChapterSourceViewModel.kt#getContent",
+      "app/src/main/java/io/legado/app/ui/book/read/ReadBookViewModel.kt#saveContent",
+      "app/src/main/java/io/legado/app/help/book/BookHelp.kt"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-READER-CHAPTER-SOURCE-OVERRIDE-RUNTIME-001"
+  },
+  "limits": {
+    "timeout_ms": 5000
+  }
+}

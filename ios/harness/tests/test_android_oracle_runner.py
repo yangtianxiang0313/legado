@@ -199,6 +199,42 @@ def book_group_runtime_raw_artifact():
     }
 
 
+def chapter_source_override_raw_artifact():
+    scenario = "rl-reader-chapter-source-override-runtime-001"
+    contract = runner.SCENARIO_CONTRACTS[scenario]
+    requests = []
+    cases = []
+    for index, (case_id, operation) in enumerate(
+        contract["expected_cases"]
+    ):
+        request = {
+            "operation": operation,
+            "arguments": {"fixture_case": case_id},
+        }
+        requests.append(request)
+        cases.append(
+            {
+                "id": case_id,
+                "operation": operation,
+                "request": request,
+                "result": {
+                    "case_index": index,
+                    "cache_identity": "current-book/current-chapter",
+                    "alternative_source_persisted": False,
+                },
+                "issue": None,
+            }
+        )
+    return {
+        "schema_version": 1,
+        "scenario_id": scenario,
+        "device_origin": "android-runtime://local",
+        "logical_origin": "android-runtime://local",
+        "request_plan": requests,
+        "cases": cases,
+    }
+
+
 def read_record_runtime_raw_artifact():
     scenario = "rl-reader-history-read-record-runtime-risk-001"
     contract = runner.SCENARIO_CONTRACTS[scenario]
@@ -1308,6 +1344,14 @@ class AndroidOracleRunnerTests(unittest.TestCase):
             "rl-library-shelf-group-bit-boundary-risk-001",
             book_group_runtime["scenario_id"],
         )
+        chapter_source_override = runner.doctor(
+            ROOT,
+            "rl-reader-chapter-source-override-runtime-001",
+        )
+        self.assertEqual(
+            "rl-reader-chapter-source-override-runtime-001",
+            chapter_source_override["scenario_id"],
+        )
         reader_prefetch_runtime = runner.doctor(
             ROOT,
             "rl-reader-cache-prefetch-policy-001",
@@ -1473,6 +1517,39 @@ class AndroidOracleRunnerTests(unittest.TestCase):
         self.assertTrue(
             all(
                 value["issue"] is None
+                for value in artifact["result"]["value"][
+                    "portable_known_projection"
+                ]["cases"]
+            )
+        )
+
+    def test_chapter_source_override_fixture_tracks_cache_identity(self):
+        scenario = "rl-reader-chapter-source-override-runtime-001"
+        runtime_bindings = {
+            **bindings(),
+            "fixture_kind": "android_runtime_scenario",
+            "fixture_path": (
+                "ios/harness/fixtures/runtime-lab/"
+                f"{scenario}"
+            ),
+        }
+        runtime_bindings.pop("source_template_sha256")
+        artifact = runner.normalize_raw_artifact(
+            chapter_source_override_raw_artifact(),
+            runtime_bindings,
+            scenario,
+        )
+        self.assertEqual("reader_runtime", artifact["result"]["type"])
+        self.assertEqual(4 * 6, len(artifact["stages"]))
+        self.assertEqual(
+            4,
+            artifact["result"]["value"]["android_characterization"][
+                "case_count"
+            ],
+        )
+        self.assertTrue(
+            all(
+                value["result"]["alternative_source_persisted"] is False
                 for value in artifact["result"]["value"][
                     "portable_known_projection"
                 ]["cases"]

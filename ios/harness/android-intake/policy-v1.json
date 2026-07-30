@@ -698,6 +698,66 @@
       "symbol": "convert",
       "symbol_id": "kotlin://io.legado.app.ui.book.group/GroupSelectDialog/GroupAdapter/convert",
       "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-CHAPTER-SOURCE-GET-CONTENT",
+      "fact_key": "reader.chapter-source.fetch-content",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/ui/book/changesource/ChangeChapterSourceViewModel.kt",
+      "symbol": "getContent",
+      "symbol_id": "kotlin://io.legado.app.ui.book.changesource/ChangeChapterSourceViewModel/getContent",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-READ-VIEW-MODEL-SAVE-CONTENT",
+      "fact_key": "reader.chapter-source.save-current-content",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookViewModel.kt",
+      "symbol": "saveContent",
+      "symbol_id": "kotlin://io.legado.app.ui.book.read/ReadBookViewModel/saveContent",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-BOOK-HELP-SAVE-TEXT",
+      "fact_key": "reader.chapter-cache.save-text",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/help/book/BookHelp.kt",
+      "symbol": "saveText",
+      "symbol_id": "kotlin://io.legado.app.help.book/BookHelp/saveText",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-BOOK-HELP-GET-CONTENT",
+      "fact_key": "reader.chapter-cache.get-content",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/help/book/BookHelp.kt",
+      "symbol": "getContent",
+      "symbol_id": "kotlin://io.legado.app.help.book/BookHelp/getContent",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
+    },
+    {
+      "fact_id": "AF-BOOK-HELP-DELETE-CONTENT",
+      "fact_key": "reader.chapter-cache.delete-content",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "path": "app/src/main/java/io/legado/app/help/book/BookHelp.kt",
+      "symbol": "delContent",
+      "symbol_id": "kotlin://io.legado.app.help.book/BookHelp/delContent",
+      "maps_to": ["REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"]
     }
   ]
 }

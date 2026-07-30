@@ -568,6 +568,40 @@ SCENARIO_CONTRACTS = {
             "min-value-selection-and-membership",
         }),
     },
+    "rl-reader-chapter-source-override-runtime-001": {
+        "status": "candidate",
+        "fixture_kind": "android_runtime_scenario",
+        "result_type": "reader_runtime",
+        "stage_names": (
+            "fixture_setup",
+            "alternative_source_fetch",
+            "cache_write",
+            "cache_read",
+            "source_recovery",
+            "result_mapping",
+        ),
+        "expected_cases": (
+            ("alternative-fetch-is-cacheless", "chapter_source_fetch"),
+            (
+                "replacement-uses-current-cache-identity",
+                "chapter_source_replace",
+            ),
+            (
+                "replacement-overwrites-existing-current-cache",
+                "chapter_source_overwrite",
+            ),
+            (
+                "invalidation-recovers-current-source",
+                "chapter_source_invalidate_recover",
+            ),
+        ),
+        "nominal_cases": frozenset({
+            "alternative-fetch-is-cacheless",
+            "replacement-uses-current-cache-identity",
+            "replacement-overwrites-existing-current-cache",
+            "invalidation-recovers-current-source",
+        }),
+    },
     "rl-reader-history-read-record-runtime-risk-001": {
         "status": "candidate",
         "fixture_kind": "android_runtime_scenario",

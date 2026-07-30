@@ -252,6 +252,29 @@ class SourceLabTests(unittest.TestCase):
             )
         )
 
+    def test_chapter_source_override_runtime_scenario_is_cache_scoped(self):
+        scenario = "rl-reader-chapter-source-override-runtime-001"
+        directory, case, inputs = source_lab.load_scenario(
+            REPO_ROOT,
+            scenario,
+        )
+        self.assertEqual(
+            [],
+            source_lab.validate_scenario(REPO_ROOT, directory, case),
+        )
+        self.assertEqual("android_runtime_scenario", case["kind"])
+        self.assertEqual(4, len(inputs["cases"]))
+        self.assertEqual(
+            {"nominal", "boundary"},
+            {
+                value["role"]
+                for coverage in case["coverage"]
+                for value in coverage["cases"]
+            },
+        )
+        self.assertEqual("none", case["transport"]["mode"])
+        self.assertFalse(case["determinism"]["network_allowed"])
+
     def test_global_scenario_manifest_includes_independent_integration_lab(self):
         directory, case, inputs = source_lab.load_scenario(
             REPO_ROOT,

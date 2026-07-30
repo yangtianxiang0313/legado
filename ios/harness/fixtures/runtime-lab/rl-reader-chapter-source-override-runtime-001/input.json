@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "alternative-fetch-is-cacheless",
+      "operation": "chapter_source_fetch",
+      "arguments": {
+        "current_content": "当前书源正文-A",
+        "alternative_content": "替代书源正文-A"
+      }
+    },
+    {
+      "id": "replacement-uses-current-cache-identity",
+      "operation": "chapter_source_replace",
+      "arguments": {
+        "current_content": "当前书源正文-B",
+        "alternative_content": "替代书源正文-B"
+      }
+    },
+    {
+      "id": "replacement-overwrites-existing-current-cache",
+      "operation": "chapter_source_overwrite",
+      "arguments": {
+        "current_content": "当前书源正文-C",
+        "alternative_content": "替代书源正文-C",
+        "existing_cache_content": "既有当前章节缓存"
+      }
+    },
+    {
+      "id": "invalidation-recovers-current-source",
+      "operation": "chapter_source_invalidate_recover",
+      "arguments": {
+        "current_content": "当前书源恢复正文-D",
+        "alternative_content": "替代书源正文-D"
+      }
+    }
+  ]
+}
