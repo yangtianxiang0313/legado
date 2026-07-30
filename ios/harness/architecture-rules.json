@@ -49,7 +49,7 @@
     "SourceRuntime": {"dependencies": ["LegadoCore", "LibraryDomain", "SourceFormat", "RuleRuntime"], "external_imports": [], "forbidden_imports": ["SwiftUI", "UIKit", "WebKit", "GRDB"]},
     "ReaderCore": {"dependencies": ["LegadoCore", "LibraryDomain"], "external_imports": [], "forbidden_imports": ["SwiftUI", "UIKit", "WebKit", "GRDB"]},
     "IntegrationKit": {"dependencies": ["LegadoCore"], "external_imports": [], "forbidden_imports": ["SwiftUI", "UIKit", "WebKit", "GRDB", "Security"]},
-    "AppUseCases": {"dependencies": ["LegadoCore", "LibraryDomain", "SourceRuntime", "ReaderCore", "IntegrationKit"], "external_imports": [], "forbidden_imports": ["SwiftUI", "UIKit", "WebKit", "GRDB", "Security"]},
+    "AppUseCases": {"dependencies": ["LegadoCore", "LibraryDomain", "SourceFormat", "RuleRuntime", "SourceRuntime", "ReaderCore", "IntegrationKit"], "external_imports": [], "forbidden_imports": ["SwiftUI", "UIKit", "WebKit", "GRDB", "Security", "SwiftSoup"]},
     "DatabaseGRDB": {"dependencies": ["LegadoCore", "LibraryDomain", "AppUseCases"], "external_imports": ["GRDB"], "forbidden_imports": ["SwiftUI", "WebKit"]},
     "NetworkFoundation": {"dependencies": ["LegadoCore", "SourceRuntime"], "external_imports": [], "forbidden_imports": ["SwiftUI", "WebKit", "GRDB"]},
     "WebDAVFoundation": {"dependencies": ["LegadoCore", "IntegrationKit"], "external_imports": [], "forbidden_imports": ["SwiftUI", "UIKit", "WebKit", "GRDB"]},
@@ -112,12 +112,12 @@
   "profiles": {
     "store_safe": {
       "root_product": "LegadoStoreSafeKit",
-      "required_targets": ["LegadoCore", "LibraryDomain", "SourceFormat", "RuleRuntime", "SourceRuntime", "ReaderCore", "AppUseCases"],
+      "required_targets": ["LegadoCore", "LibraryDomain", "SourceFormat", "RuleRuntime", "SourceRuntime", "ReaderCore", "AppUseCases", "HTMLSwiftSoup"],
       "forbidden_targets": ["ScriptJavaScriptCore", "WebRuntimeWebKit", "FeatureSourceDeveloper", "TestSupport", "ConformanceCLI"]
     },
     "full_compat": {
       "root_product": "LegadoFullCompatKit",
-      "required_targets": ["LegadoCore", "LibraryDomain", "SourceFormat", "RuleRuntime", "SourceRuntime", "ReaderCore", "AppUseCases", "ScriptJavaScriptCore"],
+      "required_targets": ["LegadoCore", "LibraryDomain", "SourceFormat", "RuleRuntime", "SourceRuntime", "ReaderCore", "AppUseCases", "HTMLSwiftSoup", "ScriptJavaScriptCore"],
       "forbidden_targets": ["TestSupport", "ConformanceCLI"]
     }
   }

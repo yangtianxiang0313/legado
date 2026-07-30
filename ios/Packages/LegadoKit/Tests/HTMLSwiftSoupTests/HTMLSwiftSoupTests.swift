@@ -26,10 +26,21 @@ final class HTMLSwiftSoupTests: XCTestCase {
                     tag: "a",
                     text: "第一本 书",
                     ownText: "第一本",
+                    textNodes: ["第一本"],
                     outerHTML: "<a class=\"title\" href=\"/book/1\">第一本 <em>书</em></a>",
                     attributes: [
                         "class": "title",
                         "href": "/book/1",
+                    ],
+                    children: [
+                        HTMLSelectionProjection(
+                            tag: "em",
+                            text: "书",
+                            ownText: "书",
+                            textNodes: ["书"],
+                            outerHTML: "<em>书</em>",
+                            attributes: [:]
+                        )
                     ]
                 )
             ]

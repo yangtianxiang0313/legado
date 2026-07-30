@@ -1,11 +1,28 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P40-SWIFTSOUP-PRODUCT-INTEGRATION-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P40 将 SwiftSoup 接入书源解析主链",
   "objective": "依据 Android AnalyzeByJSoup 源码与已冻结 sl-source-rule-dom-selector-backends-001 真源结果，把 HTMLSelectorBackend 作为端口贯穿搜索、发现、书籍详情、目录和正文解析，并由 App composition root 注入 SwiftSoup 实现；保留 XPath 独立边界，不让 SwiftSoup 类型进入 SourceRuntime、AppUseCases 或 UI。",
   "validation_policy": "先运行一个 Android 真源结构化对齐测试；因为本里程碑首次改变 App 产品装配，再执行一次 App 构建。除此之外不运行全量 Harness、全量 Swift 测试或模拟器。",
+  "completion_evidence": [
+    "HTMLSelectorBackend 贯穿搜索、发现、书籍详情、目录和正文五条产品流水线",
+    "App composition root 统一注入 SwiftSoupHTMLSelectorBackend",
+    "SourceRuntime、AppUseCases 与 UI 均未直接 import SwiftSoup",
+    "sl-source-rule-dom-selector-backends-001 的 10 个 Android 真源场景结构化对齐通过",
+    "SwiftSoup/jsoup 版本空白差异在 adapter 内兼容，未修改 Android Golden",
+    "LegadoApp 显式链接 HTMLSwiftSoup 与 SwiftSoup 并构建通过"
+  ],
+  "final_verification": {
+    "kind": "android_oracle_structured_diff_and_single_app_build",
+    "completed_at": "2026-07-31T06:52:08+08:00",
+    "result": "Android DOM 真源聚焦测试 attempt-1 与 LegadoApp 单次构建通过；未运行全量 Harness、全量 Swift 测试或模拟器。",
+    "evidence": [
+      ".harness-runtime/loop/IOS-SOURCE-RUNTIME-SWIFTSOUP-PRODUCT-001/attempt-1",
+      ".harness-runtime/derived-data/p40-swiftsoup-product"
+    ]
+  },
   "stages": [
     {
       "id": "P40-S1",

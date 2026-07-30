@@ -1,5 +1,6 @@
 import Foundation
 import LegadoCore
+import RuleRuntime
 
 public struct HTMLCSSRule: Sendable, Equatable {
   public enum Value: String, Sendable {
@@ -387,19 +388,22 @@ public struct HTMLCSSSourceRuntime: Sendable {
   public let scriptSessionID: SourceScriptSessionID?
   public let scriptLibrary: SourceScriptLibrary?
   public let sourceUserVariable: String
+  public let htmlSelectorBackend: (any HTMLSelectorBackend)?
 
   public init(
     definition: HTMLCSSSourceDefinition,
     scriptRuntime: (any SourceScriptRuntime)? = nil,
     scriptSessionID: SourceScriptSessionID? = nil,
     scriptLibrary: SourceScriptLibrary? = nil,
-    sourceUserVariable: String = ""
+    sourceUserVariable: String = "",
+    htmlSelectorBackend: (any HTMLSelectorBackend)? = nil
   ) {
     self.definition = definition
     self.scriptRuntime = scriptRuntime
     self.scriptSessionID = scriptSessionID
     self.scriptLibrary = scriptLibrary
     self.sourceUserVariable = sourceUserVariable
+    self.htmlSelectorBackend = htmlSelectorBackend
   }
 
   public func searchRequest(keyword: String) throws -> HTTPRequest {
@@ -591,7 +595,8 @@ public struct HTMLCSSSourceRuntime: Sendable {
         scriptRuntime: scriptRuntime,
         scriptSessionID: scriptSessionID,
         scriptLibrary: scriptLibrary,
-        baseURL: redirectURL.absoluteString
+        baseURL: redirectURL.absoluteString,
+        htmlSelectorBackend: htmlSelectorBackend
       )
       strings = { rule in
         let value = try await evaluator.getString(rule.selector)
@@ -721,7 +726,8 @@ public struct HTMLCSSSourceRuntime: Sendable {
         scriptRuntime: scriptRuntime,
         scriptSessionID: scriptSessionID,
         scriptLibrary: scriptLibrary,
-        baseURL: tocEndpoint.logicalURL.absoluteString
+        baseURL: tocEndpoint.logicalURL.absoluteString,
+        htmlSelectorBackend: htmlSelectorBackend
       )
       let elements = try await listEvaluator.getElements(rules.list)
       chapters = try await elements.enumerated().asyncMap {
@@ -743,7 +749,8 @@ public struct HTMLCSSSourceRuntime: Sendable {
           scriptRuntime: scriptRuntime,
           scriptSessionID: scriptSessionID,
           scriptLibrary: scriptLibrary,
-          baseURL: tocEndpoint.logicalURL.absoluteString
+          baseURL: tocEndpoint.logicalURL.absoluteString,
+          htmlSelectorBackend: htmlSelectorBackend
         )
         let title = try await evaluator.getString(
           rules.name.selector
@@ -951,7 +958,8 @@ public struct HTMLCSSSourceRuntime: Sendable {
         scriptRuntime: scriptRuntime,
         scriptSessionID: scriptSessionID,
         scriptLibrary: scriptLibrary,
-        baseURL: chapterEndpoint.logicalURL.absoluteString
+        baseURL: chapterEndpoint.logicalURL.absoluteString,
+        htmlSelectorBackend: htmlSelectorBackend
       )
       value = try await evaluator.getString(
         rules.content.selector
@@ -1029,7 +1037,10 @@ public struct HTMLCSSSourceRuntime: Sendable {
       content: html,
       rules: [definition.content.content]
     ) {
-      let evaluator = SourceRuleConsumerEvaluator(content: html)
+      let evaluator = SourceRuleConsumerEvaluator(
+        content: html,
+        htmlSelectorBackend: htmlSelectorBackend
+      )
       let value = try evaluator.getString(
         definition.content.content.selector
       )
@@ -1091,7 +1102,8 @@ public struct HTMLCSSSourceRuntime: Sendable {
     let rawValues: [String]
     if usesStructuredRules(content: html, rules: [rule]) {
       rawValues = try SourceRuleConsumerEvaluator(
-        content: html
+        content: html,
+        htmlSelectorBackend: htmlSelectorBackend
       ).getStringList(rule.selector) ?? []
     } else {
       let document = try parse(html)
@@ -1135,7 +1147,12 @@ public struct HTMLCSSSourceRuntime: Sendable {
   }
 
   private func parse(_ html: String) throws -> HTMLDocument {
-    do { return try HTMLDocument(html: html) }
+    do {
+      return try HTMLDocument(
+        html: html,
+        selectorBackend: htmlSelectorBackend
+      )
+    }
     catch { throw SourceRuntimeIssue(stage: .parsing, code: .malformedHTML) }
   }
 
@@ -1299,7 +1316,10 @@ public struct HTMLCSSSourceRuntime: Sendable {
     existing: SourceBook,
     canRename: Bool
   ) throws -> SourceBook {
-    let evaluator = SourceRuleConsumerEvaluator(content: content)
+    let evaluator = SourceRuleConsumerEvaluator(
+      content: content,
+      htmlSelectorBackend: htmlSelectorBackend
+    )
     let rules = definition.bookInfo
     let parsedName = normalizeName(
       try structuredValue(rules.name, evaluator: evaluator)
@@ -1369,7 +1389,8 @@ public struct HTMLCSSSourceRuntime: Sendable {
     tocURL: URL
   ) throws -> [SourceChapter] {
     let elements = try SourceRuleConsumerEvaluator(
-      content: content
+      content: content,
+      htmlSelectorBackend: htmlSelectorBackend
     ).getElements(definition.toc.list)
     guard !elements.isEmpty else {
       throw SourceRuntimeIssue(
@@ -1380,7 +1401,10 @@ public struct HTMLCSSSourceRuntime: Sendable {
     return try elements.enumerated().map { index, element in
       let data = try JSONValueCodec.encode(element)
       let localContent = String(decoding: data, as: UTF8.self)
-      let evaluator = SourceRuleConsumerEvaluator(content: localContent)
+      let evaluator = SourceRuleConsumerEvaluator(
+        content: localContent,
+        htmlSelectorBackend: htmlSelectorBackend
+      )
       guard
         let title = try structuredValue(
           definition.toc.name,

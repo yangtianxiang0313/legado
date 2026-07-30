@@ -1,5 +1,6 @@
 import Foundation
 import LegadoCore
+import RuleRuntime
 
 struct SourceBookListParser {
   let definition: SourceSearchDefinition
@@ -7,19 +8,22 @@ struct SourceBookListParser {
   let scriptRuntime: (any SourceScriptRuntime)?
   let scriptSessionID: SourceScriptSessionID?
   let scriptLibrary: SourceScriptLibrary?
+  let htmlSelectorBackend: (any HTMLSelectorBackend)?
 
   init(
     definition: SourceSearchDefinition,
     variableStore: SourceVariableStore,
     scriptRuntime: (any SourceScriptRuntime)? = nil,
     scriptSessionID: SourceScriptSessionID? = nil,
-    scriptLibrary: SourceScriptLibrary? = nil
+    scriptLibrary: SourceScriptLibrary? = nil,
+    htmlSelectorBackend: (any HTMLSelectorBackend)? = nil
   ) {
     self.definition = definition
     self.variableStore = variableStore
     self.scriptRuntime = scriptRuntime
     self.scriptSessionID = scriptSessionID
     self.scriptLibrary = scriptLibrary
+    self.htmlSelectorBackend = htmlSelectorBackend
   }
 
   func parse(
@@ -37,7 +41,10 @@ struct SourceBookListParser {
     }
     let document: HTMLDocument
     do {
-      document = try HTMLDocument(html: response.body)
+      document = try HTMLDocument(
+        html: response.body,
+        selectorBackend: htmlSelectorBackend
+      )
     } catch {
       throw SourceRuntimeIssue(stage: .parsing, code: .malformedHTML)
     }
@@ -327,7 +334,8 @@ struct SourceBookListParser {
         scriptRuntime: scriptRuntime,
         scriptSessionID: scriptSessionID,
         scriptLibrary: scriptLibrary,
-        baseURL: definition.sourceURL
+        baseURL: definition.sourceURL,
+        htmlSelectorBackend: htmlSelectorBackend
       ).getString(plan.executionRule)
       return result.isEmpty ? nil : result
     }
@@ -467,7 +475,8 @@ struct SourceBookListParser {
       scriptRuntime: scriptRuntime,
       scriptSessionID: scriptSessionID,
       scriptLibrary: scriptLibrary,
-      baseURL: response.url
+      baseURL: response.url,
+      htmlSelectorBackend: htmlSelectorBackend
     ).getElements(rules.list)
     var seen: Set<String> = []
     var books: [SourceSearchBook] = []
@@ -491,7 +500,8 @@ struct SourceBookListParser {
         scriptRuntime: scriptRuntime,
         scriptSessionID: scriptSessionID,
         scriptLibrary: scriptLibrary,
-        baseURL: response.url
+        baseURL: response.url,
+        htmlSelectorBackend: htmlSelectorBackend
       )
       let name = try await structuredValue(
         rules.name,

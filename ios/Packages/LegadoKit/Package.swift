@@ -15,6 +15,7 @@ let package = Package(
                 "AppUseCases",
                 "AppNavigation",
                 "DatabaseGRDB",
+                "HTMLSwiftSoup",
             ]
         ),
         .library(
@@ -24,6 +25,7 @@ let package = Package(
                 "AppNavigation",
                 "DatabaseGRDB",
                 "ScriptJavaScriptCore",
+                "HTMLSwiftSoup",
             ]
         ),
         .executable(name: "ConformanceCLI", targets: ["ConformanceCLI"]),
@@ -68,6 +70,7 @@ let package = Package(
                 "LibraryDomain",
                 "SourceFormat",
                 "SourceRuntime",
+                "RuleRuntime",
                 "ReaderCore",
             ]
         ),
@@ -105,6 +108,7 @@ let package = Package(
                 "SourceFormat",
                 "RuleRuntime",
                 "SourceRuntime",
+                "HTMLSwiftSoup",
                 "TestSupport",
             ]
         ),

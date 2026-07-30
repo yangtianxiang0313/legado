@@ -1,4 +1,5 @@
 import Foundation
+import RuleRuntime
 
 public enum SourceDOMSelectorError: Error, Sendable, Equatable {
   case malformedCSS(String)
@@ -41,9 +42,14 @@ public struct SourceDOMNodeProjection: Sendable, Equatable {
 /// claiming parity with a full CSS or XPath implementation.
 public struct SourceDOMSelectorEvaluator: Sendable {
   public let content: String
+  public let htmlSelectorBackend: (any HTMLSelectorBackend)?
 
-  public init(content: String) {
+  public init(
+    content: String,
+    htmlSelectorBackend: (any HTMLSelectorBackend)? = nil
+  ) {
     self.content = content
+    self.htmlSelectorBackend = htmlSelectorBackend
   }
 
   public func getString(
@@ -98,6 +104,19 @@ public struct SourceDOMSelectorEvaluator: Sendable {
   public func getElements(_ rule: String) throws -> [SourceDOMNodeProjection] {
     switch backend(for: rule) {
     case .css(let normalized):
+      if let htmlSelectorBackend {
+        return try cssBackendProjections(
+          normalized,
+          backend: htmlSelectorBackend
+        ).map {
+          SourceDOMNodeProjection(
+            kind: .xpathElement,
+            asString: $0.outerHTML,
+            rendered: $0.outerHTML,
+            tag: $0.tag
+          )
+        }
+      }
       let document = try DOMDocument(html: content)
       let nodes = try cssNodes(normalized, document: document)
       return nodes.map {
@@ -188,6 +207,12 @@ public struct SourceDOMSelectorEvaluator: Sendable {
   }
 
   private func cssStringValues(_ rule: String) throws -> [String] {
+    if let htmlSelectorBackend {
+      return try cssBackendStringValues(
+        rule,
+        backend: htmlSelectorBackend
+      )
+    }
     let document = try DOMDocument(html: content)
     for operation in CSSCombination.allCases
     where rule.contains(operation.rawValue) {
@@ -213,6 +238,120 @@ public struct SourceDOMSelectorEvaluator: Sendable {
       }
     }
     return try cssSingleStringValues(rule, document: document)
+  }
+
+  private func cssBackendStringValues(
+    _ rule: String,
+    backend: any HTMLSelectorBackend
+  ) throws -> [String] {
+    for operation in CSSCombination.allCases
+    where rule.contains(operation.rawValue) {
+      let components = rule.components(separatedBy: operation.rawValue)
+      guard components.count > 1 else { continue }
+      let groups = try components.map {
+        try cssBackendSingleStringValues($0, backend: backend)
+      }
+      switch operation {
+      case .concatenate:
+        return stableUnique(groups.flatMap { $0 })
+      case .fallback:
+        return groups.first(where: { !$0.isEmpty }) ?? []
+      case .interleave:
+        let count = groups.map(\.count).max() ?? 0
+        return stableUnique(
+          (0..<count).flatMap { index in
+            groups.compactMap {
+              $0.indices.contains(index) ? $0[index] : nil
+            }
+          }
+        )
+      }
+    }
+    return try cssBackendSingleStringValues(rule, backend: backend)
+  }
+
+  private func cssBackendSingleStringValues(
+    _ rule: String,
+    backend: any HTMLSelectorBackend
+  ) throws -> [String] {
+    let parts = rule.split(
+      separator: "@",
+      omittingEmptySubsequences: false
+    ).map(String.init)
+    guard let selector = parts.first, !selector.isEmpty else {
+      throw SourceDOMSelectorError.unsupportedRule(rule)
+    }
+    var projections = try backend.select(
+      html: content,
+      selector: selector
+    )
+    var terminal: String?
+    for step in parts.dropFirst() {
+      if step.hasPrefix("children.") {
+        let token = String(step.dropFirst("children.".count))
+        projections = try applyIndexes(
+          token,
+          to: projections.flatMap(\.children)
+        )
+      } else if step.hasPrefix("tag.") {
+        let raw = String(step.dropFirst("tag.".count))
+        let parsed = try selectorAndIndexes(raw)
+        projections = try projections.flatMap {
+          try backend.select(
+            html: $0.outerHTML,
+            selector: parsed.selector
+          )
+        }
+        if let indexes = parsed.indexes {
+          projections = try applyIndexes(indexes, to: projections)
+        }
+      } else {
+        terminal = step
+      }
+    }
+    let values: [String]
+    switch terminal?.lowercased() {
+    case nil:
+      values = projections.map(\.outerHTML)
+    case "text":
+      values = projections.map(\.text)
+    case "owntext":
+      values = projections.map(\.ownText)
+    case "textnodes":
+      values = projections.map {
+        $0.textNodes.joined(separator: "\n")
+      }
+    case "html":
+      values = projections.map(\.outerHTMLWithoutScriptAndStyle)
+    case "all":
+      values = projections.map(\.outerHTML)
+    case let attribute?:
+      values = projections.compactMap {
+        $0.attributes[attribute]
+      }
+    }
+    return stableUnique(values)
+  }
+
+  private func cssBackendProjections(
+    _ rule: String,
+    backend: any HTMLSelectorBackend
+  ) throws -> [HTMLSelectionProjection] {
+    guard
+      !rule.contains("&&"),
+      !rule.contains("||"),
+      !rule.contains("%%")
+    else {
+      throw SourceDOMSelectorError.unsupportedRule(rule)
+    }
+    let parts = rule.split(
+      separator: "@",
+      omittingEmptySubsequences: false
+    )
+    guard parts.count == 1 else {
+      throw SourceDOMSelectorError.unsupportedRule(rule)
+    }
+    return try backend.select(html: content, selector: rule)
   }
 
   private func cssSingleStringValues(
@@ -296,10 +435,10 @@ public struct SourceDOMSelectorEvaluator: Sendable {
     )
   }
 
-  private func applyIndexes(
+  private func applyIndexes<Value>(
     _ expression: String,
-    to nodes: [DOMNode]
-  ) throws -> [DOMNode] {
+    to nodes: [Value]
+  ) throws -> [Value] {
     if expression.contains(":") {
       let tokens = expression.split(
         separator: ":",
@@ -322,7 +461,7 @@ public struct SourceDOMSelectorEvaluator: Sendable {
       guard stride != 0 else {
         throw SourceDOMSelectorError.malformedCSS(expression)
       }
-      var output: [DOMNode] = []
+      var output: [Value] = []
       var index = start
       if stride > 0 {
         while index <= end {

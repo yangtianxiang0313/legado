@@ -1,4 +1,5 @@
 import Foundation
+import RuleRuntime
 
 public struct SourceContentExecution: Sendable, Equatable {
   public let requests: [HTTPRequest]
@@ -30,18 +31,21 @@ public struct SourceContentPipeline: Sendable {
   private let responseSession: SourceStringResponseSession
   private let scriptRuntime: (any SourceScriptRuntime)?
   private let scriptSessionID: SourceScriptSessionID
+  private let htmlSelectorBackend: (any HTMLSelectorBackend)?
 
   public init(
     definition: SourceSearchDefinition,
     transport: any HTTPTransport,
     cookieStore: SourceCookieStore = SourceCookieStore(),
     dynamicWebPagePort: (any SourceDynamicWebPagePort)? = nil,
-    scriptRuntime: (any SourceScriptRuntime)? = nil
+    scriptRuntime: (any SourceScriptRuntime)? = nil,
+    htmlSelectorBackend: (any HTMLSelectorBackend)? = nil
   ) {
     self.definition = definition
     self.transport = transport
     self.cookieStore = cookieStore
     self.scriptRuntime = scriptRuntime
+    self.htmlSelectorBackend = htmlSelectorBackend
     self.scriptSessionID = SourceScriptSessionID(
       rawValue: definition.sourceURL
     )
@@ -93,7 +97,8 @@ public struct SourceContentPipeline: Sendable {
       scriptRuntime: scriptRuntime,
       scriptSessionID: scriptSessionID,
       scriptLibrary: definition.scriptLibrary,
-      sourceUserVariable: definition.sourceUserVariable
+      sourceUserVariable: definition.sourceUserVariable,
+      htmlSelectorBackend: htmlSelectorBackend
     )
     let first = try await fetchPage(
       endpoint: endpoint,

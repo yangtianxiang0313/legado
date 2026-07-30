@@ -1,4 +1,5 @@
 import Foundation
+import HTMLSwiftSoup
 import LegadoCore
 import SourceRuntime
 
@@ -497,7 +498,8 @@ enum SourceDOMSelectorConformanceRunner {
     _ arguments: [String: JSONValue]
   ) throws -> SourceDOMSelectorEvaluator {
     SourceDOMSelectorEvaluator(
-      content: try string("content", in: arguments)
+      content: try string("content", in: arguments),
+      htmlSelectorBackend: SwiftSoupHTMLSelectorBackend()
     )
   }
 

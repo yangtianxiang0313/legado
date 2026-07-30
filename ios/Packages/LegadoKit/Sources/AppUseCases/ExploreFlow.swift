@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import RuleRuntime
 import SourceRuntime
 
 public struct ExploreSourceSummary:
@@ -73,19 +74,22 @@ public struct SourceExploreBooksExecutor:
   private let cookieStore: SourceCookieStore
   private let dynamicWebPagePort: (any SourceDynamicWebPagePort)?
   private let scriptRuntime: (any SourceScriptRuntime)?
+  private let htmlSelectorBackend: (any HTMLSelectorBackend)?
 
   public init(
     descriptors: [ExploreSourceDescriptor],
     transport: any HTTPTransport,
     cookieStore: SourceCookieStore = SourceCookieStore(),
     dynamicWebPagePort: (any SourceDynamicWebPagePort)? = nil,
-    scriptRuntime: (any SourceScriptRuntime)? = nil
+    scriptRuntime: (any SourceScriptRuntime)? = nil,
+    htmlSelectorBackend: (any HTMLSelectorBackend)? = nil
   ) {
     self.descriptors = descriptors
     self.transport = transport
     self.cookieStore = cookieStore
     self.dynamicWebPagePort = dynamicWebPagePort
     self.scriptRuntime = scriptRuntime
+    self.htmlSelectorBackend = htmlSelectorBackend
   }
 
   public var sources: [ExploreSourceSummary] {
@@ -107,7 +111,8 @@ public struct SourceExploreBooksExecutor:
       transport: transport,
       cookieStore: cookieStore,
       dynamicWebPagePort: dynamicWebPagePort,
-      scriptRuntime: scriptRuntime
+      scriptRuntime: scriptRuntime,
+      htmlSelectorBackend: htmlSelectorBackend
     ).categories().enumerated().map { index, category in
       ExploreCategoryItem(
         id: "\(sourceID)#\(index)#\(category.title)",
@@ -134,7 +139,8 @@ public struct SourceExploreBooksExecutor:
       transport: transport,
       cookieStore: cookieStore,
       dynamicWebPagePort: dynamicWebPagePort,
-      scriptRuntime: scriptRuntime
+      scriptRuntime: scriptRuntime,
+      htmlSelectorBackend: htmlSelectorBackend
     ).explore(
       SourceExploreInput(
         category: SourceExploreCategory(

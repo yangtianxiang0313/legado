@@ -1,14 +1,20 @@
 import Foundation
 import LegadoCore
+import RuleRuntime
 
 /// Android-compatible consumers for the bounded rule-combination surface that
 /// has been frozen by the SourceLab Golden. The intermediate `JSONValue`
 /// remains typed until a consumer converts it to text, a list, or an element.
 public struct SourceRuleConsumerEvaluator: Sendable {
   public let content: String
+  public let htmlSelectorBackend: (any HTMLSelectorBackend)?
 
-  public init(content: String) {
+  public init(
+    content: String,
+    htmlSelectorBackend: (any HTMLSelectorBackend)? = nil
+  ) {
     self.content = content
+    self.htmlSelectorBackend = htmlSelectorBackend
   }
 
   public func getString(_ rule: String?) throws -> String {
@@ -89,6 +95,14 @@ public struct SourceRuleConsumerEvaluator: Sendable {
 
   public func getElement(_ rule: String) throws -> JSONValue? {
     guard !rule.isEmpty else { return nil }
+    if isCSSRule(rule) {
+      return try SourceDOMSelectorEvaluator(
+        content: content,
+        htmlSelectorBackend: htmlSelectorBackend
+      ).getElements(rule).first.map {
+        .string($0.asString)
+      }
+    }
     if isJSONRule(rule) {
       return try jsonPathEvaluator().getElement(rule)
     }
@@ -97,6 +111,14 @@ public struct SourceRuleConsumerEvaluator: Sendable {
 
   public func getElements(_ rule: String) throws -> [JSONValue] {
     guard !rule.isEmpty else { return [] }
+    if isCSSRule(rule) {
+      return try SourceDOMSelectorEvaluator(
+        content: content,
+        htmlSelectorBackend: htmlSelectorBackend
+      ).getElements(rule).map {
+        .string($0.asString)
+      }
+    }
     if isJSONRule(rule) {
       return try jsonPathEvaluator().getElements(rule)
     }
@@ -251,15 +273,11 @@ public struct SourceRuleConsumerEvaluator: Sendable {
   }
 
   private func cssTextValues(_ rawRule: String) throws -> [String] {
-    let withoutPrefix = String(rawRule.dropFirst(5))
-    let selector =
-      withoutPrefix.lowercased().hasSuffix("@text")
-      ? String(withoutPrefix.dropLast(5))
-      : withoutPrefix
     do {
-      return try HTMLDocument(html: content)
-        .select(selector)
-        .map(\.normalizedText)
+      return try SourceDOMSelectorEvaluator(
+        content: content,
+        htmlSelectorBackend: htmlSelectorBackend
+      ).getStringList(rawRule)
     } catch {
       throw SourceRuleRuntimeError.malformedContent(.defaultBackend)
     }

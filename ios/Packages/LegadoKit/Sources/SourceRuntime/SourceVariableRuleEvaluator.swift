@@ -1,5 +1,6 @@
 import Foundation
 import LegadoCore
+import RuleRuntime
 
 public struct SourceVariableRulePlan: Sendable, Equatable {
   public let executionRule: String
@@ -53,6 +54,7 @@ public struct SourceVariableRuleEvaluator: Sendable {
   public let scriptSessionID: SourceScriptSessionID?
   public let scriptLibrary: SourceScriptLibrary?
   public let baseURL: String?
+  public let htmlSelectorBackend: (any HTMLSelectorBackend)?
 
   public init(
     content: String,
@@ -60,7 +62,8 @@ public struct SourceVariableRuleEvaluator: Sendable {
     scriptRuntime: (any SourceScriptRuntime)? = nil,
     scriptSessionID: SourceScriptSessionID? = nil,
     scriptLibrary: SourceScriptLibrary? = nil,
-    baseURL: String? = nil
+    baseURL: String? = nil,
+    htmlSelectorBackend: (any HTMLSelectorBackend)? = nil
   ) {
     self.content = content
     self.resolver = resolver
@@ -68,6 +71,7 @@ public struct SourceVariableRuleEvaluator: Sendable {
     self.scriptSessionID = scriptSessionID
     self.scriptLibrary = scriptLibrary
     self.baseURL = baseURL
+    self.htmlSelectorBackend = htmlSelectorBackend
   }
 
   public func getString(_ rule: String?) async throws -> String {
@@ -86,7 +90,8 @@ public struct SourceVariableRuleEvaluator: Sendable {
       return stringValue(value)
     }
     return try SourceRuleConsumerEvaluator(
-      content: content
+      content: content,
+      htmlSelectorBackend: htmlSelectorBackend
     ).getString(plan.executionRule)
   }
 
@@ -108,7 +113,8 @@ public struct SourceVariableRuleEvaluator: Sendable {
       return listValue(value)
     }
     return try SourceRuleConsumerEvaluator(
-      content: content
+      content: content,
+      htmlSelectorBackend: htmlSelectorBackend
     ).getStringList(plan.executionRule)
   }
 
@@ -134,7 +140,8 @@ public struct SourceVariableRuleEvaluator: Sendable {
       }
     }
     return try SourceRuleConsumerEvaluator(
-      content: content
+      content: content,
+      htmlSelectorBackend: htmlSelectorBackend
     ).getElements(plan.executionRule)
   }
 

@@ -245,7 +245,7 @@ final class ConformanceCLITests: XCTestCase {
     )
     let text = String(decoding: first.data, as: UTF8.self)
 
-    XCTAssertTrue(first.passed)
+    XCTAssertTrue(first.passed, text)
     XCTAssertEqual(first.data, second.data)
     XCTAssertTrue(text.contains(#""status":"equal""#))
     XCTAssertTrue(text.contains(#""first_divergence":null"#))

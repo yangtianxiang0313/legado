@@ -1,4 +1,5 @@
 import Foundation
+import RuleRuntime
 
 public struct SourceExploreCategory: Sendable, Equatable {
   public let title: String
@@ -136,6 +137,7 @@ public struct SourceExplorePipeline: Sendable {
   private let responseChecker: any SourceExploreResponseChecking
   private let scriptRuntime: (any SourceScriptRuntime)?
   private let scriptSessionID: SourceScriptSessionID
+  private let htmlSelectorBackend: (any HTMLSelectorBackend)?
 
   public init(
     definition: SourceExploreDefinition,
@@ -143,6 +145,7 @@ public struct SourceExplorePipeline: Sendable {
     cookieStore: SourceCookieStore = SourceCookieStore(),
     dynamicWebPagePort: (any SourceDynamicWebPagePort)? = nil,
     scriptRuntime: (any SourceScriptRuntime)? = nil,
+    htmlSelectorBackend: (any HTMLSelectorBackend)? = nil,
     responseChecker: any SourceExploreResponseChecking =
       IdentitySourceExploreResponseChecker()
   ) {
@@ -155,6 +158,7 @@ public struct SourceExplorePipeline: Sendable {
     )
     self.responseChecker = responseChecker
     self.scriptRuntime = scriptRuntime
+    self.htmlSelectorBackend = htmlSelectorBackend
     self.scriptSessionID = SourceScriptSessionID(
       rawValue: definition.source.sourceURL
     )
@@ -228,7 +232,8 @@ public struct SourceExplorePipeline: Sendable {
       variableStore: variableStore,
       scriptRuntime: scriptRuntime,
       scriptSessionID: scriptSessionID,
-      scriptLibrary: definition.source.scriptLibrary
+      scriptLibrary: definition.source.scriptLibrary,
+      htmlSelectorBackend: htmlSelectorBackend
     ).parse(
       response: checked,
       rules: rules,

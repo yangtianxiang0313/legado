@@ -1,5 +1,6 @@
 import Foundation
 import LibraryDomain
+import RuleRuntime
 import SourceRuntime
 
 public protocol BookInfoLoading: Sendable {
@@ -12,19 +13,22 @@ public struct SourceBookInfoLoader: BookInfoLoading, Sendable {
   private let cookieStore: SourceCookieStore
   private let dynamicWebPagePort: (any SourceDynamicWebPagePort)?
   private let scriptRuntime: (any SourceScriptRuntime)?
+  private let htmlSelectorBackend: (any HTMLSelectorBackend)?
 
   public init(
     sources: [SearchSourceDescriptor],
     transport: any HTTPTransport,
     cookieStore: SourceCookieStore = SourceCookieStore(),
     dynamicWebPagePort: (any SourceDynamicWebPagePort)? = nil,
-    scriptRuntime: (any SourceScriptRuntime)? = nil
+    scriptRuntime: (any SourceScriptRuntime)? = nil,
+    htmlSelectorBackend: (any HTMLSelectorBackend)? = nil
   ) {
     self.sources = sources
     self.transport = transport
     self.cookieStore = cookieStore
     self.dynamicWebPagePort = dynamicWebPagePort
     self.scriptRuntime = scriptRuntime
+    self.htmlSelectorBackend = htmlSelectorBackend
   }
 
   public func load(
@@ -52,7 +56,8 @@ public struct SourceBookInfoLoader: BookInfoLoading, Sendable {
       transport: transport,
       cookieStore: cookieStore,
       dynamicWebPagePort: dynamicWebPagePort,
-      scriptRuntime: scriptRuntime
+      scriptRuntime: scriptRuntime,
+      htmlSelectorBackend: htmlSelectorBackend
     ).load(
       book: SourceBook(
         name: candidate.name,

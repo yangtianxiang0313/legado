@@ -1,4 +1,5 @@
 import Foundation
+import RuleRuntime
 
 public struct SourceTOCExecution: Sendable, Equatable {
   public let requests: [HTTPRequest]
@@ -24,6 +25,7 @@ public struct SourceTOCPipeline: Sendable {
   private let responseSession: SourceStringResponseSession
   private let scriptRuntime: (any SourceScriptRuntime)?
   private let scriptSessionID: SourceScriptSessionID
+  private let htmlSelectorBackend: (any HTMLSelectorBackend)?
   private let bookInfoResponseChecker:
     any SourceBookInfoResponseChecking
 
@@ -33,6 +35,7 @@ public struct SourceTOCPipeline: Sendable {
     cookieStore: SourceCookieStore = SourceCookieStore(),
     dynamicWebPagePort: (any SourceDynamicWebPagePort)? = nil,
     scriptRuntime: (any SourceScriptRuntime)? = nil,
+    htmlSelectorBackend: (any HTMLSelectorBackend)? = nil,
     bookInfoResponseChecker: any SourceBookInfoResponseChecking =
       IdentitySourceBookInfoResponseChecker()
   ) {
@@ -47,6 +50,7 @@ public struct SourceTOCPipeline: Sendable {
     )
     self.bookInfoResponseChecker = bookInfoResponseChecker
     self.scriptRuntime = scriptRuntime
+    self.htmlSelectorBackend = htmlSelectorBackend
     self.scriptSessionID = SourceScriptSessionID(
       rawValue: definition.sourceURL
     )
@@ -84,7 +88,8 @@ public struct SourceTOCPipeline: Sendable {
       scriptRuntime: scriptRuntime,
       scriptSessionID: scriptSessionID,
       scriptLibrary: definition.scriptLibrary,
-      sourceUserVariable: definition.sourceUserVariable
+      sourceUserVariable: definition.sourceUserVariable,
+      htmlSelectorBackend: htmlSelectorBackend
     )
     let detail = try await SourceBookInfoPipeline(
       definition: definition,
@@ -92,6 +97,7 @@ public struct SourceTOCPipeline: Sendable {
       cookieStore: cookieStore,
       dynamicWebPagePort: dynamicWebPagePort,
       scriptRuntime: scriptRuntime,
+      htmlSelectorBackend: htmlSelectorBackend,
       responseChecker: bookInfoResponseChecker
     ).load(
       book: book,

@@ -1,4 +1,5 @@
 import Foundation
+import RuleRuntime
 
 public struct SourceBookInfoResponse: Sendable, Equatable {
   public let url: URL
@@ -59,6 +60,7 @@ public struct SourceBookInfoPipeline: Sendable {
   private let responseChecker: any SourceBookInfoResponseChecking
   private let scriptRuntime: (any SourceScriptRuntime)?
   private let scriptSessionID: SourceScriptSessionID
+  private let htmlSelectorBackend: (any HTMLSelectorBackend)?
 
   public init(
     definition: SourceSearchDefinition,
@@ -66,6 +68,7 @@ public struct SourceBookInfoPipeline: Sendable {
     cookieStore: SourceCookieStore = SourceCookieStore(),
     dynamicWebPagePort: (any SourceDynamicWebPagePort)? = nil,
     scriptRuntime: (any SourceScriptRuntime)? = nil,
+    htmlSelectorBackend: (any HTMLSelectorBackend)? = nil,
     responseChecker: any SourceBookInfoResponseChecking =
       IdentitySourceBookInfoResponseChecker()
   ) {
@@ -79,6 +82,7 @@ public struct SourceBookInfoPipeline: Sendable {
     )
     self.responseChecker = responseChecker
     self.scriptRuntime = scriptRuntime
+    self.htmlSelectorBackend = htmlSelectorBackend
     self.scriptSessionID = SourceScriptSessionID(
       rawValue: definition.sourceURL
     )
@@ -94,7 +98,8 @@ public struct SourceBookInfoPipeline: Sendable {
       scriptRuntime: scriptRuntime,
       scriptSessionID: scriptSessionID,
       scriptLibrary: definition.scriptLibrary,
-      sourceUserVariable: definition.sourceUserVariable
+      sourceUserVariable: definition.sourceUserVariable,
+      htmlSelectorBackend: htmlSelectorBackend
     )
     let variableStore = SourceVariableStore(
       policy: .androidRuleData,

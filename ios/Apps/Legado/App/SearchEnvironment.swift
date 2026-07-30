@@ -1,5 +1,6 @@
 import AppUseCases
 import Foundation
+import HTMLSwiftSoup
 import LibraryDomain
 import ReaderCore
 import ScriptJavaScriptCore
@@ -14,6 +15,8 @@ enum SearchEnvironment {
     private static let dynamicWebPagePort = WKSourceDynamicWebPagePort()
     private static let scriptRuntime =
         JavaScriptCoreSourceScriptRuntime()
+    private static let htmlSelectorBackend =
+        SwiftSoupHTMLSelectorBackend()
 
     static func makeWebLoginSession(
         source: BookSourceDraft
@@ -56,7 +59,8 @@ enum SearchEnvironment {
                 transport: transport,
                 cookieStore: cookieStore,
                 dynamicWebPagePort: dynamicWebPagePort,
-                scriptRuntime: scriptRuntime
+                scriptRuntime: scriptRuntime,
+                htmlSelectorBackend: htmlSelectorBackend
             )
         )
     }
@@ -139,7 +143,8 @@ enum SearchEnvironment {
             transport: makeTransport(externalBaseURL: externalBaseURL),
             cookieStore: cookieStore,
             dynamicWebPagePort: dynamicWebPagePort,
-            scriptRuntime: scriptRuntime
+            scriptRuntime: scriptRuntime,
+            htmlSelectorBackend: htmlSelectorBackend
         )
         let summary = executor.sources.first(where: {
             $0.id == sourceID
@@ -167,7 +172,8 @@ enum SearchEnvironment {
             transport: makeTransport(externalBaseURL: externalBaseURL),
             cookieStore: cookieStore,
             dynamicWebPagePort: dynamicWebPagePort,
-            scriptRuntime: scriptRuntime
+            scriptRuntime: scriptRuntime,
+            htmlSelectorBackend: htmlSelectorBackend
         )
     }
 
@@ -187,7 +193,8 @@ enum SearchEnvironment {
             transport: makeTransport(externalBaseURL: externalBaseURL),
             cookieStore: cookieStore,
             dynamicWebPagePort: dynamicWebPagePort,
-            scriptRuntime: scriptRuntime
+            scriptRuntime: scriptRuntime,
+            htmlSelectorBackend: htmlSelectorBackend
         )
     }
 
@@ -207,7 +214,8 @@ enum SearchEnvironment {
             transport: makeTransport(externalBaseURL: externalBaseURL),
             cookieStore: cookieStore,
             dynamicWebPagePort: dynamicWebPagePort,
-            scriptRuntime: scriptRuntime
+            scriptRuntime: scriptRuntime,
+            htmlSelectorBackend: htmlSelectorBackend
         )
     }
 
@@ -268,7 +276,9 @@ enum SearchEnvironment {
             definition: selected.definition,
             transport: makeTransport(externalBaseURL: externalBaseURL),
             cookieStore: cookieStore,
-            dynamicWebPagePort: dynamicWebPagePort
+            dynamicWebPagePort: dynamicWebPagePort,
+            scriptRuntime: scriptRuntime,
+            htmlSelectorBackend: htmlSelectorBackend
         ).load(
             book: SourceBook(
                 name: "",
@@ -329,7 +339,8 @@ enum SearchEnvironment {
                 ),
                 cookieStore: cookieStore,
                 dynamicWebPagePort: dynamicWebPagePort,
-                scriptRuntime: scriptRuntime
+                scriptRuntime: scriptRuntime,
+                htmlSelectorBackend: htmlSelectorBackend
             )
         )
         await toc.load(book: item, force: true)
@@ -369,7 +380,8 @@ enum SearchEnvironment {
             transport: transport,
             cookieStore: cookieStore,
             dynamicWebPagePort: dynamicWebPagePort,
-            scriptRuntime: scriptRuntime
+            scriptRuntime: scriptRuntime,
+            htmlSelectorBackend: htmlSelectorBackend
         ).search(
             query: current.candidate.name,
             scope: .source(
@@ -410,7 +422,8 @@ enum SearchEnvironment {
             transport: transport,
             cookieStore: cookieStore,
             dynamicWebPagePort: dynamicWebPagePort,
-            scriptRuntime: scriptRuntime
+            scriptRuntime: scriptRuntime,
+            htmlSelectorBackend: htmlSelectorBackend
         ).load(book: transient)
         let resolvedCandidate = ShelfBookCandidate(
             name: candidate.name,
@@ -488,7 +501,8 @@ enum SearchEnvironment {
             transport: makeTransport(externalBaseURL: externalBaseURL),
             cookieStore: cookieStore,
             dynamicWebPagePort: dynamicWebPagePort,
-            scriptRuntime: scriptRuntime
+            scriptRuntime: scriptRuntime,
+            htmlSelectorBackend: htmlSelectorBackend
         ).loadSourceContent(
             book: book,
             chapter: chapter,

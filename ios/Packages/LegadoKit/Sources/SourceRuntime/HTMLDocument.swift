@@ -1,21 +1,25 @@
 import Foundation
+import RuleRuntime
 
 public struct HTMLNode: Sendable, Equatable {
   public let name: String
   public let attributes: [String: String]
   public let text: String
   public let children: [HTMLNode]
+  let outerHTML: String?
 
   public init(
     name: String,
     attributes: [String: String] = [:],
     text: String = "",
-    children: [HTMLNode] = []
+    children: [HTMLNode] = [],
+    outerHTML: String? = nil
   ) {
     self.name = name
     self.attributes = attributes
     self.text = text
     self.children = children
+    self.outerHTML = outerHTML
   }
 
   public var normalizedText: String {
@@ -32,8 +36,26 @@ public enum HTMLDocumentError: Error, Sendable, Equatable {
 
 public struct HTMLDocument: Sendable {
   public let root: HTMLNode
+  private let originalHTML: String
+  private let selectorBackend: (any HTMLSelectorBackend)?
 
-  public init(html: String) throws {
+  public init(
+    html: String,
+    selectorBackend: (any HTMLSelectorBackend)? = nil
+  ) throws {
+    self.originalHTML = html
+    self.selectorBackend = selectorBackend
+    if let selectorBackend {
+      let selected = try selectorBackend.select(
+        html: html,
+        selector: "html"
+      )
+      guard let document = selected.first else {
+        throw HTMLDocumentError.malformedHTML
+      }
+      self.root = Self.node(document)
+      return
+    }
     let sanitized = Self.sanitize(html)
     let delegate = TreeBuilder()
     let parser = XMLParser(data: Data(sanitized.utf8))
@@ -46,6 +68,12 @@ public struct HTMLDocument: Sendable {
   }
 
   public func select(_ selector: String, within node: HTMLNode? = nil) throws -> [HTMLNode] {
+    if let selectorBackend {
+      return try selectorBackend.select(
+        html: node?.outerHTML ?? originalHTML,
+        selector: selector
+      ).map(Self.node)
+    }
     let steps = try Self.selectorSteps(selector)
     let base = node ?? root
     var matches = Self.descendants(of: base).filter {
@@ -64,6 +92,18 @@ public struct HTMLDocument: Sendable {
       matches = candidates.filter { Self.matches($0, step.selector) }
     }
     return matches
+  }
+
+  private static func node(
+    _ projection: HTMLSelectionProjection
+  ) -> HTMLNode {
+    HTMLNode(
+      name: projection.tag,
+      attributes: projection.attributes,
+      text: projection.text,
+      children: projection.children.map(node),
+      outerHTML: projection.outerHTML
+    )
   }
 
   private enum SelectorCombinator {
