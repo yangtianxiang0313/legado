@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P30-READER-CONTENT-EDIT-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "title": "P30 阅读器正文编辑",
+  "objective": "依据冻结 Android ContentEditDialog 与 BookHelp.saveText 源码，让用户在阅读器中编辑当前章节正文、保存为当前章节缓存，或清除编辑结果并重新从原书源加载；标题编辑与平台剪贴板作为后续独立切片。",
+  "validation_policy": "运行一个正文持久化聚焦测试并执行一次 App 构建；不启动模拟器，不新增 Android Golden。",
+  "stages": [
+    {
+      "id": "P30-S1",
+      "title": "编辑、保存与重置当前正文",
+      "selectors": [
+        {
+          "id": "P30-S1-READER-CONTENT-EDIT",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-APP-NAVIGATION-READER-CONTENT-EDIT-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-APP-NAVIGATION-READER-CONTENT-EDIT-001",
+      "title": "编辑并重置当前章节正文",
+      "fixture_id": "source-ui-reader-multilevel-menu-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [
+        "IOS-APP-NAVIGATION-READER-CONTENT-REFRESH-001"
+      ],
+      "validation": "tests",
+      "test_filter": "DatabaseGRDBTests.testEditedChapterContentPersistsAndCanBeReset",
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+        "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "84fe073408448825102c7a788edd9c93d616ab9a",
+          "path": "app/src/main/java/io/legado/app/ui/book/read/ContentEditDialog.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.read.ContentEditDialog/save"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "40f47f3a0f6bfa63cce79efb7a1518737b84dc45",
+          "path": "app/src/main/java/io/legado/app/help/book/BookHelp.kt",
+          "symbol_id": "kotlin://io.legado.app.help.book.BookHelp/saveText"
+        }
+      ]
+    }
+  ]
+}
