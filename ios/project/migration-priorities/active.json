@@ -15,7 +15,7 @@
           "id": "P48-S1-WRITEBACK",
           "claim_ids": [],
           "task_ids": [
-            "IOS-SOURCE-EDITOR-LOSSLESS-WRITEBACK-001"
+            "IOS-SOURCE-RUNTIME-EDITOR-LOSSLESS-WRITEBACK-001"
           ]
         }
       ]
@@ -23,7 +23,7 @@
   ],
   "deliveries": [
     {
-      "target": "IOS-SOURCE-EDITOR-LOSSLESS-WRITEBACK-001",
+      "target": "IOS-SOURCE-RUNTIME-EDITOR-LOSSLESS-WRITEBACK-001",
       "title": "让书源编辑值真正进入独立运行时定义",
       "fixture_id": "source-editor-lossless-writeback-v1",
       "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
