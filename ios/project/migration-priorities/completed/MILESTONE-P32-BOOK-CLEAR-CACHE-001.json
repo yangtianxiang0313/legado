@@ -1,11 +1,25 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P32-BOOK-CLEAR-CACHE-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P32 书籍详情清除缓存",
   "objective": "依据冻结 Android BookInfoActivity 与 BookInfoViewModel.clearCache 源码，在书籍详情提供单书清除正文缓存能力，只删除目标书籍缓存并向用户展示完成或失败结果。",
   "validation_policy": "运行一个单书缓存删除聚焦测试并执行一次 App 构建；不启动模拟器，不新增 Android Golden。",
+  "completion_evidence": [
+    "书籍详情为已暂存书籍展示清除缓存操作",
+    "AppUseCases 通过既有单书 clearCache mutation 删除目标章节正文",
+    "成功和失败均以结构化结果反馈给用户",
+    "聚焦测试同时证明其他书籍正文缓存不受影响"
+  ],
+  "final_verification": {
+    "kind": "focused_test_and_single_app_build",
+    "completed_at": "2026-07-31T06:00:49+08:00",
+    "result": "1 个单书缓存隔离聚焦测试与一次 App 构建通过；未启动模拟器，未新增 Android Golden。",
+    "evidence": [
+      ".harness-runtime/loop/IOS-APP-NAVIGATION-BOOK-CLEAR-CACHE-001/attempt-1"
+    ]
+  },
   "stages": [
     {
       "id": "P32-S1",

@@ -228,6 +228,81 @@ final class DatabaseGRDBTests: XCTestCase {
     XCTAssertEqual(enabled?.canUpdate, true)
   }
 
+  func testBookDetailClearCacheDeletesOnlyTargetBook() async throws {
+    let path = temporaryDatabasePath()
+    let repository = try GRDBBookShelfRepository(path: path)
+    let first = try await repository.add(
+      candidate(name: "目标书籍", suffix: "clear-target"),
+      groupID: 0
+    )
+    let second = try await repository.add(
+      candidate(name: "保留书籍", suffix: "clear-preserved"),
+      groupID: 0
+    )
+    let firstChapter = BookChapter(
+      id: ChapterID(
+        sourceID: first.candidate.sourceID,
+        chapterURL: "\(first.candidate.bookURL)/1"
+      ),
+      bookID: first.id,
+      sourceID: first.candidate.sourceID,
+      index: 0,
+      title: "第一章",
+      url: "\(first.candidate.bookURL)/1"
+    )
+    let secondChapter = BookChapter(
+      id: ChapterID(
+        sourceID: second.candidate.sourceID,
+        chapterURL: "\(second.candidate.bookURL)/1"
+      ),
+      bookID: second.id,
+      sourceID: second.candidate.sourceID,
+      index: 0,
+      title: "第一章",
+      url: "\(second.candidate.bookURL)/1"
+    )
+    _ = try await repository.applyTOCUpdate(
+      bookID: first.id,
+      update: .replaced(
+        previousCount: 0,
+        chapters: [firstChapter]
+      )
+    )
+    _ = try await repository.applyTOCUpdate(
+      bookID: second.id,
+      update: .replaced(
+        previousCount: 0,
+        chapters: [secondChapter]
+      )
+    )
+    try await repository.saveChapterContent(
+      "删除我",
+      bookID: first.id,
+      chapterID: firstChapter.id
+    )
+    try await repository.saveChapterContent(
+      "保留我",
+      bookID: second.id,
+      chapterID: secondChapter.id
+    )
+    let library = ShelfLibrary(repository: repository)
+    await library.reload()
+
+    let result = await library.clearCache(bookID: first.id)
+    XCTAssertTrue(result)
+
+    let cleared = try await repository.chapterContent(
+      bookID: first.id,
+      chapterID: firstChapter.id
+    )
+    let preserved = try await repository.chapterContent(
+      bookID: second.id,
+      chapterID: secondChapter.id
+    )
+    XCTAssertNil(cleared)
+    XCTAssertEqual(preserved, "保留我")
+  }
+
   func testBatchSourceSwitchCommitsSuccessAndContinuesAfterFailure()
     async throws
   {

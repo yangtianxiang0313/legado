@@ -754,6 +754,17 @@ public final class ShelfLibrary {
   }
 
   @discardableResult
+  public func clearCache(
+    bookID: LibraryDomain.BookID
+  ) async -> Bool {
+    let report = await performBatch(
+      .clearCache,
+      bookIDs: [bookID]
+    )
+    return report.committedBookIDs == [bookID]
+  }
+
+  @discardableResult
   public func switchSources(
     bookIDs: [LibraryDomain.BookID],
     targetSourceID: String,

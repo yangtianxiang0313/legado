@@ -191,6 +191,8 @@ struct BookDetailView: View {
     @State private var sourceVariableDraft = ""
     @State private var savingSourceVariable = false
     @State private var savingCanUpdate = false
+    @State private var clearingCache = false
+    @State private var cacheMessage: String?
 
     init(
         snapshot: BookDetailActionSnapshot,
@@ -439,6 +441,17 @@ struct BookDetailView: View {
         } message: {
             Text(sourceSwitchMessage ?? "")
         }
+        .alert(
+            "清除缓存",
+            isPresented: Binding(
+                get: { cacheMessage != nil },
+                set: { if !$0 { cacheMessage = nil } }
+            )
+        ) {
+            Button("好", role: .cancel) {}
+        } message: {
+            Text(cacheMessage ?? "")
+        }
     }
 
     private var shelfButton: some View {
@@ -579,6 +592,20 @@ struct BookDetailView: View {
                     checked: availability.checked.splitLongChapter
                 )
             }
+            if storedItem != nil {
+                Button {
+                    clearBookCache()
+                } label: {
+                    Label(
+                        clearingCache ? "正在清除缓存…" : "清除缓存",
+                        systemImage: "trash.slash"
+                    )
+                }
+                .disabled(clearingCache || library == nil)
+                .accessibilityIdentifier(
+                    "action.bookDetail.clearCache"
+                )
+            }
             if availability.actions.upload {
                 action(
                     "上传到远程",
@@ -664,6 +691,22 @@ struct BookDetailView: View {
                 self.storedItem = updated
             }
             savingCanUpdate = false
+        }
+    }
+
+    private func clearBookCache() {
+        guard
+            let storedItem,
+            let library,
+            !clearingCache
+        else { return }
+        clearingCache = true
+        Task {
+            let cleared = await library.clearCache(
+                bookID: storedItem.id
+            )
+            cacheMessage = cleared ? "缓存已清除" : "清除缓存失败"
+            clearingCache = false
         }
     }
 
