@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P12-SOURCE-REQUEST-PRODUCT-INTEGRATION-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "title": "P12 导入书源请求选项接入产品主链",
+  "objective": "把独立 SourceRuntime 已实现的请求准备能力接入产品流水线，使导入书源的顶层 Header、Cookie 与重试语义真正作用于搜索、详情、目录和正文请求。",
+  "completion_evidence": [
+    "BookSource 顶层 header 被解析为稳定请求字段并应用于产品网络请求",
+    "URL option header 在顶层 header 之后覆盖同名字段",
+    "搜索、详情、目录和正文共用同一请求准备边界",
+    "复用既有 Android Header/Cookie/Retry Golden，只运行聚焦 Swift 测试"
+  ],
+  "deferred_policy": "先接影响真实源可用性的 Header；持久 Cookie、enabledCookieJar 与 retry 随后按同一主链续接。代理、动态 WebView 和长尾超时策略不混入首阶段。",
+  "deliveries": [
+    {
+      "target": "IOS-SOURCE-RUNTIME-PRODUCT-HEADER-INTEGRATION-001",
+      "title": "将导入书源顶层 Header 接入全部请求流水线",
+      "fixture_id": "source-product-header-integration-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [],
+      "validation": "tests",
+      "test_filter": "SourceProductRequestIntegrationTests",
+      "additional_allowed_paths": [
+        "ios/Apps/Legado/App/SearchEnvironment.swift"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da",
+          "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+          "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/analyzeUrl"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "af03cf51cef2eb31f54b8240c39e868ceabdba54",
+          "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
+          "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook/searchBookAwait"
+        }
+      ]
+    }
+  ],
+  "stages": [
+    {
+      "id": "P12-01-SOURCE-HEADER-INTEGRATION",
+      "title": "顶层书源 Header 进入四段产品流水线",
+      "outcome": "导入书源声明的 User-Agent、Referer 等 Header 不再只停留在 DTO，而会出现在实际 HTTPRequest 中。",
+      "selectors": [
+        {
+          "id": "SOURCE-PRODUCT-HEADER-INTEGRATION",
+          "task_ids": [
+            "IOS-SOURCE-RUNTIME-PRODUCT-HEADER-INTEGRATION-001"
+          ]
+        }
+      ]
+    }
+  ]
+}
