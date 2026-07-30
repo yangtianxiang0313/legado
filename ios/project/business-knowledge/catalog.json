@@ -6,7 +6,7 @@
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "5902da4a6d8a74335342166c7e42fca483c092734a07a1977d4d8058bce54ed4",
   "authority_sha256": "72ce72fc49f75a320341285a47eda383a3d7d07634215d38731f58643132ba6d",
-  "coverage_sha256": "2fe3cb66de0c9afa5d78b6aeec7e201e270a3b21f9564bf3291c05946e45afff",
+  "coverage_sha256": "e94373814f039e08494e22ee97f49e3e4052eab978951fcf5baf9734fa0f7e1e",
   "proposal_sha256": "eb9ec2ab3e11deff4f705c49ce621283a64329406a75ad1cf974704d4d2fc96c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -201,6 +201,19 @@
       "claim_refs": [
         {
           "id": "BKC-CHAPTER-SOURCE-OVERRIDE-001",
+          "revision": 2
+        }
+      ]
+    },
+    {
+      "id": "BKP-READER-CONTENT-CACHE-FIRST-ACQUISITION-001",
+      "revision": 1,
+      "semantic_key": "reader.content.cache-first-acquisition-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-READER-CONTENT-CACHE-FIRST-ACQUISITION-001/r0001.json",
+      "record_sha256": "6ecf6ce0c0206e30a3472fde7d9b3a9514431a13b79528208f6bb3b6b0f8c171",
+      "claim_refs": [
+        {
+          "id": "BKC-RD-CONTENT-ACQUISITION-001",
           "revision": 2
         }
       ]
@@ -702,6 +715,14 @@
       "resolution_state": "resolved"
     },
     {
+      "id": "DRV-READER-CONTENT-CACHE-FIRST-ACQUISITION-001",
+      "revision": 1,
+      "semantic_key": "reader.content.cache-first-acquisition-boundary",
+      "path": "ios/project/business-knowledge/drivers/published/DRV-READER-CONTENT-CACHE-FIRST-ACQUISITION-001/r0001.json",
+      "record_sha256": "8e36f80fad4e9676be9c846bf02baa741be354c51e3cbad402dbe3a4cf9e4876",
+      "resolution_state": "resolved"
+    },
+    {
       "id": "DRV-READER-HISTORY-READ-RECORD-RUNTIME-RISK-001",
       "revision": 1,
       "semantic_key": "reader.history.read-record-compatibility-boundary",
@@ -1036,6 +1057,15 @@
       "record_sha256": "e32da2167c7bbfab474f3c6572e4497b60622b1af87225233511a85f01170b41",
       "entry_ids": [
         "BKE-READER-CHAPTER-SOURCE-OVERRIDE-RUNTIME-001"
+      ]
+    },
+    {
+      "id": "BKL-READER-CONTENT-CACHE-FIRST-ACQUISITION-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-READER-CONTENT-CACHE-FIRST-ACQUISITION-001.json",
+      "record_sha256": "9d5d3fa14ab67e93cb117628ad312a6c4a9104e38945d37858b0ac464139cf26",
+      "entry_ids": [
+        "BKE-READER-CONTENT-CACHE-FIRST-ACQUISITION-001"
       ]
     },
     {

@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-READER-CONTENT-CACHE-FIRST-ACQUISITION-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "reader.content.cache-first-acquisition-boundary",
+  "title": "用 ReaderCore 获取策略隔离缓存、本地书与书源执行",
+  "claim_refs": [
+    {
+      "id": "BKC-RD-CONTENT-ACQUISITION-001",
+      "revision": 2
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "ReaderCore 必须逐场景复现受保护 Android Golden 中的缓存优先、空保存仍缺失、本地结果优先、书源委托、缺章终止与 loading 清理结果；expected 不得由 iOS 实现反向生成。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "modularity",
+      "scenario": "ReaderCore 只决定获取顺序与结构化 outcome；缓存读取、本地图书读取、书源执行和章节查询由消费方协议提供，核心不得依赖文件路径、GRDB、SwiftUI、Android Room 或 Golden。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "state_isolation",
+      "scenario": "每个章节请求使用稳定 BookID、ChapterID 和显式 in-flight token；缺章、缓存命中、无书源与下载失败都必须形成终态，不能复制 Android ReadBook/CacheBook 全局集合。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "failure_fidelity",
+      "scenario": "本地读取返回的非空错误文本在 Android 中属于正文值，书源下载失败属于一次失败 outcome；iOS 可以采用原生错误展示，但结构化层必须保留两者来源差异。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "scope_control",
+      "scenario": "本切片不实现成功网络下载、重试、预取、缓存落盘或排版；这些能力必须由各自 Android 真源任务扩张。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "如何用 ContentAcquisitionOutcome 区分 cache、local、source、missingChapter 和 failure，而不把 Android 错误字符串变成控制流？",
+    "如何让 AppUseCases 组合章节仓储、正文缓存、本地读取器和 SourceRuntime，同时保持 ReaderCore 为纯策略？",
+    "如何确保每条路径都清除显式 in-flight token，并允许后续重试生成新的 token？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002"
+    ],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-READER-CONTENT-CACHE-FIRST-ACQUISITION-001",
+      "IOS-READER-CORE-CONTENT-CACHE-FIRST-ACQUISITION-001"
+    ]
+  },
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30544512521/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-READER-CONTENT-CACHE-FIRST-ACQUISITION-001"
+}

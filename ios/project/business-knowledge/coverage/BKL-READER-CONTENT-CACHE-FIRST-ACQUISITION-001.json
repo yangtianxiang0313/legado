@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgeCoverageLedger",
+  "id": "BKL-READER-CONTENT-CACHE-FIRST-ACQUISITION-001",
+  "revision": 1,
+  "status": "current",
+  "packet_refs": [
+    {
+      "id": "BKP-READER-CONTENT-CACHE-FIRST-ACQUISITION-001",
+      "revision": 1,
+      "sha256": "6ecf6ce0c0206e30a3472fde7d9b3a9514431a13b79528208f6bb3b6b0f8c171"
+    }
+  ],
+  "generated_from": {
+    "knowledge_authority_sha256": "52f5fe4786dcb8edb260837c948406508def4053f0fa20c4b08900539df09416",
+    "requirement_catalog_sha256": "9fb9e64c0f654e46f4a461b1d93bce8408fb2bb93b93005ad290f0ee2278d873",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "entries": [
+    {
+      "id": "BKE-READER-CONTENT-CACHE-FIRST-ACQUISITION-001",
+      "claim_ref": {
+        "id": "BKC-RD-CONTENT-ACQUISITION-001",
+        "revision": 2
+      },
+      "validation": {
+        "required": "android_runtime",
+        "state": "verified",
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-reader-content-cache-first-acquisition-001-30543787721-1.json",
+          "ios/harness/goldens/android-legado-v1/rl-reader-content-cache-first-acquisition-001.json#/artifact/result/value"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "covered_by_requirement",
+        "refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "reason": "受保护 Android Golden 已冻结正文缓存、本地读取、书源委托与缺章终止的优先级和终态，交由 ReaderCore 纯获取策略及 AppUseCases 端口编排实现",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "planned",
+        "requirement_refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "work_item_refs": [
+          "IOS-READER-CORE-CONTENT-CACHE-FIRST-ACQUISITION-001"
+        ],
+        "capability_refs": [
+          "CAP-CONFORMANCE",
+          "CAP-CORE"
+        ],
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-reader-content-cache-first-acquisition-001-30543787721-1.json"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    }
+  ],
+  "updated_by": "IOS-CHARACTERIZE-READER-CONTENT-CACHE-FIRST-ACQUISITION-001",
+  "updated_at": "2026-07-30T12:55:00Z"
+}

@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-READER-CONTENT-CACHE-FIRST-ACQUISITION-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "reader.content.cache-first-acquisition-golden",
+  "title": "受保护 Android Golden 验证的正文缓存优先获取语义",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "b7cf2d92a166d8dd2bc750d0c353815dc647428436d751c23d6a8bb347ed0a30"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "reader.content"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-CORE"
+    ],
+    "subject_keys": [
+      "reader.content"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-RD-CONTENT-ACQUISITION-001",
+      "revision": 2,
+      "semantic_key": "reader.content.cache-first-acquisition",
+      "kind": "runtime_behavior",
+      "topic": "缓存优先的章节正文获取",
+      "statement": "在 rl-reader-content-cache-first-acquisition-001 的 6 个固定 Android 场景中，ReadBook.loadContent 先按 Book 与 BookChapter 调用 BookHelp.getContent：非空远程缓存即使没有书源也直接创建章节且不委托下载；saveText(\"\") 不形成可读缓存，后续仍走缓存缺失分支。远程缓存缺失且没有书源时会创建失败正文对应的章节对象，但不记下载失败；本地缓存缺失时 BookHelp 转交 LocalBook，本场景得到非空字符串“获取本地书籍内容失败\\nnull”，因此它被当作正文而不是进入 ReadBook 的“无内容”分支。远程缓存缺失且书源存在时会委托 CacheBook/WebBook，本场景的无效 URL 产生一次下载失败并创建失败正文对应的章节对象。Room 中缺少章节时不创建章节对象并清除 loading index。上述场景均未标记下载成功。本结论只冻结正文获取决策与 in-flight 结果，不外推到成功网络响应、当前页排版、空正文排版完成、重试调度、缓存写入时序或并发请求。",
+      "subject_keys": [
+        "reader.content"
+      ],
+      "depends_on": [],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [
+          {
+            "id": "AF-READ-BOOK-LOAD-CONTENT",
+            "revision_sha256": "a8ad06499816f1443735af5c0935b3564e5194d2b4f69061388aa2b87a81b3ed"
+          },
+          {
+            "id": "AF-BOOK-HELP-GET-CONTENT",
+            "revision_sha256": "e714af4597c4e8f1bd02b896f8126f077c7e9f0f4cdb84e0bbf74edb29adf7fd"
+          }
+        ],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d",
+            "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+            "symbol_id": "kotlin://io.legado.app.model.ReadBook/loadContent"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "40f47f3a0f6bfa63cce79efb7a1518737b84dc45",
+            "path": "app/src/main/java/io/legado/app/help/book/BookHelp.kt",
+            "symbol_id": "kotlin://io.legado.app.help.book/BookHelp/getContent"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/rl-reader-content-cache-first-acquisition-001.json",
+            "artifact_sha256": "17a9b8072508603dd42e02a647d38207e359ef628f964b902eb7c80f572d95ea",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "bb2528ffe7d75aac373b90242f7d478fc44f62b450fc70f30713258d763cd864",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "a023d2412544d7be78203e4322f9d29c99b6c23de891435adad03cf0fc98f6a3",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-RD-CONTENT-ACQUISITION-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-READER-CONTENT-CACHE-FIRST-ACQUISITION-001"
+}
