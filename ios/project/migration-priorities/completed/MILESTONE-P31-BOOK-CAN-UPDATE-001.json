@@ -1,11 +1,25 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P31-BOOK-CAN-UPDATE-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P31 书籍更新开关",
   "objective": "依据冻结 Android BookInfoActivity 与 Book.canUpdate 源码，把书籍详情中的允许更新从常量展示改成真实持久化开关，并让详情状态立即反映存储结果。",
   "validation_policy": "运行一个 canUpdate 持久化聚焦测试并执行一次 App 构建；不启动模拟器，不新增 Android Golden。",
+  "completion_evidence": [
+    "动态详情页优先读取 storedItem.canUpdate 而非静态 snapshot",
+    "允许更新 Toggle 通过 AppUseCases 单书入口执行既有 ShelfBatchMutation",
+    "切换结果写入 GRDB 并在重新打开仓储后保持",
+    "持久化成功后详情勾选状态立即更新"
+  ],
+  "final_verification": {
+    "kind": "focused_test_and_single_app_build",
+    "completed_at": "2026-07-31T05:58:54+08:00",
+    "result": "1 个 canUpdate 持久化聚焦测试与一次 App 构建通过；未启动模拟器，未新增 Android Golden。",
+    "evidence": [
+      ".harness-runtime/loop/IOS-APP-NAVIGATION-BOOK-CAN-UPDATE-001/attempt-1"
+    ]
+  },
   "stages": [
     {
       "id": "P31-S1",

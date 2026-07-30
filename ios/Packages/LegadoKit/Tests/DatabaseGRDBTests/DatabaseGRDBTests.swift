@@ -199,6 +199,35 @@ final class DatabaseGRDBTests: XCTestCase {
     XCTAssertNil(deleted)
   }
 
+  func testBookDetailCanUpdateTogglePersists() async throws {
+    let path = temporaryDatabasePath()
+    let repository = try GRDBBookShelfRepository(path: path)
+    let item = try await repository.add(
+      candidate(name: "更新开关", suffix: "can-update"),
+      groupID: 0
+    )
+    let library = ShelfLibrary(repository: repository)
+    await library.reload()
+
+    let disabled = await library.setCanUpdate(
+      false,
+      bookID: item.id
+    )
+    XCTAssertEqual(disabled?.canUpdate, false)
+
+    let reopened = try GRDBBookShelfRepository(path: path)
+    let persisted = try await reopened.book(id: item.id)
+    XCTAssertEqual(persisted?.canUpdate, false)
+
+    let reopenedLibrary = ShelfLibrary(repository: reopened)
+    await reopenedLibrary.reload()
+    let enabled = await reopenedLibrary.setCanUpdate(
+      true,
+      bookID: item.id
+    )
+    XCTAssertEqual(enabled?.canUpdate, true)
+  }
+
   func testBatchSourceSwitchCommitsSuccessAndContinuesAfterFailure()
     async throws
   {

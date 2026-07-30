@@ -190,6 +190,7 @@ struct BookDetailView: View {
     @State private var showsSourceVariable = false
     @State private var sourceVariableDraft = ""
     @State private var savingSourceVariable = false
+    @State private var savingCanUpdate = false
 
     init(
         snapshot: BookDetailActionSnapshot,
@@ -276,7 +277,7 @@ struct BookDetailView: View {
                 sourceState: sourceState,
                 loginURLState: loginURLState,
                 bookKind: snapshot.bookKind,
-                canUpdate: snapshot.canUpdate,
+                canUpdate: storedItem?.canUpdate ?? snapshot.canUpdate,
                 splitsLongChapters: snapshot.splitsLongChapters,
                 confirmsDeletion: snapshot.confirmsDeletion
             )
@@ -544,10 +545,31 @@ struct BookDetailView: View {
                 )
             }
             if availability.actions.canUpdate {
-                checkedAction(
-                    "允许更新",
-                    id: "canUpdate",
-                    checked: availability.checked.canUpdate
+                Toggle(
+                    isOn: Binding(
+                        get: {
+                            availability.checked.canUpdate
+                        },
+                        set: { canUpdate in
+                            saveCanUpdate(canUpdate)
+                        }
+                    )
+                ) {
+                    Label(
+                        "允许更新",
+                        systemImage:
+                            availability.checked.canUpdate
+                            ? "checkmark.circle.fill"
+                            : "circle"
+                    )
+                }
+                .disabled(
+                    storedItem == nil
+                        || library == nil
+                        || savingCanUpdate
+                )
+                .accessibilityIdentifier(
+                    "action.bookDetail.canUpdate"
                 )
             }
             if availability.actions.splitLongChapter {
@@ -624,6 +646,24 @@ struct BookDetailView: View {
                 showsSourceVariable = false
             }
             savingSourceVariable = false
+        }
+    }
+
+    private func saveCanUpdate(_ canUpdate: Bool) {
+        guard
+            let storedItem,
+            let library,
+            !savingCanUpdate
+        else { return }
+        savingCanUpdate = true
+        Task {
+            if let updated = await library.setCanUpdate(
+                canUpdate,
+                bookID: storedItem.id
+            ) {
+                self.storedItem = updated
+            }
+            savingCanUpdate = false
         }
     }
 

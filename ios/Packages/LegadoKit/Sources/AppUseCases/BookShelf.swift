@@ -739,6 +739,21 @@ public final class ShelfLibrary {
   }
 
   @discardableResult
+  public func setCanUpdate(
+    _ canUpdate: Bool,
+    bookID: LibraryDomain.BookID
+  ) async -> ShelfBookItem? {
+    let report = await performBatch(
+      .setCanUpdate(canUpdate),
+      bookIDs: [bookID]
+    )
+    guard report.committedBookIDs == [bookID] else {
+      return nil
+    }
+    return await item(id: bookID)
+  }
+
+  @discardableResult
   public func switchSources(
     bookIDs: [LibraryDomain.BookID],
     targetSourceID: String,
