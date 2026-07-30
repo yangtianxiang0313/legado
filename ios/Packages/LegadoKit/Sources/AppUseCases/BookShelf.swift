@@ -42,19 +42,22 @@ public struct ShelfBookItem: Identifiable, Equatable, Sendable {
   public let membership: ShelfMembership
   public let order: Int64
   public let chapterCount: Int
+  public let progress: ReadingProgress?
 
   public init(
     id: LibraryDomain.BookID,
     candidate: ShelfBookCandidate,
     membership: ShelfMembership,
     order: Int64,
-    chapterCount: Int
+    chapterCount: Int,
+    progress: ReadingProgress? = nil
   ) {
     self.id = id
     self.candidate = candidate
     self.membership = membership
     self.order = order
     self.chapterCount = chapterCount
+    self.progress = progress
   }
 }
 
@@ -74,7 +77,18 @@ public protocol BookShelfRepository: Sendable {
     bookID: LibraryDomain.BookID,
     update: LibraryDomain.ChapterTOCUpdate
   ) async throws -> [LibraryDomain.BookChapter]
+  func saveReadingProgress(
+    bookID: LibraryDomain.BookID,
+    progress: ReadingProgress
+  ) async throws
   func reset() async throws
+}
+
+public extension BookShelfRepository {
+  func saveReadingProgress(
+    bookID: LibraryDomain.BookID,
+    progress: ReadingProgress
+  ) async throws {}
 }
 
 @MainActor
@@ -160,6 +174,37 @@ public final class ShelfLibrary {
     bookID: LibraryDomain.BookID
   ) async -> [LibraryDomain.BookChapter] {
     (try? await repository.chapters(bookID: bookID)) ?? []
+  }
+
+  public func saveReadingProgress(
+    bookID: LibraryDomain.BookID,
+    chapterIndex: Int,
+    characterOffset: Int,
+    chapterTitle: String?
+  ) async {
+    let progress = ReadingProgress(
+      position: ReadingPosition(
+        chapterIndex: max(0, chapterIndex),
+        characterOffset: max(0, characterOffset)
+      ),
+      chapterTitle: chapterTitle,
+      updatedAtMilliseconds: Int64(
+        Date().timeIntervalSince1970 * 1_000
+      )
+    )
+    do {
+      try await repository.saveReadingProgress(
+        bookID: bookID,
+        progress: progress
+      )
+      if let index = books.firstIndex(where: { $0.id == bookID }) {
+        books[index] = try await repository.book(id: bookID)
+          ?? books[index]
+      }
+      errorMessage = nil
+    } catch {
+      errorMessage = "无法保存阅读进度"
+    }
   }
 
   public func reset() async {

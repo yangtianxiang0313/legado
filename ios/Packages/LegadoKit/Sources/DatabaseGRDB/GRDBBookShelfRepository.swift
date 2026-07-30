@@ -181,6 +181,31 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
     }
   }
 
+  public func saveReadingProgress(
+    bookID: LibraryDomain.BookID,
+    progress: ReadingProgress
+  ) async throws {
+    try await database.write { db in
+      try db.execute(
+        sql: """
+          UPDATE books
+          SET progressChapterIndex = ?,
+              progressCharacterOffset = ?,
+              progressChapterTitle = ?,
+              progressUpdatedAt = ?
+          WHERE bookID = ?
+          """,
+        arguments: [
+          progress.position.chapterIndex,
+          progress.position.characterOffset,
+          progress.chapterTitle,
+          progress.updatedAtMilliseconds,
+          bookID.rawValue,
+        ]
+      )
+    }
+  }
+
   public func reset() async throws {
     try await database.write { db in
       _ = try ChapterRecord.deleteAll(db)
@@ -237,6 +262,14 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
         table.uniqueKey(["bookID", "chapterIndex"])
       }
     }
+    migrator.registerMigration("addReadingProgress") { db in
+      try db.alter(table: "books") { table in
+        table.add(column: "progressChapterIndex", .integer)
+        table.add(column: "progressCharacterOffset", .integer)
+        table.add(column: "progressChapterTitle", .text)
+        table.add(column: "progressUpdatedAt", .integer)
+      }
+    }
     return migrator
   }
 }
@@ -261,6 +294,10 @@ private struct BookRecord:
   var orderValue: Int64
   var chapterCount: Int
   var updateError: Bool
+  var progressChapterIndex: Int?
+  var progressCharacterOffset: Int?
+  var progressChapterTitle: String?
+  var progressUpdatedAt: Int64?
 
   init(
     bookID: String,
@@ -284,6 +321,10 @@ private struct BookRecord:
     self.orderValue = orderValue
     self.chapterCount = chapterCount
     self.updateError = false
+    self.progressChapterIndex = nil
+    self.progressCharacterOffset = nil
+    self.progressChapterTitle = nil
+    self.progressUpdatedAt = nil
   }
 
   mutating func apply(_ candidate: ShelfBookCandidate) {
@@ -316,7 +357,26 @@ private struct BookRecord:
         ? .member(groupID: groupID)
         : .staged,
       order: orderValue,
-      chapterCount: chapterCount
+      chapterCount: chapterCount,
+      progress: readingProgress
+    )
+  }
+
+  private var readingProgress: ReadingProgress? {
+    guard
+      let progressChapterIndex,
+      let progressCharacterOffset,
+      let progressUpdatedAt
+    else {
+      return nil
+    }
+    return ReadingProgress(
+      position: ReadingPosition(
+        chapterIndex: progressChapterIndex,
+        characterOffset: progressCharacterOffset
+      ),
+      chapterTitle: progressChapterTitle,
+      updatedAtMilliseconds: progressUpdatedAt
     )
   }
 }

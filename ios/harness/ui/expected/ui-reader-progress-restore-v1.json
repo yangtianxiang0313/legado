@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "scenario_id": "ui-reader-progress-restore-v1",
+  "profile": "store_safe",
+  "simulators": [
+    {
+      "simulator_id": "SIM-PHONE-COMPACT-001",
+      "projection": "compactStack",
+      "before_termination": {
+        "chapter": "第二章 回声",
+        "chapter_index": 1,
+        "character_offset": 0,
+        "progress_label": "2/3 · 位置 0"
+      },
+      "after_relaunch": {
+        "entry": "bookDetail.startReading",
+        "toc_bypassed": true,
+        "chapter": "第二章 回声",
+        "chapter_index": 1,
+        "character_offset": 0,
+        "progress_label": "2/3 · 位置 0"
+      }
+    }
+  ]
+}

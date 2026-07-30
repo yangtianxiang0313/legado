@@ -19,4 +19,10 @@ final class DatabaseGRDBTests: XCTestCase {
       try await DatabaseGRDBRuntime.verifyTOCPersistenceAcrossReopen()
     XCTAssertTrue(verified)
   }
+
+  func testReadingProgressSurvivesRepositoryReopen() async throws {
+    let verified =
+      try await DatabaseGRDBRuntime.verifyProgressPersistenceAcrossReopen()
+    XCTAssertTrue(verified)
+  }
 }

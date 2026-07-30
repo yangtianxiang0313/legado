@@ -115,8 +115,30 @@ struct RootShellView: View {
             BookDetailView(
                 candidate: ShelfBookCandidate(route: book),
                 library: library,
-                openTOC: { bookID in
-                    router.push(.chapterTOC(bookID), on: .shelf)
+                openReading: { item in
+                    let chapters = await library.chapters(
+                        bookID: item.id
+                    )
+                    if
+                        let progress = item.progress,
+                        let chapter = chapters.first(where: {
+                            $0.index == progress.position.chapterIndex
+                        })
+                    {
+                        router.push(
+                            .reader(
+                                ReaderRoute(
+                                    bookID: item.id,
+                                    chapterID: chapter.id,
+                                    characterOffset:
+                                        progress.position.characterOffset
+                                )
+                            ),
+                            on: .shelf
+                        )
+                    } else {
+                        router.push(.chapterTOC(item.id), on: .shelf)
+                    }
                 }
             )
         case .chapterTOC(let bookID):
@@ -375,10 +397,11 @@ private struct SearchBooksView: View {
                                 name,
                                 systemImage: "checkmark"
                             )
+                                }
+                            }
                         }
+                        .accessibilityIdentifier("action.shelf.openBook")
                     }
-                }
-            }
 
             if !session.scopeMenu.available.isEmpty {
                 Section("分组") {

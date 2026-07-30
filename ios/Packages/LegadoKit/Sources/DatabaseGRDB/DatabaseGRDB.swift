@@ -116,4 +116,42 @@ public enum DatabaseGRDBRuntime {
     return reopenedChapters == chapters
       && reopenedBook?.chapterCount == 3
   }
+
+  public static func verifyProgressPersistenceAcrossReopen() async throws
+    -> Bool
+  {
+    let path = FileManager.default.temporaryDirectory
+      .appendingPathComponent(UUID().uuidString)
+      .appendingPathExtension("sqlite")
+      .path
+    let repository = try GRDBBookShelfRepository(path: path)
+    let book = try await repository.add(
+      ShelfBookCandidate(
+        name: "星河纪事",
+        author: "林舟",
+        kind: "科幻",
+        lastChapter: "第二章",
+        intro: "",
+        bookURL: "http://sourcelab.test/books/progress",
+        coverURL: nil,
+        originName: "测试源"
+      ),
+      groupID: 0
+    )
+    let progress = ReadingProgress(
+      position: ReadingPosition(
+        chapterIndex: 1,
+        characterOffset: 128
+      ),
+      chapterTitle: "第二章 回声",
+      updatedAtMilliseconds: 1_234
+    )
+    try await repository.saveReadingProgress(
+      bookID: book.id,
+      progress: progress
+    )
+
+    let reopened = try GRDBBookShelfRepository(path: path)
+    return try await reopened.book(id: book.id)?.progress == progress
+  }
 }

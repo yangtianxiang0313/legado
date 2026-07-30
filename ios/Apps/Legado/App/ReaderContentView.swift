@@ -9,6 +9,7 @@ struct ReaderContentView: View {
     let openTOC: () -> Void
     let openChapter: (ChapterID) -> Void
 
+    @Environment(\.scenePhase) private var scenePhase
     @State private var session = ReaderContentSession(
         loader: SearchEnvironment.makeReaderContentLoader()
     )
@@ -92,6 +93,13 @@ struct ReaderContentView: View {
                 chapter: chapter,
                 characterOffset: target.characterOffset
             )
+            await saveProgress(chapter: chapter)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase != .active else { return }
+            Task {
+                await saveCurrentProgress()
+            }
         }
         .sheet(isPresented: $menuPresented) {
             NavigationStack(path: $menuPath) {
@@ -159,9 +167,13 @@ struct ReaderContentView: View {
 
                     Text(chapterProgressLabel)
                         .foregroundStyle(.secondary)
+                        .accessibilityLabel(chapterProgressLabel)
                         .accessibilityIdentifier(
                             ReaderMenuAction.seekProgress
                                 .accessibilityIdentifier
+                        )
+                        .accessibilityValue(
+                            "characterOffset=\(target.characterOffset)"
                         )
 
                     Spacer()
@@ -398,15 +410,42 @@ struct ReaderContentView: View {
         guard let currentChapterPosition, !chapters.isEmpty else {
             return "—"
         }
-        return "\(currentChapterPosition + 1)/\(chapters.count)"
+        return (
+            "\(currentChapterPosition + 1)/\(chapters.count)"
+            + " · 位置 \(target.characterOffset)"
+        )
     }
 
     private func openRelativeChapter(_ offset: Int) {
         guard let currentChapterPosition else { return }
         let destination = currentChapterPosition + offset
         guard chapters.indices.contains(destination) else { return }
+        let chapter = chapters[destination]
         menuPresented = false
-        openChapter(chapters[destination].id)
+        Task {
+            await saveProgress(chapter: chapter)
+            openChapter(chapter.id)
+        }
+    }
+
+    private func saveCurrentProgress() async {
+        guard
+            let chapter = chapters.first(where: {
+                $0.id == target.chapterID
+            })
+        else { return }
+        await saveProgress(chapter: chapter)
+    }
+
+    private func saveProgress(chapter: BookChapter) async {
+        await library.saveReadingProgress(
+            bookID: target.bookID,
+            chapterIndex: chapter.index,
+            characterOffset: chapter.id == target.chapterID
+                ? target.characterOffset
+                : 0,
+            chapterTitle: chapter.title
+        )
     }
 
     private func menuPlaceholder(

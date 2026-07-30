@@ -167,7 +167,7 @@ struct BookDetailView: View {
     let display: BookDetailDisplay
     let candidate: ShelfBookCandidate?
     let library: ShelfLibrary?
-    let openTOC: ((LibraryDomain.BookID) -> Void)?
+    let openReading: ((ShelfBookItem) async -> Void)?
 
     @State private var storedItem: ShelfBookItem?
 
@@ -179,20 +179,20 @@ struct BookDetailView: View {
         self.display = display
         self.candidate = nil
         self.library = nil
-        self.openTOC = nil
+        self.openReading = nil
         _storedItem = State(initialValue: nil)
     }
 
     init(
         candidate: ShelfBookCandidate,
         library: ShelfLibrary,
-        openTOC: @escaping (LibraryDomain.BookID) -> Void
+        openReading: @escaping (ShelfBookItem) async -> Void
     ) {
         self.snapshot = .remoteSourceLoginUnshelved
         self.display = BookDetailDisplay(candidate: candidate)
         self.candidate = candidate
         self.library = library
-        self.openTOC = openTOC
+        self.openReading = openReading
         _storedItem = State(initialValue: nil)
     }
 
@@ -254,13 +254,15 @@ struct BookDetailView: View {
 
                 Button {
                     guard let storedItem else { return }
-                    openTOC?(storedItem.id)
+                    Task {
+                        await openReading?(storedItem)
+                    }
                 } label: {
                     Label("开始阅读", systemImage: "book.pages")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(storedItem == nil || openTOC == nil)
+                .disabled(storedItem == nil || openReading == nil)
                 .accessibilityIdentifier("action.bookDetail.startReading")
             }
             .padding()

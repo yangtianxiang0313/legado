@@ -824,6 +824,144 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testReaderProgressPersistsAcrossRelaunch() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = contract.projection == "regularSplit"
+            ? .landscapeLeft
+            : .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        require("action.shelf.openSearch").tap()
+        require("screen.search.books")
+        let searchField = app.searchFields.firstMatch
+        XCTAssertTrue(searchField.waitForExistence(timeout: 8))
+        searchField.tap()
+        searchField.typeText("星河纪事\n")
+        let searchResult = app.staticTexts["星河纪事"].firstMatch
+        XCTAssertTrue(searchResult.waitForExistence(timeout: 8))
+        searchResult.tap()
+        require("screen.bookDetail")
+
+        let add = app.buttons[
+            "action.bookDetail.shelf.add"
+        ].firstMatch
+        XCTAssertTrue(add.waitForExistence(timeout: 8))
+        add.tap()
+        let remove = app.buttons[
+            "action.bookDetail.shelf.remove"
+        ].firstMatch
+        XCTAssertTrue(remove.waitForExistence(timeout: 8))
+
+        let start = require("action.bookDetail.startReading")
+        XCTAssertTrue(start.isEnabled)
+        start.tap()
+        require("screen.chapterTOC")
+        require("action.chapter.select.0").tap()
+        require("screen.reader")
+        XCTAssertEqual(
+            require("label.reader.chapterTitle").label,
+            "第一章 启航"
+        )
+
+        require("action.reader.openPrimaryMenu").tap()
+        require("overlay.reader.primaryMenu")
+        let next = app.buttons[
+            "action.reader.nextChapter"
+        ].firstMatch
+        XCTAssertTrue(next.waitForExistence(timeout: 8))
+        XCTAssertTrue(next.isEnabled)
+        next.tap()
+        let title = require("label.reader.chapterTitle")
+        let chapterDeadline = Date().addingTimeInterval(8)
+        while title.label != "第二章 回声" && Date() < chapterDeadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+        }
+        XCTAssertEqual(title.label, "第二章 回声")
+
+        require("action.reader.openPrimaryMenu").tap()
+        let savedProgress = app.staticTexts[
+            "action.reader.seekProgress"
+        ].firstMatch
+        XCTAssertTrue(savedProgress.waitForExistence(timeout: 8))
+        XCTAssertEqual(
+            savedProgress.label,
+            "2/3 · 位置 0",
+            "Observed progress label: \(savedProgress.label)"
+        )
+        let closeBeforeRelaunch = app.buttons[
+            "action.reader.closeMenu"
+        ].firstMatch
+        XCTAssertTrue(closeBeforeRelaunch.waitForExistence(timeout: 8))
+        closeBeforeRelaunch.tap()
+
+        app.terminate()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        require("screen.root.shelf")
+        let shelfBook = app.buttons[
+            "action.shelf.openBook"
+        ].firstMatch
+        XCTAssertTrue(shelfBook.waitForExistence(timeout: 8))
+        shelfBook.tap()
+        require("screen.bookDetail")
+        let resume = require("action.bookDetail.startReading")
+        XCTAssertTrue(resume.isEnabled)
+        resume.tap()
+        require("screen.reader")
+        XCTAssertFalse(
+            element("screen.chapterTOC").exists,
+            "Saved progress should bypass the TOC"
+        )
+        XCTAssertEqual(
+            require("label.reader.chapterTitle").label,
+            "第二章 回声"
+        )
+        require("action.reader.openPrimaryMenu").tap()
+        let restoredProgress = app.staticTexts[
+            "action.reader.seekProgress"
+        ].firstMatch
+        XCTAssertTrue(restoredProgress.waitForExistence(timeout: 8))
+        XCTAssertEqual(
+            restoredProgress.label,
+            "2/3 · 位置 0",
+            "Observed progress label: \(restoredProgress.label)"
+        )
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "before_termination": [
+                "chapter": "第二章 回声",
+                "chapter_index": 1,
+                "character_offset": 0,
+                "progress_label": "2/3 · 位置 0",
+            ],
+            "after_relaunch": [
+                "entry": "bookDetail.startReading",
+                "toc_bypassed": true,
+                "chapter": "第二章 回声",
+                "chapter_index": 1,
+                "character_offset": 0,
+                "progress_label": "2/3 · 位置 0",
+            ],
+        ])
+    }
+
     private func observeStartupCase(
         id: String,
         initial: String,
