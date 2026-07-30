@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P22-BOOK-DETAIL-SOURCE-LOGIN-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "title": "P22 书籍详情登录书源闭环",
+  "objective": "依据冻结 Android BookInfoActivity 源码，让 iOS 书籍详情根据当前真实书源的 loginUrl 决定登录入口可见性，并把点击动作导航到已实现的书源登录页；换源后入口随当前 sourceID 更新。",
+  "validation_policy": "复用 P20 已通过的登录页与既有详情条件测试，仅执行聚焦测试和一次 App 构建，不重复本地网站模拟器验收。",
+  "stages": [
+    {
+      "id": "P22-S1",
+      "title": "接通详情登录入口",
+      "selectors": [
+        {
+          "id": "P22-S1-BOOK-DETAIL-LOGIN",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-APP-NAVIGATION-BOOK-DETAIL-SOURCE-LOGIN-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-APP-NAVIGATION-BOOK-DETAIL-SOURCE-LOGIN-001",
+      "title": "按真实书源显示并执行书籍详情登录动作",
+      "fixture_id": "book-detail-source-login-app-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [],
+      "validation": "build",
+      "ui_contract": {
+        "goal": "书籍详情只为具有非空 loginUrl 的当前书源显示登录入口，点击后进入该书源登录页。",
+        "scenario_id": "book-detail-source-login-app-v1",
+        "test_method": "testBookDetailSourceLoginFlow"
+      },
+      "additional_allowed_paths": [],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/ui/book/info/BookInfoActivity.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.info.BookInfoActivity/onMenuOpened"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/ui/book/info/BookInfoActivity.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.info.BookInfoActivity/onCompatOptionsItemSelected"
+        }
+      ]
+    }
+  ]
+}
