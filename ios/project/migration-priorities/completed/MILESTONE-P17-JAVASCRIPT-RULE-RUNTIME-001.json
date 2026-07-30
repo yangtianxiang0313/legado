@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P17-JAVASCRIPT-RULE-RUNTIME-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P17 JavaScript 规则运行时进入 FullCompat 主链",
   "objective": "依据 Android AnalyzeRule/AnalyzeUrl 的脚本调用边界和既有架构决策，建立 SourceRuntime 的异步脚本端口、独立 ScriptJavaScriptCore 平台后端与 FullCompat 组合根；先覆盖已由 Android Golden 冻结的 result/baseUrl/变量读写语义，再逐步扩展白名单 Host API，禁止把 Swift 产品对象完整暴露给脚本。",
@@ -12,6 +12,20 @@
     "搜索、详情、目录和正文规则可以注入脚本执行端口，未注入时返回稳定 capabilityDenied/unsupportedScript",
     "本地脚本书源在 FullCompat 路径产生结构化搜索至正文结果"
   ],
+  "final_verification": {
+    "kind": "focused_tests_plus_single_app_build",
+    "completed_at": "2026-07-31T04:51:20+08:00",
+    "commands": [
+      "swift test --package-path ios/Packages/LegadoKit --disable-automatic-resolution --filter SourceScriptProductIntegrationTests",
+      "xcodebuild -project ios/Apps/Legado/Legado.xcodeproj -scheme LegadoApp -destination generic/platform=iOS Simulator CODE_SIGNING_ALLOWED=NO build"
+    ],
+    "result": "2 个聚焦测试通过；LegadoApp 以 LegadoFullCompatKit 为组合根编译成功。",
+    "evidence": [
+      ".harness-runtime/loop/IOS-SOURCE-RUNTIME-SCRIPT-PRODUCT-INTEGRATION-001/attempt-1",
+      "ios/Packages/LegadoKit/Tests/ScriptJavaScriptCoreTests/SourceScriptProductIntegrationTests.swift",
+      "ios/Packages/LegadoKit/Tests/SourceRuntimeTests/SourceScriptProductIntegrationTests.swift"
+    ]
+  },
   "deferred_policy": "首轮只实现 Android Golden 已观测的纯计算、result/baseUrl 和变量 put/get；网络、文件、凭据、刷新书籍/目录与支付等副作用必须经白名单命令端口和独立 Android characterization 后加入，不复制 Rhino 的任意 Java/Android 对象暴露。",
   "deliveries": [
     {
@@ -79,7 +93,9 @@
       "test_filter": "SourceScriptProductIntegrationTests",
       "additional_allowed_paths": [
         "ios/Packages/LegadoKit/Sources/AppUseCases/**",
-        "ios/Apps/Legado/App/**"
+        "ios/Packages/LegadoKit/Tests/ScriptJavaScriptCoreTests/**",
+        "ios/Apps/Legado/App/**",
+        "ios/Apps/Legado/Legado.xcodeproj/project.pbxproj"
       ],
       "source_anchors": [
         {
