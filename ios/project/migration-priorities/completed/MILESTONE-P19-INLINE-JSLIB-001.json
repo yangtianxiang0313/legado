@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P19-INLINE-JSLIB-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P19 内联 jsLib 进入 FullCompat 脚本主链",
   "objective": "依据冻结 Android SharedJsScope、AnalyzeRule 和 AnalyzeUrl 源码，把非 JSON 的内联 jsLib 作为书源会话共享脚本装入 JavaScriptCore，再让普通规则与 loginCheckJs 复用其中函数；SourceRuntime 只传递不透明库源码和稳定身份，不承担 JavaScript 编译、缓存或平台对象暴露。",
@@ -12,6 +12,22 @@
     "BookSource.jsLib 被产品 Definition 保留，并同时进入字段规则与 loginCheckJs 执行",
     "本地 FullCompat 书源可在搜索至正文链路调用 jsLib 定义的函数"
   ],
+  "final_verification": {
+    "kind": "focused_tests_plus_single_app_build",
+    "completed_at": "2026-07-31T05:06:25+08:00",
+    "commands": [
+      "swift test --package-path ios/Packages/LegadoKit --disable-automatic-resolution --filter SourceScriptLibraryContractTests",
+      "swift test --package-path ios/Packages/LegadoKit --disable-automatic-resolution --filter JavaScriptCoreInlineLibraryTests",
+      "swift test --package-path ios/Packages/LegadoKit --disable-automatic-resolution --filter SourceJSLibraryProductIntegrationTests",
+      "xcodebuild -project ios/Apps/Legado/Legado.xcodeproj -scheme LegadoApp -destination generic/platform=iOS Simulator CODE_SIGNING_ALLOWED=NO build"
+    ],
+    "result": "3 个合同测试、4 个适配器测试、1 个搜索至正文产品链测试通过；LegadoApp 编译成功。",
+    "evidence": [
+      ".harness-runtime/loop/IOS-SOURCE-RUNTIME-SCRIPT-LIBRARY-CONTRACT-001/attempt-1",
+      ".harness-runtime/loop/IOS-SOURCE-RUNTIME-JAVASCRIPTCORE-INLINE-LIBRARY-001/attempt-1",
+      ".harness-runtime/loop/IOS-SOURCE-RUNTIME-JSLIB-PRODUCT-INTEGRATION-001/attempt-1"
+    ]
+  },
   "deferred_policy": "Android SharedJsScope 对 JSON 对象中的绝对 URL 执行同步下载和磁盘缓存；该网络与缓存副作用不在本里程碑实现，必须经独立 SourceLab/Android characterization 后通过受限库加载端口加入。",
   "deliveries": [
     {
