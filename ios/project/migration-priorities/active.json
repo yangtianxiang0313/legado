@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P24-SOURCE-USER-VARIABLE-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "title": "P24 书源用户变量闭环",
+  "objective": "依据冻结 Android BaseSource 与 BookInfoActivity 源码，将书源用户变量按 sourceURL 独立于书源定义持久化，接通详情编辑入口，并让搜索、发现、详情、目录与正文 JavaScript 通过 source.getVariable() 读取当前值。",
+  "validation_policy": "执行独立存储与 JavaScript facade 聚焦测试，再执行一次 App 构建；不启动模拟器，不运行全量书源验收。",
+  "stages": [
+    {
+      "id": "P24-S1",
+      "title": "接通书源变量存储与运行时消费",
+      "selectors": [
+        {
+          "id": "P24-S1-SOURCE-USER-VARIABLE",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-APP-NAVIGATION-SOURCE-USER-VARIABLE-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-APP-NAVIGATION-SOURCE-USER-VARIABLE-001",
+      "title": "编辑、持久化并消费书源用户变量",
+      "fixture_id": "source-user-variable-app-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [
+        "IOS-APP-NAVIGATION-BOOK-CUSTOM-VARIABLE-001"
+      ],
+      "validation": "build",
+      "ui_contract": {
+        "goal": "书源用户变量独立于书源定义保存，详情页可编辑，所有书源脚本阶段可通过 source.getVariable() 读取。",
+        "scenario_id": "source-user-variable-app-v1",
+        "test_method": "testSourceUserVariableFlow"
+      },
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/SourceRuntime/**",
+        "ios/Packages/LegadoKit/Tests/SourceRuntimeTests/**",
+        "ios/Packages/LegadoKit/Sources/ScriptJavaScriptCore/**",
+        "ios/Packages/LegadoKit/Tests/ScriptJavaScriptCoreTests/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/data/entities/BaseSource.kt",
+          "symbol_id": "kotlin://io.legado.app.data.entities.BaseSource/setVariable"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/ui/book/info/BookInfoActivity.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.info.BookInfoActivity/setSourceVariable"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt",
+          "symbol_id": "kotlin://io.legado.app.model.analyzeRule.AnalyzeRule/evalJS"
+        }
+      ]
+    }
+  ]
+}
