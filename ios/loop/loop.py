@@ -1540,6 +1540,21 @@ def app_navigation_delivery_contract(
             ),
             "test_method": "testDiscoverySearchFlow",
         },
+        "rl-ui-source-editor-debug-routes-001": {
+            "goal": (
+                "按照冻结 Android 书源编辑与调试状态转换，在 AppUseCases "
+                "中实现编辑会话、保存边界、调试路由和调用方刷新策略，"
+                "在 AppNavigation 中提供稳定页面路由，并由 AppShell "
+                "接入设置页、详情页和阅读器入口。"
+            ),
+            "acceptance_id": "structured-source-editor-debug-acceptance",
+            "scenario_id": "ui-source-editor-debug-routes-v1",
+            "expected": (
+                "ios/harness/ui/expected/"
+                "ui-source-editor-debug-routes-v1.json"
+            ),
+            "test_method": "testSourceEditorDebugRoutes",
+        },
         "rl-library-book-detail-staging-runtime-001": {
             "goal": (
                 "把稳定书籍身份、显式书架成员资格与 DatabaseGRDB 仓储接入"
