@@ -71,6 +71,20 @@
           ]
         }
       ]
+    },
+    {
+      "id": "P1-05-SOURCE-MANAGEMENT-MILESTONE",
+      "title": "接通持久化换源并验收完整流程",
+      "outcome": "书源管理、书籍换源、目录和阅读进度通过真实持久化接通，并在一台 iPhone Simulator 上完成一次端到端验收。",
+      "selectors": [
+        {
+          "id": "SOURCE-MANAGEMENT-MILESTONE",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-APP-NAVIGATION-SOURCE-MANAGEMENT-MILESTONE-001"
+          ]
+        }
+      ]
     }
   ]
 }

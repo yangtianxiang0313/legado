@@ -659,6 +659,18 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                     "ios/Packages/LegadoKit/Tests/SourceFormatTests/**",
                 ]
             )
+        if target == (
+            "IOS-APP-NAVIGATION-SOURCE-MANAGEMENT-MILESTONE-001"
+        ):
+            allowed_paths.extend(
+                [
+                    "ios/Packages/LegadoKit/Sources/LibraryDomain/**",
+                    "ios/Packages/LegadoKit/Sources/ReaderCore/**",
+                    "ios/Packages/LegadoKit/Sources/SourceRuntime/**",
+                    "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+                    "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+                ]
+            )
         return {
             "owner": "AppNavigation",
             "architecture_refs": [
@@ -1076,6 +1088,87 @@ def milestone_completion_deliveries(
     ]
 
 
+def source_management_milestone_deliveries(
+    root: Path,
+) -> list[Mapping[str, Any]]:
+    target = "IOS-APP-NAVIGATION-SOURCE-MANAGEMENT-MILESTONE-001"
+    completed = completed_task_ids(root)
+    if target in completed:
+        return []
+    policy = active_priority_policy(root)
+    prerequisites = {
+        "IOS-APP-NAVIGATION-SOURCE-BULK-MANAGEMENT-001",
+        "IOS-READER-CORE-LIBRARY-BOOK-SOURCE-SWITCH-MIGRATION-RUNTIME-001",
+        "IOS-APP-NAVIGATION-SOURCE-IMPORT-RUNTIME-001",
+    }
+    if (
+        not isinstance(policy, dict)
+        or policy.get("id") != "MILESTONE-P1-SOURCE-MANAGEMENT-001"
+        or not prerequisites.issubset(completed)
+    ):
+        return []
+    requirement = "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+    return [
+        {
+            "target": target,
+            "title": "真实书源管理与整书换源里程碑",
+            "ledger_path": "ios/project/migration-priorities/active.json",
+            "ledger": {"packet_refs": []},
+            "entries": [
+                {
+                    "validation": {
+                        "required": "milestone_integration",
+                        "state": "planned",
+                        "evidence_refs": [
+                            "ios/project/migration-priorities/active.json"
+                        ],
+                    },
+                    "delivery": {
+                        "state": "planned",
+                        "work_item_refs": [target],
+                        "requirement_refs": [requirement],
+                    },
+                }
+            ],
+            "source_anchors": [
+                {
+                    "android_commit":
+                        "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+                    "git_blob":
+                        "a461b135ca389a687189b6661a0a02e04456c7f2",
+                    "path": (
+                        "app/src/main/java/io/legado/app/ui/book/info/"
+                        "BookInfoViewModel.kt"
+                    ),
+                    "symbol_id": (
+                        "kotlin://io.legado.app.ui.book.info."
+                        "BookInfoViewModel/changeTo"
+                    ),
+                },
+                {
+                    "android_commit":
+                        "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+                    "git_blob":
+                        "b116c77fa2d48c9d1a1013e60a92236f71bea1bc",
+                    "path": (
+                        "app/src/main/java/io/legado/app/ui/book/read/"
+                        "ReadBookActivity.kt"
+                    ),
+                    "symbol_id": (
+                        "kotlin://io.legado.app.ui.book.read."
+                        "ReadBookActivity/changeTo"
+                    ),
+                },
+            ],
+            "source_contract": {
+                "path": "ios/project/migration-priorities/active.json",
+                "fixture_id": "milestone-source-management-v1",
+                "validation": "simulator",
+            },
+        }
+    ]
+
+
 def active_priority_policy(root: Path) -> Mapping[str, Any] | None:
     path = root / PRIORITY_PATH
     if not path.is_file():
@@ -1170,6 +1263,12 @@ def prioritized_work(
     deliveries.extend(
         value
         for value in milestone_completion_deliveries(root)
+        if str(value["target"]) not in known_targets
+    )
+    known_targets = {str(value["target"]) for value in deliveries}
+    deliveries.extend(
+        value
+        for value in source_management_milestone_deliveries(root)
         if str(value["target"]) not in known_targets
     )
     characterizations = pending_characterizations(root)
@@ -1743,6 +1842,21 @@ def app_navigation_delivery_contract(
                 "ui-reader-progress-restore-v1.json"
             ),
             "test_method": "testReaderProgressPersistsAcrossRelaunch",
+        },
+        "milestone-source-management-v1": {
+            "goal": (
+                "把书源批量管理与整书换源核心接入 DatabaseGRDB、详情页和"
+                "阅读器，保证旧书、目录与阅读进度原子迁移；随后只在一台"
+                "主 iPhone Simulator 上验收导入、批量管理和换源主流程。"
+            ),
+            "acceptance_id":
+                "structured-source-management-milestone-acceptance",
+            "scenario_id": "ui-source-management-milestone-v1",
+            "expected": (
+                "ios/harness/ui/expected/"
+                "ui-source-management-milestone-v1.json"
+            ),
+            "test_method": "testSourceManagementMilestone",
         },
     }
     feature = features.get(fixture_id)
@@ -2751,6 +2865,12 @@ def queue_status(root: Path) -> Mapping[str, Any]:
     deliveries.extend(
         value
         for value in milestone_completion_deliveries(root)
+        if str(value["target"]) not in known_targets
+    )
+    known_targets = {str(value["target"]) for value in deliveries}
+    deliveries.extend(
+        value
+        for value in source_management_milestone_deliveries(root)
         if str(value["target"]) not in known_targets
     )
     characterizations = pending_characterizations(root)

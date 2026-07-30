@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "scenario_id": "ui-source-management-milestone-v1",
+  "profile": "store_safe",
+  "simulators": [
+    {
+      "simulator_id": "SIM-PHONE-COMPACT-001",
+      "projection": "compactStack",
+      "managed_source": "Milestone Source",
+      "source_enabled": false,
+      "source_switched": true,
+      "progress_preserved": true,
+      "route_trace": [
+        "source.management",
+        "source.import",
+        "source.management",
+        "book.detail",
+        "book.source.switch",
+        "reader"
+      ]
+    }
+  ]
+}
