@@ -224,6 +224,17 @@ class SourceLabTests(unittest.TestCase):
             with source_lab.running_server(REPO_ROOT, self.runtime_scenario):
                 self.fail("runtime scenario started a SourceLab server")
 
+    def test_runtime_scenario_coverage_is_self_contained(self):
+        directory, case, _ = source_lab.load_scenario(
+            REPO_ROOT,
+            "rl-reader-session-close-cancellation-001",
+        )
+        self.assertEqual(
+            [],
+            source_lab.validate_scenario(REPO_ROOT, directory, case),
+        )
+        self.assertEqual("android_runtime_scenario", case["kind"])
+
     def test_library_group_boundary_runtime_scenario_is_source_anchored(self):
         scenario = "rl-library-shelf-group-bit-boundary-risk-001"
         directory, case, inputs = source_lab.load_scenario(

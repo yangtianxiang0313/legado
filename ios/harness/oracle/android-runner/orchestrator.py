@@ -1410,6 +1410,31 @@ SCENARIO_CONTRACTS = {
             "first-chapter-cannot-retreat",
         }),
     },
+    "rl-reader-session-close-cancellation-001": {
+        "status": "candidate",
+        "fixture_kind": "android_runtime_scenario",
+        "result_type": "reader_runtime",
+        "stage_names": (
+            "fixture_setup",
+            "unregister",
+            "cancellation_projection",
+            "result_mapping",
+        ),
+        "expected_cases": (
+            (
+                "matching-callback-closes-owned-session",
+                "reader_session_close",
+            ),
+            (
+                "foreign-callback-preserves-owner-but-still-cleans-runtime",
+                "reader_session_close",
+            ),
+        ),
+        "nominal_cases": frozenset({
+            "matching-callback-closes-owned-session",
+            "foreign-callback-preserves-owner-but-still-cleans-runtime",
+        }),
+    },
     "rl-reader-cache-prefetch-policy-001": {
         "status": "candidate",
         "fixture_kind": "android_runtime_scenario",

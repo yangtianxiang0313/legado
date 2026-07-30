@@ -578,7 +578,10 @@ def doctor(root: Path) -> List[str]:
                 errors.append(f"case 必须是 object：{directory}")
                 continue
             errors.extend(validate_scenario(root, directory, case))
-            if case.get("kind") == "integration_lab_scenario":
+            if case.get("kind") in {
+                "android_runtime_scenario",
+                "integration_lab_scenario",
+            }:
                 continue
             for entry in case.get("coverage", []):
                 behavior = entry.get("behavior") if isinstance(entry, dict) else None

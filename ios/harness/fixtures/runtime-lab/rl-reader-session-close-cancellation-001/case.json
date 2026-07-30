@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "kind": "android_runtime_scenario",
+  "id": "rl-reader-session-close-cancellation-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "android_runtime",
+  "capabilities": [
+    "reader.lifecycle",
+    "reader.cancellation"
+  ],
+  "compatibility_profile": "android-legado-v1",
+  "source": null,
+  "input": "input.json",
+  "transport": {
+    "mode": "none",
+    "external_network": "deny",
+    "responses": []
+  },
+  "coverage": [
+    {
+      "behavior": "reader.session.close-cancellation",
+      "cases": [
+        {
+          "id": "matching-callback-closes-owned-session",
+          "role": "nominal",
+          "android_fact_refs": ["AF-READ-BOOK-UNREGISTER"],
+          "branch_refs": [
+            "the registered callback is removed only for the identical owner",
+            "reader-owned jobs, caches, download bookkeeping, and current layout are cancelled or cleared"
+          ]
+        },
+        {
+          "id": "foreign-callback-preserves-owner-but-still-cleans-runtime",
+          "role": "boundary",
+          "android_fact_refs": ["AF-READ-BOOK-UNREGISTER"],
+          "branch_refs": [
+            "a non-identical callback does not remove the registered owner",
+            "all cleanup after the identity check still runs"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "not-observed",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 0,
+    "network_allowed": false,
+    "logical_origin": null,
+    "database_reset_per_case": true
+  },
+  "limits": {
+    "timeout_ms": 5000
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/model/ReadBook.kt#unregister",
+      "app/src/main/java/io/legado/app/ui/book/read/page/entities/TextChapter.kt#cancelLayout"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-READER-SESSION-CLOSE-CANCELLATION-001"
+  }
+}

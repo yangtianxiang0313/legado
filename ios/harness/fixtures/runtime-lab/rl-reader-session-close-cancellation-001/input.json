@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "matching-callback-closes-owned-session",
+      "operation": "reader_session_close",
+      "arguments": {
+        "callback_matches": true
+      }
+    },
+    {
+      "id": "foreign-callback-preserves-owner-but-still-cleans-runtime",
+      "operation": "reader_session_close",
+      "arguments": {
+        "callback_matches": false
+      }
+    }
+  ]
+}

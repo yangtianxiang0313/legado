@@ -69,6 +69,7 @@ import io.legado.app.lib.webdav.WebDav
 import io.legado.app.lib.webdav.WebDavFile
 import io.legado.app.model.CacheBook
 import io.legado.app.model.AudioPlay
+import io.legado.app.model.ImageProvider
 import io.legado.app.model.ReadBook
 import io.legado.app.model.analyzeRule.AnalyzeRule
 import io.legado.app.model.analyzeRule.AnalyzeUrl
@@ -270,6 +271,8 @@ class LegadoOracleInstrumentedTest {
                 runReaderContentNormalizationCases()
             "rl-reader-session-chapter-navigation-001" ->
                 runReaderChapterNavigationCases()
+            "rl-reader-session-close-cancellation-001" ->
+                runReaderSessionCloseCases()
             "rl-app-startup-first-use-and-restore-001" ->
                 runAppStartupCases()
             "sl-post-form-001" -> runPostFormCases()
@@ -6920,6 +6923,139 @@ class LegadoOracleInstrumentedTest {
         ReadBook.prevTextChapter = null
         ReadBook.curTextChapter = null
         ReadBook.nextTextChapter = null
+        synchronized(ReadBook) {
+            prefetchLoadingList().clear()
+        }
+    }
+
+    private suspend fun runReaderSessionCloseCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            require(
+                value.getString("operation") == "reader_session_close"
+            ) {
+                "Unsupported reader session close operation"
+            }
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", "reader_session_close")
+                .put("arguments", JSONObject(arguments.toString()))
+            runCase(
+                value.getString("id"),
+                "reader_session_close",
+                stimulus
+            ) {
+                readerSessionCloseProjection(arguments)
+            }
+        }
+    }
+
+    private fun readerSessionCloseProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        clearReaderSessionCloseState()
+        val registered = LayoutStreamCallback("none")
+        val foreign = LayoutStreamCallback("none")
+        val invoked =
+            if (arguments.getBoolean("callback_matches")) registered
+            else foreign
+        val preDownload = Job()
+        val downloadChild = Job(
+            requireNotNull(
+                ReadBook.downloadScope.coroutineContext[Job]
+            )
+        )
+        val mainChild = Job(
+            requireNotNull(ReadBook.coroutineContext[Job])
+        )
+        val previous = navigationTextChapter(JSONArray().put(0), 0, 3)!!
+        val current = navigationTextChapter(JSONArray().put(0), 1, 3)!!
+        val next = navigationTextChapter(JSONArray().put(0), 2, 3)!!
+        previous.listener = registered
+        current.listener = registered
+        next.listener = registered
+        val imageKey = "android-runtime://reader-close/image"
+        ImageProvider.put(
+            imageKey,
+            android.graphics.Bitmap.createBitmap(
+                1,
+                1,
+                android.graphics.Bitmap.Config.ARGB_8888
+            )
+        )
+        return try {
+            ReadBook.callBack = registered
+            ReadBook.msg = "closing"
+            ReadBook.preDownloadTask = preDownload
+            ReadBook.downloadedChapters.addAll(listOf(1, 2))
+            ReadBook.downloadFailChapters[3] = 2
+            ReadBook.prevTextChapter = previous
+            ReadBook.curTextChapter = current
+            ReadBook.nextTextChapter = next
+            synchronized(ReadBook) {
+                prefetchLoadingList().addAll(listOf(7, 8))
+            }
+
+            ReadBook.unregister(invoked)
+
+            JSONObject()
+                .put("callback_cleared", ReadBook.callBack == null)
+                .put("message_cleared", ReadBook.msg == null)
+                .put("pre_download_cancelled", preDownload.isCancelled)
+                .put(
+                    "download_children_cancelled",
+                    downloadChild.isCancelled
+                )
+                .put("main_children_cancelled", mainChild.isCancelled)
+                .put(
+                    "downloaded_chapters_cleared",
+                    ReadBook.downloadedChapters.isEmpty()
+                )
+                .put(
+                    "download_failures_cleared",
+                    ReadBook.downloadFailChapters.isEmpty()
+                )
+                .put(
+                    "image_cache_cleared",
+                    ImageProvider.get(imageKey) == null
+                )
+                .put(
+                    "current_layout_listener_cleared",
+                    current.listener == null
+                )
+                .put(
+                    "previous_layout_listener_preserved",
+                    previous.listener === registered
+                )
+                .put(
+                    "next_layout_listener_preserved",
+                    next.listener === registered
+                )
+                .put(
+                    "loading_indices",
+                    intProjection(prefetchLoadingIndices())
+                )
+        } finally {
+            preDownload.cancel()
+            downloadChild.cancel()
+            mainChild.cancel()
+            clearReaderSessionCloseState()
+        }
+    }
+
+    private fun clearReaderSessionCloseState() {
+        ReadBook.coroutineContext.cancelChildren()
+        ReadBook.downloadScope.coroutineContext.cancelChildren()
+        ReadBook.callBack = null
+        ReadBook.msg = null
+        ReadBook.preDownloadTask = null
+        ReadBook.downloadedChapters.clear()
+        ReadBook.downloadFailChapters.clear()
+        ReadBook.prevTextChapter = null
+        ReadBook.curTextChapter = null
+        ReadBook.nextTextChapter = null
+        ImageProvider.clear()
         synchronized(ReadBook) {
             prefetchLoadingList().clear()
         }
