@@ -169,6 +169,56 @@ class MinimalLoopTests(unittest.TestCase):
                 loop.satisfied_dependency_claim_refs(root),
             )
 
+    def test_knowledge_linked_claim_does_not_reenter_runtime_queue(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            events_path = root / "ios/project/loop/events.jsonl"
+            events_path.parent.mkdir(parents=True, exist_ok=True)
+            events_path.write_bytes(
+                loop.canonical(
+                    {
+                        "schema_version": 2,
+                        "sequence": 1,
+                        "at": "2026-07-30T00:00:00Z",
+                        "event": "task_completed",
+                        "task_id": "IOS-SOURCE-RUNTIME-POST-FORM-001",
+                        "details": {},
+                    }
+                )
+                + loop.canonical(
+                    {
+                        "schema_version": 2,
+                        "sequence": 2,
+                        "at": "2026-07-30T00:01:00Z",
+                        "event": "knowledge_linked",
+                        "task_id": "IOS-SOURCE-RUNTIME-POST-FORM-001",
+                        "details": {
+                            "knowledge": {
+                                "candidate_claim_refs": [
+                                    {
+                                        "id": "BKC-SR-POST-FORM-SELECTION-001",
+                                        "revision": 1,
+                                    },
+                                    {
+                                        "id": "BKC-SR-POST-BODY-DISPATCH-001",
+                                        "revision": 1,
+                                    },
+                                ]
+                            }
+                        },
+                    }
+                )
+            )
+
+            expected = {
+                ("BKC-SR-POST-FORM-SELECTION-001", 1),
+                ("BKC-SR-POST-BODY-DISPATCH-001", 1),
+            }
+            self.assertEqual(expected, loop.delivered_claim_refs(root))
+            self.assertTrue(
+                expected.issubset(loop.satisfied_dependency_claim_refs(root))
+            )
+
     def fixture(self, root: Path) -> None:
         self.write(
             root,

@@ -290,6 +290,37 @@ def reused_claim_evidence(root: Path) -> dict[tuple[str, int], str]:
     return result
 
 
+def delivered_claim_refs(root: Path) -> set[tuple[str, int]]:
+    """Claims explicitly linked to an already completed iOS delivery.
+
+    A later business-knowledge packet may split one implemented capability
+    into several finer claims. Those claims must not re-enter either the
+    Android characterization queue or the iOS delivery queue when a
+    knowledge_linked event already binds them to a completed task.
+    """
+    completed = completed_task_ids(root)
+    result: set[tuple[str, int]] = set()
+    for event in load_events(root):
+        if (
+            event.get("event") != "knowledge_linked"
+            or event.get("task_id") not in completed
+        ):
+            continue
+        details = event.get("details")
+        knowledge = details.get("knowledge") if isinstance(details, dict) else None
+        if not isinstance(knowledge, dict):
+            continue
+        for reference in knowledge.get("candidate_claim_refs", []):
+            if (
+                isinstance(reference, dict)
+                and isinstance(reference.get("id"), str)
+                and isinstance(reference.get("revision"), int)
+                and not isinstance(reference.get("revision"), bool)
+            ):
+                result.add((reference["id"], reference["revision"]))
+    return result
+
+
 def satisfied_dependency_claim_refs(root: Path) -> set[tuple[str, int]]:
     """Claims that may unlock a downstream characterization.
 
@@ -300,6 +331,7 @@ def satisfied_dependency_claim_refs(root: Path) -> set[tuple[str, int]]:
     """
     result = characterized_claim_refs(root)
     result.update(reused_claim_evidence(root))
+    result.update(delivered_claim_refs(root))
     for _, packet in relative_jsons(
         root,
         "ios/project/business-knowledge/packets/published",
@@ -892,6 +924,7 @@ def direct_characterization_deliveries(
     completed = completed_task_ids(root)
     characterized = characterized_claim_refs(root)
     reused_evidence = reused_claim_evidence(root)
+    delivered = delivered_claim_refs(root)
     ledger_claim_ids = {
         entry.get("claim_ref", {}).get("id")
         for _, ledger in relative_jsons(
@@ -929,6 +962,7 @@ def direct_characterization_deliveries(
                     claim_ref not in characterized
                     and claim_ref not in reused_evidence
                 )
+                or claim_ref in delivered
                 or claim_id in ledger_claim_ids
             ):
                 continue
@@ -1764,6 +1798,7 @@ def pending_characterizations(root: Path) -> list[Mapping[str, Any]]:
     completed = completed_task_ids(root)
     characterized = characterized_claim_refs(root)
     reused = set(reused_claim_evidence(root))
+    delivered = delivered_claim_refs(root)
     satisfied_dependencies = satisfied_dependency_claim_refs(root)
     satisfied_dependency_revisions = {
         identifier: max(
@@ -1804,6 +1839,7 @@ def pending_characterizations(root: Path) -> list[Mapping[str, Any]]:
                 or candidate_revisions.get(claim_id, 0) > revision
                 or (claim_id, revision) in characterized
                 or (claim_id, revision) in reused
+                or (claim_id, revision) in delivered
                 or is_direct_source_claim(claim)
             ):
                 continue
