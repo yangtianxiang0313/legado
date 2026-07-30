@@ -1,1 +1,1 @@
-{"active_task":null,"attempt":0,"last_completed":{"at":"2026-07-30T16:48:15Z","sequence":404,"task_id":"IOS-APP-NAVIGATION-SOURCE-MANAGEMENT-MILESTONE-001"},"schema_version":2,"status":"idle","verification":null}
+{"active_task":"IOS-SOURCE-RUNTIME-PIPELINE-BOOK-INFO-RUNTIME-001","attempt":0,"last_completed":{"at":"2026-07-30T16:54:39Z","outcome":"superseded","sequence":408,"task_id":"IOS-CHARACTERIZE-SOURCE-PIPELINE-BOOK-INFO-RUNTIME-001"},"schema_version":2,"status":"running","verification":null}

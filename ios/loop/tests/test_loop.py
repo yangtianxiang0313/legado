@@ -128,6 +128,46 @@ class MinimalLoopTests(unittest.TestCase):
                 loop.completed_task_ids(root),
             )
 
+    def test_superseded_claim_can_reuse_existing_android_evidence(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            evidence = (
+                "ios/harness/goldens/android-legado-v1/existing.json"
+            )
+            self.write(root, evidence, {"fixture_id": "existing"})
+            events_path = root / "ios/project/loop/events.jsonl"
+            events_path.parent.mkdir(parents=True, exist_ok=True)
+            events_path.write_bytes(
+                loop.canonical(
+                    {
+                        "schema_version": 2,
+                        "sequence": 1,
+                        "at": "2026-07-30T00:00:00Z",
+                        "event": "task_superseded",
+                        "task_id": "IOS-CHARACTERIZE-OLD-001",
+                        "details": {
+                            "reason": "已有相同语义真值",
+                            "replacement": "直接实现",
+                            "replacement_evidence": evidence,
+                            "knowledge": {
+                                "candidate_claim_refs": [
+                                    {"id": "BKC-SOURCE-001", "revision": 1}
+                                ]
+                            },
+                        },
+                    }
+                )
+            )
+
+            self.assertEqual(
+                {("BKC-SOURCE-001", 1): evidence},
+                loop.reused_claim_evidence(root),
+            )
+            self.assertIn(
+                ("BKC-SOURCE-001", 1),
+                loop.satisfied_dependency_claim_refs(root),
+            )
+
     def fixture(self, root: Path) -> None:
         self.write(
             root,

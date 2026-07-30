@@ -233,6 +233,34 @@ def characterized_claim_refs(root: Path) -> set[tuple[str, int]]:
     return result
 
 
+def reused_claim_evidence(root: Path) -> dict[tuple[str, int], str]:
+    """Claims resolved by reusing an existing checked-in Android artifact."""
+    result: dict[tuple[str, int], str] = {}
+    for event in load_events(root):
+        if event.get("event") != "task_superseded":
+            continue
+        details = event.get("details")
+        if not isinstance(details, dict):
+            continue
+        evidence = details.get("replacement_evidence")
+        knowledge = details.get("knowledge")
+        if (
+            not isinstance(evidence, str)
+            or not (root / evidence).is_file()
+            or not isinstance(knowledge, dict)
+        ):
+            continue
+        for reference in knowledge.get("candidate_claim_refs", []):
+            if (
+                isinstance(reference, dict)
+                and isinstance(reference.get("id"), str)
+                and isinstance(reference.get("revision"), int)
+                and not isinstance(reference.get("revision"), bool)
+            ):
+                result[(reference["id"], reference["revision"])] = evidence
+    return result
+
+
 def satisfied_dependency_claim_refs(root: Path) -> set[tuple[str, int]]:
     """Claims that may unlock a downstream characterization.
 
@@ -242,6 +270,7 @@ def satisfied_dependency_claim_refs(root: Path) -> set[tuple[str, int]]:
     remains blocked until it is published.
     """
     result = characterized_claim_refs(root)
+    result.update(reused_claim_evidence(root))
     for _, packet in relative_jsons(
         root,
         "ios/project/business-knowledge/packets/published",
@@ -795,6 +824,7 @@ def direct_characterization_deliveries(
     """
     completed = completed_task_ids(root)
     characterized = characterized_claim_refs(root)
+    reused_evidence = reused_claim_evidence(root)
     ledger_claim_ids = {
         entry.get("claim_ref", {}).get("id")
         for _, ledger in relative_jsons(
@@ -828,7 +858,10 @@ def direct_characterization_deliveries(
                 not isinstance(claim_id, str)
                 or not isinstance(revision, int)
                 or isinstance(revision, bool)
-                or claim_ref not in characterized
+                or (
+                    claim_ref not in characterized
+                    and claim_ref not in reused_evidence
+                )
                 or claim_id in ledger_claim_ids
             ):
                 continue
@@ -857,12 +890,21 @@ def direct_characterization_deliveries(
                 semantic_key,
                 str(domain["fixture_prefix"]),
             )
-            golden_path = (
-                "ios/harness/goldens/android-legado-v1/"
-                f"{fixture_id}.json"
+            golden_path = reused_evidence.get(
+                claim_ref,
+                (
+                    "ios/harness/goldens/android-legado-v1/"
+                    f"{fixture_id}.json"
+                ),
             )
             if not (root / golden_path).is_file():
                 continue
+            if claim_ref in reused_evidence:
+                reused_fixture_id = read_json(root / golden_path).get(
+                    "fixture_id"
+                )
+                if isinstance(reused_fixture_id, str):
+                    fixture_id = reused_fixture_id
             requirements = requirement_refs_for_claim(
                 root,
                 packet,
@@ -1436,6 +1478,7 @@ def automatic_characterization_requirement_refs(
 def pending_characterizations(root: Path) -> list[Mapping[str, Any]]:
     completed = completed_task_ids(root)
     characterized = characterized_claim_refs(root)
+    reused = set(reused_claim_evidence(root))
     satisfied_dependencies = satisfied_dependency_claim_refs(root)
     satisfied_dependency_revisions = {
         identifier: max(
@@ -1475,6 +1518,7 @@ def pending_characterizations(root: Path) -> list[Mapping[str, Any]]:
                 or published_revisions.get(claim_id, 0) >= revision
                 or candidate_revisions.get(claim_id, 0) > revision
                 or (claim_id, revision) in characterized
+                or (claim_id, revision) in reused
             ):
                 continue
             dependencies = {
@@ -3872,6 +3916,7 @@ def supersede(
     *,
     reason: str,
     replacement: str,
+    replacement_evidence: str | None = None,
 ) -> Mapping[str, Any]:
     if not reason.strip() or not replacement.strip():
         raise LoopError("SUPERSEDE_REASON_INVALID")
@@ -3884,6 +3929,11 @@ def supersede(
         "reason": reason.strip(),
         "replacement": replacement.strip(),
     }
+    if replacement_evidence is not None:
+        evidence = replacement_evidence.strip()
+        if not evidence or not (root / evidence).is_file():
+            raise LoopError("SUPERSEDE_EVIDENCE_INVALID")
+        details["replacement_evidence"] = evidence
     knowledge_updates = task.get("knowledge_updates")
     if isinstance(knowledge_updates, dict):
         candidate_refs = knowledge_updates.get("candidate_claim_refs")
@@ -4084,6 +4134,7 @@ def dispatch(root: Path, args: argparse.Namespace) -> Mapping[str, Any]:
             root,
             reason=args.reason,
             replacement=args.replacement,
+            replacement_evidence=args.replacement_evidence,
         )
     if args.command == "advance":
         return advance(
@@ -4116,6 +4167,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     supersede_parser = subparsers.add_parser("supersede")
     supersede_parser.add_argument("--reason", required=True)
     supersede_parser.add_argument("--replacement", required=True)
+    supersede_parser.add_argument("--replacement-evidence")
     advance_parser = subparsers.add_parser("advance")
     advance_parser.add_argument("--summary")
     advance_parser.add_argument("--current-status")
