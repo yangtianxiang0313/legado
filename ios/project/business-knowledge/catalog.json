@@ -2,11 +2,11 @@
   "schema_version": 1,
   "contract_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-  "inventory_control_sha256": "43bbf78cb631319d2bd508cce92b76851c4d44473ee24dea64eff05c3d8505cb",
+  "inventory_control_sha256": "70bed8108a0ee0d04851dceff2d1f23bf492163c1906f4f28a208cf20f558d72",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "d5941cd86b2c57086f40b9ee2f6895a7bdcdd2e4a6d82302a16addef989e7723",
-  "coverage_sha256": "dcaff823aff42278a7dc07195a7190a2d4d5175596b29c3838b425e2c764dca0",
+  "authority_sha256": "cdf0a1c4823a42d864cf4c955643f81b2cf5dcb59448738e599287c4404f8930",
+  "coverage_sha256": "6daaa2d5b17e2018c1b92ab1e12872cfee8cabb1bf223493dc74434b7407319d",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -123,6 +123,19 @@
       "claim_refs": [
         {
           "id": "BKC-RD-PREFETCH-POLICY-001",
+          "revision": 2
+        }
+      ]
+    },
+    {
+      "id": "BKP-READER-CHAPTER-SOURCE-OVERRIDE-RUNTIME-001",
+      "revision": 1,
+      "semantic_key": "reader.chapter.source-override-runtime-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-READER-CHAPTER-SOURCE-OVERRIDE-RUNTIME-001/r0001.json",
+      "record_sha256": "bcd5a3afcd767240b7c87cb7544f8fca0f5dfdefcc695daa57546cd341aa0099",
+      "claim_refs": [
+        {
+          "id": "BKC-CHAPTER-SOURCE-OVERRIDE-001",
           "revision": 2
         }
       ]
@@ -711,6 +724,15 @@
       "record_sha256": "7722eca72b0a55f41718f54c0e9dbc0aa75cfb056fbe9b03776832047a9c2d04",
       "entry_ids": [
         "BKE-READER-CACHE-PREFETCH-POLICY-001"
+      ]
+    },
+    {
+      "id": "BKL-READER-CHAPTER-SOURCE-OVERRIDE-RUNTIME-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-READER-CHAPTER-SOURCE-OVERRIDE-RUNTIME-001.json",
+      "record_sha256": "e32da2167c7bbfab474f3c6572e4497b60622b1af87225233511a85f01170b41",
+      "entry_ids": [
+        "BKE-READER-CHAPTER-SOURCE-OVERRIDE-RUNTIME-001"
       ]
     },
     {

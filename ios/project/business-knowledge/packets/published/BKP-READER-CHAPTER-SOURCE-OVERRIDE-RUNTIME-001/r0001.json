@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-READER-CHAPTER-SOURCE-OVERRIDE-RUNTIME-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "reader.chapter.source-override-runtime-golden",
+  "title": "受保护 Android Golden 验证的单章换源缓存覆盖行为",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "70bed8108a0ee0d04851dceff2d1f23bf492163c1906f4f28a208cf20f558d72"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "content.source-switch",
+      "reader.chapter"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-CORE"
+    ],
+    "subject_keys": [
+      "content.source-switch",
+      "library.chapter"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-CHAPTER-SOURCE-OVERRIDE-001",
+      "revision": 2,
+      "semantic_key": "reader.chapter.source-override-runtime",
+      "kind": "runtime_behavior",
+      "topic": "单章换源覆盖",
+      "statement": "在 rl-reader-chapter-source-override-runtime-001 的 4 个固定 Android 场景中，ChangeChapterSourceViewModel.getContent 以 needSave=false 从替代书源取得正文，替代 Book、Chapter 与替代缓存均不落盘；用户确认替换后，ReadBookViewModel.saveContent 按当前 Book.bookUrl 和当前章节索引查询 Chapter，再由 BookHelp.saveText 把替代正文写入当前 Book/Chapter 的缓存身份，并覆盖该身份下的既有正文。当前 Book.origin、Chapter.bookUrl 与 Chapter.url 均保持当前书源身份，替代来源没有被持久记录。删除该当前身份缓存后，后续恢复从当前 BookSource 重新取回当前源正文并再次写入当前缓存，无法恢复此前的替代源正文。该结果冻结 Android 业务事实与兼容风险，不授权 iOS 复制来源丢失模型；iOS 是否保留替代来源、覆盖多久及失效后如何恢复，须由后续产品 Requirement 决定。",
+      "subject_keys": [
+        "content.source-switch",
+        "library.chapter"
+      ],
+      "depends_on": [],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [
+          {
+            "id": "AF-CHAPTER-SOURCE-GET-CONTENT",
+            "revision_sha256": "fe923329c84b640424ccb869d0c1ab5662fa470b905cdd00afbcea15cb5c56b9"
+          },
+          {
+            "id": "AF-READ-VIEW-MODEL-SAVE-CONTENT",
+            "revision_sha256": "7c271cce27fc36424f8ad3371c6302d374d936fe212d0c16106f5eadc9c6e598"
+          },
+          {
+            "id": "AF-BOOK-HELP-SAVE-TEXT",
+            "revision_sha256": "e9b178d5feefdb949aa41615561b019a0dcfcefc9d61a7eb2e156d1dda1370f8"
+          },
+          {
+            "id": "AF-BOOK-HELP-GET-CONTENT",
+            "revision_sha256": "e714af4597c4e8f1bd02b896f8126f077c7e9f0f4cdb84e0bbf74edb29adf7fd"
+          },
+          {
+            "id": "AF-BOOK-HELP-DELETE-CONTENT",
+            "revision_sha256": "6b76312f821662f6d8b5539d259b705646389532174d04cd0c9fff91505c6b41"
+          }
+        ],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "c97d0406de9e7b4a9fbd9025aee038306175bbc5",
+            "path": "app/src/main/java/io/legado/app/ui/book/changesource/ChangeChapterSourceViewModel.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.changesource/ChangeChapterSourceViewModel/getContent"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "4426655e6bed8c4c3a874d57f47c917120406a1a",
+            "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookViewModel.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.read/ReadBookViewModel/saveContent"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "40f47f3a0f6bfa63cce79efb7a1518737b84dc45",
+            "path": "app/src/main/java/io/legado/app/help/book/BookHelp.kt",
+            "symbol_id": "kotlin://io.legado.app.help.book/BookHelp/saveText"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "40f47f3a0f6bfa63cce79efb7a1518737b84dc45",
+            "path": "app/src/main/java/io/legado/app/help/book/BookHelp.kt",
+            "symbol_id": "kotlin://io.legado.app.help.book/BookHelp/getContent"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "40f47f3a0f6bfa63cce79efb7a1518737b84dc45",
+            "path": "app/src/main/java/io/legado/app/help/book/BookHelp.kt",
+            "symbol_id": "kotlin://io.legado.app.help.book/BookHelp/delContent"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/rl-reader-chapter-source-override-runtime-001.json",
+            "artifact_sha256": "b8e3fd711e02606141e5d372016fae0e4d67c95b7a120cb11b25a7b3abe75c25",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "91764aea36fd86957da3bf892d60a2cbbfe5163041889debbe15e9be5216724a",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "1530151ec9619bdd980fba1057da5d6696e5bcc4d613181bbaa5e303514de22f",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-CHAPTER-SOURCE-OVERRIDE-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-READER-CHAPTER-SOURCE-OVERRIDE-RUNTIME-001"
+}
