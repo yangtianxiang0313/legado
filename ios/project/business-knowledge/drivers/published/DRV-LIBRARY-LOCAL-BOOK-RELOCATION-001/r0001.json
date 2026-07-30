@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-LIBRARY-LOCAL-BOOK-RELOCATION-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "library.local-book.relocation-boundary",
+  "title": "稳定书籍身份与可变本地文件位置分离",
+  "claim_refs": [
+    {
+      "id": "BKC-LOCAL-BOOK-RELOCATION-001",
+      "revision": 2
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "data_integrity",
+      "scenario": "文件移动不得通过替换跨层 BookID 隐式删除或错绑章节、阅读进度与书签；位置变更及目录重建必须成为显式、可审计的领域操作。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "LibraryDomain 需要复现受保护 Android Golden 已确认的默认目录优先、导入目录回退、未命中保留原位置和命中后目录重建结果，但不复制 Android 的 Room 主键设计。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "modularity",
+      "scenario": "LibraryDomain 只依赖文件定位与持久化端口；Foundation URL、文件系统、数据库 Record、Android Uri、Room 与 UI 目录选择器停留在 Adapter 或 AppUseCases。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "determinism",
+      "scenario": "自动搜索顺序、同名候选选择、失败缓存与缓存失效策略必须由显式策略表达，Conformance runner 可在不启动 SwiftUI 和真实文件网站的情况下复验。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "recoverability",
+      "scenario": "定位失败必须保留原文件引用和已有领域数据；再次定位、用户手选或权限恢复后能够显式重试，不能被不可见的永久失败缓存锁死。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "scope_control",
+      "scenario": "首个实现切片只覆盖 Golden 的自动搜索、身份保持或位置迁移、目录清理重建和可控缓存；用户手选、并发、跨进程缓存及其他格式另行扩展真源。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "如何用不可变 BookID 与可变 LocalBookLocation 表达同一本书移动，而不让文件 URL 成为跨层身份？",
+    "如何把定位、位置持久化、旧目录失效与新目录重建组织成可恢复用例，并让失败状态可重试？",
+    "如何以显式 RelocationCachePolicy 兼容已观察的单进程粘性失败，同时为 iOS 提供安全的失效边界？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002"
+    ],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-LIBRARY-LOCAL-BOOK-RELOCATION-RUNTIME-001",
+      "IOS-LIBRARY-DOMAIN-LOCAL-BOOK-RELOCATION-RUNTIME-001"
+    ]
+  },
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30517439578/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-LIBRARY-LOCAL-BOOK-RELOCATION-RUNTIME-001"
+}

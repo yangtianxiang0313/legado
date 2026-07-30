@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgeCoverageLedger",
+  "id": "BKL-LIBRARY-LOCAL-BOOK-RELOCATION-RUNTIME-001",
+  "revision": 1,
+  "status": "current",
+  "packet_refs": [
+    {
+      "id": "BKP-LIBRARY-LOCAL-BOOK-RELOCATION-RUNTIME-001",
+      "revision": 1,
+      "sha256": "5335df4ae27f30ece14cfd9c0908ca4700ef3be05e82ae7dadd0b179bc7e0885"
+    }
+  ],
+  "generated_from": {
+    "knowledge_authority_sha256": "7ae072493390fbf8c19896af515a5851df6a7474a50607791619ffde6d01dd44",
+    "requirement_catalog_sha256": "0e59c6d35392eca368e585eb25fc6f918db05eeb2de5fd9d5ae39c4f375260d4",
+    "architecture_digest_sha256": "fa6ab6cd2f4142848847c17a03d761e4cd4705a39babdf82bec3efa68ab4be9a"
+  },
+  "entries": [
+    {
+      "id": "BKE-LIBRARY-LOCAL-BOOK-RELOCATION-RUNTIME-001",
+      "claim_ref": {
+        "id": "BKC-LOCAL-BOOK-RELOCATION-001",
+        "revision": 2
+      },
+      "validation": {
+        "required": "android_runtime",
+        "state": "verified",
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-library-local-book-relocation-runtime-001-30517439578-1.json",
+          "ios/harness/goldens/android-legado-v1/rl-library-local-book-relocation-runtime-001.json#/artifact/result/value/portable_known_projection"
+        ],
+        "blockers": []
+      },
+      "product_disposition": {
+        "kind": "covered_by_requirement",
+        "refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01",
+          "DRV-LIBRARY-LOCAL-BOOK-RELOCATION-001@1"
+        ],
+        "reason": "受保护 Android Golden 已固定自动搜索顺序、路径主键迁移、旧章节删除、新身份目录重建、未命中保持及单进程失败缓存。iOS 交由 LibraryDomain 以稳定 BookID、可变 LocalBookLocation、显式迁移用例和可控缓存实现，不复制 Android Room、Uri 或路径主键。",
+        "review_after": null
+      },
+      "delivery": {
+        "state": "planned",
+        "requirement_refs": [
+          "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01"
+        ],
+        "work_item_refs": [
+          "IOS-LIBRARY-DOMAIN-LOCAL-BOOK-RELOCATION-RUNTIME-001"
+        ],
+        "capability_refs": [
+          "CAP-CONFORMANCE",
+          "CAP-CORE"
+        ],
+        "evidence_refs": [
+          "ios/harness/goldens/releases/rl-library-local-book-relocation-runtime-001-30517439578-1.json"
+        ]
+      },
+      "computed": {
+        "accounted": true,
+        "coverage_state": "covered"
+      }
+    }
+  ],
+  "updated_by": "IOS-CHARACTERIZE-LIBRARY-LOCAL-BOOK-RELOCATION-RUNTIME-001",
+  "updated_at": "2026-07-30T05:58:56Z"
+}

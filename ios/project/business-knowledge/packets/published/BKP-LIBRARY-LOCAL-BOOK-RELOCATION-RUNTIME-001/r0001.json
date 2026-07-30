@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-LIBRARY-LOCAL-BOOK-RELOCATION-RUNTIME-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "library.local-book.relocation-runtime-golden",
+  "title": "受保护 Android Golden 验证的本地书文件重定位语义",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "b28f98aad7db9d86e80afd6d266d76462b56941414668783193f9be6e7155cca"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "content.import",
+      "library.catalog",
+      "reader.toc"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-CORE"
+    ],
+    "subject_keys": [
+      "content.import",
+      "library.book-identity",
+      "library.chapter"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-LOCAL-BOOK-RELOCATION-001",
+      "revision": 2,
+      "semantic_key": "library.local-book.relocation-runtime",
+      "kind": "runtime_behavior",
+      "topic": "本地文件重定位",
+      "statement": "在 rl-library-local-book-relocation-runtime-001 的 5 个固定 Android 场景中，原路径可读时 getLocalUri 返回原文件，Book 身份和已有章节保持不变。原路径失效时，自动定位先按原文件名搜索默认本地书目录，再回退导入目录；命中后 Android 直接把 Book.bookUrl 改为新 URI，旧主键对应的 Book 与章节消失，新主键 Book 存在但目录暂为空。随后真实调用 ReadBookViewModel.loadChapterList 可在新身份下重建 2 章，旧身份章节仍为 0，ReadBook 当前书也切到新身份。两个目录均未命中时返回不可读的原 URI，Book 身份和已有章节保持不变。首次失败后，即使再创建同名可读文件，同一进程内第二次调用仍因 URI 缓存返回原失效位置，说明失败结果具有粘性。本结论只覆盖自动搜索、Room 身份迁移、TXT 目录重载与单进程二次调用；不外推用户手选目录回调、进程重启后的缓存、并发迁移、事务原子性、非 TXT 格式、同名多文件选择顺序或外部文件权限变化。iOS 不应复制以文件路径作为跨层稳定 BookID 的存储设计，而应把稳定书籍身份、可变文件位置、定位缓存和目录重建分别建模。",
+      "subject_keys": [
+        "content.import",
+        "library.book-identity",
+        "library.chapter"
+      ],
+      "depends_on": [],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [
+          {
+            "id": "AF-BOOK-GET-LOCAL-URI",
+            "revision_sha256": "8734040dc9fe702953d0337d53ed56442e7a9ed75da4de42a953513374ea7475"
+          },
+          {
+            "id": "AF-READ-BOOK-LOAD-CHAPTER-LIST",
+            "revision_sha256": "8cd35b4781c7ac2204d348f46e3bc48b74a8b81cbae34d1e72734d6cddc027ce"
+          }
+        ],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "d5c2b821ea1caa131078e36d0bdf83a73bb8e3dc",
+            "path": "app/src/main/java/io/legado/app/help/book/BookExtensions.kt",
+            "symbol_id": "kotlin://io.legado.app.help.book/BookExtensions/getLocalUri"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "4426655e6bed8c4c3a874d57f47c917120406a1a",
+            "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookViewModel.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.read/ReadBookViewModel/loadChapterList"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "8496ae09111fce34dee650d73ce7949735f7327e",
+            "path": "app/src/main/java/io/legado/app/ui/book/read/BaseReadBookActivity.kt",
+            "symbol_id": "kotlin://io.legado.app.ui.book.read/BaseReadBookActivity"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/rl-library-local-book-relocation-runtime-001.json",
+            "artifact_sha256": "177fde6ac948bf882fb9bfb96960c4beb0d3aeb6ef6662a529c7f7bca79a1ea2",
+            "projection_pointer": "/artifact/result/value/portable_known_projection",
+            "observed_sha256": "718cb6dc9440b8cb8b8a7a99fe046d789eb27819ccd84bbb1a23b20767b9ad77",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "a1dfb4963baa74ba568d06603c60e78812d8aa7845294d0c7384a9be98560ba1",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-LOCAL-BOOK-RELOCATION-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-LIBRARY-LOCAL-BOOK-RELOCATION-RUNTIME-001"
+}

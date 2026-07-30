@@ -2,11 +2,11 @@
   "schema_version": 1,
   "contract_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-  "inventory_control_sha256": "b28f98aad7db9d86e80afd6d266d76462b56941414668783193f9be6e7155cca",
+  "inventory_control_sha256": "72fbb946d960a22c920a8f7a7264e78d819d9142a43c0dcf6e32b0b2c313f0cc",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "7ae072493390fbf8c19896af515a5851df6a7474a50607791619ffde6d01dd44",
-  "coverage_sha256": "4c40660a1714086f07db6836ef3b616c617ea5442b466f36ac8a0a9a8a23b21e",
+  "authority_sha256": "ba88bda83c2641d0c70f6c729c0c696591976a78c577f2aa1c8869340c629ad9",
+  "coverage_sha256": "37048bbf62a80b791934472193d6f2afb223f5d4026a99f4517366de21c34149",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -85,6 +85,19 @@
         {
           "id": "BKC-INTEGRATION-WEBDAV-DEPENDENCY-001",
           "revision": 3
+        }
+      ]
+    },
+    {
+      "id": "BKP-LIBRARY-LOCAL-BOOK-RELOCATION-RUNTIME-001",
+      "revision": 1,
+      "semantic_key": "library.local-book.relocation-runtime-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-LIBRARY-LOCAL-BOOK-RELOCATION-RUNTIME-001/r0001.json",
+      "record_sha256": "5335df4ae27f30ece14cfd9c0908ca4700ef3be05e82ae7dadd0b179bc7e0885",
+      "claim_refs": [
+        {
+          "id": "BKC-LOCAL-BOOK-RELOCATION-001",
+          "revision": 2
         }
       ]
     },
@@ -529,6 +542,14 @@
       "resolution_state": "resolved"
     },
     {
+      "id": "DRV-LIBRARY-LOCAL-BOOK-RELOCATION-001",
+      "revision": 1,
+      "semantic_key": "library.local-book.relocation-boundary",
+      "path": "ios/project/business-knowledge/drivers/published/DRV-LIBRARY-LOCAL-BOOK-RELOCATION-001/r0001.json",
+      "record_sha256": "1ea545b894af8dad4d5d4921cf2c87e4d21f73f99e25931e32986753057b7c0e",
+      "resolution_state": "resolved"
+    },
+    {
       "id": "DRV-READER-BOOKMARK-SEARCH-RUNTIME-001",
       "revision": 1,
       "semantic_key": "reader.bookmark.search-compatibility-boundary",
@@ -766,6 +787,15 @@
       "record_sha256": "5405a88cee04682007bf32a726c3ac9387773407cc0cf5ae14c24e0ef75db2b8",
       "entry_ids": [
         "BKE-INTEGRATION-WEBDAV-DEPENDENCY-DECISION-001"
+      ]
+    },
+    {
+      "id": "BKL-LIBRARY-LOCAL-BOOK-RELOCATION-RUNTIME-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-LIBRARY-LOCAL-BOOK-RELOCATION-RUNTIME-001.json",
+      "record_sha256": "82d62cf3ec4a21447f81337bc420cc00a35ca0ecd4437735587c04fcf5e870c9",
+      "entry_ids": [
+        "BKE-LIBRARY-LOCAL-BOOK-RELOCATION-RUNTIME-001"
       ]
     },
     {
