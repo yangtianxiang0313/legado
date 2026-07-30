@@ -37,7 +37,13 @@ let package = Package(
         .target(name: "ReaderCore", dependencies: ["LegadoCore", "LibraryDomain"]),
         .target(
             name: "AppUseCases",
-            dependencies: ["LegadoCore", "LibraryDomain", "SourceRuntime", "ReaderCore"]
+            dependencies: [
+                "LegadoCore",
+                "LibraryDomain",
+                "SourceFormat",
+                "SourceRuntime",
+                "ReaderCore",
+            ]
         ),
         .target(
             name: "AppNavigation",

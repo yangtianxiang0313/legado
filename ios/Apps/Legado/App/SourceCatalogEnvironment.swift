@@ -15,13 +15,19 @@ actor UserDefaultsSourceCatalogRepository: SourceCatalogRepository {
     }
 
     func saveSource(_ source: BookSourceDraft) async throws {
+        try await saveSources([source])
+    }
+
+    func saveSources(_ imported: [BookSourceDraft]) async throws {
         var sources = try await loadSources()
-        if let index = sources.firstIndex(where: {
-            $0.sourceURL == source.sourceURL
-        }) {
-            sources[index] = source
-        } else {
-            sources.append(source)
+        for source in imported {
+            if let index = sources.firstIndex(where: {
+                $0.sourceURL == source.sourceURL
+            }) {
+                sources[index] = source
+            } else {
+                sources.append(source)
+            }
         }
         defaults.set(
             try JSONEncoder().encode(sources),

@@ -1,1 +1,1 @@
-{"active_task":null,"attempt":0,"last_completed":{"at":"2026-07-30T15:30:03Z","sequence":371,"task_id":"IOS-CHARACTERIZE-APP-SOURCE-IMPORT-RUNTIME-001"},"schema_version":2,"status":"idle","verification":null}
+{"active_task":"IOS-CHARACTERIZE-LIBRARY-BOOK-SOURCE-SWITCH-MIGRATION-RUNTIME-001","attempt":0,"last_completed":{"at":"2026-07-30T15:39:24Z","sequence":376,"task_id":"IOS-APP-NAVIGATION-SOURCE-IMPORT-RUNTIME-001"},"schema_version":2,"status":"running","verification":null}

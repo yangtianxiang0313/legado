@@ -1031,6 +1031,66 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testSourceImportFlow() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-sources",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        selectRoot("root.settings", label: "我的")
+        require("action.settings.openSources").tap()
+        require("screen.source.management")
+        require("action.source.import").tap()
+        require("screen.source.import")
+
+        let definition = require("field.source.import.text")
+        definition.tap()
+        definition.typeText(
+            """
+            {"bookSourceUrl":"https://ui.import/source",\
+            "bookSourceName":"Imported Source","lastUpdateTime":20}
+            """
+        )
+        let parse = app.buttons[
+            "action.source.import.parse"
+        ].firstMatch
+        XCTAssertTrue(parse.waitForExistence(timeout: 8))
+        parse.tap()
+        require("toggle.source.import.candidate.0")
+        let commit = app.buttons[
+            "action.source.import.commit"
+        ].firstMatch
+        XCTAssertTrue(commit.waitForExistence(timeout: 8))
+        commit.tap()
+
+        require("screen.source.management")
+        require("list.source.catalog")
+        XCTAssertTrue(
+            app.staticTexts["Imported Source"].waitForExistence(timeout: 8)
+        )
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "imported_source": "Imported Source",
+            "source_url": "https://ui.import/source",
+            "route_trace": [
+                "source.management",
+                "source.import",
+                "source.management",
+            ],
+        ])
+    }
+
     private func observeStartupCase(
         id: String,
         initial: String,

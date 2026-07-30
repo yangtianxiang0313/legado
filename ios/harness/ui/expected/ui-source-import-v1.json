@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "scenario_id": "ui-source-import-v1",
+  "profile": "store_safe",
+  "simulators": [
+    {
+      "simulator_id": "SIM-PHONE-COMPACT-001",
+      "projection": "compactStack",
+      "imported_source": "Imported Source",
+      "source_url": "https://ui.import/source",
+      "route_trace": [
+        "source.management",
+        "source.import",
+        "source.management"
+      ]
+    }
+  ]
+}

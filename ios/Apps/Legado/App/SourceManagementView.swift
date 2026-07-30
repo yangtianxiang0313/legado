@@ -1,9 +1,11 @@
 import AppUseCases
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct SourceManagementView: View {
     @Bindable var catalog: SourceCatalog
     let openEditor: (String?) -> Void
+    @State private var showsImport = false
 
     var body: some View {
         List {
@@ -56,7 +58,14 @@ struct SourceManagementView: View {
         .navigationTitle("书源管理")
         .accessibilityIdentifier("screen.source.management")
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                Button {
+                    showsImport = true
+                } label: {
+                    Label("导入书源", systemImage: "square.and.arrow.down")
+                }
+                .accessibilityIdentifier("action.source.import")
+
                 Button {
                     openEditor(nil)
                 } label: {
@@ -65,8 +74,198 @@ struct SourceManagementView: View {
                 .accessibilityIdentifier("action.source.add")
             }
         }
+        .sheet(isPresented: $showsImport) {
+            NavigationStack {
+                SourceImportView(catalog: catalog) {
+                    showsImport = false
+                }
+            }
+        }
         .task {
             await catalog.reload()
+        }
+    }
+}
+
+private struct SourceImportView: View {
+    @Bindable var catalog: SourceCatalog
+    let dismiss: () -> Void
+
+    @State private var payload = ""
+    @State private var candidates: [SourceImportCandidate]?
+    @State private var showsFileImporter = false
+    @State private var message: String?
+    @State private var keepName = false
+    @State private var keepGroup = false
+    @State private var keepEnable = false
+    @State private var group = ""
+    @State private var groupMode: SourceImportGroupMode = .unchanged
+
+    var body: some View {
+        Form {
+            if let candidates {
+                preview(candidates)
+            } else {
+                Section("书源定义") {
+                    TextEditor(text: $payload)
+                        .frame(minHeight: 180)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .accessibilityIdentifier("field.source.import.text")
+                    Button("选择 JSON 文件") {
+                        showsFileImporter = true
+                    }
+                    .accessibilityIdentifier("action.source.import.file")
+                }
+            }
+            if let message {
+                Section {
+                    Text(message)
+                        .foregroundStyle(.secondary)
+                        .accessibilityIdentifier("label.source.import.message")
+                }
+            }
+        }
+        .navigationTitle("导入书源")
+        .accessibilityIdentifier("screen.source.import")
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("取消", action: dismiss)
+                    .accessibilityIdentifier("action.source.import.cancel")
+            }
+            ToolbarItem(placement: .confirmationAction) {
+                if candidates == nil {
+                    Button("解析", action: parse)
+                        .disabled(payload.trimmingCharacters(
+                            in: .whitespacesAndNewlines
+                        ).isEmpty)
+                        .accessibilityIdentifier("action.source.import.parse")
+                } else {
+                    Button("导入", action: commit)
+                        .accessibilityIdentifier("action.source.import.commit")
+                }
+            }
+        }
+        .fileImporter(
+            isPresented: $showsFileImporter,
+            allowedContentTypes: [.json, .plainText]
+        ) { result in
+            switch result {
+            case .success(let url):
+                load(url)
+            case .failure:
+                message = "无法读取所选文件"
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func preview(
+        _ values: [SourceImportCandidate]
+    ) -> some View {
+        if values.isEmpty {
+            ContentUnavailableView(
+                "没有可导入的书源",
+                systemImage: "tray"
+            )
+            .accessibilityIdentifier("state.source.import.empty")
+        } else {
+            Section("导入预览") {
+                ForEach(values.indices, id: \.self) { index in
+                    Toggle(isOn: Binding(
+                        get: { candidates?[index].selected ?? false },
+                        set: { candidates?[index].selected = $0 }
+                    )) {
+                        VStack(alignment: .leading) {
+                            Text(values[index].incoming.name)
+                            Text(values[index].incoming.sourceURL)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text(status(values[index]))
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .accessibilityIdentifier(
+                        "toggle.source.import.candidate.\(index)"
+                    )
+                }
+            }
+            Section("冲突处理") {
+                Toggle("保留现有名称", isOn: $keepName)
+                Toggle("保留现有分组", isOn: $keepGroup)
+                Toggle("保留现有启停状态", isOn: $keepEnable)
+                Picker("指定分组", selection: $groupMode) {
+                    Text("不修改").tag(SourceImportGroupMode.unchanged)
+                    Text("替换").tag(SourceImportGroupMode.replace)
+                    Text("追加").tag(SourceImportGroupMode.append)
+                }
+                if groupMode != .unchanged {
+                    TextField("分组名称", text: $group)
+                }
+            }
+        }
+    }
+
+    private func status(_ candidate: SourceImportCandidate) -> String {
+        if candidate.isNew { return "新增" }
+        if candidate.isUpdate { return "可更新" }
+        return "已是最新"
+    }
+
+    private func parse() {
+        do {
+            let imported = try SourceDefinitionImport.decode(
+                Data(payload.utf8)
+            )
+            candidates = SourceImportPolicy.preview(
+                incoming: imported,
+                existing: catalog.sources
+            )
+            message = imported.isEmpty ? "文件中没有书源" : nil
+        } catch SourceImportError.notSource {
+            message = "内容不是有效书源"
+        } catch {
+            message = "书源格式不正确"
+        }
+    }
+
+    private func commit() {
+        guard let candidates else { return }
+        let sources = SourceImportPolicy.mergedSelection(
+            candidates,
+            options: SourceImportOptions(
+                keepName: keepName,
+                keepGroup: keepGroup,
+                keepEnable: keepEnable,
+                group: group,
+                groupMode: groupMode
+            )
+        )
+        guard !sources.isEmpty else {
+            message = "没有选中有效书源"
+            return
+        }
+        Task {
+            if await catalog.importSources(sources) {
+                dismiss()
+            }
+        }
+    }
+
+    private func load(_ url: URL) {
+        let granted = url.startAccessingSecurityScopedResource()
+        defer {
+            if granted {
+                url.stopAccessingSecurityScopedResource()
+            }
+        }
+        do {
+            payload = try String(contentsOf: url, encoding: .utf8)
+            candidates = nil
+            message = nil
+        } catch {
+            message = "无法读取所选文件"
         }
     }
 }

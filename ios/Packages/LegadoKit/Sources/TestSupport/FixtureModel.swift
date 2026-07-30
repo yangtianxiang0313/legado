@@ -4491,3 +4491,272 @@ public enum SourceEditorDebugFixtureProjection {
     }
   }
 }
+
+public enum SourceImportFixtureProjectionError: Error, Sendable {
+  case invalidFixture
+}
+
+public enum SourceImportFixtureProjection {
+  public static func project(
+    operation: String,
+    arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    switch operation {
+    case "source_import_format_matrix":
+      return try formatMatrix(arguments)
+    case "source_import_comparison_matrix":
+      return try comparisonMatrix(arguments)
+    case "source_import_merge_matrix":
+      return try mergeMatrix(arguments)
+    default:
+      throw SourceImportFixtureProjectionError.invalidFixture
+    }
+  }
+
+  private static func formatMatrix(
+    _ arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    guard case .array(let formats)? = arguments["formats"] else {
+      throw SourceImportFixtureProjectionError.invalidFixture
+    }
+    return .object([
+      "formats": .array(try formats.map { value in
+        guard
+          case .object(let item) = value,
+          case .string(let id)? = item["id"],
+          case .string(let kind)? = item["kind"]
+        else {
+          throw SourceImportFixtureProjectionError.invalidFixture
+        }
+        let first = definition(
+          url: "android-runtime://source-import/\(id)",
+          name: "Imported \(id)",
+          update: 20
+        )
+        let second = definition(
+          url: "android-runtime://source-import/\(id)/second",
+          name: "Imported \(id) second",
+          update: 21
+        )
+        let missing = definition(
+          url: nil,
+          name: "Missing URL",
+          update: 21
+        )
+        let document: JSONValue?
+        switch kind {
+        case "object":
+          document = first
+        case "array":
+          document = .array([first, second])
+        case "empty_array":
+          document = .array([])
+        case "array_invalid_second":
+          document = .array([first, missing])
+        case "missing_url":
+          document = missing
+        case "invalid":
+          document = nil
+        default:
+          throw SourceImportFixtureProjectionError.invalidFixture
+        }
+        let imported: [BookSourceDraft]?
+        if let document {
+          imported = try? SourceDefinitionImport.decode(
+            JSONValueCodec.encode(document)
+          )
+        } else {
+          imported = try? SourceDefinitionImport.decode(
+            Data("not-a-source-definition".utf8)
+          )
+        }
+        return .object([
+          "id": .string(id),
+          "kind": .string(kind),
+          "status": .string(imported == nil ? "rejected" : "accepted"),
+          "count": imported.map {
+            .number(JSONNumber(Int64($0.count)))
+          } ?? .null,
+          "source_urls": .array(
+            (imported ?? []).map {
+              .string($0.sourceURL)
+            }
+          ),
+        ])
+      })
+    ])
+  }
+
+  private static func comparisonMatrix(
+    _ arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    guard case .array(let comparisons)? = arguments["comparisons"] else {
+      throw SourceImportFixtureProjectionError.invalidFixture
+    }
+    return .object([
+      "comparisons": .array(try comparisons.map { value in
+        guard
+          case .object(let item) = value,
+          case .string(let id)? = item["id"],
+          let incomingUpdate = int64(item["incoming_update"])
+        else {
+          throw SourceImportFixtureProjectionError.invalidFixture
+        }
+        let url = "android-runtime://source-import/comparison/\(id)"
+        let incoming = draft(
+          url: url,
+          name: "Incoming \(id)",
+          update: incomingUpdate
+        )
+        let existing: [BookSourceDraft]
+        if let update = int64(item["existing_update"]) {
+          existing = [
+            draft(
+              url: url,
+              name: "Existing \(id)",
+              update: update
+            )
+          ]
+        } else {
+          existing = []
+        }
+        let candidate = try required(
+          SourceImportPolicy.preview(
+            incoming: [incoming],
+            existing: existing
+          ).first
+        )
+        return .object([
+          "id": .string(id),
+          "status": .string("accepted"),
+          "selected": .bool(candidate.selected),
+          "new_source": .bool(candidate.isNew),
+          "update_source": .bool(candidate.isUpdate),
+        ])
+      })
+    ])
+  }
+
+  private static func mergeMatrix(
+    _ arguments: [String: JSONValue]
+  ) throws -> JSONValue {
+    guard case .array(let merges)? = arguments["merges"] else {
+      throw SourceImportFixtureProjectionError.invalidFixture
+    }
+    return .object([
+      "merges": .array(try merges.map { value in
+        guard
+          case .object(let item) = value,
+          case .string(let id)? = item["id"],
+          case .bool(let keepName)? = item["keep_name"],
+          case .bool(let keepGroup)? = item["keep_group"],
+          case .bool(let keepEnable)? = item["keep_enable"],
+          case .string(let group)? = item["group"],
+          case .string(let modeText)? = item["group_mode"],
+          let mode = SourceImportGroupMode(rawValue: modeText)
+        else {
+          throw SourceImportFixtureProjectionError.invalidFixture
+        }
+        let url = "android-runtime://source-import/merge/\(id)"
+        var existing = draft(
+          url: url,
+          name: "Existing \(id)",
+          update: 10
+        )
+        existing.group = "oldA,oldB"
+        existing.importMetadata = .init(
+          enabled: false,
+          enabledExplore: false,
+          lastUpdateTime: 10,
+          customOrder: 17
+        )
+        var incoming = draft(
+          url: url,
+          name: "Incoming \(id)",
+          update: 20
+        )
+        incoming.group = "incoming"
+        incoming.importMetadata = .init(
+          enabled: true,
+          enabledExplore: true,
+          lastUpdateTime: 20,
+          customOrder: 99
+        )
+        let candidate = try required(
+          SourceImportPolicy.preview(
+            incoming: [incoming],
+            existing: [existing]
+          ).first
+        )
+        let saved = try required(
+          SourceImportPolicy.merge(
+            candidate,
+            options: SourceImportOptions(
+              keepName: keepName,
+              keepGroup: keepGroup,
+              keepEnable: keepEnable,
+              group: group,
+              groupMode: mode
+            )
+          )
+        )
+        let metadata = saved.importMetadata ?? .init()
+        return .object([
+          "id": .string(id),
+          "name": .string(saved.name),
+          "group": .string(saved.group),
+          "enabled": .bool(metadata.enabled),
+          "enabled_explore": .bool(metadata.enabledExplore),
+          "custom_order":
+            .number(JSONNumber(Int64(metadata.customOrder))),
+        ])
+      })
+    ])
+  }
+
+  private static func definition(
+    url: String?,
+    name: String,
+    update: Int64
+  ) -> JSONValue {
+    var fields: [String: JSONValue] = [
+      "bookSourceName": .string(name),
+      "lastUpdateTime": .number(JSONNumber(update)),
+    ]
+    if let url {
+      fields["bookSourceUrl"] = .string(url)
+    }
+    return .object(fields)
+  }
+
+  private static func draft(
+    url: String,
+    name: String,
+    update: Int64
+  ) -> BookSourceDraft {
+    BookSourceDraft(
+      sourceURL: url,
+      name: name,
+      importMetadata: .init(lastUpdateTime: update)
+    )
+  }
+
+  private static func int64(_ value: JSONValue?) -> Int64? {
+    guard
+      case .number(let number)? = value,
+      let result = Int64(number.rawToken)
+    else {
+      return nil
+    }
+    return result
+  }
+
+  private static func required<Value>(
+    _ value: Value?
+  ) throws -> Value {
+    guard let value else {
+      throw SourceImportFixtureProjectionError.invalidFixture
+    }
+    return value
+  }
+}

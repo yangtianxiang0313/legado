@@ -1,6 +1,25 @@
 import Foundation
 import Observation
 
+public struct BookSourceImportMetadata: Codable, Equatable, Sendable {
+  public var enabled: Bool
+  public var enabledExplore: Bool
+  public var lastUpdateTime: Int64
+  public var customOrder: Int32
+
+  public init(
+    enabled: Bool = true,
+    enabledExplore: Bool = true,
+    lastUpdateTime: Int64 = 0,
+    customOrder: Int32 = 0
+  ) {
+    self.enabled = enabled
+    self.enabledExplore = enabledExplore
+    self.lastUpdateTime = lastUpdateTime
+    self.customOrder = customOrder
+  }
+}
+
 public struct BookSourceDraft: Codable, Equatable, Identifiable, Sendable {
   public var sourceURL: String
   public var name: String
@@ -14,6 +33,8 @@ public struct BookSourceDraft: Codable, Equatable, Identifiable, Sendable {
   public var bookInfoRule: String
   public var tocRule: String
   public var contentRule: String
+  public var importMetadata: BookSourceImportMetadata?
+  public var rawDefinition: Data?
 
   public var id: String { sourceURL }
 
@@ -29,7 +50,9 @@ public struct BookSourceDraft: Codable, Equatable, Identifiable, Sendable {
     exploreRule: String = "",
     bookInfoRule: String = "",
     tocRule: String = "",
-    contentRule: String = ""
+    contentRule: String = "",
+    importMetadata: BookSourceImportMetadata? = nil,
+    rawDefinition: Data? = nil
   ) {
     self.sourceURL = sourceURL
     self.name = name
@@ -43,6 +66,8 @@ public struct BookSourceDraft: Codable, Equatable, Identifiable, Sendable {
     self.bookInfoRule = bookInfoRule
     self.tocRule = tocRule
     self.contentRule = contentRule
+    self.importMetadata = importMetadata
+    self.rawDefinition = rawDefinition
   }
 }
 
@@ -202,7 +227,16 @@ public enum SourceEditResultPolicy {
 public protocol SourceCatalogRepository: Sendable {
   func loadSources() async throws -> [BookSourceDraft]
   func saveSource(_ source: BookSourceDraft) async throws
+  func saveSources(_ sources: [BookSourceDraft]) async throws
   func resetSources() async throws
+}
+
+public extension SourceCatalogRepository {
+  func saveSources(_ sources: [BookSourceDraft]) async throws {
+    for source in sources {
+      try await saveSource(source)
+    }
+  }
 }
 
 @MainActor
@@ -240,6 +274,18 @@ public final class SourceCatalog {
       return true
     } catch {
       errorMessage = "无法保存书源"
+      return false
+    }
+  }
+
+  @discardableResult
+  public func importSources(_ sources: [BookSourceDraft]) async -> Bool {
+    do {
+      try await repository.saveSources(sources)
+      await reload()
+      return true
+    } catch {
+      errorMessage = "无法导入书源"
       return false
     }
   }
