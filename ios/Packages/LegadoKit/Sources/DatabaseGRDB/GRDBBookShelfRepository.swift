@@ -492,6 +492,20 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
     }
   }
 
+  public func clearChapterContents(
+    bookID: LibraryDomain.BookID,
+    chapterIDs: [LibraryDomain.ChapterID]
+  ) async throws {
+    guard !chapterIDs.isEmpty else { return }
+    let rawIDs = chapterIDs.map(\.rawValue)
+    try await database.write { db in
+      _ = try ChapterContentRecord
+        .filter(Column("bookID") == bookID.rawValue)
+        .filter(rawIDs.contains(Column("chapterID")))
+        .deleteAll(db)
+    }
+  }
+
   public func saveSourceVariables(
     bookID: LibraryDomain.BookID,
     bookVariables: [String: String]?,

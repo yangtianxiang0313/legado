@@ -495,6 +495,86 @@ final class DatabaseGRDBTests: XCTestCase {
     XCTAssertEqual(deletedBookmarks, [])
   }
 
+  func testReaderContentRefreshScopesDeleteOnlyRequestedCache()
+    async throws
+  {
+    let repository = try GRDBBookShelfRepository(
+      path: temporaryDatabasePath()
+    )
+    let item = try await repository.add(
+      candidate(name: "刷新测试", suffix: "refresh"),
+      groupID: 0
+    )
+    let chapters = (0..<3).map { index in
+      BookChapter(
+        id: ChapterID(
+          sourceID: item.candidate.sourceID,
+          chapterURL: "\(item.candidate.bookURL)/\(index)"
+        ),
+        bookID: item.id,
+        sourceID: item.candidate.sourceID,
+        index: index,
+        title: "第\(index + 1)章",
+        url: "\(item.candidate.bookURL)/\(index)"
+      )
+    }
+    _ = try await repository.applyTOCUpdate(
+      bookID: item.id,
+      update: .replaced(previousCount: 0, chapters: chapters)
+    )
+    for chapter in chapters {
+      try await repository.saveChapterContent(
+        "cache-\(chapter.index)",
+        bookID: item.id,
+        chapterID: chapter.id
+      )
+    }
+    let library = ShelfLibrary(repository: repository)
+
+    let invalidatedAfter = await library.invalidateReaderContent(
+      bookID: item.id,
+      currentChapterID: chapters[1].id,
+      scope: .currentAndAfter
+    )
+    XCTAssertTrue(invalidatedAfter)
+    let first = try await repository.chapterContent(
+      bookID: item.id,
+      chapterID: chapters[0].id
+    )
+    let second = try await repository.chapterContent(
+      bookID: item.id,
+      chapterID: chapters[1].id
+    )
+    let third = try await repository.chapterContent(
+      bookID: item.id,
+      chapterID: chapters[2].id
+    )
+    XCTAssertEqual(first, "cache-0")
+    XCTAssertNil(second)
+    XCTAssertNil(third)
+
+    for chapter in chapters {
+      try await repository.saveChapterContent(
+        "cache-\(chapter.index)",
+        bookID: item.id,
+        chapterID: chapter.id
+      )
+    }
+    let invalidatedAll = await library.invalidateReaderContent(
+      bookID: item.id,
+      currentChapterID: chapters[1].id,
+      scope: .all
+    )
+    XCTAssertTrue(invalidatedAll)
+    for chapter in chapters {
+      let content = try await repository.chapterContent(
+        bookID: item.id,
+        chapterID: chapter.id
+      )
+      XCTAssertNil(content)
+    }
+  }
+
   private func temporaryDatabasePath() -> String {
     FileManager.default.temporaryDirectory
       .appendingPathComponent(UUID().uuidString)

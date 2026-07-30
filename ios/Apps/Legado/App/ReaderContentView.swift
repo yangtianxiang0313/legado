@@ -72,11 +72,22 @@ struct ReaderContentView: View {
             if let document = session.document {
                 pagedContent(document)
             } else if session.state == .failed {
-                ContentUnavailableView(
-                    "正文加载失败",
-                    systemImage: "exclamationmark.triangle",
-                    description: Text(session.errorMessage ?? "请稍后重试")
-                )
+                VStack(spacing: 16) {
+                    ContentUnavailableView(
+                        "正文加载失败",
+                        systemImage: "exclamationmark.triangle",
+                        description: Text(
+                            session.errorMessage ?? "请稍后重试"
+                        )
+                    )
+                    Button {
+                        refreshReaderContent(.current)
+                    } label: {
+                        Label("重新加载", systemImage: "arrow.clockwise")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .accessibilityIdentifier("action.reader.retryContent")
+                }
             } else {
                 ProgressView("正在加载正文…")
                     .accessibilityIdentifier("state.reader.loading")
@@ -553,20 +564,38 @@ struct ReaderContentView: View {
                 )
             }
             Section("章节") {
-                menuPlaceholder(
-                    .refreshCurrent,
-                    title: "刷新当前章",
-                    systemImage: "arrow.clockwise"
+                Button {
+                    refreshReaderContent(.current)
+                } label: {
+                    Label("刷新当前章", systemImage: "arrow.clockwise")
+                }
+                .accessibilityIdentifier(
+                    ReaderMenuAction.refreshCurrent
+                        .accessibilityIdentifier
                 )
-                menuPlaceholder(
-                    .refreshAfter,
-                    title: "刷新后续章节",
-                    systemImage: "arrow.clockwise.circle"
+                Button {
+                    refreshReaderContent(.currentAndAfter)
+                } label: {
+                    Label(
+                        "刷新后续章节",
+                        systemImage: "arrow.clockwise.circle"
+                    )
+                }
+                .accessibilityIdentifier(
+                    ReaderMenuAction.refreshAfter
+                        .accessibilityIdentifier
                 )
-                menuPlaceholder(
-                    .refreshAll,
-                    title: "刷新全部章节",
-                    systemImage: "arrow.triangle.2.circlepath"
+                Button {
+                    refreshReaderContent(.all)
+                } label: {
+                    Label(
+                        "刷新全部章节",
+                        systemImage: "arrow.triangle.2.circlepath"
+                    )
+                }
+                .accessibilityIdentifier(
+                    ReaderMenuAction.refreshAll
+                        .accessibilityIdentifier
                 )
                 menuPlaceholder(
                     .cacheOffline,
@@ -944,6 +973,20 @@ struct ReaderContentView: View {
             characterOffset: anchor
         )
         refreshBookmarkState()
+    }
+
+    private func refreshReaderContent(
+        _ scope: ReaderContentRefreshScope
+    ) {
+        menuPresented = false
+        Task {
+            guard await library.invalidateReaderContent(
+                bookID: target.bookID,
+                currentChapterID: target.chapterID,
+                scope: scope
+            ) else { return }
+            await reloadCurrentContent()
+        }
     }
 
     private func saveProgress(chapter: BookChapter) async {

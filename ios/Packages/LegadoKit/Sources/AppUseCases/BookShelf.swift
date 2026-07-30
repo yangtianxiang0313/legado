@@ -113,6 +113,12 @@ public enum BookImportFailure: Error, Equatable, Sendable {
   case unreadableText
 }
 
+public enum ReaderContentRefreshScope: Equatable, Sendable {
+  case current
+  case currentAndAfter
+  case all
+}
+
 public protocol BookShelfRepository:
   Sendable, ReaderReplacementRuleRepository
 {
@@ -167,6 +173,10 @@ public protocol BookShelfRepository:
     _ content: String,
     bookID: LibraryDomain.BookID,
     chapterID: LibraryDomain.ChapterID
+  ) async throws
+  func clearChapterContents(
+    bookID: LibraryDomain.BookID,
+    chapterIDs: [LibraryDomain.ChapterID]
   ) async throws
   func saveSourceVariables(
     bookID: LibraryDomain.BookID,
@@ -239,6 +249,13 @@ public extension BookShelfRepository {
     _ content: String,
     bookID: LibraryDomain.BookID,
     chapterID: LibraryDomain.ChapterID
+  ) async throws {
+    throw BookImportFailure.unsupportedRepository
+  }
+
+  func clearChapterContents(
+    bookID: LibraryDomain.BookID,
+    chapterIDs: [LibraryDomain.ChapterID]
   ) async throws {
     throw BookImportFailure.unsupportedRepository
   }
@@ -471,6 +488,49 @@ public final class ShelfLibrary {
       errorMessage = nil
     } catch {
       errorMessage = "无法缓存章节正文"
+    }
+  }
+
+  @discardableResult
+  public func invalidateReaderContent(
+    bookID: LibraryDomain.BookID,
+    currentChapterID: LibraryDomain.ChapterID,
+    scope: ReaderContentRefreshScope
+  ) async -> Bool {
+    do {
+      let chapters = try await repository.chapters(bookID: bookID)
+        .sorted {
+          if $0.index == $1.index {
+            return $0.id.rawValue < $1.id.rawValue
+          }
+          return $0.index < $1.index
+        }
+      guard
+        let currentIndex = chapters.firstIndex(where: {
+          $0.id == currentChapterID
+        })
+      else {
+        errorMessage = "当前章节不存在"
+        return false
+      }
+      let targets: [LibraryDomain.ChapterID]
+      switch scope {
+      case .current:
+        targets = [currentChapterID]
+      case .currentAndAfter:
+        targets = chapters[currentIndex...].map(\.id)
+      case .all:
+        targets = chapters.map(\.id)
+      }
+      try await repository.clearChapterContents(
+        bookID: bookID,
+        chapterIDs: targets
+      )
+      errorMessage = nil
+      return true
+    } catch {
+      errorMessage = "无法刷新正文缓存"
+      return false
     }
   }
 
