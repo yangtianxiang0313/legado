@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P48-SOURCE-EDITOR-LOSSLESS-WRITEBACK-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P48 书源编辑器 lossless 写回运行时定义",
   "objective": "依据冻结 Android BookSource/Rule 对象模型，在独立 SourceFormat 中建立书源编辑投影与补丁 Codec：导入时把五段规则对象投影为可编辑 JSON，保存时将基础字段、启用状态和规则修改写回 rawDefinition，同时保留未编辑字段与未知扩展；确保编辑器保存、调试和后续运行读取的是同一份定义。",
