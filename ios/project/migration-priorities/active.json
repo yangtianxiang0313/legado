@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P18-LOGIN-CHECK-RESPONSE-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "title": "P18 loginCheckJs 响应替换进入书源主链",
+  "objective": "依据已冻结的 Android 搜索流水线 Golden，把 loginCheckJs 在解析前读取并替换 StrResponse 的语义接入 FullCompat：SourceRuntime 只定义结构化响应脚本合同，ScriptJavaScriptCore 提供受限的 Android StrResponse 兼容外观，搜索、发现、详情、目录和正文统一消费替换后的正文与最终 URL。",
+  "completion_evidence": [
+    "SourceRuntime 用结构化 URL/body 值表达响应检查，不依赖 JavaScriptCore、OkHttp 或 Android StrResponse",
+    "JavaScriptCore 后端只为 responseCheck 请求提供受限 result.url()/result.body() 与 StrResponse 构造兼容，不开放任意 Packages 对象",
+    "BookSource.loginCheckJs 被产品 Definition 保留并在搜索、发现、详情、目录和正文解析前执行",
+    "脚本返回的新 URL 成为相对链接解析基准，返回的新 body 成为后续规则输入",
+    "本地 FullCompat 书源复现 Android Golden 中 login-check-body-transform 的结构化结果"
+  ],
+  "deferred_policy": "本里程碑只实现已由 sl-source-pipeline-search-runtime-001 冻结的响应 URL/body 替换；source.login()、java.getResponse()、任意 Packages、凭据输入和支付副作用继续拒绝，等待独立业务特征化。",
+  "deliveries": [
+    {
+      "target": "IOS-SOURCE-RUNTIME-SCRIPT-RESPONSE-CONTRACT-001",
+      "title": "定义响应脚本请求与稳定投影合同",
+      "fixture_id": "source-script-response-contract-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [],
+      "validation": "tests",
+      "test_filter": "SourceScriptResponseContractTests",
+      "additional_allowed_paths": [],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
+          "symbol_id": "kotlin://io.legado.app.model.webBook.WebBook/searchBookAwait"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/help/http/StrResponse.kt",
+          "symbol_id": "kotlin://io.legado.app.help.http.StrResponse"
+        }
+      ]
+    },
+    {
+      "target": "IOS-SOURCE-RUNTIME-JAVASCRIPTCORE-STRRESPONSE-BRIDGE-001",
+      "title": "提供受限 Android StrResponse JavaScript 兼容层",
+      "fixture_id": "source-javascriptcore-strresponse-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [
+        "IOS-SOURCE-RUNTIME-SCRIPT-RESPONSE-CONTRACT-001"
+      ],
+      "validation": "tests",
+      "test_filter": "JavaScriptCoreResponseBridgeTests",
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/ScriptJavaScriptCore/**",
+        "ios/Packages/LegadoKit/Tests/ScriptJavaScriptCoreTests/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt",
+          "symbol_id": "kotlin://io.legado.app.model.analyzeRule.AnalyzeRule/evalJS"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "ios/harness/oracle/android-runner/LegadoOracleInstrumentedTest.kt",
+          "symbol_id": "android-oracle://runSearchPipelineCases/login_check_transform"
+        }
+      ]
+    },
+    {
+      "target": "IOS-SOURCE-RUNTIME-LOGIN-CHECK-PRODUCT-INTEGRATION-001",
+      "title": "把 loginCheckJs 接入五段产品流水线",
+      "fixture_id": "source-login-check-product-integration-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [
+        "IOS-SOURCE-RUNTIME-JAVASCRIPTCORE-STRRESPONSE-BRIDGE-001"
+      ],
+      "validation": "tests",
+      "test_filter": "SourceLoginCheckProductIntegrationTests",
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Tests/ScriptJavaScriptCoreTests/**",
+        "ios/Apps/Legado/App/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
+          "symbol_id": "kotlin://io.legado.app.model.webBook.WebBook"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "ios/harness/goldens/android-legado-v1/sl-source-pipeline-search-runtime-001.json",
+          "symbol_id": "android-golden://login-check-body-transform"
+        }
+      ]
+    }
+  ],
+  "stages": [
+    {
+      "id": "P18-01-RESPONSE-SCRIPT-CONTRACT",
+      "title": "响应脚本值合同",
+      "outcome": "响应校验以稳定 URL/body 投影进入脚本端口，并拒绝非响应返回值。",
+      "selectors": [
+        {
+          "id": "SOURCE-SCRIPT-RESPONSE-CONTRACT",
+          "task_ids": [
+            "IOS-SOURCE-RUNTIME-SCRIPT-RESPONSE-CONTRACT-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P18-02-STRRESPONSE-BRIDGE",
+      "title": "受限 StrResponse 兼容外观",
+      "outcome": "已冻结 Android loginCheckJs 可在 JavaScriptCore 中读取并构造响应，而不能访问任意 Android/Java 对象。",
+      "selectors": [
+        {
+          "id": "SOURCE-JAVASCRIPTCORE-STRRESPONSE-BRIDGE",
+          "task_ids": [
+            "IOS-SOURCE-RUNTIME-JAVASCRIPTCORE-STRRESPONSE-BRIDGE-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P18-03-LOGIN-CHECK-PRODUCT",
+      "title": "五段书源产品接线",
+      "outcome": "搜索到正文均在规则解析前消费 loginCheckJs 替换后的 URL/body。",
+      "selectors": [
+        {
+          "id": "SOURCE-LOGIN-CHECK-PRODUCT-INTEGRATION",
+          "task_ids": [
+            "IOS-SOURCE-RUNTIME-LOGIN-CHECK-PRODUCT-INTEGRATION-001"
+          ]
+        }
+      ]
+    }
+  ]
+}

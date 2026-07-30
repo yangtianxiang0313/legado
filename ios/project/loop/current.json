@@ -1,1 +1,1 @@
-{"active_task":null,"attempt":0,"last_completed":{"at":"2026-07-30T20:51:20Z","sequence":559,"task_id":"IOS-SOURCE-RUNTIME-SCRIPT-PRODUCT-INTEGRATION-001"},"schema_version":2,"status":"idle","verification":null}
+{"active_task":"IOS-SOURCE-RUNTIME-SCRIPT-RESPONSE-CONTRACT-001","attempt":0,"last_completed":{"at":"2026-07-30T20:51:20Z","sequence":559,"task_id":"IOS-SOURCE-RUNTIME-SCRIPT-PRODUCT-INTEGRATION-001"},"schema_version":2,"status":"running","verification":null}
