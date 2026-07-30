@@ -30,6 +30,43 @@ final class DatabaseGRDBTests: XCTestCase {
     XCTAssertTrue(verified)
   }
 
+  func testReaderReplacementRulesSurviveReopenAndRetainOrder()
+    async throws
+  {
+    let path = temporaryDatabasePath()
+    let repository = try GRDBBookShelfRepository(path: path)
+    let later = ReaderReplacementRule(
+      id: "later",
+      name: "后执行",
+      pattern: "乙",
+      replacement: "",
+      order: 20
+    )
+    let earlier = ReaderReplacementRule(
+      id: "earlier",
+      name: "先执行",
+      pattern: "甲",
+      replacement: "乙",
+      scope: "测试书",
+      excludeScope: "排除源",
+      appliesToTitle: true,
+      appliesToContent: true,
+      isEnabled: false,
+      isRegex: false,
+      order: 10
+    )
+    try await repository.saveReplacementRule(later)
+    try await repository.saveReplacementRule(earlier)
+
+    let reopened = try GRDBBookShelfRepository(path: path)
+    let restored = try await reopened.replacementRules()
+    XCTAssertEqual(restored, [earlier, later])
+
+    try await reopened.deleteReplacementRule(id: earlier.id)
+    let afterDelete = try await reopened.replacementRules()
+    XCTAssertEqual(afterDelete, [later])
+  }
+
   func testSourceSwitchAtomicallyPreservesStableIdentityAndProgress()
     async throws
   {

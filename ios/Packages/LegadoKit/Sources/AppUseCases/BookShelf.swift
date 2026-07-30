@@ -107,7 +107,9 @@ public enum BookImportFailure: Error, Equatable, Sendable {
   case unreadableText
 }
 
-public protocol BookShelfRepository: Sendable {
+public protocol BookShelfRepository:
+  Sendable, ReaderReplacementRuleRepository
+{
   func stage(_ candidate: ShelfBookCandidate) async throws -> ShelfBookItem
   func add(
     _ candidate: ShelfBookCandidate,
@@ -364,9 +366,12 @@ public final class ShelfLibrary {
   public func readerContentLoader(
     fallback: any ReaderContentLoading
   ) -> any ReaderContentLoading {
-    RepositoryReaderContentLoader(
-      repository: repository,
-      fallback: fallback
+    ReplacementNormalizingReaderContentLoader(
+      base: RepositoryReaderContentLoader(
+        repository: repository,
+        fallback: fallback
+      ),
+      rules: repository
     )
   }
 

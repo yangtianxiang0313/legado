@@ -14,13 +14,20 @@ struct LegadoApp: App {
     @State private var sourceCatalog: SourceCatalog
     @State private var readAloud: ReadAloudSession
     @State private var readerPreferences: ReaderPreferencesStore
+    @State private var replacementRules: ReaderReplacementRuleStore
 
     init() {
         do {
+            let libraryRepository = try GRDBBookShelfRepository
+                .applicationSupport()
             _library = State(
                 initialValue: ShelfLibrary(
-                    repository: try GRDBBookShelfRepository
-                        .applicationSupport()
+                    repository: libraryRepository
+                )
+            )
+            _replacementRules = State(
+                initialValue: ReaderReplacementRuleStore(
+                    repository: libraryRepository
                 )
             )
             _sourceCatalog = State(
@@ -71,6 +78,7 @@ struct LegadoApp: App {
                     sourceCatalog: sourceCatalog,
                     readAloud: readAloud,
                     readerPreferences: readerPreferences,
+                    replacementRules: replacementRules,
                     startupCase: startupCase
                 )
             } else {
@@ -79,7 +87,8 @@ struct LegadoApp: App {
                     library: library,
                     sourceCatalog: sourceCatalog,
                     readAloud: readAloud,
-                    readerPreferences: readerPreferences
+                    readerPreferences: readerPreferences,
+                    replacementRules: replacementRules
                 )
             }
         }

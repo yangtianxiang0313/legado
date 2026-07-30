@@ -514,6 +514,38 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
     }
   }
 
+  public func replacementRules() async throws -> [ReaderReplacementRule] {
+    try await database.read { db in
+      try ReaderReplacementRuleRecord
+        .order(Column("orderValue").asc, Column("name").asc)
+        .fetchAll(db)
+        .map(\.rule)
+    }
+  }
+
+  public func saveReplacementRule(
+    _ rule: ReaderReplacementRule
+  ) async throws {
+    try await database.write { db in
+      var record = ReaderReplacementRuleRecord(rule: rule)
+      try record.save(db)
+    }
+  }
+
+  public func deleteReplacementRule(id: String) async throws {
+    try await database.write { db in
+      _ = try ReaderReplacementRuleRecord
+        .filter(Column("ruleID") == id)
+        .deleteAll(db)
+    }
+  }
+
+  public func resetReplacementRules() async throws {
+    try await database.write { db in
+      _ = try ReaderReplacementRuleRecord.deleteAll(db)
+    }
+  }
+
   public func reset() async throws {
     try await database.write { db in
       _ = try ReadingBookmarkRecord.deleteAll(db)
@@ -632,6 +664,21 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
         table.uniqueKey(
           ["bookID", "chapterID", "characterOffset"]
         )
+      }
+    }
+    migrator.registerMigration("addReaderReplacementRules") { db in
+      try db.create(table: "readerReplacementRules") { table in
+        table.column("ruleID", .text).primaryKey()
+        table.column("name", .text).notNull()
+        table.column("pattern", .text).notNull()
+        table.column("replacement", .text).notNull()
+        table.column("scope", .text)
+        table.column("excludeScope", .text)
+        table.column("appliesToTitle", .boolean).notNull()
+        table.column("appliesToContent", .boolean).notNull()
+        table.column("isEnabled", .boolean).notNull()
+        table.column("isRegex", .boolean).notNull()
+        table.column("orderValue", .integer).notNull().indexed()
       }
     }
     return migrator
@@ -799,6 +846,54 @@ private struct ReadingBookmarkRecord:
       chapterTitle: chapterTitle,
       excerpt: excerpt,
       createdAtMilliseconds: createdAtMilliseconds
+    )
+  }
+}
+
+private struct ReaderReplacementRuleRecord:
+  Codable, FetchableRecord, MutablePersistableRecord
+{
+  static let databaseTableName = "readerReplacementRules"
+
+  var ruleID: String
+  var name: String
+  var pattern: String
+  var replacement: String
+  var scope: String?
+  var excludeScope: String?
+  var appliesToTitle: Bool
+  var appliesToContent: Bool
+  var isEnabled: Bool
+  var isRegex: Bool
+  var orderValue: Int
+
+  init(rule: ReaderReplacementRule) {
+    ruleID = rule.id
+    name = rule.name
+    pattern = rule.pattern
+    replacement = rule.replacement
+    scope = rule.scope
+    excludeScope = rule.excludeScope
+    appliesToTitle = rule.appliesToTitle
+    appliesToContent = rule.appliesToContent
+    isEnabled = rule.isEnabled
+    isRegex = rule.isRegex
+    orderValue = rule.order
+  }
+
+  var rule: ReaderReplacementRule {
+    ReaderReplacementRule(
+      id: ruleID,
+      name: name,
+      pattern: pattern,
+      replacement: replacement,
+      scope: scope,
+      excludeScope: excludeScope,
+      appliesToTitle: appliesToTitle,
+      appliesToContent: appliesToContent,
+      isEnabled: isEnabled,
+      isRegex: isRegex,
+      order: orderValue
     )
   }
 }

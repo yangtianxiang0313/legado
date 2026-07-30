@@ -10,6 +10,7 @@ struct ReaderContentView: View {
     let persistedSources: [BookSourceDraft]
     @Bindable var readAloud: ReadAloudSession
     @Bindable var readerPreferences: ReaderPreferencesStore
+    @Bindable var replacementRules: ReaderReplacementRuleStore
     let openTOC: () -> Void
     let openChapter: (ChapterID, Int) -> Void
     let openSourceEditor: (String?) -> Void
@@ -26,6 +27,7 @@ struct ReaderContentView: View {
     @State private var searchResults: [ReaderSearchResult] = []
     @State private var isSearching = false
     @State private var sourceID: String?
+    @State private var replacementDraft: ReaderReplacementRule?
 
     init(
         target: ReaderRoute,
@@ -33,6 +35,7 @@ struct ReaderContentView: View {
         persistedSources: [BookSourceDraft],
         readAloud: ReadAloudSession,
         readerPreferences: ReaderPreferencesStore,
+        replacementRules: ReaderReplacementRuleStore,
         openTOC: @escaping () -> Void,
         openChapter: @escaping (ChapterID, Int) -> Void,
         openSourceEditor: @escaping (String?) -> Void
@@ -42,6 +45,7 @@ struct ReaderContentView: View {
         self.persistedSources = persistedSources
         self.readAloud = readAloud
         self.readerPreferences = readerPreferences
+        self.replacementRules = replacementRules
         self.openTOC = openTOC
         self.openChapter = openChapter
         self.openSourceEditor = openSourceEditor
@@ -173,6 +177,8 @@ struct ReaderContentView: View {
                             moreMenu
                         case .search:
                             searchMenu
+                        case .replacementRules:
+                            replacementRulesMenu
                         case .primary, .textSelection:
                             EmptyView()
                         }
@@ -535,10 +541,15 @@ struct ReaderContentView: View {
                 .accessibilityIdentifier(
                     ReaderMenuAction.openSearch.accessibilityIdentifier
                 )
-                menuPlaceholder(
-                    .openReplaceRules,
-                    title: "替换规则",
-                    systemImage: "arrow.left.arrow.right"
+                NavigationLink(value: ReaderMenuLayer.replacementRules) {
+                    Label(
+                        "替换规则",
+                        systemImage: "arrow.left.arrow.right"
+                    )
+                }
+                .accessibilityIdentifier(
+                    ReaderMenuAction.openReplaceRules
+                        .accessibilityIdentifier
                 )
             }
             Section("章节") {
@@ -666,6 +677,127 @@ struct ReaderContentView: View {
         .navigationTitle("全文搜索")
         .navigationBarTitleDisplayMode(.inline)
         .accessibilityIdentifier("overlay.reader.search")
+    }
+
+    private var replacementRulesMenu: some View {
+        List {
+            Section {
+                Button {
+                    replacementDraft = ReaderReplacementRule(
+                        name: "",
+                        pattern: "",
+                        replacement: "",
+                        isRegex: false,
+                        order: replacementRules.nextOrder
+                    )
+                } label: {
+                    Label("新增规则", systemImage: "plus")
+                }
+                .accessibilityIdentifier(
+                    "action.reader.replacement.add"
+                )
+            }
+
+            if let errorMessage = replacementRules.errorMessage {
+                Section {
+                    Text(errorMessage)
+                        .foregroundStyle(.red)
+                        .accessibilityIdentifier(
+                            "state.reader.replacement.error"
+                        )
+                }
+            }
+
+            Section("规则 \(replacementRules.rules.count)") {
+                if replacementRules.rules.isEmpty {
+                    Text("暂无替换规则")
+                        .foregroundStyle(.secondary)
+                        .accessibilityIdentifier(
+                            "state.reader.replacement.empty"
+                        )
+                }
+                ForEach(replacementRules.rules) { rule in
+                    HStack {
+                        Button {
+                            replacementDraft = rule
+                        } label: {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(rule.name)
+                                    .font(.headline)
+                                Text("\(rule.pattern) → \(rule.replacement)")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier(
+                            "action.reader.replacement.edit.\(rule.id)"
+                        )
+
+                        Toggle(
+                            "启用",
+                            isOn: Binding(
+                                get: { rule.isEnabled },
+                                set: { enabled in
+                                    Task {
+                                        if await replacementRules.setEnabled(
+                                            id: rule.id,
+                                            enabled: enabled
+                                        ) {
+                                            await reloadCurrentContent()
+                                        }
+                                    }
+                                }
+                            )
+                        )
+                        .labelsHidden()
+                        .accessibilityIdentifier(
+                            "action.reader.replacement.toggle.\(rule.id)"
+                        )
+                    }
+                    .swipeActions {
+                        Button(role: .destructive) {
+                            Task {
+                                if await replacementRules.delete(id: rule.id) {
+                                    await reloadCurrentContent()
+                                }
+                            }
+                        } label: {
+                            Label("删除", systemImage: "trash")
+                        }
+                        .accessibilityIdentifier(
+                            "action.reader.replacement.delete.\(rule.id)"
+                        )
+                    }
+                }
+            }
+        }
+        .task {
+            await replacementRules.reload()
+        }
+        .navigationTitle("替换规则")
+        .navigationBarTitleDisplayMode(.inline)
+        .accessibilityIdentifier("overlay.reader.replacementRules")
+        .sheet(item: $replacementDraft) { rule in
+            ReaderReplacementRuleEditor(
+                rule: rule,
+                save: { updated in
+                    Task {
+                        guard await replacementRules.save(updated) else {
+                            return
+                        }
+                        replacementDraft = nil
+                        menuPresented = false
+                        await reloadCurrentContent()
+                    }
+                },
+                cancel: {
+                    replacementDraft = nil
+                }
+            )
+        }
     }
 
     @ViewBuilder
@@ -796,6 +928,22 @@ struct ReaderContentView: View {
             })
         else { return }
         await saveProgress(chapter: chapter)
+    }
+
+    private func reloadCurrentContent() async {
+        guard
+            let book = await library.item(id: target.bookID),
+            let chapter = chapters.first(where: {
+                $0.id == target.chapterID
+            })
+        else { return }
+        let anchor = currentReaderOffset
+        await session.load(
+            book: book,
+            chapter: chapter,
+            characterOffset: anchor
+        )
+        refreshBookmarkState()
     }
 
     private func saveProgress(chapter: BookChapter) async {
@@ -956,4 +1104,107 @@ private struct ReaderPaginationRenderKey: Hashable {
     let height: Int
     let fontSize: Double
     let lineSpacing: Double
+}
+
+private struct ReaderReplacementRuleEditor: View {
+    @State private var rule: ReaderReplacementRule
+    let save: (ReaderReplacementRule) -> Void
+    let cancel: () -> Void
+
+    init(
+        rule: ReaderReplacementRule,
+        save: @escaping (ReaderReplacementRule) -> Void,
+        cancel: @escaping () -> Void
+    ) {
+        _rule = State(initialValue: rule)
+        self.save = save
+        self.cancel = cancel
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("规则") {
+                    TextField("名称", text: $rule.name)
+                        .accessibilityIdentifier(
+                            "input.reader.replacement.name"
+                        )
+                    TextField("匹配内容", text: $rule.pattern)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .accessibilityIdentifier(
+                            "input.reader.replacement.pattern"
+                        )
+                    TextField("替换为", text: $rule.replacement)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .accessibilityIdentifier(
+                            "input.reader.replacement.replacement"
+                        )
+                }
+                Section("应用") {
+                    Toggle("使用正则表达式", isOn: $rule.isRegex)
+                        .accessibilityIdentifier(
+                            "action.reader.replacement.regex"
+                        )
+                    Toggle("作用于正文", isOn: $rule.appliesToContent)
+                    Toggle("作用于标题", isOn: $rule.appliesToTitle)
+                    Toggle("启用", isOn: $rule.isEnabled)
+                }
+                Section("作用域（可选）") {
+                    TextField(
+                        "包含书名或书源",
+                        text: optionalBinding(\.scope)
+                    )
+                    TextField(
+                        "排除书名或书源",
+                        text: optionalBinding(\.excludeScope)
+                    )
+                }
+                if let message = rule.validationMessage {
+                    Section {
+                        Text(message)
+                            .foregroundStyle(.red)
+                            .accessibilityIdentifier(
+                                "state.reader.replacement.validation"
+                            )
+                    }
+                }
+            }
+            .navigationTitle(rule.name.isEmpty ? "新增规则" : "编辑规则")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消", action: cancel)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("保存") {
+                        var updated = rule
+                        if updated.name.trimmingCharacters(
+                            in: .whitespacesAndNewlines
+                        ).isEmpty {
+                            updated.name = "未命名规则"
+                        }
+                        save(updated)
+                    }
+                    .disabled(rule.validationMessage != nil)
+                    .accessibilityIdentifier(
+                        "action.reader.replacement.save"
+                    )
+                }
+            }
+            .accessibilityIdentifier("sheet.reader.replacementEditor")
+        }
+    }
+
+    private func optionalBinding(
+        _ keyPath: WritableKeyPath<ReaderReplacementRule, String?>
+    ) -> Binding<String> {
+        Binding(
+            get: { rule[keyPath: keyPath] ?? "" },
+            set: { value in
+                rule[keyPath: keyPath] = value.isEmpty ? nil : value
+            }
+        )
+    }
 }

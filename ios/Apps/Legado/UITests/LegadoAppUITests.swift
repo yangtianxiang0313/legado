@@ -1896,6 +1896,82 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testReaderContentReplacementMilestone() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+            "--reset-replacement-rules",
+            "--seed-offline-cache",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        openSeededReader()
+        waitForText(
+            "晨光",
+            in: "text.reader.content"
+        )
+        requireButton("action.reader.openPrimaryMenu").tap()
+        requireByScrolling(
+            "action.reader.openMore",
+            in: "overlay.reader.primaryMenu"
+        ).tap()
+        requireByScrolling(
+            "action.reader.openReplaceRules",
+            in: "overlay.reader.more"
+        ).tap()
+        require("overlay.reader.replacementRules")
+        requireButton("action.reader.replacement.add").tap()
+        require("sheet.reader.replacementEditor")
+
+        let name = require("input.reader.replacement.name")
+        name.tap()
+        name.typeText("晨光替换")
+        let pattern = require("input.reader.replacement.pattern")
+        pattern.tap()
+        pattern.typeText("晨光")
+        let replacement = require(
+            "input.reader.replacement.replacement"
+        )
+        replacement.tap()
+        replacement.typeText("星光")
+        requireButton("action.reader.replacement.save").tap()
+
+        require("screen.reader")
+        waitForText(
+            "星光",
+            in: "text.reader.content"
+        )
+
+        app.terminate()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+        ]
+        app.launch()
+        openSeededReader()
+        waitForText(
+            "星光",
+            in: "text.reader.content"
+        )
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "rule_saved": true,
+            "display_content_reloaded": true,
+            "persisted_after_relaunch": true,
+            "raw_cache_preserved": true,
+        ])
+    }
+
     private func openSeededReader() {
         let book = app.staticTexts["星河纪事"].firstMatch
         XCTAssertTrue(book.waitForExistence(timeout: 8))
@@ -1916,6 +1992,25 @@ final class LegadoAppUITests: XCTestCase {
         let value = element(identifier)
         let expectation = XCTNSPredicateExpectation(
             predicate: NSPredicate(format: "label == %@", label),
+            object: value
+        )
+        XCTAssertEqual(
+            XCTWaiter.wait(for: [expectation], timeout: timeout),
+            .completed
+        )
+    }
+
+    private func waitForText(
+        _ text: String,
+        in identifier: String,
+        timeout: TimeInterval = 8
+    ) {
+        let value = require(identifier)
+        let expectation = XCTNSPredicateExpectation(
+            predicate: NSPredicate(
+                format: "label CONTAINS %@",
+                text
+            ),
             object: value
         )
         XCTAssertEqual(

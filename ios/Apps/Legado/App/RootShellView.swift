@@ -8,6 +8,7 @@ struct RootShellView: View {
     @Bindable var sourceCatalog: SourceCatalog
     @Bindable var readAloud: ReadAloudSession
     @Bindable var readerPreferences: ReaderPreferencesStore
+    @Bindable var replacementRules: ReaderReplacementRuleStore
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var didLoadLibrary = false
 
@@ -34,8 +35,14 @@ struct RootShellView: View {
             ) {
                 await sourceCatalog.reset()
             }
+            if ProcessInfo.processInfo.arguments.contains(
+                "--reset-replacement-rules"
+            ) {
+                await replacementRules.reset()
+            }
             await library.reload()
             await sourceCatalog.reload()
+            await replacementRules.reload()
             if ProcessInfo.processInfo.arguments.contains(
                 "--seed-shelf-management"
             ) {
@@ -272,6 +279,7 @@ struct RootShellView: View {
                 persistedSources: sourceCatalog.sources,
                 readAloud: readAloud,
                 readerPreferences: readerPreferences,
+                replacementRules: replacementRules,
                 openTOC: {
                     router.push(.chapterTOC(target.bookID), on: root)
                 },
@@ -1067,6 +1075,7 @@ struct StartupAcceptanceView: View {
     @Bindable var sourceCatalog: SourceCatalog
     @Bindable var readAloud: ReadAloudSession
     @Bindable var readerPreferences: ReaderPreferencesStore
+    @Bindable var replacementRules: ReaderReplacementRuleStore
     let startupCase: StartupAcceptanceCase
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -1107,7 +1116,8 @@ struct StartupAcceptanceView: View {
                 library: library,
                 sourceCatalog: sourceCatalog,
                 readAloud: readAloud,
-                readerPreferences: readerPreferences
+                readerPreferences: readerPreferences,
+                replacementRules: replacementRules
             )
         }
     }

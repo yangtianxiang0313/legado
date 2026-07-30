@@ -105,6 +105,51 @@ public struct RepositoryReaderContentLoader:
   }
 }
 
+public struct ReplacementNormalizingReaderContentLoader:
+  ReaderContentLoading, Sendable
+{
+  private let base: any ReaderContentLoading
+  private let rules: any ReaderReplacementRuleRepository
+
+  public init(
+    base: any ReaderContentLoading,
+    rules: any ReaderReplacementRuleRepository
+  ) {
+    self.base = base
+    self.rules = rules
+  }
+
+  public func load(
+    book: ShelfBookItem,
+    chapter: LibraryDomain.BookChapter,
+    characterOffset: Int
+  ) async throws -> ReaderDocument {
+    let raw = try await base.load(
+      book: book,
+      chapter: chapter,
+      characterOffset: characterOffset
+    )
+    let storedRules = (try? await rules.replacementRules()) ?? []
+    let normalized = AndroidReaderContentNormalizationPolicy.normalize(
+      ReaderContentNormalizationInput(
+        bookName: book.candidate.name,
+        bookOrigin: book.candidate.sourceID,
+        chapterTitle: raw.title,
+        content: raw.content,
+        includeTitle: false,
+        useReplacementRules: true,
+        paragraphIndent: "　　",
+        rules: storedRules.map(\.contentRule)
+      )
+    )
+    return ReaderDocument(
+      position: raw.position,
+      title: normalized.displayTitle,
+      content: normalized.renderedText
+    )
+  }
+}
+
 public enum ReaderContentLoadingState: Equatable, Sendable {
   case idle
   case loading
