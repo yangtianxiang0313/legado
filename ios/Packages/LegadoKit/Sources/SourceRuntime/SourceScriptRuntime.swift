@@ -24,8 +24,14 @@ public enum SourceScriptValue: Equatable, Sendable {
   case object([String: SourceScriptValue])
 }
 
+public enum SourceScriptPurpose: String, Equatable, Sendable {
+  case rule
+  case responseCheck
+}
+
 public struct SourceScriptRequest: Equatable, Sendable {
   public let sessionID: SourceScriptSessionID
+  public let purpose: SourceScriptPurpose
   public let script: String
   public let result: SourceScriptValue
   public let baseURL: String?
@@ -33,12 +39,14 @@ public struct SourceScriptRequest: Equatable, Sendable {
 
   public init(
     sessionID: SourceScriptSessionID,
+    purpose: SourceScriptPurpose = .rule,
     script: String,
     result: SourceScriptValue = .undefined,
     baseURL: String? = nil,
     bindings: [String: SourceScriptValue] = [:]
   ) {
     self.sessionID = sessionID
+    self.purpose = purpose
     self.script = script
     self.result = result
     self.baseURL = baseURL
