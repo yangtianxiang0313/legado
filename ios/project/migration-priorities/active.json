@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P45-PRODUCTION-SOURCE-PROXY-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "title": "P45 生产书源代理进入真实网络链路",
+  "objective": "依据冻结 Android AnalyzeUrl/getProxyClient，将书源 header 中的 proxy 控制字段从普通请求头剥离，作为 HTTPRequest 的显式网络策略传入 URLSession；支持 Android 的 HTTP、SOCKS4/SOCKS5 及可选账号密码语法，并保证 Cookie、重试和重定向重建请求时策略不丢失。",
+  "validation_policy": "只运行 SourceProxyIntegrationTests 聚焦测试组；由于修改 SourceRuntime 与 NetworkFoundation 跨 Target 合同，再执行一次 LegadoApp 编译。不跑全量 Harness、全量 Swift 测试或模拟器。",
+  "stages": [
+    {
+      "id": "P45-S1",
+      "title": "代理配置建模、请求剥离与 URLSession 接线",
+      "selectors": [
+        {
+          "id": "P45-S1-PROXY",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-SOURCE-RUNTIME-PRODUCTION-PROXY-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-SOURCE-RUNTIME-PRODUCTION-PROXY-001",
+      "title": "让书源代理策略真正作用于生产网络请求",
+      "fixture_id": "source-production-proxy-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [
+        "IOS-SOURCE-RUNTIME-REDIRECT-COOKIE-CHAIN-001"
+      ],
+      "validation": "tests",
+      "package_path": "ios/Packages/LegadoSourceKit",
+      "test_filter": "SourceProxyIntegrationTests",
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoSourceKit/**",
+        "ios/Apps/Legado/**",
+        "ios/docs/architecture.md",
+        "ios/project/migration-priorities/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da",
+          "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+          "symbol_id": "kotlin://io.legado.app.model.analyzeRule.AnalyzeUrl/proxy"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "9c104f66bfd9fa638afaf01e1f687ecf9a0a0749",
+          "path": "app/src/main/java/io/legado/app/help/http/HttpHelper.kt",
+          "symbol_id": "kotlin://io.legado.app.help.http/getProxyClient"
+        }
+      ]
+    }
+  ]
+}
