@@ -5,6 +5,10 @@ import SourceRuntime
 
 @MainActor
 enum SearchEnvironment {
+    private static let cookieStore = SourceCookieStore(
+        persistence: UserDefaultsSourceCookiePersistence()
+    )
+
     static func makeSession(
         persistedSources: [BookSourceDraft] = []
     ) -> SearchSession {
@@ -21,7 +25,8 @@ enum SearchEnvironment {
             groups: Array(Set(sources.map(\.group))).sorted(),
             executor: SourceSearchBooksExecutor(
                 sources: sources,
-                transport: transport
+                transport: transport,
+                cookieStore: cookieStore
             )
         )
     }
@@ -126,7 +131,8 @@ enum SearchEnvironment {
                 persistedSources: persistedSources,
                 includeDisabled: true
             ),
-            transport: makeTransport(externalBaseURL: externalBaseURL)
+            transport: makeTransport(externalBaseURL: externalBaseURL),
+            cookieStore: cookieStore
         )
     }
 
@@ -143,7 +149,8 @@ enum SearchEnvironment {
                 persistedSources: persistedSources,
                 includeDisabled: true
             ),
-            transport: makeTransport(externalBaseURL: externalBaseURL)
+            transport: makeTransport(externalBaseURL: externalBaseURL),
+            cookieStore: cookieStore
         )
     }
 
@@ -197,7 +204,8 @@ enum SearchEnvironment {
         let selected = sources[selectedIndex]
         let execution = try await SourceBookInfoPipeline(
             definition: selected.definition,
-            transport: makeTransport(externalBaseURL: externalBaseURL)
+            transport: makeTransport(externalBaseURL: externalBaseURL),
+            cookieStore: cookieStore
         ).load(
             book: SourceBook(
                 name: "",
@@ -249,7 +257,8 @@ enum SearchEnvironment {
                 sources: [selected],
                 transport: makeTransport(
                     externalBaseURL: externalBaseURL
-                )
+                ),
+                cookieStore: cookieStore
             )
         )
         await toc.load(book: item, force: true)
@@ -284,7 +293,8 @@ enum SearchEnvironment {
         let transport = makeTransport(externalBaseURL: externalBaseURL)
         let results = try await SourceSearchBooksExecutor(
             sources: [descriptor],
-            transport: transport
+            transport: transport,
+            cookieStore: cookieStore
         ).search(
             query: current.candidate.name,
             scope: .source(
@@ -320,7 +330,8 @@ enum SearchEnvironment {
         )
         let chapters = try await SourceBookChapterLoader(
             sources: [descriptor],
-            transport: transport
+            transport: transport,
+            cookieStore: cookieStore
         ).load(book: transient)
         return (candidate, chapters)
     }
@@ -472,6 +483,7 @@ enum SearchEnvironment {
             ),
             bookURLPattern: string(root, "bookUrlPattern"),
             sourceHeaders: sourceHeaders(root),
+            enabledCookieJar: root["enabledCookieJar"] as? Bool ?? false,
             runtime: runtime
         )
         let catalog = (

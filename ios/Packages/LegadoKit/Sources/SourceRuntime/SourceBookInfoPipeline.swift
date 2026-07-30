@@ -54,16 +54,19 @@ public struct SourceBookInfoExecution: Sendable, Equatable {
 public struct SourceBookInfoPipeline: Sendable {
   private let definition: SourceSearchDefinition
   private let transport: any HTTPTransport
+  private let cookieStore: SourceCookieStore
   private let responseChecker: any SourceBookInfoResponseChecking
 
   public init(
     definition: SourceSearchDefinition,
     transport: any HTTPTransport,
+    cookieStore: SourceCookieStore = SourceCookieStore(),
     responseChecker: any SourceBookInfoResponseChecking =
       IdentitySourceBookInfoResponseChecker()
   ) {
     self.definition = definition
     self.transport = transport
+    self.cookieStore = cookieStore
     self.responseChecker = responseChecker
   }
 
@@ -86,12 +89,19 @@ public struct SourceBookInfoPipeline: Sendable {
       let request = try definition.prepare(
         runtime.request(for: book.bookURL)
       )
-      requestPlan = SourceRequestPlan(
+      let plan = SourceRequestPlan(
         request: request,
         body: nil,
         formFields: []
       )
-      let networkResponse = try await transport.execute(request)
+      requestPlan = plan
+      let networkResponse = try await SourceRequestSession(
+        transport: transport,
+        cookieStore: cookieStore
+      ).execute(
+        plan,
+        enabledCookieJar: definition.enabledCookieJar
+      ).response
       guard
         let body = String(
           data: networkResponse.body.bytes,

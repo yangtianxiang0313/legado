@@ -14,13 +14,16 @@ public protocol ReaderContentLoading: Sendable {
 public struct SourceReaderContentLoader: ReaderContentLoading, Sendable {
   private let sources: [SearchSourceDescriptor]
   private let transport: any HTTPTransport
+  private let cookieStore: SourceCookieStore
 
   public init(
     sources: [SearchSourceDescriptor],
-    transport: any HTTPTransport
+    transport: any HTTPTransport,
+    cookieStore: SourceCookieStore = SourceCookieStore()
   ) {
     self.sources = sources
     self.transport = transport
+    self.cookieStore = cookieStore
   }
 
   public func load(
@@ -38,7 +41,8 @@ public struct SourceReaderContentLoader: ReaderContentLoading, Sendable {
     }
     let execution = try await SourceContentPipeline(
       definition: source.definition,
-      transport: transport
+      transport: transport,
+      cookieStore: cookieStore
     ).content(chapterURL: chapter.url)
     return ReaderDocument(
       position: ReaderPosition(

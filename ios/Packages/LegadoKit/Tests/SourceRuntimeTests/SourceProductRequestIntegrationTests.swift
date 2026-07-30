@@ -95,6 +95,68 @@ final class SourceProductRequestIntegrationTests: XCTestCase {
     }
   }
 
+  func testEnabledCookieSessionIsSharedAndPersistentLayerRestores()
+    async throws
+  {
+    let persistence = MemoryCookiePersistence(
+      values: [
+        "sourcelab.test": "persisted=stored; shared=stored"
+      ]
+    )
+    let cookieStore = SourceCookieStore(persistence: persistence)
+    let definition = SourceSearchDefinition(
+      sourceURL: "http://sourcelab.test",
+      sourceName: "Cookie 书源",
+      originOrder: 1,
+      sourceHeaders: [
+        try SourceHeaderField(
+          name: "Cookie",
+          value: "explicit=source; shared=explicit"
+        )
+      ],
+      enabledCookieJar: true,
+      runtime: try makeDefinition(
+        searchURL: "http://sourcelab.test/search?q={{key}}",
+        sourceHeaders: []
+      ).runtime
+    )
+    let transport = CookieRecordingTransport()
+    let pipeline = SourceSearchPipeline(
+      definition: definition,
+      transport: transport,
+      cookieStore: cookieStore
+    )
+
+    _ = try await pipeline.search(
+      SourceSearchInput(keyword: "第一次", page: 1)
+    )
+    _ = try await pipeline.search(
+      SourceSearchInput(keyword: "第二次", page: 1)
+    )
+
+    let requests = await transport.requests()
+    XCTAssertEqual(
+      requests[0].headers.values(for: "cookie"),
+      ["persisted=stored; shared=stored; explicit=source"]
+    )
+    XCTAssertEqual(
+      requests[1].headers.values(for: "cookie"),
+      [
+        "persisted=stored; shared=session; remember=server; "
+          + "session=memory; explicit=source"
+      ]
+    )
+    let restored = SourceCookieStore(persistence: persistence)
+    let snapshot = try await restored.snapshot(
+      for: try HTTPURL("http://sourcelab.test/search")
+    )
+    XCTAssertEqual(
+      snapshot.persistentCookie,
+      "persisted=stored; shared=stored; remember=server"
+    )
+    XCTAssertNil(snapshot.sessionCookie)
+  }
+
   private func makeDefinition(
     searchURL: String,
     sourceHeaders: [SourceHeaderField]
@@ -183,6 +245,69 @@ private actor HeaderRecordingTransport: HTTPTransport {
       statusCode: 200,
       effectiveURL: request.url,
       body: HTTPBody(Data(body.utf8))
+    )
+  }
+
+  func requests() -> [HTTPRequest] {
+    recorded
+  }
+}
+
+private actor MemoryCookiePersistence: SourceCookiePersisting {
+  private var values: [String: String]
+
+  init(values: [String: String]) {
+    self.values = values
+  }
+
+  func loadPersistentCookie(
+    for domain: String
+  ) async throws -> String? {
+    values[domain]
+  }
+
+  func savePersistentCookie(
+    _ cookie: String?,
+    for domain: String
+  ) async throws {
+    values[domain] = cookie
+  }
+}
+
+private actor CookieRecordingTransport: HTTPTransport {
+  private var recorded: [HTTPRequest] = []
+
+  func execute(_ request: HTTPRequest) async throws -> HTTPResponse {
+    recorded.append(request)
+    return try HTTPResponse(
+      statusCode: 200,
+      effectiveURL: request.url,
+      headers: HTTPHeaders([
+        try HTTPHeader(
+          name: "Set-Cookie",
+          value: "remember=server; Max-Age=3600"
+        ),
+        try HTTPHeader(
+          name: "Set-Cookie",
+          value: "session=memory; Path=/"
+        ),
+        try HTTPHeader(
+          name: "Set-Cookie",
+          value: "shared=session; Path=/"
+        ),
+      ]),
+      body: HTTPBody(
+        Data(
+          """
+          <html><body>
+            <article class="book">
+              <span class="name">星河纪事</span>
+              <a href="/book"></a>
+            </article>
+          </body></html>
+          """.utf8
+        )
+      )
     )
   }
 

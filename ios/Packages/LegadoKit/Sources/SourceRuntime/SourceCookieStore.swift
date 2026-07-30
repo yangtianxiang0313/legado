@@ -123,19 +123,33 @@ public struct SourceCookieSnapshot: Equatable, Sendable {
   public let combinedCookie: String
 }
 
+public protocol SourceCookiePersisting: Sendable {
+  func loadPersistentCookie(for domain: String) async throws -> String?
+  func savePersistentCookie(
+    _ cookie: String?,
+    for domain: String
+  ) async throws
+}
+
 public actor SourceCookieStore {
   private var persistent: [String: [SourceCookiePair]] = [:]
   private var session: [String: [SourceCookiePair]] = [:]
   private var initializedSessionDomains: Set<String> = []
+  private var loadedPersistentDomains: Set<String> = []
+  private let persistence: (any SourceCookiePersisting)?
 
-  public init() {}
+  public init(persistence: (any SourceCookiePersisting)? = nil) {
+    self.persistence = persistence
+  }
 
   public func replacePersistentCookie(
     _ rawCookie: String,
     for url: HTTPURL
-  ) throws {
+  ) async throws {
     let domain = try SourceCookieDomain.normalized(for: url)
+    try await loadPersistentCookieIfNeeded(for: domain)
     persistent[domain] = SourceCookieParser.parse(rawCookie)
+    try await persist(domain: domain)
   }
 
   public func replaceSessionCookie(
@@ -151,9 +165,10 @@ public actor SourceCookieStore {
     setCookieHeaders: [String],
     for url: HTTPURL,
     enabledCookieJar: Bool
-  ) throws {
+  ) async throws {
     guard enabledCookieJar else { return }
     let domain = try SourceCookieDomain.normalized(for: url)
+    try await loadPersistentCookieIfNeeded(for: domain)
     var persistentUpdates: [SourceCookiePair] = []
     var sessionUpdates: [SourceCookiePair] = []
     for header in setCookieHeaders {
@@ -173,10 +188,16 @@ public actor SourceCookieStore {
       sessionUpdates,
     ])
     initializedSessionDomains.insert(domain)
+    if !persistentUpdates.isEmpty {
+      try await persist(domain: domain)
+    }
   }
 
-  public func snapshot(for url: HTTPURL) throws -> SourceCookieSnapshot {
+  public func snapshot(
+    for url: HTTPURL
+  ) async throws -> SourceCookieSnapshot {
     let domain = try SourceCookieDomain.normalized(for: url)
+    try await loadPersistentCookieIfNeeded(for: domain)
     let persistentPairs = persistent[domain] ?? []
     let sessionPairs = session[domain] ?? []
     let persistentCookie = SourceCookieParser.serialize(persistentPairs)
@@ -194,19 +215,53 @@ public actor SourceCookieStore {
     )
   }
 
-  public func removeCookie(named name: String, for url: HTTPURL) throws {
+  public func removeCookie(
+    named name: String,
+    for url: HTTPURL
+  ) async throws {
     let domain = try SourceCookieDomain.normalized(for: url)
+    try await loadPersistentCookieIfNeeded(for: domain)
     persistent[domain] = (persistent[domain] ?? []).filter { $0.name != name }
     if initializedSessionDomains.contains(domain) {
       session[domain] = (session[domain] ?? []).filter { $0.name != name }
     }
+    try await persist(domain: domain)
   }
 
-  public func removeCookies(for url: HTTPURL) throws {
+  public func removeCookies(for url: HTTPURL) async throws {
     let domain = try SourceCookieDomain.normalized(for: url)
     persistent.removeValue(forKey: domain)
     session.removeValue(forKey: domain)
     initializedSessionDomains.remove(domain)
+    loadedPersistentDomains.insert(domain)
+    try await persistence?.savePersistentCookie(nil, for: domain)
+  }
+
+  private func loadPersistentCookieIfNeeded(
+    for domain: String
+  ) async throws {
+    guard loadedPersistentDomains.insert(domain).inserted else {
+      return
+    }
+    guard
+      let raw = try await persistence?.loadPersistentCookie(
+        for: domain
+      )
+    else {
+      return
+    }
+    persistent[domain] = SourceCookieParser.parse(raw)
+  }
+
+  private func persist(domain: String) async throws {
+    guard let persistence else { return }
+    let value = SourceCookieParser.serialize(
+      persistent[domain] ?? []
+    )
+    try await persistence.savePersistentCookie(
+      value.isEmpty ? nil : value,
+      for: domain
+    )
   }
 
   private static func responseCookie(
@@ -308,5 +363,45 @@ public enum SourceCookieRequestCoordinator {
       body: request.body,
       timeout: request.timeout
     )
+  }
+}
+
+public struct SourceRequestSession: Sendable {
+  private let transport: any HTTPTransport
+  private let cookieStore: SourceCookieStore
+
+  public init(
+    transport: any HTTPTransport,
+    cookieStore: SourceCookieStore
+  ) {
+    self.transport = transport
+    self.cookieStore = cookieStore
+  }
+
+  public func execute(
+    _ plan: SourceRequestPlan,
+    enabledCookieJar: Bool
+  ) async throws -> SourceRequestExecution {
+    let explicitCookie = plan.request.headers
+      .values(for: "cookie")
+      .joined(separator: "; ")
+    let preparation = try await SourceCookieRequestCoordinator.prepare(
+      request: plan.request,
+      storageURL: plan.request.url,
+      explicitCookie: explicitCookie,
+      store: cookieStore,
+      enabledCookieJar: enabledCookieJar
+    )
+    let execution = try await SourceRequestExecutor(
+      transport: transport
+    ).execute(preparation.networkRequest, retry: plan.retry)
+    try await cookieStore.saveResponse(
+      setCookieHeaders: execution.response.headers.values(
+        for: "set-cookie"
+      ),
+      for: execution.effectiveURL,
+      enabledCookieJar: enabledCookieJar
+    )
+    return execution
   }
 }

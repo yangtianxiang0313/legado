@@ -1,5 +1,6 @@
 import AppUseCases
 import Foundation
+import SourceRuntime
 
 actor UserDefaultsSourceCatalogRepository: SourceCatalogRepository {
     private let defaults: UserDefaults
@@ -44,5 +45,29 @@ actor UserDefaultsSourceCatalogRepository: SourceCatalogRepository {
 
     func resetSources() async throws {
         defaults.removeObject(forKey: storageKey)
+    }
+}
+
+actor UserDefaultsSourceCookiePersistence: SourceCookiePersisting {
+    private let defaults: UserDefaults
+    private let storageKey = "legado.sourceCookies.v1"
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+    }
+
+    func loadPersistentCookie(
+        for domain: String
+    ) async throws -> String? {
+        defaults.dictionary(forKey: storageKey)?[domain] as? String
+    }
+
+    func savePersistentCookie(
+        _ cookie: String?,
+        for domain: String
+    ) async throws {
+        var values = defaults.dictionary(forKey: storageKey) ?? [:]
+        values[domain] = cookie
+        defaults.set(values, forKey: storageKey)
     }
 }

@@ -13,13 +13,16 @@ public struct SourceContentExecution: Sendable, Equatable {
 public struct SourceContentPipeline: Sendable {
   private let definition: SourceSearchDefinition
   private let transport: any HTTPTransport
+  private let cookieStore: SourceCookieStore
 
   public init(
     definition: SourceSearchDefinition,
-    transport: any HTTPTransport
+    transport: any HTTPTransport,
+    cookieStore: SourceCookieStore = SourceCookieStore()
   ) {
     self.definition = definition
     self.transport = transport
+    self.cookieStore = cookieStore
   }
 
   public func content(chapterURL: String) async throws
@@ -30,7 +33,17 @@ public struct SourceContentPipeline: Sendable {
     }
     let runtime = HTMLCSSSourceRuntime(definition: definition.runtime)
     let request = try definition.prepare(runtime.request(for: url))
-    let response = try await transport.execute(request)
+    let response = try await SourceRequestSession(
+      transport: transport,
+      cookieStore: cookieStore
+    ).execute(
+      SourceRequestPlan(
+        request: request,
+        body: nil,
+        formFields: []
+      ),
+      enabledCookieJar: definition.enabledCookieJar
+    ).response
     guard
       let effectiveURL = URL(string: response.effectiveURL.absoluteString),
       let html = String(data: response.body.bytes, encoding: .utf8)

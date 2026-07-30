@@ -19,17 +19,20 @@ public struct SourceTOCExecution: Sendable, Equatable {
 public struct SourceTOCPipeline: Sendable {
   private let definition: SourceSearchDefinition
   private let transport: any HTTPTransport
+  private let cookieStore: SourceCookieStore
   private let bookInfoResponseChecker:
     any SourceBookInfoResponseChecking
 
   public init(
     definition: SourceSearchDefinition,
     transport: any HTTPTransport,
+    cookieStore: SourceCookieStore = SourceCookieStore(),
     bookInfoResponseChecker: any SourceBookInfoResponseChecking =
       IdentitySourceBookInfoResponseChecker()
   ) {
     self.definition = definition
     self.transport = transport
+    self.cookieStore = cookieStore
     self.bookInfoResponseChecker = bookInfoResponseChecker
   }
 
@@ -60,6 +63,7 @@ public struct SourceTOCPipeline: Sendable {
     let detail = try await SourceBookInfoPipeline(
       definition: definition,
       transport: transport,
+      cookieStore: cookieStore,
       responseChecker: bookInfoResponseChecker
     ).load(
       book: book,
@@ -89,7 +93,17 @@ public struct SourceTOCPipeline: Sendable {
       runtime.request(for: tocURL)
     )
     requests.append(tocRequest)
-    let tocResponse = try await transport.execute(tocRequest)
+    let tocResponse = try await SourceRequestSession(
+      transport: transport,
+      cookieStore: cookieStore
+    ).execute(
+      SourceRequestPlan(
+        request: tocRequest,
+        body: nil,
+        formFields: []
+      ),
+      enabledCookieJar: definition.enabledCookieJar
+    ).response
     let tocResponseURL = try responseURL(tocResponse)
     let tocHTML = try responseBody(tocResponse)
     let chapters = try runtime.chapters(

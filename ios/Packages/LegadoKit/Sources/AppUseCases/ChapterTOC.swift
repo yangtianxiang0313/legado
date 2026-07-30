@@ -12,13 +12,16 @@ public protocol BookChapterLoading: Sendable {
 public struct SourceBookChapterLoader: BookChapterLoading, Sendable {
   private let sources: [SearchSourceDescriptor]
   private let transport: any HTTPTransport
+  private let cookieStore: SourceCookieStore
 
   public init(
     sources: [SearchSourceDescriptor],
-    transport: any HTTPTransport
+    transport: any HTTPTransport,
+    cookieStore: SourceCookieStore = SourceCookieStore()
   ) {
     self.sources = sources
     self.transport = transport
+    self.cookieStore = cookieStore
   }
 
   public func load(
@@ -35,7 +38,8 @@ public struct SourceBookChapterLoader: BookChapterLoading, Sendable {
     }
     let execution = try await SourceTOCPipeline(
       definition: source.definition,
-      transport: transport
+      transport: transport,
+      cookieStore: cookieStore
     ).chapters(bookURL: candidate.bookURL)
     return execution.chapters.map {
       LibraryDomain.BookChapter(

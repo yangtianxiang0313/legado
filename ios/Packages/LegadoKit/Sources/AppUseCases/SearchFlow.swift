@@ -210,13 +210,16 @@ public protocol SearchBooksExecuting: Sendable {
 public struct SourceSearchBooksExecutor: SearchBooksExecuting, Sendable {
   private let sources: [SearchSourceDescriptor]
   private let transport: any HTTPTransport
+  private let cookieStore: SourceCookieStore
 
   public init(
     sources: [SearchSourceDescriptor],
-    transport: any HTTPTransport
+    transport: any HTTPTransport,
+    cookieStore: SourceCookieStore = SourceCookieStore()
   ) {
     self.sources = sources
     self.transport = transport
+    self.cookieStore = cookieStore
   }
 
   public func search(
@@ -232,7 +235,8 @@ public struct SourceSearchBooksExecutor: SearchBooksExecuting, Sendable {
       do {
         let execution = try await SourceSearchPipeline(
           definition: source.definition,
-          transport: transport
+          transport: transport,
+          cookieStore: cookieStore
         ).search(SourceSearchInput(keyword: query, page: 1))
         batches.append(
           execution.books.map {

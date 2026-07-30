@@ -6,6 +6,7 @@ public struct SourceSearchDefinition: Sendable, Equatable {
   public let originOrder: Int
   public let bookURLPattern: String?
   public let sourceHeaders: [SourceHeaderField]
+  public let enabledCookieJar: Bool
   public let runtime: HTMLCSSSourceDefinition
 
   public init(
@@ -14,6 +15,7 @@ public struct SourceSearchDefinition: Sendable, Equatable {
     originOrder: Int,
     bookURLPattern: String? = nil,
     sourceHeaders: [SourceHeaderField] = [],
+    enabledCookieJar: Bool = false,
     runtime: HTMLCSSSourceDefinition
   ) {
     self.sourceURL = sourceURL
@@ -21,6 +23,7 @@ public struct SourceSearchDefinition: Sendable, Equatable {
     self.originOrder = originOrder
     self.bookURLPattern = bookURLPattern
     self.sourceHeaders = sourceHeaders
+    self.enabledCookieJar = enabledCookieJar
     self.runtime = runtime
   }
 
@@ -171,16 +174,19 @@ public enum SourceSearchPipelineError: Error, Sendable, Equatable {
 public struct SourceSearchPipeline: Sendable {
   private let definition: SourceSearchDefinition
   private let transport: any HTTPTransport
+  private let cookieStore: SourceCookieStore
   private let responseChecker: any SourceSearchResponseChecking
 
   public init(
     definition: SourceSearchDefinition,
     transport: any HTTPTransport,
+    cookieStore: SourceCookieStore = SourceCookieStore(),
     responseChecker: any SourceSearchResponseChecking =
       IdentitySourceSearchResponseChecker()
   ) {
     self.definition = definition
     self.transport = transport
+    self.cookieStore = cookieStore
     self.responseChecker = responseChecker
   }
 
@@ -206,9 +212,13 @@ public struct SourceSearchPipeline: Sendable {
       )
     )
     let requestPlan = try definition.prepare(compilation.plan)
-    let networkResponse = try await transport.execute(
-      requestPlan.request
-    )
+    let networkResponse = try await SourceRequestSession(
+      transport: transport,
+      cookieStore: cookieStore
+    ).execute(
+      requestPlan,
+      enabledCookieJar: definition.enabledCookieJar
+    ).response
     guard
       let body = String(
         data: networkResponse.body.bytes,
