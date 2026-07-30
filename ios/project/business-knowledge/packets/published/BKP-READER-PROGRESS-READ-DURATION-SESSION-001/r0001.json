@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-READER-PROGRESS-READ-DURATION-SESSION-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "reader.progress.read-duration-session-golden",
+  "title": "受保护 Android Golden 验证的阅读时长会话与异步结算边界",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "3bcba0f2bc7493cf16af9224c942c57b8d255d7bab39ab8dee2c72112a2c8247"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "reader.progress",
+      "reader.session"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-CORE"
+    ],
+    "subject_keys": [
+      "reader.progress",
+      "reader.session"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-RD-SESSION-STATE-001",
+      "revision": 2,
+      "semantic_key": "reader.session.android-state-aggregate",
+      "kind": "runtime_behavior",
+      "topic": "进程级阅读会话状态与迟到任务",
+      "statement": "Android ReadBook 是进程级可变 object，resetData 与 upReadTime 共享同一个 readRecord 和 readStartTime。受保护场景用单线程 executor 屏障证明：upReadTime 排队时不捕获书籍或会话身份；若任务执行前 resetData 已切换到另一部书，旧会话的累计时长会写入新书，旧书没有对应记录。enableReadRecord 同样在任务执行时读取，而非在调用时形成快照。iOS ReaderCore 必须把 session identity/generation、目标书籍和结算时点作为显式值传入异步命令，并拒绝迟到 generation，不能复制 Android 全局共享对象的隐式绑定。",
+      "subject_keys": [
+        "reader.session",
+        "reader.progress"
+      ],
+      "depends_on": [],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [
+          {
+            "id": "AF-READ-BOOK-RESET-DATA",
+            "revision_sha256": "71cb776f8966882bf7a37e2a75094c9972ecebafa393de56ed03a094e892aefa"
+          },
+          {
+            "id": "AF-READ-BOOK-UP-READ-TIME",
+            "revision_sha256": "97abbc3dfd09a3105d91f55f03883103adf20e54c2baf8da86e3d0a0b70d96de"
+          }
+        ],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d",
+            "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+            "symbol_id": "kotlin://io.legado.app.model.ReadBook"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d",
+            "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+            "symbol_id": "kotlin://io.legado.app.model.ReadBook/resetData"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d",
+            "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+            "symbol_id": "kotlin://io.legado.app.model.ReadBook/upReadTime"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/rl-reader-progress-read-duration-session-001.json",
+            "artifact_sha256": "b8c2c278247b31dd86130a8fdfb9b00fa9119968b64eb1bb35c4c725b32a2b4a",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "57b14fec4fbe6617892863cea6147d6a334d2c3ae17ae2db6a1bb8d10c24740f",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "a0e037a1b5a775d98dd5bd5fe2c012f09593afec53a943d187e5047c15e3ebf4",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-RD-SESSION-STATE-001",
+        "revision": 1
+      }
+    },
+    {
+      "id": "BKC-RD-READ-RECORD-001",
+      "revision": 2,
+      "semantic_key": "reader.progress.read-duration-session",
+      "kind": "runtime_behavior",
+      "topic": "阅读时长结算与持久化窗口",
+      "statement": "在 rl-reader-progress-read-duration-session-001 的 7 个固定 Android 场景中，启用记录后 upReadTime 以当前时刻减 readStartTime 累加时长，随后推进 readStartTime、更新 lastRead，并以 (deviceId, bookName) 替换同一 ReadRecord；连续结算保持单行且累计值与时点单调前进。关闭记录时排队任务直接返回且不推进会话起点，之后重新启用会把关闭期间一并补算。开关状态在 executor 真正执行时读取：调用时开启、执行前关闭会跳过，反向切换则会结算。持久化完全异步，任务仍在队列时数据库保持旧累计值，异常终止可能丢失这段窗口；更严重的是排队后切书会把旧会话时长写给新书。结合既有 rl-reader-history-read-record-runtime-risk-001，Android onPause 只保存阅读进度、不主动结算尾段。iOS 应由 ReaderCore 维护单调时钟驱动的显式 ReadingSession，前后台/切书/关闭页面时同步生成不可变结算命令，通过带 session generation 的存储端口幂等提交；兼容导入可保留 Android 历史值，但不复制其跨书迟到写入和停用后补算缺陷。",
+      "subject_keys": [
+        "reader.progress",
+        "reader.session"
+      ],
+      "depends_on": [
+        {
+          "id": "BKC-RD-SESSION-STATE-001",
+          "revision": 2
+        }
+      ],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [
+          {
+            "id": "AF-READ-BOOK-RESET-DATA",
+            "revision_sha256": "71cb776f8966882bf7a37e2a75094c9972ecebafa393de56ed03a094e892aefa"
+          },
+          {
+            "id": "AF-READ-BOOK-UP-READ-TIME",
+            "revision_sha256": "97abbc3dfd09a3105d91f55f03883103adf20e54c2baf8da86e3d0a0b70d96de"
+          },
+          {
+            "id": "AF-READ-RECORD-CONSTRUCTOR",
+            "revision_sha256": "e71a48f0f13f66185bd5a1f9f528b4e750a2a71457a16d861ac83294aec9a45d"
+          }
+        ],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "9f03612aa904402fce4e1aabc2b176b23f4a6c2d",
+            "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+            "symbol_id": "kotlin://io.legado.app.model.ReadBook/upReadTime"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "c1638ac313e3d71997e9830383e3d604a8c3ec2f",
+            "path": "app/src/main/java/io/legado/app/data/entities/ReadRecord.kt",
+            "symbol_id": "kotlin://io.legado.app.data.entities.ReadRecord"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/rl-reader-progress-read-duration-session-001.json",
+            "artifact_sha256": "b8c2c278247b31dd86130a8fdfb9b00fa9119968b64eb1bb35c4c725b32a2b4a",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "57b14fec4fbe6617892863cea6147d6a334d2c3ae17ae2db6a1bb8d10c24740f",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "a0e037a1b5a775d98dd5bd5fe2c012f09593afec53a943d187e5047c15e3ebf4",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          },
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/rl-reader-history-read-record-runtime-risk-001.json",
+            "artifact_sha256": "a4a465612dba6ef829c6d1652960cf0fa14f5b17a63afda81f36e60356c7e5b9",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "13def9e8591818a797109693c9adad0adaf90540dedd4f72f141e3c1eb84eb2a",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "7b575ce8a9ab3d7421f7204f2a530de6a592ec0749bf07d93263f1320d8b42f6",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-RD-READ-RECORD-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-READER-PROGRESS-READ-DURATION-SESSION-001"
+}

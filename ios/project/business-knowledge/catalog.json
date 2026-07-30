@@ -5,8 +5,8 @@
   "inventory_control_sha256": "3bcba0f2bc7493cf16af9224c942c57b8d255d7bab39ab8dee2c72112a2c8247",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "c903b4c3224e2b553a51fa181f0c31ca0a39b254d8def0a316d2e97d29ea3097",
-  "coverage_sha256": "719299c2870e7563efd6e71544f76f9bc9fa32843975fbc52ea35211f46c2fdb",
+  "authority_sha256": "b0ae732a767bad64ee6742260321b4ddcade66ecd29878f77d6f27860ab2ba3d",
+  "coverage_sha256": "b5011e526139361a9296b3a9bac7417d04144e5a86960de401d7459a5744fe87",
   "proposal_sha256": "8821ed5a95e76fed622b5e67be0aa534bef70208f4f3a1e5579ab9769687be3c",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
@@ -188,6 +188,23 @@
       "claim_refs": [
         {
           "id": "BKC-BOOK-PROGRESS-RUNTIME-001",
+          "revision": 2
+        }
+      ]
+    },
+    {
+      "id": "BKP-READER-PROGRESS-READ-DURATION-SESSION-001",
+      "revision": 1,
+      "semantic_key": "reader.progress.read-duration-session-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-READER-PROGRESS-READ-DURATION-SESSION-001/r0001.json",
+      "record_sha256": "e3a10870cb278cb86e427bc58c36c19df0e200d01efad6111ba6a9faab076484",
+      "claim_refs": [
+        {
+          "id": "BKC-RD-READ-RECORD-001",
+          "revision": 2
+        },
+        {
+          "id": "BKC-RD-SESSION-STATE-001",
           "revision": 2
         }
       ]
@@ -795,6 +812,16 @@
       "record_sha256": "549627eccaca18f02d5f0fa05bdc0b95eabde05f6f00cae37911ff56efdf4790",
       "entry_ids": [
         "BKE-READER-PROGRESS-LAYOUT-SAVE-RUNTIME-001"
+      ]
+    },
+    {
+      "id": "BKL-READER-PROGRESS-READ-DURATION-SESSION-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-READER-PROGRESS-READ-DURATION-SESSION-001.json",
+      "record_sha256": "c1f11cc0b272bcbc55a513178a82278285c4c0709b1e04866e41049cdb5c0177",
+      "entry_ids": [
+        "BKE-READER-PROGRESS-READ-DURATION-SESSION-001",
+        "BKE-READER-SESSION-STATE-001"
       ]
     },
     {
