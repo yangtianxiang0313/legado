@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P36-BOOK-INFO-REFRESH-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "title": "P36 远程书籍信息刷新",
+  "objective": "依据冻结 Android BookInfoViewModel.refreshBook/loadBookInfo 源码，从当前书源重新解析远程书籍详情，按稳定 bookID 持久化更新后的元数据与真实 tocURL，随后强制刷新目录，并把刷新结果回投详情页。",
+  "validation_policy": "运行一个书籍元数据与目录刷新聚焦集成测试，再执行一次 App 构建；不启动模拟器，不新增 Android Golden。",
+  "stages": [
+    {
+      "id": "P36-S1",
+      "title": "连接详情刷新到目录更新",
+      "selectors": [
+        {
+          "id": "P36-S1-REMOTE-BOOK-REFRESH",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-APP-NAVIGATION-BOOK-INFO-REFRESH-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-APP-NAVIGATION-BOOK-INFO-REFRESH-001",
+      "title": "刷新远程书籍信息与目录",
+      "fixture_id": "rl-library-book-detail-staging-runtime-001",
+      "requirement_ref": "REQ-IOS-UI-BOOTSTRAP-001@1#RC-01",
+      "prerequisite_task_ids": [
+        "IOS-APP-NAVIGATION-BOOK-COPY-URL-001",
+        "IOS-APP-NAVIGATION-CHAPTER-TOC-001"
+      ],
+      "validation": "tests",
+      "test_filter": "DatabaseGRDBTests.testBookInfoRefreshUpdatesMetadataAndTOC",
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+        "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+        "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "a461b135ca389a687189b6661a0a02e04456c7f2",
+          "path": "app/src/main/java/io/legado/app/ui/book/info/BookInfoViewModel.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.info.BookInfoViewModel/refreshBook"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "a461b135ca389a687189b6661a0a02e04456c7f2",
+          "path": "app/src/main/java/io/legado/app/ui/book/info/BookInfoViewModel.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.info.BookInfoViewModel/loadBookInfo"
+        }
+      ]
+    }
+  ]
+}
