@@ -370,6 +370,44 @@ class SourceLabTests(unittest.TestCase):
         self.assertEqual("none", case["transport"]["mode"])
         self.assertFalse(case["determinism"]["network_allowed"])
 
+    def test_book_detail_actions_cover_source_and_local_boundaries(self):
+        scenario = "rl-ui-book-detail-conditional-actions-001"
+        directory, case, inputs = source_lab.load_scenario(
+            REPO_ROOT,
+            scenario,
+        )
+        self.assertEqual(
+            [],
+            source_lab.validate_scenario(
+                REPO_ROOT,
+                directory,
+                case,
+            ),
+        )
+        self.assertEqual("android_runtime_scenario", case["kind"])
+        self.assertEqual(6, len(inputs["cases"]))
+        self.assertEqual(
+            {"book_detail_action_projection"},
+            {value["operation"] for value in inputs["cases"]},
+        )
+        self.assertEqual(
+            {"nominal", "boundary", "denied"},
+            {
+                value["role"]
+                for coverage in case["coverage"]
+                for value in coverage["cases"]
+            },
+        )
+        self.assertEqual(
+            {"remote", "local_txt", "local_epub"},
+            {
+                value["arguments"]["book_kind"]
+                for value in inputs["cases"]
+            },
+        )
+        self.assertEqual("none", case["transport"]["mode"])
+        self.assertFalse(case["determinism"]["network_allowed"])
+
     def test_reader_layout_page_projection_covers_reflow_and_boundaries(self):
         scenario = "rl-reader-layout-page-projection-001"
         directory, case, inputs = source_lab.load_scenario(

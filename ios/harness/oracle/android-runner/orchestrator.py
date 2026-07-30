@@ -892,6 +892,52 @@ SCENARIO_CONTRACTS = {
             "queued-save-is-not-durable-before-execution",
         }),
     },
+    "rl-ui-book-detail-conditional-actions-001": {
+        "status": "candidate",
+        "fixture_kind": "android_runtime_scenario",
+        "result_type": "ui_runtime",
+        "stage_names": (
+            "fixture_setup",
+            "activity_launch",
+            "state_projection",
+            "menu_observation",
+            "result_mapping",
+        ),
+        "expected_cases": (
+            (
+                "remote-source-login-unshelved",
+                "book_detail_action_projection",
+            ),
+            (
+                "remote-source-no-login-shelved",
+                "book_detail_action_projection",
+            ),
+            (
+                "remote-source-whitespace-login",
+                "book_detail_action_projection",
+            ),
+            (
+                "remote-missing-source",
+                "book_detail_action_projection",
+            ),
+            (
+                "local-txt-shelved",
+                "book_detail_action_projection",
+            ),
+            (
+                "local-non-txt-unshelved",
+                "book_detail_action_projection",
+            ),
+        ),
+        "nominal_cases": frozenset({
+            "remote-source-login-unshelved",
+            "remote-source-no-login-shelved",
+            "remote-source-whitespace-login",
+            "remote-missing-source",
+            "local-txt-shelved",
+            "local-non-txt-unshelved",
+        }),
+    },
     "rl-reader-cache-prefetch-policy-001": {
         "status": "candidate",
         "fixture_kind": "android_runtime_scenario",

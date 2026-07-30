@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "logical_origin": "http://sourcelab.test",
-  "control_sha256": "e18dc16467c532a2564dbfa0f0fb5146091dafbc07d3ab36fd833fe66526a201",
+  "control_sha256": "c24f59edccf0bdb84ea4e4ee17ea3c1fc5bed419e43c2d33429282546ad4acd1",
   "scenarios": [
     {
       "id": "il-integration-backup-webdav-001",
@@ -92,6 +92,12 @@
       "status": "candidate",
       "path": "ios/harness/fixtures/runtime-lab/rl-reader-progress-toc-remap-001",
       "sha256": "d471026839b334a5de182f0d12c69f48c29e9cf9c49aae027060f27376f49139"
+    },
+    {
+      "id": "rl-ui-book-detail-conditional-actions-001",
+      "status": "candidate",
+      "path": "ios/harness/fixtures/runtime-lab/rl-ui-book-detail-conditional-actions-001",
+      "sha256": "cdeab93358cb5e622581a37e34d9385b4179263cb63ac5cca3eb90ea27a71553"
     },
     {
       "id": "sl-content-cache-queue-completion-runtime-001",

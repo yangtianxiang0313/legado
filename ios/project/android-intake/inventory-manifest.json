@@ -2,8 +2,8 @@
   "schema_version": 1,
   "android_git_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
   "android_tree": "c81f5d383116e37c1eefee3eb86654514e82022b",
-  "control_sha256": "3bcba0f2bc7493cf16af9224c942c57b8d255d7bab39ab8dee2c72112a2c8247",
-  "policy_sha256": "b06815c8df920db6052ac7d8277223dc6db5d74ff448c07cddac370af2bfc25d",
+  "control_sha256": "b28f98aad7db9d86e80afd6d266d76462b56941414668783193f9be6e7155cca",
+  "policy_sha256": "2bae4add522a3de3c89f035872852157cf601597b02a0776f8dbf6d8b784d960",
   "facts": [
     {
       "id": "AF-ANALYZE-JSONPATH-GET-LIST",
@@ -409,6 +409,54 @@
         "body_semantic_sha256": "0e4c9747f0c57943a05a1a323f7946689d5a5a013a485ab92f912962b374d67e"
       },
       "revision_sha256": "e9b178d5feefdb949aa41615561b019a0dcfcefc9d61a7eb2e156d1dda1370f8",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-BOOK-INFO-MENU-OPENED",
+      "fact_key": "ui.book.detail-conditional-menu-actions",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.ui.book.info.BookInfoActivity/onMenuOpened",
+      "path": "app/src/main/java/io/legado/app/ui/book/info/BookInfoActivity.kt",
+      "git_blob": "611ce1a9a56ed26ce71ca482eea0e908c7634857",
+      "source_sha256": "073db5dc1349b643acdf1c3c2870f17508a9b6753f3deb51c3efda69877ebee7",
+      "start_line": 163,
+      "end_line": 183,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "onMenuOpened",
+        "signature": "fun onMenuOpened(featureId: Int, menu: Menu): Boolean",
+        "body_semantic_sha256": "bc4504abfb1e8ad0aec563bb44744ccafcb40739911210c85182395e9fc7653d"
+      },
+      "revision_sha256": "14e5a5902fba073469b9d3f0a94c36b93093e71e18de1beb7d63f51987bb7896",
+      "maps_to": [
+        "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
+      ]
+    },
+    {
+      "id": "AF-BOOK-INFO-UP-BOOKSHELF",
+      "fact_key": "ui.book.detail-bookshelf-action",
+      "category": "production_entrypoint",
+      "evidence_level": "L2",
+      "support_state": "active_untested",
+      "extractor": "kotlin_function_entrypoint",
+      "symbol_id": "kotlin://io.legado.app.ui.book.info.BookInfoActivity/upTvBookshelf",
+      "path": "app/src/main/java/io/legado/app/ui/book/info/BookInfoActivity.kt",
+      "git_blob": "611ce1a9a56ed26ce71ca482eea0e908c7634857",
+      "source_sha256": "073db5dc1349b643acdf1c3c2870f17508a9b6753f3deb51c3efda69877ebee7",
+      "start_line": 355,
+      "end_line": 362,
+      "payload": {
+        "kind": "kotlin_function_entrypoint",
+        "symbol": "upTvBookshelf",
+        "signature": "fun upTvBookshelf()",
+        "body_semantic_sha256": "b9e1b54b4ffefcc8358d6df8374be79a417bdb33919ec89954a13c501401f347"
+      },
+      "revision_sha256": "a8713f787efdf46c6e4d8feb1216a701312999d42df54c85412c79a1c27fb8ff",
       "maps_to": [
         "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001"
       ]

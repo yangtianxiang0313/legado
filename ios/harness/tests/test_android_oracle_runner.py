@@ -1537,6 +1537,14 @@ class AndroidOracleRunnerTests(unittest.TestCase):
             "rl-reader-progress-save-runtime-001",
             progress_save_runtime["scenario_id"],
         )
+        book_detail_actions = runner.doctor(
+            ROOT,
+            "rl-ui-book-detail-conditional-actions-001",
+        )
+        self.assertEqual(
+            "rl-ui-book-detail-conditional-actions-001",
+            book_detail_actions["scenario_id"],
+        )
         reader_layout_stream = runner.doctor(
             ROOT,
             "rl-reader-layout-incremental-stream-001",

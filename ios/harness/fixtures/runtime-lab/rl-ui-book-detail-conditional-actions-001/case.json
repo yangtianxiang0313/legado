@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "kind": "android_runtime_scenario",
+  "id": "rl-ui-book-detail-conditional-actions-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "android_runtime",
+  "capabilities": ["android.activity", "android.menu", "ui.book-detail"],
+  "compatibility_profile": "android-legado-v1",
+  "source": null,
+  "input": "input.json",
+  "transport": {
+    "mode": "none",
+    "external_network": "deny",
+    "responses": []
+  },
+  "coverage": [
+    {
+      "behavior": "ui.book.detail-conditional-actions",
+      "cases": [
+        {
+          "id": "remote-source-login-unshelved",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-BOOK-INFO-MENU-OPENED",
+            "AF-BOOK-INFO-UP-BOOKSHELF"
+          ],
+          "branch_refs": [
+            "A remote book with a nonblank source login URL exposes source actions while the unshelved state exposes add and hides edit"
+          ]
+        },
+        {
+          "id": "remote-source-no-login-shelved",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-BOOK-INFO-MENU-OPENED",
+            "AF-BOOK-INFO-UP-BOOKSHELF"
+          ],
+          "branch_refs": [
+            "A blank login URL hides only login while a shelved book exposes remove and edit"
+          ]
+        },
+        {
+          "id": "remote-source-whitespace-login",
+          "role": "boundary",
+          "android_fact_refs": ["AF-BOOK-INFO-MENU-OPENED"],
+          "branch_refs": [
+            "A whitespace-only login URL is blank for action availability"
+          ]
+        },
+        {
+          "id": "remote-missing-source",
+          "role": "denied",
+          "android_fact_refs": ["AF-BOOK-INFO-MENU-OPENED"],
+          "branch_refs": [
+            "A missing source denies login, source variable, book variable, and can-update actions"
+          ]
+        },
+        {
+          "id": "local-txt-shelved",
+          "role": "nominal",
+          "android_fact_refs": [
+            "AF-BOOK-INFO-MENU-OPENED",
+            "AF-BOOK-INFO-UP-BOOKSHELF"
+          ],
+          "branch_refs": [
+            "A local TXT book exposes split-long-chapter and upload without source actions"
+          ]
+        },
+        {
+          "id": "local-non-txt-unshelved",
+          "role": "boundary",
+          "android_fact_refs": [
+            "AF-BOOK-INFO-MENU-OPENED",
+            "AF-BOOK-INFO-UP-BOOKSHELF"
+          ],
+          "branch_refs": [
+            "A non-TXT local book exposes upload but not split-long-chapter"
+          ]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "state_projection",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 0,
+    "network_allowed": false,
+    "logical_origin": null,
+    "database_reset_per_case": true
+  },
+  "limits": {"timeout_ms": 5000},
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/ui/book/info/BookInfoActivity.kt#onMenuOpened",
+      "app/src/main/java/io/legado/app/ui/book/info/BookInfoActivity.kt#upTvBookshelf",
+      "app/src/main/res/menu/book_info.xml"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-UI-BOOK-DETAIL-CONDITIONAL-ACTIONS-001"
+  }
+}

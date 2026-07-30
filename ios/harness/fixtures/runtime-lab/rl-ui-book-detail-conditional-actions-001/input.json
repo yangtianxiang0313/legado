@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "remote-source-login-unshelved",
+      "operation": "book_detail_action_projection",
+      "arguments": {
+        "in_bookshelf": false,
+        "source_state": "present",
+        "login_url_state": "nonblank",
+        "book_kind": "remote",
+        "can_update": false,
+        "split_long_chapter": false,
+        "delete_alert": true
+      }
+    },
+    {
+      "id": "remote-source-no-login-shelved",
+      "operation": "book_detail_action_projection",
+      "arguments": {
+        "in_bookshelf": true,
+        "source_state": "present",
+        "login_url_state": "blank",
+        "book_kind": "remote",
+        "can_update": true,
+        "split_long_chapter": true,
+        "delete_alert": false
+      }
+    },
+    {
+      "id": "remote-source-whitespace-login",
+      "operation": "book_detail_action_projection",
+      "arguments": {
+        "in_bookshelf": false,
+        "source_state": "present",
+        "login_url_state": "whitespace",
+        "book_kind": "remote",
+        "can_update": true,
+        "split_long_chapter": false,
+        "delete_alert": true
+      }
+    },
+    {
+      "id": "remote-missing-source",
+      "operation": "book_detail_action_projection",
+      "arguments": {
+        "in_bookshelf": false,
+        "source_state": "missing",
+        "login_url_state": "absent",
+        "book_kind": "remote",
+        "can_update": false,
+        "split_long_chapter": false,
+        "delete_alert": false
+      }
+    },
+    {
+      "id": "local-txt-shelved",
+      "operation": "book_detail_action_projection",
+      "arguments": {
+        "in_bookshelf": true,
+        "source_state": "missing",
+        "login_url_state": "absent",
+        "book_kind": "local_txt",
+        "can_update": false,
+        "split_long_chapter": true,
+        "delete_alert": true
+      }
+    },
+    {
+      "id": "local-non-txt-unshelved",
+      "operation": "book_detail_action_projection",
+      "arguments": {
+        "in_bookshelf": false,
+        "source_state": "missing",
+        "login_url_state": "absent",
+        "book_kind": "local_epub",
+        "can_update": true,
+        "split_long_chapter": false,
+        "delete_alert": false
+      }
+    }
+  ]
+}

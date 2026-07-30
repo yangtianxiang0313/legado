@@ -11,6 +11,8 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.util.Base64
 import android.util.Log
+import android.widget.TextView
+import androidx.appcompat.view.menu.MenuBuilder
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
@@ -65,6 +67,7 @@ import io.legado.app.ui.book.read.page.entities.TextPage
 import io.legado.app.ui.book.read.page.provider.ChapterProvider
 import io.legado.app.ui.book.read.ReadBookActivity
 import io.legado.app.ui.book.read.ReadBookViewModel
+import io.legado.app.ui.book.info.BookInfoActivity
 import io.legado.app.ui.book.changesource.ChangeChapterSourceViewModel
 import io.legado.app.ui.main.MainActivity
 import io.legado.app.ui.welcome.WelcomeActivity
@@ -197,6 +200,8 @@ class LegadoOracleInstrumentedTest {
                 runReaderProgressRuntimeCases()
             "rl-reader-progress-save-runtime-001" ->
                 runReaderProgressSaveRuntimeCases()
+            "rl-ui-book-detail-conditional-actions-001" ->
+                runBookDetailConditionalActionCases()
             "rl-reader-cache-prefetch-policy-001" ->
                 runReaderPrefetchPolicyCases()
             "rl-reader-progress-toc-remap-001" ->
@@ -3464,6 +3469,179 @@ class LegadoOracleInstrumentedTest {
                 appDb.bookChapterDao.delByBook(it.bookUrl)
                 appDb.bookDao.delete(it)
             }
+    }
+
+    private suspend fun runBookDetailConditionalActionCases() {
+        val values = input.getJSONArray("cases")
+        val target =
+            InstrumentationRegistry.getInstrumentation().targetContext
+        val scenario = ActivityScenario.launch<BookInfoActivity>(
+            Intent(target, BookInfoActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+        var activity: BookInfoActivity? = null
+        scenario.onActivity { activity = it }
+        val previousDeleteAlert = LocalConfig.bookInfoDeleteAlert
+        try {
+            for (index in 0 until values.length()) {
+                val value = values.getJSONObject(index)
+                val operation = value.getString("operation")
+                require(operation == "book_detail_action_projection") {
+                    "Unsupported book detail operation: $operation"
+                }
+                val arguments = value.getJSONObject("arguments")
+                val stimulus = JSONObject()
+                    .put("operation", operation)
+                    .put(
+                        "arguments",
+                        JSONObject(arguments.toString())
+                    )
+                runCase(
+                    value.getString("id"),
+                    operation,
+                    stimulus
+                ) {
+                    bookDetailConditionalActionProjection(
+                        requireNotNull(activity),
+                        value.getString("id"),
+                        arguments
+                    )
+                }
+            }
+        } finally {
+            LocalConfig.bookInfoDeleteAlert = previousDeleteAlert
+            scenario.close()
+        }
+    }
+
+    private fun bookDetailConditionalActionProjection(
+        activity: BookInfoActivity,
+        caseId: String,
+        arguments: JSONObject
+    ): JSONObject = onMainThread {
+        val bookKind = arguments.getString("book_kind")
+        val local = bookKind.startsWith("local_")
+        val book = Book(
+            bookUrl = "/android-runtime/book-detail/$caseId",
+            tocUrl = "/android-runtime/book-detail/$caseId/toc",
+            origin = if (local) {
+                BookType.localTag
+            } else {
+                "android-runtime://book-source"
+            },
+            originName = when (bookKind) {
+                "remote" -> "Oracle Source"
+                "local_txt" -> "oracle-book.txt"
+                "local_epub" -> "oracle-book.epub"
+                else -> error("Unsupported book kind: $bookKind")
+            },
+            name = "Oracle Book $caseId",
+            author = "Oracle"
+        )
+        book.canUpdate = arguments.getBoolean("can_update")
+        book.setSplitLongChapter(
+            arguments.getBoolean("split_long_chapter")
+        )
+        val source = when (arguments.getString("source_state")) {
+            "present" -> BookSource(
+                bookSourceUrl = "android-runtime://book-source",
+                bookSourceName = "Oracle Source",
+                loginUrl = when (
+                    arguments.getString("login_url_state")
+                ) {
+                    "nonblank" -> "/login"
+                    "blank" -> ""
+                    "whitespace" -> " \t "
+                    else -> error("Unsupported login URL state")
+                }
+            )
+            "missing" -> null
+            else -> error("Unsupported source state")
+        }
+        LocalConfig.bookInfoDeleteAlert =
+            arguments.getBoolean("delete_alert")
+
+        val menu = MenuBuilder(activity)
+        activity.onCompatCreateOptionsMenu(menu)
+        activity.viewModel.inBookshelf =
+            arguments.getBoolean("in_bookshelf")
+        activity.viewModel.bookSource = source
+        activity.viewModel.bookData.value = book
+        activity.onMenuOpened(0, menu)
+
+        val shelfText = activity
+            .findViewById<TextView>(R.id.tv_shelf)
+            .text
+            .toString()
+        val shelfAction = when (shelfText) {
+            activity.getString(R.string.add_to_bookshelf) -> "add"
+            activity.getString(R.string.remove_from_bookshelf) -> "remove"
+            else -> error("Unknown bookshelf action label")
+        }
+        JSONObject()
+            .put("shelf_action", shelfAction)
+            .put(
+                "actions",
+                JSONObject()
+                    .put(
+                        "edit",
+                        menu.findItem(R.id.menu_edit).isVisible
+                    )
+                    .put(
+                        "login",
+                        menu.findItem(R.id.menu_login).isVisible
+                    )
+                    .put(
+                        "set_source_variable",
+                        menu.findItem(
+                            R.id.menu_set_source_variable
+                        ).isVisible
+                    )
+                    .put(
+                        "set_book_variable",
+                        menu.findItem(
+                            R.id.menu_set_book_variable
+                        ).isVisible
+                    )
+                    .put(
+                        "can_update",
+                        menu.findItem(
+                            R.id.menu_can_update
+                        ).isVisible
+                    )
+                    .put(
+                        "split_long_chapter",
+                        menu.findItem(
+                            R.id.menu_split_long_chapter
+                        ).isVisible
+                    )
+                    .put(
+                        "upload",
+                        menu.findItem(R.id.menu_upload).isVisible
+                    )
+            )
+            .put(
+                "checked",
+                JSONObject()
+                    .put(
+                        "can_update",
+                        menu.findItem(
+                            R.id.menu_can_update
+                        ).isChecked
+                    )
+                    .put(
+                        "split_long_chapter",
+                        menu.findItem(
+                            R.id.menu_split_long_chapter
+                        ).isChecked
+                    )
+                    .put(
+                        "delete_alert",
+                        menu.findItem(
+                            R.id.menu_delete_alert
+                        ).isChecked
+                    )
+            )
     }
 
     private suspend fun runReaderProgressSaveRuntimeCases() {
