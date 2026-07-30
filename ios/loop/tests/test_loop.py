@@ -1226,6 +1226,9 @@ class MinimalLoopTests(unittest.TestCase):
         reader = loop.app_navigation_delivery_contract(
             "rl-ui-reader-toc-result-001"
         )
+        reader_menu = loop.app_navigation_delivery_contract(
+            "source-ui-reader-multilevel-menu-v1"
+        )
 
         self.assertEqual(
             "testStartupFirstUseAndRestore",
@@ -1248,6 +1251,10 @@ class MinimalLoopTests(unittest.TestCase):
             reader["ui_acceptance"]["test_method"],
         )
         self.assertEqual(
+            "testReaderMultilevelMenuFlow",
+            reader_menu["ui_acceptance"]["test_method"],
+        )
+        self.assertEqual(
             (
                 "ios/harness/ui/expected/"
                 "ui-book-detail-conditional-actions-v1.json"
@@ -1258,6 +1265,7 @@ class MinimalLoopTests(unittest.TestCase):
         self.assertIn("移除静态样例", search["goal"])
         self.assertIn("目录抓取", toc["goal"])
         self.assertIn("正文", reader["goal"])
+        self.assertIn("主操作层", reader_menu["goal"])
         with self.assertRaisesRegex(
             loop.LoopError,
             "APP_NAVIGATION_UI_CONTRACT_NOT_MAPPED",

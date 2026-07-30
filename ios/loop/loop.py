@@ -836,6 +836,89 @@ def direct_characterization_deliveries(
     return sorted(deliveries, key=lambda value: str(value["target"]))
 
 
+def direct_source_ui_deliveries(
+    root: Path,
+) -> list[Mapping[str, Any]]:
+    """Turn a frozen Android UI topology into one simulator delivery."""
+    contracts = {
+        "ui.reader.multilevel-menu": {
+            "target": "IOS-APP-NAVIGATION-READER-MULTILEVEL-MENU-001",
+            "fixture_id": "source-ui-reader-multilevel-menu-v1",
+        },
+    }
+    completed = completed_task_ids(root)
+    characterized = characterized_claim_refs(root)
+    deliveries: list[Mapping[str, Any]] = []
+    for packet_path, packet in latest_json_revisions(
+        root,
+        "ios/project/business-knowledge/packets/proposals",
+    ):
+        if packet.get("status") != "candidate":
+            continue
+        for claim in packet.get("claims", []):
+            if not isinstance(claim, dict):
+                continue
+            claim_ref = (claim.get("id"), claim.get("revision"))
+            contract = contracts.get(str(claim.get("semantic_key")))
+            if (
+                contract is None
+                or claim_ref not in characterized
+                or contract["target"] in completed
+            ):
+                continue
+            requirements = requirement_refs_for_claim(root, packet, claim)
+            if not requirements:
+                continue
+            entry = {
+                "claim_ref": {
+                    "id": claim_ref[0],
+                    "revision": claim_ref[1],
+                },
+                "validation": {
+                    "required": "android_source",
+                    "state": "verified",
+                    "evidence_refs": [packet_path],
+                },
+                "delivery": {
+                    "state": "planned",
+                    "work_item_refs": [contract["target"]],
+                    "requirement_refs": requirements,
+                },
+            }
+            deliveries.append(
+                {
+                    "target": contract["target"],
+                    "title": str(
+                        claim.get("topic") or claim.get("semantic_key")
+                    ),
+                    "ledger_path": "ios/project/loop/events.jsonl",
+                    "ledger": {
+                        "packet_refs": [
+                            {
+                                "id": packet.get("id"),
+                                "revision": packet.get("revision"),
+                                "path": packet_path,
+                            }
+                        ]
+                    },
+                    "entries": [entry],
+                    "source_anchors": claim.get("support", {}).get(
+                        "source_anchors",
+                        [],
+                    ),
+                    "source_contract": {
+                        "path": packet_path,
+                        "claim_ref": {
+                            "id": claim_ref[0],
+                            "revision": claim_ref[1],
+                        },
+                        "fixture_id": contract["fixture_id"],
+                    },
+                }
+            )
+    return sorted(deliveries, key=lambda value: str(value["target"]))
+
+
 def active_priority_policy(root: Path) -> Mapping[str, Any] | None:
     path = root / PRIORITY_PATH
     if not path.is_file():
@@ -920,6 +1003,12 @@ def prioritized_work(
         for value in direct_characterization_deliveries(root)
         if str(value["target"]) not in published_targets
     ]
+    known_targets = {str(value["target"]) for value in deliveries}
+    deliveries.extend(
+        value
+        for value in direct_source_ui_deliveries(root)
+        if str(value["target"]) not in known_targets
+    )
     characterizations = pending_characterizations(root)
     policy = active_priority_policy(root)
     if policy is None:
@@ -1399,6 +1488,20 @@ def app_navigation_delivery_contract(
             ),
             "test_method": "testReaderContentFlow",
         },
+        "source-ui-reader-multilevel-menu-v1": {
+            "goal": (
+                "按照冻结 Android 阅读器菜单源码拓扑，一次实现主操作层、"
+                "外观层、更多设置层和文本操作层；平台控件允许 iOS 化，"
+                "菜单层级、关键叶子和返回关系保持一致。"
+            ),
+            "acceptance_id": "structured-reader-menu-acceptance",
+            "scenario_id": "ui-reader-multilevel-menu-v1",
+            "expected": (
+                "ios/harness/ui/expected/"
+                "ui-reader-multilevel-menu-v1.json"
+            ),
+            "test_method": "testReaderMultilevelMenuFlow",
+        },
     }
     feature = features.get(fixture_id)
     if feature is None:
@@ -1455,7 +1558,12 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
     architecture = owner_contract(target)
     migration = migration_for(root, requirement_refs, target)
     driver_match = driver_for(root, claim_refs)
-    fixture_id = None
+    source_contract = delivery.get("source_contract")
+    fixture_id = (
+        source_contract.get("fixture_id")
+        if isinstance(source_contract, dict)
+        else None
+    )
     golden_path = next(
         (
             value.split("#", 1)[0]
@@ -1836,6 +1944,97 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "claims": claim_refs,
         },
     }
+    if isinstance(source_contract, dict):
+        ui_acceptance = delivery_contract.get("ui_acceptance")
+        if not isinstance(ui_acceptance, dict):
+            raise LoopError("SOURCE_UI_ACCEPTANCE_MISSING")
+        source = {
+            "authority": "android_source_contract",
+            "anchors": source_anchors,
+            "fixture_id": fixture_id,
+            "source_contract": source_contract,
+            "knowledge": {
+                "coverage": delivery["ledger_path"],
+                "packets": ledger.get("packet_refs", []),
+                "driver": driver_ref,
+                "claims": claim_refs,
+            },
+            "ui_acceptance": ui_acceptance,
+        }
+        allowed_paths = list(architecture["allowed_paths"])
+        expected_path = str(ui_acceptance["expected"])
+        if expected_path not in allowed_paths:
+            allowed_paths.append(expected_path)
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "id": target,
+            "kind": "delivery",
+            "title": title,
+            "status": "ready",
+            "priority": 100,
+            "goal": delivery_contract["goal"],
+            "source": source,
+            "requirements": requirement_refs,
+            "architecture": {
+                "owner": architecture["owner"],
+                "refs": architecture["architecture_refs"],
+                "rule": delivery_contract["rule"],
+            },
+            "scope": {
+                "allowed_paths": allowed_paths,
+                "forbidden": [
+                    "Android golden",
+                    "accepted Requirement",
+                    "架构依赖边",
+                    "三方依赖",
+                ],
+            },
+            "acceptance": {
+                "profile": "ui_slice",
+                "commands": [
+                    {
+                        "id": "ui-simulator-acceptance",
+                        "argv": [
+                            "python3",
+                            "-B",
+                            "ios/harness/ui/ui_simulator.py",
+                            "verify",
+                            "--root",
+                            ".",
+                            "--task",
+                            "ios/project/loop/task.json",
+                        ],
+                        "timeout_seconds": 1800,
+                    }
+                ],
+                "structured_output": {
+                    "mode": "command_json",
+                    "command_id": "ui-simulator-acceptance",
+                    "fixture_id": ui_acceptance["scenario_id"],
+                    "expected": expected_path,
+                    "required_fields": [
+                        "expected",
+                        "actual",
+                        "simulator_matrix",
+                        "first_divergence",
+                    ],
+                    "expected_values": {
+                        "scenario_id": ui_acceptance["scenario_id"],
+                        "status": "equal",
+                        "first_divergence": None,
+                    },
+                },
+            },
+            "knowledge_updates": {
+                "required_on_completion": [
+                    "summary",
+                    "current_status",
+                    "architecture_change",
+                    "pitfalls",
+                    "next_step",
+                ]
+            },
+        }
     if architecture["owner"] == "DependencyControl":
         expected = (
             "ios/harness/dependencies/expected/"
@@ -2235,6 +2434,12 @@ def queue_status(root: Path) -> Mapping[str, Any]:
         for value in direct_characterization_deliveries(root)
         if str(value["target"]) not in published_targets
     ]
+    known_targets = {str(value["target"]) for value in deliveries}
+    deliveries.extend(
+        value
+        for value in direct_source_ui_deliveries(root)
+        if str(value["target"]) not in known_targets
+    )
     characterizations = pending_characterizations(root)
     eligible = prioritized_work(root)
     result: dict[str, Any] = {
@@ -2415,6 +2620,25 @@ def validate_task(root: Path, task: Mapping[str, Any]) -> None:
             or not (root / expected).is_file()
         ):
             raise LoopError("TASK_SOURCE_INVALID:ios_product_decision")
+    elif authority == "android_source_contract":
+        source_contract = source.get("source_contract")
+        anchors = source.get("anchors")
+        ui_acceptance = source.get("ui_acceptance")
+        expected = (
+            ui_acceptance.get("expected")
+            if isinstance(ui_acceptance, dict)
+            else None
+        )
+        if (
+            task.get("kind") != "delivery"
+            or not isinstance(source_contract, dict)
+            or not isinstance(source_contract.get("path"), str)
+            or not (root / source_contract["path"]).is_file()
+            or not isinstance(anchors, list)
+            or not anchors
+            or not isinstance(expected, str)
+        ):
+            raise LoopError("TASK_SOURCE_INVALID:android_source_contract")
     else:
         raise LoopError("TASK_SOURCE_AUTHORITY_INVALID")
     acceptance = task.get("acceptance")
