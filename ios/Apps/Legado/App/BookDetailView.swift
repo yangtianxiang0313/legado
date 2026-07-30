@@ -173,6 +173,7 @@ struct BookDetailView: View {
     let candidate: ShelfBookCandidate?
     let library: ShelfLibrary?
     let preferences: BookDetailPreferencesStore?
+    let copyToClipboard: ((String) -> Void)?
     let openReading: ((ShelfBookItem) async -> Void)?
     let editSource: ((String) -> Void)?
     let loginSource: ((String) -> Void)?
@@ -196,6 +197,7 @@ struct BookDetailView: View {
     @State private var savingCanUpdate = false
     @State private var clearingCache = false
     @State private var cacheMessage: String?
+    @State private var copiedMessage: String?
     @State private var showsDeleteConfirmation = false
     @State private var rebuildingLocalText = false
 
@@ -208,6 +210,7 @@ struct BookDetailView: View {
         self.candidate = nil
         self.library = nil
         self.preferences = nil
+        self.copyToClipboard = nil
         self.openReading = nil
         self.editSource = nil
         self.loginSource = nil
@@ -222,6 +225,7 @@ struct BookDetailView: View {
         candidate: ShelfBookCandidate,
         library: ShelfLibrary,
         preferences: BookDetailPreferencesStore,
+        copyToClipboard: @escaping (String) -> Void,
         openReading: @escaping (ShelfBookItem) async -> Void,
         editSource: @escaping (String) -> Void,
         loginSource: @escaping (String) -> Void,
@@ -240,6 +244,7 @@ struct BookDetailView: View {
         self.candidate = candidate
         self.library = library
         self.preferences = preferences
+        self.copyToClipboard = copyToClipboard
         self.openReading = openReading
         self.editSource = editSource
         self.loginSource = loginSource
@@ -481,6 +486,17 @@ struct BookDetailView: View {
         } message: {
             Text(cacheMessage ?? "")
         }
+        .alert(
+            "复制成功",
+            isPresented: Binding(
+                get: { copiedMessage != nil },
+                set: { if !$0 { copiedMessage = nil } }
+            )
+        ) {
+            Button("好", role: .cancel) {}
+        } message: {
+            Text(copiedMessage ?? "")
+        }
         .confirmationDialog(
             "确定将这本书移出书架吗？",
             isPresented: $showsDeleteConfirmation,
@@ -600,6 +616,37 @@ struct BookDetailView: View {
                     "action.bookDetail.setBookVariable"
                 )
             }
+            if
+                let bookURL = activeCandidate?.bookURL,
+                !bookURL.isEmpty,
+                copyToClipboard != nil
+            {
+                Button {
+                    copyURL(bookURL, label: "书籍 URL")
+                } label: {
+                    Label("复制书籍 URL", systemImage: "doc.on.doc")
+                }
+                .accessibilityIdentifier(
+                    "action.bookDetail.copyBookURL"
+                )
+            }
+            if
+                let tocURL = activeCandidate?.tocURL,
+                !tocURL.isEmpty,
+                copyToClipboard != nil
+            {
+                Button {
+                    copyURL(tocURL, label: "目录 URL")
+                } label: {
+                    Label(
+                        "复制目录 URL",
+                        systemImage: "list.bullet.clipboard"
+                    )
+                }
+                .accessibilityIdentifier(
+                    "action.bookDetail.copyTOCURL"
+                )
+            }
             if availability.actions.canUpdate {
                 Toggle(
                     isOn: Binding(
@@ -707,6 +754,11 @@ struct BookDetailView: View {
             Image(systemName: "ellipsis.circle")
         }
         .accessibilityIdentifier("action.bookDetail.more")
+    }
+
+    private func copyURL(_ value: String, label: String) {
+        copyToClipboard?(value)
+        copiedMessage = "\(label)已复制"
     }
 
     private func performSourceSwitch(_ source: BookSourceDraft) {
@@ -971,6 +1023,7 @@ extension ShelfBookCandidate {
             lastChapter: route.lastChapter,
             intro: route.intro,
             bookURL: route.bookURL,
+            tocURL: route.tocURL,
             bookRequestExpression: route.bookRequestExpression,
             coverURL: route.coverURL,
             originName: route.originName,

@@ -10,6 +10,7 @@ public struct ShelfBookCandidate: Equatable, Sendable {
   public let lastChapter: String
   public let intro: String
   public let bookURL: String
+  public let tocURL: String?
   public let bookRequestExpression: String
   public let coverURL: String?
   public let originName: String
@@ -23,6 +24,7 @@ public struct ShelfBookCandidate: Equatable, Sendable {
     lastChapter: String,
     intro: String,
     bookURL: String,
+    tocURL: String? = nil,
     bookRequestExpression: String? = nil,
     coverURL: String?,
     originName: String,
@@ -35,6 +37,7 @@ public struct ShelfBookCandidate: Equatable, Sendable {
     self.lastChapter = lastChapter
     self.intro = intro
     self.bookURL = bookURL
+    self.tocURL = tocURL
     self.bookRequestExpression = bookRequestExpression ?? bookURL
     self.coverURL = coverURL
     self.originName = originName
@@ -139,7 +142,8 @@ public protocol BookShelfRepository:
   func applyTOCUpdate(
     bookID: LibraryDomain.BookID,
     update: LibraryDomain.ChapterTOCUpdate,
-    bookVariables: [String: String]?
+    bookVariables: [String: String]?,
+    tocURL: String?
   ) async throws -> [LibraryDomain.BookChapter]
   func saveReadingProgress(
     bookID: LibraryDomain.BookID,
@@ -203,12 +207,26 @@ public protocol BookShelfRepository:
 public extension BookShelfRepository {
   func applyTOCUpdate(
     bookID: LibraryDomain.BookID,
+    update: LibraryDomain.ChapterTOCUpdate,
+    bookVariables: [String: String]?
+  ) async throws -> [LibraryDomain.BookChapter] {
+    try await applyTOCUpdate(
+      bookID: bookID,
+      update: update,
+      bookVariables: bookVariables,
+      tocURL: nil
+    )
+  }
+
+  func applyTOCUpdate(
+    bookID: LibraryDomain.BookID,
     update: LibraryDomain.ChapterTOCUpdate
   ) async throws -> [LibraryDomain.BookChapter] {
     try await applyTOCUpdate(
       bookID: bookID,
       update: update,
-      bookVariables: nil
+      bookVariables: nil,
+      tocURL: nil
     )
   }
 

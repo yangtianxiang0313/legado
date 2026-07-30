@@ -12,13 +12,16 @@ public protocol BookChapterLoading: Sendable {
 public struct BookChapterLoadResult: Equatable, Sendable {
   public let chapters: [LibraryDomain.BookChapter]
   public let bookVariables: [String: String]
+  public let tocURL: String?
 
   public init(
     chapters: [LibraryDomain.BookChapter],
-    bookVariables: [String: String]
+    bookVariables: [String: String],
+    tocURL: String? = nil
   ) {
     self.chapters = chapters
     self.bookVariables = bookVariables
+    self.tocURL = tocURL
   }
 }
 
@@ -100,7 +103,8 @@ public struct SourceBookChapterLoader: BookChapterLoading, Sendable {
     }
     return BookChapterLoadResult(
       chapters: chapters,
-      bookVariables: execution.book.variables
+      bookVariables: execution.book.variables,
+      tocURL: execution.book.tocURL?.absoluteString
     )
   }
 }
@@ -150,7 +154,8 @@ public final class ChapterTOCSession {
       chapters = try await repository.applyTOCUpdate(
         bookID: book.id,
         update: update,
-        bookVariables: fetched.bookVariables
+        bookVariables: fetched.bookVariables,
+        tocURL: fetched.tocURL
       )
       state = update.updateError ? .failed : .loaded
       errorMessage = update.updateError ? "目录为空，已保留原目录" : nil

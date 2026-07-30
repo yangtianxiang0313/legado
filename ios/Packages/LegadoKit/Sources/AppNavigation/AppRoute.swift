@@ -18,6 +18,7 @@ public struct SearchBookRoute: Codable, Hashable, Sendable {
     public let lastChapter: String
     public let intro: String
     public let bookURL: String
+    public let tocURL: String?
     public let bookRequestExpression: String
     public let coverURL: String?
     public let originName: String
@@ -31,6 +32,7 @@ public struct SearchBookRoute: Codable, Hashable, Sendable {
         lastChapter: String,
         intro: String,
         bookURL: String,
+        tocURL: String? = nil,
         bookRequestExpression: String? = nil,
         coverURL: String?,
         originName: String,
@@ -43,6 +45,7 @@ public struct SearchBookRoute: Codable, Hashable, Sendable {
         self.lastChapter = lastChapter
         self.intro = intro
         self.bookURL = bookURL
+        self.tocURL = tocURL
         self.bookRequestExpression = bookRequestExpression ?? bookURL
         self.coverURL = coverURL
         self.originName = originName
@@ -60,6 +63,7 @@ public struct SearchBookRoute: Codable, Hashable, Sendable {
             && lhs.lastChapter == rhs.lastChapter
             && lhs.intro == rhs.intro
             && lhs.bookURL == rhs.bookURL
+            && lhs.tocURL == rhs.tocURL
             && lhs.bookRequestExpression == rhs.bookRequestExpression
             && lhs.coverURL == rhs.coverURL
             && lhs.originName == rhs.originName
@@ -74,6 +78,7 @@ public struct SearchBookRoute: Codable, Hashable, Sendable {
         hasher.combine(lastChapter)
         hasher.combine(intro)
         hasher.combine(bookURL)
+        hasher.combine(tocURL)
         hasher.combine(bookRequestExpression)
         hasher.combine(coverURL)
         hasher.combine(originName)

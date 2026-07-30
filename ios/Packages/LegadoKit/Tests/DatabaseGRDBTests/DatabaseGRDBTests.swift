@@ -30,6 +30,44 @@ final class DatabaseGRDBTests: XCTestCase {
     XCTAssertTrue(verified)
   }
 
+  func testBookAndTOCURLsPersistForDetailActions() async throws {
+    let path = temporaryDatabasePath()
+    let repository = try GRDBBookShelfRepository(path: path)
+    let input = candidate(name: "地址合同", suffix: "url-contract")
+    let staged = try await repository.stage(input)
+    let tocURL =
+      "https://source.test/books/url-contract/chapters?token=exact"
+    let chapter = BookChapter(
+      id: ChapterID(
+        sourceID: input.sourceID,
+        chapterURL: "\(tocURL)#chapter-1"
+      ),
+      bookID: staged.id,
+      sourceID: input.sourceID,
+      index: 0,
+      title: "第一章",
+      url: "\(tocURL)#chapter-1"
+    )
+
+    _ = try await repository.applyTOCUpdate(
+      bookID: staged.id,
+      update: .replaced(previousCount: 0, chapters: [chapter]),
+      bookVariables: nil,
+      tocURL: tocURL
+    )
+
+    let reopened = try GRDBBookShelfRepository(path: path)
+    let reopenedBook = try await reopened.book(id: staged.id)
+    let restored = try XCTUnwrap(reopenedBook)
+    XCTAssertEqual(restored.candidate.bookURL, input.bookURL)
+    XCTAssertEqual(restored.candidate.tocURL, tocURL)
+
+    _ = try await reopened.stage(input)
+    let restagedBook = try await reopened.book(id: staged.id)
+    let afterIncompleteRestage = try XCTUnwrap(restagedBook)
+    XCTAssertEqual(afterIncompleteRestage.candidate.tocURL, tocURL)
+  }
+
   func testReaderReplacementRulesSurviveReopenAndRetainOrder()
     async throws
   {

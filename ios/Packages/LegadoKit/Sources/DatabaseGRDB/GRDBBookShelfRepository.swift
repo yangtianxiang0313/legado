@@ -148,7 +148,8 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
   public func applyTOCUpdate(
     bookID: LibraryDomain.BookID,
     update: LibraryDomain.ChapterTOCUpdate,
-    bookVariables: [String: String]?
+    bookVariables: [String: String]?,
+    tocURL: String?
   ) async throws -> [LibraryDomain.BookChapter] {
     try await database.write { db in
       if let bookVariables {
@@ -158,6 +159,12 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
             SourceVariableJSON.encode(bookVariables),
             bookID.rawValue,
           ]
+        )
+      }
+      if let tocURL {
+        try db.execute(
+          sql: "UPDATE books SET tocURL = ? WHERE bookID = ?",
+          arguments: [tocURL, bookID.rawValue]
         )
       }
       switch update {
@@ -899,6 +906,11 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
         ).notNull().defaults(to: true)
       }
     }
+    migrator.registerMigration("preserveBookTOCURL") { db in
+      try db.alter(table: "books") { table in
+        table.add(column: "tocURL", .text)
+      }
+    }
     return migrator
   }
 }
@@ -923,6 +935,7 @@ private struct BookRecord:
 
   var bookID: String
   var bookURL: String
+  var tocURL: String?
   var bookRequestExpression: String
   var name: String
   var author: String
@@ -956,6 +969,7 @@ private struct BookRecord:
   ) {
     self.bookID = bookID
     self.bookURL = candidate.bookURL
+    self.tocURL = candidate.tocURL
     self.bookRequestExpression = candidate.bookRequestExpression
     self.name = candidate.name
     self.author = candidate.author
@@ -983,6 +997,9 @@ private struct BookRecord:
 
   mutating func apply(_ candidate: ShelfBookCandidate) {
     bookURL = candidate.bookURL
+    if let candidateTOCURL = candidate.tocURL {
+      tocURL = candidateTOCURL
+    }
     bookRequestExpression = candidate.bookRequestExpression
     name = candidate.name
     author = candidate.author
@@ -1005,6 +1022,7 @@ private struct BookRecord:
         lastChapter: lastChapter,
         intro: intro,
         bookURL: bookURL,
+        tocURL: tocURL,
         bookRequestExpression: bookRequestExpression,
         coverURL: coverURL,
         originName: originName,

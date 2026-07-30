@@ -1,11 +1,26 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P35-BOOK-COPY-URL-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P35 复制书籍与目录 URL",
   "objective": "依据冻结 Android Book 与 BookInfoActivity 源码，保留书籍详情 URL 和目录 URL 两个独立数据字段；目录解析后把真实 tocUrl 贯通到 UseCase 与 GRDB，详情菜单通过 App 组合层剪贴板适配复制对应值，不用 bookUrl 伪造 tocUrl。",
   "validation_policy": "运行一个 URL 数据合同与数据库重开持久化聚焦测试，再执行一次 App 构建；不启动模拟器，不新增 Android Golden。",
+  "completion_evidence": [
+    "ShelfBookCandidate 与 SearchBookRoute 保留独立可选 tocURL，不以 bookURL 代替",
+    "SourceTOCPipeline 的真实目录 URL 经 BookChapterLoadResult 写入 GRDB",
+    "数据库重开后 bookURL 与 tocURL 均保持，缺少 tocURL 的重复暂存不会抹除已有值",
+    "详情菜单分别复制书籍 URL 与目录 URL，UIPasteboard 仅在 App 组合层",
+    "聚焦持久化测试与一次 LegadoApp 构建通过"
+  ],
+  "final_verification": {
+    "kind": "focused_persistence_test_and_single_app_build",
+    "completed_at": "2026-07-31T06:17:09+08:00",
+    "result": "聚焦测试 attempt-2 与 LegadoApp 构建通过；未启动模拟器，未新增 Android Golden。",
+    "evidence": [
+      ".harness-runtime/loop/IOS-APP-NAVIGATION-BOOK-COPY-URL-001/attempt-2"
+    ]
+  },
   "stages": [
     {
       "id": "P35-S1",

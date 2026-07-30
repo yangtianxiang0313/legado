@@ -287,6 +287,7 @@ enum SearchEnvironment {
             lastChapter: execution.book.lastChapter ?? "",
             intro: execution.book.intro ?? "",
             bookURL: execution.book.bookURL.absoluteString,
+            tocURL: execution.book.tocURL?.absoluteString,
             bookRequestExpression:
                 execution.book.bookEndpoint.requestExpression,
             coverURL: execution.book.coverURL?.absoluteString,
@@ -384,14 +385,28 @@ enum SearchEnvironment {
             chapterCount: current.chapterCount,
             progress: current.progress
         )
-        let chapters = try await SourceBookChapterLoader(
+        let loaded = try await SourceBookChapterLoader(
             sources: [descriptor],
             transport: transport,
             cookieStore: cookieStore,
             dynamicWebPagePort: dynamicWebPagePort,
             scriptRuntime: scriptRuntime
-        ).load(book: transient).chapters
-        return (candidate, chapters)
+        ).load(book: transient)
+        let resolvedCandidate = ShelfBookCandidate(
+            name: candidate.name,
+            author: candidate.author,
+            kind: candidate.kind,
+            lastChapter: candidate.lastChapter,
+            intro: candidate.intro,
+            bookURL: candidate.bookURL,
+            tocURL: loaded.tocURL,
+            bookRequestExpression: candidate.bookRequestExpression,
+            coverURL: candidate.coverURL,
+            originName: candidate.originName,
+            sourceID: candidate.sourceID,
+            variables: loaded.bookVariables
+        )
+        return (resolvedCandidate, loaded.chapters)
     }
 
     static func resolveChapterSource(

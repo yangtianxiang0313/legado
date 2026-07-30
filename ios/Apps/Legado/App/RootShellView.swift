@@ -2,6 +2,7 @@ import AppNavigation
 import AppUseCases
 import Foundation
 import SwiftUI
+import UIKit
 
 struct RootShellView: View {
     @Bindable var router: AppRouter
@@ -180,6 +181,9 @@ struct RootShellView: View {
                 candidate: ShelfBookCandidate(route: book),
                 library: library,
                 preferences: bookDetailPreferences,
+                copyToClipboard: { value in
+                    UIPasteboard.general.string = value
+                },
                 openReading: { item in
                     let chapters = await library.chapters(
                         bookID: item.id
@@ -636,6 +640,7 @@ private extension SearchBookRoute {
             lastChapter: candidate.lastChapter,
             intro: candidate.intro,
             bookURL: candidate.bookURL,
+            tocURL: candidate.tocURL,
             bookRequestExpression:
                 candidate.bookRequestExpression,
             coverURL: candidate.coverURL,
@@ -653,6 +658,7 @@ private extension SearchBookRoute {
             lastChapter: result.lastChapter,
             intro: result.intro,
             bookURL: result.bookURL,
+            tocURL: nil,
             bookRequestExpression: result.bookRequestExpression,
             coverURL: result.coverURL,
             originName: result.originName,
