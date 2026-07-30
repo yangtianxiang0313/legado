@@ -169,6 +169,164 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testBookDetailConditionalActions() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = contract.projection == "regularSplit"
+            ? .landscapeLeft
+            : .portrait
+
+        let allActions = [
+            "edit",
+            "login",
+            "setSourceVariable",
+            "setBookVariable",
+            "canUpdate",
+            "splitLongChapter",
+            "upload",
+            "deleteAlert",
+        ]
+        let cases: [BookDetailUITestCase] = [
+            BookDetailUITestCase(
+                id: "remote-source-login-unshelved",
+                shelfAction: "add",
+                visibleActions: [
+                    "login",
+                    "setSourceVariable",
+                    "setBookVariable",
+                    "canUpdate",
+                    "deleteAlert",
+                ],
+                checked: [
+                    "canUpdate": false,
+                    "deleteAlert": true,
+                ]
+            ),
+            BookDetailUITestCase(
+                id: "remote-source-no-login-shelved",
+                shelfAction: "remove",
+                visibleActions: [
+                    "edit",
+                    "setSourceVariable",
+                    "setBookVariable",
+                    "canUpdate",
+                    "deleteAlert",
+                ],
+                checked: [
+                    "canUpdate": true,
+                    "deleteAlert": false,
+                ]
+            ),
+            BookDetailUITestCase(
+                id: "remote-source-whitespace-login",
+                shelfAction: "add",
+                visibleActions: [
+                    "setSourceVariable",
+                    "setBookVariable",
+                    "canUpdate",
+                    "deleteAlert",
+                ],
+                checked: [
+                    "canUpdate": true,
+                    "deleteAlert": true,
+                ]
+            ),
+            BookDetailUITestCase(
+                id: "remote-missing-source",
+                shelfAction: "add",
+                visibleActions: ["deleteAlert"],
+                checked: ["deleteAlert": false]
+            ),
+            BookDetailUITestCase(
+                id: "local-txt-shelved",
+                shelfAction: "remove",
+                visibleActions: [
+                    "edit",
+                    "splitLongChapter",
+                    "upload",
+                    "deleteAlert",
+                ],
+                checked: [
+                    "splitLongChapter": true,
+                    "deleteAlert": true,
+                ]
+            ),
+            BookDetailUITestCase(
+                id: "local-non-txt-unshelved",
+                shelfAction: "add",
+                visibleActions: ["upload", "deleteAlert"],
+                checked: ["deleteAlert": false]
+            ),
+        ]
+
+        var observations: [[String: Any]] = []
+        for testCase in cases {
+            app.terminate()
+            app.launchArguments = [
+                "-AppleLanguages", "(zh-Hans)",
+                "-AppleLocale", "zh_CN",
+                "--book-detail-case", testCase.id,
+            ]
+            app.launch()
+
+            require("projection.\(contract.projection)")
+            require("screen.bookDetail")
+            require(
+                "action.bookDetail.shelf.\(testCase.shelfAction)"
+            )
+            let more = app.buttons["action.bookDetail.more"].firstMatch
+            XCTAssertTrue(more.waitForExistence(timeout: 8))
+            more.tap()
+
+            var visibleActions: [String] = []
+            for action in allActions {
+                let item = app.descendants(matching: .any)[
+                    "action.bookDetail.\(action)"
+                ].firstMatch
+                if item.exists {
+                    visibleActions.append(action)
+                }
+            }
+            XCTAssertEqual(
+                Set(visibleActions),
+                Set(testCase.visibleActions),
+                "Wrong visible actions for \(testCase.id)"
+            )
+
+            var checked: [String: Bool] = [:]
+            for action in testCase.checked.keys.sorted() {
+                let item = app.descendants(matching: .any)[
+                    "action.bookDetail.\(action)"
+                ].firstMatch
+                XCTAssertTrue(item.waitForExistence(timeout: 8))
+                print(
+                    "BOOK_DETAIL_CHECKED \(testCase.id) \(action) "
+                        + "selected=\(item.isSelected) "
+                        + "value=\(String(describing: item.value)) "
+                        + "label=\(item.label)"
+                )
+                checked[action] = item.isSelected
+            }
+            XCTAssertEqual(checked, testCase.checked)
+            observations.append([
+                "id": testCase.id,
+                "screen": "screen.bookDetail",
+                "shelf_action": testCase.shelfAction,
+                "visible_actions": visibleActions.sorted(),
+                "checked": checked,
+            ])
+        }
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "cases": observations,
+        ])
+    }
+
     private func observeStartupCase(
         id: String,
         initial: String,
@@ -266,6 +424,13 @@ final class LegadoAppUITests: XCTestCase {
             XCTFail("Could not serialize UI observation: \(error)")
         }
     }
+}
+
+private struct BookDetailUITestCase {
+    let id: String
+    let shelfAction: String
+    let visibleActions: [String]
+    let checked: [String: Bool]
 }
 
 private struct SimulatorContract {

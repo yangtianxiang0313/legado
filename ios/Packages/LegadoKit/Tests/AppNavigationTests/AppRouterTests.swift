@@ -30,4 +30,17 @@ final class AppRouterTests: XCTestCase {
         XCTAssertEqual(router.path(for: .shelf), [])
         XCTAssertNil(router.pop())
     }
+
+    @MainActor
+    func testBookDetailCanFollowSearchOnShelfStack() {
+        let router = AppRouter(selectedRoot: .shelf)
+
+        router.push(.searchBooks)
+        router.push(.bookDetail)
+
+        XCTAssertEqual(
+            router.path(for: .shelf),
+            [.searchBooks, .bookDetail]
+        )
+    }
 }

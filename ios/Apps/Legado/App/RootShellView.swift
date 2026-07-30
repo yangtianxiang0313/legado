@@ -67,7 +67,11 @@ struct RootShellView: View {
     private func destination(for route: AppRoute) -> some View {
         switch route {
         case .searchBooks:
-            SearchBooksView()
+            SearchBooksView {
+                router.push(.bookDetail, on: .shelf)
+            }
+        case .bookDetail:
+            BookDetailView(snapshot: .remoteSourceLoginUnshelved)
         }
     }
 
@@ -113,22 +117,46 @@ private struct RootContentView: View {
 }
 
 private struct SearchBooksView: View {
+    let openBookDetail: () -> Void
+
     var body: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "text.magnifyingglass")
-                .font(.system(size: 44, weight: .semibold))
-                .foregroundStyle(.tint)
-
-            Text("搜索书籍")
-                .font(.title.bold())
-                .accessibilityIdentifier("screen.search.books")
-
-            Text("书源搜索能力将在后续 Feature 切片中接入。")
-                .foregroundStyle(.secondary)
+        List {
+            Section {
+                Button(action: openBookDetail) {
+                    HStack(spacing: 14) {
+                        Image(systemName: "book.closed.fill")
+                            .font(.title2)
+                            .foregroundStyle(.tint)
+                            .frame(width: 42, height: 52)
+                            .background(
+                                Color.accentColor.opacity(0.12),
+                                in: RoundedRectangle(cornerRadius: 9)
+                            )
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text("星河纪事")
+                                .font(.headline)
+                            Text("林舟 · 科幻,冒险")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            Text("第二章 回声")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .foregroundStyle(.tertiary)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("action.search.openBookDetail")
+            } header: {
+                Text("本地书源模拟结果")
+            } footer: {
+                Text("当前切片用于验收详情动作；真实搜索执行将在后续切片接入。")
+            }
         }
-        .padding()
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(uiColor: .systemGroupedBackground))
+        .accessibilityIdentifier("screen.search.books")
         .navigationTitle("搜索")
     }
 }

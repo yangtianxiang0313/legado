@@ -341,9 +341,9 @@ public enum ReaderBookmarkFixtureProjection {
     var plans: [JSONValue] = []
     var cases: [JSONValue] = []
     var identifiers: Set<String> = []
-    for value in inputCases {
+    for inputValue in inputCases {
       guard
-        case .object(let inputCase) = value,
+        case .object(let inputCase) = inputValue,
         case .string(let id)? = inputCase["id"],
         identifiers.insert(id).inserted,
         case .string(let operation)? = inputCase["operation"],
@@ -2607,6 +2607,185 @@ public enum AppStartupFixtureProjection {
       "privacy_accepted": .bool(outcome.privacyAccepted),
       "update_log_visible": .bool(outcome.updateLogVisible),
       "version_matches_current": .bool(outcome.versionIsCurrent),
+    ])
+  }
+}
+
+public enum BookDetailActionFixtureProjectionError: Error, Sendable {
+  case invalidFixture
+}
+
+public struct BookDetailActionFixtureProjectionRun: Sendable {
+  public let artifact: JSONValue
+  public let requestPlan: JSONValue
+
+  public init(artifact: JSONValue, requestPlan: JSONValue) {
+    self.artifact = artifact
+    self.requestPlan = requestPlan
+  }
+}
+
+public enum BookDetailActionFixtureProjection {
+  public static let fixtureID =
+    "rl-ui-book-detail-conditional-actions-001"
+
+  public static func run(
+    caseData: Data,
+    inputData: Data
+  ) throws -> BookDetailActionFixtureProjectionRun {
+    let caseDocument: JSONValue
+    let inputDocument: JSONValue
+    do {
+      caseDocument = try JSONValueCodec.decode(caseData)
+      inputDocument = try JSONValueCodec.decode(inputData)
+    } catch {
+      throw BookDetailActionFixtureProjectionError.invalidFixture
+    }
+    guard
+      case .object(let caseRoot) = caseDocument,
+      caseRoot["id"] == .string(fixtureID),
+      caseRoot["kind"] == .string("android_runtime_scenario"),
+      caseRoot["operation"] == .string("android_runtime"),
+      case .object(let inputRoot) = inputDocument,
+      inputRoot["schema_version"] == .number(JSONNumber(1)),
+      case .array(let inputCases)? = inputRoot["cases"]
+    else {
+      throw BookDetailActionFixtureProjectionError.invalidFixture
+    }
+
+    var identifiers: Set<String> = []
+    var plans: [JSONValue] = []
+    var cases: [JSONValue] = []
+    for inputValue in inputCases {
+      guard
+        case .object(let inputCase) = inputValue,
+        case .string(let id)? = inputCase["id"],
+        identifiers.insert(id).inserted,
+        inputCase["operation"]
+          == .string("book_detail_action_projection"),
+        case .object(let arguments)? = inputCase["arguments"]
+      else {
+        throw BookDetailActionFixtureProjectionError.invalidFixture
+      }
+      let operation = "book_detail_action_projection"
+      plans.append(
+        .object([
+          "operation": .string(operation),
+          "arguments": .object(arguments),
+        ])
+      )
+      let availability = BookDetailActionAvailability(
+        snapshot: try snapshot(arguments)
+      )
+      cases.append(
+        .object([
+          "id": .string(id),
+          "operation": .string(operation),
+          "result": value(availability),
+          "issue": .null,
+        ])
+      )
+    }
+
+    let requestPlan = JSONValue.array(plans)
+    return BookDetailActionFixtureProjectionRun(
+      artifact: .object([
+        "schema_version": .number(JSONNumber(1)),
+        "fixture_id": .string(fixtureID),
+        "engine": .object([
+          "platform": .string("ios"),
+          "revision": .string("book-detail-actions-v1"),
+          "compatibility_profile": .string("android-legado-v1"),
+        ]),
+        "request_plan": requestPlan,
+        "result": .object([
+          "type": .string("ui_runtime"),
+          "value": .object([
+            "portable_known_projection": .object([
+              "cases": .array(cases)
+            ])
+          ]),
+        ]),
+        "issues": .array([]),
+      ]),
+      requestPlan: requestPlan
+    )
+  }
+
+  private static func snapshot(
+    _ arguments: [String: JSONValue]
+  ) throws -> BookDetailActionSnapshot {
+    guard
+      case .bool(let inBookshelf)? = arguments["in_bookshelf"],
+      let sourceState = enumValue(
+        BookDetailSourceState.self,
+        key: "source_state",
+        in: arguments
+      ),
+      let loginURLState = enumValue(
+        BookDetailLoginURLState.self,
+        key: "login_url_state",
+        in: arguments
+      ),
+      let bookKind = enumValue(
+        BookDetailBookKind.self,
+        key: "book_kind",
+        in: arguments
+      ),
+      case .bool(let canUpdate)? = arguments["can_update"],
+      case .bool(let splitLongChapter)? =
+        arguments["split_long_chapter"],
+      case .bool(let deleteAlert)? = arguments["delete_alert"]
+    else {
+      throw BookDetailActionFixtureProjectionError.invalidFixture
+    }
+    return BookDetailActionSnapshot(
+      isInBookshelf: inBookshelf,
+      sourceState: sourceState,
+      loginURLState: loginURLState,
+      bookKind: bookKind,
+      canUpdate: canUpdate,
+      splitsLongChapters: splitLongChapter,
+      confirmsDeletion: deleteAlert
+    )
+  }
+
+  private static func enumValue<Value: RawRepresentable>(
+    _ type: Value.Type,
+    key: String,
+    in arguments: [String: JSONValue]
+  ) -> Value? where Value.RawValue == String {
+    guard
+      case .string(let raw)? = arguments[key]
+    else {
+      return nil
+    }
+    return Value(rawValue: raw)
+  }
+
+  private static func value(
+    _ availability: BookDetailActionAvailability
+  ) -> JSONValue {
+    .object([
+      "shelf_action": .string(availability.shelfAction.rawValue),
+      "actions": .object([
+        "edit": .bool(availability.actions.edit),
+        "login": .bool(availability.actions.login),
+        "set_source_variable":
+          .bool(availability.actions.setSourceVariable),
+        "set_book_variable":
+          .bool(availability.actions.setBookVariable),
+        "can_update": .bool(availability.actions.canUpdate),
+        "split_long_chapter":
+          .bool(availability.actions.splitLongChapter),
+        "upload": .bool(availability.actions.upload),
+      ]),
+      "checked": .object([
+        "can_update": .bool(availability.checked.canUpdate),
+        "split_long_chapter":
+          .bool(availability.checked.splitLongChapter),
+        "delete_alert": .bool(availability.checked.deleteAlert),
+      ]),
     ])
   }
 }
