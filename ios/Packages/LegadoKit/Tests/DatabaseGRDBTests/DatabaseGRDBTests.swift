@@ -617,6 +617,67 @@ final class DatabaseGRDBTests: XCTestCase {
     XCTAssertEqual(updatedContent, "更新后的正文")
   }
 
+  func testLocalTextRefreshReparsesManagedFile() async throws {
+    let path = temporaryDatabasePath()
+    let repository = try GRDBBookShelfRepository(path: path)
+    let library = ShelfLibrary(repository: repository)
+    let reference = "file:///managed/imported/refresh.txt"
+    let importedValue = await library.importLocalText(
+      fileName: "本地刷新.txt",
+      managedReference: reference,
+      data: Data(
+        """
+        第一章 初始
+        初始正文
+        第二章 将被移除
+        旧的第二章
+        """.utf8
+      )
+    )
+    let imported = try XCTUnwrap(importedValue)
+    let originalID = imported.id
+    XCTAssertEqual(imported.chapterCount, 2)
+
+    let refreshedValue = await library.refreshLocalText(
+      bookID: originalID,
+      data: Data(
+        """
+        第一章 初始
+        文件变化后的正文
+        第三章 新增
+        新增章节正文
+        """.utf8
+      )
+    )
+    let refreshed = try XCTUnwrap(refreshedValue)
+    XCTAssertEqual(refreshed.id, originalID)
+    XCTAssertEqual(refreshed.chapterCount, 2)
+    XCTAssertTrue(refreshed.splitsLongChapters)
+
+    let chapters = try await repository.chapters(bookID: originalID)
+    XCTAssertEqual(chapters.map(\.title), ["第一章 初始", "第三章 新增"])
+    let firstContent = try await repository.chapterContent(
+      bookID: originalID,
+      chapterID: chapters[0].id
+    )
+    let secondContent = try await repository.chapterContent(
+      bookID: originalID,
+      chapterID: chapters[1].id
+    )
+    XCTAssertEqual(firstContent, "文件变化后的正文")
+    XCTAssertEqual(secondContent, "新增章节正文")
+
+    let reopened = try GRDBBookShelfRepository(path: path)
+    let persisted = try await reopened.book(id: originalID)
+    let persistedChapters = try await reopened.chapters(bookID: originalID)
+    XCTAssertEqual(persisted?.id, originalID)
+    XCTAssertEqual(persisted?.chapterCount, 2)
+    XCTAssertEqual(
+      persistedChapters.map(\.title),
+      ["第一章 初始", "第三章 新增"]
+    )
+  }
+
   func testLocalTextLongChapterPreferenceRebuildsAndPersists()
     async throws
   {

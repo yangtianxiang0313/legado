@@ -1,11 +1,27 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P38-LOCAL-TEXT-REFRESH-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P38 重新读取本地 TXT",
   "objective": "依据冻结 Android BookInfoViewModel.refreshBook/loadChapter 与 LocalBook 源码，为托管本地 TXT 提供刷新入口：重新读取当前文件，沿用已保存的长章节拆分偏好，重新解析并原子替换目录和正文缓存，同时保留稳定 bookID、书架状态和可映射阅读进度。",
   "validation_policy": "运行一个本地 TXT 文件变更后重新解析、缓存替换与重开持久化聚焦测试，再执行一次 App 构建；不启动模拟器，不新增 Android Golden。",
+  "completion_evidence": [
+    "ShelfLibrary.refreshLocalText 读取当前 splitsLongChapters 偏好并复用既有解析与原子重建",
+    "AppShell 负责从托管 file URL 读取 Data，核心包不依赖平台文件选择器",
+    "详情刷新动作同时支持有书源的远程书和托管本地 TXT",
+    "文件内容变化后目录与正文缓存被替换，稳定 bookID 与偏好保持",
+    "数据库重开后新目录仍存在",
+    "聚焦本地刷新测试与一次 LegadoApp 构建通过"
+  ],
+  "final_verification": {
+    "kind": "focused_local_refresh_test_and_single_app_build",
+    "completed_at": "2026-07-31T06:27:55+08:00",
+    "result": "聚焦测试 attempt-1 与 LegadoApp 构建通过；未启动模拟器，未新增 Android Golden。",
+    "evidence": [
+      ".harness-runtime/loop/IOS-APP-NAVIGATION-LOCAL-TEXT-REFRESH-001/attempt-1"
+    ]
+  },
   "stages": [
     {
       "id": "P38-S1",

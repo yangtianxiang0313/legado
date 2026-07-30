@@ -652,6 +652,25 @@ public final class ShelfLibrary {
     }
   }
 
+  @discardableResult
+  public func refreshLocalText(
+    bookID: LibraryDomain.BookID,
+    data: Data
+  ) async -> ShelfBookItem? {
+    guard
+      let current = try? await repository.book(id: bookID),
+      current.candidate.sourceID == "local-file"
+    else {
+      errorMessage = "仅本地 TXT 支持重新读取"
+      return nil
+    }
+    return await setLocalTextLongChapterSplitting(
+      current.splitsLongChapters,
+      bookID: bookID,
+      data: data
+    )
+  }
+
   public func readerContentLoader(
     fallback: any ReaderContentLoading
   ) -> any ReaderContentLoading {

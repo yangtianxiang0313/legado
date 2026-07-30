@@ -651,10 +651,15 @@ struct BookDetailView: View {
                 .accessibilityIdentifier("action.bookDetail.login")
             }
             if
-                activeBookKind == .remote,
                 storedItem != nil,
-                activeSource != nil,
-                refreshBookInfo != nil
+                refreshBookInfo != nil,
+                (
+                    activeBookKind == .localTXT
+                        || (
+                            activeBookKind == .remote
+                                && activeSource != nil
+                        )
+                )
             {
                 Button {
                     performBookInfoRefresh()
@@ -662,7 +667,7 @@ struct BookDetailView: View {
                     Label(
                         refreshingBookInfo
                             ? "正在刷新…"
-                            : "刷新书籍信息",
+                            : "刷新书籍",
                         systemImage: "arrow.clockwise"
                     )
                 }

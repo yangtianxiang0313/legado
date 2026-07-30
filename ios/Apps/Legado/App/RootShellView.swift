@@ -185,7 +185,22 @@ struct RootShellView: View {
                     UIPasteboard.general.string = value
                 },
                 refreshBookInfo: { item in
-                    await library.refreshBookInfo(
+                    if item.candidate.sourceID == "local-file" {
+                        guard
+                            let url = URL(
+                                string: item.candidate.bookURL
+                            ),
+                            url.isFileURL,
+                            let data = try? Data(contentsOf: url)
+                        else {
+                            return nil
+                        }
+                        return await library.refreshLocalText(
+                            bookID: item.id,
+                            data: data
+                        )
+                    }
+                    return await library.refreshBookInfo(
                         item,
                         infoLoader:
                             SearchEnvironment.makeBookInfoLoader(
