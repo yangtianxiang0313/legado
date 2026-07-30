@@ -1,11 +1,26 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P33-BOOK-DELETE-CONFIRMATION-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P33 书籍删除确认偏好",
   "objective": "依据冻结 Android BookInfoActivity.deleteBook 与 LocalConfig.bookInfoDeleteAlert 源码，把详情页删除确认从常量 Toggle 改为持久化偏好，并让移出书架流程按该偏好选择确认后删除或直接删除。",
   "validation_policy": "运行一个偏好存储聚焦测试并执行一次 App 构建；不启动模拟器，不新增 Android Golden。",
+  "completion_evidence": [
+    "BookDetailPreferences 默认启用删除确认并通过 Repository 持久化",
+    "UserDefaults 适配器仅存在于 App 组合根",
+    "详情菜单 Toggle 读取并更新真实偏好",
+    "移出书架按偏好进入确认分支或直接执行",
+    "删除后重新读取 staged book membership 并刷新详情状态"
+  ],
+  "final_verification": {
+    "kind": "focused_test_and_single_app_build",
+    "completed_at": "2026-07-31T06:03:58+08:00",
+    "result": "1 个偏好存储聚焦测试与一次 App 构建通过；未启动模拟器，未新增 Android Golden。",
+    "evidence": [
+      ".harness-runtime/loop/IOS-APP-NAVIGATION-BOOK-DELETE-CONFIRMATION-001/attempt-1"
+    ]
+  },
   "stages": [
     {
       "id": "P33-S1",

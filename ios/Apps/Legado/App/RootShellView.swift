@@ -8,6 +8,7 @@ struct RootShellView: View {
     @Bindable var sourceCatalog: SourceCatalog
     @Bindable var readAloud: ReadAloudSession
     @Bindable var readerPreferences: ReaderPreferencesStore
+    @Bindable var bookDetailPreferences: BookDetailPreferencesStore
     @Bindable var replacementRules: ReaderReplacementRuleStore
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var didLoadLibrary = false
@@ -177,6 +178,7 @@ struct RootShellView: View {
             BookDetailView(
                 candidate: ShelfBookCandidate(route: book),
                 library: library,
+                preferences: bookDetailPreferences,
                 openReading: { item in
                     let chapters = await library.chapters(
                         bookID: item.id
@@ -1118,6 +1120,7 @@ struct StartupAcceptanceView: View {
     @Bindable var sourceCatalog: SourceCatalog
     @Bindable var readAloud: ReadAloudSession
     @Bindable var readerPreferences: ReaderPreferencesStore
+    @Bindable var bookDetailPreferences: BookDetailPreferencesStore
     @Bindable var replacementRules: ReaderReplacementRuleStore
     let startupCase: StartupAcceptanceCase
 
@@ -1160,6 +1163,7 @@ struct StartupAcceptanceView: View {
                 sourceCatalog: sourceCatalog,
                 readAloud: readAloud,
                 readerPreferences: readerPreferences,
+                bookDetailPreferences: bookDetailPreferences,
                 replacementRules: replacementRules
             )
         }

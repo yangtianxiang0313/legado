@@ -14,6 +14,7 @@ struct LegadoApp: App {
     @State private var sourceCatalog: SourceCatalog
     @State private var readAloud: ReadAloudSession
     @State private var readerPreferences: ReaderPreferencesStore
+    @State private var bookDetailPreferences: BookDetailPreferencesStore
     @State private var replacementRules: ReaderReplacementRuleStore
 
     init() {
@@ -58,6 +59,12 @@ struct LegadoApp: App {
                     repository: preferencesRepository
                 )
             )
+            _bookDetailPreferences = State(
+                initialValue: BookDetailPreferencesStore(
+                    repository:
+                        UserDefaultsBookDetailPreferencesRepository()
+                )
+            )
         } catch {
             fatalError("Unable to initialize library database: \(error)")
         }
@@ -78,6 +85,7 @@ struct LegadoApp: App {
                     sourceCatalog: sourceCatalog,
                     readAloud: readAloud,
                     readerPreferences: readerPreferences,
+                    bookDetailPreferences: bookDetailPreferences,
                     replacementRules: replacementRules,
                     startupCase: startupCase
                 )
@@ -88,6 +96,7 @@ struct LegadoApp: App {
                     sourceCatalog: sourceCatalog,
                     readAloud: readAloud,
                     readerPreferences: readerPreferences,
+                    bookDetailPreferences: bookDetailPreferences,
                     replacementRules: replacementRules
                 )
             }
@@ -120,6 +129,38 @@ private final class UserDefaultsReaderPreferencesRepository:
     }
 
     func save(_ preferences: ReaderPreferences) {
+        guard let data = try? JSONEncoder().encode(preferences) else {
+            return
+        }
+        defaults.set(data, forKey: key)
+    }
+}
+
+@MainActor
+private final class UserDefaultsBookDetailPreferencesRepository:
+    BookDetailPreferencesRepository
+{
+    private let defaults: UserDefaults
+    private let key = "bookDetail.preferences.v1"
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+    }
+
+    func load() -> BookDetailPreferences {
+        guard
+            let data = defaults.data(forKey: key),
+            let value = try? JSONDecoder().decode(
+                BookDetailPreferences.self,
+                from: data
+            )
+        else {
+            return BookDetailPreferences()
+        }
+        return value
+    }
+
+    func save(_ preferences: BookDetailPreferences) {
         guard let data = try? JSONEncoder().encode(preferences) else {
             return
         }

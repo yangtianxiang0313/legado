@@ -172,6 +172,7 @@ struct BookDetailView: View {
     let display: BookDetailDisplay
     let candidate: ShelfBookCandidate?
     let library: ShelfLibrary?
+    let preferences: BookDetailPreferencesStore?
     let openReading: ((ShelfBookItem) async -> Void)?
     let editSource: ((String) -> Void)?
     let loginSource: ((String) -> Void)?
@@ -193,6 +194,7 @@ struct BookDetailView: View {
     @State private var savingCanUpdate = false
     @State private var clearingCache = false
     @State private var cacheMessage: String?
+    @State private var showsDeleteConfirmation = false
 
     init(
         snapshot: BookDetailActionSnapshot,
@@ -202,6 +204,7 @@ struct BookDetailView: View {
         self.display = display
         self.candidate = nil
         self.library = nil
+        self.preferences = nil
         self.openReading = nil
         self.editSource = nil
         self.loginSource = nil
@@ -214,6 +217,7 @@ struct BookDetailView: View {
     init(
         candidate: ShelfBookCandidate,
         library: ShelfLibrary,
+        preferences: BookDetailPreferencesStore,
         openReading: @escaping (ShelfBookItem) async -> Void,
         editSource: @escaping (String) -> Void,
         loginSource: @escaping (String) -> Void,
@@ -229,6 +233,7 @@ struct BookDetailView: View {
         self.display = BookDetailDisplay(candidate: candidate)
         self.candidate = candidate
         self.library = library
+        self.preferences = preferences
         self.openReading = openReading
         self.editSource = editSource
         self.loginSource = loginSource
@@ -281,7 +286,9 @@ struct BookDetailView: View {
                 bookKind: snapshot.bookKind,
                 canUpdate: storedItem?.canUpdate ?? snapshot.canUpdate,
                 splitsLongChapters: snapshot.splitsLongChapters,
-                confirmsDeletion: snapshot.confirmsDeletion
+                confirmsDeletion:
+                    preferences?.value.confirmsDeletion
+                    ?? snapshot.confirmsDeletion
             )
         )
     }
@@ -452,22 +459,36 @@ struct BookDetailView: View {
         } message: {
             Text(cacheMessage ?? "")
         }
+        .confirmationDialog(
+            "确定将这本书移出书架吗？",
+            isPresented: $showsDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("移出书架", role: .destructive) {
+                performShelfRemoval()
+            }
+            Button("取消", role: .cancel) {}
+        }
     }
 
     private var shelfButton: some View {
         Button {
             guard let candidate, let library else { return }
-            Task {
-                if let storedItem,
-                   storedItem.membership.isInBookshelf
-                {
-                    await library.remove(storedItem)
+            if let storedItem,
+               storedItem.membership.isInBookshelf
+            {
+                if preferences?.value.confirmsDeletion ?? true {
+                    showsDeleteConfirmation = true
                 } else {
-                    await library.add(candidate)
+                    performShelfRemoval()
                 }
-                self.storedItem = await library.item(
-                    forURL: candidate.bookURL
-                )
+            } else {
+                Task {
+                    await library.add(candidate)
+                    self.storedItem = await library.item(
+                        forURL: candidate.bookURL
+                    )
+                }
             }
         } label: {
             Label(
@@ -613,10 +634,27 @@ struct BookDetailView: View {
                     systemImage: "icloud.and.arrow.up"
                 )
             }
-            checkedAction(
-                "删除时确认",
-                id: "deleteAlert",
-                checked: availability.checked.deleteAlert
+            Toggle(
+                isOn: Binding(
+                    get: {
+                        availability.checked.deleteAlert
+                    },
+                    set: { enabled in
+                        preferences?.setConfirmsDeletion(enabled)
+                    }
+                )
+            ) {
+                Label(
+                    "删除时确认",
+                    systemImage:
+                        availability.checked.deleteAlert
+                        ? "checkmark.circle.fill"
+                        : "circle"
+                )
+            }
+            .disabled(preferences == nil)
+            .accessibilityIdentifier(
+                "action.bookDetail.deleteAlert"
             )
         } label: {
             Image(systemName: "ellipsis.circle")
@@ -707,6 +745,18 @@ struct BookDetailView: View {
             )
             cacheMessage = cleared ? "缓存已清除" : "清除缓存失败"
             clearingCache = false
+        }
+    }
+
+    private func performShelfRemoval() {
+        guard
+            let storedItem,
+            let library,
+            storedItem.membership.isInBookshelf
+        else { return }
+        Task {
+            await library.remove(storedItem)
+            self.storedItem = await library.item(id: storedItem.id)
         }
     }
 
