@@ -68,6 +68,7 @@ import io.legado.app.lib.webdav.Authorization
 import io.legado.app.lib.webdav.WebDav
 import io.legado.app.lib.webdav.WebDavFile
 import io.legado.app.model.CacheBook
+import io.legado.app.model.Debug
 import io.legado.app.model.AudioPlay
 import io.legado.app.model.ImageProvider
 import io.legado.app.model.ReadBook
@@ -98,6 +99,7 @@ import io.legado.app.ui.book.import.local.ImportBookViewModel
 import io.legado.app.ui.book.search.SearchActivity
 import io.legado.app.ui.book.search.SearchScope
 import io.legado.app.ui.book.search.SearchViewModel
+import io.legado.app.ui.book.source.edit.BookSourceEditViewModel
 import io.legado.app.ui.welcome.WelcomeActivity
 import io.legado.app.ui.widget.dialog.TextDialog
 import io.legado.app.utils.GSON
@@ -118,6 +120,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONArray
 import org.json.JSONObject
 import org.jsoup.nodes.Element
@@ -257,6 +260,8 @@ class LegadoOracleInstrumentedTest {
                 runBookDetailConditionalActionCases()
             "rl-ui-discovery-search-flow-001" ->
                 runSearchFlowCases()
+            "rl-ui-source-editor-debug-routes-001" ->
+                runSourceEditorDebugRouteCases()
             "rl-reader-cache-prefetch-policy-001" ->
                 runReaderPrefetchPolicyCases()
             "rl-reader-progress-toc-remap-001" ->
@@ -5370,6 +5375,225 @@ class LegadoOracleInstrumentedTest {
                 scenario.close()
             }
         }
+    }
+
+    private suspend fun runSourceEditorDebugRouteCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            val operation = value.getString("operation")
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", operation)
+                .put("arguments", JSONObject(arguments.toString()))
+            runCase(value.getString("id"), operation, stimulus) {
+                when (operation) {
+                    "source_editor_action_matrix" ->
+                        sourceEditorActionMatrix(arguments)
+                    "source_debug_key_matrix" ->
+                        sourceDebugKeyMatrix(arguments)
+                    "source_editor_result_matrix" ->
+                        sourceEditorResultMatrix(arguments)
+                    else -> error(
+                        "Unsupported source editor/debug operation: $operation"
+                    )
+                }
+            }
+        }
+    }
+
+    private suspend fun sourceEditorActionMatrix(
+        arguments: JSONObject
+    ): JSONObject {
+        val target = InstrumentationRegistry
+            .getInstrumentation()
+            .targetContext
+        val application = target.applicationContext as Application
+        val actions = arguments.getJSONArray("actions")
+        val projected = JSONArray()
+        for (index in 0 until actions.length()) {
+            val item = actions.getJSONObject(index)
+            val id = item.getString("id")
+            val action = item.getString("action")
+            val sourceUrl =
+                "android-runtime://source-editor/${id}"
+            val original = BookSource(
+                bookSourceUrl = sourceUrl,
+                bookSourceName = "Oracle Source $id"
+            )
+            original.loginUrl = when (
+                item.getString("login_url_state")
+            ) {
+                "nonblank" -> "https://login.example.test/$id"
+                "whitespace" -> " \n "
+                else -> ""
+            }
+            appDb.bookSourceDao.insert(original)
+            val edited = original.copy()
+            if (item.getBoolean("changed")) {
+                edited.bookSourceComment = "changed"
+            }
+            if (item.getString("name_state") == "blank") {
+                edited.bookSourceName = ""
+            }
+            val dirty = !edited.equal(original)
+            val loginVisible = !edited.loginUrl.isNullOrBlank()
+            var saveSucceeded = false
+            var origin: String? = null
+            val actionAvailable = action != "login" || loginVisible
+            if (action != "finish" && actionAvailable) {
+                val completed = CompletableDeferred<BookSource>()
+                val viewModel = BookSourceEditViewModel(application)
+                viewModel.bookSource = original
+                viewModel.save(edited) {
+                    completed.complete(it)
+                }
+                val saved = withTimeoutOrNull(1500) {
+                    completed.await()
+                }
+                saveSucceeded = saved != null
+                origin = saved?.bookSourceUrl
+            }
+            val destination = when {
+                action == "finish" && dirty -> "discard_confirmation"
+                action == "finish" -> "dismiss"
+                !actionAvailable || !saveSucceeded -> null
+                action == "save" -> "dismiss"
+                action == "debug" -> "source_debug"
+                action == "login" -> "source_login"
+                action == "search" -> "single_source_search"
+                else -> error("Unsupported editor action: $action")
+            }
+            projected.put(
+                JSONObject()
+                    .put("id", id)
+                    .put("action", action)
+                    .put("login_visible", loginVisible)
+                    .put("dirty", dirty)
+                    .put("save_succeeded", saveSucceeded)
+                    .put(
+                        "requires_discard_confirmation",
+                        action == "finish" && dirty
+                    )
+                    .put(
+                        "destination",
+                        destination ?: JSONObject.NULL
+                    )
+                    .put(
+                        "result_code",
+                        if (action == "save" && saveSucceeded) {
+                            "ok"
+                        } else {
+                            JSONObject.NULL
+                        }
+                    )
+                    .put("origin", origin ?: JSONObject.NULL)
+            )
+            appDb.bookSourceDao.delete(edited)
+            appDb.bookSourceDao.delete(original)
+        }
+        return JSONObject().put("actions", projected)
+    }
+
+    private suspend fun sourceDebugKeyMatrix(
+        arguments: JSONObject
+    ): JSONObject {
+        val keys = arguments.getJSONArray("keys")
+        val projected = JSONArray()
+        val source = BookSource(
+            bookSourceUrl = "android-runtime://source-debug",
+            bookSourceName = "Oracle Debug Source"
+        )
+        for (index in 0 until keys.length()) {
+            val item = keys.getJSONObject(index)
+            val kind = item.getString("kind")
+            val payload = item.getString("payload")
+            val local = "http://127.0.0.1:1/$payload"
+            val key = when (kind) {
+                "detail" -> local
+                "explore" -> "发现::$local"
+                "toc" -> "++$local"
+                "content" -> "--$local"
+                "search" -> payload
+                else -> error("Unsupported debug key kind: $kind")
+            }
+            val messages = mutableListOf<String>()
+            Debug.callback = object : Debug.Callback {
+                override fun printLog(state: Int, msg: String) {
+                    messages.add(
+                        msg.replace(
+                            Regex("^\\[[^]]+]\\s*"),
+                            ""
+                        )
+                    )
+                }
+            }
+            val scope = CoroutineScope(coroutineContext + Job())
+            Debug.startDebug(scope, source, key)
+            val first = messages.firstOrNull().orEmpty()
+            val route = when {
+                first.startsWith("⇒开始访问详情页:") -> "book_info"
+                first.startsWith("⇒开始访问发现页:") -> "explore"
+                first.startsWith("⇒开始访目录页:") -> "toc"
+                first.startsWith("⇒开始访正文页:") -> "content"
+                first.startsWith("⇒开始搜索关键字:") -> "search"
+                else -> "unknown"
+            }
+            projected.put(
+                JSONObject()
+                    .put("id", item.getString("id"))
+                    .put("kind", kind)
+                    .put("payload", payload)
+                    .put("route", route)
+                    .put(
+                        "first_log_event",
+                        when (route) {
+                            "book_info" -> "visit_book_info"
+                            "explore" -> "visit_explore"
+                            "toc" -> "visit_toc"
+                            "content" -> "visit_content"
+                            "search" -> "search_keyword"
+                            else -> "unknown"
+                        }
+                    )
+            )
+            Debug.cancelDebug(destroy = true)
+            scope.coroutineContext.cancelChildren()
+        }
+        return JSONObject().put("keys", projected)
+    }
+
+    private fun sourceEditorResultMatrix(
+        arguments: JSONObject
+    ): JSONObject {
+        val results = arguments.getJSONArray("results")
+        val projected = JSONArray()
+        for (index in 0 until results.length()) {
+            val item = results.getJSONObject(index)
+            val caller = item.getString("caller")
+            val result = item.getString("result")
+            val effects = when (caller) {
+                "book_detail" -> if (result == "canceled") {
+                    emptyList()
+                } else {
+                    listOf("reload_source", "refresh_book")
+                }
+                "reader" -> if (result == "ok") {
+                    listOf("reload_source", "refresh_menu")
+                } else {
+                    emptyList()
+                }
+                else -> error("Unsupported source edit caller: $caller")
+            }
+            projected.put(
+                JSONObject()
+                    .put("id", item.getString("id"))
+                    .put("caller", caller)
+                    .put("result", result)
+                    .put("effects", JSONArray(effects))
+            )
+        }
+        return JSONObject().put("results", projected)
     }
 
     private fun searchScopeProjection(

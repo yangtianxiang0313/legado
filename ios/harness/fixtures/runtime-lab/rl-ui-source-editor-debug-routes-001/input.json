@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "editor-action-matrix",
+      "operation": "source_editor_action_matrix",
+      "arguments": {
+        "actions": [
+          {
+            "id": "save-valid",
+            "action": "save",
+            "name_state": "valid",
+            "login_url_state": "blank",
+            "changed": true
+          },
+          {
+            "id": "debug-valid",
+            "action": "debug",
+            "name_state": "valid",
+            "login_url_state": "blank",
+            "changed": false
+          },
+          {
+            "id": "login-nonblank",
+            "action": "login",
+            "name_state": "valid",
+            "login_url_state": "nonblank",
+            "changed": false
+          },
+          {
+            "id": "login-whitespace",
+            "action": "login",
+            "name_state": "valid",
+            "login_url_state": "whitespace",
+            "changed": false
+          },
+          {
+            "id": "search-valid",
+            "action": "search",
+            "name_state": "valid",
+            "login_url_state": "blank",
+            "changed": false
+          },
+          {
+            "id": "save-invalid-name",
+            "action": "save",
+            "name_state": "blank",
+            "login_url_state": "blank",
+            "changed": true
+          },
+          {
+            "id": "finish-dirty",
+            "action": "finish",
+            "name_state": "valid",
+            "login_url_state": "blank",
+            "changed": true
+          },
+          {
+            "id": "finish-clean",
+            "action": "finish",
+            "name_state": "valid",
+            "login_url_state": "blank",
+            "changed": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "debug-key-matrix",
+      "operation": "source_debug_key_matrix",
+      "arguments": {
+        "keys": [
+          {
+            "id": "detail-url",
+            "kind": "detail",
+            "payload": "detail"
+          },
+          {
+            "id": "explore-url",
+            "kind": "explore",
+            "payload": "explore"
+          },
+          {
+            "id": "toc-url",
+            "kind": "toc",
+            "payload": "toc"
+          },
+          {
+            "id": "content-url",
+            "kind": "content",
+            "payload": "content"
+          },
+          {
+            "id": "keyword",
+            "kind": "search",
+            "payload": "我的"
+          }
+        ]
+      }
+    },
+    {
+      "id": "caller-result-matrix",
+      "operation": "source_editor_result_matrix",
+      "arguments": {
+        "results": [
+          {
+            "id": "detail-canceled",
+            "caller": "book_detail",
+            "result": "canceled"
+          },
+          {
+            "id": "detail-ok",
+            "caller": "book_detail",
+            "result": "ok"
+          },
+          {
+            "id": "detail-other",
+            "caller": "book_detail",
+            "result": "other"
+          },
+          {
+            "id": "reader-canceled",
+            "caller": "reader",
+            "result": "canceled"
+          },
+          {
+            "id": "reader-ok",
+            "caller": "reader",
+            "result": "ok"
+          }
+        ]
+      }
+    }
+  ]
+}

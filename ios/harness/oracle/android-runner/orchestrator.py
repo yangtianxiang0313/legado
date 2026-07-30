@@ -1136,6 +1136,28 @@ SCENARIO_CONTRACTS = {
             "detail-roundtrip-preserves-query",
         }),
     },
+    "rl-ui-source-editor-debug-routes-001": {
+        "status": "candidate",
+        "fixture_kind": "android_runtime_scenario",
+        "result_type": "ui_runtime",
+        "stage_names": (
+            "fixture_setup",
+            "editor_action",
+            "debug_route",
+            "caller_result",
+            "result_mapping",
+        ),
+        "expected_cases": (
+            ("editor-action-matrix", "source_editor_action_matrix"),
+            ("debug-key-matrix", "source_debug_key_matrix"),
+            ("caller-result-matrix", "source_editor_result_matrix"),
+        ),
+        "nominal_cases": frozenset({
+            "editor-action-matrix",
+            "debug-key-matrix",
+            "caller-result-matrix",
+        }),
+    },
     "rl-library-book-detail-staging-runtime-001": {
         "status": "candidate",
         "fixture_kind": "android_runtime_scenario",
