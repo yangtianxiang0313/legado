@@ -838,6 +838,44 @@ class MinimalLoopTests(unittest.TestCase):
 
             self.assertEqual([], loop.pending_characterizations(root))
 
+    def test_verified_candidate_evidence_satisfies_dependency(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            artifact = (
+                "ios/harness/goldens/android-legado-v1/existing.json"
+            )
+            self.write(root, artifact, {"fixture_id": "existing"})
+            self.write(
+                root,
+                "ios/project/business-knowledge/packets/proposals/"
+                "BKP-VERIFIED/r0001.json",
+                {
+                    "id": "BKP-VERIFIED",
+                    "revision": 1,
+                    "status": "candidate",
+                    "claims": [
+                        {
+                            "id": "BKC-VERIFIED",
+                            "revision": 2,
+                            "support": {
+                                "state": "runtime_verified",
+                                "runtime_requirement": (
+                                    "android_characterization"
+                                ),
+                                "runtime_evidence": [
+                                    {"artifact_uri": artifact}
+                                ],
+                            },
+                        }
+                    ],
+                },
+            )
+
+            self.assertIn(
+                ("BKC-VERIFIED", 2),
+                loop.satisfied_dependency_claim_refs(root),
+            )
+
     def test_business_inference_never_becomes_android_runtime_task(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

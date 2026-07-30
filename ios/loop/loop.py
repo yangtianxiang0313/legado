@@ -271,6 +271,22 @@ def satisfied_dependency_claim_refs(root: Path) -> set[tuple[str, int]]:
                 and not isinstance(claim.get("revision"), bool)
             ):
                 result.add((claim["id"], claim["revision"]))
+            elif (
+                isinstance(support, dict)
+                and support.get("state") == "runtime_verified"
+                and isinstance(support.get("runtime_evidence"), list)
+                and support["runtime_evidence"]
+                and all(
+                    isinstance(evidence, dict)
+                    and isinstance(evidence.get("artifact_uri"), str)
+                    and (root / evidence["artifact_uri"]).is_file()
+                    for evidence in support["runtime_evidence"]
+                )
+                and isinstance(claim.get("id"), str)
+                and isinstance(claim.get("revision"), int)
+                and not isinstance(claim.get("revision"), bool)
+            ):
+                result.add((claim["id"], claim["revision"]))
     return result
 
 
@@ -1322,6 +1338,21 @@ def pending_characterizations(root: Path) -> list[Mapping[str, Any]]:
     completed = completed_task_ids(root)
     characterized = characterized_claim_refs(root)
     satisfied_dependencies = satisfied_dependency_claim_refs(root)
+    satisfied_dependency_revisions = {
+        identifier: max(
+            revision,
+            max(
+                (
+                    current_revision
+                    for current_identifier, current_revision
+                    in satisfied_dependencies
+                    if current_identifier == identifier
+                ),
+                default=0,
+            ),
+        )
+        for identifier, revision in satisfied_dependencies
+    }
     published_revisions = current_published_claim_revisions(root)
     candidate_revisions = current_candidate_claim_revisions(root)
     candidates: list[tuple[int, int, str, Mapping[str, Any]]] = []
@@ -1352,7 +1383,10 @@ def pending_characterizations(root: Path) -> list[Mapping[str, Any]]:
                 for value in claim.get("depends_on", [])
                 if isinstance(value, dict)
             }
-            if not dependencies.issubset(satisfied_dependencies):
+            if any(
+                satisfied_dependency_revisions.get(identifier, 0) < revision
+                for identifier, revision in dependencies
+            ):
                 continue
             requirements = requirement_refs_for_claim(root, packet, claim)
             if not requirements:

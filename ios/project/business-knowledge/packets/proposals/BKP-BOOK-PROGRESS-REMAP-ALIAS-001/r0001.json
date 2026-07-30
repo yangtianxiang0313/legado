@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-BOOK-PROGRESS-REMAP-ALIAS-001",
+  "revision": 1,
+  "status": "candidate",
+  "semantic_key": "reader.progress.toc-remap-runtime",
+  "title": "整书换源依赖的目录进度重映射证据复用",
+  "scope": {
+    "bounded_contexts": [
+      "reader.progress",
+      "content.source-switch"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-CORE"
+    ],
+    "subject_keys": [
+      "reader.progress",
+      "library.chapter"
+    ]
+  },
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122"
+  },
+  "claims": [
+    {
+      "id": "BKC-BOOK-PROGRESS-REMAP-001",
+      "revision": 2,
+      "semantic_key": "reader.progress.toc-remap-runtime",
+      "kind": "runtime_behavior",
+      "topic": "换源后的目录进度重映射",
+      "statement": "整书换源依赖的 getDurChapter 目录重映射语义，已由 rl-reader-progress-toc-remap-001 的 11 个真实 Android 场景覆盖；该证据与 BKC-RD-PROGRESS-REMAP-001@2 共用同一源码符号、Android commit 和结构化结果，不重复创建 fixture 或 Golden。",
+      "subject_keys": [
+        "reader.progress",
+        "library.chapter"
+      ],
+      "depends_on": [],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "40f47f3a0f6bfa63cce79efb7a1518737b84dc45",
+            "path": "app/src/main/java/io/legado/app/help/book/BookHelp.kt",
+            "symbol_id": "kotlin://io.legado.app.help.book.BookHelp/getDurChapter"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/rl-reader-progress-toc-remap-001.json",
+            "artifact_sha256": "94c85e59eac8e456f2b03fd9f21156435c9a16e2f2817d1e9b8c840cb792ef1a",
+            "projection_pointer": "/artifact/result/value",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "1c1016b710dedc4d59130f4f25d1f7614f6cbba3d479113e45edee692b883573"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-BOOK-PROGRESS-REMAP-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-REUSE-READER-PROGRESS-TOC-REMAP-001"
+}
