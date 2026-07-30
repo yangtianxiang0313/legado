@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P21-SINGLE-SOURCE-SEARCH-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "title": "P21 书源编辑器单源搜索闭环",
+  "objective": "依据冻结 Android BookSourceEditActivity 与 SearchActivity 源码，把 iOS 书源编辑器的单源搜索占位页接入既有 SearchSession，并保持 scope 固定为当前书源，搜索结果可继续进入书籍详情。",
+  "validation_policy": "复用已验证的搜索主链，仅执行一次 App 构建；不重复运行模拟器矩阵。",
+  "stages": [
+    {
+      "id": "P21-S1",
+      "title": "接通单源搜索与详情导航",
+      "selectors": [
+        {
+          "id": "P21-S1-SINGLE-SOURCE-SEARCH",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-APP-NAVIGATION-SINGLE-SOURCE-SEARCH-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-APP-NAVIGATION-SINGLE-SOURCE-SEARCH-001",
+      "title": "复用 SearchSession 实现书源编辑器单源搜索",
+      "fixture_id": "single-source-search-app-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [],
+      "validation": "build",
+      "ui_contract": {
+        "goal": "从书源编辑器进入固定当前书源的搜索页，并允许搜索结果进入书籍详情。",
+        "scenario_id": "single-source-search-app-v1",
+        "test_method": "testSingleSourceSearchFlow"
+      },
+      "additional_allowed_paths": [],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/ui/book/source/edit/BookSourceEditActivity.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.source.edit.BookSourceEditActivity/onCompatOptionsItemSelected"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/ui/book/search/SearchActivity.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.search.SearchActivity/initData"
+        }
+      ]
+    }
+  ]
+}
