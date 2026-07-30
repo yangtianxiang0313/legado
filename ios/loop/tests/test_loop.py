@@ -2472,6 +2472,14 @@ class MinimalLoopTests(unittest.TestCase):
             "IOS-DEPENDENCY-GRDB-PERSISTENCE-001"
         )
         self.assertEqual("DependencyControl", dependency["owner"])
+        swift_soup = loop.owner_contract(
+            "IOS-DEPENDENCY-SWIFTSOUP-HTML-001"
+        )
+        self.assertEqual("DependencyControl", swift_soup["owner"])
+        self.assertIn(
+            "ios/Packages/LegadoKit/Sources/HTMLSwiftSoup/**",
+            swift_soup["allowed_paths"],
+        )
         ui = loop.app_navigation_delivery_contract(
             "rl-library-book-detail-staging-runtime-001"
         )

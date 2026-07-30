@@ -584,6 +584,33 @@ def source_anchors_for_claims(
 
 
 def owner_contract(target: str) -> Mapping[str, Any]:
+    if target == "IOS-DEPENDENCY-SWIFTSOUP-HTML-001":
+        return {
+            "owner": "DependencyControl",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-002",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-011",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/Packages/LegadoKit/Package.swift",
+                "ios/Packages/LegadoKit/Package.resolved",
+                "ios/Packages/LegadoKit/Sources/RuleRuntime/**",
+                "ios/Packages/LegadoKit/Sources/HTMLSwiftSoup/**",
+                "ios/Packages/LegadoKit/Tests/HTMLSwiftSoupTests/**",
+                "ios/harness/dependency-policy.json",
+                "ios/harness/architecture-rules.json",
+                "ios/project/dependency-proposals/**",
+                "ios/docs/dependencies.md",
+                "ios/docs/third-party-notices.md",
+                "ios/project/sbom/**",
+            ],
+        }
     if target == "IOS-DEPENDENCY-GRDB-PERSISTENCE-001":
         return {
             "owner": "DependencyControl",
@@ -2671,7 +2698,16 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
         if isinstance(android_commit, str):
             android_baseline = {"android_commit": android_commit}
     delivery_contracts = {
-        "DependencyControl": {},
+        "DependencyControl": {
+            "goal": (
+                "一次只启用一个已批准的精确版本依赖，物化独立适配层与"
+                "退出边界；不在依赖任务中顺带实现产品业务。"
+            ),
+            "rule": (
+                "第三方类型只能存在于声明的 Adapter target；Core、Domain、"
+                "UseCase、UI 与 Conformance 不得直接 import。"
+            ),
+        },
         "SourceRuntime": {
             "goal": (
                 "按照冻结 Android 运行结果，在独立 SourceRuntime 中实现该书源能力；"
@@ -2826,6 +2862,21 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
                     ],
                     "timeout_seconds": 900,
                 }
+            forbidden = [
+                "Android golden",
+                "accepted Requirement",
+                "架构依赖边",
+                "三方依赖",
+                "切片级 Simulator fixture",
+            ]
+            if architecture["owner"] == "DependencyControl":
+                forbidden = [
+                    "Android golden",
+                    "accepted Requirement",
+                    "未声明的三方依赖",
+                    "产品业务实现",
+                    "切片级 Simulator fixture",
+                ]
             return {
                 "schema_version": SCHEMA_VERSION,
                 "id": target,
@@ -2843,13 +2894,7 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
                 },
                 "scope": {
                     "allowed_paths": allowed_paths,
-                    "forbidden": [
-                        "Android golden",
-                        "accepted Requirement",
-                        "架构依赖边",
-                        "三方依赖",
-                        "切片级 Simulator fixture",
-                    ],
+                    "forbidden": forbidden,
                 },
                 "acceptance": {
                     "profile": "slice",
