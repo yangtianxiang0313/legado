@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P17-JAVASCRIPT-RULE-RUNTIME-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "title": "P17 JavaScript 规则运行时进入 FullCompat 主链",
+  "objective": "依据 Android AnalyzeRule/AnalyzeUrl 的脚本调用边界和既有架构决策，建立 SourceRuntime 的异步脚本端口、独立 ScriptJavaScriptCore 平台后端与 FullCompat 组合根；先覆盖已由 Android Golden 冻结的 result/baseUrl/变量读写语义，再逐步扩展白名单 Host API，禁止把 Swift 产品对象完整暴露给脚本。",
+  "completion_evidence": [
+    "SourceRuntime 只依赖 Sendable 脚本端口和稳定 ScriptValue/ScriptIssue，不导入 JavaScriptCore",
+    "ScriptJavaScriptCore 独立 Target 持有 JSContext/JSVirtualMachine，并按 SourceSession 串行隔离",
+    "LegadoFullCompatKit 链接 ScriptJavaScriptCore，LegadoStoreSafeKit 的编译闭包不包含脚本后端",
+    "搜索、详情、目录和正文规则可以注入脚本执行端口，未注入时返回稳定 capabilityDenied/unsupportedScript",
+    "本地脚本书源在 FullCompat 路径产生结构化搜索至正文结果"
+  ],
+  "deferred_policy": "首轮只实现 Android Golden 已观测的纯计算、result/baseUrl 和变量 put/get；网络、文件、凭据、刷新书籍/目录与支付等副作用必须经白名单命令端口和独立 Android characterization 后加入，不复制 Rhino 的任意 Java/Android 对象暴露。",
+  "deliveries": [
+    {
+      "target": "IOS-SOURCE-RUNTIME-SCRIPT-CONTRACT-001",
+      "title": "建立异步脚本端口与稳定值/错误合同",
+      "fixture_id": "source-script-runtime-contract-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [],
+      "validation": "tests",
+      "test_filter": "SourceScriptRuntimeContractTests",
+      "additional_allowed_paths": [],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt",
+          "symbol_id": "kotlin://io.legado.app.model.analyzeRule.AnalyzeRule/evalJS"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+          "symbol_id": "kotlin://io.legado.app.model.analyzeRule.AnalyzeUrl/evalJS"
+        }
+      ]
+    },
+    {
+      "target": "IOS-SOURCE-RUNTIME-JAVASCRIPTCORE-ADAPTER-001",
+      "title": "实现独立 JavaScriptCore 会话后端与 Profile 闭包",
+      "fixture_id": "source-javascriptcore-adapter-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [
+        "IOS-SOURCE-RUNTIME-SCRIPT-CONTRACT-001"
+      ],
+      "validation": "tests",
+      "test_filter": "ScriptJavaScriptCoreTests",
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Package.swift",
+        "ios/Packages/LegadoKit/Sources/ScriptJavaScriptCore/**",
+        "ios/Packages/LegadoKit/Tests/ScriptJavaScriptCoreTests/**",
+        "ios/harness/architecture-rules.json",
+        "ios/harness/probes/package_contract.py",
+        "ios/harness/tests/test_package_contract.py"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt",
+          "symbol_id": "kotlin://io.legado.app.model.analyzeRule.AnalyzeRule/evalJS"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/help/JsExtensions.kt",
+          "symbol_id": "kotlin://io.legado.app.help.JsExtensions"
+        }
+      ]
+    },
+    {
+      "target": "IOS-SOURCE-RUNTIME-SCRIPT-PRODUCT-INTEGRATION-001",
+      "title": "把脚本端口接入四段书源产品流水线",
+      "fixture_id": "source-script-product-integration-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [
+        "IOS-SOURCE-RUNTIME-JAVASCRIPTCORE-ADAPTER-001"
+      ],
+      "validation": "tests",
+      "test_filter": "SourceScriptProductIntegrationTests",
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Apps/Legado/App/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
+          "symbol_id": "kotlin://io.legado.app.model.webBook.WebBook"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt",
+          "symbol_id": "kotlin://io.legado.app.model.analyzeRule.AnalyzeRule/evalJS"
+        }
+      ]
+    }
+  ],
+  "stages": [
+    {
+      "id": "P17-01-SCRIPT-CONTRACT",
+      "title": "脚本值、上下文、命令与错误边界",
+      "outcome": "规则执行层可以请求异步脚本求值，但 SourceRuntime 不感知 JavaScriptCore、线程或产品对象。",
+      "selectors": [
+        {
+          "id": "SOURCE-SCRIPT-CONTRACT",
+          "task_ids": [
+            "IOS-SOURCE-RUNTIME-SCRIPT-CONTRACT-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P17-02-JAVASCRIPTCORE-ADAPTER",
+      "title": "FullCompat 平台脚本后端",
+      "outcome": "JavaScriptCore 被隔离在独立 Target 和会话 actor 中，StoreSafe 链接闭包继续排除任意脚本。",
+      "selectors": [
+        {
+          "id": "SOURCE-JAVASCRIPTCORE-ADAPTER",
+          "task_ids": [
+            "IOS-SOURCE-RUNTIME-JAVASCRIPTCORE-ADAPTER-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P17-03-SCRIPT-PRODUCT-INTEGRATION",
+      "title": "四段书源流水线消费脚本端口",
+      "outcome": "搜索、详情、目录和正文共享同一脚本会话边界，并由本地脚本书源结构化验收。",
+      "selectors": [
+        {
+          "id": "SOURCE-SCRIPT-PRODUCT-INTEGRATION",
+          "task_ids": [
+            "IOS-SOURCE-RUNTIME-SCRIPT-PRODUCT-INTEGRATION-001"
+          ]
+        }
+      ]
+    }
+  ]
+}
