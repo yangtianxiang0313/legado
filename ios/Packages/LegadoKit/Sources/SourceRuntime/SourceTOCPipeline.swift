@@ -80,18 +80,24 @@ public struct SourceTOCPipeline: Sendable {
         code: .ruleFailed
       )
     }
+    let variableStore = SourceVariableStore(
+      policy: .androidRuleData,
+      values: detail.book.variables
+    )
 
     var requests = detail.requestPlan.map { [$0.request] } ?? []
     let firstPage: SourceTOCPage
     if let tocHTML = detail.tocHTML {
-      firstPage = try runtime.chapterPage(
+      firstPage = try await runtime.chapterPage(
         html: tocHTML,
-        tocEndpoint: tocEndpoint
+        tocEndpoint: tocEndpoint,
+        variableStore: variableStore
       )
     } else {
       let fetched = try await fetchPage(
         endpoint: tocEndpoint,
-        runtime: runtime
+        runtime: runtime,
+        variableStore: variableStore
       )
       requests.append(fetched.request)
       firstPage = fetched.page
@@ -107,7 +113,8 @@ public struct SourceTOCPipeline: Sendable {
       {
         let fetched = try await fetchPage(
           endpoint: endpoint,
-          runtime: runtime
+          runtime: runtime,
+          variableStore: variableStore
         )
         requests.append(fetched.request)
         chapters.append(contentsOf: fetched.page.chapters)
@@ -118,7 +125,8 @@ public struct SourceTOCPipeline: Sendable {
       where visited.insert(endpoint.requestExpression).inserted {
         let fetched = try await fetchPage(
           endpoint: endpoint,
-          runtime: runtime
+          runtime: runtime,
+          variableStore: variableStore
         )
         requests.append(fetched.request)
         chapters.append(contentsOf: fetched.page.chapters)
@@ -133,16 +141,28 @@ public struct SourceTOCPipeline: Sendable {
     }
     return SourceTOCExecution(
       requests: requests,
-      book: detail.book,
+      book: detail.book.replacingVariables(
+        await variableStore.snapshot()
+      ),
       chapters: chapters
     )
   }
 
   private func fetchPage(
     endpoint: SourceEndpoint,
-    runtime: HTMLCSSSourceRuntime
+    runtime: HTMLCSSSourceRuntime,
+    variableStore: SourceVariableStore
   ) async throws -> (request: HTTPRequest, page: SourceTOCPage) {
-    let plan = try definition.prepare(endpoint.requestPlan())
+    let plan = try definition.prepare(
+      await endpoint.requestPlan(
+        resolver: SourceVariableResolver(
+          role: .url,
+          scopes: SourceVariableScopes(
+            ruleData: variableStore
+          )
+        )
+      )
+    )
     let response = try await SourceRequestSession(
       transport: transport,
       cookieStore: cookieStore
@@ -160,9 +180,10 @@ public struct SourceTOCPipeline: Sendable {
     }
     return (
       plan.request,
-      try runtime.chapterPage(
+      try await runtime.chapterPage(
         html: body,
-        tocEndpoint: .plain(effectiveURL)
+        tocEndpoint: .plain(effectiveURL),
+        variableStore: variableStore
       )
     )
   }
@@ -187,7 +208,8 @@ public struct SourceTOCPipeline: Sendable {
           endpoint: chapter.endpoint,
           isPay: chapter.isPay,
           isVIP: chapter.isVIP,
-          isVolume: chapter.isVolume
+          isVolume: chapter.isVolume,
+          variables: chapter.variables
         )
       )
     }

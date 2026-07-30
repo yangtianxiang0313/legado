@@ -122,6 +122,7 @@ public struct SourceSearchBook: Sendable, Equatable {
   public let originName: String
   public let originOrder: Int
   public let infoHTML: String?
+  public let variables: [String: String]
 
   public init(
     name: String,
@@ -136,7 +137,8 @@ public struct SourceSearchBook: Sendable, Equatable {
     origin: String,
     originName: String,
     originOrder: Int,
-    infoHTML: String?
+    infoHTML: String?,
+    variables: [String: String] = [:]
   ) {
     self.name = name
     self.author = author
@@ -151,6 +153,7 @@ public struct SourceSearchBook: Sendable, Equatable {
     self.originName = originName
     self.originOrder = originOrder
     self.infoHTML = infoHTML
+    self.variables = variables
   }
 }
 
@@ -196,6 +199,9 @@ public struct SourceSearchPipeline: Sendable {
   public func search(_ input: SourceSearchInput) async throws
     -> SourceSearchExecution
   {
+    let variableStore = SourceVariableStore(
+      policy: .androidRuleData
+    )
     guard
       !definition.runtime.searchURLTemplate
         .trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -206,12 +212,18 @@ public struct SourceSearchPipeline: Sendable {
       )
     }
 
-    let compilation = try SourceURLTemplateCompiler.compile(
+    let compilation = try await SourceURLTemplateCompiler.compile(
       SourceURLTemplateInput(
         template: definition.runtime.searchURLTemplate,
         key: input.keyword,
         page: input.page,
         baseURL: definition.sourceURL
+      ),
+      resolver: SourceVariableResolver(
+        role: .url,
+        scopes: SourceVariableScopes(
+          ruleData: variableStore
+        )
       )
     )
     let requestPlan = try definition.prepare(compilation.plan)
@@ -238,7 +250,10 @@ public struct SourceSearchPipeline: Sendable {
       source: definition,
       input: input
     )
-    let books = try parse(response: checked)
+    let books = try await parse(
+      response: checked,
+      variableStore: variableStore
+    )
     return SourceSearchExecution(
       requestPlan: requestPlan,
       response: checked,
@@ -247,9 +262,13 @@ public struct SourceSearchPipeline: Sendable {
   }
 
   private func parse(
-    response: SourceSearchResponse
-  ) throws -> [SourceSearchBook] {
-    try SourceBookListParser(definition: definition).parse(
+    response: SourceSearchResponse,
+    variableStore: SourceVariableStore
+  ) async throws -> [SourceSearchBook] {
+    try await SourceBookListParser(
+      definition: definition,
+      variableStore: variableStore
+    ).parse(
       response: response,
       rules: definition.runtime.search,
       reverse: false,

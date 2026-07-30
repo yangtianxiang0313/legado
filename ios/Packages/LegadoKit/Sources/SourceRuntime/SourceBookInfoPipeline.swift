@@ -76,6 +76,10 @@ public struct SourceBookInfoPipeline: Sendable {
     canRename: Bool = true
   ) async throws -> SourceBookInfoExecution {
     let runtime = HTMLCSSSourceRuntime(definition: definition.runtime)
+    let variableStore = SourceVariableStore(
+      policy: .androidRuleData,
+      values: book.variables
+    )
     let requestPlan: SourceRequestPlan?
     let response: SourceBookInfoResponse
 
@@ -87,7 +91,15 @@ public struct SourceBookInfoPipeline: Sendable {
       )
     } else {
       let plan = try definition.prepare(
-        book.bookEndpoint.requestPlan()
+        await book.bookEndpoint.requestPlan(
+          resolver: SourceVariableResolver(
+            role: .url,
+            scopes: SourceVariableScopes(
+              ruleData: variableStore,
+              bookName: book.name
+            )
+          )
+        )
       )
       requestPlan = plan
       let networkResponse = try await SourceRequestSession(
@@ -118,12 +130,13 @@ public struct SourceBookInfoPipeline: Sendable {
       )
     }
 
-    let parsed = try runtime.bookInfo(
+    let parsed = try await runtime.bookInfo(
       html: response.body,
       baseURL: book.bookEndpoint.logicalURL,
       redirectURL: response.url,
       existing: book,
-      canRename: canRename
+      canRename: canRename,
+      variableStore: variableStore
     )
     return SourceBookInfoExecution(
       requestPlan: requestPlan,

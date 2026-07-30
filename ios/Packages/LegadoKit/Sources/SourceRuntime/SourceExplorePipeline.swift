@@ -159,11 +159,20 @@ public struct SourceExplorePipeline: Sendable {
     guard let template = input.category.urlTemplate else {
       throw SourceExplorePipelineError.missingCategoryURL
     }
-    let compilation = try SourceURLTemplateCompiler.compile(
+    let variableStore = SourceVariableStore(
+      policy: .androidRuleData
+    )
+    let compilation = try await SourceURLTemplateCompiler.compile(
       SourceURLTemplateInput(
         template: template,
         page: input.page,
         baseURL: definition.source.sourceURL
+      ),
+      resolver: SourceVariableResolver(
+        role: .url,
+        scopes: SourceVariableScopes(
+          ruleData: variableStore
+        )
       )
     )
     let networkResponse = try await transport.execute(
@@ -188,8 +197,9 @@ public struct SourceExplorePipeline: Sendable {
     let rules =
       definition.source.runtime.explore
       ?? definition.source.runtime.search
-    let books = try SourceBookListParser(
-      definition: definition.source
+    let books = try await SourceBookListParser(
+      definition: definition.source,
+      variableStore: variableStore
     ).parse(
       response: checked,
       rules: rules,

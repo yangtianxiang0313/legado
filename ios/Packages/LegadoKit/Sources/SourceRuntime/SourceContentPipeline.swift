@@ -40,7 +40,9 @@ public struct SourceContentPipeline: Sendable {
 
   public func content(
     chapterURL: String,
-    nextChapterURL: String? = nil
+    nextChapterURL: String? = nil,
+    bookVariables: [String: String] = [:],
+    chapterVariables: [String: String] = [:]
   ) async throws
     -> SourceContentExecution
   {
@@ -58,23 +60,31 @@ public struct SourceContentPipeline: Sendable {
     }
     return try await content(
       endpoint: endpoint,
-      nextChapterEndpoint: nextChapterEndpoint
+      nextChapterEndpoint: nextChapterEndpoint,
+      bookVariables: bookVariables,
+      chapterVariables: chapterVariables
     )
   }
 
   public func content(
     endpoint: SourceEndpoint,
-    nextChapterEndpoint: SourceEndpoint? = nil
+    nextChapterEndpoint: SourceEndpoint? = nil,
+    bookVariables: [String: String] = [:],
+    chapterVariables: [String: String] = [:]
   ) async throws
     -> SourceContentExecution
   {
     let runtime = HTMLCSSSourceRuntime(definition: definition.runtime)
     let first = try await fetchPage(
       endpoint: endpoint,
-      runtime: runtime
+      runtime: runtime,
+      bookVariables: bookVariables,
+      chapterVariables: chapterVariables
     )
     var requests = [first.request]
     var contents = [first.page.content.content]
+    var currentChapterVariables =
+      first.page.content.variables
     var visited = Set([endpoint.requestExpression])
     if first.page.nextEndpoints.count == 1 {
       var next = first.page.nextEndpoints.first
@@ -88,10 +98,14 @@ public struct SourceContentPipeline: Sendable {
       {
         let fetched = try await fetchPage(
           endpoint: pageEndpoint,
-          runtime: runtime
+          runtime: runtime,
+          bookVariables: bookVariables,
+          chapterVariables: currentChapterVariables
         )
         requests.append(fetched.request)
         contents.append(fetched.page.content.content)
+        currentChapterVariables =
+          fetched.page.content.variables
         next = fetched.page.nextEndpoints.first
       }
     } else {
@@ -105,29 +119,48 @@ public struct SourceContentPipeline: Sendable {
       {
         let fetched = try await fetchPage(
           endpoint: pageEndpoint,
-          runtime: runtime
+          runtime: runtime,
+          bookVariables: bookVariables,
+          chapterVariables: currentChapterVariables
         )
         requests.append(fetched.request)
         contents.append(fetched.page.content.content)
+        currentChapterVariables =
+          fetched.page.content.variables
       }
     }
     return SourceContentExecution(
       requests: requests,
       content: SourceContent(
         chapterURL: first.page.content.chapterURL,
-        content: contents.joined(separator: "\n")
+        content: contents.joined(separator: "\n"),
+        variables: currentChapterVariables
       )
     )
   }
 
   private func fetchPage(
     endpoint: SourceEndpoint,
-    runtime: HTMLCSSSourceRuntime
+    runtime: HTMLCSSSourceRuntime,
+    bookVariables: [String: String],
+    chapterVariables: [String: String]
   ) async throws -> (
     request: HTTPRequest,
     page: SourceContentPage
   ) {
-    let plan = try definition.prepare(endpoint.requestPlan())
+    let bookStore = SourceVariableStore(values: bookVariables)
+    let chapterStore = SourceVariableStore(values: chapterVariables)
+    let plan = try definition.prepare(
+      await endpoint.requestPlan(
+        resolver: SourceVariableResolver(
+          role: .url,
+          scopes: SourceVariableScopes(
+            chapter: chapterStore,
+            ruleData: bookStore
+          )
+        )
+      )
+    )
     let response = try await SourceRequestSession(
       transport: transport,
       cookieStore: cookieStore
@@ -145,9 +178,11 @@ public struct SourceContentPipeline: Sendable {
     }
     return (
       plan.request,
-      try runtime.contentPage(
+      try await runtime.contentPage(
         html: html,
-        chapterEndpoint: .plain(effectiveURL)
+        chapterEndpoint: .plain(effectiveURL),
+        bookVariables: await bookStore.snapshot(),
+        chapterVariables: await chapterStore.snapshot()
       )
     )
   }

@@ -65,6 +65,16 @@ public struct SourceEndpoint: Equatable, Sendable {
     try SourceRequestCompiler.compileRendered(requestExpression)
   }
 
+  public func requestPlan(
+    resolver: SourceVariableResolver
+  ) async throws -> SourceRequestPlan {
+    let rendered = try await SourceVariableTemplateRenderer.render(
+      requestExpression,
+      resolver: resolver
+    )
+    return try SourceRequestCompiler.compileRendered(rendered)
+  }
+
   private init(logicalURL: URL, requestExpression: String) {
     self.logicalURL = logicalURL
     self.requestExpression = requestExpression

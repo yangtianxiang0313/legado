@@ -3,15 +3,16 @@ import LegadoCore
 
 struct SourceBookListParser {
   let definition: SourceSearchDefinition
+  let variableStore: SourceVariableStore
 
   func parse(
     response: SourceSearchResponse,
     rules: SearchRules,
     reverse: Bool,
     allowsDetailPattern: Bool
-  ) throws -> [SourceSearchBook] {
+  ) async throws -> [SourceSearchBook] {
     if usesStructuredRules(response: response, rules: rules) {
-      return try parseStructured(
+      return try await parseStructured(
         response: response,
         rules: rules,
         reverse: reverse
@@ -26,7 +27,7 @@ struct SourceBookListParser {
 
     if allowsDetailPattern, try matchesDetailPattern(response.url) {
       guard
-        let book = try book(
+        let book = try await book(
           node: document.root,
           document: document,
           response: response,
@@ -44,11 +45,20 @@ struct SourceBookListParser {
       return [book]
     }
 
+    let listPlan = SourceVariableRulePlan.parse(
+      normalizedList(rules.list)
+    )
+    try await applyWrites(
+      listPlan.writes,
+      node: document.root,
+      document: document,
+      resolver: sharedResolver
+    )
     let nodes = try document.select(
-      HTMLCSSRule(normalizedList(rules.list)).cssSelector
+      HTMLCSSRule(listPlan.executionRule).cssSelector
     )
     if nodes.isEmpty, definition.bookURLPattern?.isEmpty != false {
-      if let detail = try book(
+      if let detail = try await book(
         node: document.root,
         document: document,
         response: response,
@@ -65,7 +75,7 @@ struct SourceBookListParser {
     var books: [SourceSearchBook] = []
     for node in nodes {
       guard
-        let candidate = try book(
+        let candidate = try await book(
           node: node,
           document: document,
           response: response,
@@ -134,11 +144,36 @@ struct SourceBookListParser {
     rules: Rules,
     fallbackBookURL: String,
     preservesHTML: Bool
-  ) throws -> SourceSearchBook? {
-    let name = try value(rules.name, in: node, document: document) ?? ""
+  ) async throws -> SourceSearchBook? {
+    let store = SourceVariableStore(
+      policy: .androidRuleData,
+      values: await variableStore.snapshot()
+    )
+    let resolver = SourceVariableResolver(
+      role: .rule,
+      scopes: SourceVariableScopes(
+        book: store,
+        ruleData: store
+      )
+    )
+    let name =
+      try await variableValue(
+        rules.name,
+        in: node,
+        document: document,
+        resolver: resolver
+      ) ?? ""
     guard !name.isEmpty else { return nil }
-    let rawBookURL = try rules.bookURL.flatMap {
-      try value($0, in: node, document: document)
+    let rawBookURL: String?
+    if let bookURLRule = rules.bookURL {
+      rawBookURL = try await variableValue(
+        bookURLRule,
+        in: node,
+        document: document,
+        resolver: resolver
+      )
+    } else {
+      rawBookURL = nil
     }
     let resolvedBookEndpoint = rawBookURL.flatMap {
       resolveEndpoint($0, relativeTo: response.url)
@@ -153,25 +188,51 @@ struct SourceBookListParser {
       return nil
     }
     let bookURL = bookEndpoint.logicalURL.absoluteString
-    let coverURL = try value(
+    let coverURL = try await variableValue(
       rules.coverURL,
       in: node,
-      document: document
+      document: document,
+      resolver: resolver
     ).map {
       resolve($0, relativeTo: response.url)
     }
     return SourceSearchBook(
       name: name,
       author: normalizeAuthor(
-        try value(rules.author, in: node, document: document) ?? ""
+        try await variableValue(
+          rules.author,
+          in: node,
+          document: document,
+          resolver: resolver
+        ) ?? ""
       ),
-      kind: try value(rules.kind, in: node, document: document) ?? "",
+      kind: try await variableValue(
+        rules.kind,
+        in: node,
+        document: document,
+        resolver: resolver
+      ) ?? "",
       wordCount: normalizeWordCount(
-        try value(rules.wordCount, in: node, document: document) ?? ""
+        try await variableValue(
+          rules.wordCount,
+          in: node,
+          document: document,
+          resolver: resolver
+        ) ?? ""
       ),
-      intro: try value(rules.intro, in: node, document: document) ?? "",
+      intro: try await variableValue(
+        rules.intro,
+        in: node,
+        document: document,
+        resolver: resolver
+      ) ?? "",
       lastChapter:
-        try value(rules.lastChapter, in: node, document: document) ?? "",
+        try await variableValue(
+          rules.lastChapter,
+          in: node,
+          document: document,
+          resolver: resolver
+        ) ?? "",
       bookURL: bookURL,
       bookRequestExpression: bookEndpoint.requestExpression,
       coverURL: coverURL,
@@ -181,7 +242,15 @@ struct SourceBookListParser {
       infoHTML:
         preservesHTML || bookURL == response.url
         ? response.body
-        : nil
+        : nil,
+      variables: await store.snapshot()
+    )
+  }
+
+  private var sharedResolver: SourceVariableResolver {
+    SourceVariableResolver(
+      role: .rule,
+      scopes: SourceVariableScopes(ruleData: variableStore)
     )
   }
 
@@ -211,6 +280,59 @@ struct SourceBookListParser {
       in: .whitespacesAndNewlines
     )
     return trimmed?.isEmpty == false ? trimmed : nil
+  }
+
+  private func variableValue(
+    _ rule: HTMLCSSRule,
+    in node: HTMLNode,
+    document: HTMLDocument,
+    resolver: SourceVariableResolver
+  ) async throws -> String? {
+    let plan = SourceVariableRulePlan.parse(rule.selector)
+    try await applyWrites(
+      plan.writes,
+      node: node,
+      document: document,
+      resolver: resolver
+    )
+    guard !plan.executionRule.isEmpty else { return nil }
+    if
+      plan.executionRule.lowercased().hasPrefix("@js:")
+        || plan.executionRule.lowercased().hasPrefix("<js>")
+    {
+      let result = try await SourceVariableRuleEvaluator(
+        content: node.normalizedText,
+        resolver: resolver
+      ).getString(plan.executionRule)
+      return result.isEmpty ? nil : result
+    }
+    return try value(
+      HTMLCSSRule(
+        plan.executionRule,
+        value: rule.value
+      ),
+      in: node,
+      document: document
+    )
+  }
+
+  private func applyWrites(
+    _ writes: [String: String],
+    node: HTMLNode,
+    document: HTMLDocument,
+    resolver: SourceVariableResolver
+  ) async throws {
+    for key in writes.keys.sorted() {
+      let rule = HTMLCSSRule(writes[key] ?? "")
+      let value =
+        try await variableValue(
+          rule,
+          in: node,
+          document: document,
+          resolver: resolver
+        ) ?? ""
+      _ = await resolver.put(key, value: value)
+    }
   }
 
   private func matchesDetailPattern(_ url: String) throws -> Bool {
@@ -313,19 +435,36 @@ struct SourceBookListParser {
     response: SourceSearchResponse,
     rules: SearchRules,
     reverse: Bool
-  ) throws -> [SourceSearchBook] {
-    let elements = try SourceRuleConsumerEvaluator(
-      content: response.body
+  ) async throws -> [SourceSearchBook] {
+    let elements = try await SourceVariableRuleEvaluator(
+      content: response.body,
+      resolver: sharedResolver
     ).getElements(rules.list)
     var seen: Set<String> = []
     var books: [SourceSearchBook] = []
     for element in elements {
       let data = try JSONValueCodec.encode(element)
       let content = String(decoding: data, as: UTF8.self)
-      let evaluator = SourceRuleConsumerEvaluator(content: content)
-      let name = try structuredValue(rules.name, evaluator: evaluator)
+      let store = SourceVariableStore(
+        policy: .androidRuleData,
+        values: await variableStore.snapshot()
+      )
+      let evaluator = SourceVariableRuleEvaluator(
+        content: content,
+        resolver: SourceVariableResolver(
+          role: .rule,
+          scopes: SourceVariableScopes(
+            book: store,
+            ruleData: store
+          )
+        )
+      )
+      let name = try await structuredValue(
+        rules.name,
+        evaluator: evaluator
+      )
       guard !name.isEmpty else { continue }
-      let rawBookURL = try structuredValue(
+      let rawBookURL = try await structuredValue(
         rules.bookURL,
         evaluator: evaluator
       )
@@ -339,7 +478,7 @@ struct SourceBookListParser {
       }
       let bookURL = bookEndpoint.logicalURL.absoluteString
       guard seen.insert(bookURL).inserted else { continue }
-      let rawCoverURL = try structuredValue(
+      let rawCoverURL = try await structuredValue(
         rules.coverURL,
         evaluator: evaluator
       )
@@ -347,17 +486,26 @@ struct SourceBookListParser {
         SourceSearchBook(
           name: name,
           author: normalizeAuthor(
-            try structuredValue(rules.author, evaluator: evaluator)
+            try await structuredValue(
+              rules.author,
+              evaluator: evaluator
+            )
           ),
-          kind: try structuredValue(rules.kind, evaluator: evaluator),
+          kind: try await structuredValue(
+            rules.kind,
+            evaluator: evaluator
+          ),
           wordCount: normalizeWordCount(
-            try structuredValue(
+            try await structuredValue(
               rules.wordCount,
               evaluator: evaluator
             )
           ),
-          intro: try structuredValue(rules.intro, evaluator: evaluator),
-          lastChapter: try structuredValue(
+          intro: try await structuredValue(
+            rules.intro,
+            evaluator: evaluator
+          ),
+          lastChapter: try await structuredValue(
             rules.lastChapter,
             evaluator: evaluator
           ),
@@ -369,7 +517,8 @@ struct SourceBookListParser {
           origin: definition.sourceURL,
           originName: definition.sourceName,
           originOrder: definition.originOrder,
-          infoHTML: bookURL == response.url ? response.body : nil
+          infoHTML: bookURL == response.url ? response.body : nil,
+          variables: await store.snapshot()
         )
       )
     }
@@ -378,13 +527,13 @@ struct SourceBookListParser {
 
   private func structuredValue(
     _ rule: HTMLCSSRule,
-    evaluator: SourceRuleConsumerEvaluator
-  ) throws -> String {
+    evaluator: SourceVariableRuleEvaluator
+  ) async throws -> String {
     let raw = rule.selector.trimmingCharacters(
       in: .whitespacesAndNewlines
     )
     guard raw != "__legado_missing__" else { return "" }
-    return try evaluator.getString(raw).trimmingCharacters(
+    return try await evaluator.getString(raw).trimmingCharacters(
       in: .whitespacesAndNewlines
     )
   }

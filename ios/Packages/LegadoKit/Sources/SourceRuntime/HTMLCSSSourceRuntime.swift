@@ -181,6 +181,7 @@ public struct SourceBook: Sendable, Equatable {
   public let bookEndpoint: SourceEndpoint
   public let coverURL: URL?
   public let tocEndpoint: SourceEndpoint?
+  public let variables: [String: String]
 
   public var bookURL: URL {
     bookEndpoint.logicalURL
@@ -199,7 +200,8 @@ public struct SourceBook: Sendable, Equatable {
     lastChapter: String?,
     bookURL: URL,
     coverURL: URL?,
-    tocURL: URL?
+    tocURL: URL?,
+    variables: [String: String] = [:]
   ) {
     self.init(
       name: name,
@@ -210,7 +212,8 @@ public struct SourceBook: Sendable, Equatable {
       lastChapter: lastChapter,
       bookEndpoint: .plain(bookURL),
       coverURL: coverURL,
-      tocEndpoint: tocURL.map(SourceEndpoint.plain)
+      tocEndpoint: tocURL.map(SourceEndpoint.plain),
+      variables: variables
     )
   }
 
@@ -223,7 +226,8 @@ public struct SourceBook: Sendable, Equatable {
     lastChapter: String?,
     bookEndpoint: SourceEndpoint,
     coverURL: URL?,
-    tocEndpoint: SourceEndpoint?
+    tocEndpoint: SourceEndpoint?,
+    variables: [String: String] = [:]
   ) {
     self.name = name
     self.author = author
@@ -234,6 +238,24 @@ public struct SourceBook: Sendable, Equatable {
     self.bookEndpoint = bookEndpoint
     self.coverURL = coverURL
     self.tocEndpoint = tocEndpoint
+    self.variables = variables
+  }
+
+  public func replacingVariables(
+    _ variables: [String: String]
+  ) -> SourceBook {
+    SourceBook(
+      name: name,
+      author: author,
+      intro: intro,
+      kind: kind,
+      wordCount: wordCount,
+      lastChapter: lastChapter,
+      bookEndpoint: bookEndpoint,
+      coverURL: coverURL,
+      tocEndpoint: tocEndpoint,
+      variables: variables
+    )
   }
 }
 
@@ -244,6 +266,7 @@ public struct SourceChapter: Sendable, Equatable {
   public let isPay: Bool
   public let isVIP: Bool
   public let isVolume: Bool
+  public let variables: [String: String]
 
   public var url: URL {
     endpoint.logicalURL
@@ -255,7 +278,8 @@ public struct SourceChapter: Sendable, Equatable {
     url: URL,
     isPay: Bool,
     isVIP: Bool,
-    isVolume: Bool
+    isVolume: Bool,
+    variables: [String: String] = [:]
   ) {
     self.init(
       index: index,
@@ -263,7 +287,8 @@ public struct SourceChapter: Sendable, Equatable {
       endpoint: .plain(url),
       isPay: isPay,
       isVIP: isVIP,
-      isVolume: isVolume
+      isVolume: isVolume,
+      variables: variables
     )
   }
 
@@ -273,7 +298,8 @@ public struct SourceChapter: Sendable, Equatable {
     endpoint: SourceEndpoint,
     isPay: Bool,
     isVIP: Bool,
-    isVolume: Bool
+    isVolume: Bool,
+    variables: [String: String] = [:]
   ) {
     self.index = index
     self.title = title
@@ -281,17 +307,40 @@ public struct SourceChapter: Sendable, Equatable {
     self.isPay = isPay
     self.isVIP = isVIP
     self.isVolume = isVolume
+    self.variables = variables
   }
 }
 
 public struct SourceContent: Sendable, Equatable {
   public let chapterURL: URL
   public let content: String
+  public let variables: [String: String]
+
+  public init(
+    chapterURL: URL,
+    content: String,
+    variables: [String: String] = [:]
+  ) {
+    self.chapterURL = chapterURL
+    self.content = content
+    self.variables = variables
+  }
 }
 
 public struct SourceTOCPage: Sendable, Equatable {
   public let chapters: [SourceChapter]
   public let nextEndpoints: [SourceEndpoint]
+  public let bookVariables: [String: String]
+
+  public init(
+    chapters: [SourceChapter],
+    nextEndpoints: [SourceEndpoint],
+    bookVariables: [String: String] = [:]
+  ) {
+    self.chapters = chapters
+    self.nextEndpoints = nextEndpoints
+    self.bookVariables = bookVariables
+  }
 }
 
 public struct SourceContentPage: Sendable, Equatable {
@@ -478,7 +527,97 @@ public struct HTMLCSSSourceRuntime: Sendable {
         base: redirectURL,
         fallback: existing.coverURL
       ),
-      tocEndpoint: toc
+      tocEndpoint: toc,
+      variables: existing.variables
+    )
+  }
+
+  public func bookInfo(
+    html: String,
+    baseURL: URL,
+    redirectURL: URL,
+    existing: SourceBook,
+    canRename: Bool,
+    variableStore: SourceVariableStore
+  ) async throws -> SourceBook {
+    let resolver = SourceVariableResolver(
+      role: .rule,
+      scopes: SourceVariableScopes(
+        book: variableStore,
+        ruleData: variableStore,
+        bookName: existing.name
+      )
+    )
+    let rules = definition.bookInfo
+    let strings: (HTMLCSSRule) async throws -> String?
+    if usesStructuredRules(
+      content: html,
+      rules: [rules.name, rules.author, rules.tocURL]
+    ) {
+      let evaluator = SourceVariableRuleEvaluator(
+        content: html,
+        resolver: resolver
+      )
+      strings = { rule in
+        let value = try await evaluator.getString(rule.selector)
+          .trimmingCharacters(in: .whitespacesAndNewlines)
+        return value.isEmpty ? nil : value
+      }
+    } else {
+      let document = try parse(html)
+      let evaluator = SourceVariableHTMLRuleEvaluator(
+        document: document,
+        node: document.root,
+        resolver: resolver
+      )
+      strings = { rule in
+        try await evaluator.string(rule)
+      }
+    }
+    let parsedName = normalizeName(
+      try await strings(rules.name)
+    )
+    let parsedAuthor = normalizeAuthor(
+      try await strings(rules.author)
+    )
+    let mayRename = canRename && rules.allowsRename
+    let name = replacement(
+      existing: existing.name,
+      parsed: parsedName,
+      mayReplaceExisting: mayRename
+    )
+    guard !name.isEmpty else {
+      throw SourceRuntimeIssue(
+        stage: .fieldEvaluation,
+        code: .ruleFailed
+      )
+    }
+    let rawTOC = try await strings(rules.tocURL)
+    let rawCover = try await strings(rules.coverURL)
+    return SourceBook(
+      name: name,
+      author: replacement(
+        existing: existing.author,
+        parsed: parsedAuthor,
+        mayReplaceExisting: mayRename
+      ),
+      intro: try await strings(rules.intro) ?? existing.intro,
+      kind: try await strings(rules.kind) ?? existing.kind,
+      wordCount: normalizeWordCount(
+        try await strings(rules.wordCount)
+          ?? existing.wordCount
+      ),
+      lastChapter:
+        try await strings(rules.lastChapter)
+        ?? existing.lastChapter,
+      bookEndpoint: existing.bookEndpoint,
+      coverURL: rawCover.flatMap {
+        URL(string: $0, relativeTo: redirectURL)?.absoluteURL
+      } ?? existing.coverURL,
+      tocEndpoint: try rawTOC.map {
+        try SourceEndpoint(resolving: $0, relativeTo: baseURL)
+      } ?? existing.bookEndpoint,
+      variables: await variableStore.snapshot()
     )
   }
 
@@ -510,6 +649,150 @@ public struct HTMLCSSSourceRuntime: Sendable {
         rule: definition.toc.nextTocURL,
         currentEndpoint: tocEndpoint
       )
+    )
+  }
+
+  public func chapterPage(
+    html: String,
+    tocEndpoint: SourceEndpoint,
+    variableStore: SourceVariableStore
+  ) async throws -> SourceTOCPage {
+    let bookResolver = SourceVariableResolver(
+      role: .rule,
+      scopes: SourceVariableScopes(
+        book: variableStore,
+        ruleData: variableStore
+      )
+    )
+    let rules = definition.toc
+    let chapters: [SourceChapter]
+    let nextValues: [String]
+    if usesStructuredRules(
+      content: html,
+      rules: [
+        HTMLCSSRule(rules.list),
+        rules.name,
+        rules.url,
+      ]
+    ) {
+      let listEvaluator = SourceVariableRuleEvaluator(
+        content: html,
+        resolver: bookResolver
+      )
+      let elements = try await listEvaluator.getElements(rules.list)
+      chapters = try await elements.enumerated().asyncMap {
+        index, element in
+        let data = try JSONValueCodec.encode(element)
+        let localContent = String(decoding: data, as: UTF8.self)
+        let chapterStore = SourceVariableStore()
+        let evaluator = SourceVariableRuleEvaluator(
+          content: localContent,
+          resolver: SourceVariableResolver(
+            role: .rule,
+            scopes: SourceVariableScopes(
+              chapter: chapterStore,
+              book: variableStore,
+              ruleData: variableStore
+            )
+          )
+        )
+        let title = try await evaluator.getString(
+          rules.name.selector
+        )
+        let rawURL = try await evaluator.getString(
+          rules.url.selector
+        )
+        guard !title.isEmpty, !rawURL.isEmpty else {
+          throw SourceRuntimeIssue(
+            stage: .fieldEvaluation,
+            code: .ruleFailed
+          )
+        }
+        return SourceChapter(
+          index: index,
+          title: title,
+          endpoint: try SourceEndpoint(
+            resolving: rawURL,
+            relativeTo: tocEndpoint.logicalURL
+          ),
+          isPay: false,
+          isVIP: false,
+          isVolume: false,
+          variables: await chapterStore.snapshot()
+        )
+      }
+      if let nextRule = rules.nextTocURL {
+        nextValues =
+          try await listEvaluator.getStringList(
+            nextRule.selector
+          ) ?? []
+      } else {
+        nextValues = []
+      }
+    } else {
+      let document = try parse(html)
+      let listEvaluator = SourceVariableHTMLRuleEvaluator(
+        document: document,
+        node: document.root,
+        resolver: bookResolver
+      )
+      let nodes = try await listEvaluator.elements(rules.list)
+      chapters = try await nodes.enumerated().asyncMap {
+        index, node in
+        let chapterStore = SourceVariableStore()
+        let evaluator = SourceVariableHTMLRuleEvaluator(
+          document: document,
+          node: node,
+          resolver: SourceVariableResolver(
+            role: .rule,
+            scopes: SourceVariableScopes(
+              chapter: chapterStore,
+              book: variableStore,
+              ruleData: variableStore
+            )
+          )
+        )
+        guard
+          let title = try await evaluator.string(rules.name),
+          let rawURL = try await evaluator.string(rules.url)
+        else {
+          throw SourceRuntimeIssue(
+            stage: .fieldEvaluation,
+            code: .ruleFailed
+          )
+        }
+        return SourceChapter(
+          index: index,
+          title: title,
+          endpoint: try SourceEndpoint(
+            resolving: rawURL,
+            relativeTo: tocEndpoint.logicalURL
+          ),
+          isPay: false,
+          isVIP: false,
+          isVolume: false,
+          variables: await chapterStore.snapshot()
+        )
+      }
+      if let nextRule = rules.nextTocURL {
+        nextValues = try await listEvaluator.strings(nextRule)
+      } else {
+        nextValues = []
+      }
+    }
+    guard !chapters.isEmpty else {
+      throw SourceRuntimeIssue(
+        stage: .fieldEvaluation,
+        code: .ruleFailed
+      )
+    }
+    return SourceTOCPage(
+      chapters: chapters,
+      nextEndpoints: resolvedPaginationEndpoints(
+        nextValues,
+        currentEndpoint: tocEndpoint
+      ),
+      bookVariables: await variableStore.snapshot()
     )
   }
 
@@ -580,6 +863,97 @@ public struct HTMLCSSSourceRuntime: Sendable {
     )
   }
 
+  public func contentPage(
+    html: String,
+    chapterEndpoint: SourceEndpoint,
+    bookVariables: [String: String],
+    chapterVariables: [String: String]
+  ) async throws -> SourceContentPage {
+    let bookStore = SourceVariableStore(values: bookVariables)
+    let chapterStore = SourceVariableStore(values: chapterVariables)
+    let resolver = SourceVariableResolver(
+      role: .rule,
+      scopes: SourceVariableScopes(
+        chapter: chapterStore,
+        book: bookStore,
+        ruleData: bookStore
+      )
+    )
+    let rules = definition.content
+    let value: String
+    let nextValues: [String]
+    if usesStructuredRules(
+      content: html,
+      rules: [rules.content]
+    ) {
+      let evaluator = SourceVariableRuleEvaluator(
+        content: html,
+        resolver: resolver
+      )
+      value = try await evaluator.getString(
+        rules.content.selector
+      )
+      if let nextRule = rules.nextContentURL {
+        nextValues =
+          try await evaluator.getStringList(
+            nextRule.selector
+          ) ?? []
+      } else {
+        nextValues = []
+      }
+    } else {
+      let document = try parse(html)
+      let evaluator = SourceVariableHTMLRuleEvaluator(
+        document: document,
+        node: document.root,
+        resolver: resolver
+      )
+      let executionRule = try await evaluator.prepare(
+        rules.content
+      )
+      guard
+        let node = try document.select(
+          HTMLCSSRule(executionRule).cssSelector
+        ).first
+      else {
+        throw SourceRuntimeIssue(
+          stage: .fieldEvaluation,
+          code: .ruleFailed
+        )
+      }
+      value = formattedContent(
+        node: node,
+        chapterURL: chapterEndpoint.logicalURL
+      )
+      if let nextRule = rules.nextContentURL {
+        nextValues = try await evaluator.strings(nextRule)
+      } else {
+        nextValues = []
+      }
+    }
+    guard
+      !value.trimmingCharacters(
+        in: .whitespacesAndNewlines
+      ).isEmpty
+    else {
+      throw SourceRuntimeIssue(
+        stage: .fieldEvaluation,
+        code: .ruleFailed
+      )
+    }
+    return SourceContentPage(
+      content: SourceContent(
+        chapterURL: chapterEndpoint.logicalURL,
+        content: value,
+        variables: await chapterStore.snapshot()
+      ),
+      nextEndpoints: resolvedPaginationEndpoints(
+        nextValues,
+        currentEndpoint: chapterEndpoint
+      )
+    )
+  }
+
   private func parsedContent(
     html: String,
     chapterURL: URL
@@ -612,6 +986,17 @@ public struct HTMLCSSSourceRuntime: Sendable {
     else {
       throw SourceRuntimeIssue(stage: .fieldEvaluation, code: .ruleFailed)
     }
+    let value = formattedContent(node: node, chapterURL: chapterURL)
+    guard !value.isEmpty else {
+      throw SourceRuntimeIssue(stage: .fieldEvaluation, code: .ruleFailed)
+    }
+    return SourceContent(chapterURL: chapterURL, content: value)
+  }
+
+  private func formattedContent(
+    node: HTMLNode,
+    chapterURL: URL
+  ) -> String {
     let lines = node.children.compactMap { child -> String? in
       switch child.name {
       case "p":
@@ -627,10 +1012,7 @@ public struct HTMLCSSSourceRuntime: Sendable {
         return text.isEmpty ? nil : "　　" + text
       }
     }
-    guard !lines.isEmpty else {
-      throw SourceRuntimeIssue(stage: .fieldEvaluation, code: .ruleFailed)
-    }
-    return SourceContent(chapterURL: chapterURL, content: lines.joined(separator: "\n"))
+    return lines.joined(separator: "\n")
   }
 
   private func paginationEndpoints(
@@ -659,6 +1041,16 @@ public struct HTMLCSSSourceRuntime: Sendable {
         }
       }
     }
+    return resolvedPaginationEndpoints(
+      rawValues,
+      currentEndpoint: currentEndpoint
+    )
+  }
+
+  private func resolvedPaginationEndpoints(
+    _ rawValues: [String],
+    currentEndpoint: SourceEndpoint
+  ) -> [SourceEndpoint] {
     var seen: Set<String> = []
     return rawValues.compactMap { raw in
       guard
@@ -900,7 +1292,8 @@ public struct HTMLCSSSourceRuntime: Sendable {
       } ?? existing.coverURL,
       tocEndpoint: try rawTOC.map {
         try SourceEndpoint(resolving: $0, relativeTo: baseURL)
-      } ?? existing.bookEndpoint
+      } ?? existing.bookEndpoint,
+      variables: existing.variables
     )
   }
 
@@ -989,5 +1382,17 @@ public struct HTMLCSSSourceRuntime: Sendable {
     }
     guard let data = content.data(using: .utf8) else { return false }
     return (try? JSONSerialization.jsonObject(with: data)) != nil
+  }
+}
+
+private extension Sequence {
+  func asyncMap<Result>(
+    _ transform: (Element) async throws -> Result
+  ) async rethrows -> [Result] {
+    var values: [Result] = []
+    for element in self {
+      values.append(try await transform(element))
+    }
+    return values
   }
 }

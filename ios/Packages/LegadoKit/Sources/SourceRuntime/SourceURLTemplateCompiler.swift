@@ -43,6 +43,24 @@ public struct SourceURLTemplateCompilation: Equatable, Sendable {
 
 public enum SourceURLTemplateCompiler {
   public static func compile(
+    _ input: SourceURLTemplateInput,
+    resolver: SourceVariableResolver
+  ) async throws -> SourceURLTemplateCompilation {
+    let rendered = try await SourceVariableTemplateRenderer.render(
+      input.template,
+      resolver: resolver
+    )
+    return try compile(
+      SourceURLTemplateInput(
+        template: rendered,
+        key: input.key,
+        page: input.page,
+        baseURL: input.baseURL
+      )
+    )
+  }
+
+  public static func compile(
     _ input: SourceURLTemplateInput
   ) throws -> SourceURLTemplateCompilation {
     let scriptRendered = try renderScriptBlock(
