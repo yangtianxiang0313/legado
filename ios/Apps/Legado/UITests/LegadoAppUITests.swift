@@ -1768,6 +1768,79 @@ final class LegadoAppUITests: XCTestCase {
         )
     }
 
+    func testReaderPreferencesMilestone() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+            "--reset-reader-preferences",
+            "--seed-offline-cache",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        openSeededReader()
+        requireButton("action.reader.openPrimaryMenu").tap()
+        requireByScrolling(
+            "action.reader.openAppearance",
+            in: "overlay.reader.primaryMenu"
+        ).tap()
+        require("overlay.reader.appearance")
+        let darkTheme = require("action.reader.toggleTheme")
+        XCTAssertTrue(darkTheme.label.contains("切换为深色模式"))
+        darkTheme.tap()
+        XCTAssertTrue(
+            require("action.reader.toggleTheme").label.contains(
+                "切换为浅色模式"
+            )
+        )
+        require("action.reader.fontSize.increment").tap()
+        XCTAssertTrue(
+            app.staticTexts["字号 21"].waitForExistence(timeout: 8)
+        )
+
+        app.terminate()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+        ]
+        app.launch()
+
+        require("screen.root.shelf")
+        openSeededReader()
+        requireButton("action.reader.openPrimaryMenu").tap()
+        requireByScrolling(
+            "action.reader.openAppearance",
+            in: "overlay.reader.primaryMenu"
+        ).tap()
+        require("overlay.reader.appearance")
+        let restoredTheme = require("action.reader.toggleTheme")
+        XCTAssertTrue(
+            restoredTheme.label.contains("切换为浅色模式")
+        )
+        XCTAssertTrue(
+            app.staticTexts["字号 21"].waitForExistence(timeout: 8)
+        )
+    }
+
+    private func openSeededReader() {
+        let book = app.staticTexts["星河纪事"].firstMatch
+        XCTAssertTrue(book.waitForExistence(timeout: 8))
+        book.tap()
+        require("screen.bookDetail")
+        requireButton("action.bookDetail.startReading").tap()
+        if element("screen.chapterTOC").waitForExistence(timeout: 2) {
+            require("action.chapter.select.0").tap()
+        }
+        require("screen.reader")
+    }
+
     private func waitForLabel(
         _ label: String,
         identifier: String,

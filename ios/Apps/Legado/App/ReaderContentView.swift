@@ -1,6 +1,7 @@
 import AppNavigation
 import AppUseCases
 import LibraryDomain
+import ReaderCore
 import SwiftUI
 
 struct ReaderContentView: View {
@@ -8,6 +9,7 @@ struct ReaderContentView: View {
     @Bindable var library: ShelfLibrary
     let persistedSources: [BookSourceDraft]
     @Bindable var readAloud: ReadAloudSession
+    @Bindable var readerPreferences: ReaderPreferencesStore
     let openTOC: () -> Void
     let openChapter: (ChapterID, Int) -> Void
     let openSourceEditor: (String?) -> Void
@@ -18,11 +20,6 @@ struct ReaderContentView: View {
     @State private var menuPresented = false
     @State private var menuPath: [ReaderMenuLayer] = []
     @State private var chapters: [BookChapter] = []
-    @State private var isDarkTheme = false
-    @State private var brightness = 1.0
-    @State private var fontSize = 17.0
-    @State private var lineSpacing = 8.0
-    @State private var autoPageEnabled = false
     @State private var bookmarked = false
     @State private var searchQuery = ""
     @State private var searchResults: [ReaderSearchResult] = []
@@ -34,6 +31,7 @@ struct ReaderContentView: View {
         library: ShelfLibrary,
         persistedSources: [BookSourceDraft],
         readAloud: ReadAloudSession,
+        readerPreferences: ReaderPreferencesStore,
         openTOC: @escaping () -> Void,
         openChapter: @escaping (ChapterID, Int) -> Void,
         openSourceEditor: @escaping (String?) -> Void
@@ -42,6 +40,7 @@ struct ReaderContentView: View {
         self.library = library
         self.persistedSources = persistedSources
         self.readAloud = readAloud
+        self.readerPreferences = readerPreferences
         self.openTOC = openTOC
         self.openChapter = openChapter
         self.openSourceEditor = openSourceEditor
@@ -67,8 +66,14 @@ struct ReaderContentView: View {
                             .font(.title2.bold())
                             .accessibilityIdentifier("label.reader.chapterTitle")
                         Text(document.content)
-                            .font(.system(size: fontSize))
-                            .lineSpacing(lineSpacing)
+                            .font(
+                                .system(
+                                    size: readerPreferences.value.fontSize
+                                )
+                            )
+                            .lineSpacing(
+                                readerPreferences.value.lineSpacing
+                            )
                             .textSelection(.enabled)
                             .contextMenu {
                                 textSelectionMenu
@@ -93,8 +98,11 @@ struct ReaderContentView: View {
         }
         .navigationTitle("阅读")
         .navigationBarTitleDisplayMode(.inline)
-        .preferredColorScheme(isDarkTheme ? .dark : .light)
-        .brightness(brightness - 1)
+        .environment(
+            \.colorScheme,
+            readerPreferences.value.darkTheme ? .dark : .light
+        )
+        .brightness(readerPreferences.value.brightness - 1)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
@@ -302,7 +310,7 @@ struct ReaderContentView: View {
 
                 Toggle(
                     "自动翻页",
-                    isOn: $autoPageEnabled
+                    isOn: autoPageBinding
                 )
                 .accessibilityIdentifier(
                     ReaderMenuAction.toggleAutoPage.accessibilityIdentifier
@@ -325,14 +333,39 @@ struct ReaderContentView: View {
     private var appearanceMenu: some View {
         Form {
             Section("主题") {
-                Toggle("深色模式", isOn: $isDarkTheme)
-                    .accessibilityIdentifier(
-                        ReaderMenuAction.toggleTheme.accessibilityIdentifier
+                Button {
+                    readerPreferences.setDarkTheme(
+                        !readerPreferences.value.darkTheme
                     )
+                } label: {
+                    HStack {
+                        Label(
+                            readerPreferences.value.darkTheme
+                                ? "切换为浅色模式"
+                                : "切换为深色模式",
+                            systemImage: readerPreferences.value.darkTheme
+                                ? "sun.max"
+                                : "moon"
+                        )
+                        Spacer()
+                        Text(
+                            readerPreferences.value.darkTheme
+                                ? "深色"
+                                : "浅色"
+                        )
+                        .foregroundStyle(.secondary)
+                    }
+                }
+                .accessibilityIdentifier(
+                    ReaderMenuAction.toggleTheme.accessibilityIdentifier
+                )
 
                 VStack(alignment: .leading) {
                     Text("亮度")
-                    Slider(value: $brightness, in: 0.4...1)
+                    Slider(
+                        value: brightnessBinding,
+                        in: ReaderPreferences.brightnessRange
+                    )
                         .accessibilityIdentifier(
                             ReaderMenuAction.updateBrightness
                                 .accessibilityIdentifier
@@ -341,16 +374,51 @@ struct ReaderContentView: View {
             }
 
             Section("排版") {
+                HStack {
+                    Text(
+                        "字号 \(Int(readerPreferences.value.fontSize))"
+                    )
+                    .accessibilityIdentifier(
+                        "label.reader.fontSizeValue"
+                    )
+                    Spacer()
+                    Button {
+                        readerPreferences.setFontSize(
+                            readerPreferences.value.fontSize - 1
+                        )
+                    } label: {
+                        Image(systemName: "minus")
+                    }
+                    .buttonStyle(.borderless)
+                    .disabled(
+                        readerPreferences.value.fontSize
+                            <= ReaderPreferences.fontSizeRange.lowerBound
+                    )
+                    .accessibilityIdentifier(
+                        "action.reader.fontSize.decrement"
+                    )
+                    Button {
+                        readerPreferences.setFontSize(
+                            readerPreferences.value.fontSize + 1
+                        )
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                    .buttonStyle(.borderless)
+                    .disabled(
+                        readerPreferences.value.fontSize
+                            >= ReaderPreferences.fontSizeRange.upperBound
+                    )
+                    .accessibilityIdentifier(
+                        "action.reader.fontSize.increment"
+                    )
+                }
                 Stepper(
-                    "字号 \(Int(fontSize))",
-                    value: $fontSize,
-                    in: 12...32
+                    "行距 \(Int(readerPreferences.value.lineSpacing))",
+                    value: lineSpacingBinding,
+                    in: ReaderPreferences.lineSpacingRange
                 )
-                Stepper(
-                    "行距 \(Int(lineSpacing))",
-                    value: $lineSpacing,
-                    in: 0...20
-                )
+                .accessibilityIdentifier("action.reader.updateLineSpacing")
                 .accessibilityIdentifier(
                     ReaderMenuAction.updateAppearance.accessibilityIdentifier
                 )
@@ -703,6 +771,34 @@ struct ReaderContentView: View {
         case .failed:
             return readAloud.errorMessage ?? "朗读失败"
         }
+    }
+
+    private var brightnessBinding: Binding<Double> {
+        Binding(
+            get: { readerPreferences.value.brightness },
+            set: { readerPreferences.setBrightness($0) }
+        )
+    }
+
+    private var fontSizeBinding: Binding<Double> {
+        Binding(
+            get: { readerPreferences.value.fontSize },
+            set: { readerPreferences.setFontSize($0) }
+        )
+    }
+
+    private var lineSpacingBinding: Binding<Double> {
+        Binding(
+            get: { readerPreferences.value.lineSpacing },
+            set: { readerPreferences.setLineSpacing($0) }
+        )
+    }
+
+    private var autoPageBinding: Binding<Bool> {
+        Binding(
+            get: { readerPreferences.value.autoPageEnabled },
+            set: { readerPreferences.setAutoPageEnabled($0) }
+        )
     }
 
     private func requestNextReadAloudChapter() {
