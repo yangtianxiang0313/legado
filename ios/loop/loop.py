@@ -42,7 +42,7 @@ NON_RUNTIME_CLAIM_KINDS = frozenset(
         "composite_static_fact",
     }
 )
-SOURCE_UI_DELIVERY_CONTRACTS = {
+DIRECT_SOURCE_DELIVERY_CONTRACTS = {
     "ui.reader.multilevel-menu": {
         "target": "IOS-APP-NAVIGATION-READER-MULTILEVEL-MENU-001",
         "fixture_id": "source-ui-reader-multilevel-menu-v1",
@@ -57,6 +57,12 @@ SOURCE_UI_DELIVERY_CONTRACTS = {
         "target": "IOS-APP-NAVIGATION-DISCOVERY-EXPLORE-FLOW-001",
         "fixture_id": "source-ui-discovery-explore-flow-v1",
         "validation": "simulator",
+    },
+    "library.shelf.sort-and-unread-runtime": {
+        "target": "IOS-LIBRARY-DOMAIN-SHELF-SORT-UNREAD-001",
+        "fixture_id": "source-library-shelf-sort-unread-v1",
+        "validation": "tests",
+        "test_filter": "LibraryDomainTests",
     },
 }
 
@@ -969,15 +975,15 @@ def direct_characterization_deliveries(
     return sorted(deliveries, key=lambda value: str(value["target"]))
 
 
-def direct_source_ui_deliveries(
+def direct_source_deliveries(
     root: Path,
 ) -> list[Mapping[str, Any]]:
-    """Turn a frozen Android UI topology directly into an iOS delivery.
+    """Turn an allow-listed frozen-source contract into an iOS delivery.
 
-    Static menus and deterministic state mutations do not need a dedicated
-    Android instrumented runner. They may be consumed from source when the
-    current claim explicitly declares ``runtime_requirement=none``. Simulator
-    acceptance remains opt-in for complete visible flows.
+    Static topology and deterministic policies do not need a dedicated Android
+    instrumented runner. Runtime branches must already be covered elsewhere or
+    remain in the normal characterization queue. Simulator acceptance remains
+    opt-in for complete visible flows.
     """
     completed = completed_task_ids(root)
     characterized = characterized_claim_refs(root)
@@ -992,12 +998,12 @@ def direct_source_ui_deliveries(
             if not isinstance(claim, dict):
                 continue
             claim_ref = (claim.get("id"), claim.get("revision"))
-            contract = SOURCE_UI_DELIVERY_CONTRACTS.get(
+            contract = DIRECT_SOURCE_DELIVERY_CONTRACTS.get(
                 str(claim.get("semantic_key"))
             )
             source_ready = (
                 claim_ref in characterized
-                or is_direct_source_ui_claim(claim)
+                or is_direct_source_claim(claim)
             )
             if (
                 contract is None
@@ -1053,6 +1059,11 @@ def direct_source_ui_deliveries(
                         },
                         "fixture_id": contract["fixture_id"],
                         "validation": contract["validation"],
+                        **(
+                            {"test_filter": contract["test_filter"]}
+                            if "test_filter" in contract
+                            else {}
+                        ),
                     },
                 }
             )
@@ -1300,7 +1311,7 @@ def prioritized_work(
     known_targets = {str(value["target"]) for value in deliveries}
     deliveries.extend(
         value
-        for value in direct_source_ui_deliveries(root)
+        for value in direct_source_deliveries(root)
         if str(value["target"]) not in known_targets
     )
     known_targets = {str(value["target"]) for value in deliveries}
@@ -1521,7 +1532,7 @@ def pending_characterizations(root: Path) -> list[Mapping[str, Any]]:
                 or candidate_revisions.get(claim_id, 0) > revision
                 or (claim_id, revision) in characterized
                 or (claim_id, revision) in reused
-                or is_direct_source_ui_claim(claim)
+                or is_direct_source_claim(claim)
             ):
                 continue
             dependencies = {
@@ -1564,8 +1575,8 @@ def characterization_task_id(semantic_key: str) -> str:
     return f"IOS-CHARACTERIZE-{slug}-001"
 
 
-def is_direct_source_ui_claim(claim: Mapping[str, Any]) -> bool:
-    """Whether an explicit UI contract can be implemented from frozen source.
+def is_direct_source_claim(claim: Mapping[str, Any]) -> bool:
+    """Whether an explicit contract can be implemented from frozen source.
 
     This is intentionally allow-listed. It prevents a broad "all UI is static"
     shortcut while avoiding an Android instrumented runner for topology whose
@@ -1574,7 +1585,7 @@ def is_direct_source_ui_claim(claim: Mapping[str, Any]) -> bool:
     """
     support = claim.get("support")
     return (
-        str(claim.get("semantic_key")) in SOURCE_UI_DELIVERY_CONTRACTS
+        str(claim.get("semantic_key")) in DIRECT_SOURCE_DELIVERY_CONTRACTS
         and isinstance(support, dict)
         and support.get("state") == "candidate_source_anchored"
         and bool(support.get("source_anchors"))
@@ -2386,9 +2397,14 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             else None
         )
         if (
-            source_validation not in {"build", "simulator"}
+            source_validation not in {"build", "simulator", "tests"}
             or source_validation == "simulator"
             and not isinstance(ui_acceptance, dict)
+            or source_validation == "tests"
+            and (
+                not isinstance(source_contract.get("test_filter"), str)
+                or not source_contract["test_filter"].strip()
+            )
         ):
             raise LoopError("SOURCE_VALIDATION_INVALID")
         source = {
@@ -2404,7 +2420,40 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             },
         }
         allowed_paths = list(architecture["allowed_paths"])
-        if source_validation == "build":
+        if source_validation in {"build", "tests"}:
+            if source_validation == "tests":
+                acceptance_command = {
+                    "id": "focused-swift-tests",
+                    "argv": [
+                        "swift",
+                        "test",
+                        "--package-path",
+                        "ios/Packages/LegadoKit",
+                        "--disable-automatic-resolution",
+                        "--filter",
+                        source_contract["test_filter"],
+                    ],
+                    "required_output_pattern": (
+                        r"Executed [1-9][0-9]* tests?, with 0 failures"
+                    ),
+                    "timeout_seconds": 600,
+                }
+            else:
+                acceptance_command = {
+                    "id": "ios-app-build",
+                    "argv": [
+                        "xcodebuild",
+                        "-project",
+                        "ios/Apps/Legado/Legado.xcodeproj",
+                        "-scheme",
+                        "LegadoApp",
+                        "-destination",
+                        "generic/platform=iOS Simulator",
+                        "CODE_SIGNING_ALLOWED=NO",
+                        "build",
+                    ],
+                    "timeout_seconds": 900,
+                }
             return {
                 "schema_version": SCHEMA_VERSION,
                 "id": target,
@@ -2432,23 +2481,7 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
                 },
                 "acceptance": {
                     "profile": "slice",
-                    "commands": [
-                        {
-                            "id": "ios-app-build",
-                            "argv": [
-                                "xcodebuild",
-                                "-project",
-                                "ios/Apps/Legado/Legado.xcodeproj",
-                                "-scheme",
-                                "LegadoApp",
-                                "-destination",
-                                "generic/platform=iOS Simulator",
-                                "CODE_SIGNING_ALLOWED=NO",
-                                "build",
-                            ],
-                            "timeout_seconds": 900,
-                        }
-                    ],
+                    "commands": [acceptance_command],
                 },
                 "knowledge_updates": {
                     "required_on_completion": [
@@ -2936,7 +2969,7 @@ def queue_status(root: Path) -> Mapping[str, Any]:
     known_targets = {str(value["target"]) for value in deliveries}
     deliveries.extend(
         value
-        for value in direct_source_ui_deliveries(root)
+        for value in direct_source_deliveries(root)
         if str(value["target"]) not in known_targets
     )
     known_targets = {str(value["target"]) for value in deliveries}

@@ -878,7 +878,7 @@ class MinimalLoopTests(unittest.TestCase):
 
             self.assertEqual([], loop.pending_characterizations(root))
 
-    def test_allowlisted_source_ui_flow_skips_android_ui_runner(self):
+    def test_allowlisted_source_contract_skips_duplicate_android_runner(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             self.write(
@@ -925,23 +925,52 @@ class MinimalLoopTests(unittest.TestCase):
                                     {"path": "ExploreShowActivity.kt"},
                                 ],
                             },
-                        }
+                        },
+                        {
+                            "id": "BKC-SHELF-SORT-UNREAD-001",
+                            "revision": 1,
+                            "semantic_key": (
+                                "library.shelf.sort-and-unread-runtime"
+                            ),
+                            "topic": "书架排序与新增章节状态",
+                            "kind": "runtime_behavior",
+                            "subject_keys": ["library.shelf"],
+                            "depends_on": [],
+                            "support": {
+                                "state": "candidate_source_anchored",
+                                "runtime_requirement": (
+                                    "android_characterization"
+                                ),
+                                "source_anchors": [
+                                    {"path": "BookGroup.kt"},
+                                    {"path": "ReadBook.kt"},
+                                ],
+                            },
+                        },
                     ],
                 },
             )
 
             self.assertEqual([], loop.pending_characterizations(root))
-            deliveries = loop.direct_source_ui_deliveries(root)
-            self.assertEqual(1, len(deliveries))
+            deliveries = loop.direct_source_deliveries(root)
+            self.assertEqual(2, len(deliveries))
+            ui = next(
+                value for value in deliveries
+                if value["target"].startswith("IOS-APP-NAVIGATION")
+            )
+            domain = next(
+                value for value in deliveries
+                if value["target"].startswith("IOS-LIBRARY-DOMAIN")
+            )
             self.assertEqual(
                 "IOS-APP-NAVIGATION-DISCOVERY-EXPLORE-FLOW-001",
-                deliveries[0]["target"],
+                ui["target"],
             )
             self.assertEqual(
                 "source-ui-discovery-explore-flow-v1",
-                deliveries[0]["source_contract"]["fixture_id"],
+                ui["source_contract"]["fixture_id"],
             )
-            task = loop.build_task(root, deliveries[0])
+            task = loop.build_task(root, ui)
             self.assertFalse(
                 (
                     root
@@ -950,6 +979,16 @@ class MinimalLoopTests(unittest.TestCase):
                 ).exists()
             )
             loop.validate_task(root, task)
+            domain_task = loop.build_task(root, domain)
+            self.assertEqual(
+                "LibraryDomainTests",
+                domain_task["source"]["source_contract"]["test_filter"],
+            )
+            self.assertEqual(
+                "focused-swift-tests",
+                domain_task["acceptance"]["commands"][0]["id"],
+            )
+            loop.validate_task(root, domain_task)
 
     def test_verified_candidate_evidence_satisfies_dependency(self):
         with tempfile.TemporaryDirectory() as directory:
