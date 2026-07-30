@@ -482,8 +482,41 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
     }
   }
 
+  public func bookmarks(
+    bookID: LibraryDomain.BookID
+  ) async throws -> [ReadingBookmark] {
+    try await database.read { db in
+      try ReadingBookmarkRecord
+        .filter(Column("bookID") == bookID.rawValue)
+        .order(
+          Column("chapterIndex").asc,
+          Column("characterOffset").asc
+        )
+        .fetchAll(db)
+        .map(\.bookmark)
+    }
+  }
+
+  public func saveBookmark(
+    _ bookmark: ReadingBookmark
+  ) async throws {
+    try await database.write { db in
+      var record = ReadingBookmarkRecord(bookmark: bookmark)
+      try record.save(db)
+    }
+  }
+
+  public func deleteBookmark(id: String) async throws {
+    try await database.write { db in
+      _ = try ReadingBookmarkRecord
+        .filter(Column("bookmarkID") == id)
+        .deleteAll(db)
+    }
+  }
+
   public func reset() async throws {
     try await database.write { db in
+      _ = try ReadingBookmarkRecord.deleteAll(db)
       _ = try ChapterContentRecord.deleteAll(db)
       _ = try ChapterRecord.deleteAll(db)
       _ = try BookRecord.deleteAll(db)
@@ -577,6 +610,27 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
           references: "books",
           columns: ["bookID"],
           onDelete: .cascade
+        )
+      }
+    }
+    migrator.registerMigration("addReaderBookmarks") { db in
+      try db.create(table: "readingBookmarks") { table in
+        table.column("bookmarkID", .text).primaryKey()
+        table.column("bookID", .text).notNull().indexed()
+        table.column("chapterID", .text).notNull()
+        table.column("chapterIndex", .integer).notNull()
+        table.column("characterOffset", .integer).notNull()
+        table.column("chapterTitle", .text).notNull()
+        table.column("excerpt", .text).notNull()
+        table.column("createdAtMilliseconds", .integer).notNull()
+        table.foreignKey(
+          ["bookID"],
+          references: "books",
+          columns: ["bookID"],
+          onDelete: .cascade
+        )
+        table.uniqueKey(
+          ["bookID", "chapterID", "characterOffset"]
         )
       }
     }
@@ -708,6 +762,45 @@ private struct ChapterContentRecord:
   var bookID: String
   var chapterID: String
   var content: String
+}
+
+private struct ReadingBookmarkRecord:
+  Codable, FetchableRecord, MutablePersistableRecord
+{
+  static let databaseTableName = "readingBookmarks"
+
+  var bookmarkID: String
+  var bookID: String
+  var chapterID: String
+  var chapterIndex: Int
+  var characterOffset: Int
+  var chapterTitle: String
+  var excerpt: String
+  var createdAtMilliseconds: Int64
+
+  init(bookmark: ReadingBookmark) {
+    bookmarkID = bookmark.id
+    bookID = bookmark.bookID.rawValue
+    chapterID = bookmark.chapterID.rawValue
+    chapterIndex = bookmark.chapterIndex
+    characterOffset = bookmark.characterOffset
+    chapterTitle = bookmark.chapterTitle
+    excerpt = bookmark.excerpt
+    createdAtMilliseconds = bookmark.createdAtMilliseconds
+  }
+
+  var bookmark: ReadingBookmark {
+    ReadingBookmark(
+      id: bookmarkID,
+      bookID: BookID(rawValue: bookID),
+      chapterID: ChapterID(rawValue: chapterID),
+      chapterIndex: chapterIndex,
+      characterOffset: characterOffset,
+      chapterTitle: chapterTitle,
+      excerpt: excerpt,
+      createdAtMilliseconds: createdAtMilliseconds
+    )
+  }
 }
 
 private struct ChapterRecord:

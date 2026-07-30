@@ -266,12 +266,13 @@ struct RootShellView: View {
                 openTOC: {
                     router.push(.chapterTOC(target.bookID), on: root)
                 },
-                openChapter: { chapterID in
+                openChapter: { chapterID, characterOffset in
                     router.replaceTop(
                         with: .reader(
                             ReaderRoute(
                                 bookID: target.bookID,
-                                chapterID: chapterID
+                                chapterID: chapterID,
+                                characterOffset: characterOffset
                             )
                         ),
                         on: root

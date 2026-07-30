@@ -1584,6 +1584,124 @@ final class LegadoAppUITests: XCTestCase {
 
     }
 
+    func testReaderToolsMilestone() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+            "--seed-offline-cache",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        let book = app.staticTexts["星河纪事"].firstMatch
+        XCTAssertTrue(book.waitForExistence(timeout: 8))
+        book.tap()
+        require("screen.bookDetail")
+        requireButton("action.bookDetail.startReading").tap()
+        require("screen.chapterTOC")
+        require("action.chapter.select.0").tap()
+        require("screen.reader")
+
+        requireButton("action.reader.openPrimaryMenu").tap()
+        requireByScrolling(
+            "action.reader.openMore",
+            in: "overlay.reader.primaryMenu"
+        ).tap()
+        require("overlay.reader.more")
+        requireByScrolling(
+            "action.reader.addBookmark",
+            in: "overlay.reader.more"
+        ).tap()
+        waitForLabel(
+            "移除书签",
+            identifier: "action.reader.addBookmark"
+        )
+
+        app.terminate()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+        ]
+        app.launch()
+        require("screen.root.shelf")
+        let restoredBook = app.staticTexts["星河纪事"].firstMatch
+        XCTAssertTrue(restoredBook.waitForExistence(timeout: 8))
+        restoredBook.tap()
+        require("screen.bookDetail")
+        requireButton("action.bookDetail.startReading").tap()
+        require("screen.reader")
+        XCTAssertEqual(
+            require("label.reader.chapterTitle").label,
+            "第一章 启航"
+        )
+        requireButton("action.reader.openPrimaryMenu").tap()
+        requireByScrolling(
+            "action.reader.openMore",
+            in: "overlay.reader.primaryMenu"
+        ).tap()
+        require("overlay.reader.more")
+        let restoredBookmark = requireByScrolling(
+            "action.reader.addBookmark",
+            in: "overlay.reader.more"
+        )
+        waitForLabel(
+            "移除书签",
+            identifier: "action.reader.addBookmark"
+        )
+        restoredBookmark.tap()
+        waitForLabel(
+            "添加书签",
+            identifier: "action.reader.addBookmark"
+        )
+
+        app.navigationBars.buttons.firstMatch.tap()
+        require("overlay.reader.primaryMenu")
+        requireByScrolling(
+            "action.reader.openMore",
+            in: "overlay.reader.primaryMenu"
+        ).tap()
+        require("overlay.reader.more")
+        requireByScrolling(
+            "action.reader.openSearch",
+            in: "overlay.reader.more"
+        ).tap()
+        require("overlay.reader.search")
+        let query = require("input.reader.search.query")
+        query.tap()
+        query.typeText("晨光")
+        requireButton("action.reader.search.submit").tap()
+        let result = app.buttons.matching(
+            NSPredicate(
+                format: "label CONTAINS %@ AND label CONTAINS %@",
+                "第一章 启航",
+                "晨光"
+            )
+        ).firstMatch
+        XCTAssertTrue(
+            result.waitForExistence(timeout: 15),
+            "Missing visible search result for 第一章 启航 / 晨光"
+        )
+        XCTAssertTrue(result.label.contains("第一章 启航"))
+        XCTAssertTrue(result.label.contains("晨光"))
+        result.tap()
+
+        require("screen.reader")
+        XCTAssertEqual(
+            require("label.reader.chapterTitle").label,
+            "第一章 启航"
+        )
+        requireButton("action.reader.openPrimaryMenu").tap()
+        let progress = require("action.reader.seekProgress")
+        XCTAssertEqual(progress.label, "1/3 · 位置 5")
+    }
+
     private func waitForLabel(
         _ label: String,
         identifier: String,

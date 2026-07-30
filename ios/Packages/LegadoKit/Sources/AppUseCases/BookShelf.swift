@@ -159,6 +159,11 @@ public protocol BookShelfRepository: Sendable {
     bookID: LibraryDomain.BookID,
     chapterID: LibraryDomain.ChapterID
   ) async throws
+  func bookmarks(
+    bookID: LibraryDomain.BookID
+  ) async throws -> [ReadingBookmark]
+  func saveBookmark(_ bookmark: ReadingBookmark) async throws
+  func deleteBookmark(id: String) async throws
   func reset() async throws
 }
 
@@ -211,13 +216,27 @@ public extension BookShelfRepository {
   ) async throws {
     throw BookImportFailure.unsupportedRepository
   }
+
+  func bookmarks(
+    bookID: LibraryDomain.BookID
+  ) async throws -> [ReadingBookmark] {
+    []
+  }
+
+  func saveBookmark(_ bookmark: ReadingBookmark) async throws {
+    throw BookImportFailure.unsupportedRepository
+  }
+
+  func deleteBookmark(id: String) async throws {
+    throw BookImportFailure.unsupportedRepository
+  }
 }
 
 @MainActor
 @Observable
 public final class ShelfLibrary {
   public private(set) var books: [ShelfBookItem] = []
-  public private(set) var errorMessage: String?
+  public internal(set) var errorMessage: String?
   public private(set) var selectedGroupID: Int?
   public private(set) var sortMode: ShelfSortMode = .recentlyRead
   public private(set) var lastBatchReport: ShelfBatchReport?

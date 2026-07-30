@@ -8,8 +8,9 @@ struct ReaderContentView: View {
     @Bindable var library: ShelfLibrary
     let persistedSources: [BookSourceDraft]
     let openTOC: () -> Void
-    let openChapter: (ChapterID) -> Void
+    let openChapter: (ChapterID, Int) -> Void
     let openSourceEditor: (String?) -> Void
+    private let contentLoader: any ReaderContentLoading
 
     @Environment(\.scenePhase) private var scenePhase
     @State private var session: ReaderContentSession
@@ -22,6 +23,9 @@ struct ReaderContentView: View {
     @State private var lineSpacing = 8.0
     @State private var autoPageEnabled = false
     @State private var bookmarked = false
+    @State private var searchQuery = ""
+    @State private var searchResults: [ReaderSearchResult] = []
+    @State private var isSearching = false
     @State private var sourceID: String?
 
     init(
@@ -29,7 +33,7 @@ struct ReaderContentView: View {
         library: ShelfLibrary,
         persistedSources: [BookSourceDraft],
         openTOC: @escaping () -> Void,
-        openChapter: @escaping (ChapterID) -> Void,
+        openChapter: @escaping (ChapterID, Int) -> Void,
         openSourceEditor: @escaping (String?) -> Void
     ) {
         self.target = target
@@ -38,13 +42,15 @@ struct ReaderContentView: View {
         self.openTOC = openTOC
         self.openChapter = openChapter
         self.openSourceEditor = openSourceEditor
+        let loader = library.readerContentLoader(
+            fallback: SearchEnvironment.makeReaderContentLoader(
+                persistedSources: persistedSources
+            )
+        )
+        contentLoader = loader
         _session = State(
             initialValue: ReaderContentSession(
-                loader: library.readerContentLoader(
-                    fallback: SearchEnvironment.makeReaderContentLoader(
-                        persistedSources: persistedSources
-                    )
-                )
+                loader: loader
             )
         )
     }
@@ -91,6 +97,7 @@ struct ReaderContentView: View {
                 Button {
                     menuPath = []
                     menuPresented = true
+                    refreshBookmarkState()
                 } label: {
                     Label("阅读菜单", systemImage: "text.justify")
                 }
@@ -117,6 +124,11 @@ struct ReaderContentView: View {
             sourceID = book.candidate.sourceID.isEmpty
                 ? nil
                 : book.candidate.sourceID
+            bookmarked = await library.isBookmarked(
+                bookID: target.bookID,
+                chapterID: chapter.id,
+                characterOffset: target.characterOffset
+            )
             await session.load(
                 book: book,
                 chapter: chapter,
@@ -140,6 +152,8 @@ struct ReaderContentView: View {
                             appearanceMenu
                         case .more:
                             moreMenu
+                        case .search:
+                            searchMenu
                         case .primary, .textSelection:
                             EmptyView()
                         }
@@ -328,10 +342,11 @@ struct ReaderContentView: View {
                 }
                 .accessibilityIdentifier("action.reader.editSource")
 
-                menuPlaceholder(
-                    .openSearch,
-                    title: "全文搜索",
-                    systemImage: "magnifyingglass"
+                NavigationLink(value: ReaderMenuLayer.search) {
+                    Label("全文搜索", systemImage: "magnifyingglass")
+                }
+                .accessibilityIdentifier(
+                    ReaderMenuAction.openSearch.accessibilityIdentifier
                 )
                 menuPlaceholder(
                     .openReplaceRules,
@@ -362,10 +377,16 @@ struct ReaderContentView: View {
                 )
             }
             Section("阅读工具") {
-                Toggle(
-                    "添加书签",
-                    isOn: $bookmarked
-                )
+                Button {
+                    toggleCurrentBookmark()
+                } label: {
+                    Label(
+                        bookmarked ? "移除书签" : "添加书签",
+                        systemImage: bookmarked
+                            ? "bookmark.fill"
+                            : "bookmark"
+                    )
+                }
                 .accessibilityIdentifier(
                     ReaderMenuAction.addBookmark.accessibilityIdentifier
                 )
@@ -401,6 +422,69 @@ struct ReaderContentView: View {
         .accessibilityIdentifier("overlay.reader.more")
     }
 
+    private var searchMenu: some View {
+        List {
+            Section {
+                TextField("搜索全书正文", text: $searchQuery)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .accessibilityIdentifier("input.reader.search.query")
+                Button {
+                    runFullTextSearch()
+                } label: {
+                    Label("搜索", systemImage: "magnifyingglass")
+                }
+                .disabled(
+                    searchQuery.trimmingCharacters(
+                        in: .whitespacesAndNewlines
+                    ).isEmpty || isSearching
+                )
+                .accessibilityIdentifier("action.reader.search.submit")
+            }
+
+            if isSearching {
+                ProgressView("正在搜索全部章节…")
+                    .accessibilityIdentifier("state.reader.search.loading")
+            } else {
+                Section("结果 \(searchResults.count)") {
+                    if searchResults.isEmpty {
+                        Text(searchQuery.isEmpty ? "输入关键词开始搜索" : "没有结果")
+                            .foregroundStyle(.secondary)
+                            .accessibilityIdentifier(
+                                "state.reader.search.empty"
+                            )
+                    }
+                    ForEach(searchResults) { result in
+                        Button {
+                            menuPresented = false
+                            openChapter(
+                                result.chapterID,
+                                result.characterOffset
+                            )
+                        } label: {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(result.chapterTitle)
+                                    .font(.headline)
+                                Text(result.excerpt)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(3)
+                            }
+                        }
+                        .accessibilityIdentifier(
+                            "action.reader.search.result."
+                                + "\(result.chapterIndex)."
+                                + "\(result.characterOffset)"
+                        )
+                    }
+                }
+            }
+        }
+        .navigationTitle("全文搜索")
+        .navigationBarTitleDisplayMode(.inline)
+        .accessibilityIdentifier("overlay.reader.search")
+    }
+
     @ViewBuilder
     private var textSelectionMenu: some View {
         Button {
@@ -411,7 +495,7 @@ struct ReaderContentView: View {
             ReaderMenuAction.selectionReadAloud.accessibilityIdentifier
         )
         Button {
-            bookmarked = true
+            toggleCurrentBookmark()
         } label: {
             Label("添加书签", systemImage: "bookmark")
         }
@@ -461,7 +545,47 @@ struct ReaderContentView: View {
         menuPresented = false
         Task {
             await saveProgress(chapter: chapter)
-            openChapter(chapter.id)
+            openChapter(chapter.id, 0)
+        }
+    }
+
+    private func toggleCurrentBookmark() {
+        guard
+            let chapter = chapters.first(where: {
+                $0.id == target.chapterID
+            }),
+            let document = session.document
+        else { return }
+        Task {
+            bookmarked = await library.toggleBookmark(
+                bookID: target.bookID,
+                chapter: chapter,
+                characterOffset: target.characterOffset,
+                content: document.content
+            )
+        }
+    }
+
+    private func refreshBookmarkState() {
+        Task {
+            bookmarked = await library.isBookmarked(
+                bookID: target.bookID,
+                chapterID: target.chapterID,
+                characterOffset: target.characterOffset
+            )
+        }
+    }
+
+    private func runFullTextSearch() {
+        isSearching = true
+        searchResults = []
+        Task {
+            searchResults = await library.searchBookContent(
+                bookID: target.bookID,
+                query: searchQuery,
+                loader: contentLoader
+            )
+            isSearching = false
         }
     }
 

@@ -2,6 +2,7 @@ public enum ReaderMenuLayer: String, CaseIterable, Codable, Hashable, Sendable {
     case primary
     case appearance
     case more
+    case search
     case textSelection
 }
 
@@ -93,6 +94,8 @@ public enum ReaderMenuCatalog {
             appearance
         case .more:
             more
+        case .search:
+            []
         case .textSelection:
             textSelection
         }

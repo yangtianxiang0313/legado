@@ -385,6 +385,79 @@ final class DatabaseGRDBTests: XCTestCase {
     XCTAssertEqual(report.failedCount, 0)
   }
 
+  func testBookmarksAndFullTextSearchSurviveRepositoryReopen()
+    async throws
+  {
+    let path = temporaryDatabasePath()
+    let repository = try GRDBBookShelfRepository(path: path)
+    let item = try await repository.add(
+      candidate(name: "星河纪事", suffix: "reader-tools"),
+      groupID: 0
+    )
+    let chapters = (0..<2).map { index in
+      BookChapter(
+        id: ChapterID(
+          sourceID: item.candidate.sourceID,
+          chapterURL: "\(item.candidate.bookURL)/\(index)"
+        ),
+        bookID: item.id,
+        sourceID: item.candidate.sourceID,
+        index: index,
+        title: index == 0 ? "第一章 启航" : "第二章 回声",
+        url: "\(item.candidate.bookURL)/\(index)"
+      )
+    }
+    _ = try await repository.applyTOCUpdate(
+      bookID: item.id,
+      update: .replaced(previousCount: 0, chapters: chapters)
+    )
+    try await repository.saveChapterContent(
+      "星港的晨光照亮甲板，晨光再次越过舷窗。",
+      bookID: item.id,
+      chapterID: chapters[0].id
+    )
+    try await repository.saveChapterContent(
+      "山谷只有回声。",
+      bookID: item.id,
+      chapterID: chapters[1].id
+    )
+    let bookmark = ReadingBookmark(
+      id: ReadingBookmark.stableID(
+        bookID: item.id,
+        chapterID: chapters[0].id,
+        characterOffset: 4
+      ),
+      bookID: item.id,
+      chapterID: chapters[0].id,
+      chapterIndex: 0,
+      characterOffset: 4,
+      chapterTitle: chapters[0].title,
+      excerpt: "星港的晨光",
+      createdAtMilliseconds: 123
+    )
+    try await repository.saveBookmark(bookmark)
+    try await repository.saveBookmark(bookmark)
+
+    let reopened = try GRDBBookShelfRepository(path: path)
+    let storedBookmarks = try await reopened.bookmarks(bookID: item.id)
+    XCTAssertEqual(storedBookmarks, [bookmark])
+    let library = ShelfLibrary(repository: reopened)
+    let results = await library.searchBookContent(
+      bookID: item.id,
+      query: "晨光",
+      loader: library.readerContentLoader(
+        fallback: UnavailableReaderLoader()
+      )
+    )
+    XCTAssertEqual(results.count, 2)
+    XCTAssertEqual(results.map(\.chapterID), [chapters[0].id, chapters[0].id])
+    XCTAssertEqual(results.map(\.characterOffset), [3, 10])
+
+    try await reopened.deleteBookmark(id: bookmark.id)
+    let deletedBookmarks = try await reopened.bookmarks(bookID: item.id)
+    XCTAssertEqual(deletedBookmarks, [])
+  }
+
   private func temporaryDatabasePath() -> String {
     FileManager.default.temporaryDirectory
       .appendingPathComponent(UUID().uuidString)
