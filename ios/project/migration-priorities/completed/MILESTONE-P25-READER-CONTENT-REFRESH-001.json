@@ -1,11 +1,26 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P25-READER-CONTENT-REFRESH-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P25 阅读正文刷新闭环",
   "objective": "依据冻结 Android ReadBookActivity 与 ReadBookViewModel 源码，实现当前章、后续章节和全部章节的正文缓存失效，并在保留当前字符位置的前提下重新抓取当前章；加载失败页提供同语义重试。",
   "validation_policy": "执行缓存范围聚焦测试和一次 App 构建；不启动模拟器，不运行全量阅读回归。",
+  "completion_evidence": [
+    "ReaderContentRefreshScope 明确 current、currentAndAfter 与 all 三种范围",
+    "AppUseCases 根据稳定章节顺序计算 chapterIDs，后续范围包含当前章",
+    "DatabaseGRDB 仅删除目标章节的正文缓存",
+    "阅读器三个刷新入口已从禁用占位替换为真实动作",
+    "刷新后保留当前字符位置重新加载，失败页提供当前章重试"
+  ],
+  "final_verification": {
+    "kind": "focused_test_and_single_app_build",
+    "completed_at": "2026-07-31T05:39:49+08:00",
+    "result": "1 个缓存范围聚焦测试和一次 App 构建通过；未运行模拟器。",
+    "evidence": [
+      ".harness-runtime/loop/IOS-APP-NAVIGATION-READER-CONTENT-REFRESH-001/attempt-1"
+    ]
+  },
   "stages": [
     {
       "id": "P25-S1",
