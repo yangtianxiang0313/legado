@@ -73,3 +73,10 @@ Loop 不再让每个小切片重复承担发布级验证：
 
 Android 真源 Golden 仍是迁移语义的权威。瘦身只移除重复验证，不把 iOS
 测试结果反向当作 Android expected。
+
+普通 Characterization 只允许一次真实 Android runner 生成 Golden，并校验
+Golden、manifest、Android commit 和 runner digest 的绑定；不再为每个业务
+切片重复执行全局 Source Lab/Business Knowledge Doctor，也不要求
+Oracle → Receipt → Publisher → Release 的多段发布往返。普通 Delivery 只跑
+所属模块的聚焦 Swift 测试和 ConformanceCLI 跨端比较；Package 全局合同留到
+checkpoint。

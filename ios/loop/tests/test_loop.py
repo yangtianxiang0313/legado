@@ -155,6 +155,13 @@ class MinimalLoopTests(unittest.TestCase):
                 for check in task["acceptance"]["commands"]
                 if check["id"] == "source-runtime-tests"
             )
+            self.assertNotIn(
+                "package-contract",
+                {
+                    check["id"]
+                    for check in task["acceptance"]["commands"]
+                },
+            )
             self.assertIn(
                 "[1-9]",
                 source_runtime_check["required_output_pattern"],
@@ -1103,11 +1110,6 @@ class MinimalLoopTests(unittest.TestCase):
                 contract["fixture_prefix"],
             ),
         )
-        self.assertEqual(
-            "integration-lab-contract",
-            contract["contract_command"]["id"],
-        )
-
         task = loop.build_characterization_task(
             Path("/tmp/unused"),
             {
@@ -1128,27 +1130,18 @@ class MinimalLoopTests(unittest.TestCase):
         )
 
         self.assertEqual("IntegrationKit", task["architecture"]["owner"])
-        self.assertEqual(
-            "integration-lab-contract",
-            task["acceptance"]["commands"][0]["id"],
-        )
         self.assertEqual("slice", task["acceptance"]["profile"])
-        self.assertEqual(
-            [
-                "integration-lab-contract",
-                "business-knowledge-contract",
-            ],
-            [
-                command["id"]
-                for command in task["acceptance"]["commands"]
-            ],
-        )
+        self.assertEqual([], task["acceptance"]["commands"])
         self.assertIn(
             "ios/harness/integration-lab/**",
             task["scope"]["allowed_paths"],
         )
         self.assertIn(
             "ios/harness/oracle/ci_proposal.py",
+            task["scope"]["allowed_paths"],
+        )
+        self.assertNotIn(
+            "ios/publisher/android_golden_publisher.py",
             task["scope"]["allowed_paths"],
         )
         self.assertIn(
@@ -1702,17 +1695,14 @@ class MinimalLoopTests(unittest.TestCase):
                 contract,
             )
             (root / receipt_relative).unlink()
-            missing_receipt, _ = loop.validate_android_golden(
+            without_receipt, _ = loop.validate_android_golden(
                 root,
                 contract,
             )
 
             self.assertEqual([], failures)
             self.assertEqual(golden_sha256, observed)
-            self.assertIn(
-                "golden_receipt_invalid_or_missing",
-                missing_receipt,
-            )
+            self.assertEqual([], without_receipt)
 
     def test_projection_replays_task_lifecycle_and_memory(self):
         events = [

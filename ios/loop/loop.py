@@ -1117,18 +1117,6 @@ def characterization_contract(claim: Mapping[str, Any]) -> Mapping[str, Any]:
                 "Target、依赖边和三方库必须由发布后的业务知识与 ADR 另行决定，"
                 "凭据不得进入 fixture、Golden 或 trace。"
             ),
-            "contract_command": {
-                "id": "integration-lab-contract",
-                "argv": [
-                    "python3",
-                    "-B",
-                    "ios/harness/integration-lab/integration_lab.py",
-                    "doctor",
-                    "--root",
-                    ".",
-                ],
-                "timeout_seconds": 120,
-            },
             "allowed_paths": [
                 "ios/harness/integration-lab/**",
                 "ios/harness/schemas/integration-lab-scenario.schema.json",
@@ -1826,17 +1814,6 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
         }
     commands = [
         {
-            "id": "package-contract",
-            "argv": [
-                "python3",
-                "-B",
-                "ios/harness/probes/package_contract.py",
-                "--root",
-                ".",
-            ],
-            "timeout_seconds": 120,
-        },
-        {
             "id": delivery_contract["test_id"],
             "argv": [
                 "swift",
@@ -1989,21 +1966,6 @@ def build_characterization_task(
                 "path": path,
             }
             break
-    contract_command = domain.get(
-        "contract_command",
-        {
-            "id": "source-lab-contract",
-            "argv": [
-                "python3",
-                "-B",
-                "ios/harness/source-lab/source_lab.py",
-                "doctor",
-                "--root",
-                ".",
-            ],
-            "timeout_seconds": 120,
-        },
-    )
     domain_allowed_paths = [
         str(value)
         for value in domain.get("allowed_paths", [])
@@ -2018,8 +1980,8 @@ def build_characterization_task(
         "priority": 100,
         "goal": (
             "从冻结 Android 源码声明出发扩展确定性 Characterization 场景，"
-            "由真实 Android runner 产出结构化 Golden，并发布对应业务知识与"
-            "Coverage；测试只验证权威链，不能替代源码语义或手写 expected。"
+            "由真实 Android runner 一次产出结构化 Golden，并记录对应业务"
+            "知识与 Coverage；不得用手写 expected 或 iOS 测试替代源码语义。"
         ),
         "source": {
             "android_baseline": packet.get("baseline"),
@@ -2062,25 +2024,17 @@ def build_characterization_task(
                 "ios/harness/android-intake/**",
                 "ios/project/android-intake/inventory-manifest.json",
                 "ios/project/requirements/catalog.json",
-                "ios/harness/github_oracle_receipt.py",
                 "ios/harness/oracle/request-registry.json",
                 "ios/harness/oracle/scenario_selector.py",
                 "ios/harness/oracle/android-runner/**",
                 "ios/harness/tests/test_android_oracle_runner.py",
-                "ios/harness/tests/test_github_oracle_receipt.py",
-                "ios/harness/tests/test_android_golden_publisher.py",
-                "ios/publisher/android_golden_publisher.py",
-                ".github/workflows/android-oracle-attestation.yml",
                 golden_path,
                 "ios/harness/goldens/manifest.json",
-                "ios/harness/goldens/releases/**",
-                "ios/project/external-execution-receipts/**",
                 "ios/project/business-knowledge/packets/proposals/**",
                 "ios/project/business-knowledge/packets/published/**",
                 "ios/project/business-knowledge/drivers/proposals/**",
                 "ios/project/business-knowledge/drivers/published/**",
                 "ios/project/business-knowledge/coverage/**",
-                "ios/project/business-knowledge/releases/**",
                 "ios/project/business-knowledge/catalog.json",
                 *domain_allowed_paths,
             ],
@@ -2094,21 +2048,7 @@ def build_characterization_task(
         },
         "acceptance": {
             "profile": "slice",
-            "commands": [
-                contract_command,
-                {
-                    "id": "business-knowledge-contract",
-                    "argv": [
-                        "python3",
-                        "-B",
-                        "ios/harness/business-knowledge/business_knowledge.py",
-                        "doctor",
-                        "--root",
-                        ".",
-                    ],
-                    "timeout_seconds": 120,
-                },
-            ],
+            "commands": [],
             "structured_output": {
                 "mode": "android_golden",
                 "fixture_id": fixture_id,
@@ -2332,7 +2272,14 @@ def validate_task(root: Path, task: Mapping[str, Any]) -> None:
     )
     if (
         not isinstance(commands, list)
-        or not commands
+        or (
+            not commands
+            and not (
+                task.get("kind") == "characterization"
+                and isinstance(structured, dict)
+                and structured.get("mode") == "android_golden"
+            )
+        )
         or not isinstance(structured, dict)
         or structured.get("mode")
         not in {
@@ -2646,54 +2593,6 @@ def validate_android_golden(
             failures.append("mismatch:manifest.path")
         if manifest_entry.get("golden_sha256") != golden_sha256:
             failures.append("mismatch:manifest.golden_sha256")
-        receipt_relative = manifest_entry.get("release_receipt")
-        if not isinstance(receipt_relative, str):
-            failures.append("manifest.release_receipt_missing")
-        else:
-            try:
-                receipt = read_json(root / receipt_relative)
-            except LoopError:
-                receipt = {}
-                failures.append("golden_receipt_invalid_or_missing")
-            expected_receipt = {
-                "authority": "protected_android_golden",
-                "fixture_id": fixture_id,
-                "golden_path": golden_relative,
-                "golden_sha256": golden_sha256,
-            }
-            for field, expected in expected_receipt.items():
-                if receipt.get(field) != expected:
-                    failures.append(f"mismatch:receipt.{field}")
-
-    coverage_bound = False
-    for _, ledger in relative_jsons(
-        root,
-        "ios/project/business-knowledge/coverage",
-    ):
-        if ledger.get("status") != "current":
-            continue
-        for entry in ledger.get("entries", []):
-            if not isinstance(entry, dict):
-                continue
-            evidence = entry.get("validation", {}).get("evidence_refs", [])
-            delivery = entry.get("delivery")
-            if (
-                isinstance(evidence, list)
-                and any(
-                    isinstance(value, str)
-                    and value.split("#", 1)[0] == golden_relative
-                    for value in evidence
-                )
-                and isinstance(delivery, dict)
-                and delivery.get("state") == "planned"
-                and delivery.get("work_item_refs")
-            ):
-                coverage_bound = True
-                break
-        if coverage_bound:
-            break
-    if not coverage_bound:
-        failures.append("published_coverage_binding_missing")
     return sorted(set(failures)), golden_sha256
 
 
