@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P38-LOCAL-TEXT-REFRESH-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "title": "P38 重新读取本地 TXT",
+  "objective": "依据冻结 Android BookInfoViewModel.refreshBook/loadChapter 与 LocalBook 源码，为托管本地 TXT 提供刷新入口：重新读取当前文件，沿用已保存的长章节拆分偏好，重新解析并原子替换目录和正文缓存，同时保留稳定 bookID、书架状态和可映射阅读进度。",
+  "validation_policy": "运行一个本地 TXT 文件变更后重新解析、缓存替换与重开持久化聚焦测试，再执行一次 App 构建；不启动模拟器，不新增 Android Golden。",
+  "stages": [
+    {
+      "id": "P38-S1",
+      "title": "连接本地文件刷新到既有原子重建能力",
+      "selectors": [
+        {
+          "id": "P38-S1-LOCAL-TEXT-REFRESH",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-APP-NAVIGATION-LOCAL-TEXT-REFRESH-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-APP-NAVIGATION-LOCAL-TEXT-REFRESH-001",
+      "title": "重新读取并刷新本地 TXT",
+      "fixture_id": "rl-ui-book-detail-conditional-actions-001",
+      "requirement_ref": "REQ-IOS-UI-BOOTSTRAP-001@1#RC-01",
+      "prerequisite_task_ids": [
+        "IOS-APP-NAVIGATION-LOCAL-TEXT-LONG-CHAPTER-001",
+        "IOS-APP-NAVIGATION-BOOK-INFO-REFRESH-001"
+      ],
+      "validation": "tests",
+      "test_filter": "DatabaseGRDBTests.testLocalTextRefreshReparsesManagedFile",
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+        "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+        "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "a461b135ca389a687189b6661a0a02e04456c7f2",
+          "path": "app/src/main/java/io/legado/app/ui/book/info/BookInfoViewModel.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.info.BookInfoViewModel/refreshBook"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "a461b135ca389a687189b6661a0a02e04456c7f2",
+          "path": "app/src/main/java/io/legado/app/ui/book/info/BookInfoViewModel.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.info.BookInfoViewModel/loadChapter"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "0c0c50252d9c2590053fbf10cd39c49e314839e0",
+          "path": "app/src/main/java/io/legado/app/model/localBook/LocalBook.kt",
+          "symbol_id": "kotlin://io.legado.app.model.localBook.LocalBook/getChapterList"
+        }
+      ]
+    }
+  ]
+}
