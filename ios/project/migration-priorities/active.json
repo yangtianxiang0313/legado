@@ -1,55 +1,42 @@
 {
   "schema_version": 1,
-  "id": "MILESTONE-P2-DISCOVERY-EXPLORE-001",
+  "id": "MILESTONE-P3-USABLE-SHELF-001",
   "status": "active",
   "mode": "critical_path_only",
-  "title": "P2 可用发现主链路",
-  "objective": "用户可从持久化且启用发现的书源进入分类书单，经详情页加入书架并继续现有阅读主链路。",
+  "title": "P3 可管理书架主链路",
+  "objective": "用户可按 Android 业务语义查看排序与新增章节状态，并对书架书籍执行可解释、可恢复的批量管理。",
   "completion_evidence": [
-    "书籍详情阶段按 Android 语义补全书籍字段和目录地址",
-    "发现 URL、分类和分页书单由独立 SourceRuntime 结构化解析",
-    "发现页只展示 enabledExplore 的持久化书源",
-    "用户可从发现书源进入分类、书单、详情并加入书架",
-    "本地书源网站覆盖分类、分页、空列表和失败分支",
-    "完整发现主链路只在一个 iPhone Simulator 里程碑验收"
+    "书架支持最近阅读、最近更新、名称、手动与综合时间排序",
+    "分组排序可以覆盖全局排序，且不破坏稳定书籍身份",
+    "目录增长形成新增章节状态，进入阅读后按 Android 语义清零",
+    "批量管理明确表达逐书成功、失败、取消和部分提交结果",
+    "删除、清缓存、更新开关、分组和换源复用既有领域端口",
+    "完整书架管理主链路只在一个 iPhone Simulator 里程碑验收"
   ],
-  "deferred_policy": "书架排序、离线缓存、远程书下载、WebDAV、朗读、导入导出和根入口可见性在发现主链路完成后再进入活动任务。",
+  "deferred_policy": "离线缓存、远程书下载、WebDAV、朗读、跨应用导入导出和根入口可见性在书架管理主链路完成后再进入活动任务。",
   "stages": [
     {
-      "id": "P2-01-BOOK-INFO-PIPELINE",
-      "title": "补齐详情阶段流水线",
-      "outcome": "搜索或发现得到的候选书籍可通过真实书源补齐详情字段和目录地址。",
+      "id": "P3-01-SHELF-SORT-UNREAD",
+      "title": "实现排序与新增章节状态",
+      "outcome": "书架及分组采用确定的排序策略，并正确投影目录增长和已读清零状态。",
       "selectors": [
         {
-          "id": "SOURCE-BOOK-INFO",
+          "id": "SHELF-SORT-UNREAD",
           "claim_ids": [
-            "BKC-SR-BOOK-INFO-PIPELINE-001"
+            "BKC-SHELF-SORT-UNREAD-001"
           ]
         }
       ]
     },
     {
-      "id": "P2-02-EXPLORE-PIPELINE",
-      "title": "实现发现解析流水线",
-      "outcome": "启用发现的书源可产生分类和分页书单，并隔离单源失败。",
+      "id": "P3-02-SHELF-BATCH-PARTIAL",
+      "title": "实现批量操作结果模型",
+      "outcome": "批量动作逐书执行并返回成功、失败、取消和部分提交的结构化结果。",
       "selectors": [
         {
-          "id": "SOURCE-EXPLORE-PIPELINE",
+          "id": "SHELF-BATCH-PARTIAL",
           "claim_ids": [
-            "BKC-SR-EXPLORE-PIPELINE-001"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "P2-03-EXPLORE-UI",
-      "title": "接通发现根页面",
-      "outcome": "发现根页、分类书单、详情和入架形成完整用户路径。",
-      "selectors": [
-        {
-          "id": "DISCOVERY-EXPLORE-FLOW",
-          "claim_ids": [
-            "BKC-UI-EXPLORE-FLOW-001"
+            "BKC-SHELF-BATCH-PARTIAL-001"
           ]
         }
       ]

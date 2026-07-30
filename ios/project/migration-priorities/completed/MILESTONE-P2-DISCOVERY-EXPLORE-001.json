@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P2-DISCOVERY-EXPLORE-001",
+  "status": "completed",
+  "completed_at": "2026-07-30T17:21:53Z",
+  "mode": "critical_path_only",
+  "title": "P2 可用发现主链路",
+  "objective": "用户可从持久化且启用发现的书源进入分类书单，经详情页加入书架并继续现有阅读主链路。",
+  "completion_evidence": [
+    {
+      "claim": "书籍详情阶段按 Android 语义补全书籍字段和目录地址",
+      "status": "verified",
+      "evidence": ".harness-runtime/loop/IOS-SOURCE-RUNTIME-PIPELINE-BOOK-INFO-RUNTIME-001/attempt-1"
+    },
+    {
+      "claim": "发现 URL、分类和分页书单由独立 SourceRuntime 结构化解析",
+      "status": "verified",
+      "evidence": [
+        "ios/harness/goldens/android-legado-v1/sl-source-pipeline-explore-runtime-001.json",
+        ".harness-runtime/loop/IOS-SOURCE-RUNTIME-PIPELINE-EXPLORE-RUNTIME-001/attempt-1"
+      ]
+    },
+    {
+      "claim": "发现根页只展示 enabledExplore 书源，并接通分类、书单、详情和已有阅读链路",
+      "status": "verified",
+      "evidence": ".harness-runtime/loop/IOS-APP-NAVIGATION-DISCOVERY-EXPLORE-FLOW-001/attempt-4"
+    }
+  ],
+  "known_limits": [
+    "发现页的样式和交互细节采用 iOS 原生实现，不逐像素复刻 Android。",
+    "海量真实书源兼容继续由独立 SourceRuntime 按源码迁移，不由 UI 里程碑穷举。"
+  ],
+  "stages": [
+    {
+      "id": "P2-01-BOOK-INFO-PIPELINE",
+      "title": "补齐详情阶段流水线",
+      "outcome": "搜索或发现得到的候选书籍可通过真实书源补齐详情字段和目录地址。",
+      "selectors": [
+        {
+          "id": "SOURCE-BOOK-INFO",
+          "claim_ids": [
+            "BKC-SR-BOOK-INFO-PIPELINE-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P2-02-EXPLORE-PIPELINE",
+      "title": "实现发现解析流水线",
+      "outcome": "启用发现的书源可产生分类和分页书单，并隔离单源失败。",
+      "selectors": [
+        {
+          "id": "SOURCE-EXPLORE-PIPELINE",
+          "claim_ids": [
+            "BKC-SR-EXPLORE-PIPELINE-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P2-03-EXPLORE-UI",
+      "title": "接通发现根页面",
+      "outcome": "发现根页、分类书单、详情和入架形成完整用户路径。",
+      "selectors": [
+        {
+          "id": "DISCOVERY-EXPLORE-FLOW",
+          "claim_ids": [
+            "BKC-UI-EXPLORE-FLOW-001"
+          ]
+        }
+      ]
+    }
+  ]
+}
