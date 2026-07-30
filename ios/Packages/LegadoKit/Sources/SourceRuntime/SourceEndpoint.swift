@@ -14,6 +14,13 @@ public struct SourceEndpoint: Equatable, Sendable {
   public let logicalURL: URL
   public let requestExpression: String
 
+  public static func plain(_ url: URL) -> SourceEndpoint {
+    SourceEndpoint(
+      logicalURL: url.absoluteURL,
+      requestExpression: url.absoluteURL.absoluteString
+    )
+  }
+
   public init(url: URL) throws {
     let absolute = url.absoluteURL.absoluteString
     guard
@@ -22,8 +29,7 @@ public struct SourceEndpoint: Equatable, Sendable {
     else {
       throw SourceEndpointError.invalidURL
     }
-    self.logicalURL = URL(string: absolute)!
-    self.requestExpression = absolute
+    self = .plain(url)
   }
 
   public init(
@@ -57,5 +63,10 @@ public struct SourceEndpoint: Equatable, Sendable {
 
   public func requestPlan() throws -> SourceRequestPlan {
     try SourceRequestCompiler.compileRendered(requestExpression)
+  }
+
+  private init(logicalURL: URL, requestExpression: String) {
+    self.logicalURL = logicalURL
+    self.requestExpression = requestExpression
   }
 }

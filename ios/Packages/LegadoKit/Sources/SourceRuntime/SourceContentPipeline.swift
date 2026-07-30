@@ -28,20 +28,28 @@ public struct SourceContentPipeline: Sendable {
   public func content(chapterURL: String) async throws
     -> SourceContentExecution
   {
-    guard let url = URL(string: chapterURL) else {
+    guard
+      let sourceURL = URL(string: definition.sourceURL)
+    else {
       throw SourceRuntimeIssue(stage: .urlTemplate, code: .invalidURL)
     }
+    let endpoint = try SourceEndpoint(
+      resolving: chapterURL,
+      relativeTo: sourceURL
+    )
+    return try await content(endpoint: endpoint)
+  }
+
+  public func content(endpoint: SourceEndpoint) async throws
+    -> SourceContentExecution
+  {
     let runtime = HTMLCSSSourceRuntime(definition: definition.runtime)
-    let request = try definition.prepare(runtime.request(for: url))
+    let plan = try definition.prepare(endpoint.requestPlan())
     let response = try await SourceRequestSession(
       transport: transport,
       cookieStore: cookieStore
     ).execute(
-      SourceRequestPlan(
-        request: request,
-        body: nil,
-        formFields: []
-      ),
+      plan,
       enabledCookieJar: definition.enabledCookieJar
     ).response
     guard
@@ -51,7 +59,7 @@ public struct SourceContentPipeline: Sendable {
       throw SourceSearchPipelineError.invalidResponseEncoding
     }
     return SourceContentExecution(
-      request: request,
+      request: plan.request,
       content: try runtime.content(
         html: html,
         chapterURL: effectiveURL

@@ -37,9 +37,13 @@ public struct SourceTOCPipeline: Sendable {
   }
 
   public func chapters(bookURL: String) async throws -> SourceTOCExecution {
-    guard let requestedBookURL = URL(string: bookURL) else {
+    guard let sourceURL = URL(string: definition.sourceURL) else {
       throw SourceRuntimeIssue(stage: .urlTemplate, code: .invalidURL)
     }
+    let requestedBookEndpoint = try SourceEndpoint(
+      resolving: bookURL,
+      relativeTo: sourceURL
+    )
     return try await chapters(
       book: SourceBook(
         name: "",
@@ -47,9 +51,9 @@ public struct SourceTOCPipeline: Sendable {
         intro: nil,
         kind: nil,
         lastChapter: nil,
-        bookURL: requestedBookURL,
+        bookEndpoint: requestedBookEndpoint,
         coverURL: nil,
-        tocURL: nil
+        tocEndpoint: nil
       )
     )
   }
@@ -70,7 +74,7 @@ public struct SourceTOCPipeline: Sendable {
       infoHTML: infoHTML,
       canRename: canRename
     )
-    guard let tocURL = detail.book.tocURL else {
+    guard let tocEndpoint = detail.book.tocEndpoint else {
       throw SourceRuntimeIssue(
         stage: .fieldEvaluation,
         code: .ruleFailed
@@ -84,31 +88,27 @@ public struct SourceTOCPipeline: Sendable {
         book: detail.book,
         chapters: try runtime.chapters(
           html: tocHTML,
-          tocURL: tocURL
+          tocEndpoint: tocEndpoint
         )
       )
     }
 
-    let tocRequest = try definition.prepare(
-      runtime.request(for: tocURL)
+    let tocPlan = try definition.prepare(
+      tocEndpoint.requestPlan()
     )
-    requests.append(tocRequest)
+    requests.append(tocPlan.request)
     let tocResponse = try await SourceRequestSession(
       transport: transport,
       cookieStore: cookieStore
     ).execute(
-      SourceRequestPlan(
-        request: tocRequest,
-        body: nil,
-        formFields: []
-      ),
+      tocPlan,
       enabledCookieJar: definition.enabledCookieJar
     ).response
     let tocResponseURL = try responseURL(tocResponse)
     let tocHTML = try responseBody(tocResponse)
     let chapters = try runtime.chapters(
       html: tocHTML,
-      tocURL: tocResponseURL
+      tocEndpoint: .plain(tocResponseURL)
     )
     return SourceTOCExecution(
       requests: requests,

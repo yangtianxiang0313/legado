@@ -166,9 +166,17 @@ public struct SourceBook: Sendable, Equatable {
   public let kind: String?
   public let wordCount: String?
   public let lastChapter: String?
-  public let bookURL: URL
+  public let bookEndpoint: SourceEndpoint
   public let coverURL: URL?
-  public let tocURL: URL?
+  public let tocEndpoint: SourceEndpoint?
+
+  public var bookURL: URL {
+    bookEndpoint.logicalURL
+  }
+
+  public var tocURL: URL? {
+    tocEndpoint?.logicalURL
+  }
 
   public init(
     name: String,
@@ -181,25 +189,87 @@ public struct SourceBook: Sendable, Equatable {
     coverURL: URL?,
     tocURL: URL?
   ) {
+    self.init(
+      name: name,
+      author: author,
+      intro: intro,
+      kind: kind,
+      wordCount: wordCount,
+      lastChapter: lastChapter,
+      bookEndpoint: .plain(bookURL),
+      coverURL: coverURL,
+      tocEndpoint: tocURL.map(SourceEndpoint.plain)
+    )
+  }
+
+  public init(
+    name: String,
+    author: String?,
+    intro: String?,
+    kind: String?,
+    wordCount: String? = nil,
+    lastChapter: String?,
+    bookEndpoint: SourceEndpoint,
+    coverURL: URL?,
+    tocEndpoint: SourceEndpoint?
+  ) {
     self.name = name
     self.author = author
     self.intro = intro
     self.kind = kind
     self.wordCount = wordCount
     self.lastChapter = lastChapter
-    self.bookURL = bookURL
+    self.bookEndpoint = bookEndpoint
     self.coverURL = coverURL
-    self.tocURL = tocURL
+    self.tocEndpoint = tocEndpoint
   }
 }
 
 public struct SourceChapter: Sendable, Equatable {
   public let index: Int
   public let title: String
-  public let url: URL
+  public let endpoint: SourceEndpoint
   public let isPay: Bool
   public let isVIP: Bool
   public let isVolume: Bool
+
+  public var url: URL {
+    endpoint.logicalURL
+  }
+
+  public init(
+    index: Int,
+    title: String,
+    url: URL,
+    isPay: Bool,
+    isVIP: Bool,
+    isVolume: Bool
+  ) {
+    self.init(
+      index: index,
+      title: title,
+      endpoint: .plain(url),
+      isPay: isPay,
+      isVIP: isVIP,
+      isVolume: isVolume
+    )
+  }
+
+  public init(
+    index: Int,
+    title: String,
+    endpoint: SourceEndpoint,
+    isPay: Bool,
+    isVIP: Bool,
+    isVolume: Bool
+  ) {
+    self.index = index
+    self.title = title
+    self.endpoint = endpoint
+    self.isPay = isPay
+    self.isVIP = isVIP
+    self.isVolume = isVolume
+  }
 }
 
 public struct SourceContent: Sendable, Equatable {
@@ -253,7 +323,12 @@ public struct HTMLCSSSourceRuntime: Sendable {
     ).compactMap { node in
       guard
         let name = try value(definition.search.name, in: node, document: document),
-        let book = try resolved(definition.search.bookURL, in: node, document: document, base: responseURL)
+        let book = try resolvedEndpoint(
+          definition.search.bookURL,
+          in: node,
+          document: document,
+          base: responseURL
+        )
       else { return nil }
       return SourceBook(
         name: name,
@@ -261,9 +336,9 @@ public struct HTMLCSSSourceRuntime: Sendable {
         intro: try value(definition.search.intro, in: node, document: document),
         kind: try value(definition.search.kind, in: node, document: document),
         lastChapter: try value(definition.search.lastChapter, in: node, document: document),
-        bookURL: book,
+        bookEndpoint: book,
         coverURL: try resolved(definition.search.coverURL, in: node, document: document, base: responseURL),
-        tocURL: nil
+        tocEndpoint: nil
       )
     }
   }
@@ -343,12 +418,12 @@ public struct HTMLCSSSourceRuntime: Sendable {
       mayReplaceExisting: mayRename
     )
     let toc =
-      try resolved(
+      try resolvedEndpoint(
         definition.bookInfo.tocURL,
         in: document.root,
         document: document,
         base: baseURL
-      ) ?? baseURL
+      ) ?? existing.bookEndpoint
     return SourceBook(
       name: name,
       author: author,
@@ -374,18 +449,26 @@ public struct HTMLCSSSourceRuntime: Sendable {
         in: document,
         fallback: existing.lastChapter
       ),
-      bookURL: existing.bookURL,
+      bookEndpoint: existing.bookEndpoint,
       coverURL: optionalURL(
         definition.bookInfo.coverURL,
         in: document,
         base: redirectURL,
         fallback: existing.coverURL
       ),
-      tocURL: toc
+      tocEndpoint: toc
     )
   }
 
   public func chapters(html: String, tocURL: URL) throws -> [SourceChapter] {
+    try chapters(html: html, tocEndpoint: .plain(tocURL))
+  }
+
+  public func chapters(
+    html: String,
+    tocEndpoint: SourceEndpoint
+  ) throws -> [SourceChapter] {
+    let tocURL = tocEndpoint.logicalURL
     if usesStructuredRules(
       content: html,
       rules: [
@@ -406,12 +489,17 @@ public struct HTMLCSSSourceRuntime: Sendable {
     return try nodes.enumerated().map { index, node in
       guard
         let title = try value(definition.toc.name, in: node, document: document),
-        let url = try resolved(definition.toc.url, in: node, document: document, base: tocURL)
+        let endpoint = try resolvedEndpoint(
+          definition.toc.url,
+          in: node,
+          document: document,
+          base: tocURL
+        )
       else { throw SourceRuntimeIssue(stage: .fieldEvaluation, code: .ruleFailed) }
       return SourceChapter(
         index: index,
         title: title,
-        url: url,
+        endpoint: endpoint,
         isPay: false,
         isVIP: false,
         isVolume: false
@@ -511,6 +599,20 @@ public struct HTMLCSSSourceRuntime: Sendable {
   ) throws -> URL? {
     guard let raw = try value(rule, in: node, document: document) else { return nil }
     return URL(string: raw, relativeTo: base)?.absoluteURL
+  }
+
+  private func resolvedEndpoint(
+    _ rule: HTMLCSSRule,
+    in node: HTMLNode,
+    document: HTMLDocument,
+    base: URL
+  ) throws -> SourceEndpoint? {
+    guard
+      let raw = try value(rule, in: node, document: document)
+    else {
+      return nil
+    }
+    return try SourceEndpoint(resolving: raw, relativeTo: base)
   }
 
   private func optionalValue(
@@ -674,13 +776,13 @@ public struct HTMLCSSSourceRuntime: Sendable {
         evaluator: evaluator,
         fallback: existing.lastChapter
       ),
-      bookURL: existing.bookURL,
+      bookEndpoint: existing.bookEndpoint,
       coverURL: rawCover.flatMap {
         URL(string: $0, relativeTo: redirectURL)?.absoluteURL
       } ?? existing.coverURL,
-      tocURL: rawTOC.flatMap {
-        URL(string: $0, relativeTo: baseURL)?.absoluteURL
-      } ?? baseURL
+      tocEndpoint: try rawTOC.map {
+        try SourceEndpoint(resolving: $0, relativeTo: baseURL)
+      } ?? existing.bookEndpoint
     )
   }
 
@@ -709,11 +811,7 @@ public struct HTMLCSSSourceRuntime: Sendable {
         let rawURL = try structuredValue(
           definition.toc.url,
           evaluator: evaluator
-        ),
-        let url = URL(
-          string: rawURL,
-          relativeTo: tocURL
-        )?.absoluteURL
+        )
       else {
         throw SourceRuntimeIssue(
           stage: .fieldEvaluation,
@@ -723,7 +821,10 @@ public struct HTMLCSSSourceRuntime: Sendable {
       return SourceChapter(
         index: index,
         title: title,
-        url: url,
+        endpoint: try SourceEndpoint(
+          resolving: rawURL,
+          relativeTo: tocURL
+        ),
         isPay: false,
         isVIP: false,
         isVolume: false

@@ -82,17 +82,12 @@ public struct SourceBookInfoPipeline: Sendable {
     if let infoHTML, !infoHTML.isEmpty {
       requestPlan = nil
       response = SourceBookInfoResponse(
-        url: book.bookURL,
+        url: book.bookEndpoint.logicalURL,
         body: infoHTML
       )
     } else {
-      let request = try definition.prepare(
-        runtime.request(for: book.bookURL)
-      )
-      let plan = SourceRequestPlan(
-        request: request,
-        body: nil,
-        formFields: []
+      let plan = try definition.prepare(
+        book.bookEndpoint.requestPlan()
       )
       requestPlan = plan
       let networkResponse = try await SourceRequestSession(
@@ -125,7 +120,7 @@ public struct SourceBookInfoPipeline: Sendable {
 
     let parsed = try runtime.bookInfo(
       html: response.body,
-      baseURL: book.bookURL,
+      baseURL: book.bookEndpoint.logicalURL,
       redirectURL: response.url,
       existing: book,
       canRename: canRename
@@ -134,7 +129,10 @@ public struct SourceBookInfoPipeline: Sendable {
       requestPlan: requestPlan,
       response: response,
       book: parsed,
-      tocHTML: parsed.tocURL == book.bookURL ? response.body : nil
+      tocHTML:
+        parsed.tocEndpoint == book.bookEndpoint
+        ? response.body
+        : nil
     )
   }
 }

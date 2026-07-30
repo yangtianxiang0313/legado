@@ -141,7 +141,7 @@ struct SourceBookListParser {
       try value($0, in: node, document: document)
     }
     let bookURL = rawBookURL.map {
-      resolve($0, relativeTo: response.url)
+      resolveRequestExpression($0, relativeTo: response.url)
     } ?? fallbackBookURL
     let coverURL = try value(
       rules.coverURL,
@@ -267,6 +267,24 @@ struct SourceBookListParser {
     return String(base[...slash]) + raw
   }
 
+  private func resolveRequestExpression(
+    _ raw: String,
+    relativeTo base: String
+  ) -> String {
+    guard
+      let baseURL = URL(
+        string: SourceRequestCompiler.splitURLAndOption(base).url
+      ),
+      let endpoint = try? SourceEndpoint(
+        resolving: raw,
+        relativeTo: baseURL
+      )
+    else {
+      return resolve(raw, relativeTo: base)
+    }
+    return endpoint.requestExpression
+  }
+
   private func usesStructuredRules(
     response: SourceSearchResponse,
     rules: SearchRules
@@ -302,7 +320,10 @@ struct SourceBookListParser {
       )
       let bookURL = rawBookURL.isEmpty
         ? response.url
-        : resolve(rawBookURL, relativeTo: response.url)
+        : resolveRequestExpression(
+          rawBookURL,
+          relativeTo: response.url
+        )
       guard seen.insert(bookURL).inserted else { continue }
       let rawCoverURL = try structuredValue(
         rules.coverURL,
