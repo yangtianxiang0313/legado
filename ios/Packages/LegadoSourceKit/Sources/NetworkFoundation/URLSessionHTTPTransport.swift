@@ -1,3 +1,4 @@
+import CFNetwork
 import Foundation
 import os
 import SourceRuntime
@@ -19,7 +20,10 @@ public struct URLSessionLoadResult: Sendable {
 }
 
 public protocol URLSessionDataLoading: Sendable {
-    func data(for request: URLRequest) async throws
+    func data(
+        for request: URLRequest,
+        proxy: HTTPProxyConfiguration?
+    ) async throws
         -> URLSessionLoadResult
 }
 
@@ -114,7 +118,10 @@ public actor URLSessionHTTPTransport: HTTPTransport {
         }
 
         do {
-            let result = try await loader.data(for: urlRequest)
+            let result = try await loader.data(
+                for: urlRequest,
+                proxy: request.proxy
+            )
             try Task.checkCancellation()
             guard result.data.count <= maximumResponseBytes else {
                 throw HTTPTransportFailure.responseTooLarge
@@ -171,16 +178,23 @@ public actor URLSessionHTTPTransport: HTTPTransport {
 private actor FoundationURLSessionDataLoader:
     URLSessionDataLoading
 {
-    private let session: URLSession
+    private let baseConfiguration: URLSessionConfiguration
+    private let directSession: URLSession
+    private var proxySessions: [
+        HTTPProxyConfiguration: URLSession
+    ] = [:]
 
     init(configuration: URLSessionConfiguration) {
-        self.session = URLSession(configuration: configuration)
+        self.baseConfiguration = configuration
+        self.directSession = URLSession(configuration: configuration)
     }
 
     func data(
-        for request: URLRequest
+        for request: URLRequest,
+        proxy: HTTPProxyConfiguration?
     ) async throws -> URLSessionLoadResult {
-        let collector = RedirectCookieCollector()
+        let session = session(for: proxy)
+        let collector = RedirectCookieCollector(proxy: proxy)
         let (data, response) = try await session.data(
             for: request,
             delegate: collector
@@ -200,15 +214,38 @@ private actor FoundationURLSessionDataLoader:
             responseCookies: cookies
         )
     }
+
+    private func session(
+        for proxy: HTTPProxyConfiguration?
+    ) -> URLSession {
+        guard let proxy else { return directSession }
+        if let cached = proxySessions[proxy] {
+            return cached
+        }
+        let configuration = baseConfiguration.copy()
+            as? URLSessionConfiguration ?? baseConfiguration
+        configuration.connectionProxyDictionary =
+            URLSessionProxyConfigurationBuilder.dictionary(
+                for: proxy
+            )
+        let session = URLSession(configuration: configuration)
+        proxySessions[proxy] = session
+        return session
+    }
 }
 
 final class RedirectCookieCollector:
     NSObject,
     URLSessionTaskDelegate
 {
+    private let proxy: HTTPProxyConfiguration?
     private let storage = OSAllocatedUnfairLock(
         initialState: [HTTPResponseCookie]()
     )
+
+    init(proxy: HTTPProxyConfiguration? = nil) {
+        self.proxy = proxy
+    }
 
     func urlSession(
         _ session: URLSession,
@@ -226,8 +263,72 @@ final class RedirectCookieCollector:
         completionHandler(request)
     }
 
+    func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        didReceive challenge: URLAuthenticationChallenge,
+        completionHandler: @escaping (
+            URLSession.AuthChallengeDisposition,
+            URLCredential?
+        ) -> Void
+    ) {
+        guard
+            challenge.protectionSpace.isProxy(),
+            let username = proxy?.username,
+            let password = proxy?.password
+        else {
+            completionHandler(
+                .performDefaultHandling,
+                nil
+            )
+            return
+        }
+        completionHandler(
+            .useCredential,
+            URLCredential(
+                user: username,
+                password: password,
+                persistence: .forSession
+            )
+        )
+    }
+
     func snapshot() -> [HTTPResponseCookie] {
         storage.withLock { $0 }
+    }
+}
+
+enum URLSessionProxyConfigurationBuilder {
+    static func dictionary(
+        for proxy: HTTPProxyConfiguration
+    ) -> [AnyHashable: Any] {
+        var values: [AnyHashable: Any]
+        switch proxy.type {
+        case .http:
+            values = [
+                kCFNetworkProxiesHTTPEnable as String: true,
+                kCFNetworkProxiesHTTPProxy as String: proxy.host,
+                kCFNetworkProxiesHTTPPort as String: Int(proxy.port),
+                kCFNetworkProxiesHTTPSEnable as String: true,
+                kCFNetworkProxiesHTTPSProxy as String: proxy.host,
+                kCFNetworkProxiesHTTPSPort as String: Int(proxy.port),
+            ]
+        case .socks:
+            values = [
+                kCFNetworkProxiesSOCKSEnable as String: true,
+                kCFNetworkProxiesSOCKSProxy as String: proxy.host,
+                kCFNetworkProxiesSOCKSPort as String: Int(proxy.port),
+            ]
+            if let username = proxy.username {
+                values[kCFStreamPropertySOCKSUser as String] =
+                    username
+            }
+            if let password = proxy.password {
+                values[kCFStreamPropertySOCKSPassword as String] =
+                    password
+            }
+        }
+        return values
     }
 }
 

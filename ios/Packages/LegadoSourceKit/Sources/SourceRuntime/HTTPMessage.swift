@@ -185,25 +185,82 @@ public struct HTTPTimeout: Codable, Equatable, Sendable {
   }
 }
 
+public enum HTTPProxyType: String, Codable, Equatable, Hashable, Sendable {
+  case http
+  case socks
+}
+
+/// Transport policy carried beside the HTTP fields.
+///
+/// A source's `proxy` value is a control field in Legado, not an HTTP header.
+/// Keeping it on the request makes that distinction survive retries, cookie
+/// preparation and transport adapters.
+public struct HTTPProxyConfiguration: Codable, Equatable, Hashable, Sendable {
+  public let type: HTTPProxyType
+  public let host: String
+  public let port: UInt16
+  public let username: String?
+  public let password: String?
+
+  public init(
+    type: HTTPProxyType,
+    host: String,
+    port: UInt16,
+    username: String? = nil,
+    password: String? = nil
+  ) {
+    self.type = type
+    self.host = host
+    self.port = port
+    self.username = username
+    self.password = password
+  }
+
+  private enum CodingKeys: String, CodingKey {
+    case type
+    case host
+    case port
+  }
+
+  public init(from decoder: any Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    self.init(
+      type: try container.decode(HTTPProxyType.self, forKey: .type),
+      host: try container.decode(String.self, forKey: .host),
+      port: try container.decode(UInt16.self, forKey: .port)
+    )
+  }
+
+  public func encode(to encoder: any Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(type, forKey: .type)
+    try container.encode(host, forKey: .host)
+    try container.encode(port, forKey: .port)
+  }
+}
+
 public struct HTTPRequest: Codable, Equatable, Sendable {
   public let method: HTTPMethod
   public let url: HTTPURL
   public let headers: HTTPHeaders
   public let body: HTTPBody?
   public let timeout: HTTPTimeout?
+  public let proxy: HTTPProxyConfiguration?
 
   public init(
     method: HTTPMethod,
     url: HTTPURL,
     headers: HTTPHeaders = HTTPHeaders(),
     body: HTTPBody? = nil,
-    timeout: HTTPTimeout? = nil
+    timeout: HTTPTimeout? = nil,
+    proxy: HTTPProxyConfiguration? = nil
   ) {
     self.method = method
     self.url = url
     self.headers = headers
     self.body = body
     self.timeout = timeout
+    self.proxy = proxy
   }
 }
 

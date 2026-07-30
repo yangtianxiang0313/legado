@@ -27,6 +27,7 @@ public struct SourceRequestPreparation: Equatable, Sendable {
   public let networkHeaders: [SourceHeaderField]
   public let constructedRequest: HTTPRequest
   public let networkRequest: HTTPRequest
+  public let proxy: HTTPProxyConfiguration?
   public let retry: Int
 }
 
@@ -43,8 +44,17 @@ public enum SourceRequestPreparer {
       throw SourceRequestPreparationError.invalidRetry
     }
 
-    let inherited = canonical(inheritedHeaders)
-    let constructed = canonical(overlay(inheritedHeaders, with: optionHeaders))
+    let overlaid = overlay(inheritedHeaders, with: optionHeaders)
+    let proxyText = overlaid.last(where: {
+      $0.name.caseInsensitiveCompare("proxy") == .orderedSame
+    })?.value
+    let proxy = try proxyText.map(SourceProxyConfiguration.init) ?? request.proxy
+    let inherited = canonical(
+      removingHeaders(named: "proxy", from: inheritedHeaders)
+    )
+    let constructed = canonical(
+      removingHeaders(named: "proxy", from: overlaid)
+    )
     let resolved = canonical(
       try resolveSessionHeaders(
         constructed,
@@ -65,8 +75,17 @@ public enum SourceRequestPreparer {
       constructedHeaders: constructed,
       resolvedHeaders: resolved,
       networkHeaders: network,
-      constructedRequest: try replacingHeaders(of: request, with: constructed),
-      networkRequest: try replacingHeaders(of: request, with: network),
+      constructedRequest: try replacingHeaders(
+        of: request,
+        with: constructed,
+        proxy: proxy
+      ),
+      networkRequest: try replacingHeaders(
+        of: request,
+        with: network,
+        proxy: proxy
+      ),
+      proxy: proxy,
       retry: retry
     )
   }
@@ -182,7 +201,8 @@ public enum SourceRequestPreparer {
 
   private static func replacingHeaders(
     of request: HTTPRequest,
-    with fields: [SourceHeaderField]
+    with fields: [SourceHeaderField],
+    proxy: HTTPProxyConfiguration?
   ) throws -> HTTPRequest {
     HTTPRequest(
       method: request.method,
@@ -191,7 +211,8 @@ public enum SourceRequestPreparer {
         try fields.map { try HTTPHeader(name: $0.name, value: $0.value) }
       ),
       body: request.body,
-      timeout: request.timeout
+      timeout: request.timeout,
+      proxy: proxy
     )
   }
 }

@@ -176,7 +176,8 @@ private actor CookieChainLoader: URLSessionDataLoading {
     }
 
     func data(
-        for request: URLRequest
+        for request: URLRequest,
+        proxy: HTTPProxyConfiguration?
     ) async throws -> URLSessionLoadResult {
         self.request = request
         return result

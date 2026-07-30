@@ -232,7 +232,8 @@ private actor RecordingLoader: URLSessionDataLoading {
     }
 
     func data(
-        for request: URLRequest
+        for request: URLRequest,
+        proxy: HTTPProxyConfiguration?
     ) async throws -> URLSessionLoadResult {
         observedRequest = request
         return try result.get()

@@ -398,7 +398,8 @@ public enum SourceCookieRequestCoordinator {
       url: request.url,
       headers: HTTPHeaders(fields),
       body: request.body,
-      timeout: request.timeout
+      timeout: request.timeout,
+      proxy: request.proxy
     )
   }
 }

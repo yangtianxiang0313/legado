@@ -66,40 +66,62 @@ public enum SourceDispatchTarget: Equatable, Sendable {
   }
 }
 
-public enum SourceProxyType: String, Equatable, Sendable {
-  case http = "HTTP"
-  case socks = "SOCKS"
-}
+public typealias SourceProxyType = HTTPProxyType
+public typealias SourceProxyConfiguration = HTTPProxyConfiguration
 
-public struct SourceProxyConfiguration: Equatable, Sendable {
-  public let type: SourceProxyType
-  public let host: String
-  public let port: UInt16
-
+extension HTTPProxyConfiguration {
   public init(_ value: String) throws {
     guard
-      let components = URLComponents(string: value),
-      let scheme = components.scheme?.lowercased(),
-      let host = components.host,
-      !host.isEmpty,
-      let port = components.port,
-      (1...65_535).contains(port),
-      components.path.isEmpty,
-      components.query == nil,
-      components.fragment == nil
+      let schemeBoundary = value.range(of: "://"),
+      !value[schemeBoundary.upperBound...].isEmpty
     else {
       throw SourceTransportDispatchError.invalidProxy
     }
+    let scheme = value[..<schemeBoundary.lowerBound].lowercased()
+    let remainder = String(value[schemeBoundary.upperBound...])
+    let components = remainder.split(
+      separator: "@",
+      omittingEmptySubsequences: false
+    )
+    guard components.count == 1 || components.count == 3 else {
+      throw SourceTransportDispatchError.invalidProxy
+    }
+    let endpoint = String(components[0])
+    guard
+      let portBoundary = endpoint.lastIndex(of: ":"),
+      portBoundary != endpoint.startIndex,
+      endpoint.index(after: portBoundary) != endpoint.endIndex
+    else {
+      throw SourceTransportDispatchError.invalidProxy
+    }
+    let host = String(endpoint[..<portBoundary])
+    let portText = String(endpoint[endpoint.index(after: portBoundary)...])
+    guard
+      !host.isEmpty,
+      !host.contains(where: { "/?#@".contains($0) }),
+      let port = Int(portText),
+      (1...65_535).contains(port),
+      components.count == 1
+        || (!components[1].isEmpty && !components[2].isEmpty)
+    else {
+      throw SourceTransportDispatchError.invalidProxy
+    }
+    let type: HTTPProxyType
     switch scheme {
     case "http":
-      self.type = .http
+      type = .http
     case "socks4", "socks5":
-      self.type = .socks
+      type = .socks
     default:
       throw SourceTransportDispatchError.invalidProxy
     }
-    self.host = host
-    self.port = UInt16(port)
+    self.init(
+      type: type,
+      host: host,
+      port: UInt16(port),
+      username: components.count == 3 ? String(components[1]) : nil,
+      password: components.count == 3 ? String(components[2]) : nil
+    )
   }
 }
 
@@ -220,7 +242,8 @@ public enum SourceTransportDispatchCompiler {
         body: input.body.map { HTTPBody(Data($0.utf8)) },
         timeout: try input.readTimeoutMilliseconds.map {
           try HTTPTimeout(milliseconds: $0)
-        }
+        },
+        proxy: proxy
       )
     }
     return SourceTransportDispatchPlan(

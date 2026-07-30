@@ -165,6 +165,12 @@ URLSession 使用禁用共享 `HTTPCookieStorage` 的私有会话。重定向 de
 Cookie 全部归到最终 URL。没有结构化 Cookie 事件的 FixtureTransport 仍可使用最终
 响应原始 Header，保持离线测试兼容。
 
+Android 书源 Header 中的小写 `proxy` 是网络控制字段，不是 HTTP Header。
+`SourceRuntime` 必须在请求准备阶段将其剥离为 `HTTPRequest.proxy`，Cookie、重试与
+重定向相关的请求重建必须保留该值；`NetworkFoundation` 才将 HTTP 或 SOCKS 策略
+翻译为隔离的 `URLSessionConfiguration`。代理会话按完整配置缓存，账号密码只用于
+代理认证，禁止进入 URLRequest Header、响应模型或 Trace。
+
 WebDAV 的具体边界由 [ADR-0008](adr/0008-integrationkit-webdav-boundary.md) 固定：
 首版不引入 WebDAV 三方库，`IntegrationKit` 只依赖 `LegadoCore`，
 `WebDAVFoundation` 只依赖 `LegadoCore` 与 `IntegrationKit`，`AppUseCases`
