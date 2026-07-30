@@ -9,11 +9,22 @@ let package = Package(
         .macOS(.v14),
     ],
     products: [
-        .library(name: "LegadoStoreSafeKit", targets: ["AppUseCases", "AppNavigation"]),
-        .library(name: "LegadoFullCompatKit", targets: ["AppUseCases", "AppNavigation"]),
+        .library(
+            name: "LegadoStoreSafeKit",
+            targets: ["AppUseCases", "AppNavigation", "DatabaseGRDB"]
+        ),
+        .library(
+            name: "LegadoFullCompatKit",
+            targets: ["AppUseCases", "AppNavigation", "DatabaseGRDB"]
+        ),
         .executable(name: "ConformanceCLI", targets: ["ConformanceCLI"]),
     ],
-    dependencies: [],
+    dependencies: [
+        .package(
+            url: "https://github.com/groue/GRDB.swift.git",
+            exact: "7.11.1"
+        ),
+    ],
     targets: [
         .target(name: "LegadoCore"),
         .target(name: "LibraryDomain", dependencies: ["LegadoCore"]),
@@ -31,6 +42,15 @@ let package = Package(
         .target(
             name: "AppNavigation",
             dependencies: ["LegadoCore", "LibraryDomain"]
+        ),
+        .target(
+            name: "DatabaseGRDB",
+            dependencies: [
+                "LegadoCore",
+                "LibraryDomain",
+                "AppUseCases",
+                .product(name: "GRDB", package: "GRDB.swift"),
+            ]
         ),
         .target(
             name: "TestSupport",
@@ -75,6 +95,10 @@ let package = Package(
         .testTarget(
             name: "AppNavigationTests",
             dependencies: ["AppNavigation"]
+        ),
+        .testTarget(
+            name: "DatabaseGRDBTests",
+            dependencies: ["DatabaseGRDB"]
         ),
     ],
     swiftLanguageModes: [.v6]

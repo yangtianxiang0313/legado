@@ -1,0 +1,10 @@
+import DatabaseGRDB
+import XCTest
+
+final class DatabaseGRDBTests: XCTestCase {
+  func testExactDependencyCanOpenAndUseSQLite() throws {
+    XCTAssertTrue(
+      try DatabaseGRDBRuntime.verifyInMemoryDatabase()
+    )
+  }
+}

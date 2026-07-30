@@ -21,6 +21,7 @@ REQUIRED_SOURCE_TARGETS = {
     "ReaderCore",
     "AppUseCases",
     "AppNavigation",
+    "DatabaseGRDB",
     "TestSupport",
     "ConformanceCLI",
 }
@@ -31,6 +32,7 @@ REQUIRED_TEST_TARGETS = {
     "ConformanceCLITests",
     "SourceFormatTests",
     "AppNavigationTests",
+    "DatabaseGRDBTests",
 }
 REQUIRED_LIBRARY_PRODUCTS = {
     "LegadoStoreSafeKit",
@@ -229,8 +231,6 @@ def main() -> int:
         except json.JSONDecodeError as error:
             errors.append(f"dump-package 输出不是 JSON：{error}")
             package = {}
-        if package.get("dependencies"):
-            errors.append("Bootstrap Package 不得包含外部依赖")
         targets = {target.get("name"): target for target in package.get("targets", [])}
         missing_sources = sorted(REQUIRED_SOURCE_TARGETS - set(targets))
         missing_tests = sorted(REQUIRED_TEST_TARGETS - set(targets))

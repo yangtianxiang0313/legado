@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "id": "DEP-0001",
+  "identity": "grdb.swift",
+  "from_version": null,
+  "to_exact_version": "7.11.1",
+  "products": [
+    "GRDB"
+  ],
+  "allowed_targets": [
+    "DatabaseGRDB"
+  ],
+  "expected_revision": "b83108d10f42680d78f23fe4d4d80fc88dab3212",
+  "adr": "ADR-0001",
+  "reason": "P0 书架需要并发安全、可迁移、事务化的 SQLite 持久层；系统 SQLite C API 会显著增加映射、迁移和并发样板，而 SwiftData 不适合既定复杂 schema 与 Android 导入边界。",
+  "alternatives": [
+    "直接封装 SQLite3：依赖最少，但迁移、查询映射、事务和并发维护成本更高。",
+    "SwiftData/Core Data：系统集成好，但不符合架构中显式 SQL、复杂 schema 和 Android 兼容导入要求。",
+    "暂用 UserDefaults/JSON：无法提供书籍、章节、进度的一致事务和可演进 migration，因此拒绝。"
+  ],
+  "transitive_dependencies": [],
+  "license": "MIT",
+  "privacy_manifest": "上游 7.11.1 包含 GRDB/PrivacyInfo.xcprivacy；声明不跟踪、不收集数据、无跟踪域且不访问 required-reason API。当前适配层只使用本地 SQLite。",
+  "security_review": "官方 HTTPS Git 仓库与精确 tag/revision；SwiftPM 源码 Target，无 binary target、plugin、macro 或 traits；GRDB 只允许 DatabaseGRDB import。",
+  "size_delta_bytes": 0,
+  "exit_plan": "所有 GRDB 类型在 DatabaseGRDB 终止；替换时保留 AppUseCases Repository ports 和 LibraryDomain 模型，只重写 adapter 与 migration。",
+  "owner": "iOS Persistence",
+  "required_checks": [
+    "dependency-contract",
+    "package-contract",
+    "database-grdb-tests",
+    "dependency-activation-acceptance"
+  ],
+  "status": "applied"
+}

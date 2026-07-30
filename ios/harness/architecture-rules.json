@@ -78,7 +78,8 @@
     "TestSupportTests": {"dependencies": ["LegadoCore", "TestSupport"], "external_imports": []},
     "ConformanceCLITests": {"dependencies": ["LegadoCore", "ConformanceCLI", "TestSupport"], "external_imports": []},
     "SourceFormatTests": {"dependencies": ["LegadoCore", "SourceFormat", "TestSupport"], "external_imports": []},
-    "AppNavigationTests": {"dependencies": ["AppNavigation"], "external_imports": []}
+    "AppNavigationTests": {"dependencies": ["AppNavigation"], "external_imports": []},
+    "DatabaseGRDBTests": {"dependencies": ["DatabaseGRDB"], "external_imports": []}
   },
   "banned_patterns": [
     {

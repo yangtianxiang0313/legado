@@ -1,0 +1,39 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "name": "Legado-iOS-GRDB-7.11.1",
+  "documentNamespace": "https://legado.example.invalid/spdx/grdb-7.11.1-b83108d10f42680d78f23fe4d4d80fc88dab3212",
+  "creationInfo": {
+    "created": "2026-07-30T09:45:00Z",
+    "creators": [
+      "Tool: Legado Loop v2"
+    ]
+  },
+  "packages": [
+    {
+      "name": "GRDB.swift",
+      "SPDXID": "SPDXRef-Package-GRDB",
+      "versionInfo": "7.11.1",
+      "downloadLocation": "git+https://github.com/groue/GRDB.swift.git@b83108d10f42680d78f23fe4d4d80fc88dab3212",
+      "filesAnalyzed": false,
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "copyrightText": "Copyright (C) 2015-2025 Gwendal Roué",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:swift/grdb.swift@7.11.1?vcs_url=git%2Bhttps%3A%2F%2Fgithub.com%2Fgroue%2FGRDB.swift.git%40b83108d10f42680d78f23fe4d4d80fc88dab3212"
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-GRDB"
+    }
+  ]
+}

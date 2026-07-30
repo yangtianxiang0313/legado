@@ -36,7 +36,7 @@
   },
   "dependency_lock": {
     "file": "ios/Packages/LegadoKit/Package.resolved",
-    "digest": null
+    "digest": "99162d58334f359e0fcf8ab12bd64a6b72776ab4376391a7628512a5a35ea403"
   },
   "accepted_by": [
     "ADR-0001",
