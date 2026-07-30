@@ -1,1 +1,1 @@
-{"active_task":null,"attempt":0,"last_completed":{"at":"2026-07-30T06:05:53Z","sequence":211,"task_id":"IOS-LIBRARY-DOMAIN-LOCAL-BOOK-RELOCATION-RUNTIME-001"},"schema_version":2,"status":"idle","verification":null}
+{"active_task":"IOS-CHARACTERIZE-LIBRARY-BOOK-IMPORT-CHANNEL-RUNTIME-001","attempt":0,"last_completed":{"at":"2026-07-30T06:05:53Z","sequence":211,"task_id":"IOS-LIBRARY-DOMAIN-LOCAL-BOOK-RELOCATION-RUNTIME-001"},"schema_version":2,"status":"running","verification":null}
