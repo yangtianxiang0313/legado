@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P44-REDIRECT-COOKIE-CHAIN-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P44 重定向 Cookie 链进入生产书源会话",
   "objective": "依据冻结 Android HttpHelper/CookieManager，捕获 URLSession 每个重定向响应和最终响应解析出的全部 Cookie，按响应 URL 与 persistent/session 属性交给 SourceCookieStore，并让后续请求复用；禁止依赖共享 HTTPCookieStorage 或把跨域 Cookie 错存到最终 URL。",
