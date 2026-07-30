@@ -1,150 +1,91 @@
 {
   "schema_version": 1,
-  "id": "MILESTONE-P13-SOURCE-ENDPOINT-REQUEST-OPTIONS-001",
+  "id": "MILESTONE-P14-SOURCE-MULTIPAGE-TOC-CONTENT-001",
   "status": "active",
   "mode": "critical_path_only",
-  "title": "P13 详情目录正文请求表达式保真",
-  "objective": "对齐 Android BookChapter.getAbsoluteURL 与 AnalyzeUrl 的职责分离：领域身份使用逻辑绝对 URL，请求层同时保留逗号后的 method/body/header/retry option，使详情、目录和正文不再被强制降级为 GET。",
+  "title": "P14 多页目录与多页正文",
+  "objective": "对齐 Android BookChapterList.nextTocUrl 与 BookContent.nextContentUrl：真实书源的目录和单章正文可沿规则解析出的下一页端点继续请求，按稳定顺序合并，并以已访问端点阻止循环。",
   "completion_evidence": [
-    "SourceRuntime 端点值同时保存逻辑绝对 URL 与原始请求表达式",
-    "只对 option 前的 URL 部分做相对地址补全，option 原样保留",
-    "详情、目录、正文通过 SourceRequestCompiler 构建 RequestPlan",
-    "后续产品持久化不会把请求表达式压缩成 Foundation URL"
+    "导入书源保留 TocRule.nextTocUrl 与 ContentRule.nextContentUrl",
+    "目录流水线逐页请求并合并章节，重复端点停止",
+    "正文流水线逐页请求并合并正文，遇到下一章地址停止",
+    "分页端点继续复用 SourceEndpoint 的 method/body/header/retry 语义",
+    "产品目录和阅读主链消费合并后的最终结果"
   ],
-  "deferred_policy": "先建立端点值和 SourceRuntime 流水线；随后再贯通 SearchResult、ShelfBookCandidate、BookChapter 与 GRDB。动态 WebView、下一页目录和下一页正文不混入首阶段。",
+  "deferred_policy": "先实现静态 HTML、JSONPath 与正则规则可确定解析的下一页；WebView/webJs、登录检测脚本和 preUpdateJs 另列后续能力，不阻塞静态真实源主链。",
   "deliveries": [
     {
-      "target": "IOS-SOURCE-RUNTIME-ENDPOINT-REQUEST-EXPRESSION-001",
-      "title": "建立保留 URL option 的书源端点值与请求计划",
-      "fixture_id": "source-endpoint-request-expression-v1",
+      "target": "IOS-SOURCE-RUNTIME-MULTIPAGE-RULE-IMPORT-001",
+      "title": "导入并建模目录与正文下一页规则",
+      "fixture_id": "source-multipage-rule-import-v1",
       "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-04",
       "prerequisite_task_ids": [],
       "validation": "tests",
-      "test_filter": "SourceEndpointRequestExpressionTests",
-      "additional_allowed_paths": [],
-      "source_anchors": [
-        {
-          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "git_blob": "3c962707818d3ad976867221a2f76da20e001e11",
-          "path": "app/src/main/java/io/legado/app/data/entities/BookChapter.kt",
-          "symbol_id": "kotlin://io.legado.app.data.entities.BookChapter/getAbsoluteURL"
-        },
-        {
-          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "git_blob": "af03cf51cef2eb31f54b8240c39e868ceabdba54",
-          "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
-          "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook/getContentAwait"
-        },
-        {
-          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da",
-          "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
-          "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/analyzeUrl"
-        }
-      ]
-    },
-    {
-      "target": "IOS-SOURCE-RUNTIME-ENDPOINT-PRODUCT-INTEGRATION-001",
-      "title": "贯通详情目录正文的端点请求表达式",
-      "fixture_id": "source-endpoint-product-integration-v1",
-      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-04",
-      "prerequisite_task_ids": [
-        "IOS-SOURCE-RUNTIME-ENDPOINT-REQUEST-EXPRESSION-001"
-      ],
-      "validation": "tests",
-      "test_filter": "SourceEndpointProductIntegrationTests",
-      "additional_allowed_paths": [],
-      "source_anchors": [
-        {
-          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "git_blob": "3c962707818d3ad976867221a2f76da20e001e11",
-          "path": "app/src/main/java/io/legado/app/data/entities/BookChapter.kt",
-          "symbol_id": "kotlin://io.legado.app.data.entities.BookChapter/getAbsoluteURL"
-        },
-        {
-          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "git_blob": "af03cf51cef2eb31f54b8240c39e868ceabdba54",
-          "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
-          "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook/getContentAwait"
-        },
-        {
-          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "git_blob": "9ac49ded1fe34bbf8bf083fadbbe78be8087f8da",
-          "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
-          "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/analyzeUrl"
-        }
-      ]
-    },
-    {
-      "target": "IOS-SOURCE-RUNTIME-ENDPOINT-PERSISTENCE-001",
-      "title": "贯通搜索书架章节与数据库的请求表达式",
-      "fixture_id": "source-endpoint-persistence-v1",
-      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-04",
-      "prerequisite_task_ids": [
-        "IOS-SOURCE-RUNTIME-ENDPOINT-PRODUCT-INTEGRATION-001"
-      ],
-      "validation": "tests",
-      "test_filter": "SourceEndpointPersistenceTests",
+      "test_filter": "SourceMultipageRuleImportTests",
       "additional_allowed_paths": [
-        "ios/Packages/LegadoKit/Sources/LibraryDomain/**",
-        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
-        "ios/Packages/LegadoKit/Sources/AppNavigation/**",
-        "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
-        "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
-        "ios/Apps/Legado/App/**"
+        "ios/Apps/Legado/App/SearchEnvironment.swift"
       ],
       "source_anchors": [
         {
           "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "git_blob": "3c962707818d3ad976867221a2f76da20e001e11",
-          "path": "app/src/main/java/io/legado/app/data/entities/BookChapter.kt",
-          "symbol_id": "kotlin://io.legado.app.data.entities.BookChapter/getAbsoluteURL"
+          "path": "app/src/main/java/io/legado/app/data/entities/rule/TocRule.kt",
+          "symbol_id": "kotlin://io.legado.app.data.entities.rule/TocRule/nextTocUrl"
         },
         {
           "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "git_blob": "af03cf51cef2eb31f54b8240c39e868ceabdba54",
-          "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
-          "symbol_id": "kotlin://io.legado.app.model.webBook/WebBook/getContentAwait"
+          "path": "app/src/main/java/io/legado/app/data/entities/rule/ContentRule.kt",
+          "symbol_id": "kotlin://io.legado.app.data.entities.rule/ContentRule/nextContentUrl"
+        }
+      ]
+    },
+    {
+      "target": "IOS-SOURCE-RUNTIME-MULTIPAGE-PIPELINE-001",
+      "title": "贯通目录与正文多页请求合并",
+      "fixture_id": "source-multipage-pipeline-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-04",
+      "prerequisite_task_ids": [
+        "IOS-SOURCE-RUNTIME-MULTIPAGE-RULE-IMPORT-001"
+      ],
+      "validation": "tests",
+      "test_filter": "SourceMultipagePipelineTests",
+      "additional_allowed_paths": [],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/model/webBook/BookChapterList.kt",
+          "symbol_id": "kotlin://io.legado.app.model.webBook/BookChapterList/analyzeChapterList"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/model/webBook/BookContent.kt",
+          "symbol_id": "kotlin://io.legado.app.model.webBook/BookContent/analyzeContent"
         }
       ]
     }
   ],
   "stages": [
     {
-      "id": "P13-01-SOURCE-ENDPOINT-VALUE",
-      "title": "端点值保留逻辑 URL 与请求 option",
-      "outcome": "SourceRuntime 可对相对 URL 补全后保留 option，并为非搜索阶段生成 POST/Header/Retry RequestPlan。",
+      "id": "P14-01-MULTIPAGE-RULE-IMPORT",
+      "title": "下一页规则进入 iOS 书源定义",
+      "outcome": "Android 书源 JSON 中的 nextTocUrl 与 nextContentUrl 不再在导入时丢失。",
       "selectors": [
         {
-          "id": "SOURCE-ENDPOINT-REQUEST-EXPRESSION",
+          "id": "SOURCE-MULTIPAGE-RULE-IMPORT",
           "task_ids": [
-            "IOS-SOURCE-RUNTIME-ENDPOINT-REQUEST-EXPRESSION-001"
+            "IOS-SOURCE-RUNTIME-MULTIPAGE-RULE-IMPORT-001"
           ]
         }
       ]
     },
     {
-      "id": "P13-02-SOURCE-ENDPOINT-PRODUCT",
-      "title": "详情目录正文消费完整请求表达式",
-      "outcome": "SourceBook 与 SourceChapter 保留端点，详情、目录和正文按 URL option 发出 POST/body/header/retry 请求。",
+      "id": "P14-02-MULTIPAGE-PIPELINE",
+      "title": "目录与正文按下一页规则持续请求",
+      "outcome": "SourceRuntime 在循环保护下合并多页目录与正文，并将最终结果交给产品主链。",
       "selectors": [
         {
-          "id": "SOURCE-ENDPOINT-PRODUCT-INTEGRATION",
+          "id": "SOURCE-MULTIPAGE-PIPELINE",
           "task_ids": [
-            "IOS-SOURCE-RUNTIME-ENDPOINT-PRODUCT-INTEGRATION-001"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "P13-03-SOURCE-ENDPOINT-PERSISTENCE",
-      "title": "请求表达式贯穿产品模型与持久化",
-      "outcome": "书籍和章节以逻辑 URL 建立身份，同时在导航、书架和 GRDB 中独立保存完整请求表达式。",
-      "selectors": [
-        {
-          "id": "SOURCE-ENDPOINT-PERSISTENCE",
-          "task_ids": [
-            "IOS-SOURCE-RUNTIME-ENDPOINT-PERSISTENCE-001"
+            "IOS-SOURCE-RUNTIME-MULTIPAGE-PIPELINE-001"
           ]
         }
       ]
