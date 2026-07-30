@@ -1,1 +1,1 @@
-{"active_task":null,"attempt":0,"last_completed":{"at":"2026-07-30T10:38:09Z","sequence":264,"task_id":"IOS-CHARACTERIZE-LIBRARY-CHAPTER-TOC-UPDATE-RUNTIME-001"},"schema_version":2,"status":"idle","verification":null}
+{"active_task":"IOS-APP-NAVIGATION-CHAPTER-TOC-001","attempt":0,"last_completed":{"at":"2026-07-30T10:38:09Z","sequence":264,"task_id":"IOS-CHARACTERIZE-LIBRARY-CHAPTER-TOC-UPDATE-RUNTIME-001"},"schema_version":2,"status":"running","verification":null}
