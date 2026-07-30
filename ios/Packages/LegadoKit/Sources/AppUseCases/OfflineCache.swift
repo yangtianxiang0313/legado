@@ -96,11 +96,28 @@ public extension ShelfLibrary {
         while !finished {
           await queue.beginAttempt(chapter.index)
           do {
-            let document = try await loader.load(
-              book: book,
-              chapter: chapter,
-              characterOffset: 0
-            )
+            let document: ReaderDocument
+            if
+              let boundaryLoader =
+                loader as? any ChapterBoundaryReaderContentLoading
+            {
+              let nextChapter =
+                chapters.indices.contains(offset + 1)
+                ? chapters[offset + 1]
+                : chapters.first
+              document = try await boundaryLoader.load(
+                book: book,
+                chapter: chapter,
+                nextChapter: nextChapter,
+                characterOffset: 0
+              )
+            } else {
+              document = try await loader.load(
+                book: book,
+                chapter: chapter,
+                characterOffset: 0
+              )
+            }
             guard !document.content.isEmpty else {
               throw OfflineCacheFailure.emptyContent
             }

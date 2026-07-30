@@ -11,7 +11,20 @@ public protocol ReaderContentLoading: Sendable {
   ) async throws -> ReaderDocument
 }
 
-public struct SourceReaderContentLoader: ReaderContentLoading, Sendable {
+public protocol ChapterBoundaryReaderContentLoading:
+  ReaderContentLoading
+{
+  func load(
+    book: ShelfBookItem,
+    chapter: LibraryDomain.BookChapter,
+    nextChapter: LibraryDomain.BookChapter?,
+    characterOffset: Int
+  ) async throws -> ReaderDocument
+}
+
+public struct SourceReaderContentLoader:
+  ChapterBoundaryReaderContentLoading, Sendable
+{
   private let sources: [SearchSourceDescriptor]
   private let transport: any HTTPTransport
   private let cookieStore: SourceCookieStore
@@ -31,6 +44,20 @@ public struct SourceReaderContentLoader: ReaderContentLoading, Sendable {
     chapter: LibraryDomain.BookChapter,
     characterOffset: Int
   ) async throws -> ReaderDocument {
+    try await load(
+      book: book,
+      chapter: chapter,
+      nextChapter: nil,
+      characterOffset: characterOffset
+    )
+  }
+
+  public func load(
+    book: ShelfBookItem,
+    chapter: LibraryDomain.BookChapter,
+    nextChapter: LibraryDomain.BookChapter?,
+    characterOffset: Int
+  ) async throws -> ReaderDocument {
     guard
       let source = sources.first(where: {
         $0.id == chapter.sourceID
@@ -43,7 +70,10 @@ public struct SourceReaderContentLoader: ReaderContentLoading, Sendable {
       definition: source.definition,
       transport: transport,
       cookieStore: cookieStore
-    ).content(chapterURL: chapter.requestExpression)
+    ).content(
+      chapterURL: chapter.requestExpression,
+      nextChapterURL: nextChapter?.requestExpression
+    )
     return ReaderDocument(
       position: ReaderPosition(
         bookID: book.id,
@@ -91,6 +121,26 @@ public struct RepositoryReaderContentLoader:
         ),
         title: chapter.title,
         content: content
+      )
+    }
+    if
+      let boundaryLoader =
+        fallback as? any ChapterBoundaryReaderContentLoading
+    {
+      let chapters = try await repository.chapters(
+        bookID: book.id
+      ).sorted { $0.index < $1.index }
+      let index = chapters.firstIndex { $0.id == chapter.id }
+      let nextChapter = index.flatMap {
+        chapters.indices.contains($0 + 1)
+          ? chapters[$0 + 1]
+          : chapters.first
+      }
+      return try await boundaryLoader.load(
+        book: book,
+        chapter: chapter,
+        nextChapter: nextChapter,
+        characterOffset: characterOffset
       )
     }
     let document = try await fallback.load(
