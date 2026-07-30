@@ -2919,6 +2919,18 @@ def reconcile(root: Path) -> Mapping[str, Any]:
         validate_task(root, task)
         if task.get("id") != projected["active_task"]:
             raise LoopError("ACTIVE_TASK_ID_DRIFT")
+        if (
+            projected.get("status") == "running"
+            and projected.get("attempt") == 0
+            and projected.get("verification") is None
+            and not git(root, "status", "--porcelain")
+        ):
+            head = git(root, "rev-parse", "HEAD")
+            if task.get("base_commit") != head:
+                task = dict(task)
+                task["base_commit"] = head
+                write_json(task_path, task)
+                repairs.append("rebased_unstarted_task")
     try:
         state = current(root)
     except LoopError:
