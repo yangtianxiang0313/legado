@@ -557,19 +557,82 @@ def prepare(
         except GoldenPublisherError:
             exact_replay = False
         if not exact_replay:
-            raise GoldenPublisherError("GOLDEN_ALREADY_PUBLISHED_CONFLICT")
-        return {
-            "schema_version": 2,
-            "status": "already_published",
-            "authority": "protected_android_golden",
-            "fixture_id": scenario_id,
-            "run_id": authorized_run_id,
-            "source_digest": authorized_source_digest,
-            "golden_sha256": golden_sha256,
-            "manifest_sha256": _sha256(manifest_bytes),
-            "release_receipt_sha256": _sha256(receipt_bytes),
-            "files": [],
-        }
+            existing_golden_path = root / _string(
+                existing.get("path"),
+                "existing.path",
+            )
+            existing_receipt_relative = _string(
+                existing.get("release_receipt"),
+                "existing.release_receipt",
+            )
+            existing_receipt_path = root / existing_receipt_relative
+            existing_golden_sha256 = _string(
+                existing.get("golden_sha256"),
+                "existing.golden_sha256",
+            )
+            existing_run_id = _string(
+                existing.get("run_id"),
+                "existing.run_id",
+            )
+            existing_source_digest = _string(
+                existing.get("source_digest"),
+                "existing.source_digest",
+            )
+            existing_proposal_sha256 = _string(
+                existing.get("proposal_sha256"),
+                "existing.proposal_sha256",
+            )
+            existing_receipt = _object(
+                exact_json.loads(
+                    _safe_regular(existing_receipt_path).read_bytes()
+                ),
+                "existing release receipt",
+            )
+            if (
+                existing.get("path") != published_entry["path"]
+                or _sha256(
+                    _safe_regular(existing_golden_path).read_bytes()
+                )
+                != existing_golden_sha256
+                or existing_receipt.get("authority")
+                != "protected_android_golden"
+                or existing_receipt.get("fixture_id") != scenario_id
+                or existing_receipt.get("run_id") != existing_run_id
+                or existing_receipt.get("source_digest")
+                != existing_source_digest
+                or existing_receipt.get("proposal_sha256")
+                != existing_proposal_sha256
+                or existing_receipt.get("golden_sha256")
+                != existing_golden_sha256
+                or existing_receipt.get("golden_path")
+                != existing.get("path")
+                or existing_run_id == authorized_run_id
+                or receipt_path.exists()
+            ):
+                raise GoldenPublisherError(
+                    "GOLDEN_ALREADY_PUBLISHED_CONFLICT"
+                )
+            receipt["supersedes"] = {
+                "run_id": existing_run_id,
+                "source_digest": existing_source_digest,
+                "proposal_sha256": existing_proposal_sha256,
+                "golden_sha256": existing_golden_sha256,
+                "release_receipt": existing_receipt_relative,
+            }
+            receipt_bytes = _canonical_bytes(exact_json, receipt)
+        else:
+            return {
+                "schema_version": 2,
+                "status": "already_published",
+                "authority": "protected_android_golden",
+                "fixture_id": scenario_id,
+                "run_id": authorized_run_id,
+                "source_digest": authorized_source_digest,
+                "golden_sha256": golden_sha256,
+                "manifest_sha256": _sha256(manifest_bytes),
+                "release_receipt_sha256": _sha256(receipt_bytes),
+                "files": [],
+            }
 
     output = _external_empty_directory(root, output_dir)
     _private_write(output / "manifest.json", manifest_bytes)

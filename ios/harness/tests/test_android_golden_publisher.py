@@ -404,6 +404,74 @@ class AndroidGoldenPublisherTests(unittest.TestCase):
         ):
             self._prepare(self.root / "conflict")
 
+    def test_prepare_allows_attested_revision_and_supersedes_release(self):
+        first_output = self.root / "initial-revision"
+        first = self._prepare(first_output)
+        self._install(first_output)
+        manifest_path = (
+            self.publisher_root
+            / "ios/harness/goldens/manifest.json"
+        )
+        first_manifest = json.loads(manifest_path.read_text())
+        first_entry = first_manifest["fixtures"][self.scenario]
+        first_receipt = first_entry["release_receipt"]
+
+        self.run_id = "43/1"
+        self.source_digest = "d" * 40
+        self.proposal["producer"]["run_id"] = self.run_id
+        self.payload = ci_proposal._dump(
+            {
+                "schema_version": 1,
+                "fixture_id": self.scenario,
+                "scenario_id": self.scenario,
+                "result": {
+                    "method": "POST",
+                    "body": "keyword=revision",
+                },
+            }
+        )
+        self.proposal["fixtures"][0]["payload_sha256"] = self._sha256(
+            self.payload
+        )
+        self._refresh_proposal()
+        self.evidence_archive.unlink()
+        ci_proposal.deterministic_tar(
+            self.evidence_archive,
+            {
+                f"evidence/payloads/{self.scenario}.json":
+                    self.payload,
+                "evidence/run.json": b"{}",
+                "evidence/runner-environment.json": b"{}",
+            },
+        )
+
+        revision_output = self.root / "revision"
+        revision = self._prepare(revision_output)
+        self.assertEqual(
+            "staged_for_external_publisher",
+            revision["status"],
+        )
+        staged_receipt = json.loads(
+            (
+                revision_output
+                / "releases"
+                / f"{self.scenario}-43-1.json"
+            ).read_text()
+        )
+        self.assertEqual(
+            {
+                "run_id": first_entry["run_id"],
+                "source_digest": first_entry["source_digest"],
+                "proposal_sha256": first_entry["proposal_sha256"],
+                "golden_sha256": first_entry["golden_sha256"],
+                "release_receipt": first_receipt,
+            },
+            staged_receipt["supersedes"],
+        )
+        self.assertTrue(
+            (self.publisher_root / first_receipt).is_file()
+        )
+
     def test_prepare_accepts_a_symlinked_gh_executable(self):
         linked = self.root / "linked-gh"
         linked.symlink_to(self.gh)
