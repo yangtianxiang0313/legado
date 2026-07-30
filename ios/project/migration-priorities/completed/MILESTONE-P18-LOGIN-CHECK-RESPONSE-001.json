@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P18-LOGIN-CHECK-RESPONSE-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P18 loginCheckJs 响应替换进入书源主链",
   "objective": "依据已冻结的 Android 搜索流水线 Golden，把 loginCheckJs 在解析前读取并替换 StrResponse 的语义接入 FullCompat：SourceRuntime 只定义结构化响应脚本合同，ScriptJavaScriptCore 提供受限的 Android StrResponse 兼容外观，搜索、发现、详情、目录和正文统一消费替换后的正文与最终 URL。",
@@ -12,6 +12,23 @@
     "脚本返回的新 URL 成为相对链接解析基准，返回的新 body 成为后续规则输入",
     "本地 FullCompat 书源复现 Android Golden 中 login-check-body-transform 的结构化结果"
   ],
+  "final_verification": {
+    "kind": "focused_tests_plus_single_app_build",
+    "completed_at": "2026-07-31T04:59:42+08:00",
+    "commands": [
+      "swift test --package-path ios/Packages/LegadoKit --disable-automatic-resolution --filter SourceScriptResponseContractTests",
+      "swift test --package-path ios/Packages/LegadoKit --disable-automatic-resolution --filter JavaScriptCoreResponseBridgeTests",
+      "swift test --package-path ios/Packages/LegadoKit --disable-automatic-resolution --filter SourceLoginCheckProductIntegrationTests",
+      "xcodebuild -project ios/Apps/Legado/Legado.xcodeproj -scheme LegadoApp -destination generic/platform=iOS Simulator CODE_SIGNING_ALLOWED=NO build"
+    ],
+    "result": "3 个合同测试、4 个桥接测试、2 个产品链路测试通过；LegadoApp 编译成功。",
+    "evidence": [
+      ".harness-runtime/loop/IOS-SOURCE-RUNTIME-SCRIPT-RESPONSE-CONTRACT-001/attempt-1",
+      ".harness-runtime/loop/IOS-SOURCE-RUNTIME-JAVASCRIPTCORE-STRRESPONSE-BRIDGE-001/attempt-1",
+      ".harness-runtime/loop/IOS-SOURCE-RUNTIME-LOGIN-CHECK-PRODUCT-INTEGRATION-001/attempt-1",
+      "ios/harness/goldens/android-legado-v1/sl-source-pipeline-search-runtime-001.json#/artifact/result/value/portable_known_projection"
+    ]
+  },
   "deferred_policy": "本里程碑只实现已由 sl-source-pipeline-search-runtime-001 冻结的响应 URL/body 替换；source.login()、java.getResponse()、任意 Packages、凭据输入和支付副作用继续拒绝，等待独立业务特征化。",
   "deliveries": [
     {
