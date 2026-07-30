@@ -63,7 +63,7 @@
       ]
     },
     {
-      "target": "IOS-APP-NAVIGATION-DYNAMIC-WEBKIT-ADAPTER-001",
+      "target": "IOS-SOURCE-RUNTIME-DYNAMIC-WEBKIT-ADAPTER-001",
       "title": "实现 WKWebView 页面端口并注入书源产品环境",
       "fixture_id": "source-dynamic-webkit-adapter-v1",
       "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
@@ -120,7 +120,7 @@
         {
           "id": "APP-DYNAMIC-WEBKIT-ADAPTER",
           "task_ids": [
-            "IOS-APP-NAVIGATION-DYNAMIC-WEBKIT-ADAPTER-001"
+            "IOS-SOURCE-RUNTIME-DYNAMIC-WEBKIT-ADAPTER-001"
           ]
         }
       ]
