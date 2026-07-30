@@ -5,7 +5,7 @@
   "mode": "critical_path_only",
   "title": "P39 启用 SwiftSoup HTML 适配层",
   "objective": "按照已批准的依赖白名单，一次只启用 SwiftSoup 2.13.6：精确锁定 SwiftPM revision，新增只允许 import SwiftSoup 的 HTMLSwiftSoup target，以库中立投影证明复杂 CSS 和容错 HTML 可解析；本里程碑不顺带改写 SourceRuntime 产品管线，也不引入 Kanna。",
-  "validation_policy": "运行 dependency/package 合同、HTMLSwiftSoup 聚焦测试和一次 App 构建；依赖基础设施发生变化，因此允许这两个相关合同检查，但不运行全量 Harness、全量 Swift 测试或模拟器。",
+  "validation_policy": "只运行 HTMLSwiftSoup 聚焦测试与轻量依赖边界检查；当前 adapter 尚未接入 App，App 构建不能证明该风险，因此不运行 App 构建、全量 Harness、全量 Swift 测试或模拟器。",
   "stages": [
     {
       "id": "P39-S1",
@@ -32,7 +32,9 @@
       ],
       "validation": "tests",
       "test_filter": "HTMLSwiftSoupTests",
-      "additional_allowed_paths": [],
+      "additional_allowed_paths": [
+        "ios/project/baseline.json"
+      ],
       "source_anchors": []
     }
   ]
