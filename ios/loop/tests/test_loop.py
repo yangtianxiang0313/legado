@@ -1029,6 +1029,9 @@ class MinimalLoopTests(unittest.TestCase):
         detail = loop.app_navigation_delivery_contract(
             "rl-ui-book-detail-conditional-actions-001"
         )
+        search = loop.app_navigation_delivery_contract(
+            "rl-ui-discovery-search-flow-001"
+        )
 
         self.assertEqual(
             "testStartupFirstUseAndRestore",
@@ -1039,6 +1042,10 @@ class MinimalLoopTests(unittest.TestCase):
             detail["ui_acceptance"]["test_method"],
         )
         self.assertEqual(
+            "testDiscoverySearchFlow",
+            search["ui_acceptance"]["test_method"],
+        )
+        self.assertEqual(
             (
                 "ios/harness/ui/expected/"
                 "ui-book-detail-conditional-actions-v1.json"
@@ -1046,6 +1053,7 @@ class MinimalLoopTests(unittest.TestCase):
             detail["ui_acceptance"]["expected"],
         )
         self.assertIn("书籍详情操作矩阵", detail["goal"])
+        self.assertIn("移除静态样例", search["goal"])
         with self.assertRaisesRegex(
             loop.LoopError,
             "APP_NAVIGATION_UI_CONTRACT_NOT_MAPPED",

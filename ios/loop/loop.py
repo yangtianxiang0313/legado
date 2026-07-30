@@ -1144,6 +1144,20 @@ def app_navigation_delivery_contract(
             ),
             "test_method": "testBookDetailConditionalActions",
         },
+        "rl-ui-discovery-search-flow-001": {
+            "goal": (
+                "按照冻结 Android 搜索流程，在 AppUseCases 中实现搜索会话与"
+                "范围状态，在 AppNavigation 中传递稳定候选路由，并由 AppShell "
+                "接入 SourceRuntime 与 LibraryDomain 的真实结果，移除静态样例。"
+            ),
+            "acceptance_id": "structured-search-flow-acceptance",
+            "scenario_id": "ui-discovery-search-flow-v1",
+            "expected": (
+                "ios/harness/ui/expected/"
+                "ui-discovery-search-flow-v1.json"
+            ),
+            "test_method": "testDiscoverySearchFlow",
+        },
     }
     feature = features.get(fixture_id)
     if feature is None:
