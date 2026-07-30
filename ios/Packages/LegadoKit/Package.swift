@@ -69,6 +69,7 @@ let package = Package(
             dependencies: [
                 "LegadoCore",
                 "LibraryDomain",
+                "ReaderCore",
                 "SourceFormat",
                 "RuleRuntime",
                 "SourceRuntime",
@@ -79,6 +80,10 @@ let package = Package(
         .testTarget(
             name: "SourceRuntimeTests",
             dependencies: ["LegadoCore", "SourceRuntime", "TestSupport"]
+        ),
+        .testTarget(
+            name: "ReaderCoreTests",
+            dependencies: ["ReaderCore"]
         ),
         .testTarget(
             name: "TestSupportTests",
