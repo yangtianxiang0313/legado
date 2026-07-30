@@ -41,6 +41,22 @@ final class URLSessionHTTPTransportTests: XCTestCase {
             request.value(forHTTPHeaderField: "X-Book"),
             "one"
         )
+        XCTAssertEqual(
+            request.value(forHTTPHeaderField: "User-Agent"),
+            URLSessionHTTPTransport.androidCompatibleDefaultUserAgent
+        )
+        XCTAssertEqual(
+            request.value(forHTTPHeaderField: "Keep-Alive"),
+            "300"
+        )
+        XCTAssertEqual(
+            request.value(forHTTPHeaderField: "Connection"),
+            "Keep-Alive"
+        )
+        XCTAssertEqual(
+            request.value(forHTTPHeaderField: "Cache-Control"),
+            "no-cache"
+        )
         XCTAssertEqual(request.httpBody, Data("request".utf8))
         XCTAssertEqual(request.timeoutInterval, 2.5)
         XCTAssertEqual(response.statusCode, 206)
@@ -53,6 +69,59 @@ final class URLSessionHTTPTransportTests: XCTestCase {
             ["network"]
         )
         XCTAssertEqual(response.body.bytes, Data("payload".utf8))
+    }
+
+    func testPreservesExplicitUserAgentAndRemovesNullSentinel()
+        async throws
+    {
+        let explicitLoader = RecordingLoader(
+            result: .success(okResponse())
+        )
+        let explicitTransport = URLSessionHTTPTransport(
+            loader: explicitLoader
+        )
+        _ = try await explicitTransport.execute(
+            HTTPRequest(
+                method: .get,
+                url: try HTTPURL("https://example.com"),
+                headers: HTTPHeaders([
+                    try HTTPHeader(
+                        name: "User-Agent",
+                        value: "Source Custom UA"
+                    ),
+                ])
+            )
+        )
+        let explicitRequest = await explicitLoader.lastRequest()
+        XCTAssertEqual(
+            explicitRequest?.value(
+                forHTTPHeaderField: "User-Agent"
+            ),
+            "Source Custom UA"
+        )
+
+        let nullLoader = RecordingLoader(
+            result: .success(okResponse())
+        )
+        let nullTransport = URLSessionHTTPTransport(
+            loader: nullLoader
+        )
+        _ = try await nullTransport.execute(
+            HTTPRequest(
+                method: .get,
+                url: try HTTPURL("https://example.com"),
+                headers: HTTPHeaders([
+                    try HTTPHeader(
+                        name: "User-Agent",
+                        value: "null"
+                    ),
+                ])
+            )
+        )
+        let nullRequest = await nullLoader.lastRequest()
+        XCTAssertNil(
+            nullRequest?.value(forHTTPHeaderField: "User-Agent")
+        )
     }
 
     func testRejectsOversizedResponse() async throws {
@@ -136,6 +205,18 @@ final class URLSessionHTTPTransportTests: XCTestCase {
         HTTPRequest(
             method: .get,
             url: try HTTPURL("https://example.com")
+        )
+    }
+
+    private func okResponse() -> (Data, URLResponse) {
+        (
+            Data(),
+            HTTPURLResponse(
+                url: URL(string: "https://example.com")!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            )!
         )
     }
 }

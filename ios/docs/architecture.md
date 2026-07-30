@@ -152,6 +152,12 @@ UI 定制只能依赖书源 Package 的公开产品，书源 Package 禁止反�
 HTTP/HTTPS 站点，App 明确声明 ATS 任意网络加载；请求头、Cookie、脚本和正文仍必须
 遵守 RuntimePolicy、脱敏与能力边界。
 
+`URLSessionHTTPTransport` 在平台边界复现冻结 Android `HttpHelper` 的默认请求：
+缺少 `User-Agent` 时注入 Chrome 123 兼容 UA，书源显式声明 `User-Agent: null`
+时不注入，并追加 `Keep-Alive: 300`、`Connection: Keep-Alive` 与
+`Cache-Control: no-cache`；默认 request/resource timeout 分别为 15/60 秒。
+书源显式提供的非空 UA 优先于默认值。
+
 WebDAV 的具体边界由 [ADR-0008](adr/0008-integrationkit-webdav-boundary.md) 固定：
 首版不引入 WebDAV 三方库，`IntegrationKit` 只依赖 `LegadoCore`，
 `WebDAVFoundation` 只依赖 `LegadoCore` 与 `IntegrationKit`，`AppUseCases`

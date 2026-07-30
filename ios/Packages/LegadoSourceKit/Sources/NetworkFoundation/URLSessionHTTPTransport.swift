@@ -12,13 +12,19 @@ extension URLSession: URLSessionDataLoading {}
 
 public actor URLSessionHTTPTransport: HTTPTransport {
     public static let defaultMaximumResponseBytes = 32 * 1_024 * 1_024
+    public static let androidCompatibleDefaultUserAgent =
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        + "AppleWebKit/537.36 (KHTML, like Gecko) "
+        + "Chrome/123.0.0.0 Safari/537.36"
 
     private let loader: any URLSessionDataLoading
     private let maximumResponseBytes: Int
+    private let defaultUserAgent: String
 
     public init(
         configuration: URLSessionConfiguration = .default,
-        maximumResponseBytes: Int = defaultMaximumResponseBytes
+        maximumResponseBytes: Int = defaultMaximumResponseBytes,
+        defaultUserAgent: String = androidCompatibleDefaultUserAgent
     ) {
         let isolated = configuration.copy()
             as? URLSessionConfiguration ?? configuration
@@ -26,16 +32,21 @@ public actor URLSessionHTTPTransport: HTTPTransport {
         isolated.httpShouldSetCookies = false
         isolated.urlCache = nil
         isolated.requestCachePolicy = .reloadIgnoringLocalCacheData
+        isolated.timeoutIntervalForRequest = 15
+        isolated.timeoutIntervalForResource = 60
         self.loader = URLSession(configuration: isolated)
         self.maximumResponseBytes = max(0, maximumResponseBytes)
+        self.defaultUserAgent = defaultUserAgent
     }
 
     public init(
         loader: any URLSessionDataLoading,
-        maximumResponseBytes: Int = defaultMaximumResponseBytes
+        maximumResponseBytes: Int = defaultMaximumResponseBytes,
+        defaultUserAgent: String = androidCompatibleDefaultUserAgent
     ) {
         self.loader = loader
         self.maximumResponseBytes = max(0, maximumResponseBytes)
+        self.defaultUserAgent = defaultUserAgent
     }
 
     public func execute(
@@ -47,7 +58,35 @@ public actor URLSessionHTTPTransport: HTTPTransport {
         }
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = request.method.rawValue
-        for header in request.headers.fields {
+        var fields = request.headers.fields
+        let userAgent = fields.last(where: {
+            $0.name == "user-agent"
+        })?.value
+        fields.removeAll {
+            $0.name == "user-agent" && userAgent == "null"
+        }
+        if userAgent == nil {
+            fields.append(
+                try HTTPHeader(
+                    name: "User-Agent",
+                    value: defaultUserAgent
+                )
+            )
+        }
+        fields.append(
+            contentsOf: [
+                try HTTPHeader(name: "Keep-Alive", value: "300"),
+                try HTTPHeader(
+                    name: "Connection",
+                    value: "Keep-Alive"
+                ),
+                try HTTPHeader(
+                    name: "Cache-Control",
+                    value: "no-cache"
+                ),
+            ]
+        )
+        for header in fields {
             urlRequest.addValue(
                 header.value,
                 forHTTPHeaderField: header.name
