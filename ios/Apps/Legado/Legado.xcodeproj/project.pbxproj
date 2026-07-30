@@ -11,6 +11,7 @@
 		7CF2EBDB0B65A2B3E697C3BD /* LegadoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB97AF8062C9ACB83622DB4D /* LegadoApp.swift */; };
 		8C9B2045210D4D12A72EDB80 /* BookDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F643378684698E56A60BB42 /* BookDetailView.swift */; };
 		21A4A736593B4A24A94DCE11 /* ChapterTOCView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C38E772DA644EC4AF99CB15 /* ChapterTOCView.swift */; };
+		47A4A736593B4A24A94DCE11 /* ReaderContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C38E772DA644EC4AF99CB15 /* ReaderContentView.swift */; };
 		9AEB7EA85E118BCDEF1BC722 /* RootShellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AA56687558EF2C28A2F526F /* RootShellView.swift */; };
 		DACC0FDD44450CF8A823AC81 /* LegadoStoreSafeKit in Frameworks */ = {isa = PBXBuildFile; productRef = 752C493A99E434E7A062F2B3 /* LegadoStoreSafeKit */; };
 		E1A98B56D9C34F74A21B0137 /* SearchEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2A98B56D9C34F74A21B0137 /* SearchEnvironment.swift */; };
@@ -34,6 +35,7 @@
 		7347A313DD725C4724AF05DC /* LegadoKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = LegadoKit; path = ../../Packages/LegadoKit; sourceTree = SOURCE_ROOT; };
 		8F643378684698E56A60BB42 /* BookDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookDetailView.swift; sourceTree = "<group>"; };
 		7C38E772DA644EC4AF99CB15 /* ChapterTOCView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChapterTOCView.swift; sourceTree = "<group>"; };
+		9C38E772DA644EC4AF99CB15 /* ReaderContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderContentView.swift; sourceTree = "<group>"; };
 		DB97AF8062C9ACB83622DB4D /* LegadoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegadoApp.swift; sourceTree = "<group>"; };
 		E2A98B56D9C34F74A21B0137 /* SearchEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchEnvironment.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -55,6 +57,7 @@
 			children = (
 				8F643378684698E56A60BB42 /* BookDetailView.swift */,
 				7C38E772DA644EC4AF99CB15 /* ChapterTOCView.swift */,
+				9C38E772DA644EC4AF99CB15 /* ReaderContentView.swift */,
 				DB97AF8062C9ACB83622DB4D /* LegadoApp.swift */,
 				1AA56687558EF2C28A2F526F /* RootShellView.swift */,
 				E2A98B56D9C34F74A21B0137 /* SearchEnvironment.swift */,
@@ -189,6 +192,7 @@
 			files = (
 				8C9B2045210D4D12A72EDB80 /* BookDetailView.swift in Sources */,
 				21A4A736593B4A24A94DCE11 /* ChapterTOCView.swift in Sources */,
+				47A4A736593B4A24A94DCE11 /* ReaderContentView.swift in Sources */,
 				7CF2EBDB0B65A2B3E697C3BD /* LegadoApp.swift in Sources */,
 				9AEB7EA85E118BCDEF1BC722 /* RootShellView.swift in Sources */,
 				E1A98B56D9C34F74A21B0137 /* SearchEnvironment.swift in Sources */,

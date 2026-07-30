@@ -120,7 +120,23 @@ struct RootShellView: View {
                 }
             )
         case .chapterTOC(let bookID):
-            ChapterTOCView(bookID: bookID, library: library)
+            ChapterTOCView(
+                bookID: bookID,
+                library: library,
+                openReader: { chapter in
+                    router.push(
+                        .reader(
+                            ReaderRoute(
+                                bookID: bookID,
+                                chapterID: chapter.id
+                            )
+                        ),
+                        on: .shelf
+                    )
+                }
+            )
+        case .reader(let target):
+            ReaderContentView(target: target, library: library)
         }
     }
 

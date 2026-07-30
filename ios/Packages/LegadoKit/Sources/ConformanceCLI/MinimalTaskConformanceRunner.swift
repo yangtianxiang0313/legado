@@ -54,6 +54,7 @@ public enum MinimalTaskConformanceRunner {
         || fixtureID == BookDetailStagingConformanceRunner.fixtureID
         || fixtureID == SearchUIFlowConformanceRunner.fixtureID
         || fixtureID == ChapterTOCConformanceRunner.fixtureID
+        || fixtureID == ReaderTOCHandoffConformanceRunner.fixtureID
       ? "runtime-lab"
       : "source-lab"
     let fixtureDirectory = try resolve(
@@ -231,6 +232,19 @@ public enum MinimalTaskConformanceRunner {
     }
     if fixtureID == ChapterTOCConformanceRunner.fixtureID {
       let run = try ChapterTOCConformanceRunner.run(
+        fixtureDirectory: fixtureDirectory
+      )
+      return try finish(
+        taskID: taskID,
+        fixtureID: fixtureID,
+        goldenPath: goldenPath,
+        actualArtifact: run.artifact,
+        canonicalPlans: run.requestPlan,
+        root: root
+      )
+    }
+    if fixtureID == ReaderTOCHandoffConformanceRunner.fixtureID {
+      let run = try ReaderTOCHandoffConformanceRunner.run(
         fixtureDirectory: fixtureDirectory
       )
       return try finish(

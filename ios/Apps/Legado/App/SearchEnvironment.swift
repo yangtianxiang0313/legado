@@ -31,6 +31,17 @@ enum SearchEnvironment {
         )
     }
 
+    static func makeReaderContentLoader() -> any ReaderContentLoading {
+        let externalBaseURL = ProcessInfo.processInfo.environment[
+            "LEGADO_SEARCH_BASE_URL"
+        ]
+        let baseURL = externalBaseURL ?? "http://legado.local"
+        return SourceReaderContentLoader(
+            sources: makeSources(baseURL: baseURL),
+            transport: makeTransport(externalBaseURL: externalBaseURL)
+        )
+    }
+
     private static func makeTransport(
         externalBaseURL: String?
     ) -> any HTTPTransport {
@@ -140,6 +151,10 @@ private actor LocalBookSourceTransport: HTTPTransport {
             where: { "\($0.path)/toc" == path }
         ) {
             body = book.tocHTML
+        } else if let match = Self.books.compactMap({
+            $0.chapterHTML(path: path)
+        }).first {
+            body = match
         } else {
             body = searchHTML(components: components)
         }
@@ -239,6 +254,36 @@ private struct LocalBook: Sendable {
           <div class="chapter"><a href="\(path)/chapter-1">第一章 启航</a></div>
           <div class="chapter"><a href="\(path)/chapter-2">第二章 回声</a></div>
           <div class="chapter"><a href="\(path)/chapter-3">第三章 归途</a></div>
+        </body></html>
+        """
+    }
+
+    func chapterHTML(path requestedPath: String) -> String? {
+        let chapters = [
+            (
+                "\(path)/chapter-1",
+                "第一章 启航",
+                ["星港的晨光越过舷窗。", "远航者点亮了失落信标。"]
+            ),
+            (
+                "\(path)/chapter-2",
+                "第二章 回声",
+                ["信号从群星深处返回。", "每一次回声都更接近真相。"]
+            ),
+            (
+                "\(path)/chapter-3",
+                "第三章 归途",
+                ["舰队沿着星图驶向故乡。", "新的旅程已经在地平线等待。"]
+            ),
+        ]
+        guard let chapter = chapters.first(
+            where: { $0.0 == requestedPath }
+        ) else { return nil }
+        let paragraphs = chapter.2.map { "<p>\($0)</p>" }.joined()
+        return """
+        <html><body>
+          <h1>\(chapter.1)</h1>
+          <div id="content">\(paragraphs)</div>
         </body></html>
         """
     }

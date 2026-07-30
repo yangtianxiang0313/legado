@@ -5,6 +5,62 @@ import LibraryDomain
 import ReaderCore
 import SourceRuntime
 
+public struct ReaderTOCHandoffFixtureProjection: Equatable, Sendable {
+  public let chapterIndex: Int
+  public let characterOffset: Int
+  public let chapterChanged: Bool
+
+  public init(
+    chapterIndex: Int,
+    characterOffset: Int,
+    chapterChanged: Bool
+  ) {
+    self.chapterIndex = chapterIndex
+    self.characterOffset = characterOffset
+    self.chapterChanged = chapterChanged
+  }
+}
+
+public enum ReaderTOCHandoffFixture {
+  public static func project(
+    completion: String,
+    producer: String,
+    selectedIndex: Int?,
+    currentIndex: Int?,
+    characterOffset: Int?
+  ) -> ReaderTOCHandoffFixtureProjection? {
+    let mappedProducer: ReaderTOCProducer
+    switch producer {
+    case "null_intent":
+      mappedProducer = .nullPayload
+    case "empty_intent":
+      mappedProducer = .emptyPayload
+    case "chapter":
+      mappedProducer = .chapter
+    case "bookmark":
+      mappedProducer = .bookmark
+    case "reverse":
+      mappedProducer = .reverse
+    default:
+      return nil
+    }
+    guard let selection = ReaderTOCHandoffPolicy.selection(
+      completion: completion == "ok" ? .accepted : .canceled,
+      producer: mappedProducer,
+      selectedIndex: selectedIndex,
+      currentIndex: currentIndex,
+      characterOffset: characterOffset
+    ) else {
+      return nil
+    }
+    return ReaderTOCHandoffFixtureProjection(
+      chapterIndex: selection.chapterIndex,
+      characterOffset: selection.characterOffset,
+      chapterChanged: selection.chapterChanged
+    )
+  }
+}
+
 public enum FixtureOperation: String, Codable, Sendable {
   case sourceRoundTrip = "source_round_trip"
   case sourceLabSite = "source_lab_site"

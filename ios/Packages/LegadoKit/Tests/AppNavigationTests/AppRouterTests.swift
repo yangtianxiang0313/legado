@@ -54,4 +54,19 @@ final class AppRouterTests: XCTestCase {
         )
     }
 
+    @MainActor
+    func testReaderRouteCarriesStableChapterIdentityAndOffset() {
+        let target = ReaderRoute(
+            bookID: .init(rawValue: "book"),
+            chapterID: .init(rawValue: "chapter"),
+            characterOffset: 128
+        )
+        let router = AppRouter()
+
+        router.push(.reader(target))
+
+        XCTAssertEqual(router.path(for: .shelf), [.reader(target)])
+        XCTAssertEqual(target.characterOffset, 128)
+    }
+
 }

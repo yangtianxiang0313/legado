@@ -583,6 +583,88 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testReaderContentFlow() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = contract.projection == "regularSplit"
+            ? .landscapeLeft
+            : .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        require("action.shelf.openSearch").tap()
+        require("screen.search.books")
+        let searchField = app.searchFields.firstMatch
+        XCTAssertTrue(searchField.waitForExistence(timeout: 8))
+        searchField.tap()
+        searchField.typeText("星河纪事\n")
+        let result = app.staticTexts["星河纪事"].firstMatch
+        XCTAssertTrue(result.waitForExistence(timeout: 8))
+        result.tap()
+
+        require("screen.bookDetail")
+        let start = require("action.bookDetail.startReading")
+        let deadline = Date().addingTimeInterval(8)
+        while !start.isEnabled && Date() < deadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+        }
+        XCTAssertTrue(start.isEnabled)
+        start.tap()
+
+        require("screen.chapterTOC")
+        require("action.chapter.select.0").tap()
+        require("screen.reader")
+        let title = require("label.reader.chapterTitle")
+        let content = require("text.reader.content")
+        XCTAssertEqual(title.label, "第一章 启航")
+        XCTAssertTrue(content.label.contains("星港的晨光越过舷窗。"))
+        XCTAssertTrue(content.label.contains("远航者点亮了失落信标。"))
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "phases": [
+                [
+                    "id": "toc_selection",
+                    "screen": "screen.chapterTOC",
+                    "selected": "第一章 启航",
+                ],
+                [
+                    "id": "reader_loaded",
+                    "screen": "screen.reader",
+                    "chapter": "第一章 启航",
+                    "content_fragments": [
+                        "星港的晨光越过舷窗。",
+                        "远航者点亮了失落信标。",
+                    ],
+                ],
+            ],
+            "route_trace": [
+                ["operation": "push", "route_id": "search.books"],
+                [
+                    "operation": "push",
+                    "route_id":
+                        "book.detail:http://legado.local/books/star-river",
+                ],
+                ["operation": "push", "route_id": "book.toc:current"],
+                [
+                    "operation": "push",
+                    "route_id":
+                        "reader:http://legado.local/books/star-river"
+                            + "/chapter-1@0",
+                ],
+            ],
+        ])
+    }
+
     private func observeStartupCase(
         id: String,
         initial: String,

@@ -5,6 +5,7 @@ import SwiftUI
 struct ChapterTOCView: View {
     let bookID: LibraryDomain.BookID
     @Bindable var library: ShelfLibrary
+    let openReader: (LibraryDomain.BookChapter) -> Void
 
     @State private var book: ShelfBookItem?
     @State private var session: ChapterTOCSession?
@@ -68,6 +69,7 @@ struct ChapterTOCView: View {
                 .contentShape(Rectangle())
                 .onTapGesture {
                     selectedChapterID = chapter.id
+                    openReader(chapter)
                 }
                 .accessibilityElement(children: .combine)
                 .accessibilityIdentifier(

@@ -147,6 +147,15 @@ public final class ShelfLibrary {
     ChapterTOCSession(repository: repository, loader: loader)
   }
 
+  public func chapter(
+    bookID: LibraryDomain.BookID,
+    chapterID: LibraryDomain.ChapterID
+  ) async -> LibraryDomain.BookChapter? {
+    try? await repository.chapters(bookID: bookID).first {
+      $0.id == chapterID
+    }
+  }
+
   public func reset() async {
     try? await repository.reset()
     books = []

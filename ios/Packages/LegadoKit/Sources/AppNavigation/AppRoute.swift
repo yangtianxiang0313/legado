@@ -45,10 +45,27 @@ public struct SearchBookRoute: Codable, Hashable, Sendable {
     }
 }
 
+public struct ReaderRoute: Codable, Hashable, Sendable {
+    public let bookID: LibraryDomain.BookID
+    public let chapterID: LibraryDomain.ChapterID
+    public let characterOffset: Int
+
+    public init(
+        bookID: LibraryDomain.BookID,
+        chapterID: LibraryDomain.ChapterID,
+        characterOffset: Int = 0
+    ) {
+        self.bookID = bookID
+        self.chapterID = chapterID
+        self.characterOffset = max(0, characterOffset)
+    }
+}
+
 public enum AppRoute: Codable, Hashable, Identifiable, Sendable {
     case searchBooks
     case bookDetail(SearchBookRoute)
     case chapterTOC(LibraryDomain.BookID)
+    case reader(ReaderRoute)
 
     public var id: String {
         switch self {
@@ -58,6 +75,8 @@ public enum AppRoute: Codable, Hashable, Identifiable, Sendable {
             "book.detail:\(book.bookURL)"
         case .chapterTOC(let bookID):
             "book.toc:\(bookID.rawValue)"
+        case .reader(let target):
+            "reader:\(target.bookID.rawValue):\(target.chapterID.rawValue)"
         }
     }
 }
