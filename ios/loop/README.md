@@ -61,3 +61,15 @@ python3 -B ios/loop/loop.py advance \
 任务。完整 stdout/stderr 和 verification report 位于 `.harness-runtime/loop`，
 不进入 Git。旧 Harness 仅保留在 Git 历史；新的任务不得再生成 Recipe、
 WorkItem、Checkpoint 或 Evidence 副本。
+
+## 分层验证
+
+Loop 不再让每个小切片重复承担发布级验证：
+
+- `slice`：只跑所属领域合同、聚焦测试和结构化跨端对齐；
+- `ui_slice`：在 `slice` 基础上只跑一台主 iPhone Simulator；
+- `checkpoint`：仅用于 UI 拓扑、依赖启用、P0 里程碑和发布检查，运行完整
+  Swift 测试、iPhone+iPad 矩阵与 Oracle/Publisher 基础设施回归。
+
+Android 真源 Golden 仍是迁移语义的权威。瘦身只移除重复验证，不把 iOS
+测试结果反向当作 Android expected。

@@ -493,6 +493,11 @@ class MinimalLoopTests(unittest.TestCase):
                 "testStartupFirstUseAndRestore",
                 task["source"]["ui_acceptance"]["test_method"],
             )
+            self.assertEqual("ui_slice", task["acceptance"]["profile"])
+            self.assertEqual(
+                1,
+                len(task["source"]["ui_acceptance"]["simulators"]),
+            )
             self.assertEqual(
                 {"android_commit": "a" * 40},
                 task["source"]["android_baseline"],
@@ -1126,6 +1131,17 @@ class MinimalLoopTests(unittest.TestCase):
         self.assertEqual(
             "integration-lab-contract",
             task["acceptance"]["commands"][0]["id"],
+        )
+        self.assertEqual("slice", task["acceptance"]["profile"])
+        self.assertEqual(
+            [
+                "integration-lab-contract",
+                "business-knowledge-contract",
+            ],
+            [
+                command["id"]
+                for command in task["acceptance"]["commands"]
+            ],
         )
         self.assertIn(
             "ios/harness/integration-lab/**",

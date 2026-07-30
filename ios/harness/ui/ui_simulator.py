@@ -174,6 +174,36 @@ def ui_test_method(ui: Mapping[str, Any]) -> str:
     return value
 
 
+def expected_for_simulators(
+    expected: Mapping[str, Any],
+    simulator_ids: list[str],
+) -> Mapping[str, Any]:
+    expected_simulators = expected.get("simulators")
+    if not isinstance(expected_simulators, list):
+        raise UIAcceptanceError("UI_EXPECTED_SIMULATORS_INVALID")
+    selected = [
+        value
+        for value in expected_simulators
+        if (
+            isinstance(value, dict)
+            and value.get("simulator_id") in simulator_ids
+        )
+    ]
+    selected_ids = {
+        value.get("simulator_id")
+        for value in selected
+    }
+    if selected_ids != set(simulator_ids) or len(selected) != len(simulator_ids):
+        raise UIAcceptanceError("UI_EXPECTED_SIMULATOR_MISSING")
+    return {
+        **expected,
+        "simulators": sorted(
+            selected,
+            key=lambda value: str(value.get("simulator_id")),
+        ),
+    }
+
+
 def run(root: Path, task_path: str) -> Mapping[str, Any]:
     task_file = safe_path(root, task_path)
     try:
@@ -264,12 +294,13 @@ def run(root: Path, task_path: str) -> Mapping[str, Any]:
             key=lambda value: str(value.get("simulator_id")),
         ),
     }
-    difference = first_difference(expected, actual)
+    selected_expected = expected_for_simulators(expected, simulator_ids)
+    difference = first_difference(selected_expected, actual)
     return {
         "schema_version": 1,
         "scenario_id": ui["scenario_id"],
         "status": "equal" if difference is None else "different",
-        "expected": expected,
+        "expected": selected_expected,
         "actual": actual,
         "simulator_matrix": sorted(simulator_ids),
         "first_divergence": difference,

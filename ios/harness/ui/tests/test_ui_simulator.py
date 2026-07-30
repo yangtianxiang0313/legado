@@ -67,6 +67,33 @@ class UISimulatorContractTests(unittest.TestCase):
                 {"test_method": "testRootTopology;rm"}
             )
 
+    def test_expected_can_select_slice_from_checkpoint_matrix(self):
+        expected = {
+            "scenario_id": "reader",
+            "simulators": [
+                {"simulator_id": "SIM-PHONE-COMPACT-001"},
+                {"simulator_id": "SIM-PAD-REGULAR-001"},
+            ],
+        }
+
+        selected = ui_simulator.expected_for_simulators(
+            expected,
+            ["SIM-PHONE-COMPACT-001"],
+        )
+
+        self.assertEqual(
+            [{"simulator_id": "SIM-PHONE-COMPACT-001"}],
+            selected["simulators"],
+        )
+        with self.assertRaisesRegex(
+            ui_simulator.UIAcceptanceError,
+            "UI_EXPECTED_SIMULATOR_MISSING",
+        ):
+            ui_simulator.expected_for_simulators(
+                expected,
+                ["SIM-TV-001"],
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1152,8 +1152,10 @@ def characterization_fixture_id(
     return f"{fixture_prefix}-{slug}-001"
 
 
-def app_ui_simulators() -> list[Mapping[str, str]]:
-    return [
+def app_ui_simulators(
+    profile: str = "checkpoint",
+) -> list[Mapping[str, str]]:
+    simulators = [
         {
             "simulator_id": "SIM-PHONE-COMPACT-001",
             "name": "Legado Loop iPhone SE (3rd generation)",
@@ -1175,6 +1177,9 @@ def app_ui_simulators() -> list[Mapping[str, str]]:
             "projection": "regularSplit",
         },
     ]
+    if profile == "slice":
+        return simulators[:1]
+    return simulators
 
 
 def app_navigation_delivery_contract(
@@ -1286,7 +1291,7 @@ def app_navigation_delivery_contract(
             "project": "ios/Apps/Legado/Legado.xcodeproj",
             "scheme": "LegadoApp",
             "test_method": feature["test_method"],
-            "simulators": app_ui_simulators(),
+            "simulators": app_ui_simulators("slice"),
         },
     }
 
@@ -1405,6 +1410,7 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
                 ],
             },
             "acceptance": {
+                "profile": "slice",
                 "commands": [
                     {
                         "id": "dependency-contract",
@@ -1541,6 +1547,7 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
                 ],
             },
             "acceptance": {
+                "profile": "checkpoint",
                 "commands": [
                     {
                         "id": "package-contract",
@@ -1733,6 +1740,7 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
                 ],
             },
             "acceptance": {
+                "profile": "checkpoint",
                 "commands": [
                     {
                         "id": "dependency-contract",
@@ -1859,44 +1867,6 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "timeout_seconds": 300,
         },
     ]
-    extra_test_filters = []
-    if target == "IOS-APP-NAVIGATION-BOOK-DETAIL-STAGING-001":
-        extra_test_filters = [
-            ("database-grdb-tests", "DatabaseGRDBTests")
-        ]
-    elif target == "IOS-APP-NAVIGATION-CHAPTER-TOC-001":
-        extra_test_filters = [
-            ("library-domain-tests", "LibraryDomainTests"),
-            ("source-runtime-tests", "SourceRuntimeTests"),
-            ("database-grdb-tests", "DatabaseGRDBTests"),
-        ]
-    elif target == "IOS-APP-NAVIGATION-READER-CONTENT-001":
-        extra_test_filters = [
-            ("library-domain-tests", "LibraryDomainTests"),
-            ("source-runtime-tests", "SourceRuntimeTests"),
-            ("reader-core-tests", "ReaderCoreTests"),
-            ("database-grdb-tests", "DatabaseGRDBTests"),
-        ]
-    for command_id, test_filter in reversed(extra_test_filters):
-        commands.insert(
-            2,
-            {
-                "id": command_id,
-                "argv": [
-                    "swift",
-                    "test",
-                    "--package-path",
-                    "ios/Packages/LegadoKit",
-                    "--disable-automatic-resolution",
-                    "--filter",
-                    test_filter,
-                ],
-                "required_output_pattern": (
-                    r"Executed [1-9][0-9]* tests?, with 0 failures"
-                ),
-                "timeout_seconds": 600,
-            },
-        )
     ui_acceptance = delivery_contract.get("ui_acceptance")
     allowed_paths = list(architecture["allowed_paths"])
     if isinstance(ui_acceptance, dict):
@@ -1948,6 +1918,11 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             ],
         },
         "acceptance": {
+            "profile": (
+                "ui_slice"
+                if isinstance(ui_acceptance, dict)
+                else "slice"
+            ),
             "commands": commands,
             "structured_output": {
                 "mode": "command_json",
@@ -2118,32 +2093,9 @@ def build_characterization_task(
             ],
         },
         "acceptance": {
+            "profile": "slice",
             "commands": [
                 contract_command,
-                {
-                    "id": "oracle-contract-tests",
-                    "argv": [
-                        "python3",
-                        "-B",
-                        "-m",
-                        "unittest",
-                        "ios.harness.tests.test_oracle_control",
-                        "ios.harness.tests.test_oracle_ci_proposal",
-                        "ios.harness.tests.test_oracle_trusted_import",
-                    ],
-                    "timeout_seconds": 180,
-                },
-                {
-                    "id": "android-golden-contract",
-                    "argv": [
-                        "python3",
-                        "-B",
-                        "-m",
-                        "unittest",
-                        "ios.harness.tests.test_android_golden_publisher",
-                    ],
-                    "timeout_seconds": 300,
-                },
                 {
                     "id": "business-knowledge-contract",
                     "argv": [
@@ -2373,6 +2325,11 @@ def validate_task(root: Path, task: Mapping[str, Any]) -> None:
         if isinstance(acceptance, dict)
         else None
     )
+    validation_profile = (
+        acceptance.get("profile")
+        if isinstance(acceptance, dict)
+        else None
+    )
     if (
         not isinstance(commands, list)
         or not commands
@@ -2392,6 +2349,13 @@ def validate_task(root: Path, task: Mapping[str, Any]) -> None:
             for value in structured["required_fields"]
         )
     ):
+        raise LoopError("TASK_ACCEPTANCE_INVALID")
+    if validation_profile not in {
+        None,
+        "slice",
+        "ui_slice",
+        "checkpoint",
+    }:
         raise LoopError("TASK_ACCEPTANCE_INVALID")
     command_ids = [
         command.get("id")
