@@ -137,6 +137,10 @@ public protocol BookShelfRepository:
   func shelfBooks() async throws -> [ShelfBookItem]
   func book(forURL bookURL: String) async throws -> ShelfBookItem?
   func book(id: LibraryDomain.BookID) async throws -> ShelfBookItem?
+  func updateBookInfo(
+    bookID: LibraryDomain.BookID,
+    candidate: ShelfBookCandidate
+  ) async throws -> ShelfBookItem
   func chapters(bookID: LibraryDomain.BookID) async throws
     -> [LibraryDomain.BookChapter]
   func applyTOCUpdate(
@@ -205,6 +209,13 @@ public protocol BookShelfRepository:
 }
 
 public extension BookShelfRepository {
+  func updateBookInfo(
+    bookID: LibraryDomain.BookID,
+    candidate: ShelfBookCandidate
+  ) async throws -> ShelfBookItem {
+    try await stage(candidate)
+  }
+
   func applyTOCUpdate(
     bookID: LibraryDomain.BookID,
     update: LibraryDomain.ChapterTOCUpdate,
@@ -389,6 +400,44 @@ public final class ShelfLibrary {
 
   public func item(id: LibraryDomain.BookID) async -> ShelfBookItem? {
     try? await repository.book(id: id)
+  }
+
+  @discardableResult
+  public func refreshBookInfo(
+    _ book: ShelfBookItem,
+    infoLoader: any BookInfoLoading,
+    chapterLoader: any BookChapterLoading
+  ) async -> ShelfBookItem? {
+    do {
+      let candidate = try await infoLoader.load(book: book)
+      let updated = try await repository.updateBookInfo(
+        bookID: book.id,
+        candidate: candidate
+      )
+      let existing = try await repository.chapters(bookID: book.id)
+      let fetched = try await chapterLoader.load(book: updated)
+      let update = ChapterTOCUpdatePolicy.shelfUpdate(
+        existing: existing,
+        fetched: fetched.chapters
+      )
+      _ = try await repository.applyTOCUpdate(
+        bookID: book.id,
+        update: update,
+        bookVariables: fetched.bookVariables,
+        tocURL: fetched.tocURL
+      )
+      let refreshed = try await repository.book(id: book.id)
+      if refreshed?.membership.isInBookshelf == true {
+        await reload()
+      }
+      errorMessage = update.updateError
+        ? "目录为空，已保留原目录"
+        : nil
+      return refreshed
+    } catch {
+      errorMessage = "书籍信息刷新失败"
+      return nil
+    }
   }
 
   @discardableResult

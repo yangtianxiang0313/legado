@@ -133,6 +133,23 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
     }
   }
 
+  public func updateBookInfo(
+    bookID: LibraryDomain.BookID,
+    candidate: ShelfBookCandidate
+  ) async throws -> ShelfBookItem {
+    try await database.write { db in
+      guard var record = try BookRecord
+        .filter(Column("bookID") == bookID.rawValue)
+        .fetchOne(db)
+      else {
+        throw ShelfMutationFailure.missingBook
+      }
+      record.apply(candidate)
+      try record.update(db)
+      return record.item
+    }
+  }
+
   public func chapters(
     bookID: LibraryDomain.BookID
   ) async throws -> [LibraryDomain.BookChapter] {

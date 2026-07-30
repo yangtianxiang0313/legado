@@ -68,6 +68,83 @@ final class DatabaseGRDBTests: XCTestCase {
     XCTAssertEqual(afterIncompleteRestage.candidate.tocURL, tocURL)
   }
 
+  func testBookInfoRefreshUpdatesMetadataAndTOC() async throws {
+    let path = temporaryDatabasePath()
+    let repository = try GRDBBookShelfRepository(path: path)
+    let original = candidate(name: "旧书名", suffix: "refresh-old")
+    let stored = try await repository.add(original, groupID: 0)
+    let oldChapter = BookChapter(
+      id: ChapterID(
+        sourceID: original.sourceID,
+        chapterURL: "\(original.bookURL)/old"
+      ),
+      bookID: stored.id,
+      sourceID: original.sourceID,
+      index: 0,
+      title: "旧目录",
+      url: "\(original.bookURL)/old"
+    )
+    _ = try await repository.applyTOCUpdate(
+      bookID: stored.id,
+      update: .replaced(previousCount: 0, chapters: [oldChapter])
+    )
+    let refreshedCandidate = ShelfBookCandidate(
+      name: "新书名",
+      author: "新作者",
+      kind: "新分类",
+      lastChapter: "第二章",
+      intro: "新简介",
+      bookURL: "https://source.test/books/refresh-new",
+      tocURL: "https://source.test/books/refresh-new/toc",
+      coverURL: "https://source.test/cover.png",
+      originName: "更新后的测试源",
+      sourceID: original.sourceID,
+      variables: ["refresh": "done"]
+    )
+    let newChapter = BookChapter(
+      id: ChapterID(
+        sourceID: original.sourceID,
+        chapterURL: "\(refreshedCandidate.tocURL!)/2"
+      ),
+      bookID: stored.id,
+      sourceID: original.sourceID,
+      index: 0,
+      title: "新目录",
+      url: "\(refreshedCandidate.tocURL!)/2"
+    )
+    let library = ShelfLibrary(repository: repository)
+
+    let refreshed = await library.refreshBookInfo(
+      stored,
+      infoLoader: StubBookInfoLoader(candidate: refreshedCandidate),
+      chapterLoader: StubBookChapterLoader(
+        result: BookChapterLoadResult(
+          chapters: [newChapter],
+          bookVariables: refreshedCandidate.variables,
+          tocURL: refreshedCandidate.tocURL
+        )
+      )
+    )
+
+    XCTAssertEqual(refreshed?.id, stored.id)
+    XCTAssertEqual(refreshed?.candidate.name, refreshedCandidate.name)
+    XCTAssertEqual(refreshed?.candidate.author, refreshedCandidate.author)
+    XCTAssertEqual(refreshed?.candidate.bookURL, refreshedCandidate.bookURL)
+    XCTAssertEqual(refreshed?.candidate.tocURL, refreshedCandidate.tocURL)
+    XCTAssertEqual(refreshed?.candidate.lastChapter, newChapter.title)
+    XCTAssertEqual(refreshed?.candidate.variables, ["refresh": "done"])
+    XCTAssertEqual(refreshed?.chapterCount, 1)
+    let reopened = try GRDBBookShelfRepository(path: path)
+    let reopenedBook = try await reopened.book(id: stored.id)
+    let reopenedChapters = try await reopened.chapters(bookID: stored.id)
+    XCTAssertEqual(reopenedBook?.id, stored.id)
+    XCTAssertEqual(reopenedBook?.candidate.name, refreshedCandidate.name)
+    XCTAssertEqual(reopenedBook?.candidate.bookURL, refreshedCandidate.bookURL)
+    XCTAssertEqual(reopenedBook?.candidate.tocURL, refreshedCandidate.tocURL)
+    XCTAssertEqual(reopenedBook?.candidate.lastChapter, newChapter.title)
+    XCTAssertEqual(reopenedChapters, [newChapter])
+  }
+
   func testReaderReplacementRulesSurviveReopenAndRetainOrder()
     async throws
   {
@@ -985,6 +1062,22 @@ final class DatabaseGRDBTests: XCTestCase {
 
 private enum TestFailure: Error {
   case expected
+}
+
+private struct StubBookInfoLoader: BookInfoLoading {
+  let candidate: ShelfBookCandidate
+
+  func load(book: ShelfBookItem) async throws -> ShelfBookCandidate {
+    candidate
+  }
+}
+
+private struct StubBookChapterLoader: BookChapterLoading {
+  let result: BookChapterLoadResult
+
+  func load(book: ShelfBookItem) async throws -> BookChapterLoadResult {
+    result
+  }
 }
 
 private actor RetryingReaderLoader: ReaderContentLoading {

@@ -171,6 +171,26 @@ enum SearchEnvironment {
         )
     }
 
+    static func makeBookInfoLoader(
+        persistedSources: [BookSourceDraft] = []
+    ) -> any BookInfoLoading {
+        let externalBaseURL = ProcessInfo.processInfo.environment[
+            "LEGADO_SEARCH_BASE_URL"
+        ]
+        let baseURL = externalBaseURL ?? "http://legado.local"
+        return SourceBookInfoLoader(
+            sources: makeSources(
+                baseURL: baseURL,
+                persistedSources: persistedSources,
+                includeDisabled: true
+            ),
+            transport: makeTransport(externalBaseURL: externalBaseURL),
+            cookieStore: cookieStore,
+            dynamicWebPagePort: dynamicWebPagePort,
+            scriptRuntime: scriptRuntime
+        )
+    }
+
     static func makeReaderContentLoader(
         persistedSources: [BookSourceDraft] = []
     ) -> any ReaderContentLoading {

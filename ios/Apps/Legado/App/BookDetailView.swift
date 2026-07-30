@@ -174,6 +174,8 @@ struct BookDetailView: View {
     let library: ShelfLibrary?
     let preferences: BookDetailPreferencesStore?
     let copyToClipboard: ((String) -> Void)?
+    let refreshBookInfo:
+        ((ShelfBookItem) async -> ShelfBookItem?)?
     let openReading: ((ShelfBookItem) async -> Void)?
     let editSource: ((String) -> Void)?
     let loginSource: ((String) -> Void)?
@@ -198,6 +200,8 @@ struct BookDetailView: View {
     @State private var clearingCache = false
     @State private var cacheMessage: String?
     @State private var copiedMessage: String?
+    @State private var refreshingBookInfo = false
+    @State private var refreshMessage: String?
     @State private var showsDeleteConfirmation = false
     @State private var rebuildingLocalText = false
 
@@ -211,6 +215,7 @@ struct BookDetailView: View {
         self.library = nil
         self.preferences = nil
         self.copyToClipboard = nil
+        self.refreshBookInfo = nil
         self.openReading = nil
         self.editSource = nil
         self.loginSource = nil
@@ -226,6 +231,8 @@ struct BookDetailView: View {
         library: ShelfLibrary,
         preferences: BookDetailPreferencesStore,
         copyToClipboard: @escaping (String) -> Void,
+        refreshBookInfo:
+            @escaping (ShelfBookItem) async -> ShelfBookItem?,
         openReading: @escaping (ShelfBookItem) async -> Void,
         editSource: @escaping (String) -> Void,
         loginSource: @escaping (String) -> Void,
@@ -245,6 +252,7 @@ struct BookDetailView: View {
         self.library = library
         self.preferences = preferences
         self.copyToClipboard = copyToClipboard
+        self.refreshBookInfo = refreshBookInfo
         self.openReading = openReading
         self.editSource = editSource
         self.loginSource = loginSource
@@ -497,6 +505,17 @@ struct BookDetailView: View {
         } message: {
             Text(copiedMessage ?? "")
         }
+        .alert(
+            "刷新书籍",
+            isPresented: Binding(
+                get: { refreshMessage != nil },
+                set: { if !$0 { refreshMessage = nil } }
+            )
+        ) {
+            Button("好", role: .cancel) {}
+        } message: {
+            Text(refreshMessage ?? "")
+        }
         .confirmationDialog(
             "确定将这本书移出书架吗？",
             isPresented: $showsDeleteConfirmation,
@@ -585,6 +604,27 @@ struct BookDetailView: View {
                     )
                 }
                 .accessibilityIdentifier("action.bookDetail.login")
+            }
+            if
+                activeBookKind == .remote,
+                storedItem != nil,
+                activeSource != nil,
+                refreshBookInfo != nil
+            {
+                Button {
+                    performBookInfoRefresh()
+                } label: {
+                    Label(
+                        refreshingBookInfo
+                            ? "正在刷新…"
+                            : "刷新书籍信息",
+                        systemImage: "arrow.clockwise"
+                    )
+                }
+                .disabled(refreshingBookInfo)
+                .accessibilityIdentifier(
+                    "action.bookDetail.refresh"
+                )
             }
             if availability.actions.setSourceVariable {
                 Button {
@@ -759,6 +799,20 @@ struct BookDetailView: View {
     private func copyURL(_ value: String, label: String) {
         copyToClipboard?(value)
         copiedMessage = "\(label)已复制"
+    }
+
+    private func performBookInfoRefresh() {
+        guard let storedItem, let refreshBookInfo else { return }
+        refreshingBookInfo = true
+        Task {
+            if let refreshed = await refreshBookInfo(storedItem) {
+                self.storedItem = refreshed
+                refreshMessage = "书籍信息和目录已更新"
+            } else {
+                refreshMessage = "刷新失败，已保留原有数据"
+            }
+            refreshingBookInfo = false
+        }
     }
 
     private func performSourceSwitch(_ source: BookSourceDraft) {

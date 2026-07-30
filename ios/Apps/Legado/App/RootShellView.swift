@@ -184,6 +184,19 @@ struct RootShellView: View {
                 copyToClipboard: { value in
                     UIPasteboard.general.string = value
                 },
+                refreshBookInfo: { item in
+                    await library.refreshBookInfo(
+                        item,
+                        infoLoader:
+                            SearchEnvironment.makeBookInfoLoader(
+                                persistedSources: sourceCatalog.sources
+                            ),
+                        chapterLoader:
+                            SearchEnvironment.makeChapterLoader(
+                                persistedSources: sourceCatalog.sources
+                            )
+                    )
+                },
                 openReading: { item in
                     let chapters = await library.chapters(
                         bookID: item.id

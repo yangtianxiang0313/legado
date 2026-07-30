@@ -1,11 +1,27 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P36-BOOK-INFO-REFRESH-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P36 远程书籍信息刷新",
   "objective": "依据冻结 Android BookInfoViewModel.refreshBook/loadBookInfo 源码，从当前书源重新解析远程书籍详情，按稳定 bookID 持久化更新后的元数据与真实 tocURL，随后强制刷新目录，并把刷新结果回投详情页。",
   "validation_policy": "运行一个书籍元数据与目录刷新聚焦集成测试，再执行一次 App 构建；不启动模拟器，不新增 Android Golden。",
+  "completion_evidence": [
+    "BookInfoLoading 端口把远程详情刷新与 SourceRuntime 实现解耦",
+    "SourceBookInfoLoader 从当前 sourceID 和 requestExpression 重新解析详情",
+    "GRDB 按稳定 bookID 更新书名、作者、地址、封面、变量与 tocURL",
+    "ShelfLibrary 在详情更新后强制获取并替换目录，最终 lastChapter 来自真实目录末章",
+    "SwiftUI 详情菜单通过注入闭包刷新并回投最新 ShelfBookItem",
+    "聚焦集成测试与一次 LegadoApp 构建通过"
+  ],
+  "final_verification": {
+    "kind": "focused_refresh_integration_test_and_single_app_build",
+    "completed_at": "2026-07-31T06:20:46+08:00",
+    "result": "聚焦测试 attempt-3 与 LegadoApp 构建通过；未启动模拟器，未新增 Android Golden。",
+    "evidence": [
+      ".harness-runtime/loop/IOS-APP-NAVIGATION-BOOK-INFO-REFRESH-001/attempt-3"
+    ]
+  },
   "stages": [
     {
       "id": "P36-S1",
