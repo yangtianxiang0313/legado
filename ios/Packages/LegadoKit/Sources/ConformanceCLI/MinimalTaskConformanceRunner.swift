@@ -47,6 +47,7 @@ public enum MinimalTaskConformanceRunner {
         || fixtureID == ReaderPrefetchConformanceRunner.fixtureID
         || fixtureID
           == ReaderContentAcquisitionConformanceRunner.fixtureID
+        || fixtureID == ReaderIndexLoadDedupConformanceRunner.fixtureID
         || fixtureID == ReaderTOCRemapConformanceRunner.fixtureID
         || fixtureID == AppStartupConformanceRunner.fixtureID
         || fixtureID == BookDetailActionConformanceRunner.fixtureID
@@ -132,6 +133,19 @@ public enum MinimalTaskConformanceRunner {
       == ReaderContentAcquisitionConformanceRunner.fixtureID
     {
       let run = try ReaderContentAcquisitionConformanceRunner.run(
+        fixtureDirectory: fixtureDirectory
+      )
+      return try finish(
+        taskID: taskID,
+        fixtureID: fixtureID,
+        goldenPath: goldenPath,
+        actualArtifact: run.artifact,
+        canonicalPlans: run.requestPlan,
+        root: root
+      )
+    }
+    if fixtureID == ReaderIndexLoadDedupConformanceRunner.fixtureID {
+      let run = try ReaderIndexLoadDedupConformanceRunner.run(
         fixtureDirectory: fixtureDirectory
       )
       return try finish(
