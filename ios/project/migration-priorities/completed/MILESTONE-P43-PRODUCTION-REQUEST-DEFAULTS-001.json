@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P43-PRODUCTION-REQUEST-DEFAULTS-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P43 对齐生产书源默认请求头",
   "objective": "依据冻结 Android HttpHelper，把缺失 User-Agent 时补默认浏览器 UA、显式 User-Agent:null 时删除 UA，以及 Keep-Alive、Connection、Cache-Control 默认头接入 NetworkFoundation；避免真实书源因当前 CFNetwork 默认请求指纹而拒绝访问。",
