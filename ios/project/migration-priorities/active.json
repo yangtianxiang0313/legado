@@ -1,96 +1,126 @@
 {
   "schema_version": 1,
-  "id": "MILESTONE-P15-SOURCE-VARIABLE-CONTEXT-001",
+  "id": "MILESTONE-P16-DYNAMIC-WEB-PRODUCT-INTEGRATION-001",
   "status": "active",
   "mode": "critical_path_only",
-  "title": "P15 书源变量上下文进入产品流水线",
-  "objective": "对齐 Android RuleData、AnalyzeRule.put/get 与 AnalyzeUrl.put/get：搜索、详情、目录和正文阶段共享正确层级的书源、书籍、章节与临时变量，使依赖 @put、java.get 和变量模板的真实书源可以连续运行。",
+  "title": "P16 动态网页书源进入真实产品主链",
+  "objective": "把已对齐 Android 的 Dynamic Web 状态机接入真实书源执行：保留 URL option 的 useWebView/webJs，正文规则传入 webJs/sourceRegex，搜索、详情、目录和正文统一经可注入响应加载端口执行，并由 iOS WKWebView 适配器完成页面加载、脚本求值、资源命中与 Cookie 回灌。",
   "completion_evidence": [
-    "现有 SourceVariableStore/Resolver 被真实请求与规则流水线消费",
-    "搜索临时 RuleData 在一次搜索内共享但不污染其他搜索",
-    "书籍变量从详情贯穿目录，章节变量贯穿正文分页",
-    "@put 写入遵循 chapter→book/ruleData→source 的 Android 层级",
-    "持久书籍与章节变量在 App 重启后仍可用于请求和规则"
+    "SourceRequestPlan 保留 useWebView 与 webJs，不在 URL 编译后丢失",
+    "搜索、详情、目录和正文流水线均可选择普通 HTTP 或 Dynamic Web 响应",
+    "正文规则的 webJs 与 sourceRegex 进入 Dynamic Web 配置",
+    "WebKit 类型只存在于 App 平台适配层，不进入 SourceRuntime、Domain 或 SwiftUI 状态",
+    "本地动态书源在 iOS Simulator 上产生结构化搜索或正文结果"
   ],
-  "deferred_policy": "先对齐确定性的 put/get 与模板变量，不把任意 JavaScript/WebView 执行混入变量生命周期；脚本后端在变量合同稳定后单独迁移。",
+  "deferred_policy": "本里程碑只接入已经由 Android Golden 冻结的页面加载、脚本、资源命中和 Cookie 行为；任意规则 JavaScript 引擎与登录检查脚本继续独立迁移。",
   "deliveries": [
     {
-      "target": "IOS-SOURCE-RUNTIME-VARIABLE-PRODUCT-INTEGRATION-001",
-      "title": "将变量解析器接入四段 SourceRuntime 流水线",
-      "fixture_id": "source-variable-product-integration-v1",
-      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-04",
+      "target": "IOS-SOURCE-RUNTIME-DYNAMIC-WEB-REQUEST-OPTIONS-001",
+      "title": "保留 Dynamic Web URL option 与正文配置",
+      "fixture_id": "source-dynamic-web-request-options-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
       "prerequisite_task_ids": [],
       "validation": "tests",
-      "test_filter": "SourceVariableProductIntegrationTests",
-      "additional_allowed_paths": [],
+      "test_filter": "SourceDynamicWebRequestOptionTests",
+      "additional_allowed_paths": [
+        "ios/Apps/Legado/App/SearchEnvironment.swift"
+      ],
       "source_anchors": [
         {
           "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "path": "app/src/main/java/io/legado/app/model/analyzeRule/RuleData.kt",
-          "symbol_id": "kotlin://io.legado.app.model.analyzeRule/RuleData"
-        },
-        {
-          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt",
-          "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeRule/put"
-        },
-        {
-          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
           "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
-          "symbol_id": "kotlin://io.legado.app.model.analyzeRule/AnalyzeUrl/put"
+          "symbol_id": "kotlin://io.legado.app.model.analyzeRule.AnalyzeUrl/analyzeUrl"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/data/entities/rule/ContentRule.kt",
+          "symbol_id": "kotlin://io.legado.app.data.entities.rule.ContentRule"
         }
       ]
     },
     {
-      "target": "IOS-SOURCE-RUNTIME-VARIABLE-PERSISTENCE-001",
-      "title": "持久化书籍与章节变量并恢复产品上下文",
-      "fixture_id": "source-variable-persistence-v1",
-      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-04",
+      "target": "IOS-SOURCE-RUNTIME-DYNAMIC-WEB-PRODUCT-INTEGRATION-001",
+      "title": "统一四段流水线的 HTTP 与 Dynamic Web 响应加载",
+      "fixture_id": "source-dynamic-web-product-integration-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
       "prerequisite_task_ids": [
-        "IOS-SOURCE-RUNTIME-VARIABLE-PRODUCT-INTEGRATION-001"
+        "IOS-SOURCE-RUNTIME-DYNAMIC-WEB-REQUEST-OPTIONS-001"
       ],
       "validation": "tests",
-      "test_filter": "SourceVariablePersistenceTests",
+      "test_filter": "SourceDynamicWebProductIntegrationTests",
+      "additional_allowed_paths": [],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeUrl.kt",
+          "symbol_id": "kotlin://io.legado.app.model.analyzeRule.AnalyzeUrl/getStrResponseAwait"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
+          "symbol_id": "kotlin://io.legado.app.model.webBook.WebBook/getContentAwait"
+        }
+      ]
+    },
+    {
+      "target": "IOS-APP-DYNAMIC-WEBKIT-ADAPTER-001",
+      "title": "实现 WKWebView 页面端口并注入书源产品环境",
+      "fixture_id": "source-dynamic-webkit-adapter-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [
+        "IOS-SOURCE-RUNTIME-DYNAMIC-WEB-PRODUCT-INTEGRATION-001"
+      ],
+      "validation": "build",
       "additional_allowed_paths": [
-        "ios/Packages/LegadoKit/Sources/LibraryDomain/**",
-        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
-        "ios/Packages/LegadoKit/Sources/AppNavigation/**",
-        "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
-        "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
-        "ios/Apps/Legado/App/**"
+        "ios/Apps/Legado/App/**",
+        "ios/Apps/Legado/UITests/**",
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**"
       ],
       "source_anchors": [
         {
           "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "path": "app/src/main/java/io/legado/app/model/analyzeRule/RuleDataInterface.kt",
-          "symbol_id": "kotlin://io.legado.app.model.analyzeRule/RuleDataInterface/variableMap"
+          "path": "app/src/main/java/io/legado/app/help/http/BackstageWebView.kt",
+          "symbol_id": "kotlin://io.legado.app.help.http.BackstageWebView"
         }
       ]
     }
   ],
   "stages": [
     {
-      "id": "P15-01-VARIABLE-PRODUCT-INTEGRATION",
-      "title": "变量作用域进入 SourceRuntime 主链",
-      "outcome": "请求模板和规则解析使用同一 Android 层级变量上下文，put/get 可跨同一业务阶段连续生效。",
+      "id": "P16-01-DYNAMIC-WEB-OPTIONS",
+      "title": "动态网页配置进入 RequestPlan",
+      "outcome": "URL option 与正文规则的动态网页声明在编译后仍可供执行层消费。",
       "selectors": [
         {
-          "id": "SOURCE-VARIABLE-PRODUCT-INTEGRATION",
+          "id": "SOURCE-DYNAMIC-WEB-OPTIONS",
           "task_ids": [
-            "IOS-SOURCE-RUNTIME-VARIABLE-PRODUCT-INTEGRATION-001"
+            "IOS-SOURCE-RUNTIME-DYNAMIC-WEB-REQUEST-OPTIONS-001"
           ]
         }
       ]
     },
     {
-      "id": "P15-02-VARIABLE-PERSISTENCE",
-      "title": "书籍与章节变量随产品数据持久化",
-      "outcome": "书架与章节重载后恢复变量 Map，并重新构造 SourceVariableScopes。",
+      "id": "P16-02-DYNAMIC-WEB-PIPELINES",
+      "title": "四段产品流水线选择动态响应",
+      "outcome": "普通 HTTP 与动态网页共享后续规则解析，Dynamic Web 不再是孤立测试状态机。",
       "selectors": [
         {
-          "id": "SOURCE-VARIABLE-PERSISTENCE",
+          "id": "SOURCE-DYNAMIC-WEB-PRODUCT-INTEGRATION",
           "task_ids": [
-            "IOS-SOURCE-RUNTIME-VARIABLE-PERSISTENCE-001"
+            "IOS-SOURCE-RUNTIME-DYNAMIC-WEB-PRODUCT-INTEGRATION-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P16-03-WEBKIT-ADAPTER",
+      "title": "iOS 平台页面执行端口",
+      "outcome": "App 注入真实 WKWebView 适配器，并在本地动态书源上完成一次结构化结果验收。",
+      "selectors": [
+        {
+          "id": "APP-DYNAMIC-WEBKIT-ADAPTER",
+          "task_ids": [
+            "IOS-APP-DYNAMIC-WEBKIT-ADAPTER-001"
           ]
         }
       ]
