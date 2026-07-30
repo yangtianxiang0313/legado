@@ -92,6 +92,10 @@ let package = Package(
             dependencies: ["ReaderCore"]
         ),
         .testTarget(
+            name: "LibraryDomainTests",
+            dependencies: ["LibraryDomain"]
+        ),
+        .testTarget(
             name: "TestSupportTests",
             dependencies: ["LegadoCore", "TestSupport"]
         ),

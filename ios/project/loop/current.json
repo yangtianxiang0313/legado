@@ -1,1 +1,1 @@
-{"active_task":null,"attempt":0,"last_completed":{"at":"2026-07-30T17:24:38Z","outcome":"superseded","sequence":428,"task_id":"IOS-CHARACTERIZE-LIBRARY-SHELF-SORT-AND-UNREAD-RUNTIME-001"},"schema_version":2,"status":"idle","verification":null}
+{"active_task":null,"attempt":0,"last_completed":{"at":"2026-07-30T17:26:54Z","sequence":431,"task_id":"IOS-LIBRARY-DOMAIN-SHELF-SORT-UNREAD-001"},"schema_version":2,"status":"idle","verification":null}
