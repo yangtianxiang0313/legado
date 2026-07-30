@@ -3828,3 +3828,254 @@ public enum BookImportFixtureProjection {
     .number(JSONNumber(Int64(value)))
   }
 }
+
+public struct SearchBookLifecycleMergeProbeResult: Equatable, Sendable {
+  public let bookURLs: [String]
+  public let originOrders: [Int]
+  public let origins: [[String]]
+
+  public init(
+    bookURLs: [String],
+    originOrders: [Int],
+    origins: [[String]]
+  ) {
+    self.bookURLs = bookURLs
+    self.originOrders = originOrders
+    self.origins = origins
+  }
+}
+
+public struct SearchBookLifecycleStoreProbeResult: Equatable, Sendable {
+  public let writeSequences: [Int64]
+  public let storedName: String?
+  public let sourceCascadeWorked: Bool
+  public let remainingAfterCleanup: [String]
+
+  public init(
+    writeSequences: [Int64],
+    storedName: String?,
+    sourceCascadeWorked: Bool,
+    remainingAfterCleanup: [String]
+  ) {
+    self.writeSequences = writeSequences
+    self.storedName = storedName
+    self.sourceCascadeWorked = sourceCascadeWorked
+    self.remainingAfterCleanup = remainingAfterCleanup
+  }
+}
+
+public enum SearchBookLifecycleDomainProbe {
+  public static func merged() -> SearchBookLifecycleMergeProbeResult {
+    let books = SearchBookSearchState.aggregate(
+      batches: [
+        [
+          candidate(
+            name: "星河",
+            author: "甲",
+            url: "book://exact/source-a",
+            origin: "source://a",
+            order: 20
+          ),
+          candidate(
+            name: "星河外传",
+            author: "乙",
+            url: "book://contains/source-a",
+            origin: "source://a",
+            order: 20
+          ),
+          candidate(
+            name: "月光",
+            author: "丙",
+            url: "book://other/source-a",
+            origin: "source://a",
+            order: 20
+          ),
+        ],
+        [
+          candidate(
+            name: "星河",
+            author: "甲",
+            url: "book://exact/source-b",
+            origin: "source://b",
+            order: 10
+          ),
+          candidate(
+            name: "星河外传",
+            author: "乙",
+            url: "book://contains/source-b",
+            origin: "source://b",
+            order: 10
+          ),
+          candidate(
+            name: "月光",
+            author: "丙",
+            url: "book://other/source-b",
+            origin: "source://b",
+            order: 10
+          ),
+        ],
+      ],
+      keyword: "星河",
+      precision: false
+    )
+    return SearchBookLifecycleMergeProbeResult(
+      bookURLs: books.map(\.representative.bookURL),
+      originOrders: books.map(\.representative.originOrder),
+      origins: books.map(\.origins)
+    )
+  }
+
+  public static func ranked() -> [String] {
+    var state = SearchBookSearchState()
+    state.merge(
+      [
+        candidate(
+          name: "星河",
+          author: "单源",
+          url: "book://exact-one",
+          origin: "source://a"
+        ),
+        candidate(
+          name: "单源",
+          author: "星河",
+          url: "book://exact-two",
+          origin: "source://a"
+        ),
+        candidate(
+          name: "星河外传",
+          author: "乙",
+          url: "book://contains",
+          origin: "source://a"
+        ),
+        candidate(
+          name: "月光",
+          author: "丙",
+          url: "book://other",
+          origin: "source://a"
+        ),
+      ],
+      keyword: "星河",
+      precision: false
+    )
+    state.merge(
+      [
+        candidate(
+          name: "单源",
+          author: "星河",
+          url: "book://exact-two-b",
+          origin: "source://b"
+        ),
+        candidate(
+          name: "星河外传",
+          author: "乙",
+          url: "book://contains-b",
+          origin: "source://b"
+        ),
+      ],
+      keyword: "星河",
+      precision: false
+    )
+    return state.books.map(\.representative.bookURL)
+  }
+
+  public static func precisionCount() -> Int {
+    SearchBookSearchState.aggregate(
+      batches: [[
+        candidate(
+          name: "月光",
+          author: "丙",
+          url: "book://other",
+          origin: "source://a"
+        )
+      ]],
+      keyword: "星河",
+      precision: true
+    ).count
+  }
+
+  public static func stored() -> SearchBookLifecycleStoreProbeResult {
+    var replacement = SearchBookCandidateStore(
+      sourceIDs: ["source://replace"]
+    )
+    let first = replacement.insert(
+      candidate(
+        name: "旧名字",
+        url: "book://same",
+        origin: "source://replace"
+      )
+    )
+    let second = replacement.insert(
+      candidate(
+        name: "新名字",
+        url: "book://same",
+        origin: "source://replace"
+      )
+    )
+
+    var cascade = SearchBookCandidateStore(
+      sourceIDs: ["source://cascade"]
+    )
+    cascade.insert(
+      candidate(
+        name: "级联",
+        url: "book://cascade",
+        origin: "source://cascade"
+      )
+    )
+    cascade.removeSource("source://cascade")
+
+    var cleanup = SearchBookCandidateStore(sourceIDs: ["source://ttl"])
+    cleanup.insert(
+      candidate(
+        name: "stale",
+        url: "stale",
+        origin: "source://ttl",
+        time: 199_999
+      )
+    )
+    cleanup.insert(
+      candidate(
+        name: "boundary",
+        url: "boundary",
+        origin: "source://ttl",
+        time: 200_000
+      )
+    )
+    cleanup.insert(
+      candidate(
+        name: "fresh",
+        url: "fresh",
+        origin: "source://ttl",
+        time: 200_001
+      )
+    )
+    cleanup.clearExpired(earlierThan: 200_000)
+
+    return SearchBookLifecycleStoreProbeResult(
+      writeSequences: [first.sequence, second.sequence],
+      storedName:
+        replacement.candidate(bookURL: "book://same")?.name,
+      sourceCascadeWorked:
+        cascade.candidate(bookURL: "book://cascade") == nil,
+      remainingAfterCleanup: cleanup.candidates.map(\.bookURL)
+    )
+  }
+
+  private static func candidate(
+    name: String,
+    author: String = "",
+    url: String,
+    origin: String,
+    order: Int = 0,
+    time: Int64 = 0
+  ) -> SearchBookCandidate {
+    SearchBookCandidate(
+      name: name,
+      author: author,
+      bookURL: url,
+      origin: origin,
+      originOrder: order,
+      observedAt: time
+    )
+  }
+}
