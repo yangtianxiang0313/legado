@@ -1404,6 +1404,15 @@ def priority_policy_deliveries(
                         declaration.get("validation", "tests")
                     ),
                 },
+                **(
+                    {"ui_contract": declaration["ui_contract"]}
+                    if isinstance(declaration.get("ui_contract"), dict)
+                    else {}
+                ),
+                "additional_allowed_paths": declaration.get(
+                    "additional_allowed_paths",
+                    [],
+                ),
             }
         )
     return deliveries
@@ -1480,6 +1489,32 @@ def active_priority_policy(root: Path) -> Mapping[str, Any] | None:
             or not delivery["source_anchors"]
             or delivery.get("validation", "tests")
             not in {"build", "tests", "simulator"}
+            or not isinstance(
+                delivery.get("additional_allowed_paths", []),
+                list,
+            )
+            or any(
+                not isinstance(value, str) or not value
+                for value in delivery.get("additional_allowed_paths", [])
+            )
+            or (
+                delivery.get("validation") == "simulator"
+                and (
+                    not isinstance(delivery.get("ui_contract"), dict)
+                    or any(
+                        not isinstance(
+                            delivery["ui_contract"].get(field),
+                            str,
+                        )
+                        or not delivery["ui_contract"][field].strip()
+                        for field in (
+                            "goal",
+                            "scenario_id",
+                            "test_method",
+                        )
+                    )
+                )
+            )
         ):
             raise LoopError("PRIORITY_POLICY_INVALID")
         delivery_targets.add(delivery["target"])
@@ -2618,7 +2653,31 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "acceptance_id": "structured-domain-acceptance",
         },
     }
-    if architecture["owner"] == "AppNavigation":
+    if (
+        architecture["owner"] == "AppNavigation"
+        and isinstance(delivery.get("ui_contract"), dict)
+    ):
+        declared_ui = delivery["ui_contract"]
+        delivery_contract = {
+            "goal": declared_ui["goal"],
+            "rule": (
+                "AppNavigation 只承载稳定 Route、启动快照、检查点与 effect；"
+                "AppUseCases 通过端口执行持久化，AppShell 只投影 UI，"
+                "Android Activity、Dialog 与平台 I/O 不进入核心。"
+            ),
+            "test_id": "app-navigation-tests",
+            "test_filter": "AppNavigationTests",
+            "acceptance_id": f"{fixture_id}-acceptance",
+            "ui_acceptance": {
+                "scenario_id": declared_ui["scenario_id"],
+                "profile": "store_safe",
+                "project": "ios/Apps/Legado/Legado.xcodeproj",
+                "scheme": "LegadoApp",
+                "test_method": declared_ui["test_method"],
+                "simulators": app_ui_simulators("slice"),
+            },
+        }
+    elif architecture["owner"] == "AppNavigation":
         delivery_contract = app_navigation_delivery_contract(
             str(fixture_id)
         )
@@ -2671,6 +2730,9 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             },
         }
         allowed_paths = list(architecture["allowed_paths"])
+        for path in delivery.get("additional_allowed_paths", []):
+            if path not in allowed_paths:
+                allowed_paths.append(path)
         if source_validation in {"build", "tests"}:
             if source_validation == "tests":
                 acceptance_command = {

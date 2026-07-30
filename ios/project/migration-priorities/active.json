@@ -1,63 +1,80 @@
 {
   "schema_version": 1,
-  "id": "MILESTONE-P5-OFFLINE-READING-001",
+  "id": "MILESTONE-P6-READER-TOOLS-001",
   "status": "active",
   "mode": "critical_path_only",
-  "title": "P5 可用离线阅读主链路",
-  "objective": "用户可把远程书籍章节批量缓存到持久存储，并在书源网络不可用和 App 重启后继续阅读已缓存正文。",
+  "title": "P6 可用阅读工具主链路",
+  "objective": "用户可在阅读器中持久添加和删除书签，跨重启恢复书签，并对全书章节正文执行搜索后跳转到精确章节与字符位置。",
   "completion_evidence": [
-    "离线缓存复用既有 SourceCacheQueueModel 的去重、停止与三次重试语义",
-    "远程正文成功获取后写入持久化章节缓存，空正文不形成缓存命中",
-    "本地书不进入远程离线下载队列",
-    "缓存操作返回已缓存、跳过、失败与取消的结构化结果",
-    "清缓存后正文重新走书源获取，断网时已缓存正文仍可阅读",
-    "完整缓存到断网阅读主链路只在一个 iPhone Simulator 里程碑验收"
+    "书签使用稳定 BookID、ChapterID 和字符位置持久化，不以书名作为产品主键",
+    "同一阅读位置重复添加保持幂等，删除只影响目标位置",
+    "全文搜索覆盖所有章节并返回章节标题、上下文摘要和字符位置",
+    "缺失正文通过现有 ReaderContentLoader 获取并写回缓存，不建立第二套抓取链路",
+    "搜索结果跳转复用 ReaderRoute 的 ChapterID 与 characterOffset",
+    "完整书签到重启恢复、全文搜索到结果跳转只运行一次 iPhone Simulator"
   ],
-  "deferred_policy": "后台下载、磁盘配额、图片完整缓存和进程中断后的队列恢复不在本里程碑伪实现；先完成前台可用的持久正文缓存主链。",
+  "deferred_policy": "全局跨书书签页、书签备注编辑、正则搜索、繁简转换、替换规则参与搜索和阅读时长统计不在本里程碑伪实现；先完成当前书籍内可用工具主链。",
   "deliveries": [
     {
-      "target": "IOS-APP-NAVIGATION-OFFLINE-CACHE-MILESTONE-001",
-      "title": "远程正文缓存与断网阅读里程碑",
+      "target": "IOS-APP-NAVIGATION-READER-TOOLS-MILESTONE-001",
+      "title": "持久书签与全文搜索里程碑",
       "prerequisite_task_ids": [
-        "IOS-SOURCE-RUNTIME-CACHE-QUEUE-COMPLETION-001",
-        "IOS-READER-CORE-CONTENT-CACHE-FIRST-ACQUISITION-001",
-        "IOS-READER-CORE-CACHE-PREFETCH-POLICY-001"
+        "IOS-READER-CORE-BOOKMARK-SEARCH-001",
+        "IOS-APP-NAVIGATION-OFFLINE-CACHE-MILESTONE-001"
       ],
       "requirement_ref": "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01",
-      "fixture_id": "milestone-offline-cache-v1",
+      "fixture_id": "milestone-reader-tools-v1",
       "validation": "simulator",
+      "ui_contract": {
+        "goal": "把 Android 已明确的书签与全文搜索业务语义接入现有 Reader：稳定身份由 iOS 领域模型负责，正文获取复用缓存优先加载器，GRDB 持久化书签，SwiftUI 提供添加、删除、搜索结果和精确跳转。",
+        "scenario_id": "ui-reader-tools-milestone-v1",
+        "test_method": "testReaderToolsMilestone"
+      },
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/LibraryDomain/**",
+        "ios/Packages/LegadoKit/Sources/ReaderCore/**",
+        "ios/Packages/LegadoKit/Tests/ReaderCoreTests/**",
+        "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+        "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**"
+      ],
       "source_anchors": [
         {
           "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "git_blob": "cdcbbf5696c1d2b018e25c2819c0461e8c667866",
-          "path": "app/src/main/java/io/legado/app/model/CacheBook.kt",
-          "symbol_id": "kotlin://io.legado.app.model.CacheBook"
+          "git_blob": "7940139ff5c87e977f4aeefa43064e733055ddca",
+          "path": "app/src/main/java/io/legado/app/data/dao/BookmarkDao.kt",
+          "symbol_id": "kotlin://io.legado.app.data.dao.BookmarkDao/flowSearch"
         },
         {
           "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "git_blob": "4916633d8c891cbdb2fc28a66c93a9b4750fa938",
-          "path": "app/src/main/java/io/legado/app/service/CacheBookService.kt",
-          "symbol_id": "kotlin://io.legado.app.service.CacheBookService"
+          "git_blob": "1093970423bc64d7405a142a75befd23c09ec163",
+          "path": "app/src/main/java/io/legado/app/data/entities/Bookmark.kt",
+          "symbol_id": "kotlin://io.legado.app.data.entities.Bookmark"
         },
         {
           "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "git_blob": "40f47f3a0f6bfa63cce79efb7a1518737b84dc45",
-          "path": "app/src/main/java/io/legado/app/help/book/BookHelp.kt",
-          "symbol_id": "kotlin://io.legado.app.help.book.BookHelp/hasContent"
+          "git_blob": "f5d774795238ea0f7dbdaccfe652ef68a1ebfa4e",
+          "path": "app/src/main/java/io/legado/app/ui/book/searchContent/SearchContentViewModel.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.searchContent.SearchContentViewModel/searchChapter"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "4426655e6bed8c4c3a874d57f47c917120406a1a",
+          "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookViewModel.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.read.ReadBookViewModel/searchResultPositions"
         }
       ]
     }
   ],
   "stages": [
     {
-      "id": "P5-01-OFFLINE-CACHE-MILESTONE",
-      "title": "接通缓存到断网阅读纵向主链路",
-      "outcome": "既有缓存状态机通过 AppUseCases 与 GRDB 接入书架批量动作和阅读器缓存优先加载。",
+      "id": "P6-01-READER-TOOLS-MILESTONE",
+      "title": "接通书签与全文搜索纵向主链路",
+      "outcome": "既有 ReaderCore 书签知识与正文缓存链通过 AppUseCases、GRDB 和 Reader UI 形成可用产品能力。",
       "selectors": [
         {
-          "id": "OFFLINE-CACHE-MILESTONE",
+          "id": "READER-TOOLS-MILESTONE",
           "task_ids": [
-            "IOS-APP-NAVIGATION-OFFLINE-CACHE-MILESTONE-001"
+            "IOS-APP-NAVIGATION-READER-TOOLS-MILESTONE-001"
           ]
         }
       ]

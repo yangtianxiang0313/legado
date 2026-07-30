@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P5-OFFLINE-READING-001",
+  "status": "completed",
+  "completed_at": "2026-07-30T18:13:07Z",
+  "mode": "critical_path_only",
+  "title": "P5 可用离线阅读主链路",
+  "objective": "用户可把远程书籍章节批量缓存到持久存储，并在书源网络不可用和 App 重启后继续阅读已缓存正文。",
+  "completion_evidence": [
+    "离线缓存复用既有 SourceCacheQueueModel 的去重、停止与三次重试语义",
+    "远程正文成功获取后写入持久化章节缓存，空正文不形成缓存命中",
+    "本地书不进入远程离线下载队列",
+    "缓存操作返回已缓存、跳过、失败与取消的结构化结果",
+    "清缓存后正文重新走书源获取，断网时已缓存正文仍可阅读",
+    "完整缓存到断网阅读主链路只在一个 iPhone Simulator 里程碑验收"
+  ],
+  "deferred_policy": "后台下载、磁盘配额、图片完整缓存和进程中断后的队列恢复不在本里程碑伪实现；先完成前台可用的持久正文缓存主链。",
+  "deliveries": [
+    {
+      "target": "IOS-APP-NAVIGATION-OFFLINE-CACHE-MILESTONE-001",
+      "title": "远程正文缓存与断网阅读里程碑",
+      "prerequisite_task_ids": [
+        "IOS-SOURCE-RUNTIME-CACHE-QUEUE-COMPLETION-001",
+        "IOS-READER-CORE-CONTENT-CACHE-FIRST-ACQUISITION-001",
+        "IOS-READER-CORE-CACHE-PREFETCH-POLICY-001"
+      ],
+      "requirement_ref": "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01",
+      "fixture_id": "milestone-offline-cache-v1",
+      "validation": "simulator",
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "cdcbbf5696c1d2b018e25c2819c0461e8c667866",
+          "path": "app/src/main/java/io/legado/app/model/CacheBook.kt",
+          "symbol_id": "kotlin://io.legado.app.model.CacheBook"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "4916633d8c891cbdb2fc28a66c93a9b4750fa938",
+          "path": "app/src/main/java/io/legado/app/service/CacheBookService.kt",
+          "symbol_id": "kotlin://io.legado.app.service.CacheBookService"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "40f47f3a0f6bfa63cce79efb7a1518737b84dc45",
+          "path": "app/src/main/java/io/legado/app/help/book/BookHelp.kt",
+          "symbol_id": "kotlin://io.legado.app.help.book.BookHelp/hasContent"
+        }
+      ]
+    }
+  ],
+  "stages": [
+    {
+      "id": "P5-01-OFFLINE-CACHE-MILESTONE",
+      "title": "接通缓存到断网阅读纵向主链路",
+      "outcome": "既有缓存状态机通过 AppUseCases 与 GRDB 接入书架批量动作和阅读器缓存优先加载。",
+      "selectors": [
+        {
+          "id": "OFFLINE-CACHE-MILESTONE",
+          "task_ids": [
+            "IOS-APP-NAVIGATION-OFFLINE-CACHE-MILESTONE-001"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -2473,6 +2473,14 @@ class MinimalLoopTests(unittest.TestCase):
                     "fixture_id": "milestone-book-import-v1",
                     "validation": "simulator",
                     "source_anchors": [{"path": "LocalBook.kt"}],
+                    "ui_contract": {
+                        "goal": "完成导入主链路",
+                        "scenario_id": "ui-book-import-v1",
+                        "test_method": "testBookImportMilestone",
+                    },
+                    "additional_allowed_paths": [
+                        "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**"
+                    ],
                 }
             ],
         }
@@ -2497,6 +2505,14 @@ class MinimalLoopTests(unittest.TestCase):
         self.assertEqual(
             "simulator",
             deliveries[0]["source_contract"]["validation"],
+        )
+        self.assertEqual(
+            "testBookImportMilestone",
+            deliveries[0]["ui_contract"]["test_method"],
+        )
+        self.assertEqual(
+            ["ios/Packages/LegadoKit/Sources/DatabaseGRDB/**"],
+            deliveries[0]["additional_allowed_paths"],
         )
         contract = loop.app_navigation_delivery_contract(
             "milestone-book-import-v1"
