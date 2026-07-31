@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P66-WEBDAV-SETTINGS-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "priority": 10,
+  "title": "P66 WebDAV 设置页",
+  "objective": "将 P65 的安全连接初始化接入 iOS 我的页：保存服务地址、账号、密码和目录，并显式显示连接测试结果。",
+  "validation_policy": "表单及连接动作在一台主 iPhone Simulator 验收；网络响应由确定性注入 transport 提供，不依赖公网 WebDAV。",
+  "stages": [{"id":"P66-S1","title":"连接设置 UI","selectors":[{"id":"P66-S1-SETTINGS","claim_ids":[],"task_ids":["IOS-APP-NAVIGATION-WEBDAV-CONNECTION-SETTINGS-001"]}]}],
+  "deliveries": [{
+    "target":"IOS-APP-NAVIGATION-WEBDAV-CONNECTION-SETTINGS-001",
+    "title":"WebDAV 设置与连接测试",
+    "prerequisite_task_ids":["IOS-INTEGRATION-WEBDAV-CONNECTION-FOUNDATION-001"],
+    "requirement_ref":"REQ-IOS-WEBDAV-CONNECTION-001@1#RC-01",
+    "fixture_id":"il-integration-backup-webdav-001",
+    "validation":"simulator",
+    "source_anchors":[{"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/ui/config/BackupConfigFragment.kt","symbol_id":"kotlin://io.legado.app.ui.config.BackupConfigFragment/onSharedPreferenceChanged"}],
+    "ui_contract":{"goal":"在我的页提供 WebDAV 地址、账号、密码、目录的编辑与连接测试；密码不得回显，成功或失败须有可访问的结构化状态。","scenario_id":"ui-webdav-connection-settings-v1","test_method":"testWebDAVConnectionSettings"}
+  }]
+}

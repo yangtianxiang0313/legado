@@ -750,6 +750,25 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/harness/architecture-rules.json",
             ],
         }
+    if target == "IOS-APP-NAVIGATION-WEBDAV-CONNECTION-SETTINGS-001":
+        return {
+            "owner": "AppNavigation",
+            "architecture_refs": ["ARCH-001", "ARCH-005", "ARCH-008", "ARCH-017"],
+            "allowed_paths": [
+                "ios/Apps/Legado/**",
+                "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+                "ios/Packages/LegadoKit/Sources/AppNavigation/**",
+                "ios/Packages/LegadoKit/Sources/IntegrationKit/**",
+                "ios/Packages/LegadoKit/Sources/WebDAVFoundation/**",
+                "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+                "ios/Packages/LegadoKit/Tests/AppNavigationTests/**",
+                "ios/Packages/LegadoKit/Tests/IntegrationKitTests/**",
+                "ios/Packages/LegadoKit/Tests/WebDAVFoundationTests/**",
+                "ios/Packages/LegadoKit/Package.swift",
+                "ios/harness/ui/ui_simulator.py",
+                "ios/harness/ui/tests/test_ui_simulator.py",
+            ],
+        }
     if target == "IOS-UI-BOOTSTRAP-001":
         return {
             "owner": "AppShell",
