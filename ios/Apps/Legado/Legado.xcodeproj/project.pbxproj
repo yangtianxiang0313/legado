@@ -9,15 +9,16 @@
 /* Begin PBXBuildFile section */
 		1A247BC9DA1F87E2A09B5044 /* ShelfManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1461305771304D0B5A9934B5 /* ShelfManagementView.swift */; };
 		26C1753D9C50964A3EA59600 /* ChapterTOCView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 148BB4F7EFBC9D40BED6769D /* ChapterTOCView.swift */; };
+		4E0588B991A4FC81B896DF1E /* ReaderPageTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEFB0E99A597F60739406609 /* ReaderPageTextView.swift */; };
 		682ADA9807FEE6DA793B5B45 /* SourceManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C9DD517B1446521069518EC /* SourceManagementView.swift */; };
-		6CA4C2449D674B518896C424 /* SourceLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C3D6A5A1D184704A75CC5EF /* SourceLoginView.swift */; };
+		7156F98B0DD6A96BA68B2DD7 /* SourceLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6745EA056C92C63BE1082180 /* SourceLoginView.swift */; };
 		77A808F091EA8A7F43C7112F /* LegadoAppUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35F4A6E9B82AF44A887F2980 /* LegadoAppUITests.swift */; };
 		7CF2EBDB0B65A2B3E697C3BD /* LegadoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB97AF8062C9ACB83622DB4D /* LegadoApp.swift */; };
 		81816E12EB45F89D6C820242 /* ManagedBookFileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F888FA69C591B5A9AC6E9D5B /* ManagedBookFileStore.swift */; };
 		8C9B2045210D4D12A72EDB80 /* BookDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F643378684698E56A60BB42 /* BookDetailView.swift */; };
 		9AEB7EA85E118BCDEF1BC722 /* RootShellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AA56687558EF2C28A2F526F /* RootShellView.swift */; };
 		D8AD017203A6DBD627D4F11B /* SourceCatalogEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C9B37DC68383564F773D013 /* SourceCatalogEnvironment.swift */; };
-		DACC0FDD44450CF8A823AC81 /* LegadoFullCompatKit in Frameworks */ = {isa = PBXBuildFile; productRef = 752C493A99E434E7A062F2B3 /* LegadoFullCompatKit */; };
+		DACC0FDD44450CF8A823AC81 /* LegadoFullCompatKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8A799DD0032467FB0842EF83 /* LegadoFullCompatKit */; };
 		EE6ACF282E27D4D151647C16 /* ReaderContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF7E0504B02B52095E37595C /* ReaderContentView.swift */; };
 		F6215ABC51AF3EDE56196855 /* SearchEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E3179602790AC70DE65BB59 /* SearchEnvironment.swift */; };
 /* End PBXBuildFile section */
@@ -35,17 +36,19 @@
 /* Begin PBXFileReference section */
 		03D812586C316D23E78AB8E6 /* LegadoAppUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = LegadoAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0E3179602790AC70DE65BB59 /* SearchEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchEnvironment.swift; sourceTree = "<group>"; };
-		0C3D6A5A1D184704A75CC5EF /* SourceLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceLoginView.swift; sourceTree = "<group>"; };
 		1461305771304D0B5A9934B5 /* ShelfManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShelfManagementView.swift; sourceTree = "<group>"; };
 		148BB4F7EFBC9D40BED6769D /* ChapterTOCView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChapterTOCView.swift; sourceTree = "<group>"; };
 		1AA56687558EF2C28A2F526F /* RootShellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootShellView.swift; sourceTree = "<group>"; };
+		1BF1DDFF0D03D90900CACB9C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		1C9DD517B1446521069518EC /* SourceManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceManagementView.swift; sourceTree = "<group>"; };
 		35F4A6E9B82AF44A887F2980 /* LegadoAppUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegadoAppUITests.swift; sourceTree = "<group>"; };
 		41F121F4FC3DD3B968A18419 /* LegadoApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = LegadoApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		6745EA056C92C63BE1082180 /* SourceLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceLoginView.swift; sourceTree = "<group>"; };
 		7347A313DD725C4724AF05DC /* LegadoKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = LegadoKit; path = ../../Packages/LegadoKit; sourceTree = SOURCE_ROOT; };
 		7C9B37DC68383564F773D013 /* SourceCatalogEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceCatalogEnvironment.swift; sourceTree = "<group>"; };
 		8F643378684698E56A60BB42 /* BookDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookDetailView.swift; sourceTree = "<group>"; };
 		DB97AF8062C9ACB83622DB4D /* LegadoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegadoApp.swift; sourceTree = "<group>"; };
+		DEFB0E99A597F60739406609 /* ReaderPageTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderPageTextView.swift; sourceTree = "<group>"; };
 		F888FA69C591B5A9AC6E9D5B /* ManagedBookFileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagedBookFileStore.swift; sourceTree = "<group>"; };
 		FF7E0504B02B52095E37595C /* ReaderContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderContentView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -67,14 +70,16 @@
 			children = (
 				8F643378684698E56A60BB42 /* BookDetailView.swift */,
 				148BB4F7EFBC9D40BED6769D /* ChapterTOCView.swift */,
+				1BF1DDFF0D03D90900CACB9C /* Info.plist */,
 				DB97AF8062C9ACB83622DB4D /* LegadoApp.swift */,
 				F888FA69C591B5A9AC6E9D5B /* ManagedBookFileStore.swift */,
 				FF7E0504B02B52095E37595C /* ReaderContentView.swift */,
+				DEFB0E99A597F60739406609 /* ReaderPageTextView.swift */,
 				1AA56687558EF2C28A2F526F /* RootShellView.swift */,
 				0E3179602790AC70DE65BB59 /* SearchEnvironment.swift */,
 				1461305771304D0B5A9934B5 /* ShelfManagementView.swift */,
 				7C9B37DC68383564F773D013 /* SourceCatalogEnvironment.swift */,
-				0C3D6A5A1D184704A75CC5EF /* SourceLoginView.swift */,
+				6745EA056C92C63BE1082180 /* SourceLoginView.swift */,
 				1C9DD517B1446521069518EC /* SourceManagementView.swift */,
 			);
 			path = App;
@@ -131,7 +136,7 @@
 			);
 			name = LegadoApp;
 			packageProductDependencies = (
-				752C493A99E434E7A062F2B3 /* LegadoFullCompatKit */,
+				8A799DD0032467FB0842EF83 /* LegadoFullCompatKit */,
 			);
 			productName = LegadoApp;
 			productReference = 41F121F4FC3DD3B968A18419 /* LegadoApp.app */;
@@ -210,11 +215,12 @@
 				7CF2EBDB0B65A2B3E697C3BD /* LegadoApp.swift in Sources */,
 				81816E12EB45F89D6C820242 /* ManagedBookFileStore.swift in Sources */,
 				EE6ACF282E27D4D151647C16 /* ReaderContentView.swift in Sources */,
+				4E0588B991A4FC81B896DF1E /* ReaderPageTextView.swift in Sources */,
 				9AEB7EA85E118BCDEF1BC722 /* RootShellView.swift in Sources */,
 				F6215ABC51AF3EDE56196855 /* SearchEnvironment.swift in Sources */,
 				1A247BC9DA1F87E2A09B5044 /* ShelfManagementView.swift in Sources */,
 				D8AD017203A6DBD627D4F11B /* SourceCatalogEnvironment.swift in Sources */,
-				6CA4C2449D674B518896C424 /* SourceLoginView.swift in Sources */,
+				7156F98B0DD6A96BA68B2DD7 /* SourceLoginView.swift in Sources */,
 				682ADA9807FEE6DA793B5B45 /* SourceManagementView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -459,7 +465,7 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		752C493A99E434E7A062F2B3 /* LegadoFullCompatKit */ = {
+		8A799DD0032467FB0842EF83 /* LegadoFullCompatKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = LegadoFullCompatKit;
 		};

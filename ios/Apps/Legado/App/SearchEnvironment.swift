@@ -6,6 +6,7 @@ import SourceRuntimeComposition
 import SourceNetworkComposition
 import SourceScriptComposition
 import SourceRuntime
+import UIKit
 import WebKit
 
 @MainActor
@@ -300,6 +301,21 @@ enum SearchEnvironment {
             scriptRuntime: scriptRuntime,
             htmlSelectorBackend: htmlSelectorBackend
         )
+    }
+
+    static func loadReaderImage(_ sourceURL: String) async -> UIImage? {
+        guard let url = try? HTTPURL(sourceURL) else { return nil }
+        let externalBaseURL = ProcessInfo.processInfo.environment[
+            "LEGADO_SEARCH_BASE_URL"
+        ]
+        guard let response = try? await makeTransport(
+            externalBaseURL: externalBaseURL
+        ).execute(
+            HTTPRequest(method: .get, url: url)
+        ), (200..<300).contains(response.statusCode) else {
+            return nil
+        }
+        return UIImage(data: response.body.bytes)
     }
 
     static func importBookURL(
@@ -850,6 +866,13 @@ private actor LocalBookSourceTransport: HTTPTransport {
             string: request.url.absoluteString
         )
         let path = components?.path ?? ""
+        if path == "/images/reader-demo.png" {
+            return try HTTPResponse(
+                statusCode: 200,
+                effectiveURL: request.url,
+                body: HTTPBody(Self.readerDemoPNG)
+            )
+        }
         let body: String
         if path.hasPrefix("/explore/") {
             body = exploreHTML(
@@ -938,6 +961,10 @@ private actor LocalBookSourceTransport: HTTPTransport {
             path: "/books/fantasy-river"
         ),
     ]
+
+    private static let readerDemoPNG = Data(base64Encoded:
+        "iVBORw0KGgoAAAANSUhEUgAAAAIAAAABCAYAAAD0In+KAAAAEUlEQVR4nGP0q/z/n4GBgQEAEMYCx6tVuvcAAAAASUVORK5CYII="
+    )!
 }
 
 private struct LocalBook: Sendable {
@@ -995,7 +1022,11 @@ private struct LocalBook: Sendable {
             (
                 "\(path)/chapter-2",
                 "第二章 回声",
-                ["信号从群星深处返回。", "每一次回声都更接近真相。"]
+                [
+                    "信号从群星深处返回。",
+                    "<img src=\"/images/reader-demo.png\">",
+                    "每一次回声都更接近真相。",
+                ]
             ),
             (
                 "\(path)/chapter-3",
@@ -1006,7 +1037,9 @@ private struct LocalBook: Sendable {
         guard let chapter = chapters.first(
             where: { $0.0 == requestedPath }
         ) else { return nil }
-        let paragraphs = chapter.2.map { "<p>\($0)</p>" }.joined()
+        let paragraphs = chapter.2.map { value in
+            value.hasPrefix("<img ") ? value : "<p>\(value)</p>"
+        }.joined()
         return """
         <html><body>
           <h1>\(chapter.1)</h1>

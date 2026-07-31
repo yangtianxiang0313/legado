@@ -23,15 +23,18 @@ public struct ReaderDocument: Equatable, Sendable {
   public let position: ReaderPosition
   public let title: String
   public let content: String
+  public let imageStyle: String?
 
   public init(
     position: ReaderPosition,
     title: String,
-    content: String
+    content: String,
+    imageStyle: String? = nil
   ) {
     self.position = position
     self.title = title
     self.content = content
+    self.imageStyle = imageStyle
   }
 }
 

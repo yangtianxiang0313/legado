@@ -3,6 +3,7 @@ import AppUseCases
 import LibraryDomain
 import ReaderCore
 import SwiftUI
+import UIKit
 
 struct ReaderContentView: View {
     let target: ReaderRoute
@@ -41,6 +42,7 @@ struct ReaderContentView: View {
     @State private var offlineCacheReport: OfflineCacheReport?
     @State private var contentEditorDraft: ReaderContentEditorDraft?
     @State private var replacementDraft: ReaderReplacementRule?
+    @State private var readerImages: [String: UIImage] = [:]
 
     init(
         target: ReaderRoute,
@@ -177,6 +179,15 @@ struct ReaderContentView: View {
                 )
             }
         }
+        .task(id: session.document?.content) {
+            guard let document = session.document else {
+                readerImages = [:]
+                return
+            }
+            readerImages = await loadReaderImages(
+                ReaderContentImageProjection(sourceContent: document.content)
+            )
+        }
         .onChange(of: readAloud.characterOffset) { _, offset in
             guard
                 readAloud.bookID == target.bookID,
@@ -245,10 +256,45 @@ struct ReaderContentView: View {
 
     private func pagedContent(_ document: ReaderDocument) -> some View {
         GeometryReader { proxy in
+            let projection = ReaderContentImageProjection(
+                sourceContent: document.content
+            )
             let viewport = ReaderViewport(
                 width: max(1, proxy.size.width - 48),
                 height: max(1, proxy.size.height - 132)
             )
+            let imageLayouts = readerImageLayouts(
+                projection: projection,
+                viewport: viewport,
+                imageStyle: document.imageStyle
+            )
+            let currentPageStart = pagination.pages.indices.contains(
+                pagination.currentPageIndex
+            ) ? pagination.pages[pagination.currentPageIndex]
+                .startCharacterOffset : 0
+            let currentPageEnd = pagination.currentPageIndex + 1 < pagination.pages.count
+                ? pagination.pages[pagination.currentPageIndex + 1]
+                    .startCharacterOffset
+                : (projection.layoutText as NSString).length
+            let pageAttachments = imageLayouts.compactMap { attachment -> ReaderImageAttachmentLayout? in
+                guard attachment.layoutCharacterOffset >= currentPageStart,
+                    attachment.layoutCharacterOffset < currentPageEnd
+                else { return nil }
+                return ReaderImageAttachmentLayout(
+                    layoutCharacterOffset:
+                        attachment.layoutCharacterOffset - currentPageStart,
+                    size: attachment.size
+                )
+            }
+            let pageImageSources: [Int: String] = projection.imageAnchors.reduce(
+                into: [:]
+            ) { result, anchor in
+                guard anchor.layoutCharacterOffset >= currentPageStart,
+                    anchor.layoutCharacterOffset < currentPageEnd
+                else { return }
+                result[anchor.layoutCharacterOffset - currentPageStart] =
+                    anchor.sourceURL
+            }
             VStack(alignment: .leading, spacing: 16) {
                 Text(document.title)
                     .font(.title2.bold())
@@ -256,19 +302,19 @@ struct ReaderContentView: View {
 
                 Group {
                     if pagination.state == .ready {
-                        Text(pagination.currentPageText)
-                            .font(
-                                .system(
-                                    size: readerPreferences.value.fontSize
-                                )
-                            )
-                            .lineSpacing(
-                                readerPreferences.value.lineSpacing
-                            )
-                            .textSelection(.enabled)
-                            .contextMenu {
-                                textSelectionMenu
-                            }
+                        ReaderPageTextView(
+                            text: pagination.currentPageText,
+                            attachments: pageAttachments,
+                            images: readerImages,
+                            imageSources: pageImageSources,
+                            fontSize: readerPreferences.value.fontSize,
+                            lineSpacing: readerPreferences.value.lineSpacing
+                        )
+                        if !pageAttachments.isEmpty {
+                            Text("本页含 \(pageAttachments.count) 张插图")
+                                .font(.caption)
+                                .accessibilityIdentifier("label.reader.inlineImage")
+                        }
                     } else {
                         ProgressView("正在分页…")
                     }
@@ -279,6 +325,16 @@ struct ReaderContentView: View {
                     alignment: .topLeading
                 )
                 .accessibilityIdentifier("text.reader.content")
+
+                if !projection.imageAnchors.isEmpty {
+                    Text(
+                        "正文含 \(projection.imageAnchors.count) 张插图，"
+                            + "已加载 \(imageLayouts.count) 张"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("state.reader.inlineImage")
+                }
 
                 HStack {
                     Button {
@@ -328,7 +384,8 @@ struct ReaderContentView: View {
                     width: Int(viewport.width.rounded()),
                     height: Int(viewport.height.rounded()),
                     fontSize: readerPreferences.value.fontSize,
-                    lineSpacing: readerPreferences.value.lineSpacing
+                    lineSpacing: readerPreferences.value.lineSpacing,
+                    imageCount: readerImages.count
                 )
             ) {
                 pagination.layout(
@@ -337,12 +394,47 @@ struct ReaderContentView: View {
                     typography: ReaderTypography(
                         fontSize: readerPreferences.value.fontSize,
                         lineSpacing: readerPreferences.value.lineSpacing
-                    )
+                    ),
+                    imageAttachments: imageLayouts
                 )
                 await savePaginationProgress()
                 refreshBookmarkState()
             }
         }
+    }
+
+    private func readerImageLayouts(
+        projection: ReaderContentImageProjection,
+        viewport: ReaderViewport,
+        imageStyle: String?
+    ) -> [ReaderImageAttachmentLayout] {
+        projection.imageAnchors.compactMap { anchor in
+            guard let image = readerImages[anchor.sourceURL],
+                let size = ReaderImageLayoutPolicy.size(
+                    naturalWidth: image.size.width,
+                    naturalHeight: image.size.height,
+                    visibleWidth: viewport.width,
+                    visibleHeight: viewport.height,
+                    imageStyle: imageStyle
+                )
+            else { return nil }
+            return ReaderImageAttachmentLayout(
+                layoutCharacterOffset: anchor.layoutCharacterOffset,
+                size: size
+            )
+        }
+    }
+
+    private func loadReaderImages(
+        _ projection: ReaderContentImageProjection
+    ) async -> [String: UIImage] {
+        var images: [String: UIImage] = [:]
+        for source in Set(projection.imageAnchors.map(\.sourceURL)) {
+            if let image = await SearchEnvironment.loadReaderImage(source) {
+                images[source] = image
+            }
+        }
+        return images
     }
 
     private var currentReaderOffset: Int {
@@ -1659,6 +1751,7 @@ private struct ReaderPaginationRenderKey: Hashable {
     let height: Int
     let fontSize: Double
     let lineSpacing: Double
+    let imageCount: Int
 }
 
 private struct ReaderContentEditorDraft: Identifiable {

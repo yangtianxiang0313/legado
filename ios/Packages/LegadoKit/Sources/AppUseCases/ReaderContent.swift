@@ -138,7 +138,8 @@ public struct SourceReaderContentLoader:
         characterOffset: characterOffset
       ),
       title: execution.content.title ?? chapter.title,
-      content: execution.content.content
+      content: execution.content.content,
+      imageStyle: source.definition.imageStyle
     )
     return SourceReaderContentResult(
       document: document,
@@ -289,7 +290,8 @@ public struct ReplacementNormalizingReaderContentLoader:
     return ReaderDocument(
       position: raw.position,
       title: normalized.displayTitle,
-      content: normalized.renderedText
+      content: normalized.renderedText,
+      imageStyle: raw.imageStyle
     )
   }
 }

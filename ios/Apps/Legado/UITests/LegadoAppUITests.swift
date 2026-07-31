@@ -757,6 +757,51 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testReaderInlineImageFlow() throws {
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: ProcessInfo.processInfo.environment)
+        )
+        XCUIDevice.shared.orientation = contract.projection == "regularSplit"
+            ? .landscapeLeft : .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        require("action.shelf.openSearch").tap()
+        let searchField = app.searchFields.firstMatch
+        XCTAssertTrue(searchField.waitForExistence(timeout: 8))
+        searchField.tap()
+        searchField.typeText("星河纪事\n")
+        let result = app.staticTexts["星河纪事"].firstMatch
+        XCTAssertTrue(result.waitForExistence(timeout: 8))
+        result.tap()
+        let start = require("action.bookDetail.startReading")
+        let deadline = Date().addingTimeInterval(8)
+        while !start.isEnabled && Date() < deadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+        }
+        XCTAssertTrue(start.isEnabled)
+        start.tap()
+        require("screen.chapterTOC")
+        require("action.chapter.select.1").tap()
+        require("screen.reader")
+        XCTAssertEqual(require("label.reader.chapterTitle").label, "第二章 回声")
+        require("state.reader.inlineImage")
+        waitForText("已加载 1 张", in: "state.reader.inlineImage")
+        XCTAssertTrue(require("text.reader.content").exists)
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "chapter": "第二章 回声",
+            "inline_image_loaded": true,
+        ])
+    }
+
     func testReaderMultilevelMenuFlow() throws {
         let environment = ProcessInfo.processInfo.environment
         let contract = try XCTUnwrap(

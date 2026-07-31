@@ -5,6 +5,16 @@ public enum ReaderContentBlock: Equatable, Sendable {
   case image(sourceURL: String)
 }
 
+public struct ReaderContentImageAnchor: Equatable, Sendable {
+  public let layoutCharacterOffset: Int
+  public let sourceURL: String
+
+  public init(layoutCharacterOffset: Int, sourceURL: String) {
+    self.layoutCharacterOffset = layoutCharacterOffset
+    self.sourceURL = sourceURL
+  }
+}
+
 /// Keeps the cached source text authoritative while providing a layout-safe
 /// representation for a future native image attachment renderer. Image tags
 /// become one object-replacement character in layout text; offset conversion
@@ -18,6 +28,7 @@ public struct ReaderContentImageProjection: Equatable, Sendable {
   public let sourceContent: String
   public let blocks: [ReaderContentBlock]
   public let layoutText: String
+  public let imageAnchors: [ReaderContentImageAnchor]
   private let segments: [Segment]
 
   public init(sourceContent: String) {
@@ -26,6 +37,7 @@ public struct ReaderContentImageProjection: Equatable, Sendable {
     let fullRange = NSRange(sourceContent.startIndex..., in: sourceContent)
     let matches = expression.matches(in: sourceContent, range: fullRange)
     var blocks: [ReaderContentBlock] = []
+    var imageAnchors: [ReaderContentImageAnchor] = []
     var layoutText = ""
     var segments: [Segment] = []
     var sourceCursor = 0
@@ -46,12 +58,19 @@ public struct ReaderContentImageProjection: Equatable, Sendable {
       let sourceURL = Self.imageSource(in: sourceContent, match: match) ?? ""
       let layoutRange = NSRange(location: (layoutText as NSString).length, length: 1)
       blocks.append(.image(sourceURL: sourceURL))
+      imageAnchors.append(
+        ReaderContentImageAnchor(
+          layoutCharacterOffset: layoutRange.location,
+          sourceURL: sourceURL
+        )
+      )
       layoutText.append("\u{FFFC}")
       segments.append(Segment(source: match.range, layout: layoutRange))
       sourceCursor = NSMaxRange(match.range)
     }
     appendText(NSRange(location: sourceCursor, length: fullRange.length - sourceCursor))
     self.blocks = blocks
+    self.imageAnchors = imageAnchors
     self.layoutText = layoutText
     self.segments = segments
   }

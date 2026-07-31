@@ -188,18 +188,32 @@ private final class UITestSystemSpeechSynthesizer:
 }
 
 @MainActor
-final class NativeTextPaginator: ReaderPaginating {
+final class NativeTextPaginator: ReaderImageAttachmentPaginating {
     func pages(
         content: String,
         viewport: ReaderViewport,
         typography: ReaderTypography
+    ) -> [ReaderLayoutPage] {
+        pages(
+            content: content,
+            viewport: viewport,
+            typography: typography,
+            imageAttachments: []
+        )
+    }
+
+    func pages(
+        content: String,
+        viewport: ReaderViewport,
+        typography: ReaderTypography,
+        imageAttachments: [ReaderImageAttachmentLayout]
     ) -> [ReaderLayoutPage] {
         let source = content as NSString
         guard source.length > 0 else { return [] }
 
         let paragraph = NSMutableParagraphStyle()
         paragraph.lineSpacing = typography.lineSpacing
-        let attributed = NSAttributedString(
+        let attributed = NSMutableAttributedString(
             string: content,
             attributes: [
                 .font: UIFont.systemFont(
@@ -208,6 +222,23 @@ final class NativeTextPaginator: ReaderPaginating {
                 .paragraphStyle: paragraph,
             ]
         )
+        for attachmentLayout in imageAttachments.sorted(
+            by: { $0.layoutCharacterOffset > $1.layoutCharacterOffset }
+        ) {
+            let offset = attachmentLayout.layoutCharacterOffset
+            guard offset >= 0, offset < source.length else { continue }
+            let attachment = NSTextAttachment()
+            attachment.bounds = CGRect(
+                x: attachmentLayout.size.horizontalInset,
+                y: 0,
+                width: attachmentLayout.size.width,
+                height: attachmentLayout.size.height
+            )
+            attributed.replaceCharacters(
+                in: NSRange(location: offset, length: 1),
+                with: NSAttributedString(attachment: attachment)
+            )
+        }
         let storage = NSTextStorage(attributedString: attributed)
         let layout = NSLayoutManager()
         storage.addLayoutManager(layout)

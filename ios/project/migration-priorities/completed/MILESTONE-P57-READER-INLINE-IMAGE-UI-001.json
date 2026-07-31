@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P57-READER-INLINE-IMAGE-UI-001",
+  "status": "completed",
+  "mode": "critical_path_only",
+  "title": "P57 阅读器图文附件纵向切片",
+  "objective": "将书源正文的 img 标签从 SourceRuntime 一直接入 iOS 阅读器：保留源文本进度锚点，按 Android ChapterProvider.setTypeImage 尺寸规则参与 TextKit 分页，并通过受控本地书源在 iPhone Simulator 验收。",
+  "validation_policy": "仅运行图文投影/分页与 imageStyle 编译聚焦测试，以及一个 iPhone Simulator 图文阅读用例；不跑全量 UI 矩阵。",
+  "stages": [
+    {
+      "id": "P57-S1",
+      "title": "书源到阅读器图文渲染",
+      "selectors": [
+        {
+          "id": "P57-S1-INLINE-IMAGE-UI",
+          "claim_ids": [],
+          "task_ids": ["IOS-READER-CORE-INLINE-IMAGE-UI-001"]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-READER-CORE-INLINE-IMAGE-UI-001",
+      "title": "实现并验收阅读器内联图片",
+      "fixture_id": "sl-reader-inline-image-projection-001",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-04",
+      "prerequisite_task_ids": ["IOS-READER-CORE-IMAGE-LAYOUT-001"],
+      "validation": "simulator",
+      "package_path": "ios/Packages/LegadoKit",
+      "test_filter": "ReaderContentImageProjectionTests|ReaderImageLayoutPolicyTests|ReaderPaginationTests",
+      "ui_contract": {
+        "goal": "从本地书源打开第二章，验证正文中的内联图片已加载并参与阅读器显示。",
+        "scenario_id": "reader-inline-image-ui-v1",
+        "test_method": "testReaderInlineImageFlow"
+      },
+      "additional_allowed_paths": [
+        "ios/Apps/Legado/App/**",
+        "ios/Apps/Legado/UITests/**",
+        "ios/Apps/Legado/project.yml",
+        "ios/Apps/Legado/Legado.xcodeproj/project.pbxproj",
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Sources/ReaderCore/**",
+        "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+        "ios/Packages/LegadoSourceKit/Sources/SourceRuntime/**",
+        "ios/Packages/LegadoSourceKit/Tests/SourceRuntimeTests/**",
+        "ios/project/migration-priorities/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "a498de9be334ac2f181056c76cd75b53dd1da896",
+          "path": "app/src/main/java/io/legado/app/ui/book/read/page/provider/ChapterProvider.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.read.page.provider.ChapterProvider/setTypeImage"
+        }
+      ]
+    }
+  ]
+}

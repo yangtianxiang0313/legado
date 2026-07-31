@@ -18,12 +18,12 @@ targets:
       - App
     dependencies:
       - package: LegadoKit
-        product: LegadoStoreSafeKit
+        product: LegadoFullCompatKit
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.yangtianxiang.legado.app
-        GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: Legado
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: App/Info.plist
         TARGETED_DEVICE_FAMILY: "1,2"
   LegadoAppUITests:
     type: bundle.ui-testing

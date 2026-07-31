@@ -23,12 +23,32 @@ public struct ReaderTypography: Equatable, Hashable, Sendable {
   }
 }
 
+public struct ReaderImageAttachmentLayout: Equatable, Sendable {
+  public let layoutCharacterOffset: Int
+  public let size: ReaderImageLayoutSize
+
+  public init(layoutCharacterOffset: Int, size: ReaderImageLayoutSize) {
+    self.layoutCharacterOffset = max(0, layoutCharacterOffset)
+    self.size = size
+  }
+}
+
 @MainActor
 public protocol ReaderPaginating: AnyObject {
   func pages(
     content: String,
     viewport: ReaderViewport,
     typography: ReaderTypography
+  ) -> [ReaderLayoutPage]
+}
+
+@MainActor
+public protocol ReaderImageAttachmentPaginating: ReaderPaginating {
+  func pages(
+    content: String,
+    viewport: ReaderViewport,
+    typography: ReaderTypography,
+    imageAttachments: [ReaderImageAttachmentLayout]
   ) -> [ReaderLayoutPage]
 }
 
@@ -48,6 +68,8 @@ public final class ReaderPaginationSession {
 
   private let paginator: any ReaderPaginating
   private var content = ""
+  private var projection: ReaderContentImageProjection?
+  private var currentLayoutCharacterOffset = 0
   private var chapterID: ChapterID?
 
   public init(paginator: any ReaderPaginating) {
@@ -76,24 +98,41 @@ public final class ReaderPaginationSession {
   public func layout(
     document: ReaderDocument,
     viewport: ReaderViewport,
-    typography: ReaderTypography
+    typography: ReaderTypography,
+    imageAttachments: [ReaderImageAttachmentLayout] = []
   ) {
+    let newProjection = ReaderContentImageProjection(
+      sourceContent: document.content
+    )
+    let layoutContent = newProjection.layoutText
     let anchor = chapterID == document.position.chapterID
-        && content == document.content
+        && content == layoutContent
         && !pages.isEmpty
-      ? currentCharacterOffset
-      : max(0, document.position.characterOffset)
+      ? currentLayoutCharacterOffset
+      : newProjection.layoutOffset(
+        forSourceOffset: max(0, document.position.characterOffset)
+      )
     chapterID = document.position.chapterID
-    content = document.content
-    currentCharacterOffset = min(
+    projection = newProjection.imageAnchors.isEmpty ? nil : newProjection
+    content = layoutContent
+    currentLayoutCharacterOffset = min(
       anchor,
-      (document.content as NSString).length
+      (layoutContent as NSString).length
     )
-    pages = paginator.pages(
-      content: content,
-      viewport: viewport,
-      typography: typography
-    )
+    if let paginator = paginator as? any ReaderImageAttachmentPaginating {
+      pages = paginator.pages(
+        content: content,
+        viewport: viewport,
+        typography: typography,
+        imageAttachments: imageAttachments
+      )
+    } else {
+      pages = paginator.pages(
+        content: content,
+        viewport: viewport,
+        typography: typography
+      )
+    }
     guard !pages.isEmpty else {
       currentPageIndex = 0
       state = .empty
@@ -101,8 +140,11 @@ public final class ReaderPaginationSession {
     }
     let map = try? ReaderLayoutMap(pages: pages, isComplete: true)
     currentPageIndex = map?.pageIndex(
-      forCharacterOffset: currentCharacterOffset
+      forCharacterOffset: currentLayoutCharacterOffset
     ) ?? pages.index(before: pages.endIndex)
+    currentCharacterOffset = projection?.sourceOffset(
+      forLayoutOffset: currentLayoutCharacterOffset
+    ) ?? currentLayoutCharacterOffset
     state = .ready
   }
 
@@ -112,7 +154,10 @@ public final class ReaderPaginationSession {
     let destination = currentPageIndex + delta
     guard pages.indices.contains(destination) else { return nil }
     currentPageIndex = destination
-    currentCharacterOffset = pages[destination].startCharacterOffset
+    currentLayoutCharacterOffset = pages[destination].startCharacterOffset
+    currentCharacterOffset = projection?.sourceOffset(
+      forLayoutOffset: currentLayoutCharacterOffset
+    ) ?? currentLayoutCharacterOffset
     return currentCharacterOffset
   }
 }

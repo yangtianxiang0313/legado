@@ -86,6 +86,36 @@ final class ReaderPaginationTests: XCTestCase {
     XCTAssertEqual(session.currentCharacterOffset, 0)
   }
 
+  func testInlineImagePageAnchorPersistsAsSourceOffset() {
+    let paginator = FakeReaderPaginator(
+      pages: [
+        ReaderLayoutPage(startCharacterOffset: 0, characterCount: 3),
+        ReaderLayoutPage(startCharacterOffset: 3, characterCount: 2),
+      ]
+    )
+    let session = ReaderPaginationSession(paginator: paginator)
+    let content = "前文<img src=\"https://example.test/image.png\">后文"
+    let document = ReaderDocument(
+      position: ReaderPosition(
+        bookID: BookID(rawValue: "book"),
+        chapterID: ChapterID(rawValue: "chapter"),
+        chapterIndex: 0,
+        characterOffset: 0
+      ),
+      title: "图文",
+      content: content
+    )
+
+    session.layout(
+      document: document,
+      viewport: ReaderViewport(width: 300, height: 500),
+      typography: ReaderTypography(fontSize: 20, lineSpacing: 12)
+    )
+
+    XCTAssertEqual(session.currentPageText, "前文\u{FFFC}")
+    XCTAssertEqual(session.movePage(by: 1), (content as NSString).length - 2)
+  }
+
   private func makeDocument(
     offset: Int,
     chapterID: String = "chapter"

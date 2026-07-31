@@ -54,7 +54,8 @@ final class BookSourceRuntimeCompilerTests: XCTestCase {
             "content": "#content@html",
             "nextContentUrl": ".next@href",
             "webJs": "document.body.innerHTML",
-            "sourceRegex": "media=(.+)"
+            "sourceRegex": "media=(.+)",
+            "imageStyle": "FULL"
           }
         }
         """#.utf8
@@ -110,6 +111,7 @@ final class BookSourceRuntimeCompilerTests: XCTestCase {
       compiled.definition.sourceUserVariable,
       #"{"token":"one"}"#
     )
+    XCTAssertEqual(compiled.definition.imageStyle, "FULL")
     XCTAssertEqual(
       compiled.exploreDefinition?.catalog,
       "精选::https://edited.example/explore?page={{page}}"
