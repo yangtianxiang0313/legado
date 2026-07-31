@@ -427,18 +427,27 @@ struct ReaderContentView: View {
         }
     }
 
+    @MainActor
     private func loadReaderImages(
         _ projection: ReaderContentImageProjection,
         bookID: BookID,
         imageDecode: String?
     ) async -> [String: UIImage] {
+        let sources = Set(projection.imageAnchors.map(\.sourceURL))
+        let tasks = sources.map { source in
+            Task { @MainActor in
+                let image = await SearchEnvironment.loadReaderImage(
+                    source,
+                    bookID: bookID,
+                    imageDecode: imageDecode
+                )
+                return (source, image)
+            }
+        }
         var images: [String: UIImage] = [:]
-        for source in Set(projection.imageAnchors.map(\.sourceURL)) {
-            if let image = await SearchEnvironment.loadReaderImage(
-                source,
-                bookID: bookID,
-                imageDecode: imageDecode
-            ) {
+        for task in tasks {
+            let (source, image) = await task.value
+            if let image {
                 images[source] = image
             }
         }
