@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P58-READER-IMAGE-DECODE-001",
+  "status": "completed",
+  "mode": "critical_path_only",
+  "title": "P58 书源正文图片解码",
+  "objective": "依据冻结 Android ContentRule.imageDecode 与 ImageUtils.decode，把书源声明的正文图片字节解码规则纳入独立 SourceRuntime 契约；空规则保持原始字节，解码失败显式降级，平台 UIImage 解码不进入书源内核。",
+  "validation_policy": "先运行 SourceRuntime 编译与图片字节解码聚焦测试；在可消费的解码端口接入阅读器前不新增模拟器回归。",
+  "stages": [
+    {
+      "id": "P58-S1",
+      "title": "图片解码规则契约",
+      "selectors": [
+        {
+          "id": "P58-S1-IMAGE-DECODE",
+          "claim_ids": [],
+          "task_ids": ["IOS-SOURCE-RUNTIME-IMAGE-DECODE-001"]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-SOURCE-RUNTIME-IMAGE-DECODE-001",
+      "title": "编译并执行正文图片字节解码规则",
+      "fixture_id": "sl-reader-image-decode-runtime-001",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-04",
+      "prerequisite_task_ids": ["IOS-READER-CORE-INLINE-IMAGE-UI-001"],
+      "validation": "tests",
+      "package_path": "ios/Packages/LegadoSourceKit",
+      "test_filter": "BookSourceRuntimeCompilerTests|SourceImageDecodeTests",
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoSourceKit/Sources/SourceRuntime/**",
+        "ios/Packages/LegadoSourceKit/Sources/SourceScriptComposition/**",
+        "ios/Packages/LegadoSourceKit/Tests/SourceRuntimeTests/**",
+        "ios/project/migration-priorities/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "aef453668216619314f556bdf5d100733c9c5414",
+          "path": "app/src/main/java/io/legado/app/data/entities/rule/ContentRule.kt",
+          "symbol_id": "kotlin://io.legado.app.data.entities.rule.ContentRule/imageDecode"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "f23da69733ce181b40edea7b990a8a262e8df156",
+          "path": "app/src/main/java/io/legado/app/utils/ImageUtils.kt",
+          "symbol_id": "kotlin://io.legado.app.utils.ImageUtils/decode"
+        }
+      ]
+    }
+  ]
+}

@@ -193,6 +193,7 @@ public enum BookSourceRuntimeCompiler {
       scriptLibrary: scriptLibrary(source.jsLib),
       sourceUserVariable: overrides.sourceUserVariable,
       imageStyle: nonEmpty(fieldString(content.imageStyle)),
+      imageDecode: nonEmpty(fieldString(content.imageDecode)),
       runtime: runtime
     )
     let catalog = preferred(

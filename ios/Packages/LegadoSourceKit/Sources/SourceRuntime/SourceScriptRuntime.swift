@@ -27,6 +27,7 @@ public enum SourceScriptValue: Equatable, Sendable {
 public enum SourceScriptPurpose: String, Equatable, Sendable {
   case rule
   case responseCheck
+  case imageDecode
 }
 
 public struct SourceScriptLibrary: Equatable, Sendable {

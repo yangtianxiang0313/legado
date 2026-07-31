@@ -12,6 +12,7 @@ public struct SourceSearchDefinition: Sendable, Equatable {
   public let scriptLibrary: SourceScriptLibrary?
   public let sourceUserVariable: String
   public let imageStyle: String?
+  public let imageDecode: String?
   public let runtime: HTMLCSSSourceDefinition
 
   public init(
@@ -25,6 +26,7 @@ public struct SourceSearchDefinition: Sendable, Equatable {
     scriptLibrary: SourceScriptLibrary? = nil,
     sourceUserVariable: String = "",
     imageStyle: String? = nil,
+    imageDecode: String? = nil,
     runtime: HTMLCSSSourceDefinition
   ) {
     self.sourceURL = sourceURL
@@ -37,6 +39,7 @@ public struct SourceSearchDefinition: Sendable, Equatable {
     self.scriptLibrary = scriptLibrary
     self.sourceUserVariable = sourceUserVariable
     self.imageStyle = imageStyle
+    self.imageDecode = imageDecode
     self.runtime = runtime
   }
 
