@@ -1,8 +1,10 @@
 import AppNavigation
 import AppUseCases
 import Foundation
+import IntegrationKit
 import SwiftUI
 import UIKit
+import WebDAVFoundation
 
 struct RootShellView: View {
     @Bindable var router: AppRouter
@@ -13,6 +15,9 @@ struct RootShellView: View {
     @Bindable var bookDetailPreferences: BookDetailPreferencesStore
     @Bindable var rootVisibility: RootVisibilityPreferencesStore
     @Bindable var replacementRules: ReaderReplacementRuleStore
+    @Bindable var webDAVSettings: WebDAVConnectionSettingsStore
+    let webDAVCredentials: KeychainWebDAVCredentialStore
+    let webDAVClient: any WebDAVConnectionInitializing
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var didLoadLibrary = false
 
@@ -160,7 +165,10 @@ struct RootShellView: View {
                         persistedSources: sourceCatalog.sources
                     )
                 },
-                rootVisibility: rootVisibility
+                rootVisibility: rootVisibility,
+                webDAVSettings: webDAVSettings,
+                webDAVCredentials: webDAVCredentials,
+                webDAVClient: webDAVClient
             )
             .navigationDestination(for: AppRoute.self) { route in
                 destination(for: route, on: root)
@@ -604,6 +612,16 @@ private struct RootContentView: View {
     let books: () -> [ShelfBookItem]
     let exploreSources: () -> [ExploreSourceSummary]
     @Bindable var rootVisibility: RootVisibilityPreferencesStore
+    @Bindable var webDAVSettings: WebDAVConnectionSettingsStore
+    let webDAVCredentials: KeychainWebDAVCredentialStore
+    let webDAVClient: any WebDAVConnectionInitializing
+    @State private var webDAVAccount = ProcessInfo.processInfo.arguments.contains(
+        "--webdav-test-double"
+    ) ? "reader" : ""
+    @State private var webDAVPassword = ProcessInfo.processInfo.arguments.contains(
+        "--webdav-test-double"
+    ) ? "p@ssword" : ""
+    @State private var webDAVStatus = ""
 
     var body: some View {
         if root == .shelf {
@@ -619,7 +637,8 @@ private struct RootContentView: View {
     }
 
     private var genericRoot: some View {
-        VStack(spacing: 20) {
+        ScrollView {
+            VStack(spacing: 20) {
             Image(systemName: root.systemImage)
                 .font(.system(size: 44, weight: .semibold))
                 .foregroundStyle(.tint)
@@ -695,12 +714,81 @@ private struct RootContentView: View {
                     .accessibilityIdentifier("toggle.settings.root.rss")
                 }
                 .accessibilityIdentifier("section.settings.rootVisibility")
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("WebDAV")
+                        .font(.headline)
+                    TextField("服务器地址", text: Binding(
+                        get: { webDAVSettings.value.serverAddress },
+                        set: { webDAVSettings.update(serverAddress: $0, directoryName: webDAVSettings.value.directoryName) }
+                    ))
+                    .textInputAutocapitalization(.never)
+                    .accessibilityIdentifier("field.settings.webdav.server")
+                    TextField("账号", text: $webDAVAccount)
+                        .textInputAutocapitalization(.never)
+                        .accessibilityIdentifier("field.settings.webdav.account")
+                    SecureField("密码", text: $webDAVPassword)
+                        .accessibilityIdentifier("field.settings.webdav.password")
+                    TextField("目录", text: Binding(
+                        get: { webDAVSettings.value.directoryName },
+                        set: { webDAVSettings.update(serverAddress: webDAVSettings.value.serverAddress, directoryName: $0) }
+                    ))
+                    .accessibilityIdentifier("field.settings.webdav.directory")
+                    Button("测试连接") { testWebDAVConnection() }
+                        .accessibilityIdentifier("action.settings.webdav.test")
+                    if !webDAVStatus.isEmpty {
+                        Text(webDAVStatus)
+                            .accessibilityIdentifier("state.settings.webdav.connection")
+                    }
+                }
             }
+            }
+            .padding()
         }
-        .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(uiColor: .systemGroupedBackground))
         .navigationTitle(root.title)
+    }
+
+    private func testWebDAVConnection() {
+        guard
+            let serverURL = WebDAVServerURL(
+                rawValue: webDAVSettings.value.serverAddress
+            ),
+            !webDAVAccount.isEmpty,
+            !webDAVPassword.isEmpty
+        else {
+            webDAVStatus = "请填写完整 WebDAV 配置"
+            return
+        }
+        let settings = WebDAVConnectionConfiguration(
+            serverURL: serverURL,
+            directoryName: webDAVSettings.value.directoryName,
+            credentialReference: webDAVSettings.value.credentialReference
+        )
+        Task {
+            do {
+                try await webDAVCredentials.save(
+                    WebDAVBasicCredentials(
+                        username: webDAVAccount,
+                        password: webDAVPassword
+                    ),
+                    for: settings.credentialReference
+                )
+                webDAVSettings.update(
+                    serverAddress: serverURL.rawValue,
+                    directoryName: webDAVSettings.value.directoryName
+                )
+                switch await webDAVClient.initialize(settings) {
+                case .ready:
+                    webDAVStatus = "WebDAV 连接成功"
+                case .failed:
+                    webDAVStatus = "WebDAV 连接失败"
+                }
+            } catch {
+                webDAVStatus = "WebDAV 凭据保存失败"
+            }
+        }
     }
 }
 
@@ -1225,6 +1313,9 @@ struct StartupAcceptanceView: View {
     @Bindable var bookDetailPreferences: BookDetailPreferencesStore
     @Bindable var rootVisibility: RootVisibilityPreferencesStore
     @Bindable var replacementRules: ReaderReplacementRuleStore
+    @Bindable var webDAVSettings: WebDAVConnectionSettingsStore
+    let webDAVCredentials: KeychainWebDAVCredentialStore
+    let webDAVClient: any WebDAVConnectionInitializing
     let startupCase: StartupAcceptanceCase
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -1268,7 +1359,10 @@ struct StartupAcceptanceView: View {
                 readerPreferences: readerPreferences,
                 bookDetailPreferences: bookDetailPreferences,
                 rootVisibility: rootVisibility,
-                replacementRules: replacementRules
+                replacementRules: replacementRules,
+                webDAVSettings: webDAVSettings,
+                webDAVCredentials: webDAVCredentials,
+                webDAVClient: webDAVClient
             )
         }
     }

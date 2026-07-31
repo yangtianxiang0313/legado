@@ -127,6 +127,48 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testWebDAVConnectionSettings() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-webdav-settings",
+            "--webdav-test-double",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        selectRoot("root.settings", label: "我的")
+        require("field.settings.webdav.server")
+        require("field.settings.webdav.account")
+        require("field.settings.webdav.password")
+        require("field.settings.webdav.directory")
+        app.swipeUp()
+        element("action.settings.webdav.test").tap()
+        let result = element("state.settings.webdav.connection")
+        XCTAssertTrue(result.waitForExistence(timeout: 8))
+        XCTAssertEqual("WebDAV 连接成功", result.label)
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "screen": "screen.root.settings",
+            "settings_controls": [
+                "field.settings.webdav.server",
+                "field.settings.webdav.account",
+                "field.settings.webdav.password",
+                "field.settings.webdav.directory",
+                "action.settings.webdav.test",
+            ],
+            "connection_state": result.label,
+        ])
+    }
+
     func testStartupFirstUseAndRestore() throws {
         let environment = ProcessInfo.processInfo.environment
         let contract = try XCTUnwrap(

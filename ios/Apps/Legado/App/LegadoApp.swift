@@ -3,9 +3,11 @@ import AppNavigation
 import AppUseCases
 import DatabaseGRDB
 import Foundation
+import IntegrationKit
 import ReaderCore
 import SwiftUI
 import UIKit
+import WebDAVFoundation
 
 @main
 struct LegadoApp: App {
@@ -17,11 +19,42 @@ struct LegadoApp: App {
     @State private var bookDetailPreferences: BookDetailPreferencesStore
     @State private var rootVisibility: RootVisibilityPreferencesStore
     @State private var replacementRules: ReaderReplacementRuleStore
+    @State private var webDAVSettings: WebDAVConnectionSettingsStore
+    private let webDAVCredentials: KeychainWebDAVCredentialStore
+    private let webDAVClient: any WebDAVConnectionInitializing
 
     init() {
         let processArguments = ProcessInfo.processInfo.arguments
         let rootVisibilityRepository =
             UserDefaultsRootVisibilityPreferencesRepository()
+        let webDAVCredentials = KeychainWebDAVCredentialStore()
+        self.webDAVCredentials = webDAVCredentials
+        self.webDAVClient = ProcessInfo.processInfo.arguments.contains(
+            "--webdav-test-double"
+        )
+            ? WebDAVFoundationConnectionClient(
+                credentials: webDAVCredentials,
+                transport: UITestWebDAVTransport()
+            )
+            : WebDAVFoundationConnectionClient(credentials: webDAVCredentials)
+        let webDAVSettingsRepository =
+            UserDefaultsWebDAVConnectionSettingsRepository()
+        if processArguments.contains("--reset-webdav-settings") {
+            webDAVSettingsRepository.save(WebDAVConnectionSettings())
+        }
+        if processArguments.contains("--webdav-test-double") {
+            webDAVSettingsRepository.save(
+                WebDAVConnectionSettings(
+                    serverAddress: "https://dav.example.test/dav",
+                    directoryName: "legado"
+                )
+            )
+        }
+        _webDAVSettings = State(
+            initialValue: WebDAVConnectionSettingsStore(
+                repository: webDAVSettingsRepository
+            )
+        )
         if processArguments.contains("--reset-root-visibility") {
             rootVisibilityRepository.save(RootVisibilityPreferences())
         }
@@ -115,6 +148,9 @@ struct LegadoApp: App {
                     bookDetailPreferences: bookDetailPreferences,
                     rootVisibility: rootVisibility,
                     replacementRules: replacementRules,
+                    webDAVSettings: webDAVSettings,
+                    webDAVCredentials: webDAVCredentials,
+                    webDAVClient: webDAVClient,
                     startupCase: startupCase
                 )
             } else {
@@ -126,10 +162,41 @@ struct LegadoApp: App {
                     readerPreferences: readerPreferences,
                     bookDetailPreferences: bookDetailPreferences,
                     rootVisibility: rootVisibility,
-                    replacementRules: replacementRules
+                    replacementRules: replacementRules,
+                    webDAVSettings: webDAVSettings,
+                    webDAVCredentials: webDAVCredentials,
+                    webDAVClient: webDAVClient
                 )
             }
         }
+    }
+}
+
+@MainActor
+private final class UserDefaultsWebDAVConnectionSettingsRepository:
+    WebDAVConnectionSettingsRepository
+{
+    private let defaults: UserDefaults
+    private let key = "webdav.connection.settings.v1"
+
+    init(defaults: UserDefaults = .standard) { self.defaults = defaults }
+
+    func load() -> WebDAVConnectionSettings {
+        guard let data = defaults.data(forKey: key),
+              let value = try? JSONDecoder().decode(WebDAVConnectionSettings.self, from: data)
+        else { return WebDAVConnectionSettings() }
+        return value
+    }
+
+    func save(_ settings: WebDAVConnectionSettings) {
+        guard let data = try? JSONEncoder().encode(settings) else { return }
+        defaults.set(data, forKey: key)
+    }
+}
+
+private struct UITestWebDAVTransport: WebDAVHTTPTransport {
+    func perform(_ request: URLRequest) async throws -> WebDAVHTTPResponse {
+        WebDAVHTTPResponse(statusCode: 207)
     }
 }
 

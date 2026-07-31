@@ -1,6 +1,6 @@
 import Foundation
 
-public struct WebDAVCredentialReference: Sendable, Equatable, Hashable {
+public struct WebDAVCredentialReference: Codable, Sendable, Equatable, Hashable {
     public let rawValue: String
 
     public init(_ rawValue: String) {
