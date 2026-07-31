@@ -1,0 +1,1 @@
+{"schema_version":1,"cases":[{"id":"debug-search-chain","operation":"debug_runtime","arguments":{"input":"真值"},"request":{"method":"GET","target":"/debug/search?q=%E7%9C%9F%E5%80%BC"}}]}

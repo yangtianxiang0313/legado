@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "logical_origin": "http://sourcelab.test",
-  "control_sha256": "c44647e9fdd1883e2efaacdd83c498d1947bc3206a89940324712e22f8707808",
+  "control_sha256": "0b9af2efafbfe4bc6d06de79405291bd4e638e0c36e2f89979341482778ee422",
   "scenarios": [
     {
       "id": "il-integration-backup-webdav-001",
@@ -208,6 +208,12 @@
       "sha256": "8ba78bb03d5b7ee941b4573e7f67ef0f992327fb48b1ccdc2599a70a77b059d1"
     },
     {
+      "id": "sl-ios-dynamic-web-product-001",
+      "status": "candidate",
+      "path": "ios/harness/fixtures/source-lab/sl-ios-dynamic-web-product-001",
+      "sha256": "f4b35cf1d8990617bf8b2c8d75caf7bf29de8ae8be2c62637c2fd6c04c87ab38"
+    },
+    {
       "id": "sl-post-form-001",
       "status": "candidate",
       "path": "ios/harness/fixtures/source-lab/sl-post-form-001",
@@ -218,6 +224,12 @@
       "status": "candidate",
       "path": "ios/harness/fixtures/source-lab/sl-source-cookie-persistent-session-merge-runtime-001",
       "sha256": "40613e5b7953b2a992d57c3188943a63b4525927ee74b5c9c64da10203339f04"
+    },
+    {
+      "id": "sl-source-debug-android-truth-001",
+      "status": "reference",
+      "path": "ios/harness/fixtures/source-lab/sl-source-debug-android-truth-001",
+      "sha256": "491b197e0249792511cf52558ef9cc09b2f8dd139e4e33bbbb03c9962a3ae66b"
     },
     {
       "id": "sl-source-pipeline-explore-runtime-001",
@@ -323,6 +335,11 @@
     }
   ],
   "coverage": {
+    "debug.full-chain": {
+      "nominal": [
+        "sl-source-debug-android-truth-001:debug-search-chain"
+      ]
+    },
     "pipeline.book-info-html": {
       "boundary": [
         "sl-html-basic-001:book-detail-missing-cover",

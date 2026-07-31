@@ -99,6 +99,33 @@ final class SourceDebugRunnerTests: XCTestCase {
     )
   }
 
+  // Android Debug.startDebug's frozen continuation is search → detail → TOC
+  // → content. P50 freezes the same sequence against SourceLab; this test
+  // keeps the iOS report projection attached to that portable contract.
+  func testAndroidTruthSourceLabSearchChainProjection() async {
+    let report = await SourceDebugRunner(
+      definition: androidTruthDefinition(),
+      transport: AndroidTruthTransport()
+    ).run("真值")
+
+    XCTAssertEqual(report.outcome, .completed)
+    XCTAssertEqual(
+      report.stages.map(\.stage),
+      [.search, .bookInfo, .toc, .content]
+    )
+    XCTAssertEqual(
+      report.stages.flatMap(\.network).map(\.requestURL),
+      [
+        "http://sourcelab.test/debug/search?q=%E7%9C%9F%E5%80%BC",
+        "http://sourcelab.test/debug/book.html",
+        "http://sourcelab.test/debug/toc.html",
+        "http://sourcelab.test/debug/chapter-1.html",
+      ]
+    )
+    XCTAssertEqual(field("first_name", in: report.stages[0]), "真值之书")
+    XCTAssertEqual(field("first_title", in: report.stages[2]), "第一章 真值")
+  }
+
   private func runner(
     transport: any HTTPTransport = DebugTransport()
   ) -> SourceDebugRunner {
@@ -200,6 +227,44 @@ final class SourceDebugRunnerTests: XCTestCase {
       )
     )
   }
+
+  private func androidTruthDefinition() -> SourceSearchDefinition {
+    SourceSearchDefinition(
+      sourceURL: "http://sourcelab.test",
+      sourceName: "SourceLab Android 调试真值源",
+      originOrder: 3,
+      runtime: HTMLCSSSourceDefinition(
+        searchURLTemplate: "http://sourcelab.test/debug/search?q={{key}}",
+        search: SearchRules(
+          list: ".book",
+          name: HTMLCSSRule(".name"),
+          author: HTMLCSSRule(".author"),
+          intro: .optional(nil),
+          kind: .optional(nil),
+          lastChapter: .optional(nil),
+          bookURL: HTMLCSSRule("a", value: .href),
+          coverURL: .optional(nil, value: .src)
+        ),
+        bookInfo: BookInfoRules(
+          name: HTMLCSSRule("h1"),
+          author: HTMLCSSRule(".author"),
+          intro: .optional(nil),
+          kind: .optional(nil),
+          lastChapter: .optional(nil),
+          coverURL: .optional(nil, value: .src),
+          tocURL: HTMLCSSRule("a.toc", value: .href)
+        ),
+        toc: TOCRules(
+          list: "#toc > li",
+          name: HTMLCSSRule("a"),
+          url: HTMLCSSRule("a", value: .href)
+        ),
+        content: ContentRules(
+          content: HTMLCSSRule("#content", value: .html)
+        )
+      )
+    )
+  }
 }
 
 private actor DebugTransport: HTTPTransport {
@@ -255,6 +320,30 @@ private actor DebugHTMLTransport: HTTPTransport {
     case "/content":
       body =
         #"<html><body><article id="content">直接文本正文</article></body></html>"#
+    default:
+      throw HTTPTransportFailure.connectionFailed
+    }
+    return try HTTPResponse(
+      statusCode: 200,
+      effectiveURL: request.url,
+      body: HTTPBody(Data(body.utf8))
+    )
+  }
+}
+
+private actor AndroidTruthTransport: HTTPTransport {
+  func execute(_ request: HTTPRequest) async throws -> HTTPResponse {
+    let path = URL(string: request.url.absoluteString)?.path ?? ""
+    let body: String
+    switch path {
+    case "/debug/search":
+      body = #"<main><article class="book"><a href="/debug/book.html"><span class="name">真值之书</span></a><span class="author">迁移者</span></article></main>"#
+    case "/debug/book.html":
+      body = #"<main><h1>真值之书</h1><p class="author">迁移者</p><a class="toc" href="/debug/toc.html">目录</a></main>"#
+    case "/debug/toc.html":
+      body = #"<ol id="toc"><li><a href="/debug/chapter-1.html">第一章 真值</a></li></ol>"#
+    case "/debug/chapter-1.html":
+      body = #"<main><h1>第一章 真值</h1><article id="content"><p>离线真值正文。</p></article></main>"#
     default:
       throw HTTPTransportFailure.connectionFailed
     }

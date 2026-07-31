@@ -66,6 +66,13 @@ SCENARIO_CONTRACTS = {
         "expected_cases": EXPECTED_CASES,
         "nominal_cases": frozenset(NOMINAL_CASES),
     },
+    "sl-source-debug-android-truth-001": {
+        "status": "candidate",
+        "expected_cases": (
+            ("debug-search-chain", "debug_runtime"),
+        ),
+        "nominal_cases": frozenset({"debug-search-chain"}),
+    },
     "sl-post-form-001": {
         "status": "candidate",
         "expected_cases": (
@@ -1844,6 +1851,12 @@ SCENARIO_CONTRACTS = {
     },
 }
 ROUTE_OBSERVATION_SCENARIOS = {
+    "sl-source-debug-android-truth-001": (
+        "debug-search",
+        "debug-book",
+        "debug-toc",
+        "debug-content",
+    ),
     "sl-source-request-header-cookie-retry-layering-001": (
         "retry-two-with-header-cookie",
         "retry-default",

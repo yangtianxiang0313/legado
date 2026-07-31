@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "kind": "source_lab_scenario",
+  "id": "sl-source-debug-android-truth-001",
+  "revision": 1,
+  "status": "reference",
+  "operation": "source_lab_site",
+  "capabilities": ["CAP-RUNTIME-PORTS", "CAP-CONFORMANCE", "CAP-SOURCE-FORMAT"],
+  "compatibility_profile": "android-legado-v1",
+  "source": "source.template.json",
+  "input": "input.json",
+  "transport": {
+    "mode": "fixture_and_loopback",
+    "external_network": "deny",
+    "responses": [
+      {"id": "debug-search", "match": {"method": "GET", "path": "/debug/search", "query": {"q": "真值"}}, "respond": {"status": 200, "headers": {"content-type": "text/html; charset=utf-8"}, "body_file": "responses/search.html"}},
+      {"id": "debug-book", "match": {"method": "GET", "path": "/debug/book.html", "query": {}}, "respond": {"status": 200, "headers": {"content-type": "text/html; charset=utf-8"}, "body_file": "responses/book.html"}},
+      {"id": "debug-toc", "match": {"method": "GET", "path": "/debug/toc.html", "query": {}}, "respond": {"status": 200, "headers": {"content-type": "text/html; charset=utf-8"}, "body_file": "responses/toc.html"}},
+      {"id": "debug-content", "match": {"method": "GET", "path": "/debug/chapter-1.html", "query": {}}, "respond": {"status": 200, "headers": {"content-type": "text/html; charset=utf-8"}, "body_file": "responses/content.html"}}
+    ]
+  },
+  "coverage": [
+    {"behavior": "debug.full-chain", "cases": [{"id": "debug-search-chain", "role": "nominal", "android_fact_refs": ["AF-WEBBOOK-SEARCH-ENTRYPOINT", "AF-WEBBOOK-BOOKINFO-ENTRYPOINT", "AF-WEBBOOK-TOC-ENTRYPOINT", "AF-WEBBOOK-CONTENT-ENTRYPOINT"], "branch_refs": ["Debug.startDebug searchDebug to infoDebug to tocDebug to contentDebug"]}]}
+  ],
+  "determinism": {"clock": "2026-01-01T00:00:00Z", "timezone": "UTC", "locale": "en_US_POSIX", "random_seed": 97, "network_allowed": false, "logical_origin": "http://sourcelab.test"},
+  "limits": {"timeout_ms": 5000, "max_response_bytes": 1048576, "max_request_body_bytes": 65536, "max_requests": 8, "max_concurrency": 1},
+  "provenance": {"kind": "synthetic", "source_refs": ["app/src/main/java/io/legado/app/model/Debug.kt", "app/src/main/java/io/legado/app/model/webBook/WebBook.kt"], "introduced_by": "IOS-SOURCE-RUNTIME-DEBUG-ANDROID-TRUTH-001"}
+}

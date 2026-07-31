@@ -8,6 +8,7 @@
     {"id": "pipeline.book-info-html", "status": "active", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 1},
     {"id": "pipeline.toc-html", "status": "active", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 1},
     {"id": "pipeline.content-html", "status": "active", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 1},
+    {"id": "debug.full-chain", "status": "active", "required_roles": ["nominal"], "min_cases_per_role": 1, "phase": 1},
     {"id": "url.relative-resolution", "status": "active", "required_roles": ["nominal"], "min_cases_per_role": 1, "phase": 1},
     {"id": "rule.css-selector", "status": "active", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 1},
     {"id": "transport.post-form", "status": "planned", "required_roles": ["nominal", "boundary"], "min_cases_per_role": 1, "phase": 1},

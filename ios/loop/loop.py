@@ -1492,6 +1492,11 @@ def priority_policy_deliveries(
                         )
                         else {}
                     ),
+                    **(
+                        {"android_truth_capture": True}
+                        if declaration.get("android_truth_capture") is True
+                        else {}
+                    ),
                 },
                 **(
                     {"ui_contract": declaration["ui_contract"]}
@@ -2897,13 +2902,17 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
                     ],
                     "timeout_seconds": 900,
                 }
+            captures_android_truth = (
+                source_contract.get("android_truth_capture") is True
+            )
             forbidden = [
-                "Android golden",
                 "accepted Requirement",
                 "架构依赖边",
                 "三方依赖",
                 "切片级 Simulator fixture",
             ]
+            if not captures_android_truth:
+                forbidden.insert(0, "Android golden")
             if architecture["owner"] == "DependencyControl":
                 forbidden = [
                     "Android golden",

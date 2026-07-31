@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P50-SOURCE-DEBUG-ANDROID-TRUTH-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "title": "P50 书源调试 Android 真值结构化对齐",
+  "objective": "复用离线 SourceLab 的代表性 HTML 书源，在冻结 Android 的 Debug.startDebug 中实际执行搜索到详情、目录、正文的续跑链路；将终态、入口路由、阶段序列和本地站点请求路径冻结为结构化 Golden，并令独立 iOS SourceDebugRunner 对齐该投影。SourceLab 只提供稳定网站，不提供业务 expected。",
+  "validation_policy": "只运行一次 Android Oracle 对该代表性 SourceLab 场景的真值采集，再运行 SourceDebugRunnerTests 聚焦测试；不跑全量 Harness、全量 Swift 测试、设备矩阵或 iOS 模拟器，因为本项不改 UI。",
+  "stages": [
+    {
+      "id": "P50-S1",
+      "title": "Android Debug.startDebug 真值采集与 iOS 结构化投影对齐",
+      "selectors": [
+        {
+          "id": "P50-S1-TRUTH",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-SOURCE-RUNTIME-DEBUG-ANDROID-TRUTH-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-SOURCE-RUNTIME-DEBUG-ANDROID-TRUTH-001",
+      "title": "以 Android 真正调试续跑结果约束 iOS 书源调试报告",
+      "fixture_id": "sl-source-debug-android-truth-001",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [
+        "IOS-SOURCE-RUNTIME-DEBUG-EXECUTION-001"
+      ],
+      "validation": "tests",
+      "android_truth_capture": true,
+      "package_path": "ios/Packages/LegadoSourceKit",
+      "test_filter": "SourceDebugRunnerTests",
+      "additional_allowed_paths": [
+        "ios/harness/fixtures/source-lab/**",
+        "ios/harness/source-lab/**",
+        "ios/harness/goldens/**",
+        "ios/harness/oracle/android-runner/**",
+        "ios/harness/tests/**",
+        "ios/loop/**",
+        "ios/Packages/LegadoSourceKit/**",
+        "ios/docs/architecture.md",
+        "ios/project/migration-priorities/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "a0748328a70610373148dd55850d60db269652dd",
+          "path": "app/src/main/java/io/legado/app/model/Debug.kt",
+          "symbol_id": "kotlin://io.legado.app.model.Debug#startDebug"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/model/webBook/WebBook.kt",
+          "symbol_id": "kotlin://io.legado.app.model.webBook.WebBook"
+        }
+      ]
+    }
+  ]
+}

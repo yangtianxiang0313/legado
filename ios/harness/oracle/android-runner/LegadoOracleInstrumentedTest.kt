@@ -319,6 +319,8 @@ class LegadoOracleInstrumentedTest {
                 runDOMSelectorBackendCases()
             "sl-source-rule-jsonpath-regex-backends-001" ->
                 runJSONPathRegexBackendCases()
+            "sl-source-debug-android-truth-001" ->
+                runSourceDebugRuntimeCases()
             "sl-source-pipeline-search-runtime-001" ->
                 runSearchPipelineCases()
             "sl-source-pipeline-explore-runtime-001" ->
@@ -5627,6 +5629,76 @@ class LegadoOracleInstrumentedTest {
                     )
                 }
             }
+        }
+    }
+
+    private suspend fun runSourceDebugRuntimeCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            val arguments = value.getJSONObject("arguments")
+            val debugInput = arguments.getString("input")
+            runCase(
+                value.getString("id"),
+                "debug_runtime",
+                searchRequest(debugInput)
+            ) {
+                sourceDebugRuntimeProjection(debugInput)
+            }
+        }
+    }
+
+    private suspend fun sourceDebugRuntimeProjection(
+        debugInput: String
+    ): JSONObject {
+        val messages = java.util.Collections.synchronizedList(
+            mutableListOf<String>()
+        )
+        var terminalState: Int? = null
+        Debug.callback = object : Debug.Callback {
+            override fun printLog(state: Int, msg: String) {
+                messages.add(msg.replace(Regex("^\\[[^]]+]\\s*"), ""))
+                if (state == 1000 || state < 0) {
+                    terminalState = state
+                }
+            }
+        }
+        val scope = CoroutineScope(coroutineContext + Job())
+        try {
+            Debug.startDebug(scope, source, debugInput)
+            val completed = withTimeoutOrNull(5_000) {
+                while (terminalState == null) {
+                    delay(10)
+                }
+                terminalState
+            }
+            require(completed == 1000) {
+                "Debug.startDebug did not complete successfully: $completed"
+            }
+            val stages = JSONArray()
+            val markers = listOf(
+                "︾开始解析搜索页" to "search",
+                "︾开始解析详情页" to "book_info",
+                "︾开始解析目录页" to "toc",
+                "︾开始解析正文页" to "content"
+            )
+            markers.forEach { (marker, stage) ->
+                if (messages.any { it.contains(marker) }) {
+                    stages.put(stage)
+                }
+            }
+            return JSONObject()
+                .put("entry_route", "search")
+                .put("terminal_state", completed)
+                .put("stage_sequence", stages)
+                .put(
+                    "terminal_message",
+                    messages.lastOrNull { it.contains("正文页解析完成") }
+                        ?: JSONObject.NULL
+                )
+        } finally {
+            Debug.cancelDebug(destroy = true)
+            scope.coroutineContext.cancelChildren()
         }
     }
 
