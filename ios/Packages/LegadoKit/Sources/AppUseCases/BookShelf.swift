@@ -233,6 +233,11 @@ public protocol BookShelfRepository:
     bookID: LibraryDomain.BookID,
     chapterID: LibraryDomain.ChapterID
   ) async throws
+  func saveSourceChapterTitle(
+    _ title: String,
+    bookID: LibraryDomain.BookID,
+    chapterID: LibraryDomain.ChapterID
+  ) async throws
   func clearChapterContents(
     bookID: LibraryDomain.BookID,
     chapterIDs: [LibraryDomain.ChapterID]
@@ -372,6 +377,12 @@ public extension BookShelfRepository {
   ) async throws {
     throw BookImportFailure.unsupportedRepository
   }
+
+  func saveSourceChapterTitle(
+    _ title: String,
+    bookID: LibraryDomain.BookID,
+    chapterID: LibraryDomain.ChapterID
+  ) async throws {}
 
   func clearChapterContents(
     bookID: LibraryDomain.BookID,

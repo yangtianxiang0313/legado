@@ -26,13 +26,16 @@ public protocol ChapterBoundaryReaderContentLoading:
 public struct SourceReaderContentResult: Equatable, Sendable {
   public let document: ReaderDocument
   public let chapterVariables: [String: String]
+  public let resolvedChapterTitle: String?
 
   public init(
     document: ReaderDocument,
-    chapterVariables: [String: String]
+    chapterVariables: [String: String],
+    resolvedChapterTitle: String? = nil
   ) {
     self.document = document
     self.chapterVariables = chapterVariables
+    self.resolvedChapterTitle = resolvedChapterTitle
   }
 }
 
@@ -134,12 +137,13 @@ public struct SourceReaderContentLoader:
         chapterIndex: chapter.index,
         characterOffset: characterOffset
       ),
-      title: chapter.title,
+      title: execution.content.title ?? chapter.title,
       content: execution.content.content
     )
     return SourceReaderContentResult(
       document: document,
-      chapterVariables: execution.content.variables
+      chapterVariables: execution.content.variables,
+      resolvedChapterTitle: execution.content.title
     )
   }
 }
@@ -206,6 +210,16 @@ public struct RepositoryReaderContentLoader:
         chapterID: chapter.id,
         chapterVariables: result.chapterVariables
       )
+      if let title = result.resolvedChapterTitle,
+        !title.isEmpty,
+        title != chapter.title
+      {
+        try await repository.saveSourceChapterTitle(
+          title,
+          bookID: book.id,
+          chapterID: chapter.id
+        )
+      }
       document = result.document
     } else if
       let boundaryLoader =

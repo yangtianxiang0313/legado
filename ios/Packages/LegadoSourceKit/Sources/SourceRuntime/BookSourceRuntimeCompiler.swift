@@ -158,6 +158,7 @@ public enum BookSourceRuntimeCompiler {
         nextTocURL: optionalURLRule(toc.nextTocUrl)
       ),
       content: ContentRules(
+        title: .optional(fieldString(content.title)),
         content: .optional(
           fieldString(content.content),
           value: .html

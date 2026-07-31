@@ -226,6 +226,12 @@
       "sha256": "7f58efab6a00d8bfd79b08e2e455a9c4348f3178ba7f7c2c3133a21eee5c5e4b"
     },
     {
+      "id": "sl-source-content-title-runtime-001",
+      "status": "reference",
+      "path": "ios/harness/fixtures/source-lab/sl-source-content-title-runtime-001",
+      "sha256": "f22bdbf51dc5ce20785ab92d44023c279ef9b624e44aed18697761e0a52704ed"
+    },
+    {
       "id": "sl-source-cookie-persistent-session-merge-runtime-001",
       "status": "candidate",
       "path": "ios/harness/fixtures/source-lab/sl-source-cookie-persistent-session-merge-runtime-001",
@@ -367,7 +373,8 @@
       ],
       "nominal": [
         "sl-html-basic-001:chapter",
-        "sl-source-content-replace-runtime-001:content-replace-after-normalization"
+        "sl-source-content-replace-runtime-001:content-replace-after-normalization",
+        "sl-source-content-title-runtime-001:content-title-overrides-toc-title"
       ]
     },
     "pipeline.search-html": {

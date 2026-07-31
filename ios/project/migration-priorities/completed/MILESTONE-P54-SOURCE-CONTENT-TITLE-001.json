@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P54-SOURCE-CONTENT-TITLE-001",
+  "status": "completed",
+  "mode": "critical_path_only",
+  "title": "P54 正文标题覆盖持久化",
+  "objective": "依据冻结 Android BookContent.analyzeContent 源码，使书源 ruleContent.title 在正文抓取成功时覆盖当前章节标题、立即反映在 ReaderDocument，并持久化到 iOS 章节存储；SourceRuntime 只输出解析结果，AppUseCases 编排仓储更新，GRDB 负责落库。",
+  "validation_policy": "只运行正文标题覆盖与重开持久化聚焦测试；不启动 Android 或 iOS 模拟器。",
+  "stages": [{"id":"P54-S1","title":"正文标题解析、传播与持久化","selectors":[{"id":"P54-S1-CONTENT-TITLE","claim_ids":[],"task_ids":["IOS-SOURCE-RUNTIME-CONTENT-TITLE-001"]}]}],
+  "deliveries": [{
+    "target":"IOS-SOURCE-RUNTIME-CONTENT-TITLE-001",
+    "title":"接通书源正文标题覆盖与持久化",
+    "fixture_id":"sl-source-content-title-runtime-001",
+    "requirement_ref":"REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-04",
+    "prerequisite_task_ids":["IOS-SOURCE-RUNTIME-CONTENT-REPLACE-001"],
+    "validation":"tests",
+    "package_path":"ios/Packages/LegadoKit",
+    "test_filter":"SourceContentTitlePersistenceTests",
+    "additional_allowed_paths":["ios/Packages/LegadoSourceKit/**","ios/Packages/LegadoKit/Sources/AppUseCases/**","ios/Packages/LegadoKit/Sources/DatabaseGRDB/**","ios/Packages/LegadoKit/Tests/**","ios/harness/fixtures/source-lab/**","ios/harness/source-lab/**","ios/project/migration-priorities/**"],
+    "source_anchors":[
+      {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","git_blob":"fcf27c884aa557b539f009067ae55e79c5fa3591","path":"app/src/main/java/io/legado/app/model/webBook/BookContent.kt","symbol_id":"kotlin://io.legado.app.model.webBook/BookContent/analyzeContent"}
+    ]
+  }]
+}

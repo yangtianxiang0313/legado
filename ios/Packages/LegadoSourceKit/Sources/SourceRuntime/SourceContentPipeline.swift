@@ -166,6 +166,7 @@ public struct SourceContentPipeline: Sendable {
       requests: requests,
       content: SourceContent(
         chapterURL: first.page.content.chapterURL,
+        title: first.page.content.title,
         content: content,
         variables: currentChapterVariables
       )

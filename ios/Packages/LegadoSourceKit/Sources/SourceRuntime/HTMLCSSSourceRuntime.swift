@@ -144,6 +144,7 @@ public struct TOCRules: Sendable, Equatable {
 }
 
 public struct ContentRules: Sendable, Equatable {
+  public let title: HTMLCSSRule
   public let content: HTMLCSSRule
   public let nextContentURL: HTMLCSSRule?
   public let webJS: String?
@@ -151,9 +152,11 @@ public struct ContentRules: Sendable, Equatable {
   public let replaceRegex: String?
 
   public init(
+    title: HTMLCSSRule = .optional(nil),
     content: HTMLCSSRule,
     nextContentURL: HTMLCSSRule? = nil
   ) {
+    self.title = title
     self.content = content
     self.nextContentURL = nextContentURL
     self.webJS = nil
@@ -162,12 +165,14 @@ public struct ContentRules: Sendable, Equatable {
   }
 
   public init(
+    title: HTMLCSSRule = .optional(nil),
     content: HTMLCSSRule,
     nextContentURL: HTMLCSSRule?,
     webJS: String?,
     sourceRegex: String?,
     replaceRegex: String? = nil
   ) {
+    self.title = title
     self.content = content
     self.nextContentURL = nextContentURL
     self.webJS = webJS
@@ -343,15 +348,18 @@ public struct SourceChapter: Sendable, Equatable {
 
 public struct SourceContent: Sendable, Equatable {
   public let chapterURL: URL
+  public let title: String?
   public let content: String
   public let variables: [String: String]
 
   public init(
     chapterURL: URL,
+    title: String? = nil,
     content: String,
     variables: [String: String] = [:]
   ) {
     self.chapterURL = chapterURL
+    self.title = title
     self.content = content
     self.variables = variables
   }
@@ -985,6 +993,7 @@ public struct HTMLCSSSourceRuntime: Sendable {
     )
     let rules = definition.content
     let value: String
+    let title: String?
     let nextValues: [String]
     if usesStructuredRules(
       content: html,
@@ -1002,6 +1011,11 @@ public struct HTMLCSSSourceRuntime: Sendable {
       value = try await evaluator.getString(
         rules.content.selector
       )
+      let parsedTitle = try await evaluator.getString(rules.title.selector)
+      let normalizedTitle = parsedTitle.trimmingCharacters(
+        in: .whitespacesAndNewlines
+      )
+      title = normalizedTitle.isEmpty ? nil : normalizedTitle
       if let nextRule = rules.nextContentURL {
         nextValues =
           try await evaluator.getStringList(
@@ -1038,6 +1052,9 @@ public struct HTMLCSSSourceRuntime: Sendable {
         node: node,
         chapterURL: chapterEndpoint.logicalURL
       )
+      let parsedTitle = try await evaluator.string(rules.title)?
+        .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+      title = parsedTitle.isEmpty ? nil : parsedTitle
       if let nextRule = rules.nextContentURL {
         nextValues = try await evaluator.strings(nextRule)
       } else {
@@ -1057,6 +1074,7 @@ public struct HTMLCSSSourceRuntime: Sendable {
     return SourceContentPage(
       content: SourceContent(
         chapterURL: chapterEndpoint.logicalURL,
+        title: title,
         content: value,
         variables: await chapterStore.snapshot()
       ),

@@ -650,6 +650,24 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
     }
   }
 
+  public func saveSourceChapterTitle(
+    _ title: String,
+    bookID: LibraryDomain.BookID,
+    chapterID: LibraryDomain.ChapterID
+  ) async throws {
+    guard !title.isEmpty else { return }
+    try await database.write { db in
+      try db.execute(
+        sql: """
+          UPDATE chapters
+          SET title = ?
+          WHERE bookID = ? AND chapterID = ?
+          """,
+        arguments: [title, bookID.rawValue, chapterID.rawValue]
+      )
+    }
+  }
+
   public func clearChapterContents(
     bookID: LibraryDomain.BookID,
     chapterIDs: [LibraryDomain.ChapterID]
