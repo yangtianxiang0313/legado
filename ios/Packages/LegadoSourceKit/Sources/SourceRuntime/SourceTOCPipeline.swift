@@ -278,9 +278,7 @@ public struct SourceTOCPipeline: Sendable {
     var result: [SourceChapter] = []
     for chapter in chapters {
       guard
-        seen.insert(
-          chapter.endpoint.logicalURL.absoluteString
-        ).inserted
+        seen.insert(chapter.endpoint.requestExpression).inserted
       else {
         continue
       }

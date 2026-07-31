@@ -321,6 +321,8 @@ class LegadoOracleInstrumentedTest {
                 runJSONPathRegexBackendCases()
             "sl-source-debug-android-truth-001" ->
                 runSourceDebugRuntimeCases()
+            "sl-source-pipeline-toc-runtime-001" ->
+                runTOCPipelineCases()
             "sl-source-pipeline-search-runtime-001" ->
                 runSearchPipelineCases()
             "sl-source-pipeline-explore-runtime-001" ->
@@ -5644,6 +5646,32 @@ class LegadoOracleInstrumentedTest {
                 searchRequest(debugInput)
             ) {
                 sourceDebugRuntimeProjection(debugInput)
+            }
+        }
+    }
+
+    private suspend fun runTOCPipelineCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            val arguments = value.getJSONObject("arguments")
+            val tocPath = arguments.getString("toc_path")
+            val tocURL = "$deviceOrigin$tocPath"
+            runCase(
+                value.getString("id"),
+                "toc_pipeline",
+                request(tocURL)
+            ) {
+                val book = Book(
+                    bookUrl = "$deviceOrigin/books/toc-runtime",
+                    tocUrl = tocURL,
+                    origin = source.bookSourceUrl,
+                    originName = source.bookSourceName,
+                    name = "目录流水线"
+                )
+                chapterProjection(
+                    WebBook.getChapterListAwait(source, book).getOrThrow()
+                )
             }
         }
     }

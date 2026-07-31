@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P52-SOURCE-TOC-ANDROID-TRUTH-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "title": "P52 目录流水线 Android 真值实现",
+  "objective": "依据 P51 已运行的 Android 目录真值，令独立 iOS SourceRuntime 保留跨页 URL 去重与索引，并支持书源的 VIP、付费、卷标记和空 URL 回退到当前目录页；不把 Android BookChapter 或 UI 状态引入 iOS。",
+  "validation_policy": "只运行 SourceTOCPipelineTests 聚焦测试；P51 已完成 Android 真值采集，本项不重复启动 Android 或 iOS 模拟器。",
+  "stages": [{"id":"P52-S1","title":"目录运行时字段与回退语义","selectors":[{"id":"P52-S1-TOC","claim_ids":[],"task_ids":["IOS-SOURCE-RUNTIME-TOC-ANDROID-TRUTH-001"]}]}],
+  "deliveries": [{
+    "target":"IOS-SOURCE-RUNTIME-TOC-ANDROID-TRUTH-001",
+    "title":"以 Android 真值补齐 iOS 目录章节语义",
+    "fixture_id":"sl-source-pipeline-toc-runtime-001",
+    "requirement_ref":"REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+    "prerequisite_task_ids":["IOS-SOURCE-RUNTIME-DEBUG-ANDROID-TRUTH-001"],
+    "validation":"tests",
+    "package_path":"ios/Packages/LegadoSourceKit",
+    "test_filter":"SourceTOCPipelineTests",
+    "additional_allowed_paths":["ios/Packages/LegadoSourceKit/**","ios/harness/fixtures/source-lab/**","ios/harness/oracle/android-runner/**","ios/harness/tests/**","ios/harness/source-lab/**","ios/project/migration-priorities/**"],
+    "source_anchors":[
+      {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","git_blob":"af03cf51cef2eb31f54b8240c39e868ceabdba54","path":"app/src/main/java/io/legado/app/model/webBook/WebBook.kt","symbol_id":"kotlin://io.legado.app.model.webBook/WebBook/getChapterListAwait"},
+      {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","git_blob":"6f1b758fed28cb7212d748e1270d64c13463800a","path":"app/src/main/java/io/legado/app/model/webBook/BookChapterList.kt","symbol_id":"kotlin://io.legado.app.model.webBook/BookChapterList/analyzeChapterList"}
+    ]
+  }]
+}

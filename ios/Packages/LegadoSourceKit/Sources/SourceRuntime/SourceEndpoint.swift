@@ -21,6 +21,20 @@ public struct SourceEndpoint: Equatable, Sendable {
     )
   }
 
+  /// Android represents a volume without a chapter URL by its title and row
+  /// index. It must remain distinct from a regular chapter that falls back to
+  /// the TOC URL, while its public URL still resolves to that TOC page.
+  static func syntheticVolume(
+    title: String,
+    index: Int,
+    fallbackURL: URL
+  ) -> SourceEndpoint {
+    SourceEndpoint(
+      logicalURL: fallbackURL.absoluteURL,
+      requestExpression: title + String(index)
+    )
+  }
+
   public init(url: URL) throws {
     let absolute = url.absoluteURL.absoluteString
     guard

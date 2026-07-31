@@ -73,6 +73,14 @@ SCENARIO_CONTRACTS = {
         ),
         "nominal_cases": frozenset({"debug-search-chain"}),
     },
+    "sl-source-pipeline-toc-runtime-001": {
+        "status": "candidate",
+        "expected_cases": (
+            ("toc-pagination-flags", "toc_pipeline"),
+            ("toc-empty-url-fallback", "toc_pipeline"),
+        ),
+        "nominal_cases": frozenset({"toc-pagination-flags"}),
+    },
     "sl-post-form-001": {
         "status": "candidate",
         "expected_cases": (
@@ -1856,6 +1864,11 @@ ROUTE_OBSERVATION_SCENARIOS = {
         "debug-book",
         "debug-toc",
         "debug-content",
+    ),
+    "sl-source-pipeline-toc-runtime-001": (
+        "toc-page-one",
+        "toc-page-two",
+        "toc-empty-url",
     ),
     "sl-source-request-header-cookie-retry-layering-001": (
         "retry-two-with-header-cookie",

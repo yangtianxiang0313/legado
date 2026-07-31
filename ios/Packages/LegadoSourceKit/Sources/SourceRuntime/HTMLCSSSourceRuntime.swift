@@ -119,17 +119,26 @@ public struct TOCRules: Sendable, Equatable {
   public let list: String
   public let name: HTMLCSSRule
   public let url: HTMLCSSRule
+  public let isVIP: HTMLCSSRule
+  public let isPay: HTMLCSSRule
+  public let isVolume: HTMLCSSRule
   public let nextTocURL: HTMLCSSRule?
 
   public init(
     list: String,
     name: HTMLCSSRule,
     url: HTMLCSSRule,
+    isVIP: HTMLCSSRule = .optional(nil),
+    isPay: HTMLCSSRule = .optional(nil),
+    isVolume: HTMLCSSRule = .optional(nil),
     nextTocURL: HTMLCSSRule? = nil
   ) {
     self.list = list
     self.name = name
     self.url = url
+    self.isVIP = isVIP
+    self.isPay = isPay
+    self.isVolume = isVolume
     self.nextTocURL = nextTocURL
   }
 }
@@ -758,22 +767,32 @@ public struct HTMLCSSSourceRuntime: Sendable {
         let rawURL = try await evaluator.getString(
           rules.url.selector
         )
-        guard !title.isEmpty, !rawURL.isEmpty else {
+        guard !title.isEmpty else {
           throw SourceRuntimeIssue(
             stage: .fieldEvaluation,
             code: .ruleFailed
           )
         }
+        let isVolume = androidIsTrue(
+          try await evaluator.getString(rules.isVolume.selector)
+        )
         return SourceChapter(
           index: index,
           title: title,
-          endpoint: try SourceEndpoint(
-            resolving: rawURL,
-            relativeTo: tocEndpoint.logicalURL
+          endpoint: try chapterEndpoint(
+            rawURL: rawURL,
+            title: title,
+            index: index,
+            isVolume: isVolume,
+            tocEndpoint: tocEndpoint
           ),
-          isPay: false,
-          isVIP: false,
-          isVolume: false,
+          isPay: androidIsTrue(
+            try await evaluator.getString(rules.isPay.selector)
+          ),
+          isVIP: androidIsTrue(
+            try await evaluator.getString(rules.isVIP.selector)
+          ),
+          isVolume: isVolume,
           variables: await chapterStore.snapshot()
         )
       }
@@ -817,25 +836,32 @@ public struct HTMLCSSSourceRuntime: Sendable {
           scriptLibrary: scriptLibrary,
           baseURL: tocEndpoint.logicalURL.absoluteString
         )
-        guard
-          let title = try await evaluator.string(rules.name),
-          let rawURL = try await evaluator.string(rules.url)
-        else {
+        guard let title = try await evaluator.string(rules.name), !title.isEmpty else {
           throw SourceRuntimeIssue(
             stage: .fieldEvaluation,
             code: .ruleFailed
           )
         }
+        let isVolume = androidIsTrue(
+          try await evaluator.string(rules.isVolume) ?? ""
+        )
         return SourceChapter(
           index: index,
           title: title,
-          endpoint: try SourceEndpoint(
-            resolving: rawURL,
-            relativeTo: tocEndpoint.logicalURL
+          endpoint: try chapterEndpoint(
+            rawURL: try await evaluator.string(rules.url) ?? "",
+            title: title,
+            index: index,
+            isVolume: isVolume,
+            tocEndpoint: tocEndpoint
           ),
-          isPay: false,
-          isVIP: false,
-          isVolume: false,
+          isPay: androidIsTrue(
+            try await evaluator.string(rules.isPay) ?? ""
+          ),
+          isVIP: androidIsTrue(
+            try await evaluator.string(rules.isVIP) ?? ""
+          ),
+          isVolume: isVolume,
           variables: await chapterStore.snapshot()
         )
       }
@@ -886,20 +912,28 @@ public struct HTMLCSSSourceRuntime: Sendable {
     return try nodes.enumerated().map { index, node in
       guard
         let title = try value(definition.toc.name, in: node, document: document),
-        let endpoint = try resolvedEndpoint(
-          definition.toc.url,
-          in: node,
-          document: document,
-          base: tocURL
-        )
+        let rawURL = try value(definition.toc.url, in: node, document: document)
       else { throw SourceRuntimeIssue(stage: .fieldEvaluation, code: .ruleFailed) }
+      let isVolume = androidIsTrue(
+        try value(definition.toc.isVolume, in: node, document: document) ?? ""
+      )
       return SourceChapter(
         index: index,
         title: title,
-        endpoint: endpoint,
-        isPay: false,
-        isVIP: false,
-        isVolume: false
+        endpoint: try chapterEndpoint(
+          rawURL: rawURL,
+          title: title,
+          index: index,
+          isVolume: isVolume,
+          tocEndpoint: .plain(tocURL)
+        ),
+        isPay: androidIsTrue(
+          try value(definition.toc.isPay, in: node, document: document) ?? ""
+        ),
+        isVIP: androidIsTrue(
+          try value(definition.toc.isVIP, in: node, document: document) ?? ""
+        ),
+        isVolume: isVolume
       )
     }
   }
@@ -1414,9 +1448,10 @@ public struct HTMLCSSSourceRuntime: Sendable {
           definition.toc.name,
           evaluator: evaluator
         ),
-        let rawURL = try structuredValue(
+        let rawURL = try structuredOptionalValue(
           definition.toc.url,
-          evaluator: evaluator
+          evaluator: evaluator,
+          fallback: ""
         )
       else {
         throw SourceRuntimeIssue(
@@ -1424,16 +1459,38 @@ public struct HTMLCSSSourceRuntime: Sendable {
           code: .ruleFailed
         )
       }
+      let isVolume = androidIsTrue(
+        try structuredOptionalValue(
+          definition.toc.isVolume,
+          evaluator: evaluator,
+          fallback: ""
+        ) ?? ""
+      )
       return SourceChapter(
         index: index,
         title: title,
-        endpoint: try SourceEndpoint(
-          resolving: rawURL,
-          relativeTo: tocURL
+        endpoint: try chapterEndpoint(
+          rawURL: rawURL,
+          title: title,
+          index: index,
+          isVolume: isVolume,
+          tocEndpoint: .plain(tocURL)
         ),
-        isPay: false,
-        isVIP: false,
-        isVolume: false
+        isPay: androidIsTrue(
+          try structuredOptionalValue(
+            definition.toc.isPay,
+            evaluator: evaluator,
+            fallback: ""
+          ) ?? ""
+        ),
+        isVIP: androidIsTrue(
+          try structuredOptionalValue(
+            definition.toc.isVIP,
+            evaluator: evaluator,
+            fallback: ""
+          ) ?? ""
+        ),
+        isVolume: isVolume
       )
     }
   }
@@ -1460,6 +1517,38 @@ public struct HTMLCSSSourceRuntime: Sendable {
     fallback: String?
   ) throws -> String? {
     try structuredValue(rule, evaluator: evaluator) ?? fallback
+  }
+
+  private func chapterEndpoint(
+    rawURL: String,
+    title: String,
+    index: Int,
+    isVolume: Bool,
+    tocEndpoint: SourceEndpoint
+  ) throws -> SourceEndpoint {
+    let trimmedURL = rawURL.trimmingCharacters(in: .whitespacesAndNewlines)
+    if !trimmedURL.isEmpty {
+      return try SourceEndpoint(
+        resolving: trimmedURL,
+        relativeTo: tocEndpoint.logicalURL
+      )
+    }
+    if isVolume {
+      return .syntheticVolume(
+        title: title,
+        index: index,
+        fallbackURL: tocEndpoint.logicalURL
+      )
+    }
+    return .plain(tocEndpoint.logicalURL)
+  }
+
+  private func androidIsTrue(_ value: String) -> Bool {
+    let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty, trimmed.lowercased() != "null" else {
+      return false
+    }
+    return !["false", "no", "not", "0"].contains(trimmed.lowercased())
   }
 
   private func usesStructuredRules(

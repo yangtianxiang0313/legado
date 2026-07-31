@@ -1,0 +1,1 @@
+{"schema_version":1,"cases":[{"id":"toc-pagination-flags","operation":"toc_pipeline","arguments":{"toc_path":"/toc/one"},"request":{"method":"GET","target":"/toc/one"}},{"id":"toc-empty-url-fallback","operation":"toc_pipeline","arguments":{"toc_path":"/toc/fallback"},"request":{"method":"GET","target":"/toc/fallback"}}]}

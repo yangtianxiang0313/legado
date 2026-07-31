@@ -41,7 +41,74 @@ final class SourceTOCPipelineTests: XCTestCase {
     )
   }
 
-  private func definition() -> SourceSearchDefinition {
+  func testAndroidTruthPreservesTOCFlagsAndEmptyURLFallback() async throws {
+    let rules = TOCRules(
+      list: ".chapter",
+      name: HTMLCSSRule(".name"),
+      url: HTMLCSSRule("a", value: .href),
+      isVIP: HTMLCSSRule(".vip"),
+      isPay: HTMLCSSRule(".pay"),
+      isVolume: HTMLCSSRule(".volume"),
+      nextTocURL: HTMLCSSRule("a.next", value: .href)
+    )
+    let transport = TOCTransport(responses: [
+      "http://sourcelab.test/toc/one": """
+        <main>
+          <li class="chapter"><a href="/chapter/1"><span class="name">第一章</span></a><span class="vip">true</span></li>
+          <li class="chapter"><a href="/chapter/2"><span class="name">第二章</span></a><span class="pay">true</span></li>
+          <a class="next" href="/toc/two">下一页</a>
+        </main>
+        """,
+      "http://sourcelab.test/toc/two": """
+        <main>
+          <li class="chapter"><a href="/chapter/2"><span class="name">第二章</span></a><span class="pay">true</span></li>
+          <li class="chapter"><a href="/chapter/3"><span class="name">第三章</span></a></li>
+        </main>
+        """,
+      "http://sourcelab.test/toc/fallback": """
+        <main>
+          <li class="chapter"><span class="name">第一卷</span><span class="volume">true</span></li>
+          <li class="chapter"><span class="name">无链接章节</span></li>
+        </main>
+        """,
+    ])
+    let pipeline = SourceTOCPipeline(
+      definition: definition(toc: rules),
+      transport: transport
+    )
+
+    let paged = try await pipeline.chapters(
+      tocURL: "http://sourcelab.test/toc/one"
+    )
+    XCTAssertEqual(
+      paged.requests.map { $0.url.absoluteString },
+      ["http://sourcelab.test/toc/one", "http://sourcelab.test/toc/two"]
+    )
+    XCTAssertEqual(paged.chapters.map(\.title), ["第一章", "第二章", "第三章"])
+    XCTAssertEqual(paged.chapters.map(\.index), [0, 1, 2])
+    XCTAssertEqual(paged.chapters.map(\.isVIP), [true, false, false])
+    XCTAssertEqual(paged.chapters.map(\.isPay), [false, true, false])
+    XCTAssertEqual(paged.chapters.map(\.isVolume), [false, false, false])
+
+    let fallback = try await pipeline.chapters(
+      tocURL: "http://sourcelab.test/toc/fallback"
+    )
+    XCTAssertEqual(fallback.chapters.map(\.title), ["第一卷", "无链接章节"])
+    XCTAssertEqual(
+      fallback.chapters.map { $0.url.absoluteString },
+      ["http://sourcelab.test/toc/fallback", "http://sourcelab.test/toc/fallback"]
+    )
+    XCTAssertEqual(fallback.chapters.map(\.isVolume), [true, false])
+    XCTAssertEqual(fallback.chapters[0].endpoint.requestExpression, "第一卷0")
+  }
+
+  private func definition(
+    toc: TOCRules = TOCRules(
+      list: ".chapter",
+      name: HTMLCSSRule("a"),
+      url: HTMLCSSRule("a", value: .href)
+    )
+  ) -> SourceSearchDefinition {
     SourceSearchDefinition(
       sourceURL: "http://sourcelab.test",
       sourceName: "测试源",
@@ -67,11 +134,7 @@ final class SourceTOCPipelineTests: XCTestCase {
           coverURL: HTMLCSSRule("img.book-cover", value: .src),
           tocURL: HTMLCSSRule("a.toc-link", value: .href)
         ),
-        toc: TOCRules(
-          list: ".chapter",
-          name: HTMLCSSRule("a"),
-          url: HTMLCSSRule("a", value: .href)
-        ),
+        toc: toc,
         content: ContentRules(
           content: HTMLCSSRule("#content", value: .html)
         )

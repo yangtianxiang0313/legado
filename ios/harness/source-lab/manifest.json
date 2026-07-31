@@ -244,6 +244,12 @@
       "sha256": "1d3848595ec1b2e9c373a33745bbfd6f6b6c917775b20d34e30d31907b7e1fd0"
     },
     {
+      "id": "sl-source-pipeline-toc-runtime-001",
+      "status": "reference",
+      "path": "ios/harness/fixtures/source-lab/sl-source-pipeline-toc-runtime-001",
+      "sha256": "770607ac0f64de5b6ce29138871d15783c03f6473cfbcca9f9f91256e7678277"
+    },
+    {
       "id": "sl-source-request-field-encoding-runtime-001",
       "status": "candidate",
       "path": "ios/harness/fixtures/source-lab/sl-source-request-field-encoding-runtime-001",
@@ -367,10 +373,12 @@
     },
     "pipeline.toc-html": {
       "boundary": [
-        "sl-html-basic-001:toc-empty"
+        "sl-html-basic-001:toc-empty",
+        "sl-source-pipeline-toc-runtime-001:toc-empty-url-fallback"
       ],
       "nominal": [
-        "sl-html-basic-001:toc"
+        "sl-html-basic-001:toc",
+        "sl-source-pipeline-toc-runtime-001:toc-pagination-flags"
       ]
     },
     "rule.css-selector": {

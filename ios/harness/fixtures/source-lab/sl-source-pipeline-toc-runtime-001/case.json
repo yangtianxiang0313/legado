@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "kind": "source_lab_scenario",
+  "id": "sl-source-pipeline-toc-runtime-001",
+  "revision": 1,
+  "status": "reference",
+  "operation": "source_lab_site",
+  "capabilities": ["CAP-RUNTIME-PORTS", "CAP-CONFORMANCE", "CAP-SOURCE-FORMAT"],
+  "compatibility_profile": "android-legado-v1",
+  "source": "source.template.json",
+  "input": "input.json",
+  "transport": {"mode": "fixture_and_loopback", "external_network": "deny", "responses": [
+    {"id":"toc-page-one","match":{"method":"GET","path":"/toc/one","query":{}},"respond":{"status":200,"headers":{"content-type":"text/html; charset=utf-8"},"body_file":"responses/one.html"}},
+    {"id":"toc-page-two","match":{"method":"GET","path":"/toc/two","query":{}},"respond":{"status":200,"headers":{"content-type":"text/html; charset=utf-8"},"body_file":"responses/two.html"}},
+    {"id":"toc-empty-url","match":{"method":"GET","path":"/toc/fallback","query":{}},"respond":{"status":200,"headers":{"content-type":"text/html; charset=utf-8"},"body_file":"responses/fallback.html"}}
+  ]},
+  "coverage": [
+    {"behavior":"pipeline.toc-html","cases":[
+      {"id":"toc-pagination-flags","role":"nominal","android_fact_refs":["AF-WEBBOOK-TOC-ENTRYPOINT"],"branch_refs":["BookChapterList.analyzeChapterList follows one nextTocUrl, de-duplicates and projects VIP/pay/volume"]},
+      {"id":"toc-empty-url-fallback","role":"boundary","android_fact_refs":["AF-WEBBOOK-TOC-ENTRYPOINT"],"branch_refs":["BookChapterList.analyzeChapterList substitutes volume title/index or baseUrl for empty chapter URL"]}
+    ]}
+  ],
+  "determinism":{"clock":"2026-01-01T00:00:00Z","timezone":"UTC","locale":"en_US_POSIX","random_seed":101,"network_allowed":false,"logical_origin":"http://sourcelab.test"},
+  "limits":{"timeout_ms":1000,"max_response_bytes":1048576,"max_request_body_bytes":65536,"max_requests":8,"max_concurrency":1},
+  "provenance":{"kind":"synthetic","source_refs":["app/src/main/java/io/legado/app/model/webBook/WebBook.kt","app/src/main/java/io/legado/app/model/webBook/BookChapterList.kt"],"introduced_by":"IOS-CHARACTERIZE-SOURCE-PIPELINE-TOC-RUNTIME-001"}
+}

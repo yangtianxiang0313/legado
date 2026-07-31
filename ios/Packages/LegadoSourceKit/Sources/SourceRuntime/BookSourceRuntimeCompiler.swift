@@ -152,6 +152,9 @@ public enum BookSourceRuntimeCompiler {
           fieldString(toc.chapterUrl),
           value: .href
         ),
+        isVIP: .optional(fieldString(toc.isVip)),
+        isPay: .optional(fieldString(toc.isPay)),
+        isVolume: .optional(fieldString(toc.isVolume)),
         nextTocURL: optionalURLRule(toc.nextTocUrl)
       ),
       content: ContentRules(
