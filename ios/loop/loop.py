@@ -730,6 +730,26 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "third_party_policy": "foundation_only_initially",
             },
         }
+    if target == "IOS-INTEGRATION-WEBDAV-CONNECTION-FOUNDATION-001":
+        return {
+            "owner": "IntegrationKit",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/Packages/LegadoKit/Package.swift",
+                "ios/Packages/LegadoKit/Sources/IntegrationKit/**",
+                "ios/Packages/LegadoKit/Sources/WebDAVFoundation/**",
+                "ios/Packages/LegadoKit/Tests/IntegrationKitTests/**",
+                "ios/Packages/LegadoKit/Tests/WebDAVFoundationTests/**",
+                "ios/harness/architecture-rules.json",
+            ],
+        }
     if target == "IOS-UI-BOOTSTRAP-001":
         return {
             "owner": "AppShell",
@@ -2856,6 +2876,20 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_id": "library-domain-tests",
             "test_filter": "LibraryDomainTests",
             "acceptance_id": "structured-domain-acceptance",
+        },
+        "IntegrationKit": {
+            "goal": (
+                "按照冻结 Android WebDAV 行为与已接受的安全边界，实现可替换的"
+                "协议值、端口和 Foundation live adapter；不在本切片扩张备份"
+                "或恢复业务。"
+            ),
+            "rule": (
+                "IntegrationKit 不携带 secret 或平台 I/O；WebDAVFoundation"
+                "在适配器内部终止 URLSession、XML 与 Keychain。"
+            ),
+            "test_id": "webdav-connection-focused-tests",
+            "test_filter": "IntegrationKitTests|WebDAVFoundationTests",
+            "acceptance_id": "webdav-connection-foundation-acceptance",
         },
     }
     if (

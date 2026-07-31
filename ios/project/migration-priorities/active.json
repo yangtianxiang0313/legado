@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P65-WEBDAV-CONNECTION-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "priority": 10,
+  "title": "P65 WebDAV 连接基础",
+  "objective": "基于冻结 Android 的配置更新与目录初始化行为，建立可替换的 WebDAV 协议内核和 Foundation live adapter；不在此阶段定义备份包、恢复或云端进度冲突。",
+  "validation_policy": "协议和凭据边界以受保护 Android Golden 为真源；本切片只跑相关 Swift 测试。真正设置页和完整用户路径在下一 UI 里程碑以一台主 iPhone 验收。",
+  "stages": [
+    {
+      "id": "P65-S1",
+      "title": "连接与目录初始化",
+      "selectors": [
+        {
+          "id": "P65-S1-FOUNDATION",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-INTEGRATION-WEBDAV-CONNECTION-FOUNDATION-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-INTEGRATION-WEBDAV-CONNECTION-FOUNDATION-001",
+      "title": "WebDAV 连接与目录初始化 Foundation 边界",
+      "prerequisite_task_ids": [],
+      "requirement_ref": "REQ-IOS-WEBDAV-CONNECTION-001@1#RC-01",
+      "fixture_id": "il-integration-backup-webdav-001",
+      "validation": "tests",
+      "package_path": "ios/Packages/LegadoKit",
+      "test_filter": "IntegrationKitTests|WebDAVFoundationTests",
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/help/AppWebDav.kt",
+          "symbol_id": "kotlin://io.legado.app.help.AppWebDav/upConfig"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/lib/webdav/WebDav.kt",
+          "symbol_id": "kotlin://io.legado.app.lib.webdav.WebDav"
+        }
+      ]
+    }
+  ]
+}

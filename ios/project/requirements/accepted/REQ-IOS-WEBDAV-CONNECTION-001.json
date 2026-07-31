@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "id": "REQ-IOS-WEBDAV-CONNECTION-001",
+  "revision": 1,
+  "status": "accepted",
+  "semantic_key": "integration.webdav.connection-initialization",
+  "title": "WebDAV 连接配置与远端目录初始化",
+  "origin": {
+    "kind": "ios_product_decision",
+    "baseline_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "fact_refs": [],
+    "decision_refs": [
+      "ADR-0008"
+    ],
+    "admission": "project_owner_continuous_migration"
+  },
+  "classification": {
+    "kind": "ios_policy_extension",
+    "profiles": [
+      "store_safe",
+      "full_compat"
+    ],
+    "support_state": "project_only",
+    "evidence_level": "project"
+  },
+  "capability_refs": [
+    "CAP-RUNTIME-PORTS",
+    "CAP-CONFORMANCE"
+  ],
+  "clauses": [
+    {
+      "id": "RC-01",
+      "statement": "用户提供的 WebDAV 根地址、账号和密码必须通过凭据引用隔离；连接测试先探测认证，再确保根目录及 bookProgress、books、background 三个子目录存在。地址会规范化为以 / 结尾的根路径；凭据原文、Authorization 和错误响应正文不得进入值对象、日志、fixture 或验收输出。",
+      "proof_kind": "android_oracle",
+      "required_checks": [
+        "webdav-connection-focused-tests",
+        "package-contract"
+      ],
+      "source_lab_behaviors": [
+        "webdav_check",
+        "webdav_make_directory"
+      ]
+    }
+  ],
+  "readiness": {
+    "state": "implementation_ready",
+    "blockers": [],
+    "next_action": "由 P65 先建立 IntegrationKit 与 WebDAVFoundation；随后在独立 UI 切片接入设置页。"
+  },
+  "supersedes": null
+}

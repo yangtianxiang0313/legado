@@ -79,6 +79,20 @@
         "RC-02",
         "RC-03"
       ]
+    },
+    {
+      "id": "REQ-IOS-WEBDAV-CONNECTION-001",
+      "revision": 1,
+      "status": "accepted",
+      "semantic_key": "integration.webdav.connection-initialization",
+      "origin_kind": "ios_product_decision",
+      "readiness": "implementation_ready",
+      "path": "ios/project/requirements/accepted/REQ-IOS-WEBDAV-CONNECTION-001.json",
+      "record_sha256": "368fed91b7f8c457c8e0afd82df7bdba599650806780acb4af4ab871fb2e4864",
+      "fact_selection_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "clauses": [
+        "RC-01"
+      ]
     }
   ]
 }
