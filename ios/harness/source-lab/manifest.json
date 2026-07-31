@@ -220,6 +220,12 @@
       "sha256": "f427538d556c7ed65dcf3723029eb272edb2ce6a0ce25671007368476bf2607b"
     },
     {
+      "id": "sl-reader-inline-image-projection-001",
+      "status": "reference",
+      "path": "ios/harness/fixtures/source-lab/sl-reader-inline-image-projection-001",
+      "sha256": "1974a533b0c1dd20ab88d3bbdc0bcb49973b21c89d94c0483f091674463383c4"
+    },
+    {
       "id": "sl-source-content-replace-runtime-001",
       "status": "reference",
       "path": "ios/harness/fixtures/source-lab/sl-source-content-replace-runtime-001",
@@ -373,6 +379,7 @@
       ],
       "nominal": [
         "sl-html-basic-001:chapter",
+        "sl-reader-inline-image-projection-001:inline-image-anchor",
         "sl-source-content-replace-runtime-001:content-replace-after-normalization",
         "sl-source-content-title-runtime-001:content-title-overrides-toc-title"
       ]

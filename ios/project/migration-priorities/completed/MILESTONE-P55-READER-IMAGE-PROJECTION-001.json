@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P55-READER-IMAGE-PROJECTION-001",
+  "status": "completed",
+  "mode": "critical_path_only",
+  "title": "P55 图文正文位置投影基础",
+  "objective": "为图文阅读器建立独立 ReaderCore 投影：从书源正文的 img 标记生成文本与图片块、布局文本和原始 UTF-16 位置映射。原始正文仍是缓存与 Android 对齐身份；布局文本只供后续附件分页使用，确保图片不破坏阅读进度和书签锚点。",
+  "validation_policy": "只运行 ReaderContentImageProjectionTests 聚焦测试；本基础切片不启动模拟器，图片实际渲染在后续 UI 纵向切片验收。",
+  "stages": [{"id":"P55-S1","title":"图文内容与位置映射","selectors":[{"id":"P55-S1-IMAGE-PROJECTION","claim_ids":[],"task_ids":["IOS-READER-CORE-IMAGE-CONTENT-PROJECTION-001"]}]}],
+  "deliveries": [{
+    "target":"IOS-READER-CORE-IMAGE-CONTENT-PROJECTION-001",
+    "title":"建立图文正文位置投影模型",
+    "fixture_id":"sl-reader-inline-image-projection-001",
+    "requirement_ref":"REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-04",
+    "prerequisite_task_ids":["IOS-SOURCE-RUNTIME-CONTENT-TITLE-001"],
+    "validation":"tests",
+    "package_path":"ios/Packages/LegadoKit",
+    "test_filter":"ReaderContentImageProjectionTests",
+    "additional_allowed_paths":["ios/Packages/LegadoKit/Sources/ReaderCore/**","ios/Packages/LegadoKit/Tests/ReaderCoreTests/**","ios/harness/fixtures/source-lab/**","ios/harness/source-lab/**","ios/project/migration-priorities/**"],
+    "source_anchors":[
+      {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","git_blob":"fcf27c884aa557b539f009067ae55e79c5fa3591","path":"app/src/main/java/io/legado/app/model/webBook/BookContent.kt","symbol_id":"kotlin://io.legado.app.model.webBook/BookContent/analyzeContent"},
+      {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","git_blob":"a498de9be334ac2f181056c76cd75b53dd1da896","path":"app/src/main/java/io/legado/app/ui/book/read/page/provider/ChapterProvider.kt","symbol_id":"kotlin://io.legado.app.ui.book.read.page.provider.ChapterProvider/setTypeImage"}
+    ]
+  }]
+}
