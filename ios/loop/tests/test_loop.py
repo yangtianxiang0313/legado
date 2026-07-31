@@ -169,6 +169,37 @@ class MinimalLoopTests(unittest.TestCase):
                 loop.satisfied_dependency_claim_refs(root),
             )
 
+    def test_superseded_source_file_is_not_treated_as_android_evidence(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            evidence = "app/src/main/java/RemoteBookWebDav.kt"
+            self.write(root, evidence, "class RemoteBookWebDav")
+            events_path = root / "ios/project/loop/events.jsonl"
+            events_path.parent.mkdir(parents=True, exist_ok=True)
+            events_path.write_bytes(
+                loop.canonical(
+                    {
+                        "schema_version": 2,
+                        "sequence": 1,
+                        "at": "2026-07-30T00:00:00Z",
+                        "event": "task_superseded",
+                        "task_id": "IOS-CHARACTERIZE-OLD-001",
+                        "details": {
+                            "reason": "需要不同架构边界",
+                            "replacement": "后续 IntegrationKit 任务",
+                            "replacement_evidence": evidence,
+                            "knowledge": {
+                                "candidate_claim_refs": [
+                                    {"id": "BKC-SOURCE-001", "revision": 1}
+                                ]
+                            },
+                        },
+                    }
+                )
+            )
+
+            self.assertEqual({}, loop.reused_claim_evidence(root))
+
     def test_knowledge_linked_claim_does_not_reenter_runtime_queue(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

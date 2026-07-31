@@ -280,9 +280,16 @@ def reused_claim_evidence(root: Path) -> dict[tuple[str, int], str]:
         knowledge = details.get("knowledge")
         if (
             not isinstance(evidence, str)
+            or not evidence.endswith(".json")
             or not (root / evidence).is_file()
             or not isinstance(knowledge, dict)
         ):
+            continue
+        try:
+            artifact = read_json(root / evidence)
+        except LoopError:
+            continue
+        if not isinstance(artifact.get("fixture_id"), str):
             continue
         for reference in knowledge.get("candidate_claim_refs", []):
             if (
