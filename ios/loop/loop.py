@@ -66,7 +66,10 @@ DIRECT_SOURCE_DELIVERY_CONTRACTS = {
     "ui.root.configurable-visibility": {
         "target": "IOS-APP-NAVIGATION-ROOT-VISIBILITY-001",
         "fixture_id": "source-ui-root-configurable-visibility-v1",
-        "validation": "simulator",
+        # 根入口显隐是一个局部配置投影；Router 与偏好存储已有聚焦测试。
+        # 不让这类叶子 UI 切片重复启动 Simulator，统一留给下一次主路径
+        # 或阶段里程碑的真实 UI 验收。
+        "validation": "build",
     },
     "library.shelf.sort-and-unread-runtime": {
         "target": "IOS-LIBRARY-DOMAIN-SHELF-SORT-UNREAD-001",
@@ -2204,9 +2207,9 @@ def app_ui_simulators(
             "projection": "regularSplit",
         },
     ]
-    if profile == "slice":
-        return simulators[:1]
-    return simulators
+    # 日常迁移只使用一台稳定的主 iPhone。iPad 是产品发布/专项适配
+    # 的显式检查，不应因为一个普通 Delivery 被隐式加入验证矩阵。
+    return simulators[:1]
 
 
 def app_navigation_delivery_contract(
@@ -2681,7 +2684,7 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "priority": 100,
             "goal": (
                 "物化最小原生 iOS App、共享 Route 状态和 UITest Target；"
-                "在固定 iPhone/iPad Simulator 上验证四 Root 与书架搜索结构。"
+                "在固定主 iPhone Simulator 上验证四 Root 与书架搜索结构。"
             ),
             "source": {
                 "authority": "ios_product_decision",
@@ -2698,32 +2701,7 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
                     "profile": "store_safe",
                     "project": "ios/Apps/Legado/Legado.xcodeproj",
                     "scheme": "LegadoApp",
-                    "simulators": [
-                        {
-                            "simulator_id": "SIM-PHONE-COMPACT-001",
-                            "name": "Legado Loop iPhone SE (3rd generation)",
-                            "device_type": (
-                                "com.apple.CoreSimulator.SimDeviceType."
-                                "iPhone-SE-3rd-generation"
-                            ),
-                            "runtime": (
-                                "com.apple.CoreSimulator.SimRuntime.iOS-26-0"
-                            ),
-                            "projection": "compactStack",
-                        },
-                        {
-                            "simulator_id": "SIM-PAD-REGULAR-001",
-                            "name": "Legado Loop iPad Pro 13-inch (M4)",
-                            "device_type": (
-                                "com.apple.CoreSimulator.SimDeviceType."
-                                "iPad-Pro-13-inch-M4-8GB"
-                            ),
-                            "runtime": (
-                                "com.apple.CoreSimulator.SimRuntime.iOS-26-0"
-                            ),
-                            "projection": "regularSplit",
-                        },
-                    ],
+                    "simulators": app_ui_simulators("slice"),
                 },
             },
             "requirements": requirement_refs,
