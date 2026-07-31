@@ -14,11 +14,23 @@ public struct ReaderImageCacheKey: Hashable, Sendable {
   }
 }
 
+/// Persistence boundary for reader image bytes.
+///
+/// App adapters may implement this with the platform cache directory; the
+/// policy itself remains independent from Foundation and UIKit.
+public protocol ReaderImageDataStore: Sendable {
+  func data(for key: ReaderImageCacheKey) async -> [UInt8]?
+  func store(_ value: [UInt8], for key: ReaderImageCacheKey) async
+}
+
 public actor ReaderImageDataCache {
+  private let persistentStore: (any ReaderImageDataStore)?
   private var cachedValues: [ReaderImageCacheKey: [UInt8]] = [:]
   private var loadingTasks: [ReaderImageCacheKey: Task<[UInt8]?, Never>] = [:]
 
-  public init() {}
+  public init(persistentStore: (any ReaderImageDataStore)? = nil) {
+    self.persistentStore = persistentStore
+  }
 
   /// Returns a book-scoped cached value or coalesces simultaneous loads for it.
   public func value(
@@ -27,6 +39,10 @@ public actor ReaderImageDataCache {
   ) async -> [UInt8]? {
     if let cached = cachedValues[key] {
       return cached
+    }
+    if let persistentStore, let persisted = await persistentStore.data(for: key) {
+      cachedValues[key] = persisted
+      return persisted
     }
     if let loading = loadingTasks[key] {
       return await loading.value
@@ -40,6 +56,7 @@ public actor ReaderImageDataCache {
     loadingTasks[key] = nil
     if let value {
       cachedValues[key] = value
+      await persistentStore?.store(value, for: key)
     }
     return value
   }

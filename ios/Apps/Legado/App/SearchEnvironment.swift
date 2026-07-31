@@ -19,7 +19,9 @@ enum SearchEnvironment {
         SourceScriptComposition.makeScriptRuntime()
     private static let htmlSelectorBackend =
         SourceRuntimeComposition.makeHTMLSelectorBackend()
-    private static let readerImageCache = ReaderImageDataCache()
+    private static let readerImageCache = ReaderImageDataCache(
+        persistentStore: ReaderImageFileStore()
+    )
 
     static func debugSource(
         _ source: BookSourceDraft,

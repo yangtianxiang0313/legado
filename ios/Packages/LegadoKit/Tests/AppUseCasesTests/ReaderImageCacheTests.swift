@@ -57,6 +57,25 @@ final class ReaderImageCacheTests: XCTestCase {
     XCTAssertEqual(secondValue, [1, 2, 3])
     XCTAssertEqual(callCount, 1)
   }
+
+  func testNewCacheInstanceReadsPersistedBookScopedBytes() async {
+    let store = MemoryImageDataStore()
+    let calls = ImageLoadCounter()
+    let key = ReaderImageCacheKey(
+      bookID: BookID(rawValue: "book-a"),
+      sourceURL: "https://example.test/image.png"
+    )
+
+    let firstCache = ReaderImageDataCache(persistentStore: store)
+    _ = await firstCache.value(for: key) { await calls.load() }
+
+    let relaunchedCache = ReaderImageDataCache(persistentStore: store)
+    let value = await relaunchedCache.value(for: key) { await calls.load() }
+
+    XCTAssertEqual(value, [1, 2, 3])
+    let callCount = await calls.value()
+    XCTAssertEqual(callCount, 1)
+  }
 }
 
 private actor ImageLoadCounter {
@@ -74,4 +93,16 @@ private actor ImageLoadCounter {
   }
 
   func value() -> Int { count }
+}
+
+private actor MemoryImageDataStore: ReaderImageDataStore {
+  private var values: [ReaderImageCacheKey: [UInt8]] = [:]
+
+  func data(for key: ReaderImageCacheKey) async -> [UInt8]? {
+    values[key]
+  }
+
+  func store(_ value: [UInt8], for key: ReaderImageCacheKey) async {
+    values[key] = value
+  }
 }
