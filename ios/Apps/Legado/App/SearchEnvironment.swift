@@ -303,7 +303,10 @@ enum SearchEnvironment {
         )
     }
 
-    static func loadReaderImage(_ sourceURL: String) async -> UIImage? {
+    static func loadReaderImage(
+        _ sourceURL: String,
+        imageDecode: String?
+    ) async -> UIImage? {
         guard let url = try? HTTPURL(sourceURL) else { return nil }
         let externalBaseURL = ProcessInfo.processInfo.environment[
             "LEGADO_SEARCH_BASE_URL"
@@ -315,7 +318,22 @@ enum SearchEnvironment {
         ), (200..<300).contains(response.statusCode) else {
             return nil
         }
-        return UIImage(data: response.body.bytes)
+        let decoded = await SourceImageDecoder(
+            runtime: scriptRuntime,
+            sessionID: .init(rawValue: "reader-image:\(sourceURL)")
+        ).decode(
+            bytes: Array(response.body.bytes),
+            rule: imageDecode,
+            context: .init(sourceURL: sourceURL)
+        )
+        let bytes: [UInt8]
+        switch decoded {
+        case .passthrough(let value), .decoded(let value):
+            bytes = value
+        case .failed:
+            return nil
+        }
+        return UIImage(data: Data(bytes))
     }
 
     static func importBookURL(
@@ -742,6 +760,7 @@ enum SearchEnvironment {
                 #"^"# + NSRegularExpression.escapedPattern(
                     for: baseURL
                 ) + #"/books/"#,
+            imageDecode: "result.map(function(byte) { return byte ^ 255; })",
             runtime: HTMLCSSSourceDefinition(
                 searchURLTemplate:
                     "\(baseURL)/search?source=\(group)&q={{key}}",
@@ -870,7 +889,7 @@ private actor LocalBookSourceTransport: HTTPTransport {
             return try HTTPResponse(
                 statusCode: 200,
                 effectiveURL: request.url,
-                body: HTTPBody(Self.readerDemoPNG)
+                body: HTTPBody(Self.readerDemoEncryptedPNG)
             )
         }
         let body: String
@@ -965,6 +984,10 @@ private actor LocalBookSourceTransport: HTTPTransport {
     private static let readerDemoPNG = Data(base64Encoded:
         "iVBORw0KGgoAAAANSUhEUgAAAAIAAAABCAYAAAD0In+KAAAAEUlEQVR4nGP0q/z/n4GBgQEAEMYCx6tVuvcAAAAASUVORK5CYII="
     )!
+
+    private static let readerDemoEncryptedPNG = Data(
+        readerDemoPNG.map { $0 ^ 255 }
+    )
 }
 
 private struct LocalBook: Sendable {

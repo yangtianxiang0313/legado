@@ -455,6 +455,62 @@ class MinimalLoopTests(unittest.TestCase):
         ):
             self.assertEqual([], loop.prioritized_work(Path(".")))
 
+    def test_empty_queue_replenishes_from_eligible_frontier_candidate(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.write(
+                root,
+                loop.EVENTS_PATH.as_posix(),
+                {
+                    "schema_version": 2,
+                    "sequence": 1,
+                    "at": "2026-07-31T00:00:00Z",
+                    "event": "task_completed",
+                    "task_id": "IOS-PREREQUISITE-001",
+                    "details": {},
+                },
+            )
+            candidate = {
+                "schema_version": 1,
+                "id": "MILESTONE-FRONTIER-001",
+                "status": "pending",
+                "mode": "critical_path_only",
+                "priority": 10,
+                "stages": [{
+                    "id": "S1",
+                    "title": "Frontier",
+                    "selectors": [{
+                        "id": "TARGET",
+                        "claim_ids": [],
+                        "task_ids": ["IOS-SOURCE-RUNTIME-FRONTIER-001"],
+                    }],
+                }],
+                "deliveries": [{
+                    "target": "IOS-SOURCE-RUNTIME-FRONTIER-001",
+                    "title": "Frontier delivery",
+                    "fixture_id": "source-frontier-v1",
+                    "requirement_ref": "REQ-001@1#RC-01",
+                    "prerequisite_task_ids": ["IOS-PREREQUISITE-001"],
+                    "validation": "tests",
+                    "source_anchors": [{"path": "Source.kt"}],
+                }],
+            }
+            self.write(
+                root,
+                "ios/project/migration-frontier/candidates/frontier.json",
+                candidate,
+            )
+
+            replenished = loop.replenish_priority_policy(root)
+
+            self.assertEqual("MILESTONE-FRONTIER-001", replenished["id"])
+            active = loop.active_priority_policy(root)
+            self.assertEqual("active", active["status"])
+            self.assertEqual(
+                "IOS-SOURCE-RUNTIME-FRONTIER-001",
+                loop.priority_policy_deliveries(root)[0]["target"],
+            )
+
     def test_completed_event_removes_delivery_from_queue(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

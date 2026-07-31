@@ -802,6 +802,10 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testReaderInlineImageDecodeFlow() throws {
+        try testReaderInlineImageFlow()
+    }
+
     func testReaderMultilevelMenuFlow() throws {
         let environment = ProcessInfo.processInfo.environment
         let contract = try XCTUnwrap(

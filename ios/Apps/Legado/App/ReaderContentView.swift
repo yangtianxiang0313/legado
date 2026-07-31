@@ -185,7 +185,8 @@ struct ReaderContentView: View {
                 return
             }
             readerImages = await loadReaderImages(
-                ReaderContentImageProjection(sourceContent: document.content)
+                ReaderContentImageProjection(sourceContent: document.content),
+                imageDecode: document.imageDecode
             )
         }
         .onChange(of: readAloud.characterOffset) { _, offset in
@@ -426,11 +427,15 @@ struct ReaderContentView: View {
     }
 
     private func loadReaderImages(
-        _ projection: ReaderContentImageProjection
+        _ projection: ReaderContentImageProjection,
+        imageDecode: String?
     ) async -> [String: UIImage] {
         var images: [String: UIImage] = [:]
         for source in Set(projection.imageAnchors.map(\.sourceURL)) {
-            if let image = await SearchEnvironment.loadReaderImage(source) {
+            if let image = await SearchEnvironment.loadReaderImage(
+                source,
+                imageDecode: imageDecode
+            ) {
                 images[source] = image
             }
         }

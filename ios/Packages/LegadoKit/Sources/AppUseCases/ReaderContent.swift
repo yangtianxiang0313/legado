@@ -139,7 +139,8 @@ public struct SourceReaderContentLoader:
       ),
       title: execution.content.title ?? chapter.title,
       content: execution.content.content,
-      imageStyle: source.definition.imageStyle
+      imageStyle: source.definition.imageStyle,
+      imageDecode: source.definition.imageDecode
     )
     return SourceReaderContentResult(
       document: document,
@@ -291,7 +292,8 @@ public struct ReplacementNormalizingReaderContentLoader:
       position: raw.position,
       title: normalized.displayTitle,
       content: normalized.renderedText,
-      imageStyle: raw.imageStyle
+      imageStyle: raw.imageStyle,
+      imageDecode: raw.imageDecode
     )
   }
 }

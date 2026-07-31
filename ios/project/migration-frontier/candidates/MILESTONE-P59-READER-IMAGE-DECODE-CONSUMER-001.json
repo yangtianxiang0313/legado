@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P59-READER-IMAGE-DECODE-CONSUMER-001",
+  "status": "pending",
+  "mode": "critical_path_only",
+  "priority": 10,
+  "title": "P59 阅读器图片解码消费端",
+  "objective": "依据 Android ImageUtils.decode，把已完成的 SourceRuntime imageDecode 契约接入正文图片下载：仅当规则产生有效字节时构造平台图片；失败显示为图片不可用，不向正文注入密文。",
+  "validation_policy": "运行图片字节消费聚焦测试及一条 iPhone 受控书源阅读路径；不跑全量 UI 矩阵。",
+  "stages": [
+    {
+      "id": "P59-S1",
+      "title": "图片解码消费端",
+      "selectors": [
+        {
+          "id": "P59-S1-IMAGE-DECODE-CONSUMER",
+          "claim_ids": [],
+          "task_ids": ["IOS-APP-NAVIGATION-READER-IMAGE-DECODE-001"]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-APP-NAVIGATION-READER-IMAGE-DECODE-001",
+      "title": "让阅读器按书源规则解码正文图片",
+      "fixture_id": "sl-reader-image-decode-consumer-001",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-04",
+      "prerequisite_task_ids": ["IOS-SOURCE-RUNTIME-IMAGE-DECODE-001"],
+      "validation": "simulator",
+      "package_path": "ios/Packages/LegadoSourceKit",
+      "test_filter": "SourceImageDecodeTests",
+      "ui_contract": {
+        "goal": "从受控本地书源进入带 imageDecode 的正文，确认解码后的图片加载成功。",
+        "scenario_id": "reader-inline-image-decode-ui-v1",
+        "test_method": "testReaderInlineImageDecodeFlow"
+      },
+      "additional_allowed_paths": [
+        "ios/Apps/Legado/App/**",
+        "ios/Apps/Legado/UITests/**",
+        "ios/Apps/Legado/project.yml",
+        "ios/Apps/Legado/Legado.xcodeproj/project.pbxproj",
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Sources/ReaderCore/**",
+        "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+        "ios/Packages/LegadoSourceKit/Sources/SourceRuntime/**",
+        "ios/Packages/LegadoSourceKit/Tests/SourceRuntimeTests/**",
+        "ios/loop/loop.py",
+        "ios/loop/tests/test_loop.py",
+        "ios/project/migration-frontier/**",
+        "ios/project/migration-priorities/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "f23da69733ce181b40edea7b990a8a262e8df156",
+          "path": "app/src/main/java/io/legado/app/utils/ImageUtils.kt",
+          "symbol_id": "kotlin://io.legado.app.utils.ImageUtils/decode"
+        }
+      ]
+    }
+  ]
+}

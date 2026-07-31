@@ -25,6 +25,7 @@ TASK_PATH = LOOP_ROOT / "task.json"
 CURRENT_PATH = LOOP_ROOT / "current.json"
 EVENTS_PATH = LOOP_ROOT / "events.jsonl"
 PRIORITY_PATH = Path("ios/project/migration-priorities/active.json")
+FRONTIER_CANDIDATE_ROOT = Path("ios/project/migration-frontier/candidates")
 RUNTIME_ROOT = Path(".harness-runtime/loop")
 LOCK_PATH = RUNTIME_ROOT / "loop.lock"
 CONTROL_PATHS = {
@@ -1616,6 +1617,65 @@ def active_priority_policy(root: Path) -> Mapping[str, Any] | None:
             raise LoopError("PRIORITY_POLICY_INVALID")
         delivery_targets.add(delivery["target"])
     return policy
+
+
+def pending_frontier_policies(root: Path) -> list[Mapping[str, Any]]:
+    """Read Android-anchored future milestones without activating them yet."""
+    completed = completed_task_ids(root)
+    candidates: list[Mapping[str, Any]] = []
+    for path, policy in relative_jsons(root, str(FRONTIER_CANDIDATE_ROOT)):
+        deliveries = policy.get("deliveries")
+        priority = policy.get("priority")
+        if (
+            policy.get("schema_version") != 1
+            or policy.get("status") != "pending"
+            or policy.get("mode") != "critical_path_only"
+            or not isinstance(policy.get("id"), str)
+            or not isinstance(priority, int)
+            or isinstance(priority, bool)
+            or not isinstance(deliveries, list)
+            or not deliveries
+        ):
+            raise LoopError(f"FRONTIER_CANDIDATE_INVALID:{path}")
+        eligible = False
+        for delivery in deliveries:
+            if not isinstance(delivery, dict):
+                raise LoopError(f"FRONTIER_CANDIDATE_INVALID:{path}")
+            target = delivery.get("target")
+            prerequisites = delivery.get("prerequisite_task_ids", [])
+            if (
+                not isinstance(target, str)
+                or not isinstance(prerequisites, list)
+                or target in completed
+            ):
+                continue
+            if all(isinstance(value, str) and value in completed for value in prerequisites):
+                eligible = True
+                break
+        if eligible:
+            candidates.append({**policy, "candidate_path": path})
+    return sorted(candidates, key=lambda value: (value["priority"], value["id"]))
+
+
+def replenish_priority_policy(root: Path) -> Mapping[str, Any] | None:
+    """Materialize exactly one eligible frontier candidate as the active queue."""
+    if (root / PRIORITY_PATH).is_file():
+        return None
+    candidates = pending_frontier_policies(root)
+    if not candidates:
+        return None
+    selected = candidates[0]
+    active = {
+        key: value
+        for key, value in selected.items()
+        if key != "candidate_path"
+    }
+    active["status"] = "active"
+    write_json(root / PRIORITY_PATH, active)
+    return {
+        "id": active["id"],
+        "candidate_path": selected["candidate_path"],
+    }
 
 
 def priority_match(
@@ -3460,6 +3520,8 @@ def queue_status(root: Path) -> Mapping[str, Any]:
                 len(deliveries) + len(characterizations) - len(eligible)
             ),
         }
+    elif (root / FRONTIER_CANDIDATE_ROOT).is_dir():
+        result["frontier_candidate_count"] = len(pending_frontier_policies(root))
     return result
 
 
@@ -4535,6 +4597,17 @@ def advance(
     if state["status"] == "idle":
         task = next_task(root)
         if task is None:
+            replenished = replenish_priority_policy(root)
+            if replenished is not None:
+                started = start(root)
+                return {
+                    "schema_version": SCHEMA_VERSION,
+                    "status": "running",
+                    "action": "implement",
+                    "task": started,
+                    "replenished": replenished,
+                    "reconciliation": reconciliation,
+                }
             return {
                 "schema_version": SCHEMA_VERSION,
                 "status": "queue_empty",
@@ -4594,6 +4667,18 @@ def advance(
             )
             next_task_value = next_task(root)
             if next_task_value is None:
+                replenished = replenish_priority_policy(root)
+                if replenished is not None:
+                    started = start(root)
+                    return {
+                        "schema_version": SCHEMA_VERSION,
+                        "status": "running",
+                        "action": "implement",
+                        "completed": completed,
+                        "task": started,
+                        "replenished": replenished,
+                        "reconciliation": reconciliation,
+                    }
                 return {
                     "schema_version": SCHEMA_VERSION,
                     "status": "queue_empty",
