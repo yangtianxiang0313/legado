@@ -26,17 +26,46 @@ final class SourceContentPipelineTests: XCTestCase {
       "http://sourcelab.test/chapter-1"
     )
   }
+
+  func testContentReplaceRegexRunsAfterPagesAreMerged() async throws {
+    let transport = ContentTransport(responses: [
+      "http://sourcelab.test/chapter-1": """
+        <html><body><div id="content"><p>  第一段  </p></div>
+        <a class="next" href="/chapter-2">下一页</a></body></html>
+        """,
+      "http://sourcelab.test/chapter-2": """
+        <html><body><div id="content"><p>  第二段  </p></div></body></html>
+        """,
+    ])
+    let definition = contentDefinition(
+      nextContentURL: HTMLCSSRule("a.next", value: .href),
+      replaceRegex: "##第一段\\n第二段##合并段"
+    )
+    let result = try await SourceContentPipeline(
+      definition: definition,
+      transport: transport
+    ).content(chapterURL: "http://sourcelab.test/chapter-1")
+
+    XCTAssertEqual(result.content.content, "　　合并段")
+  }
 }
 
 private actor ContentTransport: HTTPTransport {
-  let html: String
+  let responses: [String: String]
 
   init(html: String) {
-    self.html = html
+    self.responses = ["http://sourcelab.test/chapter-1": html]
+  }
+
+  init(responses: [String: String]) {
+    self.responses = responses
   }
 
   func execute(_ request: HTTPRequest) async throws -> HTTPResponse {
-    try HTTPResponse(
+    guard let html = responses[request.url.absoluteString] else {
+      throw URLError(.resourceUnavailable)
+    }
+    return try HTTPResponse(
       statusCode: 200,
       effectiveURL: request.url,
       body: HTTPBody(Data(html.utf8))
@@ -44,7 +73,10 @@ private actor ContentTransport: HTTPTransport {
   }
 }
 
-private func contentDefinition() -> SourceSearchDefinition {
+private func contentDefinition(
+  nextContentURL: HTMLCSSRule? = nil,
+  replaceRegex: String? = nil
+) -> SourceSearchDefinition {
   SourceSearchDefinition(
     sourceURL: "http://sourcelab.test",
     sourceName: "测试源",
@@ -76,7 +108,11 @@ private func contentDefinition() -> SourceSearchDefinition {
         url: HTMLCSSRule("a", value: .href)
       ),
       content: ContentRules(
-        content: HTMLCSSRule("#content", value: .html)
+        content: HTMLCSSRule("#content", value: .html),
+        nextContentURL: nextContentURL,
+        webJS: nil,
+        sourceRegex: nil,
+        replaceRegex: replaceRegex
       )
     )
   )

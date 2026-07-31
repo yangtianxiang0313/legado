@@ -154,11 +154,19 @@ public struct SourceContentPipeline: Sendable {
           fetched.page.content.variables
       }
     }
+    let content = try await replacedContent(
+      contents.joined(separator: "\n"),
+      bookVariables: bookVariables,
+      chapterVariables: currentChapterVariables
+    )
+    guard !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+      throw SourceRuntimeIssue(stage: .fieldEvaluation, code: .ruleFailed)
+    }
     return SourceContentExecution(
       requests: requests,
       content: SourceContent(
         chapterURL: first.page.content.chapterURL,
-        content: contents.joined(separator: "\n"),
+        content: content,
         variables: currentChapterVariables
       )
     )
@@ -225,5 +233,41 @@ public struct SourceContentPipeline: Sendable {
         chapterVariables: await chapterStore.snapshot()
       )
     )
+  }
+
+  private func replacedContent(
+    _ content: String,
+    bookVariables: [String: String],
+    chapterVariables: [String: String]
+  ) async throws -> String {
+    guard let rule = definition.runtime.content.replaceRegex,
+      !rule.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    else {
+      return content
+    }
+    let normalized = content
+      .split(separator: "\n", omittingEmptySubsequences: false)
+      .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+      .joined(separator: "\n")
+    let value = try await SourceVariableRuleEvaluator(
+      content: normalized,
+      resolver: SourceVariableResolver(
+        role: .rule,
+        scopes: SourceVariableScopes(
+          chapter: SourceVariableStore(values: chapterVariables),
+          book: SourceVariableStore(values: bookVariables),
+          ruleData: SourceVariableStore(values: bookVariables),
+          sourceUserVariable: definition.sourceUserVariable
+        )
+      ),
+      scriptRuntime: scriptRuntime,
+      scriptSessionID: scriptSessionID,
+      scriptLibrary: definition.scriptLibrary,
+      htmlSelectorBackend: htmlSelectorBackend
+    ).getString(rule)
+    return value
+      .split(separator: "\n", omittingEmptySubsequences: false)
+      .map { "　　" + $0 }
+      .joined(separator: "\n")
   }
 }

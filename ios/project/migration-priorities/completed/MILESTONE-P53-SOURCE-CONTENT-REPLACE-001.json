@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P53-SOURCE-CONTENT-REPLACE-001",
+  "status": "completed",
+  "mode": "critical_path_only",
+  "title": "P53 正文全文替换规则主链",
+  "objective": "依据冻结 Android BookContent.analyzeContent 源码，把书源 ruleContent.replaceRegex 接入独立 iOS SourceRuntime：多页正文合并后先逐行 trim，再按规则执行全文替换并形成 Android 对齐的段落缩进；不把 Reader 的用户替换规则或 Android UI 状态引入书源运行时。",
+  "validation_policy": "只运行 SourceContentPipelineTests 聚焦测试和对应 SourceLab 场景校验；不启动 iOS 模拟器，不重复运行 Android。",
+  "stages": [{"id":"P53-S1","title":"正文替换规则编译与执行","selectors":[{"id":"P53-S1-CONTENT-REPLACE","claim_ids":[],"task_ids":["IOS-SOURCE-RUNTIME-CONTENT-REPLACE-001"]}]}],
+  "deliveries": [{
+    "target":"IOS-SOURCE-RUNTIME-CONTENT-REPLACE-001",
+    "title":"将书源正文全文替换接入 SourceRuntime",
+    "fixture_id":"sl-source-content-replace-runtime-001",
+    "requirement_ref":"REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-04",
+    "prerequisite_task_ids":["IOS-SOURCE-RUNTIME-TOC-ANDROID-TRUTH-001"],
+    "validation":"tests",
+    "package_path":"ios/Packages/LegadoSourceKit",
+    "test_filter":"SourceContentPipelineTests",
+    "additional_allowed_paths":["ios/Packages/LegadoSourceKit/**","ios/harness/fixtures/source-lab/**","ios/harness/source-lab/**","ios/project/migration-priorities/**"],
+    "source_anchors":[
+      {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","git_blob":"fcf27c884aa557b539f009067ae55e79c5fa3591","path":"app/src/main/java/io/legado/app/model/webBook/BookContent.kt","symbol_id":"kotlin://io.legado.app.model.webBook/BookContent/getContent"}
+    ]
+  }]
+}

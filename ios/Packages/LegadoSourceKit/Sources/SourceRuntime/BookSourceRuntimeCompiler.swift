@@ -168,6 +168,9 @@ public enum BookSourceRuntimeCompiler {
         webJS: nonEmpty(fieldString(content.webJs)),
         sourceRegex: nonEmpty(
           fieldString(content.sourceRegex)
+        ),
+        replaceRegex: nonEmpty(
+          fieldString(content.replaceRegex)
         )
       )
     )

@@ -1,0 +1,1 @@
+{"schema_version":1,"cases":[{"id":"content-replace-after-normalization","operation":"content_pipeline","arguments":{"chapter_path":"/chapter/replace"},"request":{"method":"GET","target":"/chapter/replace"}}]}

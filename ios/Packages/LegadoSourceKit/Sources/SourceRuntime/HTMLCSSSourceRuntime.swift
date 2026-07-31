@@ -148,6 +148,7 @@ public struct ContentRules: Sendable, Equatable {
   public let nextContentURL: HTMLCSSRule?
   public let webJS: String?
   public let sourceRegex: String?
+  public let replaceRegex: String?
 
   public init(
     content: HTMLCSSRule,
@@ -157,18 +158,21 @@ public struct ContentRules: Sendable, Equatable {
     self.nextContentURL = nextContentURL
     self.webJS = nil
     self.sourceRegex = nil
+    self.replaceRegex = nil
   }
 
   public init(
     content: HTMLCSSRule,
     nextContentURL: HTMLCSSRule?,
     webJS: String?,
-    sourceRegex: String?
+    sourceRegex: String?,
+    replaceRegex: String? = nil
   ) {
     self.content = content
     self.nextContentURL = nextContentURL
     self.webJS = webJS
     self.sourceRegex = sourceRegex
+    self.replaceRegex = replaceRegex
   }
 }
 
