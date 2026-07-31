@@ -78,19 +78,39 @@ public struct SourceTOCPipeline: Sendable {
     )
   }
 
+  /// Starts at a known TOC endpoint without interpreting it as a book detail
+  /// page. Android source debug uses this path for the `++` input prefix.
+  public func chapters(tocURL: String) async throws -> SourceTOCExecution {
+    guard let sourceURL = URL(string: definition.sourceURL) else {
+      throw SourceRuntimeIssue(stage: .urlTemplate, code: .invalidURL)
+    }
+    let endpoint = try SourceEndpoint(
+      resolving: tocURL,
+      relativeTo: sourceURL
+    )
+    let book = SourceBook(
+      name: "",
+      author: nil,
+      intro: nil,
+      kind: nil,
+      lastChapter: nil,
+      bookEndpoint: endpoint,
+      coverURL: nil,
+      tocEndpoint: endpoint
+    )
+    return try await chapters(
+      resolvedBook: book,
+      tocEndpoint: endpoint,
+      tocHTML: nil,
+      initialRequests: []
+    )
+  }
+
   public func chapters(
     book: SourceBook,
     infoHTML: String? = nil,
     canRename: Bool = true
   ) async throws -> SourceTOCExecution {
-    let runtime = HTMLCSSSourceRuntime(
-      definition: definition.runtime,
-      scriptRuntime: scriptRuntime,
-      scriptSessionID: scriptSessionID,
-      scriptLibrary: definition.scriptLibrary,
-      sourceUserVariable: definition.sourceUserVariable,
-      htmlSelectorBackend: htmlSelectorBackend
-    )
     let detail = try await SourceBookInfoPipeline(
       definition: definition,
       transport: transport,
@@ -110,14 +130,36 @@ public struct SourceTOCPipeline: Sendable {
         code: .ruleFailed
       )
     }
+    return try await chapters(
+      resolvedBook: detail.book,
+      tocEndpoint: tocEndpoint,
+      tocHTML: detail.tocHTML,
+      initialRequests: detail.requestPlan.map { [$0.request] } ?? []
+    )
+  }
+
+  private func chapters(
+    resolvedBook: SourceBook,
+    tocEndpoint: SourceEndpoint,
+    tocHTML: String?,
+    initialRequests: [HTTPRequest]
+  ) async throws -> SourceTOCExecution {
+    let runtime = HTMLCSSSourceRuntime(
+      definition: definition.runtime,
+      scriptRuntime: scriptRuntime,
+      scriptSessionID: scriptSessionID,
+      scriptLibrary: definition.scriptLibrary,
+      sourceUserVariable: definition.sourceUserVariable,
+      htmlSelectorBackend: htmlSelectorBackend
+    )
     let variableStore = SourceVariableStore(
       policy: .androidRuleData,
-      values: detail.book.variables
+      values: resolvedBook.variables
     )
 
-    var requests = detail.requestPlan.map { [$0.request] } ?? []
+    var requests = initialRequests
     let firstPage: SourceTOCPage
-    if let tocHTML = detail.tocHTML {
+    if let tocHTML {
       firstPage = try await runtime.chapterPage(
         html: tocHTML,
         tocEndpoint: tocEndpoint,
@@ -171,7 +213,7 @@ public struct SourceTOCPipeline: Sendable {
     }
     return SourceTOCExecution(
       requests: requests,
-      book: detail.book.replacingVariables(
+      book: resolvedBook.replacingVariables(
         await variableStore.snapshot()
       ),
       chapters: chapters

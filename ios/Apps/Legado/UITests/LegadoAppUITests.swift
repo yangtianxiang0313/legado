@@ -1123,6 +1123,94 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testSourceDebugRuntimeMilestone() throws {
+        let server = try SourceLoginHTTPServer()
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: ProcessInfo.processInfo.environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-sources",
+        ]
+        app.launchEnvironment["LEGADO_SEARCH_BASE_URL"] = server.origin
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        selectRoot("root.settings", label: "我的")
+        require("action.settings.openSources").tap()
+        require("screen.source.management")
+        requireFirst("action.source.create").tap()
+        requireButton("action.source.import").tap()
+        require("screen.source.import")
+
+        let definition = require("field.source.import.text")
+        definition.tap()
+        definition.typeText(
+            """
+            {"bookSourceUrl":"\(server.origin)",\
+            "bookSourceName":"结构化调试书源",\
+            "bookSourceGroup":"SourceDebug","enabled":true,\
+            "searchUrl":"\(server.origin)/debug/search?q={{key}}",\
+            "ruleSearch":{"bookList":".book",\
+            "name":".name","author":".author","bookUrl":"a"},\
+            "ruleBookInfo":{"name":"h1.name",\
+            "author":".author","tocUrl":"a.toc"},\
+            "ruleToc":{"chapterList":".chapter",\
+            "chapterName":"a","chapterUrl":"a"},\
+            "ruleContent":{"content":"#content"}}
+            """
+        )
+        requireButton("action.source.import.parse").tap()
+        require("toggle.source.import.candidate.0")
+        requireButton("action.source.import.commit").tap()
+        require("screen.source.management")
+
+        app.staticTexts["结构化调试书源"].tap()
+        require("screen.source.editor")
+        requireButton("action.source.editor.more").tap()
+        requireButton("action.source.editor.debug").tap()
+        require("screen.source.debug")
+        requireButton("action.source.debug.start").tap()
+
+        let outcome = requireByScrolling(
+            "label.source.debug.outcome",
+            in: "screen.source.debug"
+        )
+        if outcome.label != "调试完成" {
+            let failure = requireByScrolling(
+                "label.source.debug.failure.content",
+                in: "screen.source.debug"
+            )
+            XCTFail("Debug failed: \(failure.label)")
+        }
+        XCTAssertEqual(
+            requireByScrolling(
+                "label.source.debug.route",
+                in: "screen.source.debug"
+            ).label,
+            "search"
+        )
+        XCTAssertTrue(server.observedDebugMainChain)
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "scenario": "source-debug-runtime-v1",
+            "entry": "search",
+            "stages": [
+                "search",
+                "book_info",
+                "toc",
+                "content",
+            ],
+            "network_main_chain_observed": true,
+            "structured_outcome": "completed",
+        ])
+    }
+
     func testSourceImportFlow() throws {
         let environment = ProcessInfo.processInfo.environment
         let contract = try XCTUnwrap(
@@ -2404,6 +2492,7 @@ private final class SourceLoginHTTPServer: @unchecked Sendable {
     private let queue = DispatchQueue(label: "SourceLoginHTTPServer")
     private let stateLock = NSLock()
     private var authenticatedSearch = false
+    private var debugPaths: Set<String> = []
     private var startupPort: NWEndpoint.Port?
     private var startupError: NWError?
 
@@ -2413,6 +2502,17 @@ private final class SourceLoginHTTPServer: @unchecked Sendable {
         stateLock.lock()
         defer { stateLock.unlock() }
         return authenticatedSearch
+    }
+
+    var observedDebugMainChain: Bool {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return [
+            "/debug/search",
+            "/debug/book",
+            "/debug/toc",
+            "/debug/content/1",
+        ].allSatisfy(debugPaths.contains)
     }
 
     init() throws {
@@ -2513,6 +2613,11 @@ private final class SourceLoginHTTPServer: @unchecked Sendable {
         let extraHeaders: [String]
         let body: String
 
+        if path.hasPrefix("/debug/") {
+            stateLock.lock()
+            debugPaths.insert(path)
+            stateLock.unlock()
+        }
         switch path {
         case "/login":
             status = "200 OK"
@@ -2546,6 +2651,49 @@ private final class SourceLoginHTTPServer: @unchecked Sendable {
                 extraHeaders = []
                 body = "<html><body><p>需要登录</p></body></html>"
             }
+        case "/debug/search":
+            status = "200 OK"
+            extraHeaders = []
+            body = """
+                <html><body>
+                <div class="book">
+                  <span class="name">调试主链书</span>
+                  <span class="author">本地作者</span>
+                  <a href="/debug/book">详情</a>
+                </div>
+                </body></html>
+                """
+        case "/debug/book":
+            status = "200 OK"
+            extraHeaders = []
+            body = """
+                <html><body>
+                <h1 class="name">调试主链书</h1>
+                <span class="author">本地作者</span>
+                <a class="toc" href="/debug/toc">目录</a>
+                </body></html>
+                """
+        case "/debug/toc":
+            status = "200 OK"
+            extraHeaders = []
+            body = """
+                <html><body>
+                <div class="chapter">
+                  <a href="/debug/content/1">第一章</a>
+                </div>
+                <div class="chapter">
+                  <a href="/debug/content/2">第二章</a>
+                </div>
+                </body></html>
+                """
+        case "/debug/content/1":
+            status = "200 OK"
+            extraHeaders = []
+            body = """
+                <html><body>
+                <article id="content">本地真实网络正文</article>
+                </body></html>
+                """
         default:
             status = "404 Not Found"
             extraHeaders = []

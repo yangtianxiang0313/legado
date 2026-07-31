@@ -1,4 +1,3 @@
-import CFNetwork
 import Foundation
 import os
 import SourceRuntime
@@ -341,26 +340,24 @@ enum URLSessionProxyConfigurationBuilder {
         switch proxy.type {
         case .http:
             values = [
-                kCFNetworkProxiesHTTPEnable as String: true,
-                kCFNetworkProxiesHTTPProxy as String: proxy.host,
-                kCFNetworkProxiesHTTPPort as String: Int(proxy.port),
-                kCFNetworkProxiesHTTPSEnable as String: true,
-                kCFNetworkProxiesHTTPSProxy as String: proxy.host,
-                kCFNetworkProxiesHTTPSPort as String: Int(proxy.port),
+                "HTTPEnable": true,
+                "HTTPProxy": proxy.host,
+                "HTTPPort": Int(proxy.port),
+                "HTTPSEnable": true,
+                "HTTPSProxy": proxy.host,
+                "HTTPSPort": Int(proxy.port),
             ]
         case .socks:
             values = [
-                kCFNetworkProxiesSOCKSEnable as String: true,
-                kCFNetworkProxiesSOCKSProxy as String: proxy.host,
-                kCFNetworkProxiesSOCKSPort as String: Int(proxy.port),
+                "SOCKSEnable": true,
+                "SOCKSProxy": proxy.host,
+                "SOCKSPort": Int(proxy.port),
             ]
             if let username = proxy.username {
-                values[kCFStreamPropertySOCKSUser as String] =
-                    username
+                values["SOCKSUser"] = username
             }
             if let password = proxy.password {
-                values[kCFStreamPropertySOCKSPassword as String] =
-                    password
+                values["SOCKSPassword"] = password
             }
         }
         return values

@@ -1,4 +1,3 @@
-import CFNetwork
 import Foundation
 @testable import NetworkFoundation
 @testable import SourceRuntime
@@ -146,13 +145,13 @@ final class SourceProxyIntegrationTests: XCTestCase {
                     host: "http.proxy",
                     port: 8_080
                 )
-            )
+        )
         XCTAssertEqual(
-            http[kCFNetworkProxiesHTTPProxy as String] as? String,
+            http["HTTPProxy"] as? String,
             "http.proxy"
         )
         XCTAssertEqual(
-            http[kCFNetworkProxiesHTTPSPort as String] as? Int,
+            http["HTTPSPort"] as? Int,
             8_080
         )
 
@@ -165,20 +164,17 @@ final class SourceProxyIntegrationTests: XCTestCase {
                     username: "reader",
                     password: "secret"
                 )
-            )
+        )
         XCTAssertEqual(
-            socks[kCFNetworkProxiesSOCKSProxy as String]
-                as? String,
+            socks["SOCKSProxy"] as? String,
             "socks.proxy"
         )
         XCTAssertEqual(
-            socks[kCFStreamPropertySOCKSUser as String]
-                as? String,
+            socks["SOCKSUser"] as? String,
             "reader"
         )
         XCTAssertEqual(
-            socks[kCFStreamPropertySOCKSPassword as String]
-                as? String,
+            socks["SOCKSPassword"] as? String,
             "secret"
         )
     }

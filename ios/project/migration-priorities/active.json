@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P49-SOURCE-DEBUG-RUNTIME-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "title": "P49 真实书源结构化调试闭环",
+  "objective": "依据冻结 Android Debug.startDebug 的入口路由和逐级续跑语义，在独立 SourceRuntime 中复用生产搜索、发现、详情、目录、正文流水线，输出请求、阶段、结果和错误的结构化报告；iOS 调试页直接展示该报告，不再以静态阶段标签冒充调试。",
+  "validation_policy": "开发阶段只运行 SourceDebugRunnerTests；UI 接线完成后仅运行一次主 iPhone 模拟器调试路径。不运行全量 Harness、全量 Swift 测试或设备矩阵，知识沉淀变化不触发重跑。",
+  "stages": [
+    {
+      "id": "P49-S1",
+      "title": "结构化 Runner 与调试 UI 产品接线",
+      "selectors": [
+        {
+          "id": "P49-S1-DEBUG",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-SOURCE-RUNTIME-DEBUG-EXECUTION-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-SOURCE-RUNTIME-DEBUG-EXECUTION-001",
+      "title": "复用五条生产流水线执行书源调试并输出结构化报告",
+      "fixture_id": "source-debug-runtime-v1",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "prerequisite_task_ids": [
+        "IOS-SOURCE-RUNTIME-EDITOR-LOSSLESS-WRITEBACK-001"
+      ],
+      "validation": "tests",
+      "package_path": "ios/Packages/LegadoSourceKit",
+      "test_filter": "SourceDebugRunnerTests",
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoSourceKit/**",
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+        "ios/Apps/Legado/**",
+        "ios/docs/architecture.md",
+        "ios/project/migration-priorities/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "a0748328a70610373148dd55850d60db269652dd",
+          "path": "app/src/main/java/io/legado/app/model/Debug.kt",
+          "symbol_id": "kotlin://io.legado.app.model.Debug#startDebug"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "git_blob": "b7efa3029bc50a47ef693a23016752aa032f2978",
+          "path": "app/src/main/java/io/legado/app/ui/book/source/debug/BookSourceDebugModel.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.source.debug.BookSourceDebugModel"
+        }
+      ]
+    }
+  ]
+}

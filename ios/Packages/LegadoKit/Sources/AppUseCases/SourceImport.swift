@@ -62,7 +62,7 @@ public enum SourceDefinitionImport {
       let edit = try BookSourceEditorCodec.project(
         definition
       )
-      BookSourceDraft(
+      return BookSourceDraft(
         sourceURL: edit.sourceURL,
         name: edit.name,
         loginURL: edit.loginURL,

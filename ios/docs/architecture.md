@@ -125,6 +125,13 @@ App 丢弃；失败应发生在真正执行该能力时，并携带对应运行�
 未修改规则内的未知字段；`BookSourceDraft` 只是 UI 编辑缓存，所有 Repository 写入
 前必须同步 `rawDefinition`，旧数据载入时则从原始定义补齐尚未持久化的规则文本。
 
+书源调试是 `SourceRuntime.SourceDebugRunner` 对生产流水线的编排和观察层，不得另建
+调试专用解析器。它按冻结 Android `Debug.startDebug` 解释输入：普通文本从搜索开始，
+`分类::URL` 从发现开始，绝对 URL 从详情开始，`++URL` 和 `--URL` 分别从目录、正文
+开始；除直接正文外，成功阶段必须取第一本书、首个有效章节继续运行到正文。
+`SourceDebugReport` 结构化记录入口、阶段、脱敏请求概要、响应预览、解析字段和错误；
+App 只编译当前 lossless 定义、注入生产 Transport/HTML/JS adapter 并展示报告。
+
 ### 3.1 内核 Target
 
 | Target | 职责 | 允许的项目依赖 |
@@ -182,6 +189,10 @@ Android 书源 Header 中的小写 `proxy` 是网络控制字段，不是 HTTP H
 重定向相关的请求重建必须保留该值；`NetworkFoundation` 才将 HTTP 或 SOCKS 策略
 翻译为隔离的 `URLSessionConfiguration`。代理会话按完整配置缓存，账号密码只用于
 代理认证，禁止进入 URLRequest Header、响应模型或 Trace。
+`connectionProxyDictionary` 使用平台公开接受的字符串键
+（`HTTPEnable/HTTPProxy/HTTPPort`、`HTTPSEnable/HTTPSProxy/HTTPSPort`、
+`SOCKSEnable/SOCKSProxy/SOCKSPort`）；禁止引用在 iOS SDK 中不可用的
+`kCFNetworkProxies*` 常量。
 
 WebDAV 的具体边界由 [ADR-0008](adr/0008-integrationkit-webdav-boundary.md) 固定：
 首版不引入 WebDAV 三方库，`IntegrationKit` 只依赖 `LegadoCore`，

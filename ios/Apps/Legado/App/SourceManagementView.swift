@@ -1,4 +1,5 @@
 import AppUseCases
+import SourceRuntime
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -846,7 +847,8 @@ struct SourceDebugView: View {
     let source: BookSourceDraft
 
     @State private var key = "我的"
-    @State private var route: SourceDebugRoute?
+    @State private var report: SourceDebugReport?
+    @State private var isRunning = false
 
     var body: some View {
         List {
@@ -855,24 +857,59 @@ struct SourceDebugView: View {
                     .textInputAutocapitalization(.never)
                     .accessibilityIdentifier("field.source.debug.key")
                 Button("开始调试") {
-                    route = SourceDebugRouter.route(for: key)
+                    start()
                 }
+                .disabled(isRunning)
                 .accessibilityIdentifier("action.source.debug.start")
+                if isRunning {
+                    ProgressView("正在执行真实书源流水线…")
+                        .accessibilityIdentifier(
+                            "progress.source.debug"
+                        )
+                }
             }
             Section("调试阶段") {
-                debugStage("搜索", active: route?.kind == .search)
-                debugStage("发现", active: route?.kind == .explore)
-                debugStage("详情", active: route?.kind == .bookInfo)
-                debugStage("目录", active: route?.kind == .toc)
-                debugStage("正文", active: route?.kind == .content)
+                debugStage("搜索", operation: .search)
+                debugStage("发现", operation: .explore)
+                debugStage("详情", operation: .bookInfo)
+                debugStage("目录", operation: .toc)
+                debugStage("正文", operation: .content)
             }
-            if let route {
+            if let report {
                 Section("当前路由") {
-                    Text(route.kind.rawValue)
+                    Text(report.entryOperation.rawValue)
                         .accessibilityIdentifier("label.source.debug.route")
-                    Text(route.payload)
+                    Text(report.input)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                }
+                Section("结构化结果") {
+                    HStack {
+                        Image(
+                            systemName: report.outcome == .completed
+                                ? "checkmark.seal.fill"
+                                : "xmark.octagon.fill"
+                        )
+                        Text(
+                            report.outcome == .completed
+                                ? "调试完成"
+                                : "调试失败"
+                        )
+                        .accessibilityIdentifier(
+                            "label.source.debug.outcome"
+                        )
+                    }
+                    .foregroundStyle(
+                        report.outcome == .completed
+                            ? Color.green
+                            : Color.red
+                    )
+                    ForEach(
+                        Array(report.stages.enumerated()),
+                        id: \.offset
+                    ) { _, stage in
+                        stageResult(stage)
+                    }
                 }
             }
         }
@@ -880,12 +917,134 @@ struct SourceDebugView: View {
         .accessibilityIdentifier("screen.source.debug")
     }
 
-    private func debugStage(_ title: String, active: Bool) -> some View {
-        Label(
+    private func debugStage(
+        _ title: String,
+        operation: SourceDebugOperation
+    ) -> some View {
+        let stage = report?.stages.first {
+            $0.stage == operation
+        }
+        let symbol: String
+        let color: Color
+        switch stage?.outcome {
+        case .completed:
+            symbol = "checkmark.circle.fill"
+            color = .green
+        case .failed:
+            symbol = "xmark.circle.fill"
+            color = .red
+        case nil:
+            symbol = "circle"
+            color = .secondary
+        }
+        return Label(
             title,
-            systemImage: active ? "checkmark.circle.fill" : "circle"
+            systemImage: symbol
         )
-        .foregroundStyle(active ? Color.accentColor : Color.secondary)
+        .foregroundStyle(color)
+        .accessibilityIdentifier(
+            "label.source.debug.stage.\(operation.rawValue)"
+        )
+    }
+
+    @ViewBuilder
+    private func stageResult(
+        _ stage: SourceDebugStageReport
+    ) -> some View {
+        DisclosureGroup(
+            isExpanded: .constant(stage.outcome == .failed)
+        ) {
+            ForEach(
+                Array(stage.fields.enumerated()),
+                id: \.offset
+            ) { _, field in
+                LabeledContent(field.name, value: field.value)
+            }
+            ForEach(
+                Array(stage.network.enumerated()),
+                id: \.offset
+            ) { index, exchange in
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(
+                        "\(exchange.method) \(exchange.requestURL)"
+                    )
+                    .font(.caption.monospaced())
+                    if let statusCode = exchange.statusCode {
+                        Text(
+                            "HTTP \(statusCode) · "
+                                + "\(exchange.responseBodyByteCount ?? 0) B"
+                        )
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    }
+                    if let preview = exchange.responsePreview,
+                       !preview.isEmpty {
+                        Text(preview)
+                            .font(.caption2.monospaced())
+                            .lineLimit(8)
+                            .textSelection(.enabled)
+                    }
+                    if let failure = exchange.failure {
+                        Text(failure)
+                            .font(.caption2.monospaced())
+                            .foregroundStyle(.red)
+                    }
+                }
+                .accessibilityIdentifier(
+                    "label.source.debug.network."
+                        + "\(stage.stage.rawValue).\(index)"
+                )
+            }
+            if let failure = stage.failure {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(failure.message)
+                        .accessibilityIdentifier(
+                            "label.source.debug.failure."
+                                + stage.stage.rawValue
+                        )
+                    if let runtimeStage = failure.runtimeStage,
+                       let runtimeCode = failure.runtimeCode {
+                        Text("\(runtimeStage) · \(runtimeCode)")
+                            .font(.caption.monospaced())
+                    }
+                }
+                .foregroundStyle(.red)
+            }
+        } label: {
+            Label(
+                stageTitle(stage.stage),
+                systemImage: stage.outcome == .completed
+                    ? "checkmark.circle.fill"
+                    : "xmark.circle.fill"
+            )
+            .foregroundStyle(
+                stage.outcome == .completed
+                    ? Color.green
+                    : Color.red
+            )
+        }
+    }
+
+    private func stageTitle(_ stage: SourceDebugOperation) -> String {
+        switch stage {
+        case .search: "搜索"
+        case .explore: "发现"
+        case .bookInfo: "详情"
+        case .toc: "目录"
+        case .content: "正文"
+        }
+    }
+
+    private func start() {
+        isRunning = true
+        report = nil
+        Task {
+            report = await SearchEnvironment.debugSource(
+                source,
+                input: key
+            )
+            isRunning = false
+        }
     }
 }
 

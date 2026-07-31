@@ -1090,6 +1090,10 @@ public struct HTMLCSSSourceRuntime: Sendable {
         return text.isEmpty ? nil : "　　" + text
       }
     }
+    if lines.isEmpty {
+      let text = node.normalizedText
+      return text.isEmpty ? "" : "　　" + text
+    }
     return lines.joined(separator: "\n")
   }
 

@@ -19,6 +19,81 @@ enum SearchEnvironment {
     private static let htmlSelectorBackend =
         SourceRuntimeComposition.makeHTMLSelectorBackend()
 
+    static func debugSource(
+        _ source: BookSourceDraft,
+        input: String
+    ) async -> SourceDebugReport {
+        let route = SourceRuntime.SourceDebugRoute.parse(input)
+        guard let data = source.rawDefinition else {
+            return debugCompilationFailure(
+                input: input,
+                operation: route.operation,
+                message: "书源没有可执行的原始定义"
+            )
+        }
+        do {
+            let compiled = try BookSourceRuntimeCompiler.compile(
+                data,
+                overrides: BookSourceRuntimeOverrides(
+                    sourceURL: source.sourceURL,
+                    sourceName: source.name,
+                    group: source.group,
+                    originOrder: Int(
+                        source.importMetadata?.customOrder ?? 0
+                    ),
+                    enabled:
+                        source.importMetadata?.enabled ?? true,
+                    enabledExplore:
+                        source.importMetadata?.enabledExplore ?? true,
+                    exploreURL: source.exploreURL,
+                    sourceUserVariable: source.userVariable
+                )
+            )
+            let externalBaseURL = ProcessInfo.processInfo.environment[
+                "LEGADO_SEARCH_BASE_URL"
+            ]
+            return await SourceDebugRunner(
+                definition: compiled.definition,
+                exploreDefinition: compiled.exploreDefinition,
+                transport: makeTransport(
+                    externalBaseURL: externalBaseURL
+                ),
+                cookieStore: cookieStore,
+                dynamicWebPagePort: dynamicWebPagePort,
+                scriptRuntime: scriptRuntime,
+                htmlSelectorBackend: htmlSelectorBackend
+            ).run(input)
+        } catch {
+            return debugCompilationFailure(
+                input: input,
+                operation: route.operation,
+                message: String(describing: error)
+            )
+        }
+    }
+
+    private static func debugCompilationFailure(
+        input: String,
+        operation: SourceDebugOperation,
+        message: String
+    ) -> SourceDebugReport {
+        SourceDebugReport(
+            input: input,
+            entryOperation: operation,
+            outcome: .failed,
+            stages: [
+                SourceDebugStageReport(
+                    stage: operation,
+                    outcome: .failed,
+                    failure: SourceDebugFailure(
+                        type: "source_definition_compilation",
+                        message: message
+                    )
+                )
+            ]
+        )
+    }
+
     static func makeWebLoginSession(
         source: BookSourceDraft
     ) -> SourceWebLoginSession {
