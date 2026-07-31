@@ -2862,6 +2862,24 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
                 "simulators": app_ui_simulators("slice"),
             },
         }
+    elif (
+        architecture["owner"] == "AppNavigation"
+        and isinstance(source_contract, dict)
+        and source_contract.get("validation") in {"build", "tests"}
+    ):
+        delivery_contract = {
+            "goal": (
+                "按 Android 源码锚定的非 UI 语义完成 App 侧集成；"
+                "仅运行声明的聚焦构建或测试，不虚构 Simulator 验收。"
+            ),
+            "rule": (
+                "AppNavigation 保持 Route/effect 边界；AppUseCases 承载平台无关"
+                "策略，App 适配层承载文件系统与 UIKit。"
+            ),
+            "test_id": "focused-app-tests",
+            "test_filter": str(source_contract.get("test_filter", "")),
+            "acceptance_id": f"{fixture_id}-acceptance",
+        }
     elif architecture["owner"] == "AppNavigation":
         delivery_contract = app_navigation_delivery_contract(
             str(fixture_id)
