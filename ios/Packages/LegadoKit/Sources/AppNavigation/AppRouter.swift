@@ -19,6 +19,13 @@ public final class AppRouter {
         selectedRoot = root
     }
 
+    public func reconcileVisibleRoots(_ roots: [RootRoute]) {
+        guard roots.contains(selectedRoot) else {
+            selectedRoot = .shelf
+            return
+        }
+    }
+
     public func path(for root: RootRoute) -> [AppRoute] {
         rootPaths[root, default: []]
     }

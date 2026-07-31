@@ -30,6 +30,26 @@ final class ReaderPreferencesStoreTests: XCTestCase {
 }
 
 @MainActor
+final class RootVisibilityPreferencesStoreTests: XCTestCase {
+  func testStorePersistsOptionalRootChanges() {
+    let repository = InMemoryRootVisibilityPreferencesRepository(
+      value: RootVisibilityPreferences()
+    )
+    let store = RootVisibilityPreferencesStore(repository: repository)
+
+    store.setShowsExplore(false)
+    store.setShowsRSS(false)
+
+    XCTAssertEqual(
+      store.value,
+      RootVisibilityPreferences(showsExplore: false, showsRSS: false)
+    )
+    XCTAssertEqual(repository.value, store.value)
+    XCTAssertEqual(repository.saveCount, 2)
+  }
+}
+
+@MainActor
 private final class InMemoryReaderPreferencesRepository:
   ReaderPreferencesRepository
 {
@@ -45,6 +65,25 @@ private final class InMemoryReaderPreferencesRepository:
   }
 
   func save(_ preferences: ReaderPreferences) {
+    value = preferences
+    saveCount += 1
+  }
+}
+
+@MainActor
+private final class InMemoryRootVisibilityPreferencesRepository:
+  RootVisibilityPreferencesRepository
+{
+  var value: RootVisibilityPreferences
+  var saveCount = 0
+
+  init(value: RootVisibilityPreferences) {
+    self.value = value
+  }
+
+  func load() -> RootVisibilityPreferences { value }
+
+  func save(_ preferences: RootVisibilityPreferences) {
     value = preferences
     saveCount += 1
   }

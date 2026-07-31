@@ -93,6 +93,40 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testRootConfigurableVisibility() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-root-visibility",
+            "--initial-root-explore",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        require("screen.root.explore")
+        selectRoot("root.settings", label: "我的")
+        require("screen.root.settings")
+        let exploreToggle = app.switches["显示发现"]
+        let rssToggle = app.switches["显示 RSS"]
+        XCTAssertTrue(exploreToggle.waitForExistence(timeout: 8))
+        XCTAssertTrue(rssToggle.waitForExistence(timeout: 8))
+        exploreToggle.tap()
+        rssToggle.tap()
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "settings_controls": ["显示发现", "显示 RSS"],
+            "actions": ["hide_explore", "hide_rss"],
+        ])
+    }
+
     func testStartupFirstUseAndRestore() throws {
         let environment = ProcessInfo.processInfo.environment
         let contract = try XCTUnwrap(

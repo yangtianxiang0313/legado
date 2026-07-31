@@ -149,4 +149,13 @@ final class AppRouterTests: XCTestCase {
         )
     }
 
+    @MainActor
+    func testHidingSelectedOptionalRootFallsBackToShelf() {
+        let router = AppRouter(selectedRoot: .explore)
+
+        router.reconcileVisibleRoots([.shelf, .settings])
+
+        XCTAssertEqual(router.selectedRoot, .shelf)
+    }
+
 }

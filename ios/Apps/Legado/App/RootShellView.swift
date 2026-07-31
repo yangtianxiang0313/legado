@@ -11,6 +11,7 @@ struct RootShellView: View {
     @Bindable var readAloud: ReadAloudSession
     @Bindable var readerPreferences: ReaderPreferencesStore
     @Bindable var bookDetailPreferences: BookDetailPreferencesStore
+    @Bindable var rootVisibility: RootVisibilityPreferencesStore
     @Bindable var replacementRules: ReaderReplacementRuleStore
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var didLoadLibrary = false
@@ -24,6 +25,9 @@ struct RootShellView: View {
                 compactShell
                     .accessibilityIdentifier("projection.compactStack")
             }
+        }
+        .onAppear {
+            router.reconcileVisibleRoots(visibleRoots)
         }
         .task {
             guard !didLoadLibrary else { return }
@@ -46,6 +50,7 @@ struct RootShellView: View {
             await library.reload()
             await sourceCatalog.reload()
             await replacementRules.reload()
+            router.reconcileVisibleRoots(visibleRoots)
             if ProcessInfo.processInfo.arguments.contains(
                 "--seed-shelf-management"
             ) {
@@ -67,11 +72,22 @@ struct RootShellView: View {
                 await seedPaginationCache()
             }
         }
+        .onChange(of: rootVisibility.value) { _, _ in
+            router.reconcileVisibleRoots(visibleRoots)
+        }
+    }
+
+    private var visibleRoots: [RootRoute] {
+        var roots: [RootRoute] = [.shelf]
+        if rootVisibility.value.showsExplore { roots.append(.explore) }
+        if rootVisibility.value.showsRSS { roots.append(.rss) }
+        roots.append(.settings)
+        return roots
     }
 
     private var compactShell: some View {
         TabView(selection: $router.selectedRoot) {
-            ForEach(RootRoute.allCases) { root in
+            ForEach(visibleRoots) { root in
                 navigationStack(for: root)
                     .tabItem {
                         Label(root.title, systemImage: root.systemImage)
@@ -85,7 +101,7 @@ struct RootShellView: View {
     private var regularShell: some View {
         NavigationSplitView {
             List {
-                ForEach(RootRoute.allCases) { root in
+                ForEach(visibleRoots) { root in
                     Button {
                         router.selectRoot(root)
                     } label: {
@@ -143,7 +159,8 @@ struct RootShellView: View {
                     SearchEnvironment.exploreSources(
                         persistedSources: sourceCatalog.sources
                     )
-                }
+                },
+                rootVisibility: rootVisibility
             )
             .navigationDestination(for: AppRoute.self) { route in
                 destination(for: route, on: root)
@@ -586,6 +603,7 @@ private struct RootContentView: View {
     let openBook: (ShelfBookItem) -> Void
     let books: () -> [ShelfBookItem]
     let exploreSources: () -> [ExploreSourceSummary]
+    @Bindable var rootVisibility: RootVisibilityPreferencesStore
 
     var body: some View {
         if root == .shelf {
@@ -655,6 +673,28 @@ private struct RootContentView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .accessibilityIdentifier("action.settings.openSources")
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("根入口")
+                        .font(.headline)
+                    Toggle(
+                        "显示发现",
+                        isOn: Binding(
+                            get: { rootVisibility.value.showsExplore },
+                            set: { rootVisibility.setShowsExplore($0) }
+                        )
+                    )
+                    .accessibilityIdentifier("toggle.settings.root.explore")
+                    Toggle(
+                        "显示 RSS",
+                        isOn: Binding(
+                            get: { rootVisibility.value.showsRSS },
+                            set: { rootVisibility.setShowsRSS($0) }
+                        )
+                    )
+                    .accessibilityIdentifier("toggle.settings.root.rss")
+                }
+                .accessibilityIdentifier("section.settings.rootVisibility")
             }
         }
         .padding()
@@ -1183,6 +1223,7 @@ struct StartupAcceptanceView: View {
     @Bindable var readAloud: ReadAloudSession
     @Bindable var readerPreferences: ReaderPreferencesStore
     @Bindable var bookDetailPreferences: BookDetailPreferencesStore
+    @Bindable var rootVisibility: RootVisibilityPreferencesStore
     @Bindable var replacementRules: ReaderReplacementRuleStore
     let startupCase: StartupAcceptanceCase
 
@@ -1226,6 +1267,7 @@ struct StartupAcceptanceView: View {
                 readAloud: readAloud,
                 readerPreferences: readerPreferences,
                 bookDetailPreferences: bookDetailPreferences,
+                rootVisibility: rootVisibility,
                 replacementRules: replacementRules
             )
         }

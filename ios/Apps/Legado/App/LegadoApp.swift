@@ -15,9 +15,36 @@ struct LegadoApp: App {
     @State private var readAloud: ReadAloudSession
     @State private var readerPreferences: ReaderPreferencesStore
     @State private var bookDetailPreferences: BookDetailPreferencesStore
+    @State private var rootVisibility: RootVisibilityPreferencesStore
     @State private var replacementRules: ReaderReplacementRuleStore
 
     init() {
+        let processArguments = ProcessInfo.processInfo.arguments
+        let rootVisibilityRepository =
+            UserDefaultsRootVisibilityPreferencesRepository()
+        if processArguments.contains("--reset-root-visibility") {
+            rootVisibilityRepository.save(RootVisibilityPreferences())
+        }
+        if processArguments.contains("--hide-optional-roots") {
+            rootVisibilityRepository.save(
+                RootVisibilityPreferences(
+                    showsExplore: false,
+                    showsRSS: false
+                )
+            )
+        }
+        let rootVisibilityStore = RootVisibilityPreferencesStore(
+            repository: rootVisibilityRepository
+        )
+        _rootVisibility = State(initialValue: rootVisibilityStore)
+        _router = State(
+            initialValue: AppRouter(
+                selectedRoot: processArguments.contains("--initial-root-explore")
+                    && rootVisibilityStore.value.showsExplore
+                    ? .explore
+                    : .shelf
+            )
+        )
         do {
             let libraryRepository = try GRDBBookShelfRepository
                 .applicationSupport()
@@ -49,7 +76,7 @@ struct LegadoApp: App {
             )
             let preferencesRepository =
                 UserDefaultsReaderPreferencesRepository()
-            if ProcessInfo.processInfo.arguments.contains(
+            if processArguments.contains(
                 "--reset-reader-preferences"
             ) {
                 preferencesRepository.save(ReaderPreferences())
@@ -86,6 +113,7 @@ struct LegadoApp: App {
                     readAloud: readAloud,
                     readerPreferences: readerPreferences,
                     bookDetailPreferences: bookDetailPreferences,
+                    rootVisibility: rootVisibility,
                     replacementRules: replacementRules,
                     startupCase: startupCase
                 )
@@ -97,6 +125,7 @@ struct LegadoApp: App {
                     readAloud: readAloud,
                     readerPreferences: readerPreferences,
                     bookDetailPreferences: bookDetailPreferences,
+                    rootVisibility: rootVisibility,
                     replacementRules: replacementRules
                 )
             }
@@ -161,6 +190,38 @@ private final class UserDefaultsBookDetailPreferencesRepository:
     }
 
     func save(_ preferences: BookDetailPreferences) {
+        guard let data = try? JSONEncoder().encode(preferences) else {
+            return
+        }
+        defaults.set(data, forKey: key)
+    }
+}
+
+@MainActor
+private final class UserDefaultsRootVisibilityPreferencesRepository:
+    RootVisibilityPreferencesRepository
+{
+    private let defaults: UserDefaults
+    private let key = "root.visibility.preferences.v1"
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+    }
+
+    func load() -> RootVisibilityPreferences {
+        guard
+            let data = defaults.data(forKey: key),
+            let value = try? JSONDecoder().decode(
+                RootVisibilityPreferences.self,
+                from: data
+            )
+        else {
+            return RootVisibilityPreferences()
+        }
+        return value
+    }
+
+    func save(_ preferences: RootVisibilityPreferences) {
         guard let data = try? JSONEncoder().encode(preferences) else {
             return
         }

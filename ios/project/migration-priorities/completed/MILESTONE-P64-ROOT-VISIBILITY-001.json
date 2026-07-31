@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P64-ROOT-VISIBILITY-001",
+  "status": "completed",
+  "mode": "critical_path_only",
+  "priority": 10,
+  "title": "P64 可配置根入口",
+  "objective": "依据 Android MainActivity 的根入口重建语义，允许用户在 iOS 中隐藏发现或 RSS，保持书架与我的稳定可达，并在当前入口失效时安全回退。",
+  "validation_policy": "静态 UI 策略直接从源码锚定迁移；完成后只运行一台主 iPhone Simulator，不做 Android Characterization 或设备矩阵。",
+  "stages": [
+    {
+      "id": "P64-S1",
+      "title": "根入口可见性",
+      "selectors": [
+        {
+          "id": "P64-S1-ROOT-VISIBILITY",
+          "claim_ids": ["BKC-UI-ROOT-VISIBILITY-001"],
+          "task_ids": ["IOS-APP-NAVIGATION-ROOT-VISIBILITY-001"]
+        }
+      ]
+    }
+  ],
+  "deliveries": []
+}

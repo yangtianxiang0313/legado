@@ -63,6 +63,11 @@ DIRECT_SOURCE_DELIVERY_CONTRACTS = {
         "fixture_id": "source-ui-discovery-explore-flow-v1",
         "validation": "simulator",
     },
+    "ui.root.configurable-visibility": {
+        "target": "IOS-APP-NAVIGATION-ROOT-VISIBILITY-001",
+        "fixture_id": "source-ui-root-configurable-visibility-v1",
+        "validation": "simulator",
+    },
     "library.shelf.sort-and-unread-runtime": {
         "target": "IOS-LIBRARY-DOMAIN-SHELF-SORT-UNREAD-001",
         "fixture_id": "source-library-shelf-sort-unread-v1",
@@ -783,6 +788,10 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                     "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
                     "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
                 ]
+            )
+        if target == "IOS-APP-NAVIGATION-ROOT-VISIBILITY-001":
+            allowed_paths.append(
+                "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**"
             )
         if target == "IOS-APP-NAVIGATION-READER-PROGRESS-RESTORE-001":
             allowed_paths.extend(
@@ -2357,6 +2366,17 @@ def app_navigation_delivery_contract(
             ),
             "test_method": "testDiscoveryExploreFlow",
         },
+        "source-ui-root-configurable-visibility-v1": {
+            "goal": (
+                "按冻结 Android 根入口配置源码，将发现与 RSS 作为可隐藏的"
+                "辅助 Root；书架和我的保持稳定可达，当前选中入口被隐藏时"
+                "回退至书架。"
+            ),
+            "acceptance_id": "structured-root-visibility-acceptance",
+            "scenario_id": "ui-root-configurable-visibility-v1",
+            "expected": "",
+            "test_method": "testRootConfigurableVisibility",
+        },
         "milestone-reader-progress-restore-v1": {
             "goal": (
                 "把 ReaderCore 已对齐的章节/字符坐标保存语义接入"
@@ -2959,6 +2979,27 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             },
         }
         allowed_paths = list(architecture["allowed_paths"])
+        source_path = source_contract.get("path")
+        if (
+            isinstance(source_path, str)
+            and source_path.startswith("ios/project/")
+            and source_path not in allowed_paths
+        ):
+            allowed_paths.append(source_path)
+        if (
+            any(
+                contract.get("target") == target
+                for contract in DIRECT_SOURCE_DELIVERY_CONTRACTS.values()
+            )
+            and "ios/loop/loop.py" not in allowed_paths
+        ):
+            allowed_paths.append("ios/loop/loop.py")
+        if (
+            isinstance(delivery.get("source_contract"), dict)
+            and delivery.get("source_contract") is source_contract
+            and str(PRIORITY_PATH) not in allowed_paths
+        ):
+            allowed_paths.append(str(PRIORITY_PATH))
         for path in delivery.get("additional_allowed_paths", []):
             if path not in allowed_paths:
                 allowed_paths.append(path)
