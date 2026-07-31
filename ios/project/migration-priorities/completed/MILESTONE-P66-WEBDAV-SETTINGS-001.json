@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P66-WEBDAV-SETTINGS-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "priority": 10,
   "title": "P66 WebDAV 设置页",
