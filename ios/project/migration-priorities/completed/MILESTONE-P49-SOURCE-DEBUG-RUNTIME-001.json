@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P49-SOURCE-DEBUG-RUNTIME-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P49 真实书源结构化调试闭环",
   "objective": "依据冻结 Android Debug.startDebug 的入口路由和逐级续跑语义，在独立 SourceRuntime 中复用生产搜索、发现、详情、目录、正文流水线，输出请求、阶段、结果和错误的结构化报告；iOS 调试页直接展示该报告，不再以静态阶段标签冒充调试。",
