@@ -245,6 +245,20 @@ def completed_task_ids(root: Path) -> set[str]:
     return completed
 
 
+def superseded_task_ids(root: Path) -> set[str]:
+    """Return tasks explicitly retired without treating them as completed.
+
+    Supersession never satisfies a prerequisite, but it must prevent `next`
+    from deriving the same abandoned candidate again on the following turn.
+    """
+    return {
+        str(event["task_id"])
+        for event in load_events(root)
+        if event.get("event") == "task_superseded"
+        and isinstance(event.get("task_id"), str)
+    }
+
+
 def characterized_claim_refs(root: Path) -> set[tuple[str, int]]:
     result: set[tuple[str, int]] = set()
     for event in load_events(root):
@@ -1912,6 +1926,7 @@ def automatic_characterization_requirement_refs(
 
 def pending_characterizations(root: Path) -> list[Mapping[str, Any]]:
     completed = completed_task_ids(root)
+    superseded = superseded_task_ids(root)
     characterized = characterized_claim_refs(root)
     reused = set(reused_claim_evidence(root))
     delivered = delivered_claim_refs(root)
@@ -1974,7 +1989,7 @@ def pending_characterizations(root: Path) -> list[Mapping[str, Any]]:
                 continue
             semantic_key = str(claim.get("semantic_key") or claim_id)
             task_id = characterization_task_id(semantic_key)
-            if task_id in completed:
+            if task_id in completed or task_id in superseded:
                 continue
             value = {
                 "packet_path": packet_path,

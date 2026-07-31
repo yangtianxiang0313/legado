@@ -129,6 +129,77 @@ class MinimalLoopTests(unittest.TestCase):
                 loop.completed_task_ids(root),
             )
 
+    def test_superseded_characterization_does_not_reenter_queue(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            task_id = loop.characterization_task_id(
+                "integration.transfer.import-export"
+            )
+            events_path = root / "ios/project/loop/events.jsonl"
+            events_path.parent.mkdir(parents=True, exist_ok=True)
+            events_path.write_bytes(
+                loop.canonical(
+                    {
+                        "schema_version": 2,
+                        "sequence": 1,
+                        "at": "2026-07-31T00:00:00Z",
+                        "event": "task_superseded",
+                        "task_id": task_id,
+                        "details": {
+                            "reason": "服务级观测成本过高",
+                            "replacement": "按独立产品规格后续实现",
+                        },
+                    }
+                )
+            )
+            self.assertEqual({task_id}, loop.superseded_task_ids(root))
+
+            with patch.object(
+                loop,
+                "latest_json_revisions",
+                return_value=[
+                    (
+                        "packet.json",
+                        {
+                            "status": "candidate",
+                            "baseline": {"android_commit": "abc"},
+                            "claims": [
+                                {
+                                    "id": "BKC-EXPORT-001",
+                                    "revision": 1,
+                                    "semantic_key": (
+                                        "integration.transfer.import-export"
+                                    ),
+                                    "kind": "runtime_behavior",
+                                    "subject_keys": ["integration.transfer"],
+                                    "depends_on": [],
+                                    "support": {
+                                        "state": "candidate_source_anchored",
+                                        "source_anchors": [{"path": "Export.kt"}],
+                                        "runtime_requirement": (
+                                            "android_characterization"
+                                        ),
+                                    },
+                                }
+                            ],
+                        },
+                    )
+                ],
+            ), patch.object(
+                loop,
+                "requirement_refs_for_claim",
+                return_value=["REQ-001@1#RC-01"],
+            ), patch.object(
+                loop,
+                "current_published_claim_revisions",
+                return_value={},
+            ), patch.object(
+                loop,
+                "current_candidate_claim_revisions",
+                return_value={},
+            ):
+                self.assertEqual([], loop.pending_characterizations(root))
+
     def test_superseded_claim_can_reuse_existing_android_evidence(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
