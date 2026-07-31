@@ -19,6 +19,7 @@ enum SearchEnvironment {
         SourceScriptComposition.makeScriptRuntime()
     private static let htmlSelectorBackend =
         SourceRuntimeComposition.makeHTMLSelectorBackend()
+    private static let readerImageCache = ReaderImageDataCache()
 
     static func debugSource(
         _ source: BookSourceDraft,
@@ -305,34 +306,38 @@ enum SearchEnvironment {
 
     static func loadReaderImage(
         _ sourceURL: String,
+        bookID: BookID,
         imageDecode: String?
     ) async -> UIImage? {
-        guard let url = try? HTTPURL(sourceURL) else { return nil }
-        let externalBaseURL = ProcessInfo.processInfo.environment[
-            "LEGADO_SEARCH_BASE_URL"
-        ]
-        guard let response = try? await makeTransport(
-            externalBaseURL: externalBaseURL
-        ).execute(
-            HTTPRequest(method: .get, url: url)
-        ), (200..<300).contains(response.statusCode) else {
-            return nil
+        let key = ReaderImageCacheKey(bookID: bookID, sourceURL: sourceURL)
+        let bytes = await readerImageCache.value(for: key) {
+            guard let url = try? HTTPURL(sourceURL) else { return nil }
+            let externalBaseURL = ProcessInfo.processInfo.environment[
+                "LEGADO_SEARCH_BASE_URL"
+            ]
+            guard let response = try? await makeTransport(
+                externalBaseURL: externalBaseURL
+            ).execute(
+                HTTPRequest(method: .get, url: url)
+            ), (200..<300).contains(response.statusCode) else {
+                return nil
+            }
+            let decoded = await SourceImageDecoder(
+                runtime: scriptRuntime,
+                sessionID: .init(rawValue: "reader-image:\(sourceURL)")
+            ).decode(
+                bytes: Array(response.body.bytes),
+                rule: imageDecode,
+                context: .init(sourceURL: sourceURL)
+            )
+            switch decoded {
+            case .passthrough(let value), .decoded(let value):
+                return value
+            case .failed:
+                return nil
+            }
         }
-        let decoded = await SourceImageDecoder(
-            runtime: scriptRuntime,
-            sessionID: .init(rawValue: "reader-image:\(sourceURL)")
-        ).decode(
-            bytes: Array(response.body.bytes),
-            rule: imageDecode,
-            context: .init(sourceURL: sourceURL)
-        )
-        let bytes: [UInt8]
-        switch decoded {
-        case .passthrough(let value), .decoded(let value):
-            bytes = value
-        case .failed:
-            return nil
-        }
+        guard let bytes else { return nil }
         return UIImage(data: Data(bytes))
     }
 

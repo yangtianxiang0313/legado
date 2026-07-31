@@ -186,6 +186,7 @@ struct ReaderContentView: View {
             }
             readerImages = await loadReaderImages(
                 ReaderContentImageProjection(sourceContent: document.content),
+                bookID: document.position.bookID,
                 imageDecode: document.imageDecode
             )
         }
@@ -428,12 +429,14 @@ struct ReaderContentView: View {
 
     private func loadReaderImages(
         _ projection: ReaderContentImageProjection,
+        bookID: BookID,
         imageDecode: String?
     ) async -> [String: UIImage] {
         var images: [String: UIImage] = [:]
         for source in Set(projection.imageAnchors.map(\.sourceURL)) {
             if let image = await SearchEnvironment.loadReaderImage(
                 source,
+                bookID: bookID,
                 imageDecode: imageDecode
             ) {
                 images[source] = image
