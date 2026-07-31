@@ -91,7 +91,9 @@
     "SourceFormatTests": {"dependencies": ["LegadoCore", "SourceFormat"], "external_imports": []},
     "AppNavigationTests": {"dependencies": ["AppNavigation", "AppUseCases"], "external_imports": []},
     "DatabaseGRDBTests": {"dependencies": ["LibraryDomain", "ReaderCore", "AppUseCases", "DatabaseGRDB"], "external_imports": []},
-    "AppUseCasesTests": {"dependencies": ["LibraryDomain", "SourceRuntime", "AppUseCases", "ReaderCore"], "external_imports": []}
+    "AppUseCasesTests": {"dependencies": ["LibraryDomain", "SourceRuntime", "AppUseCases", "ReaderCore"], "external_imports": []},
+    "IntegrationKitTests": {"dependencies": ["IntegrationKit"], "external_imports": []},
+    "WebDAVFoundationTests": {"dependencies": ["IntegrationKit", "WebDAVFoundation"], "external_imports": []}
   },
   "banned_patterns": [
     {
@@ -123,12 +125,12 @@
   "profiles": {
     "store_safe": {
       "root_product": "LegadoStoreSafeKit",
-      "required_targets": ["LegadoCore", "LibraryDomain", "SourceFormat", "RuleRuntime", "SourceRuntime", "ReaderCore", "AppUseCases", "HTMLSwiftSoup", "NetworkFoundation", "SourceRuntimeComposition", "SourceNetworkComposition"],
+      "required_targets": ["LegadoCore", "LibraryDomain", "SourceFormat", "RuleRuntime", "SourceRuntime", "ReaderCore", "IntegrationKit", "WebDAVFoundation", "AppUseCases", "HTMLSwiftSoup", "NetworkFoundation", "SourceRuntimeComposition", "SourceNetworkComposition"],
       "forbidden_targets": ["ScriptJavaScriptCore", "WebRuntimeWebKit", "FeatureSourceDeveloper", "TestSupport", "ConformanceCLI"]
     },
     "full_compat": {
       "root_product": "LegadoFullCompatKit",
-      "required_targets": ["LegadoCore", "LibraryDomain", "SourceFormat", "RuleRuntime", "SourceRuntime", "ReaderCore", "AppUseCases", "HTMLSwiftSoup", "ScriptJavaScriptCore", "NetworkFoundation", "SourceRuntimeComposition", "SourceScriptComposition", "SourceNetworkComposition"],
+      "required_targets": ["LegadoCore", "LibraryDomain", "SourceFormat", "RuleRuntime", "SourceRuntime", "ReaderCore", "IntegrationKit", "WebDAVFoundation", "AppUseCases", "HTMLSwiftSoup", "ScriptJavaScriptCore", "NetworkFoundation", "SourceRuntimeComposition", "SourceScriptComposition", "SourceNetworkComposition"],
       "forbidden_targets": ["TestSupport", "ConformanceCLI"]
     }
   }

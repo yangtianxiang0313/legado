@@ -15,6 +15,8 @@ let package = Package(
                 "AppUseCases",
                 "AppNavigation",
                 "DatabaseGRDB",
+                "IntegrationKit",
+                "WebDAVFoundation",
                 "SourceRuntimeComposition",
                 "SourceNetworkComposition",
             ]
@@ -25,6 +27,8 @@ let package = Package(
                 "AppUseCases",
                 "AppNavigation",
                 "DatabaseGRDB",
+                "IntegrationKit",
+                "WebDAVFoundation",
                 "SourceRuntimeComposition",
                 "SourceScriptComposition",
                 "SourceNetworkComposition",
@@ -82,6 +86,19 @@ let package = Package(
             ]
         ),
         .target(
+            name: "IntegrationKit",
+            dependencies: [
+                .product(name: "LegadoCoreKit", package: "LegadoCoreKit"),
+            ]
+        ),
+        .target(
+            name: "WebDAVFoundation",
+            dependencies: [
+                .product(name: "LegadoCoreKit", package: "LegadoCoreKit"),
+                "IntegrationKit",
+            ]
+        ),
+        .target(
             name: "AppUseCases",
             dependencies: [
                 .product(name: "LegadoCoreKit", package: "LegadoCoreKit"),
@@ -91,6 +108,7 @@ let package = Package(
                 ),
                 "LibraryDomain",
                 "ReaderCore",
+                "IntegrationKit",
             ]
         ),
         .target(
@@ -173,6 +191,14 @@ let package = Package(
         .testTarget(
             name: "AppUseCasesTests",
             dependencies: ["AppUseCases", "ReaderCore"]
+        ),
+        .testTarget(
+            name: "IntegrationKitTests",
+            dependencies: ["IntegrationKit"]
+        ),
+        .testTarget(
+            name: "WebDAVFoundationTests",
+            dependencies: ["WebDAVFoundation", "IntegrationKit"]
         ),
     ],
     swiftLanguageModes: [.v6]
