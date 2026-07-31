@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P52-SOURCE-TOC-ANDROID-TRUTH-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "title": "P52 目录流水线 Android 真值实现",
   "objective": "依据 P51 已运行的 Android 目录真值，令独立 iOS SourceRuntime 保留跨页 URL 去重与索引，并支持书源的 VIP、付费、卷标记和空 URL 回退到当前目录页；不把 Android BookChapter 或 UI 状态引入 iOS。",
