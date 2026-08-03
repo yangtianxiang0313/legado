@@ -1,1 +1,1 @@
-{"active_task":"IOS-INTEGRATION-ANDROID-BACKUP-REPLACERULE-INTEROP-001","attempt":0,"last_completed":{"at":"2026-08-03T10:38:46Z","sequence":766,"task_id":"IOS-INTEGRATION-IOS-BACKUP-ANDROID-RESTORE-ORACLE-001"},"schema_version":2,"status":"running","verification":null}
+{"active_task":null,"attempt":0,"last_completed":{"at":"2026-08-03T10:57:15Z","sequence":769,"task_id":"IOS-INTEGRATION-ANDROID-BACKUP-REPLACERULE-INTEROP-001"},"schema_version":2,"status":"idle","verification":null}
