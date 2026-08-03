@@ -800,6 +800,26 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**",
             ],
         }
+    if target == "IOS-INTEGRATION-WEBDAV-REMOTE-BOOK-RUNTIME-001":
+        return {
+            "owner": "IntegrationKit",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-002",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-011",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/Packages/LegadoKit/Sources/IntegrationKit/**",
+                "ios/Packages/LegadoKit/Sources/WebDAVFoundation/**",
+                "ios/Packages/LegadoKit/Tests/IntegrationKitTests/**",
+                "ios/Packages/LegadoKit/Tests/WebDAVFoundationTests/**",
+            ],
+        }
     if target == "IOS-INTEGRATION-IOS-BACKUP-ANDROID-RESTORE-ORACLE-001":
         return {
             "owner": "IntegrationKit",
@@ -4323,6 +4343,21 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_id": "android-webdav-server-profile-interop-tests",
             "test_filter": "AndroidWebDAVServerProfileInteropTests",
             "acceptance_id": "android-webdav-server-profile-interop-acceptance",
+        }
+    if target == "IOS-INTEGRATION-WEBDAV-REMOTE-BOOK-RUNTIME-001":
+        delivery_contracts["IntegrationKit"] = {
+            "goal": (
+                "按 Android RemoteBookWebDav、WebDav 与 RemoteBook 源码，实现 WebDAV 远程书目录 "
+                "PROPFIND 列举、可读文件过滤和 GET 下载，并输出可供后续本地书导入消费的结构化资源。"
+            ),
+            "rule": (
+                "IntegrationKit 仅定义资源值、结果与端口；WebDAVFoundation 承担 XML、认证和 live I/O。"
+                "只接受目录及 Android bookFileRegex/archiveFileRegex 支持的文件，下载不得向不同 host 发送凭据；"
+                "本切片不新增 SwiftUI、数据库或模拟器验收。"
+            ),
+            "test_id": "webdav-remote-book-runtime-tests",
+            "test_filter": "WebDAVRemoteBookRuntimeTests",
+            "acceptance_id": "webdav-remote-book-runtime-acceptance",
         }
     if target == "IOS-SOURCE-RUNTIME-DICTIONARY-JSOUP-001":
         delivery_contracts["SourceRuntime"] = {
