@@ -298,6 +298,8 @@ class LegadoOracleInstrumentedTest {
                 runIOSBackupAndroidRestoreCases()
             "rl-integration-backup-ios-replacerule-to-android-001" ->
                 runIOSReplaceRuleBackupAndroidRestoreCases()
+            "rl-integration-backup-ios-library-to-android-001" ->
+                runIOSLibraryBackupAndroidRestoreCases()
             "sl-post-form-001" -> runPostFormCases()
             "sl-source-response-xml-declaration-normalization-001" ->
                 runXmlResponseCases()
@@ -879,6 +881,134 @@ class LegadoOracleInstrumentedTest {
             appDb.replaceRuleDao.findById(ruleId)?.let {
                 appDb.replaceRuleDao.delete(it)
             }
+            workspace.deleteRecursively()
+        }
+    }
+
+    private suspend fun runIOSLibraryBackupAndroidRestoreCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            require(
+                value.getString("operation") ==
+                    "ios_library_backup_android_restore"
+            ) {
+                "iOS library restore scenario operation is invalid"
+            }
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", "ios_library_backup_android_restore")
+                .put(
+                    "arguments",
+                    JSONObject()
+                        .put("archive_sha256", arguments.getString("archive_sha256"))
+                        .put("profile", arguments.getString("profile"))
+                )
+            runCase(
+                value.getString("id"),
+                "ios_library_backup_android_restore",
+                stimulus
+            ) {
+                iosLibraryBackupAndroidRestoreProjection(
+                    arguments.getString("archive_base64")
+                )
+            }
+        }
+    }
+
+    private suspend fun iosLibraryBackupAndroidRestoreProjection(
+        archiveBase64: String
+    ): JSONObject {
+        val target = InstrumentationRegistry.getInstrumentation().targetContext
+        val workspace = File(
+            target.cacheDir,
+            "legado-oracle-ios-library-backup-restore"
+        )
+        val archiveFile = File(workspace, "backup.zip")
+        val extracted = File(workspace, "extracted")
+        val bookURL = "https://ios-oracle.invalid/book"
+        val groupID = 8L
+        val bookName = "iOS Oracle Book"
+        val bookAuthor = "Oracle Author"
+
+        workspace.deleteRecursively()
+        extracted.mkdirs()
+        appDb.clearAllTables()
+        try {
+            archiveFile.writeBytes(Base64.decode(archiveBase64, Base64.DEFAULT))
+            val archiveProjection = ZipFile(archiveFile).use { archive ->
+                val entries = java.util.Collections.list(archive.entries())
+                JSONObject()
+                    .put("member_names", JSONArray(entries.map { it.name }.sorted()))
+                    .put(
+                        "compression_methods",
+                        JSONArray(entries.map { it.method }.distinct().sorted())
+                    )
+                    .put("has_bookshelf", archive.getEntry("bookshelf.json") != null)
+                    .put("has_book_group", archive.getEntry("bookGroup.json") != null)
+                    .put("has_bookmark", archive.getEntry("bookmark.json") != null)
+            }
+
+            ZipUtils.unZipToPath(archiveFile, extracted)
+            Restore.restore(extracted.absolutePath)
+            val restoredBook = appDb.bookDao.getBook(bookURL)
+            val restoredGroup = appDb.bookGroupDao.getByID(groupID)
+            val restoredBookmark = appDb.bookmarkDao
+                .getByBook(bookName, bookAuthor)
+                .singleOrNull { it.time == 1_700_000_000_123L }
+
+            return JSONObject()
+                .put("archive", archiveProjection)
+                .put(
+                    "book",
+                    JSONObject()
+                        .put("restored", restoredBook != null)
+                        .put("book_url", restoredBook?.bookUrl)
+                        .put("name", restoredBook?.name)
+                        .put("author", restoredBook?.author)
+                        .put("group", restoredBook?.group)
+                        .put("latest_chapter_title", restoredBook?.latestChapterTitle)
+                        .put("latest_chapter_time", restoredBook?.latestChapterTime)
+                        .put("last_check_time", restoredBook?.lastCheckTime)
+                        .put("last_check_count", restoredBook?.lastCheckCount)
+                        .put("total_chapter_count", restoredBook?.totalChapterNum)
+                        .put("current_chapter_title", restoredBook?.durChapterTitle)
+                        .put("current_chapter_index", restoredBook?.durChapterIndex)
+                        .put("current_chapter_position", restoredBook?.durChapterPos)
+                        .put("last_read_time", restoredBook?.durChapterTime)
+                        .put("can_update", restoredBook?.canUpdate)
+                        .put("order", restoredBook?.order)
+                        .put("origin_order", restoredBook?.originOrder)
+                        .put("reverse_toc", restoredBook?.readConfig?.reverseToc)
+                        .put(
+                            "split_long_chapter",
+                            restoredBook?.readConfig?.splitLongChapter
+                        )
+                )
+                .put(
+                    "group",
+                    JSONObject()
+                        .put("restored", restoredGroup != null)
+                        .put("group_id", restoredGroup?.groupId)
+                        .put("group_name", restoredGroup?.groupName)
+                        .put("order", restoredGroup?.order)
+                        .put("enable_refresh", restoredGroup?.enableRefresh)
+                        .put("show", restoredGroup?.show)
+                        .put("book_sort", restoredGroup?.bookSort)
+                )
+                .put(
+                    "bookmark",
+                    JSONObject()
+                        .put("restored", restoredBookmark != null)
+                        .put("time", restoredBookmark?.time)
+                        .put("chapter_index", restoredBookmark?.chapterIndex)
+                        .put("chapter_position", restoredBookmark?.chapterPos)
+                        .put("chapter_name", restoredBookmark?.chapterName)
+                        .put("book_text", restoredBookmark?.bookText)
+                        .put("content", restoredBookmark?.content)
+                )
+        } finally {
+            appDb.clearAllTables()
             workspace.deleteRecursively()
         }
     }
@@ -13146,7 +13276,9 @@ class LegadoOracleInstrumentedTest {
                 scenarioId == "rl-integration-backup-archive-001" ||
                     scenarioId == "rl-integration-backup-ios-to-android-001" ||
                     scenarioId ==
-                    "rl-integration-backup-ios-replacerule-to-android-001"
+                    "rl-integration-backup-ios-replacerule-to-android-001" ||
+                    scenarioId ==
+                    "rl-integration-backup-ios-library-to-android-001"
             ) {
                 issue.put(
                     "exception_message",

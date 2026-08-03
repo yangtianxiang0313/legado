@@ -98,6 +98,81 @@ import Testing
     #expect(try AndroidBackupArchive.readReplacementRules(from: archiveURL) == [rule])
 }
 
+@Test func androidLibraryDocumentsRoundTripLosslessly() throws {
+    let booksJSON = Data(
+        #"[{"author":"Oracle Author","bookUrl":"https://ios-oracle.invalid/book","durChapterIndex":3,"durChapterPos":27,"futureBookField":9223372036854775000,"group":8,"name":"Oracle Book","readConfig":{"reverseToc":true,"splitLongChapter":false,"futureConfig":"keep"}}]"#.utf8
+    )
+    let groupsJSON = Data(
+        #"[{"bookSort":2,"enableRefresh":false,"futureGroupField":true,"groupId":8,"groupName":"Oracle Group","order":4,"show":true}]"#.utf8
+    )
+    let bookmarksJSON = Data(
+        #"[{"bookAuthor":"Oracle Author","bookName":"Oracle Book","bookText":"selected","chapterIndex":3,"chapterName":"Chapter Four","chapterPos":27,"content":"context","futureBookmarkField":"keep","time":1700000000123}]"#.utf8
+    )
+
+    let books = try AndroidBookCodec.decodeMany(booksJSON)
+    let groups = try AndroidBookGroupCodec.decodeMany(groupsJSON)
+    let bookmarks = try AndroidBookmarkCodec.decodeMany(bookmarksJSON)
+    let book = try #require(books.first)
+    #expect(book.bookURL == .value("https://ios-oracle.invalid/book"))
+    #expect(book.group == .value(8))
+    #expect(book.currentChapterIndex == .value(3))
+    #expect(book.readConfig == .value([
+        "reverseToc": .bool(true),
+        "splitLongChapter": .bool(false),
+        "futureConfig": .string("keep"),
+    ]))
+    #expect(book.unknownFields["futureBookField"] != nil)
+    #expect(try AndroidBookCodec.decodeMany(AndroidBookCodec.encodeMany(books)) == books)
+    #expect(try AndroidBookGroupCodec.decodeMany(AndroidBookGroupCodec.encodeMany(groups)) == groups)
+    #expect(try AndroidBookmarkCodec.decodeMany(AndroidBookmarkCodec.encodeMany(bookmarks)) == bookmarks)
+}
+
+@Test func combinedAndroidLibraryBackupCarriesAllCoreMembers() throws {
+    let book = AndroidBookDTO(
+        bookURL: "https://ios-oracle.invalid/book",
+        tocURL: "https://ios-oracle.invalid/book/toc",
+        origin: "https://ios-oracle.invalid/source",
+        originName: "iOS Oracle Source",
+        name: "iOS Oracle Book",
+        author: "Oracle Author",
+        group: 8,
+        latestChapterTitle: "Chapter Ten",
+        latestChapterTime: 1_700_000_000_000,
+        totalChapterCount: 10,
+        currentChapterTitle: "Chapter Four",
+        currentChapterIndex: 3,
+        currentChapterPosition: 27,
+        lastReadTime: 1_700_000_000_123,
+        order: 6,
+        readConfig: ["reverseToc": .bool(true), "splitLongChapter": .bool(false)]
+    )
+    let group = AndroidBookGroupDTO(groupID: 8, groupName: "Oracle Group", order: 4)
+    let bookmark = AndroidBookmarkDTO(
+        time: 1_700_000_000_123,
+        bookName: "iOS Oracle Book",
+        bookAuthor: "Oracle Author",
+        chapterIndex: 3,
+        chapterPosition: 27,
+        chapterName: "Chapter Four",
+        bookText: "selected",
+        content: "context"
+    )
+    let archiveURL = temporaryArchiveURL()
+    defer { try? FileManager.default.removeItem(at: archiveURL.deletingLastPathComponent()) }
+
+    try AndroidBackupArchive.write(
+        .init(books: [book], bookGroups: [group], bookmarks: [bookmark]),
+        to: archiveURL
+    )
+
+    #expect(Set(try ArchiveZIPFoundation.descriptors(at: archiveURL).map(\.path)) == Set([
+        "bookshelf.json", "bookGroup.json", "bookmark.json",
+    ]))
+    #expect(try AndroidBackupArchive.readBooks(from: archiveURL) == [book])
+    #expect(try AndroidBackupArchive.readBookGroups(from: archiveURL) == [group])
+    #expect(try AndroidBackupArchive.readBookmarks(from: archiveURL) == [bookmark])
+}
+
 @Test func archiveContainerRejectsTraversalAndDuplicateMembers() throws {
     let archiveURL = temporaryArchiveURL()
     defer { try? FileManager.default.removeItem(at: archiveURL.deletingLastPathComponent()) }

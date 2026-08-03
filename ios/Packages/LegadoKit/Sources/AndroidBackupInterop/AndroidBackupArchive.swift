@@ -5,13 +5,22 @@ import SourceFormat
 public struct AndroidBackupContents: Equatable, Sendable {
     public var bookSources: [BookSourceDTO]
     public var replacementRules: [AndroidReplaceRuleDTO]
+    public var books: [AndroidBookDTO]
+    public var bookGroups: [AndroidBookGroupDTO]
+    public var bookmarks: [AndroidBookmarkDTO]
 
     public init(
         bookSources: [BookSourceDTO] = [],
-        replacementRules: [AndroidReplaceRuleDTO] = []
+        replacementRules: [AndroidReplaceRuleDTO] = [],
+        books: [AndroidBookDTO] = [],
+        bookGroups: [AndroidBookGroupDTO] = [],
+        bookmarks: [AndroidBookmarkDTO] = []
     ) {
         self.bookSources = bookSources
         self.replacementRules = replacementRules
+        self.books = books
+        self.bookGroups = bookGroups
+        self.bookmarks = bookmarks
     }
 }
 
@@ -19,6 +28,9 @@ public enum AndroidBackupArchive {
     public static let fileName = "backup.zip"
     public static let bookSourcesMember = "bookSource.json"
     public static let replacementRulesMember = "replaceRule.json"
+    public static let booksMember = "bookshelf.json"
+    public static let bookGroupsMember = "bookGroup.json"
+    public static let bookmarksMember = "bookmark.json"
 
     public static func write(
         _ contents: AndroidBackupContents,
@@ -40,6 +52,27 @@ public enum AndroidBackupArchive {
                     data: try AndroidReplaceRuleCodec.encodeMany(
                         contents.replacementRules
                     )
+                )
+            )
+        }
+        if !contents.books.isEmpty {
+            members.append(
+                .init(path: booksMember, data: try AndroidBookCodec.encodeMany(contents.books))
+            )
+        }
+        if !contents.bookGroups.isEmpty {
+            members.append(
+                .init(
+                    path: bookGroupsMember,
+                    data: try AndroidBookGroupCodec.encodeMany(contents.bookGroups)
+                )
+            )
+        }
+        if !contents.bookmarks.isEmpty {
+            members.append(
+                .init(
+                    path: bookmarksMember,
+                    data: try AndroidBookmarkCodec.encodeMany(contents.bookmarks)
                 )
             )
         }
@@ -79,5 +112,35 @@ public enum AndroidBackupArchive {
             return []
         }
         return try AndroidReplaceRuleCodec.decodeMany(data)
+    }
+
+    public static func readBooks(
+        from archiveURL: URL,
+        maximumMemberBytes: UInt64 = 64 * 1_024 * 1_024
+    ) throws -> [AndroidBookDTO] {
+        guard let data = try ArchiveZIPFoundation.read(
+            booksMember, from: archiveURL, maximumBytes: maximumMemberBytes
+        ) else { return [] }
+        return try AndroidBookCodec.decodeMany(data)
+    }
+
+    public static func readBookGroups(
+        from archiveURL: URL,
+        maximumMemberBytes: UInt64 = 32 * 1_024 * 1_024
+    ) throws -> [AndroidBookGroupDTO] {
+        guard let data = try ArchiveZIPFoundation.read(
+            bookGroupsMember, from: archiveURL, maximumBytes: maximumMemberBytes
+        ) else { return [] }
+        return try AndroidBookGroupCodec.decodeMany(data)
+    }
+
+    public static func readBookmarks(
+        from archiveURL: URL,
+        maximumMemberBytes: UInt64 = 32 * 1_024 * 1_024
+    ) throws -> [AndroidBookmarkDTO] {
+        guard let data = try ArchiveZIPFoundation.read(
+            bookmarksMember, from: archiveURL, maximumBytes: maximumMemberBytes
+        ) else { return [] }
+        return try AndroidBookmarkCodec.decodeMany(data)
     }
 }
