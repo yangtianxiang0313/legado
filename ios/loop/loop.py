@@ -1251,6 +1251,33 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/harness/architecture-rules.json",
             ],
         }
+    if target == "IOS-SOURCE-REAL-WIKISOURCE-ANDROID-CAPTURE-001":
+        return {
+            "owner": "SourceLab",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-002",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-011",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/harness/fixtures/real-source/**",
+                "ios/harness/source-lab/source_lab.py",
+                "ios/harness/source-lab/tests/test_real_source_capture.py",
+                "ios/harness/oracle/android-runner/orchestrator.py",
+                "ios/harness/oracle/android-runner/LegadoOracleInstrumentedTest.kt",
+                "ios/harness/tests/test_android_oracle_runner.py",
+                "ios/harness/fixtures/manifest.json",
+                "ios/harness/source-lab/manifest.json",
+                "ios/harness/goldens/android-legado-v1/rs-wikisource-public-domain-001.json",
+                "ios/project/external-execution-receipts/**",
+                "ios/project/business-knowledge/**",
+            ],
+        }
     if target == "IOS-DEPENDENCY-SWIFTSOUP-HTML-001":
         return {
             "owner": "DependencyControl",
@@ -2203,6 +2230,11 @@ def priority_policy_deliveries(
                         if declaration.get("android_truth_capture") is True
                         else {}
                     ),
+                    **(
+                        {"command": declaration["command"]}
+                        if isinstance(declaration.get("command"), list)
+                        else {}
+                    ),
                 },
                 **(
                     {"ui_contract": declaration["ui_contract"]}
@@ -2291,7 +2323,18 @@ def active_priority_policy(root: Path) -> Mapping[str, Any] | None:
                 and not delivery["target"].startswith("IOS-DEPENDENCY-")
             )
             or delivery.get("validation", "tests")
-            not in {"build", "tests", "simulator"}
+            not in {"build", "tests", "simulator", "command"}
+            or (
+                delivery.get("validation") == "command"
+                and (
+                    not isinstance(delivery.get("command"), list)
+                    or not delivery["command"]
+                    or any(
+                        not isinstance(value, str) or not value
+                        for value in delivery["command"]
+                    )
+                )
+            )
             or not isinstance(
                 delivery.get("additional_allowed_paths", []),
                 list,
@@ -3543,6 +3586,19 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_filter": "IntegrationKitTests|WebDAVFoundationTests",
             "acceptance_id": "webdav-connection-foundation-acceptance",
         },
+        "SourceLab": {
+            "goal": (
+                "建立首个可审计的真实书源录制：使用公开版权内容和固定输入，"
+                "由冻结 Android WebBook 运行搜索、详情、目录和正文并输出结构化结果。"
+            ),
+            "rule": (
+                "真实网络只允许一次性 Android capture；日常 iOS 验收消费录制结果，"
+                "不得把实时网站可用性变成每次 Loop 的阻塞条件，也不得保存凭据或受限内容。"
+            ),
+            "test_id": "real-source-capture-contract-tests",
+            "test_filter": "",
+            "acceptance_id": "real-source-capture-contract",
+        },
     }
     if target == "IOS-INTEGRATION-BACKUP-ARCHIVE-ORACLE-001":
         delivery_contracts["IntegrationKit"] = {
@@ -3929,7 +3985,8 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             else None
         )
         if (
-            source_validation not in {"build", "simulator", "tests"}
+            source_validation
+            not in {"build", "simulator", "tests", "command"}
             or source_validation == "simulator"
             and not isinstance(ui_acceptance, dict)
             or source_validation == "tests"
@@ -3980,7 +4037,7 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
         for path in delivery.get("additional_allowed_paths", []):
             if path not in allowed_paths:
                 allowed_paths.append(path)
-        if source_validation in {"build", "tests"}:
+        if source_validation in {"build", "tests", "command"}:
             if source_validation == "tests":
                 package_path = str(
                     source_contract.get(
@@ -4004,7 +4061,7 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
                     ),
                     "timeout_seconds": 600,
                 }
-            else:
+            elif source_validation == "build":
                 acceptance_command = {
                     "id": "ios-app-build",
                     "argv": [
@@ -4019,6 +4076,22 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
                         "build",
                     ],
                     "timeout_seconds": 900,
+                }
+            else:
+                command = source_contract.get("command")
+                if (
+                    not isinstance(command, list)
+                    or not command
+                    or any(
+                        not isinstance(value, str) or not value
+                        for value in command
+                    )
+                ):
+                    raise LoopError("SOURCE_COMMAND_INVALID")
+                acceptance_command = {
+                    "id": "focused-command",
+                    "argv": command,
+                    "timeout_seconds": 600,
                 }
             captures_android_truth = (
                 source_contract.get("android_truth_capture") is True

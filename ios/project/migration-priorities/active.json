@@ -224,6 +224,13 @@
       "selectors": [
         {"id": "P67-S31-XPATH-RUNTIME", "claim_ids": [], "task_ids": ["IOS-SOURCE-RUNTIME-KANNA-XPATH-PRODUCT-001"]}
       ]
+    },
+    {
+      "id": "P67-S32",
+      "title": "公版真实书源 Android 结构化录制",
+      "selectors": [
+        {"id": "P67-S32-REAL-SOURCE-CAPTURE", "claim_ids": [], "task_ids": ["IOS-SOURCE-REAL-WIKISOURCE-ANDROID-CAPTURE-001"]}
+      ]
     }
   ],
   "deliveries": [
@@ -1018,6 +1025,34 @@
         "ios/Packages/LegadoKit/Tests/SourceRuntimeCompositionTests/**",
         "ios/Apps/Legado/App/SearchEnvironment.swift",
         "ios/harness/architecture-rules.json",
+        "ios/loop/loop.py"
+      ]
+    },
+    {
+      "target": "IOS-SOURCE-REAL-WIKISOURCE-ANDROID-CAPTURE-001",
+      "title": "用维基文库公版作品建立首个 Android 真源结构化录制",
+      "prerequisite_task_ids": ["IOS-SOURCE-RUNTIME-KANNA-XPATH-PRODUCT-001"],
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "fixture_id": "rs-wikisource-public-domain-001",
+      "validation": "command",
+      "command": ["python3", "-B", "ios/harness/source-lab/tests/test_real_source_capture.py"],
+      "android_truth_capture": true,
+      "source_anchors": [
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/model/webBook/WebBook.kt","symbol_id":"kotlin://io.legado.app.model.webBook.WebBook"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/model/webBook/SearchModel.kt","symbol_id":"kotlin://io.legado.app.model.webBook.SearchModel"}
+      ],
+      "additional_allowed_paths": [
+        "ios/harness/fixtures/real-source/**",
+        "ios/harness/source-lab/source_lab.py",
+        "ios/harness/source-lab/tests/test_real_source_capture.py",
+        "ios/harness/oracle/android-runner/orchestrator.py",
+        "ios/harness/oracle/android-runner/LegadoOracleInstrumentedTest.kt",
+        "ios/harness/tests/test_android_oracle_runner.py",
+        "ios/harness/fixtures/manifest.json",
+        "ios/harness/source-lab/manifest.json",
+        "ios/harness/goldens/android-legado-v1/rs-wikisource-public-domain-001.json",
+        "ios/project/external-execution-receipts/**",
+        "ios/project/business-knowledge/**",
         "ios/loop/loop.py"
       ]
     }
