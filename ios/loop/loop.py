@@ -1054,6 +1054,28 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/Apps/Legado/App/**",
             ],
         }
+    if target == "IOS-HTTP-TTS-ANDROID-INTEROP-001":
+        return {
+            "owner": "IntegrationKit",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
+                "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+                "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+                "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+                "ios/Packages/LegadoKit/Tests/AndroidBackupInteropTests/**",
+                "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**",
+                "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+                "ios/Apps/Legado/App/**",
+            ],
+        }
     if target == "IOS-DEPENDENCY-SWIFTSOUP-HTML-001":
         return {
             "owner": "DependencyControl",
@@ -3519,6 +3541,20 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_id": "rss-content-star-tests",
             "test_filter": "RSSContentStarTests",
             "acceptance_id": "rss-content-star-acceptance",
+        }
+    if target == "IOS-HTTP-TTS-ANDROID-INTEROP-001":
+        delivery_contracts["IntegrationKit"] = {
+            "goal": (
+                "按冻结 Android HttpTTS 主键和全部配置字段，实现 httpTTS.json "
+                "双向互通并为 iOS 在线朗读运行时提供持久化配置。"
+            ),
+            "rule": (
+                "AndroidBackupInterop 保真格式；AppUseCases 拥有 HTTP TTS 领域模型和仓储端口；"
+                "DatabaseGRDB 实现持久化，本切片不提前实现音频播放。"
+            ),
+            "test_id": "http-tts-interop-tests",
+            "test_filter": "HTTPTextToSpeechInteropTests",
+            "acceptance_id": "http-tts-interop-acceptance",
         }
     if (
         architecture["owner"] == "AppNavigation"
