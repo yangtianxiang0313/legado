@@ -18,6 +18,7 @@ struct RootShellView: View {
     @Bindable var rootVisibility: RootVisibilityPreferencesStore
     @Bindable var replacementRules: ReaderReplacementRuleStore
     @Bindable var ruleSubscriptions: RuleSubscriptionStore
+    @Bindable var rssStore: RSSStore
     @Bindable var webDAVSettings: WebDAVConnectionSettingsStore
     let webDAVCredentials: KeychainWebDAVCredentialStore
     let webDAVClient: any WebDAVConnectionInitializing
@@ -61,6 +62,7 @@ struct RootShellView: View {
             await sourceCatalog.reload()
             await replacementRules.reload()
             await ruleSubscriptions.reload()
+            await rssStore.reload()
             router.reconcileVisibleRoots(visibleRoots)
             if ProcessInfo.processInfo.arguments.contains(
                 "--seed-shelf-management"
@@ -173,6 +175,7 @@ struct RootShellView: View {
                         persistedSources: sourceCatalog.sources
                     )
                 },
+                rssStore: rssStore,
                 rootVisibility: rootVisibility,
                 webDAVSettings: webDAVSettings,
                 webDAVCredentials: webDAVCredentials,
@@ -182,6 +185,7 @@ struct RootShellView: View {
                     await sourceCatalog.reload()
                     await replacementRules.reload()
                     await ruleSubscriptions.reload()
+                    await rssStore.reload()
                 },
                 libraryBackup: libraryBackup
             )
@@ -632,6 +636,7 @@ private struct RootContentView: View {
     let openBook: (ShelfBookItem) -> Void
     let books: () -> [ShelfBookItem]
     let exploreSources: () -> [ExploreSourceSummary]
+    @Bindable var rssStore: RSSStore
     @Bindable var rootVisibility: RootVisibilityPreferencesStore
     @Bindable var webDAVSettings: WebDAVConnectionSettingsStore
     let webDAVCredentials: KeychainWebDAVCredentialStore
@@ -660,6 +665,8 @@ private struct RootContentView: View {
                 openSearch: openSearch,
                 openBook: openBook
             )
+        } else if root == .rss {
+            RSSRootView(store: rssStore)
         } else {
             genericRoot
         }
@@ -896,6 +903,11 @@ private struct RootContentView: View {
                     androidBackupImportStatus +=
                         "、\(summary.ruleSubscriptionCount) 条规则订阅"
                 }
+                if summary.rssSourceCount > 0 || summary.rssStarCount > 0 {
+                    androidBackupImportStatus +=
+                        "、\(summary.rssSourceCount) 个 RSS 源、"
+                        + "\(summary.rssStarCount) 条 RSS 收藏"
+                }
             } catch {
                 androidBackupImportStatus = "Android 备份导入失败"
             }
@@ -934,7 +946,9 @@ private struct RootContentView: View {
                     + "\(summary.replacementRuleCount) 条替换规则、"
                     + "\(summary.readRecordCount) 条阅读记录、"
                     + "\(summary.searchHistoryCount) 条搜索历史、"
-                    + "\(summary.ruleSubscriptionCount) 条规则订阅"
+                    + "\(summary.ruleSubscriptionCount) 条规则订阅、"
+                    + "\(summary.rssSourceCount) 个 RSS 源、"
+                    + "\(summary.rssStarCount) 条 RSS 收藏"
                 showsAndroidBackupExporter = true
             } catch {
                 androidBackupExportStatus = "Android 备份生成失败"
@@ -1395,6 +1409,83 @@ private struct SearchBooksView: View {
     }
 }
 
+private struct RSSRootView: View {
+    @Bindable var store: RSSStore
+
+    var body: some View {
+        List {
+            Section("RSS 源（\(store.sources.count)）") {
+                if store.sources.isEmpty {
+                    ContentUnavailableView(
+                        "还没有 RSS 源",
+                        systemImage: "dot.radiowaves.left.and.right",
+                        description: Text("可从 Android backup.zip 导入 RSS 源。")
+                    )
+                } else {
+                    ForEach(store.sources) { source in
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(source.sourceName.isEmpty
+                                    ? source.sourceURL
+                                    : source.sourceName)
+                                    .font(.headline)
+                                Text(source.sourceURL)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                                if let group = source.sourceGroup, !group.isEmpty {
+                                    Text(group)
+                                        .font(.caption2)
+                                        .foregroundStyle(.tertiary)
+                                }
+                            }
+                            Spacer()
+                            Image(systemName: source.enabled
+                                ? "checkmark.circle.fill"
+                                : "pause.circle")
+                                .foregroundStyle(source.enabled ? .green : .secondary)
+                        }
+                    }
+                }
+            }
+
+            Section("收藏（\(store.stars.count)）") {
+                if store.stars.isEmpty {
+                    Text("暂无 RSS 收藏").foregroundStyle(.secondary)
+                } else {
+                    ForEach(store.stars) { star in
+                        if let url = URL(string: star.link) {
+                            Link(destination: url) { starRow(star) }
+                        } else {
+                            starRow(star)
+                        }
+                    }
+                }
+            }
+
+            if let error = store.errorMessage {
+                Section { Text(error).foregroundStyle(.red) }
+            }
+        }
+        .navigationTitle("RSS")
+        .task { await store.reload() }
+        .accessibilityIdentifier("screen.rss")
+    }
+
+    private func starRow(_ star: RSSStar) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(star.title.isEmpty ? star.link : star.title)
+                .font(.headline)
+            if let description = star.description, !description.isEmpty {
+                Text(description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+        }
+    }
+}
+
 private extension RootRoute {
     var title: String {
         switch self {
@@ -1530,6 +1621,7 @@ struct StartupAcceptanceView: View {
     @Bindable var rootVisibility: RootVisibilityPreferencesStore
     @Bindable var replacementRules: ReaderReplacementRuleStore
     @Bindable var ruleSubscriptions: RuleSubscriptionStore
+    @Bindable var rssStore: RSSStore
     @Bindable var webDAVSettings: WebDAVConnectionSettingsStore
     let webDAVCredentials: KeychainWebDAVCredentialStore
     let webDAVClient: any WebDAVConnectionInitializing
@@ -1580,6 +1672,7 @@ struct StartupAcceptanceView: View {
                 rootVisibility: rootVisibility,
                 replacementRules: replacementRules,
                 ruleSubscriptions: ruleSubscriptions,
+                rssStore: rssStore,
                 webDAVSettings: webDAVSettings,
                 webDAVCredentials: webDAVCredentials,
                 webDAVClient: webDAVClient,

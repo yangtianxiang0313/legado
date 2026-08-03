@@ -12,6 +12,8 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
   public let readRecordCount: Int
   public let searchHistoryCount: Int
   public let ruleSubscriptionCount: Int
+  public let rssSourceCount: Int
+  public let rssStarCount: Int
 
   public init(
     bookCount: Int,
@@ -21,7 +23,9 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
     replacementRuleCount: Int,
     readRecordCount: Int = 0,
     searchHistoryCount: Int = 0,
-    ruleSubscriptionCount: Int = 0
+    ruleSubscriptionCount: Int = 0,
+    rssSourceCount: Int = 0,
+    rssStarCount: Int = 0
   ) {
     self.bookCount = bookCount
     self.groupCount = groupCount
@@ -31,6 +35,8 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
     self.readRecordCount = readRecordCount
     self.searchHistoryCount = searchHistoryCount
     self.ruleSubscriptionCount = ruleSubscriptionCount
+    self.rssSourceCount = rssSourceCount
+    self.rssStarCount = rssStarCount
   }
 }
 
@@ -45,6 +51,7 @@ public protocol AndroidCoreBackupRestoreRepository: Sendable {
   func restoreAndroidReadRecords(_ records: [LibraryDomain.ReadRecord]) async throws
   func restoreAndroidSearchHistory(_ entries: [SearchHistoryEntry]) async throws
   func restoreAndroidRuleSubscriptions(_ values: [RuleSubscription]) async throws
+  func restoreAndroidRSS(sources: [RSSSource], stars: [RSSStar]) async throws
 }
 
 public extension AndroidCoreBackupRestoreRepository {
@@ -54,6 +61,11 @@ public extension AndroidCoreBackupRestoreRepository {
 
   func restoreAndroidRuleSubscriptions(
     _ values: [RuleSubscription]
+  ) async throws {}
+
+  func restoreAndroidRSS(
+    sources: [RSSSource],
+    stars: [RSSStar]
   ) async throws {}
 }
 
@@ -86,6 +98,12 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     let ruleSubscriptions = AndroidRuleSubscriptionInteropAdapter.restoreValues(
       try AndroidBackupArchive.readRuleSubscriptions(from: archiveURL)
     )
+    let rssSources = AndroidRSSInteropAdapter.restoreSources(
+      try AndroidBackupArchive.readRSSSources(from: archiveURL)
+    )
+    let rssStars = AndroidRSSInteropAdapter.restoreStars(
+      try AndroidBackupArchive.readRSSStars(from: archiveURL)
+    )
 
     let library = try await repository.restoreAndroidLibrary(libraryPlan)
     if !bookSources.isEmpty {
@@ -103,6 +121,12 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     if !ruleSubscriptions.isEmpty {
       try await repository.restoreAndroidRuleSubscriptions(ruleSubscriptions)
     }
+    if !rssSources.isEmpty || !rssStars.isEmpty {
+      try await repository.restoreAndroidRSS(
+        sources: rssSources,
+        stars: rssStars
+      )
+    }
     return AndroidCoreBackupRestoreSummary(
       bookCount: library.bookCount,
       groupCount: library.groupCount,
@@ -111,7 +135,9 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
       replacementRuleCount: replacementRules.count,
       readRecordCount: readRecords.count,
       searchHistoryCount: searchHistory.count,
-      ruleSubscriptionCount: ruleSubscriptions.count
+      ruleSubscriptionCount: ruleSubscriptions.count,
+      rssSourceCount: rssSources.count,
+      rssStarCount: rssStars.count
     )
   }
 

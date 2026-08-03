@@ -22,6 +22,7 @@ struct LegadoApp: App {
     @State private var rootVisibility: RootVisibilityPreferencesStore
     @State private var replacementRules: ReaderReplacementRuleStore
     @State private var ruleSubscriptions: RuleSubscriptionStore
+    @State private var rssStore: RSSStore
     @State private var webDAVSettings: WebDAVConnectionSettingsStore
     private let webDAVCredentials: KeychainWebDAVCredentialStore
     private let webDAVClient: any WebDAVConnectionInitializing
@@ -114,6 +115,9 @@ struct LegadoApp: App {
                     repository: libraryRepository
                 )
             )
+            _rssStore = State(
+                initialValue: RSSStore(repository: libraryRepository)
+            )
             _sourceCatalog = State(
                 initialValue: SourceCatalog(
                     repository: sourceRepository
@@ -172,6 +176,7 @@ struct LegadoApp: App {
                     rootVisibility: rootVisibility,
                     replacementRules: replacementRules,
                     ruleSubscriptions: ruleSubscriptions,
+                    rssStore: rssStore,
                     webDAVSettings: webDAVSettings,
                     webDAVCredentials: webDAVCredentials,
                     webDAVClient: webDAVClient,
@@ -190,6 +195,7 @@ struct LegadoApp: App {
                     rootVisibility: rootVisibility,
                     replacementRules: replacementRules,
                     ruleSubscriptions: ruleSubscriptions,
+                    rssStore: rssStore,
                     webDAVSettings: webDAVSettings,
                     webDAVCredentials: webDAVCredentials,
                     webDAVClient: webDAVClient,
@@ -257,6 +263,13 @@ private struct AppAndroidCoreBackupRestoreRepository:
     ) async throws {
         try await repository.restoreAndroidRuleSubscriptions(values)
     }
+
+    func restoreAndroidRSS(
+        sources: [RSSSource],
+        stars: [RSSStar]
+    ) async throws {
+        try await repository.restoreAndroidRSS(sources: sources, stars: stars)
+    }
 }
 
 private struct AppAndroidLibraryBackupRepository:
@@ -280,6 +293,14 @@ private struct AppAndroidLibraryBackupRepository:
 
     func androidRuleSubscriptions() async throws -> [RuleSubscription] {
         try await repository.androidRuleSubscriptions()
+    }
+
+    func androidRSSSources() async throws -> [RSSSource] {
+        try await repository.androidRSSSources()
+    }
+
+    func androidRSSStars() async throws -> [RSSStar] {
+        try await repository.androidRSSStars()
     }
 }
 

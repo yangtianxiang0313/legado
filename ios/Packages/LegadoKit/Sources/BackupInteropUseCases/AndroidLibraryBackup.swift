@@ -13,6 +13,8 @@ public struct AndroidLibraryBackupSummary: Equatable, Sendable {
   public let readRecordCount: Int
   public let searchHistoryCount: Int
   public let ruleSubscriptionCount: Int
+  public let rssSourceCount: Int
+  public let rssStarCount: Int
 
   public init(
     bookCount: Int,
@@ -22,7 +24,9 @@ public struct AndroidLibraryBackupSummary: Equatable, Sendable {
     replacementRuleCount: Int = 0,
     readRecordCount: Int = 0,
     searchHistoryCount: Int = 0,
-    ruleSubscriptionCount: Int = 0
+    ruleSubscriptionCount: Int = 0,
+    rssSourceCount: Int = 0,
+    rssStarCount: Int = 0
   ) {
     self.bookCount = bookCount
     self.groupCount = groupCount
@@ -32,6 +36,8 @@ public struct AndroidLibraryBackupSummary: Equatable, Sendable {
     self.readRecordCount = readRecordCount
     self.searchHistoryCount = searchHistoryCount
     self.ruleSubscriptionCount = ruleSubscriptionCount
+    self.rssSourceCount = rssSourceCount
+    self.rssStarCount = rssStarCount
   }
 }
 
@@ -40,12 +46,16 @@ public protocol AndroidLibraryBackupRepository: Sendable {
   func androidReadRecords() async throws -> [ReadRecord]
   func androidSearchHistory() async throws -> [SearchHistoryEntry]
   func androidRuleSubscriptions() async throws -> [RuleSubscription]
+  func androidRSSSources() async throws -> [RSSSource]
+  func androidRSSStars() async throws -> [RSSStar]
 }
 
 public extension AndroidLibraryBackupRepository {
   func androidReadRecords() async throws -> [ReadRecord] { [] }
   func androidSearchHistory() async throws -> [SearchHistoryEntry] { [] }
   func androidRuleSubscriptions() async throws -> [RuleSubscription] { [] }
+  func androidRSSSources() async throws -> [RSSSource] { [] }
+  func androidRSSStars() async throws -> [RSSStar] { [] }
 }
 
 public enum AndroidLibraryBackupError: Error, Equatable, Sendable {
@@ -78,13 +88,17 @@ public struct AndroidLibraryBackupUseCase: Sendable {
     let readRecords = try await repository.androidReadRecords()
     let searchHistory = try await repository.androidSearchHistory()
     let ruleSubscriptions = try await repository.androidRuleSubscriptions()
+    let rssSources = try await repository.androidRSSSources()
+    let rssStars = try await repository.androidRSSStars()
     let contents = try AndroidLibraryBackupAdapter.contents(
       from: plan,
       bookSources: bookSources,
       replacementRules: replacementRules,
       readRecords: readRecords,
       searchHistory: searchHistory,
-      ruleSubscriptions: ruleSubscriptions
+      ruleSubscriptions: ruleSubscriptions,
+      rssSources: rssSources,
+      rssStars: rssStars
     )
     try AndroidBackupArchive.write(
       contents,
@@ -98,7 +112,9 @@ public struct AndroidLibraryBackupUseCase: Sendable {
       replacementRuleCount: contents.replacementRules.count,
       readRecordCount: contents.readRecords.count,
       searchHistoryCount: contents.searchHistory.count,
-      ruleSubscriptionCount: contents.ruleSubscriptions.count
+      ruleSubscriptionCount: contents.ruleSubscriptions.count,
+      rssSourceCount: contents.rssSources.count,
+      rssStarCount: contents.rssStars.count
     )
   }
 }
@@ -113,7 +129,9 @@ public enum AndroidLibraryBackupAdapter {
       replacementRules: [],
       readRecords: [],
       searchHistory: [],
-      ruleSubscriptions: []
+      ruleSubscriptions: [],
+      rssSources: [],
+      rssStars: []
     )
   }
 
@@ -123,7 +141,9 @@ public enum AndroidLibraryBackupAdapter {
     replacementRules: [ReaderReplacementRule],
     readRecords: [ReadRecord] = [],
     searchHistory: [SearchHistoryEntry] = [],
-    ruleSubscriptions: [RuleSubscription] = []
+    ruleSubscriptions: [RuleSubscription] = [],
+    rssSources: [RSSSource] = [],
+    rssStars: [RSSStar] = []
   ) throws -> AndroidBackupContents {
     let sourceData = try SourceManagementPolicy.exportData(
       bookSources,
@@ -139,7 +159,9 @@ public enum AndroidLibraryBackupAdapter {
       searchHistory: AndroidSearchHistoryInteropAdapter.backupDocuments(searchHistory),
       ruleSubscriptions: AndroidRuleSubscriptionInteropAdapter.backupDocuments(
         ruleSubscriptions
-      )
+      ),
+      rssSources: AndroidRSSInteropAdapter.backupSources(rssSources),
+      rssStars: AndroidRSSInteropAdapter.backupStars(rssStars)
     )
   }
 

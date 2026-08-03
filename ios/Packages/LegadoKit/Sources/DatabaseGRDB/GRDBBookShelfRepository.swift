@@ -5,7 +5,7 @@ import GRDB
 import LibraryDomain
 
 public actor GRDBBookShelfRepository:
-  BookShelfRepository, RuleSubscriptionRepository
+  BookShelfRepository, RuleSubscriptionRepository, RSSRepository
 {
   private let database: DatabaseQueue
 
@@ -1021,6 +1021,62 @@ public actor GRDBBookShelfRepository:
     }
   }
 
+  public func rssSources() async throws -> [RSSSource] {
+    try await database.read { db in
+      try RSSSourceRecord
+        .order(Column("customOrder").asc, Column("sourceURL").asc)
+        .fetchAll(db)
+        .map { try $0.value }
+    }
+  }
+
+  public func rssStars() async throws -> [RSSStar] {
+    try await database.read { db in
+      try RSSStarRecord
+        .order(Column("starTime").desc)
+        .fetchAll(db)
+        .map { try $0.value }
+    }
+  }
+
+  public func upsertRSSSource(_ source: RSSSource) async throws {
+    try await database.write { db in
+      var record = try RSSSourceRecord(value: source)
+      try record.save(db)
+    }
+  }
+
+  public func upsertRSSStar(_ star: RSSStar) async throws {
+    try await database.write { db in
+      var record = try RSSStarRecord(value: star)
+      try record.save(db)
+    }
+  }
+
+  public func androidRSSSources() async throws -> [RSSSource] {
+    try await rssSources()
+  }
+
+  public func androidRSSStars() async throws -> [RSSStar] {
+    try await rssStars()
+  }
+
+  public func restoreAndroidRSS(
+    sources: [RSSSource],
+    stars: [RSSStar]
+  ) async throws {
+    try await database.write { db in
+      for source in sources {
+        var record = try RSSSourceRecord(value: source)
+        try record.save(db)
+      }
+      for star in stars {
+        var record = try RSSStarRecord(value: star)
+        try record.save(db)
+      }
+    }
+  }
+
   public func restoreAndroidReadRecords(
     _ records: [LibraryDomain.ReadRecord]
   ) async throws {
@@ -1036,6 +1092,8 @@ public actor GRDBBookShelfRepository:
     try await database.write { db in
       _ = try SearchHistoryRecord.deleteAll(db)
       _ = try RuleSubscriptionRecord.deleteAll(db)
+      _ = try RSSStarRecord.deleteAll(db)
+      _ = try RSSSourceRecord.deleteAll(db)
       _ = try ReadRecordRecord.deleteAll(db)
       _ = try AndroidLibraryBookmarkRecord.deleteAll(db)
       _ = try AndroidLibraryGroupRecord.deleteAll(db)
@@ -1294,6 +1352,23 @@ public actor GRDBBookShelfRepository:
         table.column("customOrder", .integer).notNull().indexed()
         table.column("autoUpdate", .boolean).notNull()
         table.column("updatedAt", .integer).notNull()
+      }
+    }
+    migrator.registerMigration("addRSSInterop") { db in
+      try db.create(table: "rssSources") { table in
+        table.column("sourceURL", .text).notNull().primaryKey()
+        table.column("sourceName", .text).notNull()
+        table.column("sourceGroup", .text)
+        table.column("enabled", .boolean).notNull().indexed()
+        table.column("customOrder", .integer).notNull().indexed()
+        table.column("payload", .blob).notNull()
+      }
+      try db.create(table: "rssStars") { table in
+        table.column("origin", .text).notNull()
+        table.column("link", .text).notNull()
+        table.column("starTime", .integer).notNull().indexed()
+        table.column("payload", .blob).notNull()
+        table.primaryKey(["origin", "link"])
       }
     }
     return migrator
@@ -1666,6 +1741,50 @@ private struct RuleSubscriptionRecord:
       updatedAt: updatedAt
     )
   }
+}
+
+private struct RSSSourceRecord:
+  Codable, FetchableRecord, MutablePersistableRecord
+{
+  static let databaseTableName = "rssSources"
+
+  var sourceURL: String
+  var sourceName: String
+  var sourceGroup: String?
+  var enabled: Bool
+  var customOrder: Int
+  var payload: Data
+
+  init(value: RSSSource) throws {
+    sourceURL = value.sourceURL
+    sourceName = value.sourceName
+    sourceGroup = value.sourceGroup
+    enabled = value.enabled
+    customOrder = value.customOrder
+    payload = try JSONEncoder().encode(value)
+  }
+
+  var value: RSSSource { get throws { try JSONDecoder().decode(RSSSource.self, from: payload) } }
+}
+
+private struct RSSStarRecord:
+  Codable, FetchableRecord, MutablePersistableRecord
+{
+  static let databaseTableName = "rssStars"
+
+  var origin: String
+  var link: String
+  var starTime: Int64
+  var payload: Data
+
+  init(value: RSSStar) throws {
+    origin = value.origin
+    link = value.link
+    starTime = value.starTime
+    payload = try JSONEncoder().encode(value)
+  }
+
+  var value: RSSStar { get throws { try JSONDecoder().decode(RSSStar.self, from: payload) } }
 }
 
 private struct ChapterContentRecord:

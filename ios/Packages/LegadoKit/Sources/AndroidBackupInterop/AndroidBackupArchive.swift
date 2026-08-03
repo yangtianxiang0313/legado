@@ -11,6 +11,8 @@ public struct AndroidBackupContents: Equatable, Sendable {
     public var readRecords: [AndroidReadRecordDTO]
     public var searchHistory: [AndroidSearchHistoryDTO]
     public var ruleSubscriptions: [AndroidRuleSubscriptionDTO]
+    public var rssSources: [AndroidRSSSourceDTO]
+    public var rssStars: [AndroidRSSStarDTO]
 
     public init(
         bookSources: [BookSourceDTO] = [],
@@ -20,7 +22,9 @@ public struct AndroidBackupContents: Equatable, Sendable {
         bookmarks: [AndroidBookmarkDTO] = [],
         readRecords: [AndroidReadRecordDTO] = [],
         searchHistory: [AndroidSearchHistoryDTO] = [],
-        ruleSubscriptions: [AndroidRuleSubscriptionDTO] = []
+        ruleSubscriptions: [AndroidRuleSubscriptionDTO] = [],
+        rssSources: [AndroidRSSSourceDTO] = [],
+        rssStars: [AndroidRSSStarDTO] = []
     ) {
         self.bookSources = bookSources
         self.replacementRules = replacementRules
@@ -30,6 +34,8 @@ public struct AndroidBackupContents: Equatable, Sendable {
         self.readRecords = readRecords
         self.searchHistory = searchHistory
         self.ruleSubscriptions = ruleSubscriptions
+        self.rssSources = rssSources
+        self.rssStars = rssStars
     }
 }
 
@@ -43,6 +49,8 @@ public enum AndroidBackupArchive {
     public static let readRecordsMember = "readRecord.json"
     public static let searchHistoryMember = "searchHistory.json"
     public static let ruleSubscriptionsMember = "sourceSub.json"
+    public static let rssSourcesMember = "rssSources.json"
+    public static let rssStarsMember = "rssStar.json"
 
     public static func write(
         _ contents: AndroidBackupContents,
@@ -111,6 +119,22 @@ public enum AndroidBackupArchive {
                     data: try AndroidRuleSubscriptionCodec.encodeMany(
                         contents.ruleSubscriptions
                     )
+                )
+            )
+        }
+        if !contents.rssSources.isEmpty {
+            members.append(
+                .init(
+                    path: rssSourcesMember,
+                    data: try AndroidRSSCodec.encodeSources(contents.rssSources)
+                )
+            )
+        }
+        if !contents.rssStars.isEmpty {
+            members.append(
+                .init(
+                    path: rssStarsMember,
+                    data: try AndroidRSSCodec.encodeStars(contents.rssStars)
                 )
             )
         }
@@ -224,5 +248,25 @@ public enum AndroidBackupArchive {
             maximumBytes: maximumMemberBytes
         ) else { return [] }
         return try AndroidRuleSubscriptionCodec.decodeMany(data)
+    }
+
+    public static func readRSSSources(
+        from archiveURL: URL,
+        maximumMemberBytes: UInt64 = 64 * 1_024 * 1_024
+    ) throws -> [AndroidRSSSourceDTO] {
+        guard let data = try ArchiveZIPFoundation.read(
+            rssSourcesMember, from: archiveURL, maximumBytes: maximumMemberBytes
+        ) else { return [] }
+        return try AndroidRSSCodec.decodeSources(data)
+    }
+
+    public static func readRSSStars(
+        from archiveURL: URL,
+        maximumMemberBytes: UInt64 = 64 * 1_024 * 1_024
+    ) throws -> [AndroidRSSStarDTO] {
+        guard let data = try ArchiveZIPFoundation.read(
+            rssStarsMember, from: archiveURL, maximumBytes: maximumMemberBytes
+        ) else { return [] }
+        return try AndroidRSSCodec.decodeStars(data)
     }
 }
