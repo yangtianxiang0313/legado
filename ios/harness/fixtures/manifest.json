@@ -39,6 +39,11 @@
       "sha256": "d5a7b47d2954869e41e9590bfbe3da0d48cc10b731a0c39096fa81070171628d"
     },
     {
+      "id": "rl-integration-backup-ios-replacerule-to-android-001",
+      "path": "ios/harness/fixtures/runtime-lab/rl-integration-backup-ios-replacerule-to-android-001",
+      "sha256": "1ab9c2cda15fa00d80d657a326eff87b28c3d1f2f3d0f0d147816f7e960cc84a"
+    },
+    {
       "id": "rl-discovery-search-book-persistence-lifecycle-001",
       "path": "ios/harness/fixtures/runtime-lab/rl-discovery-search-book-persistence-lifecycle-001",
       "sha256": "dc2f50e7f04e7b97ee38eb173df1ad8cfc5ceeb60392a01e7b6ab345d6022497"

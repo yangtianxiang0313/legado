@@ -296,6 +296,8 @@ class LegadoOracleInstrumentedTest {
                 runBackupArchiveCases()
             "rl-integration-backup-ios-to-android-001" ->
                 runIOSBackupAndroidRestoreCases()
+            "rl-integration-backup-ios-replacerule-to-android-001" ->
+                runIOSReplaceRuleBackupAndroidRestoreCases()
             "sl-post-form-001" -> runPostFormCases()
             "sl-source-response-xml-declaration-normalization-001" ->
                 runXmlResponseCases()
@@ -780,6 +782,103 @@ class LegadoOracleInstrumentedTest {
                 )
         } finally {
             appDb.bookSourceDao.delete(sourceURL)
+            workspace.deleteRecursively()
+        }
+    }
+
+    private suspend fun runIOSReplaceRuleBackupAndroidRestoreCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            require(
+                value.getString("operation") ==
+                    "ios_replacerule_backup_android_restore"
+            ) {
+                "iOS replacement rule restore scenario operation is invalid"
+            }
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", "ios_replacerule_backup_android_restore")
+                .put(
+                    "arguments",
+                    JSONObject()
+                        .put("archive_sha256", arguments.getString("archive_sha256"))
+                        .put("profile", arguments.getString("profile"))
+                )
+            runCase(
+                value.getString("id"),
+                "ios_replacerule_backup_android_restore",
+                stimulus
+            ) {
+                iosReplaceRuleBackupAndroidRestoreProjection(
+                    arguments.getString("archive_base64")
+                )
+            }
+        }
+    }
+
+    private suspend fun iosReplaceRuleBackupAndroidRestoreProjection(
+        archiveBase64: String
+    ): JSONObject {
+        val target = InstrumentationRegistry.getInstrumentation().targetContext
+        val workspace = File(
+            target.cacheDir,
+            "legado-oracle-ios-replacerule-backup-restore"
+        )
+        val archiveFile = File(workspace, "backup.zip")
+        val extracted = File(workspace, "extracted")
+        val ruleId = 7_003L
+
+        workspace.deleteRecursively()
+        extracted.mkdirs()
+        appDb.clearAllTables()
+        try {
+            archiveFile.writeBytes(
+                Base64.decode(archiveBase64, Base64.DEFAULT)
+            )
+            val archiveProjection = ZipFile(archiveFile).use { archive ->
+                val entries = java.util.Collections.list(archive.entries())
+                JSONObject()
+                    .put(
+                        "member_names",
+                        JSONArray(entries.map { it.name }.sorted())
+                    )
+                    .put(
+                        "compression_methods",
+                        JSONArray(entries.map { it.method }.distinct().sorted())
+                    )
+                    .put(
+                        "has_replace_rule",
+                        archive.getEntry("replaceRule.json") != null
+                    )
+            }
+
+            ZipUtils.unZipToPath(archiveFile, extracted)
+            Restore.restore(extracted.absolutePath)
+            val restored = appDb.replaceRuleDao.findById(ruleId)
+
+            return JSONObject()
+                .put("archive", archiveProjection)
+                .put(
+                    "restore",
+                    JSONObject()
+                        .put("replace_rule_restored", restored != null)
+                        .put("id", restored?.id)
+                        .put("name", restored?.name)
+                        .put("group", restored?.group)
+                        .put("pattern", restored?.pattern)
+                        .put("replacement", restored?.replacement)
+                        .put("scope_title", restored?.scopeTitle)
+                        .put("scope_content", restored?.scopeContent)
+                        .put("is_enabled", restored?.isEnabled)
+                        .put("is_regex", restored?.isRegex)
+                        .put("timeout_millisecond", restored?.timeoutMillisecond)
+                        .put("order", restored?.order)
+                )
+        } finally {
+            appDb.replaceRuleDao.findById(ruleId)?.let {
+                appDb.replaceRuleDao.delete(it)
+            }
             workspace.deleteRecursively()
         }
     }
@@ -13045,7 +13144,9 @@ class LegadoOracleInstrumentedTest {
                 .put("exception_type", error.javaClass.name)
             if (
                 scenarioId == "rl-integration-backup-archive-001" ||
-                    scenarioId == "rl-integration-backup-ios-to-android-001"
+                    scenarioId == "rl-integration-backup-ios-to-android-001" ||
+                    scenarioId ==
+                    "rl-integration-backup-ios-replacerule-to-android-001"
             ) {
                 issue.put(
                     "exception_message",

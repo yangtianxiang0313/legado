@@ -118,6 +118,7 @@ let package = Package(
             name: "AndroidBackupInterop",
             dependencies: [
                 "ArchiveZIPFoundation",
+                .product(name: "LegadoCoreKit", package: "LegadoCoreKit"),
                 .product(
                     name: "LegadoSourceFormatKit",
                     package: "LegadoSourceKit"
@@ -235,6 +236,7 @@ let package = Package(
             dependencies: [
                 "AndroidBackupInterop",
                 "ArchiveZIPFoundation",
+                .product(name: "LegadoCoreKit", package: "LegadoCoreKit"),
                 .product(
                     name: "LegadoSourceFormatKit",
                     package: "LegadoSourceKit"

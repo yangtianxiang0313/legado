@@ -1760,6 +1760,27 @@ SCENARIO_CONTRACTS = {
             "ios-book-source-archive-restores-on-android"
         }),
     },
+    "rl-integration-backup-ios-replacerule-to-android-001": {
+        "status": "candidate",
+        "fixture_kind": "android_runtime_scenario",
+        "result_type": "integration_runtime",
+        "stage_names": (
+            "fixture_setup",
+            "ios_archive_load",
+            "android_restore",
+            "database_projection",
+            "result_mapping",
+        ),
+        "expected_cases": (
+            (
+                "ios-replace-rule-archive-restores-on-android",
+                "ios_replacerule_backup_android_restore",
+            ),
+        ),
+        "nominal_cases": frozenset({
+            "ios-replace-rule-archive-restores-on-android"
+        }),
+    },
     "il-integration-backup-webdav-001": {
         "status": "candidate",
         "fixture_kind": "integration_lab_scenario",

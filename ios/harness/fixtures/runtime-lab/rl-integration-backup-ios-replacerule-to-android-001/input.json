@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "ios-replace-rule-archive-restores-on-android",
+      "operation": "ios_replacerule_backup_android_restore",
+      "arguments": {
+        "archive_base64": "UEsDBBQAAAgIAAAAIQD3ZMUN3gAAAE4BAAAQAAAAcmVwbGFjZVJ1bGUuanNvbjWQS0tDMRCF/0oJLrT0PopKMVtx4aIUWnfiIk2GOpibCZOkFMT/7uQ+dplzvjnDyeevgpv1xcHJUgSlVTfPTm3UhalE0YiN9SACOqV3ff8or/QWzNkLpjMXqMIRLnBbxmCGmoaH0+owbq+OEL2xNYXYASu9fdmoaHIGDpWk1Ny36wfxYzl7tO9BHIp7wz+VHgGeMrh4aDI1JjgmdM11K1uzN0DIQi/WXbXS3O0755h019WoqVOL4Wo8uq5dL9wryeGaMRUZtQ/M0n9WMg5AJe/Re0xgKcgfPD33/d/XP1BLAQIVAxQAAAgIAAAAIQD3ZMUN3gAAAE4BAAAQAAAAAAAAAAAAAACkgQAAAAByZXBsYWNlUnVsZS5qc29uUEsFBgAAAAABAAEAPgAAAAwBAAAAAA==",
+        "archive_sha256": "40fb5d9466e9e9c57f4fb94b35f96d5a673138de7bf6c4a2a464a1b34aecea1b",
+        "profile": "ios-public-replace-rule-v1"
+      }
+    }
+  ]
+}
