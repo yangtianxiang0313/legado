@@ -157,20 +157,38 @@ import Testing
         bookText: "selected",
         content: "context"
     )
+    let readRecord = AndroidReadRecordDTO(
+        deviceID: "android-device",
+        bookName: "iOS Oracle Book",
+        readTime: 3_600,
+        lastRead: 1_700_000_000_456,
+        unknownFields: ["futureRecordField": .string("keep")]
+    )
     let archiveURL = temporaryArchiveURL()
     defer { try? FileManager.default.removeItem(at: archiveURL.deletingLastPathComponent()) }
 
     try AndroidBackupArchive.write(
-        .init(books: [book], bookGroups: [group], bookmarks: [bookmark]),
+        .init(
+            books: [book],
+            bookGroups: [group],
+            bookmarks: [bookmark],
+            readRecords: [readRecord]
+        ),
         to: archiveURL
     )
 
     #expect(Set(try ArchiveZIPFoundation.descriptors(at: archiveURL).map(\.path)) == Set([
-        "bookshelf.json", "bookGroup.json", "bookmark.json",
+        "bookshelf.json", "bookGroup.json", "bookmark.json", "readRecord.json",
     ]))
     #expect(try AndroidBackupArchive.readBooks(from: archiveURL) == [book])
     #expect(try AndroidBackupArchive.readBookGroups(from: archiveURL) == [group])
     #expect(try AndroidBackupArchive.readBookmarks(from: archiveURL) == [bookmark])
+    #expect(try AndroidBackupArchive.readReadRecords(from: archiveURL) == [readRecord])
+    #expect(
+        try AndroidReadRecordCodec.decodeMany(
+            AndroidReadRecordCodec.encodeMany([readRecord])
+        ) == [readRecord]
+    )
 }
 
 @Test func archiveContainerRejectsTraversalAndDuplicateMembers() throws {

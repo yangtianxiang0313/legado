@@ -175,6 +175,41 @@ struct AndroidLibraryRestorePersistenceTests {
     #expect(bookmark.content == "native excerpt")
   }
 
+  @Test func persistsReadRecordsByAndroidCompositePrimaryKey() async throws {
+    let databaseURL = temporaryDatabaseURL()
+    defer { try? FileManager.default.removeItem(at: databaseURL.deletingLastPathComponent()) }
+    let repository = try GRDBBookShelfRepository(path: databaseURL.path)
+
+    try await repository.restoreAndroidReadRecords([
+      ReadRecord(
+        deviceID: "android-a",
+        bookName: "Book",
+        readTime: 100,
+        lastRead: 1_000
+      ),
+      ReadRecord(
+        deviceID: "android-b",
+        bookName: "Book",
+        readTime: 200,
+        lastRead: 2_000
+      )
+    ])
+    try await repository.restoreAndroidReadRecords([
+      ReadRecord(
+        deviceID: "android-a",
+        bookName: "Book",
+        readTime: 300,
+        lastRead: 3_000
+      )
+    ])
+
+    let records = try await repository.androidReadRecords()
+
+    #expect(records.count == 2)
+    #expect(records.map(\.deviceID) == ["android-b", "android-a"])
+    #expect(records.map(\.readTime) == [200, 300])
+  }
+
   private func restoreBook() -> AndroidLibraryRestoreBook {
     AndroidLibraryRestoreBook(
       candidate: candidate(

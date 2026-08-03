@@ -917,8 +917,29 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
     }
   }
 
+  public func androidReadRecords() async throws -> [LibraryDomain.ReadRecord] {
+    try await database.read { db in
+      try ReadRecordRecord
+        .order(Column("lastRead").asc)
+        .fetchAll(db)
+        .map(\.value)
+    }
+  }
+
+  public func restoreAndroidReadRecords(
+    _ records: [LibraryDomain.ReadRecord]
+  ) async throws {
+    try await database.write { db in
+      for value in records {
+        var record = ReadRecordRecord(value: value)
+        try record.save(db)
+      }
+    }
+  }
+
   public func reset() async throws {
     try await database.write { db in
+      _ = try ReadRecordRecord.deleteAll(db)
       _ = try AndroidLibraryBookmarkRecord.deleteAll(db)
       _ = try AndroidLibraryGroupRecord.deleteAll(db)
       _ = try ReadingBookmarkRecord.deleteAll(db)
@@ -1149,6 +1170,15 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
         table.column("chapterName", .text).notNull()
         table.column("bookText", .text).notNull()
         table.column("content", .text).notNull()
+      }
+    }
+    migrator.registerMigration("addAndroidReadRecordInterop") { db in
+      try db.create(table: "readRecords") { table in
+        table.column("deviceID", .text).notNull()
+        table.column("bookName", .text).notNull()
+        table.column("readTime", .integer).notNull()
+        table.column("lastRead", .integer).notNull().indexed()
+        table.primaryKey(["deviceID", "bookName"])
       }
     }
     return migrator
@@ -1436,6 +1466,33 @@ private struct AndroidLibraryBookmarkRecord:
       chapterName: chapterName,
       bookText: bookText,
       content: content
+    )
+  }
+}
+
+private struct ReadRecordRecord:
+  Codable, FetchableRecord, MutablePersistableRecord
+{
+  static let databaseTableName = "readRecords"
+
+  var deviceID: String
+  var bookName: String
+  var readTime: Int64
+  var lastRead: Int64
+
+  init(value: LibraryDomain.ReadRecord) {
+    deviceID = value.deviceID
+    bookName = value.bookName
+    readTime = value.readTime
+    lastRead = value.lastRead
+  }
+
+  var value: LibraryDomain.ReadRecord {
+    LibraryDomain.ReadRecord(
+      deviceID: deviceID,
+      bookName: bookName,
+      readTime: readTime,
+      lastRead: lastRead
     )
   }
 }

@@ -877,6 +877,10 @@ private struct RootContentView: View {
                         "、\(summary.bookSourceCount) 个书源、"
                         + "\(summary.replacementRuleCount) 条替换规则"
                 }
+                if summary.readRecordCount > 0 {
+                    androidBackupImportStatus +=
+                        "、\(summary.readRecordCount) 条阅读记录"
+                }
             } catch {
                 androidBackupImportStatus = "Android 备份导入失败"
             }
@@ -912,7 +916,8 @@ private struct RootContentView: View {
                     + "\(summary.groupCount) 个分组、"
                     + "\(summary.bookmarkCount) 条书签、"
                     + "\(summary.bookSourceCount) 个书源、"
-                    + "\(summary.replacementRuleCount) 条替换规则"
+                    + "\(summary.replacementRuleCount) 条替换规则、"
+                    + "\(summary.readRecordCount) 条阅读记录"
                 showsAndroidBackupExporter = true
             } catch {
                 androidBackupExportStatus = "Android 备份生成失败"

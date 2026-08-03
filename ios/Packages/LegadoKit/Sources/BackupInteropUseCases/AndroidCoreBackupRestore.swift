@@ -1,6 +1,7 @@
 import AndroidBackupInterop
 import AppUseCases
 import Foundation
+import LibraryDomain
 
 public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
   public let bookCount: Int
@@ -8,19 +9,22 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
   public let bookmarkCount: Int
   public let bookSourceCount: Int
   public let replacementRuleCount: Int
+  public let readRecordCount: Int
 
   public init(
     bookCount: Int,
     groupCount: Int,
     bookmarkCount: Int,
     bookSourceCount: Int,
-    replacementRuleCount: Int
+    replacementRuleCount: Int,
+    readRecordCount: Int = 0
   ) {
     self.bookCount = bookCount
     self.groupCount = groupCount
     self.bookmarkCount = bookmarkCount
     self.bookSourceCount = bookSourceCount
     self.replacementRuleCount = replacementRuleCount
+    self.readRecordCount = readRecordCount
   }
 }
 
@@ -32,6 +36,7 @@ public protocol AndroidCoreBackupRestoreRepository: Sendable {
   func restoreAndroidReplacementRules(
     _ rules: [ReaderReplacementRule]
   ) async throws
+  func restoreAndroidReadRecords(_ records: [LibraryDomain.ReadRecord]) async throws
 }
 
 public struct AndroidCoreBackupRestoreUseCase: Sendable {
@@ -54,6 +59,9 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     let replacementRules = try AndroidBackupArchive.readReplacementRules(
       from: archiveURL
     ).map(Self.mapReplacementRule)
+    let readRecords = AndroidReadRecordInteropAdapter.restoreValues(
+      try AndroidBackupArchive.readReadRecords(from: archiveURL)
+    )
 
     let library = try await repository.restoreAndroidLibrary(libraryPlan)
     if !bookSources.isEmpty {
@@ -62,12 +70,16 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     if !replacementRules.isEmpty {
       try await repository.restoreAndroidReplacementRules(replacementRules)
     }
+    if !readRecords.isEmpty {
+      try await repository.restoreAndroidReadRecords(readRecords)
+    }
     return AndroidCoreBackupRestoreSummary(
       bookCount: library.bookCount,
       groupCount: library.groupCount,
       bookmarkCount: library.bookmarkCount,
       bookSourceCount: bookSources.count,
-      replacementRuleCount: replacementRules.count
+      replacementRuleCount: replacementRules.count,
+      readRecordCount: readRecords.count
     )
   }
 

@@ -9,7 +9,17 @@ import Testing
 struct AndroidLibraryBackupUseCaseTests {
   @Test func writesArchiveThatImportsBackToTheSameLibraryPlan() async throws {
     let plan = fixturePlan()
-    let repository = BackupRepositoryStub(plan: plan)
+    let repository = BackupRepositoryStub(
+      plan: plan,
+      records: [
+        ReadRecord(
+          deviceID: "ios-device",
+          bookName: "iOS Book",
+          readTime: 7_200,
+          lastRead: 1_700_000_000_987
+        )
+      ]
+    )
     let useCase = AndroidLibraryBackupUseCase(repository: repository)
     let directory = FileManager.default.temporaryDirectory
       .appendingPathComponent(UUID().uuidString, isDirectory: true)
@@ -42,6 +52,7 @@ struct AndroidLibraryBackupUseCaseTests {
     let restored = try AndroidLibraryImportAdapter.plan(from: archiveURL)
     let sources = try AndroidBackupArchive.readBookSources(from: archiveURL)
     let rules = try AndroidBackupArchive.readReplacementRules(from: archiveURL)
+    let records = try AndroidBackupArchive.readReadRecords(from: archiveURL)
 
     #expect(
       summary == AndroidLibraryBackupSummary(
@@ -49,13 +60,16 @@ struct AndroidLibraryBackupUseCaseTests {
         groupCount: 1,
         bookmarkCount: 1,
         bookSourceCount: 1,
-        replacementRuleCount: 1
+        replacementRuleCount: 1,
+        readRecordCount: 1
       )
     )
     #expect(restored == plan)
     #expect(sources.first?.bookSourceUrl == .value("https://ios.invalid/source"))
     #expect(rules.first?.name == .value("去广告"))
     #expect(rules.first?.order == .value(3))
+    #expect(records.first?.restoreProjection.deviceID == "ios-device")
+    #expect(records.first?.restoreProjection.readTime == 7_200)
   }
 
   private func fixturePlan() -> AndroidLibraryRestorePlan {
@@ -127,12 +141,18 @@ struct AndroidLibraryBackupUseCaseTests {
 
 private actor BackupRepositoryStub: AndroidLibraryBackupRepository {
   let plan: AndroidLibraryRestorePlan
+  let records: [ReadRecord]
 
-  init(plan: AndroidLibraryRestorePlan) {
+  init(plan: AndroidLibraryRestorePlan, records: [ReadRecord] = []) {
     self.plan = plan
+    self.records = records
   }
 
   func androidLibraryBackupPlan() async throws -> AndroidLibraryRestorePlan {
     plan
+  }
+
+  func androidReadRecords() async throws -> [ReadRecord] {
+    records
   }
 }

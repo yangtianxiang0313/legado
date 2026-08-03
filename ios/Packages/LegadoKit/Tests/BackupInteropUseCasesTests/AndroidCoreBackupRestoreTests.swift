@@ -2,6 +2,7 @@ import AndroidBackupInterop
 import AppUseCases
 import BackupInteropUseCases
 import Foundation
+import LibraryDomain
 import Testing
 
 @Suite("AndroidCoreBackupRestoreUseCaseTests")
@@ -34,6 +35,14 @@ struct AndroidCoreBackupRestoreUseCaseTests {
             replacement: "",
             order: 3
           )
+        ],
+        readRecords: [
+          AndroidReadRecordDTO(
+            deviceID: "android-device",
+            bookName: "Android Book",
+            readTime: 3_600,
+            lastRead: 1_700_000_000_789
+          )
         ]
       ),
       to: archiveURL
@@ -48,13 +57,16 @@ struct AndroidCoreBackupRestoreUseCaseTests {
         groupCount: 0,
         bookmarkCount: 0,
         bookSourceCount: 1,
-        replacementRuleCount: 1
+        replacementRuleCount: 1,
+        readRecordCount: 1
       )
     )
     #expect(snapshot.sources.first?.sourceURL == "https://android.invalid/source")
     #expect(snapshot.rules.first?.id == "42")
     #expect(snapshot.rules.first?.name == "去广告")
     #expect(snapshot.rules.first?.order == 3)
+    #expect(snapshot.records.first?.deviceID == "android-device")
+    #expect(snapshot.records.first?.readTime == 3_600)
   }
 
 }
@@ -62,6 +74,7 @@ struct AndroidCoreBackupRestoreUseCaseTests {
 private actor CoreRestoreRepositoryStub: AndroidCoreBackupRestoreRepository {
   private var sources: [BookSourceDraft] = []
   private var rules: [ReaderReplacementRule] = []
+  private var records: [ReadRecord] = []
 
   func restoreAndroidLibrary(
     _ plan: AndroidLibraryRestorePlan
@@ -83,10 +96,15 @@ private actor CoreRestoreRepositoryStub: AndroidCoreBackupRestoreRepository {
     self.rules = rules
   }
 
+  func restoreAndroidReadRecords(_ records: [ReadRecord]) async throws {
+    self.records = records
+  }
+
   func snapshot() -> (
     sources: [BookSourceDraft],
-    rules: [ReaderReplacementRule]
+    rules: [ReaderReplacementRule],
+    records: [ReadRecord]
   ) {
-    (sources, rules)
+    (sources, rules, records)
   }
 }

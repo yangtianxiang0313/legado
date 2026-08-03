@@ -8,19 +8,22 @@ public struct AndroidBackupContents: Equatable, Sendable {
     public var books: [AndroidBookDTO]
     public var bookGroups: [AndroidBookGroupDTO]
     public var bookmarks: [AndroidBookmarkDTO]
+    public var readRecords: [AndroidReadRecordDTO]
 
     public init(
         bookSources: [BookSourceDTO] = [],
         replacementRules: [AndroidReplaceRuleDTO] = [],
         books: [AndroidBookDTO] = [],
         bookGroups: [AndroidBookGroupDTO] = [],
-        bookmarks: [AndroidBookmarkDTO] = []
+        bookmarks: [AndroidBookmarkDTO] = [],
+        readRecords: [AndroidReadRecordDTO] = []
     ) {
         self.bookSources = bookSources
         self.replacementRules = replacementRules
         self.books = books
         self.bookGroups = bookGroups
         self.bookmarks = bookmarks
+        self.readRecords = readRecords
     }
 }
 
@@ -31,6 +34,7 @@ public enum AndroidBackupArchive {
     public static let booksMember = "bookshelf.json"
     public static let bookGroupsMember = "bookGroup.json"
     public static let bookmarksMember = "bookmark.json"
+    public static let readRecordsMember = "readRecord.json"
 
     public static func write(
         _ contents: AndroidBackupContents,
@@ -73,6 +77,14 @@ public enum AndroidBackupArchive {
                 .init(
                     path: bookmarksMember,
                     data: try AndroidBookmarkCodec.encodeMany(contents.bookmarks)
+                )
+            )
+        }
+        if !contents.readRecords.isEmpty {
+            members.append(
+                .init(
+                    path: readRecordsMember,
+                    data: try AndroidReadRecordCodec.encodeMany(contents.readRecords)
                 )
             )
         }
@@ -154,5 +166,15 @@ public enum AndroidBackupArchive {
             bookmarksMember, from: archiveURL, maximumBytes: maximumMemberBytes
         ) else { return [] }
         return try AndroidBookmarkCodec.decodeMany(data)
+    }
+
+    public static func readReadRecords(
+        from archiveURL: URL,
+        maximumMemberBytes: UInt64 = 32 * 1_024 * 1_024
+    ) throws -> [AndroidReadRecordDTO] {
+        guard let data = try ArchiveZIPFoundation.read(
+            readRecordsMember, from: archiveURL, maximumBytes: maximumMemberBytes
+        ) else { return [] }
+        return try AndroidReadRecordCodec.decodeMany(data)
     }
 }

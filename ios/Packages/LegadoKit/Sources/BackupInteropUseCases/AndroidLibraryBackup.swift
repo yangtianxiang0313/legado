@@ -10,24 +10,32 @@ public struct AndroidLibraryBackupSummary: Equatable, Sendable {
   public let bookmarkCount: Int
   public let bookSourceCount: Int
   public let replacementRuleCount: Int
+  public let readRecordCount: Int
 
   public init(
     bookCount: Int,
     groupCount: Int,
     bookmarkCount: Int,
     bookSourceCount: Int = 0,
-    replacementRuleCount: Int = 0
+    replacementRuleCount: Int = 0,
+    readRecordCount: Int = 0
   ) {
     self.bookCount = bookCount
     self.groupCount = groupCount
     self.bookmarkCount = bookmarkCount
     self.bookSourceCount = bookSourceCount
     self.replacementRuleCount = replacementRuleCount
+    self.readRecordCount = readRecordCount
   }
 }
 
 public protocol AndroidLibraryBackupRepository: Sendable {
   func androidLibraryBackupPlan() async throws -> AndroidLibraryRestorePlan
+  func androidReadRecords() async throws -> [ReadRecord]
+}
+
+public extension AndroidLibraryBackupRepository {
+  func androidReadRecords() async throws -> [ReadRecord] { [] }
 }
 
 public enum AndroidLibraryBackupError: Error, Equatable, Sendable {
@@ -57,10 +65,12 @@ public struct AndroidLibraryBackupUseCase: Sendable {
     replacementRules: [ReaderReplacementRule]
   ) async throws -> AndroidLibraryBackupSummary {
     let plan = try await repository.androidLibraryBackupPlan()
+    let readRecords = try await repository.androidReadRecords()
     let contents = try AndroidLibraryBackupAdapter.contents(
       from: plan,
       bookSources: bookSources,
-      replacementRules: replacementRules
+      replacementRules: replacementRules,
+      readRecords: readRecords
     )
     try AndroidBackupArchive.write(
       contents,
@@ -71,7 +81,8 @@ public struct AndroidLibraryBackupUseCase: Sendable {
       groupCount: plan.groups.count,
       bookmarkCount: plan.bookmarks.count,
       bookSourceCount: contents.bookSources.count,
-      replacementRuleCount: contents.replacementRules.count
+      replacementRuleCount: contents.replacementRules.count,
+      readRecordCount: contents.readRecords.count
     )
   }
 }
@@ -80,13 +91,19 @@ public enum AndroidLibraryBackupAdapter {
   public static func contents(from plan: AndroidLibraryRestorePlan) throws
     -> AndroidBackupContents
   {
-    try contents(from: plan, bookSources: [], replacementRules: [])
+    try contents(
+      from: plan,
+      bookSources: [],
+      replacementRules: [],
+      readRecords: []
+    )
   }
 
   public static func contents(
     from plan: AndroidLibraryRestorePlan,
     bookSources: [BookSourceDraft],
-    replacementRules: [ReaderReplacementRule]
+    replacementRules: [ReaderReplacementRule],
+    readRecords: [ReadRecord] = []
   ) throws -> AndroidBackupContents {
     let sourceData = try SourceManagementPolicy.exportData(
       bookSources,
@@ -97,7 +114,8 @@ public enum AndroidLibraryBackupAdapter {
       replacementRules: try replacementRules.map(mapReplacementRule),
       books: try plan.books.map(mapBook),
       bookGroups: try plan.groups.map(mapGroup),
-      bookmarks: try plan.bookmarks.map(mapBookmark)
+      bookmarks: try plan.bookmarks.map(mapBookmark),
+      readRecords: AndroidReadRecordInteropAdapter.backupDocuments(readRecords)
     )
   }
 

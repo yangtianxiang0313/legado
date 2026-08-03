@@ -5,6 +5,7 @@ import BackupInteropUseCases
 import DatabaseGRDB
 import Foundation
 import IntegrationKit
+import LibraryDomain
 import ReaderCore
 import SwiftUI
 import UIKit
@@ -216,6 +217,12 @@ private struct AppAndroidCoreBackupRestoreRepository:
             try await repository.saveReplacementRule(rule)
         }
     }
+
+    func restoreAndroidReadRecords(
+        _ records: [LibraryDomain.ReadRecord]
+    ) async throws {
+        try await repository.restoreAndroidReadRecords(records)
+    }
 }
 
 private struct AppAndroidLibraryBackupRepository:
@@ -227,6 +234,10 @@ private struct AppAndroidLibraryBackupRepository:
         -> AndroidLibraryRestorePlan
     {
         try await repository.androidLibraryBackupPlan()
+    }
+
+    func androidReadRecords() async throws -> [LibraryDomain.ReadRecord] {
+        try await repository.androidReadRecords()
     }
 }
 
