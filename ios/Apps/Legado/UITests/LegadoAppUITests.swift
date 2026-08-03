@@ -169,6 +169,45 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testAndroidLibraryBackupImportEntry() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+        ]
+        app.launchEnvironment["LEGADO_ANDROID_BACKUP_FIXTURE_BASE64"] =
+            "UEsDBBQAAAgIAAAAIQCfHJMcXQAAAGMAAAAOAAAAYm9va0dyb3VwLmpzb26LrlZKys/PDs4vKlGyMtJRSs1LTMpJDUpNK0otzlCySkvMKU7VUUovyi8t8ExRsrKAsv0Sc1OVrJT8ixKTc1IV3EFCSjpK+UUpqUVKViY6SsUZ+eVKViVFpam1sQBQSwMEFAAACAgAAAAhAML7DuN+AAAAugAAAA0AAABib29rbWFyay5qc29ui65WSsrPz3YsLcnIL1KyUvIvSkzOSVWA8nXAkn6JualAqUz/YAWotBNQFCoZklpRApQsTs1JTS5JTQGKJmckFpSkFnnmpaRWKFkZwwWgxjhDeApu+aVFCNUB+cVKVkbmQH5+XklqHshIMAtouI5SSSZIp6G5ARQYGhnXxgIAUEsDBBQAAAgIAAAAIQDqOq76HgEAAFUCAAAOAAAAYm9va3NoZWxmLmpzb26NUU1rwzAM/StF52xJW1iHb1tgMBjtoO1p7OA5amLqWsEfZaX0v09eUmhoGfPJ0nt6kp4+jiBjaMiBgIWTyuDoqYsz+CLarp1hpAmh9SLPNfk7+mXda7uXRld5IjFXSbtuKxkQRHARM6iiKxvZBnSvtsJvENPL3Dt5EJPZZWqld1w8nhX9G0+mQzgYxqEPRy8U04y1o9iCeMzASB/KBtW2pGgDq1+krrSLIqEBE36ze3GDMRxghZb7W5nqQC+Wo96+584QchWyqQ/pp2tt/3bR8zYK4UyeX6kuh4RFp847OpRVSXajaxBHjvboPK5Ine/gW6PDG9m6nxvERhqPJ0YOVnVr86qB1L9OnTMREj1I0yvO446dSxqHNomdPn8AUEsBAhUDFAAACAgAAAAhAJ8ckxxdAAAAYwAAAA4AAAAAAAAAAAAAAKSBAAAAAGJvb2tHcm91cC5qc29uUEsBAhUDFAAACAgAAAAhAML7DuN+AAAAugAAAA0AAAAAAAAAAAAAAKSBiQAAAGJvb2ttYXJrLmpzb25QSwECFQMUAAAICAAAACEA6jqu+h4BAABVAgAADgAAAAAAAAAAAAAApIEyAQAAYm9va3NoZWxmLmpzb25QSwUGAAAAAAMAAwCzAAAAfAIAAAAA"
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        selectRoot("root.settings", label: "我的")
+        app.swipeUp()
+        let importButton = element("action.settings.androidBackup.import")
+        XCTAssertTrue(importButton.waitForExistence(timeout: 8))
+        importButton.tap()
+        let status = element("state.settings.androidBackup.import")
+        XCTAssertTrue(status.waitForExistence(timeout: 8))
+        XCTAssertEqual("已导入 1 本书、1 个分组、1 条书签", status.label)
+
+        selectRoot("root.shelf", label: "书架")
+        XCTAssertTrue(app.staticTexts["iOS Oracle Book"].waitForExistence(timeout: 8))
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "screen": "screen.root.settings",
+            "action": "action.settings.androidBackup.import",
+            "result": status.label,
+            "restored_book": "iOS Oracle Book",
+        ])
+    }
+
     func testStartupFirstUseAndRestore() throws {
         let environment = ProcessInfo.processInfo.environment
         let contract = try XCTUnwrap(

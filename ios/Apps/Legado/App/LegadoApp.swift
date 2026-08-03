@@ -1,6 +1,7 @@
 import AVFoundation
 import AppNavigation
 import AppUseCases
+import BackupInteropUseCases
 import DatabaseGRDB
 import Foundation
 import IntegrationKit
@@ -22,6 +23,7 @@ struct LegadoApp: App {
     @State private var webDAVSettings: WebDAVConnectionSettingsStore
     private let webDAVCredentials: KeychainWebDAVCredentialStore
     private let webDAVClient: any WebDAVConnectionInitializing
+    private let libraryRestore: AndroidLibraryRestoreUseCase
 
     init() {
         let processArguments = ProcessInfo.processInfo.arguments
@@ -81,6 +83,11 @@ struct LegadoApp: App {
         do {
             let libraryRepository = try GRDBBookShelfRepository
                 .applicationSupport()
+            self.libraryRestore = AndroidLibraryRestoreUseCase(
+                repository: AppAndroidLibraryRestoreRepository(
+                    repository: libraryRepository
+                )
+            )
             _library = State(
                 initialValue: ShelfLibrary(
                     repository: libraryRepository
@@ -151,6 +158,7 @@ struct LegadoApp: App {
                     webDAVSettings: webDAVSettings,
                     webDAVCredentials: webDAVCredentials,
                     webDAVClient: webDAVClient,
+                    libraryRestore: libraryRestore,
                     startupCase: startupCase
                 )
             } else {
@@ -165,10 +173,23 @@ struct LegadoApp: App {
                     replacementRules: replacementRules,
                     webDAVSettings: webDAVSettings,
                     webDAVCredentials: webDAVCredentials,
-                    webDAVClient: webDAVClient
+                    webDAVClient: webDAVClient,
+                    libraryRestore: libraryRestore
                 )
             }
         }
+    }
+}
+
+private struct AppAndroidLibraryRestoreRepository:
+    AndroidLibraryRestoreRepository
+{
+    let repository: GRDBBookShelfRepository
+
+    func restoreAndroidLibrary(
+        _ plan: AndroidLibraryRestorePlan
+    ) async throws -> AndroidLibraryRestoreSummary {
+        try await repository.restoreAndroidLibrary(plan)
     }
 }
 

@@ -1,9 +1,11 @@
 import AppNavigation
 import AppUseCases
+import BackupInteropUseCases
 import Foundation
 import IntegrationKit
 import SwiftUI
 import UIKit
+import UniformTypeIdentifiers
 import WebDAVFoundation
 
 struct RootShellView: View {
@@ -18,6 +20,7 @@ struct RootShellView: View {
     @Bindable var webDAVSettings: WebDAVConnectionSettingsStore
     let webDAVCredentials: KeychainWebDAVCredentialStore
     let webDAVClient: any WebDAVConnectionInitializing
+    let libraryRestore: AndroidLibraryRestoreUseCase
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var didLoadLibrary = false
 
@@ -168,7 +171,8 @@ struct RootShellView: View {
                 rootVisibility: rootVisibility,
                 webDAVSettings: webDAVSettings,
                 webDAVCredentials: webDAVCredentials,
-                webDAVClient: webDAVClient
+                webDAVClient: webDAVClient,
+                libraryRestore: libraryRestore
             )
             .navigationDestination(for: AppRoute.self) { route in
                 destination(for: route, on: root)
@@ -615,6 +619,7 @@ private struct RootContentView: View {
     @Bindable var webDAVSettings: WebDAVConnectionSettingsStore
     let webDAVCredentials: KeychainWebDAVCredentialStore
     let webDAVClient: any WebDAVConnectionInitializing
+    let libraryRestore: AndroidLibraryRestoreUseCase
     @State private var webDAVAccount = ProcessInfo.processInfo.arguments.contains(
         "--webdav-test-double"
     ) ? "reader" : ""
@@ -622,6 +627,8 @@ private struct RootContentView: View {
         "--webdav-test-double"
     ) ? "p@ssword" : ""
     @State private var webDAVStatus = ""
+    @State private var showsAndroidBackupImporter = false
+    @State private var androidBackupImportStatus = ""
 
     var body: some View {
         if root == .shelf {
@@ -694,6 +701,22 @@ private struct RootContentView: View {
                 .accessibilityIdentifier("action.settings.openSources")
 
                 VStack(alignment: .leading, spacing: 10) {
+                    Text("Android 数据互通")
+                        .font(.headline)
+                    Button {
+                        beginAndroidBackupImport()
+                    } label: {
+                        Label("导入 Android backup.zip", systemImage: "square.and.arrow.down")
+                    }
+                    .accessibilityIdentifier("action.settings.androidBackup.import")
+                    if !androidBackupImportStatus.isEmpty {
+                        Text(androidBackupImportStatus)
+                            .accessibilityIdentifier("state.settings.androidBackup.import")
+                    }
+                }
+                .accessibilityIdentifier("section.settings.androidBackup")
+
+                VStack(alignment: .leading, spacing: 10) {
                     Text("根入口")
                         .font(.headline)
                     Toggle(
@@ -748,6 +771,70 @@ private struct RootContentView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(uiColor: .systemGroupedBackground))
         .navigationTitle(root.title)
+        .fileImporter(
+            isPresented: $showsAndroidBackupImporter,
+            allowedContentTypes: [.zip],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                guard let url = urls.first else {
+                    androidBackupImportStatus = "未选择备份文件"
+                    return
+                }
+                restoreAndroidLibrary(from: url, removeAfterRestore: false)
+            case .failure:
+                androidBackupImportStatus = "备份文件选择失败"
+            }
+        }
+    }
+
+    private func beginAndroidBackupImport() {
+        guard
+            let encoded = ProcessInfo.processInfo.environment[
+                "LEGADO_ANDROID_BACKUP_FIXTURE_BASE64"
+            ],
+            let data = Data(base64Encoded: encoded)
+        else {
+            showsAndroidBackupImporter = true
+            return
+        }
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("android-library-import-ui-test.zip")
+        do {
+            try data.write(to: url, options: .atomic)
+            restoreAndroidLibrary(from: url, removeAfterRestore: true)
+        } catch {
+            androidBackupImportStatus = "备份测试文件准备失败"
+        }
+    }
+
+    private func restoreAndroidLibrary(
+        from url: URL,
+        removeAfterRestore: Bool
+    ) {
+        androidBackupImportStatus = "正在导入…"
+        let hasSecurityScope = url.startAccessingSecurityScopedResource()
+        Task {
+            defer {
+                if hasSecurityScope {
+                    url.stopAccessingSecurityScopedResource()
+                }
+                if removeAfterRestore {
+                    try? FileManager.default.removeItem(at: url)
+                }
+            }
+            do {
+                let summary = try await libraryRestore.restore(from: url)
+                await library.reload()
+                androidBackupImportStatus =
+                    "已导入 \(summary.bookCount) 本书、"
+                    + "\(summary.groupCount) 个分组、"
+                    + "\(summary.bookmarkCount) 条书签"
+            } catch {
+                androidBackupImportStatus = "Android 备份导入失败"
+            }
+        }
     }
 
     private func testWebDAVConnection() {
@@ -1316,6 +1403,7 @@ struct StartupAcceptanceView: View {
     @Bindable var webDAVSettings: WebDAVConnectionSettingsStore
     let webDAVCredentials: KeychainWebDAVCredentialStore
     let webDAVClient: any WebDAVConnectionInitializing
+    let libraryRestore: AndroidLibraryRestoreUseCase
     let startupCase: StartupAcceptanceCase
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -1362,7 +1450,8 @@ struct StartupAcceptanceView: View {
                 replacementRules: replacementRules,
                 webDAVSettings: webDAVSettings,
                 webDAVCredentials: webDAVCredentials,
-                webDAVClient: webDAVClient
+                webDAVClient: webDAVClient,
+                libraryRestore: libraryRestore
             )
         }
     }
