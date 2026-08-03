@@ -1160,12 +1160,34 @@ private struct RootContentView: View {
                         at: archiveURL.deletingLastPathComponent()
                     )
                 }
+                let webDAVConfiguration: AndroidWebDAVBackupExportInput?
+                if webDAVSettings.value.serverAddress.isEmpty {
+                    webDAVConfiguration = nil
+                } else {
+                    guard !androidBackupPassword.isEmpty else {
+                        androidBackupExportStatus =
+                            "导出 WebDAV 配置需要填写 Android 备份口令"
+                        return
+                    }
+                    let credentials = try await webDAVCredentials.credentials(
+                        for: webDAVSettings.value.credentialReference
+                    )
+                    webDAVConfiguration = AndroidWebDAVBackupExportInput(
+                        serverAddress: webDAVSettings.value.serverAddress,
+                        username: credentials.username,
+                        password: credentials.password,
+                        directoryName: webDAVSettings.value.directoryName,
+                        backupPassword: androidBackupPassword
+                    )
+                }
                 let summary = try await libraryBackup.export(
                     to: archiveURL,
                     bookSources: backupSources,
                     replacementRules: backupReplacementRules,
-                    readerPreferences: readerPreferences.value
+                    readerPreferences: readerPreferences.value,
+                    webDAVConfiguration: webDAVConfiguration
                 )
+                androidBackupPassword = ""
                 androidBackupExportDocument = AndroidBackupZipDocument(
                     data: try Data(contentsOf: archiveURL)
                 )
@@ -1181,6 +1203,9 @@ private struct RootContentView: View {
                     + "\(summary.rssSourceCount) 个 RSS 源、"
                     + "\(summary.rssStarCount) 条 RSS 收藏、"
                     + "\(summary.httpTextToSpeechEngineCount) 个在线朗读引擎"
+                if summary.webDAVConfigurationCount > 0 {
+                    androidBackupExportStatus += "、1 份 WebDAV 配置"
+                }
                 showsAndroidBackupExporter = true
             } catch {
                 androidBackupExportStatus = "Android 备份生成失败"
