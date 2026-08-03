@@ -306,9 +306,9 @@ struct ShelfManagementView: View {
             Button("未分组") {
                 Task { await library.selectGroup(0) }
             }
-            ForEach(library.availableGroupIDs, id: \.self) { groupID in
-                Button("分组 \(groupID)") {
-                    Task { await library.selectGroup(groupID) }
+            ForEach(library.availableGroups) { group in
+                Button(group.name) {
+                    Task { await library.selectGroup(group.id) }
                 }
             }
         } label: {
@@ -352,8 +352,10 @@ struct ShelfManagementView: View {
                     Button("移到未分组") {
                         runBatch(.moveToGroup(0))
                     }
-                    Button("移到分组 1") {
-                        runBatch(.moveToGroup(1))
+                    ForEach(library.availableGroups) { group in
+                        Button("移到\(group.name)") {
+                            runBatch(.moveToGroup(group.id))
+                        }
                     }
                 }
                 .accessibilityIdentifier("action.shelf.batch.group")
@@ -425,7 +427,11 @@ struct ShelfManagementView: View {
         guard let groupID = library.selectedGroupID else {
             return "全部书籍"
         }
-        return groupID == 0 ? "未分组" : "分组 \(groupID)"
+        if groupID == 0 {
+            return "未分组"
+        }
+        return library.availableGroups.first { $0.id == groupID }?.name
+            ?? "分组 \(groupID)"
     }
 
     private func toggle(_ id: ShelfBookItem.ID) {

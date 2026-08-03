@@ -140,6 +140,25 @@ public struct ShelfBookItem: Identifiable, Equatable, Sendable {
   }
 }
 
+public struct ShelfGroupItem: Identifiable, Equatable, Sendable {
+  public let id: Int
+  public let name: String
+  public let order: Int
+  public let isShown: Bool
+
+  public init(
+    id: Int,
+    name: String,
+    order: Int = 0,
+    isShown: Bool = true
+  ) {
+    self.id = id
+    self.name = name
+    self.order = order
+    self.isShown = isShown
+  }
+}
+
 public enum ShelfBatchMutation: Equatable, Sendable {
   case delete
   case clearCache
@@ -174,6 +193,7 @@ public protocol BookShelfRepository:
   ) async throws -> ShelfBookItem
   func remove(bookID: LibraryDomain.BookID) async throws
   func shelfBooks() async throws -> [ShelfBookItem]
+  func shelfGroups() async throws -> [ShelfGroupItem]
   func book(forURL bookURL: String) async throws -> ShelfBookItem?
   func book(id: LibraryDomain.BookID) async throws -> ShelfBookItem?
   func updateBookInfo(
@@ -257,6 +277,10 @@ public protocol BookShelfRepository:
 }
 
 public extension BookShelfRepository {
+  func shelfGroups() async throws -> [ShelfGroupItem] {
+    []
+  }
+
   func updateBookInfo(
     bookID: LibraryDomain.BookID,
     candidate: ShelfBookCandidate
@@ -417,6 +441,7 @@ public extension BookShelfRepository {
 @Observable
 public final class ShelfLibrary {
   public private(set) var books: [ShelfBookItem] = []
+  public private(set) var groups: [ShelfGroupItem] = []
   public internal(set) var errorMessage: String?
   public private(set) var selectedGroupID: Int?
   public private(set) var sortMode: ShelfSortMode = .recentlyRead
@@ -435,6 +460,7 @@ public final class ShelfLibrary {
   public func reload() async {
     do {
       allBooks = try await repository.shelfBooks()
+      groups = try await repository.shelfGroups()
       sortMode = try await repository.shelfSortMode(
         groupID: selectedGroupID
       )
@@ -891,6 +917,7 @@ public final class ShelfLibrary {
     try? await repository.reset()
     allBooks = []
     books = []
+    groups = []
     selectedGroupID = nil
     sortMode = .recentlyRead
     lastBatchReport = nil
@@ -898,9 +925,22 @@ public final class ShelfLibrary {
   }
 
   public var availableGroupIDs: [Int] {
-    Array(
-      Set(allBooks.map(\.membership.groupID).filter { $0 > 0 })
-    ).sorted()
+    availableGroups.map(\.id)
+  }
+
+  public var availableGroups: [ShelfGroupItem] {
+    let restored = groups.filter { $0.id > 0 && $0.isShown }
+    let restoredIDs = Set(restored.map(\.id))
+    let inferred = Set(
+      allBooks.flatMap { book in
+        Self.oneHotGroupIDs(in: book.membership.groupID)
+      }
+    )
+    .subtracting(restoredIDs)
+    .map { ShelfGroupItem(id: $0, name: "分组 \($0)") }
+    return (restored + inferred).sorted {
+      ($0.order, $0.id) < ($1.order, $1.id)
+    }
   }
 
   public func selectGroup(_ groupID: Int?) async {
@@ -1056,7 +1096,7 @@ public final class ShelfLibrary {
   private func projectBooks() {
     let filtered = allBooks.filter {
       guard let selectedGroupID else { return true }
-      return $0.membership.groupID == selectedGroupID
+      return $0.membership.isMember(of: selectedGroupID)
     }
     let orderedIDs = ShelfBookOrdering.sort(
       filtered.map(\.presentation),
@@ -1064,6 +1104,14 @@ public final class ShelfLibrary {
     ).map(\.id)
     let byID = Dictionary(uniqueKeysWithValues: filtered.map { ($0.id, $0) })
     books = orderedIDs.compactMap { byID[$0] }
+  }
+
+  nonisolated private static func oneHotGroupIDs(in groupMask: Int) -> [Int] {
+    guard groupMask > 0 else { return [] }
+    return (0..<Int.bitWidth - 1).compactMap { offset in
+      let candidate = 1 << offset
+      return groupMask & candidate == 0 ? nil : candidate
+    }
   }
 
   nonisolated private static func sourceMigration(

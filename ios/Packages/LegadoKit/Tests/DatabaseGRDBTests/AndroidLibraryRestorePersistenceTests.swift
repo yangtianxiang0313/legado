@@ -100,6 +100,50 @@ struct AndroidLibraryRestorePersistenceTests {
     #expect(restored.bookmarks.first?.content == "after")
   }
 
+  @MainActor
+  @Test func projectsRestoredGroupNamesAndMultiGroupMembership() async throws {
+    let databaseURL = temporaryDatabaseURL()
+    defer { try? FileManager.default.removeItem(at: databaseURL.deletingLastPathComponent()) }
+    let repository = try GRDBBookShelfRepository(path: databaseURL.path)
+    _ = try await repository.restoreAndroidLibrary(
+      AndroidLibraryRestorePlan(
+        books: [restoreBook()],
+        groups: [
+          AndroidLibraryRestoreGroup(
+            id: 1,
+            name: "收藏",
+            cover: nil,
+            order: 1,
+            enablesRefresh: true,
+            isShown: true,
+            bookSort: 0
+          ),
+          AndroidLibraryRestoreGroup(
+            id: 8,
+            name: "工作",
+            cover: nil,
+            order: 2,
+            enablesRefresh: true,
+            isShown: true,
+            bookSort: 0
+          )
+        ],
+        bookmarks: []
+      )
+    )
+    let library = ShelfLibrary(repository: repository)
+
+    await library.reload()
+    #expect(library.availableGroups.map(\.name) == ["收藏", "工作"])
+
+    await library.selectGroup(1)
+    #expect(library.books.map(\.candidate.name) == ["Android Book"])
+    await library.selectGroup(8)
+    #expect(library.books.map(\.candidate.name) == ["Android Book"])
+    await library.selectGroup(0)
+    #expect(library.books.isEmpty)
+  }
+
   private func restoreBook() -> AndroidLibraryRestoreBook {
     AndroidLibraryRestoreBook(
       candidate: candidate(

@@ -112,6 +112,25 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
     }
   }
 
+  public func shelfGroups() async throws -> [ShelfGroupItem] {
+    try await database.read { db in
+      try AndroidLibraryGroupRecord
+        .order(Column("orderValue").asc, Column("groupID").asc)
+        .fetchAll(db)
+        .compactMap { record in
+          guard let groupID = Int(exactly: record.groupID), groupID > 0 else {
+            return nil
+          }
+          return ShelfGroupItem(
+            id: groupID,
+            name: record.name,
+            order: record.orderValue,
+            isShown: record.isShown
+          )
+        }
+    }
+  }
+
   public func book(
     forURL bookURL: String
   ) async throws -> ShelfBookItem? {

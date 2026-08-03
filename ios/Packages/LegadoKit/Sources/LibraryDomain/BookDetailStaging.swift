@@ -27,6 +27,18 @@ public enum ShelfMembership: Equatable, Sendable {
       return groupID
     }
   }
+
+  /// Android stores user-group membership as a bit mask. Group zero is the
+  /// explicit ungrouped projection; positive one-hot identifiers use bit
+  /// containment so one book can appear in more than one restored group.
+  public func isMember(of groupID: Int) -> Bool {
+    guard case .member(let groupMask) = self else { return false }
+    if groupID == 0 {
+      return groupMask == 0
+    }
+    guard groupID > 0, groupMask > 0 else { return false }
+    return groupMask & groupID != 0
+  }
 }
 
 public struct LibraryBook: Equatable, Sendable {
