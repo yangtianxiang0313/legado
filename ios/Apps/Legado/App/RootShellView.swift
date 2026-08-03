@@ -27,6 +27,17 @@ private extension Color {
     }
 }
 
+private extension DefaultHomePage {
+    var title: String {
+        switch self {
+        case .bookshelf: "书架"
+        case .explore: "发现"
+        case .rss: "RSS"
+        case .settings: "我的"
+        }
+    }
+}
+
 private func synchronizeDefaultWebDAVServer(
     settings: WebDAVConnectionSettings,
     repository: any WebDAVServerProfileRepository
@@ -489,6 +500,7 @@ struct RootShellView: View {
                 showsDiscovery: rootVisibility.value.showsExplore,
                 showsRSS: rootVisibility.value.showsRSS,
                 bookshelfSort: await library.globalShelfSortMode(),
+                defaultHomePage: rootVisibility.value.defaultHomePage,
                 readAloudPreferences: readAloudPreferences.value
             ),
             webDAVConfiguration: primaryConfiguration,
@@ -1545,6 +1557,25 @@ private struct RootContentView: View {
                         )
                     )
                     .accessibilityIdentifier("toggle.settings.root.rss")
+                    Picker(
+                        "默认首页",
+                        selection: Binding(
+                            get: {
+                                rootVisibility.value.defaultHomePage
+                            },
+                            set: {
+                                rootVisibility.setDefaultHomePage($0)
+                            }
+                        )
+                    ) {
+                        ForEach(DefaultHomePage.allCases, id: \.rawValue) {
+                            page in
+                            Text(page.title).tag(page)
+                        }
+                    }
+                    .accessibilityIdentifier(
+                        "picker.settings.root.defaultHomePage"
+                    )
                 }
                 .accessibilityIdentifier("section.settings.rootVisibility")
 
@@ -1913,6 +1944,8 @@ private struct RootContentView: View {
                             showsRSS: rootVisibility.value.showsRSS,
                             bookshelfSort:
                                 await library.globalShelfSortMode(),
+                            defaultHomePage:
+                                rootVisibility.value.defaultHomePage,
                             readAloudPreferences:
                                 readAloudPreferences.value
                         ),

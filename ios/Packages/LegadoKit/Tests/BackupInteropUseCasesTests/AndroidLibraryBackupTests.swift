@@ -75,6 +75,7 @@ struct AndroidLibraryBackupUseCaseTests {
         showsDiscovery: false,
         showsRSS: true,
         bookshelfSort: .combinedTime,
+        defaultHomePage: .settings,
         readAloudPreferences: ReadAloudPreferences(
           followsSystemRate: false,
           speechRatePreference: 15
@@ -136,6 +137,7 @@ struct AndroidLibraryBackupUseCaseTests {
     #expect(
       sharedPreferences.bookshelfSort == 4
     )
+    #expect(sharedPreferences.defaultHomePage == "my")
     #expect(sharedPreferences.ttsFollowsSystemRate == false)
     #expect(sharedPreferences.ttsSpeechRate == 15)
   }

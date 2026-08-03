@@ -71,6 +71,7 @@ struct AndroidCoreBackupRestoreUseCaseTests {
           AndroidApplicationBackupPreferences.showDiscoveryKey: .boolean(false),
           AndroidApplicationBackupPreferences.showRSSKey: .boolean(false),
           AndroidApplicationBackupPreferences.bookshelfSortKey: .int(4),
+          AndroidApplicationBackupPreferences.defaultHomePageKey: .string("my"),
           AndroidApplicationBackupPreferences.ttsFollowSystemKey: .boolean(false),
           AndroidApplicationBackupPreferences.ttsSpeechRateKey: .int(15),
         ])
@@ -90,7 +91,7 @@ struct AndroidCoreBackupRestoreUseCaseTests {
     #expect(summary.localTextTOCRuleCount == 1)
     #expect(summary.readerConfigCount == 2)
     #expect(summary.dictionaryRuleCount == 1)
-    #expect(summary.applicationPreferenceCount == 5)
+    #expect(summary.applicationPreferenceCount == 6)
     #expect(Set(summary.preflight.members.map(\.path)) == Set([
       "bookSource.json", "config.xml", "dictRule.json", "readConfig.json",
       "readRecord.json", "replaceRule.json", "shareReadConfig.json",
@@ -110,6 +111,7 @@ struct AndroidCoreBackupRestoreUseCaseTests {
     #expect(snapshot.dictionaryRules.first?.name == "词典")
     #expect(snapshot.navigationPreferences?.showsExplore == false)
     #expect(snapshot.navigationPreferences?.showsRSS == false)
+    #expect(snapshot.navigationPreferences?.defaultHomePage == .settings)
     #expect(snapshot.globalShelfSortMode == .combinedTime)
     #expect(snapshot.readAloudPreferences?.followsSystemRate == false)
     #expect(snapshot.readAloudPreferences?.speechRatePreference == 15)

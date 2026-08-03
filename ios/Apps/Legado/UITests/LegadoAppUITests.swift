@@ -513,6 +513,52 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testRestoredAndroidDefaultHomePageDrivesNextColdStart() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        let commonArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+            "--webdav-test-double",
+            "--webdav-app-preferences-backup-test-double",
+        ]
+        app.launchArguments = commonArguments + [
+            "--reset-root-visibility",
+            "--reset-webdav-settings",
+            "--reset-webdav-backup-discovery",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        require("screen.root.shelf")
+        let offer = app.alerts["发现新的云端备份"]
+        XCTAssertTrue(offer.waitForExistence(timeout: 15))
+        offer.buttons["恢复"].tap()
+        let completion = app.alerts["云端备份恢复完成"]
+        XCTAssertTrue(completion.waitForExistence(timeout: 15))
+        completion.buttons["好"].tap()
+
+        app.terminate()
+        app.launchArguments = commonArguments
+        app.launch()
+        require("projection.\(contract.projection)")
+        require("screen.root.settings", timeout: 15)
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "scenario_id": "ui-android-default-home-page-restore-v1",
+            "android_default_home_page": "my",
+            "ios_cold_start_root": "root.settings",
+            "consumption_phase": "next_cold_start",
+        ])
+    }
+
     func testLatestWebDAVBackupDiscoveryAndRestore() throws {
         let environment = ProcessInfo.processInfo.environment
         let contract = try XCTUnwrap(

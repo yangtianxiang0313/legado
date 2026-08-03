@@ -102,14 +102,20 @@ public struct AndroidWebDAVConfigurationImportPlan: Equatable, Sendable {
 public struct AndroidNavigationPreferencesImportPlan: Equatable, Sendable {
   public let showsExplore: Bool?
   public let showsRSS: Bool?
+  public let defaultHomePage: DefaultHomePage?
 
-  public init(showsExplore: Bool? = nil, showsRSS: Bool? = nil) {
+  public init(
+    showsExplore: Bool? = nil,
+    showsRSS: Bool? = nil,
+    defaultHomePage: DefaultHomePage? = nil
+  ) {
     self.showsExplore = showsExplore
     self.showsRSS = showsRSS
+    self.defaultHomePage = defaultHomePage
   }
 
   public var isPresent: Bool {
-    showsExplore != nil || showsRSS != nil
+    showsExplore != nil || showsRSS != nil || defaultHomePage != nil
   }
 }
 
@@ -462,7 +468,10 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     let navigationPreferences = projectedApplicationPreferences.map {
       AndroidNavigationPreferencesImportPlan(
         showsExplore: $0.showsDiscovery,
-        showsRSS: $0.showsRSS
+        showsRSS: $0.showsRSS,
+        defaultHomePage: $0.defaultHomePage.flatMap(
+          DefaultHomePage.init(rawValue:)
+        )
       )
     }.flatMap { $0.isPresent ? $0 : nil }
     let globalShelfSortMode = projectedApplicationPreferences?
@@ -562,6 +571,7 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
         projectedApplicationPreferences?.showsDiscovery.map { _ in 1 },
         projectedApplicationPreferences?.showsRSS.map { _ in 1 },
         globalShelfSortMode.map { _ in 1 },
+        navigationPreferences?.defaultHomePage.map { _ in 1 },
         projectedApplicationPreferences?.ttsFollowsSystemRate.map { _ in 1 },
         readAloudSpeechRate.map { _ in 1 },
       ].compactMap { $0 }.count,

@@ -162,12 +162,14 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
   public static let showDiscoveryKey = "showDiscovery"
   public static let showRSSKey = "showRss"
   public static let bookshelfSortKey = "bookshelfSort"
+  public static let defaultHomePageKey = "defaultHomePage"
   public static let ttsFollowSystemKey = "ttsFollowSys"
   public static let ttsSpeechRateKey = "ttsSpeechRate"
 
   public let showsDiscovery: Bool?
   public let showsRSS: Bool?
   public let bookshelfSort: Int64?
+  public let defaultHomePage: String?
   public let ttsFollowsSystemRate: Bool?
   public let ttsSpeechRate: Int64?
 
@@ -175,12 +177,14 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
     showsDiscovery: Bool? = nil,
     showsRSS: Bool? = nil,
     bookshelfSort: Int64? = nil,
+    defaultHomePage: String? = nil,
     ttsFollowsSystemRate: Bool? = nil,
     ttsSpeechRate: Int64? = nil
   ) {
     self.showsDiscovery = showsDiscovery
     self.showsRSS = showsRSS
     self.bookshelfSort = bookshelfSort
+    self.defaultHomePage = defaultHomePage
     self.ttsFollowsSystemRate = ttsFollowsSystemRate
     self.ttsSpeechRate = ttsSpeechRate
   }
@@ -190,6 +194,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
       showsDiscovery: document.boolean(Self.showDiscoveryKey),
       showsRSS: document.boolean(Self.showRSSKey),
       bookshelfSort: document.integer(Self.bookshelfSortKey),
+      defaultHomePage: document.string(Self.defaultHomePageKey),
       ttsFollowsSystemRate: document.boolean(Self.ttsFollowSystemKey),
       ttsSpeechRate: document.integer(Self.ttsSpeechRateKey)
     )
@@ -197,6 +202,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
 
   public var isPresent: Bool {
     showsDiscovery != nil || showsRSS != nil || bookshelfSort != nil
+      || defaultHomePage != nil
       || ttsFollowsSystemRate != nil || ttsSpeechRate != nil
   }
 }

@@ -1,4 +1,5 @@
 @testable import AppUseCases
+import Foundation
 import ReaderCore
 import XCTest
 
@@ -39,13 +40,33 @@ final class RootVisibilityPreferencesStoreTests: XCTestCase {
 
     store.setShowsExplore(false)
     store.setShowsRSS(false)
+    store.setDefaultHomePage(.settings)
 
     XCTAssertEqual(
       store.value,
-      RootVisibilityPreferences(showsExplore: false, showsRSS: false)
+      RootVisibilityPreferences(
+        showsExplore: false,
+        showsRSS: false,
+        defaultHomePage: .settings
+      )
     )
     XCTAssertEqual(repository.value, store.value)
-    XCTAssertEqual(repository.saveCount, 2)
+    XCTAssertEqual(repository.saveCount, 3)
+  }
+
+  func testLegacyPayloadDefaultsHomePageAndHiddenRootFallsBackToShelf() throws {
+    let legacy = try JSONDecoder().decode(
+      RootVisibilityPreferences.self,
+      from: Data(#"{"showsExplore":false,"showsRSS":true}"#.utf8)
+    )
+    XCTAssertEqual(legacy.defaultHomePage, .bookshelf)
+
+    let hidden = RootVisibilityPreferences(
+      showsExplore: false,
+      showsRSS: true,
+      defaultHomePage: .explore
+    )
+    XCTAssertEqual(hidden.effectiveDefaultHomePage, .bookshelf)
   }
 }
 

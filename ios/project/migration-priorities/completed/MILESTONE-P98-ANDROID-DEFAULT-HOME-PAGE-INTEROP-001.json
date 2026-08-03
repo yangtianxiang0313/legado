@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P98-ANDROID-DEFAULT-HOME-PAGE-INTEROP-001",
+  "status": "completed",
+  "mode": "critical_path_only",
+  "priority": 1,
+  "title": "P98 Android 默认首页双端互通",
+  "objective": "让 Android config.xml 的 defaultHomePage 在 iOS 恢复后于下一次冷启动选择等价根页面，并让 iOS 设置值按 bookshelf、explore、rss、my 原值回写 Android。",
+  "validation_policy": "聚焦测试覆盖 typed projection、旧偏好兼容解码、恢复与导出往返；最终只运行一条 iPhone Simulator 恢复后重启场景，验证 my 映射到 iOS 设置根页面。",
+  "stages": [{
+    "id": "P98-S1",
+    "title": "默认首页进入备份往返与冷启动",
+    "selectors": [{
+      "id": "P98-S1-DEFAULT-HOME",
+      "claim_ids": [],
+      "task_ids": ["IOS-APP-NAVIGATION-ANDROID-DEFAULT-HOME-PAGE-INTEROP-001"]
+    }]
+  }],
+  "deliveries": [{
+    "target": "IOS-APP-NAVIGATION-ANDROID-DEFAULT-HOME-PAGE-INTEROP-001",
+    "title": "恢复、冷启动消费并回写 Android 默认首页",
+    "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+    "fixture_id": "ui-android-default-home-page-restore-v1",
+    "validation": "simulator",
+    "prerequisite_task_ids": ["IOS-APP-NAVIGATION-ANDROID-READ-ALOUD-PREFERENCES-INTEROP-001"],
+    "additional_allowed_paths": [
+      "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
+      "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+      "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+      "ios/Packages/LegadoKit/Tests/AndroidBackupInteropTests/**",
+      "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**",
+      "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+      "ios/Apps/Legado/App/**",
+      "ios/Apps/Legado/UITests/**"
+    ],
+    "ui_contract": {
+      "goal": "恢复 defaultHomePage=my 的 Android backup.zip，终止并重新启动 iOS App 后，初始根页面为设置页。",
+      "scenario_id": "ui-android-default-home-page-restore-v1",
+      "test_method": "testRestoredAndroidDefaultHomePageDrivesNextColdStart"
+    },
+    "source_anchors": [
+      {
+        "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+        "path": "app/src/main/java/io/legado/app/help/config/AppConfig.kt",
+        "symbol_id": "kotlin://io.legado.app.help.config.AppConfig/defaultHomePage"
+      },
+      {
+        "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+        "path": "app/src/main/java/io/legado/app/ui/main/MainActivity.kt",
+        "symbol_id": "kotlin://io.legado.app.ui.main.MainActivity/upHomePage"
+      },
+      {
+        "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+        "path": "app/src/main/res/values/arrays.xml",
+        "symbol_id": "android-resource://array/default_home_page_value"
+      }
+    ]
+  }]
+}

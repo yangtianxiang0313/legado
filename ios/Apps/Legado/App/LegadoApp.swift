@@ -12,6 +12,17 @@ import SwiftUI
 import UIKit
 import WebDAVFoundation
 
+private extension DefaultHomePage {
+    var rootRoute: RootRoute {
+        switch self {
+        case .bookshelf: .shelf
+        case .explore: .explore
+        case .rss: .rss
+        case .settings: .settings
+        }
+    }
+}
+
 @main
 struct LegadoApp: App {
     @State private var router = AppRouter()
@@ -152,7 +163,8 @@ struct LegadoApp: App {
                 selectedRoot: processArguments.contains("--initial-root-explore")
                     && rootVisibilityStore.value.showsExplore
                     ? .explore
-                    : .shelf
+                    : rootVisibilityStore.value.effectiveDefaultHomePage
+                        .rootRoute
             )
         )
         do {
@@ -667,6 +679,9 @@ private struct AppAndroidCoreBackupRestoreRepository:
             if let showsRSS = plan.showsRSS {
                 value.showsRSS = showsRSS
             }
+            if let defaultHomePage = plan.defaultHomePage {
+                value.defaultHomePage = defaultHomePage
+            }
             rootVisibility.replace(value)
         }
     }
@@ -1050,6 +1065,8 @@ private actor UITestWebDAVBackupTransfer: WebDAVBackupTransferring {
                             .boolean(false),
                         AndroidApplicationBackupPreferences.bookshelfSortKey:
                             .int(4),
+                        AndroidApplicationBackupPreferences.defaultHomePageKey:
+                            .string("my"),
                         AndroidApplicationBackupPreferences.ttsFollowSystemKey:
                             .boolean(false),
                         AndroidApplicationBackupPreferences.ttsSpeechRateKey:
