@@ -1,1 +1,1 @@
-{"active_task":"IOS-DATABASE-ANDROID-LIBRARY-RESTORE-001","attempt":0,"last_completed":{"at":"2026-08-03T11:26:43Z","sequence":775,"task_id":"IOS-INTEGRATION-ANDROID-LIBRARY-IMPORT-ADAPTER-001"},"schema_version":2,"status":"running","verification":null}
+{"active_task":null,"attempt":0,"last_completed":{"at":"2026-08-03T11:31:05Z","sequence":778,"task_id":"IOS-DATABASE-ANDROID-LIBRARY-RESTORE-001"},"schema_version":2,"status":"idle","verification":null}
