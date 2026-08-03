@@ -3366,6 +3366,20 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_filter": "AndroidLibraryRestorePersistenceTests",
             "acceptance_id": "android-library-restore-persistence-acceptance",
         }
+    if target == "IOS-SEARCH-ANDROID-HISTORY-INTEROP-001":
+        delivery_contracts["IntegrationKit"] = {
+            "goal": (
+                "按冻结 Android SearchKeyword 主键、使用次数和最后使用时间语义，"
+                "实现 searchHistory.json 与 iOS 搜索历史的双向互通。"
+            ),
+            "rule": (
+                "AndroidBackupInterop 保留格式和未知字段；AppUseCases 负责搜索历史"
+                "写入策略，DatabaseGRDB 实现存储；UI 只消费历史和提交搜索事件。"
+            ),
+            "test_id": "search-history-interop-tests",
+            "test_filter": "SearchHistoryInteropTests",
+            "acceptance_id": "search-history-interop-acceptance",
+        }
     if (
         architecture["owner"] == "AppNavigation"
         and isinstance(delivery.get("ui_contract"), dict)
