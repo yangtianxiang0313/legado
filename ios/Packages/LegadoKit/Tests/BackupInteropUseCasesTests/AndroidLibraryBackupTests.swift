@@ -1,3 +1,4 @@
+import AndroidBackupInterop
 import AppUseCases
 import BackupInteropUseCases
 import Foundation
@@ -18,15 +19,43 @@ struct AndroidLibraryBackupUseCaseTests {
     defer { try? FileManager.default.removeItem(at: directory) }
     let archiveURL = directory.appendingPathComponent("backup.zip")
 
-    let summary = try await useCase.export(to: archiveURL)
+    let summary = try await useCase.export(
+      to: archiveURL,
+      bookSources: [
+        BookSourceDraft(
+          sourceURL: "https://ios.invalid/source",
+          name: "iOS Source",
+          searchURL: "https://ios.invalid/search?key={{key}}",
+          searchRule: "$.books[*]"
+        )
+      ],
+      replacementRules: [
+        ReaderReplacementRule(
+          id: "ios-rule",
+          name: "去广告",
+          pattern: "ad",
+          replacement: "",
+          order: 3
+        )
+      ]
+    )
     let restored = try AndroidLibraryImportAdapter.plan(from: archiveURL)
+    let sources = try AndroidBackupArchive.readBookSources(from: archiveURL)
+    let rules = try AndroidBackupArchive.readReplacementRules(from: archiveURL)
 
     #expect(
       summary == AndroidLibraryBackupSummary(
-        bookCount: 1, groupCount: 1, bookmarkCount: 1
+        bookCount: 1,
+        groupCount: 1,
+        bookmarkCount: 1,
+        bookSourceCount: 1,
+        replacementRuleCount: 1
       )
     )
     #expect(restored == plan)
+    #expect(sources.first?.bookSourceUrl == .value("https://ios.invalid/source"))
+    #expect(rules.first?.name == .value("去广告"))
+    #expect(rules.first?.order == .value(3))
   }
 
   private func fixturePlan() -> AndroidLibraryRestorePlan {

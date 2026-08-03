@@ -138,6 +138,8 @@ struct RootShellView: View {
                 persistedSources: SearchEnvironment.sourceSwitchTargets(
                     persistedSources: sourceCatalog.sources
                 ),
+                backupSources: sourceCatalog.sources,
+                backupReplacementRules: replacementRules.rules,
                 openSearch: {
                     router.push(.searchBooks, on: .shelf)
                 },
@@ -611,6 +613,8 @@ private struct RootContentView: View {
     let root: RootRoute
     @Bindable var library: ShelfLibrary
     let persistedSources: [BookSourceDraft]
+    let backupSources: [BookSourceDraft]
+    let backupReplacementRules: [ReaderReplacementRule]
     let openSearch: () -> Void
     let openSources: () -> Void
     let openExploreSource: (ExploreSourceSummary) -> Void
@@ -882,14 +886,20 @@ private struct RootContentView: View {
                         at: archiveURL.deletingLastPathComponent()
                     )
                 }
-                let summary = try await libraryBackup.export(to: archiveURL)
+                let summary = try await libraryBackup.export(
+                    to: archiveURL,
+                    bookSources: backupSources,
+                    replacementRules: backupReplacementRules
+                )
                 androidBackupExportDocument = AndroidBackupZipDocument(
                     data: try Data(contentsOf: archiveURL)
                 )
                 androidBackupExportStatus =
                     "已准备 \(summary.bookCount) 本书、"
                     + "\(summary.groupCount) 个分组、"
-                    + "\(summary.bookmarkCount) 条书签"
+                    + "\(summary.bookmarkCount) 条书签、"
+                    + "\(summary.bookSourceCount) 个书源、"
+                    + "\(summary.replacementRuleCount) 条替换规则"
                 showsAndroidBackupExporter = true
             } catch {
                 androidBackupExportStatus = "Android 备份生成失败"
