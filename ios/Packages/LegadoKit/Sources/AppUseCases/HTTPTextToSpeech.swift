@@ -1,4 +1,5 @@
 import Foundation
+import SourceRuntime
 
 public struct HTTPTextToSpeechEngine: Codable, Identifiable, Equatable, Sendable {
   public let id: Int64
@@ -46,4 +47,64 @@ public struct HTTPTextToSpeechEngine: Codable, Identifiable, Equatable, Sendable
 public protocol HTTPTextToSpeechRepository: Sendable {
   func httpTextToSpeechEngines() async throws -> [HTTPTextToSpeechEngine]
   func upsertHTTPTextToSpeechEngine(_ engine: HTTPTextToSpeechEngine) async throws
+}
+
+public protocol HTTPTextToSpeechAudioLoading: Sendable {
+  func load(
+    engine: HTTPTextToSpeechEngine,
+    text: String,
+    speed: Int
+  ) async throws -> Data
+}
+
+public struct SourceRuntimeHTTPTextToSpeechAudioLoader:
+  HTTPTextToSpeechAudioLoading, Sendable
+{
+  private let transport: any HTTPTransport
+  private let cookieStore: SourceCookieStore
+  private let scriptRuntime: (any SourceScriptRuntime)?
+
+  public init(
+    transport: any HTTPTransport,
+    cookieStore: SourceCookieStore = SourceCookieStore(),
+    scriptRuntime: (any SourceScriptRuntime)? = nil
+  ) {
+    self.transport = transport
+    self.cookieStore = cookieStore
+    self.scriptRuntime = scriptRuntime
+  }
+
+  public func load(
+    engine: HTTPTextToSpeechEngine,
+    text: String,
+    speed: Int
+  ) async throws -> Data {
+    let audio = try await HTTPTextToSpeechPipeline(
+      definition: HTTPTextToSpeechRuntimeDefinition(
+        id: engine.id,
+        urlTemplate: engine.url,
+        contentTypePattern: engine.contentType,
+        headers: try headers(engine.header),
+        enabledCookieJar: engine.enabledCookieJar ?? false,
+        scriptLibrary: engine.jsLib.map {
+          SourceScriptLibrary(source: $0)
+        }
+      ),
+      transport: transport,
+      cookieStore: cookieStore,
+      scriptRuntime: scriptRuntime
+    ).load(text: text, speed: speed)
+    return audio.data
+  }
+
+  private func headers(_ value: String?) throws -> [SourceHeaderField] {
+    guard let value, !value.isEmpty else { return [] }
+    let object = try JSONDecoder().decode(
+      [String: String].self,
+      from: Data(value.utf8)
+    )
+    return try object.sorted { $0.key < $1.key }.map {
+      try SourceHeaderField(name: $0.key, value: $0.value)
+    }
+  }
 }
