@@ -2,6 +2,7 @@ import AndroidBackupInterop
 import AppUseCases
 import Foundation
 import LibraryDomain
+import ReaderCore
 
 public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
   public let bookCount: Int
@@ -16,6 +17,8 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
   public let rssStarCount: Int
   public let httpTextToSpeechEngineCount: Int
   public let localTextTOCRuleCount: Int
+  public let readerConfigCount: Int
+  public let readerConfigProjection: AndroidReaderConfigProjection?
 
   public init(
     bookCount: Int,
@@ -29,7 +32,9 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
     rssSourceCount: Int = 0,
     rssStarCount: Int = 0,
     httpTextToSpeechEngineCount: Int = 0,
-    localTextTOCRuleCount: Int = 0
+    localTextTOCRuleCount: Int = 0,
+    readerConfigCount: Int = 0,
+    readerConfigProjection: AndroidReaderConfigProjection? = nil
   ) {
     self.bookCount = bookCount
     self.groupCount = groupCount
@@ -43,6 +48,8 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
     self.rssStarCount = rssStarCount
     self.httpTextToSpeechEngineCount = httpTextToSpeechEngineCount
     self.localTextTOCRuleCount = localTextTOCRuleCount
+    self.readerConfigCount = readerConfigCount
+    self.readerConfigProjection = readerConfigProjection
   }
 }
 
@@ -63,6 +70,9 @@ public protocol AndroidCoreBackupRestoreRepository: Sendable {
   ) async throws
   func restoreAndroidLocalTextTOCRules(
     _ values: [LocalTextTOCRule]
+  ) async throws
+  func restoreAndroidReaderConfigBundle(
+    _ bundle: AndroidReaderConfigBundle
   ) async throws
 }
 
@@ -86,6 +96,10 @@ public extension AndroidCoreBackupRestoreRepository {
 
   func restoreAndroidLocalTextTOCRules(
     _ values: [LocalTextTOCRule]
+  ) async throws {}
+
+  func restoreAndroidReaderConfigBundle(
+    _ bundle: AndroidReaderConfigBundle
   ) async throws {}
 }
 
@@ -131,6 +145,12 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     let localTextTOCRules = AndroidLocalTextTOCRuleInteropAdapter.restoreValues(
       try AndroidBackupArchive.readLocalTextTOCRules(from: archiveURL)
     )
+    let readerConfigBundle = AndroidReaderConfigBundle(
+      styles: try AndroidBackupArchive.readReaderConfigs(from: archiveURL),
+      sharedStyle: try AndroidBackupArchive.readSharedReaderConfig(
+        from: archiveURL
+      )
+    )
 
     let library = try await repository.restoreAndroidLibrary(libraryPlan)
     if !bookSources.isEmpty {
@@ -162,6 +182,11 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     if !localTextTOCRules.isEmpty {
       try await repository.restoreAndroidLocalTextTOCRules(localTextTOCRules)
     }
+    if !readerConfigBundle.styles.isEmpty
+      || readerConfigBundle.sharedStyle != nil
+    {
+      try await repository.restoreAndroidReaderConfigBundle(readerConfigBundle)
+    }
     return AndroidCoreBackupRestoreSummary(
       bookCount: library.bookCount,
       groupCount: library.groupCount,
@@ -174,7 +199,10 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
       rssSourceCount: rssSources.count,
       rssStarCount: rssStars.count,
       httpTextToSpeechEngineCount: httpTextToSpeechEngines.count,
-      localTextTOCRuleCount: localTextTOCRules.count
+      localTextTOCRuleCount: localTextTOCRules.count,
+      readerConfigCount: readerConfigBundle.styles.count
+        + (readerConfigBundle.sharedStyle == nil ? 0 : 1),
+      readerConfigProjection: readerConfigBundle.projection
     )
   }
 

@@ -15,6 +15,8 @@ public struct AndroidBackupContents: Equatable, Sendable {
     public var rssStars: [AndroidRSSStarDTO]
     public var httpTextToSpeechEngines: [AndroidHTTPTextToSpeechDTO]
     public var localTextTOCRules: [AndroidLocalTextTOCRuleDTO]
+    public var readerConfigs: [AndroidReaderConfigDTO]
+    public var sharedReaderConfig: AndroidReaderConfigDTO?
 
     public init(
         bookSources: [BookSourceDTO] = [],
@@ -28,7 +30,9 @@ public struct AndroidBackupContents: Equatable, Sendable {
         rssSources: [AndroidRSSSourceDTO] = [],
         rssStars: [AndroidRSSStarDTO] = [],
         httpTextToSpeechEngines: [AndroidHTTPTextToSpeechDTO] = [],
-        localTextTOCRules: [AndroidLocalTextTOCRuleDTO] = []
+        localTextTOCRules: [AndroidLocalTextTOCRuleDTO] = [],
+        readerConfigs: [AndroidReaderConfigDTO] = [],
+        sharedReaderConfig: AndroidReaderConfigDTO? = nil
     ) {
         self.bookSources = bookSources
         self.replacementRules = replacementRules
@@ -42,6 +46,8 @@ public struct AndroidBackupContents: Equatable, Sendable {
         self.rssStars = rssStars
         self.httpTextToSpeechEngines = httpTextToSpeechEngines
         self.localTextTOCRules = localTextTOCRules
+        self.readerConfigs = readerConfigs
+        self.sharedReaderConfig = sharedReaderConfig
     }
 }
 
@@ -59,6 +65,8 @@ public enum AndroidBackupArchive {
     public static let rssStarsMember = "rssStar.json"
     public static let httpTextToSpeechMember = "httpTTS.json"
     public static let localTextTOCRulesMember = "txtTocRule.json"
+    public static let readerConfigsMember = "readConfig.json"
+    public static let sharedReaderConfigMember = "shareReadConfig.json"
 
     public static func write(
         _ contents: AndroidBackupContents,
@@ -162,6 +170,26 @@ public enum AndroidBackupArchive {
                     path: localTextTOCRulesMember,
                     data: try AndroidLocalTextTOCRuleCodec.encodeMany(
                         contents.localTextTOCRules
+                    )
+                )
+            )
+        }
+        if !contents.readerConfigs.isEmpty {
+            members.append(
+                .init(
+                    path: readerConfigsMember,
+                    data: try AndroidReaderConfigCodec.encodeList(
+                        contents.readerConfigs
+                    )
+                )
+            )
+        }
+        if let sharedReaderConfig = contents.sharedReaderConfig {
+            members.append(
+                .init(
+                    path: sharedReaderConfigMember,
+                    data: try AndroidReaderConfigCodec.encodeShared(
+                        sharedReaderConfig
                     )
                 )
             )
@@ -320,5 +348,27 @@ public enum AndroidBackupArchive {
             maximumBytes: maximumMemberBytes
         ) else { return [] }
         return try AndroidLocalTextTOCRuleCodec.decodeMany(data)
+    }
+
+    public static func readReaderConfigs(
+        from archiveURL: URL,
+        maximumMemberBytes: UInt64 = 32 * 1_024 * 1_024
+    ) throws -> [AndroidReaderConfigDTO] {
+        guard let data = try ArchiveZIPFoundation.read(
+            readerConfigsMember, from: archiveURL, maximumBytes: maximumMemberBytes
+        ) else { return [] }
+        return try AndroidReaderConfigCodec.decodeList(data)
+    }
+
+    public static func readSharedReaderConfig(
+        from archiveURL: URL,
+        maximumMemberBytes: UInt64 = 32 * 1_024 * 1_024
+    ) throws -> AndroidReaderConfigDTO? {
+        guard let data = try ArchiveZIPFoundation.read(
+            sharedReaderConfigMember,
+            from: archiveURL,
+            maximumBytes: maximumMemberBytes
+        ) else { return nil }
+        return try AndroidReaderConfigCodec.decodeShared(data)
     }
 }

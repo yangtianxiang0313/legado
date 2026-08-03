@@ -178,6 +178,7 @@ struct RootShellView: View {
                     )
                 },
                 rssStore: rssStore,
+                readerPreferences: readerPreferences,
                 rootVisibility: rootVisibility,
                 webDAVSettings: webDAVSettings,
                 webDAVCredentials: webDAVCredentials,
@@ -641,6 +642,7 @@ private struct RootContentView: View {
     let books: () -> [ShelfBookItem]
     let exploreSources: () -> [ExploreSourceSummary]
     @Bindable var rssStore: RSSStore
+    @Bindable var readerPreferences: ReaderPreferencesStore
     @Bindable var rootVisibility: RootVisibilityPreferencesStore
     @Bindable var webDAVSettings: WebDAVConnectionSettingsStore
     let webDAVCredentials: KeychainWebDAVCredentialStore
@@ -882,6 +884,9 @@ private struct RootContentView: View {
             }
             do {
                 let summary = try await backupRestore.restore(from: url)
+                if let projection = summary.readerConfigProjection {
+                    readerPreferences.apply(projection)
+                }
                 await library.reload()
                 await reloadBackupDomains()
                 androidBackupImportStatus =
@@ -916,6 +921,10 @@ private struct RootContentView: View {
                     androidBackupImportStatus +=
                         "、\(summary.httpTextToSpeechEngineCount) 个在线朗读引擎"
                 }
+                if summary.readerConfigCount > 0 {
+                    androidBackupImportStatus +=
+                        "、\(summary.readerConfigCount) 份阅读配置"
+                }
             } catch {
                 androidBackupImportStatus = "Android 备份导入失败"
             }
@@ -941,7 +950,8 @@ private struct RootContentView: View {
                 let summary = try await libraryBackup.export(
                     to: archiveURL,
                     bookSources: backupSources,
-                    replacementRules: backupReplacementRules
+                    replacementRules: backupReplacementRules,
+                    readerPreferences: readerPreferences.value
                 )
                 androidBackupExportDocument = AndroidBackupZipDocument(
                     data: try Data(contentsOf: archiveURL)

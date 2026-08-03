@@ -3,6 +3,7 @@ import AppUseCases
 import Foundation
 import LegadoCore
 import LibraryDomain
+import ReaderCore
 
 public struct AndroidLibraryBackupSummary: Equatable, Sendable {
   public let bookCount: Int
@@ -17,6 +18,7 @@ public struct AndroidLibraryBackupSummary: Equatable, Sendable {
   public let rssStarCount: Int
   public let httpTextToSpeechEngineCount: Int
   public let localTextTOCRuleCount: Int
+  public let readerConfigCount: Int
 
   public init(
     bookCount: Int,
@@ -30,7 +32,8 @@ public struct AndroidLibraryBackupSummary: Equatable, Sendable {
     rssSourceCount: Int = 0,
     rssStarCount: Int = 0,
     httpTextToSpeechEngineCount: Int = 0,
-    localTextTOCRuleCount: Int = 0
+    localTextTOCRuleCount: Int = 0,
+    readerConfigCount: Int = 0
   ) {
     self.bookCount = bookCount
     self.groupCount = groupCount
@@ -44,6 +47,7 @@ public struct AndroidLibraryBackupSummary: Equatable, Sendable {
     self.rssStarCount = rssStarCount
     self.httpTextToSpeechEngineCount = httpTextToSpeechEngineCount
     self.localTextTOCRuleCount = localTextTOCRuleCount
+    self.readerConfigCount = readerConfigCount
   }
 }
 
@@ -56,6 +60,7 @@ public protocol AndroidLibraryBackupRepository: Sendable {
   func androidRSSStars() async throws -> [RSSStar]
   func androidHTTPTextToSpeechEngines() async throws -> [HTTPTextToSpeechEngine]
   func localTextTOCRules() async throws -> [LocalTextTOCRule]
+  func androidReaderConfigBundle() async throws -> AndroidReaderConfigBundle?
 }
 
 public extension AndroidLibraryBackupRepository {
@@ -66,6 +71,7 @@ public extension AndroidLibraryBackupRepository {
   func androidRSSStars() async throws -> [RSSStar] { [] }
   func androidHTTPTextToSpeechEngines() async throws -> [HTTPTextToSpeechEngine] { [] }
   func localTextTOCRules() async throws -> [LocalTextTOCRule] { [] }
+  func androidReaderConfigBundle() async throws -> AndroidReaderConfigBundle? { nil }
 }
 
 public enum AndroidLibraryBackupError: Error, Equatable, Sendable {
@@ -92,7 +98,8 @@ public struct AndroidLibraryBackupUseCase: Sendable {
   public func export(
     to archiveURL: URL,
     bookSources: [BookSourceDraft],
-    replacementRules: [ReaderReplacementRule]
+    replacementRules: [ReaderReplacementRule],
+    readerPreferences: ReaderPreferences? = nil
   ) async throws -> AndroidLibraryBackupSummary {
     let plan = try await repository.androidLibraryBackupPlan()
     let readRecords = try await repository.androidReadRecords()
@@ -102,6 +109,13 @@ public struct AndroidLibraryBackupUseCase: Sendable {
     let rssStars = try await repository.androidRSSStars()
     let httpTextToSpeechEngines = try await repository.androidHTTPTextToSpeechEngines()
     let localTextTOCRules = try await repository.localTextTOCRules()
+    let storedReaderConfigBundle = try await repository.androidReaderConfigBundle()
+    let readerConfigBundle = readerPreferences.map {
+      (storedReaderConfigBundle ?? AndroidReaderConfigBundle(
+        styles: [],
+        sharedStyle: nil
+      )).applying($0)
+    } ?? storedReaderConfigBundle
     let contents = try AndroidLibraryBackupAdapter.contents(
       from: plan,
       bookSources: bookSources,
@@ -112,7 +126,8 @@ public struct AndroidLibraryBackupUseCase: Sendable {
       rssSources: rssSources,
       rssStars: rssStars,
       httpTextToSpeechEngines: httpTextToSpeechEngines,
-      localTextTOCRules: localTextTOCRules
+      localTextTOCRules: localTextTOCRules,
+      readerConfigBundle: readerConfigBundle
     )
     try AndroidBackupArchive.write(
       contents,
@@ -130,7 +145,9 @@ public struct AndroidLibraryBackupUseCase: Sendable {
       rssSourceCount: contents.rssSources.count,
       rssStarCount: contents.rssStars.count,
       httpTextToSpeechEngineCount: contents.httpTextToSpeechEngines.count,
-      localTextTOCRuleCount: contents.localTextTOCRules.count
+      localTextTOCRuleCount: contents.localTextTOCRules.count,
+      readerConfigCount: contents.readerConfigs.count
+        + (contents.sharedReaderConfig == nil ? 0 : 1)
     )
   }
 }
@@ -149,7 +166,8 @@ public enum AndroidLibraryBackupAdapter {
       rssSources: [],
       rssStars: [],
       httpTextToSpeechEngines: [],
-      localTextTOCRules: []
+      localTextTOCRules: [],
+      readerConfigBundle: nil
     )
   }
 
@@ -163,7 +181,8 @@ public enum AndroidLibraryBackupAdapter {
     rssSources: [RSSSource] = [],
     rssStars: [RSSStar] = [],
     httpTextToSpeechEngines: [HTTPTextToSpeechEngine] = [],
-    localTextTOCRules: [LocalTextTOCRule] = []
+    localTextTOCRules: [LocalTextTOCRule] = [],
+    readerConfigBundle: AndroidReaderConfigBundle? = nil
   ) throws -> AndroidBackupContents {
     let sourceData = try SourceManagementPolicy.exportData(
       bookSources,
@@ -187,7 +206,9 @@ public enum AndroidLibraryBackupAdapter {
           httpTextToSpeechEngines
         ),
       localTextTOCRules:
-        AndroidLocalTextTOCRuleInteropAdapter.backupDocuments(localTextTOCRules)
+        AndroidLocalTextTOCRuleInteropAdapter.backupDocuments(localTextTOCRules),
+      readerConfigs: readerConfigBundle?.styles ?? [],
+      sharedReaderConfig: readerConfigBundle?.sharedStyle
     )
   }
 

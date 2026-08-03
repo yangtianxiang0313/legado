@@ -1143,6 +1143,35 @@ public actor GRDBBookShelfRepository:
     }
   }
 
+  public func androidReaderConfigBundle() async throws
+    -> AndroidReaderConfigBundle?
+  {
+    try await database.read { db in
+      let records = try AndroidReaderConfigRecord.fetchAll(db)
+      guard !records.isEmpty else { return nil }
+      let payloads = Dictionary(uniqueKeysWithValues: records.map { ($0.key, $0.payload) })
+      return try AndroidReaderConfigBundle(
+        stylesData: payloads["styles"],
+        sharedStyleData: payloads["shared"]
+      )
+    }
+  }
+
+  public func restoreAndroidReaderConfigBundle(
+    _ bundle: AndroidReaderConfigBundle
+  ) async throws {
+    let styles = try bundle.encodedStyles()
+    let shared = try bundle.encodedSharedStyle()
+    try await database.write { db in
+      var stylesRecord = AndroidReaderConfigRecord(key: "styles", payload: styles)
+      try stylesRecord.save(db)
+      if let shared {
+        var sharedRecord = AndroidReaderConfigRecord(key: "shared", payload: shared)
+        try sharedRecord.save(db)
+      }
+    }
+  }
+
   public func restoreAndroidReadRecords(
     _ records: [LibraryDomain.ReadRecord]
   ) async throws {
@@ -1448,6 +1477,12 @@ public actor GRDBBookShelfRepository:
       try db.create(table: "localTextTOCRules") { table in
         table.column("id", .integer).notNull().primaryKey()
         table.column("serialNumber", .integer).notNull().indexed()
+        table.column("payload", .blob).notNull()
+      }
+    }
+    migrator.registerMigration("addAndroidReaderConfigInterop") { db in
+      try db.create(table: "androidReaderConfigs") { table in
+        table.column("key", .text).notNull().primaryKey()
         table.column("payload", .blob).notNull()
       }
     }
@@ -1909,6 +1944,14 @@ private struct LocalTextTOCRuleRecord:
       try JSONDecoder().decode(LocalTextTOCRule.self, from: payload)
     }
   }
+}
+
+private struct AndroidReaderConfigRecord:
+  Codable, FetchableRecord, MutablePersistableRecord
+{
+  static let databaseTableName = "androidReaderConfigs"
+  var key: String
+  var payload: Data
 }
 
 private struct ChapterContentRecord:

@@ -46,6 +46,13 @@ public final class ReaderPreferencesStore {
     repository.save(value)
   }
 
+  public func apply(_ projection: AndroidReaderConfigProjection) {
+    let updated = projection.applying(to: value)
+    guard updated != value else { return }
+    value = updated
+    repository.save(updated)
+  }
+
   private func update(
     _ mutation: (inout ReaderPreferences) -> Void
   ) {
