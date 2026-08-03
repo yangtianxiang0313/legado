@@ -51,16 +51,18 @@ struct AndroidCoreBackupRestoreUseCaseTests {
     let summary = try await useCase.restore(from: archiveURL)
     let snapshot = await repository.snapshot()
 
-    #expect(
-      summary == AndroidCoreBackupRestoreSummary(
-        bookCount: 0,
-        groupCount: 0,
-        bookmarkCount: 0,
-        bookSourceCount: 1,
-        replacementRuleCount: 1,
-        readRecordCount: 1
-      )
-    )
+    #expect(summary.bookCount == 0)
+    #expect(summary.groupCount == 0)
+    #expect(summary.bookmarkCount == 0)
+    #expect(summary.bookSourceCount == 1)
+    #expect(summary.replacementRuleCount == 1)
+    #expect(summary.readRecordCount == 1)
+    #expect(summary.preflight.members.map(\.path) == [
+      "bookSource.json", "readRecord.json", "replaceRule.json",
+    ])
+    #expect(summary.preflight.members.allSatisfy {
+      $0.disposition == .supported
+    })
     #expect(snapshot.sources.first?.sourceURL == "https://android.invalid/source")
     #expect(snapshot.rules.first?.id == "42")
     #expect(snapshot.rules.first?.name == "去广告")

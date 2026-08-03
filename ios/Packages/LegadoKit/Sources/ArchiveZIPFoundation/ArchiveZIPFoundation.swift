@@ -69,7 +69,12 @@ public enum ArchiveZIPFoundation {
 
     public static func descriptors(at url: URL) throws -> [Descriptor] {
         let archive = try Archive(url: url, accessMode: .read)
+        var paths = Set<String>()
         return try archive.map { entry in
+            try validate(entry.path)
+            guard paths.insert(entry.path).inserted else {
+                throw ContainerError.duplicateMemberPath(entry.path)
+            }
             guard entry.type == .file else {
                 throw ContainerError.nonFileMember(entry.path)
             }

@@ -24,6 +24,7 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
   public let themeConfigCount: Int
   public let webDAVConfigurationCount: Int
   public let webDAVServerProfileCount: Int
+  public let preflight: AndroidBackupPreflightReport
 
   public init(
     bookCount: Int,
@@ -44,7 +45,8 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
     keyboardAssistCount: Int = 0,
     themeConfigCount: Int = 0,
     webDAVConfigurationCount: Int = 0,
-    webDAVServerProfileCount: Int = 0
+    webDAVServerProfileCount: Int = 0,
+    preflight: AndroidBackupPreflightReport = .init(members: [])
   ) {
     self.bookCount = bookCount
     self.groupCount = groupCount
@@ -65,6 +67,7 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
     self.themeConfigCount = themeConfigCount
     self.webDAVConfigurationCount = webDAVConfigurationCount
     self.webDAVServerProfileCount = webDAVServerProfileCount
+    self.preflight = preflight
   }
 }
 
@@ -77,6 +80,7 @@ public enum AndroidWebDAVCredentialImportState: Equatable, Sendable {
 public enum AndroidCoreBackupRestoreError: Error, Equatable, Sendable {
   case backupPasswordRequired
   case invalidBackupPassword
+  case preflightRejected(AndroidBackupPreflightReport)
 }
 
 public struct AndroidWebDAVConfigurationImportPlan: Equatable, Sendable {
@@ -179,6 +183,10 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
   ) async throws
     -> AndroidCoreBackupRestoreSummary
   {
+    let preflight = AndroidBackupArchive.preflight(from: archiveURL)
+    guard !preflight.hasBlockingIssues else {
+      throw AndroidCoreBackupRestoreError.preflightRejected(preflight)
+    }
     let libraryPlan = try AndroidLibraryImportAdapter.plan(from: archiveURL)
     let bookSourceDTOs = try AndroidBackupArchive.readBookSources(
       from: archiveURL
@@ -327,7 +335,8 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
       keyboardAssistCount: keyboardAssists.count,
       themeConfigCount: themeProfiles.count,
       webDAVConfigurationCount: webDAVConfiguration == nil ? 0 : 1,
-      webDAVServerProfileCount: serverProfilePlan.webDAVProfiles.count
+      webDAVServerProfileCount: serverProfilePlan.webDAVProfiles.count,
+      preflight: preflight
     )
   }
 
