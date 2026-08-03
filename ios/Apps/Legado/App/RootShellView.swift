@@ -64,6 +64,7 @@ struct RootShellView: View {
     @Bindable var library: ShelfLibrary
     @Bindable var sourceCatalog: SourceCatalog
     @Bindable var readAloud: ReadAloudSession
+    @Bindable var readAloudPreferences: ReadAloudPreferencesStore
     @Bindable var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
     @Bindable var dictionaryLookup: DictionaryLookupStore
     @Bindable var keyboardAssists: KeyboardAssistStore
@@ -487,7 +488,8 @@ struct RootShellView: View {
             applicationPreferences: AndroidApplicationBackupExportInput(
                 showsDiscovery: rootVisibility.value.showsExplore,
                 showsRSS: rootVisibility.value.showsRSS,
-                bookshelfSort: await library.globalShelfSortMode()
+                bookshelfSort: await library.globalShelfSortMode(),
+                readAloudPreferences: readAloudPreferences.value
             ),
             webDAVConfiguration: primaryConfiguration,
             webDAVServerProfiles: profileExports,
@@ -617,6 +619,7 @@ struct RootShellView: View {
                 },
                 rssStore: rssStore,
                 readerPreferences: readerPreferences,
+                readAloudPreferences: readAloudPreferences,
                 appThemeProfiles: appThemeProfiles,
                 rootVisibility: rootVisibility,
                 webDAVSettings: webDAVSettings,
@@ -880,6 +883,7 @@ struct RootShellView: View {
                 library: library,
                 persistedSources: sourceCatalog.sources,
                 readAloud: readAloud,
+                readAloudPreferences: readAloudPreferences,
                 httpTextToSpeechEngines: httpTextToSpeechEngines,
                 dictionaryLookup: dictionaryLookup,
                 readerPreferences: readerPreferences,
@@ -1377,6 +1381,7 @@ private struct RootContentView: View {
     let exploreSources: () -> [ExploreSourceSummary]
     @Bindable var rssStore: RSSStore
     @Bindable var readerPreferences: ReaderPreferencesStore
+    @Bindable var readAloudPreferences: ReadAloudPreferencesStore
     @Bindable var appThemeProfiles: AppThemeProfileStore
     @Bindable var rootVisibility: RootVisibilityPreferencesStore
     @Bindable var webDAVSettings: WebDAVConnectionSettingsStore
@@ -1907,7 +1912,9 @@ private struct RootContentView: View {
                                 rootVisibility.value.showsExplore,
                             showsRSS: rootVisibility.value.showsRSS,
                             bookshelfSort:
-                                await library.globalShelfSortMode()
+                                await library.globalShelfSortMode(),
+                            readAloudPreferences:
+                                readAloudPreferences.value
                         ),
                     webDAVConfiguration: webDAVConfiguration,
                     webDAVServerProfiles: serverProfileExports,
@@ -2785,6 +2792,7 @@ struct StartupAcceptanceView: View {
     @Bindable var library: ShelfLibrary
     @Bindable var sourceCatalog: SourceCatalog
     @Bindable var readAloud: ReadAloudSession
+    @Bindable var readAloudPreferences: ReadAloudPreferencesStore
     @Bindable var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
     @Bindable var dictionaryLookup: DictionaryLookupStore
     @Bindable var keyboardAssists: KeyboardAssistStore
@@ -2847,6 +2855,7 @@ struct StartupAcceptanceView: View {
                 library: library,
                 sourceCatalog: sourceCatalog,
                 readAloud: readAloud,
+                readAloudPreferences: readAloudPreferences,
                 httpTextToSpeechEngines: httpTextToSpeechEngines,
                 dictionaryLookup: dictionaryLookup,
                 keyboardAssists: keyboardAssists,

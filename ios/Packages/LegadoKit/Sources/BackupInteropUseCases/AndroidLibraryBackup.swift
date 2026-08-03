@@ -101,15 +101,18 @@ public struct AndroidApplicationBackupExportInput: Equatable, Sendable {
   public let showsDiscovery: Bool
   public let showsRSS: Bool
   public let bookshelfSort: ShelfSortMode
+  public let readAloudPreferences: ReadAloudPreferences
 
   public init(
     showsDiscovery: Bool,
     showsRSS: Bool,
-    bookshelfSort: ShelfSortMode
+    bookshelfSort: ShelfSortMode,
+    readAloudPreferences: ReadAloudPreferences = .init()
   ) {
     self.showsDiscovery = showsDiscovery
     self.showsRSS = showsRSS
     self.bookshelfSort = bookshelfSort
+    self.readAloudPreferences = readAloudPreferences
   }
 }
 
@@ -333,6 +336,17 @@ public struct AndroidLibraryBackupUseCase: Sendable {
         .boolean(applicationPreferences.showsRSS)
       values[AndroidApplicationBackupPreferences.bookshelfSortKey] =
         .int(Int32(applicationPreferences.bookshelfSort.rawValue))
+      values[AndroidApplicationBackupPreferences.ttsFollowSystemKey] =
+        .boolean(
+          applicationPreferences.readAloudPreferences.followsSystemRate
+        )
+      values[AndroidApplicationBackupPreferences.ttsSpeechRateKey] =
+        .int(
+          Int32(
+            applicationPreferences.readAloudPreferences
+              .speechRatePreference
+          )
+        )
     }
     return values.isEmpty ? nil : AndroidSharedPreferencesDocument(values: values)
   }

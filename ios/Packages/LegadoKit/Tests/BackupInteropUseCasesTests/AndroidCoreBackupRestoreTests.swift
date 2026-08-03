@@ -3,6 +3,7 @@ import AppUseCases
 import BackupInteropUseCases
 import Foundation
 import LibraryDomain
+import ReaderCore
 import Testing
 
 @Suite("AndroidCoreBackupRestoreUseCaseTests")
@@ -70,6 +71,8 @@ struct AndroidCoreBackupRestoreUseCaseTests {
           AndroidApplicationBackupPreferences.showDiscoveryKey: .boolean(false),
           AndroidApplicationBackupPreferences.showRSSKey: .boolean(false),
           AndroidApplicationBackupPreferences.bookshelfSortKey: .int(4),
+          AndroidApplicationBackupPreferences.ttsFollowSystemKey: .boolean(false),
+          AndroidApplicationBackupPreferences.ttsSpeechRateKey: .int(15),
         ])
       ),
       to: archiveURL
@@ -87,7 +90,7 @@ struct AndroidCoreBackupRestoreUseCaseTests {
     #expect(summary.localTextTOCRuleCount == 1)
     #expect(summary.readerConfigCount == 2)
     #expect(summary.dictionaryRuleCount == 1)
-    #expect(summary.applicationPreferenceCount == 3)
+    #expect(summary.applicationPreferenceCount == 5)
     #expect(Set(summary.preflight.members.map(\.path)) == Set([
       "bookSource.json", "config.xml", "dictRule.json", "readConfig.json",
       "readRecord.json", "replaceRule.json", "shareReadConfig.json",
@@ -108,6 +111,8 @@ struct AndroidCoreBackupRestoreUseCaseTests {
     #expect(snapshot.navigationPreferences?.showsExplore == false)
     #expect(snapshot.navigationPreferences?.showsRSS == false)
     #expect(snapshot.globalShelfSortMode == .combinedTime)
+    #expect(snapshot.readAloudPreferences?.followsSystemRate == false)
+    #expect(snapshot.readAloudPreferences?.speechRatePreference == 15)
   }
 
 }
@@ -121,6 +126,7 @@ private actor CoreRestoreRepositoryStub: AndroidCoreBackupRestoreRepository {
   private var dictionaryRules: [DictionaryRule] = []
   private var navigationPreferences: AndroidNavigationPreferencesImportPlan?
   private var globalShelfSortMode: ShelfSortMode?
+  private var readAloudPreferences: AndroidReadAloudPreferencesImportPlan?
 
   func restoreAndroidDatabaseDomains(
     _ payload: AndroidCoreDatabaseRestorePayload
@@ -186,6 +192,12 @@ private actor CoreRestoreRepositoryStub: AndroidCoreBackupRestoreRepository {
     navigationPreferences = plan
   }
 
+  func restoreAndroidReadAloudPreferences(
+    _ plan: AndroidReadAloudPreferencesImportPlan
+  ) async throws {
+    readAloudPreferences = plan
+  }
+
   func snapshot() -> (
     sources: [BookSourceDraft],
     rules: [ReaderReplacementRule],
@@ -194,11 +206,12 @@ private actor CoreRestoreRepositoryStub: AndroidCoreBackupRestoreRepository {
     readerConfig: AndroidReaderConfigBundle?,
     dictionaryRules: [DictionaryRule],
     navigationPreferences: AndroidNavigationPreferencesImportPlan?,
-    globalShelfSortMode: ShelfSortMode?
+    globalShelfSortMode: ShelfSortMode?,
+    readAloudPreferences: AndroidReadAloudPreferencesImportPlan?
   ) {
     (
       sources, rules, records, tocRules, readerConfig, dictionaryRules,
-      navigationPreferences, globalShelfSortMode
+      navigationPreferences, globalShelfSortMode, readAloudPreferences
     )
   }
 }

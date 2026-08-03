@@ -162,31 +162,42 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
   public static let showDiscoveryKey = "showDiscovery"
   public static let showRSSKey = "showRss"
   public static let bookshelfSortKey = "bookshelfSort"
+  public static let ttsFollowSystemKey = "ttsFollowSys"
+  public static let ttsSpeechRateKey = "ttsSpeechRate"
 
   public let showsDiscovery: Bool?
   public let showsRSS: Bool?
   public let bookshelfSort: Int64?
+  public let ttsFollowsSystemRate: Bool?
+  public let ttsSpeechRate: Int64?
 
   public init(
     showsDiscovery: Bool? = nil,
     showsRSS: Bool? = nil,
-    bookshelfSort: Int64? = nil
+    bookshelfSort: Int64? = nil,
+    ttsFollowsSystemRate: Bool? = nil,
+    ttsSpeechRate: Int64? = nil
   ) {
     self.showsDiscovery = showsDiscovery
     self.showsRSS = showsRSS
     self.bookshelfSort = bookshelfSort
+    self.ttsFollowsSystemRate = ttsFollowsSystemRate
+    self.ttsSpeechRate = ttsSpeechRate
   }
 
   public init(document: AndroidSharedPreferencesDocument) {
     self.init(
       showsDiscovery: document.boolean(Self.showDiscoveryKey),
       showsRSS: document.boolean(Self.showRSSKey),
-      bookshelfSort: document.integer(Self.bookshelfSortKey)
+      bookshelfSort: document.integer(Self.bookshelfSortKey),
+      ttsFollowsSystemRate: document.boolean(Self.ttsFollowSystemKey),
+      ttsSpeechRate: document.integer(Self.ttsSpeechRateKey)
     )
   }
 
   public var isPresent: Bool {
     showsDiscovery != nil || showsRSS != nil || bookshelfSort != nil
+      || ttsFollowsSystemRate != nil || ttsSpeechRate != nil
   }
 }
 

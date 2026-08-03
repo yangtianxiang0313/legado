@@ -413,6 +413,106 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testRestoredAndroidReadAloudPreferencesDriveIOSRuntime() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+            "--reset-read-aloud-preferences",
+            "--reset-webdav-settings",
+            "--reset-webdav-backup-discovery",
+            "--seed-offline-cache",
+            "--system-read-aloud-test-double",
+            "--webdav-test-double",
+            "--webdav-app-preferences-backup-test-double",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        let offer = app.alerts["发现新的云端备份"]
+        XCTAssertTrue(offer.waitForExistence(timeout: 15))
+        offer.buttons["恢复"].tap()
+        let completion = app.alerts["云端备份恢复完成"]
+        XCTAssertTrue(completion.waitForExistence(timeout: 15))
+        completion.buttons["好"].tap()
+
+        let book = app.staticTexts["星河纪事"].firstMatch
+        XCTAssertTrue(book.waitForExistence(timeout: 8))
+        book.tap()
+        require("screen.bookDetail")
+        requireButton("action.bookDetail.startReading").tap()
+        require("screen.chapterTOC")
+        require("action.chapter.select.0").tap()
+        require("screen.reader")
+        requireButton("action.reader.openPrimaryMenu").tap()
+        requireByScrolling(
+            "action.reader.openMore",
+            in: "overlay.reader.primaryMenu"
+        ).tap()
+        require("overlay.reader.more")
+        requireByScrolling(
+            "action.reader.openReadAloudSettings",
+            in: "overlay.reader.more"
+        ).tap()
+
+        require("screen.reader.readAloudSettings")
+        let followSystem = app.switches[
+            "toggle.reader.readAloud.followSystemRate"
+        ].firstMatch
+        XCTAssertTrue(followSystem.waitForExistence(timeout: 8))
+        XCTAssertEqual(followSystem.value as? String, "0")
+        XCTAssertTrue(
+            app.staticTexts
+                .matching(identifier: "state.reader.readAloud.customRate")
+                .matching(NSPredicate(format: "label == %@", "自定义语速 2.0x"))
+                .firstMatch
+                .waitForExistence(timeout: 8)
+        )
+        XCTAssertTrue(
+            app.staticTexts
+                .matching(identifier: "state.reader.readAloud.effectiveRate")
+                .matching(NSPredicate(format: "label == %@", "当前生效 2.0x"))
+                .firstMatch
+                .waitForExistence(timeout: 8)
+        )
+        app.buttons["完成"].tap()
+        requireButton("action.reader.openPrimaryMenu").tap()
+        requireByScrolling(
+            "action.reader.openMore",
+            in: "overlay.reader.primaryMenu"
+        ).tap()
+        require("overlay.reader.more")
+        requireByScrolling(
+            "action.reader.startReadAloud",
+            in: "overlay.reader.more"
+        ).tap()
+        waitForLabel(
+            "正在朗读",
+            identifier: "state.reader.readAloud"
+        )
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "scenario_id": "ui-android-read-aloud-preferences-restore-v1",
+            "android_preferences": [
+                "ttsFollowSys": false,
+                "ttsSpeechRate": 15,
+            ],
+            "ios_consumption": [
+                "follows_system_rate": false,
+                "relative_rate": 2.0,
+                "runtime_state": "speaking",
+            ],
+        ])
+    }
+
     func testLatestWebDAVBackupDiscoveryAndRestore() throws {
         let environment = ProcessInfo.processInfo.environment
         let contract = try XCTUnwrap(

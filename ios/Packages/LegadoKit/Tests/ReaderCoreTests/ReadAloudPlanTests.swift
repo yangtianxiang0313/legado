@@ -41,4 +41,28 @@ final class ReadAloudPlanTests: XCTestCase {
   func testAndroidSpeechRateMapping() {
     XCTAssertEqual(ReadAloudPlan.speechRate(preference: 7), 1.2)
   }
+
+  func testReadAloudPreferencesUseAndroidRangeAndFollowSystemSemantics() {
+    XCTAssertEqual(
+      ReadAloudPreferences(
+        followsSystemRate: false,
+        speechRatePreference: 15
+      ).relativeRate,
+      2
+    )
+    XCTAssertEqual(
+      ReadAloudPreferences(
+        followsSystemRate: true,
+        speechRatePreference: 45
+      ).relativeRate,
+      1
+    )
+    XCTAssertEqual(
+      ReadAloudPreferences(
+        followsSystemRate: false,
+        speechRatePreference: 99
+      ).speechRatePreference,
+      45
+    )
+  }
 }

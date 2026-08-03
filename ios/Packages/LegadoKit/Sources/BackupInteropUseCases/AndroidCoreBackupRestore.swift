@@ -113,6 +113,23 @@ public struct AndroidNavigationPreferencesImportPlan: Equatable, Sendable {
   }
 }
 
+public struct AndroidReadAloudPreferencesImportPlan: Equatable, Sendable {
+  public let followsSystemRate: Bool?
+  public let speechRatePreference: Int?
+
+  public init(
+    followsSystemRate: Bool? = nil,
+    speechRatePreference: Int? = nil
+  ) {
+    self.followsSystemRate = followsSystemRate
+    self.speechRatePreference = speechRatePreference
+  }
+
+  public var isPresent: Bool {
+    followsSystemRate != nil || speechRatePreference != nil
+  }
+}
+
 public struct AndroidCoreDatabaseRestorePayload: Equatable, Sendable {
   public let library: AndroidLibraryRestorePlan
   public let replacementRules: [ReaderReplacementRule]
@@ -172,6 +189,7 @@ public struct AndroidCoreBackupRestorePayload: Equatable, Sendable {
   public let database: AndroidCoreDatabaseRestorePayload
   public let bookSources: [BookSourceDraft]
   public let navigationPreferences: AndroidNavigationPreferencesImportPlan?
+  public let readAloudPreferences: AndroidReadAloudPreferencesImportPlan?
   public let webDAVConfiguration: AndroidWebDAVConfigurationImportPlan?
   public let webDAVServerProfiles: AndroidServerProfileImportPlan
 
@@ -179,6 +197,7 @@ public struct AndroidCoreBackupRestorePayload: Equatable, Sendable {
     database: AndroidCoreDatabaseRestorePayload,
     bookSources: [BookSourceDraft] = [],
     navigationPreferences: AndroidNavigationPreferencesImportPlan? = nil,
+    readAloudPreferences: AndroidReadAloudPreferencesImportPlan? = nil,
     webDAVConfiguration: AndroidWebDAVConfigurationImportPlan? = nil,
     webDAVServerProfiles: AndroidServerProfileImportPlan = .init(
       entries: [],
@@ -188,6 +207,7 @@ public struct AndroidCoreBackupRestorePayload: Equatable, Sendable {
     self.database = database
     self.bookSources = bookSources
     self.navigationPreferences = navigationPreferences
+    self.readAloudPreferences = readAloudPreferences
     self.webDAVConfiguration = webDAVConfiguration
     self.webDAVServerProfiles = webDAVServerProfiles
   }
@@ -229,6 +249,9 @@ public protocol AndroidCoreBackupRestoreRepository: Sendable {
   func restoreAndroidNavigationPreferences(
     _ plan: AndroidNavigationPreferencesImportPlan
   ) async throws
+  func restoreAndroidReadAloudPreferences(
+    _ plan: AndroidReadAloudPreferencesImportPlan
+  ) async throws
   func restoreAndroidWebDAVConfiguration(
     _ plan: AndroidWebDAVConfigurationImportPlan
   ) async throws
@@ -255,6 +278,11 @@ public extension AndroidCoreBackupRestoreRepository {
       preferences.isPresent
     {
       try await restoreAndroidNavigationPreferences(preferences)
+    }
+    if let preferences = payload.readAloudPreferences,
+      preferences.isPresent
+    {
+      try await restoreAndroidReadAloudPreferences(preferences)
     }
     if !payload.bookSources.isEmpty {
       try await restoreAndroidBookSources(payload.bookSources)
@@ -336,6 +364,9 @@ public extension AndroidCoreBackupRestoreRepository {
   ) async throws {}
   func restoreAndroidNavigationPreferences(
     _ plan: AndroidNavigationPreferencesImportPlan
+  ) async throws {}
+  func restoreAndroidReadAloudPreferences(
+    _ plan: AndroidReadAloudPreferencesImportPlan
   ) async throws {}
   func restoreAndroidWebDAVConfiguration(
     _ plan: AndroidWebDAVConfigurationImportPlan
@@ -438,6 +469,18 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
       .bookshelfSort
       .flatMap(Int.init(exactly:))
       .flatMap(ShelfSortMode.init(rawValue:))
+    let readAloudSpeechRate = projectedApplicationPreferences?
+      .ttsSpeechRate
+      .flatMap(Int.init(exactly:))
+      .flatMap {
+        ReadAloudPreferences.speechRateRange.contains($0) ? $0 : nil
+      }
+    let readAloudPreferences = projectedApplicationPreferences.map {
+      AndroidReadAloudPreferencesImportPlan(
+        followsSystemRate: $0.ttsFollowsSystemRate,
+        speechRatePreference: readAloudSpeechRate
+      )
+    }.flatMap { $0.isPresent ? $0 : nil }
     let webDAVConfiguration = projectedWebDAVConfiguration.flatMap {
       $0.isPresent ? $0 : nil
     }
@@ -491,6 +534,7 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
         ),
         bookSources: bookSources,
         navigationPreferences: navigationPreferences,
+        readAloudPreferences: readAloudPreferences,
         webDAVConfiguration: webDAVImportPlan,
         webDAVServerProfiles: serverProfilePlan
       )
@@ -518,6 +562,8 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
         projectedApplicationPreferences?.showsDiscovery.map { _ in 1 },
         projectedApplicationPreferences?.showsRSS.map { _ in 1 },
         globalShelfSortMode.map { _ in 1 },
+        projectedApplicationPreferences?.ttsFollowsSystemRate.map { _ in 1 },
+        readAloudSpeechRate.map { _ in 1 },
       ].compactMap { $0 }.count,
       webDAVConfigurationCount: webDAVConfiguration == nil ? 0 : 1,
       webDAVServerProfileCount: serverProfilePlan.webDAVProfiles.count,

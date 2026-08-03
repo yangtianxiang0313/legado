@@ -19,6 +19,8 @@ struct AndroidWebDAVConfigInteropTests {
         <boolean name="showDiscovery" value="false" />
         <boolean name="showRss" value="true" />
         <int name="bookshelfSort" value="4" />
+        <boolean name="ttsFollowSys" value="false" />
+        <int name="ttsSpeechRate" value="15" />
         <int name="threadCount" value="8" />
         <long name="lastBackup" value="1700000000000" />
         <float name="textSize" value="18.5" />
@@ -42,6 +44,8 @@ struct AndroidWebDAVConfigInteropTests {
     #expect(application.showsDiscovery == false)
     #expect(application.showsRSS == true)
     #expect(application.bookshelfSort == 4)
+    #expect(application.ttsFollowsSystemRate == false)
+    #expect(application.ttsSpeechRate == 15)
     #expect(document.values["onlyLatestBackup"] == .boolean(false))
     #expect(document.values["threadCount"] == .int(8))
     #expect(document.values["lastBackup"] == .long(1_700_000_000_000))

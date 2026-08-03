@@ -10,10 +10,11 @@ final class ReadAloudSessionTests: XCTestCase {
     let session = ReadAloudSession(synthesizer: synthesizer)
     let document = makeDocument(content: "第一段\n\n第二段")
 
-    session.start(document: document) {}
+    session.start(document: document, relativeRate: 2) {}
 
     XCTAssertEqual(session.state, .speaking)
     XCTAssertEqual(synthesizer.spokenSegments.map(\.text), ["第一段", "第二段"])
+    XCTAssertEqual(synthesizer.relativeRate, 2)
     session.pause()
     XCTAssertEqual(session.state, .paused)
     XCTAssertEqual(synthesizer.pauseCount, 1)
@@ -82,6 +83,7 @@ private final class FakeSystemSpeechSynthesizer:
   var pauseCount = 0
   var resumeCount = 0
   var stopCount = 0
+  var relativeRate: Float = 0
   private var onEvent:
     (@MainActor @Sendable (SystemSpeechEvent) -> Void)?
 
@@ -91,6 +93,7 @@ private final class FakeSystemSpeechSynthesizer:
     onEvent: @escaping @MainActor @Sendable (SystemSpeechEvent) -> Void
   ) {
     spokenSegments = segments
+    self.relativeRate = relativeRate
     self.onEvent = onEvent
   }
 

@@ -11,6 +11,7 @@ struct ReaderContentView: View {
     @Bindable var library: ShelfLibrary
     let persistedSources: [BookSourceDraft]
     @Bindable var readAloud: ReadAloudSession
+    @Bindable var readAloudPreferences: ReadAloudPreferencesStore
     @Bindable var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
     @Bindable var dictionaryLookup: DictionaryLookupStore
     @Bindable var readerPreferences: ReaderPreferencesStore
@@ -60,6 +61,7 @@ struct ReaderContentView: View {
         library: ShelfLibrary,
         persistedSources: [BookSourceDraft],
         readAloud: ReadAloudSession,
+        readAloudPreferences: ReadAloudPreferencesStore,
         httpTextToSpeechEngines: HTTPTextToSpeechEngineStore,
         dictionaryLookup: DictionaryLookupStore,
         readerPreferences: ReaderPreferencesStore,
@@ -76,6 +78,7 @@ struct ReaderContentView: View {
         self.library = library
         self.persistedSources = persistedSources
         self.readAloud = readAloud
+        self.readAloudPreferences = readAloudPreferences
         self.httpTextToSpeechEngines = httpTextToSpeechEngines
         self.dictionaryLookup = dictionaryLookup
         self.readerPreferences = readerPreferences
@@ -234,6 +237,7 @@ struct ReaderContentView: View {
             {
                 readAloud.continueWithNextChapter(
                     document: document,
+                    relativeRate: readAloudPreferences.value.relativeRate,
                     requestNextChapter: requestNextReadAloudChapter
                 )
             }
@@ -334,6 +338,7 @@ struct ReaderContentView: View {
             NavigationStack {
                 ReadAloudEngineSettingsView(
                     store: httpTextToSpeechEngines,
+                    preferences: readAloudPreferences,
                     select: { id in
                         readAloud.stop()
                         httpTextToSpeechEngines.select(id)
@@ -1863,6 +1868,7 @@ struct ReaderContentView: View {
                 guard let document = session.document else { return }
                 readAloud.start(
                     document: document,
+                    relativeRate: readAloudPreferences.value.relativeRate,
                     requestNextChapter: requestNextReadAloudChapter
                 )
             } label: {
@@ -2106,11 +2112,75 @@ private struct ReaderContentEditor: View {
 
 private struct ReadAloudEngineSettingsView: View {
     @Bindable var store: HTTPTextToSpeechEngineStore
+    @Bindable var preferences: ReadAloudPreferencesStore
     let select: (Int64?) -> Void
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         List {
+            Section("语速") {
+                Toggle(
+                    "跟随系统语速",
+                    isOn: Binding(
+                        get: {
+                            preferences.value.followsSystemRate
+                        },
+                        set: {
+                            preferences.setFollowsSystemRate($0)
+                        }
+                    )
+                )
+                .accessibilityIdentifier(
+                    "toggle.reader.readAloud.followSystemRate"
+                )
+                VStack(alignment: .leading) {
+                    Text(
+                        String(
+                            format: "自定义语速 %.1fx",
+                            ReadAloudPlan.speechRate(
+                                preference: preferences.value
+                                    .speechRatePreference
+                            )
+                        )
+                    )
+                    .accessibilityIdentifier(
+                        "state.reader.readAloud.customRate"
+                    )
+                    Slider(
+                        value: Binding(
+                            get: {
+                                Double(
+                                    preferences.value.speechRatePreference
+                                )
+                            },
+                            set: {
+                                preferences.setSpeechRatePreference(
+                                    Int($0.rounded())
+                                )
+                            }
+                        ),
+                        in: Double(
+                            ReadAloudPreferences.speechRateRange.lowerBound
+                        )...Double(
+                            ReadAloudPreferences.speechRateRange.upperBound
+                        ),
+                        step: 1
+                    )
+                    .disabled(preferences.value.followsSystemRate)
+                    .accessibilityIdentifier(
+                        "slider.reader.readAloud.speechRate"
+                    )
+                }
+                Text(
+                    String(
+                        format: "当前生效 %.1fx",
+                        preferences.value.relativeRate
+                    )
+                )
+                .accessibilityIdentifier(
+                    "state.reader.readAloud.effectiveRate"
+                )
+            }
             Section("朗读引擎") {
                 engineRow(id: nil, name: "iOS 系统朗读")
                 ForEach(store.engines) { engine in

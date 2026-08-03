@@ -3,6 +3,7 @@ import AppUseCases
 import BackupInteropUseCases
 import Foundation
 import LibraryDomain
+import ReaderCore
 import Testing
 
 @Suite("AndroidLibraryBackupUseCaseTests")
@@ -73,7 +74,11 @@ struct AndroidLibraryBackupUseCaseTests {
       applicationPreferences: AndroidApplicationBackupExportInput(
         showsDiscovery: false,
         showsRSS: true,
-        bookshelfSort: .combinedTime
+        bookshelfSort: .combinedTime,
+        readAloudPreferences: ReadAloudPreferences(
+          followsSystemRate: false,
+          speechRatePreference: 15
+        )
       ),
       webDAVConfiguration: nil
     )
@@ -131,6 +136,8 @@ struct AndroidLibraryBackupUseCaseTests {
     #expect(
       sharedPreferences.bookshelfSort == 4
     )
+    #expect(sharedPreferences.ttsFollowsSystemRate == false)
+    #expect(sharedPreferences.ttsSpeechRate == 15)
   }
 
   private func fixturePlan() -> AndroidLibraryRestorePlan {

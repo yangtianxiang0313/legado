@@ -18,6 +18,7 @@ struct LegadoApp: App {
     @State private var library: ShelfLibrary
     @State private var sourceCatalog: SourceCatalog
     @State private var readAloud: ReadAloudSession
+    @State private var readAloudPreferences: ReadAloudPreferencesStore
     @State private var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
     @State private var dictionaryLookup: DictionaryLookupStore
     @State private var keyboardAssists: KeyboardAssistStore
@@ -134,7 +135,18 @@ struct LegadoApp: App {
         let rootVisibilityStore = RootVisibilityPreferencesStore(
             repository: rootVisibilityRepository
         )
+        let readAloudPreferencesRepository =
+            UserDefaultsReadAloudPreferencesRepository()
+        if processArguments.contains("--reset-read-aloud-preferences") {
+            readAloudPreferencesRepository.save(ReadAloudPreferences())
+        }
+        let readAloudPreferencesStore = ReadAloudPreferencesStore(
+            repository: readAloudPreferencesRepository
+        )
         _rootVisibility = State(initialValue: rootVisibilityStore)
+        _readAloudPreferences = State(
+            initialValue: readAloudPreferencesStore
+        )
         _router = State(
             initialValue: AppRouter(
                 selectedRoot: processArguments.contains("--initial-root-explore")
@@ -153,6 +165,7 @@ struct LegadoApp: App {
                     repository: libraryRepository,
                     sourceRepository: sourceRepository,
                     rootVisibility: rootVisibilityStore,
+                    readAloudPreferences: readAloudPreferencesStore,
                     webDAVSettings: webDAVSettingsStore,
                     webDAVCredentials: webDAVCredentials
                 )
@@ -289,6 +302,7 @@ struct LegadoApp: App {
                     library: library,
                     sourceCatalog: sourceCatalog,
                     readAloud: readAloud,
+                    readAloudPreferences: readAloudPreferences,
                     httpTextToSpeechEngines: httpTextToSpeechEngines,
                     dictionaryLookup: dictionaryLookup,
                     keyboardAssists: keyboardAssists,
@@ -319,6 +333,7 @@ struct LegadoApp: App {
                     library: library,
                     sourceCatalog: sourceCatalog,
                     readAloud: readAloud,
+                    readAloudPreferences: readAloudPreferences,
                     httpTextToSpeechEngines: httpTextToSpeechEngines,
                     dictionaryLookup: dictionaryLookup,
                     keyboardAssists: keyboardAssists,
@@ -366,6 +381,7 @@ private struct AppAndroidCoreBackupRestoreRepository:
     let repository: GRDBBookShelfRepository
     let sourceRepository: UserDefaultsSourceCatalogRepository
     let rootVisibility: RootVisibilityPreferencesStore
+    let readAloudPreferences: ReadAloudPreferencesStore
     let webDAVSettings: WebDAVConnectionSettingsStore
     let webDAVCredentials: KeychainWebDAVCredentialStore
 
@@ -390,6 +406,10 @@ private struct AppAndroidCoreBackupRestoreRepository:
                 if let preferences = payload.navigationPreferences,
                    preferences.isPresent {
                     try await restoreAndroidNavigationPreferences(preferences)
+                }
+                if let preferences = payload.readAloudPreferences,
+                   preferences.isPresent {
+                    try await restoreAndroidReadAloudPreferences(preferences)
                 }
                 if !payload.bookSources.isEmpty {
                     try await sourceRepository.saveSources(
@@ -436,6 +456,9 @@ private struct AppAndroidCoreBackupRestoreRepository:
             rootVisibility: await MainActor.run {
                 rootVisibility.value
             },
+            readAloudPreferences: await MainActor.run {
+                readAloudPreferences.value
+            },
             webDAVSettings: settings,
             mainCredential: mainCredential,
             serverProfiles: serverProfiles,
@@ -456,6 +479,7 @@ private struct AppAndroidCoreBackupRestoreRepository:
         }
         await MainActor.run {
             rootVisibility.replace(checkpoint.rootVisibility)
+            readAloudPreferences.replace(checkpoint.readAloudPreferences)
         }
 
         let importedServerReferences = Set(
@@ -647,6 +671,21 @@ private struct AppAndroidCoreBackupRestoreRepository:
         }
     }
 
+    func restoreAndroidReadAloudPreferences(
+        _ plan: AndroidReadAloudPreferencesImportPlan
+    ) async throws {
+        await MainActor.run {
+            var value = readAloudPreferences.value
+            if let followsSystemRate = plan.followsSystemRate {
+                value.followsSystemRate = followsSystemRate
+            }
+            if let speechRatePreference = plan.speechRatePreference {
+                value.speechRatePreference = speechRatePreference
+            }
+            readAloudPreferences.replace(value)
+        }
+    }
+
     func restoreAndroidWebDAVServerProfiles(
         _ plan: AndroidServerProfileImportPlan
     ) async throws {
@@ -662,6 +701,7 @@ private struct AppAndroidCoreBackupRestoreRepository:
 private struct AppAndroidCoreRestoreCheckpoint: Sendable {
     let sources: [BookSourceDraft]
     let rootVisibility: RootVisibilityPreferences
+    let readAloudPreferences: ReadAloudPreferences
     let webDAVSettings: WebDAVConnectionSettings
     let mainCredential: WebDAVBasicCredentials?
     let serverProfiles: [WebDAVServerProfile]
@@ -1010,6 +1050,10 @@ private actor UITestWebDAVBackupTransfer: WebDAVBackupTransferring {
                             .boolean(false),
                         AndroidApplicationBackupPreferences.bookshelfSortKey:
                             .int(4),
+                        AndroidApplicationBackupPreferences.ttsFollowSystemKey:
+                            .boolean(false),
+                        AndroidApplicationBackupPreferences.ttsSpeechRateKey:
+                            .int(15),
                     ]
                 )
             } else if includesBookmark {
@@ -1107,6 +1151,38 @@ private final class UserDefaultsReaderPreferencesRepository:
     }
 
     func save(_ preferences: ReaderPreferences) {
+        guard let data = try? JSONEncoder().encode(preferences) else {
+            return
+        }
+        defaults.set(data, forKey: key)
+    }
+}
+
+@MainActor
+private final class UserDefaultsReadAloudPreferencesRepository:
+    ReadAloudPreferencesRepository
+{
+    private let defaults: UserDefaults
+    private let key = "reader.readAloud.preferences.v1"
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+    }
+
+    func load() -> ReadAloudPreferences {
+        guard
+            let data = defaults.data(forKey: key),
+            let value = try? JSONDecoder().decode(
+                ReadAloudPreferences.self,
+                from: data
+            )
+        else {
+            return ReadAloudPreferences()
+        }
+        return value
+    }
+
+    func save(_ preferences: ReadAloudPreferences) {
         guard let data = try? JSONEncoder().encode(preferences) else {
             return
         }
