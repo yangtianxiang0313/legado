@@ -223,6 +223,7 @@ class GitHubOracleReceiptSettler:
         allowed = {
             f"ios/harness/fixtures/source-lab/{self.identity.scenario}",
             f"ios/harness/fixtures/runtime-lab/{self.identity.scenario}",
+            f"ios/harness/fixtures/real-source/{self.identity.scenario}",
             (
                 "ios/harness/fixtures/integration-lab/"
                 f"{self.identity.scenario}"
