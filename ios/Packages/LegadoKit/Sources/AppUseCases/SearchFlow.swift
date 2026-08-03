@@ -224,6 +224,46 @@ public struct SearchResult: Identifiable, Hashable, Sendable {
   }
 }
 
+public enum AndroidPrecisionSearchPolicy {
+  public static func project(
+    _ results: [SearchResult],
+    keyword: String,
+    precision: Bool
+  ) -> [SearchResult] {
+    results.enumerated()
+      .compactMap { offset, result -> RankedResult? in
+        let rank: Int
+        if result.name == keyword || result.author == keyword {
+          rank = 0
+        } else if result.name.contains(keyword)
+          || result.author.contains(keyword)
+        {
+          rank = 1
+        } else {
+          guard !precision else { return nil }
+          rank = 2
+        }
+        return RankedResult(offset: offset, rank: rank, result: result)
+      }
+      .sorted {
+        if $0.rank != $1.rank { return $0.rank < $1.rank }
+        if $0.rank < 2,
+          $0.result.originCount != $1.result.originCount
+        {
+          return $0.result.originCount > $1.result.originCount
+        }
+        return $0.offset < $1.offset
+      }
+      .map(\.result)
+  }
+
+  private struct RankedResult {
+    let offset: Int
+    let rank: Int
+    let result: SearchResult
+  }
+}
+
 public struct SearchSourceDescriptor: Sendable, Equatable {
   public let id: String
   public let name: String
@@ -396,6 +436,10 @@ public final class SearchSession {
     SearchScopeMenuState(scope: scope, groups: groups)
   }
 
+  public var usesPrecisionSearch: Bool {
+    scopePreferences?.value.usesPrecisionSearch ?? false
+  }
+
   public func selectAllSources() {
     scope = .all
     persistScope()
@@ -413,6 +457,14 @@ public final class SearchSession {
 
   private func persistScope() {
     scopePreferences?.setScope(scope)
+  }
+
+  public func setUsesPrecisionSearch(_ enabled: Bool) {
+    guard enabled != usesPrecisionSearch else { return }
+    scopePreferences?.setUsesPrecisionSearch(enabled)
+    if !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+      search()
+    }
   }
 
   public func search() {
@@ -436,7 +488,11 @@ public final class SearchSession {
           scope: selectedScope
         )
         try Task.checkCancellation()
-        results = value
+        results = AndroidPrecisionSearchPolicy.project(
+          value,
+          keyword: trimmed,
+          precision: usesPrecisionSearch
+        )
         loadingState = .idle
       } catch is CancellationError {
         loadingState = .idle

@@ -81,7 +81,8 @@ struct AndroidLibraryBackupUseCaseTests {
         ),
         searchScopePreferences: SearchScopePreferences(
           serializedScope: "科幻",
-          changeSourceGroup: "科幻"
+          changeSourceGroup: "科幻",
+          usesPrecisionSearch: true
         ),
         sourceSwitchPreferences: SourceSwitchPreferences(
           automaticallyRecoversMissingSource: false,
@@ -152,6 +153,7 @@ struct AndroidLibraryBackupUseCaseTests {
     #expect(sharedPreferences.enablesReadRecord == false)
     #expect(sharedPreferences.searchScope == "科幻")
     #expect(sharedPreferences.searchGroup == "科幻")
+    #expect(sharedPreferences.usesPrecisionSearch == true)
     #expect(sharedPreferences.automaticallyChangesSource == false)
     #expect(sharedPreferences.changeSourceChecksAuthor == true)
     #expect(sharedPreferences.ttsFollowsSystemRate == false)

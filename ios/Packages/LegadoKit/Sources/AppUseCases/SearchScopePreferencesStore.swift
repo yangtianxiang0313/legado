@@ -5,18 +5,47 @@ public struct SearchScopePreferences:
 {
   public var serializedScope: String
   public var changeSourceGroup: String
+  public var usesPrecisionSearch: Bool
 
   public init(
     serializedScope: String = "",
-    changeSourceGroup: String = ""
+    changeSourceGroup: String = "",
+    usesPrecisionSearch: Bool = false
   ) {
     self.serializedScope = serializedScope
     self.changeSourceGroup = changeSourceGroup
+    self.usesPrecisionSearch = usesPrecisionSearch
   }
 
-  public init(scope: SearchScopeSelection) {
+  public init(
+    scope: SearchScopeSelection,
+    usesPrecisionSearch: Bool = false
+  ) {
     serializedScope = scope.serialized
     changeSourceGroup = Self.androidSearchGroup(for: scope)
+    self.usesPrecisionSearch = usesPrecisionSearch
+  }
+
+  private enum CodingKeys: String, CodingKey {
+    case serializedScope
+    case changeSourceGroup
+    case usesPrecisionSearch
+  }
+
+  public init(from decoder: any Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    serializedScope = try container.decodeIfPresent(
+      String.self,
+      forKey: .serializedScope
+    ) ?? ""
+    changeSourceGroup = try container.decodeIfPresent(
+      String.self,
+      forKey: .changeSourceGroup
+    ) ?? ""
+    usesPrecisionSearch = try container.decodeIfPresent(
+      Bool.self,
+      forKey: .usesPrecisionSearch
+    ) ?? false
   }
 
   public var scope: SearchScopeSelection {
@@ -60,7 +89,18 @@ public final class SearchScopePreferencesStore {
   }
 
   public func setScope(_ scope: SearchScopeSelection) {
-    replace(SearchScopePreferences(scope: scope))
+    replace(
+      SearchScopePreferences(
+        scope: scope,
+        usesPrecisionSearch: value.usesPrecisionSearch
+      )
+    )
+  }
+
+  public func setUsesPrecisionSearch(_ enabled: Bool) {
+    var updated = value
+    updated.usesPrecisionSearch = enabled
+    replace(updated)
   }
 
   public func replace(_ preferences: SearchScopePreferences) {

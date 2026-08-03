@@ -2539,6 +2539,15 @@ private struct SearchBooksView: View {
 
     private var scopeMenu: some View {
         Menu {
+            Toggle(
+                "精准搜索",
+                isOn: Binding(
+                    get: { session.usesPrecisionSearch },
+                    set: { session.setUsesPrecisionSearch($0) }
+                )
+            )
+            .accessibilityIdentifier("toggle.search.precision")
+
             Button {
                 session.selectAllSources()
             } label: {

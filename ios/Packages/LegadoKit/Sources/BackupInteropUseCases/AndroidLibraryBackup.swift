@@ -363,6 +363,10 @@ public struct AndroidLibraryBackupUseCase: Sendable {
         .string(
           applicationPreferences.searchScopePreferences.changeSourceGroup
         )
+      values[AndroidApplicationBackupPreferences.precisionSearchKey] =
+        .boolean(
+          applicationPreferences.searchScopePreferences.usesPrecisionSearch
+        )
       values[AndroidApplicationBackupPreferences.autoChangeSourceKey] =
         .boolean(
           applicationPreferences.sourceSwitchPreferences

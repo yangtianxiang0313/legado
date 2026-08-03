@@ -23,6 +23,7 @@ struct AndroidWebDAVConfigInteropTests {
         <boolean name="enableReadRecord" value="false" />
         <string name="searchScope">科幻,奇幻</string>
         <string name="searchGroup"></string>
+        <boolean name="precisionSearch" value="true" />
         <boolean name="autoChangeSource" value="false" />
         <boolean name="changeSourceCheckAuthor" value="true" />
         <boolean name="ttsFollowSys" value="false" />
@@ -54,6 +55,7 @@ struct AndroidWebDAVConfigInteropTests {
     #expect(application.enablesReadRecord == false)
     #expect(application.searchScope == "科幻,奇幻")
     #expect(application.searchGroup == "")
+    #expect(application.usesPrecisionSearch == true)
     #expect(application.automaticallyChangesSource == false)
     #expect(application.changeSourceChecksAuthor == true)
     #expect(application.ttsFollowsSystemRate == false)

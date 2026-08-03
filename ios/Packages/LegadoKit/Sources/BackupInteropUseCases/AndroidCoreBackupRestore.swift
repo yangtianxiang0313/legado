@@ -151,17 +151,21 @@ public struct AndroidSearchScopePreferencesImportPlan:
 {
   public let serializedScope: String?
   public let changeSourceGroup: String?
+  public let usesPrecisionSearch: Bool?
 
   public init(
     serializedScope: String? = nil,
-    changeSourceGroup: String? = nil
+    changeSourceGroup: String? = nil,
+    usesPrecisionSearch: Bool? = nil
   ) {
     self.serializedScope = serializedScope
     self.changeSourceGroup = changeSourceGroup
+    self.usesPrecisionSearch = usesPrecisionSearch
   }
 
   public var isPresent: Bool {
     serializedScope != nil || changeSourceGroup != nil
+      || usesPrecisionSearch != nil
   }
 }
 
@@ -591,7 +595,8 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     let searchScopePreferences = projectedApplicationPreferences.map {
       AndroidSearchScopePreferencesImportPlan(
         serializedScope: $0.searchScope,
-        changeSourceGroup: $0.searchGroup
+        changeSourceGroup: $0.searchGroup,
+        usesPrecisionSearch: $0.usesPrecisionSearch
       )
     }.flatMap { $0.isPresent ? $0 : nil }
     let sourceSwitchPreferences = projectedApplicationPreferences.map {
@@ -690,6 +695,7 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
         readingHistoryPreferences.map { _ in 1 },
         projectedApplicationPreferences?.searchScope.map { _ in 1 },
         projectedApplicationPreferences?.searchGroup.map { _ in 1 },
+        projectedApplicationPreferences?.usesPrecisionSearch.map { _ in 1 },
         projectedApplicationPreferences?.automaticallyChangesSource
           .map { _ in 1 },
         projectedApplicationPreferences?.changeSourceChecksAuthor

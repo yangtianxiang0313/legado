@@ -1,4 +1,5 @@
 @testable import AppUseCases
+import Foundation
 import XCTest
 
 @MainActor
@@ -7,7 +8,8 @@ final class SearchScopePreferencesStoreTests: XCTestCase {
     let repository = SearchScopePreferencesRepositoryStub(
       loaded: SearchScopePreferences(
         serializedScope: "科幻",
-        changeSourceGroup: "科幻"
+        changeSourceGroup: "科幻",
+        usesPrecisionSearch: true
       )
     )
     let store = SearchScopePreferencesStore(repository: repository)
@@ -23,7 +25,73 @@ final class SearchScopePreferencesStoreTests: XCTestCase {
 
     XCTAssertEqual(store.value.serializedScope, "")
     XCTAssertEqual(store.value.changeSourceGroup, "")
-    XCTAssertEqual(repository.saved.last, SearchScopePreferences())
+    XCTAssertTrue(store.value.usesPrecisionSearch)
+  }
+
+  func testLegacyStoredScopeDefaultsPrecisionSearchToOff() throws {
+    let decoded = try JSONDecoder().decode(
+      SearchScopePreferences.self,
+      from: Data(
+        #"{"serializedScope":"科幻","changeSourceGroup":"科幻"}"#.utf8
+      )
+    )
+
+    XCTAssertFalse(decoded.usesPrecisionSearch)
+  }
+
+  func testAndroidPrecisionProjectionRanksAndFiltersResults() {
+    let results = [
+      result("unrelated", name: "银河", author: "甲", origins: 9),
+      result("contains-low", name: "星河外传", author: "乙", origins: 1),
+      result("exact-low", name: "星河", author: "丙", origins: 1),
+      result("contains-high", name: "远方", author: "星河作者", origins: 4),
+      result("exact-high", name: "别名", author: "星河", origins: 3),
+    ]
+
+    XCTAssertEqual(
+      AndroidPrecisionSearchPolicy.project(
+        results,
+        keyword: "星河",
+        precision: false
+      ).map(\.id),
+      ["exact-high", "exact-low", "contains-high", "contains-low", "unrelated"]
+    )
+    XCTAssertEqual(
+      AndroidPrecisionSearchPolicy.project(
+        results,
+        keyword: "星河",
+        precision: true
+      ).map(\.id),
+      ["exact-high", "exact-low", "contains-high", "contains-low"]
+    )
+  }
+
+  func testPrecisionToggleImmediatelyRepeatsCurrentSearch() async {
+    let repository = SearchScopePreferencesRepositoryStub(
+      loaded: SearchScopePreferences()
+    )
+    let store = SearchScopePreferencesStore(repository: repository)
+    let executor = SearchBooksExecutorStub(results: [
+      result("match", name: "星河纪事", author: "林川", origins: 1),
+      result("other", name: "远方", author: "他人", origins: 1),
+    ])
+    let session = SearchSession(
+      groups: [],
+      executor: executor,
+      scopePreferences: store
+    )
+    session.query = "星河"
+    session.search()
+    await waitUntilIdle(session)
+    XCTAssertEqual(session.results.map(\.id), ["match", "other"])
+
+    session.setUsesPrecisionSearch(true)
+    await waitUntilIdle(session)
+
+    XCTAssertEqual(session.results.map(\.id), ["match"])
+    XCTAssertTrue(store.value.usesPrecisionSearch)
+    let callCount = await executor.callCount()
+    XCTAssertEqual(callCount, 2)
   }
 
   func testSingleGroupMatchesAndroidSearchGroupDerivation() {
@@ -55,13 +123,51 @@ final class SearchScopePreferencesStoreTests: XCTestCase {
   }
 }
 
-private struct SearchBooksExecutorStub: SearchBooksExecuting {
+private func result(
+  _ id: String,
+  name: String,
+  author: String,
+  origins: Int
+) -> SearchResult {
+  SearchResult(
+    id: id,
+    name: name,
+    author: author,
+    kind: "",
+    lastChapter: "",
+    intro: "",
+    bookURL: "https://example.invalid/\(id)",
+    coverURL: nil,
+    origin: "source",
+    originName: "source",
+    originCount: origins
+  )
+}
+
+@MainActor
+private func waitUntilIdle(_ session: SearchSession) async {
+  while session.loadingState == .loading {
+    await Task.yield()
+  }
+}
+
+private actor SearchBooksExecutorStub: SearchBooksExecuting {
+  let results: [SearchResult]
+  private var calls = 0
+
+  init(results: [SearchResult] = []) {
+    self.results = results
+  }
+
   func search(
     query: String,
     scope: SearchScopeSelection
   ) async throws -> [SearchResult] {
-    []
+    calls += 1
+    return results
   }
+
+  func callCount() -> Int { calls }
 }
 
 @MainActor

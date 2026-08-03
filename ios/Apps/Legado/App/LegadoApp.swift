@@ -805,6 +805,9 @@ private struct AppAndroidCoreBackupRestoreRepository:
             if let changeSourceGroup = plan.changeSourceGroup {
                 value.changeSourceGroup = changeSourceGroup
             }
+            if let enabled = plan.usesPrecisionSearch {
+                value.usesPrecisionSearch = enabled
+            }
             searchScopePreferences.replace(value)
         }
     }
@@ -1199,6 +1202,8 @@ private actor UITestWebDAVBackupTransfer: WebDAVBackupTransferring {
                             .string("科幻"),
                         AndroidApplicationBackupPreferences.searchGroupKey:
                             .string("科幻"),
+                        AndroidApplicationBackupPreferences.precisionSearchKey:
+                            .boolean(true),
                         AndroidApplicationBackupPreferences.autoChangeSourceKey:
                             .boolean(true),
                         AndroidApplicationBackupPreferences

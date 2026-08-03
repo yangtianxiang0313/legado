@@ -166,6 +166,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
   public static let enableReadRecordKey = "enableReadRecord"
   public static let searchScopeKey = "searchScope"
   public static let searchGroupKey = "searchGroup"
+  public static let precisionSearchKey = "precisionSearch"
   public static let autoChangeSourceKey = "autoChangeSource"
   public static let changeSourceCheckAuthorKey = "changeSourceCheckAuthor"
   public static let ttsFollowSystemKey = "ttsFollowSys"
@@ -178,6 +179,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
   public let enablesReadRecord: Bool?
   public let searchScope: String?
   public let searchGroup: String?
+  public let usesPrecisionSearch: Bool?
   public let automaticallyChangesSource: Bool?
   public let changeSourceChecksAuthor: Bool?
   public let ttsFollowsSystemRate: Bool?
@@ -191,6 +193,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
     enablesReadRecord: Bool? = nil,
     searchScope: String? = nil,
     searchGroup: String? = nil,
+    usesPrecisionSearch: Bool? = nil,
     automaticallyChangesSource: Bool? = nil,
     changeSourceChecksAuthor: Bool? = nil,
     ttsFollowsSystemRate: Bool? = nil,
@@ -203,6 +206,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
     self.enablesReadRecord = enablesReadRecord
     self.searchScope = searchScope
     self.searchGroup = searchGroup
+    self.usesPrecisionSearch = usesPrecisionSearch
     self.automaticallyChangesSource = automaticallyChangesSource
     self.changeSourceChecksAuthor = changeSourceChecksAuthor
     self.ttsFollowsSystemRate = ttsFollowsSystemRate
@@ -218,6 +222,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
       enablesReadRecord: document.boolean(Self.enableReadRecordKey),
       searchScope: document.string(Self.searchScopeKey),
       searchGroup: document.string(Self.searchGroupKey),
+      usesPrecisionSearch: document.boolean(Self.precisionSearchKey),
       automaticallyChangesSource: document.boolean(Self.autoChangeSourceKey),
       changeSourceChecksAuthor: document.boolean(
         Self.changeSourceCheckAuthorKey
@@ -232,6 +237,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
       || defaultHomePage != nil
       || enablesReadRecord != nil
       || searchScope != nil || searchGroup != nil
+      || usesPrecisionSearch != nil
       || automaticallyChangesSource != nil
       || changeSourceChecksAuthor != nil
       || ttsFollowsSystemRate != nil || ttsSpeechRate != nil
