@@ -137,6 +137,7 @@ let package = Package(
                 .product(name: "LegadoCoreKit", package: "LegadoCoreKit"),
                 "AndroidBackupInterop",
                 "AppUseCases",
+                "IntegrationKit",
                 "LibraryDomain",
             ]
         ),
@@ -267,6 +268,7 @@ let package = Package(
             dependencies: [
                 "AndroidBackupInterop",
                 "BackupInteropUseCases",
+                "IntegrationKit",
                 .product(name: "LegadoCoreKit", package: "LegadoCoreKit"),
             ]
         ),
