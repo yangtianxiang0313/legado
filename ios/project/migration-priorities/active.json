@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P85-DIRECT-LINK-UPLOAD-RULE-INTEROP-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "priority": 1,
+  "title": "P85 Android 直链上传规则备份互通",
+  "objective": "依据冻结 Android DirectLinkUpload.Rule、Backup.backup 与 Restore.restore，把 backup.zip 唯一 deferred 成员 directLinkUploadRule.json 升级为受支持域：保留已知字段和未知扩展，原子恢复到 iOS 持久层，并可由 iOS 重新导出供 Android 使用。",
+  "validation_policy": "对象格式、未知字段、缺失成员、恢复持久化和回流归档使用聚焦测试；不实现或宣称直链网络上传运行时，不启动模拟器。",
+  "stages": [
+    {
+      "id": "P85-S1",
+      "title": "格式与领域互通",
+      "selectors": [
+        {
+          "id": "P85-S1-CODEC",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-APP-NAVIGATION-DIRECT-LINK-UPLOAD-RULE-INTEROP-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P85-S2",
+      "title": "持久化与全量备份接线",
+      "selectors": [
+        {
+          "id": "P85-S2-PERSISTENCE",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-APP-NAVIGATION-DIRECT-LINK-UPLOAD-RULE-PERSISTENCE-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-APP-NAVIGATION-DIRECT-LINK-UPLOAD-RULE-INTEROP-001",
+      "title": "实现 directLinkUploadRule.json 双向 Codec 与领域映射",
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-02",
+      "fixture_id": "rl-direct-link-upload-rule-interop-001",
+      "package_path": "ios/Packages/LegadoKit",
+      "validation": "tests",
+      "test_filter": "DirectLinkUploadRuleInteropTests",
+      "prerequisite_task_ids": [
+        "IOS-INTEGRATION-ANDROID-BACKUP-PREFLIGHT-001"
+      ],
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
+        "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+        "ios/Packages/LegadoKit/Tests/AndroidBackupInteropTests/**",
+        "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/help/DirectLinkUpload.kt",
+          "symbol_id": "kotlin://io.legado.app.help.DirectLinkUpload/Rule"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/help/storage/Backup.kt",
+          "symbol_id": "kotlin://io.legado.app.help.storage.Backup/backup"
+        }
+      ]
+    },
+    {
+      "target": "IOS-APP-NAVIGATION-DIRECT-LINK-UPLOAD-RULE-PERSISTENCE-001",
+      "title": "持久化直链上传规则并纳入 Android 全量备份恢复",
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-02",
+      "fixture_id": "rl-direct-link-upload-rule-persistence-001",
+      "package_path": "ios/Packages/LegadoKit",
+      "validation": "tests",
+      "test_filter": "DirectLinkUploadRulePersistenceTests|AndroidBackupPreflightTests",
+      "prerequisite_task_ids": [
+        "IOS-APP-NAVIGATION-DIRECT-LINK-UPLOAD-RULE-INTEROP-001"
+      ],
+      "additional_allowed_paths": [
+        "ios/Apps/Legado/App/**",
+        "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
+        "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+        "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+        "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**",
+        "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/help/storage/Restore.kt",
+          "symbol_id": "kotlin://io.legado.app.help.storage.Restore/restore"
+        }
+      ]
+    }
+  ]
+}

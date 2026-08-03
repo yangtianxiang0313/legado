@@ -20,6 +20,7 @@ public struct AndroidBackupContents: Equatable, Sendable {
     public var dictionaryRules: [AndroidDictionaryRuleDTO]
     public var keyboardAssists: [AndroidKeyboardAssistDTO]
     public var themeConfigs: [AndroidThemeConfigDTO]
+    public var directLinkUploadRule: AndroidDirectLinkUploadRuleDTO?
     public var sharedPreferences: AndroidSharedPreferencesDocument?
     public var serverProfilesPayload: Data?
 
@@ -41,6 +42,7 @@ public struct AndroidBackupContents: Equatable, Sendable {
         dictionaryRules: [AndroidDictionaryRuleDTO] = [],
         keyboardAssists: [AndroidKeyboardAssistDTO] = [],
         themeConfigs: [AndroidThemeConfigDTO] = [],
+        directLinkUploadRule: AndroidDirectLinkUploadRuleDTO? = nil,
         sharedPreferences: AndroidSharedPreferencesDocument? = nil,
         serverProfilesPayload: Data? = nil
     ) {
@@ -61,6 +63,7 @@ public struct AndroidBackupContents: Equatable, Sendable {
         self.dictionaryRules = dictionaryRules
         self.keyboardAssists = keyboardAssists
         self.themeConfigs = themeConfigs
+        self.directLinkUploadRule = directLinkUploadRule
         self.sharedPreferences = sharedPreferences
         self.serverProfilesPayload = serverProfilesPayload
     }
@@ -87,6 +90,7 @@ public enum AndroidBackupArchive {
     public static let themeConfigsMember = "themeConfig.json"
     public static let sharedPreferencesMember = "config.xml"
     public static let serverProfilesMember = "servers.json"
+    public static let directLinkUploadRuleMember = "directLinkUploadRule.json"
 
     public static func write(
         _ contents: AndroidBackupContents,
@@ -240,6 +244,16 @@ public enum AndroidBackupArchive {
                     path: themeConfigsMember,
                     data: try AndroidThemeConfigCodec.encodeMany(
                         contents.themeConfigs
+                    )
+                )
+            )
+        }
+        if let directLinkUploadRule = contents.directLinkUploadRule {
+            members.append(
+                .init(
+                    path: directLinkUploadRuleMember,
+                    data: try AndroidDirectLinkUploadRuleCodec.encode(
+                        directLinkUploadRule
                     )
                 )
             )
@@ -469,6 +483,18 @@ public enum AndroidBackupArchive {
             maximumBytes: maximumMemberBytes
         ) else { return [] }
         return try AndroidThemeConfigCodec.decodeMany(data)
+    }
+
+    public static func readDirectLinkUploadRule(
+        from archiveURL: URL,
+        maximumMemberBytes: UInt64 = 32 * 1_024 * 1_024
+    ) throws -> AndroidDirectLinkUploadRuleDTO? {
+        guard let data = try ArchiveZIPFoundation.read(
+            directLinkUploadRuleMember,
+            from: archiveURL,
+            maximumBytes: maximumMemberBytes
+        ) else { return nil }
+        return try AndroidDirectLinkUploadRuleCodec.decode(data)
     }
 
     public static func readSharedPreferences(
