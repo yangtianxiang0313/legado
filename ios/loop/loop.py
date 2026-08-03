@@ -780,6 +780,26 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/Packages/LegadoKit/Tests/WebDAVFoundationTests/**",
             ],
         }
+    if target == "IOS-INTEGRATION-ANDROID-WEBDAV-SERVER-PROFILES-001":
+        return {
+            "owner": "IntegrationKit",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-002",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-011",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
+                "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+                "ios/Packages/LegadoKit/Tests/AndroidBackupInteropTests/**",
+                "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**",
+            ],
+        }
     if target == "IOS-INTEGRATION-IOS-BACKUP-ANDROID-RESTORE-ORACLE-001":
         return {
             "owner": "IntegrationKit",
@@ -4288,6 +4308,21 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_id": "dictionary-interop-tests",
             "test_filter": "DictionaryInteropTests",
             "acceptance_id": "dictionary-interop-acceptance",
+        }
+    if target == "IOS-INTEGRATION-ANDROID-WEBDAV-SERVER-PROFILES-001":
+        delivery_contracts["IntegrationKit"] = {
+            "goal": (
+                "按 Android Server、Backup 与 Restore 源码，无损往返 servers.json，兼容整文件 "
+                "BackupAES 密文与历史明文数组，并生成不泄漏到 UI 的 WebDAV 服务器档案导入计划。"
+            ),
+            "rule": (
+                "AndroidBackupInterop 保留完整 JSON、嵌套 config 字符串与未知字段；"
+                "BackupInteropUseCases 只生成纯值恢复计划。缺失或错误口令必须在任何 repository "
+                "写入前结构化失败；本切片不新增 SwiftUI 或网络请求。"
+            ),
+            "test_id": "android-webdav-server-profile-interop-tests",
+            "test_filter": "AndroidWebDAVServerProfileInteropTests",
+            "acceptance_id": "android-webdav-server-profile-interop-acceptance",
         }
     if target == "IOS-SOURCE-RUNTIME-DICTIONARY-JSOUP-001":
         delivery_contracts["SourceRuntime"] = {
