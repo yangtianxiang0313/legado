@@ -196,6 +196,16 @@ class LegadoOracleInstrumentedTest {
     private val source: BookSource by lazy {
         GSON.fromJson(sourceJson, BookSource::class.java)
     }
+    private val cacheSource: BookSource by lazy {
+        if (scenarioId == "rl-reader-cache-offline-queue-001") {
+            BookSource(
+                bookSourceUrl = "https://oracle.invalid/cache-source",
+                bookSourceName = "Oracle Cache Source"
+            )
+        } else {
+            source
+        }
+    }
     private val deviceOrigin by lazy {
         when {
             isAndroidRuntimeScenario &&
@@ -9941,8 +9951,8 @@ class LegadoOracleInstrumentedTest {
         val secondBook = firstBook.copy(
             bookUrl = firstBook.bookUrl + "/second"
         )
-        val first = CacheBook.CacheBookModel(source, firstBook)
-        val second = CacheBook.CacheBookModel(source, secondBook)
+        val first = CacheBook.CacheBookModel(cacheSource, firstBook)
+        val second = CacheBook.CacheBookModel(cacheSource, secondBook)
         return try {
             first.addDownload(1, 3)
             beginCacheAttempt(first, 1)
@@ -9968,7 +9978,7 @@ class LegadoOracleInstrumentedTest {
     ): JSONObject {
         resetCacheBookState()
         val book = cacheProbeBook(arguments)
-        val model = CacheBook.getOrCreate(source, book)
+        val model = CacheBook.getOrCreate(cacheSource, book)
         return try {
             model.addDownload(2, 4)
             beginCacheAttempt(model, 2)
@@ -9979,7 +9989,7 @@ class LegadoOracleInstrumentedTest {
             val closedModel = cacheModelState(model)
             val summaryAfterClose = CacheBook.downloadSummary
             val registryEmptyAfterClose = CacheBook.cacheBookMap.isEmpty()
-            val fresh = CacheBook.getOrCreate(source, book)
+            val fresh = CacheBook.getOrCreate(cacheSource, book)
             fresh.addDownload(
                 arguments.getInt("fresh_index"),
                 arguments.getInt("fresh_index")
@@ -10139,7 +10149,7 @@ class LegadoOracleInstrumentedTest {
     ): JSONObject {
         resetCacheBookState()
         val book = cacheProbeBook(arguments)
-        val model = CacheBook.CacheBookModel(source, book)
+        val model = CacheBook.CacheBookModel(cacheSource, book)
         return try {
             model.addDownload(
                 arguments.getInt("first_start"),
@@ -10183,7 +10193,7 @@ class LegadoOracleInstrumentedTest {
                 arguments.getInt("chapter_index")
             )
             val ordinaryModel = CacheBook.CacheBookModel(
-                source,
+                cacheSource,
                 ordinaryBook
             )
             ordinaryModel.addDownload(
@@ -10241,7 +10251,7 @@ class LegadoOracleInstrumentedTest {
                 index = arguments.getInt("concurrent_index")
             )
             val concurrentModel = CacheBook.CacheBookModel(
-                source,
+                cacheSource,
                 concurrentBook
             )
             concurrentModel.addDownload(
@@ -10271,7 +10281,10 @@ class LegadoOracleInstrumentedTest {
                 url = ordinaryChapter.url + "/stopped",
                 index = arguments.getInt("stopped_index")
             )
-            val stoppedModel = CacheBook.CacheBookModel(source, stoppedBook)
+            val stoppedModel = CacheBook.CacheBookModel(
+                cacheSource,
+                stoppedBook
+            )
             stoppedModel.addDownload(
                 stoppedChapter.index,
                 stoppedChapter.index
@@ -10340,7 +10353,7 @@ class LegadoOracleInstrumentedTest {
             val successChapter = baseChapter.copy(
                 index = arguments.getInt("success_index")
             )
-            val successModel = CacheBook.CacheBookModel(source, book)
+            val successModel = CacheBook.CacheBookModel(cacheSource, book)
             successModel.addDownload(
                 successChapter.index,
                 successChapter.index
@@ -10355,7 +10368,10 @@ class LegadoOracleInstrumentedTest {
                 url = baseChapter.url + "/cancel",
                 index = arguments.getInt("cancel_index")
             )
-            val cancelModel = CacheBook.CacheBookModel(source, cancelBook)
+            val cancelModel = CacheBook.CacheBookModel(
+                cacheSource,
+                cancelBook
+            )
             cancelModel.addDownload(
                 cancelChapter.index,
                 cancelChapter.index
@@ -10369,7 +10385,10 @@ class LegadoOracleInstrumentedTest {
                 url = baseChapter.url + "/stopped",
                 index = arguments.getInt("stopped_cancel_index")
             )
-            val stoppedModel = CacheBook.CacheBookModel(source, stoppedBook)
+            val stoppedModel = CacheBook.CacheBookModel(
+                cacheSource,
+                stoppedBook
+            )
             stoppedModel.addDownload(
                 stoppedChapter.index,
                 stoppedChapter.index
@@ -10422,7 +10441,7 @@ class LegadoOracleInstrumentedTest {
     ): JSONObject {
         resetCacheBookState()
         val book = cacheProbeBook(arguments)
-        val model = CacheBook.getOrCreate(source, book)
+        val model = CacheBook.getOrCreate(cacheSource, book)
         val index = arguments.getInt("chapter_index")
         return try {
             model.addDownload(index, index)
@@ -13617,6 +13636,7 @@ class LegadoOracleInstrumentedTest {
             if (
                 scenarioId == "rl-integration-backup-archive-001" ||
                     scenarioId == "rl-integration-backup-ios-to-android-001" ||
+                    scenarioId == "rl-reader-cache-offline-queue-001" ||
                     scenarioId ==
                     "rl-integration-backup-ios-replacerule-to-android-001" ||
                     scenarioId ==
