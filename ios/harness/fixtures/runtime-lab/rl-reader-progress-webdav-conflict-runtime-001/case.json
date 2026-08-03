@@ -15,17 +15,17 @@
     "responses": [
       {
         "id": "cloud-ahead",
-        "match": {"method": "GET", "path": "/dav/cloud-ahead-auto-applies/bookProgress/SyncBook_SyncAuthor.json"},
+        "match": {"method": "GET", "path": "/dav/cloud-ahead-auto-applies/legado/bookProgress/SyncBook_SyncAuthor.json"},
         "respond": {"status": 200, "headers": {"content-type": "application/json; charset=utf-8"}, "body_file": "responses/cloud-ahead.json"}
       },
       {
         "id": "cloud-behind-position",
-        "match": {"method": "GET", "path": "/dav/cloud-behind-position-requires-confirmation/bookProgress/SyncBook_SyncAuthor.json"},
+        "match": {"method": "GET", "path": "/dav/cloud-behind-position-requires-confirmation/legado/bookProgress/SyncBook_SyncAuthor.json"},
         "respond": {"status": 200, "headers": {"content-type": "application/json; charset=utf-8"}, "body_file": "responses/cloud-behind-position.json"}
       },
       {
         "id": "cloud-behind-chapter",
-        "match": {"method": "GET", "path": "/dav/cloud-behind-chapter-can-manually-rollback/bookProgress/SyncBook_SyncAuthor.json"},
+        "match": {"method": "GET", "path": "/dav/cloud-behind-chapter-can-manually-rollback/legado/bookProgress/SyncBook_SyncAuthor.json"},
         "respond": {"status": 200, "headers": {"content-type": "application/json; charset=utf-8"}, "body_file": "responses/cloud-behind-chapter.json"}
       }
     ]

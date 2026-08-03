@@ -667,7 +667,7 @@ class SourceLabTests(unittest.TestCase):
         with source_lab.running_server(REPO_ROOT, scenario) as server:
             target = (
                 f"http://127.0.0.1:{server.server_address[1]}"
-                "/dav/cloud-ahead-auto-applies/bookProgress/"
+                "/dav/cloud-ahead-auto-applies/legado/bookProgress/"
                 "SyncBook_SyncAuthor.json"
             )
             with urllib.request.urlopen(target, timeout=1) as response:
