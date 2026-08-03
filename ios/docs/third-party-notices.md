@@ -19,3 +19,12 @@
 - 版权所有：Copyright (c) 2009-2025 Jonathan Hedley；Copyright (c) 2016-2025 Nabil Chatbi（Swift port）
 
 许可允许使用、复制、修改、合并、发布、分发、再许可和销售本软件，但所有副本或主要部分必须保留版权与许可声明。软件按“原样”提供，不附带任何明示或暗示担保。
+
+## ZIPFoundation 0.9.20
+
+- 项目：ZIPFoundation
+- 来源：https://github.com/weichsel/ZIPFoundation
+- 固定 revision：`22787ffb59de99e5dc1fbfe80b19c97a904ad48d`
+- 许可证：MIT
+
+许可允许使用、复制、修改、合并、发布、分发、再许可和销售本软件，但所有副本或主要部分必须保留版权与许可声明。软件按“原样”提供，不附带任何明示或暗示担保。

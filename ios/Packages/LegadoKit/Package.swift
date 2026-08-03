@@ -17,6 +17,7 @@ let package = Package(
                 "DatabaseGRDB",
                 "IntegrationKit",
                 "WebDAVFoundation",
+                "ArchiveZIPFoundation",
                 "SourceRuntimeComposition",
                 "SourceNetworkComposition",
             ]
@@ -29,6 +30,7 @@ let package = Package(
                 "DatabaseGRDB",
                 "IntegrationKit",
                 "WebDAVFoundation",
+                "ArchiveZIPFoundation",
                 "SourceRuntimeComposition",
                 "SourceScriptComposition",
                 "SourceNetworkComposition",
@@ -42,6 +44,10 @@ let package = Package(
         .package(
             url: "https://github.com/groue/GRDB.swift.git",
             exact: "7.11.1"
+        ),
+        .package(
+            url: "https://github.com/weichsel/ZIPFoundation.git",
+            exact: "0.9.20"
         ),
     ],
     targets: [
@@ -96,6 +102,14 @@ let package = Package(
             dependencies: [
                 .product(name: "LegadoCoreKit", package: "LegadoCoreKit"),
                 "IntegrationKit",
+            ]
+        ),
+        .target(
+            name: "ArchiveZIPFoundation",
+            dependencies: [
+                .product(name: "LegadoCoreKit", package: "LegadoCoreKit"),
+                "ReaderCore",
+                .product(name: "ZIPFoundation", package: "ZIPFoundation"),
             ]
         ),
         .target(
@@ -199,6 +213,10 @@ let package = Package(
         .testTarget(
             name: "WebDAVFoundationTests",
             dependencies: ["WebDAVFoundation", "IntegrationKit"]
+        ),
+        .testTarget(
+            name: "ArchiveZIPFoundationTests",
+            dependencies: ["ArchiveZIPFoundation"]
         ),
     ],
     swiftLanguageModes: [.v6]

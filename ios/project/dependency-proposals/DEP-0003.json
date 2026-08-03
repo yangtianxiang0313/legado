@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "id": "DEP-0003",
+  "identity": "zipfoundation",
+  "from_version": null,
+  "to_exact_version": "0.9.20",
+  "products": ["ZIPFoundation"],
+  "allowed_targets": ["ArchiveZIPFoundation"],
+  "expected_revision": "22787ffb59de99e5dc1fbfe80b19c97a904ad48d",
+  "adr": "ADR-0009",
+  "reason": "Android 双端互通备份使用普通 ZIP；Foundation 没有可维护的 ZIP archive 读写 API。ZIPFoundation 只解决受限容器访问，业务格式、Zip Slip 防护和逐域恢复继续属于项目代码。",
+  "alternatives": ["自行实现 ZIP：会重复实现 central directory、压缩和错误边界，风险高。", "iOS 私有快照：违反 Android 双向互通优先的产品决定。"],
+  "transitive_dependencies": [],
+  "license": "MIT",
+  "privacy_manifest": "0.9.20 是源码 ZIP 容器库；不收集数据、不使用网络，需在构建产物中复核其 Privacy Manifest。",
+  "security_review": "官方 HTTPS 仓库、精确 tag 与 peeled revision；SwiftPM 源码依赖，无 binary target、plugin、macro 或 traits；第三方类型只允许 ArchiveZIPFoundation import。",
+  "size_delta_bytes": 0,
+  "exit_plan": "ZIPFoundation 类型终止于 ArchiveZIPFoundation；如替换容器实现，IntegrationKit 的 archive port 与备份 DTO 不变。",
+  "owner": "iOS Integration",
+  "required_checks": ["dependency-contract", "package-contract", "archive-zip-foundation-focused-tests"],
+  "status": "applied"
+}

@@ -25,7 +25,7 @@
       "fixture_id": "android-backup-archive-v1",
       "validation": "build",
       "source_anchors": [],
-      "additional_allowed_paths": ["ios/docs/adr/0009-android-backup-interoperability.md"]
+      "additional_allowed_paths": ["ios/docs/adr/0009-android-backup-interoperability.md", "ios/project/baseline.json"]
     }
   ]
 }

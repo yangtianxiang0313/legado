@@ -1,0 +1,20 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "name": "Legado-iOS-ZIPFoundation-0.9.20",
+  "documentNamespace": "https://legado.example.invalid/spdx/zipfoundation-0.9.20-22787ffb59de99e5dc1fbfe80b19c97a904ad48d",
+  "creationInfo": {"created": "2026-08-03T08:37:04Z", "creators": ["Tool: Legado Loop v2"]},
+  "packages": [{
+    "name": "ZIPFoundation",
+    "SPDXID": "SPDXRef-Package-ZIPFoundation",
+    "versionInfo": "0.9.20",
+    "downloadLocation": "git+https://github.com/weichsel/ZIPFoundation.git@22787ffb59de99e5dc1fbfe80b19c97a904ad48d",
+    "filesAnalyzed": false,
+    "licenseConcluded": "MIT",
+    "licenseDeclared": "MIT",
+    "copyrightText": "NOASSERTION",
+    "externalRefs": [{"referenceCategory": "PACKAGE-MANAGER", "referenceType": "purl", "referenceLocator": "pkg:swift/zipfoundation@0.9.20?vcs_url=git%2Bhttps%3A%2F%2Fgithub.com%2Fweichsel%2FZIPFoundation.git%4022787ffb59de99e5dc1fbfe80b19c97a904ad48d"}]
+  }],
+  "relationships": [{"spdxElementId": "SPDXRef-DOCUMENT", "relationshipType": "DESCRIBES", "relatedSpdxElement": "SPDXRef-Package-ZIPFoundation"}]
+}

@@ -636,6 +636,7 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/Packages/LegadoKit/Tests/ArchiveZIPFoundationTests/**",
                 "ios/harness/dependency-policy.json",
                 "ios/harness/architecture-rules.json",
+                "ios/project/baseline.json",
                 "ios/project/dependency-proposals/**",
                 "ios/docs/dependencies.md",
                 "ios/docs/third-party-notices.md",
