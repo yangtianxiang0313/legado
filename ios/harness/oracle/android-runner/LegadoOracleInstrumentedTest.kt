@@ -294,6 +294,8 @@ class LegadoOracleInstrumentedTest {
                 runAppStartupCases()
             "rl-integration-backup-archive-001" ->
                 runBackupArchiveCases()
+            "rl-integration-backup-ios-to-android-001" ->
+                runIOSBackupAndroidRestoreCases()
             "sl-post-form-001" -> runPostFormCases()
             "sl-source-response-xml-declaration-normalization-001" ->
                 runXmlResponseCases()
@@ -699,6 +701,85 @@ class LegadoOracleInstrumentedTest {
                 .commit()
             LocalConfig.password = null
             Backup.clearCache()
+            workspace.deleteRecursively()
+        }
+    }
+
+    private suspend fun runIOSBackupAndroidRestoreCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            require(value.getString("operation") == "ios_backup_android_restore") {
+                "iOS backup restore scenario only accepts ios_backup_android_restore stimuli"
+            }
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", "ios_backup_android_restore")
+                .put(
+                    "arguments",
+                    JSONObject()
+                        .put("archive_sha256", arguments.getString("archive_sha256"))
+                        .put("profile", arguments.getString("profile"))
+                )
+            runCase(
+                value.getString("id"),
+                "ios_backup_android_restore",
+                stimulus
+            ) {
+                iosBackupAndroidRestoreProjection(
+                    arguments.getString("archive_base64")
+                )
+            }
+        }
+    }
+
+    private suspend fun iosBackupAndroidRestoreProjection(
+        archiveBase64: String
+    ): JSONObject {
+        val target = InstrumentationRegistry.getInstrumentation().targetContext
+        val workspace = File(target.cacheDir, "legado-oracle-ios-backup-restore")
+        val archiveFile = File(workspace, "backup.zip")
+        val extracted = File(workspace, "extracted")
+        val sourceURL = "https://ios-oracle.invalid/source"
+
+        workspace.deleteRecursively()
+        extracted.mkdirs()
+        appDb.clearAllTables()
+        try {
+            archiveFile.writeBytes(
+                Base64.decode(archiveBase64, Base64.DEFAULT)
+            )
+            val archiveProjection = ZipFile(archiveFile).use { archive ->
+                val entries = java.util.Collections.list(archive.entries())
+                JSONObject()
+                    .put(
+                        "member_names",
+                        JSONArray(entries.map { it.name }.sorted())
+                    )
+                    .put(
+                        "compression_methods",
+                        JSONArray(entries.map { it.method }.distinct().sorted())
+                    )
+                    .put("has_book_source", archive.getEntry("bookSource.json") != null)
+            }
+
+            ZipUtils.unZipToPath(archiveFile, extracted)
+            Restore.restore(extracted.absolutePath)
+            val restored = appDb.bookSourceDao.getBookSource(sourceURL)
+
+            return JSONObject()
+                .put("archive", archiveProjection)
+                .put(
+                    "restore",
+                    JSONObject()
+                        .put("book_source_restored", restored != null)
+                        .put("book_source_url", restored?.bookSourceUrl)
+                        .put("book_source_name", restored?.bookSourceName)
+                        .put("enabled", restored?.enabled)
+                        .put("enabled_explore", restored?.enabledExplore)
+                )
+        } finally {
+            appDb.bookSourceDao.delete(sourceURL)
             workspace.deleteRecursively()
         }
     }
@@ -12962,7 +13043,10 @@ class LegadoOracleInstrumentedTest {
             val issue = JSONObject()
                 .put("code", "android_exception")
                 .put("exception_type", error.javaClass.name)
-            if (scenarioId == "rl-integration-backup-archive-001") {
+            if (
+                scenarioId == "rl-integration-backup-archive-001" ||
+                    scenarioId == "rl-integration-backup-ios-to-android-001"
+            ) {
                 issue.put(
                     "exception_message",
                     error.message?.take(1_024) ?: ""

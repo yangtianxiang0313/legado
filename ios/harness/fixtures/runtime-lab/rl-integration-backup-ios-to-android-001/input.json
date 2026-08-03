@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "ios-book-source-archive-restores-on-android",
+      "operation": "ios_backup_android_restore",
+      "arguments": {
+        "archive_base64": "UEsDBBQAAAgIAAAAIQBfw8AhmgAAAOgAAAAPAAAAYm9va1NvdXJjZS5qc29uhY4xC8IwEIX/SslsLa4FcXJw0A6lkzhck5OGnrlwSYtS+t+NFcXN5cF7fPfenSfVMvc1D6LxBDdUpbJVnVUCmjB752r1AzVCieli9KEsCssh54VdWzcCWVOEzw06aAmNKqMM+LX7uyeWtHMFCin2Q0tWH1xEYX8E6VFeP6TeyDk4I2xNPm5SX0AQ3f3fX7Bdj4/tNCWdZzVfnlBLAQIVAxQAAAgIAAAAIQBfw8AhmgAAAOgAAAAPAAAAAAAAAAAAAACkgQAAAABib29rU291cmNlLmpzb25QSwUGAAAAAAEAAQA9AAAAxwAAAAAA",
+        "archive_sha256": "f8ea4508c3fd80216016d1aaf603f38af94c7006330fabba57332a8532961165",
+        "profile": "ios-public-book-source-v1"
+      }
+    }
+  ]
+}
