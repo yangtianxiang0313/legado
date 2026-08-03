@@ -34,6 +34,7 @@ struct LegadoApp: App {
     private let webDAVProgressUploader: WebDAVReaderProgressUploadCoordinator
     private let backupRestore: AndroidCoreBackupRestoreUseCase
     private let libraryBackup: AndroidLibraryBackupUseCase
+    private let webDAVBackupSync: WebDAVBackupSyncUseCase
 
     init() {
         let processArguments = ProcessInfo.processInfo.arguments
@@ -130,6 +131,19 @@ struct LegadoApp: App {
                 repository: AppAndroidLibraryBackupRepository(
                     repository: libraryRepository
                 )
+            )
+            self.webDAVBackupSync = WebDAVBackupSyncUseCase(
+                transfer: processArguments.contains("--webdav-test-double")
+                    ? UITestWebDAVBackupTransfer(
+                        seededArchive: ProcessInfo.processInfo.environment[
+                            "LEGADO_ANDROID_BACKUP_FIXTURE_BASE64"
+                        ].flatMap { Data(base64Encoded: $0) }
+                    )
+                    : WebDAVFoundationBackupClient(
+                        credentials: webDAVCredentials
+                    ),
+                exporter: libraryBackup,
+                restorer: backupRestore
             )
             _library = State(
                 initialValue: ShelfLibrary(
@@ -247,6 +261,7 @@ struct LegadoApp: App {
                     webDAVProgressUploader: webDAVProgressUploader,
                     backupRestore: backupRestore,
                     libraryBackup: libraryBackup,
+                    webDAVBackupSync: webDAVBackupSync,
                     startupCase: startupCase
                 )
             } else {
@@ -271,7 +286,8 @@ struct LegadoApp: App {
                     webDAVProgressLoader: webDAVProgressLoader,
                     webDAVProgressUploader: webDAVProgressUploader,
                     backupRestore: backupRestore,
-                    libraryBackup: libraryBackup
+                    libraryBackup: libraryBackup,
+                    webDAVBackupSync: webDAVBackupSync
                 )
             }
         }
@@ -487,6 +503,49 @@ private struct UITestWebDAVProgressSaver: WebDAVBookProgressSaving {
         document: WebDAVBookProgressDocument
     ) async -> WebDAVBookProgressSaveResult {
         .saved
+    }
+}
+
+private actor UITestWebDAVBackupTransfer: WebDAVBackupTransferring {
+    private var archives: [String: Data]
+
+    init(seededArchive: Data?) {
+        archives = seededArchive.map {
+            ["backup-android-fixture.zip": $0]
+        } ?? [:]
+    }
+
+    func listBackups(
+        configuration: WebDAVConnectionConfiguration
+    ) async -> WebDAVBackupListResult {
+        .loaded(
+            archives.keys.sorted(by: >).map {
+                WebDAVBackupFile(
+                    name: $0,
+                    size: Int64(archives[$0]?.count ?? 0),
+                    lastModifiedMilliseconds: 1_775_433_600_000
+                )
+            }
+        )
+    }
+
+    func uploadBackup(
+        configuration: WebDAVConnectionConfiguration,
+        fileName: String,
+        data: Data
+    ) async -> WebDAVBackupUploadResult {
+        archives[fileName] = data
+        return .uploaded
+    }
+
+    func downloadBackup(
+        configuration: WebDAVConnectionConfiguration,
+        fileName: String
+    ) async -> WebDAVBackupDownloadResult {
+        guard let data = archives[fileName] else {
+            return .failed(.notFound)
+        }
+        return .downloaded(data)
     }
 }
 

@@ -48,6 +48,7 @@ struct RootShellView: View {
     let webDAVProgressUploader: WebDAVReaderProgressUploadCoordinator
     let backupRestore: AndroidCoreBackupRestoreUseCase
     let libraryBackup: AndroidLibraryBackupUseCase
+    let webDAVBackupSync: WebDAVBackupSyncUseCase
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var didLoadLibrary = false
 
@@ -273,7 +274,8 @@ struct RootShellView: View {
                     await keyboardAssists.reload()
                     await appThemeProfiles.reload()
                 },
-                libraryBackup: libraryBackup
+                libraryBackup: libraryBackup,
+                webDAVBackupSync: webDAVBackupSync
             )
             .navigationDestination(for: AppRoute.self) { route in
                 destination(for: route, on: root)
@@ -753,6 +755,7 @@ private struct RootContentView: View {
     let backupRestore: AndroidCoreBackupRestoreUseCase
     let reloadBackupDomains: () async -> Void
     let libraryBackup: AndroidLibraryBackupUseCase
+    let webDAVBackupSync: WebDAVBackupSyncUseCase
     @State private var webDAVAccount = ProcessInfo.processInfo.arguments.contains(
         "--webdav-test-double"
     ) ? "reader" : ""
@@ -765,6 +768,8 @@ private struct RootContentView: View {
     @State private var showsAndroidBackupExporter = false
     @State private var androidBackupExportDocument = AndroidBackupZipDocument()
     @State private var androidBackupExportStatus = ""
+    @State private var webDAVBackupFiles: [WebDAVBackupFile] = []
+    @State private var webDAVBackupStatus = ""
 
     var body: some View {
         if root == .shelf {
@@ -945,6 +950,42 @@ private struct RootContentView: View {
                         Text(webDAVStatus)
                             .accessibilityIdentifier("state.settings.webdav.connection")
                     }
+                    Divider()
+                    Button {
+                        uploadWebDAVBackup()
+                    } label: {
+                        Label("上传全量备份", systemImage: "icloud.and.arrow.up")
+                    }
+                    .accessibilityIdentifier(
+                        "action.settings.webdav.backup.upload"
+                    )
+                    Button {
+                        loadWebDAVBackups()
+                    } label: {
+                        Label("刷新云端备份", systemImage: "arrow.clockwise")
+                    }
+                    .accessibilityIdentifier(
+                        "action.settings.webdav.backup.refresh"
+                    )
+                    ForEach(webDAVBackupFiles, id: \.name) { file in
+                        Button {
+                            restoreWebDAVBackup(file)
+                        } label: {
+                            Label(
+                                "恢复 \(file.name)",
+                                systemImage: "icloud.and.arrow.down"
+                            )
+                        }
+                        .accessibilityIdentifier(
+                            "action.settings.webdav.backup.restore.\(file.name)"
+                        )
+                    }
+                    if !webDAVBackupStatus.isEmpty {
+                        Text(webDAVBackupStatus)
+                            .accessibilityIdentifier(
+                                "state.settings.webdav.backup"
+                            )
+                    }
                 }
             }
             }
@@ -953,6 +994,7 @@ private struct RootContentView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(uiColor: .systemGroupedBackground))
         .navigationTitle(root.title)
+        .accessibilityIdentifier("scroll.\(root.rawValue)")
         .fileImporter(
             isPresented: $showsAndroidBackupImporter,
             allowedContentTypes: [.zip],
@@ -1162,6 +1204,86 @@ private struct RootContentView: View {
                 }
             } catch {
                 webDAVStatus = "WebDAV 凭据保存失败"
+            }
+        }
+    }
+
+    private func uploadWebDAVBackup() {
+        guard let configuration = webDAVSettings.value.connectionConfiguration else {
+            webDAVBackupStatus = "请先配置 WebDAV"
+            return
+        }
+        webDAVBackupStatus = "正在上传备份…"
+        Task {
+            let fileName = WebDAVBackupSyncUseCase.androidFileName(
+                date: Date(),
+                deviceName: "iOS"
+            )
+            let result = await webDAVBackupSync.upload(
+                configuration: configuration,
+                fileName: fileName,
+                bookSources: backupSources,
+                replacementRules: backupReplacementRules,
+                readerPreferences: readerPreferences.value
+            )
+            switch result {
+            case .uploaded(_, let summary):
+                webDAVBackupStatus =
+                    "已上传 \(summary.bookCount) 本书、"
+                    + "\(summary.bookSourceCount) 个书源"
+                await refreshWebDAVBackups(configuration: configuration)
+            case .failed:
+                webDAVBackupStatus = "WebDAV 备份上传失败"
+            }
+        }
+    }
+
+    private func loadWebDAVBackups() {
+        guard let configuration = webDAVSettings.value.connectionConfiguration else {
+            webDAVBackupStatus = "请先配置 WebDAV"
+            return
+        }
+        webDAVBackupStatus = "正在读取云端备份…"
+        Task { await refreshWebDAVBackups(configuration: configuration) }
+    }
+
+    private func refreshWebDAVBackups(
+        configuration: WebDAVConnectionConfiguration
+    ) async {
+        switch await webDAVBackupSync.listBackups(configuration: configuration) {
+        case .loaded(let files):
+            webDAVBackupFiles = files
+            webDAVBackupStatus = files.isEmpty
+                ? "云端没有备份"
+                : "找到 \(files.count) 个云端备份"
+        case .failed:
+            webDAVBackupStatus = "云端备份读取失败"
+        }
+    }
+
+    private func restoreWebDAVBackup(_ file: WebDAVBackupFile) {
+        guard let configuration = webDAVSettings.value.connectionConfiguration else {
+            webDAVBackupStatus = "请先配置 WebDAV"
+            return
+        }
+        webDAVBackupStatus = "正在恢复 \(file.name)…"
+        Task {
+            switch await webDAVBackupSync.restore(
+                configuration: configuration,
+                fileName: file.name
+            ) {
+            case .restored(let summary):
+                if let projection = summary.readerConfigProjection {
+                    readerPreferences.apply(projection)
+                }
+                await library.reload()
+                await reloadBackupDomains()
+                webDAVBackupStatus =
+                    "已恢复 \(summary.bookCount) 本书、"
+                    + "\(summary.groupCount) 个分组、"
+                    + "\(summary.bookmarkCount) 条书签"
+            case .failed:
+                webDAVBackupStatus = "WebDAV 备份恢复失败"
             }
         }
     }
@@ -1909,6 +2031,7 @@ struct StartupAcceptanceView: View {
     let webDAVProgressUploader: WebDAVReaderProgressUploadCoordinator
     let backupRestore: AndroidCoreBackupRestoreUseCase
     let libraryBackup: AndroidLibraryBackupUseCase
+    let webDAVBackupSync: WebDAVBackupSyncUseCase
     let startupCase: StartupAcceptanceCase
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -1965,7 +2088,8 @@ struct StartupAcceptanceView: View {
                 webDAVProgressLoader: webDAVProgressLoader,
                 webDAVProgressUploader: webDAVProgressUploader,
                 backupRestore: backupRestore,
-                libraryBackup: libraryBackup
+                libraryBackup: libraryBackup,
+                webDAVBackupSync: webDAVBackupSync
             )
         }
     }

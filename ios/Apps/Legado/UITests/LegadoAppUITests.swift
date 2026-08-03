@@ -169,6 +169,62 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testWebDAVBackupUploadAndRestore() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+            "--reset-webdav-settings",
+            "--webdav-test-double",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        selectRoot("root.settings", label: "我的")
+        let upload = requireByScrolling(
+            "action.settings.webdav.backup.upload",
+            in: "scroll.root.settings"
+        )
+        upload.tap()
+
+        let status = require("state.settings.webdav.backup", timeout: 15)
+        let listed = NSPredicate(format: "label BEGINSWITH '找到 '")
+        expectation(for: listed, evaluatedWith: status)
+        waitForExpectations(timeout: 15)
+
+        let restore = app.buttons.matching(
+            NSPredicate(
+                format: "identifier BEGINSWITH %@",
+                "action.settings.webdav.backup.restore."
+            )
+        ).firstMatch
+        XCTAssertTrue(restore.waitForExistence(timeout: 8))
+        let restoredFile = restore.identifier.replacingOccurrences(
+            of: "action.settings.webdav.backup.restore.",
+            with: ""
+        )
+        restore.tap()
+
+        let restored = NSPredicate(format: "label BEGINSWITH '已恢复 '")
+        expectation(for: restored, evaluatedWith: status)
+        waitForExpectations(timeout: 15)
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "screen": "screen.root.settings",
+            "uploaded_and_listed": true,
+            "restored_file": restoredFile,
+            "restore_state": status.label,
+        ])
+    }
+
     func testAndroidLibraryBackupImportEntry() throws {
         let environment = ProcessInfo.processInfo.environment
         let contract = try XCTUnwrap(
