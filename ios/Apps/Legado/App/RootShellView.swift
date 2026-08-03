@@ -26,6 +26,19 @@ private extension Color {
     }
 }
 
+private func synchronizeDefaultWebDAVServer(
+    settings: WebDAVConnectionSettings,
+    repository: any WebDAVServerProfileRepository
+) async throws {
+    guard
+        let profile = WebDAVDefaultServerBridge.profile(settings: settings)
+    else { return }
+    try await repository.upsertWebDAVServerProfile(profile)
+    if try await repository.selectedWebDAVServerProfileID() == nil {
+        try await repository.selectWebDAVServerProfile(id: profile.id)
+    }
+}
+
 struct RootShellView: View {
     @Bindable var router: AppRouter
     @Bindable var library: ShelfLibrary
@@ -104,6 +117,11 @@ struct RootShellView: View {
                         password: "secret"
                     ),
                     for: reference
+                )
+            } else {
+                try? await synchronizeDefaultWebDAVServer(
+                    settings: webDAVSettings.value,
+                    repository: webDAVServerProfiles
                 )
             }
             if ProcessInfo.processInfo.arguments.contains(
@@ -1338,10 +1356,16 @@ private struct RootContentView: View {
                         at: archiveURL.deletingLastPathComponent()
                     )
                 }
-                let storedServerProfiles = try await webDAVServerProfiles
-                    .webDAVServerProfiles()
-                let selectedServerID = try await webDAVServerProfiles
-                    .selectedWebDAVServerProfileID()
+                let storedServerProfiles = WebDAVDefaultServerBridge
+                    .androidExportProfiles(
+                        try await webDAVServerProfiles
+                            .webDAVServerProfiles()
+                    )
+                let selectedServerID = WebDAVDefaultServerBridge
+                    .androidExportSelectedID(
+                        try await webDAVServerProfiles
+                            .selectedWebDAVServerProfileID()
+                    )
                 if !storedServerProfiles.isEmpty
                     && androidBackupPassword.isEmpty
                 {
@@ -1458,6 +1482,10 @@ private struct RootContentView: View {
                 )
                 switch await webDAVClient.initialize(settings) {
                 case .ready:
+                    try await synchronizeDefaultWebDAVServer(
+                        settings: webDAVSettings.value,
+                        repository: webDAVServerProfiles
+                    )
                     webDAVStatus = "WebDAV 连接成功"
                 case .failed:
                     webDAVStatus = "WebDAV 连接失败"
