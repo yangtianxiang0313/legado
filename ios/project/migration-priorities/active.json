@@ -43,6 +43,15 @@
         "claim_ids": ["BKC-BOOK-PROGRESS-WEBDAV-RUNTIME-001"],
         "task_ids": ["IOS-INTEGRATION-WEBDAV-READER-PROGRESS-IOS-TO-ANDROID-001"]
       }]
+    },
+    {
+      "id": "P68-S5",
+      "title": "阅读生命周期自动上传",
+      "selectors": [{
+        "id": "P68-UPLOAD-LIFECYCLE",
+        "claim_ids": ["BKC-BOOK-PROGRESS-WEBDAV-RUNTIME-001"],
+        "task_ids": ["IOS-APP-NAVIGATION-WEBDAV-READER-PROGRESS-UPLOAD-LIFECYCLE-001"]
+      }]
     }
   ],
   "deliveries": [
@@ -141,6 +150,38 @@
         "ios/harness/goldens/releases/**",
         "ios/harness/tests/test_android_oracle_runner.py",
         "ios/project/external-execution-receipts/**",
+        "ios/loop/loop.py"
+      ]
+    },
+    {
+      "target": "IOS-APP-NAVIGATION-WEBDAV-READER-PROGRESS-UPLOAD-LIFECYCLE-001",
+      "title": "阅读进度保存后自动上传 WebDAV",
+      "fixture_id": "rl-reader-progress-webdav-ios-to-android-001",
+      "requirement_ref": "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01",
+      "validation": "build",
+      "prerequisite_task_ids": ["IOS-INTEGRATION-WEBDAV-READER-PROGRESS-IOS-TO-ANDROID-001"],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
+          "symbol_id": "kotlin://io.legado.app.model.ReadBook/saveRead"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/help/AppWebDav.kt",
+          "symbol_id": "kotlin://io.legado.app.help.AppWebDav/uploadBookProgress"
+        }
+      ],
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/IntegrationKit/**",
+        "ios/Packages/LegadoKit/Sources/WebDAVFoundation/**",
+        "ios/Packages/LegadoKit/Sources/LibraryDomain/**",
+        "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+        "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+        "ios/Packages/LegadoKit/Tests/IntegrationKitTests/**",
+        "ios/Packages/LegadoKit/Tests/WebDAVFoundationTests/**",
+        "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+        "ios/project/migration-priorities/active.json",
         "ios/loop/loop.py"
       ]
     }
