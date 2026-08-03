@@ -949,7 +949,7 @@ def owner_contract(target: str) -> Mapping[str, Any]:
         }
     if target == "IOS-SEARCH-ANDROID-HISTORY-INTEROP-001":
         return {
-            "owner": "AppUseCases",
+            "owner": "IntegrationKit",
             "architecture_refs": [
                 "ARCH-001",
                 "ARCH-005",
