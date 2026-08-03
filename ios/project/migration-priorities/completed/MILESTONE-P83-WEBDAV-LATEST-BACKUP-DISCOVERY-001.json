@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P83-WEBDAV-LATEST-BACKUP-DISCOVERY-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "priority": 1,
   "title": "P83 WebDAV 跨端新备份发现",
