@@ -21,6 +21,7 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
   public let readerConfigProjection: AndroidReaderConfigProjection?
   public let dictionaryRuleCount: Int
   public let keyboardAssistCount: Int
+  public let themeConfigCount: Int
 
   public init(
     bookCount: Int,
@@ -38,7 +39,8 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
     readerConfigCount: Int = 0,
     readerConfigProjection: AndroidReaderConfigProjection? = nil,
     dictionaryRuleCount: Int = 0,
-    keyboardAssistCount: Int = 0
+    keyboardAssistCount: Int = 0,
+    themeConfigCount: Int = 0
   ) {
     self.bookCount = bookCount
     self.groupCount = groupCount
@@ -56,6 +58,7 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
     self.readerConfigProjection = readerConfigProjection
     self.dictionaryRuleCount = dictionaryRuleCount
     self.keyboardAssistCount = keyboardAssistCount
+    self.themeConfigCount = themeConfigCount
   }
 }
 
@@ -82,6 +85,7 @@ public protocol AndroidCoreBackupRestoreRepository: Sendable {
   ) async throws
   func restoreAndroidDictionaryRules(_ values: [DictionaryRule]) async throws
   func restoreAndroidKeyboardAssists(_ values: [KeyboardAssist]) async throws
+  func restoreAndroidThemeProfiles(_ values: [AppThemeProfile]) async throws
 }
 
 public extension AndroidCoreBackupRestoreRepository {
@@ -111,6 +115,7 @@ public extension AndroidCoreBackupRestoreRepository {
   ) async throws {}
   func restoreAndroidDictionaryRules(_ values: [DictionaryRule]) async throws {}
   func restoreAndroidKeyboardAssists(_ values: [KeyboardAssist]) async throws {}
+  func restoreAndroidThemeProfiles(_ values: [AppThemeProfile]) async throws {}
 }
 
 public struct AndroidCoreBackupRestoreUseCase: Sendable {
@@ -167,6 +172,9 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     let keyboardAssists = AndroidKeyboardAssistInteropAdapter.restoreValues(
       try AndroidBackupArchive.readKeyboardAssists(from: archiveURL)
     )
+    let themeProfiles = AndroidThemeConfigInteropAdapter.restoreValues(
+      try AndroidBackupArchive.readThemeConfigs(from: archiveURL)
+    )
 
     let library = try await repository.restoreAndroidLibrary(libraryPlan)
     if !bookSources.isEmpty {
@@ -209,6 +217,9 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     if !keyboardAssists.isEmpty {
       try await repository.restoreAndroidKeyboardAssists(keyboardAssists)
     }
+    if !themeProfiles.isEmpty {
+      try await repository.restoreAndroidThemeProfiles(themeProfiles)
+    }
     return AndroidCoreBackupRestoreSummary(
       bookCount: library.bookCount,
       groupCount: library.groupCount,
@@ -226,7 +237,8 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
         + (readerConfigBundle.sharedStyle == nil ? 0 : 1),
       readerConfigProjection: readerConfigBundle.projection,
       dictionaryRuleCount: dictionaryRules.count,
-      keyboardAssistCount: keyboardAssists.count
+      keyboardAssistCount: keyboardAssists.count,
+      themeConfigCount: themeProfiles.count
     )
   }
 

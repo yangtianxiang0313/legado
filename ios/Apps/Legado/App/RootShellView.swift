@@ -8,6 +8,24 @@ import UIKit
 import UniformTypeIdentifiers
 import WebDAVFoundation
 
+private extension Color {
+    init?(androidHex rawValue: String) {
+        let value = rawValue.trimmingCharacters(
+            in: CharacterSet(charactersIn: "#").union(.whitespacesAndNewlines)
+        )
+        guard value.count == 6, let rgb = UInt64(value, radix: 16) else {
+            return nil
+        }
+        self.init(
+            .sRGB,
+            red: Double((rgb >> 16) & 0xff) / 255,
+            green: Double((rgb >> 8) & 0xff) / 255,
+            blue: Double(rgb & 0xff) / 255,
+            opacity: 1
+        )
+    }
+}
+
 struct RootShellView: View {
     @Bindable var router: AppRouter
     @Bindable var library: ShelfLibrary
@@ -16,6 +34,7 @@ struct RootShellView: View {
     @Bindable var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
     @Bindable var dictionaryLookup: DictionaryLookupStore
     @Bindable var keyboardAssists: KeyboardAssistStore
+    @Bindable var appThemeProfiles: AppThemeProfileStore
     @Bindable var readerPreferences: ReaderPreferencesStore
     @Bindable var bookDetailPreferences: BookDetailPreferencesStore
     @Bindable var rootVisibility: RootVisibilityPreferencesStore
@@ -43,6 +62,11 @@ struct RootShellView: View {
         .onAppear {
             router.reconcileVisibleRoots(visibleRoots)
         }
+        .tint(activeThemeTint)
+        .preferredColorScheme(activeThemeColorScheme)
+        .background(activeThemeBackground.ignoresSafeArea())
+        .toolbarBackground(activeThemePrimary, for: .navigationBar)
+        .toolbarBackground(activeThemeBottomBackground, for: .tabBar)
         .task {
             guard !didLoadLibrary else { return }
             didLoadLibrary = true
@@ -69,6 +93,7 @@ struct RootShellView: View {
             await httpTextToSpeechEngines.reload()
             await dictionaryLookup.reload()
             await keyboardAssists.reload()
+            await appThemeProfiles.reload()
             router.reconcileVisibleRoots(visibleRoots)
             if ProcessInfo.processInfo.arguments.contains(
                 "--seed-shelf-management"
@@ -102,6 +127,39 @@ struct RootShellView: View {
         if rootVisibility.value.showsRSS { roots.append(.rss) }
         roots.append(.settings)
         return roots
+    }
+
+    private var activeThemeTint: Color {
+        guard let value = appThemeProfiles.selectedProfile?.accentColor,
+              let color = Color(androidHex: value)
+        else { return .accentColor }
+        return color
+    }
+
+    private var activeThemePrimary: Color {
+        guard let value = appThemeProfiles.selectedProfile?.primaryColor,
+              let color = Color(androidHex: value)
+        else { return Color(uiColor: .systemBackground) }
+        return color
+    }
+
+    private var activeThemeBackground: Color {
+        guard let value = appThemeProfiles.selectedProfile?.backgroundColor,
+              let color = Color(androidHex: value)
+        else { return Color(uiColor: .systemBackground) }
+        return color
+    }
+
+    private var activeThemeBottomBackground: Color {
+        guard let value = appThemeProfiles.selectedProfile?.bottomBackgroundColor,
+              let color = Color(androidHex: value)
+        else { return Color(uiColor: .systemBackground) }
+        return color
+    }
+
+    private var activeThemeColorScheme: ColorScheme? {
+        guard let profile = appThemeProfiles.selectedProfile else { return nil }
+        return profile.isNightTheme ? .dark : .light
     }
 
     private var compactShell: some View {
@@ -183,6 +241,7 @@ struct RootShellView: View {
                 },
                 rssStore: rssStore,
                 readerPreferences: readerPreferences,
+                appThemeProfiles: appThemeProfiles,
                 rootVisibility: rootVisibility,
                 webDAVSettings: webDAVSettings,
                 webDAVCredentials: webDAVCredentials,
@@ -196,6 +255,7 @@ struct RootShellView: View {
                     await httpTextToSpeechEngines.reload()
                     await dictionaryLookup.reload()
                     await keyboardAssists.reload()
+                    await appThemeProfiles.reload()
                 },
                 libraryBackup: libraryBackup
             )
@@ -651,6 +711,7 @@ private struct RootContentView: View {
     let exploreSources: () -> [ExploreSourceSummary]
     @Bindable var rssStore: RSSStore
     @Bindable var readerPreferences: ReaderPreferencesStore
+    @Bindable var appThemeProfiles: AppThemeProfileStore
     @Bindable var rootVisibility: RootVisibilityPreferencesStore
     @Bindable var webDAVSettings: WebDAVConnectionSettingsStore
     let webDAVCredentials: KeychainWebDAVCredentialStore
@@ -791,6 +852,41 @@ private struct RootContentView: View {
                 .accessibilityIdentifier("section.settings.rootVisibility")
 
                 VStack(alignment: .leading, spacing: 10) {
+                    Text("应用主题")
+                        .font(.headline)
+                    Picker(
+                        "主题模板",
+                        selection: Binding(
+                            get: { appThemeProfiles.selectedName },
+                            set: { appThemeProfiles.select($0) }
+                        )
+                    ) {
+                        Text("跟随系统").tag(String?.none)
+                        ForEach(appThemeProfiles.profiles) { profile in
+                            Text(profile.name).tag(Optional(profile.name))
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .accessibilityIdentifier("picker.settings.appTheme")
+                    if let profile = appThemeProfiles.selectedProfile {
+                        HStack(spacing: 8) {
+                            Circle()
+                                .fill(Color(androidHex: profile.primaryColor) ?? .primary)
+                            Circle()
+                                .fill(Color(androidHex: profile.accentColor) ?? .accentColor)
+                            Text(profile.isNightTheme ? "深色" : "浅色")
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(height: 24)
+                        .accessibilityIdentifier("state.settings.appTheme.selected")
+                    } else if appThemeProfiles.profiles.isEmpty {
+                        Text("导入 Android backup.zip 后可选择主题模板")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .accessibilityIdentifier("section.settings.appTheme")
+
+                VStack(alignment: .leading, spacing: 10) {
                     Text("WebDAV")
                         .font(.headline)
                     TextField("服务器地址", text: Binding(
@@ -923,6 +1019,10 @@ private struct RootContentView: View {
                 if summary.keyboardAssistCount > 0 {
                     androidBackupImportStatus +=
                         "、\(summary.keyboardAssistCount) 个编辑辅助键"
+                }
+                if summary.themeConfigCount > 0 {
+                    androidBackupImportStatus +=
+                        "、\(summary.themeConfigCount) 个主题模板"
                 }
                 if summary.rssSourceCount > 0 || summary.rssStarCount > 0 {
                     androidBackupImportStatus +=
@@ -1761,6 +1861,7 @@ struct StartupAcceptanceView: View {
     @Bindable var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
     @Bindable var dictionaryLookup: DictionaryLookupStore
     @Bindable var keyboardAssists: KeyboardAssistStore
+    @Bindable var appThemeProfiles: AppThemeProfileStore
     @Bindable var readerPreferences: ReaderPreferencesStore
     @Bindable var bookDetailPreferences: BookDetailPreferencesStore
     @Bindable var rootVisibility: RootVisibilityPreferencesStore
@@ -1815,6 +1916,7 @@ struct StartupAcceptanceView: View {
                 httpTextToSpeechEngines: httpTextToSpeechEngines,
                 dictionaryLookup: dictionaryLookup,
                 keyboardAssists: keyboardAssists,
+                appThemeProfiles: appThemeProfiles,
                 readerPreferences: readerPreferences,
                 bookDetailPreferences: bookDetailPreferences,
                 rootVisibility: rootVisibility,

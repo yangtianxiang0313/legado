@@ -19,6 +19,7 @@ public struct AndroidBackupContents: Equatable, Sendable {
     public var sharedReaderConfig: AndroidReaderConfigDTO?
     public var dictionaryRules: [AndroidDictionaryRuleDTO]
     public var keyboardAssists: [AndroidKeyboardAssistDTO]
+    public var themeConfigs: [AndroidThemeConfigDTO]
 
     public init(
         bookSources: [BookSourceDTO] = [],
@@ -36,7 +37,8 @@ public struct AndroidBackupContents: Equatable, Sendable {
         readerConfigs: [AndroidReaderConfigDTO] = [],
         sharedReaderConfig: AndroidReaderConfigDTO? = nil,
         dictionaryRules: [AndroidDictionaryRuleDTO] = [],
-        keyboardAssists: [AndroidKeyboardAssistDTO] = []
+        keyboardAssists: [AndroidKeyboardAssistDTO] = [],
+        themeConfigs: [AndroidThemeConfigDTO] = []
     ) {
         self.bookSources = bookSources
         self.replacementRules = replacementRules
@@ -54,6 +56,7 @@ public struct AndroidBackupContents: Equatable, Sendable {
         self.sharedReaderConfig = sharedReaderConfig
         self.dictionaryRules = dictionaryRules
         self.keyboardAssists = keyboardAssists
+        self.themeConfigs = themeConfigs
     }
 }
 
@@ -75,6 +78,7 @@ public enum AndroidBackupArchive {
     public static let sharedReaderConfigMember = "shareReadConfig.json"
     public static let dictionaryRulesMember = "dictRule.json"
     public static let keyboardAssistsMember = "keyboardAssists.json"
+    public static let themeConfigsMember = "themeConfig.json"
 
     public static func write(
         _ contents: AndroidBackupContents,
@@ -218,6 +222,16 @@ public enum AndroidBackupArchive {
                     path: keyboardAssistsMember,
                     data: try AndroidKeyboardAssistCodec.encodeMany(
                         contents.keyboardAssists
+                    )
+                )
+            )
+        }
+        if !contents.themeConfigs.isEmpty {
+            members.append(
+                .init(
+                    path: themeConfigsMember,
+                    data: try AndroidThemeConfigCodec.encodeMany(
+                        contents.themeConfigs
                     )
                 )
             )
@@ -422,5 +436,17 @@ public enum AndroidBackupArchive {
             maximumBytes: maximumMemberBytes
         ) else { return [] }
         return try AndroidKeyboardAssistCodec.decodeMany(data)
+    }
+
+    public static func readThemeConfigs(
+        from archiveURL: URL,
+        maximumMemberBytes: UInt64 = 32 * 1_024 * 1_024
+    ) throws -> [AndroidThemeConfigDTO] {
+        guard let data = try ArchiveZIPFoundation.read(
+            themeConfigsMember,
+            from: archiveURL,
+            maximumBytes: maximumMemberBytes
+        ) else { return [] }
+        return try AndroidThemeConfigCodec.decodeMany(data)
     }
 }

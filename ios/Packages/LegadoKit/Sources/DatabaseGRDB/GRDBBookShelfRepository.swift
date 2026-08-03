@@ -7,7 +7,7 @@ import LibraryDomain
 public actor GRDBBookShelfRepository:
   BookShelfRepository, RuleSubscriptionRepository, RSSRepository,
   HTTPTextToSpeechRepository, DictionaryRuleRepository,
-  KeyboardAssistRepository
+  KeyboardAssistRepository, AppThemeProfileRepository
 {
   private let database: DatabaseQueue
 
@@ -1213,6 +1213,26 @@ public actor GRDBBookShelfRepository:
     }
   }
 
+  public func appThemeProfiles() async throws -> [AppThemeProfile] {
+    try await database.read { db in
+      try AppThemeProfileRecord
+        .order(Column("name").asc)
+        .fetchAll(db)
+        .map { try $0.value }
+    }
+  }
+
+  public func restoreAndroidThemeProfiles(
+    _ values: [AppThemeProfile]
+  ) async throws {
+    try await database.write { db in
+      for value in values {
+        var record = try AppThemeProfileRecord(value: value)
+        try record.save(db)
+      }
+    }
+  }
+
   public func restoreAndroidReadRecords(
     _ records: [LibraryDomain.ReadRecord]
   ) async throws {
@@ -1542,6 +1562,13 @@ public actor GRDBBookShelfRepository:
         table.column("serialNumber", .integer).notNull().indexed()
         table.column("payload", .blob).notNull()
         table.primaryKey(["type", "key"])
+      }
+    }
+    migrator.registerMigration("addAndroidThemeConfigInterop") { db in
+      try db.create(table: "appThemeProfiles") { table in
+        table.column("name", .text).notNull().primaryKey()
+        table.column("night", .boolean).notNull().indexed()
+        table.column("payload", .blob).notNull()
       }
     }
     return migrator
@@ -2051,6 +2078,25 @@ private struct KeyboardAssistRecord:
 
   var value: KeyboardAssist {
     get throws { try JSONDecoder().decode(KeyboardAssist.self, from: payload) }
+  }
+}
+
+private struct AppThemeProfileRecord:
+  Codable, FetchableRecord, MutablePersistableRecord
+{
+  static let databaseTableName = "appThemeProfiles"
+  var name: String
+  var night: Bool
+  var payload: Data
+
+  init(value: AppThemeProfile) throws {
+    name = value.name
+    night = value.isNightTheme
+    payload = try JSONEncoder().encode(value)
+  }
+
+  var value: AppThemeProfile {
+    get throws { try JSONDecoder().decode(AppThemeProfile.self, from: payload) }
   }
 }
 

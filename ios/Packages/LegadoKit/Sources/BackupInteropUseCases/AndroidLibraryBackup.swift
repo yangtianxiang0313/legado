@@ -21,6 +21,7 @@ public struct AndroidLibraryBackupSummary: Equatable, Sendable {
   public let readerConfigCount: Int
   public let dictionaryRuleCount: Int
   public let keyboardAssistCount: Int
+  public let themeConfigCount: Int
 
   public init(
     bookCount: Int,
@@ -37,7 +38,8 @@ public struct AndroidLibraryBackupSummary: Equatable, Sendable {
     localTextTOCRuleCount: Int = 0,
     readerConfigCount: Int = 0,
     dictionaryRuleCount: Int = 0,
-    keyboardAssistCount: Int = 0
+    keyboardAssistCount: Int = 0,
+    themeConfigCount: Int = 0
   ) {
     self.bookCount = bookCount
     self.groupCount = groupCount
@@ -54,6 +56,7 @@ public struct AndroidLibraryBackupSummary: Equatable, Sendable {
     self.readerConfigCount = readerConfigCount
     self.dictionaryRuleCount = dictionaryRuleCount
     self.keyboardAssistCount = keyboardAssistCount
+    self.themeConfigCount = themeConfigCount
   }
 }
 
@@ -69,6 +72,7 @@ public protocol AndroidLibraryBackupRepository: Sendable {
   func androidReaderConfigBundle() async throws -> AndroidReaderConfigBundle?
   func dictionaryRules() async throws -> [DictionaryRule]
   func keyboardAssists() async throws -> [KeyboardAssist]
+  func appThemeProfiles() async throws -> [AppThemeProfile]
 }
 
 public extension AndroidLibraryBackupRepository {
@@ -82,6 +86,7 @@ public extension AndroidLibraryBackupRepository {
   func androidReaderConfigBundle() async throws -> AndroidReaderConfigBundle? { nil }
   func dictionaryRules() async throws -> [DictionaryRule] { [] }
   func keyboardAssists() async throws -> [KeyboardAssist] { [] }
+  func appThemeProfiles() async throws -> [AppThemeProfile] { [] }
 }
 
 public enum AndroidLibraryBackupError: Error, Equatable, Sendable {
@@ -128,6 +133,7 @@ public struct AndroidLibraryBackupUseCase: Sendable {
     } ?? storedReaderConfigBundle
     let dictionaryRules = try await repository.dictionaryRules()
     let keyboardAssists = try await repository.keyboardAssists()
+    let themeProfiles = try await repository.appThemeProfiles()
     let contents = try AndroidLibraryBackupAdapter.contents(
       from: plan,
       bookSources: bookSources,
@@ -141,7 +147,8 @@ public struct AndroidLibraryBackupUseCase: Sendable {
       localTextTOCRules: localTextTOCRules,
       readerConfigBundle: readerConfigBundle,
       dictionaryRules: dictionaryRules,
-      keyboardAssists: keyboardAssists
+      keyboardAssists: keyboardAssists,
+      themeProfiles: themeProfiles
     )
     try AndroidBackupArchive.write(
       contents,
@@ -163,7 +170,8 @@ public struct AndroidLibraryBackupUseCase: Sendable {
       readerConfigCount: contents.readerConfigs.count
         + (contents.sharedReaderConfig == nil ? 0 : 1),
       dictionaryRuleCount: contents.dictionaryRules.count,
-      keyboardAssistCount: contents.keyboardAssists.count
+      keyboardAssistCount: contents.keyboardAssists.count,
+      themeConfigCount: contents.themeConfigs.count
     )
   }
 }
@@ -185,7 +193,8 @@ public enum AndroidLibraryBackupAdapter {
       localTextTOCRules: [],
       readerConfigBundle: nil,
       dictionaryRules: [],
-      keyboardAssists: []
+      keyboardAssists: [],
+      themeProfiles: []
     )
   }
 
@@ -202,7 +211,8 @@ public enum AndroidLibraryBackupAdapter {
     localTextTOCRules: [LocalTextTOCRule] = [],
     readerConfigBundle: AndroidReaderConfigBundle? = nil,
     dictionaryRules: [DictionaryRule] = [],
-    keyboardAssists: [KeyboardAssist] = []
+    keyboardAssists: [KeyboardAssist] = [],
+    themeProfiles: [AppThemeProfile] = []
   ) throws -> AndroidBackupContents {
     let sourceData = try SourceManagementPolicy.exportData(
       bookSources,
@@ -232,7 +242,9 @@ public enum AndroidLibraryBackupAdapter {
       dictionaryRules:
         AndroidDictionaryRuleInteropAdapter.backupDocuments(dictionaryRules),
       keyboardAssists:
-        AndroidKeyboardAssistInteropAdapter.backupDocuments(keyboardAssists)
+        AndroidKeyboardAssistInteropAdapter.backupDocuments(keyboardAssists),
+      themeConfigs:
+        AndroidThemeConfigInteropAdapter.backupDocuments(themeProfiles)
     )
   }
 

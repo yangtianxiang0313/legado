@@ -20,6 +20,7 @@ struct LegadoApp: App {
     @State private var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
     @State private var dictionaryLookup: DictionaryLookupStore
     @State private var keyboardAssists: KeyboardAssistStore
+    @State private var appThemeProfiles: AppThemeProfileStore
     @State private var readerPreferences: ReaderPreferencesStore
     @State private var bookDetailPreferences: BookDetailPreferencesStore
     @State private var rootVisibility: RootVisibilityPreferencesStore
@@ -141,6 +142,12 @@ struct LegadoApp: App {
             _keyboardAssists = State(
                 initialValue: KeyboardAssistStore(repository: libraryRepository)
             )
+            _appThemeProfiles = State(
+                initialValue: AppThemeProfileStore(
+                    repository: libraryRepository,
+                    selection: UserDefaultsAppThemeSelectionPersistence()
+                )
+            )
             let systemSynthesizer: any SystemSpeechSynthesizing =
                 ProcessInfo.processInfo.arguments.contains(
                     "--system-read-aloud-test-double"
@@ -198,6 +205,7 @@ struct LegadoApp: App {
                     httpTextToSpeechEngines: httpTextToSpeechEngines,
                     dictionaryLookup: dictionaryLookup,
                     keyboardAssists: keyboardAssists,
+                    appThemeProfiles: appThemeProfiles,
                     readerPreferences: readerPreferences,
                     bookDetailPreferences: bookDetailPreferences,
                     rootVisibility: rootVisibility,
@@ -220,6 +228,7 @@ struct LegadoApp: App {
                     httpTextToSpeechEngines: httpTextToSpeechEngines,
                     dictionaryLookup: dictionaryLookup,
                     keyboardAssists: keyboardAssists,
+                    appThemeProfiles: appThemeProfiles,
                     readerPreferences: readerPreferences,
                     bookDetailPreferences: bookDetailPreferences,
                     rootVisibility: rootVisibility,
@@ -312,6 +321,12 @@ private struct AppAndroidCoreBackupRestoreRepository:
     ) async throws {
         try await repository.restoreAndroidKeyboardAssists(values)
     }
+
+    func restoreAndroidThemeProfiles(
+        _ values: [AppThemeProfile]
+    ) async throws {
+        try await repository.restoreAndroidThemeProfiles(values)
+    }
 }
 
 private struct AppAndroidLibraryBackupRepository:
@@ -353,6 +368,34 @@ private struct AppAndroidLibraryBackupRepository:
 
     func keyboardAssists() async throws -> [KeyboardAssist] {
         try await repository.keyboardAssists()
+    }
+
+    func appThemeProfiles() async throws -> [AppThemeProfile] {
+        try await repository.appThemeProfiles()
+    }
+}
+
+@MainActor
+private final class UserDefaultsAppThemeSelectionPersistence:
+    AppThemeSelectionPersistence
+{
+    private let defaults: UserDefaults
+    private let key = "appearance.selectedAndroidThemeName.v1"
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+    }
+
+    func selectedThemeName() -> String? {
+        defaults.string(forKey: key)
+    }
+
+    func saveSelectedThemeName(_ value: String?) {
+        if let value {
+            defaults.set(value, forKey: key)
+        } else {
+            defaults.removeObject(forKey: key)
+        }
     }
 }
 
