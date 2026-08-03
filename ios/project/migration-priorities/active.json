@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P81-WEBDAV-SERVER-MANAGEMENT-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "priority": 1,
+  "title": "P81 WebDAV 多服务器双端互通",
+  "objective": "依据冻结 Android Server、ServersDialog 与 ServerConfigViewModel，实现 iOS 对 Android WebDAV 多服务器的新增、编辑、删除、选择和安全凭据持久化；服务器 ID、排序和选中状态可经 servers.json 往返，密码仅落 Keychain。",
+  "validation_policy": "管理事务与 GRDB 语义使用聚焦测试；App 接线做一次增量编译，完整管理入口只做一条主 iPhone Simulator 流程。",
+  "stages": [
+    {
+      "id": "P81-S1",
+      "title": "跨端服务器管理合同",
+      "selectors": [
+        {
+          "id": "P81-S1-MANAGEMENT",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-APP-NAVIGATION-WEBDAV-SERVER-MANAGEMENT-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P81-S2",
+      "title": "iOS 管理入口与关键流程",
+      "selectors": [
+        {
+          "id": "P81-S2-APP",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-APP-NAVIGATION-WEBDAV-SERVER-MANAGEMENT-APP-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-APP-NAVIGATION-WEBDAV-SERVER-MANAGEMENT-001",
+      "title": "实现 Android 兼容的 WebDAV 服务器管理事务",
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+      "fixture_id": "rl-app-webdav-server-management-001",
+      "package_path": "ios/Packages/LegadoKit",
+      "validation": "tests",
+      "test_filter": "WebDAVServerProfileManagementTests",
+      "prerequisite_task_ids": [
+        "IOS-APP-NAVIGATION-WEBDAV-DEFAULT-SERVER-APP-001"
+      ],
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+        "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+        "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/data/entities/Server.kt",
+          "symbol_id": "kotlin://io.legado.app.data.entities.Server"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/ui/book/import/remote/ServerConfigViewModel.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.import.remote.ServerConfigViewModel/save"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/ui/book/import/remote/ServersDialog.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.import.remote.ServersDialog"
+        }
+      ]
+    },
+    {
+      "target": "IOS-APP-NAVIGATION-WEBDAV-SERVER-MANAGEMENT-APP-001",
+      "title": "接通 iOS WebDAV 多服务器管理入口",
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+      "fixture_id": "app-webdav-server-management-v1",
+      "validation": "build",
+      "prerequisite_task_ids": [
+        "IOS-APP-NAVIGATION-WEBDAV-SERVER-MANAGEMENT-001"
+      ],
+      "additional_allowed_paths": [
+        "ios/Apps/Legado/App/**",
+        "ios/Apps/LegadoUITests/**",
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Sources/WebDAVFoundation/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/ui/book/import/remote/ServersDialog.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.import.remote.ServersDialog"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/ui/book/import/remote/ServerConfigDialog.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.import.remote.ServerConfigDialog"
+        }
+      ]
+    }
+  ]
+}

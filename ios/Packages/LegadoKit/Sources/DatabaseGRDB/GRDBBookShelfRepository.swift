@@ -532,6 +532,12 @@ public actor GRDBBookShelfRepository:
     }
   }
 
+  public func deleteWebDAVServerProfile(id: Int64) async throws {
+    try await database.write { db in
+      _ = try WebDAVServerProfileRecord.deleteOne(db, key: id)
+    }
+  }
+
   public func selectWebDAVServerProfile(id: Int64?) async throws {
     try await database.write { db in
       try db.execute(
