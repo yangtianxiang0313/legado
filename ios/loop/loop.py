@@ -1270,6 +1270,7 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/harness/source-lab/tests/test_real_source_capture.py",
                 "ios/harness/oracle/android-runner/orchestrator.py",
                 "ios/harness/oracle/android-runner/LegadoOracleInstrumentedTest.kt",
+                "ios/harness/oracle/request-registry.json",
                 "ios/harness/tests/test_android_oracle_runner.py",
                 "ios/harness/fixtures/manifest.json",
                 "ios/harness/source-lab/manifest.json",

@@ -439,6 +439,13 @@
       ],
       "authority": "android_oracle_candidate_only",
       "status": "candidate"
+    },
+    {
+      "id": "IOS-ANDROID-REAL-SOURCE-WIKISOURCE-ATTESTATION-001",
+      "scenario_id": "rs-wikisource-public-domain-001",
+      "fixture_ids": ["rs-wikisource-public-domain-001"],
+      "authority": "android_oracle_candidate_only",
+      "status": "candidate"
     }
   ]
 }
