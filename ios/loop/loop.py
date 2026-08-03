@@ -765,6 +765,24 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/project/external-execution-receipts/**",
             ],
         }
+    if target == "IOS-INTEGRATION-ANDROID-LIBRARY-IMPORT-ADAPTER-001":
+        return {
+            "owner": "IntegrationKit",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/Packages/LegadoKit/Package.swift",
+                "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
+                "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+                "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**",
+            ],
+        }
     if target == "IOS-DEPENDENCY-SWIFTSOUP-HTML-001":
         return {
             "owner": "DependencyControl",
@@ -3130,6 +3148,22 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_id": "android-backup-library-interop-tests",
             "test_filter": "AndroidBackupInteropTests",
             "acceptance_id": "android-backup-library-interop-golden",
+        }
+    if target == "IOS-INTEGRATION-ANDROID-LIBRARY-IMPORT-ADAPTER-001":
+        delivery_contracts["IntegrationKit"] = {
+            "goal": (
+                "将 Android backup.zip 中的 Book、BookGroup、Bookmark 无损格式 DTO "
+                "转换为 iOS 可持久化的领域恢复计划，保留书籍进度、分组位掩码、"
+                "阅读配置和书签自然身份。"
+            ),
+            "rule": (
+                "AndroidBackupInterop 只拥有格式 DTO；BackupInteropUseCases 承担"
+                "跨边界映射。不得把 Android 多分组位掩码降级成单分组索引，"
+                "不得要求备份中不存在的 chapterID。"
+            ),
+            "test_id": "android-library-import-adapter-tests",
+            "test_filter": "BackupInteropUseCasesTests",
+            "acceptance_id": "android-library-import-adapter-acceptance",
         }
     if (
         architecture["owner"] == "AppNavigation"

@@ -49,6 +49,13 @@
       "selectors": [
         {"id": "P67-S6-LIBRARY", "claim_ids": [], "task_ids": ["IOS-INTEGRATION-ANDROID-BACKUP-LIBRARY-INTEROP-001"]}
       ]
+    },
+    {
+      "id": "P67-S7",
+      "title": "Android 用户书库导入 iOS 领域层",
+      "selectors": [
+        {"id": "P67-S7-LIBRARY-IMPORT", "claim_ids": [], "task_ids": ["IOS-INTEGRATION-ANDROID-LIBRARY-IMPORT-ADAPTER-001"]}
+      ]
     }
   ],
   "deliveries": [
@@ -198,6 +205,30 @@
         "ios/harness/goldens/releases/**",
         "ios/harness/tests/test_android_oracle_runner.py",
         "ios/project/external-execution-receipts/**",
+        "ios/loop/loop.py"
+      ]
+    },
+    {
+      "target": "IOS-INTEGRATION-ANDROID-LIBRARY-IMPORT-ADAPTER-001",
+      "title": "Android 用户书库备份导入 iOS 领域适配",
+      "prerequisite_task_ids": [
+        "IOS-INTEGRATION-ANDROID-BACKUP-LIBRARY-INTEROP-001"
+      ],
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+      "fixture_id": "rl-integration-backup-ios-library-to-android-001",
+      "validation": "tests",
+      "test_filter": "BackupInteropUseCasesTests",
+      "source_anchors": [
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/help/storage/Restore.kt","symbol_id":"kotlin://io.legado.app.help.storage/Restore/restore"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/data/entities/Book.kt","symbol_id":"kotlin://io.legado.app.data.entities.Book"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/data/entities/BookGroup.kt","symbol_id":"kotlin://io.legado.app.data.entities.BookGroup"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/data/entities/Bookmark.kt","symbol_id":"kotlin://io.legado.app.data.entities.Bookmark"}
+      ],
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Package.swift",
+        "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
+        "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+        "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**",
         "ios/loop/loop.py"
       ]
     }
