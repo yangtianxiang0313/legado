@@ -19,6 +19,7 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
   public let localTextTOCRuleCount: Int
   public let readerConfigCount: Int
   public let readerConfigProjection: AndroidReaderConfigProjection?
+  public let dictionaryRuleCount: Int
 
   public init(
     bookCount: Int,
@@ -34,7 +35,8 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
     httpTextToSpeechEngineCount: Int = 0,
     localTextTOCRuleCount: Int = 0,
     readerConfigCount: Int = 0,
-    readerConfigProjection: AndroidReaderConfigProjection? = nil
+    readerConfigProjection: AndroidReaderConfigProjection? = nil,
+    dictionaryRuleCount: Int = 0
   ) {
     self.bookCount = bookCount
     self.groupCount = groupCount
@@ -50,6 +52,7 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
     self.localTextTOCRuleCount = localTextTOCRuleCount
     self.readerConfigCount = readerConfigCount
     self.readerConfigProjection = readerConfigProjection
+    self.dictionaryRuleCount = dictionaryRuleCount
   }
 }
 
@@ -74,6 +77,7 @@ public protocol AndroidCoreBackupRestoreRepository: Sendable {
   func restoreAndroidReaderConfigBundle(
     _ bundle: AndroidReaderConfigBundle
   ) async throws
+  func restoreAndroidDictionaryRules(_ values: [DictionaryRule]) async throws
 }
 
 public extension AndroidCoreBackupRestoreRepository {
@@ -101,6 +105,7 @@ public extension AndroidCoreBackupRestoreRepository {
   func restoreAndroidReaderConfigBundle(
     _ bundle: AndroidReaderConfigBundle
   ) async throws {}
+  func restoreAndroidDictionaryRules(_ values: [DictionaryRule]) async throws {}
 }
 
 public struct AndroidCoreBackupRestoreUseCase: Sendable {
@@ -151,6 +156,9 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
         from: archiveURL
       )
     )
+    let dictionaryRules = AndroidDictionaryRuleInteropAdapter.restoreValues(
+      try AndroidBackupArchive.readDictionaryRules(from: archiveURL)
+    )
 
     let library = try await repository.restoreAndroidLibrary(libraryPlan)
     if !bookSources.isEmpty {
@@ -187,6 +195,9 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     {
       try await repository.restoreAndroidReaderConfigBundle(readerConfigBundle)
     }
+    if !dictionaryRules.isEmpty {
+      try await repository.restoreAndroidDictionaryRules(dictionaryRules)
+    }
     return AndroidCoreBackupRestoreSummary(
       bookCount: library.bookCount,
       groupCount: library.groupCount,
@@ -202,7 +213,8 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
       localTextTOCRuleCount: localTextTOCRules.count,
       readerConfigCount: readerConfigBundle.styles.count
         + (readerConfigBundle.sharedStyle == nil ? 0 : 1),
-      readerConfigProjection: readerConfigBundle.projection
+      readerConfigProjection: readerConfigBundle.projection,
+      dictionaryRuleCount: dictionaryRules.count
     )
   }
 

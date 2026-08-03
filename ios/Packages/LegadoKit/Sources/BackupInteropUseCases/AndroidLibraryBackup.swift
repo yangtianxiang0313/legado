@@ -19,6 +19,7 @@ public struct AndroidLibraryBackupSummary: Equatable, Sendable {
   public let httpTextToSpeechEngineCount: Int
   public let localTextTOCRuleCount: Int
   public let readerConfigCount: Int
+  public let dictionaryRuleCount: Int
 
   public init(
     bookCount: Int,
@@ -33,7 +34,8 @@ public struct AndroidLibraryBackupSummary: Equatable, Sendable {
     rssStarCount: Int = 0,
     httpTextToSpeechEngineCount: Int = 0,
     localTextTOCRuleCount: Int = 0,
-    readerConfigCount: Int = 0
+    readerConfigCount: Int = 0,
+    dictionaryRuleCount: Int = 0
   ) {
     self.bookCount = bookCount
     self.groupCount = groupCount
@@ -48,6 +50,7 @@ public struct AndroidLibraryBackupSummary: Equatable, Sendable {
     self.httpTextToSpeechEngineCount = httpTextToSpeechEngineCount
     self.localTextTOCRuleCount = localTextTOCRuleCount
     self.readerConfigCount = readerConfigCount
+    self.dictionaryRuleCount = dictionaryRuleCount
   }
 }
 
@@ -61,6 +64,7 @@ public protocol AndroidLibraryBackupRepository: Sendable {
   func androidHTTPTextToSpeechEngines() async throws -> [HTTPTextToSpeechEngine]
   func localTextTOCRules() async throws -> [LocalTextTOCRule]
   func androidReaderConfigBundle() async throws -> AndroidReaderConfigBundle?
+  func dictionaryRules() async throws -> [DictionaryRule]
 }
 
 public extension AndroidLibraryBackupRepository {
@@ -72,6 +76,7 @@ public extension AndroidLibraryBackupRepository {
   func androidHTTPTextToSpeechEngines() async throws -> [HTTPTextToSpeechEngine] { [] }
   func localTextTOCRules() async throws -> [LocalTextTOCRule] { [] }
   func androidReaderConfigBundle() async throws -> AndroidReaderConfigBundle? { nil }
+  func dictionaryRules() async throws -> [DictionaryRule] { [] }
 }
 
 public enum AndroidLibraryBackupError: Error, Equatable, Sendable {
@@ -116,6 +121,7 @@ public struct AndroidLibraryBackupUseCase: Sendable {
         sharedStyle: nil
       )).applying($0)
     } ?? storedReaderConfigBundle
+    let dictionaryRules = try await repository.dictionaryRules()
     let contents = try AndroidLibraryBackupAdapter.contents(
       from: plan,
       bookSources: bookSources,
@@ -127,7 +133,8 @@ public struct AndroidLibraryBackupUseCase: Sendable {
       rssStars: rssStars,
       httpTextToSpeechEngines: httpTextToSpeechEngines,
       localTextTOCRules: localTextTOCRules,
-      readerConfigBundle: readerConfigBundle
+      readerConfigBundle: readerConfigBundle,
+      dictionaryRules: dictionaryRules
     )
     try AndroidBackupArchive.write(
       contents,
@@ -147,7 +154,8 @@ public struct AndroidLibraryBackupUseCase: Sendable {
       httpTextToSpeechEngineCount: contents.httpTextToSpeechEngines.count,
       localTextTOCRuleCount: contents.localTextTOCRules.count,
       readerConfigCount: contents.readerConfigs.count
-        + (contents.sharedReaderConfig == nil ? 0 : 1)
+        + (contents.sharedReaderConfig == nil ? 0 : 1),
+      dictionaryRuleCount: contents.dictionaryRules.count
     )
   }
 }
@@ -167,7 +175,8 @@ public enum AndroidLibraryBackupAdapter {
       rssStars: [],
       httpTextToSpeechEngines: [],
       localTextTOCRules: [],
-      readerConfigBundle: nil
+      readerConfigBundle: nil,
+      dictionaryRules: []
     )
   }
 
@@ -182,7 +191,8 @@ public enum AndroidLibraryBackupAdapter {
     rssStars: [RSSStar] = [],
     httpTextToSpeechEngines: [HTTPTextToSpeechEngine] = [],
     localTextTOCRules: [LocalTextTOCRule] = [],
-    readerConfigBundle: AndroidReaderConfigBundle? = nil
+    readerConfigBundle: AndroidReaderConfigBundle? = nil,
+    dictionaryRules: [DictionaryRule] = []
   ) throws -> AndroidBackupContents {
     let sourceData = try SourceManagementPolicy.exportData(
       bookSources,
@@ -208,7 +218,9 @@ public enum AndroidLibraryBackupAdapter {
       localTextTOCRules:
         AndroidLocalTextTOCRuleInteropAdapter.backupDocuments(localTextTOCRules),
       readerConfigs: readerConfigBundle?.styles ?? [],
-      sharedReaderConfig: readerConfigBundle?.sharedStyle
+      sharedReaderConfig: readerConfigBundle?.sharedStyle,
+      dictionaryRules:
+        AndroidDictionaryRuleInteropAdapter.backupDocuments(dictionaryRules)
     )
   }
 

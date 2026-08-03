@@ -194,6 +194,23 @@ enum SearchEnvironment {
         )
     }
 
+    static func makeDictionaryLookupExecutor()
+        -> any DictionaryLookupExecuting
+    {
+        SourceRuntimeDictionaryLookupExecutor(
+            pipeline: DictionaryLookupPipeline(
+                transport: makeTransport(
+                    externalBaseURL: ProcessInfo.processInfo.environment[
+                        "LEGADO_SEARCH_BASE_URL"
+                    ]
+                ),
+                cookieStore: cookieStore,
+                htmlSelectorBackend: htmlSelectorBackend,
+                scriptRuntime: scriptRuntime
+            )
+        )
+    }
+
     static func exploreSources(
         persistedSources: [BookSourceDraft] = []
     ) -> [ExploreSourceSummary] {

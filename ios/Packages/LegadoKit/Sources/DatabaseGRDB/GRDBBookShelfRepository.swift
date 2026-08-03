@@ -6,7 +6,7 @@ import LibraryDomain
 
 public actor GRDBBookShelfRepository:
   BookShelfRepository, RuleSubscriptionRepository, RSSRepository,
-  HTTPTextToSpeechRepository
+  HTTPTextToSpeechRepository, DictionaryRuleRepository
 {
   private let database: DatabaseQueue
 
@@ -1172,6 +1172,26 @@ public actor GRDBBookShelfRepository:
     }
   }
 
+  public func dictionaryRules() async throws -> [DictionaryRule] {
+    try await database.read { db in
+      try DictionaryRuleRecord
+        .order(Column("sortNumber").asc, Column("name").asc)
+        .fetchAll(db)
+        .map { try $0.value }
+    }
+  }
+
+  public func restoreAndroidDictionaryRules(
+    _ values: [DictionaryRule]
+  ) async throws {
+    try await database.write { db in
+      for value in values {
+        var record = try DictionaryRuleRecord(value: value)
+        try record.save(db)
+      }
+    }
+  }
+
   public func restoreAndroidReadRecords(
     _ records: [LibraryDomain.ReadRecord]
   ) async throws {
@@ -1483,6 +1503,14 @@ public actor GRDBBookShelfRepository:
     migrator.registerMigration("addAndroidReaderConfigInterop") { db in
       try db.create(table: "androidReaderConfigs") { table in
         table.column("key", .text).notNull().primaryKey()
+        table.column("payload", .blob).notNull()
+      }
+    }
+    migrator.registerMigration("addAndroidDictionaryRuleInterop") { db in
+      try db.create(table: "dictionaryRules") { table in
+        table.column("name", .text).notNull().primaryKey()
+        table.column("enabled", .boolean).notNull().indexed()
+        table.column("sortNumber", .integer).notNull().indexed()
         table.column("payload", .blob).notNull()
       }
     }
@@ -1952,6 +1980,27 @@ private struct AndroidReaderConfigRecord:
   static let databaseTableName = "androidReaderConfigs"
   var key: String
   var payload: Data
+}
+
+private struct DictionaryRuleRecord:
+  Codable, FetchableRecord, MutablePersistableRecord
+{
+  static let databaseTableName = "dictionaryRules"
+  var name: String
+  var enabled: Bool
+  var sortNumber: Int
+  var payload: Data
+
+  init(value: DictionaryRule) throws {
+    name = value.name
+    enabled = value.isEnabled
+    sortNumber = value.sortNumber
+    payload = try JSONEncoder().encode(value)
+  }
+
+  var value: DictionaryRule {
+    get throws { try JSONDecoder().decode(DictionaryRule.self, from: payload) }
+  }
 }
 
 private struct ChapterContentRecord:

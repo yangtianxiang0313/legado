@@ -18,6 +18,7 @@ struct LegadoApp: App {
     @State private var sourceCatalog: SourceCatalog
     @State private var readAloud: ReadAloudSession
     @State private var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
+    @State private var dictionaryLookup: DictionaryLookupStore
     @State private var readerPreferences: ReaderPreferencesStore
     @State private var bookDetailPreferences: BookDetailPreferencesStore
     @State private var rootVisibility: RootVisibilityPreferencesStore
@@ -130,6 +131,12 @@ struct LegadoApp: App {
                     UserDefaultsHTTPTextToSpeechSelectionPersistence()
             )
             _httpTextToSpeechEngines = State(initialValue: engineStore)
+            _dictionaryLookup = State(
+                initialValue: DictionaryLookupStore(
+                    repository: libraryRepository,
+                    executor: SearchEnvironment.makeDictionaryLookupExecutor()
+                )
+            )
             let systemSynthesizer: any SystemSpeechSynthesizing =
                 ProcessInfo.processInfo.arguments.contains(
                     "--system-read-aloud-test-double"
@@ -185,6 +192,7 @@ struct LegadoApp: App {
                     sourceCatalog: sourceCatalog,
                     readAloud: readAloud,
                     httpTextToSpeechEngines: httpTextToSpeechEngines,
+                    dictionaryLookup: dictionaryLookup,
                     readerPreferences: readerPreferences,
                     bookDetailPreferences: bookDetailPreferences,
                     rootVisibility: rootVisibility,
@@ -205,6 +213,7 @@ struct LegadoApp: App {
                     sourceCatalog: sourceCatalog,
                     readAloud: readAloud,
                     httpTextToSpeechEngines: httpTextToSpeechEngines,
+                    dictionaryLookup: dictionaryLookup,
                     readerPreferences: readerPreferences,
                     bookDetailPreferences: bookDetailPreferences,
                     rootVisibility: rootVisibility,

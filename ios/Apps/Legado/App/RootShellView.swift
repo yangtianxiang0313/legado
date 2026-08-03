@@ -14,6 +14,7 @@ struct RootShellView: View {
     @Bindable var sourceCatalog: SourceCatalog
     @Bindable var readAloud: ReadAloudSession
     @Bindable var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
+    @Bindable var dictionaryLookup: DictionaryLookupStore
     @Bindable var readerPreferences: ReaderPreferencesStore
     @Bindable var bookDetailPreferences: BookDetailPreferencesStore
     @Bindable var rootVisibility: RootVisibilityPreferencesStore
@@ -65,6 +66,7 @@ struct RootShellView: View {
             await ruleSubscriptions.reload()
             await rssStore.reload()
             await httpTextToSpeechEngines.reload()
+            await dictionaryLookup.reload()
             router.reconcileVisibleRoots(visibleRoots)
             if ProcessInfo.processInfo.arguments.contains(
                 "--seed-shelf-management"
@@ -190,6 +192,7 @@ struct RootShellView: View {
                     await ruleSubscriptions.reload()
                     await rssStore.reload()
                     await httpTextToSpeechEngines.reload()
+                    await dictionaryLookup.reload()
                 },
                 libraryBackup: libraryBackup
             )
@@ -406,6 +409,7 @@ struct RootShellView: View {
                 persistedSources: sourceCatalog.sources,
                 readAloud: readAloud,
                 httpTextToSpeechEngines: httpTextToSpeechEngines,
+                dictionaryLookup: dictionaryLookup,
                 readerPreferences: readerPreferences,
                 replacementRules: replacementRules,
                 openTOC: {
@@ -924,6 +928,10 @@ private struct RootContentView: View {
                 if summary.readerConfigCount > 0 {
                     androidBackupImportStatus +=
                         "、\(summary.readerConfigCount) 份阅读配置"
+                }
+                if summary.dictionaryRuleCount > 0 {
+                    androidBackupImportStatus +=
+                        "、\(summary.dictionaryRuleCount) 条词典规则"
                 }
             } catch {
                 androidBackupImportStatus = "Android 备份导入失败"
@@ -1743,6 +1751,7 @@ struct StartupAcceptanceView: View {
     @Bindable var sourceCatalog: SourceCatalog
     @Bindable var readAloud: ReadAloudSession
     @Bindable var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
+    @Bindable var dictionaryLookup: DictionaryLookupStore
     @Bindable var readerPreferences: ReaderPreferencesStore
     @Bindable var bookDetailPreferences: BookDetailPreferencesStore
     @Bindable var rootVisibility: RootVisibilityPreferencesStore
@@ -1795,6 +1804,7 @@ struct StartupAcceptanceView: View {
                 sourceCatalog: sourceCatalog,
                 readAloud: readAloud,
                 httpTextToSpeechEngines: httpTextToSpeechEngines,
+                dictionaryLookup: dictionaryLookup,
                 readerPreferences: readerPreferences,
                 bookDetailPreferences: bookDetailPreferences,
                 rootVisibility: rootVisibility,

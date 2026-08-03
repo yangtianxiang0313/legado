@@ -17,6 +17,7 @@ public struct AndroidBackupContents: Equatable, Sendable {
     public var localTextTOCRules: [AndroidLocalTextTOCRuleDTO]
     public var readerConfigs: [AndroidReaderConfigDTO]
     public var sharedReaderConfig: AndroidReaderConfigDTO?
+    public var dictionaryRules: [AndroidDictionaryRuleDTO]
 
     public init(
         bookSources: [BookSourceDTO] = [],
@@ -32,7 +33,8 @@ public struct AndroidBackupContents: Equatable, Sendable {
         httpTextToSpeechEngines: [AndroidHTTPTextToSpeechDTO] = [],
         localTextTOCRules: [AndroidLocalTextTOCRuleDTO] = [],
         readerConfigs: [AndroidReaderConfigDTO] = [],
-        sharedReaderConfig: AndroidReaderConfigDTO? = nil
+        sharedReaderConfig: AndroidReaderConfigDTO? = nil,
+        dictionaryRules: [AndroidDictionaryRuleDTO] = []
     ) {
         self.bookSources = bookSources
         self.replacementRules = replacementRules
@@ -48,6 +50,7 @@ public struct AndroidBackupContents: Equatable, Sendable {
         self.localTextTOCRules = localTextTOCRules
         self.readerConfigs = readerConfigs
         self.sharedReaderConfig = sharedReaderConfig
+        self.dictionaryRules = dictionaryRules
     }
 }
 
@@ -67,6 +70,7 @@ public enum AndroidBackupArchive {
     public static let localTextTOCRulesMember = "txtTocRule.json"
     public static let readerConfigsMember = "readConfig.json"
     public static let sharedReaderConfigMember = "shareReadConfig.json"
+    public static let dictionaryRulesMember = "dictRule.json"
 
     public static func write(
         _ contents: AndroidBackupContents,
@@ -190,6 +194,16 @@ public enum AndroidBackupArchive {
                     path: sharedReaderConfigMember,
                     data: try AndroidReaderConfigCodec.encodeShared(
                         sharedReaderConfig
+                    )
+                )
+            )
+        }
+        if !contents.dictionaryRules.isEmpty {
+            members.append(
+                .init(
+                    path: dictionaryRulesMember,
+                    data: try AndroidDictionaryRuleCodec.encodeMany(
+                        contents.dictionaryRules
                     )
                 )
             )
@@ -370,5 +384,17 @@ public enum AndroidBackupArchive {
             maximumBytes: maximumMemberBytes
         ) else { return nil }
         return try AndroidReaderConfigCodec.decodeShared(data)
+    }
+
+    public static func readDictionaryRules(
+        from archiveURL: URL,
+        maximumMemberBytes: UInt64 = 32 * 1_024 * 1_024
+    ) throws -> [AndroidDictionaryRuleDTO] {
+        guard let data = try ArchiveZIPFoundation.read(
+            dictionaryRulesMember,
+            from: archiveURL,
+            maximumBytes: maximumMemberBytes
+        ) else { return [] }
+        return try AndroidDictionaryRuleCodec.decodeMany(data)
     }
 }

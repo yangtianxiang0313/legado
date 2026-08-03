@@ -11,6 +11,7 @@ struct ReaderContentView: View {
     let persistedSources: [BookSourceDraft]
     @Bindable var readAloud: ReadAloudSession
     @Bindable var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
+    @Bindable var dictionaryLookup: DictionaryLookupStore
     @Bindable var readerPreferences: ReaderPreferencesStore
     @Bindable var replacementRules: ReaderReplacementRuleStore
     let openTOC: () -> Void
@@ -25,6 +26,7 @@ struct ReaderContentView: View {
     @State private var menuPresented = false
     @State private var menuPath: [ReaderMenuLayer] = []
     @State private var showsReadAloudSettings = false
+    @State private var showsDictionaryLookup = false
     @State private var chapters: [BookChapter] = []
     @State private var bookmarked = false
     @State private var searchQuery = ""
@@ -52,6 +54,7 @@ struct ReaderContentView: View {
         persistedSources: [BookSourceDraft],
         readAloud: ReadAloudSession,
         httpTextToSpeechEngines: HTTPTextToSpeechEngineStore,
+        dictionaryLookup: DictionaryLookupStore,
         readerPreferences: ReaderPreferencesStore,
         replacementRules: ReaderReplacementRuleStore,
         openTOC: @escaping () -> Void,
@@ -64,6 +67,7 @@ struct ReaderContentView: View {
         self.persistedSources = persistedSources
         self.readAloud = readAloud
         self.httpTextToSpeechEngines = httpTextToSpeechEngines
+        self.dictionaryLookup = dictionaryLookup
         self.readerPreferences = readerPreferences
         self.replacementRules = replacementRules
         self.openTOC = openTOC
@@ -281,6 +285,9 @@ struct ReaderContentView: View {
                     }
                 )
             }
+        }
+        .sheet(isPresented: $showsDictionaryLookup) {
+            DictionaryLookupView(store: dictionaryLookup)
         }
     }
 
@@ -831,6 +838,19 @@ struct ReaderContentView: View {
                 }
                 .accessibilityIdentifier(
                     ReaderMenuAction.openReadAloudSettings
+                        .accessibilityIdentifier
+                )
+                Button {
+                    menuPresented = false
+                    Task {
+                        await Task.yield()
+                        showsDictionaryLookup = true
+                    }
+                } label: {
+                    Label("词典", systemImage: "character.book.closed")
+                }
+                .accessibilityIdentifier(
+                    ReaderMenuAction.selectionLookupDictionary
                         .accessibilityIdentifier
                 )
                 Button {
@@ -1794,6 +1814,65 @@ struct ReaderContentView: View {
         }
         .disabled(true)
         .accessibilityIdentifier(action.accessibilityIdentifier)
+    }
+}
+
+private struct DictionaryLookupView: View {
+    @Bindable var store: DictionaryLookupStore
+    @Environment(\.dismiss) private var dismiss
+    @State private var word = ""
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("查询") {
+                    TextField("输入词语", text: $word)
+                        .textInputAutocapitalization(.never)
+                        .accessibilityIdentifier("input.reader.dictionary.word")
+                    Picker(
+                        "词典规则",
+                        selection: Binding(
+                            get: { store.selectedRuleName ?? "" },
+                            set: { name in
+                                guard !name.isEmpty else { return }
+                                Task { await store.lookup(word, ruleName: name) }
+                            }
+                        )
+                    ) {
+                        ForEach(store.rules) { rule in
+                            Text(rule.name).tag(rule.name)
+                        }
+                    }
+                    Button("查询") {
+                        Task { await store.lookup(word) }
+                    }
+                    .disabled(store.isLoading)
+                    .accessibilityIdentifier("action.reader.dictionary.lookup")
+                }
+                if let result = store.result {
+                    Section(store.selectedRuleName ?? "查询结果") {
+                        Text(result)
+                            .textSelection(.enabled)
+                            .accessibilityIdentifier("result.reader.dictionary")
+                    }
+                }
+                if let errorMessage = store.errorMessage {
+                    Section {
+                        Text(errorMessage)
+                            .foregroundStyle(.red)
+                            .accessibilityIdentifier("state.reader.dictionary.error")
+                    }
+                }
+            }
+            .overlay { if store.isLoading { ProgressView() } }
+            .navigationTitle("词典")
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("完成") { dismiss() }
+                }
+            }
+            .task { await store.reload() }
+        }
     }
 }
 
