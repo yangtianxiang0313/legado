@@ -187,7 +187,6 @@ final class LegadoAppUITests: XCTestCase {
 
         require("projection.\(contract.projection)")
         selectRoot("root.settings", label: "我的")
-        app.swipeUp()
         let importButton = element("action.settings.androidBackup.import")
         XCTAssertTrue(importButton.waitForExistence(timeout: 8))
         importButton.tap()
