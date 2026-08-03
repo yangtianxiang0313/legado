@@ -1279,6 +1279,31 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/project/business-knowledge/**",
             ],
         }
+    if target == "IOS-SOURCE-REAL-WIKISOURCE-IOS-COMPARE-001":
+        return {
+            "owner": "SourceRuntime",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-002",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-011",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/Packages/LegadoKit/Package.swift",
+                "ios/Packages/LegadoKit/Sources/ConformanceCLI/**",
+                "ios/Packages/LegadoKit/Tests/ConformanceCLITests/**",
+                "ios/Packages/LegadoSourceKit/Sources/SourceRuntime/**",
+                "ios/Packages/LegadoSourceKit/Sources/RuleRuntime/**",
+                "ios/Packages/LegadoSourceKit/Tests/SourceRuntimeTests/**",
+                "ios/harness/fixtures/real-source/rs-wikisource-public-domain-001/**",
+                "ios/harness/goldens/android-legado-v1/rs-wikisource-public-domain-001.json",
+                "ios/harness/real-source/**",
+            ],
+        }
     if target == "IOS-DEPENDENCY-SWIFTSOUP-HTML-001":
         return {
             "owner": "DependencyControl",
