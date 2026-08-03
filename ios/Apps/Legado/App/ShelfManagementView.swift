@@ -7,6 +7,7 @@ import UniformTypeIdentifiers
 struct ShelfManagementView: View {
     @Bindable var library: ShelfLibrary
     let persistedSources: [BookSourceDraft]
+    @Bindable var sourceSwitchPreferences: SourceSwitchPreferencesStore
     let webDAVServerProfiles: any WebDAVServerProfileRepository
     let webDAVServerCredentials: any WebDAVServerCredentialVault
     let webDAVRemoteBooks: any WebDAVRemoteBookTransferring
@@ -454,7 +455,10 @@ struct ShelfManagementView: View {
                                 .resolveSourceSwitch(
                                     current: current,
                                     target: source,
-                                    persistedSources: persistedSources
+                                    persistedSources: persistedSources,
+                                    requiresAuthorMatch:
+                                        sourceSwitchPreferences.value
+                                        .requiresAuthorMatch
                                 )
                             return (
                                 candidate: resolved.candidate,

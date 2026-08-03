@@ -84,7 +84,8 @@ struct AndroidLibraryBackupUseCaseTests {
           changeSourceGroup: "科幻"
         ),
         sourceSwitchPreferences: SourceSwitchPreferences(
-          automaticallyRecoversMissingSource: false
+          automaticallyRecoversMissingSource: false,
+          requiresAuthorMatch: true
         ),
         readAloudPreferences: ReadAloudPreferences(
           followsSystemRate: false,
@@ -152,6 +153,7 @@ struct AndroidLibraryBackupUseCaseTests {
     #expect(sharedPreferences.searchScope == "科幻")
     #expect(sharedPreferences.searchGroup == "科幻")
     #expect(sharedPreferences.automaticallyChangesSource == false)
+    #expect(sharedPreferences.changeSourceChecksAuthor == true)
     #expect(sharedPreferences.ttsFollowsSystemRate == false)
     #expect(sharedPreferences.ttsSpeechRate == 15)
   }

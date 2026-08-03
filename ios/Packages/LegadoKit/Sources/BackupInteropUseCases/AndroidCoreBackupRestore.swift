@@ -168,11 +168,20 @@ public struct AndroidSearchScopePreferencesImportPlan:
 public struct AndroidSourceSwitchPreferencesImportPlan:
   Equatable, Sendable
 {
-  public let automaticallyRecoversMissingSource: Bool
+  public let automaticallyRecoversMissingSource: Bool?
+  public let requiresAuthorMatch: Bool?
 
-  public init(automaticallyRecoversMissingSource: Bool) {
+  public init(
+    automaticallyRecoversMissingSource: Bool? = nil,
+    requiresAuthorMatch: Bool? = nil
+  ) {
     self.automaticallyRecoversMissingSource =
       automaticallyRecoversMissingSource
+    self.requiresAuthorMatch = requiresAuthorMatch
+  }
+
+  public var isPresent: Bool {
+    automaticallyRecoversMissingSource != nil || requiresAuthorMatch != nil
   }
 }
 
@@ -585,13 +594,12 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
         changeSourceGroup: $0.searchGroup
       )
     }.flatMap { $0.isPresent ? $0 : nil }
-    let sourceSwitchPreferences = projectedApplicationPreferences?
-      .automaticallyChangesSource
-      .map {
-        AndroidSourceSwitchPreferencesImportPlan(
-          automaticallyRecoversMissingSource: $0
-        )
-      }
+    let sourceSwitchPreferences = projectedApplicationPreferences.map {
+      AndroidSourceSwitchPreferencesImportPlan(
+        automaticallyRecoversMissingSource: $0.automaticallyChangesSource,
+        requiresAuthorMatch: $0.changeSourceChecksAuthor
+      )
+    }.flatMap { $0.isPresent ? $0 : nil }
     let webDAVConfiguration = projectedWebDAVConfiguration.flatMap {
       $0.isPresent ? $0 : nil
     }
@@ -682,7 +690,10 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
         readingHistoryPreferences.map { _ in 1 },
         projectedApplicationPreferences?.searchScope.map { _ in 1 },
         projectedApplicationPreferences?.searchGroup.map { _ in 1 },
-        sourceSwitchPreferences.map { _ in 1 },
+        projectedApplicationPreferences?.automaticallyChangesSource
+          .map { _ in 1 },
+        projectedApplicationPreferences?.changeSourceChecksAuthor
+          .map { _ in 1 },
       ].compactMap { $0 }.count,
       webDAVConfigurationCount: webDAVConfiguration == nil ? 0 : 1,
       webDAVServerProfileCount: serverProfilePlan.webDAVProfiles.count,

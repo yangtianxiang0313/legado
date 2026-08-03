@@ -831,7 +831,10 @@ struct RootShellView: View {
                             .resolveSourceSwitch(
                                 current: current,
                                 target: source,
-                                persistedSources: sourceCatalog.sources
+                                persistedSources: sourceCatalog.sources,
+                                requiresAuthorMatch:
+                                    sourceSwitchPreferences.value
+                                    .requiresAuthorMatch
                             )
                         let switched = await library.switchSource(
                             current: current,
@@ -1485,6 +1488,7 @@ private struct RootContentView: View {
             ShelfManagementView(
                 library: library,
                 persistedSources: persistedSources,
+                sourceSwitchPreferences: sourceSwitchPreferences,
                 webDAVServerProfiles: webDAVServerProfiles,
                 webDAVServerCredentials: KeychainWebDAVServerCredentialVault(
                     store: webDAVCredentials
@@ -1675,6 +1679,22 @@ private struct RootContentView: View {
                     )
                     .accessibilityIdentifier(
                         "toggle.settings.sourceSwitch.automaticRecovery"
+                    )
+                    Toggle(
+                        "换源时校验作者",
+                        isOn: Binding(
+                            get: {
+                                sourceSwitchPreferences.value
+                                    .requiresAuthorMatch
+                            },
+                            set: {
+                                sourceSwitchPreferences
+                                    .setRequiresAuthorMatch($0)
+                            }
+                        )
+                    )
+                    .accessibilityIdentifier(
+                        "toggle.settings.sourceSwitch.authorMatch"
                     )
                 }
 

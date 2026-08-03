@@ -813,9 +813,14 @@ private struct AppAndroidCoreBackupRestoreRepository:
         _ plan: AndroidSourceSwitchPreferencesImportPlan
     ) async throws {
         await MainActor.run {
-            sourceSwitchPreferences.setAutomaticallyRecoversMissingSource(
-                plan.automaticallyRecoversMissingSource
-            )
+            var value = sourceSwitchPreferences.value
+            if let enabled = plan.automaticallyRecoversMissingSource {
+                value.automaticallyRecoversMissingSource = enabled
+            }
+            if let enabled = plan.requiresAuthorMatch {
+                value.requiresAuthorMatch = enabled
+            }
+            sourceSwitchPreferences.replace(value)
         }
     }
 
@@ -1195,6 +1200,9 @@ private actor UITestWebDAVBackupTransfer: WebDAVBackupTransferring {
                         AndroidApplicationBackupPreferences.searchGroupKey:
                             .string("科幻"),
                         AndroidApplicationBackupPreferences.autoChangeSourceKey:
+                            .boolean(true),
+                        AndroidApplicationBackupPreferences
+                            .changeSourceCheckAuthorKey:
                             .boolean(true),
                         AndroidApplicationBackupPreferences.ttsFollowSystemKey:
                             .boolean(false),

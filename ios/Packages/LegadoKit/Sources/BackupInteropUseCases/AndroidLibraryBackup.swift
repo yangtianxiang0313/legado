@@ -368,6 +368,10 @@ public struct AndroidLibraryBackupUseCase: Sendable {
           applicationPreferences.sourceSwitchPreferences
             .automaticallyRecoversMissingSource
         )
+      values[AndroidApplicationBackupPreferences.changeSourceCheckAuthorKey] =
+        .boolean(
+          applicationPreferences.sourceSwitchPreferences.requiresAuthorMatch
+        )
       values[AndroidApplicationBackupPreferences.ttsFollowSystemKey] =
         .boolean(
           applicationPreferences.readAloudPreferences.followsSystemRate

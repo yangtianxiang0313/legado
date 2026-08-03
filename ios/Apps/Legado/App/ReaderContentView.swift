@@ -1045,6 +1045,11 @@ struct ReaderContentView: View {
 
     private var bookSourceMenu: some View {
         List {
+            Section("匹配规则") {
+                sourceAuthorMatchToggle(
+                    identifier: "toggle.reader.bookSource.authorMatch"
+                )
+            }
             if let bookSourceSwitchMessage {
                 Section {
                     Text(bookSourceSwitchMessage)
@@ -1108,6 +1113,11 @@ struct ReaderContentView: View {
 
     private var chapterSourceMenu: some View {
         List {
+            Section("匹配规则") {
+                sourceAuthorMatchToggle(
+                    identifier: "toggle.reader.chapterSource.authorMatch"
+                )
+            }
             if let chapterSourceMessage {
                 Section {
                     Text(chapterSourceMessage)
@@ -1745,7 +1755,9 @@ struct ReaderContentView: View {
                     .resolveSourceSwitch(
                         current: readerBook,
                         target: source,
-                        persistedSources: persistedSources
+                        persistedSources: persistedSources,
+                        requiresAuthorMatch: sourceSwitchPreferences.value
+                            .requiresAuthorMatch
                     )
                 guard
                     let switched = await library.switchSource(
@@ -1805,7 +1817,9 @@ struct ReaderContentView: View {
                         current: readerBook,
                         currentChapter: currentChapter,
                         target: source,
-                        persistedSources: persistedSources
+                        persistedSources: persistedSources,
+                        requiresAuthorMatch: sourceSwitchPreferences.value
+                            .requiresAuthorMatch
                     )
             } catch {
                 chapterSourceMessage =
@@ -1814,6 +1828,23 @@ struct ReaderContentView: View {
             }
             loadingChapterSource = false
         }
+    }
+
+    private func sourceAuthorMatchToggle(
+        identifier: String
+    ) -> some View {
+        Toggle(
+            "校验作者",
+            isOn: Binding(
+                get: {
+                    sourceSwitchPreferences.value.requiresAuthorMatch
+                },
+                set: {
+                    sourceSwitchPreferences.setRequiresAuthorMatch($0)
+                }
+            )
+        )
+        .accessibilityIdentifier(identifier)
     }
 
     private func replaceCurrentChapterContent(

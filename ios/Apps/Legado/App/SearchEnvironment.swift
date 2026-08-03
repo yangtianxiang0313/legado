@@ -554,7 +554,7 @@ enum SearchEnvironment {
         current: ShelfBookItem,
         target: BookSourceDraft,
         persistedSources: [BookSourceDraft],
-        requiresExactIdentity: Bool = false
+        requiresAuthorMatch: Bool = false
     ) async throws -> (
         candidate: ShelfBookCandidate,
         chapters: [LibraryDomain.BookChapter]
@@ -588,14 +588,16 @@ enum SearchEnvironment {
                 identifier: descriptor.id
             )
         )
-        let exactResult = results.first(where: {
-            $0.name == current.candidate.name
-                && normalizedAuthor($0.author)
-                    == normalizedAuthor(current.candidate.author)
+        let matchingResult = results.first(where: {
+            SourceSwitchCandidateIdentityPolicy.matches(
+                currentTitle: current.candidate.name,
+                currentAuthor: normalizedAuthor(current.candidate.author),
+                candidateTitle: $0.name,
+                candidateAuthor: normalizedAuthor($0.author),
+                requiresAuthorMatch: requiresAuthorMatch
+            )
         })
-        guard let result = exactResult ?? (
-            requiresExactIdentity ? nil : results.first
-        ) else {
+        guard let result = matchingResult else {
             throw SourceSwitchEnvironmentError.bookNotFound
         }
         let candidate = ShelfBookCandidate(
@@ -687,7 +689,7 @@ enum SearchEnvironment {
                     current: current,
                     target: source,
                     persistedSources: persistedSources,
-                    requiresExactIdentity: true
+                    requiresAuthorMatch: true
                 ),
                 !resolved.chapters.isEmpty
             else { continue }
@@ -726,12 +728,14 @@ enum SearchEnvironment {
         current: ShelfBookItem,
         currentChapter: LibraryDomain.BookChapter,
         target: BookSourceDraft,
-        persistedSources: [BookSourceDraft]
+        persistedSources: [BookSourceDraft],
+        requiresAuthorMatch: Bool = false
     ) async throws -> ChapterSourceResolution {
         let resolved = try await resolveSourceSwitch(
             current: current,
             target: target,
-            persistedSources: persistedSources
+            persistedSources: persistedSources,
+            requiresAuthorMatch: requiresAuthorMatch
         )
         let targetBook = ShelfBookItem(
             id: current.id,
@@ -904,7 +908,11 @@ enum SearchEnvironment {
     }
 
     private static func normalizedAuthor(_ value: String) -> String {
-        value.replacingOccurrences(of: "作者：", with: "")
+        value.replacingOccurrences(
+            of: #"^\s*作\s*者[:：\s]+|\s+著"#,
+            with: "",
+            options: .regularExpression
+        )
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
