@@ -820,6 +820,31 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/Packages/LegadoKit/Tests/WebDAVFoundationTests/**",
             ],
         }
+    if target == "IOS-APP-ANDROID-WEBDAV-SERVER-PROFILE-PERSISTENCE-001":
+        return {
+            "owner": "AppNavigation",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-002",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-011",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/Apps/Legado/App/**",
+                "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
+                "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+                "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+                "ios/Packages/LegadoKit/Sources/IntegrationKit/**",
+                "ios/Packages/LegadoKit/Sources/WebDAVFoundation/**",
+                "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+                "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**",
+                "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+            ],
+        }
     if target == "IOS-INTEGRATION-IOS-BACKUP-ANDROID-RESTORE-ORACLE-001":
         return {
             "owner": "IntegrationKit",
@@ -4358,6 +4383,21 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_id": "webdav-remote-book-runtime-tests",
             "test_filter": "WebDAVRemoteBookRuntimeTests",
             "acceptance_id": "webdav-remote-book-runtime-acceptance",
+        }
+    if target == "IOS-APP-ANDROID-WEBDAV-SERVER-PROFILE-PERSISTENCE-001":
+        delivery_contracts["AppNavigation"] = {
+            "goal": (
+                "把 Android servers.json 的有效 WebDAV 档案恢复到 iOS GRDB + Keychain，"
+                "并让现有 iOS Android backup.zip 导出重新生成整文件 BackupAES 密文，实现持久化双向闭环。"
+            ),
+            "rule": (
+                "GRDB 只保存非敏感服务器元数据和 credentialReference；密码只进入 Keychain。"
+                "恢复必须先完成口令预检，并在数据库写入失败时回滚 Keychain；导出必须使用用户显式提供的"
+                " Android 备份口令。本切片不新增服务器管理 UI。"
+            ),
+            "test_id": "webdav-server-profile-persistence-tests",
+            "test_filter": "WebDAVServerProfilePersistenceTests",
+            "acceptance_id": "webdav-server-profile-persistence-acceptance",
         }
     if target == "IOS-SOURCE-RUNTIME-DICTIONARY-JSOUP-001":
         delivery_contracts["SourceRuntime"] = {
