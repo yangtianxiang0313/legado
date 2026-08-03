@@ -84,6 +84,13 @@
       "selectors": [
         {"id": "P67-S11-LIBRARY-EXPORT-UI", "claim_ids": [], "task_ids": ["IOS-APP-NAVIGATION-ANDROID-LIBRARY-EXPORT-001"]}
       ]
+    },
+    {
+      "id": "P67-S12",
+      "title": "用户可见 Android 全量核心备份",
+      "selectors": [
+        {"id": "P67-S12-CORE-BACKUP", "claim_ids": [], "task_ids": ["IOS-APP-NAVIGATION-ANDROID-CORE-BACKUP-001"]}
+      ]
     }
   ],
   "deliveries": [
@@ -352,6 +359,33 @@
       "additional_allowed_paths": [
         "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
         "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+        "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+        "ios/Packages/LegadoKit/Tests/AndroidBackupInteropTests/**",
+        "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**",
+        "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+        "ios/Apps/Legado/App/**",
+        "ios/loop/loop.py"
+      ]
+    },
+    {
+      "target": "IOS-APP-NAVIGATION-ANDROID-CORE-BACKUP-001",
+      "title": "把书源与替换规则并入 Android 全量核心备份",
+      "prerequisite_task_ids": [
+        "IOS-APP-NAVIGATION-ANDROID-LIBRARY-EXPORT-001"
+      ],
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+      "fixture_id": "rl-integration-backup-ios-library-to-android-001",
+      "validation": "tests",
+      "test_filter": "BackupInteropUseCasesTests|AndroidBackupInteropTests",
+      "source_anchors": [
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/help/storage/Backup.kt","symbol_id":"kotlin://io.legado.app.help.storage.Backup/backup"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/data/entities/BookSource.kt","symbol_id":"kotlin://io.legado.app.data.entities.BookSource"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/data/entities/ReplaceRule.kt","symbol_id":"kotlin://io.legado.app.data.entities.ReplaceRule"}
+      ],
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
+        "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
         "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
         "ios/Packages/LegadoKit/Tests/AndroidBackupInteropTests/**",
         "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**",
