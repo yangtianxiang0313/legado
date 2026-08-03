@@ -351,20 +351,7 @@ struct RootShellView: View {
                     if AndroidWebDAVBookOrigin.isLocalSource(
                         item.candidate.sourceID
                     ) {
-                        guard let file = await localBookFile(for: item) else {
-                            return nil
-                        }
-                        if file.reference != item.candidate.bookURL {
-                            return await library.restoreWebDAVLocalText(
-                                bookID: item.id,
-                                managedReference: file.reference,
-                                data: file.data
-                            )
-                        }
-                        return await library.refreshLocalText(
-                            bookID: item.id,
-                            data: file.data
-                        )
+                        return await refreshLocalBook(item)
                     }
                     return await library.refreshBookInfo(
                         item,
@@ -673,6 +660,90 @@ struct RootShellView: View {
             data: data,
             fileName: fileName
         )
+    }
+
+    private func refreshLocalBook(
+        _ item: ShelfBookItem
+    ) async -> ShelfBookItem? {
+        let existingFile: ManagedBookFile? = {
+            guard
+                let url = URL(string: item.candidate.bookURL),
+                url.isFileURL,
+                let data = try? Data(contentsOf: url)
+            else { return nil }
+            return ManagedBookFile(
+                reference: item.candidate.bookURL,
+                fileName: item.candidate.originName,
+                data: data
+            )
+        }()
+        guard item.candidate.sourceID != "local-file" else {
+            guard let existingFile else { return nil }
+            return await library.refreshLocalText(
+                bookID: item.id,
+                data: existingFile.data
+            )
+        }
+        let decision = await WebDAVRemoteBookRefreshUseCase(
+            repository: webDAVServerProfiles,
+            transfer: webDAVRemoteBooks
+        ).check(
+            sourceID: item.candidate.sourceID,
+            lastCheckTime: item.lastCheckTime,
+            localFileAvailable: existingFile != nil
+        )
+        switch decision {
+        case .current(let remoteModifiedMilliseconds):
+            guard let existingFile else { return nil }
+            guard
+                let refreshed = await library.refreshLocalText(
+                    bookID: item.id,
+                    data: existingFile.data
+                )
+            else { return nil }
+            return await library.updateWebDAVBookState(
+                bookID: refreshed.id,
+                sourceID: refreshed.candidate.sourceID,
+                lastCheckTime: remoteModifiedMilliseconds
+            )
+        case .downloadRequired(let target):
+            guard case .downloaded(let name, let data) =
+                await webDAVRemoteBooks.downloadRemoteBook(
+                    configuration: target.configuration,
+                    resource: target.resource
+                ),
+                let file = try? ManagedBookFileStore.persist(
+                    data: data,
+                    fileName: name
+                ),
+                let restored = await library.restoreWebDAVLocalText(
+                    bookID: item.id,
+                    managedReference: file.reference,
+                    data: file.data
+                )
+            else { return nil }
+            return await library.updateWebDAVBookState(
+                bookID: restored.id,
+                sourceID: restored.candidate.sourceID,
+                lastCheckTime: target.resource.lastModifiedMilliseconds
+            )
+        case .remoteMissing:
+            guard let existingFile else { return nil }
+            guard
+                let downgraded = await library.updateWebDAVBookState(
+                    bookID: item.id,
+                    sourceID: "local-file",
+                    lastCheckTime: 0
+                )
+            else { return nil }
+            return await library.refreshLocalText(
+                bookID: downgraded.id,
+                data: existingFile.data
+            )
+        case .notWebDAVBook, .invalidOrigin, .serverProfileUnavailable,
+            .invalidServerProfile, .repositoryUnavailable, .failed:
+            return nil
+        }
     }
 
     private func pathBinding(for root: RootRoute) -> Binding<[AppRoute]> {

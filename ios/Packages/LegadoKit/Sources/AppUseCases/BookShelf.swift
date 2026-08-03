@@ -163,6 +163,7 @@ public struct ShelfBookItem: Identifiable, Equatable, Sendable {
   public let chapterCount: Int
   public let progress: ReadingProgress?
   public let latestChapterTime: Int64
+  public let lastCheckTime: Int64
   public let latestCheckCount: Int
   public let canUpdate: Bool
   public let splitsLongChapters: Bool
@@ -175,6 +176,7 @@ public struct ShelfBookItem: Identifiable, Equatable, Sendable {
     chapterCount: Int,
     progress: ReadingProgress? = nil,
     latestChapterTime: Int64 = 0,
+    lastCheckTime: Int64 = 0,
     latestCheckCount: Int = 0,
     canUpdate: Bool = true,
     splitsLongChapters: Bool = true
@@ -186,6 +188,7 @@ public struct ShelfBookItem: Identifiable, Equatable, Sendable {
     self.chapterCount = chapterCount
     self.progress = progress
     self.latestChapterTime = latestChapterTime
+    self.lastCheckTime = max(0, lastCheckTime)
     self.latestCheckCount = max(0, latestCheckCount)
     self.canUpdate = canUpdate
     self.splitsLongChapters = splitsLongChapters
@@ -274,6 +277,11 @@ public protocol BookShelfRepository:
   func updateBookMetadata(
     bookID: LibraryDomain.BookID,
     update: BookMetadataUpdate
+  ) async throws -> ShelfBookItem
+  func updateWebDAVBookState(
+    bookID: LibraryDomain.BookID,
+    sourceID: String,
+    lastCheckTime: Int64
   ) async throws -> ShelfBookItem
   func chapters(bookID: LibraryDomain.BookID) async throws
     -> [LibraryDomain.BookChapter]
@@ -407,6 +415,14 @@ public extension BookShelfRepository {
         variables: candidate.variables
       )
     )
+  }
+
+  func updateWebDAVBookState(
+    bookID: LibraryDomain.BookID,
+    sourceID: String,
+    lastCheckTime: Int64
+  ) async throws -> ShelfBookItem {
+    throw ShelfMutationFailure.missingBook
   }
 
   func applyTOCUpdate(
@@ -698,13 +714,41 @@ public final class ShelfLibrary {
           serverID: serverID
         )
       )
+      let checked = try await repository.updateWebDAVBookState(
+        bookID: updated.id,
+        sourceID: updated.candidate.sourceID,
+        lastCheckTime: Self.nowMilliseconds
+      )
+      if checked.membership.isInBookshelf {
+        await reload()
+      }
+      errorMessage = nil
+      return checked
+    } catch {
+      errorMessage = "无法保存 WebDAV 书籍来源"
+      return nil
+    }
+  }
+
+  @discardableResult
+  public func updateWebDAVBookState(
+    bookID: LibraryDomain.BookID,
+    sourceID: String,
+    lastCheckTime: Int64
+  ) async -> ShelfBookItem? {
+    do {
+      let updated = try await repository.updateWebDAVBookState(
+        bookID: bookID,
+        sourceID: sourceID,
+        lastCheckTime: lastCheckTime
+      )
       if updated.membership.isInBookshelf {
         await reload()
       }
       errorMessage = nil
       return updated
     } catch {
-      errorMessage = "无法保存 WebDAV 书籍来源"
+      errorMessage = "无法保存 WebDAV 检查状态"
       return nil
     }
   }

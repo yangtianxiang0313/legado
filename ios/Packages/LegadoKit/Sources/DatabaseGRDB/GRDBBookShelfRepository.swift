@@ -198,6 +198,25 @@ public actor GRDBBookShelfRepository:
     }
   }
 
+  public func updateWebDAVBookState(
+    bookID: LibraryDomain.BookID,
+    sourceID: String,
+    lastCheckTime: Int64
+  ) async throws -> ShelfBookItem {
+    try await database.write { db in
+      guard var record = try BookRecord
+        .filter(Column("bookID") == bookID.rawValue)
+        .fetchOne(db)
+      else {
+        throw ShelfMutationFailure.missingBook
+      }
+      record.sourceID = sourceID
+      record.lastCheckTime = max(0, lastCheckTime)
+      try record.update(db)
+      return record.item
+    }
+  }
+
   public func chapters(
     bookID: LibraryDomain.BookID
   ) async throws -> [LibraryDomain.BookChapter] {
@@ -1850,6 +1869,7 @@ private struct BookRecord:
       chapterCount: chapterCount,
       progress: readingProgress,
       latestChapterTime: latestChapterTime,
+      lastCheckTime: lastCheckTime,
       latestCheckCount: latestCheckCount,
       canUpdate: canUpdate,
       splitsLongChapters: splitsLongChapters
