@@ -76,6 +76,7 @@ struct RootShellView: View {
     @Bindable var sourceCatalog: SourceCatalog
     @Bindable var readAloud: ReadAloudSession
     @Bindable var readAloudPreferences: ReadAloudPreferencesStore
+    @Bindable var readingHistoryPreferences: ReadingHistoryPreferencesStore
     @Bindable var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
     @Bindable var dictionaryLookup: DictionaryLookupStore
     @Bindable var keyboardAssists: KeyboardAssistStore
@@ -501,6 +502,7 @@ struct RootShellView: View {
                 showsRSS: rootVisibility.value.showsRSS,
                 bookshelfSort: await library.globalShelfSortMode(),
                 defaultHomePage: rootVisibility.value.defaultHomePage,
+                readingHistoryPreferences: readingHistoryPreferences.value,
                 readAloudPreferences: readAloudPreferences.value
             ),
             webDAVConfiguration: primaryConfiguration,
@@ -632,6 +634,7 @@ struct RootShellView: View {
                 rssStore: rssStore,
                 readerPreferences: readerPreferences,
                 readAloudPreferences: readAloudPreferences,
+                readingHistoryPreferences: readingHistoryPreferences,
                 appThemeProfiles: appThemeProfiles,
                 rootVisibility: rootVisibility,
                 webDAVSettings: webDAVSettings,
@@ -896,6 +899,7 @@ struct RootShellView: View {
                 persistedSources: sourceCatalog.sources,
                 readAloud: readAloud,
                 readAloudPreferences: readAloudPreferences,
+                readingHistoryPreferences: readingHistoryPreferences,
                 httpTextToSpeechEngines: httpTextToSpeechEngines,
                 dictionaryLookup: dictionaryLookup,
                 readerPreferences: readerPreferences,
@@ -1394,6 +1398,7 @@ private struct RootContentView: View {
     @Bindable var rssStore: RSSStore
     @Bindable var readerPreferences: ReaderPreferencesStore
     @Bindable var readAloudPreferences: ReadAloudPreferencesStore
+    @Bindable var readingHistoryPreferences: ReadingHistoryPreferencesStore
     @Bindable var appThemeProfiles: AppThemeProfileStore
     @Bindable var rootVisibility: RootVisibilityPreferencesStore
     @Bindable var webDAVSettings: WebDAVConnectionSettingsStore
@@ -1578,6 +1583,27 @@ private struct RootContentView: View {
                     )
                 }
                 .accessibilityIdentifier("section.settings.rootVisibility")
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("阅读记录")
+                        .font(.headline)
+                    Toggle(
+                        "记录阅读时长",
+                        isOn: Binding(
+                            get: {
+                                readingHistoryPreferences.value
+                                    .recordsReadingTime
+                            },
+                            set: {
+                                readingHistoryPreferences
+                                    .setRecordsReadingTime($0)
+                            }
+                        )
+                    )
+                    .accessibilityIdentifier(
+                        "toggle.settings.readingHistory.enabled"
+                    )
+                }
 
                 VStack(alignment: .leading, spacing: 10) {
                     Text("应用主题")
@@ -1946,6 +1972,8 @@ private struct RootContentView: View {
                                 await library.globalShelfSortMode(),
                             defaultHomePage:
                                 rootVisibility.value.defaultHomePage,
+                            readingHistoryPreferences:
+                                readingHistoryPreferences.value,
                             readAloudPreferences:
                                 readAloudPreferences.value
                         ),
@@ -2826,6 +2854,7 @@ struct StartupAcceptanceView: View {
     @Bindable var sourceCatalog: SourceCatalog
     @Bindable var readAloud: ReadAloudSession
     @Bindable var readAloudPreferences: ReadAloudPreferencesStore
+    @Bindable var readingHistoryPreferences: ReadingHistoryPreferencesStore
     @Bindable var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
     @Bindable var dictionaryLookup: DictionaryLookupStore
     @Bindable var keyboardAssists: KeyboardAssistStore
@@ -2889,6 +2918,7 @@ struct StartupAcceptanceView: View {
                 sourceCatalog: sourceCatalog,
                 readAloud: readAloud,
                 readAloudPreferences: readAloudPreferences,
+                readingHistoryPreferences: readingHistoryPreferences,
                 httpTextToSpeechEngines: httpTextToSpeechEngines,
                 dictionaryLookup: dictionaryLookup,
                 keyboardAssists: keyboardAssists,

@@ -43,6 +43,47 @@ struct AndroidLibraryRestorePersistenceTests {
     )
   }
 
+  @MainActor
+  @Test func disabledReadingHistoryPreservesExistingRecordsAndDropsActiveSession()
+    async throws
+  {
+    let databaseURL = temporaryDatabaseURL()
+    defer { try? FileManager.default.removeItem(at: databaseURL.deletingLastPathComponent()) }
+    let repository = try GRDBBookShelfRepository(path: databaseURL.path)
+    let library = ShelfLibrary(
+      repository: repository,
+      readRecordDeviceID: "ios-device"
+    )
+    let existing = ReadRecord(
+      deviceID: "android-device",
+      bookName: "互通测试书",
+      readTime: 9,
+      lastRead: 900
+    )
+    try await repository.restoreAndroidReadRecords([existing])
+
+    await library.beginReadingRecord(
+      bookName: "互通测试书",
+      enabled: false,
+      atMilliseconds: 1_000
+    )
+    await library.settleReadingRecord(
+      enabled: false,
+      atMilliseconds: 5_000
+    )
+    await library.beginReadingRecord(
+      bookName: "互通测试书",
+      enabled: true,
+      atMilliseconds: 10_000
+    )
+    await library.settleReadingRecord(
+      enabled: false,
+      atMilliseconds: 14_000
+    )
+
+    #expect(try await repository.androidReadRecords() == [existing])
+  }
+
   @Test func atomicallyUpsertsCompleteAndroidLibraryPlan() async throws {
     let databaseURL = temporaryDatabaseURL()
     defer { try? FileManager.default.removeItem(at: databaseURL.deletingLastPathComponent()) }

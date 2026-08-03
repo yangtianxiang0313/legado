@@ -102,6 +102,7 @@ public struct AndroidApplicationBackupExportInput: Equatable, Sendable {
   public let showsRSS: Bool
   public let bookshelfSort: ShelfSortMode
   public let defaultHomePage: DefaultHomePage
+  public let readingHistoryPreferences: ReadingHistoryPreferences
   public let readAloudPreferences: ReadAloudPreferences
 
   public init(
@@ -109,12 +110,14 @@ public struct AndroidApplicationBackupExportInput: Equatable, Sendable {
     showsRSS: Bool,
     bookshelfSort: ShelfSortMode,
     defaultHomePage: DefaultHomePage = .bookshelf,
+    readingHistoryPreferences: ReadingHistoryPreferences = .init(),
     readAloudPreferences: ReadAloudPreferences = .init()
   ) {
     self.showsDiscovery = showsDiscovery
     self.showsRSS = showsRSS
     self.bookshelfSort = bookshelfSort
     self.defaultHomePage = defaultHomePage
+    self.readingHistoryPreferences = readingHistoryPreferences
     self.readAloudPreferences = readAloudPreferences
   }
 }
@@ -341,6 +344,11 @@ public struct AndroidLibraryBackupUseCase: Sendable {
         .int(Int32(applicationPreferences.bookshelfSort.rawValue))
       values[AndroidApplicationBackupPreferences.defaultHomePageKey] =
         .string(applicationPreferences.defaultHomePage.rawValue)
+      values[AndroidApplicationBackupPreferences.enableReadRecordKey] =
+        .boolean(
+          applicationPreferences.readingHistoryPreferences
+            .recordsReadingTime
+        )
       values[AndroidApplicationBackupPreferences.ttsFollowSystemKey] =
         .boolean(
           applicationPreferences.readAloudPreferences.followsSystemRate

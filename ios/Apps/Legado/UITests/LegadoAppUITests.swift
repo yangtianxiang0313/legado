@@ -513,6 +513,62 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testRestoredAndroidReadRecordPreferenceDrivesIOSPolicy() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+            "--reset-reading-history-preferences",
+            "--reset-webdav-settings",
+            "--reset-webdav-backup-discovery",
+            "--seed-offline-cache",
+            "--webdav-test-double",
+            "--webdav-app-preferences-backup-test-double",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        let offer = app.alerts["发现新的云端备份"]
+        XCTAssertTrue(offer.waitForExistence(timeout: 15))
+        offer.buttons["恢复"].tap()
+        let completion = app.alerts["云端备份恢复完成"]
+        XCTAssertTrue(completion.waitForExistence(timeout: 15))
+        completion.buttons["好"].tap()
+
+        selectRoot("root.settings", label: "我的")
+        let toggle = requireByScrolling(
+            "toggle.settings.readingHistory.enabled",
+            in: "scroll.root.settings"
+        )
+        XCTAssertEqual(toggle.value as? String, "0")
+
+        selectRoot("root.shelf", label: "书架")
+        let book = app.staticTexts["星河纪事"].firstMatch
+        XCTAssertTrue(book.waitForExistence(timeout: 8))
+        book.tap()
+        require("screen.bookDetail")
+        requireButton("action.bookDetail.startReading").tap()
+        require("screen.chapterTOC")
+        require("action.chapter.select.0").tap()
+        require("screen.reader")
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "scenario_id": "ui-android-read-record-preference-restore-v1",
+            "android_enableReadRecord": false,
+            "ios_setting": false,
+            "reader_entry_completed": true,
+            "write_policy": "disabled_by_restored_preference",
+        ])
+    }
+
     func testRestoredAndroidDefaultHomePageDrivesNextColdStart() throws {
         let environment = ProcessInfo.processInfo.environment
         let contract = try XCTUnwrap(

@@ -12,6 +12,7 @@ struct ReaderContentView: View {
     let persistedSources: [BookSourceDraft]
     @Bindable var readAloud: ReadAloudSession
     @Bindable var readAloudPreferences: ReadAloudPreferencesStore
+    @Bindable var readingHistoryPreferences: ReadingHistoryPreferencesStore
     @Bindable var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
     @Bindable var dictionaryLookup: DictionaryLookupStore
     @Bindable var readerPreferences: ReaderPreferencesStore
@@ -62,6 +63,7 @@ struct ReaderContentView: View {
         persistedSources: [BookSourceDraft],
         readAloud: ReadAloudSession,
         readAloudPreferences: ReadAloudPreferencesStore,
+        readingHistoryPreferences: ReadingHistoryPreferencesStore,
         httpTextToSpeechEngines: HTTPTextToSpeechEngineStore,
         dictionaryLookup: DictionaryLookupStore,
         readerPreferences: ReaderPreferencesStore,
@@ -79,6 +81,7 @@ struct ReaderContentView: View {
         self.persistedSources = persistedSources
         self.readAloud = readAloud
         self.readAloudPreferences = readAloudPreferences
+        self.readingHistoryPreferences = readingHistoryPreferences
         self.httpTextToSpeechEngines = httpTextToSpeechEngines
         self.dictionaryLookup = dictionaryLookup
         self.readerPreferences = readerPreferences
@@ -218,7 +221,10 @@ struct ReaderContentView: View {
                 ? nil
                 : book.candidate.sourceID
             readerBook = book
-            await library.beginReadingRecord(bookName: book.candidate.name)
+            await library.beginReadingRecord(
+                bookName: book.candidate.name,
+                enabled: readingHistoryPreferences.value.recordsReadingTime
+            )
             bookmarked = await library.isBookmarked(
                 bookID: target.bookID,
                 chapterID: chapter.id,
@@ -277,12 +283,19 @@ struct ReaderContentView: View {
             Task {
                 if phase == .active {
                     if let bookName = readerBook?.candidate.name {
-                        await library.beginReadingRecord(bookName: bookName)
+                        await library.beginReadingRecord(
+                            bookName: bookName,
+                            enabled: readingHistoryPreferences.value
+                                .recordsReadingTime
+                        )
                     }
                 } else {
                     await saveCurrentProgress()
                     await webDAVProgressUploader.flush()
-                    await library.settleReadingRecord()
+                    await library.settleReadingRecord(
+                        enabled: readingHistoryPreferences.value
+                            .recordsReadingTime
+                    )
                 }
             }
         }
@@ -290,7 +303,10 @@ struct ReaderContentView: View {
             Task {
                 await saveCurrentProgress()
                 await webDAVProgressUploader.flush()
-                await library.settleReadingRecord()
+                await library.settleReadingRecord(
+                    enabled: readingHistoryPreferences.value
+                        .recordsReadingTime
+                )
             }
         }
         .sheet(isPresented: $menuPresented) {

@@ -163,6 +163,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
   public static let showRSSKey = "showRss"
   public static let bookshelfSortKey = "bookshelfSort"
   public static let defaultHomePageKey = "defaultHomePage"
+  public static let enableReadRecordKey = "enableReadRecord"
   public static let ttsFollowSystemKey = "ttsFollowSys"
   public static let ttsSpeechRateKey = "ttsSpeechRate"
 
@@ -170,6 +171,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
   public let showsRSS: Bool?
   public let bookshelfSort: Int64?
   public let defaultHomePage: String?
+  public let enablesReadRecord: Bool?
   public let ttsFollowsSystemRate: Bool?
   public let ttsSpeechRate: Int64?
 
@@ -178,6 +180,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
     showsRSS: Bool? = nil,
     bookshelfSort: Int64? = nil,
     defaultHomePage: String? = nil,
+    enablesReadRecord: Bool? = nil,
     ttsFollowsSystemRate: Bool? = nil,
     ttsSpeechRate: Int64? = nil
   ) {
@@ -185,6 +188,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
     self.showsRSS = showsRSS
     self.bookshelfSort = bookshelfSort
     self.defaultHomePage = defaultHomePage
+    self.enablesReadRecord = enablesReadRecord
     self.ttsFollowsSystemRate = ttsFollowsSystemRate
     self.ttsSpeechRate = ttsSpeechRate
   }
@@ -195,6 +199,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
       showsRSS: document.boolean(Self.showRSSKey),
       bookshelfSort: document.integer(Self.bookshelfSortKey),
       defaultHomePage: document.string(Self.defaultHomePageKey),
+      enablesReadRecord: document.boolean(Self.enableReadRecordKey),
       ttsFollowsSystemRate: document.boolean(Self.ttsFollowSystemKey),
       ttsSpeechRate: document.integer(Self.ttsSpeechRateKey)
     )
@@ -203,6 +208,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
   public var isPresent: Bool {
     showsDiscovery != nil || showsRSS != nil || bookshelfSort != nil
       || defaultHomePage != nil
+      || enablesReadRecord != nil
       || ttsFollowsSystemRate != nil || ttsSpeechRate != nil
   }
 }

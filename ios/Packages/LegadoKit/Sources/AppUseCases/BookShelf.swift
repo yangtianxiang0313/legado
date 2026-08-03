@@ -588,8 +588,13 @@ public final class ShelfLibrary {
 
   public func beginReadingRecord(
     bookName: String,
+    enabled: Bool = true,
     atMilliseconds nowMilliseconds: Int64? = nil
   ) async {
+    guard enabled else {
+      readRecordSession = nil
+      return
+    }
     guard !bookName.isEmpty else { return }
     if readRecordSession?.bookName == bookName { return }
     if readRecordSession != nil {
@@ -609,10 +614,12 @@ public final class ShelfLibrary {
   }
 
   public func settleReadingRecord(
+    enabled: Bool = true,
     atMilliseconds nowMilliseconds: Int64? = nil
   ) async {
     guard let session = readRecordSession else { return }
     readRecordSession = nil
+    guard enabled else { return }
     let update = NativeReadRecordPolicy.settle(
       session: session,
       nowMilliseconds: nowMilliseconds ?? Self.nowMilliseconds

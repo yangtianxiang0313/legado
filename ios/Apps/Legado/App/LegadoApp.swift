@@ -30,6 +30,8 @@ struct LegadoApp: App {
     @State private var sourceCatalog: SourceCatalog
     @State private var readAloud: ReadAloudSession
     @State private var readAloudPreferences: ReadAloudPreferencesStore
+    @State private var readingHistoryPreferences:
+        ReadingHistoryPreferencesStore
     @State private var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
     @State private var dictionaryLookup: DictionaryLookupStore
     @State private var keyboardAssists: KeyboardAssistStore
@@ -154,9 +156,23 @@ struct LegadoApp: App {
         let readAloudPreferencesStore = ReadAloudPreferencesStore(
             repository: readAloudPreferencesRepository
         )
+        let readingHistoryPreferencesRepository =
+            UserDefaultsReadingHistoryPreferencesRepository()
+        if processArguments.contains("--reset-reading-history-preferences") {
+            readingHistoryPreferencesRepository.save(
+                ReadingHistoryPreferences()
+            )
+        }
+        let readingHistoryPreferencesStore =
+            ReadingHistoryPreferencesStore(
+                repository: readingHistoryPreferencesRepository
+            )
         _rootVisibility = State(initialValue: rootVisibilityStore)
         _readAloudPreferences = State(
             initialValue: readAloudPreferencesStore
+        )
+        _readingHistoryPreferences = State(
+            initialValue: readingHistoryPreferencesStore
         )
         _router = State(
             initialValue: AppRouter(
@@ -178,6 +194,8 @@ struct LegadoApp: App {
                     sourceRepository: sourceRepository,
                     rootVisibility: rootVisibilityStore,
                     readAloudPreferences: readAloudPreferencesStore,
+                    readingHistoryPreferences:
+                        readingHistoryPreferencesStore,
                     webDAVSettings: webDAVSettingsStore,
                     webDAVCredentials: webDAVCredentials
                 )
@@ -315,6 +333,7 @@ struct LegadoApp: App {
                     sourceCatalog: sourceCatalog,
                     readAloud: readAloud,
                     readAloudPreferences: readAloudPreferences,
+                    readingHistoryPreferences: readingHistoryPreferences,
                     httpTextToSpeechEngines: httpTextToSpeechEngines,
                     dictionaryLookup: dictionaryLookup,
                     keyboardAssists: keyboardAssists,
@@ -346,6 +365,7 @@ struct LegadoApp: App {
                     sourceCatalog: sourceCatalog,
                     readAloud: readAloud,
                     readAloudPreferences: readAloudPreferences,
+                    readingHistoryPreferences: readingHistoryPreferences,
                     httpTextToSpeechEngines: httpTextToSpeechEngines,
                     dictionaryLookup: dictionaryLookup,
                     keyboardAssists: keyboardAssists,
@@ -394,6 +414,7 @@ private struct AppAndroidCoreBackupRestoreRepository:
     let sourceRepository: UserDefaultsSourceCatalogRepository
     let rootVisibility: RootVisibilityPreferencesStore
     let readAloudPreferences: ReadAloudPreferencesStore
+    let readingHistoryPreferences: ReadingHistoryPreferencesStore
     let webDAVSettings: WebDAVConnectionSettingsStore
     let webDAVCredentials: KeychainWebDAVCredentialStore
 
@@ -422,6 +443,11 @@ private struct AppAndroidCoreBackupRestoreRepository:
                 if let preferences = payload.readAloudPreferences,
                    preferences.isPresent {
                     try await restoreAndroidReadAloudPreferences(preferences)
+                }
+                if let preferences = payload.readingHistoryPreferences {
+                    try await restoreAndroidReadingHistoryPreferences(
+                        preferences
+                    )
                 }
                 if !payload.bookSources.isEmpty {
                     try await sourceRepository.saveSources(
@@ -471,6 +497,9 @@ private struct AppAndroidCoreBackupRestoreRepository:
             readAloudPreferences: await MainActor.run {
                 readAloudPreferences.value
             },
+            readingHistoryPreferences: await MainActor.run {
+                readingHistoryPreferences.value
+            },
             webDAVSettings: settings,
             mainCredential: mainCredential,
             serverProfiles: serverProfiles,
@@ -492,6 +521,9 @@ private struct AppAndroidCoreBackupRestoreRepository:
         await MainActor.run {
             rootVisibility.replace(checkpoint.rootVisibility)
             readAloudPreferences.replace(checkpoint.readAloudPreferences)
+            readingHistoryPreferences.replace(
+                checkpoint.readingHistoryPreferences
+            )
         }
 
         let importedServerReferences = Set(
@@ -701,6 +733,16 @@ private struct AppAndroidCoreBackupRestoreRepository:
         }
     }
 
+    func restoreAndroidReadingHistoryPreferences(
+        _ plan: AndroidReadingHistoryPreferencesImportPlan
+    ) async throws {
+        await MainActor.run {
+            readingHistoryPreferences.setRecordsReadingTime(
+                plan.recordsReadingTime
+            )
+        }
+    }
+
     func restoreAndroidWebDAVServerProfiles(
         _ plan: AndroidServerProfileImportPlan
     ) async throws {
@@ -717,6 +759,7 @@ private struct AppAndroidCoreRestoreCheckpoint: Sendable {
     let sources: [BookSourceDraft]
     let rootVisibility: RootVisibilityPreferences
     let readAloudPreferences: ReadAloudPreferences
+    let readingHistoryPreferences: ReadingHistoryPreferences
     let webDAVSettings: WebDAVConnectionSettings
     let mainCredential: WebDAVBasicCredentials?
     let serverProfiles: [WebDAVServerProfile]
@@ -1067,6 +1110,8 @@ private actor UITestWebDAVBackupTransfer: WebDAVBackupTransferring {
                             .int(4),
                         AndroidApplicationBackupPreferences.defaultHomePageKey:
                             .string("my"),
+                        AndroidApplicationBackupPreferences.enableReadRecordKey:
+                            .boolean(false),
                         AndroidApplicationBackupPreferences.ttsFollowSystemKey:
                             .boolean(false),
                         AndroidApplicationBackupPreferences.ttsSpeechRateKey:
@@ -1200,6 +1245,38 @@ private final class UserDefaultsReadAloudPreferencesRepository:
     }
 
     func save(_ preferences: ReadAloudPreferences) {
+        guard let data = try? JSONEncoder().encode(preferences) else {
+            return
+        }
+        defaults.set(data, forKey: key)
+    }
+}
+
+@MainActor
+private final class UserDefaultsReadingHistoryPreferencesRepository:
+    ReadingHistoryPreferencesRepository
+{
+    private let defaults: UserDefaults
+    private let key = "reader.history.preferences.v1"
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+    }
+
+    func load() -> ReadingHistoryPreferences {
+        guard
+            let data = defaults.data(forKey: key),
+            let value = try? JSONDecoder().decode(
+                ReadingHistoryPreferences.self,
+                from: data
+            )
+        else {
+            return ReadingHistoryPreferences()
+        }
+        return value
+    }
+
+    func save(_ preferences: ReadingHistoryPreferences) {
         guard let data = try? JSONEncoder().encode(preferences) else {
             return
         }

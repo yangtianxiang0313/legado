@@ -20,6 +20,7 @@ struct AndroidWebDAVConfigInteropTests {
         <boolean name="showRss" value="true" />
         <int name="bookshelfSort" value="4" />
         <string name="defaultHomePage">my</string>
+        <boolean name="enableReadRecord" value="false" />
         <boolean name="ttsFollowSys" value="false" />
         <int name="ttsSpeechRate" value="15" />
         <int name="threadCount" value="8" />
@@ -46,6 +47,7 @@ struct AndroidWebDAVConfigInteropTests {
     #expect(application.showsRSS == true)
     #expect(application.bookshelfSort == 4)
     #expect(application.defaultHomePage == "my")
+    #expect(application.enablesReadRecord == false)
     #expect(application.ttsFollowsSystemRate == false)
     #expect(application.ttsSpeechRate == 15)
     #expect(document.values["onlyLatestBackup"] == .boolean(false))
