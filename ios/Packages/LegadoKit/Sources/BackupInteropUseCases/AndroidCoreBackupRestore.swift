@@ -68,6 +68,12 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
 public enum AndroidWebDAVCredentialImportState: Equatable, Sendable {
   case missing
   case unresolvedAndroidBackupPayload(username: String?, payload: String)
+  case resolved(username: String, password: String)
+}
+
+public enum AndroidCoreBackupRestoreError: Error, Equatable, Sendable {
+  case backupPasswordRequired
+  case invalidBackupPassword
 }
 
 public struct AndroidWebDAVConfigurationImportPlan: Equatable, Sendable {
@@ -152,7 +158,16 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     self.repository = repository
   }
 
-  public func restore(from archiveURL: URL) async throws
+  public func restore(
+    from archiveURL: URL
+  ) async throws -> AndroidCoreBackupRestoreSummary {
+    try await restore(from: archiveURL, backupPassword: nil)
+  }
+
+  public func restore(
+    from archiveURL: URL,
+    backupPassword: String?
+  ) async throws
     -> AndroidCoreBackupRestoreSummary
   {
     let libraryPlan = try AndroidLibraryImportAdapter.plan(from: archiveURL)
@@ -204,7 +219,15 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     )
     let webDAVConfiguration = try AndroidBackupArchive
       .readWebDAVBackupConfiguration(from: archiveURL)
+    let webDAVImportPlan = try webDAVConfiguration.map {
+      try Self.webDAVImportPlan($0, backupPassword: backupPassword)
+    }
 
+    if let webDAVImportPlan {
+      try await repository.restoreAndroidWebDAVConfiguration(
+        webDAVImportPlan
+      )
+    }
     let library = try await repository.restoreAndroidLibrary(libraryPlan)
     if !bookSources.isEmpty {
       try await repository.restoreAndroidBookSources(bookSources)
@@ -249,11 +272,6 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     if !themeProfiles.isEmpty {
       try await repository.restoreAndroidThemeProfiles(themeProfiles)
     }
-    if let webDAVConfiguration {
-      try await repository.restoreAndroidWebDAVConfiguration(
-        Self.webDAVImportPlan(webDAVConfiguration)
-      )
-    }
     return AndroidCoreBackupRestoreSummary(
       bookCount: library.bookCount,
       groupCount: library.groupCount,
@@ -278,13 +296,26 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
   }
 
   private static func webDAVImportPlan(
-    _ value: AndroidWebDAVBackupConfiguration
-  ) -> AndroidWebDAVConfigurationImportPlan {
+    _ value: AndroidWebDAVBackupConfiguration,
+    backupPassword: String?
+  ) throws -> AndroidWebDAVConfigurationImportPlan {
     let credential: AndroidWebDAVCredentialImportState
     if let payload = value.unresolvedPasswordPayload, !payload.isEmpty {
-      credential = .unresolvedAndroidBackupPayload(
-        username: value.username,
-        payload: payload
+      guard let backupPassword, !backupPassword.isEmpty else {
+        throw AndroidCoreBackupRestoreError.backupPasswordRequired
+      }
+      let password: String
+      do {
+        password = try AndroidBackupAES.decryptBase64(
+          payload,
+          backupPassword: backupPassword
+        )
+      } catch {
+        throw AndroidCoreBackupRestoreError.invalidBackupPassword
+      }
+      credential = .resolved(
+        username: value.username ?? "",
+        password: password
       )
     } else {
       credential = .missing

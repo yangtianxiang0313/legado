@@ -89,11 +89,10 @@ struct LegadoApp: App {
                 )
             )
         }
-        _webDAVSettings = State(
-            initialValue: WebDAVConnectionSettingsStore(
-                repository: webDAVSettingsRepository
-            )
+        let webDAVSettingsStore = WebDAVConnectionSettingsStore(
+            repository: webDAVSettingsRepository
         )
+        _webDAVSettings = State(initialValue: webDAVSettingsStore)
         if processArguments.contains("--reset-root-visibility") {
             rootVisibilityRepository.save(RootVisibilityPreferences())
         }
@@ -124,7 +123,9 @@ struct LegadoApp: App {
             self.backupRestore = AndroidCoreBackupRestoreUseCase(
                 repository: AppAndroidCoreBackupRestoreRepository(
                     repository: libraryRepository,
-                    sourceRepository: sourceRepository
+                    sourceRepository: sourceRepository,
+                    webDAVSettings: webDAVSettingsStore,
+                    webDAVCredentials: webDAVCredentials
                 )
             )
             self.libraryBackup = AndroidLibraryBackupUseCase(
@@ -312,6 +313,8 @@ private struct AppAndroidCoreBackupRestoreRepository:
 {
     let repository: GRDBBookShelfRepository
     let sourceRepository: UserDefaultsSourceCatalogRepository
+    let webDAVSettings: WebDAVConnectionSettingsStore
+    let webDAVCredentials: KeychainWebDAVCredentialStore
 
     func restoreAndroidLibrary(
         _ plan: AndroidLibraryRestorePlan
@@ -374,6 +377,34 @@ private struct AppAndroidCoreBackupRestoreRepository:
         _ values: [AppThemeProfile]
     ) async throws {
         try await repository.restoreAndroidThemeProfiles(values)
+    }
+
+    func restoreAndroidWebDAVConfiguration(
+        _ plan: AndroidWebDAVConfigurationImportPlan
+    ) async throws {
+        let reference = await MainActor.run {
+            webDAVSettings.value.credentialReference
+        }
+        switch plan.credential {
+        case .missing:
+            break
+        case .resolved(let username, let password):
+            try await webDAVCredentials.save(
+                WebDAVBasicCredentials(
+                    username: username,
+                    password: password
+                ),
+                for: reference
+            )
+        case .unresolvedAndroidBackupPayload:
+            throw AndroidCoreBackupRestoreError.backupPasswordRequired
+        }
+        await MainActor.run {
+            webDAVSettings.update(
+                serverAddress: plan.settings.serverAddress,
+                directoryName: plan.settings.directoryName
+            )
+        }
     }
 }
 

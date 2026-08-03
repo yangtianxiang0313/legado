@@ -765,6 +765,7 @@ private struct RootContentView: View {
     @State private var webDAVStatus = ""
     @State private var showsAndroidBackupImporter = false
     @State private var androidBackupImportStatus = ""
+    @State private var androidBackupPassword = ""
     @State private var showsAndroidBackupExporter = false
     @State private var androidBackupExportDocument = AndroidBackupZipDocument()
     @State private var androidBackupExportStatus = ""
@@ -852,6 +853,13 @@ private struct RootContentView: View {
                         Label("导入 Android backup.zip", systemImage: "square.and.arrow.down")
                     }
                     .accessibilityIdentifier("action.settings.androidBackup.import")
+                    SecureField(
+                        "Android 备份口令（含 WebDAV 凭据时必填）",
+                        text: $androidBackupPassword
+                    )
+                    .accessibilityIdentifier(
+                        "field.settings.androidBackup.password"
+                    )
                     if !androidBackupImportStatus.isEmpty {
                         Text(androidBackupImportStatus)
                             .accessibilityIdentifier("state.settings.androidBackup.import")
@@ -1063,7 +1071,13 @@ private struct RootContentView: View {
                 }
             }
             do {
-                let summary = try await backupRestore.restore(from: url)
+                let summary = try await backupRestore.restore(
+                    from: url,
+                    backupPassword: androidBackupPassword.isEmpty
+                        ? nil
+                        : androidBackupPassword
+                )
+                androidBackupPassword = ""
                 if let projection = summary.readerConfigProjection {
                     readerPreferences.apply(projection)
                 }
@@ -1117,6 +1131,13 @@ private struct RootContentView: View {
                     androidBackupImportStatus +=
                         "、\(summary.dictionaryRuleCount) 条词典规则"
                 }
+                if summary.webDAVConfigurationCount > 0 {
+                    androidBackupImportStatus += "、1 份 WebDAV 配置"
+                }
+            } catch AndroidCoreBackupRestoreError.backupPasswordRequired {
+                androidBackupImportStatus = "请输入 Android 备份口令后重试"
+            } catch AndroidCoreBackupRestoreError.invalidBackupPassword {
+                androidBackupImportStatus = "Android 备份口令错误"
             } catch {
                 androidBackupImportStatus = "Android 备份导入失败"
             }

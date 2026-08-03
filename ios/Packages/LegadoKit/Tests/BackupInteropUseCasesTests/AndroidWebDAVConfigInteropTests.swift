@@ -5,9 +5,9 @@ import Foundation
 import LibraryDomain
 import Testing
 
-@Suite("AndroidWebDAVConfigInteropTests")
-struct AndroidWebDAVConfigRestoreTests {
-  @Test func coreRestoreEmitsNonSecretSettingsAndUnresolvedCredential() async throws {
+@Suite("AndroidWebDAVConfigAppRestoreTests")
+struct AndroidWebDAVConfigAppRestoreTests {
+  @Test func coreRestoreResolvesSettingsAndCredential() async throws {
     let repository = WebDAVConfigRestoreRepositoryStub()
     let useCase = AndroidCoreBackupRestoreUseCase(repository: repository)
     let directory = FileManager.default.temporaryDirectory
@@ -25,7 +25,7 @@ struct AndroidWebDAVConfigRestoreTests {
             .string("https://dav.example/root"),
           AndroidWebDAVBackupConfiguration.usernameKey: .string("reader"),
           AndroidWebDAVBackupConfiguration.passwordKey:
-            .string("android-encrypted-payload"),
+            .string("0LSuhOm3EXMTTUpsnaZ4lg=="),
           AndroidWebDAVBackupConfiguration.directoryNameKey:
             .string("shared-books"),
         ])
@@ -33,7 +33,10 @@ struct AndroidWebDAVConfigRestoreTests {
       to: archiveURL
     )
 
-    let summary = try await useCase.restore(from: archiveURL)
+    let summary = try await useCase.restore(
+      from: archiveURL,
+      backupPassword: "backup-pass"
+    )
     let plan = try #require(await repository.webDAVPlan())
 
     #expect(summary.webDAVConfigurationCount == 1)
@@ -41,11 +44,45 @@ struct AndroidWebDAVConfigRestoreTests {
     #expect(plan.settings.directoryName == "shared-books")
     #expect(
       plan.credential
-        == .unresolvedAndroidBackupPayload(
+        == .resolved(
           username: "reader",
-          payload: "android-encrypted-payload"
+          password: "webdav-secret"
         )
     )
+  }
+
+  @Test func missingOrWrongPasswordFailsBeforeRepositoryMutation() async throws {
+    let repository = WebDAVConfigRestoreRepositoryStub()
+    let useCase = AndroidCoreBackupRestoreUseCase(repository: repository)
+    let directory = FileManager.default.temporaryDirectory
+      .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    try FileManager.default.createDirectory(
+      at: directory,
+      withIntermediateDirectories: true
+    )
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let archiveURL = directory.appendingPathComponent("backup.zip")
+    try AndroidBackupArchive.write(
+      AndroidBackupContents(
+        sharedPreferences: AndroidSharedPreferencesDocument(values: [
+          AndroidWebDAVBackupConfiguration.passwordKey:
+            .string("0LSuhOm3EXMTTUpsnaZ4lg==")
+        ])
+      ),
+      to: archiveURL
+    )
+
+    await #expect(throws: AndroidCoreBackupRestoreError.backupPasswordRequired) {
+      try await useCase.restore(from: archiveURL)
+    }
+    await #expect(throws: AndroidCoreBackupRestoreError.invalidBackupPassword) {
+      try await useCase.restore(
+        from: archiveURL,
+        backupPassword: "wrong"
+      )
+    }
+    #expect(await repository.webDAVPlan() == nil)
+    #expect(await repository.libraryRestoreCount() == 0)
   }
 }
 
@@ -53,11 +90,17 @@ private actor WebDAVConfigRestoreRepositoryStub:
   AndroidCoreBackupRestoreRepository
 {
   private var plan: AndroidWebDAVConfigurationImportPlan?
+  private var libraryRestores = 0
 
   func restoreAndroidLibrary(
     _ plan: AndroidLibraryRestorePlan
   ) async throws -> AndroidLibraryRestoreSummary {
-    AndroidLibraryRestoreSummary(bookCount: 0, groupCount: 0, bookmarkCount: 0)
+    libraryRestores += 1
+    return AndroidLibraryRestoreSummary(
+      bookCount: 0,
+      groupCount: 0,
+      bookmarkCount: 0
+    )
   }
 
   func restoreAndroidBookSources(_ sources: [BookSourceDraft]) async throws {}
@@ -75,4 +118,5 @@ private actor WebDAVConfigRestoreRepositoryStub:
   }
 
   func webDAVPlan() -> AndroidWebDAVConfigurationImportPlan? { plan }
+  func libraryRestoreCount() -> Int { libraryRestores }
 }
