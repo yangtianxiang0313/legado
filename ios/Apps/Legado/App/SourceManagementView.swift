@@ -1,12 +1,15 @@
 import AppUseCases
+import Foundation
 import SourceRuntime
 import SwiftUI
 import UniformTypeIdentifiers
 
 struct SourceManagementView: View {
     @Bindable var catalog: SourceCatalog
+    @Bindable var ruleSubscriptions: RuleSubscriptionStore
     let openEditor: (String?) -> Void
     @State private var showsImport = false
+    @State private var showsSubscriptions = false
     @State private var query = ""
     @State private var filter: SourceManagementFilter = .all
     @State private var sort: SourceManagementSort = .defaultOrder
@@ -164,6 +167,13 @@ struct SourceManagementView: View {
                         .accessibilityIdentifier("action.source.import")
 
                         Button {
+                            showsSubscriptions = true
+                        } label: {
+                            Label("规则订阅", systemImage: "link")
+                        }
+                        .accessibilityIdentifier("action.source.subscriptions")
+
+                        Button {
                             openEditor(nil)
                         } label: {
                             Label("新建书源", systemImage: "plus")
@@ -199,6 +209,14 @@ struct SourceManagementView: View {
                 SourceImportView(catalog: catalog) {
                     showsImport = false
                 }
+            }
+        }
+        .sheet(isPresented: $showsSubscriptions) {
+            NavigationStack {
+                RuleSubscriptionView(
+                    store: ruleSubscriptions,
+                    catalog: catalog
+                )
             }
         }
         .task {
@@ -436,6 +454,169 @@ private struct SourceJSONDocument: FileDocument {
     }
 }
 
+private struct RuleSubscriptionView: View {
+    @Bindable var store: RuleSubscriptionStore
+    @Bindable var catalog: SourceCatalog
+    @State private var editing: RuleSubscription?
+    @State private var importPayload = ""
+    @State private var showsImporter = false
+    @State private var message: String?
+
+    var body: some View {
+        List {
+            if store.subscriptions.isEmpty {
+                ContentUnavailableView(
+                    "还没有规则订阅",
+                    systemImage: "link",
+                    description: Text("可添加 Android 兼容的书源、RSS 或替换规则订阅。")
+                )
+            } else {
+                ForEach(store.subscriptions) { subscription in
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(subscription.name.isEmpty
+                                    ? subscription.url
+                                    : subscription.name)
+                                    .font(.headline)
+                                Text(subscription.url)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                                Text(typeName(subscription.type))
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
+                            }
+                            Spacer()
+                            Button("编辑") { editing = subscription }
+                                .buttonStyle(.borderless)
+                        }
+                        if subscription.type == 0 {
+                            Button("从订阅导入书源") {
+                                load(subscription)
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                    }
+                    .swipeActions {
+                        Button("删除", role: .destructive) {
+                            Task { await store.remove(id: subscription.id) }
+                        }
+                    }
+                }
+            }
+            if let message {
+                Section { Text(message).foregroundStyle(.secondary) }
+            }
+        }
+        .navigationTitle("规则订阅")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    let now = Int64(Date().timeIntervalSince1970 * 1_000)
+                    editing = RuleSubscription(
+                        id: now,
+                        name: "",
+                        url: "",
+                        type: 0,
+                        customOrder: (store.subscriptions.map(\.customOrder).max() ?? 0) + 1,
+                        autoUpdate: false,
+                        updatedAt: now
+                    )
+                } label: {
+                    Label("添加订阅", systemImage: "plus")
+                }
+            }
+        }
+        .task { await store.reload() }
+        .sheet(item: $editing) { value in
+            NavigationStack {
+                RuleSubscriptionEditor(
+                    value: value,
+                    save: { updated in
+                        if await store.save(updated) {
+                            editing = nil
+                        }
+                    }
+                )
+            }
+        }
+        .sheet(isPresented: $showsImporter) {
+            NavigationStack {
+                SourceImportView(
+                    catalog: catalog,
+                    initialPayload: importPayload,
+                    dismiss: { showsImporter = false }
+                )
+            }
+        }
+    }
+
+    private func typeName(_ type: Int) -> String {
+        switch type {
+        case 0: "书源订阅"
+        case 1: "RSS 订阅"
+        case 2: "替换规则订阅"
+        default: "未知类型 \(type)"
+        }
+    }
+
+    private func load(_ subscription: RuleSubscription) {
+        Task {
+            guard let url = URL(string: subscription.url) else {
+                message = "订阅地址无效"
+                return
+            }
+            do {
+                let (data, response) = try await URLSession.shared.data(from: url)
+                if let http = response as? HTTPURLResponse,
+                   !(200..<300).contains(http.statusCode) {
+                    message = "订阅请求失败（\(http.statusCode)）"
+                    return
+                }
+                importPayload = String(decoding: data, as: UTF8.self)
+                showsImporter = true
+                message = nil
+            } catch {
+                message = "无法加载订阅"
+            }
+        }
+    }
+}
+
+private struct RuleSubscriptionEditor: View {
+    @State var value: RuleSubscription
+    let save: (RuleSubscription) async -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        Form {
+            TextField("名称", text: $value.name)
+            TextField("https://…", text: $value.url)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+            Picker("类型", selection: $value.type) {
+                Text("书源").tag(0)
+                Text("RSS").tag(1)
+                Text("替换规则").tag(2)
+            }
+            Toggle("自动更新", isOn: $value.autoUpdate)
+        }
+        .navigationTitle("规则订阅")
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("取消") { dismiss() }
+            }
+            ToolbarItem(placement: .confirmationAction) {
+                Button("保存") {
+                    value.updatedAt = Int64(Date().timeIntervalSince1970 * 1_000)
+                    Task { await save(value) }
+                }
+            }
+        }
+    }
+}
+
 private struct SourceImportView: View {
     @Bindable var catalog: SourceCatalog
     let dismiss: () -> Void
@@ -449,6 +630,16 @@ private struct SourceImportView: View {
     @State private var keepEnable = false
     @State private var group = ""
     @State private var groupMode: SourceImportGroupMode = .unchanged
+
+    init(
+        catalog: SourceCatalog,
+        initialPayload: String = "",
+        dismiss: @escaping () -> Void
+    ) {
+        self.catalog = catalog
+        self.dismiss = dismiss
+        _payload = State(initialValue: initialPayload)
+    }
 
     var body: some View {
         Form {

@@ -4,7 +4,9 @@ import Foundation
 import GRDB
 import LibraryDomain
 
-public actor GRDBBookShelfRepository: BookShelfRepository {
+public actor GRDBBookShelfRepository:
+  BookShelfRepository, RuleSubscriptionRepository
+{
   private let database: DatabaseQueue
 
   public init(path: String) throws {
@@ -978,6 +980,47 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
     }
   }
 
+  public func ruleSubscriptions() async throws -> [RuleSubscription] {
+    try await database.read { db in
+      try RuleSubscriptionRecord
+        .order(Column("customOrder").asc, Column("id").asc)
+        .fetchAll(db)
+        .map(\.value)
+    }
+  }
+
+  public func upsertRuleSubscription(
+    _ value: RuleSubscription
+  ) async throws {
+    try await database.write { db in
+      var record = RuleSubscriptionRecord(value: value)
+      try record.save(db)
+    }
+  }
+
+  public func deleteRuleSubscription(id: Int64) async throws {
+    try await database.write { db in
+      _ = try RuleSubscriptionRecord
+        .filter(Column("id") == id)
+        .deleteAll(db)
+    }
+  }
+
+  public func androidRuleSubscriptions() async throws -> [RuleSubscription] {
+    try await ruleSubscriptions()
+  }
+
+  public func restoreAndroidRuleSubscriptions(
+    _ values: [RuleSubscription]
+  ) async throws {
+    try await database.write { db in
+      for value in values {
+        var record = RuleSubscriptionRecord(value: value)
+        try record.save(db)
+      }
+    }
+  }
+
   public func restoreAndroidReadRecords(
     _ records: [LibraryDomain.ReadRecord]
   ) async throws {
@@ -992,6 +1035,7 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
   public func reset() async throws {
     try await database.write { db in
       _ = try SearchHistoryRecord.deleteAll(db)
+      _ = try RuleSubscriptionRecord.deleteAll(db)
       _ = try ReadRecordRecord.deleteAll(db)
       _ = try AndroidLibraryBookmarkRecord.deleteAll(db)
       _ = try AndroidLibraryGroupRecord.deleteAll(db)
@@ -1239,6 +1283,17 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
         table.column("word", .text).notNull().primaryKey()
         table.column("usage", .integer).notNull()
         table.column("lastUseTime", .integer).notNull().indexed()
+      }
+    }
+    migrator.registerMigration("addRuleSubscriptionInterop") { db in
+      try db.create(table: "ruleSubscriptions") { table in
+        table.column("id", .integer).notNull().primaryKey()
+        table.column("name", .text).notNull()
+        table.column("url", .text).notNull().indexed()
+        table.column("type", .integer).notNull()
+        table.column("customOrder", .integer).notNull().indexed()
+        table.column("autoUpdate", .boolean).notNull()
+        table.column("updatedAt", .integer).notNull()
       }
     }
     return migrator
@@ -1574,6 +1629,42 @@ private struct SearchHistoryRecord:
 
   var value: SearchHistoryEntry {
     SearchHistoryEntry(word: word, usage: usage, lastUseTime: lastUseTime)
+  }
+}
+
+private struct RuleSubscriptionRecord:
+  Codable, FetchableRecord, MutablePersistableRecord
+{
+  static let databaseTableName = "ruleSubscriptions"
+
+  var id: Int64
+  var name: String
+  var url: String
+  var type: Int
+  var customOrder: Int
+  var autoUpdate: Bool
+  var updatedAt: Int64
+
+  init(value: RuleSubscription) {
+    id = value.id
+    name = value.name
+    url = value.url
+    type = value.type
+    customOrder = value.customOrder
+    autoUpdate = value.autoUpdate
+    updatedAt = value.updatedAt
+  }
+
+  var value: RuleSubscription {
+    RuleSubscription(
+      id: id,
+      name: name,
+      url: url,
+      type: type,
+      customOrder: customOrder,
+      autoUpdate: autoUpdate,
+      updatedAt: updatedAt
+    )
   }
 }
 

@@ -10,6 +10,7 @@ public struct AndroidBackupContents: Equatable, Sendable {
     public var bookmarks: [AndroidBookmarkDTO]
     public var readRecords: [AndroidReadRecordDTO]
     public var searchHistory: [AndroidSearchHistoryDTO]
+    public var ruleSubscriptions: [AndroidRuleSubscriptionDTO]
 
     public init(
         bookSources: [BookSourceDTO] = [],
@@ -18,7 +19,8 @@ public struct AndroidBackupContents: Equatable, Sendable {
         bookGroups: [AndroidBookGroupDTO] = [],
         bookmarks: [AndroidBookmarkDTO] = [],
         readRecords: [AndroidReadRecordDTO] = [],
-        searchHistory: [AndroidSearchHistoryDTO] = []
+        searchHistory: [AndroidSearchHistoryDTO] = [],
+        ruleSubscriptions: [AndroidRuleSubscriptionDTO] = []
     ) {
         self.bookSources = bookSources
         self.replacementRules = replacementRules
@@ -27,6 +29,7 @@ public struct AndroidBackupContents: Equatable, Sendable {
         self.bookmarks = bookmarks
         self.readRecords = readRecords
         self.searchHistory = searchHistory
+        self.ruleSubscriptions = ruleSubscriptions
     }
 }
 
@@ -39,6 +42,7 @@ public enum AndroidBackupArchive {
     public static let bookmarksMember = "bookmark.json"
     public static let readRecordsMember = "readRecord.json"
     public static let searchHistoryMember = "searchHistory.json"
+    public static let ruleSubscriptionsMember = "sourceSub.json"
 
     public static func write(
         _ contents: AndroidBackupContents,
@@ -97,6 +101,16 @@ public enum AndroidBackupArchive {
                 .init(
                     path: searchHistoryMember,
                     data: try AndroidSearchHistoryCodec.encodeMany(contents.searchHistory)
+                )
+            )
+        }
+        if !contents.ruleSubscriptions.isEmpty {
+            members.append(
+                .init(
+                    path: ruleSubscriptionsMember,
+                    data: try AndroidRuleSubscriptionCodec.encodeMany(
+                        contents.ruleSubscriptions
+                    )
                 )
             )
         }
@@ -198,5 +212,17 @@ public enum AndroidBackupArchive {
             searchHistoryMember, from: archiveURL, maximumBytes: maximumMemberBytes
         ) else { return [] }
         return try AndroidSearchHistoryCodec.decodeMany(data)
+    }
+
+    public static func readRuleSubscriptions(
+        from archiveURL: URL,
+        maximumMemberBytes: UInt64 = 32 * 1_024 * 1_024
+    ) throws -> [AndroidRuleSubscriptionDTO] {
+        guard let data = try ArchiveZIPFoundation.read(
+            ruleSubscriptionsMember,
+            from: archiveURL,
+            maximumBytes: maximumMemberBytes
+        ) else { return [] }
+        return try AndroidRuleSubscriptionCodec.decodeMany(data)
     }
 }

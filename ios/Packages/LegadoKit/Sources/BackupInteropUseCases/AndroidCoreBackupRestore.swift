@@ -11,6 +11,7 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
   public let replacementRuleCount: Int
   public let readRecordCount: Int
   public let searchHistoryCount: Int
+  public let ruleSubscriptionCount: Int
 
   public init(
     bookCount: Int,
@@ -19,7 +20,8 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
     bookSourceCount: Int,
     replacementRuleCount: Int,
     readRecordCount: Int = 0,
-    searchHistoryCount: Int = 0
+    searchHistoryCount: Int = 0,
+    ruleSubscriptionCount: Int = 0
   ) {
     self.bookCount = bookCount
     self.groupCount = groupCount
@@ -28,6 +30,7 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
     self.replacementRuleCount = replacementRuleCount
     self.readRecordCount = readRecordCount
     self.searchHistoryCount = searchHistoryCount
+    self.ruleSubscriptionCount = ruleSubscriptionCount
   }
 }
 
@@ -41,11 +44,16 @@ public protocol AndroidCoreBackupRestoreRepository: Sendable {
   ) async throws
   func restoreAndroidReadRecords(_ records: [LibraryDomain.ReadRecord]) async throws
   func restoreAndroidSearchHistory(_ entries: [SearchHistoryEntry]) async throws
+  func restoreAndroidRuleSubscriptions(_ values: [RuleSubscription]) async throws
 }
 
 public extension AndroidCoreBackupRestoreRepository {
   func restoreAndroidSearchHistory(
     _ entries: [SearchHistoryEntry]
+  ) async throws {}
+
+  func restoreAndroidRuleSubscriptions(
+    _ values: [RuleSubscription]
   ) async throws {}
 }
 
@@ -75,6 +83,9 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     let searchHistory = AndroidSearchHistoryInteropAdapter.restoreValues(
       try AndroidBackupArchive.readSearchHistory(from: archiveURL)
     )
+    let ruleSubscriptions = AndroidRuleSubscriptionInteropAdapter.restoreValues(
+      try AndroidBackupArchive.readRuleSubscriptions(from: archiveURL)
+    )
 
     let library = try await repository.restoreAndroidLibrary(libraryPlan)
     if !bookSources.isEmpty {
@@ -89,6 +100,9 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     if !searchHistory.isEmpty {
       try await repository.restoreAndroidSearchHistory(searchHistory)
     }
+    if !ruleSubscriptions.isEmpty {
+      try await repository.restoreAndroidRuleSubscriptions(ruleSubscriptions)
+    }
     return AndroidCoreBackupRestoreSummary(
       bookCount: library.bookCount,
       groupCount: library.groupCount,
@@ -96,7 +110,8 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
       bookSourceCount: bookSources.count,
       replacementRuleCount: replacementRules.count,
       readRecordCount: readRecords.count,
-      searchHistoryCount: searchHistory.count
+      searchHistoryCount: searchHistory.count,
+      ruleSubscriptionCount: ruleSubscriptions.count
     )
   }
 

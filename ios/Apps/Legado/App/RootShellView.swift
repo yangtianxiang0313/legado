@@ -17,6 +17,7 @@ struct RootShellView: View {
     @Bindable var bookDetailPreferences: BookDetailPreferencesStore
     @Bindable var rootVisibility: RootVisibilityPreferencesStore
     @Bindable var replacementRules: ReaderReplacementRuleStore
+    @Bindable var ruleSubscriptions: RuleSubscriptionStore
     @Bindable var webDAVSettings: WebDAVConnectionSettingsStore
     let webDAVCredentials: KeychainWebDAVCredentialStore
     let webDAVClient: any WebDAVConnectionInitializing
@@ -59,6 +60,7 @@ struct RootShellView: View {
             await library.reload()
             await sourceCatalog.reload()
             await replacementRules.reload()
+            await ruleSubscriptions.reload()
             router.reconcileVisibleRoots(visibleRoots)
             if ProcessInfo.processInfo.arguments.contains(
                 "--seed-shelf-management"
@@ -179,6 +181,7 @@ struct RootShellView: View {
                 reloadBackupDomains: {
                     await sourceCatalog.reload()
                     await replacementRules.reload()
+                    await ruleSubscriptions.reload()
                 },
                 libraryBackup: libraryBackup
             )
@@ -425,7 +428,10 @@ struct RootShellView: View {
                 }
             )
         case .sourceManagement:
-            SourceManagementView(catalog: sourceCatalog) { sourceID in
+            SourceManagementView(
+                catalog: sourceCatalog,
+                ruleSubscriptions: ruleSubscriptions
+            ) { sourceID in
                 router.push(.sourceEditor(sourceID), on: root)
             }
         case .sourceEditor(let sourceID):
@@ -886,6 +892,10 @@ private struct RootContentView: View {
                     androidBackupImportStatus +=
                         "、\(summary.searchHistoryCount) 条搜索历史"
                 }
+                if summary.ruleSubscriptionCount > 0 {
+                    androidBackupImportStatus +=
+                        "、\(summary.ruleSubscriptionCount) 条规则订阅"
+                }
             } catch {
                 androidBackupImportStatus = "Android 备份导入失败"
             }
@@ -923,7 +933,8 @@ private struct RootContentView: View {
                     + "\(summary.bookSourceCount) 个书源、"
                     + "\(summary.replacementRuleCount) 条替换规则、"
                     + "\(summary.readRecordCount) 条阅读记录、"
-                    + "\(summary.searchHistoryCount) 条搜索历史"
+                    + "\(summary.searchHistoryCount) 条搜索历史、"
+                    + "\(summary.ruleSubscriptionCount) 条规则订阅"
                 showsAndroidBackupExporter = true
             } catch {
                 androidBackupExportStatus = "Android 备份生成失败"
@@ -1518,6 +1529,7 @@ struct StartupAcceptanceView: View {
     @Bindable var bookDetailPreferences: BookDetailPreferencesStore
     @Bindable var rootVisibility: RootVisibilityPreferencesStore
     @Bindable var replacementRules: ReaderReplacementRuleStore
+    @Bindable var ruleSubscriptions: RuleSubscriptionStore
     @Bindable var webDAVSettings: WebDAVConnectionSettingsStore
     let webDAVCredentials: KeychainWebDAVCredentialStore
     let webDAVClient: any WebDAVConnectionInitializing
@@ -1567,6 +1579,7 @@ struct StartupAcceptanceView: View {
                 bookDetailPreferences: bookDetailPreferences,
                 rootVisibility: rootVisibility,
                 replacementRules: replacementRules,
+                ruleSubscriptions: ruleSubscriptions,
                 webDAVSettings: webDAVSettings,
                 webDAVCredentials: webDAVCredentials,
                 webDAVClient: webDAVClient,

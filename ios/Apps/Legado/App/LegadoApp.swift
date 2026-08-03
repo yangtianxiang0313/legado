@@ -21,6 +21,7 @@ struct LegadoApp: App {
     @State private var bookDetailPreferences: BookDetailPreferencesStore
     @State private var rootVisibility: RootVisibilityPreferencesStore
     @State private var replacementRules: ReaderReplacementRuleStore
+    @State private var ruleSubscriptions: RuleSubscriptionStore
     @State private var webDAVSettings: WebDAVConnectionSettingsStore
     private let webDAVCredentials: KeychainWebDAVCredentialStore
     private let webDAVClient: any WebDAVConnectionInitializing
@@ -108,6 +109,11 @@ struct LegadoApp: App {
                     repository: libraryRepository
                 )
             )
+            _ruleSubscriptions = State(
+                initialValue: RuleSubscriptionStore(
+                    repository: libraryRepository
+                )
+            )
             _sourceCatalog = State(
                 initialValue: SourceCatalog(
                     repository: sourceRepository
@@ -165,6 +171,7 @@ struct LegadoApp: App {
                     bookDetailPreferences: bookDetailPreferences,
                     rootVisibility: rootVisibility,
                     replacementRules: replacementRules,
+                    ruleSubscriptions: ruleSubscriptions,
                     webDAVSettings: webDAVSettings,
                     webDAVCredentials: webDAVCredentials,
                     webDAVClient: webDAVClient,
@@ -182,6 +189,7 @@ struct LegadoApp: App {
                     bookDetailPreferences: bookDetailPreferences,
                     rootVisibility: rootVisibility,
                     replacementRules: replacementRules,
+                    ruleSubscriptions: ruleSubscriptions,
                     webDAVSettings: webDAVSettings,
                     webDAVCredentials: webDAVCredentials,
                     webDAVClient: webDAVClient,
@@ -243,6 +251,12 @@ private struct AppAndroidCoreBackupRestoreRepository:
     ) async throws {
         try await repository.restoreAndroidSearchHistory(entries)
     }
+
+    func restoreAndroidRuleSubscriptions(
+        _ values: [RuleSubscription]
+    ) async throws {
+        try await repository.restoreAndroidRuleSubscriptions(values)
+    }
 }
 
 private struct AppAndroidLibraryBackupRepository:
@@ -262,6 +276,10 @@ private struct AppAndroidLibraryBackupRepository:
 
     func androidSearchHistory() async throws -> [SearchHistoryEntry] {
         try await repository.androidSearchHistory()
+    }
+
+    func androidRuleSubscriptions() async throws -> [RuleSubscription] {
+        try await repository.androidRuleSubscriptions()
     }
 }
 

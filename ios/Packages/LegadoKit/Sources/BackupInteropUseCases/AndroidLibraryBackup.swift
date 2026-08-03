@@ -12,6 +12,7 @@ public struct AndroidLibraryBackupSummary: Equatable, Sendable {
   public let replacementRuleCount: Int
   public let readRecordCount: Int
   public let searchHistoryCount: Int
+  public let ruleSubscriptionCount: Int
 
   public init(
     bookCount: Int,
@@ -20,7 +21,8 @@ public struct AndroidLibraryBackupSummary: Equatable, Sendable {
     bookSourceCount: Int = 0,
     replacementRuleCount: Int = 0,
     readRecordCount: Int = 0,
-    searchHistoryCount: Int = 0
+    searchHistoryCount: Int = 0,
+    ruleSubscriptionCount: Int = 0
   ) {
     self.bookCount = bookCount
     self.groupCount = groupCount
@@ -29,6 +31,7 @@ public struct AndroidLibraryBackupSummary: Equatable, Sendable {
     self.replacementRuleCount = replacementRuleCount
     self.readRecordCount = readRecordCount
     self.searchHistoryCount = searchHistoryCount
+    self.ruleSubscriptionCount = ruleSubscriptionCount
   }
 }
 
@@ -36,11 +39,13 @@ public protocol AndroidLibraryBackupRepository: Sendable {
   func androidLibraryBackupPlan() async throws -> AndroidLibraryRestorePlan
   func androidReadRecords() async throws -> [ReadRecord]
   func androidSearchHistory() async throws -> [SearchHistoryEntry]
+  func androidRuleSubscriptions() async throws -> [RuleSubscription]
 }
 
 public extension AndroidLibraryBackupRepository {
   func androidReadRecords() async throws -> [ReadRecord] { [] }
   func androidSearchHistory() async throws -> [SearchHistoryEntry] { [] }
+  func androidRuleSubscriptions() async throws -> [RuleSubscription] { [] }
 }
 
 public enum AndroidLibraryBackupError: Error, Equatable, Sendable {
@@ -72,12 +77,14 @@ public struct AndroidLibraryBackupUseCase: Sendable {
     let plan = try await repository.androidLibraryBackupPlan()
     let readRecords = try await repository.androidReadRecords()
     let searchHistory = try await repository.androidSearchHistory()
+    let ruleSubscriptions = try await repository.androidRuleSubscriptions()
     let contents = try AndroidLibraryBackupAdapter.contents(
       from: plan,
       bookSources: bookSources,
       replacementRules: replacementRules,
       readRecords: readRecords,
-      searchHistory: searchHistory
+      searchHistory: searchHistory,
+      ruleSubscriptions: ruleSubscriptions
     )
     try AndroidBackupArchive.write(
       contents,
@@ -90,7 +97,8 @@ public struct AndroidLibraryBackupUseCase: Sendable {
       bookSourceCount: contents.bookSources.count,
       replacementRuleCount: contents.replacementRules.count,
       readRecordCount: contents.readRecords.count,
-      searchHistoryCount: contents.searchHistory.count
+      searchHistoryCount: contents.searchHistory.count,
+      ruleSubscriptionCount: contents.ruleSubscriptions.count
     )
   }
 }
@@ -104,7 +112,8 @@ public enum AndroidLibraryBackupAdapter {
       bookSources: [],
       replacementRules: [],
       readRecords: [],
-      searchHistory: []
+      searchHistory: [],
+      ruleSubscriptions: []
     )
   }
 
@@ -113,7 +122,8 @@ public enum AndroidLibraryBackupAdapter {
     bookSources: [BookSourceDraft],
     replacementRules: [ReaderReplacementRule],
     readRecords: [ReadRecord] = [],
-    searchHistory: [SearchHistoryEntry] = []
+    searchHistory: [SearchHistoryEntry] = [],
+    ruleSubscriptions: [RuleSubscription] = []
   ) throws -> AndroidBackupContents {
     let sourceData = try SourceManagementPolicy.exportData(
       bookSources,
@@ -126,7 +136,10 @@ public enum AndroidLibraryBackupAdapter {
       bookGroups: try plan.groups.map(mapGroup),
       bookmarks: try plan.bookmarks.map(mapBookmark),
       readRecords: AndroidReadRecordInteropAdapter.backupDocuments(readRecords),
-      searchHistory: AndroidSearchHistoryInteropAdapter.backupDocuments(searchHistory)
+      searchHistory: AndroidSearchHistoryInteropAdapter.backupDocuments(searchHistory),
+      ruleSubscriptions: AndroidRuleSubscriptionInteropAdapter.backupDocuments(
+        ruleSubscriptions
+      )
     )
   }
 
