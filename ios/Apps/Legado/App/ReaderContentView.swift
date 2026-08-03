@@ -17,6 +17,7 @@ struct ReaderContentView: View {
     @Bindable var replacementRules: ReaderReplacementRuleStore
     @Bindable var webDAVSettings: WebDAVConnectionSettingsStore
     let webDAVProgressLoader: any WebDAVBookProgressLoading
+    let webDAVProgressUploader: WebDAVReaderProgressUploadCoordinator
     let openTOC: () -> Void
     let openChapter: (ChapterID, Int) -> Void
     let openBookInfo: (ShelfBookItem) -> Void
@@ -65,6 +66,7 @@ struct ReaderContentView: View {
         replacementRules: ReaderReplacementRuleStore,
         webDAVSettings: WebDAVConnectionSettingsStore,
         webDAVProgressLoader: any WebDAVBookProgressLoading,
+        webDAVProgressUploader: WebDAVReaderProgressUploadCoordinator,
         openTOC: @escaping () -> Void,
         openChapter: @escaping (ChapterID, Int) -> Void,
         openBookInfo: @escaping (ShelfBookItem) -> Void,
@@ -80,6 +82,7 @@ struct ReaderContentView: View {
         self.replacementRules = replacementRules
         self.webDAVSettings = webDAVSettings
         self.webDAVProgressLoader = webDAVProgressLoader
+        self.webDAVProgressUploader = webDAVProgressUploader
         self.openTOC = openTOC
         self.openChapter = openChapter
         self.openBookInfo = openBookInfo
@@ -259,7 +262,10 @@ struct ReaderContentView: View {
                     bookID: target.bookID,
                     chapterIndex: chapter.index,
                     characterOffset: offset,
-                    chapterTitle: chapter.title
+                    chapterTitle: chapter.title,
+                    webDAVConfiguration:
+                        webDAVSettings.value.connectionConfiguration,
+                    webDAVUploader: webDAVProgressUploader
                 )
             }
         }
@@ -271,6 +277,7 @@ struct ReaderContentView: View {
                     }
                 } else {
                     await saveCurrentProgress()
+                    await webDAVProgressUploader.flush()
                     await library.settleReadingRecord()
                 }
             }
@@ -278,6 +285,7 @@ struct ReaderContentView: View {
         .onDisappear {
             Task {
                 await saveCurrentProgress()
+                await webDAVProgressUploader.flush()
                 await library.settleReadingRecord()
             }
         }
@@ -1738,7 +1746,10 @@ struct ReaderContentView: View {
             characterOffset: chapter.id == target.chapterID
                 ? currentReaderOffset
                 : 0,
-            chapterTitle: chapter.title
+            chapterTitle: chapter.title,
+            webDAVConfiguration:
+                webDAVSettings.value.connectionConfiguration,
+            webDAVUploader: webDAVProgressUploader
         )
     }
 

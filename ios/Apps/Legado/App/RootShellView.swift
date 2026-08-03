@@ -45,6 +45,7 @@ struct RootShellView: View {
     let webDAVCredentials: KeychainWebDAVCredentialStore
     let webDAVClient: any WebDAVConnectionInitializing
     let webDAVProgressLoader: any WebDAVBookProgressLoading
+    let webDAVProgressUploader: WebDAVReaderProgressUploadCoordinator
     let backupRestore: AndroidCoreBackupRestoreUseCase
     let libraryBackup: AndroidLibraryBackupUseCase
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -492,6 +493,7 @@ struct RootShellView: View {
                 replacementRules: replacementRules,
                 webDAVSettings: webDAVSettings,
                 webDAVProgressLoader: webDAVProgressLoader,
+                webDAVProgressUploader: webDAVProgressUploader,
                 openTOC: {
                     router.push(.chapterTOC(target.bookID), on: root)
                 },
@@ -1904,6 +1906,7 @@ struct StartupAcceptanceView: View {
     let webDAVCredentials: KeychainWebDAVCredentialStore
     let webDAVClient: any WebDAVConnectionInitializing
     let webDAVProgressLoader: any WebDAVBookProgressLoading
+    let webDAVProgressUploader: WebDAVReaderProgressUploadCoordinator
     let backupRestore: AndroidCoreBackupRestoreUseCase
     let libraryBackup: AndroidLibraryBackupUseCase
     let startupCase: StartupAcceptanceCase
@@ -1960,6 +1963,7 @@ struct StartupAcceptanceView: View {
                 webDAVCredentials: webDAVCredentials,
                 webDAVClient: webDAVClient,
                 webDAVProgressLoader: webDAVProgressLoader,
+                webDAVProgressUploader: webDAVProgressUploader,
                 backupRestore: backupRestore,
                 libraryBackup: libraryBackup
             )

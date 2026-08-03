@@ -31,6 +31,7 @@ struct LegadoApp: App {
     private let webDAVCredentials: KeychainWebDAVCredentialStore
     private let webDAVClient: any WebDAVConnectionInitializing
     private let webDAVProgressLoader: any WebDAVBookProgressLoading
+    private let webDAVProgressUploader: WebDAVReaderProgressUploadCoordinator
     private let backupRestore: AndroidCoreBackupRestoreUseCase
     private let libraryBackup: AndroidLibraryBackupUseCase
 
@@ -67,6 +68,13 @@ struct LegadoApp: App {
                 credentials: webDAVCredentials
             )
         }
+        self.webDAVProgressUploader = WebDAVReaderProgressUploadCoordinator(
+            saver: processArguments.contains("--webdav-test-double")
+                ? UITestWebDAVProgressSaver()
+                : WebDAVFoundationProgressClient(
+                    credentials: webDAVCredentials
+                )
+        )
         let webDAVSettingsRepository =
             UserDefaultsWebDAVConnectionSettingsRepository()
         if processArguments.contains("--reset-webdav-settings") {
@@ -236,6 +244,7 @@ struct LegadoApp: App {
                     webDAVCredentials: webDAVCredentials,
                     webDAVClient: webDAVClient,
                     webDAVProgressLoader: webDAVProgressLoader,
+                    webDAVProgressUploader: webDAVProgressUploader,
                     backupRestore: backupRestore,
                     libraryBackup: libraryBackup,
                     startupCase: startupCase
@@ -260,6 +269,7 @@ struct LegadoApp: App {
                     webDAVCredentials: webDAVCredentials,
                     webDAVClient: webDAVClient,
                     webDAVProgressLoader: webDAVProgressLoader,
+                    webDAVProgressUploader: webDAVProgressUploader,
                     backupRestore: backupRestore,
                     libraryBackup: libraryBackup
                 )
@@ -468,6 +478,15 @@ private struct UITestWebDAVProgressLoader: WebDAVBookProgressLoading {
                 durChapterTitle: chapterTitle
             )
         )
+    }
+}
+
+private struct UITestWebDAVProgressSaver: WebDAVBookProgressSaving {
+    func save(
+        configuration: WebDAVConnectionConfiguration,
+        document: WebDAVBookProgressDocument
+    ) async -> WebDAVBookProgressSaveResult {
+        .saved
     }
 }
 

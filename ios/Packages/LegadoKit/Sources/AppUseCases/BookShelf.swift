@@ -1,4 +1,5 @@
 import Foundation
+import IntegrationKit
 import LibraryDomain
 import Observation
 import ReaderCore
@@ -883,12 +884,15 @@ public final class ShelfLibrary {
     }
   }
 
+  @discardableResult
   public func saveReadingProgress(
     bookID: LibraryDomain.BookID,
     chapterIndex: Int,
     characterOffset: Int,
-    chapterTitle: String?
-  ) async {
+    chapterTitle: String?,
+    webDAVConfiguration: WebDAVConnectionConfiguration? = nil,
+    webDAVUploader: WebDAVReaderProgressUploadCoordinator? = nil
+  ) async -> ReadingProgress? {
     let progress = ReadingProgress(
       position: ReadingPosition(
         chapterIndex: max(0, chapterIndex),
@@ -904,15 +908,31 @@ public final class ShelfLibrary {
         bookID: bookID,
         progress: progress
       )
-      if let index = books.firstIndex(where: { $0.id == bookID }) {
-        books[index] = try await repository.book(id: bookID)
-          ?? books[index]
+      let persistedBook = try await repository.book(id: bookID)
+      if
+        let persistedBook,
+        let index = books.firstIndex(where: { $0.id == bookID })
+      {
+        books[index] = persistedBook
       }
       allBooks = try await repository.shelfBooks()
       projectBooks()
       errorMessage = nil
+      if
+        let persistedBook,
+        let webDAVConfiguration,
+        let webDAVUploader
+      {
+        await webDAVUploader.schedule(
+          configuration: webDAVConfiguration,
+          book: persistedBook,
+          progress: progress
+        )
+      }
+      return progress
     } catch {
       errorMessage = "无法保存阅读进度"
+      return nil
     }
   }
 
