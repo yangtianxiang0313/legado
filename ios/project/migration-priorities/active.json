@@ -14,6 +14,13 @@
       "selectors": [
         {"id": "P67-S1-ZIP", "claim_ids": [], "task_ids": ["IOS-DEPENDENCY-ZIPFOUNDATION-ARCHIVE-001"]}
       ]
+    },
+    {
+      "id": "P67-S2",
+      "title": "Android 实际归档与恢复取证",
+      "selectors": [
+        {"id": "P67-S2-ORACLE", "claim_ids": [], "task_ids": ["IOS-INTEGRATION-BACKUP-ARCHIVE-ORACLE-001"]}
+      ]
     }
   ],
   "deliveries": [
@@ -26,6 +33,19 @@
       "validation": "build",
       "source_anchors": [],
       "additional_allowed_paths": ["ios/docs/adr/0009-android-backup-interoperability.md", "ios/project/baseline.json"]
+    },
+    {
+      "target": "IOS-INTEGRATION-BACKUP-ARCHIVE-ORACLE-001",
+      "title": "Android 备份归档与恢复 Oracle",
+      "prerequisite_task_ids": ["IOS-DEPENDENCY-ZIPFOUNDATION-ARCHIVE-001"],
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+      "fixture_id": "android-backup-archive-v1",
+      "validation": "build",
+      "source_anchors": [
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/help/storage/Backup.kt","symbol_id":"kotlin://io.legado.app.help.storage/Backup/backup"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/help/storage/Restore.kt","symbol_id":"kotlin://io.legado.app.help.storage/Restore/restore"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/help/storage/BackupAES.kt","symbol_id":"kotlin://io.legado.app.help.storage/BackupAES"}
+      ]
     }
   ]
 }

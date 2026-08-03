@@ -643,6 +643,29 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/project/sbom/**",
             ],
         }
+    if target == "IOS-INTEGRATION-BACKUP-ARCHIVE-ORACLE-001":
+        return {
+            "owner": "IntegrationKit",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/harness/oracle/android-runner/**",
+                "ios/harness/oracle/request-registry.json",
+                "ios/harness/fixtures/runtime-lab/**",
+                "ios/harness/goldens/android-legado-v1/**",
+                "ios/harness/goldens/manifest.json",
+                "ios/harness/goldens/releases/**",
+                "ios/harness/tests/test_android_oracle_runner.py",
+                "ios/project/external-execution-receipts/**",
+                "ios/project/migration-priorities/active.json",
+            ],
+        }
     if target == "IOS-DEPENDENCY-SWIFTSOUP-HTML-001":
         return {
             "owner": "DependencyControl",
@@ -2936,6 +2959,21 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "acceptance_id": "webdav-connection-foundation-acceptance",
         },
     }
+    if target == "IOS-INTEGRATION-BACKUP-ARCHIVE-ORACLE-001":
+        delivery_contracts["IntegrationKit"] = {
+            "goal": (
+                "在真实 Android Instrumentation 中生成备份、执行恢复并输出"
+                "脱敏的归档结构、成员、加密投影和逐域合并结果；不得实现 iOS"
+                "业务或用静态源码替代运行事实。"
+            ),
+            "rule": (
+                "Oracle 只记录脱敏后的结构化观察；密码、书源原文、服务器内容"
+                "和可恢复的备份字节不得进入 fixture、Golden 或日志。"
+            ),
+            "test_id": "android-backup-archive-oracle",
+            "test_filter": "IntegrationKitTests",
+            "acceptance_id": "android-backup-archive-golden",
+        }
     if (
         architecture["owner"] == "AppNavigation"
         and isinstance(delivery.get("ui_contract"), dict)
