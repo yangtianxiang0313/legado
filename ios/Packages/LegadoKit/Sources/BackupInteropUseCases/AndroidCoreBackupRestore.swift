@@ -96,7 +96,62 @@ public struct AndroidWebDAVConfigurationImportPlan: Equatable, Sendable {
   }
 }
 
+public struct AndroidCoreDatabaseRestorePayload: Equatable, Sendable {
+  public let library: AndroidLibraryRestorePlan
+  public let replacementRules: [ReaderReplacementRule]
+  public let readRecords: [LibraryDomain.ReadRecord]
+  public let searchHistory: [SearchHistoryEntry]
+  public let ruleSubscriptions: [RuleSubscription]
+  public let rssSources: [RSSSource]
+  public let rssStars: [RSSStar]
+  public let httpTextToSpeechEngines: [HTTPTextToSpeechEngine]
+  public let localTextTOCRules: [LocalTextTOCRule]
+  public let readerConfigBundle: AndroidReaderConfigBundle
+  public let dictionaryRules: [DictionaryRule]
+  public let keyboardAssists: [KeyboardAssist]
+  public let themeProfiles: [AppThemeProfile]
+  public let directLinkUploadRule: DirectLinkUploadRule?
+
+  public init(
+    library: AndroidLibraryRestorePlan,
+    replacementRules: [ReaderReplacementRule] = [],
+    readRecords: [LibraryDomain.ReadRecord] = [],
+    searchHistory: [SearchHistoryEntry] = [],
+    ruleSubscriptions: [RuleSubscription] = [],
+    rssSources: [RSSSource] = [],
+    rssStars: [RSSStar] = [],
+    httpTextToSpeechEngines: [HTTPTextToSpeechEngine] = [],
+    localTextTOCRules: [LocalTextTOCRule] = [],
+    readerConfigBundle: AndroidReaderConfigBundle = .init(
+      styles: [],
+      sharedStyle: nil
+    ),
+    dictionaryRules: [DictionaryRule] = [],
+    keyboardAssists: [KeyboardAssist] = [],
+    themeProfiles: [AppThemeProfile] = [],
+    directLinkUploadRule: DirectLinkUploadRule? = nil
+  ) {
+    self.library = library
+    self.replacementRules = replacementRules
+    self.readRecords = readRecords
+    self.searchHistory = searchHistory
+    self.ruleSubscriptions = ruleSubscriptions
+    self.rssSources = rssSources
+    self.rssStars = rssStars
+    self.httpTextToSpeechEngines = httpTextToSpeechEngines
+    self.localTextTOCRules = localTextTOCRules
+    self.readerConfigBundle = readerConfigBundle
+    self.dictionaryRules = dictionaryRules
+    self.keyboardAssists = keyboardAssists
+    self.themeProfiles = themeProfiles
+    self.directLinkUploadRule = directLinkUploadRule
+  }
+}
+
 public protocol AndroidCoreBackupRestoreRepository: Sendable {
+  func restoreAndroidDatabaseDomains(
+    _ payload: AndroidCoreDatabaseRestorePayload
+  ) async throws -> AndroidLibraryRestoreSummary
   func restoreAndroidLibrary(
     _ plan: AndroidLibraryRestorePlan
   ) async throws -> AndroidLibraryRestoreSummary
@@ -132,6 +187,56 @@ public protocol AndroidCoreBackupRestoreRepository: Sendable {
 }
 
 public extension AndroidCoreBackupRestoreRepository {
+  func restoreAndroidDatabaseDomains(
+    _ payload: AndroidCoreDatabaseRestorePayload
+  ) async throws -> AndroidLibraryRestoreSummary {
+    let library = try await restoreAndroidLibrary(payload.library)
+    if !payload.replacementRules.isEmpty {
+      try await restoreAndroidReplacementRules(payload.replacementRules)
+    }
+    if !payload.readRecords.isEmpty {
+      try await restoreAndroidReadRecords(payload.readRecords)
+    }
+    if !payload.searchHistory.isEmpty {
+      try await restoreAndroidSearchHistory(payload.searchHistory)
+    }
+    if !payload.ruleSubscriptions.isEmpty {
+      try await restoreAndroidRuleSubscriptions(payload.ruleSubscriptions)
+    }
+    if !payload.rssSources.isEmpty || !payload.rssStars.isEmpty {
+      try await restoreAndroidRSS(
+        sources: payload.rssSources,
+        stars: payload.rssStars
+      )
+    }
+    if !payload.httpTextToSpeechEngines.isEmpty {
+      try await restoreAndroidHTTPTextToSpeechEngines(
+        payload.httpTextToSpeechEngines
+      )
+    }
+    if !payload.localTextTOCRules.isEmpty {
+      try await restoreAndroidLocalTextTOCRules(payload.localTextTOCRules)
+    }
+    if !payload.readerConfigBundle.styles.isEmpty
+      || payload.readerConfigBundle.sharedStyle != nil
+    {
+      try await restoreAndroidReaderConfigBundle(payload.readerConfigBundle)
+    }
+    if !payload.dictionaryRules.isEmpty {
+      try await restoreAndroidDictionaryRules(payload.dictionaryRules)
+    }
+    if !payload.keyboardAssists.isEmpty {
+      try await restoreAndroidKeyboardAssists(payload.keyboardAssists)
+    }
+    if !payload.themeProfiles.isEmpty {
+      try await restoreAndroidThemeProfiles(payload.themeProfiles)
+    }
+    if let value = payload.directLinkUploadRule {
+      try await restoreAndroidDirectLinkUploadRule(value)
+    }
+    return library
+  }
+
   func restoreAndroidSearchHistory(
     _ entries: [SearchHistoryEntry]
   ) async throws {}
@@ -286,54 +391,26 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
         webDAVImportPlan
       )
     }
-    let library = try await repository.restoreAndroidLibrary(libraryPlan)
+    let library = try await repository.restoreAndroidDatabaseDomains(
+      AndroidCoreDatabaseRestorePayload(
+        library: libraryPlan,
+        replacementRules: replacementRules,
+        readRecords: readRecords,
+        searchHistory: searchHistory,
+        ruleSubscriptions: ruleSubscriptions,
+        rssSources: rssSources,
+        rssStars: rssStars,
+        httpTextToSpeechEngines: httpTextToSpeechEngines,
+        localTextTOCRules: localTextTOCRules,
+        readerConfigBundle: readerConfigBundle,
+        dictionaryRules: dictionaryRules,
+        keyboardAssists: keyboardAssists,
+        themeProfiles: themeProfiles,
+        directLinkUploadRule: directLinkUploadRule
+      )
+    )
     if !bookSources.isEmpty {
       try await repository.restoreAndroidBookSources(bookSources)
-    }
-    if !replacementRules.isEmpty {
-      try await repository.restoreAndroidReplacementRules(replacementRules)
-    }
-    if !readRecords.isEmpty {
-      try await repository.restoreAndroidReadRecords(readRecords)
-    }
-    if !searchHistory.isEmpty {
-      try await repository.restoreAndroidSearchHistory(searchHistory)
-    }
-    if !ruleSubscriptions.isEmpty {
-      try await repository.restoreAndroidRuleSubscriptions(ruleSubscriptions)
-    }
-    if !rssSources.isEmpty || !rssStars.isEmpty {
-      try await repository.restoreAndroidRSS(
-        sources: rssSources,
-        stars: rssStars
-      )
-    }
-    if !httpTextToSpeechEngines.isEmpty {
-      try await repository.restoreAndroidHTTPTextToSpeechEngines(
-        httpTextToSpeechEngines
-      )
-    }
-    if !localTextTOCRules.isEmpty {
-      try await repository.restoreAndroidLocalTextTOCRules(localTextTOCRules)
-    }
-    if !readerConfigBundle.styles.isEmpty
-      || readerConfigBundle.sharedStyle != nil
-    {
-      try await repository.restoreAndroidReaderConfigBundle(readerConfigBundle)
-    }
-    if !dictionaryRules.isEmpty {
-      try await repository.restoreAndroidDictionaryRules(dictionaryRules)
-    }
-    if !keyboardAssists.isEmpty {
-      try await repository.restoreAndroidKeyboardAssists(keyboardAssists)
-    }
-    if !themeProfiles.isEmpty {
-      try await repository.restoreAndroidThemeProfiles(themeProfiles)
-    }
-    if let directLinkUploadRule {
-      try await repository.restoreAndroidDirectLinkUploadRule(
-        directLinkUploadRule
-      )
     }
     return AndroidCoreBackupRestoreSummary(
       bookCount: library.bookCount,

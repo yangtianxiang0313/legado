@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P92-ANDROID-BACKUP-DATABASE-ATOMICITY-001",
+  "status": "completed",
+  "mode": "critical_path_only",
+  "priority": 1,
+  "title": "P92 Android 备份数据库域原子恢复",
+  "objective": "把 Android backup.zip 中书架、分组、书签、替换规则、阅读记录、搜索历史、订阅、RSS、朗读、目录规则、阅读配置、词典、键盘辅助、主题和直链规则聚合为一个恢复载荷，并在 GRDB 中单事务提交；任一后置域失败时不得留下前置域数据。",
+  "validation_policy": "使用 SQLite 失败触发器在后置词典域注入真实写入失败，验证前置书架域回滚；同时运行核心恢复聚焦测试和一次 App 构建，不启动模拟器。",
+  "stages": [{
+    "id": "P92-S1",
+    "title": "数据库恢复载荷与单事务提交",
+    "selectors": [{
+      "id": "P92-S1-ATOMIC",
+      "claim_ids": [],
+      "task_ids": ["IOS-APP-NAVIGATION-ANDROID-BACKUP-DATABASE-ATOMICITY-001"]
+    }]
+  }],
+  "deliveries": [{
+    "target": "IOS-APP-NAVIGATION-ANDROID-BACKUP-DATABASE-ATOMICITY-001",
+    "title": "Android 备份全部 GRDB 域单事务恢复",
+    "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-02",
+    "fixture_id": "rl-android-backup-database-atomicity-001",
+    "package_path": "ios/Packages/LegadoKit",
+    "validation": "tests",
+    "test_filter": "AndroidCoreDatabaseRestoreAtomicityTests|AndroidCoreBackupRestoreTests",
+    "prerequisite_task_ids": ["IOS-APP-NAVIGATION-ANDROID-EMPTY-BACKUP-PASSWORD-002"],
+    "additional_allowed_paths": [
+      "ios/Apps/Legado/App/**",
+      "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+      "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+      "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**",
+      "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**"
+    ],
+    "source_anchors": [
+      {
+        "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+        "path": "app/src/main/java/io/legado/app/help/storage/Restore.kt",
+        "symbol_id": "kotlin://io.legado.app.help.storage.Restore/restore"
+      },
+      {
+        "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+        "path": "app/src/main/java/io/legado/app/data/AppDatabase.kt",
+        "symbol_id": "kotlin://io.legado.app.data.AppDatabase"
+      }
+    ]
+  }]
+}

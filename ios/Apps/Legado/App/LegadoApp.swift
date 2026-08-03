@@ -359,6 +359,12 @@ private struct AppAndroidCoreBackupRestoreRepository:
     let webDAVSettings: WebDAVConnectionSettingsStore
     let webDAVCredentials: KeychainWebDAVCredentialStore
 
+    func restoreAndroidDatabaseDomains(
+        _ payload: AndroidCoreDatabaseRestorePayload
+    ) async throws -> AndroidLibraryRestoreSummary {
+        try await repository.restoreAndroidDatabaseDomains(payload)
+    }
+
     func restoreAndroidLibrary(
         _ plan: AndroidLibraryRestorePlan
     ) async throws -> AndroidLibraryRestoreSummary {

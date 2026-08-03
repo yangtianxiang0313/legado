@@ -969,6 +969,127 @@ public actor GRDBBookShelfRepository:
     }
   }
 
+  public func restoreAndroidDatabaseDomains(
+    _ payload: AndroidCoreDatabaseRestorePayload
+  ) async throws -> AndroidLibraryRestoreSummary {
+    let encodedReaderStyles = try payload.readerConfigBundle.encodedStyles()
+    let encodedSharedReaderStyle = try payload.readerConfigBundle
+      .encodedSharedStyle()
+    return try await database.write { db in
+      for value in payload.library.books {
+        let groupMask = try Self.platformGroupMask(value.groupMask)
+        var record =
+          try BookRecord
+            .filter(Column("bookURL") == value.candidate.bookURL)
+            .fetchOne(db)
+          ?? BookRecord(
+            bookID: UUID().uuidString.lowercased(),
+            candidate: value.candidate,
+            membership: .member(groupID: groupMask),
+            orderValue: value.order,
+            chapterCount: value.chapterCount
+          )
+        record.apply(value.candidate)
+        record.inBookshelf = true
+        record.groupID = groupMask
+        record.orderValue = value.order
+        record.chapterCount = value.chapterCount
+        record.progressChapterIndex = value.progress.position.chapterIndex
+        record.progressCharacterOffset = value.progress.position.characterOffset
+        record.progressChapterTitle = value.progress.chapterTitle
+        record.progressUpdatedAt = value.progress.updatedAtMilliseconds
+        record.latestChapterTime = value.latestChapterTime
+        record.lastCheckTime = value.lastCheckTime
+        record.latestCheckCount = value.latestCheckCount
+        record.canUpdate = value.canUpdate
+        record.reversesTableOfContents = value.reversesTableOfContents
+        record.splitsLongChapters = value.splitsLongChapters
+        record.androidType = value.androidType
+        record.originOrder = value.originOrder
+        record.syncTime = value.syncTime
+        record.charset = value.charset
+        record.customTag = value.customTag
+        record.wordCount = value.wordCount
+        try record.save(db)
+      }
+      for value in payload.library.groups {
+        var record = AndroidLibraryGroupRecord(value: value)
+        try record.save(db)
+      }
+      for value in payload.library.bookmarks {
+        var record = AndroidLibraryBookmarkRecord(value: value)
+        try record.save(db)
+      }
+      for value in payload.replacementRules {
+        var record = ReaderReplacementRuleRecord(rule: value)
+        try record.save(db)
+      }
+      for value in payload.readRecords {
+        var record = ReadRecordRecord(value: value)
+        try record.save(db)
+      }
+      for value in payload.searchHistory {
+        var record = SearchHistoryRecord(value: value)
+        try record.save(db)
+      }
+      for value in payload.ruleSubscriptions {
+        var record = RuleSubscriptionRecord(value: value)
+        try record.save(db)
+      }
+      for value in payload.rssSources {
+        var record = try RSSSourceRecord(value: value)
+        try record.save(db)
+      }
+      for value in payload.rssStars {
+        var record = try RSSStarRecord(value: value)
+        try record.save(db)
+      }
+      for value in payload.httpTextToSpeechEngines {
+        var record = try HTTPTextToSpeechRecord(value: value)
+        try record.save(db)
+      }
+      for value in payload.localTextTOCRules {
+        var record = try LocalTextTOCRuleRecord(value: value)
+        try record.save(db)
+      }
+      if !payload.readerConfigBundle.styles.isEmpty {
+        var record = AndroidReaderConfigRecord(
+          key: "styles",
+          payload: encodedReaderStyles
+        )
+        try record.save(db)
+      }
+      if let encodedSharedReaderStyle {
+        var record = AndroidReaderConfigRecord(
+          key: "shared",
+          payload: encodedSharedReaderStyle
+        )
+        try record.save(db)
+      }
+      for value in payload.dictionaryRules {
+        var record = try DictionaryRuleRecord(value: value)
+        try record.save(db)
+      }
+      for value in payload.keyboardAssists {
+        var record = try KeyboardAssistRecord(value: value)
+        try record.save(db)
+      }
+      for value in payload.themeProfiles {
+        var record = try AppThemeProfileRecord(value: value)
+        try record.save(db)
+      }
+      if let value = payload.directLinkUploadRule {
+        var record = try DirectLinkUploadRuleRecord(value: value)
+        try record.save(db)
+      }
+      return AndroidLibraryRestoreSummary(
+        bookCount: payload.library.books.count,
+        groupCount: payload.library.groups.count,
+        bookmarkCount: payload.library.bookmarks.count
+      )
+    }
+  }
+
   public func restoredAndroidLibraryPlan() async throws
     -> AndroidLibraryRestorePlan
   {
