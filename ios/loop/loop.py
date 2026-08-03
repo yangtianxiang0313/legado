@@ -1969,6 +1969,23 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/Packages/LegadoKit/Sources/TestSupport/FixtureModel.swift",
             ],
         }
+    if target == "IOS-INTEGRATION-WEBDAV-REMOTE-BOOK-UPLOAD-001":
+        return {
+            "owner": "IntegrationKit",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-002",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-011",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            # The frontier candidate declares this slice's exact writable
+            # surface; keep the owner contract from broadening it.
+            "allowed_paths": [],
+        }
     raise LoopError(f"OWNER_NOT_MAPPED:{target}")
 
 
