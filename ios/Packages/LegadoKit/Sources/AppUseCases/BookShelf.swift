@@ -70,12 +70,46 @@ public struct ShelfBookCandidate: Equatable, Sendable {
 public enum AndroidWebDAVBookOrigin {
   public static let prefix = "webDav::"
 
+  public struct Value: Sendable, Equatable {
+    public let remoteURL: URL
+    public let serverID: Int64
+
+    public init(remoteURL: URL, serverID: Int64) {
+      self.remoteURL = remoteURL
+      self.serverID = serverID
+    }
+  }
+
   public static func encode(
     remoteURL: URL,
     serverID: Int64
   ) -> String {
     let attributes = "{\"serverID\":\(serverID)}"
     return prefix + remoteURL.absoluteString + "," + attributes
+  }
+
+  public static func decode(_ sourceID: String) -> Value? {
+    guard sourceID.hasPrefix(prefix) else { return nil }
+    let payload = String(sourceID.dropFirst(prefix.count))
+    guard
+      let delimiter = payload.range(of: ",{", options: .backwards),
+      let remoteURL = URL(
+        string: String(payload[..<delimiter.lowerBound])
+      ),
+      let data = String(payload[delimiter.upperBound...]).data(using: .utf8),
+      let decoded = try? JSONSerialization.jsonObject(
+        with: Data("{".utf8) + data
+      ),
+      let object = decoded as? [String: Any],
+      let number = object["serverID"] as? NSNumber
+    else {
+      return nil
+    }
+    return Value(remoteURL: remoteURL, serverID: number.int64Value)
+  }
+
+  public static func isLocalSource(_ sourceID: String) -> Bool {
+    sourceID == "local-file" || sourceID.hasPrefix(prefix)
   }
 
   public static func applying(
