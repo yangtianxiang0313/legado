@@ -136,7 +136,7 @@
     {
       "id": "rl-reader-cache-offline-queue-001",
       "path": "ios/harness/fixtures/runtime-lab/rl-reader-cache-offline-queue-001",
-      "sha256": "889b787b296b1ed9af6957f1ca792348b3efa5ce6e2247ac6c895fbd35362bc3"
+      "sha256": "a098fb2af0605921a594ade7d8b55649242bf070e5ec46b4b9b6a63e2c4e4fcb"
     },
     {
       "id": "rl-reader-progress-save-runtime-001",
