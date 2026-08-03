@@ -64,7 +64,13 @@
     "logical_origin": "http://sourcelab.test",
     "database_reset_per_case": true
   },
-  "limits": {"timeout_ms": 5000},
+  "limits": {
+    "timeout_ms": 5000,
+    "max_response_bytes": 1048576,
+    "max_request_body_bytes": 65536,
+    "max_requests": 16,
+    "max_concurrency": 2
+  },
   "provenance": {
     "kind": "synthetic",
     "source_refs": [

@@ -664,6 +664,15 @@ class SourceLabTests(unittest.TestCase):
         self.assertTrue(
             any("固定为本地 fixture" in error for error in errors)
         )
+        with source_lab.running_server(REPO_ROOT, scenario) as server:
+            target = (
+                f"http://127.0.0.1:{server.server_address[1]}"
+                "/dav/cloud-ahead-auto-applies/bookProgress/"
+                "SyncBook_SyncAuthor.json"
+            )
+            with urllib.request.urlopen(target, timeout=1) as response:
+                payload = json.loads(response.read())
+        self.assertEqual(2, payload["durChapterIndex"])
 
     def test_nested_business_answer_keys_are_rejected(self):
         value = {"arguments": {"nested_expected_result": {"name": "hard-coded"}}}

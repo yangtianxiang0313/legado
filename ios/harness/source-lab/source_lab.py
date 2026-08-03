@@ -897,7 +897,13 @@ class SourceLabRequestHandler(http.server.BaseHTTPRequestHandler):
 @contextlib.contextmanager
 def running_server(root: Path, scenario_id: str) -> Iterator[SourceLabHTTPServer]:
     directory, case, _ = load_scenario(root, scenario_id)
-    if case.get("kind") != "source_lab_scenario":
+    runtime_loopback = (
+        case.get("kind") == "android_runtime_scenario"
+        and isinstance(case.get("transport"), dict)
+        and case["transport"].get("mode") == "fixture_and_loopback"
+        and case["transport"].get("external_network") == "deny"
+    )
+    if case.get("kind") != "source_lab_scenario" and not runtime_loopback:
         raise SourceLabError(f"{scenario_id}: Android runtime scenario 禁止启动网站")
     server = SourceLabHTTPServer(("127.0.0.1", 0), directory, case)
     thread = threading.Thread(target=server.serve_forever, name=f"SourceLab-{scenario_id}")
