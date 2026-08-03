@@ -1053,6 +1053,14 @@ public actor GRDBBookShelfRepository:
     }
   }
 
+  public func deleteRSSStar(origin: String, link: String) async throws {
+    try await database.write { db in
+      _ = try RSSStarRecord
+        .filter(Column("origin") == origin && Column("link") == link)
+        .deleteAll(db)
+    }
+  }
+
   public func androidRSSSources() async throws -> [RSSSource] {
     try await rssSources()
   }

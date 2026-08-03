@@ -1413,6 +1413,7 @@ private struct RSSRootView: View {
     @Bindable var store: RSSStore
     @State private var articles = SearchEnvironment.makeRSSArticleSession()
     @State private var selectedSourceID: String?
+    @State private var selectedArticle: RSSArticleItem?
 
     var body: some View {
         List {
@@ -1468,11 +1469,12 @@ private struct RSSRootView: View {
                         }
                     }
                     ForEach(articles.articles) { article in
-                        if let url = URL(string: article.link), !article.link.isEmpty {
-                            Link(destination: url) { articleRow(article) }
-                        } else {
+                        Button {
+                            selectedArticle = article
+                        } label: {
                             articleRow(article)
                         }
+                        .buttonStyle(.plain)
                     }
                     if articles.isLoading {
                         HStack { Spacer(); ProgressView(); Spacer() }
@@ -1504,6 +1506,19 @@ private struct RSSRootView: View {
         }
         .navigationTitle("RSS")
         .task { await store.reload() }
+        .sheet(item: $selectedArticle) { article in
+            if let source = store.sources.first(where: {
+                $0.sourceURL == article.origin
+            }) {
+                NavigationStack {
+                    RSSReadView(
+                        source: source,
+                        article: article,
+                        store: store
+                    )
+                }
+            }
+        }
         .accessibilityIdentifier("screen.rss")
     }
 
@@ -1532,6 +1547,48 @@ private struct RSSRootView: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(3)
             }
+        }
+    }
+}
+
+private struct RSSReadView: View {
+    let source: RSSSource
+    let article: RSSArticleItem
+    @Bindable var store: RSSStore
+    @State private var session = SearchEnvironment.makeRSSReadSession()
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                Text(article.title).font(.title2.bold())
+                if session.isLoading {
+                    ProgressView()
+                } else if let content = session.content, !content.isEmpty {
+                    Text(content)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .textSelection(.enabled)
+                } else if let error = session.errorMessage {
+                    Text(error).foregroundStyle(.red)
+                } else if let url = URL(string: article.link) {
+                    Link("在网页中打开", destination: url)
+                }
+            }
+            .padding()
+        }
+        .navigationTitle(source.sourceName)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    Task { await store.toggleStar(article) }
+                } label: {
+                    Image(systemName: store.isStarred(article) ? "star.fill" : "star")
+                }
+                .accessibilityLabel(store.isStarred(article) ? "取消收藏" : "收藏")
+            }
+        }
+        .task(id: article.id) {
+            await session.load(source: source, article: article)
         }
     }
 }

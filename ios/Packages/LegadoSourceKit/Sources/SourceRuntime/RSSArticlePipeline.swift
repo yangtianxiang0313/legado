@@ -94,6 +94,70 @@ public enum RSSArticlePipelineError: Error, Equatable, Sendable {
   case malformedDefaultFeed
 }
 
+public struct RSSContentPipeline: Sendable {
+  private let definition: RSSRuntimeDefinition
+  private let responseSession: SourceStringResponseSession
+  private let htmlSelectorBackend: (any HTMLSelectorBackend)?
+
+  public init(
+    definition: RSSRuntimeDefinition,
+    transport: any HTTPTransport,
+    cookieStore: SourceCookieStore = SourceCookieStore(),
+    dynamicWebPagePort: (any SourceDynamicWebPagePort)? = nil,
+    htmlSelectorBackend: (any HTMLSelectorBackend)? = nil
+  ) {
+    self.definition = definition
+    responseSession = SourceStringResponseSession(
+      transport: transport,
+      cookieStore: cookieStore,
+      dynamicWebPagePort: dynamicWebPagePort
+    )
+    self.htmlSelectorBackend = htmlSelectorBackend
+  }
+
+  public func load(
+    articleURL: String,
+    ruleContent: String
+  ) async throws -> String {
+    let compilation = try SourceURLTemplateCompiler.compile(
+      SourceURLTemplateInput(
+        template: articleURL,
+        baseURL: definition.sourceURL
+      )
+    )
+    let optionHeaders = try compilation.plan.optionHeaders.isEmpty
+      ? compilation.plan.request.headers.fields.map {
+        try SourceHeaderField(name: $0.name, value: $0.value)
+      }
+      : compilation.plan.optionHeaders
+    let prepared = try SourceRequestPreparer.prepare(
+      request: compilation.plan.request,
+      inheritedHeaders: definition.sourceHeaders,
+      optionHeaders: optionHeaders,
+      persistentCookie: "",
+      enabledCookieJar: false,
+      retry: compilation.plan.retry
+    )
+    let plan = SourceRequestPlan(
+      request: prepared.constructedRequest,
+      body: compilation.plan.body,
+      formFields: compilation.plan.formFields,
+      optionHeaders: optionHeaders,
+      retry: compilation.plan.retry,
+      useWebView: compilation.plan.useWebView,
+      webJS: compilation.plan.webJS
+    )
+    let response = try await responseSession.load(
+      plan,
+      enabledCookieJar: definition.enabledCookieJar
+    )
+    return try SourceRuleConsumerEvaluator(
+      content: response.body,
+      htmlSelectorBackend: htmlSelectorBackend
+    ).getString(ruleContent)
+  }
+}
+
 public struct RSSArticlePipeline: Sendable {
   private let definition: RSSRuntimeDefinition
   private let responseSession: SourceStringResponseSession

@@ -159,6 +159,7 @@ public protocol RSSRepository: Sendable {
   func rssStars() async throws -> [RSSStar]
   func upsertRSSSource(_ source: RSSSource) async throws
   func upsertRSSStar(_ star: RSSStar) async throws
+  func deleteRSSStar(origin: String, link: String) async throws
 }
 
 @MainActor
@@ -185,6 +186,38 @@ public final class RSSStore {
       errorMessage = "无法读取 RSS 数据"
     }
   }
+
+  public func isStarred(_ article: RSSArticleItem) -> Bool {
+    stars.contains { $0.origin == article.origin && $0.link == article.link }
+  }
+
+  public func toggleStar(_ article: RSSArticleItem) async {
+    do {
+      if isStarred(article) {
+        try await repository.deleteRSSStar(
+          origin: article.origin,
+          link: article.link
+        )
+      } else {
+        try await repository.upsertRSSStar(
+          RSSStar(
+            origin: article.origin,
+            sort: article.sort,
+            title: article.title,
+            starTime: Int64(Date().timeIntervalSince1970 * 1_000),
+            link: article.link,
+            pubDate: article.pubDate,
+            description: article.description,
+            content: article.content,
+            image: article.image
+          )
+        )
+      }
+      await reload()
+    } catch {
+      errorMessage = "无法更新 RSS 收藏"
+    }
+  }
 }
 
 public struct RSSArticleItem: Identifiable, Equatable, Sendable {
@@ -197,6 +230,106 @@ public struct RSSArticleItem: Identifiable, Equatable, Sendable {
   public let description: String?
   public let content: String?
   public let image: String?
+
+  public init(
+    origin: String,
+    sort: String,
+    title: String,
+    link: String,
+    pubDate: String? = nil,
+    description: String? = nil,
+    content: String? = nil,
+    image: String? = nil
+  ) {
+    self.origin = origin
+    self.sort = sort
+    self.title = title
+    self.link = link
+    self.pubDate = pubDate
+    self.description = description
+    self.content = content
+    self.image = image
+  }
+}
+
+public protocol RSSContentLoading: Sendable {
+  func load(source: RSSSource, article: RSSArticleItem) async throws -> String?
+}
+
+public struct SourceRuntimeRSSContentLoader: RSSContentLoading, Sendable {
+  private let transport: any HTTPTransport
+  private let cookieStore: SourceCookieStore
+  private let dynamicWebPagePort: (any SourceDynamicWebPagePort)?
+  private let htmlSelectorBackend: (any HTMLSelectorBackend)?
+
+  public init(
+    transport: any HTTPTransport,
+    cookieStore: SourceCookieStore = SourceCookieStore(),
+    dynamicWebPagePort: (any SourceDynamicWebPagePort)? = nil,
+    htmlSelectorBackend: (any HTMLSelectorBackend)? = nil
+  ) {
+    self.transport = transport
+    self.cookieStore = cookieStore
+    self.dynamicWebPagePort = dynamicWebPagePort
+    self.htmlSelectorBackend = htmlSelectorBackend
+  }
+
+  public func load(
+    source: RSSSource,
+    article: RSSArticleItem
+  ) async throws -> String? {
+    if let description = article.description, !description.isEmpty {
+      return description
+    }
+    guard let ruleContent = source.ruleContent, !ruleContent.isEmpty else {
+      return nil
+    }
+    return try await RSSContentPipeline(
+      definition: RSSRuntimeDefinition(
+        sourceURL: source.sourceURL,
+        sourceHeaders: try sourceHeaders(source.header),
+        enabledCookieJar: source.enabledCookieJar ?? true
+      ),
+      transport: transport,
+      cookieStore: cookieStore,
+      dynamicWebPagePort: dynamicWebPagePort,
+      htmlSelectorBackend: htmlSelectorBackend
+    ).load(articleURL: article.link, ruleContent: ruleContent)
+  }
+
+  private func sourceHeaders(_ value: String?) throws -> [SourceHeaderField] {
+    guard let value, !value.isEmpty else { return [] }
+    let object = try JSONDecoder().decode(
+      [String: String].self,
+      from: Data(value.utf8)
+    )
+    return try object.sorted { $0.key < $1.key }.map {
+      try SourceHeaderField(name: $0.key, value: $0.value)
+    }
+  }
+}
+
+@MainActor
+@Observable
+public final class RSSReadSession {
+  public private(set) var content: String?
+  public private(set) var isLoading = false
+  public private(set) var errorMessage: String?
+  private let loader: any RSSContentLoading
+
+  public init(loader: any RSSContentLoading) { self.loader = loader }
+
+  public func load(source: RSSSource, article: RSSArticleItem) async {
+    isLoading = true
+    defer { isLoading = false }
+    do {
+      content = try await loader.load(source: source, article: article)
+      errorMessage = nil
+    } catch {
+      content = nil
+      errorMessage = "加载正文失败"
+    }
+  }
 }
 
 public struct RSSArticlePage: Equatable, Sendable {
