@@ -19,6 +19,7 @@ let package = Package(
                 "WebDAVFoundation",
                 "ArchiveZIPFoundation",
                 "AndroidBackupInterop",
+                "BackupInteropUseCases",
                 "SourceRuntimeComposition",
                 "SourceNetworkComposition",
             ]
@@ -33,6 +34,7 @@ let package = Package(
                 "WebDAVFoundation",
                 "ArchiveZIPFoundation",
                 "AndroidBackupInterop",
+                "BackupInteropUseCases",
                 "SourceRuntimeComposition",
                 "SourceScriptComposition",
                 "SourceNetworkComposition",
@@ -123,6 +125,15 @@ let package = Package(
                     name: "LegadoSourceFormatKit",
                     package: "LegadoSourceKit"
                 ),
+            ]
+        ),
+        .target(
+            name: "BackupInteropUseCases",
+            dependencies: [
+                .product(name: "LegadoCoreKit", package: "LegadoCoreKit"),
+                "AndroidBackupInterop",
+                "AppUseCases",
+                "LibraryDomain",
             ]
         ),
         .target(
@@ -241,6 +252,14 @@ let package = Package(
                     name: "LegadoSourceFormatKit",
                     package: "LegadoSourceKit"
                 ),
+            ]
+        ),
+        .testTarget(
+            name: "BackupInteropUseCasesTests",
+            dependencies: [
+                "AndroidBackupInterop",
+                "BackupInteropUseCases",
+                .product(name: "LegadoCoreKit", package: "LegadoCoreKit"),
             ]
         ),
     ],
