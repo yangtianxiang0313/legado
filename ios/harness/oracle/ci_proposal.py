@@ -570,6 +570,7 @@ def _fixture_entry(
         "android_runtime_scenario": "runtime-lab",
         "integration_lab_scenario": "integration-lab",
         "source_lab_scenario": "source-lab",
+        "real_source_scenario": "real-source",
     }.get(case.get("kind"))
     if fixture_root is None:
         raise CIProposalError("FIXTURE_KIND_INVALID")
