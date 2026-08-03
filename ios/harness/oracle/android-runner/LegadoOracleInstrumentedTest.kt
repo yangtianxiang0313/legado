@@ -201,7 +201,8 @@ class LegadoOracleInstrumentedTest {
             isAndroidRuntimeScenario &&
                 scenarioId in setOf(
                     "rl-reader-progress-webdav-conflict-runtime-001",
-                    "rl-reader-progress-webdav-ios-to-android-001"
+                    "rl-reader-progress-webdav-ios-to-android-001",
+                    "rl-reader-cache-offline-queue-001"
                 ) ->
                 requiredArgument("deviceOrigin").trimEnd('/')
             isAndroidRuntimeScenario -> "android-runtime://local"
@@ -241,11 +242,12 @@ class LegadoOracleInstrumentedTest {
         if (
             scenarioId in setOf(
                 "rl-reader-progress-webdav-conflict-runtime-001",
-                "rl-reader-progress-webdav-ios-to-android-001"
+                "rl-reader-progress-webdav-ios-to-android-001",
+                "rl-reader-cache-offline-queue-001"
             )
         ) {
             require(deviceOrigin.startsWith("http://127.0.0.1:")) {
-                "WebDAV progress runtime must use the run-scoped loopback origin"
+                "Loopback runtime must use the run-scoped device origin"
             }
         }
         if (isRealSourceScenario) {
