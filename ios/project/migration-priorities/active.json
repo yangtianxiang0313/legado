@@ -4,9 +4,9 @@
   "status": "active",
   "mode": "critical_path_only",
   "priority": 10,
-  "title": "P67 Android 双向备份互通",
-  "objective": "以真实 Android 归档和恢复结果建立双端备份兼容层，并按数据域持续交付。",
-  "validation_policy": "Android 真源只在格式/恢复语义变更时取证；iOS codec 运行聚焦结构化测试，用户可见的导入导出路径完成后再在一台 iPhone Simulator 验收。",
+  "title": "P67 Android 双端互通主线",
+  "objective": "先完成真实 Android 归档与恢复兼容，再按冻结源码和 Golden 持续补齐书源运行时等双端行为。",
+  "validation_policy": "Android 真源只在格式或行为语义变更时取证；iOS 运行聚焦结构化测试，完整用户可见路径形成后再做单台 iPhone Simulator 验收。",
   "stages": [
     {
       "id": "P67-S1",
@@ -209,6 +209,13 @@
       "title": "应用主题模板双端互通",
       "selectors": [
         {"id": "P67-S29-THEME-CONFIG", "claim_ids": [], "task_ids": ["IOS-APP-ANDROID-THEME-CONFIG-INTEROP-001"]}
+      ]
+    },
+    {
+      "id": "P67-S30",
+      "title": "启用独立 Kanna XPath 适配层",
+      "selectors": [
+        {"id": "P67-S30-KANNA-XPATH", "claim_ids": [], "task_ids": ["IOS-DEPENDENCY-KANNA-XPATH-001"]}
       ]
     }
   ],
@@ -955,6 +962,29 @@
         "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
         "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
         "ios/Apps/Legado/App/**",
+        "ios/loop/loop.py"
+      ]
+    },
+    {
+      "target": "IOS-DEPENDENCY-KANNA-XPATH-001",
+      "title": "启用 Kanna 6.1.0 与独立 XPathKanna 适配层",
+      "prerequisite_task_ids": ["IOS-APP-ANDROID-THEME-CONFIG-INTEROP-001"],
+      "requirement_ref": "REQ-IOS-SOURCE-RUNTIME-001@1#RC-01",
+      "fixture_id": "sl-source-rule-dom-selector-backends-001",
+      "validation": "tests",
+      "test_filter": "XPathKannaAdapterTests",
+      "source_anchors": [],
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoSourceKit/Package.swift",
+        "ios/Packages/LegadoSourceKit/Package.resolved",
+        "ios/Packages/LegadoSourceKit/Sources/XPathKanna/**",
+        "ios/Packages/LegadoSourceKit/Tests/XPathKannaTests/**",
+        "ios/harness/dependency-policy.json",
+        "ios/harness/architecture-rules.json",
+        "ios/project/dependency-proposals/**",
+        "ios/docs/dependencies.md",
+        "ios/docs/third-party-notices.md",
+        "ios/project/sbom/**",
         "ios/loop/loop.py"
       ]
     }
