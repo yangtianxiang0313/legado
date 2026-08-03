@@ -1205,6 +1205,20 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/Apps/Legado/App/**",
             ],
         }
+    if target == "IOS-APP-ANDROID-THEME-CONFIG-INTEROP-001":
+        return {
+            "owner": "AppUseCases",
+            "architecture_refs": ["ARCH-001", "ARCH-002", "ARCH-005", "ARCH-008", "ARCH-011", "ARCH-014", "ARCH-017", "ARCH-018"],
+            "allowed_paths": [
+                "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
+                "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+                "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+                "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+                "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+                "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+                "ios/Apps/Legado/App/**",
+            ],
+        }
     if target == "IOS-DEPENDENCY-SWIFTSOUP-HTML-001":
         return {
             "owner": "DependencyControl",
@@ -3782,6 +3796,20 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_id": "keyboard-assist-interop-tests",
             "test_filter": "KeyboardAssistInteropTests",
             "acceptance_id": "keyboard-assist-interop-acceptance",
+        }
+    if target == "IOS-APP-ANDROID-THEME-CONFIG-INTEROP-001":
+        delivery_contracts["AppUseCases"] = {
+            "goal": (
+                "按 Android ThemeConfig.Config、Backup 与 Restore 源码，无损往返 themeConfig.json 和 "
+                "backup.zip；iOS 展示导入模板并由用户显式选择明暗模式、主色与强调色。"
+            ),
+            "rule": (
+                "AndroidBackupInterop 保留完整模板 JSON；AppUseCases 声明主题模板仓储和 iOS 本地选择；"
+                "DatabaseGRDB 持久化模板，App 只转换颜色和投影 SwiftUI 外观；不得从 themeConfig.json 推断当前选中模板。"
+            ),
+            "test_id": "theme-config-interop-tests",
+            "test_filter": "ThemeConfigInteropTests",
+            "acceptance_id": "theme-config-interop-acceptance",
         }
     if (
         architecture["owner"] == "AppNavigation"
