@@ -714,7 +714,6 @@ private struct RootContentView: View {
                             .accessibilityIdentifier("state.settings.androidBackup.import")
                     }
                 }
-                .accessibilityIdentifier("section.settings.androidBackup")
 
                 VStack(alignment: .leading, spacing: 10) {
                     Text("根入口")
