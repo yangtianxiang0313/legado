@@ -969,7 +969,7 @@
       "target": "IOS-DEPENDENCY-KANNA-XPATH-001",
       "title": "启用 Kanna 6.1.0 与独立 XPathKanna 适配层",
       "prerequisite_task_ids": ["IOS-APP-ANDROID-THEME-CONFIG-INTEROP-001"],
-      "requirement_ref": "REQ-IOS-SOURCE-RUNTIME-001@1#RC-01",
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
       "fixture_id": "sl-source-rule-dom-selector-backends-001",
       "validation": "tests",
       "test_filter": "XPathKannaAdapterTests",
