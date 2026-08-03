@@ -63,6 +63,13 @@
       "selectors": [
         {"id": "P67-S8-LIBRARY-PERSISTENCE", "claim_ids": [], "task_ids": ["IOS-DATABASE-ANDROID-LIBRARY-RESTORE-001"]}
       ]
+    },
+    {
+      "id": "P67-S9",
+      "title": "用户可见 Android backup.zip 导入入口",
+      "selectors": [
+        {"id": "P67-S9-LIBRARY-IMPORT-UI", "claim_ids": [], "task_ids": ["IOS-APP-NAVIGATION-ANDROID-LIBRARY-IMPORT-001"]}
+      ]
     }
   ],
   "deliveries": [
@@ -262,6 +269,32 @@
         "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
         "ios/loop/loop.py"
       ]
+    },
+    {
+      "target": "IOS-APP-NAVIGATION-ANDROID-LIBRARY-IMPORT-001",
+      "title": "设置页导入 Android 用户书库备份",
+      "prerequisite_task_ids": [
+        "IOS-DATABASE-ANDROID-LIBRARY-RESTORE-001"
+      ],
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+      "fixture_id": "rl-integration-backup-ios-library-to-android-001",
+      "validation": "simulator",
+      "source_anchors": [
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/help/storage/Restore.kt","symbol_id":"kotlin://io.legado.app.help.storage.Restore/restore"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/ui/config/BackupConfigFragment.kt","symbol_id":"kotlin://io.legado.app.ui.config.BackupConfigFragment"}
+      ],
+      "additional_allowed_paths": [
+        "ios/Apps/Legado/App/**",
+        "ios/Apps/Legado/UITests/**",
+        "ios/Apps/Legado/project.yml",
+        "ios/Apps/Legado/Legado.xcodeproj/project.pbxproj",
+        "ios/loop/loop.py"
+      ],
+      "ui_contract": {
+        "goal": "在设置页提供 Android backup.zip 导入入口；选择归档后调用真实恢复用例、刷新书架，并显示书籍/分组/书签结构化计数或失败状态。",
+        "scenario_id": "ui-android-library-backup-import-v1",
+        "test_method": "testAndroidLibraryBackupImportEntry"
+      }
     }
   ]
 }

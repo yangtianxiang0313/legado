@@ -801,6 +801,24 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
             ],
         }
+    if target == "IOS-APP-NAVIGATION-ANDROID-LIBRARY-IMPORT-001":
+        return {
+            "owner": "AppNavigation",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/Apps/Legado/App/**",
+                "ios/Apps/Legado/UITests/**",
+                "ios/Apps/Legado/project.yml",
+                "ios/Apps/Legado/Legado.xcodeproj/project.pbxproj",
+            ],
+        }
     if target == "IOS-DEPENDENCY-SWIFTSOUP-HTML-001":
         return {
             "owner": "DependencyControl",
