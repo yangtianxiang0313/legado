@@ -30,6 +30,8 @@ targets:
     platform: iOS
     sources:
       - UITests
+      - path: ../../harness/fixtures/real-source/rs-wikisource-public-domain-001/source.json
+        buildPhase: resources
     dependencies:
       - target: LegadoApp
     settings:

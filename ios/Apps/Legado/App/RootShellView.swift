@@ -80,6 +80,15 @@ struct RootShellView: View {
             ) {
                 await sourceCatalog.reset()
             }
+            if
+                let rawSource = ProcessInfo.processInfo.environment[
+                    "LEGADO_SEED_SOURCE_JSON"
+                ],
+                let data = rawSource.data(using: .utf8),
+                let sources = try? SourceDefinitionImport.decode(data)
+            {
+                _ = await sourceCatalog.importSources(sources)
+            }
             if ProcessInfo.processInfo.arguments.contains(
                 "--reset-replacement-rules"
             ) {

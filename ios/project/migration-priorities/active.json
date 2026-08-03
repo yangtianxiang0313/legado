@@ -238,6 +238,13 @@
       "selectors": [
         {"id": "P67-S33-IOS-REAL-SOURCE-COMPARE", "claim_ids": [], "task_ids": ["IOS-SOURCE-REAL-WIKISOURCE-IOS-COMPARE-001"]}
       ]
+    },
+    {
+      "id": "P67-S34",
+      "title": "真实书源 iPhone 搜索到阅读主链路",
+      "selectors": [
+        {"id": "P67-S34-IOS-REAL-SOURCE-UI", "claim_ids": [], "task_ids": ["IOS-APP-REAL-WIKISOURCE-UI-FLOW-001"]}
+      ]
     }
   ],
   "deliveries": [
@@ -1101,6 +1108,33 @@
         "ios/harness/real-source/**",
         "ios/loop/loop.py"
       ]
+    },
+    {
+      "target": "IOS-APP-REAL-WIKISOURCE-UI-FLOW-001",
+      "title": "真实维基文库书源贯通 iPhone 搜索、详情、目录与阅读",
+      "prerequisite_task_ids": ["IOS-SOURCE-REAL-WIKISOURCE-IOS-COMPARE-001"],
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "fixture_id": "rs-wikisource-public-domain-001",
+      "validation": "simulator",
+      "source_anchors": [
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/ui/book/search/SearchActivity.kt","symbol_id":"kotlin://io.legado.app.ui.book.search.SearchActivity"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/ui/book/info/BookInfoActivity.kt","symbol_id":"kotlin://io.legado.app.ui.book.info.BookInfoActivity"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt","symbol_id":"kotlin://io.legado.app.ui.book.read.ReadBookActivity"}
+      ],
+      "additional_allowed_paths": [
+        "ios/Apps/Legado/App/**",
+        "ios/Apps/Legado/UITests/**",
+        "ios/Apps/Legado/project.yml",
+        "ios/Apps/Legado/Legado.xcodeproj/project.pbxproj",
+        "ios/harness/fixtures/real-source/rs-wikisource-public-domain-001/**",
+        "ios/project/migration-priorities/active.json",
+        "ios/loop/loop.py"
+      ],
+      "ui_contract": {
+        "goal": "在 iPhone Simulator 中导入同一真实书源，使用产品网络和 SourceRuntime 完成搜索《論語》、进入详情、加入书架、加载 23 章目录并打开《學而第一》正文；结构与 Android 主链路一致。",
+        "scenario_id": "ui-real-wikisource-main-flow-v1",
+        "test_method": "testRealWikisourceMainFlow"
+      }
     }
   ]
 }

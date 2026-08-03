@@ -872,6 +872,118 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testRealWikisourceMainFlow() throws {
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: ProcessInfo.processInfo.environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        let fixtureURL = try XCTUnwrap(
+            Bundle(for: Self.self).url(
+                forResource: "source",
+                withExtension: "json"
+            )
+        )
+        let sourceDefinition = try String(
+            contentsOf: fixtureURL,
+            encoding: .utf8
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+            "--reset-sources",
+        ]
+        app.launchEnvironment["LEGADO_LOCAL_SOURCE_DEMO"] = "0"
+        app.launchEnvironment["LEGADO_SEED_SOURCE_JSON"] = sourceDefinition
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        require("action.shelf.openSearch").tap()
+        require("screen.search.books")
+        let searchField = app.searchFields.firstMatch
+        XCTAssertTrue(searchField.waitForExistence(timeout: 8))
+        searchField.tap()
+        searchField.typeText("論語\n")
+
+        let result = app.staticTexts["論語"].firstMatch
+        XCTAssertTrue(
+            result.waitForExistence(timeout: 30),
+            "Real-source search did not return 論語"
+        )
+        result.tap()
+        require("screen.bookDetail")
+        XCTAssertEqual(
+            require("label.bookDetail.source").label,
+            "书源：RealSource 维基文库公版"
+        )
+
+        let add = requireButton("action.bookDetail.shelf.add")
+        add.tap()
+        XCTAssertTrue(
+            app.buttons["action.bookDetail.shelf.remove"]
+                .firstMatch.waitForExistence(timeout: 12)
+        )
+        let start = requireButton("action.bookDetail.startReading")
+        let startDeadline = Date().addingTimeInterval(30)
+        while !start.isEnabled && Date() < startDeadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+        }
+        XCTAssertTrue(start.isEnabled)
+        start.tap()
+
+        require("screen.chapterTOC", timeout: 30)
+        XCTAssertTrue(
+            require("action.chapter.select.0", timeout: 30)
+                .label.contains("序說")
+        )
+        let targetChapter = require("action.chapter.select.1")
+        XCTAssertTrue(targetChapter.label.contains("學而第一"))
+        targetChapter.tap()
+
+        require("screen.reader", timeout: 30)
+        XCTAssertEqual(
+            require("label.reader.chapterTitle", timeout: 30).label,
+            "論語/學而第一"
+        )
+        var content = require("text.reader.content", timeout: 30)
+        var found正文 = content.label.contains("學而時習之")
+        let pageProgress = require("label.reader.pageProgress")
+        let pageCount = Int(
+            pageProgress.label.split(separator: "/").last ?? "0"
+        ) ?? 0
+        XCTAssertGreaterThan(pageCount, 0)
+        for page in 2...max(2, min(pageCount, 30)) where !found正文 {
+            let nextPage = requireButton("action.reader.page.next")
+            guard nextPage.isEnabled else { break }
+            nextPage.tap()
+            waitForLabel(
+                "\(page)/\(pageCount)",
+                identifier: "label.reader.pageProgress",
+                timeout: 8
+            )
+            content = require("text.reader.content")
+            found正文 = content.label.contains("學而時習之")
+        }
+        XCTAssertTrue(found正文, content.label)
+        XCTAssertTrue(content.label.contains("子曰"), content.label)
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "scenario": "ui-real-wikisource-main-flow-v1",
+            "source": "RealSource 维基文库公版",
+            "book": "論語",
+            "chapter": "學而第一",
+            "route_trace": [
+                "search.books",
+                "book.detail",
+                "book.toc",
+                "reader",
+            ],
+        ])
+    }
+
     func testReaderInlineImageFlow() throws {
         let contract = try XCTUnwrap(
             SimulatorContract(environment: ProcessInfo.processInfo.environment)

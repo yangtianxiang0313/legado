@@ -56,6 +56,9 @@ struct ReaderPageTextView: UIViewRepresentable {
             )
         }
         view.attributedText = value
+        view.accessibilityLabel = text
+            .replacingOccurrences(of: "\u{fffc}", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
         view.accessibilityValue = attachments.isEmpty
             ? nil : "当前页含 \(attachments.count) 张插图"
     }

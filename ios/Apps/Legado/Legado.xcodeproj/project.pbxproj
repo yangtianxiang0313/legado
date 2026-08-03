@@ -17,6 +17,7 @@
 		81816E12EB45F89D6C820242 /* ManagedBookFileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F888FA69C591B5A9AC6E9D5B /* ManagedBookFileStore.swift */; };
 		8C9B2045210D4D12A72EDB80 /* BookDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F643378684698E56A60BB42 /* BookDetailView.swift */; };
 		9AEB7EA85E118BCDEF1BC722 /* RootShellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AA56687558EF2C28A2F526F /* RootShellView.swift */; };
+		C695E3558927C4FEB36D5037 /* source.json in Resources */ = {isa = PBXBuildFile; fileRef = 3686CB4663D9CA2D25774397 /* source.json */; };
 		D8AD017203A6DBD627D4F11B /* SourceCatalogEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C9B37DC68383564F773D013 /* SourceCatalogEnvironment.swift */; };
 		DACC0FDD44450CF8A823AC81 /* LegadoFullCompatKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8A799DD0032467FB0842EF83 /* LegadoFullCompatKit */; };
 		EE6ACF282E27D4D151647C16 /* ReaderContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF7E0504B02B52095E37595C /* ReaderContentView.swift */; };
@@ -43,6 +44,7 @@
 		1BF1DDFF0D03D90900CACB9C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		1C9DD517B1446521069518EC /* SourceManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceManagementView.swift; sourceTree = "<group>"; };
 		35F4A6E9B82AF44A887F2980 /* LegadoAppUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegadoAppUITests.swift; sourceTree = "<group>"; };
+		3686CB4663D9CA2D25774397 /* source.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = source.json; sourceTree = "<group>"; };
 		41F121F4FC3DD3B968A18419 /* LegadoApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = LegadoApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4B7A35C572707AC4073E55C1 /* ReaderImageFileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderImageFileStore.swift; sourceTree = "<group>"; };
 		6745EA056C92C63BE1082180 /* SourceLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceLoginView.swift; sourceTree = "<group>"; };
@@ -93,6 +95,7 @@
 			children = (
 				2A805717CBB3DE17E51458F1 /* App */,
 				3BD761BCFA0F9CC75BD6063C /* Packages */,
+				DA6CB44455DAAE7C30F8FBF1 /* rs-wikisource-public-domain-001 */,
 				34C9BFA67068D407FDAA7A51 /* UITests */,
 				7A9998A08F31415169D8903D /* Products */,
 			);
@@ -123,6 +126,15 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		DA6CB44455DAAE7C30F8FBF1 /* rs-wikisource-public-domain-001 */ = {
+			isa = PBXGroup;
+			children = (
+				3686CB4663D9CA2D25774397 /* source.json */,
+			);
+			name = "rs-wikisource-public-domain-001";
+			path = "../../harness/fixtures/real-source/rs-wikisource-public-domain-001";
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -150,6 +162,7 @@
 			buildConfigurationList = 54932E32C7F00847BA46EB0A /* Build configuration list for PBXNativeTarget "LegadoAppUITests" */;
 			buildPhases = (
 				4C052587CC9CC8EBF52FC0F7 /* Sources */,
+				9F3DCE561578DFDA2FBB3983 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -199,6 +212,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		9F3DCE561578DFDA2FBB3983 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C695E3558927C4FEB36D5037 /* source.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		4C052587CC9CC8EBF52FC0F7 /* Sources */ = {
