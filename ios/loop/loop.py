@@ -926,6 +926,27 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/Apps/Legado/App/**",
             ],
         }
+    if target == "IOS-READER-NATIVE-READ-RECORD-TRACKING-001":
+        return {
+            "owner": "ReaderCore",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/Packages/LegadoKit/Sources/ReaderCore/**",
+                "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+                "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+                "ios/Packages/LegadoKit/Tests/ReaderCoreTests/**",
+                "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+                "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+                "ios/Apps/Legado/App/**",
+            ],
+        }
     if target == "IOS-DEPENDENCY-SWIFTSOUP-HTML-001":
         return {
             "owner": "DependencyControl",
