@@ -618,6 +618,30 @@ def source_anchors_for_claims(
 
 
 def owner_contract(target: str) -> Mapping[str, Any]:
+    if target == "IOS-DEPENDENCY-ZIPFOUNDATION-ARCHIVE-001":
+        return {
+            "owner": "DependencyControl",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/Packages/LegadoKit/Package.swift",
+                "ios/Packages/LegadoKit/Package.resolved",
+                "ios/Packages/LegadoKit/Sources/ArchiveZIPFoundation/**",
+                "ios/Packages/LegadoKit/Tests/ArchiveZIPFoundationTests/**",
+                "ios/harness/dependency-policy.json",
+                "ios/harness/architecture-rules.json",
+                "ios/project/dependency-proposals/**",
+                "ios/docs/dependencies.md",
+                "ios/docs/third-party-notices.md",
+                "ios/project/sbom/**",
+            ],
+        }
     if target == "IOS-DEPENDENCY-SWIFTSOUP-HTML-001":
         return {
             "owner": "DependencyControl",

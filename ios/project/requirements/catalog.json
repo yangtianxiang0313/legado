@@ -50,6 +50,21 @@
       ]
     },
     {
+      "id": "REQ-IOS-ANDROID-BACKUP-INTEROP-001",
+      "revision": 1,
+      "status": "accepted",
+      "semantic_key": "integration.backup.android-bidirectional-interoperability",
+      "origin_kind": "ios_product_decision",
+      "readiness": "implementation_ready",
+      "path": "ios/project/requirements/accepted/REQ-IOS-ANDROID-BACKUP-INTEROP-001.json",
+      "record_sha256": "237c8c5b1163512a457792aa4fd58df3e9d21f0bf675d17faf114595ddc3d1fb",
+      "fact_selection_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "clauses": [
+        "RC-01",
+        "RC-02"
+      ]
+    },
+    {
       "id": "REQ-IOS-SOURCE-ROUNDTRIP-001",
       "revision": 1,
       "status": "accepted",

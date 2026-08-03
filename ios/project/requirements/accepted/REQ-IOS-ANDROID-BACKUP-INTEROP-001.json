@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "id": "REQ-IOS-ANDROID-BACKUP-INTEROP-001",
+  "revision": 1,
+  "status": "accepted",
+  "semantic_key": "integration.backup.android-bidirectional-interoperability",
+  "title": "Android 与 iOS 双向备份互通",
+  "origin": {
+    "kind": "ios_product_decision",
+    "baseline_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "fact_refs": [],
+    "decision_refs": ["ADR-0009"],
+    "admission": "project_owner_dual_platform_interoperability_priority"
+  },
+  "classification": {
+    "kind": "portable_parity_behavior",
+    "profiles": ["store_safe", "full_compat"],
+    "support_state": "active_untested",
+    "evidence_level": "L2"
+  },
+  "capability_refs": ["CAP-RUNTIME-PORTS", "CAP-CONFORMANCE"],
+  "clauses": [
+    {
+      "id": "RC-01",
+      "statement": "iOS 必须读取 Android 当前 backup*.zip/backup.zip 归档，并产出 Android 当前恢复路径可识别的 ZIP。归档成员集合、空成员省略、文件名、JSON 字段、AES/Base64 保护字段和逐域恢复合并语义以 Android 实际运行产物为准；不得将 iOS 私有 envelope 冒充为互通备份。",
+      "proof_kind": "android_oracle",
+      "required_checks": ["android-backup-archive-golden", "archive-codec-focused-tests", "package-contract"],
+      "source_lab_behaviors": ["backup_archive", "backup_restore"]
+    },
+    {
+      "id": "RC-02",
+      "statement": "对尚未实现映射的 Android 数据域，导入前必须结构化列出 supported、deferred、unsafe 或 malformed 结果；不得静默跳过、部分写入后伪报成功，且不直接读取 Android SQLite。",
+      "proof_kind": "architecture_decision",
+      "required_checks": ["archive-codec-focused-tests"],
+      "source_lab_behaviors": []
+    }
+  ],
+  "readiness": {
+    "state": "implementation_ready",
+    "blockers": [],
+    "next_action": "先从真实 Android 备份与恢复运行生成受保护 Golden；随后启用已批准 ZIPFoundation 并按数据域交付 codec。"
+  },
+  "supersedes": null
+}
