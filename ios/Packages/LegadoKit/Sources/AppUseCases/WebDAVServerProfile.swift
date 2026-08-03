@@ -3,6 +3,8 @@ import IntegrationKit
 import Observation
 
 public struct WebDAVServerProfile: Codable, Equatable, Sendable {
+  public static let androidDefaultID: Int64 = -1
+
   public let id: Int64
   public let name: String
   public let serverAddress: String
@@ -33,6 +35,40 @@ public struct WebDAVServerProfile: Codable, Equatable, Sendable {
       credentialReference: credentialReference
     )
   }
+
+  public var isAndroidDefault: Bool { id == Self.androidDefaultID }
+}
+
+public enum WebDAVDefaultServerBridge {
+  public static func profile(
+    settings: WebDAVConnectionSettings
+  ) -> WebDAVServerProfile? {
+    guard
+      let configuration = settings.connectionConfiguration,
+      let rootURL = configuration.rootURL
+    else { return nil }
+    let booksURL = rootURL.appendingPathComponent(
+      "books",
+      isDirectory: true
+    )
+    return WebDAVServerProfile(
+      id: WebDAVServerProfile.androidDefaultID,
+      name: "默认 WebDAV",
+      serverAddress: booksURL.absoluteString,
+      sortNumber: Int.min,
+      credentialReference: settings.credentialReference
+    )
+  }
+
+  public static func androidExportProfiles(
+    _ profiles: [WebDAVServerProfile]
+  ) -> [WebDAVServerProfile] {
+    profiles.filter { !$0.isAndroidDefault }
+  }
+
+  public static func androidExportSelectedID(_ id: Int64?) -> Int64? {
+    id == WebDAVServerProfile.androidDefaultID ? nil : id
+  }
 }
 
 public protocol WebDAVServerProfileRepository: Sendable {
@@ -42,11 +78,24 @@ public protocol WebDAVServerProfileRepository: Sendable {
     _ profiles: [WebDAVServerProfile],
     selectedID: Int64?
   ) async throws
+  func upsertWebDAVServerProfile(_ profile: WebDAVServerProfile) async throws
   func selectWebDAVServerProfile(id: Int64?) async throws
 }
 
 public extension WebDAVServerProfileRepository {
   func selectWebDAVServerProfile(id: Int64?) async throws {}
+
+  func upsertWebDAVServerProfile(
+    _ profile: WebDAVServerProfile
+  ) async throws {
+    var profiles = try await webDAVServerProfiles()
+    profiles.removeAll { $0.id == profile.id }
+    profiles.append(profile)
+    try await replaceWebDAVServerProfiles(
+      profiles,
+      selectedID: try await selectedWebDAVServerProfileID()
+    )
+  }
 }
 
 @MainActor

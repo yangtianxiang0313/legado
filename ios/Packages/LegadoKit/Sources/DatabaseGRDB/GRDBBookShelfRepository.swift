@@ -504,7 +504,9 @@ public actor GRDBBookShelfRepository:
     selectedID: Int64?
   ) async throws {
     try await database.write { db in
-      _ = try WebDAVServerProfileRecord.deleteAll(db)
+      _ = try WebDAVServerProfileRecord
+        .filter(Column("id") != WebDAVServerProfile.androidDefaultID)
+        .deleteAll(db)
       for profile in profiles {
         var record = WebDAVServerProfileRecord(value: profile)
         try record.insert(db)
@@ -518,6 +520,15 @@ public actor GRDBBookShelfRepository:
           arguments: [selectedID]
         )
       }
+    }
+  }
+
+  public func upsertWebDAVServerProfile(
+    _ profile: WebDAVServerProfile
+  ) async throws {
+    try await database.write { db in
+      var record = WebDAVServerProfileRecord(value: profile)
+      try record.save(db)
     }
   }
 
