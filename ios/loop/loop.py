@@ -1465,6 +1465,8 @@ def owner_contract(target: str) -> Mapping[str, Any]:
         }
     if target in {
         "IOS-INTEGRATION-WEBDAV-CONNECTION-FOUNDATION-001",
+        "IOS-INTEGRATION-WEBDAV-BACKUP-TRANSFER-001",
+        "IOS-BACKUP-WEBDAV-SYNC-USECASE-001",
         "IOS-INTEGRATION-WEBDAV-READER-PROGRESS-CODEC-001",
         "IOS-INTEGRATION-WEBDAV-READER-PROGRESS-UPLOAD-001",
     }:
@@ -3954,6 +3956,34 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_id": "ios-progress-android-read-tests",
             "test_filter": "IntegrationKitTests|WebDAVFoundationTests",
             "acceptance_id": "ios-progress-android-read-golden",
+        }
+    if target == "IOS-INTEGRATION-WEBDAV-BACKUP-TRANSFER-001":
+        delivery_contracts["IntegrationKit"] = {
+            "goal": (
+                "按冻结 Android AppWebDav 与既有 WebDAV Golden，实现 backup.zip "
+                "的列举、PUT 上传和 GET 下载端口及 Foundation 适配器。"
+            ),
+            "rule": (
+                "IntegrationKit 只定义不可变 Sendable 值与传输端口；URLSession、"
+                "认证和 DAV XML 留在 WebDAVFoundation，不重新解释备份内容。"
+            ),
+            "test_id": "webdav-backup-transfer-tests",
+            "test_filter": "IntegrationKitTests|WebDAVFoundationTests",
+            "acceptance_id": "webdav-backup-transfer-acceptance",
+        }
+    if target == "IOS-BACKUP-WEBDAV-SYNC-USECASE-001":
+        delivery_contracts["IntegrationKit"] = {
+            "goal": (
+                "把已经验证为 Android 兼容的 backup.zip 导出与恢复用例连接到 "
+                "WebDAV 传输端口，形成可独立测试的上传、列举和恢复编排。"
+            ),
+            "rule": (
+                "BackupInteropUseCases 负责编排，AndroidBackupInterop 负责格式，"
+                "WebDAVFoundation 负责 I/O；远端失败不得破坏本地数据库。"
+            ),
+            "test_id": "webdav-backup-sync-usecase-tests",
+            "test_filter": "BackupInteropUseCasesTests|WebDAVFoundationTests",
+            "acceptance_id": "webdav-backup-sync-usecase-acceptance",
         }
     if target == "IOS-INTEGRATION-ANDROID-BACKUP-REPLACERULE-INTEROP-001":
         delivery_contracts["IntegrationKit"] = {
