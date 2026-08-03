@@ -126,6 +126,13 @@
       "selectors": [
         {"id": "P67-S17-RULE-SUBSCRIPTION", "claim_ids": [], "task_ids": ["IOS-SOURCE-ANDROID-RULE-SUBSCRIPTION-INTEROP-001"]}
       ]
+    },
+    {
+      "id": "P67-S18",
+      "title": "RSS 数据双端互通与真实根页面",
+      "selectors": [
+        {"id": "P67-S18-RSS-DATA", "claim_ids": [], "task_ids": ["IOS-RSS-ANDROID-SOURCE-STAR-INTEROP-001"]}
+      ]
     }
   ],
   "deliveries": [
@@ -555,6 +562,32 @@
         {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/data/entities/RuleSub.kt","symbol_id":"kotlin://io.legado.app.data.entities.RuleSub"},
         {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/data/dao/RuleSubDao.kt","symbol_id":"kotlin://io.legado.app.data.dao.RuleSubDao"},
         {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/ui/rss/subscription/RuleSubActivity.kt","symbol_id":"kotlin://io.legado.app.ui.rss.subscription.RuleSubActivity"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/help/storage/Backup.kt","symbol_id":"kotlin://io.legado.app.help.storage.Backup/backup"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/help/storage/Restore.kt","symbol_id":"kotlin://io.legado.app.help.storage.Restore/restore"}
+      ],
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
+        "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+        "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+        "ios/Apps/Legado/App/**",
+        "ios/loop/loop.py"
+      ]
+    },
+    {
+      "target": "IOS-RSS-ANDROID-SOURCE-STAR-INTEROP-001",
+      "title": "Android RSS 源与收藏双端互通并驱动 iOS RSS 根页面",
+      "prerequisite_task_ids": [
+        "IOS-SOURCE-ANDROID-RULE-SUBSCRIPTION-INTEROP-001"
+      ],
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+      "fixture_id": "rl-integration-backup-ios-library-to-android-001",
+      "validation": "tests",
+      "test_filter": "RSSInteropTests",
+      "source_anchors": [
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/data/entities/RssSource.kt","symbol_id":"kotlin://io.legado.app.data.entities.RssSource"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/data/entities/RssStar.kt","symbol_id":"kotlin://io.legado.app.data.entities.RssStar"},
         {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/help/storage/Backup.kt","symbol_id":"kotlin://io.legado.app.help.storage.Backup/backup"},
         {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/help/storage/Restore.kt","symbol_id":"kotlin://io.legado.app.help.storage.Restore/restore"}
       ],

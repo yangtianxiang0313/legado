@@ -990,6 +990,26 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/Apps/Legado/App/**",
             ],
         }
+    if target == "IOS-RSS-ANDROID-SOURCE-STAR-INTEROP-001":
+        return {
+            "owner": "IntegrationKit",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
+                "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+                "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+                "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+                "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+                "ios/Apps/Legado/App/**",
+            ],
+        }
     if target == "IOS-DEPENDENCY-SWIFTSOUP-HTML-001":
         return {
             "owner": "DependencyControl",
@@ -3413,6 +3433,20 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_id": "rule-subscription-interop-tests",
             "test_filter": "RuleSubscriptionInteropTests",
             "acceptance_id": "rule-subscription-interop-acceptance",
+        }
+    if target == "IOS-RSS-ANDROID-SOURCE-STAR-INTEROP-001":
+        delivery_contracts["IntegrationKit"] = {
+            "goal": (
+                "按冻结 Android RssSource 主键和 RssStar(origin, link) 复合主键，"
+                "实现 rssSources.json、rssStar.json 双向互通并驱动 RSS 根页面。"
+            ),
+            "rule": (
+                "AndroidBackupInterop 保真格式；AppUseCases 拥有 RSS 领域值与仓储端口；"
+                "DatabaseGRDB 实现持久化；App 根页面只投影源与收藏，不在本切片伪造解析器。"
+            ),
+            "test_id": "rss-interop-tests",
+            "test_filter": "RSSInteropTests",
+            "acceptance_id": "rss-interop-acceptance",
         }
     if (
         architecture["owner"] == "AppNavigation"
