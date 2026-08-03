@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P82-WEBDAV-SHELF-PROGRESS-SYNC-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "priority": 1,
   "title": "P82 WebDAV 书架进度批量互通",
