@@ -32,6 +32,7 @@ struct LegadoApp: App {
     @State private var readAloudPreferences: ReadAloudPreferencesStore
     @State private var readingHistoryPreferences:
         ReadingHistoryPreferencesStore
+    @State private var searchScopePreferences: SearchScopePreferencesStore
     @State private var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
     @State private var dictionaryLookup: DictionaryLookupStore
     @State private var keyboardAssists: KeyboardAssistStore
@@ -167,12 +168,23 @@ struct LegadoApp: App {
             ReadingHistoryPreferencesStore(
                 repository: readingHistoryPreferencesRepository
             )
+        let searchScopePreferencesRepository =
+            UserDefaultsSearchScopePreferencesRepository()
+        if processArguments.contains("--reset-search-scope-preferences") {
+            searchScopePreferencesRepository.save(SearchScopePreferences())
+        }
+        let searchScopePreferencesStore = SearchScopePreferencesStore(
+            repository: searchScopePreferencesRepository
+        )
         _rootVisibility = State(initialValue: rootVisibilityStore)
         _readAloudPreferences = State(
             initialValue: readAloudPreferencesStore
         )
         _readingHistoryPreferences = State(
             initialValue: readingHistoryPreferencesStore
+        )
+        _searchScopePreferences = State(
+            initialValue: searchScopePreferencesStore
         )
         _router = State(
             initialValue: AppRouter(
@@ -196,6 +208,7 @@ struct LegadoApp: App {
                     readAloudPreferences: readAloudPreferencesStore,
                     readingHistoryPreferences:
                         readingHistoryPreferencesStore,
+                    searchScopePreferences: searchScopePreferencesStore,
                     webDAVSettings: webDAVSettingsStore,
                     webDAVCredentials: webDAVCredentials
                 )
@@ -334,6 +347,7 @@ struct LegadoApp: App {
                     readAloud: readAloud,
                     readAloudPreferences: readAloudPreferences,
                     readingHistoryPreferences: readingHistoryPreferences,
+                    searchScopePreferences: searchScopePreferences,
                     httpTextToSpeechEngines: httpTextToSpeechEngines,
                     dictionaryLookup: dictionaryLookup,
                     keyboardAssists: keyboardAssists,
@@ -366,6 +380,7 @@ struct LegadoApp: App {
                     readAloud: readAloud,
                     readAloudPreferences: readAloudPreferences,
                     readingHistoryPreferences: readingHistoryPreferences,
+                    searchScopePreferences: searchScopePreferences,
                     httpTextToSpeechEngines: httpTextToSpeechEngines,
                     dictionaryLookup: dictionaryLookup,
                     keyboardAssists: keyboardAssists,
@@ -415,6 +430,7 @@ private struct AppAndroidCoreBackupRestoreRepository:
     let rootVisibility: RootVisibilityPreferencesStore
     let readAloudPreferences: ReadAloudPreferencesStore
     let readingHistoryPreferences: ReadingHistoryPreferencesStore
+    let searchScopePreferences: SearchScopePreferencesStore
     let webDAVSettings: WebDAVConnectionSettingsStore
     let webDAVCredentials: KeychainWebDAVCredentialStore
 
@@ -448,6 +464,10 @@ private struct AppAndroidCoreBackupRestoreRepository:
                     try await restoreAndroidReadingHistoryPreferences(
                         preferences
                     )
+                }
+                if let preferences = payload.searchScopePreferences,
+                   preferences.isPresent {
+                    try await restoreAndroidSearchScopePreferences(preferences)
                 }
                 if !payload.bookSources.isEmpty {
                     try await sourceRepository.saveSources(
@@ -500,6 +520,9 @@ private struct AppAndroidCoreBackupRestoreRepository:
             readingHistoryPreferences: await MainActor.run {
                 readingHistoryPreferences.value
             },
+            searchScopePreferences: await MainActor.run {
+                searchScopePreferences.value
+            },
             webDAVSettings: settings,
             mainCredential: mainCredential,
             serverProfiles: serverProfiles,
@@ -523,6 +546,9 @@ private struct AppAndroidCoreBackupRestoreRepository:
             readAloudPreferences.replace(checkpoint.readAloudPreferences)
             readingHistoryPreferences.replace(
                 checkpoint.readingHistoryPreferences
+            )
+            searchScopePreferences.replace(
+                checkpoint.searchScopePreferences
             )
         }
 
@@ -743,6 +769,21 @@ private struct AppAndroidCoreBackupRestoreRepository:
         }
     }
 
+    func restoreAndroidSearchScopePreferences(
+        _ plan: AndroidSearchScopePreferencesImportPlan
+    ) async throws {
+        await MainActor.run {
+            var value = searchScopePreferences.value
+            if let serializedScope = plan.serializedScope {
+                value.serializedScope = serializedScope
+            }
+            if let changeSourceGroup = plan.changeSourceGroup {
+                value.changeSourceGroup = changeSourceGroup
+            }
+            searchScopePreferences.replace(value)
+        }
+    }
+
     func restoreAndroidWebDAVServerProfiles(
         _ plan: AndroidServerProfileImportPlan
     ) async throws {
@@ -760,6 +801,7 @@ private struct AppAndroidCoreRestoreCheckpoint: Sendable {
     let rootVisibility: RootVisibilityPreferences
     let readAloudPreferences: ReadAloudPreferences
     let readingHistoryPreferences: ReadingHistoryPreferences
+    let searchScopePreferences: SearchScopePreferences
     let webDAVSettings: WebDAVConnectionSettings
     let mainCredential: WebDAVBasicCredentials?
     let serverProfiles: [WebDAVServerProfile]
@@ -1112,6 +1154,10 @@ private actor UITestWebDAVBackupTransfer: WebDAVBackupTransferring {
                             .string("my"),
                         AndroidApplicationBackupPreferences.enableReadRecordKey:
                             .boolean(false),
+                        AndroidApplicationBackupPreferences.searchScopeKey:
+                            .string("科幻"),
+                        AndroidApplicationBackupPreferences.searchGroupKey:
+                            .string("科幻"),
                         AndroidApplicationBackupPreferences.ttsFollowSystemKey:
                             .boolean(false),
                         AndroidApplicationBackupPreferences.ttsSpeechRateKey:
@@ -1277,6 +1323,38 @@ private final class UserDefaultsReadingHistoryPreferencesRepository:
     }
 
     func save(_ preferences: ReadingHistoryPreferences) {
+        guard let data = try? JSONEncoder().encode(preferences) else {
+            return
+        }
+        defaults.set(data, forKey: key)
+    }
+}
+
+@MainActor
+private final class UserDefaultsSearchScopePreferencesRepository:
+    SearchScopePreferencesRepository
+{
+    private let defaults: UserDefaults
+    private let key = "search.scope.preferences.v1"
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+    }
+
+    func load() -> SearchScopePreferences {
+        guard
+            let data = defaults.data(forKey: key),
+            let value = try? JSONDecoder().decode(
+                SearchScopePreferences.self,
+                from: data
+            )
+        else {
+            return SearchScopePreferences()
+        }
+        return value
+    }
+
+    func save(_ preferences: SearchScopePreferences) {
         guard let data = try? JSONEncoder().encode(preferences) else {
             return
         }

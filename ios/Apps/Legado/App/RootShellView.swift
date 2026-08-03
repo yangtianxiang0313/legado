@@ -77,6 +77,7 @@ struct RootShellView: View {
     @Bindable var readAloud: ReadAloudSession
     @Bindable var readAloudPreferences: ReadAloudPreferencesStore
     @Bindable var readingHistoryPreferences: ReadingHistoryPreferencesStore
+    @Bindable var searchScopePreferences: SearchScopePreferencesStore
     @Bindable var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
     @Bindable var dictionaryLookup: DictionaryLookupStore
     @Bindable var keyboardAssists: KeyboardAssistStore
@@ -503,6 +504,7 @@ struct RootShellView: View {
                 bookshelfSort: await library.globalShelfSortMode(),
                 defaultHomePage: rootVisibility.value.defaultHomePage,
                 readingHistoryPreferences: readingHistoryPreferences.value,
+                searchScopePreferences: searchScopePreferences.value,
                 readAloudPreferences: readAloudPreferences.value
             ),
             webDAVConfiguration: primaryConfiguration,
@@ -635,6 +637,7 @@ struct RootShellView: View {
                 readerPreferences: readerPreferences,
                 readAloudPreferences: readAloudPreferences,
                 readingHistoryPreferences: readingHistoryPreferences,
+                searchScopePreferences: searchScopePreferences,
                 appThemeProfiles: appThemeProfiles,
                 rootVisibility: rootVisibility,
                 webDAVSettings: webDAVSettings,
@@ -675,7 +678,8 @@ struct RootShellView: View {
         case .searchBooks:
             SearchBooksView(
                 persistedSources: sourceCatalog.sources,
-                library: library
+                library: library,
+                scopePreferences: searchScopePreferences
             ) { result in
                 router.push(
                     .bookDetail(SearchBookRoute(result: result)),
@@ -900,6 +904,7 @@ struct RootShellView: View {
                 readAloud: readAloud,
                 readAloudPreferences: readAloudPreferences,
                 readingHistoryPreferences: readingHistoryPreferences,
+                searchScopePreferences: searchScopePreferences,
                 httpTextToSpeechEngines: httpTextToSpeechEngines,
                 dictionaryLookup: dictionaryLookup,
                 readerPreferences: readerPreferences,
@@ -1399,6 +1404,7 @@ private struct RootContentView: View {
     @Bindable var readerPreferences: ReaderPreferencesStore
     @Bindable var readAloudPreferences: ReadAloudPreferencesStore
     @Bindable var readingHistoryPreferences: ReadingHistoryPreferencesStore
+    @Bindable var searchScopePreferences: SearchScopePreferencesStore
     @Bindable var appThemeProfiles: AppThemeProfileStore
     @Bindable var rootVisibility: RootVisibilityPreferencesStore
     @Bindable var webDAVSettings: WebDAVConnectionSettingsStore
@@ -1974,6 +1980,8 @@ private struct RootContentView: View {
                                 rootVisibility.value.defaultHomePage,
                             readingHistoryPreferences:
                                 readingHistoryPreferences.value,
+                            searchScopePreferences:
+                                searchScopePreferences.value,
                             readAloudPreferences:
                                 readAloudPreferences.value
                         ),
@@ -2310,13 +2318,15 @@ private struct SearchBooksView: View {
     init(
         persistedSources: [BookSourceDraft],
         library: ShelfLibrary,
+        scopePreferences: SearchScopePreferencesStore,
         openBookDetail: @escaping (SearchResult) -> Void
     ) {
         self.openBookDetail = openBookDetail
         self.library = library
         _session = State(
             initialValue: SearchEnvironment.makeSession(
-                persistedSources: persistedSources
+                persistedSources: persistedSources,
+                scopePreferences: scopePreferences
             )
         )
     }
@@ -2855,6 +2865,7 @@ struct StartupAcceptanceView: View {
     @Bindable var readAloud: ReadAloudSession
     @Bindable var readAloudPreferences: ReadAloudPreferencesStore
     @Bindable var readingHistoryPreferences: ReadingHistoryPreferencesStore
+    @Bindable var searchScopePreferences: SearchScopePreferencesStore
     @Bindable var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
     @Bindable var dictionaryLookup: DictionaryLookupStore
     @Bindable var keyboardAssists: KeyboardAssistStore
@@ -2919,6 +2930,7 @@ struct StartupAcceptanceView: View {
                 readAloud: readAloud,
                 readAloudPreferences: readAloudPreferences,
                 readingHistoryPreferences: readingHistoryPreferences,
+                searchScopePreferences: searchScopePreferences,
                 httpTextToSpeechEngines: httpTextToSpeechEngines,
                 dictionaryLookup: dictionaryLookup,
                 keyboardAssists: keyboardAssists,

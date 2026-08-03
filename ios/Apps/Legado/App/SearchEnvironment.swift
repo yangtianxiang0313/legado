@@ -127,7 +127,8 @@ enum SearchEnvironment {
 
     static func makeSession(
         persistedSources: [BookSourceDraft] = [],
-        scope: SearchScopeSelection = .all
+        scope: SearchScopeSelection = .all,
+        scopePreferences: SearchScopePreferencesStore? = nil
     ) -> SearchSession {
         let externalBaseURL = ProcessInfo.processInfo.environment[
             "LEGADO_SEARCH_BASE_URL"
@@ -140,7 +141,17 @@ enum SearchEnvironment {
         )
         return SearchSession(
             scope: scope,
-            groups: Array(Set(sources.map(\.group))).sorted(),
+            groups: Array(
+                Set(
+                    sources.flatMap {
+                        $0.group.split(separator: ",").map {
+                            String($0).trimmingCharacters(
+                                in: .whitespacesAndNewlines
+                            )
+                        }
+                    }.filter { !$0.isEmpty }
+                )
+            ).sorted(),
             executor: SourceSearchBooksExecutor(
                 sources: sources,
                 transport: transport,
@@ -148,7 +159,8 @@ enum SearchEnvironment {
                 dynamicWebPagePort: dynamicWebPagePort,
                 scriptRuntime: scriptRuntime,
                 htmlSelectorBackend: htmlSelectorBackend
-            )
+            ),
+            scopePreferences: scopePreferences
         )
     }
 

@@ -13,6 +13,7 @@ struct ReaderContentView: View {
     @Bindable var readAloud: ReadAloudSession
     @Bindable var readAloudPreferences: ReadAloudPreferencesStore
     @Bindable var readingHistoryPreferences: ReadingHistoryPreferencesStore
+    @Bindable var searchScopePreferences: SearchScopePreferencesStore
     @Bindable var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
     @Bindable var dictionaryLookup: DictionaryLookupStore
     @Bindable var readerPreferences: ReaderPreferencesStore
@@ -64,6 +65,7 @@ struct ReaderContentView: View {
         readAloud: ReadAloudSession,
         readAloudPreferences: ReadAloudPreferencesStore,
         readingHistoryPreferences: ReadingHistoryPreferencesStore,
+        searchScopePreferences: SearchScopePreferencesStore,
         httpTextToSpeechEngines: HTTPTextToSpeechEngineStore,
         dictionaryLookup: DictionaryLookupStore,
         readerPreferences: ReaderPreferencesStore,
@@ -82,6 +84,7 @@ struct ReaderContentView: View {
         self.readAloud = readAloud
         self.readAloudPreferences = readAloudPreferences
         self.readingHistoryPreferences = readingHistoryPreferences
+        self.searchScopePreferences = searchScopePreferences
         self.httpTextToSpeechEngines = httpTextToSpeechEngines
         self.dictionaryLookup = dictionaryLookup
         self.readerPreferences = readerPreferences
@@ -1045,6 +1048,9 @@ struct ReaderContentView: View {
         persistedSources.filter {
             $0.sourceURL != sourceID
                 && ($0.importMetadata?.enabled ?? true)
+                && searchScopePreferences.value.includesChangeSource(
+                    group: $0.group
+                )
         }
     }
 

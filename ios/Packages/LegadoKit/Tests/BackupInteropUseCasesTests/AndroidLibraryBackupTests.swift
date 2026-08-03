@@ -79,6 +79,10 @@ struct AndroidLibraryBackupUseCaseTests {
         readingHistoryPreferences: ReadingHistoryPreferences(
           recordsReadingTime: false
         ),
+        searchScopePreferences: SearchScopePreferences(
+          serializedScope: "科幻",
+          changeSourceGroup: "科幻"
+        ),
         readAloudPreferences: ReadAloudPreferences(
           followsSystemRate: false,
           speechRatePreference: 15
@@ -142,6 +146,8 @@ struct AndroidLibraryBackupUseCaseTests {
     )
     #expect(sharedPreferences.defaultHomePage == "my")
     #expect(sharedPreferences.enablesReadRecord == false)
+    #expect(sharedPreferences.searchScope == "科幻")
+    #expect(sharedPreferences.searchGroup == "科幻")
     #expect(sharedPreferences.ttsFollowsSystemRate == false)
     #expect(sharedPreferences.ttsSpeechRate == 15)
   }

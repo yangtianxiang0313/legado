@@ -164,6 +164,8 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
   public static let bookshelfSortKey = "bookshelfSort"
   public static let defaultHomePageKey = "defaultHomePage"
   public static let enableReadRecordKey = "enableReadRecord"
+  public static let searchScopeKey = "searchScope"
+  public static let searchGroupKey = "searchGroup"
   public static let ttsFollowSystemKey = "ttsFollowSys"
   public static let ttsSpeechRateKey = "ttsSpeechRate"
 
@@ -172,6 +174,8 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
   public let bookshelfSort: Int64?
   public let defaultHomePage: String?
   public let enablesReadRecord: Bool?
+  public let searchScope: String?
+  public let searchGroup: String?
   public let ttsFollowsSystemRate: Bool?
   public let ttsSpeechRate: Int64?
 
@@ -181,6 +185,8 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
     bookshelfSort: Int64? = nil,
     defaultHomePage: String? = nil,
     enablesReadRecord: Bool? = nil,
+    searchScope: String? = nil,
+    searchGroup: String? = nil,
     ttsFollowsSystemRate: Bool? = nil,
     ttsSpeechRate: Int64? = nil
   ) {
@@ -189,6 +195,8 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
     self.bookshelfSort = bookshelfSort
     self.defaultHomePage = defaultHomePage
     self.enablesReadRecord = enablesReadRecord
+    self.searchScope = searchScope
+    self.searchGroup = searchGroup
     self.ttsFollowsSystemRate = ttsFollowsSystemRate
     self.ttsSpeechRate = ttsSpeechRate
   }
@@ -200,6 +208,8 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
       bookshelfSort: document.integer(Self.bookshelfSortKey),
       defaultHomePage: document.string(Self.defaultHomePageKey),
       enablesReadRecord: document.boolean(Self.enableReadRecordKey),
+      searchScope: document.string(Self.searchScopeKey),
+      searchGroup: document.string(Self.searchGroupKey),
       ttsFollowsSystemRate: document.boolean(Self.ttsFollowSystemKey),
       ttsSpeechRate: document.integer(Self.ttsSpeechRateKey)
     )
@@ -209,6 +219,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
     showsDiscovery != nil || showsRSS != nil || bookshelfSort != nil
       || defaultHomePage != nil
       || enablesReadRecord != nil
+      || searchScope != nil || searchGroup != nil
       || ttsFollowsSystemRate != nil || ttsSpeechRate != nil
   }
 }

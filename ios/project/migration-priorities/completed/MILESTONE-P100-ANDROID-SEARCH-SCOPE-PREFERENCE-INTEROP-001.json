@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P100-ANDROID-SEARCH-SCOPE-PREFERENCE-INTEROP-001",
+  "status": "completed",
+  "mode": "critical_path_only",
+  "priority": 1,
+  "title": "P100 Android 搜索范围双端互通",
+  "objective": "让 Android config.xml 的 searchScope/searchGroup 在 iOS 恢复后成为搜索页的初始范围，范围变更可跨启动保存，并按 Android 原始序列化规则回写备份。",
+  "validation_policy": "聚焦测试覆盖 Android 字符串投影、范围序列化、持久化和备份往返；最终只运行一条 iPhone Simulator 场景确认恢复后的科幻分组真实过滤搜索结果。",
+  "stages": [{
+    "id": "P100-S1",
+    "title": "搜索范围进入备份往返与搜索运行时",
+    "selectors": [{
+      "id": "P100-S1-SEARCH-SCOPE",
+      "claim_ids": [],
+      "task_ids": ["IOS-APP-NAVIGATION-ANDROID-SEARCH-SCOPE-PREFERENCE-INTEROP-001"]
+    }]
+  }],
+  "deliveries": [{
+    "target": "IOS-APP-NAVIGATION-ANDROID-SEARCH-SCOPE-PREFERENCE-INTEROP-001",
+    "title": "恢复、消费、持久化并回写 Android 搜索范围",
+    "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+    "fixture_id": "ui-android-search-scope-preference-restore-v1",
+    "validation": "simulator",
+    "prerequisite_task_ids": ["IOS-APP-NAVIGATION-ANDROID-READ-RECORD-PREFERENCE-INTEROP-001"],
+    "additional_allowed_paths": [
+      "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
+      "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+      "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+      "ios/Packages/LegadoKit/Tests/AndroidBackupInteropTests/**",
+      "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**",
+      "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+      "ios/Apps/Legado/App/**",
+      "ios/Apps/Legado/UITests/**"
+    ],
+    "ui_contract": {
+      "goal": "恢复 searchScope=科幻、searchGroup=科幻 的 Android backup.zip 后，iOS 搜索页默认使用科幻分组并真实排除其他分组结果。",
+      "scenario_id": "ui-android-search-scope-preference-restore-v1",
+      "test_method": "testRestoredAndroidSearchScopePreferenceFiltersIOSSearch"
+    },
+    "source_anchors": [
+      {
+        "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+        "path": "app/src/main/java/io/legado/app/help/config/AppConfig.kt",
+        "symbol_id": "kotlin://io.legado.app.help.config.AppConfig/searchScope"
+      },
+      {
+        "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+        "path": "app/src/main/java/io/legado/app/ui/book/search/SearchScope.kt",
+        "symbol_id": "kotlin://io.legado.app.ui.book.search.SearchScope/save"
+      },
+      {
+        "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+        "path": "app/src/main/java/io/legado/app/ui/book/search/SearchScope.kt",
+        "symbol_id": "kotlin://io.legado.app.ui.book.search.SearchScope/getBookSourceParts"
+      }
+    ]
+  }]
+}

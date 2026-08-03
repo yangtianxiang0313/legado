@@ -21,6 +21,8 @@ struct AndroidWebDAVConfigInteropTests {
         <int name="bookshelfSort" value="4" />
         <string name="defaultHomePage">my</string>
         <boolean name="enableReadRecord" value="false" />
+        <string name="searchScope">科幻,奇幻</string>
+        <string name="searchGroup"></string>
         <boolean name="ttsFollowSys" value="false" />
         <int name="ttsSpeechRate" value="15" />
         <int name="threadCount" value="8" />
@@ -48,6 +50,8 @@ struct AndroidWebDAVConfigInteropTests {
     #expect(application.bookshelfSort == 4)
     #expect(application.defaultHomePage == "my")
     #expect(application.enablesReadRecord == false)
+    #expect(application.searchScope == "科幻,奇幻")
+    #expect(application.searchGroup == "")
     #expect(application.ttsFollowsSystemRate == false)
     #expect(application.ttsSpeechRate == 15)
     #expect(document.values["onlyLatestBackup"] == .boolean(false))

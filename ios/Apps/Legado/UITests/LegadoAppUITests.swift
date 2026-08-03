@@ -569,6 +569,64 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testRestoredAndroidSearchScopePreferenceFiltersIOSSearch() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+            "--reset-search-scope-preferences",
+            "--reset-webdav-settings",
+            "--reset-webdav-backup-discovery",
+            "--webdav-test-double",
+            "--webdav-app-preferences-backup-test-double",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        let offer = app.alerts["发现新的云端备份"]
+        XCTAssertTrue(offer.waitForExistence(timeout: 15))
+        offer.buttons["恢复"].tap()
+        let completion = app.alerts["云端备份恢复完成"]
+        XCTAssertTrue(completion.waitForExistence(timeout: 15))
+        completion.buttons["好"].tap()
+
+        selectRoot("root.shelf", label: "书架")
+        require("action.shelf.openSearch").tap()
+        require("screen.search.books")
+        let searchField = app.searchFields.firstMatch
+        XCTAssertTrue(searchField.waitForExistence(timeout: 8))
+        searchField.tap()
+        searchField.typeText("星河\n")
+
+        XCTAssertTrue(
+            app.staticTexts["星河纪事"].firstMatch
+                .waitForExistence(timeout: 8)
+        )
+        XCTAssertTrue(app.staticTexts["星河之外"].firstMatch.exists)
+        XCTAssertFalse(app.staticTexts["奇幻星河"].firstMatch.exists)
+        XCTAssertTrue(
+            app.staticTexts["范围：科幻"].firstMatch
+                .waitForExistence(timeout: 8)
+        )
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "scenario_id": "ui-android-search-scope-preference-restore-v1",
+            "android_searchScope": "科幻",
+            "android_searchGroup": "科幻",
+            "ios_effective_scope": "科幻",
+            "included_results": ["星河纪事", "星河之外"],
+            "excluded_results": ["奇幻星河"],
+        ])
+    }
+
     func testRestoredAndroidDefaultHomePageDrivesNextColdStart() throws {
         let environment = ProcessInfo.processInfo.environment
         let contract = try XCTUnwrap(

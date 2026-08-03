@@ -79,7 +79,11 @@ public enum SearchScopeSelection: Equatable, Sendable {
     case .all:
       true
     case .groups(let groups):
-      groups.contains(source.group)
+      !Set(groups).isDisjoint(
+        with: source.group.split(separator: ",").map {
+          String($0).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+      )
     case .source(_, let identifier):
       identifier == source.id
     }
@@ -363,22 +367,29 @@ public final class SearchSession {
 
   private let groups: [String]
   private let executor: any SearchBooksExecuting
+  private let scopePreferences: SearchScopePreferencesStore?
   private var searchTask: Task<Void, Never>?
 
   public init(
     query: String = "",
     scope: SearchScopeSelection = .all,
     groups: [String],
-    executor: any SearchBooksExecuting
+    executor: any SearchBooksExecuting,
+    scopePreferences: SearchScopePreferencesStore? = nil
   ) {
     self.query = query
     self.groups = groups
     self.executor = executor
-    let menu = SearchScopeMenuState(scope: scope, groups: groups)
+    self.scopePreferences = scopePreferences
+    let requestedScope = scopePreferences?.value.scope ?? scope
+    let menu = SearchScopeMenuState(scope: requestedScope, groups: groups)
     self.scope = menu.scope
     self.results = []
     self.loadingState = .idle
     self.errorMessage = nil
+    if menu.scope != requestedScope {
+      scopePreferences?.setScope(menu.scope)
+    }
   }
 
   public var scopeMenu: SearchScopeMenuState {
@@ -387,14 +398,21 @@ public final class SearchSession {
 
   public func selectAllSources() {
     scope = .all
+    persistScope()
   }
 
   public func selectGroup(_ group: String) {
     scope = .groups([group])
+    persistScope()
   }
 
   public func removeScope(_ displayName: String) {
     scope.remove(displayName: displayName)
+    persistScope()
+  }
+
+  private func persistScope() {
+    scopePreferences?.setScope(scope)
   }
 
   public func search() {
