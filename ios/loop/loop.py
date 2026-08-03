@@ -1096,6 +1096,25 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
             ],
         }
+    if target == "IOS-READER-HTTP-TTS-PLAYBACK-001":
+        return {
+            "owner": "AppUseCases",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-002",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-011",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+                "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+                "ios/Apps/Legado/App/**",
+            ],
+        }
     if target == "IOS-DEPENDENCY-SWIFTSOUP-HTML-001":
         return {
             "owner": "DependencyControl",
@@ -3589,6 +3608,20 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_id": "http-tts-runtime-tests",
             "test_filter": "HTTPTextToSpeechRuntimeTests",
             "acceptance_id": "http-tts-runtime-acceptance",
+        }
+    if target == "IOS-READER-HTTP-TTS-PLAYBACK-001":
+        delivery_contracts["AppUseCases"] = {
+            "goal": (
+                "按 Android 系统 TTS/HTTP TTS 选择语义，把已导入在线引擎接入 iOS "
+                "ReadAloudSession，并支持顺序播放、暂停、继续、停止和跨章节。"
+            ),
+            "rule": (
+                "AppUseCases 管理引擎列表与持久选择；AVFoundation 适配只位于 App；"
+                "ReaderCore 分段和 ReadAloudSession 状态机保持平台无关。"
+            ),
+            "test_id": "http-tts-playback-tests",
+            "test_filter": "HTTPTextToSpeechPlaybackTests",
+            "acceptance_id": "http-tts-playback-acceptance",
         }
     if (
         architecture["owner"] == "AppNavigation"

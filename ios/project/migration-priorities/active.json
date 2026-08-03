@@ -161,6 +161,13 @@
       "selectors": [
         {"id": "P67-S22-HTTP-TTS-RUNTIME", "claim_ids": [], "task_ids": ["IOS-SOURCE-RUNTIME-HTTP-TTS-REQUEST-001"]}
       ]
+    },
+    {
+      "id": "P67-S23",
+      "title": "HTTP TTS 接入 iOS 朗读器",
+      "selectors": [
+        {"id": "P67-S23-HTTP-TTS-PLAYBACK", "claim_ids": [], "task_ids": ["IOS-READER-HTTP-TTS-PLAYBACK-001"]}
+      ]
     }
   ],
   "deliveries": [
@@ -726,6 +733,28 @@
         "ios/Packages/LegadoSourceKit/Tests/SourceRuntimeTests/**",
         "ios/Packages/LegadoKit/Sources/AppUseCases/**",
         "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+        "ios/loop/loop.py"
+      ]
+    },
+    {
+      "target": "IOS-READER-HTTP-TTS-PLAYBACK-001",
+      "title": "将 Android HTTP TTS 引擎接入 iOS 阅读器朗读",
+      "prerequisite_task_ids": [
+        "IOS-SOURCE-RUNTIME-HTTP-TTS-REQUEST-001"
+      ],
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+      "fixture_id": "rl-reader-http-tts-playback-001",
+      "validation": "tests",
+      "test_filter": "HTTPTextToSpeechPlaybackTests",
+      "source_anchors": [
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/model/ReadAloud.kt","symbol_id":"kotlin://io.legado.app.model.ReadAloud/getReadAloudClass"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/service/HttpReadAloudService.kt","symbol_id":"kotlin://io.legado.app.service.HttpReadAloudService"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/ui/book/read/config/ReadAloudConfigDialog.kt","symbol_id":"kotlin://io.legado.app.ui.book.read.config.ReadAloudConfigDialog"}
+      ],
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+        "ios/Apps/Legado/App/**",
         "ios/loop/loop.py"
       ]
     }
