@@ -90,3 +90,11 @@ private struct WebDAVConfigExportRepositoryStub:
     AndroidLibraryRestorePlan(books: [], groups: [], bookmarks: [])
   }
 }
+
+private extension WebDAVConfigExportRepositoryStub {
+  func localTextTOCRules() async throws -> [LocalTextTOCRule] { [] }
+  func androidReaderConfigBundle() async throws -> AndroidReaderConfigBundle? {
+    nil
+  }
+  func dictionaryRules() async throws -> [DictionaryRule] { [] }
+}

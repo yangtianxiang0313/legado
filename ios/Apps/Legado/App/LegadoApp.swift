@@ -402,6 +402,24 @@ private struct AppAndroidCoreBackupRestoreRepository:
         try await repository.restoreAndroidHTTPTextToSpeechEngines(values)
     }
 
+    func restoreAndroidLocalTextTOCRules(
+        _ values: [LocalTextTOCRule]
+    ) async throws {
+        try await repository.restoreAndroidLocalTextTOCRules(values)
+    }
+
+    func restoreAndroidReaderConfigBundle(
+        _ bundle: AndroidReaderConfigBundle
+    ) async throws {
+        try await repository.restoreAndroidReaderConfigBundle(bundle)
+    }
+
+    func restoreAndroidDictionaryRules(
+        _ values: [DictionaryRule]
+    ) async throws {
+        try await repository.restoreAndroidDictionaryRules(values)
+    }
+
     func restoreAndroidKeyboardAssists(
         _ values: [KeyboardAssist]
     ) async throws {
@@ -527,6 +545,20 @@ private struct AppAndroidLibraryBackupRepository:
         -> [HTTPTextToSpeechEngine]
     {
         try await repository.androidHTTPTextToSpeechEngines()
+    }
+
+    func localTextTOCRules() async throws -> [LocalTextTOCRule] {
+        try await repository.localTextTOCRules()
+    }
+
+    func androidReaderConfigBundle() async throws
+        -> AndroidReaderConfigBundle?
+    {
+        try await repository.androidReaderConfigBundle()
+    }
+
+    func dictionaryRules() async throws -> [DictionaryRule] {
+        try await repository.dictionaryRules()
     }
 
     func keyboardAssists() async throws -> [KeyboardAssist] {

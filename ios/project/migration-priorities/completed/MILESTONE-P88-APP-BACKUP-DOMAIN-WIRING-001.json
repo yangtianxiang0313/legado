@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P88-APP-BACKUP-DOMAIN-WIRING-001",
+  "status": "completed",
+  "mode": "critical_path_only",
+  "priority": 1,
+  "title": "P88 Android/iOS 备份域真实 App 接线",
+  "objective": "修复 txtTocRule.json、readConfig.json/readConfigShare.json 与 dictRule.json 虽在 Codec、UseCase、GRDB 中受支持，却被 App 组装层协议默认空实现静默丢弃的问题；导入 Android backup.zip 后必须真实落库，iOS 导出时必须真实回写这些成员。",
+  "validation_policy": "用聚焦 UseCase 测试证明三个域会被调用并进入归档；移除危险默认实现后用一次 iOS App build 证明生产组装显式接线。不启动模拟器。",
+  "stages": [
+    {
+      "id": "P88-S1",
+      "title": "禁止互通域静默空实现",
+      "selectors": [
+        {
+          "id": "P88-S1-CONTRACT",
+          "claim_ids": [],
+          "task_ids": ["IOS-APP-NAVIGATION-ANDROID-BACKUP-DOMAIN-STRICT-CONTRACT-001"]
+        }
+      ]
+    },
+    {
+      "id": "P88-S2",
+      "title": "生产 App 双向接线",
+      "selectors": [
+        {
+          "id": "P88-S2-APP-WIRING",
+          "claim_ids": [],
+          "task_ids": ["IOS-APP-NAVIGATION-BACKUP-DOMAIN-PRODUCTION-WIRING-001"]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-APP-NAVIGATION-ANDROID-BACKUP-DOMAIN-STRICT-CONTRACT-001",
+      "title": "收紧备份 Repository 合同并覆盖三域双向调用",
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+      "fixture_id": "rl-backup-domain-strict-contract-001",
+      "package_path": "ios/Packages/LegadoKit",
+      "validation": "tests",
+      "test_filter": "AndroidCoreBackupRestoreTests|AndroidLibraryBackupTests",
+      "prerequisite_task_ids": ["IOS-APP-NAVIGATION-DIRECT-LINK-UPLOAD-RULE-PERSISTENCE-001"],
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+        "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/help/storage/Backup.kt",
+          "symbol_id": "kotlin://io.legado.app.help.storage.Backup/backup"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/help/storage/Restore.kt",
+          "symbol_id": "kotlin://io.legado.app.help.storage.Restore/restore"
+        }
+      ]
+    },
+    {
+      "target": "IOS-APP-NAVIGATION-BACKUP-DOMAIN-PRODUCTION-WIRING-001",
+      "title": "把目录规则、阅读配置与词典规则接入真实 App 备份适配器",
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+      "fixture_id": "rl-backup-domain-production-wiring-001",
+      "package_path": "ios/Packages/LegadoKit",
+      "validation": "build",
+      "prerequisite_task_ids": ["IOS-APP-NAVIGATION-ANDROID-BACKUP-DOMAIN-STRICT-CONTRACT-001"],
+      "additional_allowed_paths": [
+        "ios/Apps/Legado/App/**",
+        "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+        "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/data/entities/TxtTocRule.kt",
+          "symbol_id": "kotlin://io.legado.app.data.entities.TxtTocRule"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/data/entities/Book.kt",
+          "symbol_id": "kotlin://io.legado.app.data.entities.Book.ReadConfig"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/data/entities/DictRule.kt",
+          "symbol_id": "kotlin://io.legado.app.data.entities.DictRule"
+        }
+      ]
+    }
+  ]
+}

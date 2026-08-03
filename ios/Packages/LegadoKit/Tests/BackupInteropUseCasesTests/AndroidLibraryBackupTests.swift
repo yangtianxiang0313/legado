@@ -18,6 +18,27 @@ struct AndroidLibraryBackupUseCaseTests {
           readTime: 7_200,
           lastRead: 1_700_000_000_987
         )
+      ],
+      tocRules: [
+        LocalTextTOCRule(
+          id: 7,
+          name: "卷章",
+          rule: "^卷.+$",
+          serialNumber: 1
+        )
+      ],
+      readerConfig: try AndroidReaderConfigBundle(
+        stylesData: Data(#"[{"name":"paper","textSize":18}]"#.utf8),
+        sharedStyleData: Data(
+          #"{"name":"shared","textSize":26,"lineSpacingExtra":12}"#.utf8
+        )
+      ),
+      dictionaryRules: [
+        DictionaryRule(
+          name: "词典",
+          urlRule: "https://dict.invalid/{{key}}",
+          sortNumber: 2
+        )
       ]
     )
     let useCase = AndroidLibraryBackupUseCase(repository: repository)
@@ -53,6 +74,18 @@ struct AndroidLibraryBackupUseCaseTests {
     let sources = try AndroidBackupArchive.readBookSources(from: archiveURL)
     let rules = try AndroidBackupArchive.readReplacementRules(from: archiveURL)
     let records = try AndroidBackupArchive.readReadRecords(from: archiveURL)
+    let tocRules = try AndroidBackupArchive.readLocalTextTOCRules(
+      from: archiveURL
+    )
+    let readerConfigs = try AndroidBackupArchive.readReaderConfigs(
+      from: archiveURL
+    )
+    let sharedReaderConfig = try AndroidBackupArchive.readSharedReaderConfig(
+      from: archiveURL
+    )
+    let dictionaryRules = try AndroidBackupArchive.readDictionaryRules(
+      from: archiveURL
+    )
 
     #expect(
       summary == AndroidLibraryBackupSummary(
@@ -61,7 +94,10 @@ struct AndroidLibraryBackupUseCaseTests {
         bookmarkCount: 1,
         bookSourceCount: 1,
         replacementRuleCount: 1,
-        readRecordCount: 1
+        readRecordCount: 1,
+        localTextTOCRuleCount: 1,
+        readerConfigCount: 2,
+        dictionaryRuleCount: 1
       )
     )
     #expect(restored == plan)
@@ -70,6 +106,10 @@ struct AndroidLibraryBackupUseCaseTests {
     #expect(rules.first?.order == .value(3))
     #expect(records.first?.restoreProjection.deviceID == "ios-device")
     #expect(records.first?.restoreProjection.readTime == 7_200)
+    #expect(tocRules.first?.string("name") == "卷章")
+    #expect(readerConfigs.first?.integer("textSize") == 18)
+    #expect(sharedReaderConfig?.integer("textSize") == 26)
+    #expect(dictionaryRules.first?.string("name") == "词典")
   }
 
   private func fixturePlan() -> AndroidLibraryRestorePlan {
@@ -142,10 +182,22 @@ struct AndroidLibraryBackupUseCaseTests {
 private actor BackupRepositoryStub: AndroidLibraryBackupRepository {
   let plan: AndroidLibraryRestorePlan
   let records: [ReadRecord]
+  let tocRules: [LocalTextTOCRule]
+  let readerConfig: AndroidReaderConfigBundle?
+  let storedDictionaryRules: [DictionaryRule]
 
-  init(plan: AndroidLibraryRestorePlan, records: [ReadRecord] = []) {
+  init(
+    plan: AndroidLibraryRestorePlan,
+    records: [ReadRecord] = [],
+    tocRules: [LocalTextTOCRule] = [],
+    readerConfig: AndroidReaderConfigBundle? = nil,
+    dictionaryRules: [DictionaryRule] = []
+  ) {
     self.plan = plan
     self.records = records
+    self.tocRules = tocRules
+    self.readerConfig = readerConfig
+    storedDictionaryRules = dictionaryRules
   }
 
   func androidLibraryBackupPlan() async throws -> AndroidLibraryRestorePlan {
@@ -154,5 +206,17 @@ private actor BackupRepositoryStub: AndroidLibraryBackupRepository {
 
   func androidReadRecords() async throws -> [ReadRecord] {
     records
+  }
+
+  func localTextTOCRules() async throws -> [LocalTextTOCRule] {
+    tocRules
+  }
+
+  func androidReaderConfigBundle() async throws -> AndroidReaderConfigBundle? {
+    readerConfig
+  }
+
+  func dictionaryRules() async throws -> [DictionaryRule] {
+    storedDictionaryRules
   }
 }

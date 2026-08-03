@@ -145,9 +145,6 @@ public extension AndroidLibraryBackupRepository {
   func androidRSSSources() async throws -> [RSSSource] { [] }
   func androidRSSStars() async throws -> [RSSStar] { [] }
   func androidHTTPTextToSpeechEngines() async throws -> [HTTPTextToSpeechEngine] { [] }
-  func localTextTOCRules() async throws -> [LocalTextTOCRule] { [] }
-  func androidReaderConfigBundle() async throws -> AndroidReaderConfigBundle? { nil }
-  func dictionaryRules() async throws -> [DictionaryRule] { [] }
   func keyboardAssists() async throws -> [KeyboardAssist] { [] }
   func appThemeProfiles() async throws -> [AppThemeProfile] { [] }
   func directLinkUploadRule() async throws -> DirectLinkUploadRule? { nil }

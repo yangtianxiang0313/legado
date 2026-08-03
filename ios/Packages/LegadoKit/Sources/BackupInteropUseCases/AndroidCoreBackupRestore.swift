@@ -149,14 +149,6 @@ public extension AndroidCoreBackupRestoreRepository {
     _ values: [HTTPTextToSpeechEngine]
   ) async throws {}
 
-  func restoreAndroidLocalTextTOCRules(
-    _ values: [LocalTextTOCRule]
-  ) async throws {}
-
-  func restoreAndroidReaderConfigBundle(
-    _ bundle: AndroidReaderConfigBundle
-  ) async throws {}
-  func restoreAndroidDictionaryRules(_ values: [DictionaryRule]) async throws {}
   func restoreAndroidKeyboardAssists(_ values: [KeyboardAssist]) async throws {}
   func restoreAndroidThemeProfiles(_ values: [AppThemeProfile]) async throws {}
   func restoreAndroidDirectLinkUploadRule(

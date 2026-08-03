@@ -24,6 +24,24 @@ struct AndroidCoreBackupRestoreUseCaseTests {
         )
       ).first
     )
+    let tocRule = try #require(
+      AndroidLocalTextTOCRuleCodec.decodeMany(
+        Data(#"[{"id":7,"name":"卷章","rule":"^卷.+$","serialNumber":1,"enable":true}]"#.utf8)
+      ).first
+    )
+    let readerStyle = try #require(
+      AndroidReaderConfigCodec.decodeList(
+        Data(#"[{"name":"paper","textSize":18}]"#.utf8)
+      ).first
+    )
+    let sharedReaderStyle = try AndroidReaderConfigCodec.decodeShared(
+      Data(#"{"name":"shared","textSize":26,"lineSpacingExtra":12}"#.utf8)
+    )
+    let dictionaryRule = try #require(
+      AndroidDictionaryRuleCodec.decodeMany(
+        Data(#"[{"name":"词典","urlRule":"https://dict.invalid/{{key}}","enabled":true,"sortNumber":2}]"#.utf8)
+      ).first
+    )
     try AndroidBackupArchive.write(
       AndroidBackupContents(
         bookSources: [source],
@@ -43,7 +61,11 @@ struct AndroidCoreBackupRestoreUseCaseTests {
             readTime: 3_600,
             lastRead: 1_700_000_000_789
           )
-        ]
+        ],
+        localTextTOCRules: [tocRule],
+        readerConfigs: [readerStyle],
+        sharedReaderConfig: sharedReaderStyle,
+        dictionaryRules: [dictionaryRule]
       ),
       to: archiveURL
     )
@@ -57,9 +79,14 @@ struct AndroidCoreBackupRestoreUseCaseTests {
     #expect(summary.bookSourceCount == 1)
     #expect(summary.replacementRuleCount == 1)
     #expect(summary.readRecordCount == 1)
-    #expect(summary.preflight.members.map(\.path) == [
-      "bookSource.json", "readRecord.json", "replaceRule.json",
-    ])
+    #expect(summary.localTextTOCRuleCount == 1)
+    #expect(summary.readerConfigCount == 2)
+    #expect(summary.dictionaryRuleCount == 1)
+    #expect(Set(summary.preflight.members.map(\.path)) == Set([
+      "bookSource.json", "dictRule.json", "readConfig.json",
+      "readRecord.json", "replaceRule.json", "shareReadConfig.json",
+      "txtTocRule.json",
+    ]))
     #expect(summary.preflight.members.allSatisfy {
       $0.disposition == .supported
     })
@@ -69,6 +96,9 @@ struct AndroidCoreBackupRestoreUseCaseTests {
     #expect(snapshot.rules.first?.order == 3)
     #expect(snapshot.records.first?.deviceID == "android-device")
     #expect(snapshot.records.first?.readTime == 3_600)
+    #expect(snapshot.tocRules.first?.name == "卷章")
+    #expect(snapshot.readerConfig?.projection?.fontSize == 26)
+    #expect(snapshot.dictionaryRules.first?.name == "词典")
   }
 
 }
@@ -77,6 +107,9 @@ private actor CoreRestoreRepositoryStub: AndroidCoreBackupRestoreRepository {
   private var sources: [BookSourceDraft] = []
   private var rules: [ReaderReplacementRule] = []
   private var records: [ReadRecord] = []
+  private var tocRules: [LocalTextTOCRule] = []
+  private var readerConfig: AndroidReaderConfigBundle?
+  private var dictionaryRules: [DictionaryRule] = []
 
   func restoreAndroidLibrary(
     _ plan: AndroidLibraryRestorePlan
@@ -102,11 +135,32 @@ private actor CoreRestoreRepositoryStub: AndroidCoreBackupRestoreRepository {
     self.records = records
   }
 
+  func restoreAndroidLocalTextTOCRules(
+    _ values: [LocalTextTOCRule]
+  ) async throws {
+    tocRules = values
+  }
+
+  func restoreAndroidReaderConfigBundle(
+    _ bundle: AndroidReaderConfigBundle
+  ) async throws {
+    readerConfig = bundle
+  }
+
+  func restoreAndroidDictionaryRules(
+    _ values: [DictionaryRule]
+  ) async throws {
+    dictionaryRules = values
+  }
+
   func snapshot() -> (
     sources: [BookSourceDraft],
     rules: [ReaderReplacementRule],
-    records: [ReadRecord]
+    records: [ReadRecord],
+    tocRules: [LocalTextTOCRule],
+    readerConfig: AndroidReaderConfigBundle?,
+    dictionaryRules: [DictionaryRule]
   ) {
-    (sources, rules, records)
+    (sources, rules, records, tocRules, readerConfig, dictionaryRules)
   }
 }

@@ -94,3 +94,20 @@ private actor DirectLinkRuleRepositoryStub:
     AndroidLibraryRestorePlan(books: [], groups: [], bookmarks: [])
   }
 }
+
+private extension DirectLinkRuleRepositoryStub {
+  func restoreAndroidLocalTextTOCRules(
+    _ values: [LocalTextTOCRule]
+  ) async throws {}
+  func restoreAndroidReaderConfigBundle(
+    _ bundle: AndroidReaderConfigBundle
+  ) async throws {}
+  func restoreAndroidDictionaryRules(
+    _ values: [DictionaryRule]
+  ) async throws {}
+  func localTextTOCRules() async throws -> [LocalTextTOCRule] { [] }
+  func androidReaderConfigBundle() async throws -> AndroidReaderConfigBundle? {
+    nil
+  }
+  func dictionaryRules() async throws -> [DictionaryRule] { [] }
+}

@@ -129,3 +129,15 @@ private actor WebDAVConfigRestoreRepositoryStub:
   func webDAVPlan() -> AndroidWebDAVConfigurationImportPlan? { plan }
   func libraryRestoreCount() -> Int { libraryRestores }
 }
+
+private extension WebDAVConfigRestoreRepositoryStub {
+  func restoreAndroidLocalTextTOCRules(
+    _ values: [LocalTextTOCRule]
+  ) async throws {}
+  func restoreAndroidReaderConfigBundle(
+    _ bundle: AndroidReaderConfigBundle
+  ) async throws {}
+  func restoreAndroidDictionaryRules(
+    _ values: [DictionaryRule]
+  ) async throws {}
+}

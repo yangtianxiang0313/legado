@@ -281,6 +281,14 @@ private struct EmptyProfileBackupRepository: AndroidLibraryBackupRepository {
   }
 }
 
+private extension EmptyProfileBackupRepository {
+  func localTextTOCRules() async throws -> [LocalTextTOCRule] { [] }
+  func androidReaderConfigBundle() async throws -> AndroidReaderConfigBundle? {
+    nil
+  }
+  func dictionaryRules() async throws -> [DictionaryRule] { [] }
+}
+
 private actor CoreProfileRestoreRepositoryStub:
   AndroidCoreBackupRestoreRepository
 {
@@ -311,4 +319,16 @@ private actor CoreProfileRestoreRepositoryStub:
   }
 
   func profilePlan() -> AndroidServerProfileImportPlan? { storedPlan }
+}
+
+private extension CoreProfileRestoreRepositoryStub {
+  func restoreAndroidLocalTextTOCRules(
+    _ values: [LocalTextTOCRule]
+  ) async throws {}
+  func restoreAndroidReaderConfigBundle(
+    _ bundle: AndroidReaderConfigBundle
+  ) async throws {}
+  func restoreAndroidDictionaryRules(
+    _ values: [DictionaryRule]
+  ) async throws {}
 }
