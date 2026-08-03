@@ -63,6 +63,24 @@ NOMINAL_CASES = {
     "chapter-second",
 }
 SCENARIO_CONTRACTS = {
+    "rs-wikisource-public-domain-001": {
+        "status": "candidate",
+        "fixture_kind": "real_source_scenario",
+        "device_origin": "https://zh.wikisource.org",
+        "result_type": "real_source_capture",
+        "expected_cases": (
+            ("real-search", "search"),
+            ("real-book-info", "book_info"),
+            ("real-toc", "chapters"),
+            ("real-content", "content"),
+        ),
+        "nominal_cases": frozenset({
+            "real-search",
+            "real-book-info",
+            "real-toc",
+            "real-content",
+        }),
+    },
     "sl-html-basic-001": {
         "status": "reference",
         "expected_cases": EXPECTED_CASES,
@@ -2223,6 +2241,7 @@ def fixture_root(
         "android_runtime_scenario": "runtime-lab",
         "integration_lab_scenario": "integration-lab",
         "source_lab_scenario": "source-lab",
+        "real_source_scenario": "real-source",
     }.get(fixture_kind)
     if fixture_root_name is None:
         raise AndroidOracleRunnerError("SCENARIO_KIND_DRIFT")
@@ -2308,6 +2327,14 @@ def repository_bindings(
         bindings["source_template_sha256"] = _file_sha(
             fixture_directory / "source.template.json"
         )
+    elif fixture_kind == "real_source_scenario":
+        source_path = fixture_directory / "source.json"
+        source = _read_json(source_path)
+        origin = source.get("bookSourceUrl")
+        if not isinstance(origin, str) or not origin.startswith("https://"):
+            raise AndroidOracleRunnerError("REAL_SOURCE_ORIGIN_INVALID")
+        bindings["source_sha256"] = _file_sha(source_path)
+        bindings["real_source_origin"] = origin.rstrip("/")
     return bindings
 
 
@@ -2335,12 +2362,15 @@ def normalize_raw_artifact(
     )
     runtime_scenario = fixture_kind == "android_runtime_scenario"
     integration_scenario = fixture_kind == "integration_lab_scenario"
+    real_source_scenario = fixture_kind == "real_source_scenario"
     structured_stimulus = runtime_scenario or integration_scenario
     expected_origin = (
         "android-runtime://local"
         if runtime_scenario
         else INTEGRATION_LOGICAL_ORIGIN
         if integration_scenario
+        else bindings["real_source_origin"]
+        if real_source_scenario
         else LOGICAL_ORIGIN
     )
     if (
@@ -2543,7 +2573,14 @@ def normalize_raw_artifact(
             request_url = request.get("url") if isinstance(request, dict) else None
             request_url_valid = (
                 isinstance(request_url, str)
-                and request_url.startswith(LOGICAL_ORIGIN + "/")
+                and request_url.startswith(
+                    (
+                        bindings["real_source_origin"]
+                        if real_source_scenario
+                        else LOGICAL_ORIGIN
+                    )
+                    + "/"
+                )
             )
             if (
                 scenario_id
@@ -2664,7 +2701,10 @@ def normalize_raw_artifact(
                 }
             )
     normalized_values = list(_recursive_strings(portable_cases))
-    if any(device_origin in value for value in normalized_values):
+    if (
+        not real_source_scenario
+        and any(device_origin in value for value in normalized_values)
+    ):
         raise AndroidOracleRunnerError("DEVICE_ORIGIN_LEAK")
     stages = []
     stage_names = tuple(
@@ -2724,6 +2764,10 @@ def normalize_raw_artifact(
     if fixture_kind == "source_lab_scenario":
         fixture_integrity["source_template_sha256"] = bindings[
             "source_template_sha256"
+        ]
+    elif fixture_kind == "real_source_scenario":
+        fixture_integrity["source_sha256"] = bindings[
+            "source_sha256"
         ]
     artifact = {
         "schema_version": 1,
@@ -3088,12 +3132,13 @@ def run_characterization(
         fixture_kind = bindings["fixture_kind"]
         runtime_scenario = fixture_kind == "android_runtime_scenario"
         integration_scenario = fixture_kind == "integration_lab_scenario"
+        real_source_scenario = fixture_kind == "real_source_scenario"
         integration_transport_mode = (
             _integration_lab_transport_mode(root, scenario_id)
             if integration_scenario
             else None
         )
-        if runtime_scenario:
+        if runtime_scenario or real_source_scenario:
             server_context = contextlib.nullcontext(None)
         elif (
             integration_scenario
@@ -3118,8 +3163,20 @@ def run_characterization(
                 if runtime_scenario
                 else INTEGRATION_LOGICAL_ORIGIN
                 if integration_scenario
+                else bindings["real_source_origin"]
+                if real_source_scenario
                 else LOGICAL_ORIGIN
             )
+            if real_source_scenario:
+                _, fixture_directory = fixture_root(
+                    root,
+                    scenario_id,
+                    contract,
+                )
+                source = _read_json(fixture_directory / "source.json")
+                source_base64 = base64.b64encode(
+                    _canonical(source)
+                ).decode("ascii")
             if server is not None:
                 reverse_port = int(server.server_address[1])
                 _run(

@@ -1,0 +1,42 @@
+{
+  "bookSourceUrl": "https://zh.wikisource.org",
+  "bookSourceName": "RealSource 维基文库公版",
+  "bookSourceGroup": "RealSource",
+  "bookSourceType": 0,
+  "enabled": true,
+  "enabledExplore": false,
+  "header": "{\"User-Agent\":\"Legado-iOS-Migration-Harness/1.0 (github.com/yangtianxiang0313/legado)\"}",
+  "searchUrl": "https://zh.wikisource.org/w/api.php?action=query&list=search&srsearch={{key}}&srnamespace=0&srlimit=5&format=json&formatversion=2",
+  "ruleSearch": {
+    "bookList": "$.query.search",
+    "name": "$.title",
+    "author": "",
+    "intro": "$.snippet##<[^>]+>##",
+    "kind": "",
+    "lastChapter": "",
+    "bookUrl": "$.title##^##https://zh.wikisource.org/wiki/",
+    "coverUrl": ""
+  },
+  "ruleBookInfo": {
+    "name": "@CSS:#firstHeading@text",
+    "author": "",
+    "intro": "@CSS:#mw-content-text .mw-parser-output > p@text",
+    "kind": "公版",
+    "lastChapter": "",
+    "coverUrl": "",
+    "tocUrl": "@CSS:link[rel=canonical]@href"
+  },
+  "ruleToc": {
+    "chapterList": "@CSS:a[title^=論語/]",
+    "chapterName": "@CSS:a@text",
+    "chapterUrl": "@CSS:a@href"
+  },
+  "ruleContent": {
+    "title": "@CSS:#firstHeading@text",
+    "content": "@CSS:#mw-content-text .mw-parser-output@html"
+  },
+  "x-real-source": {
+    "scenario": "rs-wikisource-public-domain-001",
+    "captureOnly": true
+  }
+}

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "logical_origin": "http://sourcelab.test",
-  "control_sha256": "0b9af2efafbfe4bc6d06de79405291bd4e638e0c36e2f89979341482778ee422",
+  "control_sha256": "d8c45a49f6544597cf043ae11b86826967342ed1223bde3e8a67434b1e2a8dfa",
   "scenarios": [
     {
       "id": "il-integration-backup-webdav-001",
@@ -218,6 +218,12 @@
       "status": "candidate",
       "path": "ios/harness/fixtures/runtime-lab/rl-ui-source-editor-debug-routes-001",
       "sha256": "004a19481a096564ed1e1258ad4eaf4ed4c4ed6cade4fc48e756b6a398485bee"
+    },
+    {
+      "id": "rs-wikisource-public-domain-001",
+      "status": "candidate",
+      "path": "ios/harness/fixtures/real-source/rs-wikisource-public-domain-001",
+      "sha256": "49831c6245cd97b1e83333810ff9e5b25b5b3ffb2f53ea1ce927a5009b7ff69c"
     },
     {
       "id": "sl-content-cache-queue-completion-runtime-001",

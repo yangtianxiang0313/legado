@@ -173,6 +173,7 @@ class LegadoOracleInstrumentedTest {
     private val scenarioId = requiredArgument("scenarioId")
     private val isAndroidRuntimeScenario = scenarioId.startsWith("rl-")
     private val isIntegrationLabScenario = scenarioId.startsWith("il-")
+    private val isRealSourceScenario = scenarioId.startsWith("rs-")
     private val isPlatformIntegrationScenario =
         scenarioId == "il-integration-system-text-to-speech-001"
     private val input = JSONObject(
@@ -207,7 +208,11 @@ class LegadoOracleInstrumentedTest {
 
     @Test
     fun runCharacterization() = runBlocking {
-        if (!isAndroidRuntimeScenario && !isIntegrationLabScenario) {
+        if (
+            !isAndroidRuntimeScenario &&
+            !isIntegrationLabScenario &&
+            !isRealSourceScenario
+        ) {
             require(deviceOrigin.startsWith("http://127.0.0.1:")) {
                 "Oracle source must use the run-scoped device loopback origin"
             }
@@ -226,8 +231,18 @@ class LegadoOracleInstrumentedTest {
                 }
             }
         }
+        if (isRealSourceScenario) {
+            require(deviceOrigin == "https://zh.wikisource.org") {
+                "Real-source capture origin is not allowlisted"
+            }
+            require(source.loginUrl.isNullOrBlank()) {
+                "Real-source capture must not use credentials"
+            }
+        }
 
         when (scenarioId) {
+            "rs-wikisource-public-domain-001" ->
+                runRealWikisourceCases()
             "il-integration-backup-webdav-001" ->
                 runWebDavIntegrationCases()
             "il-integration-remote-http-websocket-management-001" ->
@@ -440,6 +455,66 @@ class LegadoOracleInstrumentedTest {
             .put("cases", cases)
         val target = InstrumentationRegistry.getInstrumentation().targetContext
         File(target.filesDir, OUTPUT_FILE).writeText(raw.toString(), Charsets.UTF_8)
+    }
+
+    private suspend fun runRealWikisourceCases() {
+        val keyword = input.getString("keyword")
+        val selectedTitle = input.getString("book_title")
+        val selectedChapter = input.getString("chapter_title")
+        var searchBook: SearchBook? = null
+        var book: Book? = null
+        var chapters: List<BookChapter> = emptyList()
+
+        runCase("real-search", "search", searchRequest(keyword)) {
+            val values = WebBook.searchBookAwait(source, keyword)
+            searchBook = values.firstOrNull { it.name == selectedTitle }
+                ?: error("Selected public-domain work was not found")
+            searchProjection(values.take(5))
+        }
+        runCase(
+            "real-book-info",
+            "book_info",
+            request(searchBook?.bookUrl ?: source.bookSourceUrl)
+        ) {
+            val selected = requireNotNull(searchBook).toBook()
+            book = WebBook.getBookInfoAwait(source, selected)
+            bookProjection(requireNotNull(book))
+        }
+        runCase(
+            "real-toc",
+            "chapters",
+            request(book?.tocUrl ?: book?.bookUrl ?: source.bookSourceUrl)
+        ) {
+            chapters = WebBook.getChapterListAwait(
+                source,
+                requireNotNull(book)
+            ).getOrThrow()
+            chapterProjection(chapters.take(32))
+        }
+        runCase(
+            "real-content",
+            "content",
+            request(
+                chapters.firstOrNull { it.title == selectedChapter }
+                    ?.getAbsoluteURL()
+                    ?: source.bookSourceUrl
+            )
+        ) {
+            val chapter = chapters.firstOrNull {
+                it.title == selectedChapter
+            } ?: error("Selected public-domain chapter was not found")
+            val content = WebBook.getContentAwait(
+                source,
+                requireNotNull(book),
+                chapter,
+                needSave = false
+            )
+            JSONObject()
+                .put("chapter_title", chapter.title)
+                .put("chapter_url", logical(chapter.getAbsoluteURL()))
+                .put("content_characters", content.length)
+                .put("content_sample", content.take(240))
+        }
     }
 
     private suspend fun runWebDavIntegrationCases() {

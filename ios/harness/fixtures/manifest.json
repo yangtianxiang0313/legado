@@ -174,6 +174,11 @@
       "sha256": "a357b02730b066c783996068a883235b4f3caf7dd0e27973c631217aecf8f009"
     },
     {
+      "id": "rs-wikisource-public-domain-001",
+      "path": "ios/harness/fixtures/real-source/rs-wikisource-public-domain-001",
+      "sha256": "02e6e2b270dde9f0daaefcba9a7634bbe9de43a7969036f4f5161046300562a0"
+    },
+    {
       "id": "sl-content-cache-queue-completion-runtime-001",
       "path": "ios/harness/fixtures/source-lab/sl-content-cache-queue-completion-runtime-001",
       "sha256": "1172d2ca2d61315b604e338ac3e86cb9c7b6d3de0265c923e70da670d1414b98"

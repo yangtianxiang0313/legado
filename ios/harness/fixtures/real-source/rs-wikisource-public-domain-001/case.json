@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "kind": "real_source_scenario",
+  "id": "rs-wikisource-public-domain-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "real_source_capture",
+  "compatibility_profile": "android-legado-v1",
+  "source": "source.json",
+  "input": "input.json",
+  "transport": {
+    "mode": "external_capture_once",
+    "external_network": "capture_only",
+    "allowed_hosts": ["zh.wikisource.org"]
+  },
+  "retention": {
+    "content_policy": "public_domain",
+    "store_response_bodies": false,
+    "store_credentials": false,
+    "max_text_sample_characters": 240
+  },
+  "limits": {
+    "timeout_ms": 30000,
+    "max_requests": 8,
+    "max_search_results": 5,
+    "max_chapters": 32
+  },
+  "provenance": {
+    "kind": "real_source_capture",
+    "origin": "https://zh.wikisource.org",
+    "work": "論語",
+    "rights": "public_domain",
+    "rights_evidence": "https://zh.wikisource.org/wiki/論語"
+  }
+}

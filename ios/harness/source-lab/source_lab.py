@@ -28,13 +28,15 @@ SOURCE_PLACEHOLDER = "${SOURCE_LAB_ORIGIN}"
 SOURCE_FIXTURE_ROOT = Path("ios/harness/fixtures/source-lab")
 RUNTIME_FIXTURE_ROOT = Path("ios/harness/fixtures/runtime-lab")
 INTEGRATION_FIXTURE_ROOT = Path("ios/harness/fixtures/integration-lab")
+REAL_SOURCE_FIXTURE_ROOT = Path("ios/harness/fixtures/real-source")
 FIXTURE_ROOTS = (
     SOURCE_FIXTURE_ROOT,
     RUNTIME_FIXTURE_ROOT,
     INTEGRATION_FIXTURE_ROOT,
+    REAL_SOURCE_FIXTURE_ROOT,
 )
 CONTROL_ROOT = Path("ios/harness/source-lab")
-SCENARIO_ID = re.compile(r"^(?:sl|rl|il)-[a-z0-9-]+-[0-9]{3}$")
+SCENARIO_ID = re.compile(r"^(?:sl|rl|il|rs)-[a-z0-9-]+-[0-9]{3}$")
 FIXED_DATE = "Thu, 01 Jan 1970 00:00:00 GMT"
 ALLOWED_RESPONSE_HEADERS = {"content-type", "cache-control", "content-encoding", "location", "set-cookie"}
 class SourceLabError(RuntimeError):
@@ -323,6 +325,8 @@ def validate_coverage(
 
 
 def validate_scenario(root: Path, directory: Path, case: Dict[str, Any]) -> List[str]:
+    if case.get("kind") == "real_source_scenario":
+        return validate_real_source_scenario(directory, case)
     if case.get("kind") == "android_runtime_scenario":
         return validate_runtime_scenario(root, directory, case)
     if case.get("kind") == "integration_lab_scenario":
@@ -472,6 +476,97 @@ def validate_scenario(root: Path, directory: Path, case: Dict[str, Any]) -> List
     return errors
 
 
+def validate_real_source_scenario(
+    directory: Path,
+    case: Dict[str, Any],
+) -> List[str]:
+    errors: List[str] = []
+    scenario_id = case.get("id")
+    required = {
+        "schema_version", "kind", "id", "revision", "status",
+        "operation", "compatibility_profile", "source", "input",
+        "transport", "retention", "limits", "provenance",
+    }
+    if set(case) != required:
+        errors.append(f"{scenario_id}: real-source case 字段无效")
+    if (
+        scenario_id != directory.name
+        or not isinstance(scenario_id, str)
+        or not scenario_id.startswith("rs-")
+        or not SCENARIO_ID.fullmatch(scenario_id)
+        or case.get("schema_version") != 1
+        or case.get("kind") != "real_source_scenario"
+        or case.get("operation") != "real_source_capture"
+        or case.get("status") != "candidate"
+        or case.get("compatibility_profile") != "android-legado-v1"
+    ):
+        errors.append(f"{scenario_id}: real-source identity 无效")
+    try:
+        source = load_json(safe_child(directory, str(case.get("source", ""))))
+        inputs = load_json(safe_child(directory, str(case.get("input", ""))))
+    except SourceLabError as error:
+        errors.append(str(error))
+        return errors
+    if not isinstance(source, dict) or not isinstance(inputs, dict):
+        errors.append(f"{scenario_id}: source/input 必须是 object")
+        return errors
+    origin = source.get("bookSourceUrl")
+    transport = case.get("transport")
+    allowed_hosts = (
+        transport.get("allowed_hosts")
+        if isinstance(transport, dict)
+        else None
+    )
+    if (
+        not isinstance(origin, str)
+        or urllib.parse.urlsplit(origin).scheme != "https"
+        or not isinstance(allowed_hosts, list)
+        or allowed_hosts != [urllib.parse.urlsplit(origin).hostname]
+        or transport.get("mode") != "external_capture_once"
+        or transport.get("external_network") != "capture_only"
+    ):
+        errors.append(f"{scenario_id}: real-source transport/origin 无效")
+    external_hosts = {
+        urllib.parse.urlsplit(value).hostname
+        for value in recursive_strings(source)
+        if value.startswith(("http://", "https://"))
+    }
+    if external_hosts != set(allowed_hosts or []):
+        errors.append(f"{scenario_id}: source URL 超出 allowlist")
+    retention = case.get("retention")
+    if (
+        not isinstance(retention, dict)
+        or retention.get("content_policy") != "public_domain"
+        or retention.get("store_response_bodies") is not False
+        or retention.get("store_credentials") is not False
+        or not isinstance(
+            retention.get("max_text_sample_characters"), int
+        )
+        or not 1 <= retention["max_text_sample_characters"] <= 512
+    ):
+        errors.append(f"{scenario_id}: real-source retention 无效")
+    if any(
+        key in source
+        for key in ("loginUrl", "loginUi", "loginCheckJs", "jsLib")
+    ):
+        errors.append(f"{scenario_id}: 首个 real-source 禁止登录与远端脚本")
+    provenance = case.get("provenance")
+    if (
+        not isinstance(provenance, dict)
+        or provenance.get("kind") != "real_source_capture"
+        or provenance.get("origin") != origin
+        or provenance.get("rights") != "public_domain"
+        or not isinstance(provenance.get("rights_evidence"), str)
+    ):
+        errors.append(f"{scenario_id}: real-source provenance 无效")
+    if set(inputs) != {"keyword", "book_title", "chapter_title"} or any(
+        not isinstance(value, str) or not value.strip()
+        for value in inputs.values()
+    ):
+        errors.append(f"{scenario_id}: real-source input 无效")
+    return errors
+
+
 def coverage_policy(root: Path) -> Dict[str, Dict[str, Any]]:
     value = load_json(root / CONTROL_ROOT / "coverage-policy-v1.json")
     if not isinstance(value, dict) or not isinstance(value.get("behaviors"), list):
@@ -581,6 +676,7 @@ def doctor(root: Path) -> List[str]:
             if case.get("kind") in {
                 "android_runtime_scenario",
                 "integration_lab_scenario",
+                "real_source_scenario",
             }:
                 continue
             for entry in case.get("coverage", []):
