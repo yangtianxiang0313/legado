@@ -217,6 +217,13 @@
       "selectors": [
         {"id": "P67-S30-KANNA-XPATH", "claim_ids": [], "task_ids": ["IOS-DEPENDENCY-KANNA-XPATH-001"]}
       ]
+    },
+    {
+      "id": "P67-S31",
+      "title": "XPath 书源运行时产品接入",
+      "selectors": [
+        {"id": "P67-S31-XPATH-RUNTIME", "claim_ids": [], "task_ids": ["IOS-SOURCE-RUNTIME-KANNA-XPATH-PRODUCT-001"]}
+      ]
     }
   ],
   "deliveries": [
@@ -987,6 +994,30 @@
         "ios/docs/dependencies.md",
         "ios/docs/third-party-notices.md",
         "ios/project/sbom/**",
+        "ios/loop/loop.py"
+      ]
+    },
+    {
+      "target": "IOS-SOURCE-RUNTIME-KANNA-XPATH-PRODUCT-001",
+      "title": "Kanna XPath 接入搜索至正文统一书源运行时",
+      "prerequisite_task_ids": ["IOS-DEPENDENCY-KANNA-XPATH-001"],
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "fixture_id": "sl-source-rule-dom-selector-backends-001",
+      "validation": "tests",
+      "package_path": "ios/Packages/LegadoSourceKit",
+      "test_filter": "SourceXPathProductIntegrationTests",
+      "source_anchors": [
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeByXPath.kt","symbol_id":"kotlin://io.legado.app.model.analyzeRule.AnalyzeByXPath"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/model/analyzeRule/AnalyzeRule.kt","symbol_id":"kotlin://io.legado.app.model.analyzeRule.AnalyzeRule"}
+      ],
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoSourceKit/Sources/SourceRuntime/**",
+        "ios/Packages/LegadoSourceKit/Tests/SourceRuntimeTests/**",
+        "ios/Packages/LegadoKit/Package.swift",
+        "ios/Packages/LegadoKit/Sources/SourceRuntimeComposition/**",
+        "ios/Packages/LegadoKit/Tests/SourceRuntimeCompositionTests/**",
+        "ios/Apps/Legado/App/SearchEnvironment.swift",
+        "ios/harness/architecture-rules.json",
         "ios/loop/loop.py"
       ]
     }

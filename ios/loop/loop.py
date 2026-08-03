@@ -1237,6 +1237,20 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/project/sbom/**",
             ],
         }
+    if target == "IOS-SOURCE-RUNTIME-KANNA-XPATH-PRODUCT-001":
+        return {
+            "owner": "SourceRuntime",
+            "architecture_refs": ["ARCH-001", "ARCH-002", "ARCH-005", "ARCH-008", "ARCH-011", "ARCH-014", "ARCH-017", "ARCH-018"],
+            "allowed_paths": [
+                "ios/Packages/LegadoSourceKit/Sources/SourceRuntime/**",
+                "ios/Packages/LegadoSourceKit/Tests/SourceRuntimeTests/**",
+                "ios/Packages/LegadoKit/Package.swift",
+                "ios/Packages/LegadoKit/Sources/SourceRuntimeComposition/**",
+                "ios/Packages/LegadoKit/Tests/SourceRuntimeCompositionTests/**",
+                "ios/Apps/Legado/App/SearchEnvironment.swift",
+                "ios/harness/architecture-rules.json",
+            ],
+        }
     if target == "IOS-DEPENDENCY-SWIFTSOUP-HTML-001":
         return {
             "owner": "DependencyControl",
@@ -3828,6 +3842,20 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_id": "theme-config-interop-tests",
             "test_filter": "ThemeConfigInteropTests",
             "acceptance_id": "theme-config-interop-acceptance",
+        }
+    if target == "IOS-SOURCE-RUNTIME-KANNA-XPATH-PRODUCT-001":
+        delivery_contracts["SourceRuntime"] = {
+            "goal": (
+                "把 XPathSelectorBackend 接入统一规则消费者，使 @XPath: 与 // 前缀规则覆盖搜索、"
+                "发现、详情、目录和正文，并对齐已发布 Android XPath 字符串、列表、节点和失败语义。"
+            ),
+            "rule": (
+                "SourceRuntime 只依赖 RuleRuntime XPath 端口；SourceRuntimeComposition 组合 SwiftSoup 与 Kanna；"
+                "必须拒绝 Golden 已证明 Android 不支持的函数表达式，不能把 Kanna 的超集能力直接暴露。"
+            ),
+            "test_id": "source-xpath-product-integration-tests",
+            "test_filter": "SourceXPathProductIntegrationTests",
+            "acceptance_id": "source-xpath-product-integration-acceptance",
         }
     if (
         architecture["owner"] == "AppNavigation"
