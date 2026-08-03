@@ -50,6 +50,7 @@ struct RootShellView: View {
     let libraryBackup: AndroidLibraryBackupUseCase
     let webDAVBackupSync: WebDAVBackupSyncUseCase
     let webDAVServerProfiles: any WebDAVServerProfileRepository
+    let webDAVRemoteBooks: any WebDAVRemoteBookTransferring
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var didLoadLibrary = false
 
@@ -78,6 +79,32 @@ struct RootShellView: View {
                 "--reset-library"
             ) {
                 await library.reset()
+            }
+            if ProcessInfo.processInfo.arguments.contains(
+                "--seed-webdav-remote-book"
+            ) {
+                let reference = WebDAVCredentialReference(
+                    "webdav.server.7001"
+                )
+                try? await webDAVServerProfiles.replaceWebDAVServerProfiles(
+                    [
+                        WebDAVServerProfile(
+                            id: 7001,
+                            name: "测试书库",
+                            serverAddress: "https://dav.example.test/books",
+                            sortNumber: 0,
+                            credentialReference: reference
+                        )
+                    ],
+                    selectedID: 7001
+                )
+                try? await webDAVCredentials.save(
+                    WebDAVBasicCredentials(
+                        username: "reader",
+                        password: "secret"
+                    ),
+                    for: reference
+                )
             }
             if ProcessInfo.processInfo.arguments.contains(
                 "--reset-sources"
@@ -277,7 +304,8 @@ struct RootShellView: View {
                 },
                 libraryBackup: libraryBackup,
                 webDAVBackupSync: webDAVBackupSync,
-                webDAVServerProfiles: webDAVServerProfiles
+                webDAVServerProfiles: webDAVServerProfiles,
+                webDAVRemoteBooks: webDAVRemoteBooks
             )
             .navigationDestination(for: AppRoute.self) { route in
                 destination(for: route, on: root)
@@ -759,6 +787,7 @@ private struct RootContentView: View {
     let libraryBackup: AndroidLibraryBackupUseCase
     let webDAVBackupSync: WebDAVBackupSyncUseCase
     let webDAVServerProfiles: any WebDAVServerProfileRepository
+    let webDAVRemoteBooks: any WebDAVRemoteBookTransferring
     @State private var webDAVAccount = ProcessInfo.processInfo.arguments.contains(
         "--webdav-test-double"
     ) ? "reader" : ""
@@ -780,6 +809,8 @@ private struct RootContentView: View {
             ShelfManagementView(
                 library: library,
                 persistedSources: persistedSources,
+                webDAVServerProfiles: webDAVServerProfiles,
+                webDAVRemoteBooks: webDAVRemoteBooks,
                 openSearch: openSearch,
                 openBook: openBook
             )
@@ -2122,6 +2153,7 @@ struct StartupAcceptanceView: View {
     let libraryBackup: AndroidLibraryBackupUseCase
     let webDAVBackupSync: WebDAVBackupSyncUseCase
     let webDAVServerProfiles: any WebDAVServerProfileRepository
+    let webDAVRemoteBooks: any WebDAVRemoteBookTransferring
     let startupCase: StartupAcceptanceCase
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -2180,7 +2212,8 @@ struct StartupAcceptanceView: View {
                 backupRestore: backupRestore,
                 libraryBackup: libraryBackup,
                 webDAVBackupSync: webDAVBackupSync,
-                webDAVServerProfiles: webDAVServerProfiles
+                webDAVServerProfiles: webDAVServerProfiles,
+                webDAVRemoteBooks: webDAVRemoteBooks
             )
         }
     }

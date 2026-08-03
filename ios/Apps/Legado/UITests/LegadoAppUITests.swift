@@ -2223,6 +2223,54 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testWebDAVRemoteBookImportFlow() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+            "--seed-webdav-remote-book",
+            "--webdav-remote-book-test-double",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        require("screen.root.shelf")
+        requireButton("action.bookImport.open").tap()
+        requireButton("action.bookImport.webdav").tap()
+        require("screen.webdavRemoteBooks")
+        require("state.webdavRemoteBooks.server")
+
+        requireButton("action.webdavRemoteBooks.directory").tap()
+        XCTAssertTrue(
+            app.staticTexts["远程论语.txt"].waitForExistence(timeout: 8)
+        )
+        requireButton("action.webdavRemoteBooks.file").tap()
+
+        XCTAssertTrue(
+            app.staticTexts["远程论语"].waitForExistence(timeout: 12)
+        )
+        XCTAssertFalse(
+            app.otherElements["screen.webdavRemoteBooks"]
+                .waitForExistence(timeout: 1)
+        )
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "server": "测试书库",
+            "directory": "古典",
+            "downloaded_file": "远程论语.txt",
+            "imported_book": "远程论语",
+            "transport": "in_memory_webdav",
+        ])
+    }
+
     func testOfflineCacheMilestone() throws {
         let environment = ProcessInfo.processInfo.environment
         let contract = try XCTUnwrap(

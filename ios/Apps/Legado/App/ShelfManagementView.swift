@@ -1,4 +1,5 @@
 import AppUseCases
+import IntegrationKit
 import LibraryDomain
 import SwiftUI
 import UniformTypeIdentifiers
@@ -6,6 +7,8 @@ import UniformTypeIdentifiers
 struct ShelfManagementView: View {
     @Bindable var library: ShelfLibrary
     let persistedSources: [BookSourceDraft]
+    let webDAVServerProfiles: any WebDAVServerProfileRepository
+    let webDAVRemoteBooks: any WebDAVRemoteBookTransferring
     let openSearch: () -> Void
     let openBook: (ShelfBookItem) -> Void
 
@@ -14,6 +17,7 @@ struct ShelfManagementView: View {
     @State private var pendingDelete = false
     @State private var fileImporterPresented = false
     @State private var urlImporterPresented = false
+    @State private var webDAVImporterPresented = false
     @State private var importURL = ""
     @State private var importStatus: String?
 
@@ -137,6 +141,13 @@ struct ShelfManagementView: View {
             }
             Button("取消", role: .cancel) {}
         }
+        .sheet(isPresented: $webDAVImporterPresented) {
+            WebDAVRemoteBookImportView(
+                library: library,
+                repository: webDAVServerProfiles,
+                transfer: webDAVRemoteBooks
+            )
+        }
     }
 
     private var header: some View {
@@ -163,6 +174,14 @@ struct ShelfManagementView: View {
                     }
                     .accessibilityIdentifier(
                         "action.bookImport.url"
+                    )
+                    Button {
+                        webDAVImporterPresented = true
+                    } label: {
+                        Label("WebDAV 远程书", systemImage: "externaldrive")
+                    }
+                    .accessibilityIdentifier(
+                        "action.bookImport.webdav"
                     )
                 } label: {
                     Image(systemName: "plus")

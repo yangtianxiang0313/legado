@@ -36,6 +36,7 @@ struct LegadoApp: App {
     private let libraryBackup: AndroidLibraryBackupUseCase
     private let webDAVBackupSync: WebDAVBackupSyncUseCase
     private let webDAVServerProfiles: any WebDAVServerProfileRepository
+    private let webDAVRemoteBooks: any WebDAVRemoteBookTransferring
 
     init() {
         let processArguments = ProcessInfo.processInfo.arguments
@@ -43,6 +44,13 @@ struct LegadoApp: App {
             UserDefaultsRootVisibilityPreferencesRepository()
         let webDAVCredentials = KeychainWebDAVCredentialStore()
         self.webDAVCredentials = webDAVCredentials
+        self.webDAVRemoteBooks = processArguments.contains(
+            "--webdav-remote-book-test-double"
+        )
+            ? UITestWebDAVRemoteBookTransfer()
+            : WebDAVFoundationRemoteBookClient(
+                credentials: webDAVCredentials
+            )
         self.webDAVClient = ProcessInfo.processInfo.arguments.contains(
             "--webdav-test-double"
         )
@@ -266,6 +274,7 @@ struct LegadoApp: App {
                     libraryBackup: libraryBackup,
                     webDAVBackupSync: webDAVBackupSync,
                     webDAVServerProfiles: webDAVServerProfiles,
+                    webDAVRemoteBooks: webDAVRemoteBooks,
                     startupCase: startupCase
                 )
             } else {
@@ -292,7 +301,8 @@ struct LegadoApp: App {
                     backupRestore: backupRestore,
                     libraryBackup: libraryBackup,
                     webDAVBackupSync: webDAVBackupSync,
-                    webDAVServerProfiles: webDAVServerProfiles
+                    webDAVServerProfiles: webDAVServerProfiles,
+                    webDAVRemoteBooks: webDAVRemoteBooks
                 )
             }
         }
@@ -584,6 +594,58 @@ private struct UITestWebDAVProgressSaver: WebDAVBookProgressSaving {
         document: WebDAVBookProgressDocument
     ) async -> WebDAVBookProgressSaveResult {
         .saved
+    }
+}
+
+private struct UITestWebDAVRemoteBookTransfer:
+    WebDAVRemoteBookTransferring
+{
+    func listRemoteBooks(
+        configuration: WebDAVConnectionConfiguration,
+        directoryURL: URL?
+    ) async -> WebDAVRemoteBookListResult {
+        guard let rootURL = configuration.rootURL else {
+            return .failed(.invalidConfiguration)
+        }
+        if directoryURL == nil {
+            return .loaded([
+                WebDAVRemoteBookResource(
+                    name: "古典",
+                    url: rootURL.appendingPathComponent(
+                        "古典",
+                        isDirectory: true
+                    ),
+                    size: 0,
+                    lastModifiedMilliseconds: 0,
+                    isDirectory: true
+                )
+            ])
+        }
+        return .loaded([
+            WebDAVRemoteBookResource(
+                name: "远程论语.txt",
+                url: directoryURL!.appendingPathComponent(
+                    "远程论语.txt",
+                    isDirectory: false
+                ),
+                size: 72,
+                lastModifiedMilliseconds: 0,
+                isDirectory: false
+            )
+        ])
+    }
+
+    func downloadRemoteBook(
+        configuration: WebDAVConnectionConfiguration,
+        resource: WebDAVRemoteBookResource
+    ) async -> WebDAVRemoteBookDownloadResult {
+        .downloaded(
+            name: resource.name,
+            data: Data(
+                "第一章 学而\n学而时习之，不亦说乎。\n\n第二章 为政\n为政以德。"
+                    .utf8
+            )
+        )
     }
 }
 

@@ -502,6 +502,20 @@ public actor GRDBBookShelfRepository:
     }
   }
 
+  public func selectWebDAVServerProfile(id: Int64?) async throws {
+    try await database.write { db in
+      try db.execute(
+        sql: "DELETE FROM webDAVServerSelection WHERE singleton = 0"
+      )
+      if let id {
+        try db.execute(
+          sql: "INSERT INTO webDAVServerSelection (singleton, selectedID) VALUES (0, ?)",
+          arguments: [id]
+        )
+      }
+    }
+  }
+
   public func importLocalText(
     candidate: ShelfBookCandidate,
     chapters: [LocalTextChapter]

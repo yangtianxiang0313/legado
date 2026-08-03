@@ -1,5 +1,6 @@
 import Foundation
 import IntegrationKit
+import Observation
 
 public struct WebDAVServerProfile: Codable, Equatable, Sendable {
   public let id: Int64
@@ -41,4 +42,132 @@ public protocol WebDAVServerProfileRepository: Sendable {
     _ profiles: [WebDAVServerProfile],
     selectedID: Int64?
   ) async throws
+  func selectWebDAVServerProfile(id: Int64?) async throws
+}
+
+public extension WebDAVServerProfileRepository {
+  func selectWebDAVServerProfile(id: Int64?) async throws {}
+}
+
+@MainActor
+@Observable
+public final class WebDAVRemoteBookBrowserStore {
+  public private(set) var profiles: [WebDAVServerProfile] = []
+  public private(set) var selectedProfileID: Int64?
+  public private(set) var resources: [WebDAVRemoteBookResource] = []
+  public private(set) var directoryStack: [WebDAVRemoteBookResource] = []
+  public private(set) var isLoading = false
+  public private(set) var statusMessage: String?
+
+  private let repository: any WebDAVServerProfileRepository
+  private let transfer: any WebDAVRemoteBookTransferring
+
+  public init(
+    repository: any WebDAVServerProfileRepository,
+    transfer: any WebDAVRemoteBookTransferring
+  ) {
+    self.repository = repository
+    self.transfer = transfer
+  }
+
+  public var selectedProfile: WebDAVServerProfile? {
+    profiles.first { $0.id == selectedProfileID }
+  }
+
+  public var canNavigateBack: Bool { !directoryStack.isEmpty }
+
+  public func load() async {
+    do {
+      profiles = try await repository.webDAVServerProfiles()
+      let stored = try await repository.selectedWebDAVServerProfileID()
+      selectedProfileID = profiles.contains { $0.id == stored }
+        ? stored
+        : profiles.first?.id
+      guard selectedProfile != nil else {
+        resources = []
+        statusMessage = "没有可用的 WebDAV 服务器"
+        return
+      }
+      await loadDirectory(nil, resetStack: true)
+    } catch {
+      statusMessage = "无法读取 WebDAV 服务器配置"
+    }
+  }
+
+  public func selectProfile(id: Int64) async {
+    guard profiles.contains(where: { $0.id == id }) else { return }
+    do {
+      try await repository.selectWebDAVServerProfile(id: id)
+      selectedProfileID = id
+      await loadDirectory(nil, resetStack: true)
+    } catch {
+      statusMessage = "无法切换 WebDAV 服务器"
+    }
+  }
+
+  public func open(_ directory: WebDAVRemoteBookResource) async {
+    guard directory.isDirectory else { return }
+    await loadDirectory(directory, resetStack: false)
+  }
+
+  public func navigateBack() async {
+    guard !directoryStack.isEmpty else { return }
+    directoryStack.removeLast()
+    await loadCurrentDirectory()
+  }
+
+  public func download(
+    _ resource: WebDAVRemoteBookResource
+  ) async -> (name: String, data: Data)? {
+    guard
+      !resource.isDirectory,
+      let configuration = selectedProfile?.connectionConfiguration
+    else { return nil }
+    isLoading = true
+    defer { isLoading = false }
+    switch await transfer.downloadRemoteBook(
+      configuration: configuration,
+      resource: resource
+    ) {
+    case .downloaded(let name, let data):
+      statusMessage = nil
+      return (name, data)
+    case .failed:
+      statusMessage = "远程书下载失败"
+      return nil
+    }
+  }
+
+  private func loadDirectory(
+    _ directory: WebDAVRemoteBookResource?,
+    resetStack: Bool
+  ) async {
+    if resetStack {
+      directoryStack = []
+    } else if let directory {
+      directoryStack.append(directory)
+    }
+    await loadCurrentDirectory()
+  }
+
+  private func loadCurrentDirectory() async {
+    guard let configuration = selectedProfile?.connectionConfiguration else {
+      resources = []
+      statusMessage = "WebDAV 服务器地址无效"
+      return
+    }
+    isLoading = true
+    defer { isLoading = false }
+    switch await transfer.listRemoteBooks(
+      configuration: configuration,
+      directoryURL: directoryStack.last?.url
+    ) {
+    case .loaded(let values):
+      resources = values
+      statusMessage = values.isEmpty ? "当前目录没有可导入书籍" : nil
+    case .failed:
+      resources = []
+      statusMessage = "无法读取 WebDAV 目录"
+    }
+  }
 }

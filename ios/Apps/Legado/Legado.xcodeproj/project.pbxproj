@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		1A247BC9DA1F87E2A09B5044 /* ShelfManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1461305771304D0B5A9934B5 /* ShelfManagementView.swift */; };
+		261A3F991AB45FAFE8C369C9 /* WebDAVRemoteBookImportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00EAA0DCE058466B9090B40F /* WebDAVRemoteBookImportView.swift */; };
 		26C1753D9C50964A3EA59600 /* ChapterTOCView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 148BB4F7EFBC9D40BED6769D /* ChapterTOCView.swift */; };
 		4E0588B991A4FC81B896DF1E /* ReaderPageTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEFB0E99A597F60739406609 /* ReaderPageTextView.swift */; };
 		682ADA9807FEE6DA793B5B45 /* SourceManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C9DD517B1446521069518EC /* SourceManagementView.swift */; };
@@ -36,6 +37,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		00EAA0DCE058466B9090B40F /* WebDAVRemoteBookImportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebDAVRemoteBookImportView.swift; sourceTree = "<group>"; };
 		03D812586C316D23E78AB8E6 /* LegadoAppUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = LegadoAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0E3179602790AC70DE65BB59 /* SearchEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchEnvironment.swift; sourceTree = "<group>"; };
 		1461305771304D0B5A9934B5 /* ShelfManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShelfManagementView.swift; sourceTree = "<group>"; };
@@ -86,6 +88,7 @@
 				7C9B37DC68383564F773D013 /* SourceCatalogEnvironment.swift */,
 				6745EA056C92C63BE1082180 /* SourceLoginView.swift */,
 				1C9DD517B1446521069518EC /* SourceManagementView.swift */,
+				00EAA0DCE058466B9090B40F /* WebDAVRemoteBookImportView.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -250,6 +253,7 @@
 				D8AD017203A6DBD627D4F11B /* SourceCatalogEnvironment.swift in Sources */,
 				7156F98B0DD6A96BA68B2DD7 /* SourceLoginView.swift in Sources */,
 				682ADA9807FEE6DA793B5B45 /* SourceManagementView.swift in Sources */,
+				261A3F991AB45FAFE8C369C9 /* WebDAVRemoteBookImportView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
