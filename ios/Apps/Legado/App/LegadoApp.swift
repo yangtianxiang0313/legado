@@ -359,6 +359,141 @@ private struct AppAndroidCoreBackupRestoreRepository:
     let webDAVSettings: WebDAVConnectionSettingsStore
     let webDAVCredentials: KeychainWebDAVCredentialStore
 
+    func restoreAndroidCoreBackup(
+        _ payload: AndroidCoreBackupRestorePayload
+    ) async throws -> AndroidLibraryRestoreSummary {
+        try await AndroidCoreRestoreTransaction.execute(
+            capture: {
+                try await restoreCheckpoint()
+            },
+            applyExternal: {
+                if !payload.webDAVServerProfiles.entries.isEmpty
+                    || payload.webDAVServerProfiles.selectedID != nil
+                {
+                    try await restoreAndroidWebDAVServerProfiles(
+                        payload.webDAVServerProfiles
+                    )
+                }
+                if let configuration = payload.webDAVConfiguration {
+                    try await restoreAndroidWebDAVConfiguration(configuration)
+                }
+                if !payload.bookSources.isEmpty {
+                    try await sourceRepository.saveSources(
+                        payload.bookSources
+                    )
+                }
+            },
+            commitDatabase: {
+                try await repository.restoreAndroidDatabaseDomains(
+                    payload.database
+                )
+            },
+            rollbackExternal: { checkpoint in
+                try await rollback(
+                    checkpoint,
+                    importedPayload: payload
+                )
+            }
+        )
+    }
+
+    private func restoreCheckpoint() async throws
+        -> AppAndroidCoreRestoreCheckpoint
+    {
+        let settings = await MainActor.run { webDAVSettings.value }
+        let mainCredential = try? await webDAVCredentials.credentials(
+            for: settings.credentialReference
+        )
+        let serverProfiles = try await repository.webDAVServerProfiles()
+        let selectedServerID = try await repository
+            .selectedWebDAVServerProfileID()
+        var serverCredentials: [
+            WebDAVCredentialReference: WebDAVBasicCredentials
+        ] = [:]
+        for profile in serverProfiles {
+            if let credential = try? await webDAVCredentials.credentials(
+                for: profile.credentialReference
+            ) {
+                serverCredentials[profile.credentialReference] = credential
+            }
+        }
+        return AppAndroidCoreRestoreCheckpoint(
+            sources: try await sourceRepository.loadSources(),
+            webDAVSettings: settings,
+            mainCredential: mainCredential,
+            serverProfiles: serverProfiles,
+            selectedServerID: selectedServerID,
+            serverCredentials: serverCredentials
+        )
+    }
+
+    private func rollback(
+        _ checkpoint: AppAndroidCoreRestoreCheckpoint,
+        importedPayload: AndroidCoreBackupRestorePayload
+    ) async throws {
+        var failed = false
+        do {
+            try await sourceRepository.replaceSources(checkpoint.sources)
+        } catch {
+            failed = true
+        }
+
+        let importedServerReferences = Set(
+            importedPayload.webDAVServerProfiles.webDAVProfiles.map {
+                AndroidWebDAVServerProfileRestoreUseCase
+                    .credentialReference(id: $0.id)
+            }
+        )
+        for reference in importedServerReferences
+        where checkpoint.serverCredentials[reference] == nil {
+            await webDAVCredentials.remove(reference: reference)
+        }
+        for (reference, credential) in checkpoint.serverCredentials {
+            do {
+                try await webDAVCredentials.save(
+                    credential,
+                    for: reference
+                )
+            } catch {
+                failed = true
+            }
+        }
+        do {
+            try await repository.replaceWebDAVServerProfiles(
+                checkpoint.serverProfiles,
+                selectedID: checkpoint.selectedServerID
+            )
+        } catch {
+            failed = true
+        }
+
+        let oldMainReference = checkpoint.webDAVSettings.credentialReference
+        if let newMainReference = importedPayload.webDAVConfiguration?
+            .settings.credentialReference,
+            newMainReference != oldMainReference
+        {
+            await webDAVCredentials.remove(reference: newMainReference)
+        }
+        if let credential = checkpoint.mainCredential {
+            do {
+                try await webDAVCredentials.save(
+                    credential,
+                    for: oldMainReference
+                )
+            } catch {
+                failed = true
+            }
+        } else {
+            await webDAVCredentials.remove(reference: oldMainReference)
+        }
+        await MainActor.run {
+            webDAVSettings.replace(checkpoint.webDAVSettings)
+        }
+        if failed {
+            throw AppAndroidCoreRestoreRollbackError.failed
+        }
+    }
+
     func restoreAndroidDatabaseDomains(
         _ payload: AndroidCoreDatabaseRestorePayload
     ) async throws -> AndroidLibraryRestoreSummary {
@@ -487,6 +622,21 @@ private struct AppAndroidCoreBackupRestoreRepository:
             )
         ).restore(plan)
     }
+}
+
+private struct AppAndroidCoreRestoreCheckpoint: Sendable {
+    let sources: [BookSourceDraft]
+    let webDAVSettings: WebDAVConnectionSettings
+    let mainCredential: WebDAVBasicCredentials?
+    let serverProfiles: [WebDAVServerProfile]
+    let selectedServerID: Int64?
+    let serverCredentials: [
+        WebDAVCredentialReference: WebDAVBasicCredentials
+    ]
+}
+
+private enum AppAndroidCoreRestoreRollbackError: Error {
+    case failed
 }
 
 private struct AppAndroidWebDAVServerCredentialVault:

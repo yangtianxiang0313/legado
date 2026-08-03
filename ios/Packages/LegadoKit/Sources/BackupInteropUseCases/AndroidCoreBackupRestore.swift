@@ -148,7 +148,32 @@ public struct AndroidCoreDatabaseRestorePayload: Equatable, Sendable {
   }
 }
 
+public struct AndroidCoreBackupRestorePayload: Equatable, Sendable {
+  public let database: AndroidCoreDatabaseRestorePayload
+  public let bookSources: [BookSourceDraft]
+  public let webDAVConfiguration: AndroidWebDAVConfigurationImportPlan?
+  public let webDAVServerProfiles: AndroidServerProfileImportPlan
+
+  public init(
+    database: AndroidCoreDatabaseRestorePayload,
+    bookSources: [BookSourceDraft] = [],
+    webDAVConfiguration: AndroidWebDAVConfigurationImportPlan? = nil,
+    webDAVServerProfiles: AndroidServerProfileImportPlan = .init(
+      entries: [],
+      selectedID: nil
+    )
+  ) {
+    self.database = database
+    self.bookSources = bookSources
+    self.webDAVConfiguration = webDAVConfiguration
+    self.webDAVServerProfiles = webDAVServerProfiles
+  }
+}
+
 public protocol AndroidCoreBackupRestoreRepository: Sendable {
+  func restoreAndroidCoreBackup(
+    _ payload: AndroidCoreBackupRestorePayload
+  ) async throws -> AndroidLibraryRestoreSummary
   func restoreAndroidDatabaseDomains(
     _ payload: AndroidCoreDatabaseRestorePayload
   ) async throws -> AndroidLibraryRestoreSummary
@@ -187,6 +212,25 @@ public protocol AndroidCoreBackupRestoreRepository: Sendable {
 }
 
 public extension AndroidCoreBackupRestoreRepository {
+  func restoreAndroidCoreBackup(
+    _ payload: AndroidCoreBackupRestorePayload
+  ) async throws -> AndroidLibraryRestoreSummary {
+    if !payload.webDAVServerProfiles.entries.isEmpty
+      || payload.webDAVServerProfiles.selectedID != nil
+    {
+      try await restoreAndroidWebDAVServerProfiles(
+        payload.webDAVServerProfiles
+      )
+    }
+    if let configuration = payload.webDAVConfiguration {
+      try await restoreAndroidWebDAVConfiguration(configuration)
+    }
+    if !payload.bookSources.isEmpty {
+      try await restoreAndroidBookSources(payload.bookSources)
+    }
+    return try await restoreAndroidDatabaseDomains(payload.database)
+  }
+
   func restoreAndroidDatabaseDomains(
     _ payload: AndroidCoreDatabaseRestorePayload
   ) async throws -> AndroidLibraryRestoreSummary {
@@ -379,39 +423,29 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
         : AndroidCoreBackupRestoreError.invalidBackupPassword
     }
 
-    if !serverProfilePlan.entries.isEmpty
-      || serverProfilePlan.selectedID != nil
-    {
-      try await repository.restoreAndroidWebDAVServerProfiles(
-        serverProfilePlan
-      )
-    }
-    if let webDAVImportPlan {
-      try await repository.restoreAndroidWebDAVConfiguration(
-        webDAVImportPlan
-      )
-    }
-    let library = try await repository.restoreAndroidDatabaseDomains(
-      AndroidCoreDatabaseRestorePayload(
-        library: libraryPlan,
-        replacementRules: replacementRules,
-        readRecords: readRecords,
-        searchHistory: searchHistory,
-        ruleSubscriptions: ruleSubscriptions,
-        rssSources: rssSources,
-        rssStars: rssStars,
-        httpTextToSpeechEngines: httpTextToSpeechEngines,
-        localTextTOCRules: localTextTOCRules,
-        readerConfigBundle: readerConfigBundle,
-        dictionaryRules: dictionaryRules,
-        keyboardAssists: keyboardAssists,
-        themeProfiles: themeProfiles,
-        directLinkUploadRule: directLinkUploadRule
+    let library = try await repository.restoreAndroidCoreBackup(
+      AndroidCoreBackupRestorePayload(
+        database: AndroidCoreDatabaseRestorePayload(
+          library: libraryPlan,
+          replacementRules: replacementRules,
+          readRecords: readRecords,
+          searchHistory: searchHistory,
+          ruleSubscriptions: ruleSubscriptions,
+          rssSources: rssSources,
+          rssStars: rssStars,
+          httpTextToSpeechEngines: httpTextToSpeechEngines,
+          localTextTOCRules: localTextTOCRules,
+          readerConfigBundle: readerConfigBundle,
+          dictionaryRules: dictionaryRules,
+          keyboardAssists: keyboardAssists,
+          themeProfiles: themeProfiles,
+          directLinkUploadRule: directLinkUploadRule
+        ),
+        bookSources: bookSources,
+        webDAVConfiguration: webDAVImportPlan,
+        webDAVServerProfiles: serverProfilePlan
       )
     )
-    if !bookSources.isEmpty {
-      try await repository.restoreAndroidBookSources(bookSources)
-    }
     return AndroidCoreBackupRestoreSummary(
       bookCount: library.bookCount,
       groupCount: library.groupCount,
