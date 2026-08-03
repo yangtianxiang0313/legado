@@ -95,6 +95,50 @@ public struct WebDAVFoundationRemoteBookClient: WebDAVRemoteBookTransferring {
     }
   }
 
+  public func inspectRemoteBook(
+    configuration: WebDAVConnectionConfiguration,
+    remoteURL: URL
+  ) async -> WebDAVRemoteBookInspectionResult {
+    guard let rootURL = configuration.rootURL else {
+      return .failed(.invalidConfiguration)
+    }
+    guard isSameServer(remoteURL, as: rootURL) else {
+      return .failed(.invalidResourceURL)
+    }
+    guard let resolved = await resolve(configuration) else {
+      return .failed(.credentialUnavailable)
+    }
+    do {
+      var request = authorizedRequest(
+        url: remoteURL,
+        method: "PROPFIND",
+        credentials: resolved
+      )
+      request.setValue("0", forHTTPHeaderField: "Depth")
+      request.setValue("text/plain", forHTTPHeaderField: "Content-Type")
+      request.httpBody = Data(Self.propertyRequest.utf8)
+      let response = try await transport.performData(request)
+      if response.statusCode == 404 { return .missing }
+      if let failure = failure(statusCode: response.statusCode) {
+        return .failed(failure)
+      }
+      guard
+        let resources = WebDAVRemoteBookMultistatusParser.parse(
+          response.body,
+          relativeTo: remoteURL
+        ),
+        let resource = resources.first(where: {
+          sameResource($0.url, remoteURL) && !$0.isDirectory
+        })
+      else {
+        return .failed(.invalidResponse)
+      }
+      return .found(resource)
+    } catch {
+      return .failed(.transportUnavailable)
+    }
+  }
+
   public func uploadRemoteBook(
     configuration: WebDAVConnectionConfiguration,
     fileName: String,

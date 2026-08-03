@@ -56,6 +56,12 @@ public enum WebDAVRemoteBookDownloadResult: Sendable, Equatable {
   case failed(WebDAVRemoteBookFailure)
 }
 
+public enum WebDAVRemoteBookInspectionResult: Sendable, Equatable {
+  case found(WebDAVRemoteBookResource)
+  case missing
+  case failed(WebDAVRemoteBookFailure)
+}
+
 public enum WebDAVRemoteBookUploadResult: Sendable, Equatable {
   case uploaded(name: String, remoteURL: URL)
   case failed(WebDAVRemoteBookFailure)
@@ -72,6 +78,11 @@ public protocol WebDAVRemoteBookTransferring: Sendable {
     resource: WebDAVRemoteBookResource
   ) async -> WebDAVRemoteBookDownloadResult
 
+  func inspectRemoteBook(
+    configuration: WebDAVConnectionConfiguration,
+    remoteURL: URL
+  ) async -> WebDAVRemoteBookInspectionResult
+
   func uploadRemoteBook(
     configuration: WebDAVConnectionConfiguration,
     fileName: String,
@@ -80,6 +91,13 @@ public protocol WebDAVRemoteBookTransferring: Sendable {
 }
 
 public extension WebDAVRemoteBookTransferring {
+  func inspectRemoteBook(
+    configuration: WebDAVConnectionConfiguration,
+    remoteURL: URL
+  ) async -> WebDAVRemoteBookInspectionResult {
+    .failed(.transportUnavailable)
+  }
+
   func uploadRemoteBook(
     configuration: WebDAVConnectionConfiguration,
     fileName: String,
