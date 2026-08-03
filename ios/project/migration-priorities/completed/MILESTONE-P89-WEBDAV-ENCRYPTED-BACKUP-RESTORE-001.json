@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P89-WEBDAV-ENCRYPTED-BACKUP-RESTORE-001",
+  "status": "completed",
+  "mode": "critical_path_only",
+  "priority": 1,
+  "title": "P89 Android 加密 WebDAV 备份跨端恢复",
+  "objective": "让 iOS 从 WebDAV 发现并下载 Android backup.zip 后，在归档包含 BackupAES 加密的 config.xml 或 servers.json 时可结构化识别需要口令、提示用户输入、区分错误口令并用正确口令完成恢复。",
+  "validation_policy": "口令参数传递与错误分类使用聚焦测试；用户可见口令输入、错误重试与成功恢复复用既有最新备份测试双桩，只运行一台 iPhone Simulator。",
+  "stages": [
+    {
+      "id": "P89-S1",
+      "title": "恢复口令与结构化失败",
+      "selectors": [
+        {
+          "id": "P89-S1-USECASE",
+          "claim_ids": [],
+          "task_ids": ["IOS-APP-NAVIGATION-WEBDAV-ENCRYPTED-RESTORE-USECASE-001"]
+        }
+      ]
+    },
+    {
+      "id": "P89-S2",
+      "title": "口令输入与重试闭环",
+      "selectors": [
+        {
+          "id": "P89-S2-UI",
+          "claim_ids": [],
+          "task_ids": ["IOS-APP-NAVIGATION-WEBDAV-ENCRYPTED-RESTORE-UI-001"]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-APP-NAVIGATION-WEBDAV-ENCRYPTED-RESTORE-USECASE-001",
+      "title": "WebDAV 恢复传递 Android 备份口令并分类失败",
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+      "fixture_id": "rl-webdav-encrypted-backup-restore-001",
+      "package_path": "ios/Packages/LegadoKit",
+      "validation": "tests",
+      "test_filter": "WebDAVBackupSyncTests",
+      "prerequisite_task_ids": ["IOS-APP-NAVIGATION-BACKUP-DOMAIN-PRODUCTION-WIRING-001"],
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+        "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/help/storage/BackupAES.kt",
+          "symbol_id": "kotlin://io.legado.app.help.storage.BackupAES"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/help/AppWebDav.kt",
+          "symbol_id": "kotlin://io.legado.app.help.AppWebDav/restoreWebDav"
+        }
+      ]
+    },
+    {
+      "target": "IOS-APP-NAVIGATION-WEBDAV-ENCRYPTED-RESTORE-UI-001",
+      "title": "最新云端备份恢复支持安全口令输入与错误重试",
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+      "fixture_id": "ui-webdav-encrypted-backup-restore-v1",
+      "validation": "simulator",
+      "prerequisite_task_ids": ["IOS-APP-NAVIGATION-WEBDAV-ENCRYPTED-RESTORE-USECASE-001"],
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+        "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**",
+        "ios/Apps/Legado/App/**",
+        "ios/Apps/Legado/UITests/**"
+      ],
+      "ui_contract": {
+        "goal": "发现包含 Android BackupAES 凭据的云端 backup.zip 后，首次恢复弹出口令输入；错误口令留在输入页并显示错误，正确口令完成恢复。",
+        "scenario_id": "ui-webdav-encrypted-backup-restore-v1",
+        "test_method": "testLatestWebDAVEncryptedBackupRestore"
+      },
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/ui/main/MainActivity.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.main.MainActivity/backupSync"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/help/storage/Restore.kt",
+          "symbol_id": "kotlin://io.legado.app.help.storage.Restore/restore"
+        }
+      ]
+    }
+  ]
+}

@@ -282,6 +282,62 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testLatestWebDAVEncryptedBackupRestore() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+            "--reset-webdav-settings",
+            "--reset-webdav-backup-discovery",
+            "--webdav-test-double",
+            "--webdav-encrypted-backup-test-double",
+        ]
+        app.launch()
+
+        let offer = app.alerts["发现新的云端备份"]
+        XCTAssertTrue(offer.waitForExistence(timeout: 15))
+        offer.buttons["恢复"].tap()
+
+        let sheet = require("sheet.webdav.restore.password", timeout: 15)
+        let password = app.secureTextFields[
+            "field.webdav.restore.password"
+        ].firstMatch
+        XCTAssertTrue(password.waitForExistence(timeout: 8))
+        password.tap()
+        password.typeText("wrong")
+        requireButton("action.webdav.restore.password").tap()
+        XCTAssertTrue(
+            require(
+                "status.webdav.restore.password",
+                timeout: 15
+            ).label.contains("口令错误")
+        )
+
+        password.tap()
+        password.typeText("android-pass")
+        requireButton("action.webdav.restore.password").tap()
+
+        let completion = app.alerts["云端备份恢复完成"]
+        XCTAssertTrue(completion.waitForExistence(timeout: 15))
+        XCTAssertFalse(sheet.exists)
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "remote_file": "backup-android-fixture.zip",
+            "password_required": true,
+            "invalid_password_rejected": true,
+            "valid_password_restored": true,
+            "password_persisted": false,
+        ])
+    }
+
     func testAndroidLibraryBackupImportEntry() throws {
         let environment = ProcessInfo.processInfo.environment
         let contract = try XCTUnwrap(

@@ -54,6 +54,11 @@ private enum WebDAVBackupNotice: Identifiable {
     }
 }
 
+private struct WebDAVBackupPasswordRequest: Identifiable {
+    let file: WebDAVBackupFile
+    var id: String { file.name }
+}
+
 struct RootShellView: View {
     @Bindable var router: AppRouter
     @Bindable var library: ShelfLibrary
@@ -84,6 +89,10 @@ struct RootShellView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var didLoadLibrary = false
     @State private var webDAVBackupNotice: WebDAVBackupNotice?
+    @State private var webDAVBackupPasswordRequest:
+        WebDAVBackupPasswordRequest?
+    @State private var webDAVRestorePassword = ""
+    @State private var webDAVRestorePasswordError: String?
     @State private var isAutomaticBackupRunning = false
 
     var body: some View {
@@ -127,6 +136,56 @@ struct RootShellView: View {
                     message: Text(message),
                     dismissButton: .default(Text("好"))
                 )
+            }
+        }
+        .sheet(item: $webDAVBackupPasswordRequest) { request in
+            NavigationStack {
+                Form {
+                    Section {
+                        SecureField(
+                            "Android 备份口令",
+                            text: $webDAVRestorePassword
+                        )
+                        .textContentType(.password)
+                        .accessibilityIdentifier(
+                            "field.webdav.restore.password"
+                        )
+                    } footer: {
+                        Text("口令仅用于本次解密，不会保存。")
+                    }
+                    if let webDAVRestorePasswordError {
+                        Text(webDAVRestorePasswordError)
+                            .foregroundStyle(.red)
+                            .accessibilityIdentifier(
+                                "status.webdav.restore.password"
+                            )
+                    }
+                }
+                .navigationTitle("输入备份口令")
+                .accessibilityIdentifier(
+                    "sheet.webdav.restore.password"
+                )
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("取消") {
+                            webDAVBackupPasswordRequest = nil
+                            webDAVRestorePassword = ""
+                            webDAVRestorePasswordError = nil
+                        }
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("恢复") {
+                            restoreLatestWebDAVBackup(
+                                request.file,
+                                backupPassword: webDAVRestorePassword
+                            )
+                        }
+                        .disabled(webDAVRestorePassword.isEmpty)
+                        .accessibilityIdentifier(
+                            "action.webdav.restore.password"
+                        )
+                    }
+                }
             }
         }
         .task {
@@ -277,7 +336,10 @@ struct RootShellView: View {
         webDAVBackupNotice = .offer(file)
     }
 
-    private func restoreLatestWebDAVBackup(_ file: WebDAVBackupFile) {
+    private func restoreLatestWebDAVBackup(
+        _ file: WebDAVBackupFile,
+        backupPassword: String? = nil
+    ) {
         guard
             let configuration = webDAVSettings.value.connectionConfiguration
         else {
@@ -287,9 +349,13 @@ struct RootShellView: View {
         Task {
             switch await webDAVBackupSync.restore(
                 configuration: configuration,
-                fileName: file.name
+                fileName: file.name,
+                backupPassword: backupPassword
             ) {
             case .restored(let summary):
+                webDAVBackupPasswordRequest = nil
+                webDAVRestorePassword = ""
+                webDAVRestorePasswordError = nil
                 webDAVBackupCheckpoint.markBackup(
                     Int64(Date().timeIntervalSince1970 * 1_000)
                 )
@@ -310,7 +376,19 @@ struct RootShellView: View {
                     + "\(summary.groupCount) 个分组、"
                     + "\(summary.bookmarkCount) 条书签"
                 )
+            case .failed(.backupPasswordRequired):
+                webDAVRestorePassword = ""
+                webDAVRestorePasswordError = nil
+                webDAVBackupPasswordRequest = WebDAVBackupPasswordRequest(
+                    file: file
+                )
+            case .failed(.invalidBackupPassword):
+                webDAVRestorePassword = ""
+                webDAVRestorePasswordError = "备份口令错误，请重试"
             case .failed:
+                webDAVBackupPasswordRequest = nil
+                webDAVRestorePassword = ""
+                webDAVRestorePasswordError = nil
                 webDAVBackupNotice = .failure("无法恢复 \(file.name)")
             }
         }

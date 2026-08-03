@@ -167,7 +167,11 @@ struct LegadoApp: App {
                         ].flatMap { Data(base64Encoded: $0) },
                         seedsFallbackArchive: processArguments.contains(
                             "--webdav-latest-backup-test-double"
-                        )
+                        ),
+                        seedsEncryptedFallbackArchive:
+                            processArguments.contains(
+                                "--webdav-encrypted-backup-test-double"
+                            )
                     )
                     : WebDAVFoundationBackupClient(
                         credentials: webDAVCredentials
@@ -744,16 +748,24 @@ private struct UITestWebDAVRemoteBookTransfer:
 private actor UITestWebDAVBackupTransfer: WebDAVBackupTransferring {
     private var archives: [String: Data]
 
-    init(seededArchive: Data?, seedsFallbackArchive: Bool = false) {
+    init(
+        seededArchive: Data?,
+        seedsFallbackArchive: Bool = false,
+        seedsEncryptedFallbackArchive: Bool = false
+    ) {
         let archive = seededArchive ?? (
-            seedsFallbackArchive ? Self.makeFallbackArchive() : nil
+            seedsFallbackArchive || seedsEncryptedFallbackArchive
+                ? Self.makeFallbackArchive(
+                    encrypted: seedsEncryptedFallbackArchive
+                )
+                : nil
         )
         archives = archive.map {
             ["backup-android-fixture.zip": $0]
         } ?? [:]
     }
 
-    private static func makeFallbackArchive() -> Data? {
+    private static func makeFallbackArchive(encrypted: Bool) -> Data? {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
         let archiveURL = directory.appendingPathComponent("backup.zip")
@@ -763,9 +775,31 @@ private actor UITestWebDAVBackupTransfer: WebDAVBackupTransferring {
                 withIntermediateDirectories: true
             )
             defer { try? FileManager.default.removeItem(at: directory) }
+            let sharedPreferences: AndroidSharedPreferencesDocument
+            if encrypted {
+                sharedPreferences = AndroidSharedPreferencesDocument(
+                    values: [
+                        AndroidWebDAVBackupConfiguration.serverAddressKey:
+                            .string("https://dav.encrypted.test/dav"),
+                        AndroidWebDAVBackupConfiguration.usernameKey:
+                            .string("android-user"),
+                        AndroidWebDAVBackupConfiguration.passwordKey:
+                            .string(
+                                try AndroidBackupAES.encryptBase64(
+                                    "android-secret",
+                                    backupPassword: "android-pass"
+                                )
+                            ),
+                        AndroidWebDAVBackupConfiguration.directoryNameKey:
+                            .string("legado"),
+                    ]
+                )
+            } else {
+                sharedPreferences = AndroidSharedPreferencesDocument()
+            }
             try AndroidBackupArchive.write(
                 AndroidBackupContents(
-                    sharedPreferences: AndroidSharedPreferencesDocument()
+                    sharedPreferences: sharedPreferences
                 ),
                 to: archiveURL
             )

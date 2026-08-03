@@ -15,7 +15,7 @@ public protocol AndroidCoreBackupExporting: Sendable {
 extension AndroidLibraryBackupUseCase: AndroidCoreBackupExporting {}
 
 public protocol AndroidCoreBackupRestoring: Sendable {
-  func restore(from archiveURL: URL) async throws
+  func restore(from archiveURL: URL, backupPassword: String?) async throws
     -> AndroidCoreBackupRestoreSummary
 }
 
@@ -29,6 +29,8 @@ public enum WebDAVBackupSyncFailure: Sendable, Equatable {
   case list(WebDAVBackupTransferFailure)
   case upload(WebDAVBackupTransferFailure)
   case download(WebDAVBackupTransferFailure)
+  case backupPasswordRequired
+  case invalidBackupPassword
   case restore
 }
 
@@ -183,7 +185,8 @@ public struct WebDAVBackupSyncUseCase: Sendable {
 
   public func restore(
     configuration: WebDAVConnectionConfiguration,
-    fileName: String
+    fileName: String,
+    backupPassword: String? = nil
   ) async -> WebDAVBackupSyncRestoreResult {
     let data: Data
     switch await transfer.downloadBackup(
@@ -216,7 +219,16 @@ public struct WebDAVBackupSyncUseCase: Sendable {
     }
 
     do {
-      return .restored(try await restorer.restore(from: temporary))
+      return .restored(
+        try await restorer.restore(
+          from: temporary,
+          backupPassword: backupPassword
+        )
+      )
+    } catch AndroidCoreBackupRestoreError.backupPasswordRequired {
+      return .failed(.backupPasswordRequired)
+    } catch AndroidCoreBackupRestoreError.invalidBackupPassword {
+      return .failed(.invalidBackupPassword)
     } catch {
       return .failed(.restore)
     }

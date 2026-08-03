@@ -70,12 +70,48 @@ final class WebDAVBackupSyncTests: XCTestCase {
 
     let result = await useCase.restore(
       configuration: try configuration(),
-      fileName: "backup2026-08-04.zip"
+      fileName: "backup2026-08-04.zip",
+      backupPassword: "correct-password"
     )
 
     XCTAssertEqual(.restored(expected), result)
     let restoredData = await restorer.restoredData
     XCTAssertEqual(archive, restoredData)
+    let restoredPassword = await restorer.restoredPassword
+    XCTAssertEqual("correct-password", restoredPassword)
+  }
+
+  func testClassifiesAndroidBackupPasswordFailures() async throws {
+    for (error, expected) in [
+      (
+        AndroidCoreBackupRestoreError.backupPasswordRequired,
+        WebDAVBackupSyncFailure.backupPasswordRequired
+      ),
+      (
+        AndroidCoreBackupRestoreError.invalidBackupPassword,
+        WebDAVBackupSyncFailure.invalidBackupPassword
+      ),
+    ] {
+      let useCase = WebDAVBackupSyncUseCase(
+        transfer: BackupTransferDouble(
+          download: .downloaded(Data([0x50, 0x4B]))
+        ),
+        exporter: BackupExporterDouble(
+          data: Data(),
+          summary: backupSummary(bookCount: 0)
+        ),
+        restorer: BackupRestorerDouble(
+          summary: restoreSummary(bookCount: 0),
+          error: error
+        )
+      )
+
+      let result = await useCase.restore(
+        configuration: try configuration(),
+        fileName: "backup-encrypted.zip"
+      )
+      XCTAssertEqual(.failed(expected), result)
+    }
   }
 
   func testRemoteDownloadFailureNeverInvokesRestore() async throws {
@@ -209,16 +245,24 @@ private struct BackupExporterDouble: AndroidCoreBackupExporting {
 
 private actor BackupRestorerDouble: AndroidCoreBackupRestoring {
   let summary: AndroidCoreBackupRestoreSummary
+  let error: AndroidCoreBackupRestoreError?
   private(set) var restoredData: Data?
+  private(set) var restoredPassword: String?
 
-  init(summary: AndroidCoreBackupRestoreSummary) {
+  init(
+    summary: AndroidCoreBackupRestoreSummary,
+    error: AndroidCoreBackupRestoreError? = nil
+  ) {
     self.summary = summary
+    self.error = error
   }
 
-  func restore(from archiveURL: URL) async throws
+  func restore(from archiveURL: URL, backupPassword: String?) async throws
     -> AndroidCoreBackupRestoreSummary
   {
     restoredData = try Data(contentsOf: archiveURL)
+    restoredPassword = backupPassword
+    if let error { throw error }
     return summary
   }
 }

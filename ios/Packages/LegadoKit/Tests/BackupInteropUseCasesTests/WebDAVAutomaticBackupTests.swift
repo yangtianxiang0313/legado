@@ -195,7 +195,8 @@ private actor AutomaticBackupExporter: AndroidCoreBackupExporting {
 
 private struct AutomaticBackupRestorer: AndroidCoreBackupRestoring {
   func restore(
-    from archiveURL: URL
+    from archiveURL: URL,
+    backupPassword: String?
   ) async throws -> AndroidCoreBackupRestoreSummary {
     fatalError("restore is not part of automatic backup")
   }
