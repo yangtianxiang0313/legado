@@ -20,6 +20,7 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
   public let readerConfigCount: Int
   public let readerConfigProjection: AndroidReaderConfigProjection?
   public let dictionaryRuleCount: Int
+  public let keyboardAssistCount: Int
 
   public init(
     bookCount: Int,
@@ -36,7 +37,8 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
     localTextTOCRuleCount: Int = 0,
     readerConfigCount: Int = 0,
     readerConfigProjection: AndroidReaderConfigProjection? = nil,
-    dictionaryRuleCount: Int = 0
+    dictionaryRuleCount: Int = 0,
+    keyboardAssistCount: Int = 0
   ) {
     self.bookCount = bookCount
     self.groupCount = groupCount
@@ -53,6 +55,7 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
     self.readerConfigCount = readerConfigCount
     self.readerConfigProjection = readerConfigProjection
     self.dictionaryRuleCount = dictionaryRuleCount
+    self.keyboardAssistCount = keyboardAssistCount
   }
 }
 
@@ -78,6 +81,7 @@ public protocol AndroidCoreBackupRestoreRepository: Sendable {
     _ bundle: AndroidReaderConfigBundle
   ) async throws
   func restoreAndroidDictionaryRules(_ values: [DictionaryRule]) async throws
+  func restoreAndroidKeyboardAssists(_ values: [KeyboardAssist]) async throws
 }
 
 public extension AndroidCoreBackupRestoreRepository {
@@ -106,6 +110,7 @@ public extension AndroidCoreBackupRestoreRepository {
     _ bundle: AndroidReaderConfigBundle
   ) async throws {}
   func restoreAndroidDictionaryRules(_ values: [DictionaryRule]) async throws {}
+  func restoreAndroidKeyboardAssists(_ values: [KeyboardAssist]) async throws {}
 }
 
 public struct AndroidCoreBackupRestoreUseCase: Sendable {
@@ -159,6 +164,9 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     let dictionaryRules = AndroidDictionaryRuleInteropAdapter.restoreValues(
       try AndroidBackupArchive.readDictionaryRules(from: archiveURL)
     )
+    let keyboardAssists = AndroidKeyboardAssistInteropAdapter.restoreValues(
+      try AndroidBackupArchive.readKeyboardAssists(from: archiveURL)
+    )
 
     let library = try await repository.restoreAndroidLibrary(libraryPlan)
     if !bookSources.isEmpty {
@@ -198,6 +206,9 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     if !dictionaryRules.isEmpty {
       try await repository.restoreAndroidDictionaryRules(dictionaryRules)
     }
+    if !keyboardAssists.isEmpty {
+      try await repository.restoreAndroidKeyboardAssists(keyboardAssists)
+    }
     return AndroidCoreBackupRestoreSummary(
       bookCount: library.bookCount,
       groupCount: library.groupCount,
@@ -214,7 +225,8 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
       readerConfigCount: readerConfigBundle.styles.count
         + (readerConfigBundle.sharedStyle == nil ? 0 : 1),
       readerConfigProjection: readerConfigBundle.projection,
-      dictionaryRuleCount: dictionaryRules.count
+      dictionaryRuleCount: dictionaryRules.count,
+      keyboardAssistCount: keyboardAssists.count
     )
   }
 

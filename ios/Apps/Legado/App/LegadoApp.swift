@@ -19,6 +19,7 @@ struct LegadoApp: App {
     @State private var readAloud: ReadAloudSession
     @State private var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
     @State private var dictionaryLookup: DictionaryLookupStore
+    @State private var keyboardAssists: KeyboardAssistStore
     @State private var readerPreferences: ReaderPreferencesStore
     @State private var bookDetailPreferences: BookDetailPreferencesStore
     @State private var rootVisibility: RootVisibilityPreferencesStore
@@ -137,6 +138,9 @@ struct LegadoApp: App {
                     executor: SearchEnvironment.makeDictionaryLookupExecutor()
                 )
             )
+            _keyboardAssists = State(
+                initialValue: KeyboardAssistStore(repository: libraryRepository)
+            )
             let systemSynthesizer: any SystemSpeechSynthesizing =
                 ProcessInfo.processInfo.arguments.contains(
                     "--system-read-aloud-test-double"
@@ -193,6 +197,7 @@ struct LegadoApp: App {
                     readAloud: readAloud,
                     httpTextToSpeechEngines: httpTextToSpeechEngines,
                     dictionaryLookup: dictionaryLookup,
+                    keyboardAssists: keyboardAssists,
                     readerPreferences: readerPreferences,
                     bookDetailPreferences: bookDetailPreferences,
                     rootVisibility: rootVisibility,
@@ -214,6 +219,7 @@ struct LegadoApp: App {
                     readAloud: readAloud,
                     httpTextToSpeechEngines: httpTextToSpeechEngines,
                     dictionaryLookup: dictionaryLookup,
+                    keyboardAssists: keyboardAssists,
                     readerPreferences: readerPreferences,
                     bookDetailPreferences: bookDetailPreferences,
                     rootVisibility: rootVisibility,
@@ -300,6 +306,12 @@ private struct AppAndroidCoreBackupRestoreRepository:
     ) async throws {
         try await repository.restoreAndroidHTTPTextToSpeechEngines(values)
     }
+
+    func restoreAndroidKeyboardAssists(
+        _ values: [KeyboardAssist]
+    ) async throws {
+        try await repository.restoreAndroidKeyboardAssists(values)
+    }
 }
 
 private struct AppAndroidLibraryBackupRepository:
@@ -337,6 +349,10 @@ private struct AppAndroidLibraryBackupRepository:
         -> [HTTPTextToSpeechEngine]
     {
         try await repository.androidHTTPTextToSpeechEngines()
+    }
+
+    func keyboardAssists() async throws -> [KeyboardAssist] {
+        try await repository.keyboardAssists()
     }
 }
 

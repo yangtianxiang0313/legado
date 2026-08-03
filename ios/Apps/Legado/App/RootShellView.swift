@@ -15,6 +15,7 @@ struct RootShellView: View {
     @Bindable var readAloud: ReadAloudSession
     @Bindable var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
     @Bindable var dictionaryLookup: DictionaryLookupStore
+    @Bindable var keyboardAssists: KeyboardAssistStore
     @Bindable var readerPreferences: ReaderPreferencesStore
     @Bindable var bookDetailPreferences: BookDetailPreferencesStore
     @Bindable var rootVisibility: RootVisibilityPreferencesStore
@@ -67,6 +68,7 @@ struct RootShellView: View {
             await rssStore.reload()
             await httpTextToSpeechEngines.reload()
             await dictionaryLookup.reload()
+            await keyboardAssists.reload()
             router.reconcileVisibleRoots(visibleRoots)
             if ProcessInfo.processInfo.arguments.contains(
                 "--seed-shelf-management"
@@ -193,6 +195,7 @@ struct RootShellView: View {
                     await rssStore.reload()
                     await httpTextToSpeechEngines.reload()
                     await dictionaryLookup.reload()
+                    await keyboardAssists.reload()
                 },
                 libraryBackup: libraryBackup
             )
@@ -451,6 +454,7 @@ struct RootShellView: View {
             SourceEditorView(
                 source: sourceCatalog.source(id: sourceID),
                 catalog: sourceCatalog,
+                keyboardAssists: keyboardAssists,
                 navigate: { destination, savedSourceID in
                     let route: AppRoute
                     switch destination {
@@ -915,6 +919,10 @@ private struct RootContentView: View {
                 if summary.ruleSubscriptionCount > 0 {
                     androidBackupImportStatus +=
                         "、\(summary.ruleSubscriptionCount) 条规则订阅"
+                }
+                if summary.keyboardAssistCount > 0 {
+                    androidBackupImportStatus +=
+                        "、\(summary.keyboardAssistCount) 个编辑辅助键"
                 }
                 if summary.rssSourceCount > 0 || summary.rssStarCount > 0 {
                     androidBackupImportStatus +=
@@ -1752,6 +1760,7 @@ struct StartupAcceptanceView: View {
     @Bindable var readAloud: ReadAloudSession
     @Bindable var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
     @Bindable var dictionaryLookup: DictionaryLookupStore
+    @Bindable var keyboardAssists: KeyboardAssistStore
     @Bindable var readerPreferences: ReaderPreferencesStore
     @Bindable var bookDetailPreferences: BookDetailPreferencesStore
     @Bindable var rootVisibility: RootVisibilityPreferencesStore
@@ -1805,6 +1814,7 @@ struct StartupAcceptanceView: View {
                 readAloud: readAloud,
                 httpTextToSpeechEngines: httpTextToSpeechEngines,
                 dictionaryLookup: dictionaryLookup,
+                keyboardAssists: keyboardAssists,
                 readerPreferences: readerPreferences,
                 bookDetailPreferences: bookDetailPreferences,
                 rootVisibility: rootVisibility,

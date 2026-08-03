@@ -18,6 +18,7 @@ public struct AndroidBackupContents: Equatable, Sendable {
     public var readerConfigs: [AndroidReaderConfigDTO]
     public var sharedReaderConfig: AndroidReaderConfigDTO?
     public var dictionaryRules: [AndroidDictionaryRuleDTO]
+    public var keyboardAssists: [AndroidKeyboardAssistDTO]
 
     public init(
         bookSources: [BookSourceDTO] = [],
@@ -34,7 +35,8 @@ public struct AndroidBackupContents: Equatable, Sendable {
         localTextTOCRules: [AndroidLocalTextTOCRuleDTO] = [],
         readerConfigs: [AndroidReaderConfigDTO] = [],
         sharedReaderConfig: AndroidReaderConfigDTO? = nil,
-        dictionaryRules: [AndroidDictionaryRuleDTO] = []
+        dictionaryRules: [AndroidDictionaryRuleDTO] = [],
+        keyboardAssists: [AndroidKeyboardAssistDTO] = []
     ) {
         self.bookSources = bookSources
         self.replacementRules = replacementRules
@@ -51,6 +53,7 @@ public struct AndroidBackupContents: Equatable, Sendable {
         self.readerConfigs = readerConfigs
         self.sharedReaderConfig = sharedReaderConfig
         self.dictionaryRules = dictionaryRules
+        self.keyboardAssists = keyboardAssists
     }
 }
 
@@ -71,6 +74,7 @@ public enum AndroidBackupArchive {
     public static let readerConfigsMember = "readConfig.json"
     public static let sharedReaderConfigMember = "shareReadConfig.json"
     public static let dictionaryRulesMember = "dictRule.json"
+    public static let keyboardAssistsMember = "keyboardAssists.json"
 
     public static func write(
         _ contents: AndroidBackupContents,
@@ -204,6 +208,16 @@ public enum AndroidBackupArchive {
                     path: dictionaryRulesMember,
                     data: try AndroidDictionaryRuleCodec.encodeMany(
                         contents.dictionaryRules
+                    )
+                )
+            )
+        }
+        if !contents.keyboardAssists.isEmpty {
+            members.append(
+                .init(
+                    path: keyboardAssistsMember,
+                    data: try AndroidKeyboardAssistCodec.encodeMany(
+                        contents.keyboardAssists
                     )
                 )
             )
@@ -396,5 +410,17 @@ public enum AndroidBackupArchive {
             maximumBytes: maximumMemberBytes
         ) else { return [] }
         return try AndroidDictionaryRuleCodec.decodeMany(data)
+    }
+
+    public static func readKeyboardAssists(
+        from archiveURL: URL,
+        maximumMemberBytes: UInt64 = 32 * 1_024 * 1_024
+    ) throws -> [AndroidKeyboardAssistDTO] {
+        guard let data = try ArchiveZIPFoundation.read(
+            keyboardAssistsMember,
+            from: archiveURL,
+            maximumBytes: maximumMemberBytes
+        ) else { return [] }
+        return try AndroidKeyboardAssistCodec.decodeMany(data)
     }
 }

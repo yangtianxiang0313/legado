@@ -834,6 +834,7 @@ private enum SourceEditorSection: String, CaseIterable, Identifiable {
 
 struct SourceEditorView: View {
     @Bindable var catalog: SourceCatalog
+    @Bindable var keyboardAssists: KeyboardAssistStore
     let navigate: (SourceEditorDestination, String) -> Void
     let dismiss: () -> Void
 
@@ -846,11 +847,13 @@ struct SourceEditorView: View {
     init(
         source: BookSourceDraft?,
         catalog: SourceCatalog,
+        keyboardAssists: KeyboardAssistStore,
         navigate: @escaping (SourceEditorDestination, String) -> Void,
         dismiss: @escaping () -> Void
     ) {
         let initial = source ?? BookSourceDraft()
         self.catalog = catalog
+        self.keyboardAssists = keyboardAssists
         self.navigate = navigate
         self.dismiss = dismiss
         _original = State(initialValue: initial)
@@ -974,6 +977,7 @@ struct SourceEditorView: View {
         rule: Binding<String>
     ) -> some View {
         Section(title) {
+            keyboardAssistBar(rule: rule)
             TextField("请求地址", text: url)
                 .textInputAutocapitalization(.never)
                 .keyboardType(.URL)
@@ -987,9 +991,27 @@ struct SourceEditorView: View {
         rule: Binding<String>
     ) -> some View {
         Section(title) {
+            keyboardAssistBar(rule: rule)
             TextField("规则", text: rule, axis: .vertical)
                 .lineLimit(6...16)
         }
+    }
+
+    private func keyboardAssistBar(rule: Binding<String>) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(keyboardAssists.values) { assist in
+                    Button(assist.key) {
+                        rule.wrappedValue.append(assist.value)
+                    }
+                    .buttonStyle(.bordered)
+                    .accessibilityIdentifier(
+                        "action.source.editor.keyboardAssist.\(assist.serialNumber)"
+                    )
+                }
+            }
+        }
+        .accessibilityIdentifier("toolbar.source.editor.keyboardAssists")
     }
 
     private var loginVisible: Bool {

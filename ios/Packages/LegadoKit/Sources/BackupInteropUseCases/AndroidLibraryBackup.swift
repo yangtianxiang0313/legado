@@ -20,6 +20,7 @@ public struct AndroidLibraryBackupSummary: Equatable, Sendable {
   public let localTextTOCRuleCount: Int
   public let readerConfigCount: Int
   public let dictionaryRuleCount: Int
+  public let keyboardAssistCount: Int
 
   public init(
     bookCount: Int,
@@ -35,7 +36,8 @@ public struct AndroidLibraryBackupSummary: Equatable, Sendable {
     httpTextToSpeechEngineCount: Int = 0,
     localTextTOCRuleCount: Int = 0,
     readerConfigCount: Int = 0,
-    dictionaryRuleCount: Int = 0
+    dictionaryRuleCount: Int = 0,
+    keyboardAssistCount: Int = 0
   ) {
     self.bookCount = bookCount
     self.groupCount = groupCount
@@ -51,6 +53,7 @@ public struct AndroidLibraryBackupSummary: Equatable, Sendable {
     self.localTextTOCRuleCount = localTextTOCRuleCount
     self.readerConfigCount = readerConfigCount
     self.dictionaryRuleCount = dictionaryRuleCount
+    self.keyboardAssistCount = keyboardAssistCount
   }
 }
 
@@ -65,6 +68,7 @@ public protocol AndroidLibraryBackupRepository: Sendable {
   func localTextTOCRules() async throws -> [LocalTextTOCRule]
   func androidReaderConfigBundle() async throws -> AndroidReaderConfigBundle?
   func dictionaryRules() async throws -> [DictionaryRule]
+  func keyboardAssists() async throws -> [KeyboardAssist]
 }
 
 public extension AndroidLibraryBackupRepository {
@@ -77,6 +81,7 @@ public extension AndroidLibraryBackupRepository {
   func localTextTOCRules() async throws -> [LocalTextTOCRule] { [] }
   func androidReaderConfigBundle() async throws -> AndroidReaderConfigBundle? { nil }
   func dictionaryRules() async throws -> [DictionaryRule] { [] }
+  func keyboardAssists() async throws -> [KeyboardAssist] { [] }
 }
 
 public enum AndroidLibraryBackupError: Error, Equatable, Sendable {
@@ -122,6 +127,7 @@ public struct AndroidLibraryBackupUseCase: Sendable {
       )).applying($0)
     } ?? storedReaderConfigBundle
     let dictionaryRules = try await repository.dictionaryRules()
+    let keyboardAssists = try await repository.keyboardAssists()
     let contents = try AndroidLibraryBackupAdapter.contents(
       from: plan,
       bookSources: bookSources,
@@ -134,7 +140,8 @@ public struct AndroidLibraryBackupUseCase: Sendable {
       httpTextToSpeechEngines: httpTextToSpeechEngines,
       localTextTOCRules: localTextTOCRules,
       readerConfigBundle: readerConfigBundle,
-      dictionaryRules: dictionaryRules
+      dictionaryRules: dictionaryRules,
+      keyboardAssists: keyboardAssists
     )
     try AndroidBackupArchive.write(
       contents,
@@ -155,7 +162,8 @@ public struct AndroidLibraryBackupUseCase: Sendable {
       localTextTOCRuleCount: contents.localTextTOCRules.count,
       readerConfigCount: contents.readerConfigs.count
         + (contents.sharedReaderConfig == nil ? 0 : 1),
-      dictionaryRuleCount: contents.dictionaryRules.count
+      dictionaryRuleCount: contents.dictionaryRules.count,
+      keyboardAssistCount: contents.keyboardAssists.count
     )
   }
 }
@@ -176,7 +184,8 @@ public enum AndroidLibraryBackupAdapter {
       httpTextToSpeechEngines: [],
       localTextTOCRules: [],
       readerConfigBundle: nil,
-      dictionaryRules: []
+      dictionaryRules: [],
+      keyboardAssists: []
     )
   }
 
@@ -192,7 +201,8 @@ public enum AndroidLibraryBackupAdapter {
     httpTextToSpeechEngines: [HTTPTextToSpeechEngine] = [],
     localTextTOCRules: [LocalTextTOCRule] = [],
     readerConfigBundle: AndroidReaderConfigBundle? = nil,
-    dictionaryRules: [DictionaryRule] = []
+    dictionaryRules: [DictionaryRule] = [],
+    keyboardAssists: [KeyboardAssist] = []
   ) throws -> AndroidBackupContents {
     let sourceData = try SourceManagementPolicy.exportData(
       bookSources,
@@ -220,7 +230,9 @@ public enum AndroidLibraryBackupAdapter {
       readerConfigs: readerConfigBundle?.styles ?? [],
       sharedReaderConfig: readerConfigBundle?.sharedStyle,
       dictionaryRules:
-        AndroidDictionaryRuleInteropAdapter.backupDocuments(dictionaryRules)
+        AndroidDictionaryRuleInteropAdapter.backupDocuments(dictionaryRules),
+      keyboardAssists:
+        AndroidKeyboardAssistInteropAdapter.backupDocuments(keyboardAssists)
     )
   }
 

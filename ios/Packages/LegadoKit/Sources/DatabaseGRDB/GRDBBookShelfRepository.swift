@@ -6,7 +6,8 @@ import LibraryDomain
 
 public actor GRDBBookShelfRepository:
   BookShelfRepository, RuleSubscriptionRepository, RSSRepository,
-  HTTPTextToSpeechRepository, DictionaryRuleRepository
+  HTTPTextToSpeechRepository, DictionaryRuleRepository,
+  KeyboardAssistRepository
 {
   private let database: DatabaseQueue
 
@@ -1192,6 +1193,26 @@ public actor GRDBBookShelfRepository:
     }
   }
 
+  public func keyboardAssists() async throws -> [KeyboardAssist] {
+    try await database.read { db in
+      try KeyboardAssistRecord
+        .order(Column("type").asc, Column("serialNumber").asc, Column("key").asc)
+        .fetchAll(db)
+        .map { try $0.value }
+    }
+  }
+
+  public func restoreAndroidKeyboardAssists(
+    _ values: [KeyboardAssist]
+  ) async throws {
+    try await database.write { db in
+      for value in values {
+        var record = try KeyboardAssistRecord(value: value)
+        try record.save(db)
+      }
+    }
+  }
+
   public func restoreAndroidReadRecords(
     _ records: [LibraryDomain.ReadRecord]
   ) async throws {
@@ -1512,6 +1533,15 @@ public actor GRDBBookShelfRepository:
         table.column("enabled", .boolean).notNull().indexed()
         table.column("sortNumber", .integer).notNull().indexed()
         table.column("payload", .blob).notNull()
+      }
+    }
+    migrator.registerMigration("addAndroidKeyboardAssistInterop") { db in
+      try db.create(table: "keyboardAssists") { table in
+        table.column("type", .integer).notNull()
+        table.column("key", .text).notNull()
+        table.column("serialNumber", .integer).notNull().indexed()
+        table.column("payload", .blob).notNull()
+        table.primaryKey(["type", "key"])
       }
     }
     return migrator
@@ -2000,6 +2030,27 @@ private struct DictionaryRuleRecord:
 
   var value: DictionaryRule {
     get throws { try JSONDecoder().decode(DictionaryRule.self, from: payload) }
+  }
+}
+
+private struct KeyboardAssistRecord:
+  Codable, FetchableRecord, MutablePersistableRecord
+{
+  static let databaseTableName = "keyboardAssists"
+  var type: Int
+  var key: String
+  var serialNumber: Int
+  var payload: Data
+
+  init(value: KeyboardAssist) throws {
+    type = value.type
+    key = value.key
+    serialNumber = value.serialNumber
+    payload = try JSONEncoder().encode(value)
+  }
+
+  var value: KeyboardAssist {
+    get throws { try JSONDecoder().decode(KeyboardAssist.self, from: payload) }
   }
 }
 
