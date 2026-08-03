@@ -1,0 +1,37 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "name": "Legado-iOS-Kanna-6.1.0",
+  "documentNamespace": "https://legado.example.invalid/spdx/kanna-6.1.0-3c73af6d3859d9240db60aef233941a715387744",
+  "creationInfo": {
+    "created": "2026-08-03T00:00:00Z",
+    "creators": ["Tool: Legado Loop v2"]
+  },
+  "packages": [
+    {
+      "name": "Kanna",
+      "SPDXID": "SPDXRef-Package-Kanna",
+      "versionInfo": "6.1.0",
+      "downloadLocation": "git+https://github.com/tid-kijyun/Kanna.git@3c73af6d3859d9240db60aef233941a715387744",
+      "filesAnalyzed": false,
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "copyrightText": "Copyright (c) 2014-2015 Atsushi Kiwaki",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:swift/kanna@6.1.0?vcs_url=git%2Bhttps%3A%2F%2Fgithub.com%2Ftid-kijyun%2FKanna.git%403c73af6d3859d9240db60aef233941a715387744"
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-Kanna"
+    }
+  ]
+}

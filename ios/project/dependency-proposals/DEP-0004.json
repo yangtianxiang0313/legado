@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "id": "DEP-0004",
+  "identity": "kanna",
+  "from_version": null,
+  "to_exact_version": "6.1.0",
+  "products": ["Kanna"],
+  "allowed_targets": ["XPathKanna"],
+  "expected_revision": "3c73af6d3859d9240db60aef233941a715387744",
+  "adr": "ADR-0001",
+  "reason": "Android 书源把 XPath 作为搜索、详情、目录和正文的独立规则后端；项目内轻量实现只覆盖极窄表达式。Kanna 基于系统 libxml2 提供 XPath 1.0，并通过 XPathKanna 适配层输出项目自有投影。",
+  "alternatives": [
+    "继续扩展项目内 XPath：无需依赖，但会重复实现 XPath 解析、节点集和 HTML 容错，兼容风险高。",
+    "把 XPath 翻译成 CSS：仅覆盖简单节点选择，无法保真属性、文本节点、谓词和 XPath 函数。",
+    "使用 WKWebView document.evaluate：引入进程、主线程和异步生命周期，不适合确定性 SourceRuntime。"
+  ],
+  "transitive_dependencies": ["Apple platform system libxml2"],
+  "license": "MIT",
+  "privacy_manifest": "Kanna 6.1.0 自带 PrivacyInfo.xcprivacy，声明不跟踪、不收集数据、不访问 required-reason API。",
+  "security_review": "官方 HTTPS Git 仓库与精确 tag/revision；SwiftPM 源码 Target，无 binary target、plugin 或 macro。输入仅为调用方提供的 HTML/XML 字符串，不由 Kanna 发起网络请求。",
+  "size_delta_bytes": 0,
+  "exit_plan": "Kanna 的 HTMLDocument、XPathObject 与 XMLElement 全部终止于 XPathKanna；RuleRuntime 只暴露 XPathSelectorBackend 与值类型投影，替换时只需重写 adapter。",
+  "owner": "iOS Source Runtime",
+  "required_checks": [
+    "dependency-boundary",
+    "xpath-kanna-focused-tests"
+  ],
+  "status": "applied"
+}

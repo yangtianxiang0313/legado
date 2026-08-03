@@ -82,6 +82,7 @@
     "LegadoCoreTests": {"dependencies": ["LegadoCore"], "external_imports": []},
     "SourceRuntimeTests": {"dependencies": ["LegadoCore", "SourceRuntime"], "external_imports": []},
     "HTMLSwiftSoupTests": {"dependencies": ["HTMLSwiftSoup", "RuleRuntime"], "external_imports": []},
+    "XPathKannaTests": {"dependencies": ["XPathKanna", "RuleRuntime"], "external_imports": []},
     "ScriptJavaScriptCoreTests": {"dependencies": ["ScriptJavaScriptCore", "SourceRuntime"], "external_imports": []},
     "NetworkFoundationTests": {"dependencies": ["SourceRuntime", "NetworkFoundation"], "external_imports": []},
     "ReaderCoreTests": {"dependencies": ["LibraryDomain", "ReaderCore"], "external_imports": []},

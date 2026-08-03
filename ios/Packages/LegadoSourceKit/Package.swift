@@ -26,6 +26,10 @@ let package = Package(
             targets: ["HTMLSwiftSoup"]
         ),
         .library(
+            name: "LegadoXPathKannaKit",
+            targets: ["XPathKanna"]
+        ),
+        .library(
             name: "LegadoScriptJavaScriptCoreKit",
             targets: ["ScriptJavaScriptCore"]
         ),
@@ -59,6 +63,10 @@ let package = Package(
             url: "https://github.com/scinfu/SwiftSoup.git",
             exact: "2.13.6"
         ),
+        .package(
+            url: "https://github.com/tid-kijyun/Kanna.git",
+            exact: "6.1.0"
+        ),
     ],
     targets: [
         .target(
@@ -90,6 +98,14 @@ let package = Package(
             ]
         ),
         .target(
+            name: "XPathKanna",
+            dependencies: [
+                .product(name: "LegadoCoreKit", package: "LegadoCoreKit"),
+                "RuleRuntime",
+                .product(name: "Kanna", package: "Kanna"),
+            ]
+        ),
+        .target(
             name: "ScriptJavaScriptCore",
             dependencies: ["SourceRuntime"],
             linkerSettings: [.linkedFramework("JavaScriptCore")]
@@ -115,6 +131,10 @@ let package = Package(
         .testTarget(
             name: "HTMLSwiftSoupTests",
             dependencies: ["HTMLSwiftSoup", "RuleRuntime"]
+        ),
+        .testTarget(
+            name: "XPathKannaTests",
+            dependencies: ["XPathKanna", "RuleRuntime"]
         ),
         .testTarget(
             name: "ScriptJavaScriptCoreTests",

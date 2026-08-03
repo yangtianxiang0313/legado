@@ -8,7 +8,7 @@
 |---|---|---|
 | SQLite | GRDB.swift 7.11.1 | 只允许 `DatabaseGRDB` import；Record/SQL 不得泄漏。 |
 | HTML/CSS | SwiftSoup 2.13.6 | 只允许 `HTMLSwiftSoup` import；作为 jsoup 兼容后端。 |
-| XML/XPath | Kanna 6.1.0 | 只允许 `XPathKanna` import；不用它执行默认 CSS。 |
+| XML/XPath | Kanna 6.1.0（已启用） | 只允许 `XPathKanna` import；不用它执行默认 CSS。 |
 | ZIP | ZIPFoundation 0.9.20 | 只提供容器能力；Zip Slip、尺寸和压缩比策略由项目负责。 |
 | 图片 | Nuke 13.0.6 | 经 `ImageLoading` adapter 使用；Header/Cookie/cache key 归项目。 |
 | Snapshot | SnapshotTesting 1.19.3 | 仅 test target；reference 只能由 Simulator 验收任务更新。 |
