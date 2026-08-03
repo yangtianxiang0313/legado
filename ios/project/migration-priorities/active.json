@@ -98,6 +98,13 @@
       "selectors": [
         {"id": "P67-S13-CORE-RESTORE", "claim_ids": [], "task_ids": ["IOS-APP-NAVIGATION-ANDROID-CORE-RESTORE-001"]}
       ]
+    },
+    {
+      "id": "P67-S14",
+      "title": "阅读记录双端互通",
+      "selectors": [
+        {"id": "P67-S14-READ-RECORD", "claim_ids": [], "task_ids": ["IOS-INTEGRATION-ANDROID-READ-RECORD-INTEROP-001"]}
+      ]
     }
   ],
   "deliveries": [
@@ -420,6 +427,34 @@
         "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
         "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
         "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+        "ios/Packages/LegadoKit/Tests/AndroidBackupInteropTests/**",
+        "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**",
+        "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+        "ios/Apps/Legado/App/**",
+        "ios/loop/loop.py"
+      ]
+    },
+    {
+      "target": "IOS-INTEGRATION-ANDROID-READ-RECORD-INTEROP-001",
+      "title": "Android readRecord.json 双端编解码与 iOS 持久化",
+      "prerequisite_task_ids": [
+        "IOS-APP-NAVIGATION-ANDROID-CORE-RESTORE-001"
+      ],
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+      "fixture_id": "rl-integration-backup-ios-library-to-android-001",
+      "validation": "tests",
+      "test_filter": "BackupInteropUseCasesTests|AndroidBackupInteropTests|AndroidLibraryRestorePersistenceTests",
+      "source_anchors": [
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/help/storage/Backup.kt","symbol_id":"kotlin://io.legado.app.help.storage.Backup/backup"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/help/storage/Restore.kt","symbol_id":"kotlin://io.legado.app.help.storage.Restore/restore"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/data/entities/ReadRecord.kt","symbol_id":"kotlin://io.legado.app.data.entities.ReadRecord"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/data/dao/ReadRecordDao.kt","symbol_id":"kotlin://io.legado.app.data.dao.ReadRecordDao"}
+      ],
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
+        "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+        "ios/Packages/LegadoKit/Sources/LibraryDomain/**",
         "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
         "ios/Packages/LegadoKit/Tests/AndroidBackupInteropTests/**",
         "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**",
