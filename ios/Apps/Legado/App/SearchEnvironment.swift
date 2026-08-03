@@ -152,6 +152,20 @@ enum SearchEnvironment {
         )
     }
 
+    static func makeRSSArticleSession() -> RSSArticleSession {
+        let externalBaseURL = ProcessInfo.processInfo.environment[
+            "LEGADO_SEARCH_BASE_URL"
+        ]
+        return RSSArticleSession(
+            loader: SourceRuntimeRSSArticleLoader(
+                transport: makeTransport(externalBaseURL: externalBaseURL),
+                cookieStore: cookieStore,
+                dynamicWebPagePort: dynamicWebPagePort,
+                htmlSelectorBackend: htmlSelectorBackend
+            )
+        )
+    }
+
     static func exploreSources(
         persistedSources: [BookSourceDraft] = []
     ) -> [ExploreSourceSummary] {

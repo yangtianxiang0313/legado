@@ -1411,6 +1411,8 @@ private struct SearchBooksView: View {
 
 private struct RSSRootView: View {
     @Bindable var store: RSSStore
+    @State private var articles = SearchEnvironment.makeRSSArticleSession()
+    @State private var selectedSourceID: String?
 
     var body: some View {
         List {
@@ -1423,7 +1425,11 @@ private struct RSSRootView: View {
                     )
                 } else {
                     ForEach(store.sources) { source in
-                        HStack {
+                        Button {
+                            selectedSourceID = source.id
+                            Task { await articles.load(source: source) }
+                        } label: {
+                            HStack {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(source.sourceName.isEmpty
                                     ? source.sourceURL
@@ -1444,6 +1450,35 @@ private struct RSSRootView: View {
                                 ? "checkmark.circle.fill"
                                 : "pause.circle")
                                 .foregroundStyle(source.enabled ? .green : .secondary)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+
+            if let selectedSourceID,
+               let source = store.sources.first(where: { $0.id == selectedSourceID }) {
+                Section(source.sourceName.isEmpty ? "文章" : source.sourceName) {
+                    if articles.articles.isEmpty && !articles.isLoading {
+                        if let error = articles.errorMessage {
+                            Text(error).foregroundStyle(.red)
+                        } else {
+                            Text("暂无文章").foregroundStyle(.secondary)
+                        }
+                    }
+                    ForEach(articles.articles) { article in
+                        if let url = URL(string: article.link), !article.link.isEmpty {
+                            Link(destination: url) { articleRow(article) }
+                        } else {
+                            articleRow(article)
+                        }
+                    }
+                    if articles.isLoading {
+                        HStack { Spacer(); ProgressView(); Spacer() }
+                    } else if articles.hasMore {
+                        Button("加载更多") {
+                            Task { await articles.loadMore() }
                         }
                     }
                 }
@@ -1481,6 +1516,21 @@ private struct RSSRootView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
+            }
+        }
+    }
+
+    private func articleRow(_ article: RSSArticleItem) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(article.title).font(.headline)
+            if let pubDate = article.pubDate, !pubDate.isEmpty {
+                Text(pubDate).font(.caption2).foregroundStyle(.tertiary)
+            }
+            if let description = article.description, !description.isEmpty {
+                Text(description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(3)
             }
         }
     }

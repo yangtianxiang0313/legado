@@ -1,4 +1,7 @@
+import Foundation
 import Observation
+import RuleRuntime
+import SourceRuntime
 
 public struct RSSSource: Codable, Identifiable, Equatable, Sendable {
   public var id: String { sourceURL }
@@ -180,6 +183,158 @@ public final class RSSStore {
       errorMessage = nil
     } catch {
       errorMessage = "无法读取 RSS 数据"
+    }
+  }
+}
+
+public struct RSSArticleItem: Identifiable, Equatable, Sendable {
+  public var id: String { origin + "\u{0}" + link }
+  public let origin: String
+  public let sort: String
+  public let title: String
+  public let link: String
+  public let pubDate: String?
+  public let description: String?
+  public let content: String?
+  public let image: String?
+}
+
+public struct RSSArticlePage: Equatable, Sendable {
+  public let articles: [RSSArticleItem]
+  public let nextPageURL: String?
+}
+
+public protocol RSSArticleLoading: Sendable {
+  func load(
+    source: RSSSource,
+    sortName: String,
+    sortURL: String,
+    page: Int
+  ) async throws -> RSSArticlePage
+}
+
+public struct SourceRuntimeRSSArticleLoader: RSSArticleLoading, Sendable {
+  private let transport: any HTTPTransport
+  private let cookieStore: SourceCookieStore
+  private let dynamicWebPagePort: (any SourceDynamicWebPagePort)?
+  private let htmlSelectorBackend: (any HTMLSelectorBackend)?
+
+  public init(
+    transport: any HTTPTransport,
+    cookieStore: SourceCookieStore = SourceCookieStore(),
+    dynamicWebPagePort: (any SourceDynamicWebPagePort)? = nil,
+    htmlSelectorBackend: (any HTMLSelectorBackend)? = nil
+  ) {
+    self.transport = transport
+    self.cookieStore = cookieStore
+    self.dynamicWebPagePort = dynamicWebPagePort
+    self.htmlSelectorBackend = htmlSelectorBackend
+  }
+
+  public func load(
+    source: RSSSource,
+    sortName: String,
+    sortURL: String,
+    page: Int
+  ) async throws -> RSSArticlePage {
+    let headers = try sourceHeaders(source.header)
+    let result = try await RSSArticlePipeline(
+      definition: RSSRuntimeDefinition(
+        sourceURL: source.sourceURL,
+        sourceHeaders: headers,
+        enabledCookieJar: source.enabledCookieJar ?? true,
+        ruleArticles: source.ruleArticles,
+        ruleNextPage: source.ruleNextPage,
+        ruleTitle: source.ruleTitle,
+        rulePubDate: source.rulePubDate,
+        ruleDescription: source.ruleDescription,
+        ruleImage: source.ruleImage,
+        ruleLink: source.ruleLink
+      ),
+      transport: transport,
+      cookieStore: cookieStore,
+      dynamicWebPagePort: dynamicWebPagePort,
+      htmlSelectorBackend: htmlSelectorBackend
+    ).load(sortName: sortName, sortURL: sortURL, page: page)
+    return RSSArticlePage(
+      articles: result.articles.map {
+        RSSArticleItem(
+          origin: $0.origin,
+          sort: $0.sort,
+          title: $0.title,
+          link: $0.link,
+          pubDate: $0.pubDate,
+          description: $0.description,
+          content: $0.content,
+          image: $0.image
+        )
+      },
+      nextPageURL: result.nextPageURL
+    )
+  }
+
+  private func sourceHeaders(_ value: String?) throws -> [SourceHeaderField] {
+    guard let value, !value.isEmpty else { return [] }
+    let object = try JSONDecoder().decode(
+      [String: String].self,
+      from: Data(value.utf8)
+    )
+    return try object.sorted { $0.key < $1.key }.map {
+      try SourceHeaderField(name: $0.key, value: $0.value)
+    }
+  }
+}
+
+@MainActor
+@Observable
+public final class RSSArticleSession {
+  public private(set) var articles: [RSSArticleItem] = []
+  public private(set) var isLoading = false
+  public private(set) var hasMore = false
+  public private(set) var errorMessage: String?
+
+  private let loader: any RSSArticleLoading
+  private var source: RSSSource?
+  private var sortName = ""
+  private var nextPageURL: String?
+  private var page = 0
+
+  public init(loader: any RSSArticleLoading) {
+    self.loader = loader
+  }
+
+  public func load(source: RSSSource) async {
+    self.source = source
+    sortName = source.sourceName
+    page = 1
+    articles = []
+    await loadPage(url: source.sortURL ?? source.sourceURL, appending: false)
+  }
+
+  public func loadMore() async {
+    guard let nextPageURL else { return }
+    page += 1
+    await loadPage(url: nextPageURL, appending: true)
+  }
+
+  private func loadPage(url: String, appending: Bool) async {
+    guard let source else { return }
+    isLoading = true
+    defer { isLoading = false }
+    do {
+      let result = try await loader.load(
+        source: source,
+        sortName: sortName,
+        sortURL: url,
+        page: page
+      )
+      articles = appending ? articles + result.articles : result.articles
+      nextPageURL = result.nextPageURL
+      hasMore = !result.articles.isEmpty && result.nextPageURL != nil
+      errorMessage = nil
+    } catch {
+      hasMore = false
+      errorMessage = "无法加载 RSS 文章"
     }
   }
 }
