@@ -70,6 +70,13 @@
       "selectors": [
         {"id": "P67-S9-LIBRARY-IMPORT-UI", "claim_ids": [], "task_ids": ["IOS-APP-NAVIGATION-ANDROID-LIBRARY-IMPORT-001"]}
       ]
+    },
+    {
+      "id": "P67-S10",
+      "title": "iOS 书架消费 Android 分组语义",
+      "selectors": [
+        {"id": "P67-S10-GROUP-SEMANTICS", "claim_ids": [], "task_ids": ["IOS-APP-SHELF-ANDROID-GROUP-SEMANTICS-001"]}
+      ]
     }
   ],
   "deliveries": [
@@ -295,6 +302,31 @@
         "scenario_id": "ui-android-library-backup-import-v1",
         "test_method": "testAndroidLibraryBackupImportEntry"
       }
+    },
+    {
+      "target": "IOS-APP-SHELF-ANDROID-GROUP-SEMANTICS-001",
+      "title": "书架按 Android 分组名称与位掩码投影",
+      "prerequisite_task_ids": [
+        "IOS-APP-NAVIGATION-ANDROID-LIBRARY-IMPORT-001"
+      ],
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+      "fixture_id": "rl-integration-backup-ios-library-to-android-001",
+      "validation": "tests",
+      "test_filter": "BookShelfUseCasesTests|AndroidLibraryRestorePersistenceTests",
+      "source_anchors": [
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/data/entities/Book.kt","symbol_id":"kotlin://io.legado.app.data.entities.Book"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/data/entities/BookGroup.kt","symbol_id":"kotlin://io.legado.app.data.entities.BookGroup"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/data/dao/BookGroupDao.kt","symbol_id":"kotlin://io.legado.app.data.dao.BookGroupDao"}
+      ],
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/LibraryDomain/**",
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+        "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+        "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+        "ios/Apps/Legado/App/**",
+        "ios/loop/loop.py"
+      ]
     }
   ]
 }
