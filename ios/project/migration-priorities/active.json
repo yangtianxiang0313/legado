@@ -972,11 +972,13 @@
       "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
       "fixture_id": "sl-source-rule-dom-selector-backends-001",
       "validation": "tests",
+      "package_path": "ios/Packages/LegadoSourceKit",
       "test_filter": "XPathKannaAdapterTests",
       "source_anchors": [],
       "additional_allowed_paths": [
         "ios/Packages/LegadoSourceKit/Package.swift",
         "ios/Packages/LegadoSourceKit/Package.resolved",
+        "ios/Packages/LegadoSourceKit/Sources/RuleRuntime/**",
         "ios/Packages/LegadoSourceKit/Sources/XPathKanna/**",
         "ios/Packages/LegadoSourceKit/Tests/XPathKannaTests/**",
         "ios/harness/dependency-policy.json",

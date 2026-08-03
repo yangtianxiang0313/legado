@@ -1226,6 +1226,7 @@ def owner_contract(target: str) -> Mapping[str, Any]:
             "allowed_paths": [
                 "ios/Packages/LegadoSourceKit/Package.swift",
                 "ios/Packages/LegadoSourceKit/Package.resolved",
+                "ios/Packages/LegadoSourceKit/Sources/RuleRuntime/**",
                 "ios/Packages/LegadoSourceKit/Sources/XPathKanna/**",
                 "ios/Packages/LegadoSourceKit/Tests/XPathKannaTests/**",
                 "ios/harness/dependency-policy.json",
