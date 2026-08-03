@@ -21,22 +21,63 @@ public struct DictionaryLookupResult: Equatable, Sendable {
   public let finalURL: HTTPURL
 }
 
+public protocol DictionaryDOMTransforming: Sendable {
+  func innerHTML(
+    html: String,
+    removing selector: String,
+    selecting resultSelector: String
+  ) throws -> String
+}
+
+public struct HTMLSelectorDictionaryDOMTransformer:
+  DictionaryDOMTransforming, Sendable
+{
+  private let backend: any HTMLSelectorBackend
+
+  public init(backend: any HTMLSelectorBackend) {
+    self.backend = backend
+  }
+
+  public func innerHTML(
+    html: String,
+    removing selector: String,
+    selecting resultSelector: String
+  ) throws -> String {
+    guard var panel = try backend.select(
+      html: html,
+      selector: resultSelector
+    ).first?.outerHTML else { return "" }
+    for unwanted in try backend.select(html: panel, selector: selector) {
+      panel = panel.replacingOccurrences(of: unwanted.outerHTML, with: "")
+    }
+    guard
+      let opening = panel.firstIndex(of: ">"),
+      let closing = panel.range(of: "</", options: .backwards),
+      opening < closing.lowerBound
+    else { return panel }
+    return String(panel[panel.index(after: opening)..<closing.lowerBound])
+  }
+}
+
 public struct DictionaryLookupPipeline: Sendable {
   private let transport: any HTTPTransport
   private let cookieStore: SourceCookieStore
   private let htmlSelectorBackend: (any HTMLSelectorBackend)?
   private let scriptRuntime: (any SourceScriptRuntime)?
+  private let domTransformer: (any DictionaryDOMTransforming)?
 
   public init(
     transport: any HTTPTransport,
     cookieStore: SourceCookieStore = SourceCookieStore(),
     htmlSelectorBackend: (any HTMLSelectorBackend)? = nil,
-    scriptRuntime: (any SourceScriptRuntime)? = nil
+    scriptRuntime: (any SourceScriptRuntime)? = nil,
+    domTransformer: (any DictionaryDOMTransforming)? = nil
   ) {
     self.transport = transport
     self.cookieStore = cookieStore
     self.htmlSelectorBackend = htmlSelectorBackend
     self.scriptRuntime = scriptRuntime
+    self.domTransformer = domTransformer
   }
 
   public func lookup(word: String, rule: DictionaryRuntimeRule) async throws
@@ -107,6 +148,16 @@ public struct DictionaryLookupPipeline: Sendable {
         htmlSelectorBackend: htmlSelectorBackend
       ).getString(showRule)
     }
+    if Self.isBuiltInBaiduJSoupScript(showRule) {
+      guard let domTransformer else {
+        throw SourceScriptIssue(code: .capabilityDenied)
+      }
+      return try domTransformer.innerHTML(
+        html: body,
+        removing: Self.baiduNoiseSelector,
+        selecting: "#content-panel"
+      )
+    }
     guard let scriptRuntime else {
       throw SourceScriptIssue(code: .capabilityDenied)
     }
@@ -127,5 +178,17 @@ public struct DictionaryLookupPipeline: Sendable {
       return values.map { String(describing: $0) }.joined(separator: "\n")
     case .object: return ""
     }
+  }
+
+  private static let baiduNoiseSelector =
+    "script,#word-header,#term-header,.more-button,.disactive,"
+    + "#download-wrapper,#upload-dialog,#right-panel,#success-dialog,"
+    + ".toast-wrap,div[style^=color],.baike-feedback,"
+    + "#cishumean-wrapper,#syn_ant_wrapper,#baike-wrapper"
+
+  private static func isBuiltInBaiduJSoupScript(_ value: String) -> Bool {
+    value.contains("org.jsoup.Jsoup.parse(result)")
+      && value.contains("jsoup.select(\"#content-panel\").html()")
+      && value.contains(".remove()")
   }
 }

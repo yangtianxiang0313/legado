@@ -206,7 +206,10 @@ enum SearchEnvironment {
                 ),
                 cookieStore: cookieStore,
                 htmlSelectorBackend: htmlSelectorBackend,
-                scriptRuntime: scriptRuntime
+                scriptRuntime: scriptRuntime,
+                domTransformer: HTMLSelectorDictionaryDOMTransformer(
+                    backend: htmlSelectorBackend
+                )
             )
         )
     }
