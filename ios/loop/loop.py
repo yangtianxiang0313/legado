@@ -1463,7 +1463,10 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "third_party_policy": "foundation_only_initially",
             },
         }
-    if target == "IOS-INTEGRATION-WEBDAV-CONNECTION-FOUNDATION-001":
+    if target in {
+        "IOS-INTEGRATION-WEBDAV-CONNECTION-FOUNDATION-001",
+        "IOS-INTEGRATION-WEBDAV-READER-PROGRESS-CODEC-001",
+    }:
         return {
             "owner": "IntegrationKit",
             "architecture_refs": [
@@ -1576,6 +1579,23 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                     "ios/Packages/LegadoKit/Sources/ReaderCore/**",
                     "ios/Packages/LegadoKit/Tests/ReaderCoreTests/**",
                     "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+                    "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+                ]
+            )
+        if target == (
+            "IOS-APP-NAVIGATION-WEBDAV-READER-PROGRESS-SYNC-001"
+        ):
+            allowed_paths.extend(
+                [
+                    "ios/Packages/LegadoKit/Sources/LibraryDomain/**",
+                    "ios/Packages/LegadoKit/Sources/ReaderCore/**",
+                    "ios/Packages/LegadoKit/Tests/ReaderCoreTests/**",
+                    "ios/Packages/LegadoKit/Sources/IntegrationKit/**",
+                    "ios/Packages/LegadoKit/Sources/WebDAVFoundation/**",
+                    "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+                    "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+                    "ios/Packages/LegadoKit/Tests/IntegrationKitTests/**",
+                    "ios/Packages/LegadoKit/Tests/WebDAVFoundationTests/**",
                     "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
                 ]
             )

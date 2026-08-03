@@ -2856,6 +2856,21 @@ class MinimalLoopTests(unittest.TestCase):
             "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
             ui_owner["allowed_paths"],
         )
+        progress_codec = loop.owner_contract(
+            "IOS-INTEGRATION-WEBDAV-READER-PROGRESS-CODEC-001"
+        )
+        self.assertEqual("IntegrationKit", progress_codec["owner"])
+        progress_ui = loop.owner_contract(
+            "IOS-APP-NAVIGATION-WEBDAV-READER-PROGRESS-SYNC-001"
+        )
+        self.assertIn(
+            "ios/Packages/LegadoKit/Sources/WebDAVFoundation/**",
+            progress_ui["allowed_paths"],
+        )
+        self.assertIn(
+            "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+            progress_ui["allowed_paths"],
+        )
 
         toc_ui = loop.app_navigation_delivery_contract(
             "rl-library-chapter-toc-update-runtime-001"
