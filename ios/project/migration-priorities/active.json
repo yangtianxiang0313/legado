@@ -42,6 +42,13 @@
       "selectors": [
         {"id": "P67-S5-REPLACERULE", "claim_ids": [], "task_ids": ["IOS-INTEGRATION-ANDROID-BACKUP-REPLACERULE-INTEROP-001"]}
       ]
+    },
+    {
+      "id": "P67-S6",
+      "title": "用户书库备份双端互通",
+      "selectors": [
+        {"id": "P67-S6-LIBRARY", "claim_ids": [], "task_ids": ["IOS-INTEGRATION-ANDROID-BACKUP-LIBRARY-INTEROP-001"]}
+      ]
     }
   ],
   "deliveries": [
@@ -153,6 +160,39 @@
         "ios/harness/fixtures/manifest.json",
         "ios/harness/source-lab/manifest.json",
         "ios/harness/fixtures/runtime-lab/rl-integration-backup-ios-replacerule-to-android-001/**",
+        "ios/harness/goldens/android-legado-v1/**",
+        "ios/harness/goldens/manifest.json",
+        "ios/harness/goldens/releases/**",
+        "ios/harness/tests/test_android_oracle_runner.py",
+        "ios/project/external-execution-receipts/**",
+        "ios/loop/loop.py"
+      ]
+    },
+    {
+      "target": "IOS-INTEGRATION-ANDROID-BACKUP-LIBRARY-INTEROP-001",
+      "title": "Android/iOS 用户书库备份双端互通",
+      "prerequisite_task_ids": [
+        "IOS-INTEGRATION-ANDROID-BACKUP-REPLACERULE-INTEROP-001"
+      ],
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+      "fixture_id": "rl-integration-backup-ios-library-to-android-001",
+      "validation": "tests",
+      "test_filter": "AndroidBackupInteropTests",
+      "source_anchors": [
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/help/storage/Backup.kt","symbol_id":"kotlin://io.legado.app.help.storage/Backup/backup"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/help/storage/Restore.kt","symbol_id":"kotlin://io.legado.app.help.storage/Restore/restore"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/data/entities/Book.kt","symbol_id":"kotlin://io.legado.app.data.entities.Book"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/data/entities/BookGroup.kt","symbol_id":"kotlin://io.legado.app.data.entities.BookGroup"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/data/entities/Bookmark.kt","symbol_id":"kotlin://io.legado.app.data.entities.Bookmark"}
+      ],
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
+        "ios/Packages/LegadoKit/Tests/AndroidBackupInteropTests/**",
+        "ios/harness/oracle/android-runner/**",
+        "ios/harness/oracle/request-registry.json",
+        "ios/harness/fixtures/manifest.json",
+        "ios/harness/source-lab/manifest.json",
+        "ios/harness/fixtures/runtime-lab/rl-integration-backup-ios-library-to-android-001/**",
         "ios/harness/goldens/android-legado-v1/**",
         "ios/harness/goldens/manifest.json",
         "ios/harness/goldens/releases/**",

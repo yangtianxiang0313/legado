@@ -739,6 +739,32 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/project/external-execution-receipts/**",
             ],
         }
+    if target == "IOS-INTEGRATION-ANDROID-BACKUP-LIBRARY-INTEROP-001":
+        return {
+            "owner": "IntegrationKit",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
+                "ios/Packages/LegadoKit/Tests/AndroidBackupInteropTests/**",
+                "ios/harness/oracle/android-runner/**",
+                "ios/harness/oracle/request-registry.json",
+                "ios/harness/fixtures/manifest.json",
+                "ios/harness/source-lab/manifest.json",
+                "ios/harness/fixtures/runtime-lab/rl-integration-backup-ios-library-to-android-001/**",
+                "ios/harness/goldens/android-legado-v1/**",
+                "ios/harness/goldens/manifest.json",
+                "ios/harness/goldens/releases/**",
+                "ios/harness/tests/test_android_oracle_runner.py",
+                "ios/project/external-execution-receipts/**",
+            ],
+        }
     if target == "IOS-DEPENDENCY-SWIFTSOUP-HTML-001":
         return {
             "owner": "DependencyControl",
@@ -3089,6 +3115,21 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_id": "android-backup-replacerule-interop-tests",
             "test_filter": "AndroidBackupInteropTests",
             "acceptance_id": "android-backup-replacerule-interop-golden",
+        }
+    if target == "IOS-INTEGRATION-ANDROID-BACKUP-LIBRARY-INTEROP-001":
+        delivery_contracts["IntegrationKit"] = {
+            "goal": (
+                "依据冻结 Android Book、BookGroup、Bookmark、Backup 与 Restore "
+                "源码，实现用户书库三文件无损 codec，并由真实 Android 恢复"
+                "iOS 生成的组合归档。"
+            ),
+            "rule": (
+                "格式 DTO 留在 AndroidBackupInterop；未知字段、嵌套 readConfig"
+                "与整数 token 无损。不得用当前不完整的 iOS 分组模型冒充映射完成。"
+            ),
+            "test_id": "android-backup-library-interop-tests",
+            "test_filter": "AndroidBackupInteropTests",
+            "acceptance_id": "android-backup-library-interop-golden",
         }
     if (
         architecture["owner"] == "AppNavigation"
