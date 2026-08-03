@@ -1,1 +1,1 @@
-{"active_task":null,"attempt":0,"last_completed":{"at":"2026-08-03T10:15:44Z","sequence":763,"task_id":"IOS-INTEGRATION-ANDROID-BACKUP-BOOKSOURCE-CODEC-001"},"schema_version":2,"status":"idle","verification":null}
+{"active_task":"IOS-INTEGRATION-IOS-BACKUP-ANDROID-RESTORE-ORACLE-001","attempt":0,"last_completed":{"at":"2026-08-03T10:15:44Z","sequence":763,"task_id":"IOS-INTEGRATION-ANDROID-BACKUP-BOOKSOURCE-CODEC-001"},"schema_version":2,"status":"running","verification":null}

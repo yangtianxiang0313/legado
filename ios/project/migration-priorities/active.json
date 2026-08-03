@@ -28,6 +28,13 @@
       "selectors": [
         {"id": "P67-S3-BOOKSOURCE", "claim_ids": [], "task_ids": ["IOS-INTEGRATION-ANDROID-BACKUP-BOOKSOURCE-CODEC-001"]}
       ]
+    },
+    {
+      "id": "P67-S4",
+      "title": "iOS 备份由 Android 真恢复",
+      "selectors": [
+        {"id": "P67-S4-IOS-TO-ANDROID", "claim_ids": [], "task_ids": ["IOS-INTEGRATION-IOS-BACKUP-ANDROID-RESTORE-ORACLE-001"]}
+      ]
     }
   ],
   "deliveries": [
@@ -84,6 +91,34 @@
         "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
         "ios/Packages/LegadoKit/Tests/ArchiveZIPFoundationTests/**",
         "ios/Packages/LegadoKit/Tests/AndroidBackupInteropTests/**",
+        "ios/loop/loop.py"
+      ]
+    },
+    {
+      "target": "IOS-INTEGRATION-IOS-BACKUP-ANDROID-RESTORE-ORACLE-001",
+      "title": "iOS 书源备份由 Android 真恢复",
+      "prerequisite_task_ids": [
+        "IOS-INTEGRATION-ANDROID-BACKUP-BOOKSOURCE-CODEC-001"
+      ],
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+      "fixture_id": "rl-integration-backup-ios-to-android-001",
+      "validation": "tests",
+      "test_filter": "AndroidBackupInteropTests",
+      "source_anchors": [
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/help/storage/Restore.kt","symbol_id":"kotlin://io.legado.app.help.storage/Restore/restore"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/data/entities/BookSource.kt","symbol_id":"kotlin://io.legado.app.data.entities/BookSource"}
+      ],
+      "additional_allowed_paths": [
+        "ios/harness/oracle/android-runner/**",
+        "ios/harness/oracle/request-registry.json",
+        "ios/harness/fixtures/manifest.json",
+        "ios/harness/source-lab/manifest.json",
+        "ios/harness/fixtures/runtime-lab/rl-integration-backup-ios-to-android-001/**",
+        "ios/harness/goldens/android-legado-v1/**",
+        "ios/harness/goldens/manifest.json",
+        "ios/harness/goldens/releases/**",
+        "ios/harness/tests/test_android_oracle_runner.py",
+        "ios/project/external-execution-receipts/**",
         "ios/loop/loop.py"
       ]
     }

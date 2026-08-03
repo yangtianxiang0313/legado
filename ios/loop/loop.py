@@ -688,6 +688,30 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/Packages/LegadoKit/Tests/AndroidBackupInteropTests/**",
             ],
         }
+    if target == "IOS-INTEGRATION-IOS-BACKUP-ANDROID-RESTORE-ORACLE-001":
+        return {
+            "owner": "IntegrationKit",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/harness/oracle/android-runner/**",
+                "ios/harness/oracle/request-registry.json",
+                "ios/harness/fixtures/manifest.json",
+                "ios/harness/source-lab/manifest.json",
+                "ios/harness/fixtures/runtime-lab/rl-integration-backup-ios-to-android-001/**",
+                "ios/harness/goldens/android-legado-v1/**",
+                "ios/harness/goldens/manifest.json",
+                "ios/harness/goldens/releases/**",
+                "ios/harness/tests/test_android_oracle_runner.py",
+                "ios/project/external-execution-receipts/**",
+            ],
+        }
     if target == "IOS-DEPENDENCY-SWIFTSOUP-HTML-001":
         return {
             "owner": "DependencyControl",
@@ -3009,6 +3033,21 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_id": "android-backup-booksource-codec-tests",
             "test_filter": "AndroidBackupInteropTests|SourceFormatTests",
             "acceptance_id": "android-backup-booksource-codec-acceptance",
+        }
+    if target == "IOS-INTEGRATION-IOS-BACKUP-ANDROID-RESTORE-ORACLE-001":
+        delivery_contracts["IntegrationKit"] = {
+            "goal": (
+                "将 iOS codec 生成的公开合成 backup.zip 交给真实 Android "
+                "Restore，并以 Android 数据库恢复结果证明书源备份反向兼容。"
+            ),
+            "rule": (
+                "真实 Android Oracle 仅在格式或恢复语义变化时运行；日常回归"
+                "使用聚焦 Swift 测试。Golden 只记录脱敏结构化结果，不保存"
+                "归档字节、私有书源或 secret。"
+            ),
+            "test_id": "ios-backup-android-restore-oracle",
+            "test_filter": "AndroidBackupInteropTests",
+            "acceptance_id": "ios-backup-android-restore-golden",
         }
     if (
         architecture["owner"] == "AppNavigation"
