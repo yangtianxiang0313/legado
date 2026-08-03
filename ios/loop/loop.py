@@ -1487,6 +1487,35 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/harness/architecture-rules.json",
             ],
         }
+    if target == (
+        "IOS-INTEGRATION-WEBDAV-READER-PROGRESS-IOS-TO-ANDROID-001"
+    ):
+        return {
+            "owner": "IntegrationKit",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/Packages/LegadoKit/Sources/IntegrationKit/**",
+                "ios/Packages/LegadoKit/Tests/IntegrationKitTests/**",
+                "ios/harness/oracle/android-runner/**",
+                "ios/harness/oracle/request-registry.json",
+                "ios/harness/fixtures/manifest.json",
+                "ios/harness/source-lab/manifest.json",
+                "ios/harness/fixtures/runtime-lab/rl-reader-progress-webdav-ios-to-android-001/**",
+                "ios/harness/goldens/android-legado-v1/**",
+                "ios/harness/goldens/manifest.json",
+                "ios/harness/goldens/releases/**",
+                "ios/harness/tests/test_android_oracle_runner.py",
+                "ios/project/external-execution-receipts/**",
+                "ios/project/migration-priorities/active.json",
+            ],
+        }
     if target == "IOS-APP-NAVIGATION-WEBDAV-CONNECTION-SETTINGS-001":
         return {
             "owner": "AppNavigation",
@@ -3909,6 +3938,22 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_id": "ios-backup-android-restore-oracle",
             "test_filter": "AndroidBackupInteropTests",
             "acceptance_id": "ios-backup-android-restore-golden",
+        }
+    if target == (
+        "IOS-INTEGRATION-WEBDAV-READER-PROGRESS-IOS-TO-ANDROID-001"
+    ):
+        delivery_contracts["IntegrationKit"] = {
+            "goal": (
+                "将 iOS codec 生成的公开合成阅读进度交给真实 Android "
+                "AppWebDav 读取，并以结构化字段证明路径、JSON 与书籍身份反向兼容。"
+            ),
+            "rule": (
+                "iOS 产物必须来自产品 codec；Android Oracle 必须执行冻结源码的"
+                "读取路径。Golden 只保存公开合成字段与请求投影，不保存凭据。"
+            ),
+            "test_id": "ios-progress-android-read-tests",
+            "test_filter": "IntegrationKitTests|WebDAVFoundationTests",
+            "acceptance_id": "ios-progress-android-read-golden",
         }
     if target == "IOS-INTEGRATION-ANDROID-BACKUP-REPLACERULE-INTEROP-001":
         delivery_contracts["IntegrationKit"] = {
