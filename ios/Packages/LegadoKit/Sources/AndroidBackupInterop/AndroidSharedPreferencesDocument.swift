@@ -1,0 +1,255 @@
+import Foundation
+
+public enum AndroidSharedPreferenceValue: Equatable, Sendable {
+  case string(String)
+  case int(Int32)
+  case long(Int64)
+  case float(Float)
+  case boolean(Bool)
+}
+
+public struct AndroidSharedPreferencesDocument: Equatable, Sendable {
+  public var values: [String: AndroidSharedPreferenceValue]
+
+  public init(values: [String: AndroidSharedPreferenceValue] = [:]) {
+    self.values = values
+  }
+
+  public subscript(key: String) -> AndroidSharedPreferenceValue? {
+    get { values[key] }
+    set { values[key] = newValue }
+  }
+}
+
+public enum AndroidSharedPreferencesCodecError: Error, Equatable, Sendable {
+  case invalidDocument
+  case duplicateKey(String)
+  case unsupportedElement(String)
+  case invalidValue(name: String)
+}
+
+public enum AndroidSharedPreferencesCodec {
+  public static func decode(
+    _ data: Data
+  ) throws -> AndroidSharedPreferencesDocument {
+    let delegate = ParserDelegate()
+    let parser = XMLParser(data: data)
+    parser.delegate = delegate
+    parser.shouldProcessNamespaces = false
+    parser.shouldReportNamespacePrefixes = false
+    parser.shouldResolveExternalEntities = false
+    guard parser.parse(), delegate.failure == nil else {
+      throw delegate.failure ?? .invalidDocument
+    }
+    guard delegate.sawMap, delegate.depth == 0,
+      delegate.currentStringName == nil
+    else {
+      throw AndroidSharedPreferencesCodecError.invalidDocument
+    }
+    return AndroidSharedPreferencesDocument(values: delegate.values)
+  }
+
+  public static func encode(
+    _ document: AndroidSharedPreferencesDocument
+  ) -> Data {
+    var lines = [
+      #"<?xml version='1.0' encoding='utf-8' standalone='yes' ?>"#,
+      "<map>",
+    ]
+    for key in document.values.keys.sorted() {
+      guard let value = document.values[key] else { continue }
+      let name = escapeAttribute(key)
+      switch value {
+      case .string(let string):
+        lines.append("    <string name=\"\(name)\">\(escapeText(string))</string>")
+      case .int(let integer):
+        lines.append("    <int name=\"\(name)\" value=\"\(integer)\" />")
+      case .long(let integer):
+        lines.append("    <long name=\"\(name)\" value=\"\(integer)\" />")
+      case .float(let number):
+        lines.append("    <float name=\"\(name)\" value=\"\(number)\" />")
+      case .boolean(let boolean):
+        lines.append(
+          "    <boolean name=\"\(name)\" value=\"\(boolean ? "true" : "false")\" />"
+        )
+      }
+    }
+    lines.append("</map>")
+    lines.append("")
+    return Data(lines.joined(separator: "\n").utf8)
+  }
+
+  private static func escapeText(_ value: String) -> String {
+    value
+      .replacingOccurrences(of: "&", with: "&amp;")
+      .replacingOccurrences(of: "<", with: "&lt;")
+      .replacingOccurrences(of: ">", with: "&gt;")
+  }
+
+  private static func escapeAttribute(_ value: String) -> String {
+    escapeText(value)
+      .replacingOccurrences(of: "\"", with: "&quot;")
+      .replacingOccurrences(of: "'", with: "&apos;")
+  }
+}
+
+public struct AndroidWebDAVBackupConfiguration: Equatable, Sendable {
+  public static let serverAddressKey = "web_dav_url"
+  public static let usernameKey = "web_dav_account"
+  public static let passwordKey = "web_dav_password"
+  public static let directoryNameKey = "webDavDir"
+
+  public let serverAddress: String?
+  public let username: String?
+  /// Android may store AES/Base64 or its plaintext fallback here. It must not
+  /// be treated as a usable password until an explicit resolver validates it.
+  public let unresolvedPasswordPayload: String?
+  public let directoryName: String?
+
+  public init(
+    serverAddress: String?,
+    username: String?,
+    unresolvedPasswordPayload: String?,
+    directoryName: String?
+  ) {
+    self.serverAddress = serverAddress
+    self.username = username
+    self.unresolvedPasswordPayload = unresolvedPasswordPayload
+    self.directoryName = directoryName
+  }
+
+  public init(document: AndroidSharedPreferencesDocument) {
+    self.init(
+      serverAddress: document.string(Self.serverAddressKey),
+      username: document.string(Self.usernameKey),
+      unresolvedPasswordPayload: document.string(Self.passwordKey),
+      directoryName: document.string(Self.directoryNameKey)
+    )
+  }
+
+  public var isPresent: Bool {
+    serverAddress != nil
+      || username != nil
+      || unresolvedPasswordPayload != nil
+      || directoryName != nil
+  }
+}
+
+private extension AndroidSharedPreferencesDocument {
+  func string(_ key: String) -> String? {
+    guard case .string(let value)? = values[key] else { return nil }
+    return value
+  }
+}
+
+private final class ParserDelegate: NSObject, XMLParserDelegate {
+  var values: [String: AndroidSharedPreferenceValue] = [:]
+  var failure: AndroidSharedPreferencesCodecError?
+  var sawMap = false
+  var depth = 0
+  var currentStringName: String?
+  var currentStringValue = ""
+
+  func parser(
+    _ parser: XMLParser,
+    didStartElement elementName: String,
+    namespaceURI: String?,
+    qualifiedName qName: String?,
+    attributes attributeDict: [String: String] = [:]
+  ) {
+    guard failure == nil else { return }
+    depth += 1
+    if depth == 1 {
+      guard elementName == "map" else {
+        failure = .invalidDocument
+        parser.abortParsing()
+        return
+      }
+      sawMap = true
+      return
+    }
+    guard depth == 2, sawMap, let name = attributeDict["name"],
+      !name.isEmpty
+    else {
+      failure = .invalidDocument
+      parser.abortParsing()
+      return
+    }
+    guard values[name] == nil, currentStringName == nil else {
+      failure = .duplicateKey(name)
+      parser.abortParsing()
+      return
+    }
+    if elementName == "string" {
+      currentStringName = name
+      currentStringValue = ""
+      return
+    }
+    guard let rawValue = attributeDict["value"] else {
+      failure = .invalidValue(name: name)
+      parser.abortParsing()
+      return
+    }
+    let value: AndroidSharedPreferenceValue?
+    switch elementName {
+    case "int":
+      value = Int32(rawValue).map(AndroidSharedPreferenceValue.int)
+    case "long":
+      value = Int64(rawValue).map(AndroidSharedPreferenceValue.long)
+    case "float":
+      value = Float(rawValue).map(AndroidSharedPreferenceValue.float)
+    case "boolean" where rawValue == "true":
+      value = .boolean(true)
+    case "boolean" where rawValue == "false":
+      value = .boolean(false)
+    case "boolean":
+      value = nil
+    default:
+      failure = .unsupportedElement(elementName)
+      parser.abortParsing()
+      return
+    }
+    guard let value else {
+      failure = .invalidValue(name: name)
+      parser.abortParsing()
+      return
+    }
+    values[name] = value
+  }
+
+  func parser(_ parser: XMLParser, foundCharacters string: String) {
+    guard currentStringName != nil else {
+      if string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        return
+      }
+      failure = .invalidDocument
+      parser.abortParsing()
+      return
+    }
+    currentStringValue += string
+  }
+
+  func parser(
+    _ parser: XMLParser,
+    didEndElement elementName: String,
+    namespaceURI: String?,
+    qualifiedName qName: String?
+  ) {
+    guard failure == nil else { return }
+    if elementName == "string" {
+      guard let name = currentStringName, depth == 2 else {
+        failure = .invalidDocument
+        parser.abortParsing()
+        return
+      }
+      values[name] = .string(currentStringValue)
+      currentStringName = nil
+      currentStringValue = ""
+    }
+    depth -= 1
+    if depth < 0 {
+      failure = .invalidDocument
+      parser.abortParsing()
+    }
+  }
+}

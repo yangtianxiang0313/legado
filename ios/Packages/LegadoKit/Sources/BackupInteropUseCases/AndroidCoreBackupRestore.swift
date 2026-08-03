@@ -22,6 +22,7 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
   public let dictionaryRuleCount: Int
   public let keyboardAssistCount: Int
   public let themeConfigCount: Int
+  public let webDAVConfigurationCount: Int
 
   public init(
     bookCount: Int,
@@ -40,7 +41,8 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
     readerConfigProjection: AndroidReaderConfigProjection? = nil,
     dictionaryRuleCount: Int = 0,
     keyboardAssistCount: Int = 0,
-    themeConfigCount: Int = 0
+    themeConfigCount: Int = 0,
+    webDAVConfigurationCount: Int = 0
   ) {
     self.bookCount = bookCount
     self.groupCount = groupCount
@@ -59,6 +61,25 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
     self.dictionaryRuleCount = dictionaryRuleCount
     self.keyboardAssistCount = keyboardAssistCount
     self.themeConfigCount = themeConfigCount
+    self.webDAVConfigurationCount = webDAVConfigurationCount
+  }
+}
+
+public enum AndroidWebDAVCredentialImportState: Equatable, Sendable {
+  case missing
+  case unresolvedAndroidBackupPayload(username: String?, payload: String)
+}
+
+public struct AndroidWebDAVConfigurationImportPlan: Equatable, Sendable {
+  public let settings: WebDAVConnectionSettings
+  public let credential: AndroidWebDAVCredentialImportState
+
+  public init(
+    settings: WebDAVConnectionSettings,
+    credential: AndroidWebDAVCredentialImportState
+  ) {
+    self.settings = settings
+    self.credential = credential
   }
 }
 
@@ -86,6 +107,9 @@ public protocol AndroidCoreBackupRestoreRepository: Sendable {
   func restoreAndroidDictionaryRules(_ values: [DictionaryRule]) async throws
   func restoreAndroidKeyboardAssists(_ values: [KeyboardAssist]) async throws
   func restoreAndroidThemeProfiles(_ values: [AppThemeProfile]) async throws
+  func restoreAndroidWebDAVConfiguration(
+    _ plan: AndroidWebDAVConfigurationImportPlan
+  ) async throws
 }
 
 public extension AndroidCoreBackupRestoreRepository {
@@ -116,6 +140,9 @@ public extension AndroidCoreBackupRestoreRepository {
   func restoreAndroidDictionaryRules(_ values: [DictionaryRule]) async throws {}
   func restoreAndroidKeyboardAssists(_ values: [KeyboardAssist]) async throws {}
   func restoreAndroidThemeProfiles(_ values: [AppThemeProfile]) async throws {}
+  func restoreAndroidWebDAVConfiguration(
+    _ plan: AndroidWebDAVConfigurationImportPlan
+  ) async throws {}
 }
 
 public struct AndroidCoreBackupRestoreUseCase: Sendable {
@@ -175,6 +202,8 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     let themeProfiles = AndroidThemeConfigInteropAdapter.restoreValues(
       try AndroidBackupArchive.readThemeConfigs(from: archiveURL)
     )
+    let webDAVConfiguration = try AndroidBackupArchive
+      .readWebDAVBackupConfiguration(from: archiveURL)
 
     let library = try await repository.restoreAndroidLibrary(libraryPlan)
     if !bookSources.isEmpty {
@@ -220,6 +249,11 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     if !themeProfiles.isEmpty {
       try await repository.restoreAndroidThemeProfiles(themeProfiles)
     }
+    if let webDAVConfiguration {
+      try await repository.restoreAndroidWebDAVConfiguration(
+        Self.webDAVImportPlan(webDAVConfiguration)
+      )
+    }
     return AndroidCoreBackupRestoreSummary(
       bookCount: library.bookCount,
       groupCount: library.groupCount,
@@ -238,7 +272,29 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
       readerConfigProjection: readerConfigBundle.projection,
       dictionaryRuleCount: dictionaryRules.count,
       keyboardAssistCount: keyboardAssists.count,
-      themeConfigCount: themeProfiles.count
+      themeConfigCount: themeProfiles.count,
+      webDAVConfigurationCount: webDAVConfiguration == nil ? 0 : 1
+    )
+  }
+
+  private static func webDAVImportPlan(
+    _ value: AndroidWebDAVBackupConfiguration
+  ) -> AndroidWebDAVConfigurationImportPlan {
+    let credential: AndroidWebDAVCredentialImportState
+    if let payload = value.unresolvedPasswordPayload, !payload.isEmpty {
+      credential = .unresolvedAndroidBackupPayload(
+        username: value.username,
+        payload: payload
+      )
+    } else {
+      credential = .missing
+    }
+    return AndroidWebDAVConfigurationImportPlan(
+      settings: WebDAVConnectionSettings(
+        serverAddress: value.serverAddress ?? "",
+        directoryName: value.directoryName ?? "legado"
+      ),
+      credential: credential
     )
   }
 

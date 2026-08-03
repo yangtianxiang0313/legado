@@ -20,6 +20,7 @@ public struct AndroidBackupContents: Equatable, Sendable {
     public var dictionaryRules: [AndroidDictionaryRuleDTO]
     public var keyboardAssists: [AndroidKeyboardAssistDTO]
     public var themeConfigs: [AndroidThemeConfigDTO]
+    public var sharedPreferences: AndroidSharedPreferencesDocument?
 
     public init(
         bookSources: [BookSourceDTO] = [],
@@ -38,7 +39,8 @@ public struct AndroidBackupContents: Equatable, Sendable {
         sharedReaderConfig: AndroidReaderConfigDTO? = nil,
         dictionaryRules: [AndroidDictionaryRuleDTO] = [],
         keyboardAssists: [AndroidKeyboardAssistDTO] = [],
-        themeConfigs: [AndroidThemeConfigDTO] = []
+        themeConfigs: [AndroidThemeConfigDTO] = [],
+        sharedPreferences: AndroidSharedPreferencesDocument? = nil
     ) {
         self.bookSources = bookSources
         self.replacementRules = replacementRules
@@ -57,6 +59,7 @@ public struct AndroidBackupContents: Equatable, Sendable {
         self.dictionaryRules = dictionaryRules
         self.keyboardAssists = keyboardAssists
         self.themeConfigs = themeConfigs
+        self.sharedPreferences = sharedPreferences
     }
 }
 
@@ -79,6 +82,7 @@ public enum AndroidBackupArchive {
     public static let dictionaryRulesMember = "dictRule.json"
     public static let keyboardAssistsMember = "keyboardAssists.json"
     public static let themeConfigsMember = "themeConfig.json"
+    public static let sharedPreferencesMember = "config.xml"
 
     public static func write(
         _ contents: AndroidBackupContents,
@@ -233,6 +237,14 @@ public enum AndroidBackupArchive {
                     data: try AndroidThemeConfigCodec.encodeMany(
                         contents.themeConfigs
                     )
+                )
+            )
+        }
+        if let sharedPreferences = contents.sharedPreferences {
+            members.append(
+                .init(
+                    path: sharedPreferencesMember,
+                    data: AndroidSharedPreferencesCodec.encode(sharedPreferences)
                 )
             )
         }
@@ -448,5 +460,29 @@ public enum AndroidBackupArchive {
             maximumBytes: maximumMemberBytes
         ) else { return [] }
         return try AndroidThemeConfigCodec.decodeMany(data)
+    }
+
+    public static func readSharedPreferences(
+        from archiveURL: URL,
+        maximumMemberBytes: UInt64 = 4 * 1_024 * 1_024
+    ) throws -> AndroidSharedPreferencesDocument? {
+        guard let data = try ArchiveZIPFoundation.read(
+            sharedPreferencesMember,
+            from: archiveURL,
+            maximumBytes: maximumMemberBytes
+        ) else { return nil }
+        return try AndroidSharedPreferencesCodec.decode(data)
+    }
+
+    public static func readWebDAVBackupConfiguration(
+        from archiveURL: URL,
+        maximumMemberBytes: UInt64 = 4 * 1_024 * 1_024
+    ) throws -> AndroidWebDAVBackupConfiguration? {
+        guard let document = try readSharedPreferences(
+            from: archiveURL,
+            maximumMemberBytes: maximumMemberBytes
+        ) else { return nil }
+        let configuration = AndroidWebDAVBackupConfiguration(document: document)
+        return configuration.isPresent ? configuration : nil
     }
 }
