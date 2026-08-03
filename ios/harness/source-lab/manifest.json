@@ -40,6 +40,12 @@
       "sha256": "35a98224bb21572d3d4a090c48b2036352f1b7c2b1fc76cd74f4243c6230c8fa"
     },
     {
+      "id": "rl-integration-backup-archive-001",
+      "status": "candidate",
+      "path": "ios/harness/fixtures/runtime-lab/rl-integration-backup-archive-001",
+      "sha256": "9fbe2d2cdf994d9a7765d8d797f8b5445c9c2502ce00cb23a5117ec8777a04b1"
+    },
+    {
       "id": "rl-library-book-detail-staging-runtime-001",
       "status": "candidate",
       "path": "ios/harness/fixtures/runtime-lab/rl-library-book-detail-staging-runtime-001",

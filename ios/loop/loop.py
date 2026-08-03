@@ -657,6 +657,8 @@ def owner_contract(target: str) -> Mapping[str, Any]:
             "allowed_paths": [
                 "ios/harness/oracle/android-runner/**",
                 "ios/harness/oracle/request-registry.json",
+                "ios/harness/fixtures/manifest.json",
+                "ios/harness/source-lab/manifest.json",
                 "ios/harness/fixtures/runtime-lab/**",
                 "ios/harness/goldens/android-legado-v1/**",
                 "ios/harness/goldens/manifest.json",

@@ -1,0 +1,55 @@
+{
+  "schema_version": 2,
+  "id": "IOS-INTEGRATION-BACKUP-ARCHIVE-ORACLE-001",
+  "kind": "delivery",
+  "title": "Android 备份归档与恢复 Oracle",
+  "status": "in_progress",
+  "priority": 20,
+  "base_commit": "503f8acf2e017492124fa1b4d68f1e5e33d09811",
+  "goal": "在真实 Android Instrumentation 中生成备份、执行恢复并输出脱敏的归档结构、成员、加密投影和逐域合并结果；不得实现 iOS 业务或用静态源码替代运行事实。",
+  "source": {
+    "authority": "android_source_contract",
+    "anchors": [
+      {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/help/storage/Backup.kt","symbol_id":"kotlin://io.legado.app.help.storage/Backup/backup"},
+      {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/help/storage/Restore.kt","symbol_id":"kotlin://io.legado.app.help.storage/Restore/restore"},
+      {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/help/storage/BackupAES.kt","symbol_id":"kotlin://io.legado.app.help.storage/BackupAES"}
+    ],
+    "fixture_id": "rl-integration-backup-archive-001",
+    "source_contract": {
+      "path": "ios/project/migration-priorities/active.json",
+      "fixture_id": "rl-integration-backup-archive-001",
+      "validation": "build",
+      "android_truth_capture": true
+    },
+    "knowledge": {"coverage":"ios/project/migration-priorities/active.json","packets":[],"driver":null,"claims":[]}
+  },
+  "requirements": ["REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01"],
+  "architecture": {
+    "owner": "IntegrationKit",
+    "refs": ["ARCH-001", "ARCH-005", "ARCH-008", "ARCH-014", "ARCH-017", "ARCH-018"],
+    "rule": "Oracle 只记录脱敏后的结构化观察；密码、书源原文、服务器内容和可恢复的备份字节不得进入 fixture、Golden 或日志。"
+  },
+  "selection": {"milestone_id":"MILESTONE-P67-ANDROID-BACKUP-INTEROP-001","stage_id":"P67-S2","stage_title":"Android 实际归档与恢复取证","selector_id":"P67-S2-ORACLE"},
+  "scope": {
+    "allowed_paths": [
+      "ios/harness/oracle/android-runner/**",
+      "ios/harness/oracle/request-registry.json",
+      "ios/harness/fixtures/manifest.json",
+      "ios/harness/source-lab/manifest.json",
+      "ios/harness/fixtures/runtime-lab/**",
+      "ios/harness/goldens/android-legado-v1/**",
+      "ios/harness/goldens/manifest.json",
+      "ios/harness/goldens/releases/**",
+      "ios/harness/tests/test_android_oracle_runner.py",
+      "ios/project/external-execution-receipts/**",
+      "ios/project/migration-priorities/active.json",
+      "ios/loop/loop.py"
+    ],
+    "forbidden": ["accepted Requirement", "架构依赖边", "三方依赖", "切片级 Simulator fixture"]
+  },
+  "acceptance": {
+    "profile": "slice",
+    "commands": [{"id":"ios-app-build","argv":["xcodebuild","-project","ios/Apps/Legado/Legado.xcodeproj","-scheme","LegadoApp","-destination","generic/platform=iOS Simulator","CODE_SIGNING_ALLOWED=NO","build"],"timeout_seconds":900}]
+  },
+  "knowledge_updates": {"required_on_completion":["summary","current_status","architecture_change","pitfalls","next_step"]}
+}

@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "kind": "android_runtime_scenario",
+  "id": "rl-integration-backup-archive-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "android_runtime",
+  "capabilities": ["integration.backup", "integration.restore", "integration.backup.android-interop"],
+  "compatibility_profile": "android-legado-v1",
+  "source": null,
+  "input": "input.json",
+  "transport": {"mode": "none", "external_network": "deny", "responses": []},
+  "coverage": [{
+    "behavior": "integration.backup-archive-and-restore",
+    "cases": [{
+      "id": "seeded-archive-write-and-restore",
+      "role": "nominal",
+      "android_fact_refs": ["AF-WEBDAV-UPLOAD"],
+      "branch_refs": [
+        "Backup.backup writes the current Android archive from seeded persistent domains",
+        "Restore.restore imports the extracted archive through Android domain DAOs"
+      ]
+    }]
+  }],
+  "determinism": {
+    "clock": "projected-to-backup.zip",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 0,
+    "network_allowed": false,
+    "logical_origin": null,
+    "database_reset_per_case": true
+  },
+  "limits": {"timeout_ms": 5000},
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/help/storage/Backup.kt#backup",
+      "app/src/main/java/io/legado/app/help/storage/BackupAES.kt",
+      "app/src/main/java/io/legado/app/help/storage/Restore.kt#restore"
+    ],
+    "introduced_by": "IOS-INTEGRATION-BACKUP-ARCHIVE-ORACLE-001"
+  }
+}

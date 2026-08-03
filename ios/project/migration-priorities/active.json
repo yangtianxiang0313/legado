@@ -29,8 +29,9 @@
       "title": "ZIPFoundation 归档容器启用",
       "prerequisite_task_ids": [],
       "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
-      "fixture_id": "android-backup-archive-v1",
+      "fixture_id": "rl-integration-backup-archive-001",
       "validation": "build",
+      "android_truth_capture": true,
       "source_anchors": [],
       "additional_allowed_paths": ["ios/docs/adr/0009-android-backup-interoperability.md", "ios/project/baseline.json"]
     },
@@ -45,6 +46,11 @@
         {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/help/storage/Backup.kt","symbol_id":"kotlin://io.legado.app.help.storage/Backup/backup"},
         {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/help/storage/Restore.kt","symbol_id":"kotlin://io.legado.app.help.storage/Restore/restore"},
         {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/help/storage/BackupAES.kt","symbol_id":"kotlin://io.legado.app.help.storage/BackupAES"}
+      ],
+      "additional_allowed_paths": [
+        "ios/harness/fixtures/manifest.json",
+        "ios/harness/source-lab/manifest.json",
+        "ios/loop/loop.py"
       ]
     }
   ]

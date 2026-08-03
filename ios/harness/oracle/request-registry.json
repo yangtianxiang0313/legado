@@ -387,6 +387,15 @@
       "status": "candidate"
     },
     {
+      "id": "IOS-ANDROID-INTEGRATION-BACKUP-ARCHIVE-ATTESTATION-001",
+      "scenario_id": "rl-integration-backup-archive-001",
+      "fixture_ids": [
+        "rl-integration-backup-archive-001"
+      ],
+      "authority": "android_oracle_candidate_only",
+      "status": "candidate"
+    },
+    {
       "id": "IOS-ANDROID-INTEGRATION-REMOTE-MANAGEMENT-ATTESTATION-001",
       "scenario_id": "il-integration-remote-http-websocket-management-001",
       "fixture_ids": [

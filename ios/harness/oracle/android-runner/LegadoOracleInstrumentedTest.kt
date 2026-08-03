@@ -42,6 +42,7 @@ import io.legado.app.data.entities.BookProgress
 import io.legado.app.data.entities.ReadRecord
 import io.legado.app.data.entities.ReplaceRule
 import io.legado.app.data.entities.SearchBook
+import io.legado.app.data.entities.Server
 import io.legado.app.data.entities.TxtTocRule
 import io.legado.app.data.entities.rule.ContentRule
 import io.legado.app.data.entities.rule.BookInfoRule
@@ -65,6 +66,9 @@ import io.legado.app.help.http.CookieManager
 import io.legado.app.help.http.CookieStore
 import io.legado.app.help.http.StrResponse
 import io.legado.app.help.http.newCallResponse
+import io.legado.app.help.storage.Backup
+import io.legado.app.help.storage.BackupAES
+import io.legado.app.help.storage.Restore
 import io.legado.app.lib.webdav.Authorization
 import io.legado.app.lib.webdav.WebDav
 import io.legado.app.lib.webdav.WebDavFile
@@ -109,6 +113,7 @@ import io.legado.app.utils.FileDoc
 import io.legado.app.utils.NetworkUtils
 import io.legado.app.utils.defaultSharedPreferences
 import io.legado.app.utils.putPrefBoolean
+import io.legado.app.utils.compress.ZipUtils
 import io.legado.app.web.HttpServer
 import io.legado.app.web.WebSocketServer
 import kotlinx.coroutines.CancellationException
@@ -145,6 +150,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.zip.ZipEntry
+import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
 import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
 import kotlin.coroutines.coroutineContext
@@ -286,6 +292,8 @@ class LegadoOracleInstrumentedTest {
                 runReaderSessionCloseCases()
             "rl-app-startup-first-use-and-restore-001" ->
                 runAppStartupCases()
+            "rl-integration-backup-archive-001" ->
+                runBackupArchiveCases()
             "sl-post-form-001" -> runPostFormCases()
             "sl-source-response-xml-declaration-normalization-001" ->
                 runXmlResponseCases()
@@ -524,6 +532,176 @@ class LegadoOracleInstrumentedTest {
             .put("resource_type", value.resourceType)
             .put("last_modify", value.lastModify)
             .put("is_directory", value.isDir)
+
+    private suspend fun runBackupArchiveCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            require(value.getString("operation") == "backup_archive_restore") {
+                "Backup archive scenario only accepts backup_archive_restore stimuli"
+            }
+            val stimulus = JSONObject()
+                .put("operation", "backup_archive_restore")
+                .put(
+                    "arguments",
+                    JSONObject(value.getJSONObject("arguments").toString())
+                )
+            runCase(
+                value.getString("id"),
+                "backup_archive_restore",
+                stimulus
+            ) {
+                backupArchiveProjection()
+            }
+        }
+    }
+
+    private suspend fun backupArchiveProjection(): JSONObject {
+        val target = InstrumentationRegistry.getInstrumentation().targetContext
+        val workspace = File(target.cacheDir, "legado-oracle-backup-archive")
+        val output = File(workspace, "output")
+        val extracted = File(workspace, "extracted")
+        val source = BookSource(
+            bookSourceUrl = "https://oracle.invalid/source",
+            bookSourceName = "Oracle Source",
+            bookSourceGroup = "oracle",
+            enabled = true,
+            enabledExplore = false,
+            searchUrl = "https://oracle.invalid/search?key={{key}}"
+        )
+        val replaceRule = ReplaceRule(
+            id = 7_001L,
+            name = "Oracle Replace",
+            pattern = "oracle-pattern",
+            replacement = "oracle-replacement",
+            order = 17
+        )
+        val server = Server(
+            id = 7_002L,
+            name = "Oracle Server",
+            config = GSON.toJson(
+                Server.WebDavConfig(
+                    url = "https://oracle.invalid/dav/",
+                    username = "oracle-user",
+                    password = "oracle-server-secret"
+                )
+            ),
+            sortNumber = 23
+        )
+        val publicVectorPlaintext = "legado-public-backup-vector-v1"
+        val publicTestKey = "legado-public-oracle-key-v1"
+        val webDavPassword = "oracle-webdav-secret"
+
+        workspace.deleteRecursively()
+        output.mkdirs()
+        extracted.mkdirs()
+        appDb.clearAllTables()
+        val preferences = target.defaultSharedPreferences
+        preferences.edit()
+            .putBoolean(PreferKey.onlyLatestBackup, true)
+            .putString(PreferKey.webDavPassword, webDavPassword)
+            .remove(PreferKey.webDavAccount)
+            .remove(PreferKey.webDavUrl)
+            .commit()
+        LocalConfig.password = publicTestKey
+        appDb.bookSourceDao.insert(source)
+        appDb.replaceRuleDao.insert(replaceRule)
+        appDb.serverDao.insert(server)
+
+        try {
+            Backup.backup(target, output.absolutePath)
+            val archiveFile = File(output, "backup.zip")
+            require(archiveFile.isFile) { "Android backup.zip was not created" }
+
+            val archiveProjection = ZipFile(archiveFile).use { archive ->
+                val entries = java.util.Collections.list(archive.entries())
+                val names = entries.map { it.name }.sorted()
+                val sourceEntry = requireNotNull(archive.getEntry("bookSource.json"))
+                val sourceArray = JSONArray(
+                    archive.getInputStream(sourceEntry)
+                        .bufferedReader(Charsets.UTF_8)
+                        .use { it.readText() }
+                )
+                val sourceObject = (0 until sourceArray.length())
+                    .map { sourceArray.getJSONObject(it) }
+                    .first { it.optString("bookSourceName") == source.bookSourceName }
+                val serverEntry = requireNotNull(archive.getEntry("servers.json"))
+                val encryptedServers = archive.getInputStream(serverEntry)
+                    .bufferedReader(Charsets.UTF_8)
+                    .use { it.readText() }
+                val decryptedServers = BackupAES().decryptStr(encryptedServers)
+                val publicCiphertext = BackupAES().encryptBase64(publicVectorPlaintext)
+
+                JSONObject()
+                    .put("file_name", archiveFile.name)
+                    .put("member_names", JSONArray(names))
+                    .put(
+                        "compression_methods",
+                        JSONArray(entries.map { it.method }.distinct().sorted())
+                    )
+                    .put("book_source_count", sourceArray.length())
+                    .put(
+                        "book_source_field_names",
+                        JSONArray(sourceObject.keys().asSequence().toList().sorted())
+                    )
+                    .put(
+                        "servers_is_plain_json_array",
+                        encryptedServers.trim().startsWith("[")
+                    )
+                    .put("servers_decrypted_count", JSONArray(decryptedServers).length())
+                    .put(
+                        "aes_public_vector",
+                        JSONObject()
+                            .put("plaintext_id", "legado-public-backup-vector-v1")
+                            .put("ciphertext_base64", publicCiphertext)
+                            .put(
+                                "roundtrip_equal",
+                                BackupAES().decryptStr(publicCiphertext) == publicVectorPlaintext
+                            )
+                    )
+            }
+
+            appDb.bookSourceDao.delete(source)
+            appDb.replaceRuleDao.delete(replaceRule)
+            appDb.serverDao.delete(server.id)
+            preferences.edit().remove(PreferKey.webDavPassword).commit()
+            ZipUtils.unZipToPath(archiveFile, extracted)
+            Restore.restore(extracted.absolutePath)
+
+            return JSONObject()
+                .put("archive", archiveProjection)
+                .put(
+                    "restore",
+                    JSONObject()
+                        .put(
+                            "book_source_restored",
+                            appDb.bookSourceDao.getBookSource(source.bookSourceUrl) != null
+                        )
+                        .put(
+                            "replace_rule_restored",
+                            appDb.replaceRuleDao.findById(replaceRule.id) != null
+                        )
+                        .put("server_restored", appDb.serverDao.get(server.id) != null)
+                        .put(
+                            "webdav_password_restored",
+                            preferences.getString(PreferKey.webDavPassword, null) == webDavPassword
+                        )
+                )
+        } finally {
+            appDb.bookSourceDao.delete(source.bookSourceUrl)
+            appDb.replaceRuleDao.findById(replaceRule.id)?.let {
+                appDb.replaceRuleDao.delete(it)
+            }
+            appDb.serverDao.delete(server.id)
+            preferences.edit()
+                .remove(PreferKey.webDavPassword)
+                .remove(PreferKey.onlyLatestBackup)
+                .commit()
+            LocalConfig.password = null
+            Backup.clearCache()
+            workspace.deleteRecursively()
+        }
+    }
 
     private suspend fun runRemoteManagementIntegrationCases() {
         val httpServer = HttpServer(0)

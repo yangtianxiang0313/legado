@@ -1721,6 +1721,22 @@ SCENARIO_CONTRACTS = {
             "returning-version-change-debug-skips-update-log",
         }),
     },
+    "rl-integration-backup-archive-001": {
+        "status": "candidate",
+        "fixture_kind": "android_runtime_scenario",
+        "result_type": "integration_runtime",
+        "stage_names": (
+            "fixture_setup",
+            "android_backup",
+            "archive_projection",
+            "android_restore",
+            "result_mapping",
+        ),
+        "expected_cases": (
+            ("seeded-archive-write-and-restore", "backup_archive_restore"),
+        ),
+        "nominal_cases": frozenset({"seeded-archive-write-and-restore"}),
+    },
     "il-integration-backup-webdav-001": {
         "status": "candidate",
         "fixture_kind": "integration_lab_scenario",

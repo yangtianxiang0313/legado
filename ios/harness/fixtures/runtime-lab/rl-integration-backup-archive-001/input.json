@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "seeded-archive-write-and-restore",
+      "operation": "backup_archive_restore",
+      "arguments": {"profile": "seeded-public-oracle-v1"}
+    }
+  ]
+}
