@@ -12959,14 +12959,18 @@ class LegadoOracleInstrumentedTest {
                 "case=$id operation=$operation failed",
                 error
             )
+            val issue = JSONObject()
+                .put("code", "android_exception")
+                .put("exception_type", error.javaClass.name)
+            if (scenarioId == "rl-integration-backup-archive-001") {
+                issue.put(
+                    "exception_message",
+                    error.message?.take(1_024) ?: ""
+                )
+            }
             record
                 .put("result", JSONObject.NULL)
-                .put(
-                    "issue",
-                    JSONObject()
-                        .put("code", "android_exception")
-                        .put("exception_type", error.javaClass.name)
-                )
+                .put("issue", issue)
         }
         cases.put(record)
     }

@@ -2388,9 +2388,17 @@ def normalize_raw_artifact(
         if entry["id"] in nominal_cases and (
             issue is not None or not isinstance(result, dict)
         ):
+            detail = str(entry.get("id"))
+            if isinstance(issue, dict):
+                exception_type = issue.get("exception_type")
+                exception_message = issue.get("exception_message")
+                if isinstance(exception_type, str):
+                    detail += f":{exception_type}"
+                if isinstance(exception_message, str) and exception_message:
+                    detail += f":{exception_message}"
             raise AndroidOracleRunnerError(
                 "ANDROID_CHARACTERIZATION_FAILED",
-                str(entry.get("id")),
+                detail,
             )
         if issue is not None and (
             not isinstance(issue, dict)
