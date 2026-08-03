@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		1A247BC9DA1F87E2A09B5044 /* ShelfManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1461305771304D0B5A9934B5 /* ShelfManagementView.swift */; };
 		261A3F991AB45FAFE8C369C9 /* WebDAVRemoteBookImportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00EAA0DCE058466B9090B40F /* WebDAVRemoteBookImportView.swift */; };
+		2C1E8A1A7F2B4D329AEE1101 /* WebDAVServerManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C1E8A1A7F2B4D329AEE1102 /* WebDAVServerManagementView.swift */; };
 		26C1753D9C50964A3EA59600 /* ChapterTOCView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 148BB4F7EFBC9D40BED6769D /* ChapterTOCView.swift */; };
 		4E0588B991A4FC81B896DF1E /* ReaderPageTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEFB0E99A597F60739406609 /* ReaderPageTextView.swift */; };
 		682ADA9807FEE6DA793B5B45 /* SourceManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C9DD517B1446521069518EC /* SourceManagementView.swift */; };
@@ -45,6 +46,7 @@
 		1AA56687558EF2C28A2F526F /* RootShellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootShellView.swift; sourceTree = "<group>"; };
 		1BF1DDFF0D03D90900CACB9C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		1C9DD517B1446521069518EC /* SourceManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceManagementView.swift; sourceTree = "<group>"; };
+		2C1E8A1A7F2B4D329AEE1102 /* WebDAVServerManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebDAVServerManagementView.swift; sourceTree = "<group>"; };
 		35F4A6E9B82AF44A887F2980 /* LegadoAppUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegadoAppUITests.swift; sourceTree = "<group>"; };
 		3686CB4663D9CA2D25774397 /* source.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = source.json; sourceTree = "<group>"; };
 		41F121F4FC3DD3B968A18419 /* LegadoApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = LegadoApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -89,6 +91,7 @@
 				6745EA056C92C63BE1082180 /* SourceLoginView.swift */,
 				1C9DD517B1446521069518EC /* SourceManagementView.swift */,
 				00EAA0DCE058466B9090B40F /* WebDAVRemoteBookImportView.swift */,
+				2C1E8A1A7F2B4D329AEE1102 /* WebDAVServerManagementView.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -254,6 +257,7 @@
 				7156F98B0DD6A96BA68B2DD7 /* SourceLoginView.swift in Sources */,
 				682ADA9807FEE6DA793B5B45 /* SourceManagementView.swift in Sources */,
 				261A3F991AB45FAFE8C369C9 /* WebDAVRemoteBookImportView.swift in Sources */,
+				2C1E8A1A7F2B4D329AEE1101 /* WebDAVServerManagementView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

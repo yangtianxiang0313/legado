@@ -8,6 +8,7 @@ struct ShelfManagementView: View {
     @Bindable var library: ShelfLibrary
     let persistedSources: [BookSourceDraft]
     let webDAVServerProfiles: any WebDAVServerProfileRepository
+    let webDAVServerCredentials: any WebDAVServerCredentialVault
     let webDAVRemoteBooks: any WebDAVRemoteBookTransferring
     let openSearch: () -> Void
     let openBook: (ShelfBookItem) -> Void
@@ -145,6 +146,7 @@ struct ShelfManagementView: View {
             WebDAVRemoteBookImportView(
                 library: library,
                 repository: webDAVServerProfiles,
+                credentialVault: webDAVServerCredentials,
                 transfer: webDAVRemoteBooks
             )
         }

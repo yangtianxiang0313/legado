@@ -2246,6 +2246,29 @@ final class LegadoAppUITests: XCTestCase {
         require("screen.webdavRemoteBooks")
         require("state.webdavRemoteBooks.server")
 
+        requireButton("action.webdavRemoteBooks.manageServers").tap()
+        require("screen.webdavServers")
+        requireButton("action.webdavServers.add").tap()
+        let name = element("field.webdavServer.name")
+        XCTAssertTrue(name.waitForExistence(timeout: 8))
+        name.tap()
+        name.typeText("备用书库")
+        let url = element("field.webdavServer.url")
+        url.tap()
+        url.typeText("https://backup.example/books/")
+        let username = element("field.webdavServer.username")
+        username.tap()
+        username.typeText("reader")
+        let password = element("field.webdavServer.password")
+        password.tap()
+        password.typeText("secret")
+        requireButton("action.webdavServer.save").tap()
+        XCTAssertTrue(
+            app.staticTexts["备用书库"].waitForExistence(timeout: 8)
+        )
+        app.buttons["完成"].tap()
+        require("screen.webdavRemoteBooks")
+
         requireButton("action.webdavRemoteBooks.directory").tap()
         XCTAssertTrue(
             app.staticTexts["远程论语.txt"].waitForExistence(timeout: 8)
@@ -2264,6 +2287,7 @@ final class LegadoAppUITests: XCTestCase {
             "simulator_id": contract.simulatorID,
             "projection": contract.projection,
             "server": "测试书库",
+            "managed_server": "备用书库",
             "directory": "古典",
             "downloaded_file": "远程论语.txt",
             "imported_book": "远程论语",

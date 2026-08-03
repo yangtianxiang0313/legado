@@ -6,14 +6,20 @@ struct WebDAVRemoteBookImportView: View {
     @Bindable var library: ShelfLibrary
     @State private var browser: WebDAVRemoteBookBrowserStore
     @State private var importStatus: String?
+    @State private var serverManagementPresented = false
+    private let repository: any WebDAVServerProfileRepository
+    private let credentialVault: any WebDAVServerCredentialVault
     @Environment(\.dismiss) private var dismiss
 
     init(
         library: ShelfLibrary,
         repository: any WebDAVServerProfileRepository,
+        credentialVault: any WebDAVServerCredentialVault,
         transfer: any WebDAVRemoteBookTransferring
     ) {
         self.library = library
+        self.repository = repository
+        self.credentialVault = credentialVault
         _browser = State(
             initialValue: WebDAVRemoteBookBrowserStore(
                 repository: repository,
@@ -107,8 +113,27 @@ struct WebDAVRemoteBookImportView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("关闭") { dismiss() }
                 }
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        serverManagementPresented = true
+                    } label: {
+                        Label("服务器管理", systemImage: "externaldrive.connected.to.line.below")
+                    }
+                    .accessibilityIdentifier(
+                        "action.webdavRemoteBooks.manageServers"
+                    )
+                }
             }
             .task { await browser.load() }
+            .sheet(
+                isPresented: $serverManagementPresented,
+                onDismiss: { Task { await browser.load() } }
+            ) {
+                WebDAVServerManagementView(
+                    repository: repository,
+                    credentialVault: credentialVault
+                )
+            }
         }
     }
 

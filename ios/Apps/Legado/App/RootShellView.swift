@@ -968,6 +968,9 @@ private struct RootContentView: View {
                 library: library,
                 persistedSources: persistedSources,
                 webDAVServerProfiles: webDAVServerProfiles,
+                webDAVServerCredentials: KeychainWebDAVServerCredentialVault(
+                    store: webDAVCredentials
+                ),
                 webDAVRemoteBooks: webDAVRemoteBooks,
                 openSearch: openSearch,
                 openBook: openBook
