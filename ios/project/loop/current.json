@@ -1,1 +1,1 @@
-{"active_task":null,"attempt":0,"last_completed":{"at":"2026-08-03T15:00:48Z","sequence":853,"task_id":"IOS-SOURCE-REAL-WIKISOURCE-ANDROID-CAPTURE-001"},"schema_version":2,"status":"idle","verification":null}
+{"active_task":"IOS-SOURCE-REAL-WIKISOURCE-IOS-COMPARE-001","attempt":0,"last_completed":{"at":"2026-08-03T15:00:48Z","sequence":853,"task_id":"IOS-SOURCE-REAL-WIKISOURCE-ANDROID-CAPTURE-001"},"schema_version":2,"status":"running","verification":null}
