@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P85-DIRECT-LINK-UPLOAD-RULE-INTEROP-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "priority": 1,
   "title": "P85 Android 直链上传规则备份互通",
