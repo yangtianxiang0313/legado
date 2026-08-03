@@ -75,6 +75,7 @@ struct AndroidCoreBackupRestoreUseCaseTests {
           AndroidApplicationBackupPreferences.enableReadRecordKey: .boolean(false),
           AndroidApplicationBackupPreferences.searchScopeKey: .string("科幻"),
           AndroidApplicationBackupPreferences.searchGroupKey: .string("科幻"),
+          AndroidApplicationBackupPreferences.autoChangeSourceKey: .boolean(false),
           AndroidApplicationBackupPreferences.ttsFollowSystemKey: .boolean(false),
           AndroidApplicationBackupPreferences.ttsSpeechRateKey: .int(15),
         ])
@@ -94,7 +95,7 @@ struct AndroidCoreBackupRestoreUseCaseTests {
     #expect(summary.localTextTOCRuleCount == 1)
     #expect(summary.readerConfigCount == 2)
     #expect(summary.dictionaryRuleCount == 1)
-    #expect(summary.applicationPreferenceCount == 9)
+    #expect(summary.applicationPreferenceCount == 10)
     #expect(Set(summary.preflight.members.map(\.path)) == Set([
       "bookSource.json", "config.xml", "dictRule.json", "readConfig.json",
       "readRecord.json", "replaceRule.json", "shareReadConfig.json",
@@ -121,6 +122,10 @@ struct AndroidCoreBackupRestoreUseCaseTests {
     #expect(snapshot.readingHistoryPreferences?.recordsReadingTime == false)
     #expect(snapshot.searchScopePreferences?.serializedScope == "科幻")
     #expect(snapshot.searchScopePreferences?.changeSourceGroup == "科幻")
+    #expect(
+      snapshot.sourceSwitchPreferences?.automaticallyRecoversMissingSource
+        == false
+    )
   }
 
 }
@@ -138,6 +143,7 @@ private actor CoreRestoreRepositoryStub: AndroidCoreBackupRestoreRepository {
   private var readingHistoryPreferences:
     AndroidReadingHistoryPreferencesImportPlan?
   private var searchScopePreferences: AndroidSearchScopePreferencesImportPlan?
+  private var sourceSwitchPreferences: AndroidSourceSwitchPreferencesImportPlan?
 
   func restoreAndroidDatabaseDomains(
     _ payload: AndroidCoreDatabaseRestorePayload
@@ -221,6 +227,12 @@ private actor CoreRestoreRepositoryStub: AndroidCoreBackupRestoreRepository {
     searchScopePreferences = plan
   }
 
+  func restoreAndroidSourceSwitchPreferences(
+    _ plan: AndroidSourceSwitchPreferencesImportPlan
+  ) async throws {
+    sourceSwitchPreferences = plan
+  }
+
   func snapshot() -> (
     sources: [BookSourceDraft],
     rules: [ReaderReplacementRule],
@@ -232,12 +244,14 @@ private actor CoreRestoreRepositoryStub: AndroidCoreBackupRestoreRepository {
     globalShelfSortMode: ShelfSortMode?,
     readAloudPreferences: AndroidReadAloudPreferencesImportPlan?,
     readingHistoryPreferences: AndroidReadingHistoryPreferencesImportPlan?,
-    searchScopePreferences: AndroidSearchScopePreferencesImportPlan?
+    searchScopePreferences: AndroidSearchScopePreferencesImportPlan?,
+    sourceSwitchPreferences: AndroidSourceSwitchPreferencesImportPlan?
   ) {
     (
       sources, rules, records, tocRules, readerConfig, dictionaryRules,
       navigationPreferences, globalShelfSortMode, readAloudPreferences,
-      readingHistoryPreferences, searchScopePreferences
+      readingHistoryPreferences, searchScopePreferences,
+      sourceSwitchPreferences
     )
   }
 }

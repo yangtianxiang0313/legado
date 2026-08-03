@@ -627,6 +627,77 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testRestoredAndroidAutoChangeSourceRecoversMissingReaderSource()
+        throws
+    {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+            "--reset-source-switch-preferences",
+            "--reset-webdav-settings",
+            "--reset-webdav-backup-discovery",
+            "--seed-missing-source-reader",
+            "--webdav-test-double",
+            "--webdav-app-preferences-backup-test-double",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        let offer = app.alerts["发现新的云端备份"]
+        XCTAssertTrue(offer.waitForExistence(timeout: 15))
+        offer.buttons["恢复"].tap()
+        let completion = app.alerts["云端备份恢复完成"]
+        XCTAssertTrue(completion.waitForExistence(timeout: 15))
+        completion.buttons["好"].tap()
+
+        selectRoot("root.shelf", label: "书架")
+        let book = app.staticTexts["星河纪事"].firstMatch
+        XCTAssertTrue(book.waitForExistence(timeout: 12))
+        book.tap()
+        require("screen.bookDetail")
+        requireButton("action.bookDetail.startReading").tap()
+        if element("screen.chapterTOC").waitForExistence(timeout: 3) {
+            require("action.chapter.select.0").tap()
+        }
+        require("screen.reader", timeout: 30)
+
+        let recovery = element("state.reader.autoSourceRecovery")
+        XCTAssertTrue(recovery.waitForExistence(timeout: 20))
+        XCTAssertEqual(recovery.label, "已自动切换到本地科幻书源")
+        XCTAssertEqual(
+            require("label.reader.chapterTitle").label,
+            "第一章 启航"
+        )
+        let content = element("text.reader.content")
+        XCTAssertTrue(content.waitForExistence(timeout: 20))
+        XCTAssertTrue(
+            content.label.contains("远航者点亮了失落信标"),
+            content.label
+        )
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "scenario_id": "ui-android-automatic-source-recovery-v1",
+            "android_autoChangeSource": true,
+            "initial_source": "https://missing.invalid/source",
+            "recovered_source": "本地科幻书源",
+            "candidate_validation": [
+                "exact_book_identity",
+                "toc_loaded",
+                "current_chapter_content_loaded",
+            ],
+            "reader_content_loaded": true,
+        ])
+    }
+
     func testRestoredAndroidDefaultHomePageDrivesNextColdStart() throws {
         let environment = ProcessInfo.processInfo.environment
         let contract = try XCTUnwrap(

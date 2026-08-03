@@ -23,6 +23,7 @@ struct AndroidWebDAVConfigInteropTests {
         <boolean name="enableReadRecord" value="false" />
         <string name="searchScope">科幻,奇幻</string>
         <string name="searchGroup"></string>
+        <boolean name="autoChangeSource" value="false" />
         <boolean name="ttsFollowSys" value="false" />
         <int name="ttsSpeechRate" value="15" />
         <int name="threadCount" value="8" />
@@ -52,6 +53,7 @@ struct AndroidWebDAVConfigInteropTests {
     #expect(application.enablesReadRecord == false)
     #expect(application.searchScope == "科幻,奇幻")
     #expect(application.searchGroup == "")
+    #expect(application.automaticallyChangesSource == false)
     #expect(application.ttsFollowsSystemRate == false)
     #expect(application.ttsSpeechRate == 15)
     #expect(document.values["onlyLatestBackup"] == .boolean(false))

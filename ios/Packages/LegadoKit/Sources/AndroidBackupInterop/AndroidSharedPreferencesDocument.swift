@@ -166,6 +166,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
   public static let enableReadRecordKey = "enableReadRecord"
   public static let searchScopeKey = "searchScope"
   public static let searchGroupKey = "searchGroup"
+  public static let autoChangeSourceKey = "autoChangeSource"
   public static let ttsFollowSystemKey = "ttsFollowSys"
   public static let ttsSpeechRateKey = "ttsSpeechRate"
 
@@ -176,6 +177,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
   public let enablesReadRecord: Bool?
   public let searchScope: String?
   public let searchGroup: String?
+  public let automaticallyChangesSource: Bool?
   public let ttsFollowsSystemRate: Bool?
   public let ttsSpeechRate: Int64?
 
@@ -187,6 +189,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
     enablesReadRecord: Bool? = nil,
     searchScope: String? = nil,
     searchGroup: String? = nil,
+    automaticallyChangesSource: Bool? = nil,
     ttsFollowsSystemRate: Bool? = nil,
     ttsSpeechRate: Int64? = nil
   ) {
@@ -197,6 +200,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
     self.enablesReadRecord = enablesReadRecord
     self.searchScope = searchScope
     self.searchGroup = searchGroup
+    self.automaticallyChangesSource = automaticallyChangesSource
     self.ttsFollowsSystemRate = ttsFollowsSystemRate
     self.ttsSpeechRate = ttsSpeechRate
   }
@@ -210,6 +214,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
       enablesReadRecord: document.boolean(Self.enableReadRecordKey),
       searchScope: document.string(Self.searchScopeKey),
       searchGroup: document.string(Self.searchGroupKey),
+      automaticallyChangesSource: document.boolean(Self.autoChangeSourceKey),
       ttsFollowsSystemRate: document.boolean(Self.ttsFollowSystemKey),
       ttsSpeechRate: document.integer(Self.ttsSpeechRateKey)
     )
@@ -220,6 +225,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
       || defaultHomePage != nil
       || enablesReadRecord != nil
       || searchScope != nil || searchGroup != nil
+      || automaticallyChangesSource != nil
       || ttsFollowsSystemRate != nil || ttsSpeechRate != nil
   }
 }

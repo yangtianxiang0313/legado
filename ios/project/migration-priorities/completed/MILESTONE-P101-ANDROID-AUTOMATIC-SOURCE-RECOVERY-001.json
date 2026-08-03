@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P101-ANDROID-AUTOMATIC-SOURCE-RECOVERY-001",
+  "status": "completed",
+  "mode": "critical_path_only",
+  "priority": 1,
+  "title": "P101 Android 原书源缺失自动恢复",
+  "objective": "对齐 Android 阅读主链路：恢复并回写 autoChangeSource；非本地书籍原书源不可用时，遍历受 searchGroup 约束的启用书源，只有精确命中书籍、加载目录并成功试读当前章节的候选才允许原子换源。",
+  "validation_policy": "聚焦测试覆盖开关投影往返、触发策略、关闭短路和候选试读后提交；最终只运行一条 iPhone Simulator 场景验证缺失书源书籍进入阅读器后自动恢复正文。",
+  "stages": [{
+    "id": "P101-S1",
+    "title": "自动换源策略、恢复编排与 Android 偏好互通",
+    "selectors": [{
+      "id": "P101-S1-AUTO-SOURCE-RECOVERY",
+      "claim_ids": [],
+      "task_ids": ["IOS-APP-NAVIGATION-ANDROID-AUTOMATIC-SOURCE-RECOVERY-001"]
+    }]
+  }],
+  "deliveries": [{
+    "target": "IOS-APP-NAVIGATION-ANDROID-AUTOMATIC-SOURCE-RECOVERY-001",
+    "title": "原书源缺失时自动验证并切换可用书源",
+    "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+    "fixture_id": "ui-android-automatic-source-recovery-v1",
+    "validation": "simulator",
+    "prerequisite_task_ids": ["IOS-APP-NAVIGATION-ANDROID-SEARCH-SCOPE-PREFERENCE-INTEROP-001"],
+    "additional_allowed_paths": [
+      "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
+      "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+      "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+      "ios/Packages/LegadoKit/Tests/AndroidBackupInteropTests/**",
+      "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**",
+      "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+      "ios/Apps/Legado/App/**",
+      "ios/Apps/Legado/UITests/**"
+    ],
+    "ui_contract": {
+      "goal": "恢复 autoChangeSource=true 后，打开原书源已缺失的星河纪事，iOS 自动选择能够完整加载当前章节的科幻书源、原子迁移并显示正文。",
+      "scenario_id": "ui-android-automatic-source-recovery-v1",
+      "test_method": "testRestoredAndroidAutoChangeSourceRecoversMissingReaderSource"
+    },
+    "source_anchors": [
+      {
+        "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+        "path": "app/src/main/java/io/legado/app/help/config/AppConfig.kt",
+        "symbol_id": "kotlin://io.legado.app.help.config.AppConfig/autoChangeSource"
+      },
+      {
+        "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+        "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookViewModel.kt",
+        "symbol_id": "kotlin://io.legado.app.ui.book.read.ReadBookViewModel/autoChangeSource"
+      },
+      {
+        "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+        "path": "app/src/main/java/io/legado/app/ui/book/changesource/ChangeBookSourceViewModel.kt",
+        "symbol_id": "kotlin://io.legado.app.ui.book.changesource.ChangeBookSourceViewModel/autoChangeSource"
+      }
+    ]
+  }]
+}

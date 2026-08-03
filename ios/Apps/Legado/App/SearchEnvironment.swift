@@ -553,7 +553,8 @@ enum SearchEnvironment {
     static func resolveSourceSwitch(
         current: ShelfBookItem,
         target: BookSourceDraft,
-        persistedSources: [BookSourceDraft]
+        persistedSources: [BookSourceDraft],
+        requiresExactIdentity: Bool = false
     ) async throws -> (
         candidate: ShelfBookCandidate,
         chapters: [LibraryDomain.BookChapter]
@@ -587,11 +588,14 @@ enum SearchEnvironment {
                 identifier: descriptor.id
             )
         )
-        guard let result = results.first(where: {
+        let exactResult = results.first(where: {
             $0.name == current.candidate.name
                 && normalizedAuthor($0.author)
                     == normalizedAuthor(current.candidate.author)
-        }) ?? results.first else {
+        })
+        guard let result = exactResult ?? (
+            requiresExactIdentity ? nil : results.first
+        ) else {
             throw SourceSwitchEnvironmentError.bookNotFound
         }
         let candidate = ShelfBookCandidate(
@@ -638,6 +642,84 @@ enum SearchEnvironment {
             variables: loaded.bookVariables
         )
         return (resolvedCandidate, loaded.chapters)
+    }
+
+    static func sourceIsAvailable(
+        _ sourceID: String,
+        persistedSources: [BookSourceDraft]
+    ) -> Bool {
+        let externalBaseURL = ProcessInfo.processInfo.environment[
+            "LEGADO_SEARCH_BASE_URL"
+        ]
+        return makeSources(
+            baseURL: externalBaseURL ?? "http://legado.local",
+            persistedSources: persistedSources
+        ).contains { $0.id == sourceID }
+    }
+
+    static func resolveAutomaticSourceRecovery(
+        current: ShelfBookItem,
+        currentChapter: LibraryDomain.BookChapter,
+        persistedSources: [BookSourceDraft],
+        searchScopePreferences: SearchScopePreferences
+    ) async throws -> AutomaticSourceRecoveryResolution {
+        let externalBaseURL = ProcessInfo.processInfo.environment[
+            "LEGADO_SEARCH_BASE_URL"
+        ]
+        let descriptors = makeSources(
+            baseURL: externalBaseURL ?? "http://legado.local",
+            persistedSources: persistedSources
+        ).filter {
+            $0.id != current.candidate.sourceID
+                && searchScopePreferences.includesChangeSource(
+                    group: $0.group
+                )
+        }
+        for descriptor in descriptors {
+            let source = BookSourceDraft(
+                sourceURL: descriptor.id,
+                name: descriptor.name,
+                group: descriptor.group,
+                importMetadata: BookSourceImportMetadata(enabled: true)
+            )
+            guard
+                let resolved = try? await resolveSourceSwitch(
+                    current: current,
+                    target: source,
+                    persistedSources: persistedSources,
+                    requiresExactIdentity: true
+                ),
+                !resolved.chapters.isEmpty
+            else { continue }
+            let targetBook = ShelfBookItem(
+                id: current.id,
+                candidate: resolved.candidate,
+                membership: current.membership,
+                order: current.order,
+                chapterCount: resolved.chapters.count,
+                progress: current.progress
+            )
+            let selected = resolved.chapters.first(where: {
+                $0.index == currentChapter.index
+            }) ?? resolved.chapters.last!
+            let next = resolved.chapters.first(where: {
+                $0.index == selected.index + 1
+            })
+            guard
+                (try? await loadChapterSourceContent(
+                    book: targetBook,
+                    chapter: selected,
+                    nextChapter: next,
+                    persistedSources: persistedSources
+                )) != nil
+            else { continue }
+            return AutomaticSourceRecoveryResolution(
+                source: source,
+                candidate: resolved.candidate,
+                chapters: resolved.chapters
+            )
+        }
+        throw SourceSwitchEnvironmentError.noValidatedCandidate
     }
 
     static func resolveChapterSource(
@@ -938,6 +1020,13 @@ private enum SourceSwitchEnvironmentError: Error {
     case unsupportedSource
     case bookNotFound
     case chapterNotFound
+    case noValidatedCandidate
+}
+
+struct AutomaticSourceRecoveryResolution {
+    let source: BookSourceDraft
+    let candidate: ShelfBookCandidate
+    let chapters: [LibraryDomain.BookChapter]
 }
 
 struct ChapterSourceResolution {

@@ -6,6 +6,12 @@ import ReaderCore
 import SwiftUI
 import UIKit
 
+private struct RecoveredReaderSource {
+    let book: ShelfBookItem
+    let chapter: BookChapter
+    let characterOffset: Int
+}
+
 struct ReaderContentView: View {
     let target: ReaderRoute
     @Bindable var library: ShelfLibrary
@@ -14,6 +20,7 @@ struct ReaderContentView: View {
     @Bindable var readAloudPreferences: ReadAloudPreferencesStore
     @Bindable var readingHistoryPreferences: ReadingHistoryPreferencesStore
     @Bindable var searchScopePreferences: SearchScopePreferencesStore
+    @Bindable var sourceSwitchPreferences: SourceSwitchPreferencesStore
     @Bindable var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
     @Bindable var dictionaryLookup: DictionaryLookupStore
     @Bindable var readerPreferences: ReaderPreferencesStore
@@ -57,6 +64,7 @@ struct ReaderContentView: View {
     @State private var pendingCloudProgress: ReadingProgress?
     @State private var webDAVProgressMessage: String?
     @State private var syncingWebDAVProgress = false
+    @State private var automaticSourceRecoveryMessage: String?
 
     init(
         target: ReaderRoute,
@@ -66,6 +74,7 @@ struct ReaderContentView: View {
         readAloudPreferences: ReadAloudPreferencesStore,
         readingHistoryPreferences: ReadingHistoryPreferencesStore,
         searchScopePreferences: SearchScopePreferencesStore,
+        sourceSwitchPreferences: SourceSwitchPreferencesStore,
         httpTextToSpeechEngines: HTTPTextToSpeechEngineStore,
         dictionaryLookup: DictionaryLookupStore,
         readerPreferences: ReaderPreferencesStore,
@@ -85,6 +94,7 @@ struct ReaderContentView: View {
         self.readAloudPreferences = readAloudPreferences
         self.readingHistoryPreferences = readingHistoryPreferences
         self.searchScopePreferences = searchScopePreferences
+        self.sourceSwitchPreferences = sourceSwitchPreferences
         self.httpTextToSpeechEngines = httpTextToSpeechEngines
         self.dictionaryLookup = dictionaryLookup
         self.readerPreferences = readerPreferences
@@ -162,17 +172,29 @@ struct ReaderContentView: View {
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("screen.reader")
         .overlay(alignment: .top) {
-            if let webDAVProgressMessage {
-                Text(webDAVProgressMessage)
-                    .font(.caption.weight(.semibold))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(.regularMaterial, in: .capsule)
-                    .padding(.top, 8)
-                    .accessibilityIdentifier(
-                        "state.reader.webdavProgress"
-                    )
+            VStack(spacing: 6) {
+                if let automaticSourceRecoveryMessage {
+                    Text(automaticSourceRecoveryMessage)
+                        .font(.caption.weight(.semibold))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(.regularMaterial, in: .capsule)
+                        .accessibilityIdentifier(
+                            "state.reader.autoSourceRecovery"
+                        )
+                }
+                if let webDAVProgressMessage {
+                    Text(webDAVProgressMessage)
+                        .font(.caption.weight(.semibold))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(.regularMaterial, in: .capsule)
+                        .accessibilityIdentifier(
+                            "state.reader.webdavProgress"
+                        )
+                }
             }
+            .padding(.top, 8)
         }
         .alert(
             "当前进度超过云端",
@@ -224,19 +246,49 @@ struct ReaderContentView: View {
                 ? nil
                 : book.candidate.sourceID
             readerBook = book
+            let recoveryDecision = AutomaticSourceRecoveryPolicy.decide(
+                enabled: sourceSwitchPreferences.value
+                    .automaticallyRecoversMissingSource,
+                isLocalBook: AndroidWebDAVBookOrigin.isLocalSource(
+                    book.candidate.sourceID
+                ),
+                sourceAvailable: SearchEnvironment.sourceIsAvailable(
+                    book.candidate.sourceID,
+                    persistedSources: persistedSources
+                )
+            )
+            var effectiveBook = book
+            var effectiveChapter = chapter
+            var effectiveOffset = target.characterOffset
+            if recoveryDecision == .recover,
+               let recovery = await recoverMissingReaderSource(
+                   book: book,
+                   chapter: chapter
+               ) {
+                if recovery.chapter.id != target.chapterID {
+                    openChapter(
+                        recovery.chapter.id,
+                        recovery.characterOffset
+                    )
+                    return
+                }
+                effectiveBook = recovery.book
+                effectiveChapter = recovery.chapter
+                effectiveOffset = recovery.characterOffset
+            }
             await library.beginReadingRecord(
-                bookName: book.candidate.name,
+                bookName: effectiveBook.candidate.name,
                 enabled: readingHistoryPreferences.value.recordsReadingTime
             )
             bookmarked = await library.isBookmarked(
                 bookID: target.bookID,
-                chapterID: chapter.id,
-                characterOffset: target.characterOffset
+                chapterID: effectiveChapter.id,
+                characterOffset: effectiveOffset
             )
             await session.load(
-                book: book,
-                chapter: chapter,
-                characterOffset: target.characterOffset
+                book: effectiveBook,
+                chapter: effectiveChapter,
+                characterOffset: effectiveOffset
             )
             await synchronizeWebDAVProgress()
             if
@@ -1624,6 +1676,49 @@ struct ReaderContentView: View {
             characterOffset: anchor
         )
         refreshBookmarkState()
+    }
+
+    private func recoverMissingReaderSource(
+        book: ShelfBookItem,
+        chapter: BookChapter
+    ) async -> RecoveredReaderSource? {
+        automaticSourceRecoveryMessage = "正在自动换源…"
+        do {
+            let resolution = try await SearchEnvironment
+                .resolveAutomaticSourceRecovery(
+                    current: book,
+                    currentChapter: chapter,
+                    persistedSources: persistedSources,
+                    searchScopePreferences: searchScopePreferences.value
+                )
+            guard
+                let switched = await library.switchSource(
+                    current: book,
+                    candidate: resolution.candidate,
+                    chapters: resolution.chapters
+                ),
+                let progress = switched.progress,
+                let targetChapter = resolution.chapters.first(where: {
+                    $0.index == progress.position.chapterIndex
+                })
+            else {
+                automaticSourceRecoveryMessage = "自动换源失败"
+                return nil
+            }
+            readerBook = switched
+            sourceID = switched.candidate.sourceID
+            chapters = resolution.chapters
+            automaticSourceRecoveryMessage =
+                "已自动切换到\(resolution.source.name)"
+            return RecoveredReaderSource(
+                book: switched,
+                chapter: targetChapter,
+                characterOffset: progress.position.characterOffset
+            )
+        } catch {
+            automaticSourceRecoveryMessage = "自动换源失败"
+            return nil
+        }
     }
 
     private func refreshReaderContent(

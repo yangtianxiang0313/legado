@@ -78,6 +78,7 @@ struct RootShellView: View {
     @Bindable var readAloudPreferences: ReadAloudPreferencesStore
     @Bindable var readingHistoryPreferences: ReadingHistoryPreferencesStore
     @Bindable var searchScopePreferences: SearchScopePreferencesStore
+    @Bindable var sourceSwitchPreferences: SourceSwitchPreferencesStore
     @Bindable var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
     @Bindable var dictionaryLookup: DictionaryLookupStore
     @Bindable var keyboardAssists: KeyboardAssistStore
@@ -297,6 +298,11 @@ struct RootShellView: View {
                 await seedOfflineCache()
             }
             if ProcessInfo.processInfo.arguments.contains(
+                "--seed-missing-source-reader"
+            ) {
+                await seedMissingSourceReader()
+            }
+            if ProcessInfo.processInfo.arguments.contains(
                 "--seed-pagination-cache"
             ) {
                 await seedPaginationCache()
@@ -505,6 +511,7 @@ struct RootShellView: View {
                 defaultHomePage: rootVisibility.value.defaultHomePage,
                 readingHistoryPreferences: readingHistoryPreferences.value,
                 searchScopePreferences: searchScopePreferences.value,
+                sourceSwitchPreferences: sourceSwitchPreferences.value,
                 readAloudPreferences: readAloudPreferences.value
             ),
             webDAVConfiguration: primaryConfiguration,
@@ -638,6 +645,7 @@ struct RootShellView: View {
                 readAloudPreferences: readAloudPreferences,
                 readingHistoryPreferences: readingHistoryPreferences,
                 searchScopePreferences: searchScopePreferences,
+                sourceSwitchPreferences: sourceSwitchPreferences,
                 appThemeProfiles: appThemeProfiles,
                 rootVisibility: rootVisibility,
                 webDAVSettings: webDAVSettings,
@@ -905,6 +913,7 @@ struct RootShellView: View {
                 readAloudPreferences: readAloudPreferences,
                 readingHistoryPreferences: readingHistoryPreferences,
                 searchScopePreferences: searchScopePreferences,
+                sourceSwitchPreferences: sourceSwitchPreferences,
                 httpTextToSpeechEngines: httpTextToSpeechEngines,
                 dictionaryLookup: dictionaryLookup,
                 readerPreferences: readerPreferences,
@@ -1347,6 +1356,42 @@ struct RootShellView: View {
         await library.reload()
     }
 
+    private func seedMissingSourceReader() async {
+        await seedOfflineCache()
+        guard let book = library.books.first else { return }
+        let chapters = await library.chapters(bookID: book.id)
+            .sorted { $0.index < $1.index }
+        guard let chapter = chapters.first else { return }
+        _ = await library.saveReadingProgress(
+            bookID: book.id,
+            chapterIndex: chapter.index,
+            characterOffset: 0,
+            chapterTitle: chapter.title
+        )
+        let missingCandidate = ShelfBookCandidate(
+            name: book.candidate.name,
+            author: book.candidate.author,
+            kind: book.candidate.kind,
+            lastChapter: book.candidate.lastChapter,
+            intro: book.candidate.intro,
+            bookURL: book.candidate.bookURL,
+            tocURL: book.candidate.tocURL,
+            bookRequestExpression: book.candidate.bookRequestExpression,
+            coverURL: book.candidate.coverURL,
+            customCoverURL: book.candidate.customCoverURL,
+            customIntro: book.candidate.customIntro,
+            originName: "已失效书源",
+            sourceID: "https://missing.invalid/source",
+            variables: book.candidate.variables
+        )
+        _ = await library.switchSource(
+            current: book,
+            candidate: missingCandidate,
+            chapters: chapters
+        )
+        await library.reload()
+    }
+
     private func seedPaginationCache() async {
         guard let book = library.books.first else { return }
         let chapters = await library.chapters(bookID: book.id)
@@ -1405,6 +1450,7 @@ private struct RootContentView: View {
     @Bindable var readAloudPreferences: ReadAloudPreferencesStore
     @Bindable var readingHistoryPreferences: ReadingHistoryPreferencesStore
     @Bindable var searchScopePreferences: SearchScopePreferencesStore
+    @Bindable var sourceSwitchPreferences: SourceSwitchPreferencesStore
     @Bindable var appThemeProfiles: AppThemeProfileStore
     @Bindable var rootVisibility: RootVisibilityPreferencesStore
     @Bindable var webDAVSettings: WebDAVConnectionSettingsStore
@@ -1608,6 +1654,27 @@ private struct RootContentView: View {
                     )
                     .accessibilityIdentifier(
                         "toggle.settings.readingHistory.enabled"
+                    )
+                }
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("换源")
+                        .font(.headline)
+                    Toggle(
+                        "原书源失效时自动换源",
+                        isOn: Binding(
+                            get: {
+                                sourceSwitchPreferences.value
+                                    .automaticallyRecoversMissingSource
+                            },
+                            set: {
+                                sourceSwitchPreferences
+                                    .setAutomaticallyRecoversMissingSource($0)
+                            }
+                        )
+                    )
+                    .accessibilityIdentifier(
+                        "toggle.settings.sourceSwitch.automaticRecovery"
                     )
                 }
 
@@ -1982,6 +2049,8 @@ private struct RootContentView: View {
                                 readingHistoryPreferences.value,
                             searchScopePreferences:
                                 searchScopePreferences.value,
+                            sourceSwitchPreferences:
+                                sourceSwitchPreferences.value,
                             readAloudPreferences:
                                 readAloudPreferences.value
                         ),
@@ -2866,6 +2935,7 @@ struct StartupAcceptanceView: View {
     @Bindable var readAloudPreferences: ReadAloudPreferencesStore
     @Bindable var readingHistoryPreferences: ReadingHistoryPreferencesStore
     @Bindable var searchScopePreferences: SearchScopePreferencesStore
+    @Bindable var sourceSwitchPreferences: SourceSwitchPreferencesStore
     @Bindable var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
     @Bindable var dictionaryLookup: DictionaryLookupStore
     @Bindable var keyboardAssists: KeyboardAssistStore
@@ -2931,6 +3001,7 @@ struct StartupAcceptanceView: View {
                 readAloudPreferences: readAloudPreferences,
                 readingHistoryPreferences: readingHistoryPreferences,
                 searchScopePreferences: searchScopePreferences,
+                sourceSwitchPreferences: sourceSwitchPreferences,
                 httpTextToSpeechEngines: httpTextToSpeechEngines,
                 dictionaryLookup: dictionaryLookup,
                 keyboardAssists: keyboardAssists,

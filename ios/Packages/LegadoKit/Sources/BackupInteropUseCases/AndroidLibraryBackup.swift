@@ -104,6 +104,7 @@ public struct AndroidApplicationBackupExportInput: Equatable, Sendable {
   public let defaultHomePage: DefaultHomePage
   public let readingHistoryPreferences: ReadingHistoryPreferences
   public let searchScopePreferences: SearchScopePreferences
+  public let sourceSwitchPreferences: SourceSwitchPreferences
   public let readAloudPreferences: ReadAloudPreferences
 
   public init(
@@ -113,6 +114,7 @@ public struct AndroidApplicationBackupExportInput: Equatable, Sendable {
     defaultHomePage: DefaultHomePage = .bookshelf,
     readingHistoryPreferences: ReadingHistoryPreferences = .init(),
     searchScopePreferences: SearchScopePreferences = .init(),
+    sourceSwitchPreferences: SourceSwitchPreferences = .init(),
     readAloudPreferences: ReadAloudPreferences = .init()
   ) {
     self.showsDiscovery = showsDiscovery
@@ -121,6 +123,7 @@ public struct AndroidApplicationBackupExportInput: Equatable, Sendable {
     self.defaultHomePage = defaultHomePage
     self.readingHistoryPreferences = readingHistoryPreferences
     self.searchScopePreferences = searchScopePreferences
+    self.sourceSwitchPreferences = sourceSwitchPreferences
     self.readAloudPreferences = readAloudPreferences
   }
 }
@@ -359,6 +362,11 @@ public struct AndroidLibraryBackupUseCase: Sendable {
       values[AndroidApplicationBackupPreferences.searchGroupKey] =
         .string(
           applicationPreferences.searchScopePreferences.changeSourceGroup
+        )
+      values[AndroidApplicationBackupPreferences.autoChangeSourceKey] =
+        .boolean(
+          applicationPreferences.sourceSwitchPreferences
+            .automaticallyRecoversMissingSource
         )
       values[AndroidApplicationBackupPreferences.ttsFollowSystemKey] =
         .boolean(

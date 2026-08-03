@@ -33,6 +33,7 @@ struct LegadoApp: App {
     @State private var readingHistoryPreferences:
         ReadingHistoryPreferencesStore
     @State private var searchScopePreferences: SearchScopePreferencesStore
+    @State private var sourceSwitchPreferences: SourceSwitchPreferencesStore
     @State private var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
     @State private var dictionaryLookup: DictionaryLookupStore
     @State private var keyboardAssists: KeyboardAssistStore
@@ -176,6 +177,14 @@ struct LegadoApp: App {
         let searchScopePreferencesStore = SearchScopePreferencesStore(
             repository: searchScopePreferencesRepository
         )
+        let sourceSwitchPreferencesRepository =
+            UserDefaultsSourceSwitchPreferencesRepository()
+        if processArguments.contains("--reset-source-switch-preferences") {
+            sourceSwitchPreferencesRepository.save(SourceSwitchPreferences())
+        }
+        let sourceSwitchPreferencesStore = SourceSwitchPreferencesStore(
+            repository: sourceSwitchPreferencesRepository
+        )
         _rootVisibility = State(initialValue: rootVisibilityStore)
         _readAloudPreferences = State(
             initialValue: readAloudPreferencesStore
@@ -185,6 +194,9 @@ struct LegadoApp: App {
         )
         _searchScopePreferences = State(
             initialValue: searchScopePreferencesStore
+        )
+        _sourceSwitchPreferences = State(
+            initialValue: sourceSwitchPreferencesStore
         )
         _router = State(
             initialValue: AppRouter(
@@ -209,6 +221,7 @@ struct LegadoApp: App {
                     readingHistoryPreferences:
                         readingHistoryPreferencesStore,
                     searchScopePreferences: searchScopePreferencesStore,
+                    sourceSwitchPreferences: sourceSwitchPreferencesStore,
                     webDAVSettings: webDAVSettingsStore,
                     webDAVCredentials: webDAVCredentials
                 )
@@ -348,6 +361,7 @@ struct LegadoApp: App {
                     readAloudPreferences: readAloudPreferences,
                     readingHistoryPreferences: readingHistoryPreferences,
                     searchScopePreferences: searchScopePreferences,
+                    sourceSwitchPreferences: sourceSwitchPreferences,
                     httpTextToSpeechEngines: httpTextToSpeechEngines,
                     dictionaryLookup: dictionaryLookup,
                     keyboardAssists: keyboardAssists,
@@ -381,6 +395,7 @@ struct LegadoApp: App {
                     readAloudPreferences: readAloudPreferences,
                     readingHistoryPreferences: readingHistoryPreferences,
                     searchScopePreferences: searchScopePreferences,
+                    sourceSwitchPreferences: sourceSwitchPreferences,
                     httpTextToSpeechEngines: httpTextToSpeechEngines,
                     dictionaryLookup: dictionaryLookup,
                     keyboardAssists: keyboardAssists,
@@ -431,6 +446,7 @@ private struct AppAndroidCoreBackupRestoreRepository:
     let readAloudPreferences: ReadAloudPreferencesStore
     let readingHistoryPreferences: ReadingHistoryPreferencesStore
     let searchScopePreferences: SearchScopePreferencesStore
+    let sourceSwitchPreferences: SourceSwitchPreferencesStore
     let webDAVSettings: WebDAVConnectionSettingsStore
     let webDAVCredentials: KeychainWebDAVCredentialStore
 
@@ -468,6 +484,9 @@ private struct AppAndroidCoreBackupRestoreRepository:
                 if let preferences = payload.searchScopePreferences,
                    preferences.isPresent {
                     try await restoreAndroidSearchScopePreferences(preferences)
+                }
+                if let preferences = payload.sourceSwitchPreferences {
+                    try await restoreAndroidSourceSwitchPreferences(preferences)
                 }
                 if !payload.bookSources.isEmpty {
                     try await sourceRepository.saveSources(
@@ -523,6 +542,9 @@ private struct AppAndroidCoreBackupRestoreRepository:
             searchScopePreferences: await MainActor.run {
                 searchScopePreferences.value
             },
+            sourceSwitchPreferences: await MainActor.run {
+                sourceSwitchPreferences.value
+            },
             webDAVSettings: settings,
             mainCredential: mainCredential,
             serverProfiles: serverProfiles,
@@ -549,6 +571,9 @@ private struct AppAndroidCoreBackupRestoreRepository:
             )
             searchScopePreferences.replace(
                 checkpoint.searchScopePreferences
+            )
+            sourceSwitchPreferences.replace(
+                checkpoint.sourceSwitchPreferences
             )
         }
 
@@ -784,6 +809,16 @@ private struct AppAndroidCoreBackupRestoreRepository:
         }
     }
 
+    func restoreAndroidSourceSwitchPreferences(
+        _ plan: AndroidSourceSwitchPreferencesImportPlan
+    ) async throws {
+        await MainActor.run {
+            sourceSwitchPreferences.setAutomaticallyRecoversMissingSource(
+                plan.automaticallyRecoversMissingSource
+            )
+        }
+    }
+
     func restoreAndroidWebDAVServerProfiles(
         _ plan: AndroidServerProfileImportPlan
     ) async throws {
@@ -802,6 +837,7 @@ private struct AppAndroidCoreRestoreCheckpoint: Sendable {
     let readAloudPreferences: ReadAloudPreferences
     let readingHistoryPreferences: ReadingHistoryPreferences
     let searchScopePreferences: SearchScopePreferences
+    let sourceSwitchPreferences: SourceSwitchPreferences
     let webDAVSettings: WebDAVConnectionSettings
     let mainCredential: WebDAVBasicCredentials?
     let serverProfiles: [WebDAVServerProfile]
@@ -1158,6 +1194,8 @@ private actor UITestWebDAVBackupTransfer: WebDAVBackupTransferring {
                             .string("科幻"),
                         AndroidApplicationBackupPreferences.searchGroupKey:
                             .string("科幻"),
+                        AndroidApplicationBackupPreferences.autoChangeSourceKey:
+                            .boolean(true),
                         AndroidApplicationBackupPreferences.ttsFollowSystemKey:
                             .boolean(false),
                         AndroidApplicationBackupPreferences.ttsSpeechRateKey:
@@ -1355,6 +1393,38 @@ private final class UserDefaultsSearchScopePreferencesRepository:
     }
 
     func save(_ preferences: SearchScopePreferences) {
+        guard let data = try? JSONEncoder().encode(preferences) else {
+            return
+        }
+        defaults.set(data, forKey: key)
+    }
+}
+
+@MainActor
+private final class UserDefaultsSourceSwitchPreferencesRepository:
+    SourceSwitchPreferencesRepository
+{
+    private let defaults: UserDefaults
+    private let key = "reader.sourceSwitch.preferences.v1"
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+    }
+
+    func load() -> SourceSwitchPreferences {
+        guard
+            let data = defaults.data(forKey: key),
+            let value = try? JSONDecoder().decode(
+                SourceSwitchPreferences.self,
+                from: data
+            )
+        else {
+            return SourceSwitchPreferences()
+        }
+        return value
+    }
+
+    func save(_ preferences: SourceSwitchPreferences) {
         guard let data = try? JSONEncoder().encode(preferences) else {
             return
         }
