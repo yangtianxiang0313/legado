@@ -97,6 +97,22 @@ public struct AndroidWebDAVBackupExportInput: Equatable, Sendable {
   }
 }
 
+public struct AndroidApplicationBackupExportInput: Equatable, Sendable {
+  public let showsDiscovery: Bool
+  public let showsRSS: Bool
+  public let bookshelfSort: ShelfSortMode
+
+  public init(
+    showsDiscovery: Bool,
+    showsRSS: Bool,
+    bookshelfSort: ShelfSortMode
+  ) {
+    self.showsDiscovery = showsDiscovery
+    self.showsRSS = showsRSS
+    self.bookshelfSort = bookshelfSort
+  }
+}
+
 public struct AndroidWebDAVServerProfileExportInput: Equatable, Sendable {
   public let id: Int64
   public let name: String
@@ -195,6 +211,7 @@ public struct AndroidLibraryBackupUseCase: Sendable {
     bookSources: [BookSourceDraft],
     replacementRules: [ReaderReplacementRule],
     readerPreferences: ReaderPreferences?,
+    applicationPreferences: AndroidApplicationBackupExportInput? = nil,
     webDAVConfiguration: AndroidWebDAVBackupExportInput?,
     webDAVServerProfiles: [AndroidWebDAVServerProfileExportInput] = [],
     selectedWebDAVServerID: Int64? = nil,
@@ -237,6 +254,7 @@ public struct AndroidLibraryBackupUseCase: Sendable {
       directLinkUploadRule: directLinkUploadRule,
       sharedPreferences: try Self.sharedPreferences(
         webDAVConfiguration,
+        applicationPreferences: applicationPreferences,
         selectedServerID: selectedWebDAVServerID
       )
     )
@@ -279,6 +297,7 @@ public struct AndroidLibraryBackupUseCase: Sendable {
 
   private static func sharedPreferences(
     _ input: AndroidWebDAVBackupExportInput?,
+    applicationPreferences: AndroidApplicationBackupExportInput?,
     selectedServerID: Int64?
   ) throws -> AndroidSharedPreferencesDocument? {
     var values: [String: AndroidSharedPreferenceValue] = [:]
@@ -306,6 +325,14 @@ public struct AndroidLibraryBackupUseCase: Sendable {
     if let selectedServerID {
       values[AndroidWebDAVBackupConfiguration.remoteServerIDKey] =
         .long(selectedServerID)
+    }
+    if let applicationPreferences {
+      values[AndroidApplicationBackupPreferences.showDiscoveryKey] =
+        .boolean(applicationPreferences.showsDiscovery)
+      values[AndroidApplicationBackupPreferences.showRSSKey] =
+        .boolean(applicationPreferences.showsRSS)
+      values[AndroidApplicationBackupPreferences.bookshelfSortKey] =
+        .int(Int32(applicationPreferences.bookshelfSort.rawValue))
     }
     return values.isEmpty ? nil : AndroidSharedPreferencesDocument(values: values)
   }

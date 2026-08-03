@@ -158,6 +158,38 @@ public struct AndroidWebDAVBackupConfiguration: Equatable, Sendable {
   }
 }
 
+public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
+  public static let showDiscoveryKey = "showDiscovery"
+  public static let showRSSKey = "showRss"
+  public static let bookshelfSortKey = "bookshelfSort"
+
+  public let showsDiscovery: Bool?
+  public let showsRSS: Bool?
+  public let bookshelfSort: Int64?
+
+  public init(
+    showsDiscovery: Bool? = nil,
+    showsRSS: Bool? = nil,
+    bookshelfSort: Int64? = nil
+  ) {
+    self.showsDiscovery = showsDiscovery
+    self.showsRSS = showsRSS
+    self.bookshelfSort = bookshelfSort
+  }
+
+  public init(document: AndroidSharedPreferencesDocument) {
+    self.init(
+      showsDiscovery: document.boolean(Self.showDiscoveryKey),
+      showsRSS: document.boolean(Self.showRSSKey),
+      bookshelfSort: document.integer(Self.bookshelfSortKey)
+    )
+  }
+
+  public var isPresent: Bool {
+    showsDiscovery != nil || showsRSS != nil || bookshelfSort != nil
+  }
+}
+
 private extension AndroidSharedPreferencesDocument {
   func string(_ key: String) -> String? {
     guard case .string(let value)? = values[key] else { return nil }

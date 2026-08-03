@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P96-ANDROID-APP-PREFERENCES-INTEROP-001",
+  "status": "completed",
+  "mode": "critical_path_only",
+  "priority": 1,
+  "title": "P96 Android 导航与书架偏好双端互通",
+  "objective": "让 Android config.xml 中会改变主界面结构和书架使用方式的 showDiscovery、showRss、bookshelfSort 被 iOS 恢复并实际消费，同时让 iOS 当前值回写为 Android 可恢复的同名 typed preferences。",
+  "validation_policy": "Codec、恢复载荷和导出归档使用聚焦 Swift 测试；最终只运行一条 iPhone Simulator 恢复场景，验证可选根页面消失且书架采用综合排序，不重复备份矩阵。",
+  "stages": [{
+    "id": "P96-S1",
+    "title": "应用结构偏好进入备份往返",
+    "selectors": [{
+      "id": "P96-S1-PREFERENCES",
+      "claim_ids": [],
+      "task_ids": ["IOS-APP-NAVIGATION-ANDROID-APP-PREFERENCES-INTEROP-001"]
+    }]
+  }],
+  "deliveries": [{
+    "target": "IOS-APP-NAVIGATION-ANDROID-APP-PREFERENCES-INTEROP-001",
+    "title": "恢复并回写 Android 根页面与书架排序偏好",
+    "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+    "fixture_id": "ui-android-app-preferences-restore-v1",
+    "validation": "simulator",
+    "prerequisite_task_ids": ["IOS-APP-NAVIGATION-ANDROID-BOOKMARK-READER-CONSUMPTION-001"],
+    "additional_allowed_paths": [
+      "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
+      "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+      "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+      "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+      "ios/Packages/LegadoKit/Tests/AndroidBackupInteropTests/**",
+      "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**",
+      "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+      "ios/Apps/Legado/App/**",
+      "ios/Apps/Legado/UITests/**"
+    ],
+    "ui_contract": {
+      "goal": "恢复 showDiscovery=false、showRss=false、bookshelfSort=4 的 Android backup.zip 后，发现与 RSS 根入口消失，书架投影显示综合排序。",
+      "scenario_id": "ui-android-app-preferences-restore-v1",
+      "test_method": "testRestoredAndroidApplicationPreferencesDriveIOSUI"
+    },
+    "source_anchors": [
+      {
+        "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+        "path": "app/src/main/java/io/legado/app/help/storage/Backup.kt",
+        "symbol_id": "kotlin://io.legado.app.help.storage.Backup/backup"
+      },
+      {
+        "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+        "path": "app/src/main/java/io/legado/app/help/storage/Restore.kt",
+        "symbol_id": "kotlin://io.legado.app.help.storage.Restore/restore"
+      },
+      {
+        "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+        "path": "app/src/main/java/io/legado/app/help/config/AppConfig.kt",
+        "symbol_id": "kotlin://io.legado.app.help.config.AppConfig"
+      },
+      {
+        "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+        "path": "app/src/main/java/io/legado/app/ui/main/MainActivity.kt",
+        "symbol_id": "kotlin://io.legado.app.ui.main.MainActivity/upMainMenu"
+      }
+    ]
+  }]
+}

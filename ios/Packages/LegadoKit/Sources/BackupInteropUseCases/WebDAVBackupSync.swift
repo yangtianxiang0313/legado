@@ -14,17 +14,20 @@ public protocol AndroidCoreBackupExporting: Sendable {
 }
 
 public struct AndroidBackupExportContext: Equatable, Sendable {
+  public let applicationPreferences: AndroidApplicationBackupExportInput?
   public let webDAVConfiguration: AndroidWebDAVBackupExportInput?
   public let webDAVServerProfiles: [AndroidWebDAVServerProfileExportInput]
   public let selectedWebDAVServerID: Int64?
   public let backupPassword: String?
 
   public init(
+    applicationPreferences: AndroidApplicationBackupExportInput? = nil,
     webDAVConfiguration: AndroidWebDAVBackupExportInput? = nil,
     webDAVServerProfiles: [AndroidWebDAVServerProfileExportInput] = [],
     selectedWebDAVServerID: Int64? = nil,
     backupPassword: String? = nil
   ) {
+    self.applicationPreferences = applicationPreferences
     self.webDAVConfiguration = webDAVConfiguration
     self.webDAVServerProfiles = webDAVServerProfiles
     self.selectedWebDAVServerID = selectedWebDAVServerID
@@ -47,6 +50,7 @@ extension AndroidLibraryBackupUseCase: AndroidCoreBackupExporting {
       bookSources: bookSources,
       replacementRules: replacementRules,
       readerPreferences: readerPreferences,
+      applicationPreferences: context.applicationPreferences,
       webDAVConfiguration: context.webDAVConfiguration,
       webDAVServerProfiles: context.webDAVServerProfiles,
       selectedWebDAVServerID: context.selectedWebDAVServerID,

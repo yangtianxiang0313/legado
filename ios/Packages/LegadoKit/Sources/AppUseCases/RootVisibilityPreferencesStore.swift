@@ -36,6 +36,12 @@ public final class RootVisibilityPreferencesStore {
     update { $0.showsRSS = enabled }
   }
 
+  public func replace(_ preferences: RootVisibilityPreferences) {
+    guard preferences != value else { return }
+    value = preferences
+    repository.save(preferences)
+  }
+
   private func update(_ mutation: (inout RootVisibilityPreferences) -> Void) {
     var updated = value
     mutation(&updated)

@@ -65,7 +65,12 @@ struct AndroidCoreBackupRestoreUseCaseTests {
         localTextTOCRules: [tocRule],
         readerConfigs: [readerStyle],
         sharedReaderConfig: sharedReaderStyle,
-        dictionaryRules: [dictionaryRule]
+        dictionaryRules: [dictionaryRule],
+        sharedPreferences: AndroidSharedPreferencesDocument(values: [
+          AndroidApplicationBackupPreferences.showDiscoveryKey: .boolean(false),
+          AndroidApplicationBackupPreferences.showRSSKey: .boolean(false),
+          AndroidApplicationBackupPreferences.bookshelfSortKey: .int(4),
+        ])
       ),
       to: archiveURL
     )
@@ -82,8 +87,9 @@ struct AndroidCoreBackupRestoreUseCaseTests {
     #expect(summary.localTextTOCRuleCount == 1)
     #expect(summary.readerConfigCount == 2)
     #expect(summary.dictionaryRuleCount == 1)
+    #expect(summary.applicationPreferenceCount == 3)
     #expect(Set(summary.preflight.members.map(\.path)) == Set([
-      "bookSource.json", "dictRule.json", "readConfig.json",
+      "bookSource.json", "config.xml", "dictRule.json", "readConfig.json",
       "readRecord.json", "replaceRule.json", "shareReadConfig.json",
       "txtTocRule.json",
     ]))
@@ -99,6 +105,9 @@ struct AndroidCoreBackupRestoreUseCaseTests {
     #expect(snapshot.tocRules.first?.name == "卷章")
     #expect(snapshot.readerConfig?.projection?.fontSize == 26)
     #expect(snapshot.dictionaryRules.first?.name == "词典")
+    #expect(snapshot.navigationPreferences?.showsExplore == false)
+    #expect(snapshot.navigationPreferences?.showsRSS == false)
+    #expect(snapshot.globalShelfSortMode == .combinedTime)
   }
 
 }
@@ -110,6 +119,24 @@ private actor CoreRestoreRepositoryStub: AndroidCoreBackupRestoreRepository {
   private var tocRules: [LocalTextTOCRule] = []
   private var readerConfig: AndroidReaderConfigBundle?
   private var dictionaryRules: [DictionaryRule] = []
+  private var navigationPreferences: AndroidNavigationPreferencesImportPlan?
+  private var globalShelfSortMode: ShelfSortMode?
+
+  func restoreAndroidDatabaseDomains(
+    _ payload: AndroidCoreDatabaseRestorePayload
+  ) async throws -> AndroidLibraryRestoreSummary {
+    rules = payload.replacementRules
+    records = payload.readRecords
+    tocRules = payload.localTextTOCRules
+    readerConfig = payload.readerConfigBundle
+    dictionaryRules = payload.dictionaryRules
+    globalShelfSortMode = payload.globalShelfSortMode
+    return AndroidLibraryRestoreSummary(
+      bookCount: payload.library.books.count,
+      groupCount: payload.library.groups.count,
+      bookmarkCount: payload.library.bookmarks.count
+    )
+  }
 
   func restoreAndroidLibrary(
     _ plan: AndroidLibraryRestorePlan
@@ -153,14 +180,25 @@ private actor CoreRestoreRepositoryStub: AndroidCoreBackupRestoreRepository {
     dictionaryRules = values
   }
 
+  func restoreAndroidNavigationPreferences(
+    _ plan: AndroidNavigationPreferencesImportPlan
+  ) async throws {
+    navigationPreferences = plan
+  }
+
   func snapshot() -> (
     sources: [BookSourceDraft],
     rules: [ReaderReplacementRule],
     records: [ReadRecord],
     tocRules: [LocalTextTOCRule],
     readerConfig: AndroidReaderConfigBundle?,
-    dictionaryRules: [DictionaryRule]
+    dictionaryRules: [DictionaryRule],
+    navigationPreferences: AndroidNavigationPreferencesImportPlan?,
+    globalShelfSortMode: ShelfSortMode?
   ) {
-    (sources, rules, records, tocRules, readerConfig, dictionaryRules)
+    (
+      sources, rules, records, tocRules, readerConfig, dictionaryRules,
+      navigationPreferences, globalShelfSortMode
+    )
   }
 }

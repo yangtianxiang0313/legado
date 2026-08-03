@@ -16,6 +16,9 @@ struct AndroidWebDAVConfigInteropTests {
         <string name="webDavDeviceName">Pixel</string>
         <boolean name="syncBookProgress" value="false" />
         <boolean name="onlyLatestBackup" value="false" />
+        <boolean name="showDiscovery" value="false" />
+        <boolean name="showRss" value="true" />
+        <int name="bookshelfSort" value="4" />
         <int name="threadCount" value="8" />
         <long name="lastBackup" value="1700000000000" />
         <float name="textSize" value="18.5" />
@@ -25,6 +28,9 @@ struct AndroidWebDAVConfigInteropTests {
 
     let document = try AndroidSharedPreferencesCodec.decode(data)
     let webDAV = AndroidWebDAVBackupConfiguration(document: document)
+    let application = AndroidApplicationBackupPreferences(
+      document: document
+    )
 
     #expect(webDAV.serverAddress == "https://dav.example/a&b")
     #expect(webDAV.username == "reader@example.com")
@@ -33,6 +39,9 @@ struct AndroidWebDAVConfigInteropTests {
     #expect(webDAV.syncBookProgress == false)
     #expect(webDAV.webDAVDeviceName == "Pixel")
     #expect(webDAV.onlyLatestBackup == false)
+    #expect(application.showsDiscovery == false)
+    #expect(application.showsRSS == true)
+    #expect(application.bookshelfSort == 4)
     #expect(document.values["onlyLatestBackup"] == .boolean(false))
     #expect(document.values["threadCount"] == .int(8))
     #expect(document.values["lastBackup"] == .long(1_700_000_000_000))

@@ -484,6 +484,11 @@ struct RootShellView: View {
             try await webDAVServerProfiles.selectedWebDAVServerProfileID()
         )
         return AndroidBackupExportContext(
+            applicationPreferences: AndroidApplicationBackupExportInput(
+                showsDiscovery: rootVisibility.value.showsExplore,
+                showsRSS: rootVisibility.value.showsRSS,
+                bookshelfSort: await library.globalShelfSortMode()
+            ),
             webDAVConfiguration: primaryConfiguration,
             webDAVServerProfiles: profileExports,
             selectedWebDAVServerID: selectedID,
@@ -1896,6 +1901,14 @@ private struct RootContentView: View {
                     bookSources: backupSources,
                     replacementRules: backupReplacementRules,
                     readerPreferences: readerPreferences.value,
+                    applicationPreferences:
+                        AndroidApplicationBackupExportInput(
+                            showsDiscovery:
+                                rootVisibility.value.showsExplore,
+                            showsRSS: rootVisibility.value.showsRSS,
+                            bookshelfSort:
+                                await library.globalShelfSortMode()
+                        ),
                     webDAVConfiguration: webDAVConfiguration,
                     webDAVServerProfiles: serverProfileExports,
                     selectedWebDAVServerID: selectedServerID,

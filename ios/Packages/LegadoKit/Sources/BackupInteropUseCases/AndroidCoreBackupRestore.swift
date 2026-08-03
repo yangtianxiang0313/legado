@@ -22,6 +22,7 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
   public let dictionaryRuleCount: Int
   public let keyboardAssistCount: Int
   public let themeConfigCount: Int
+  public let applicationPreferenceCount: Int
   public let webDAVConfigurationCount: Int
   public let webDAVServerProfileCount: Int
   public let preflight: AndroidBackupPreflightReport
@@ -44,6 +45,7 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
     dictionaryRuleCount: Int = 0,
     keyboardAssistCount: Int = 0,
     themeConfigCount: Int = 0,
+    applicationPreferenceCount: Int = 0,
     webDAVConfigurationCount: Int = 0,
     webDAVServerProfileCount: Int = 0,
     preflight: AndroidBackupPreflightReport = .init(members: [])
@@ -65,6 +67,7 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
     self.dictionaryRuleCount = dictionaryRuleCount
     self.keyboardAssistCount = keyboardAssistCount
     self.themeConfigCount = themeConfigCount
+    self.applicationPreferenceCount = applicationPreferenceCount
     self.webDAVConfigurationCount = webDAVConfigurationCount
     self.webDAVServerProfileCount = webDAVServerProfileCount
     self.preflight = preflight
@@ -96,6 +99,20 @@ public struct AndroidWebDAVConfigurationImportPlan: Equatable, Sendable {
   }
 }
 
+public struct AndroidNavigationPreferencesImportPlan: Equatable, Sendable {
+  public let showsExplore: Bool?
+  public let showsRSS: Bool?
+
+  public init(showsExplore: Bool? = nil, showsRSS: Bool? = nil) {
+    self.showsExplore = showsExplore
+    self.showsRSS = showsRSS
+  }
+
+  public var isPresent: Bool {
+    showsExplore != nil || showsRSS != nil
+  }
+}
+
 public struct AndroidCoreDatabaseRestorePayload: Equatable, Sendable {
   public let library: AndroidLibraryRestorePlan
   public let replacementRules: [ReaderReplacementRule]
@@ -111,6 +128,7 @@ public struct AndroidCoreDatabaseRestorePayload: Equatable, Sendable {
   public let keyboardAssists: [KeyboardAssist]
   public let themeProfiles: [AppThemeProfile]
   public let directLinkUploadRule: DirectLinkUploadRule?
+  public let globalShelfSortMode: ShelfSortMode?
 
   public init(
     library: AndroidLibraryRestorePlan,
@@ -129,7 +147,8 @@ public struct AndroidCoreDatabaseRestorePayload: Equatable, Sendable {
     dictionaryRules: [DictionaryRule] = [],
     keyboardAssists: [KeyboardAssist] = [],
     themeProfiles: [AppThemeProfile] = [],
-    directLinkUploadRule: DirectLinkUploadRule? = nil
+    directLinkUploadRule: DirectLinkUploadRule? = nil,
+    globalShelfSortMode: ShelfSortMode? = nil
   ) {
     self.library = library
     self.replacementRules = replacementRules
@@ -145,18 +164,21 @@ public struct AndroidCoreDatabaseRestorePayload: Equatable, Sendable {
     self.keyboardAssists = keyboardAssists
     self.themeProfiles = themeProfiles
     self.directLinkUploadRule = directLinkUploadRule
+    self.globalShelfSortMode = globalShelfSortMode
   }
 }
 
 public struct AndroidCoreBackupRestorePayload: Equatable, Sendable {
   public let database: AndroidCoreDatabaseRestorePayload
   public let bookSources: [BookSourceDraft]
+  public let navigationPreferences: AndroidNavigationPreferencesImportPlan?
   public let webDAVConfiguration: AndroidWebDAVConfigurationImportPlan?
   public let webDAVServerProfiles: AndroidServerProfileImportPlan
 
   public init(
     database: AndroidCoreDatabaseRestorePayload,
     bookSources: [BookSourceDraft] = [],
+    navigationPreferences: AndroidNavigationPreferencesImportPlan? = nil,
     webDAVConfiguration: AndroidWebDAVConfigurationImportPlan? = nil,
     webDAVServerProfiles: AndroidServerProfileImportPlan = .init(
       entries: [],
@@ -165,6 +187,7 @@ public struct AndroidCoreBackupRestorePayload: Equatable, Sendable {
   ) {
     self.database = database
     self.bookSources = bookSources
+    self.navigationPreferences = navigationPreferences
     self.webDAVConfiguration = webDAVConfiguration
     self.webDAVServerProfiles = webDAVServerProfiles
   }
@@ -203,6 +226,9 @@ public protocol AndroidCoreBackupRestoreRepository: Sendable {
   func restoreAndroidDirectLinkUploadRule(
     _ value: DirectLinkUploadRule
   ) async throws
+  func restoreAndroidNavigationPreferences(
+    _ plan: AndroidNavigationPreferencesImportPlan
+  ) async throws
   func restoreAndroidWebDAVConfiguration(
     _ plan: AndroidWebDAVConfigurationImportPlan
   ) async throws
@@ -224,6 +250,11 @@ public extension AndroidCoreBackupRestoreRepository {
     }
     if let configuration = payload.webDAVConfiguration {
       try await restoreAndroidWebDAVConfiguration(configuration)
+    }
+    if let preferences = payload.navigationPreferences,
+      preferences.isPresent
+    {
+      try await restoreAndroidNavigationPreferences(preferences)
     }
     if !payload.bookSources.isEmpty {
       try await restoreAndroidBookSources(payload.bookSources)
@@ -302,6 +333,9 @@ public extension AndroidCoreBackupRestoreRepository {
   func restoreAndroidThemeProfiles(_ values: [AppThemeProfile]) async throws {}
   func restoreAndroidDirectLinkUploadRule(
     _ value: DirectLinkUploadRule
+  ) async throws {}
+  func restoreAndroidNavigationPreferences(
+    _ plan: AndroidNavigationPreferencesImportPlan
   ) async throws {}
   func restoreAndroidWebDAVConfiguration(
     _ plan: AndroidWebDAVConfigurationImportPlan
@@ -391,6 +425,19 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     let projectedWebDAVConfiguration = sharedPreferences.map(
       AndroidWebDAVBackupConfiguration.init(document:)
     )
+    let projectedApplicationPreferences = sharedPreferences.map(
+      AndroidApplicationBackupPreferences.init(document:)
+    )
+    let navigationPreferences = projectedApplicationPreferences.map {
+      AndroidNavigationPreferencesImportPlan(
+        showsExplore: $0.showsDiscovery,
+        showsRSS: $0.showsRSS
+      )
+    }.flatMap { $0.isPresent ? $0 : nil }
+    let globalShelfSortMode = projectedApplicationPreferences?
+      .bookshelfSort
+      .flatMap(Int.init(exactly:))
+      .flatMap(ShelfSortMode.init(rawValue:))
     let webDAVConfiguration = projectedWebDAVConfiguration.flatMap {
       $0.isPresent ? $0 : nil
     }
@@ -439,9 +486,11 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
           dictionaryRules: dictionaryRules,
           keyboardAssists: keyboardAssists,
           themeProfiles: themeProfiles,
-          directLinkUploadRule: directLinkUploadRule
+          directLinkUploadRule: directLinkUploadRule,
+          globalShelfSortMode: globalShelfSortMode
         ),
         bookSources: bookSources,
+        navigationPreferences: navigationPreferences,
         webDAVConfiguration: webDAVImportPlan,
         webDAVServerProfiles: serverProfilePlan
       )
@@ -465,6 +514,11 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
       dictionaryRuleCount: dictionaryRules.count,
       keyboardAssistCount: keyboardAssists.count,
       themeConfigCount: themeProfiles.count,
+      applicationPreferenceCount: [
+        projectedApplicationPreferences?.showsDiscovery.map { _ in 1 },
+        projectedApplicationPreferences?.showsRSS.map { _ in 1 },
+        globalShelfSortMode.map { _ in 1 },
+      ].compactMap { $0 }.count,
       webDAVConfigurationCount: webDAVConfiguration == nil ? 0 : 1,
       webDAVServerProfileCount: serverProfilePlan.webDAVProfiles.count,
       preflight: preflight

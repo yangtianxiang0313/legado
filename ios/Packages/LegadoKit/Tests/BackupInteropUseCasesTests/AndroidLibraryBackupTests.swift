@@ -68,7 +68,14 @@ struct AndroidLibraryBackupUseCaseTests {
           replacement: "",
           order: 3
         )
-      ]
+      ],
+      readerPreferences: nil,
+      applicationPreferences: AndroidApplicationBackupExportInput(
+        showsDiscovery: false,
+        showsRSS: true,
+        bookshelfSort: .combinedTime
+      ),
+      webDAVConfiguration: nil
     )
     let restored = try AndroidLibraryImportAdapter.plan(from: archiveURL)
     let sources = try AndroidBackupArchive.readBookSources(from: archiveURL)
@@ -85,6 +92,11 @@ struct AndroidLibraryBackupUseCaseTests {
     )
     let dictionaryRules = try AndroidBackupArchive.readDictionaryRules(
       from: archiveURL
+    )
+    let sharedPreferencesDocument = try AndroidBackupArchive
+      .readSharedPreferences(from: archiveURL)
+    let sharedPreferences = AndroidApplicationBackupPreferences(
+      document: try #require(sharedPreferencesDocument)
     )
 
     #expect(
@@ -110,6 +122,15 @@ struct AndroidLibraryBackupUseCaseTests {
     #expect(readerConfigs.first?.integer("textSize") == 18)
     #expect(sharedReaderConfig?.integer("textSize") == 26)
     #expect(dictionaryRules.first?.string("name") == "词典")
+    #expect(
+      sharedPreferences.showsDiscovery == false
+    )
+    #expect(
+      sharedPreferences.showsRSS == true
+    )
+    #expect(
+      sharedPreferences.bookshelfSort == 4
+    )
   }
 
   private func fixturePlan() -> AndroidLibraryRestorePlan {

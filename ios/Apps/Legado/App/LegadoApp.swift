@@ -152,6 +152,7 @@ struct LegadoApp: App {
                 repository: AppAndroidCoreBackupRestoreRepository(
                     repository: libraryRepository,
                     sourceRepository: sourceRepository,
+                    rootVisibility: rootVisibilityStore,
                     webDAVSettings: webDAVSettingsStore,
                     webDAVCredentials: webDAVCredentials
                 )
@@ -177,6 +178,10 @@ struct LegadoApp: App {
                         seedsBookmarkFallbackArchive:
                             processArguments.contains(
                                 "--webdav-bookmark-backup-test-double"
+                            ),
+                        seedsApplicationPreferencesFallbackArchive:
+                            processArguments.contains(
+                                "--webdav-app-preferences-backup-test-double"
                             )
                     )
                     : WebDAVFoundationBackupClient(
@@ -360,6 +365,7 @@ private struct AppAndroidCoreBackupRestoreRepository:
 {
     let repository: GRDBBookShelfRepository
     let sourceRepository: UserDefaultsSourceCatalogRepository
+    let rootVisibility: RootVisibilityPreferencesStore
     let webDAVSettings: WebDAVConnectionSettingsStore
     let webDAVCredentials: KeychainWebDAVCredentialStore
 
@@ -380,6 +386,10 @@ private struct AppAndroidCoreBackupRestoreRepository:
                 }
                 if let configuration = payload.webDAVConfiguration {
                     try await restoreAndroidWebDAVConfiguration(configuration)
+                }
+                if let preferences = payload.navigationPreferences,
+                   preferences.isPresent {
+                    try await restoreAndroidNavigationPreferences(preferences)
                 }
                 if !payload.bookSources.isEmpty {
                     try await sourceRepository.saveSources(
@@ -423,6 +433,9 @@ private struct AppAndroidCoreBackupRestoreRepository:
         }
         return AppAndroidCoreRestoreCheckpoint(
             sources: try await sourceRepository.loadSources(),
+            rootVisibility: await MainActor.run {
+                rootVisibility.value
+            },
             webDAVSettings: settings,
             mainCredential: mainCredential,
             serverProfiles: serverProfiles,
@@ -440,6 +453,9 @@ private struct AppAndroidCoreBackupRestoreRepository:
             try await sourceRepository.replaceSources(checkpoint.sources)
         } catch {
             failed = true
+        }
+        await MainActor.run {
+            rootVisibility.replace(checkpoint.rootVisibility)
         }
 
         let importedServerReferences = Set(
@@ -616,6 +632,21 @@ private struct AppAndroidCoreBackupRestoreRepository:
         }
     }
 
+    func restoreAndroidNavigationPreferences(
+        _ plan: AndroidNavigationPreferencesImportPlan
+    ) async throws {
+        await MainActor.run {
+            var value = rootVisibility.value
+            if let showsExplore = plan.showsExplore {
+                value.showsExplore = showsExplore
+            }
+            if let showsRSS = plan.showsRSS {
+                value.showsRSS = showsRSS
+            }
+            rootVisibility.replace(value)
+        }
+    }
+
     func restoreAndroidWebDAVServerProfiles(
         _ plan: AndroidServerProfileImportPlan
     ) async throws {
@@ -630,6 +661,7 @@ private struct AppAndroidCoreBackupRestoreRepository:
 
 private struct AppAndroidCoreRestoreCheckpoint: Sendable {
     let sources: [BookSourceDraft]
+    let rootVisibility: RootVisibilityPreferences
     let webDAVSettings: WebDAVConnectionSettings
     let mainCredential: WebDAVBasicCredentials?
     let serverProfiles: [WebDAVServerProfile]
@@ -916,14 +948,18 @@ private actor UITestWebDAVBackupTransfer: WebDAVBackupTransferring {
         seededArchive: Data?,
         seedsFallbackArchive: Bool = false,
         seedsEncryptedFallbackArchive: Bool = false,
-        seedsBookmarkFallbackArchive: Bool = false
+        seedsBookmarkFallbackArchive: Bool = false,
+        seedsApplicationPreferencesFallbackArchive: Bool = false
     ) {
         let archive = seededArchive ?? (
             seedsFallbackArchive || seedsEncryptedFallbackArchive
                 || seedsBookmarkFallbackArchive
+                || seedsApplicationPreferencesFallbackArchive
                 ? Self.makeFallbackArchive(
                     encrypted: seedsEncryptedFallbackArchive,
-                    includesBookmark: seedsBookmarkFallbackArchive
+                    includesBookmark: seedsBookmarkFallbackArchive,
+                    includesApplicationPreferences:
+                        seedsApplicationPreferencesFallbackArchive
                 )
                 : nil
         )
@@ -934,7 +970,8 @@ private actor UITestWebDAVBackupTransfer: WebDAVBackupTransferring {
 
     private static func makeFallbackArchive(
         encrypted: Bool,
-        includesBookmark: Bool
+        includesBookmark: Bool,
+        includesApplicationPreferences: Bool
     ) -> Data? {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
@@ -962,6 +999,17 @@ private actor UITestWebDAVBackupTransfer: WebDAVBackupTransferring {
                             ),
                         AndroidWebDAVBackupConfiguration.directoryNameKey:
                             .string("legado"),
+                    ]
+                )
+            } else if includesApplicationPreferences {
+                sharedPreferences = AndroidSharedPreferencesDocument(
+                    values: [
+                        AndroidApplicationBackupPreferences.showDiscoveryKey:
+                            .boolean(false),
+                        AndroidApplicationBackupPreferences.showRSSKey:
+                            .boolean(false),
+                        AndroidApplicationBackupPreferences.bookshelfSortKey:
+                            .int(4),
                     ]
                 )
             } else if includesBookmark {

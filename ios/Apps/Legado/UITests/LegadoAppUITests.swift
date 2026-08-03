@@ -360,6 +360,59 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testRestoredAndroidApplicationPreferencesDriveIOSUI() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+            "--reset-root-visibility",
+            "--reset-webdav-settings",
+            "--reset-webdav-backup-discovery",
+            "--webdav-test-double",
+            "--webdav-app-preferences-backup-test-double",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        let offer = app.alerts["发现新的云端备份"]
+        XCTAssertTrue(offer.waitForExistence(timeout: 15))
+        offer.buttons["恢复"].tap()
+        let completion = app.alerts["云端备份恢复完成"]
+        XCTAssertTrue(completion.waitForExistence(timeout: 15))
+        completion.buttons["好"].tap()
+
+        require("screen.root.shelf")
+        let combinedSort = app.staticTexts
+            .matching(identifier: "state.shelf.projection")
+            .matching(NSPredicate(format: "label == %@", "综合时间"))
+            .firstMatch
+        XCTAssertTrue(combinedSort.waitForExistence(timeout: 8))
+        XCTAssertFalse(app.buttons["action.root.explore.select"].exists)
+        XCTAssertFalse(app.buttons["action.root.rss.select"].exists)
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "scenario_id": "ui-android-app-preferences-restore-v1",
+            "android_preferences": [
+                "showDiscovery": false,
+                "showRss": false,
+                "bookshelfSort": 4,
+            ],
+            "ios_consumption": [
+                "explore_root_visible": false,
+                "rss_root_visible": false,
+                "shelf_sort": "combinedTime",
+            ],
+        ])
+    }
+
     func testLatestWebDAVBackupDiscoveryAndRestore() throws {
         let environment = ProcessInfo.processInfo.environment
         let contract = try XCTUnwrap(

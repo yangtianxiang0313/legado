@@ -67,13 +67,15 @@ struct AndroidCoreDatabaseRestoreAtomicityTests {
           bookmarks: []
         ),
         replacementRules: [replacementRule],
-        dictionaryRules: [dictionaryRule]
+        dictionaryRules: [dictionaryRule],
+        globalShelfSortMode: .combinedTime
       )
     )
 
     #expect(summary.bookCount == 0)
     #expect(try await repository.replacementRules() == [replacementRule])
     #expect(try await repository.dictionaryRules() == [dictionaryRule])
+    #expect(try await repository.shelfSortMode(groupID: nil) == .combinedTime)
   }
 
   private func installDictionaryFailureTrigger(databaseURL: URL) throws {

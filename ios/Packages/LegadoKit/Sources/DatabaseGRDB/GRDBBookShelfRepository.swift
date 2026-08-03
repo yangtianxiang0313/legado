@@ -1176,6 +1176,16 @@ public actor GRDBBookShelfRepository:
         var record = try DirectLinkUploadRuleRecord(value: value)
         try record.save(db)
       }
+      if let mode = payload.globalShelfSortMode {
+        try db.execute(
+          sql: """
+            INSERT INTO shelfPreferences (groupID, sortMode)
+            VALUES (-1, ?)
+            ON CONFLICT(groupID) DO UPDATE SET sortMode = excluded.sortMode
+            """,
+          arguments: [mode.rawValue]
+        )
+      }
       return AndroidLibraryRestoreSummary(
         bookCount: payload.library.books.count,
         groupCount: payload.library.groups.count,

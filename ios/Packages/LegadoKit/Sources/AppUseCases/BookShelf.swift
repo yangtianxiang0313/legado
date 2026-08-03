@@ -1358,6 +1358,10 @@ public final class ShelfLibrary {
     }
   }
 
+  public func globalShelfSortMode() async -> ShelfSortMode {
+    (try? await repository.shelfSortMode(groupID: nil)) ?? .recentlyRead
+  }
+
   public func moveBooks(
     fromOffsets: IndexSet,
     toOffset: Int
