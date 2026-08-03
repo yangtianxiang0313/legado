@@ -95,6 +95,51 @@ public struct WebDAVFoundationRemoteBookClient: WebDAVRemoteBookTransferring {
     }
   }
 
+  public func uploadRemoteBook(
+    configuration: WebDAVConnectionConfiguration,
+    fileName: String,
+    data: Data
+  ) async -> WebDAVRemoteBookUploadResult {
+    guard let rootURL = configuration.rootURL else {
+      return .failed(.invalidConfiguration)
+    }
+    let normalizedName = fileName.trimmingCharacters(
+      in: .whitespacesAndNewlines
+    )
+    guard
+      !normalizedName.isEmpty,
+      normalizedName != ".",
+      normalizedName != "..",
+      !normalizedName.contains("/"),
+      !normalizedName.contains("\\")
+    else {
+      return .failed(.invalidFileName)
+    }
+    guard let resolved = await resolve(configuration) else {
+      return .failed(.credentialUnavailable)
+    }
+    let remoteURL = rootURL.appendingPathComponent(normalizedName)
+    do {
+      var request = authorizedRequest(
+        url: remoteURL,
+        method: "PUT",
+        credentials: resolved
+      )
+      request.setValue(
+        "application/octet-stream",
+        forHTTPHeaderField: "Content-Type"
+      )
+      request.httpBody = data
+      let response = try await transport.performData(request)
+      if let failure = failure(statusCode: response.statusCode) {
+        return .failed(failure)
+      }
+      return .uploaded(name: normalizedName, remoteURL: remoteURL)
+    } catch {
+      return .failed(.transportUnavailable)
+    }
+  }
+
   private func resolve(
     _ configuration: WebDAVConnectionConfiguration
   ) async -> WebDAVBasicCredentials? {

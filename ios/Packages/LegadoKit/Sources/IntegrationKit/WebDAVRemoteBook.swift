@@ -37,6 +37,7 @@ public enum AndroidRemoteBookFilePolicy {
 public enum WebDAVRemoteBookFailure: Sendable, Equatable {
   case invalidConfiguration
   case invalidResourceURL
+  case invalidFileName
   case credentialUnavailable
   case authenticationRejected
   case notFound
@@ -55,6 +56,11 @@ public enum WebDAVRemoteBookDownloadResult: Sendable, Equatable {
   case failed(WebDAVRemoteBookFailure)
 }
 
+public enum WebDAVRemoteBookUploadResult: Sendable, Equatable {
+  case uploaded(name: String, remoteURL: URL)
+  case failed(WebDAVRemoteBookFailure)
+}
+
 public protocol WebDAVRemoteBookTransferring: Sendable {
   func listRemoteBooks(
     configuration: WebDAVConnectionConfiguration,
@@ -65,4 +71,20 @@ public protocol WebDAVRemoteBookTransferring: Sendable {
     configuration: WebDAVConnectionConfiguration,
     resource: WebDAVRemoteBookResource
   ) async -> WebDAVRemoteBookDownloadResult
+
+  func uploadRemoteBook(
+    configuration: WebDAVConnectionConfiguration,
+    fileName: String,
+    data: Data
+  ) async -> WebDAVRemoteBookUploadResult
+}
+
+public extension WebDAVRemoteBookTransferring {
+  func uploadRemoteBook(
+    configuration: WebDAVConnectionConfiguration,
+    fileName: String,
+    data: Data
+  ) async -> WebDAVRemoteBookUploadResult {
+    .failed(.transportUnavailable)
+  }
 }
