@@ -1,1 +1,1 @@
-{"active_task":"IOS-APP-NAVIGATION-ANDROID-CORE-RESTORE-001","attempt":0,"last_completed":{"at":"2026-08-03T12:00:56Z","sequence":793,"task_id":"IOS-APP-NAVIGATION-ANDROID-CORE-BACKUP-001"},"schema_version":2,"status":"running","verification":null}
+{"active_task":null,"attempt":0,"last_completed":{"at":"2026-08-03T12:04:30Z","sequence":796,"task_id":"IOS-APP-NAVIGATION-ANDROID-CORE-RESTORE-001"},"schema_version":2,"status":"idle","verification":null}
