@@ -128,6 +128,12 @@ public struct SourceDOMSelectorEvaluator: Sendable {
         )
       }
     case .xpath(let normalized):
+      if let xpathSelectorBackend {
+        return try xpathBackendProjections(
+          normalized,
+          backend: xpathSelectorBackend
+        ).map(sourceProjection)
+      }
       return try xpathValues(normalized).map(\.projection)
     }
   }
@@ -189,8 +195,92 @@ public struct SourceDOMSelectorEvaluator: Sendable {
     case .css(let normalized):
       return try cssStringValues(normalized)
     case .xpath(let normalized):
+      if let xpathSelectorBackend {
+        return try xpathBackendProjections(
+          normalized,
+          backend: xpathSelectorBackend
+        ).map(\.stringValue)
+      }
       return try xpathValues(normalized).map(\.string)
     }
+  }
+
+  private var xpathSelectorBackend: (any XPathSelectorBackend)? {
+    htmlSelectorBackend as? any XPathSelectorBackend
+  }
+
+  private func xpathBackendProjections(
+    _ rule: String,
+    backend: any XPathSelectorBackend
+  ) throws -> [XPathSelectionProjection] {
+    let normalized = rule.trimmingCharacters(in: .whitespacesAndNewlines)
+    if containsUnregisteredNamespacePrefix(normalized) {
+      // Android returns an empty result when a namespace prefix has not been
+      // registered. Source definitions do not carry a namespace registry.
+      return []
+    }
+    guard
+      normalized.hasPrefix("//"),
+      hasBalancedXPathDelimiters(normalized),
+      !isAndroidRejectedXPathFunction(normalized)
+    else {
+      throw SourceDOMSelectorError.malformedXPath(rule)
+    }
+    return try backend.select(html: content, expression: normalized)
+  }
+
+  private func sourceProjection(
+    _ projection: XPathSelectionProjection
+  ) -> SourceDOMNodeProjection {
+    let kind: SourceDOMNodeKind
+    switch projection.kind {
+    case .element, .text:
+      kind = .xpathElement
+    case .attribute, .scalar:
+      kind = .xpathValue
+    }
+    return SourceDOMNodeProjection(
+      kind: kind,
+      asString: projection.stringValue,
+      rendered: projection.rendered,
+      tag: projection.tag
+    )
+  }
+
+  private func hasBalancedXPathDelimiters(_ expression: String) -> Bool {
+    var brackets = 0
+    var quote: Character?
+    for character in expression {
+      if let currentQuote = quote {
+        if character == currentQuote { quote = nil }
+        continue
+      }
+      if character == "\"" || character == "'" {
+        quote = character
+      } else if character == "[" {
+        brackets += 1
+      } else if character == "]" {
+        brackets -= 1
+        if brackets < 0 { return false }
+      }
+    }
+    return brackets == 0 && quote == nil
+  }
+
+  private func containsUnregisteredNamespacePrefix(
+    _ expression: String
+  ) -> Bool {
+    expression.range(
+      of: #"(?:/|@)[A-Za-z_][A-Za-z0-9_.-]*:[A-Za-z_]"#,
+      options: .regularExpression
+    ) != nil
+  }
+
+  private func isAndroidRejectedXPathFunction(_ expression: String) -> Bool {
+    let lowercased = expression.lowercased()
+    return lowercased.contains("local-name(")
+      || ["string(", "normalize-space(", "count(", "namespace-uri("]
+        .contains { lowercased.hasPrefix($0) }
   }
 
   private func backend(for rule: String) -> Backend {

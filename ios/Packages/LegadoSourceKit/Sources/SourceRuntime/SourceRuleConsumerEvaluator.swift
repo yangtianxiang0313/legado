@@ -95,7 +95,7 @@ public struct SourceRuleConsumerEvaluator: Sendable {
 
   public func getElement(_ rule: String) throws -> JSONValue? {
     guard !rule.isEmpty else { return nil }
-    if isCSSRule(rule) {
+    if isDOMRule(rule) {
       return try SourceDOMSelectorEvaluator(
         content: content,
         htmlSelectorBackend: htmlSelectorBackend
@@ -111,7 +111,7 @@ public struct SourceRuleConsumerEvaluator: Sendable {
 
   public func getElements(_ rule: String) throws -> [JSONValue] {
     guard !rule.isEmpty else { return [] }
-    if isCSSRule(rule) {
+    if isDOMRule(rule) {
       return try SourceDOMSelectorEvaluator(
         content: content,
         htmlSelectorBackend: htmlSelectorBackend
@@ -196,8 +196,8 @@ public struct SourceRuleConsumerEvaluator: Sendable {
       }
       return .string(values.joined(separator: "\n"))
     }
-    if isCSSRule(rule) {
-      return .string(try cssTextValues(rule).joined(separator: "\n"))
+    if isDOMRule(rule) {
+      return .string(try domTextValues(rule).joined(separator: "\n"))
     }
     return .json(try evaluateJSONPath(rule))
   }
@@ -231,8 +231,8 @@ public struct SourceRuleConsumerEvaluator: Sendable {
         return .list(values)
       }
     }
-    if isCSSRule(rule) {
-      return .list(try cssTextValues(rule))
+    if isDOMRule(rule) {
+      return .list(try domTextValues(rule))
     }
     return .json(try evaluateJSONPath(rule))
   }
@@ -268,16 +268,22 @@ public struct SourceRuleConsumerEvaluator: Sendable {
     }
   }
 
-  private func isCSSRule(_ rule: String) -> Bool {
-    rule.lowercased().hasPrefix("@css:")
+  private func isDOMRule(_ rule: String) -> Bool {
+    let lowercased = rule.lowercased()
+    return lowercased.hasPrefix("@css:")
+      || lowercased.hasPrefix("@xpath:")
+      || rule.hasPrefix("//")
   }
 
-  private func cssTextValues(_ rawRule: String) throws -> [String] {
+  private func domTextValues(_ rawRule: String) throws -> [String] {
     do {
       return try SourceDOMSelectorEvaluator(
         content: content,
         htmlSelectorBackend: htmlSelectorBackend
       ).getStringList(rawRule)
+    } catch let error as SourceDOMSelectorError {
+      if case .malformedXPath = error { throw error }
+      throw SourceRuleRuntimeError.malformedContent(.defaultBackend)
     } catch {
       throw SourceRuleRuntimeError.malformedContent(.defaultBackend)
     }

@@ -65,7 +65,7 @@
     "DesignSystem": {"dependencies": ["LegadoCore"], "external_imports": [], "forbidden_imports": ["GRDB", "WebKit"]},
     "ImageNuke": {"dependencies": ["LegadoCore", "DesignSystem"], "external_imports": ["Nuke", "NukeUI"], "forbidden_imports": ["GRDB", "WebKit"]},
     "AppNavigation": {"dependencies": ["LegadoCore", "LibraryDomain"], "external_imports": [], "forbidden_imports": ["GRDB", "WebKit"]},
-    "SourceRuntimeComposition": {"dependencies": ["RuleRuntime", "HTMLSwiftSoup"], "external_imports": [], "forbidden_imports": ["SwiftUI", "UIKit", "WebKit", "GRDB"]},
+    "SourceRuntimeComposition": {"dependencies": ["RuleRuntime", "HTMLSwiftSoup", "XPathKanna"], "external_imports": [], "forbidden_imports": ["SwiftUI", "UIKit", "WebKit", "GRDB"]},
     "SourceScriptComposition": {"dependencies": ["SourceRuntime", "ScriptJavaScriptCore"], "external_imports": [], "forbidden_imports": ["SwiftUI", "UIKit", "WebKit", "GRDB"]},
     "SourceNetworkComposition": {"dependencies": ["SourceRuntime", "NetworkFoundation"], "external_imports": [], "forbidden_imports": ["SwiftUI", "UIKit", "WebKit", "GRDB"]},
     "FeatureShelf": {"dependencies": ["LibraryDomain", "AppUseCases", "DesignSystem"], "external_imports": [], "forbidden_imports": ["GRDB", "JavaScriptCore", "WebKit"]},
@@ -127,12 +127,12 @@
   "profiles": {
     "store_safe": {
       "root_product": "LegadoStoreSafeKit",
-      "required_targets": ["LegadoCore", "LibraryDomain", "SourceFormat", "RuleRuntime", "SourceRuntime", "ReaderCore", "IntegrationKit", "WebDAVFoundation", "ArchiveZIPFoundation", "AppUseCases", "HTMLSwiftSoup", "NetworkFoundation", "SourceRuntimeComposition", "SourceNetworkComposition"],
+      "required_targets": ["LegadoCore", "LibraryDomain", "SourceFormat", "RuleRuntime", "SourceRuntime", "ReaderCore", "IntegrationKit", "WebDAVFoundation", "ArchiveZIPFoundation", "AppUseCases", "HTMLSwiftSoup", "XPathKanna", "NetworkFoundation", "SourceRuntimeComposition", "SourceNetworkComposition"],
       "forbidden_targets": ["ScriptJavaScriptCore", "WebRuntimeWebKit", "FeatureSourceDeveloper", "TestSupport", "ConformanceCLI"]
     },
     "full_compat": {
       "root_product": "LegadoFullCompatKit",
-      "required_targets": ["LegadoCore", "LibraryDomain", "SourceFormat", "RuleRuntime", "SourceRuntime", "ReaderCore", "IntegrationKit", "WebDAVFoundation", "ArchiveZIPFoundation", "AppUseCases", "HTMLSwiftSoup", "ScriptJavaScriptCore", "NetworkFoundation", "SourceRuntimeComposition", "SourceScriptComposition", "SourceNetworkComposition"],
+      "required_targets": ["LegadoCore", "LibraryDomain", "SourceFormat", "RuleRuntime", "SourceRuntime", "ReaderCore", "IntegrationKit", "WebDAVFoundation", "ArchiveZIPFoundation", "AppUseCases", "HTMLSwiftSoup", "XPathKanna", "ScriptJavaScriptCore", "NetworkFoundation", "SourceRuntimeComposition", "SourceScriptComposition", "SourceNetworkComposition"],
       "forbidden_targets": ["TestSupport", "ConformanceCLI"]
     }
   }

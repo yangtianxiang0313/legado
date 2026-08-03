@@ -68,6 +68,10 @@ let package = Package(
                     name: "LegadoHTMLSwiftSoupKit",
                     package: "LegadoSourceKit"
                 ),
+                .product(
+                    name: "LegadoXPathKannaKit",
+                    package: "LegadoSourceKit"
+                ),
             ]
         ),
         .target(
