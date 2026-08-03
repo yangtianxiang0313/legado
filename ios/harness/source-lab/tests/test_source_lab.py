@@ -640,6 +640,31 @@ class SourceLabTests(unittest.TestCase):
         self.assertEqual("nominal", transport_roles["search-empty"])
         self.assertEqual("boundary", search_roles["search-empty"])
 
+    def test_runtime_scenario_allows_only_declared_loopback_fixtures(self):
+        scenario = "rl-reader-progress-webdav-conflict-runtime-001"
+        directory, case, _ = source_lab.load_scenario(
+            REPO_ROOT,
+            scenario,
+        )
+        self.assertEqual(
+            [],
+            source_lab.validate_runtime_scenario(
+                REPO_ROOT,
+                directory,
+                case,
+            ),
+        )
+        invalid = json.loads(json.dumps(case))
+        invalid["transport"]["external_network"] = "allow"
+        errors = source_lab.validate_runtime_scenario(
+            REPO_ROOT,
+            directory,
+            invalid,
+        )
+        self.assertTrue(
+            any("固定为本地 fixture" in error for error in errors)
+        )
+
     def test_nested_business_answer_keys_are_rejected(self):
         value = {"arguments": {"nested_expected_result": {"name": "hard-coded"}}}
         self.assertIn("nested_expected_result", source_lab.forbidden_business_keys(value))

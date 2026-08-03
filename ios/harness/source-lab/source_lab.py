@@ -216,17 +216,58 @@ def validate_runtime_scenario(
     if case.get("operation") != "android_runtime" or case.get("source") is not None:
         errors.append(f"{scenario_id}: runtime operation/source 无效")
     transport = case.get("transport")
-    if transport != {
+    transport_disabled = transport == {
         "mode": "none",
         "external_network": "deny",
         "responses": [],
-    }:
-        errors.append(f"{scenario_id}: runtime transport 必须禁用")
+    }
+    transport_loopback = (
+        isinstance(transport, dict)
+        and set(transport) == {"mode", "external_network", "responses"}
+        and transport.get("mode") == "fixture_and_loopback"
+        and transport.get("external_network") == "deny"
+        and isinstance(transport.get("responses"), list)
+        and bool(transport["responses"])
+    )
+    if not transport_disabled and not transport_loopback:
+        errors.append(f"{scenario_id}: runtime transport 必须禁用或固定为本地 fixture")
+    if transport_loopback:
+        route_ids: Set[str] = set()
+        for route in transport["responses"]:
+            valid = (
+                isinstance(route, dict)
+                and set(route) == {"id", "match", "respond"}
+                and isinstance(route.get("id"), str)
+                and isinstance(route.get("match"), dict)
+                and isinstance(route.get("respond"), dict)
+                and route["match"].get("method") in {"GET", "POST"}
+                and isinstance(route["match"].get("path"), str)
+                and route["match"]["path"].startswith("/")
+                and isinstance(route["respond"].get("status"), int)
+                and isinstance(route["respond"].get("headers"), dict)
+                and isinstance(route["respond"].get("body_file"), str)
+            )
+            if not valid or route.get("id") in route_ids:
+                errors.append(f"{scenario_id}: runtime loopback route 无效或重复")
+                continue
+            route_ids.add(route["id"])
+            try:
+                body_path = safe_child(
+                    directory,
+                    route["respond"]["body_file"],
+                )
+                if not body_path.is_file():
+                    errors.append(f"{scenario_id}: runtime loopback body 不存在")
+            except SourceLabError as error:
+                errors.append(str(error))
     determinism = case.get("determinism")
+    expected_origin = (
+        "http://sourcelab.test" if transport_loopback else None
+    )
     if (
         not isinstance(determinism, dict)
         or determinism.get("network_allowed") is not False
-        or determinism.get("logical_origin") is not None
+        or determinism.get("logical_origin") != expected_origin
         or determinism.get("database_reset_per_case") is not True
         or determinism.get("timezone") != "UTC"
         or determinism.get("locale") != "en_US_POSIX"

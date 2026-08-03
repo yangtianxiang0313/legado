@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "kind": "android_runtime_scenario",
+  "id": "rl-reader-progress-webdav-conflict-runtime-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "android_runtime",
+  "capabilities": ["reader.progress", "integration.webdav", "data.interop"],
+  "compatibility_profile": "android-legado-v1",
+  "source": null,
+  "input": "input.json",
+  "transport": {
+    "mode": "fixture_and_loopback",
+    "external_network": "deny",
+    "responses": [
+      {
+        "id": "cloud-ahead",
+        "match": {"method": "GET", "path": "/dav/cloud-ahead-auto-applies/bookProgress/SyncBook_SyncAuthor.json"},
+        "respond": {"status": 200, "headers": {"content-type": "application/json; charset=utf-8"}, "body_file": "responses/cloud-ahead.json"}
+      },
+      {
+        "id": "cloud-behind-position",
+        "match": {"method": "GET", "path": "/dav/cloud-behind-position-requires-confirmation/bookProgress/SyncBook_SyncAuthor.json"},
+        "respond": {"status": 200, "headers": {"content-type": "application/json; charset=utf-8"}, "body_file": "responses/cloud-behind-position.json"}
+      },
+      {
+        "id": "cloud-behind-chapter",
+        "match": {"method": "GET", "path": "/dav/cloud-behind-chapter-can-manually-rollback/bookProgress/SyncBook_SyncAuthor.json"},
+        "respond": {"status": 200, "headers": {"content-type": "application/json; charset=utf-8"}, "body_file": "responses/cloud-behind-chapter.json"}
+      }
+    ]
+  },
+  "coverage": [
+    {
+      "behavior": "reader.progress-webdav-conflict-runtime",
+      "cases": [
+        {
+          "id": "cloud-ahead-auto-applies",
+          "role": "nominal",
+          "android_fact_refs": ["AF-READ-BOOK-SYNC-PROGRESS", "AF-APP-WEBDAV-GET-BOOK-PROGRESS"],
+          "branch_refs": ["A cloud chapter or position ahead of local is applied without confirmation"]
+        },
+        {
+          "id": "cloud-behind-position-requires-confirmation",
+          "role": "boundary",
+          "android_fact_refs": ["AF-READ-BOOK-SYNC-PROGRESS"],
+          "branch_refs": ["A lower cloud position in the same chapter is surfaced to the manual confirmation callback and is not auto-applied"]
+        },
+        {
+          "id": "cloud-behind-chapter-can-manually-rollback",
+          "role": "boundary",
+          "android_fact_refs": ["AF-READ-BOOK-SYNC-PROGRESS", "AF-READ-ACTIVITY-SURE-SYNC-PROGRESS"],
+          "branch_refs": ["A lower cloud chapter can replace local progress only after the manual confirmation path calls ReadBook.setProgress"]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "fixed_input_times",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 0,
+    "network_allowed": false,
+    "logical_origin": "http://sourcelab.test",
+    "database_reset_per_case": true
+  },
+  "limits": {"timeout_ms": 5000},
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/help/AppWebDav.kt#getBookProgress",
+      "app/src/main/java/io/legado/app/ui/book/read/ReadBookViewModel.kt#syncBookProgress",
+      "app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt#sureSyncProgress",
+      "app/src/main/java/io/legado/app/model/ReadBook.kt#setProgress"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-READER-PROGRESS-WEBDAV-CONFLICT-RUNTIME-001"
+  }
+}

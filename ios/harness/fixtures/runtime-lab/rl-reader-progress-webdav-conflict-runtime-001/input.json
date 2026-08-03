@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "cloud-ahead-auto-applies",
+      "operation": "single_book_progress_sync",
+      "arguments": {
+        "local_chapter_index": 1,
+        "local_chapter_pos": 40,
+        "confirm_rollback": false
+      }
+    },
+    {
+      "id": "cloud-behind-position-requires-confirmation",
+      "operation": "single_book_progress_sync",
+      "arguments": {
+        "local_chapter_index": 1,
+        "local_chapter_pos": 90,
+        "confirm_rollback": false
+      }
+    },
+    {
+      "id": "cloud-behind-chapter-can-manually-rollback",
+      "operation": "single_book_progress_sync",
+      "arguments": {
+        "local_chapter_index": 2,
+        "local_chapter_pos": 20,
+        "confirm_rollback": true
+      }
+    }
+  ]
+}

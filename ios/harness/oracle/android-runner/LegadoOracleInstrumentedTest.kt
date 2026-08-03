@@ -50,6 +50,7 @@ import io.legado.app.data.entities.rule.TocRule
 import io.legado.app.data.appDb
 import io.legado.app.exception.ConcurrentException
 import io.legado.app.help.CacheManager
+import io.legado.app.help.AppWebDav
 import io.legado.app.help.TTS
 import io.legado.app.help.book.BookHelp
 import io.legado.app.help.book.ContentProcessor
@@ -279,6 +280,8 @@ class LegadoOracleInstrumentedTest {
                 runReaderLayoutPageProjectionCases()
             "rl-reader-progress-layout-save-runtime-001" ->
                 runReaderProgressRuntimeCases()
+            "rl-reader-progress-webdav-conflict-runtime-001" ->
+                runReaderProgressWebDavConflictCases()
             "rl-reader-progress-save-runtime-001" ->
                 runReaderProgressSaveRuntimeCases()
             "rl-ui-book-detail-conditional-actions-001" ->
@@ -4893,6 +4896,119 @@ class LegadoOracleInstrumentedTest {
             runCase(value.getString("id"), operation, stimulus) {
                 readerProgressRuntimeProjection(operation, arguments)
             }
+        }
+    }
+
+    private suspend fun runReaderProgressWebDavConflictCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            val operation = value.getString("operation")
+            require(operation == "single_book_progress_sync") {
+                "Unsupported WebDAV progress operation: $operation"
+            }
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", operation)
+                .put("arguments", JSONObject(arguments.toString()))
+            runCase(value.getString("id"), operation, stimulus) {
+                readerProgressWebDavConflictProjection(
+                    value.getString("id"),
+                    arguments
+                )
+            }
+        }
+    }
+
+    private suspend fun readerProgressWebDavConflictProjection(
+        caseId: String,
+        arguments: JSONObject
+    ): JSONObject {
+        clearProgressRuntimeState()
+        val target = InstrumentationRegistry.getInstrumentation().targetContext
+        val preferences = target.defaultSharedPreferences
+        val authorizationField = AppWebDav::class.java
+            .getDeclaredField("authorization")
+            .apply { isAccessible = true }
+        val book = Book(
+            bookUrl = "/android-runtime/reader-progress/webdav-book.txt",
+            originName = "RuntimeLab",
+            name = "SyncBook",
+            author = "SyncAuthor",
+            totalChapterNum = 3,
+            durChapterTitle = "Local Chapter",
+            durChapterIndex = arguments.getInt("local_chapter_index"),
+            durChapterPos = arguments.getInt("local_chapter_pos"),
+            durChapterTime = 100L
+        )
+        seedProgressBook(book)
+        ReadBook.resetData(book)
+        preferences.edit()
+            .putString(
+                PreferKey.webDavUrl,
+                "$deviceOrigin/dav/$caseId/"
+            )
+            .putBoolean(PreferKey.syncBookProgress, true)
+            .commit()
+        authorizationField.set(
+            AppWebDav,
+            Authorization("oracle-user", "oracle-password")
+        )
+        val prompted = CompletableDeferred<BookProgress>()
+        return try {
+            val viewModel = ReadBookViewModel(
+                target.applicationContext as Application
+            )
+            viewModel.syncBookProgress(book) { progress ->
+                prompted.complete(progress)
+            }
+            withTimeout(5_000) {
+                while (
+                    !prompted.isCompleted &&
+                    ReadBook.durChapterIndex == book.durChapterIndex &&
+                    ReadBook.durChapterPos == book.durChapterPos
+                ) {
+                    delay(10)
+                }
+            }
+            val beforeConfirmationIndex = ReadBook.durChapterIndex
+            val beforeConfirmationPos = ReadBook.durChapterPos
+            val promptedProgress = if (prompted.isCompleted) {
+                prompted.await()
+            } else {
+                null
+            }
+            if (
+                arguments.getBoolean("confirm_rollback") &&
+                promptedProgress != null
+            ) {
+                ReadBook.setProgress(promptedProgress)
+            }
+            JSONObject()
+                .put("local_chapter_index", book.durChapterIndex)
+                .put("local_char_position", book.durChapterPos)
+                .put("confirmation_requested", promptedProgress != null)
+                .put(
+                    "before_confirmation_chapter_index",
+                    beforeConfirmationIndex
+                )
+                .put(
+                    "before_confirmation_char_position",
+                    beforeConfirmationPos
+                )
+                .put(
+                    "confirmation_accepted",
+                    arguments.getBoolean("confirm_rollback")
+                )
+                .put("final_chapter_index", ReadBook.durChapterIndex)
+                .put("final_char_position", ReadBook.durChapterPos)
+        } finally {
+            authorizationField.set(AppWebDav, null)
+            preferences.edit()
+                .remove(PreferKey.webDavUrl)
+                .remove(PreferKey.syncBookProgress)
+                .commit()
+            clearProgressRuntimeState()
         }
     }
 

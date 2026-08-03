@@ -1048,6 +1048,34 @@ SCENARIO_CONTRACTS = {
             "audio-save-refreshes-title-and-persists-book-fields",
         }),
     },
+    "rl-reader-progress-webdav-conflict-runtime-001": {
+        "status": "candidate",
+        "fixture_kind": "android_runtime_scenario",
+        "result_type": "reader_runtime",
+        "stage_names": (
+            "fixture_setup",
+            "webdav_download",
+            "conflict_decision",
+            "manual_confirmation",
+            "result_mapping",
+        ),
+        "expected_cases": (
+            ("cloud-ahead-auto-applies", "single_book_progress_sync"),
+            (
+                "cloud-behind-position-requires-confirmation",
+                "single_book_progress_sync",
+            ),
+            (
+                "cloud-behind-chapter-can-manually-rollback",
+                "single_book_progress_sync",
+            ),
+        ),
+        "nominal_cases": frozenset({
+            "cloud-ahead-auto-applies",
+            "cloud-behind-position-requires-confirmation",
+            "cloud-behind-chapter-can-manually-rollback",
+        }),
+    },
     "rl-reader-progress-save-runtime-001": {
         "status": "candidate",
         "fixture_kind": "android_runtime_scenario",

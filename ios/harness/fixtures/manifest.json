@@ -144,6 +144,11 @@
       "sha256": "89cfd89fab19e169e9263f98fecc7ca0a804769e7b8dfc4e47052dd339e63a77"
     },
     {
+      "id": "rl-reader-progress-webdav-conflict-runtime-001",
+      "path": "ios/harness/fixtures/runtime-lab/rl-reader-progress-webdav-conflict-runtime-001",
+      "sha256": "4c65067caaf23aebe4ede3d123fd585c5fad4cd4494de88d98fcadd5a201d11a"
+    },
+    {
       "id": "rl-reader-session-chapter-navigation-001",
       "path": "ios/harness/fixtures/runtime-lab/rl-reader-session-chapter-navigation-001",
       "sha256": "4dfc1ef0418f2ca250400f7591b940e2d5af8b232559d3f44955a5beb64abe10"

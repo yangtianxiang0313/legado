@@ -1,1 +1,1 @@
-{"active_task":null,"attempt":0,"last_completed":{"at":"2026-08-03T15:43:49Z","sequence":862,"task_id":"IOS-LOOP-ANDROID-INVENTORY-ROLLOVER-001"},"schema_version":2,"status":"idle","verification":null}
+{"active_task":"IOS-CHARACTERIZE-READER-PROGRESS-WEBDAV-CONFLICT-RUNTIME-001","attempt":0,"last_completed":{"at":"2026-08-03T15:43:49Z","sequence":862,"task_id":"IOS-LOOP-ANDROID-INVENTORY-ROLLOVER-001"},"schema_version":2,"status":"running","verification":null}
