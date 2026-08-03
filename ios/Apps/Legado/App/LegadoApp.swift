@@ -414,10 +414,7 @@ private struct AppAndroidCoreBackupRestoreRepository:
             throw AndroidCoreBackupRestoreError.backupPasswordRequired
         }
         await MainActor.run {
-            webDAVSettings.update(
-                serverAddress: plan.settings.serverAddress,
-                directoryName: plan.settings.directoryName
-            )
+            webDAVSettings.replace(plan.settings)
         }
     }
 

@@ -13,6 +13,7 @@ struct AndroidWebDAVConfigInteropTests {
         <string name="web_dav_account">reader@example.com</string>
         <string name="web_dav_password">opaque-base64</string>
         <string name="webDavDir">legado/shared</string>
+        <boolean name="syncBookProgress" value="false" />
         <boolean name="onlyLatestBackup" value="true" />
         <int name="threadCount" value="8" />
         <long name="lastBackup" value="1700000000000" />
@@ -28,6 +29,7 @@ struct AndroidWebDAVConfigInteropTests {
     #expect(webDAV.username == "reader@example.com")
     #expect(webDAV.unresolvedPasswordPayload == "opaque-base64")
     #expect(webDAV.directoryName == "legado/shared")
+    #expect(webDAV.syncBookProgress == false)
     #expect(document.values["onlyLatestBackup"] == .boolean(true))
     #expect(document.values["threadCount"] == .int(8))
     #expect(document.values["lastBackup"] == .long(1_700_000_000_000))
@@ -54,6 +56,7 @@ struct AndroidWebDAVConfigInteropTests {
       AndroidWebDAVBackupConfiguration.usernameKey: .string("reader"),
       AndroidWebDAVBackupConfiguration.passwordKey: .string("encrypted"),
       AndroidWebDAVBackupConfiguration.directoryNameKey: .string("legado"),
+      AndroidWebDAVBackupConfiguration.syncBookProgressKey: .boolean(false),
     ])
 
     try AndroidBackupArchive.write(
@@ -68,7 +71,7 @@ struct AndroidWebDAVConfigInteropTests {
     #expect(
       try AndroidBackupArchive.readWebDAVBackupConfiguration(
         from: archiveURL
-      )?.unresolvedPasswordPayload == "encrypted"
+      )?.syncBookProgress == false
     )
   }
 

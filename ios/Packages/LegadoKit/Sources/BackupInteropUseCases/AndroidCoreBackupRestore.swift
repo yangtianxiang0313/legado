@@ -368,7 +368,8 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     return AndroidWebDAVConfigurationImportPlan(
       settings: WebDAVConnectionSettings(
         serverAddress: value.serverAddress ?? "",
-        directoryName: value.directoryName ?? "legado"
+        directoryName: value.directoryName ?? "legado",
+        syncBookProgress: value.syncBookProgress ?? true
       ),
       credential: credential
     )

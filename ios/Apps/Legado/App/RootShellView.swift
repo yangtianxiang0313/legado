@@ -178,6 +178,15 @@ struct RootShellView: View {
             ) {
                 await seedWebDAVProgress()
             }
+            if webDAVSettings.value.syncBookProgress,
+               !ProcessInfo.processInfo.arguments.contains(
+                   "--seed-webdav-progress"
+               ) {
+                _ = await library.synchronizeWebDAVShelfProgress(
+                    configuration: webDAVSettings.value.connectionConfiguration,
+                    loader: webDAVProgressLoader
+                )
+            }
         }
         .onChange(of: rootVisibility.value) { _, _ in
             router.reconcileVisibleRoots(visibleRoots)
@@ -1147,6 +1156,16 @@ private struct RootContentView: View {
                         set: { webDAVSettings.update(serverAddress: webDAVSettings.value.serverAddress, directoryName: $0) }
                     ))
                     .accessibilityIdentifier("field.settings.webdav.directory")
+                    Toggle(
+                        "同步阅读进度",
+                        isOn: Binding(
+                            get: { webDAVSettings.value.syncBookProgress },
+                            set: { webDAVSettings.updateSyncBookProgress($0) }
+                        )
+                    )
+                    .accessibilityIdentifier(
+                        "toggle.settings.webdav.syncBookProgress"
+                    )
                     Button("测试连接") { testWebDAVConnection() }
                         .accessibilityIdentifier("action.settings.webdav.test")
                     if !webDAVStatus.isEmpty {
@@ -1411,7 +1430,8 @@ private struct RootContentView: View {
                         username: credentials.username,
                         password: credentials.password,
                         directoryName: webDAVSettings.value.directoryName,
-                        backupPassword: androidBackupPassword
+                        backupPassword: androidBackupPassword,
+                        syncBookProgress: webDAVSettings.value.syncBookProgress
                     )
                 }
                 let summary = try await libraryBackup.export(

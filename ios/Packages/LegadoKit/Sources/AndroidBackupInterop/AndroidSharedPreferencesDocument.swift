@@ -99,6 +99,7 @@ public struct AndroidWebDAVBackupConfiguration: Equatable, Sendable {
   public static let passwordKey = "web_dav_password"
   public static let directoryNameKey = "webDavDir"
   public static let remoteServerIDKey = "remoteServerId"
+  public static let syncBookProgressKey = "syncBookProgress"
 
   public let serverAddress: String?
   public let username: String?
@@ -107,19 +108,22 @@ public struct AndroidWebDAVBackupConfiguration: Equatable, Sendable {
   public let unresolvedPasswordPayload: String?
   public let directoryName: String?
   public let remoteServerID: Int64?
+  public let syncBookProgress: Bool?
 
   public init(
     serverAddress: String?,
     username: String?,
     unresolvedPasswordPayload: String?,
     directoryName: String?,
-    remoteServerID: Int64? = nil
+    remoteServerID: Int64? = nil,
+    syncBookProgress: Bool? = nil
   ) {
     self.serverAddress = serverAddress
     self.username = username
     self.unresolvedPasswordPayload = unresolvedPasswordPayload
     self.directoryName = directoryName
     self.remoteServerID = remoteServerID
+    self.syncBookProgress = syncBookProgress
   }
 
   public init(document: AndroidSharedPreferencesDocument) {
@@ -128,7 +132,8 @@ public struct AndroidWebDAVBackupConfiguration: Equatable, Sendable {
       username: document.string(Self.usernameKey),
       unresolvedPasswordPayload: document.string(Self.passwordKey),
       directoryName: document.string(Self.directoryNameKey),
-      remoteServerID: document.integer(Self.remoteServerIDKey)
+      remoteServerID: document.integer(Self.remoteServerIDKey),
+      syncBookProgress: document.boolean(Self.syncBookProgressKey)
     )
   }
 
@@ -137,6 +142,7 @@ public struct AndroidWebDAVBackupConfiguration: Equatable, Sendable {
       || username != nil
       || unresolvedPasswordPayload != nil
       || directoryName != nil
+      || syncBookProgress != nil
   }
 }
 
@@ -153,6 +159,11 @@ private extension AndroidSharedPreferencesDocument {
     case .long(let value): value
     default: nil
     }
+  }
+
+  func boolean(_ key: String) -> Bool? {
+    guard case .boolean(let value)? = values[key] else { return nil }
+    return value
   }
 }
 

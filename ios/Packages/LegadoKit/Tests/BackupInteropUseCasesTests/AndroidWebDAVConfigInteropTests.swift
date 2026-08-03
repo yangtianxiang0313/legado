@@ -28,6 +28,8 @@ struct AndroidWebDAVConfigAppRestoreTests {
             .string("0LSuhOm3EXMTTUpsnaZ4lg=="),
           AndroidWebDAVBackupConfiguration.directoryNameKey:
             .string("shared-books"),
+          AndroidWebDAVBackupConfiguration.syncBookProgressKey:
+            .boolean(false),
         ])
       ),
       to: archiveURL
@@ -42,6 +44,7 @@ struct AndroidWebDAVConfigAppRestoreTests {
     #expect(summary.webDAVConfigurationCount == 1)
     #expect(plan.settings.serverAddress == "https://dav.example/root")
     #expect(plan.settings.directoryName == "shared-books")
+    #expect(plan.settings.syncBookProgress == false)
     #expect(
       plan.credential
         == .resolved(
