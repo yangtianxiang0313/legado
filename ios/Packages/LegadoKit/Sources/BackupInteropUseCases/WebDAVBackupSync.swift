@@ -8,11 +8,52 @@ public protocol AndroidCoreBackupExporting: Sendable {
     to archiveURL: URL,
     bookSources: [BookSourceDraft],
     replacementRules: [ReaderReplacementRule],
-    readerPreferences: ReaderPreferences?
+    readerPreferences: ReaderPreferences?,
+    context: AndroidBackupExportContext
   ) async throws -> AndroidLibraryBackupSummary
 }
 
-extension AndroidLibraryBackupUseCase: AndroidCoreBackupExporting {}
+public struct AndroidBackupExportContext: Equatable, Sendable {
+  public let webDAVConfiguration: AndroidWebDAVBackupExportInput?
+  public let webDAVServerProfiles: [AndroidWebDAVServerProfileExportInput]
+  public let selectedWebDAVServerID: Int64?
+  public let backupPassword: String?
+
+  public init(
+    webDAVConfiguration: AndroidWebDAVBackupExportInput? = nil,
+    webDAVServerProfiles: [AndroidWebDAVServerProfileExportInput] = [],
+    selectedWebDAVServerID: Int64? = nil,
+    backupPassword: String? = nil
+  ) {
+    self.webDAVConfiguration = webDAVConfiguration
+    self.webDAVServerProfiles = webDAVServerProfiles
+    self.selectedWebDAVServerID = selectedWebDAVServerID
+    self.backupPassword = backupPassword
+  }
+
+  public static let empty = AndroidBackupExportContext()
+}
+
+extension AndroidLibraryBackupUseCase: AndroidCoreBackupExporting {
+  public func export(
+    to archiveURL: URL,
+    bookSources: [BookSourceDraft],
+    replacementRules: [ReaderReplacementRule],
+    readerPreferences: ReaderPreferences?,
+    context: AndroidBackupExportContext
+  ) async throws -> AndroidLibraryBackupSummary {
+    try await export(
+      to: archiveURL,
+      bookSources: bookSources,
+      replacementRules: replacementRules,
+      readerPreferences: readerPreferences,
+      webDAVConfiguration: context.webDAVConfiguration,
+      webDAVServerProfiles: context.webDAVServerProfiles,
+      selectedWebDAVServerID: context.selectedWebDAVServerID,
+      backupPassword: context.backupPassword
+    )
+  }
+}
 
 public protocol AndroidCoreBackupRestoring: Sendable {
   func restore(from archiveURL: URL, backupPassword: String?) async throws
@@ -84,7 +125,8 @@ public struct WebDAVBackupSyncUseCase: Sendable {
     timeZone: TimeZone = .current,
     bookSources: [BookSourceDraft],
     replacementRules: [ReaderReplacementRule],
-    readerPreferences: ReaderPreferences? = nil
+    readerPreferences: ReaderPreferences? = nil,
+    exportContext: AndroidBackupExportContext = .empty
   ) async -> WebDAVAutomaticBackupResult {
     let nowMilliseconds = max(
       0,
@@ -118,7 +160,8 @@ public struct WebDAVBackupSyncUseCase: Sendable {
       fileName: fileName,
       bookSources: bookSources,
       replacementRules: replacementRules,
-      readerPreferences: readerPreferences
+      readerPreferences: readerPreferences,
+      exportContext: exportContext
     ) {
     case .uploaded(_, let summary):
       return .uploaded(
@@ -136,7 +179,8 @@ public struct WebDAVBackupSyncUseCase: Sendable {
     fileName: String,
     bookSources: [BookSourceDraft],
     replacementRules: [ReaderReplacementRule],
-    readerPreferences: ReaderPreferences? = nil
+    readerPreferences: ReaderPreferences? = nil,
+    exportContext: AndroidBackupExportContext = .empty
   ) async -> WebDAVBackupSyncUploadResult {
     let temporary = temporaryArchiveURL()
     do {
@@ -159,7 +203,8 @@ public struct WebDAVBackupSyncUseCase: Sendable {
         to: temporary,
         bookSources: bookSources,
         replacementRules: replacementRules,
-        readerPreferences: readerPreferences
+        readerPreferences: readerPreferences,
+        context: exportContext
       )
     } catch {
       return .failed(.export)

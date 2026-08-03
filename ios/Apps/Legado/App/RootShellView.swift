@@ -77,6 +77,7 @@ struct RootShellView: View {
     @Bindable var webDAVSettings: WebDAVConnectionSettingsStore
     @Bindable var webDAVBackupCheckpoint: WebDAVBackupCheckpointStore
     let webDAVCredentials: KeychainWebDAVCredentialStore
+    let androidBackupPasswordStore: any AndroidBackupPasswordStoring
     let webDAVClient: any WebDAVConnectionInitializing
     let webDAVProgressLoader: any WebDAVBookProgressLoading
     let webDAVProgressUploader: WebDAVReaderProgressUploadCoordinator
@@ -402,6 +403,12 @@ struct RootShellView: View {
         isAutomaticBackupRunning = true
         Task {
             defer { isAutomaticBackupRunning = false }
+            let exportContext: AndroidBackupExportContext
+            do {
+                exportContext = try await automaticBackupExportContext()
+            } catch {
+                return
+            }
             let result = await webDAVBackupSync.automaticBackup(
                 configuration: configuration,
                 now: Date(),
@@ -410,7 +417,8 @@ struct RootShellView: View {
                 deviceName: webDAVSettings.value.webDAVDeviceName,
                 bookSources: sourceCatalog.sources,
                 replacementRules: replacementRules.rules,
-                readerPreferences: readerPreferences.value
+                readerPreferences: readerPreferences.value,
+                exportContext: exportContext
             )
             switch result {
             case .remoteAlreadyExists(_, let checkpoint),
@@ -420,6 +428,64 @@ struct RootShellView: View {
                 break
             }
         }
+    }
+
+    private func automaticBackupExportContext() async throws
+        -> AndroidBackupExportContext
+    {
+        guard
+            let backupPassword = try await androidBackupPasswordStore.password(),
+            !backupPassword.isEmpty
+        else { throw AndroidLibraryBackupError.backupPasswordRequired }
+
+        let storedProfiles = WebDAVDefaultServerBridge.androidExportProfiles(
+            try await webDAVServerProfiles.webDAVServerProfiles()
+        )
+        var profileExports: [AndroidWebDAVServerProfileExportInput] = []
+        for profile in storedProfiles {
+            let credential = try await webDAVCredentials.credentials(
+                for: profile.credentialReference
+            )
+            profileExports.append(
+                AndroidWebDAVServerProfileExportInput(
+                    id: profile.id,
+                    name: profile.name,
+                    serverAddress: profile.serverAddress,
+                    username: credential.username,
+                    password: credential.password,
+                    sortNumber: profile.sortNumber
+                )
+            )
+        }
+
+        let settings = webDAVSettings.value
+        let primaryConfiguration: AndroidWebDAVBackupExportInput?
+        if settings.serverAddress.isEmpty {
+            primaryConfiguration = nil
+        } else {
+            let credential = try await webDAVCredentials.credentials(
+                for: settings.credentialReference
+            )
+            primaryConfiguration = AndroidWebDAVBackupExportInput(
+                serverAddress: settings.serverAddress,
+                username: credential.username,
+                password: credential.password,
+                directoryName: settings.directoryName,
+                backupPassword: backupPassword,
+                syncBookProgress: settings.syncBookProgress,
+                webDAVDeviceName: settings.webDAVDeviceName,
+                onlyLatestBackup: settings.onlyLatestBackup
+            )
+        }
+        let selectedID = WebDAVDefaultServerBridge.androidExportSelectedID(
+            try await webDAVServerProfiles.selectedWebDAVServerProfileID()
+        )
+        return AndroidBackupExportContext(
+            webDAVConfiguration: primaryConfiguration,
+            webDAVServerProfiles: profileExports,
+            selectedWebDAVServerID: selectedID,
+            backupPassword: backupPassword
+        )
     }
 
     private var visibleRoots: [RootRoute] {
@@ -547,6 +613,7 @@ struct RootShellView: View {
                 rootVisibility: rootVisibility,
                 webDAVSettings: webDAVSettings,
                 webDAVCredentials: webDAVCredentials,
+                androidBackupPasswordStore: androidBackupPasswordStore,
                 webDAVClient: webDAVClient,
                 backupRestore: backupRestore,
                 reloadBackupDomains: {
@@ -1303,6 +1370,7 @@ private struct RootContentView: View {
     @Bindable var rootVisibility: RootVisibilityPreferencesStore
     @Bindable var webDAVSettings: WebDAVConnectionSettingsStore
     let webDAVCredentials: KeychainWebDAVCredentialStore
+    let androidBackupPasswordStore: any AndroidBackupPasswordStoring
     let webDAVClient: any WebDAVConnectionInitializing
     let backupRestore: AndroidCoreBackupRestoreUseCase
     let reloadBackupDomains: () async -> Void
@@ -1418,6 +1486,13 @@ private struct RootContentView: View {
                     )
                     .accessibilityIdentifier(
                         "field.settings.androidBackup.password"
+                    )
+                    Button("保存为自动备份口令") {
+                        saveAutomaticBackupPassword()
+                    }
+                    .disabled(androidBackupPassword.isEmpty)
+                    .accessibilityIdentifier(
+                        "action.settings.androidBackup.savePassword"
                     )
                     if !androidBackupImportStatus.isEmpty {
                         Text(androidBackupImportStatus)
@@ -1858,6 +1933,19 @@ private struct RootContentView: View {
                 showsAndroidBackupExporter = true
             } catch {
                 androidBackupExportStatus = "Android 备份生成失败"
+            }
+        }
+    }
+
+    private func saveAutomaticBackupPassword() {
+        let password = androidBackupPassword
+        Task {
+            do {
+                try await androidBackupPasswordStore.save(password)
+                androidBackupExportStatus = "自动备份口令已安全保存"
+                androidBackupPassword = ""
+            } catch {
+                androidBackupExportStatus = "自动备份口令保存失败"
             }
         }
     }
@@ -2732,6 +2820,7 @@ struct StartupAcceptanceView: View {
     @Bindable var webDAVSettings: WebDAVConnectionSettingsStore
     @Bindable var webDAVBackupCheckpoint: WebDAVBackupCheckpointStore
     let webDAVCredentials: KeychainWebDAVCredentialStore
+    let androidBackupPasswordStore: any AndroidBackupPasswordStoring
     let webDAVClient: any WebDAVConnectionInitializing
     let webDAVProgressLoader: any WebDAVBookProgressLoading
     let webDAVProgressUploader: WebDAVReaderProgressUploadCoordinator
@@ -2793,6 +2882,7 @@ struct StartupAcceptanceView: View {
                 webDAVSettings: webDAVSettings,
                 webDAVBackupCheckpoint: webDAVBackupCheckpoint,
                 webDAVCredentials: webDAVCredentials,
+                androidBackupPasswordStore: androidBackupPasswordStore,
                 webDAVClient: webDAVClient,
                 webDAVProgressLoader: webDAVProgressLoader,
                 webDAVProgressUploader: webDAVProgressUploader,

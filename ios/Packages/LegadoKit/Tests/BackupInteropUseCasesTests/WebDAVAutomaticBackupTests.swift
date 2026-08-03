@@ -67,6 +67,27 @@ struct WebDAVAutomaticBackupTests {
     let exporter = AutomaticBackupExporter()
     let useCase = makeUseCase(transfer: transfer, exporter: exporter)
 
+    let exportContext = AndroidBackupExportContext(
+      webDAVConfiguration: AndroidWebDAVBackupExportInput(
+        serverAddress: "https://dav.example.test/dav",
+        username: "android-user",
+        password: "android-secret",
+        directoryName: "legado",
+        backupPassword: "backup-pass"
+      ),
+      webDAVServerProfiles: [
+        AndroidWebDAVServerProfileExportInput(
+          id: 7,
+          name: "共享书库",
+          serverAddress: "https://books.example.test/dav",
+          username: "books-user",
+          password: "books-secret",
+          sortNumber: 1
+        )
+      ],
+      selectedWebDAVServerID: 7,
+      backupPassword: "backup-pass"
+    )
     let result = await useCase.automaticBackup(
       configuration: try configuration(),
       now: now,
@@ -74,7 +95,8 @@ struct WebDAVAutomaticBackupTests {
       deviceName: "iPhone",
       timeZone: TimeZone(secondsFromGMT: 0)!,
       bookSources: [],
-      replacementRules: []
+      replacementRules: [],
+      exportContext: exportContext
     )
 
     let expectedSummary = AndroidLibraryBackupSummary(
@@ -90,6 +112,7 @@ struct WebDAVAutomaticBackupTests {
       )
     )
     #expect(await exporter.callCount == 1)
+    #expect(await exporter.receivedContext == exportContext)
     #expect(
       await transfer.uploadedFileName
         == "backup2026-04-06-iPhone.zip"
@@ -176,14 +199,17 @@ private actor AutomaticBackupTransfer: WebDAVBackupTransferring {
 
 private actor AutomaticBackupExporter: AndroidCoreBackupExporting {
   private(set) var callCount = 0
+  private(set) var receivedContext: AndroidBackupExportContext?
 
   func export(
     to archiveURL: URL,
     bookSources: [BookSourceDraft],
     replacementRules: [ReaderReplacementRule],
-    readerPreferences: ReaderPreferences?
+    readerPreferences: ReaderPreferences?,
+    context: AndroidBackupExportContext
   ) async throws -> AndroidLibraryBackupSummary {
     callCount += 1
+    receivedContext = context
     try Data([0x50, 0x4b]).write(to: archiveURL)
     return AndroidLibraryBackupSummary(
       bookCount: 1,

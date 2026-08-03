@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P90-WEBDAV-FULL-ANDROID-BACKUP-001",
+  "status": "completed",
+  "mode": "critical_path_only",
+  "priority": 1,
+  "title": "P90 WebDAV 自动备份完整回流 Android",
+  "objective": "修复 iOS 每日 WebDAV 自动备份只调用精简导出接口、遗漏 config.xml 与 servers.json 的问题；使用安全保存的 Android 备份口令，把主 WebDAV 配置、多服务器档案及选中状态写入 Android 可恢复的 backup.zip。",
+  "validation_policy": "完整导出参数和归档成员使用聚焦测试；App 安全口令与后台接线只做构建验证，不重复运行模拟器。",
+  "stages": [
+    {
+      "id": "P90-S1",
+      "title": "自动备份完整导出合同",
+      "selectors": [{
+        "id": "P90-S1-CONTRACT",
+        "claim_ids": [],
+        "task_ids": ["IOS-APP-NAVIGATION-WEBDAV-FULL-AUTOMATIC-BACKUP-CONTRACT-001"]
+      }]
+    },
+    {
+      "id": "P90-S2",
+      "title": "安全口令与生产接线",
+      "selectors": [{
+        "id": "P90-S2-WIRING",
+        "claim_ids": [],
+        "task_ids": ["IOS-APP-NAVIGATION-WEBDAV-FULL-AUTOMATIC-BACKUP-WIRING-001"]
+      }]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-APP-NAVIGATION-WEBDAV-FULL-AUTOMATIC-BACKUP-CONTRACT-001",
+      "title": "让每日 WebDAV 备份携带完整 Android 配置导出上下文",
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+      "fixture_id": "rl-webdav-full-automatic-backup-001",
+      "package_path": "ios/Packages/LegadoKit",
+      "validation": "tests",
+      "test_filter": "WebDAVAutomaticBackupTests",
+      "prerequisite_task_ids": ["IOS-APP-NAVIGATION-WEBDAV-ENCRYPTED-RESTORE-UI-001"],
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+        "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**"
+      ],
+      "source_anchors": [{
+        "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+        "path": "app/src/main/java/io/legado/app/help/storage/Backup.kt",
+        "symbol_id": "kotlin://io.legado.app.help.storage.Backup/backup"
+      }]
+    },
+    {
+      "target": "IOS-APP-NAVIGATION-WEBDAV-FULL-AUTOMATIC-BACKUP-WIRING-001",
+      "title": "安全保存 Android 备份口令并接通后台完整导出",
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+      "fixture_id": "app-webdav-full-automatic-backup-v1",
+      "validation": "build",
+      "prerequisite_task_ids": ["IOS-APP-NAVIGATION-WEBDAV-FULL-AUTOMATIC-BACKUP-CONTRACT-001"],
+      "additional_allowed_paths": [
+        "ios/Apps/Legado/App/**",
+        "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+        "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/help/config/LocalConfig.kt",
+          "symbol_id": "kotlin://io.legado.app.help.config.LocalConfig/password"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/help/storage/BackupAES.kt",
+          "symbol_id": "kotlin://io.legado.app.help.storage.BackupAES"
+        }
+      ]
+    }
+  ]
+}

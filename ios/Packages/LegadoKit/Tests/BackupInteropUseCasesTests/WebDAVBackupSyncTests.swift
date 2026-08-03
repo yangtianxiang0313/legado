@@ -236,7 +236,8 @@ private struct BackupExporterDouble: AndroidCoreBackupExporting {
     to archiveURL: URL,
     bookSources: [BookSourceDraft],
     replacementRules: [ReaderReplacementRule],
-    readerPreferences: ReaderPreferences?
+    readerPreferences: ReaderPreferences?,
+    context: AndroidBackupExportContext
   ) async throws -> AndroidLibraryBackupSummary {
     try data.write(to: archiveURL)
     return summary

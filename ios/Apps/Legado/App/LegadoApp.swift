@@ -32,6 +32,7 @@ struct LegadoApp: App {
     @State private var webDAVBackupCheckpoint:
         WebDAVBackupCheckpointStore
     private let webDAVCredentials: KeychainWebDAVCredentialStore
+    private let androidBackupPasswordStore: KeychainAndroidBackupPasswordStore
     private let webDAVClient: any WebDAVConnectionInitializing
     private let webDAVProgressLoader: any WebDAVBookProgressLoading
     private let webDAVProgressUploader: WebDAVReaderProgressUploadCoordinator
@@ -47,6 +48,7 @@ struct LegadoApp: App {
             UserDefaultsRootVisibilityPreferencesRepository()
         let webDAVCredentials = KeychainWebDAVCredentialStore()
         self.webDAVCredentials = webDAVCredentials
+        self.androidBackupPasswordStore = KeychainAndroidBackupPasswordStore()
         self.webDAVRemoteBooks = processArguments.contains(
             "--webdav-remote-book-test-double"
         )
@@ -291,6 +293,7 @@ struct LegadoApp: App {
                     webDAVSettings: webDAVSettings,
                     webDAVBackupCheckpoint: webDAVBackupCheckpoint,
                     webDAVCredentials: webDAVCredentials,
+                    androidBackupPasswordStore: androidBackupPasswordStore,
                     webDAVClient: webDAVClient,
                     webDAVProgressLoader: webDAVProgressLoader,
                     webDAVProgressUploader: webDAVProgressUploader,
@@ -320,6 +323,7 @@ struct LegadoApp: App {
                     webDAVSettings: webDAVSettings,
                     webDAVBackupCheckpoint: webDAVBackupCheckpoint,
                     webDAVCredentials: webDAVCredentials,
+                    androidBackupPasswordStore: androidBackupPasswordStore,
                     webDAVClient: webDAVClient,
                     webDAVProgressLoader: webDAVProgressLoader,
                     webDAVProgressUploader: webDAVProgressUploader,
