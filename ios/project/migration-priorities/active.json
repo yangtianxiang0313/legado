@@ -16,7 +16,7 @@
           "id": "P82-S1-BULK",
           "claim_ids": [],
           "task_ids": [
-            "IOS-APP-WEBDAV-SHELF-PROGRESS-SYNC-001"
+            "IOS-APP-NAVIGATION-WEBDAV-SHELF-PROGRESS-SYNC-001"
           ]
         }
       ]
@@ -29,7 +29,7 @@
           "id": "P82-S2-STARTUP",
           "claim_ids": [],
           "task_ids": [
-            "IOS-APP-WEBDAV-SHELF-PROGRESS-STARTUP-001"
+            "IOS-APP-NAVIGATION-WEBDAV-SHELF-PROGRESS-STARTUP-001"
           ]
         }
       ]
@@ -37,7 +37,7 @@
   ],
   "deliveries": [
     {
-      "target": "IOS-APP-WEBDAV-SHELF-PROGRESS-SYNC-001",
+      "target": "IOS-APP-NAVIGATION-WEBDAV-SHELF-PROGRESS-SYNC-001",
       "title": "实现 Android 语义的书架进度批量同步",
       "requirement_ref": "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01",
       "fixture_id": "rl-app-webdav-shelf-progress-sync-001",
@@ -62,13 +62,13 @@
       ]
     },
     {
-      "target": "IOS-APP-WEBDAV-SHELF-PROGRESS-STARTUP-001",
+      "target": "IOS-APP-NAVIGATION-WEBDAV-SHELF-PROGRESS-STARTUP-001",
       "title": "接通 syncBookProgress 配置与 iOS 启动批量同步",
       "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
       "fixture_id": "app-webdav-shelf-progress-startup-v1",
       "validation": "build",
       "prerequisite_task_ids": [
-        "IOS-APP-WEBDAV-SHELF-PROGRESS-SYNC-001"
+        "IOS-APP-NAVIGATION-WEBDAV-SHELF-PROGRESS-SYNC-001"
       ],
       "additional_allowed_paths": [
         "ios/Apps/Legado/App/**",
