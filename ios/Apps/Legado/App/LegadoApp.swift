@@ -17,6 +17,7 @@ struct LegadoApp: App {
     @State private var library: ShelfLibrary
     @State private var sourceCatalog: SourceCatalog
     @State private var readAloud: ReadAloudSession
+    @State private var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
     @State private var readerPreferences: ReaderPreferencesStore
     @State private var bookDetailPreferences: BookDetailPreferencesStore
     @State private var rootVisibility: RootVisibilityPreferencesStore
@@ -123,12 +124,24 @@ struct LegadoApp: App {
                     repository: sourceRepository
                 )
             )
-            let synthesizer: any SystemSpeechSynthesizing =
+            let engineStore = HTTPTextToSpeechEngineStore(
+                repository: libraryRepository,
+                persistence:
+                    UserDefaultsHTTPTextToSpeechSelectionPersistence()
+            )
+            _httpTextToSpeechEngines = State(initialValue: engineStore)
+            let systemSynthesizer: any SystemSpeechSynthesizing =
                 ProcessInfo.processInfo.arguments.contains(
                     "--system-read-aloud-test-double"
                 )
                 ? UITestSystemSpeechSynthesizer()
                 : AVSystemSpeechSynthesizer()
+            let synthesizer = SelectableSpeechSynthesizer(
+                system: systemSynthesizer,
+                engineStore: engineStore,
+                audioLoader:
+                    SearchEnvironment.makeHTTPTextToSpeechAudioLoader()
+            )
             _readAloud = State(
                 initialValue: ReadAloudSession(
                     synthesizer: synthesizer
@@ -171,6 +184,7 @@ struct LegadoApp: App {
                     library: library,
                     sourceCatalog: sourceCatalog,
                     readAloud: readAloud,
+                    httpTextToSpeechEngines: httpTextToSpeechEngines,
                     readerPreferences: readerPreferences,
                     bookDetailPreferences: bookDetailPreferences,
                     rootVisibility: rootVisibility,
@@ -190,6 +204,7 @@ struct LegadoApp: App {
                     library: library,
                     sourceCatalog: sourceCatalog,
                     readAloud: readAloud,
+                    httpTextToSpeechEngines: httpTextToSpeechEngines,
                     readerPreferences: readerPreferences,
                     bookDetailPreferences: bookDetailPreferences,
                     rootVisibility: rootVisibility,
@@ -405,6 +420,164 @@ private final class UserDefaultsBookDetailPreferencesRepository:
             return
         }
         defaults.set(data, forKey: key)
+    }
+}
+
+@MainActor
+private final class UserDefaultsHTTPTextToSpeechSelectionPersistence:
+    HTTPTextToSpeechSelectionPersistence
+{
+    private let defaults: UserDefaults
+    private let key = "reader.httpTTS.selectedEngineID"
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+    }
+
+    func selectedHTTPTextToSpeechEngineID() -> Int64? {
+        guard defaults.object(forKey: key) != nil else { return nil }
+        return Int64(defaults.integer(forKey: key))
+    }
+
+    func saveSelectedHTTPTextToSpeechEngineID(_ id: Int64?) {
+        if let id {
+            defaults.set(id, forKey: key)
+        } else {
+            defaults.removeObject(forKey: key)
+        }
+    }
+}
+
+@MainActor
+private final class SelectableSpeechSynthesizer:
+    NSObject, SystemSpeechSynthesizing,
+    @preconcurrency AVAudioPlayerDelegate
+{
+    private let system: any SystemSpeechSynthesizing
+    private let engineStore: HTTPTextToSpeechEngineStore
+    private let audioLoader: any HTTPTextToSpeechAudioLoading
+    private var usesHTTP = false
+    private var playbackTask: Task<Void, Never>?
+    private var player: AVAudioPlayer?
+    private var playbackContinuation: CheckedContinuation<Bool, Never>?
+    private var onEvent:
+        (@MainActor @Sendable (SystemSpeechEvent) -> Void)?
+
+    init(
+        system: any SystemSpeechSynthesizing,
+        engineStore: HTTPTextToSpeechEngineStore,
+        audioLoader: any HTTPTextToSpeechAudioLoading
+    ) {
+        self.system = system
+        self.engineStore = engineStore
+        self.audioLoader = audioLoader
+    }
+
+    func speak(
+        _ segments: [ReadAloudSegment],
+        relativeRate: Float,
+        onEvent: @escaping @MainActor @Sendable (SystemSpeechEvent) -> Void
+    ) {
+        stop()
+        guard let engine = engineStore.selectedEngine else {
+            usesHTTP = false
+            system.speak(
+                segments,
+                relativeRate: relativeRate,
+                onEvent: onEvent
+            )
+            return
+        }
+        usesHTTP = true
+        self.onEvent = onEvent
+        let speed = min(50, max(5, Int((relativeRate * 10).rounded())))
+        playbackTask = Task { [weak self] in
+            guard let self else { return }
+            do {
+                for segment in segments {
+                    try Task.checkCancellation()
+                    self.onEvent?(.started(segmentID: segment.id))
+                    let data = try await self.audioLoader.load(
+                        engine: engine,
+                        text: segment.text,
+                        speed: speed
+                    )
+                    try Task.checkCancellation()
+                    guard await self.play(data) else { return }
+                    self.onEvent?(.finished(segmentID: segment.id))
+                }
+            } catch is CancellationError {
+                return
+            } catch {
+                self.onEvent?(.failed(message: "在线朗读失败"))
+            }
+        }
+    }
+
+    func pause() {
+        if usesHTTP {
+            player?.pause()
+        } else {
+            system.pause()
+        }
+    }
+
+    func resume() {
+        if usesHTTP {
+            _ = player?.play()
+        } else {
+            system.resume()
+        }
+    }
+
+    func stop() {
+        system.stop()
+        playbackTask?.cancel()
+        playbackTask = nil
+        player?.stop()
+        player = nil
+        finishPlayback(false)
+        onEvent = nil
+        usesHTTP = false
+    }
+
+    private func play(_ data: Data) async -> Bool {
+        await withCheckedContinuation { continuation in
+            do {
+                let session = AVAudioSession.sharedInstance()
+                try session.setCategory(.playback, mode: .spokenAudio)
+                try session.setActive(true)
+                let player = try AVAudioPlayer(data: data)
+                self.player = player
+                playbackContinuation = continuation
+                player.delegate = self
+                if !player.play() { finishPlayback(false) }
+            } catch {
+                continuation.resume(returning: false)
+            }
+        }
+    }
+
+    private func finishPlayback(_ succeeded: Bool) {
+        guard let continuation = playbackContinuation else { return }
+        playbackContinuation = nil
+        continuation.resume(returning: succeeded)
+    }
+
+    func audioPlayerDidFinishPlaying(
+        _ player: AVAudioPlayer,
+        successfully flag: Bool
+    ) {
+        self.player = nil
+        finishPlayback(flag)
+    }
+
+    func audioPlayerDecodeErrorDidOccur(
+        _ player: AVAudioPlayer,
+        error: (any Error)?
+    ) {
+        self.player = nil
+        finishPlayback(false)
     }
 }
 

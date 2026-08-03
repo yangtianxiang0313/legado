@@ -1,4 +1,5 @@
 import Foundation
+import Observation
 import SourceRuntime
 
 public struct HTTPTextToSpeechEngine: Codable, Identifiable, Equatable, Sendable {
@@ -47,6 +48,56 @@ public struct HTTPTextToSpeechEngine: Codable, Identifiable, Equatable, Sendable
 public protocol HTTPTextToSpeechRepository: Sendable {
   func httpTextToSpeechEngines() async throws -> [HTTPTextToSpeechEngine]
   func upsertHTTPTextToSpeechEngine(_ engine: HTTPTextToSpeechEngine) async throws
+}
+
+@MainActor
+public protocol HTTPTextToSpeechSelectionPersistence: AnyObject {
+  func selectedHTTPTextToSpeechEngineID() -> Int64?
+  func saveSelectedHTTPTextToSpeechEngineID(_ id: Int64?)
+}
+
+@MainActor
+@Observable
+public final class HTTPTextToSpeechEngineStore {
+  public private(set) var engines: [HTTPTextToSpeechEngine] = []
+  public private(set) var selectedEngineID: Int64?
+  public private(set) var errorMessage: String?
+
+  private let repository: any HTTPTextToSpeechRepository
+  private let persistence: any HTTPTextToSpeechSelectionPersistence
+
+  public init(
+    repository: any HTTPTextToSpeechRepository,
+    persistence: any HTTPTextToSpeechSelectionPersistence
+  ) {
+    self.repository = repository
+    self.persistence = persistence
+    selectedEngineID = persistence.selectedHTTPTextToSpeechEngineID()
+  }
+
+  public var selectedEngine: HTTPTextToSpeechEngine? {
+    selectedEngineID.flatMap { id in engines.first { $0.id == id } }
+  }
+
+  public func reload() async {
+    do {
+      engines = try await repository.httpTextToSpeechEngines()
+      if selectedEngineID != nil && selectedEngine == nil {
+        select(nil)
+      }
+      errorMessage = nil
+    } catch {
+      errorMessage = "无法读取在线朗读引擎"
+    }
+  }
+
+  public func select(_ id: Int64?) {
+    guard id == nil || engines.contains(where: { $0.id == id }) else {
+      return
+    }
+    selectedEngineID = id
+    persistence.saveSelectedHTTPTextToSpeechEngineID(id)
+  }
 }
 
 public protocol HTTPTextToSpeechAudioLoading: Sendable {

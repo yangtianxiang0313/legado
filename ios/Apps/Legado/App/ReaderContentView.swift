@@ -10,6 +10,7 @@ struct ReaderContentView: View {
     @Bindable var library: ShelfLibrary
     let persistedSources: [BookSourceDraft]
     @Bindable var readAloud: ReadAloudSession
+    @Bindable var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
     @Bindable var readerPreferences: ReaderPreferencesStore
     @Bindable var replacementRules: ReaderReplacementRuleStore
     let openTOC: () -> Void
@@ -23,6 +24,7 @@ struct ReaderContentView: View {
     @State private var pagination: ReaderPaginationSession
     @State private var menuPresented = false
     @State private var menuPath: [ReaderMenuLayer] = []
+    @State private var showsReadAloudSettings = false
     @State private var chapters: [BookChapter] = []
     @State private var bookmarked = false
     @State private var searchQuery = ""
@@ -49,6 +51,7 @@ struct ReaderContentView: View {
         library: ShelfLibrary,
         persistedSources: [BookSourceDraft],
         readAloud: ReadAloudSession,
+        httpTextToSpeechEngines: HTTPTextToSpeechEngineStore,
         readerPreferences: ReaderPreferencesStore,
         replacementRules: ReaderReplacementRuleStore,
         openTOC: @escaping () -> Void,
@@ -60,6 +63,7 @@ struct ReaderContentView: View {
         self.library = library
         self.persistedSources = persistedSources
         self.readAloud = readAloud
+        self.httpTextToSpeechEngines = httpTextToSpeechEngines
         self.readerPreferences = readerPreferences
         self.replacementRules = replacementRules
         self.openTOC = openTOC
@@ -266,6 +270,17 @@ struct ReaderContentView: View {
                     contentEditorDraft = nil
                 }
             )
+        }
+        .sheet(isPresented: $showsReadAloudSettings) {
+            NavigationStack {
+                ReadAloudEngineSettingsView(
+                    store: httpTextToSpeechEngines,
+                    select: { id in
+                        readAloud.stop()
+                        httpTextToSpeechEngines.select(id)
+                    }
+                )
+            }
         }
     }
 
@@ -805,10 +820,18 @@ struct ReaderContentView: View {
                     ReaderMenuAction.addBookmark.accessibilityIdentifier
                 )
                 readAloudControls
-                menuPlaceholder(
-                    .openReadAloudSettings,
-                    title: "朗读设置",
-                    systemImage: "slider.horizontal.3"
+                Button {
+                    menuPresented = false
+                    Task {
+                        await Task.yield()
+                        showsReadAloudSettings = true
+                    }
+                } label: {
+                    Label("朗读设置", systemImage: "slider.horizontal.3")
+                }
+                .accessibilityIdentifier(
+                    ReaderMenuAction.openReadAloudSettings
+                        .accessibilityIdentifier
                 )
                 Button {
                     guard let document = session.document else {
@@ -1848,6 +1871,55 @@ private struct ReaderContentEditor: View {
                 }
         }
         .accessibilityIdentifier("overlay.reader.contentEditor")
+    }
+}
+
+private struct ReadAloudEngineSettingsView: View {
+    @Bindable var store: HTTPTextToSpeechEngineStore
+    let select: (Int64?) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        List {
+            Section("朗读引擎") {
+                engineRow(id: nil, name: "iOS 系统朗读")
+                ForEach(store.engines) { engine in
+                    engineRow(id: engine.id, name: engine.name)
+                }
+            }
+            if let error = store.errorMessage {
+                Section { Text(error).foregroundStyle(.red) }
+            }
+        }
+        .navigationTitle("朗读设置")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button("完成") { dismiss() }
+            }
+        }
+        .task { await store.reload() }
+        .accessibilityIdentifier("screen.reader.readAloudSettings")
+    }
+
+    private func engineRow(id: Int64?, name: String) -> some View {
+        Button {
+            select(id)
+        } label: {
+            HStack {
+                Text(name)
+                Spacer()
+                if store.selectedEngineID == id {
+                    Image(systemName: "checkmark")
+                        .foregroundStyle(.tint)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(
+            id.map { "action.reader.readAloudEngine.\($0)" }
+                ?? "action.reader.readAloudEngine.system"
+        )
     }
 }
 

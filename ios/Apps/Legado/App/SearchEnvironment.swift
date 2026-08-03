@@ -180,6 +180,20 @@ enum SearchEnvironment {
         )
     }
 
+    static func makeHTTPTextToSpeechAudioLoader()
+        -> any HTTPTextToSpeechAudioLoading
+    {
+        SourceRuntimeHTTPTextToSpeechAudioLoader(
+            transport: makeTransport(
+                externalBaseURL: ProcessInfo.processInfo.environment[
+                    "LEGADO_SEARCH_BASE_URL"
+                ]
+            ),
+            cookieStore: cookieStore,
+            scriptRuntime: scriptRuntime
+        )
+    }
+
     static func exploreSources(
         persistedSources: [BookSourceDraft] = []
     ) -> [ExploreSourceSummary] {
