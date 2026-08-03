@@ -494,6 +494,25 @@ struct RootShellView: View {
                                 + String(reflecting: error)
                         )
                     }
+                },
+                uploadLocalBook: { item in
+                    guard
+                        item.candidate.sourceID == "local-file",
+                        let fileURL = URL(
+                            string: item.candidate.bookURL
+                        ),
+                        fileURL.isFileURL,
+                        let data = try? Data(contentsOf: fileURL)
+                    else {
+                        return .localFileUnavailable
+                    }
+                    return await WebDAVLocalBookUploadUseCase(
+                        repository: webDAVServerProfiles,
+                        transfer: webDAVRemoteBooks
+                    ).upload(
+                        fileName: item.candidate.originName,
+                        data: data
+                    )
                 }
             )
         case .chapterTOC(let bookID):

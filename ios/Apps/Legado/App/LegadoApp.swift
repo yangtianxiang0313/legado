@@ -647,6 +647,20 @@ private struct UITestWebDAVRemoteBookTransfer:
             )
         )
     }
+
+    func uploadRemoteBook(
+        configuration: WebDAVConnectionConfiguration,
+        fileName: String,
+        data: Data
+    ) async -> WebDAVRemoteBookUploadResult {
+        guard let rootURL = configuration.rootURL else {
+            return .failed(.invalidConfiguration)
+        }
+        return .uploaded(
+            name: fileName,
+            remoteURL: rootURL.appendingPathComponent(fileName)
+        )
+    }
 }
 
 private actor UITestWebDAVBackupTransfer: WebDAVBackupTransferring {

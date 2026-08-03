@@ -2271,6 +2271,54 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testWebDAVLocalBookUploadFlow() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+            "--seed-book-import",
+            "--seed-webdav-remote-book",
+            "--webdav-remote-book-test-double",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        require("screen.root.shelf")
+        let book = app.staticTexts["本地旅程"].firstMatch
+        if !book.waitForExistence(timeout: 8) {
+            require("list.shelf.books").swipeUp()
+        }
+        XCTAssertTrue(book.waitForExistence(timeout: 8))
+        book.tap()
+
+        require("screen.bookDetail")
+        requireButton("action.bookDetail.more").tap()
+        requireButton("action.bookDetail.upload").tap()
+
+        let alert = app.alerts["上传 WebDAV"].firstMatch
+        XCTAssertTrue(alert.waitForExistence(timeout: 12))
+        let message = alert.staticTexts.allElementsBoundByIndex
+            .map(\.label)
+            .joined(separator: " | ")
+        XCTAssertTrue(message.contains("测试书库"))
+        XCTAssertTrue(message.contains("本地旅程"))
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "book": "本地旅程",
+            "server": "测试书库",
+            "transport": "in_memory_webdav_put",
+            "status": "uploaded",
+        ])
+    }
+
     func testOfflineCacheMilestone() throws {
         let environment = ProcessInfo.processInfo.environment
         let contract = try XCTUnwrap(

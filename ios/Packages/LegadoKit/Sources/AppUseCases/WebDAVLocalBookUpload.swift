@@ -9,6 +9,7 @@ public enum WebDAVLocalBookUploadOutcome: Sendable, Equatable {
     remoteURL: URL
   )
   case noServerProfile
+  case localFileUnavailable
   case invalidServerProfile
   case repositoryUnavailable
   case failed(WebDAVRemoteBookFailure)

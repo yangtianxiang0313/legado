@@ -193,6 +193,8 @@ struct BookDetailView: View {
     let availableSources: [BookSourceDraft]
     let switchSource:
         ((ShelfBookItem, BookSourceDraft) async -> BookSourceSwitchOutcome)?
+    let uploadLocalBook:
+        ((ShelfBookItem) async -> WebDAVLocalBookUploadOutcome)?
 
     @State private var storedItem: ShelfBookItem?
     @State private var showsSourceSwitch = false
@@ -218,6 +220,8 @@ struct BookDetailView: View {
     @State private var savingMetadata = false
     @State private var showsDeleteConfirmation = false
     @State private var rebuildingLocalText = false
+    @State private var uploadingLocalBook = false
+    @State private var uploadMessage: String?
 
     init(
         snapshot: BookDetailActionSnapshot,
@@ -238,6 +242,7 @@ struct BookDetailView: View {
         self.setSplitLongChapters = nil
         self.availableSources = []
         self.switchSource = nil
+        self.uploadLocalBook = nil
         _storedItem = State(initialValue: nil)
     }
 
@@ -264,7 +269,9 @@ struct BookDetailView: View {
             @escaping (
                 ShelfBookItem,
                 BookSourceDraft
-            ) async -> BookSourceSwitchOutcome
+            ) async -> BookSourceSwitchOutcome,
+        uploadLocalBook:
+            @escaping (ShelfBookItem) async -> WebDAVLocalBookUploadOutcome
     ) {
         self.snapshot = .remoteSourceLoginUnshelved
         self.display = BookDetailDisplay(candidate: candidate)
@@ -281,6 +288,7 @@ struct BookDetailView: View {
         self.setSplitLongChapters = setSplitLongChapters
         self.availableSources = availableSources
         self.switchSource = switchSource
+        self.uploadLocalBook = uploadLocalBook
         _storedItem = State(initialValue: nil)
     }
 
@@ -548,6 +556,7 @@ struct BookDetailView: View {
         } message: {
             Text(refreshMessage ?? "")
         }
+        .modifier(BookUploadAlertModifier(message: $uploadMessage))
         .confirmationDialog(
             "确定将这本书移出书架吗？",
             isPresented: $showsDeleteConfirmation,
@@ -812,11 +821,22 @@ struct BookDetailView: View {
                 )
             }
             if availability.actions.upload {
-                action(
-                    "上传到远程",
-                    id: "upload",
-                    systemImage: "icloud.and.arrow.up"
+                Button {
+                    uploadBookToWebDAV()
+                } label: {
+                    Label(
+                        uploadingLocalBook
+                            ? "正在上传…"
+                            : "上传到 WebDAV",
+                        systemImage: "icloud.and.arrow.up"
+                    )
+                }
+                .disabled(
+                    storedItem == nil
+                        || uploadLocalBook == nil
+                        || uploadingLocalBook
                 )
+                .accessibilityIdentifier("action.bookDetail.upload")
             }
             Toggle(
                 isOn: Binding(
@@ -862,6 +882,33 @@ struct BookDetailView: View {
                 refreshMessage = "刷新失败，已保留原有数据"
             }
             refreshingBookInfo = false
+        }
+    }
+
+    private func uploadBookToWebDAV() {
+        guard let storedItem, let uploadLocalBook else { return }
+        uploadingLocalBook = true
+        Task {
+            let outcome = await uploadLocalBook(storedItem)
+            switch outcome {
+            case .uploaded(_, let serverName, let fileName, _):
+                uploadMessage = "已上传《\(fileName)》到“\(serverName)”"
+            case .noServerProfile:
+                uploadMessage = "请先导入或配置 WebDAV 服务器"
+            case .localFileUnavailable:
+                uploadMessage = "本地书文件已不可用"
+            case .invalidServerProfile:
+                uploadMessage = "WebDAV 服务器地址无效"
+            case .repositoryUnavailable:
+                uploadMessage = "无法读取 WebDAV 服务器配置"
+            case .failed(.authenticationRejected):
+                uploadMessage = "WebDAV 认证失败"
+            case .failed(.invalidFileName):
+                uploadMessage = "本地书文件名无效"
+            case .failed:
+                uploadMessage = "上传失败"
+            }
+            uploadingLocalBook = false
         }
     }
 
@@ -1079,6 +1126,24 @@ struct BookDetailView: View {
             return .whitespace
         }
         return .nonblank
+    }
+}
+
+private struct BookUploadAlertModifier: ViewModifier {
+    @Binding var message: String?
+
+    func body(content: Content) -> some View {
+        content.alert(
+            "上传 WebDAV",
+            isPresented: Binding(
+                get: { message != nil },
+                set: { if !$0 { message = nil } }
+            )
+        ) {
+            Button("好", role: .cancel) {}
+        } message: {
+            Text(message ?? "")
+        }
     }
 }
 
