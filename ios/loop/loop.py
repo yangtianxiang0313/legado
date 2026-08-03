@@ -668,6 +668,26 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/project/migration-priorities/active.json",
             ],
         }
+    if target == "IOS-INTEGRATION-ANDROID-BACKUP-BOOKSOURCE-CODEC-001":
+        return {
+            "owner": "IntegrationKit",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/Packages/LegadoSourceKit/Package.swift",
+                "ios/Packages/LegadoSourceKit/Sources/SourceFormat/**",
+                "ios/Packages/LegadoSourceKit/Tests/SourceFormatTests/**",
+                "ios/Packages/LegadoKit/Package.swift",
+                "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
+                "ios/Packages/LegadoKit/Tests/AndroidBackupInteropTests/**",
+            ],
+        }
     if target == "IOS-DEPENDENCY-SWIFTSOUP-HTML-001":
         return {
             "owner": "DependencyControl",
@@ -2975,6 +2995,20 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_id": "android-backup-archive-oracle",
             "test_filter": "IntegrationKitTests",
             "acceptance_id": "android-backup-archive-golden",
+        }
+    if target == "IOS-INTEGRATION-ANDROID-BACKUP-BOOKSOURCE-CODEC-001":
+        delivery_contracts["IntegrationKit"] = {
+            "goal": (
+                "以受保护 Android 备份 Golden 为合同，实现 bookSource.json"
+                " 的无损读写与 Android backup.zip 容器编解码。"
+            ),
+            "rule": (
+                "书源模型继续归 SourceFormat 独立边界；AndroidBackupInterop"
+                " 只编排归档成员，不复制书源字段模型，也不依赖 UI。"
+            ),
+            "test_id": "android-backup-booksource-codec-tests",
+            "test_filter": "AndroidBackupInteropTests|SourceFormatTests",
+            "acceptance_id": "android-backup-booksource-codec-acceptance",
         }
     if (
         architecture["owner"] == "AppNavigation"

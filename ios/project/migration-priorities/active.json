@@ -21,6 +21,13 @@
       "selectors": [
         {"id": "P67-S2-ORACLE", "claim_ids": [], "task_ids": ["IOS-INTEGRATION-BACKUP-ARCHIVE-ORACLE-001"]}
       ]
+    },
+    {
+      "id": "P67-S3",
+      "title": "书源备份双端 Codec",
+      "selectors": [
+        {"id": "P67-S3-BOOKSOURCE", "claim_ids": [], "task_ids": ["IOS-INTEGRATION-ANDROID-BACKUP-BOOKSOURCE-CODEC-001"]}
+      ]
     }
   ],
   "deliveries": [
@@ -62,6 +69,7 @@
       "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
       "fixture_id": "rl-integration-backup-archive-001",
       "validation": "tests",
+      "test_filter": "AndroidBackupInteropTests|SourceFormatTests",
       "source_anchors": [
         {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/help/storage/Backup.kt","symbol_id":"kotlin://io.legado.app.help.storage/Backup/backup"},
         {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/help/storage/Restore.kt","symbol_id":"kotlin://io.legado.app.help.storage/Restore/restore"},
