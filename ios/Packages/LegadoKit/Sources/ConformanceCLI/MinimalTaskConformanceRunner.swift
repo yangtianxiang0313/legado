@@ -43,6 +43,8 @@ public enum MinimalTaskConformanceRunner {
       fixtureID == ReaderBookmarkConformanceRunner.fixtureID
         || fixtureID == ReaderReadRecordConformanceRunner.fixtureID
         || fixtureID == ReaderProgressConformanceRunner.fixtureID
+        || fixtureID
+          == ReaderProgressWebDAVConflictConformanceRunner.fixtureID
         || fixtureID == ReaderProgressSaveConformanceRunner.fixtureID
         || fixtureID == ReaderPrefetchConformanceRunner.fixtureID
         || fixtureID
@@ -101,6 +103,21 @@ public enum MinimalTaskConformanceRunner {
     }
     if fixtureID == ReaderProgressConformanceRunner.fixtureID {
       let run = try ReaderProgressConformanceRunner.run(
+        fixtureDirectory: fixtureDirectory
+      )
+      return try finish(
+        taskID: taskID,
+        fixtureID: fixtureID,
+        goldenPath: goldenPath,
+        actualArtifact: run.artifact,
+        canonicalPlans: run.requestPlan,
+        root: root
+      )
+    }
+    if fixtureID
+      == ReaderProgressWebDAVConflictConformanceRunner.fixtureID
+    {
+      let run = try ReaderProgressWebDAVConflictConformanceRunner.run(
         fixtureDirectory: fixtureDirectory
       )
       return try finish(
