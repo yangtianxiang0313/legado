@@ -162,6 +162,7 @@ let package = Package(
                 .product(name: "LegadoCoreKit", package: "LegadoCoreKit"),
                 "LibraryDomain",
                 "AppUseCases",
+                "BackupInteropUseCases",
                 .product(name: "GRDB", package: "GRDB.swift"),
             ]
         ),
@@ -223,6 +224,7 @@ let package = Package(
             dependencies: [
                 "LibraryDomain",
                 "AppUseCases",
+                "BackupInteropUseCases",
                 "DatabaseGRDB",
             ]
         ),

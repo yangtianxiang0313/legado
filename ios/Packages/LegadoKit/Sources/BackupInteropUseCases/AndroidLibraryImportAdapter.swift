@@ -27,6 +27,7 @@ public struct AndroidLibraryRestoreBook: Equatable, Sendable {
   public let chapterCount: Int
   public let progress: ReadingProgress
   public let latestChapterTime: Int64
+  public let lastCheckTime: Int64
   public let latestCheckCount: Int
   public let canUpdate: Bool
   public let reversesTableOfContents: Bool
@@ -45,6 +46,7 @@ public struct AndroidLibraryRestoreBook: Equatable, Sendable {
     chapterCount: Int,
     progress: ReadingProgress,
     latestChapterTime: Int64,
+    lastCheckTime: Int64 = 0,
     latestCheckCount: Int,
     canUpdate: Bool,
     reversesTableOfContents: Bool,
@@ -62,6 +64,7 @@ public struct AndroidLibraryRestoreBook: Equatable, Sendable {
     self.chapterCount = chapterCount
     self.progress = progress
     self.latestChapterTime = latestChapterTime
+    self.lastCheckTime = lastCheckTime
     self.latestCheckCount = latestCheckCount
     self.canUpdate = canUpdate
     self.reversesTableOfContents = reversesTableOfContents
@@ -186,6 +189,7 @@ public enum AndroidLibraryImportAdapter {
         updatedAtMilliseconds: fields.integer("durChapterTime") ?? 0
       ),
       latestChapterTime: fields.integer("latestChapterTime") ?? 0,
+      lastCheckTime: fields.integer("lastCheckTime") ?? 0,
       latestCheckCount: max(0, latestCheckCount),
       canUpdate: fields.boolean("canUpdate") ?? true,
       reversesTableOfContents: readConfig.boolean("reverseToc") ?? false,

@@ -1,4 +1,5 @@
 import AppUseCases
+import BackupInteropUseCases
 import Foundation
 import GRDB
 import LibraryDomain
@@ -779,8 +780,87 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
     }
   }
 
+  public func restoreAndroidLibrary(
+    _ plan: AndroidLibraryRestorePlan
+  ) async throws -> AndroidLibraryRestoreSummary {
+    try await database.write { db in
+      for value in plan.books {
+        let groupMask = try Self.platformGroupMask(value.groupMask)
+        var record =
+          try BookRecord
+            .filter(Column("bookURL") == value.candidate.bookURL)
+            .fetchOne(db)
+          ?? BookRecord(
+            bookID: UUID().uuidString.lowercased(),
+            candidate: value.candidate,
+            membership: .member(groupID: groupMask),
+            orderValue: value.order,
+            chapterCount: value.chapterCount
+          )
+        record.apply(value.candidate)
+        record.inBookshelf = true
+        record.groupID = groupMask
+        record.orderValue = value.order
+        record.chapterCount = value.chapterCount
+        record.progressChapterIndex = value.progress.position.chapterIndex
+        record.progressCharacterOffset = value.progress.position.characterOffset
+        record.progressChapterTitle = value.progress.chapterTitle
+        record.progressUpdatedAt = value.progress.updatedAtMilliseconds
+        record.latestChapterTime = value.latestChapterTime
+        record.lastCheckTime = value.lastCheckTime
+        record.latestCheckCount = value.latestCheckCount
+        record.canUpdate = value.canUpdate
+        record.reversesTableOfContents = value.reversesTableOfContents
+        record.splitsLongChapters = value.splitsLongChapters
+        record.androidType = value.androidType
+        record.originOrder = value.originOrder
+        record.syncTime = value.syncTime
+        record.charset = value.charset
+        record.customTag = value.customTag
+        record.wordCount = value.wordCount
+        try record.save(db)
+      }
+      for value in plan.groups {
+        var record = AndroidLibraryGroupRecord(value: value)
+        try record.save(db)
+      }
+      for value in plan.bookmarks {
+        var record = AndroidLibraryBookmarkRecord(value: value)
+        try record.save(db)
+      }
+      return AndroidLibraryRestoreSummary(
+        bookCount: plan.books.count,
+        groupCount: plan.groups.count,
+        bookmarkCount: plan.bookmarks.count
+      )
+    }
+  }
+
+  public func restoredAndroidLibraryPlan() async throws
+    -> AndroidLibraryRestorePlan
+  {
+    try await database.read { db in
+      AndroidLibraryRestorePlan(
+        books: try BookRecord
+          .order(Column("orderValue").asc)
+          .fetchAll(db)
+          .map(\.androidRestoreValue),
+        groups: try AndroidLibraryGroupRecord
+          .order(Column("orderValue").asc)
+          .fetchAll(db)
+          .map(\.value),
+        bookmarks: try AndroidLibraryBookmarkRecord
+          .order(Column("time").asc)
+          .fetchAll(db)
+          .map(\.value)
+      )
+    }
+  }
+
   public func reset() async throws {
     try await database.write { db in
+      _ = try AndroidLibraryBookmarkRecord.deleteAll(db)
+      _ = try AndroidLibraryGroupRecord.deleteAll(db)
       _ = try ReadingBookmarkRecord.deleteAll(db)
       _ = try ChapterContentRecord.deleteAll(db)
       _ = try ChapterRecord.deleteAll(db)
@@ -975,7 +1055,53 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
         table.add(column: "customIntro", .text)
       }
     }
+    migrator.registerMigration("addAndroidLibraryBackupInterop") { db in
+      try db.alter(table: "books") { table in
+        table.add(column: "lastCheckTime", .integer)
+          .notNull().defaults(to: 0)
+        table.add(column: "reversesTableOfContents", .boolean)
+          .notNull().defaults(to: false)
+        table.add(column: "androidType", .integer)
+          .notNull().defaults(to: 0)
+        table.add(column: "originOrder", .integer)
+          .notNull().defaults(to: 0)
+        table.add(column: "syncTime", .integer)
+          .notNull().defaults(to: 0)
+        table.add(column: "charset", .text)
+        table.add(column: "customTag", .text)
+        table.add(column: "wordCount", .text)
+      }
+      try db.create(table: "androidLibraryGroups") { table in
+        table.column("groupID", .integer).primaryKey()
+        table.column("name", .text).notNull()
+        table.column("cover", .text)
+        table.column("orderValue", .integer).notNull()
+        table.column("enablesRefresh", .boolean).notNull()
+        table.column("isShown", .boolean).notNull()
+        table.column("bookSort", .integer).notNull()
+      }
+      try db.create(table: "androidLibraryBookmarks") { table in
+        table.column("time", .integer).primaryKey()
+        table.column("bookName", .text).notNull().indexed()
+        table.column("bookAuthor", .text).notNull().indexed()
+        table.column("chapterIndex", .integer).notNull()
+        table.column("chapterPosition", .integer).notNull()
+        table.column("chapterName", .text).notNull()
+        table.column("bookText", .text).notNull()
+        table.column("content", .text).notNull()
+      }
+    }
     return migrator
+  }
+
+  private static func platformGroupMask(_ value: Int64) throws -> Int {
+    guard let result = Int(exactly: value) else {
+      throw AndroidLibraryImportError.integerOutOfRange(
+        field: "group",
+        value: value
+      )
+    }
+    return result
   }
 }
 
@@ -1022,9 +1148,17 @@ private struct BookRecord:
   var progressChapterTitle: String?
   var progressUpdatedAt: Int64?
   var latestChapterTime: Int64
+  var lastCheckTime: Int64
   var latestCheckCount: Int
   var canUpdate: Bool
+  var reversesTableOfContents: Bool
   var splitsLongChapters: Bool
+  var androidType: Int64
+  var originOrder: Int64
+  var syncTime: Int64
+  var charset: String?
+  var customTag: String?
+  var wordCount: String?
 
   init(
     bookID: String,
@@ -1058,9 +1192,17 @@ private struct BookRecord:
     self.progressChapterTitle = nil
     self.progressUpdatedAt = nil
     self.latestChapterTime = 0
+    self.lastCheckTime = 0
     self.latestCheckCount = 0
     self.canUpdate = true
+    self.reversesTableOfContents = false
     self.splitsLongChapters = true
+    self.androidType = 0
+    self.originOrder = 0
+    self.syncTime = 0
+    self.charset = nil
+    self.customTag = nil
+    self.wordCount = nil
   }
 
   mutating func apply(_ candidate: ShelfBookCandidate) {
@@ -1133,6 +1275,107 @@ private struct BookRecord:
       ),
       chapterTitle: progressChapterTitle,
       updatedAtMilliseconds: progressUpdatedAt
+    )
+  }
+
+  var androidRestoreValue: AndroidLibraryRestoreBook {
+    AndroidLibraryRestoreBook(
+      candidate: item.candidate,
+      groupMask: Int64(groupID),
+      order: orderValue,
+      chapterCount: chapterCount,
+      progress: readingProgress ?? ReadingProgress(
+        position: ReadingPosition(chapterIndex: 0, characterOffset: 0),
+        chapterTitle: nil,
+        updatedAtMilliseconds: 0
+      ),
+      latestChapterTime: latestChapterTime,
+      lastCheckTime: lastCheckTime,
+      latestCheckCount: latestCheckCount,
+      canUpdate: canUpdate,
+      reversesTableOfContents: reversesTableOfContents,
+      splitsLongChapters: splitsLongChapters,
+      androidType: androidType,
+      originOrder: originOrder,
+      syncTime: syncTime,
+      charset: charset,
+      customTag: customTag,
+      wordCount: wordCount
+    )
+  }
+}
+
+private struct AndroidLibraryGroupRecord:
+  Codable, FetchableRecord, MutablePersistableRecord
+{
+  static let databaseTableName = "androidLibraryGroups"
+
+  var groupID: Int64
+  var name: String
+  var cover: String?
+  var orderValue: Int
+  var enablesRefresh: Bool
+  var isShown: Bool
+  var bookSort: Int
+
+  init(value: AndroidLibraryRestoreGroup) {
+    groupID = value.id
+    name = value.name
+    cover = value.cover
+    orderValue = value.order
+    enablesRefresh = value.enablesRefresh
+    isShown = value.isShown
+    bookSort = value.bookSort
+  }
+
+  var value: AndroidLibraryRestoreGroup {
+    AndroidLibraryRestoreGroup(
+      id: groupID,
+      name: name,
+      cover: cover,
+      order: orderValue,
+      enablesRefresh: enablesRefresh,
+      isShown: isShown,
+      bookSort: bookSort
+    )
+  }
+}
+
+private struct AndroidLibraryBookmarkRecord:
+  Codable, FetchableRecord, MutablePersistableRecord
+{
+  static let databaseTableName = "androidLibraryBookmarks"
+
+  var time: Int64
+  var bookName: String
+  var bookAuthor: String
+  var chapterIndex: Int
+  var chapterPosition: Int
+  var chapterName: String
+  var bookText: String
+  var content: String
+
+  init(value: LibraryDomain.Bookmark) {
+    time = value.time
+    bookName = value.bookName
+    bookAuthor = value.bookAuthor
+    chapterIndex = value.chapterIndex
+    chapterPosition = value.chapterPosition
+    chapterName = value.chapterName
+    bookText = value.bookText
+    content = value.content
+  }
+
+  var value: LibraryDomain.Bookmark {
+    LibraryDomain.Bookmark(
+      time: time,
+      bookName: bookName,
+      bookAuthor: bookAuthor,
+      chapterIndex: chapterIndex,
+      chapterPosition: chapterPosition,
+      chapterName: chapterName,
+      bookText: bookText,
+      content: content
     )
   }
 }
