@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P94-WEBDAV-MANUAL-ENCRYPTED-RESTORE-001",
+  "status": "completed",
+  "mode": "critical_path_only",
+  "priority": 1,
+  "title": "P94 手动 WebDAV 加密备份恢复一致性",
+  "objective": "让设置页手动刷新并选择 Android 加密 backup.zip 时，与启动最新备份提示共用同一恢复状态机：自动尝试空口令、需要时安全输入、错误口令重试、正确口令恢复并刷新内存 Store。",
+  "validation_policy": "复用 P89 的真实 BackupAES 归档测试双桩，只新增一条设置页入口的 iPhone Simulator 场景；不重复运行其他 UI 矩阵。",
+  "stages": [{
+    "id": "P94-S1",
+    "title": "双入口统一恢复状态机",
+    "selectors": [{
+      "id": "P94-S1-UI",
+      "claim_ids": [],
+      "task_ids": ["IOS-APP-NAVIGATION-WEBDAV-MANUAL-ENCRYPTED-RESTORE-001"]
+    }]
+  }],
+  "deliveries": [{
+    "target": "IOS-APP-NAVIGATION-WEBDAV-MANUAL-ENCRYPTED-RESTORE-001",
+    "title": "设置页备份列表复用加密恢复与刷新闭环",
+    "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+    "fixture_id": "ui-webdav-manual-encrypted-restore-v1",
+    "validation": "simulator",
+    "prerequisite_task_ids": ["IOS-APP-NAVIGATION-ANDROID-BACKUP-CROSS-STORE-COMPENSATION-001"],
+    "additional_allowed_paths": [
+      "ios/Apps/Legado/App/**",
+      "ios/Apps/Legado/UITests/**"
+    ],
+    "ui_contract": {
+      "goal": "从设置页刷新云端备份列表，选择含 Android BackupAES 配置的 backup.zip，错误口令留在安全输入页，正确口令完成恢复。",
+      "scenario_id": "ui-webdav-manual-encrypted-restore-v1",
+      "test_method": "testManualWebDAVEncryptedBackupRestore"
+    },
+    "source_anchors": [
+      {
+        "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+        "path": "app/src/main/java/io/legado/app/help/AppWebDav.kt",
+        "symbol_id": "kotlin://io.legado.app.help.AppWebDav/restoreWebDav"
+      },
+      {
+        "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+        "path": "app/src/main/java/io/legado/app/ui/main/MainActivity.kt",
+        "symbol_id": "kotlin://io.legado.app.ui.main.MainActivity/backupSync"
+      }
+    ]
+  }]
+}

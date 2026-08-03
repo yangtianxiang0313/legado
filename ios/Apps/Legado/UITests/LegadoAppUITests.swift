@@ -211,9 +211,8 @@ final class LegadoAppUITests: XCTestCase {
         )
         restore.tap()
 
-        let restored = NSPredicate(format: "label BEGINSWITH '已恢复 '")
-        expectation(for: restored, evaluatedWith: status)
-        waitForExpectations(timeout: 15)
+        let completion = app.alerts["云端备份恢复完成"]
+        XCTAssertTrue(completion.waitForExistence(timeout: 15))
 
         emit([
             "simulator_id": contract.simulatorID,
@@ -221,7 +220,76 @@ final class LegadoAppUITests: XCTestCase {
             "screen": "screen.root.settings",
             "uploaded_and_listed": true,
             "restored_file": restoredFile,
-            "restore_state": status.label,
+            "restore_state": completion.label,
+        ])
+    }
+
+    func testManualWebDAVEncryptedBackupRestore() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+            "--reset-webdav-settings",
+            "--reset-webdav-backup-discovery",
+            "--webdav-test-double",
+            "--webdav-encrypted-backup-test-double",
+            "--skip-webdav-latest-backup-discovery",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        selectRoot("root.settings", label: "我的")
+        requireByScrolling(
+            "action.settings.webdav.backup.refresh",
+            in: "scroll.root.settings"
+        ).tap()
+        let status = require("state.settings.webdav.backup", timeout: 15)
+        let listed = NSPredicate(format: "label BEGINSWITH '找到 '")
+        expectation(for: listed, evaluatedWith: status)
+        waitForExpectations(timeout: 15)
+
+        let restore = app.buttons.matching(
+            NSPredicate(
+                format: "identifier BEGINSWITH %@",
+                "action.settings.webdav.backup.restore."
+            )
+        ).firstMatch
+        XCTAssertTrue(restore.waitForExistence(timeout: 8))
+        restore.tap()
+
+        let password = app.secureTextFields[
+            "field.webdav.restore.password"
+        ].firstMatch
+        XCTAssertTrue(password.waitForExistence(timeout: 8))
+        password.tap()
+        password.typeText("wrong")
+        requireButton("action.webdav.restore.password").tap()
+        XCTAssertTrue(
+            require(
+                "status.webdav.restore.password",
+                timeout: 15
+            ).label.contains("口令错误")
+        )
+
+        password.tap()
+        password.typeText("android-pass")
+        requireButton("action.webdav.restore.password").tap()
+
+        let completion = app.alerts["云端备份恢复完成"]
+        XCTAssertTrue(completion.waitForExistence(timeout: 15))
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "entry": "settings-backup-list",
+            "password_required": true,
+            "invalid_password_rejected": true,
+            "valid_password_restored": true,
         ])
     }
 

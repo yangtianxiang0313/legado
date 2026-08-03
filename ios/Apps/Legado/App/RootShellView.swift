@@ -121,7 +121,7 @@ struct RootShellView: View {
                     title: Text("发现新的云端备份"),
                     message: Text("是否恢复 \(file.name)？"),
                     primaryButton: .default(Text("恢复")) {
-                        restoreLatestWebDAVBackup(file)
+                        restoreWebDAVBackup(file)
                     },
                     secondaryButton: .cancel(Text("取消"))
                 )
@@ -176,7 +176,7 @@ struct RootShellView: View {
                     }
                     ToolbarItem(placement: .confirmationAction) {
                         Button("恢复") {
-                            restoreLatestWebDAVBackup(
+                            restoreWebDAVBackup(
                                 request.file,
                                 backupPassword: webDAVRestorePassword
                             )
@@ -301,7 +301,11 @@ struct RootShellView: View {
                     loader: webDAVProgressLoader
                 )
             }
-            await discoverLatestWebDAVBackup()
+            if !ProcessInfo.processInfo.arguments.contains(
+                "--skip-webdav-latest-backup-discovery"
+            ) {
+                await discoverLatestWebDAVBackup()
+            }
         }
         .onChange(of: rootVisibility.value) { _, _ in
             router.reconcileVisibleRoots(visibleRoots)
@@ -337,7 +341,7 @@ struct RootShellView: View {
         webDAVBackupNotice = .offer(file)
     }
 
-    private func restoreLatestWebDAVBackup(
+    private func restoreWebDAVBackup(
         _ file: WebDAVBackupFile,
         backupPassword: String? = nil
     ) {
@@ -628,7 +632,10 @@ struct RootShellView: View {
                 libraryBackup: libraryBackup,
                 webDAVBackupSync: webDAVBackupSync,
                 webDAVServerProfiles: webDAVServerProfiles,
-                webDAVRemoteBooks: webDAVRemoteBooks
+                webDAVRemoteBooks: webDAVRemoteBooks,
+                restoreWebDAVBackup: { file in
+                    restoreWebDAVBackup(file)
+                }
             )
             .navigationDestination(for: AppRoute.self) { route in
                 destination(for: route, on: root)
@@ -1377,6 +1384,7 @@ private struct RootContentView: View {
     let webDAVBackupSync: WebDAVBackupSyncUseCase
     let webDAVServerProfiles: any WebDAVServerProfileRepository
     let webDAVRemoteBooks: any WebDAVRemoteBookTransferring
+    let restoreWebDAVBackup: (WebDAVBackupFile) -> Void
     @State private var webDAVAccount = ProcessInfo.processInfo.arguments.contains(
         "--webdav-test-double"
     ) ? "reader" : ""
@@ -2037,35 +2045,6 @@ private struct RootContentView: View {
         }
     }
 
-    private func restoreWebDAVBackup(_ file: WebDAVBackupFile) {
-        guard let configuration = webDAVSettings.value.connectionConfiguration else {
-            webDAVBackupStatus = "请先配置 WebDAV"
-            return
-        }
-        webDAVBackupStatus = "正在恢复 \(file.name)…"
-        Task {
-            switch await webDAVBackupSync.restore(
-                configuration: configuration,
-                fileName: file.name
-            ) {
-            case .restored(let summary):
-                webDAVBackupCheckpoint.markBackup(
-                    Int64(Date().timeIntervalSince1970 * 1_000)
-                )
-                if let projection = summary.readerConfigProjection {
-                    readerPreferences.apply(projection)
-                }
-                await library.reload()
-                await reloadBackupDomains()
-                webDAVBackupStatus =
-                    "已恢复 \(summary.bookCount) 本书、"
-                    + "\(summary.groupCount) 个分组、"
-                    + "\(summary.bookmarkCount) 条书签"
-            case .failed:
-                webDAVBackupStatus = "WebDAV 备份恢复失败"
-            }
-        }
-    }
 }
 
 private extension SearchBookRoute {
