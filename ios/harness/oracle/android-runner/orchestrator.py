@@ -580,6 +580,37 @@ SCENARIO_CONTRACTS = {
             "registry-finally-cleanup",
         }),
     },
+    "rl-reader-cache-offline-queue-001": {
+        "status": "candidate",
+        "fixture_kind": "android_runtime_scenario",
+        "runtime_loopback": True,
+        "result_type": "reader_runtime",
+        "stage_names": (
+            "queue_seed",
+            "retry_accounting",
+            "lifecycle_reset",
+            "result_mapping",
+        ),
+        "expected_cases": (
+            (
+                "aggregate-summary-clear-keeps-queue",
+                "content_cache_queue_completion",
+            ),
+            (
+                "retry-budget-and-concurrent-exception",
+                "content_cache_queue_completion",
+            ),
+            (
+                "close-discards-registry-and-recreates-model",
+                "content_cache_queue_completion",
+            ),
+        ),
+        "nominal_cases": frozenset({
+            "aggregate-summary-clear-keeps-queue",
+            "retry-budget-and-concurrent-exception",
+            "close-discards-registry-and-recreates-model",
+        }),
+    },
     "rl-reader-bookmark-search-runtime-risk-001": {
         "status": "candidate",
         "fixture_kind": "android_runtime_scenario",
@@ -2015,6 +2046,11 @@ ROUTE_OBSERVATION_SCENARIOS = {
         "cloud-ahead",
         "cloud-behind-position",
         "cloud-behind-chapter",
+    ),
+    "rl-reader-cache-offline-queue-001": (
+        "aggregate-summary-clear-keeps-queue",
+        "retry-budget-and-concurrent-exception",
+        "close-discards-registry-and-recreates-model",
     ),
     "sl-source-debug-android-truth-001": (
         "debug-search",

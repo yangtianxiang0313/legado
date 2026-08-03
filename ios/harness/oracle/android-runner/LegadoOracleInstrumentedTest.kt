@@ -379,6 +379,8 @@ class LegadoOracleInstrumentedTest {
                 runExplorePipelineCases()
             "sl-content-cache-queue-completion-runtime-001" ->
                 runContentCacheQueueCompletionCases()
+            "rl-reader-cache-offline-queue-001" ->
+                runContentCacheQueueCompletionCases()
             else -> {
                 runCase("search-hit", "search", searchRequest("星河")) {
                     searchProjection(WebBook.searchBookAwait(source, "星河"))
@@ -9766,9 +9768,12 @@ class LegadoOracleInstrumentedTest {
             require(value.getString("operation") == "rule_variable_scope") {
                 "Rule variable scenario only accepts rule_variable_scope stimuli"
             }
-            val requestValue = value.getJSONObject("request")
+            val requestValue = value.optJSONObject("request")
             val request = request(
-                deviceOrigin + requestValue.getString("target")
+                deviceOrigin + (
+                    requestValue?.getString("target")
+                        ?: "/cache/${value.getString("id")}" 
+                    )
             )
             runCase(
                 value.getString("id"),
@@ -9920,7 +9925,73 @@ class LegadoOracleInstrumentedTest {
         "retry_budget" -> retryBudgetProjection(arguments)
         "success_cancel" -> successCancelProjection(arguments)
         "registry_cleanup" -> registryCleanupProjection(arguments)
+        "aggregate_clear" -> cacheAggregateClearProjection(arguments)
+        "close_recreate" -> cacheCloseRecreateProjection(arguments)
         else -> error("Unsupported content cache mode: $mode")
+    }
+
+    private fun cacheAggregateClearProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        resetCacheBookState()
+        val firstBook = cacheProbeBook(arguments)
+        val secondBook = firstBook.copy(
+            bookUrl = firstBook.bookUrl + "/second"
+        )
+        val first = CacheBook.CacheBookModel(source, firstBook)
+        val second = CacheBook.CacheBookModel(source, secondBook)
+        return try {
+            first.addDownload(1, 3)
+            beginCacheAttempt(first, 1)
+            second.addDownload(5, 6)
+            CacheBook.successDownloadSet.add("success")
+            CacheBook.errorDownloadMap["failure"] = 2
+            val before = CacheBook.downloadSummary
+            CacheBook.clear()
+            JSONObject()
+                .put("before_clear_summary", before)
+                .put("after_clear_summary", CacheBook.downloadSummary)
+                .put("first_state_after_clear", cacheModelState(first))
+                .put("second_state_after_clear", cacheModelState(second))
+                .put("registered_model_count", CacheBook.cacheBookMap.size)
+                .put("is_run_after_clear", CacheBook.isRun)
+        } finally {
+            resetCacheBookState()
+        }
+    }
+
+    private fun cacheCloseRecreateProjection(
+        arguments: JSONObject
+    ): JSONObject {
+        resetCacheBookState()
+        val book = cacheProbeBook(arguments)
+        val model = CacheBook.getOrCreate(source, book)
+        return try {
+            model.addDownload(2, 4)
+            beginCacheAttempt(model, 2)
+            CacheBook.successDownloadSet.add("success")
+            CacheBook.errorDownloadMap["failure"] = 1
+            val before = cacheModelState(model)
+            CacheBook.close()
+            val closedModel = cacheModelState(model)
+            val summaryAfterClose = CacheBook.downloadSummary
+            val registryEmptyAfterClose = CacheBook.cacheBookMap.isEmpty()
+            val fresh = CacheBook.getOrCreate(source, book)
+            fresh.addDownload(
+                arguments.getInt("fresh_index"),
+                arguments.getInt("fresh_index")
+            )
+            JSONObject()
+                .put("before_close", before)
+                .put("closed_model", closedModel)
+                .put("registry_empty_after_close", registryEmptyAfterClose)
+                .put("summary_after_close", summaryAfterClose)
+                .put("fresh_is_distinct", fresh !== model)
+                .put("fresh_state", cacheModelState(fresh))
+                .put("registry_count_after_recreate", CacheBook.cacheBookMap.size)
+        } finally {
+            resetCacheBookState()
+        }
     }
 
     private fun contentPresenceProjection(

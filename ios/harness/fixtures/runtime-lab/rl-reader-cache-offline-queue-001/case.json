@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "kind": "android_runtime_scenario",
+  "id": "rl-reader-cache-offline-queue-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "android_runtime",
+  "capabilities": ["reader.cache", "reader.lifecycle", "background.queue"],
+  "compatibility_profile": "android-legado-v1",
+  "source": null,
+  "input": "input.json",
+  "transport": {
+    "mode": "fixture_and_loopback",
+    "external_network": "deny",
+    "responses": [
+      {
+        "id": "aggregate-summary-clear-keeps-queue",
+        "match": {"method": "GET", "path": "/cache/aggregate-summary-clear-keeps-queue"},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "retry-budget-and-concurrent-exception",
+        "match": {"method": "GET", "path": "/cache/retry-budget-and-concurrent-exception"},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      },
+      {
+        "id": "close-discards-registry-and-recreates-model",
+        "match": {"method": "GET", "path": "/cache/close-discards-registry-and-recreates-model"},
+        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
+      }
+    ]
+  },
+  "coverage": [
+    {
+      "behavior": "reader.cache.offline-queue",
+      "cases": [
+        {
+          "id": "aggregate-summary-clear-keeps-queue",
+          "role": "nominal",
+          "android_fact_refs": ["AF-CACHE-BOOK-MODEL", "AF-CACHE-BOOK-SERVICE"],
+          "branch_refs": ["downloadSummary aggregates all live models while clear resets only success and error bookkeeping"]
+        },
+        {
+          "id": "retry-budget-and-concurrent-exception",
+          "role": "boundary",
+          "android_fact_refs": ["AF-CACHE-BOOK-MODEL"],
+          "branch_refs": ["ordinary errors stop requeueing at three while ConcurrentException does not consume the ordinary retry budget"]
+        },
+        {
+          "id": "close-discards-registry-and-recreates-model",
+          "role": "boundary",
+          "android_fact_refs": ["AF-CACHE-BOOK-MODEL", "AF-CACHE-BOOK-SERVICE"],
+          "branch_refs": ["service-style close clears registry and counters; a later request creates a distinct model without old waiting state"]
+        }
+      ]
+    }
+  ],
+  "determinism": {
+    "clock": "fixed",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 44,
+    "network_allowed": false,
+    "logical_origin": "http://sourcelab.test",
+    "database_reset_per_case": true
+  },
+  "limits": {
+    "timeout_ms": 5000,
+    "max_response_bytes": 1048576,
+    "max_request_body_bytes": 65536,
+    "max_requests": 8,
+    "max_concurrency": 2
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "app/src/main/java/io/legado/app/model/CacheBook.kt",
+      "app/src/main/java/io/legado/app/service/CacheBookService.kt"
+    ],
+    "introduced_by": "IOS-CHARACTERIZE-READER-CACHE-OFFLINE-QUEUE-001"
+  }
+}

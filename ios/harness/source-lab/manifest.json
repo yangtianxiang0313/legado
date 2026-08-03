@@ -106,6 +106,12 @@
       "sha256": "de6f1ee7d4bbedae37d82abe35577a87cdf4715d0a65060b93abfb94a0d4efdf"
     },
     {
+      "id": "rl-reader-cache-offline-queue-001",
+      "status": "candidate",
+      "path": "ios/harness/fixtures/runtime-lab/rl-reader-cache-offline-queue-001",
+      "sha256": "d7fd35a7502d3fc5d2e10c4319f79fc5c66aaba3db95e86b72b8276253364ccb"
+    },
+    {
       "id": "rl-reader-cache-prefetch-policy-001",
       "status": "candidate",
       "path": "ios/harness/fixtures/runtime-lab/rl-reader-cache-prefetch-policy-001",
