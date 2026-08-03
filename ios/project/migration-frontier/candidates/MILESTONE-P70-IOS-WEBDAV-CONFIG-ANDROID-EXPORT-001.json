@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P70-IOS-WEBDAV-CONFIG-ANDROID-EXPORT-001",
+  "status": "pending",
+  "mode": "critical_path_only",
+  "priority": 1,
+  "title": "P70 iOS WebDAV 配置回流 Android",
+  "objective": "让 iOS 导出的 Android backup.zip 同时携带 Android 可恢复的 config.xml，并用用户显式提供的 Android 备份口令加密 WebDAV 密码，完成配置双向互通。",
+  "validation_policy": "聚焦验证 iOS 导出归档中的 config.xml 可被同一 Android SharedPreferences/BackupAES Codec 读回；补充 App 编译，不访问网络、不启动模拟器。",
+  "stages": [
+    {
+      "id": "P70-S1",
+      "title": "iOS WebDAV 配置导出为 Android config.xml",
+      "selectors": [
+        {
+          "id": "P70-S1-CONFIG-EXPORT",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-APP-IOS-WEBDAV-CONFIG-ANDROID-EXPORT-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-APP-IOS-WEBDAV-CONFIG-ANDROID-EXPORT-001",
+      "title": "把 iOS WebDAV 设置与 Keychain 凭据写入 Android config.xml",
+      "fixture_id": "rl-integration-ios-webdav-config-android-export-001",
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+      "prerequisite_task_ids": [
+        "IOS-APP-ANDROID-WEBDAV-CONFIG-RESTORE-001"
+      ],
+      "validation": "tests",
+      "package_path": "ios/Packages/LegadoKit",
+      "test_filter": "AndroidWebDAVConfigExportTests",
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/help/storage/Backup.kt",
+          "symbol_id": "kotlin://io.legado.app.help.storage.Backup/backup"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/help/storage/Restore.kt",
+          "symbol_id": "kotlin://io.legado.app.help.storage.Restore/restore"
+        }
+      ]
+    }
+  ]
+}
