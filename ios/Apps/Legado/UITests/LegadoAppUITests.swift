@@ -225,6 +225,63 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testLatestWebDAVBackupDiscoveryAndRestore() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        let commonArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+            "--reset-webdav-settings",
+            "--webdav-test-double",
+            "--webdav-latest-backup-test-double",
+        ]
+
+        app.launchArguments = commonArguments + [
+            "--reset-webdav-backup-discovery"
+        ]
+        app.launch()
+        let offer = app.alerts["发现新的云端备份"]
+        XCTAssertTrue(offer.waitForExistence(timeout: 15))
+        XCTAssertTrue(offer.staticTexts["是否恢复 backup-android-fixture.zip？"].exists)
+        offer.buttons["取消"].tap()
+
+        app.terminate()
+        app.launchArguments = commonArguments
+        app.launch()
+        XCTAssertFalse(
+            app.alerts["发现新的云端备份"].waitForExistence(timeout: 3),
+            "取消后不应为同一远端版本重复提示"
+        )
+
+        app.terminate()
+        app.launchArguments = commonArguments + [
+            "--reset-webdav-backup-discovery"
+        ]
+        app.launch()
+        let secondOffer = app.alerts["发现新的云端备份"]
+        XCTAssertTrue(secondOffer.waitForExistence(timeout: 15))
+        secondOffer.buttons["恢复"].tap()
+        let completion = app.alerts["云端备份恢复完成"]
+        XCTAssertTrue(completion.waitForExistence(timeout: 15))
+        let result = completion.staticTexts.matching(
+            NSPredicate(format: "label BEGINSWITH '已恢复 '")
+        ).firstMatch
+        XCTAssertTrue(result.exists)
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "remote_file": "backup-android-fixture.zip",
+            "cancel_suppressed_repeat": true,
+            "restore_state": result.label,
+        ])
+    }
+
     func testAndroidLibraryBackupImportEntry() throws {
         let environment = ProcessInfo.processInfo.environment
         let contract = try XCTUnwrap(

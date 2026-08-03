@@ -1,4 +1,5 @@
 import AVFoundation
+import AndroidBackupInterop
 import AppNavigation
 import AppUseCases
 import BackupInteropUseCases
@@ -28,6 +29,8 @@ struct LegadoApp: App {
     @State private var ruleSubscriptions: RuleSubscriptionStore
     @State private var rssStore: RSSStore
     @State private var webDAVSettings: WebDAVConnectionSettingsStore
+    @State private var webDAVBackupDiscoveryCheckpoint:
+        WebDAVBackupDiscoveryCheckpointStore
     private let webDAVCredentials: KeychainWebDAVCredentialStore
     private let webDAVClient: any WebDAVConnectionInitializing
     private let webDAVProgressLoader: any WebDAVBookProgressLoading
@@ -102,6 +105,19 @@ struct LegadoApp: App {
             repository: webDAVSettingsRepository
         )
         _webDAVSettings = State(initialValue: webDAVSettingsStore)
+        let backupDiscoveryCheckpoint =
+            WebDAVBackupDiscoveryCheckpointStore(
+                repository:
+                    UserDefaultsWebDAVBackupDiscoveryCheckpointRepository()
+            )
+        if processArguments.contains(
+            "--reset-webdav-backup-discovery"
+        ) {
+            backupDiscoveryCheckpoint.reset()
+        }
+        _webDAVBackupDiscoveryCheckpoint = State(
+            initialValue: backupDiscoveryCheckpoint
+        )
         if processArguments.contains("--reset-root-visibility") {
             rootVisibilityRepository.save(RootVisibilityPreferences())
         }
@@ -148,7 +164,10 @@ struct LegadoApp: App {
                     ? UITestWebDAVBackupTransfer(
                         seededArchive: ProcessInfo.processInfo.environment[
                             "LEGADO_ANDROID_BACKUP_FIXTURE_BASE64"
-                        ].flatMap { Data(base64Encoded: $0) }
+                        ].flatMap { Data(base64Encoded: $0) },
+                        seedsFallbackArchive: processArguments.contains(
+                            "--webdav-latest-backup-test-double"
+                        )
                     )
                     : WebDAVFoundationBackupClient(
                         credentials: webDAVCredentials
@@ -266,6 +285,8 @@ struct LegadoApp: App {
                     ruleSubscriptions: ruleSubscriptions,
                     rssStore: rssStore,
                     webDAVSettings: webDAVSettings,
+                    webDAVBackupDiscoveryCheckpoint:
+                        webDAVBackupDiscoveryCheckpoint,
                     webDAVCredentials: webDAVCredentials,
                     webDAVClient: webDAVClient,
                     webDAVProgressLoader: webDAVProgressLoader,
@@ -294,6 +315,8 @@ struct LegadoApp: App {
                     ruleSubscriptions: ruleSubscriptions,
                     rssStore: rssStore,
                     webDAVSettings: webDAVSettings,
+                    webDAVBackupDiscoveryCheckpoint:
+                        webDAVBackupDiscoveryCheckpoint,
                     webDAVCredentials: webDAVCredentials,
                     webDAVClient: webDAVClient,
                     webDAVProgressLoader: webDAVProgressLoader,
@@ -557,6 +580,24 @@ private final class UserDefaultsWebDAVConnectionSettingsRepository:
     }
 }
 
+@MainActor
+private final class UserDefaultsWebDAVBackupDiscoveryCheckpointRepository:
+    WebDAVBackupDiscoveryCheckpointRepository
+{
+    private let defaults: UserDefaults
+    private let key = "webdav.backup.lastHandledMilliseconds.v1"
+
+    init(defaults: UserDefaults = .standard) { self.defaults = defaults }
+
+    func loadLastHandledMilliseconds() -> Int64 {
+        (defaults.object(forKey: key) as? NSNumber)?.int64Value ?? 0
+    }
+
+    func saveLastHandledMilliseconds(_ value: Int64) {
+        defaults.set(value, forKey: key)
+    }
+}
+
 private struct UITestWebDAVTransport: WebDAVHTTPTransport {
     func perform(_ request: URLRequest) async throws -> WebDAVHTTPResponse {
         WebDAVHTTPResponse(statusCode: 207)
@@ -663,10 +704,35 @@ private struct UITestWebDAVRemoteBookTransfer:
 private actor UITestWebDAVBackupTransfer: WebDAVBackupTransferring {
     private var archives: [String: Data]
 
-    init(seededArchive: Data?) {
-        archives = seededArchive.map {
+    init(seededArchive: Data?, seedsFallbackArchive: Bool = false) {
+        let archive = seededArchive ?? (
+            seedsFallbackArchive ? Self.makeFallbackArchive() : nil
+        )
+        archives = archive.map {
             ["backup-android-fixture.zip": $0]
         } ?? [:]
+    }
+
+    private static func makeFallbackArchive() -> Data? {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let archiveURL = directory.appendingPathComponent("backup.zip")
+        do {
+            try FileManager.default.createDirectory(
+                at: directory,
+                withIntermediateDirectories: true
+            )
+            defer { try? FileManager.default.removeItem(at: directory) }
+            try AndroidBackupArchive.write(
+                AndroidBackupContents(
+                    sharedPreferences: AndroidSharedPreferencesDocument()
+                ),
+                to: archiveURL
+            )
+            return try Data(contentsOf: archiveURL)
+        } catch {
+            return nil
+        }
     }
 
     func listBackups(

@@ -39,6 +39,20 @@ private func synchronizeDefaultWebDAVServer(
     }
 }
 
+private enum WebDAVBackupNotice: Identifiable {
+    case offer(WebDAVBackupFile)
+    case result(String)
+    case failure(String)
+
+    var id: String {
+        switch self {
+        case .offer(let file): "offer:\(file.name)"
+        case .result(let message): "result:\(message)"
+        case .failure(let message): "failure:\(message)"
+        }
+    }
+}
+
 struct RootShellView: View {
     @Bindable var router: AppRouter
     @Bindable var library: ShelfLibrary
@@ -55,6 +69,8 @@ struct RootShellView: View {
     @Bindable var ruleSubscriptions: RuleSubscriptionStore
     @Bindable var rssStore: RSSStore
     @Bindable var webDAVSettings: WebDAVConnectionSettingsStore
+    @Bindable var webDAVBackupDiscoveryCheckpoint:
+        WebDAVBackupDiscoveryCheckpointStore
     let webDAVCredentials: KeychainWebDAVCredentialStore
     let webDAVClient: any WebDAVConnectionInitializing
     let webDAVProgressLoader: any WebDAVBookProgressLoading
@@ -66,6 +82,7 @@ struct RootShellView: View {
     let webDAVRemoteBooks: any WebDAVRemoteBookTransferring
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var didLoadLibrary = false
+    @State private var webDAVBackupNotice: WebDAVBackupNotice?
 
     var body: some View {
         Group {
@@ -85,6 +102,31 @@ struct RootShellView: View {
         .background(activeThemeBackground.ignoresSafeArea())
         .toolbarBackground(activeThemePrimary, for: .navigationBar)
         .toolbarBackground(activeThemeBottomBackground, for: .tabBar)
+        .alert(item: $webDAVBackupNotice) { notice in
+            switch notice {
+            case .offer(let file):
+                Alert(
+                    title: Text("发现新的云端备份"),
+                    message: Text("是否恢复 \(file.name)？"),
+                    primaryButton: .default(Text("恢复")) {
+                        restoreLatestWebDAVBackup(file)
+                    },
+                    secondaryButton: .cancel(Text("取消"))
+                )
+            case .result(let message):
+                Alert(
+                    title: Text("云端备份恢复完成"),
+                    message: Text(message),
+                    dismissButton: .default(Text("好"))
+                )
+            case .failure(let message):
+                Alert(
+                    title: Text("云端备份恢复失败"),
+                    message: Text(message),
+                    dismissButton: .default(Text("好"))
+                )
+            }
+        }
         .task {
             guard !didLoadLibrary else { return }
             didLoadLibrary = true
@@ -187,9 +229,67 @@ struct RootShellView: View {
                     loader: webDAVProgressLoader
                 )
             }
+            await discoverLatestWebDAVBackup()
         }
         .onChange(of: rootVisibility.value) { _, _ in
             router.reconcileVisibleRoots(visibleRoots)
+        }
+    }
+
+    private func discoverLatestWebDAVBackup() async {
+        guard
+            let configuration = webDAVSettings.value.connectionConfiguration
+        else { return }
+        guard case .loaded(let files) = await webDAVBackupSync.listBackups(
+            configuration: configuration
+        ) else { return }
+        guard case .offer(let file, let checkpoint) =
+            WebDAVLatestBackupDiscovery.decide(
+                files: files,
+                lastHandledMilliseconds:
+                    webDAVBackupDiscoveryCheckpoint.lastHandledMilliseconds
+            )
+        else { return }
+
+        // Android advances LocalConfig.lastBackup before showing the dialog,
+        // so cancelling does not repeatedly prompt for the same remote file.
+        webDAVBackupDiscoveryCheckpoint.markHandled(checkpoint)
+        webDAVBackupNotice = .offer(file)
+    }
+
+    private func restoreLatestWebDAVBackup(_ file: WebDAVBackupFile) {
+        guard
+            let configuration = webDAVSettings.value.connectionConfiguration
+        else {
+            webDAVBackupNotice = .failure("请先配置 WebDAV")
+            return
+        }
+        Task {
+            switch await webDAVBackupSync.restore(
+                configuration: configuration,
+                fileName: file.name
+            ) {
+            case .restored(let summary):
+                if let projection = summary.readerConfigProjection {
+                    readerPreferences.apply(projection)
+                }
+                await library.reload()
+                await sourceCatalog.reload()
+                await replacementRules.reload()
+                await ruleSubscriptions.reload()
+                await rssStore.reload()
+                await httpTextToSpeechEngines.reload()
+                await dictionaryLookup.reload()
+                await keyboardAssists.reload()
+                await appThemeProfiles.reload()
+                webDAVBackupNotice = .result(
+                    "已恢复 \(summary.bookCount) 本书、"
+                    + "\(summary.groupCount) 个分组、"
+                    + "\(summary.bookmarkCount) 条书签"
+                )
+            case .failed:
+                webDAVBackupNotice = .failure("无法恢复 \(file.name)")
+            }
         }
     }
 
@@ -2336,6 +2436,8 @@ struct StartupAcceptanceView: View {
     @Bindable var ruleSubscriptions: RuleSubscriptionStore
     @Bindable var rssStore: RSSStore
     @Bindable var webDAVSettings: WebDAVConnectionSettingsStore
+    @Bindable var webDAVBackupDiscoveryCheckpoint:
+        WebDAVBackupDiscoveryCheckpointStore
     let webDAVCredentials: KeychainWebDAVCredentialStore
     let webDAVClient: any WebDAVConnectionInitializing
     let webDAVProgressLoader: any WebDAVBookProgressLoading
@@ -2396,6 +2498,8 @@ struct StartupAcceptanceView: View {
                 ruleSubscriptions: ruleSubscriptions,
                 rssStore: rssStore,
                 webDAVSettings: webDAVSettings,
+                webDAVBackupDiscoveryCheckpoint:
+                    webDAVBackupDiscoveryCheckpoint,
                 webDAVCredentials: webDAVCredentials,
                 webDAVClient: webDAVClient,
                 webDAVProgressLoader: webDAVProgressLoader,
