@@ -293,6 +293,73 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testRestoredAndroidBookmarkIsConsumedByReader() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+            "--reset-webdav-settings",
+            "--reset-webdav-backup-discovery",
+            "--seed-offline-cache",
+            "--webdav-test-double",
+            "--webdav-bookmark-backup-test-double",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        let offer = app.alerts["发现新的云端备份"]
+        XCTAssertTrue(offer.waitForExistence(timeout: 15))
+        offer.buttons["恢复"].tap()
+        let completion = app.alerts["云端备份恢复完成"]
+        XCTAssertTrue(completion.waitForExistence(timeout: 15))
+        completion.buttons["好"].tap()
+
+        let book = app.staticTexts["星河纪事"].firstMatch
+        XCTAssertTrue(book.waitForExistence(timeout: 8))
+        book.tap()
+        require("screen.bookDetail")
+        requireButton("action.bookDetail.startReading").tap()
+        require("screen.chapterTOC")
+        require("action.chapter.select.0").tap()
+        require("screen.reader")
+
+        requireButton("action.reader.openPrimaryMenu").tap()
+        requireByScrolling(
+            "action.reader.openMore",
+            in: "overlay.reader.primaryMenu"
+        ).tap()
+        require("overlay.reader.more")
+        let bookmark = requireByScrolling(
+            "action.reader.addBookmark",
+            in: "overlay.reader.more"
+        )
+        waitForLabel(
+            "移除书签",
+            identifier: "action.reader.addBookmark"
+        )
+        bookmark.tap()
+        waitForLabel(
+            "添加书签",
+            identifier: "action.reader.addBookmark"
+        )
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "restored_book": "星河纪事",
+            "restored_chapter": "第一章 启航",
+            "restored_position": 0,
+            "visible_as_native_bookmark": true,
+            "deletion_round_trip": true,
+        ])
+    }
+
     func testLatestWebDAVBackupDiscoveryAndRestore() throws {
         let environment = ProcessInfo.processInfo.environment
         let contract = try XCTUnwrap(

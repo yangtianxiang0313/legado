@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P95-ANDROID-BOOKMARK-CONSUMPTION-001",
+  "status": "completed",
+  "mode": "critical_path_only",
+  "priority": 1,
+  "title": "P95 Android 书签在 iOS 阅读器可见",
+  "objective": "让 Android backup.zip 恢复的自然身份书签不只被无损保存和回流 Android，还能在 iOS 目录已加载后按书名、作者、章节序号和字符位置投影为原生阅读书签，并支持当前位置识别与删除。",
+  "validation_policy": "先用 DatabaseGRDB 聚焦测试覆盖自然身份映射、原生优先去重和删除；最终只运行一条 iPhone Simulator 恢复到阅读器场景，不重复备份或阅读器矩阵。",
+  "stages": [{
+    "id": "P95-S1",
+    "title": "恢复书签进入阅读消费链",
+    "selectors": [{
+      "id": "P95-S1-BOOKMARK",
+      "claim_ids": [],
+      "task_ids": ["IOS-APP-NAVIGATION-ANDROID-BOOKMARK-READER-CONSUMPTION-001"]
+    }]
+  }],
+  "deliveries": [{
+    "target": "IOS-APP-NAVIGATION-ANDROID-BOOKMARK-READER-CONSUMPTION-001",
+    "title": "Android 恢复书签映射为 iOS 原生阅读书签",
+    "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+    "fixture_id": "ui-android-bookmark-reader-consumption-v1",
+    "validation": "simulator",
+    "prerequisite_task_ids": ["IOS-APP-NAVIGATION-WEBDAV-MANUAL-ENCRYPTED-RESTORE-001"],
+    "additional_allowed_paths": [
+      "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+      "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+      "ios/Apps/Legado/App/**",
+      "ios/Apps/Legado/UITests/**"
+    ],
+    "ui_contract": {
+      "goal": "恢复含星河纪事首章位置 0 书签的 Android backup.zip 后进入阅读器，更多菜单直接显示移除书签；点击后变为添加书签。",
+      "scenario_id": "ui-android-bookmark-reader-consumption-v1",
+      "test_method": "testRestoredAndroidBookmarkIsConsumedByReader"
+    },
+    "source_anchors": [
+      {
+        "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+        "path": "app/src/main/java/io/legado/app/data/entities/Bookmark.kt",
+        "symbol_id": "kotlin://io.legado.app.data.entities.Bookmark"
+      },
+      {
+        "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+        "path": "app/src/main/java/io/legado/app/data/dao/BookmarkDao.kt",
+        "symbol_id": "kotlin://io.legado.app.data.dao.BookmarkDao"
+      },
+      {
+        "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+        "path": "app/src/main/java/io/legado/app/help/storage/Restore.kt",
+        "symbol_id": "kotlin://io.legado.app.help.storage.Restore/restore"
+      }
+    ]
+  }]
+}

@@ -173,6 +173,10 @@ struct LegadoApp: App {
                         seedsEncryptedFallbackArchive:
                             processArguments.contains(
                                 "--webdav-encrypted-backup-test-double"
+                            ),
+                        seedsBookmarkFallbackArchive:
+                            processArguments.contains(
+                                "--webdav-bookmark-backup-test-double"
                             )
                     )
                     : WebDAVFoundationBackupClient(
@@ -911,12 +915,15 @@ private actor UITestWebDAVBackupTransfer: WebDAVBackupTransferring {
     init(
         seededArchive: Data?,
         seedsFallbackArchive: Bool = false,
-        seedsEncryptedFallbackArchive: Bool = false
+        seedsEncryptedFallbackArchive: Bool = false,
+        seedsBookmarkFallbackArchive: Bool = false
     ) {
         let archive = seededArchive ?? (
             seedsFallbackArchive || seedsEncryptedFallbackArchive
+                || seedsBookmarkFallbackArchive
                 ? Self.makeFallbackArchive(
-                    encrypted: seedsEncryptedFallbackArchive
+                    encrypted: seedsEncryptedFallbackArchive,
+                    includesBookmark: seedsBookmarkFallbackArchive
                 )
                 : nil
         )
@@ -925,7 +932,10 @@ private actor UITestWebDAVBackupTransfer: WebDAVBackupTransferring {
         } ?? [:]
     }
 
-    private static func makeFallbackArchive(encrypted: Bool) -> Data? {
+    private static func makeFallbackArchive(
+        encrypted: Bool,
+        includesBookmark: Bool
+    ) -> Data? {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
         let archiveURL = directory.appendingPathComponent("backup.zip")
@@ -954,11 +964,32 @@ private actor UITestWebDAVBackupTransfer: WebDAVBackupTransferring {
                             .string("legado"),
                     ]
                 )
+            } else if includesBookmark {
+                sharedPreferences = AndroidSharedPreferencesDocument(
+                    values: [
+                        AndroidWebDAVBackupConfiguration.syncBookProgressKey:
+                            .boolean(false)
+                    ]
+                )
             } else {
                 sharedPreferences = AndroidSharedPreferencesDocument()
             }
             try AndroidBackupArchive.write(
                 AndroidBackupContents(
+                    bookmarks: includesBookmark
+                        ? [
+                            AndroidBookmarkDTO(
+                                time: 1_775_433_600_000,
+                                bookName: "星河纪事",
+                                bookAuthor: "林舟",
+                                chapterIndex: 0,
+                                chapterPosition: 0,
+                                chapterName: "第一章 启航",
+                                bookText: "星港的晨光",
+                                content: "来自 Android 的书签"
+                            )
+                        ]
+                        : [],
                     sharedPreferences: sharedPreferences
                 ),
                 to: archiveURL

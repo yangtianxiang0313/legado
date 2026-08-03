@@ -136,6 +136,76 @@ struct AndroidLibraryRestorePersistenceTests {
     #expect(restored.bookmarks.first?.content == "after")
   }
 
+  @Test func restoredAndroidBookmarkJoinsLoadedChapterAndCanBeRemoved()
+    async throws
+  {
+    let databaseURL = temporaryDatabaseURL()
+    defer { try? FileManager.default.removeItem(at: databaseURL.deletingLastPathComponent()) }
+    let repository = try GRDBBookShelfRepository(path: databaseURL.path)
+    let book = try await repository.add(
+      candidate(
+        name: "Android Book",
+        bookURL: "https://android.invalid/book"
+      ),
+      groupID: 0
+    )
+    let chapter = BookChapter(
+      id: ChapterID(rawValue: "android-chapter-four"),
+      bookID: book.id,
+      sourceID: book.candidate.sourceID,
+      index: 3,
+      title: "Loaded Chapter Four",
+      url: "https://android.invalid/book/chapter-4"
+    )
+    _ = try await repository.applyTOCUpdate(
+      bookID: book.id,
+      update: .replaced(previousCount: 0, chapters: [chapter])
+    )
+    _ = try await repository.restoreAndroidLibrary(
+      AndroidLibraryRestorePlan(
+        books: [],
+        groups: [],
+        bookmarks: [bookmark(content: "Android note")]
+      )
+    )
+
+    let projected = try #require(
+      try await repository.bookmarks(bookID: book.id).first
+    )
+    let stableID = ReadingBookmark.stableID(
+      bookID: book.id,
+      chapterID: chapter.id,
+      characterOffset: 27
+    )
+    #expect(projected.id == stableID)
+    #expect(projected.chapterID == chapter.id)
+    #expect(projected.chapterIndex == 3)
+    #expect(projected.characterOffset == 27)
+    #expect(projected.chapterTitle == "Chapter Four")
+    #expect(projected.excerpt == "Android note")
+    #expect(projected.createdAtMilliseconds == 1_700_000_000_123)
+
+    try await repository.saveBookmark(
+      ReadingBookmark(
+        id: stableID,
+        bookID: book.id,
+        chapterID: chapter.id,
+        chapterIndex: 3,
+        characterOffset: 27,
+        chapterTitle: "Native Chapter Four",
+        excerpt: "iOS edit",
+        createdAtMilliseconds: 1_700_000_000_456
+      )
+    )
+    let merged = try await repository.bookmarks(bookID: book.id)
+    #expect(merged.count == 1)
+    #expect(merged.first?.excerpt == "iOS edit")
+
+    try await repository.deleteBookmark(id: stableID)
+    #expect(try await repository.bookmarks(bookID: book.id).isEmpty)
+    #expect(try await repository.restoredAndroidLibraryPlan().bookmarks.isEmpty)
+  }
+
   @MainActor
   @Test func projectsRestoredGroupNamesAndMultiGroupMembership() async throws {
     let databaseURL = temporaryDatabaseURL()

@@ -853,14 +853,54 @@ public actor GRDBBookShelfRepository:
     bookID: LibraryDomain.BookID
   ) async throws -> [ReadingBookmark] {
     try await database.read { db in
-      try ReadingBookmarkRecord
+      let native = try ReadingBookmarkRecord
         .filter(Column("bookID") == bookID.rawValue)
-        .order(
-          Column("chapterIndex").asc,
-          Column("characterOffset").asc
-        )
         .fetchAll(db)
         .map(\.bookmark)
+      guard let book = try BookRecord.fetchOne(db, key: bookID.rawValue)
+      else { return native }
+      let chapters = try ChapterRecord
+        .filter(Column("bookID") == bookID.rawValue)
+        .order(Column("chapterIndex").asc, Column("chapterID").asc)
+        .fetchAll(db)
+      let chapterByIndex = Dictionary(
+        chapters.map { ($0.chapterIndex, $0) },
+        uniquingKeysWith: { first, _ in first }
+      )
+      let restored = try AndroidLibraryBookmarkRecord
+        .filter(
+          Column("bookName") == book.name
+            && Column("bookAuthor") == book.author
+        )
+        .fetchAll(db)
+        .compactMap { record -> ReadingBookmark? in
+          guard let chapter = chapterByIndex[record.chapterIndex]
+          else { return nil }
+          return Self.projectRestoredBookmark(
+            record,
+            bookID: bookID,
+            chapter: chapter
+          )
+        }
+      var merged = Dictionary(
+        restored.map { ($0.id, $0) },
+        uniquingKeysWith: { first, _ in first }
+      )
+      // Native iOS edits own the presentation when both platforms describe
+      // the same chapter position. The Android row remains available for
+      // lossless backup export until that position is explicitly removed.
+      for bookmark in native {
+        merged[bookmark.id] = bookmark
+      }
+      return merged.values.sorted {
+        if $0.chapterIndex != $1.chapterIndex {
+          return $0.chapterIndex < $1.chapterIndex
+        }
+        if $0.characterOffset != $1.characterOffset {
+          return $0.characterOffset < $1.characterOffset
+        }
+        return $0.createdAtMilliseconds < $1.createdAtMilliseconds
+      }
     }
   }
 
@@ -878,7 +918,61 @@ public actor GRDBBookShelfRepository:
       _ = try ReadingBookmarkRecord
         .filter(Column("bookmarkID") == id)
         .deleteAll(db)
+      let books = try BookRecord.fetchAll(db)
+      for book in books {
+        let bookID = LibraryDomain.BookID(rawValue: book.bookID)
+        let chapters = try ChapterRecord
+          .filter(Column("bookID") == book.bookID)
+          .fetchAll(db)
+        let chapterByIndex = Dictionary(
+          chapters.map { ($0.chapterIndex, $0) },
+          uniquingKeysWith: { first, _ in first }
+        )
+        let restored = try AndroidLibraryBookmarkRecord
+          .filter(
+            Column("bookName") == book.name
+              && Column("bookAuthor") == book.author
+          )
+          .fetchAll(db)
+        for record in restored {
+          guard
+            let chapter = chapterByIndex[record.chapterIndex],
+            Self.projectRestoredBookmark(
+              record,
+              bookID: bookID,
+              chapter: chapter
+            ).id == id
+          else { continue }
+          _ = try AndroidLibraryBookmarkRecord
+            .filter(Column("time") == record.time)
+            .deleteAll(db)
+        }
+      }
     }
+  }
+
+  private static func projectRestoredBookmark(
+    _ record: AndroidLibraryBookmarkRecord,
+    bookID: LibraryDomain.BookID,
+    chapter: ChapterRecord
+  ) -> ReadingBookmark {
+    let chapterID = LibraryDomain.ChapterID(rawValue: chapter.chapterID)
+    return ReadingBookmark(
+      id: ReadingBookmark.stableID(
+        bookID: bookID,
+        chapterID: chapterID,
+        characterOffset: record.chapterPosition
+      ),
+      bookID: bookID,
+      chapterID: chapterID,
+      chapterIndex: record.chapterIndex,
+      characterOffset: record.chapterPosition,
+      chapterTitle: record.chapterName.isEmpty
+        ? chapter.title
+        : record.chapterName,
+      excerpt: record.content.isEmpty ? record.bookText : record.content,
+      createdAtMilliseconds: record.time
+    )
   }
 
   public func replacementRules() async throws -> [ReaderReplacementRule] {
