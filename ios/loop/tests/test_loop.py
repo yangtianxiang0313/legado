@@ -2045,6 +2045,14 @@ class MinimalLoopTests(unittest.TestCase):
             "ios/harness/tests/test_oracle_control.py",
             task["scope"]["allowed_paths"],
         )
+        self.assertIn(
+            "ios/harness/goldens/releases/**",
+            task["scope"]["allowed_paths"],
+        )
+        self.assertIn(
+            "ios/project/external-execution-receipts/**",
+            task["scope"]["allowed_paths"],
+        )
         architecture = loop.owner_contract(
             "IOS-INTEGRATION-WEBDAV-ARCHITECTURE-001"
         )

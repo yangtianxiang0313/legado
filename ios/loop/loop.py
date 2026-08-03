@@ -4767,6 +4767,8 @@ def build_characterization_task(
                 "ios/harness/tests/test_android_oracle_runner.py",
                 golden_path,
                 "ios/harness/goldens/manifest.json",
+                "ios/harness/goldens/releases/**",
+                "ios/project/external-execution-receipts/**",
                 "ios/project/business-knowledge/packets/proposals/**",
                 "ios/project/business-knowledge/packets/published/**",
                 "ios/project/business-knowledge/drivers/proposals/**",
