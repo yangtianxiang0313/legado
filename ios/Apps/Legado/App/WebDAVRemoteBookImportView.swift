@@ -143,8 +143,11 @@ struct WebDAVRemoteBookImportView: View {
             return
         }
         let lowercasedName = resource.name.lowercased()
-        guard lowercasedName.hasSuffix(".txt") || lowercasedName.hasSuffix(".epub") else {
-            importStatus = "当前 iOS 阅读内核支持 TXT 和 EPUB"
+        guard lowercasedName.hasSuffix(".txt")
+            || lowercasedName.hasSuffix(".epub")
+            || lowercasedName.hasSuffix(".zip")
+        else {
+            importStatus = "当前 iOS 阅读内核支持 TXT、EPUB 和 ZIP"
             return
         }
         guard let download = await browser.download(resource) else {
@@ -156,6 +159,34 @@ struct WebDAVRemoteBookImportView: View {
                 data: download.data,
                 fileName: download.name
             )
+            if lowercasedName.hasSuffix(".zip") {
+                let prepared = try ManagedBookFileStore
+                    .localArchiveItems(from: file)
+                let report = await library.importLocalArchive(
+                    archiveName: file.fileName,
+                    items: prepared.items,
+                    skipped: prepared.skipped
+                )
+                guard let profileID = browser.selectedProfileID else {
+                    importStatus = "远程书服务器身份丢失"
+                    return
+                }
+                for imported in report.imported {
+                    guard let item = await library.item(id: imported.bookID) else {
+                        continue
+                    }
+                    _ = await library.markWebDAVOrigin(
+                        for: item,
+                        remoteURL: resource.url,
+                        serverID: profileID
+                    )
+                }
+                importStatus = "已导入 \(report.imported.count) 本，"
+                    + "失败 \(report.failures.count) 本，"
+                    + "跳过 \(report.skipped.count) 项"
+                if !report.imported.isEmpty { dismiss() }
+                return
+            }
             let payload: LocalBookPayload = lowercasedName.hasSuffix(".epub")
                 ? .epub(try ManagedBookFileStore.epubMembers(from: file))
                 : .text(file.data)

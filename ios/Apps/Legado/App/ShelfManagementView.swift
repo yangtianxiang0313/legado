@@ -104,6 +104,17 @@ struct ShelfManagementView: View {
                 do {
                     let file = try ManagedBookFileStore
                         .importSelectedURL(url)
+                    if file.fileName.lowercased().hasSuffix(".zip") {
+                        let prepared = try ManagedBookFileStore
+                            .localArchiveItems(from: file)
+                        let report = await library.importLocalArchive(
+                            archiveName: file.fileName,
+                            items: prepared.items,
+                            skipped: prepared.skipped
+                        )
+                        importStatus = archiveReportSummary(report)
+                        return
+                    }
                     let payload: LocalBookPayload = file.fileName
                         .lowercased().hasSuffix(".epub")
                         ? .epub(try ManagedBookFileStore.epubMembers(from: file))
@@ -161,7 +172,13 @@ struct ShelfManagementView: View {
         if let epub = UTType(filenameExtension: "epub") {
             values.append(epub)
         }
+        values.append(.zip)
         return values
+    }
+
+    private func archiveReportSummary(_ report: LocalArchiveImportReport) -> String {
+        "已导入 \(report.imported.count) 本，失败 \(report.failures.count) 本，"
+            + "跳过 \(report.skipped.count) 项"
     }
 
     private var header: some View {

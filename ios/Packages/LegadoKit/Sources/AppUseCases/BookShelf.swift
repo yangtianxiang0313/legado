@@ -109,7 +109,10 @@ public enum AndroidWebDAVBookOrigin {
   }
 
   public static func isLocalSource(_ sourceID: String) -> Bool {
-    sourceID == "local-file" || sourceID.hasPrefix(prefix)
+    sourceID == "local-file"
+      || sourceID == "loc_book"
+      || AndroidLocalArchiveBookOrigin.decode(sourceID) != nil
+      || sourceID.hasPrefix(prefix)
   }
 
   public static func applying(
@@ -564,6 +567,7 @@ public final class ShelfLibrary {
   public private(set) var selectedGroupID: Int?
   public private(set) var sortMode: ShelfSortMode = .recentlyRead
   public private(set) var lastBatchReport: ShelfBatchReport?
+  public private(set) var lastLocalArchiveImportReport: LocalArchiveImportReport?
   public internal(set) var offlineCacheState: OfflineCacheState = .idle
   public internal(set) var offlineCacheProgress = 0
   public internal(set) var lastOfflineCacheReport: OfflineCacheReport?
@@ -859,7 +863,8 @@ public final class ShelfLibrary {
   public func importLocalBook(
     fileName: String,
     managedReference: String,
-    payload: LocalBookPayload
+    payload: LocalBookPayload,
+    sourceID: String = "local-file"
   ) async -> ShelfBookItem? {
     let metadata = LocalBookImporter.importDocument(
       LocalBookImportInput(
@@ -919,7 +924,7 @@ public final class ShelfLibrary {
           bookURL: managedReference,
           coverURL: nil,
           originName: fileName,
-          sourceID: "local-file"
+          sourceID: sourceID
         ),
         chapters: parsed.document.chapters
       )
@@ -936,6 +941,51 @@ public final class ShelfLibrary {
       errorMessage = "本地书籍导入失败"
     }
     return nil
+  }
+
+  @discardableResult
+  public func importLocalArchive(
+    archiveName: String,
+    items: [LocalArchiveImportItem],
+    skipped: [LocalArchiveSkippedEntry]
+  ) async -> LocalArchiveImportReport {
+    let sourceID = AndroidLocalArchiveBookOrigin.encode(
+      archiveName: archiveName
+    )
+    var imported: [LocalArchiveImportedBook] = []
+    var failures: [LocalArchiveEntryFailure] = []
+    for item in items {
+      if let book = await importLocalBook(
+        fileName: item.entry.fileName,
+        managedReference: item.managedReference,
+        payload: item.payload,
+        sourceID: sourceID
+      ) {
+        imported.append(
+          LocalArchiveImportedBook(
+            entryPath: item.entry.path,
+            bookID: book.id,
+            bookName: book.candidate.name
+          )
+        )
+      } else {
+        failures.append(
+          LocalArchiveEntryFailure(
+            entryPath: item.entry.path,
+            message: errorMessage ?? "导入失败"
+          )
+        )
+      }
+    }
+    let report = LocalArchiveImportReport(
+      archiveName: archiveName,
+      imported: imported,
+      failures: failures,
+      skipped: skipped
+    )
+    lastLocalArchiveImportReport = report
+    errorMessage = imported.isEmpty ? "压缩包内没有可导入的书籍" : nil
+    return report
   }
 
   @discardableResult

@@ -2457,6 +2457,77 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testLocalZIPMultiBookImportFlow() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+            "--seed-zip-import",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        require("screen.root.shelf")
+        XCTAssertTrue(
+            app.descendants(matching: .any)
+                .matching(identifier: "state.shelf.projection")
+                .matching(NSPredicate(format: "label == %@", "2 本"))
+                .firstMatch
+                .waitForExistence(timeout: 8)
+        )
+        XCTAssertFalse(app.staticTexts["readme"].firstMatch.exists)
+        let epub = app.staticTexts["跨端论语"].firstMatch
+        XCTAssertTrue(epub.waitForExistence(timeout: 12))
+        epub.tap()
+        require("screen.bookDetail")
+        requireButton("action.bookDetail.startReading").tap()
+        require("screen.chapterTOC")
+        require("action.chapter.select.0").tap()
+        require("screen.reader")
+        let epubContent = app.textViews["text.reader.content"].firstMatch
+        XCTAssertTrue(epubContent.waitForExistence(timeout: 8))
+        XCTAssertTrue(epubContent.label.contains("时习之，不亦说乎"))
+
+        app.terminate()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+        ]
+        app.launch()
+        require("screen.root.shelf")
+        let text = app.staticTexts["归档旅程"].firstMatch
+        if !text.waitForExistence(timeout: 2) {
+            app.swipeUp()
+        }
+        XCTAssertTrue(text.waitForExistence(timeout: 8))
+        text.tap()
+        require("screen.bookDetail")
+        requireButton("action.bookDetail.startReading").tap()
+        require("screen.chapterTOC")
+        require("action.chapter.select.0").tap()
+        require("screen.reader")
+        let textContent = app.textViews["text.reader.content"].firstMatch
+        XCTAssertTrue(textContent.waitForExistence(timeout: 8))
+        XCTAssertTrue(textContent.label.contains("ZIP 中的文本书"))
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "archive": "双端书库.zip",
+            "imported": ["归档旅程", "跨端论语"],
+            "ignored": ["说明/readme.md"],
+            "txt_readable": true,
+            "epub_readable": true,
+            "persisted_after_relaunch": true,
+        ])
+    }
+
     func testOfflineCacheMilestone() throws {
         let environment = ProcessInfo.processInfo.environment
         let contract = try XCTUnwrap(

@@ -1,9 +1,15 @@
 import Foundation
+import AppUseCases
 import ZIPFoundation
 
 struct ManagedBookFile {
     let reference: String
     let fileName: String
+    let data: Data
+}
+
+private struct ManagedArchiveEntry {
+    let path: String
     let data: Data
 }
 
@@ -52,14 +58,61 @@ enum ManagedBookFileStore {
     }
 
     static func epubMembers(from file: ManagedBookFile) throws -> [String: Data] {
+        Dictionary(
+            uniqueKeysWithValues: try archiveEntries(from: file).map {
+                ($0.path, $0.data)
+            }
+        )
+    }
+
+    static func localArchiveItems(
+        from file: ManagedBookFile
+    ) throws -> (
+        items: [LocalArchiveImportItem],
+        skipped: [LocalArchiveSkippedEntry]
+    ) {
+        let archived = try archiveEntries(from: file)
+        let plan = try LocalArchiveImportPlanner.plan(
+            members: archived.map {
+                LocalArchiveMember(path: $0.path, byteCount: $0.data.count)
+            }
+        )
+        let byPath = Dictionary(
+            uniqueKeysWithValues: archived.map { ($0.path, $0.data) }
+        )
+        let items = try plan.entries.map { entry in
+            guard let data = byPath[entry.path] else {
+                throw CocoaError(.fileReadCorruptFile)
+            }
+            let managed = try persist(data: data, fileName: entry.fileName)
+            let payload: LocalBookPayload
+            switch entry.format {
+            case .text:
+                payload = .text(data)
+            case .epub:
+                payload = .epub(try epubMembers(from: managed))
+            }
+            return LocalArchiveImportItem(
+                entry: entry,
+                managedReference: managed.reference,
+                payload: payload
+            )
+        }
+        return (items, plan.skipped)
+    }
+
+    private static func archiveEntries(
+        from file: ManagedBookFile
+    ) throws -> [ManagedArchiveEntry] {
         guard let url = URL(string: file.reference), url.isFileURL else {
             throw CocoaError(.fileReadUnsupportedScheme)
         }
         let archive = try Archive(url: url, accessMode: .read)
-        var result: [String: Data] = [:]
+        var paths = Set<String>()
+        var result: [ManagedArchiveEntry] = []
         var totalBytes: UInt64 = 0
         for entry in archive where entry.type == .file {
-            guard isSafeArchivePath(entry.path), result[entry.path] == nil else {
+            guard isSafeArchivePath(entry.path), paths.insert(entry.path).inserted else {
                 throw CocoaError(.fileReadCorruptFile)
             }
             guard entry.uncompressedSize <= 32 * 1_024 * 1_024 else {
@@ -75,7 +128,7 @@ enum ManagedBookFileStore {
             var data = Data()
             data.reserveCapacity(Int(entry.uncompressedSize))
             _ = try archive.extract(entry) { data.append($0) }
-            result[entry.path] = data
+            result.append(ManagedArchiveEntry(path: entry.path, data: data))
         }
         return result
     }

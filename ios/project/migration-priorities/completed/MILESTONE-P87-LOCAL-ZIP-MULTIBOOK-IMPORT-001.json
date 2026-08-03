@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P87-LOCAL-ZIP-MULTIBOOK-IMPORT-001",
+  "status": "completed",
+  "mode": "critical_path_only",
+  "priority": 1,
+  "title": "P87 Android/iOS ZIP 多书导入互通",
+  "objective": "依据冻结 Android LocalBook.importArchiveFile/importFiles，把 ZIP 内支持书籍筛选、逐本独立导入、压缩包来源标识和空归档失败接到 P86 格式分发器；本里程碑只宣称 iOS 已可阅读的 TXT/EPUB，UMD/PDF 以结构化未支持项保留。",
+  "validation_policy": "筛选、顺序、空归档、部分失败与来源编码使用聚焦测试；完整 ZIP→多书入架→分别阅读仅运行一台 iPhone Simulator。",
+  "stages": [
+    {
+      "id": "P87-S1",
+      "title": "多书计划与结构化结果",
+      "selectors": [
+        {
+          "id": "P87-S1-CONTRACT",
+          "claim_ids": [],
+          "task_ids": ["IOS-APP-NAVIGATION-LOCAL-ZIP-IMPORT-CONTRACT-001"]
+        }
+      ]
+    },
+    {
+      "id": "P87-S2",
+      "title": "ZIP 解包、入架与用户验收",
+      "selectors": [
+        {
+          "id": "P87-S2-UI",
+          "claim_ids": [],
+          "task_ids": ["IOS-APP-NAVIGATION-LOCAL-ZIP-IMPORT-UI-001"]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-APP-NAVIGATION-LOCAL-ZIP-IMPORT-CONTRACT-001",
+      "title": "实现 Android 对齐的 ZIP 多书导入计划与结果",
+      "requirement_ref": "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01",
+      "fixture_id": "rl-local-zip-import-contract-001",
+      "package_path": "ios/Packages/LegadoKit",
+      "validation": "tests",
+      "test_filter": "LocalArchiveImportTests",
+      "prerequisite_task_ids": ["IOS-APP-NAVIGATION-LOCAL-EPUB-FORMAT-001"],
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Tests/AppNavigationTests/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/model/localBook/LocalBook.kt",
+          "symbol_id": "kotlin://io.legado.app.model.localBook.LocalBook/importArchiveFile"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/model/localBook/LocalBook.kt",
+          "symbol_id": "kotlin://io.legado.app.model.localBook.LocalBook/importFiles"
+        }
+      ]
+    },
+    {
+      "target": "IOS-APP-NAVIGATION-LOCAL-ZIP-IMPORT-UI-001",
+      "title": "完成真实 ZIP 多书入架和阅读主路径",
+      "requirement_ref": "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01",
+      "fixture_id": "ui-local-zip-import-v1",
+      "package_path": "ios/Packages/LegadoKit",
+      "validation": "simulator",
+      "prerequisite_task_ids": ["IOS-APP-NAVIGATION-LOCAL-ZIP-IMPORT-CONTRACT-001"],
+      "additional_allowed_paths": [
+        "ios/Apps/Legado/App/**",
+        "ios/Apps/Legado/UITests/**",
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**"
+      ],
+      "ui_contract": {
+        "goal": "在 iPhone Simulator 导入包含 TXT、EPUB 和无关文件的真实 ZIP，书架只出现两本支持书籍，并可分别进入目录和阅读正文。",
+        "scenario_id": "ui-local-zip-import-v1",
+        "test_method": "testLocalZIPMultiBookImportFlow"
+      },
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/ui/book/import/local/ImportBookViewModel.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.import.local.ImportBookViewModel/addToBookshelf"
+        }
+      ]
+    }
+  ]
+}

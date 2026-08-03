@@ -213,6 +213,11 @@ struct RootShellView: View {
                 await seedEPUBImport()
             }
             if ProcessInfo.processInfo.arguments.contains(
+                "--seed-zip-import"
+            ) {
+                await seedZIPImport()
+            }
+            if ProcessInfo.processInfo.arguments.contains(
                 "--seed-offline-cache"
             ) {
                 await seedOfflineCache()
@@ -1002,6 +1007,67 @@ struct RootShellView: View {
 
     private func seedEPUBImport() async {
         guard library.books.isEmpty else { return }
+        guard
+            let data = makeEPUBFixtureData(),
+            let file = try? ManagedBookFileStore.persist(
+                data: data,
+                fileName: "跨端论语.epub"
+            ),
+            let unpacked = try? ManagedBookFileStore.epubMembers(from: file)
+        else { return }
+        _ = await library.importLocalBook(
+            fileName: file.fileName,
+            managedReference: file.reference,
+            payload: .epub(unpacked)
+        )
+    }
+
+    private func seedZIPImport() async {
+        guard library.books.isEmpty, let epub = makeEPUBFixtureData() else {
+            return
+        }
+        let archiveURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("legado-ui-multibook.zip")
+        let text = """
+        归档前言
+        第一章 出发
+        ZIP 中的文本书已经可以阅读。
+        第二章 抵达
+        两本书共享同一导入主链。
+        """
+        let members = [
+            ArchiveZIPFoundation.Member(
+                path: "文本/《归档旅程》作者：林舟.txt",
+                data: Data(text.utf8)
+            ),
+            ArchiveZIPFoundation.Member(
+                path: "电子书/跨端论语.epub",
+                data: epub
+            ),
+            ArchiveZIPFoundation.Member(
+                path: "说明/readme.md",
+                data: Data("不应导入".utf8)
+            ),
+        ]
+        guard
+            (try? ArchiveZIPFoundation.create(members: members, at: archiveURL)) != nil,
+            let data = try? Data(contentsOf: archiveURL),
+            let file = try? ManagedBookFileStore.persist(
+                data: data,
+                fileName: "双端书库.zip"
+            ),
+            let prepared = try? ManagedBookFileStore.localArchiveItems(
+                from: file
+            )
+        else { return }
+        _ = await library.importLocalArchive(
+            archiveName: file.fileName,
+            items: prepared.items,
+            skipped: prepared.skipped
+        )
+    }
+
+    private func makeEPUBFixtureData() -> Data? {
         let archiveURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("legado-ui-minimal.epub")
         let members = [
@@ -1058,19 +1124,9 @@ struct RootShellView: View {
             ),
         ]
         guard
-            (try? ArchiveZIPFoundation.create(members: members, at: archiveURL)) != nil,
-            let data = try? Data(contentsOf: archiveURL),
-            let file = try? ManagedBookFileStore.persist(
-                data: data,
-                fileName: "跨端论语.epub"
-            ),
-            let unpacked = try? ManagedBookFileStore.epubMembers(from: file)
-        else { return }
-        _ = await library.importLocalBook(
-            fileName: file.fileName,
-            managedReference: file.reference,
-            payload: .epub(unpacked)
-        )
+            (try? ArchiveZIPFoundation.create(members: members, at: archiveURL)) != nil
+        else { return nil }
+        return try? Data(contentsOf: archiveURL)
     }
 
     private func seedOfflineCache() async {
