@@ -7,17 +7,23 @@ public struct WebDAVConnectionSettings: Codable, Equatable, Sendable {
     public var directoryName: String
     public var credentialReference: WebDAVCredentialReference
     public var syncBookProgress: Bool
+    public var webDAVDeviceName: String
+    public var onlyLatestBackup: Bool
 
     public init(
         serverAddress: String = "",
         directoryName: String = "legado",
         credentialReference: WebDAVCredentialReference = .init("webdav.primary"),
-        syncBookProgress: Bool = true
+        syncBookProgress: Bool = true,
+        webDAVDeviceName: String = "iOS",
+        onlyLatestBackup: Bool = true
     ) {
         self.serverAddress = serverAddress
         self.directoryName = directoryName
         self.credentialReference = credentialReference
         self.syncBookProgress = syncBookProgress
+        self.webDAVDeviceName = webDAVDeviceName
+        self.onlyLatestBackup = onlyLatestBackup
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -25,6 +31,8 @@ public struct WebDAVConnectionSettings: Codable, Equatable, Sendable {
         case directoryName
         case credentialReference
         case syncBookProgress
+        case webDAVDeviceName
+        case onlyLatestBackup
     }
 
     public init(from decoder: any Decoder) throws {
@@ -44,6 +52,14 @@ public struct WebDAVConnectionSettings: Codable, Equatable, Sendable {
         syncBookProgress = try values.decodeIfPresent(
             Bool.self,
             forKey: .syncBookProgress
+        ) ?? true
+        webDAVDeviceName = try values.decodeIfPresent(
+            String.self,
+            forKey: .webDAVDeviceName
+        ) ?? "iOS"
+        onlyLatestBackup = try values.decodeIfPresent(
+            Bool.self,
+            forKey: .onlyLatestBackup
         ) ?? true
     }
 }
@@ -74,6 +90,15 @@ public final class WebDAVConnectionSettingsStore {
 
     public func updateSyncBookProgress(_ enabled: Bool) {
         value.syncBookProgress = enabled
+        repository.save(value)
+    }
+
+    public func updateBackupPreferences(
+        deviceName: String,
+        onlyLatestBackup: Bool
+    ) {
+        value.webDAVDeviceName = deviceName
+        value.onlyLatestBackup = onlyLatestBackup
         repository.save(value)
     }
 

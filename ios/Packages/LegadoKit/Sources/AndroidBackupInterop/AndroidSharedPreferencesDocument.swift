@@ -100,6 +100,8 @@ public struct AndroidWebDAVBackupConfiguration: Equatable, Sendable {
   public static let directoryNameKey = "webDavDir"
   public static let remoteServerIDKey = "remoteServerId"
   public static let syncBookProgressKey = "syncBookProgress"
+  public static let webDAVDeviceNameKey = "webDavDeviceName"
+  public static let onlyLatestBackupKey = "onlyLatestBackup"
 
   public let serverAddress: String?
   public let username: String?
@@ -109,6 +111,8 @@ public struct AndroidWebDAVBackupConfiguration: Equatable, Sendable {
   public let directoryName: String?
   public let remoteServerID: Int64?
   public let syncBookProgress: Bool?
+  public let webDAVDeviceName: String?
+  public let onlyLatestBackup: Bool?
 
   public init(
     serverAddress: String?,
@@ -116,7 +120,9 @@ public struct AndroidWebDAVBackupConfiguration: Equatable, Sendable {
     unresolvedPasswordPayload: String?,
     directoryName: String?,
     remoteServerID: Int64? = nil,
-    syncBookProgress: Bool? = nil
+    syncBookProgress: Bool? = nil,
+    webDAVDeviceName: String? = nil,
+    onlyLatestBackup: Bool? = nil
   ) {
     self.serverAddress = serverAddress
     self.username = username
@@ -124,6 +130,8 @@ public struct AndroidWebDAVBackupConfiguration: Equatable, Sendable {
     self.directoryName = directoryName
     self.remoteServerID = remoteServerID
     self.syncBookProgress = syncBookProgress
+    self.webDAVDeviceName = webDAVDeviceName
+    self.onlyLatestBackup = onlyLatestBackup
   }
 
   public init(document: AndroidSharedPreferencesDocument) {
@@ -133,7 +141,9 @@ public struct AndroidWebDAVBackupConfiguration: Equatable, Sendable {
       unresolvedPasswordPayload: document.string(Self.passwordKey),
       directoryName: document.string(Self.directoryNameKey),
       remoteServerID: document.integer(Self.remoteServerIDKey),
-      syncBookProgress: document.boolean(Self.syncBookProgressKey)
+      syncBookProgress: document.boolean(Self.syncBookProgressKey),
+      webDAVDeviceName: document.string(Self.webDAVDeviceNameKey),
+      onlyLatestBackup: document.boolean(Self.onlyLatestBackupKey)
     )
   }
 
@@ -143,6 +153,8 @@ public struct AndroidWebDAVBackupConfiguration: Equatable, Sendable {
       || unresolvedPasswordPayload != nil
       || directoryName != nil
       || syncBookProgress != nil
+      || webDAVDeviceName != nil
+      || onlyLatestBackup != nil
   }
 }
 

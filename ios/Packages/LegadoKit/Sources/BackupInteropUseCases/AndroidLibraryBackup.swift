@@ -73,6 +73,8 @@ public struct AndroidWebDAVBackupExportInput: Equatable, Sendable {
   public let directoryName: String
   public let backupPassword: String
   public let syncBookProgress: Bool
+  public let webDAVDeviceName: String
+  public let onlyLatestBackup: Bool
 
   public init(
     serverAddress: String,
@@ -80,7 +82,9 @@ public struct AndroidWebDAVBackupExportInput: Equatable, Sendable {
     password: String,
     directoryName: String,
     backupPassword: String,
-    syncBookProgress: Bool = true
+    syncBookProgress: Bool = true,
+    webDAVDeviceName: String = "iOS",
+    onlyLatestBackup: Bool = true
   ) {
     self.serverAddress = serverAddress
     self.username = username
@@ -88,6 +92,8 @@ public struct AndroidWebDAVBackupExportInput: Equatable, Sendable {
     self.directoryName = directoryName
     self.backupPassword = backupPassword
     self.syncBookProgress = syncBookProgress
+    self.webDAVDeviceName = webDAVDeviceName
+    self.onlyLatestBackup = onlyLatestBackup
   }
 }
 
@@ -294,6 +300,10 @@ public struct AndroidLibraryBackupUseCase: Sendable {
         .string(input.directoryName)
       values[AndroidWebDAVBackupConfiguration.syncBookProgressKey] =
         .boolean(input.syncBookProgress)
+      values[AndroidWebDAVBackupConfiguration.webDAVDeviceNameKey] =
+        .string(input.webDAVDeviceName)
+      values[AndroidWebDAVBackupConfiguration.onlyLatestBackupKey] =
+        .boolean(input.onlyLatestBackup)
     }
     if let selectedServerID {
       values[AndroidWebDAVBackupConfiguration.remoteServerIDKey] =

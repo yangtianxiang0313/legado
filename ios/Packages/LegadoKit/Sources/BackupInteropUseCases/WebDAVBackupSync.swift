@@ -26,6 +26,7 @@ public enum WebDAVBackupSyncFailure: Sendable, Equatable {
   case export
   case localArchiveRead
   case localArchiveWrite
+  case list(WebDAVBackupTransferFailure)
   case upload(WebDAVBackupTransferFailure)
   case download(WebDAVBackupTransferFailure)
   case restore
@@ -38,6 +39,17 @@ public enum WebDAVBackupSyncUploadResult: Sendable, Equatable {
 
 public enum WebDAVBackupSyncRestoreResult: Sendable, Equatable {
   case restored(AndroidCoreBackupRestoreSummary)
+  case failed(WebDAVBackupSyncFailure)
+}
+
+public enum WebDAVAutomaticBackupResult: Sendable, Equatable {
+  case notDue
+  case remoteAlreadyExists(fileName: String, checkpointMilliseconds: Int64)
+  case uploaded(
+    fileName: String,
+    checkpointMilliseconds: Int64,
+    summary: AndroidLibraryBackupSummary
+  )
   case failed(WebDAVBackupSyncFailure)
 }
 
@@ -60,6 +72,61 @@ public struct WebDAVBackupSyncUseCase: Sendable {
     configuration: WebDAVConnectionConfiguration
   ) async -> WebDAVBackupListResult {
     await transfer.listBackups(configuration: configuration)
+  }
+
+  public func automaticBackup(
+    configuration: WebDAVConnectionConfiguration,
+    now: Date,
+    lastBackupMilliseconds: Int64,
+    deviceName: String?,
+    timeZone: TimeZone = .current,
+    bookSources: [BookSourceDraft],
+    replacementRules: [ReaderReplacementRule],
+    readerPreferences: ReaderPreferences? = nil
+  ) async -> WebDAVAutomaticBackupResult {
+    let nowMilliseconds = max(
+      0,
+      Int64((now.timeIntervalSince1970 * 1_000).rounded(.down))
+    )
+    let checkpoint = max(0, lastBackupMilliseconds)
+    let androidDayMilliseconds: Int64 = 86_400_000
+    guard nowMilliseconds > checkpoint,
+      nowMilliseconds - checkpoint > androidDayMilliseconds
+    else { return .notDue }
+
+    let fileName = Self.androidFileName(
+      date: now,
+      deviceName: deviceName,
+      timeZone: timeZone
+    )
+    switch await transfer.listBackups(configuration: configuration) {
+    case .loaded(let files):
+      if files.contains(where: { $0.name == fileName }) {
+        return .remoteAlreadyExists(
+          fileName: fileName,
+          checkpointMilliseconds: nowMilliseconds
+        )
+      }
+    case .failed(let failure):
+      return .failed(.list(failure))
+    }
+
+    switch await upload(
+      configuration: configuration,
+      fileName: fileName,
+      bookSources: bookSources,
+      replacementRules: replacementRules,
+      readerPreferences: readerPreferences
+    ) {
+    case .uploaded(_, let summary):
+      return .uploaded(
+        fileName: fileName,
+        checkpointMilliseconds: nowMilliseconds,
+        summary: summary
+      )
+    case .failed(let failure):
+      return .failed(failure)
+    }
   }
 
   public func upload(

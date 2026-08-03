@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P84-WEBDAV-AUTOMATIC-BACKUP-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "priority": 1,
+  "title": "P84 WebDAV 跨端每日自动备份",
+  "objective": "依据冻结 Android Backup.getNowZipFileName、Backup.autoBack 与生命周期调用点，让 iOS 保留 webDavDeviceName/onlyLatestBackup 配置互通，并在进入后台时以共享 lastBackup 水位执行严格 24 小时、按设备名和日期幂等的 Android 兼容 WebDAV 自动备份。",
+  "validation_policy": "命名、24 小时边界、远端已存在和上传结果使用聚焦测试；App 生命周期与设置接线只做增量构建，不新增模拟器验收。",
+  "stages": [
+    {
+      "id": "P84-S1",
+      "title": "配置互通与自动备份合同",
+      "selectors": [
+        {
+          "id": "P84-S1-CONTRACT",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-APP-NAVIGATION-WEBDAV-AUTOMATIC-BACKUP-CONTRACT-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P84-S2",
+      "title": "后台生命周期接线",
+      "selectors": [
+        {
+          "id": "P84-S2-LIFECYCLE",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-APP-NAVIGATION-WEBDAV-AUTOMATIC-BACKUP-LIFECYCLE-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-APP-NAVIGATION-WEBDAV-AUTOMATIC-BACKUP-CONTRACT-001",
+      "title": "实现设备名配置互通与 Android 每日自动备份合同",
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+      "fixture_id": "rl-webdav-automatic-backup-contract-001",
+      "package_path": "ios/Packages/LegadoKit",
+      "validation": "tests",
+      "test_filter": "WebDAVAutomaticBackupTests|AndroidWebDAVConfigInteropTests|AndroidWebDAVConfigExportTests|AndroidWebDAVConfigAppRestoreTests",
+      "prerequisite_task_ids": [
+        "IOS-APP-NAVIGATION-WEBDAV-LATEST-BACKUP-PROMPT-001"
+      ],
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
+        "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+        "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+        "ios/Packages/LegadoKit/Tests/AndroidBackupInteropTests/**",
+        "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/help/storage/Backup.kt",
+          "symbol_id": "kotlin://io.legado.app.help.storage.Backup/getNowZipFileName"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/help/storage/Backup.kt",
+          "symbol_id": "kotlin://io.legado.app.help.storage.Backup/autoBack"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/help/config/AppConfig.kt",
+          "symbol_id": "kotlin://io.legado.app.help.config.AppConfig/webDavDeviceName"
+        }
+      ]
+    },
+    {
+      "target": "IOS-APP-NAVIGATION-WEBDAV-AUTOMATIC-BACKUP-LIFECYCLE-001",
+      "title": "接通 iOS 后台每日 WebDAV 自动备份",
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+      "fixture_id": "app-webdav-automatic-backup-lifecycle-v1",
+      "validation": "build",
+      "prerequisite_task_ids": [
+        "IOS-APP-NAVIGATION-WEBDAV-AUTOMATIC-BACKUP-CONTRACT-001"
+      ],
+      "additional_allowed_paths": [
+        "ios/Apps/Legado/App/**",
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/ui/main/MainActivity.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.main.MainActivity/onDestroy"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.read.ReadBookActivity/onPause"
+        }
+      ]
+    }
+  ]
+}

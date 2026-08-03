@@ -31,7 +31,9 @@ struct AndroidWebDAVConfigExportTests {
         password: "webdav-secret",
         directoryName: "legado/shared",
         backupPassword: "backup-pass",
-        syncBookProgress: false
+        syncBookProgress: false,
+        webDAVDeviceName: "iPhone",
+        onlyLatestBackup: false
       )
     )
     let restored = try AndroidBackupArchive.readWebDAVBackupConfiguration(
@@ -44,6 +46,8 @@ struct AndroidWebDAVConfigExportTests {
     #expect(configuration.username == "reader")
     #expect(configuration.directoryName == "legado/shared")
     #expect(configuration.syncBookProgress == false)
+    #expect(configuration.webDAVDeviceName == "iPhone")
+    #expect(configuration.onlyLatestBackup == false)
     #expect(configuration.unresolvedPasswordPayload == "0LSuhOm3EXMTTUpsnaZ4lg==")
     #expect(
       try AndroidBackupAES.decryptBase64(

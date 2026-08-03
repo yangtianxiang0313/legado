@@ -30,6 +30,10 @@ struct AndroidWebDAVConfigAppRestoreTests {
             .string("shared-books"),
           AndroidWebDAVBackupConfiguration.syncBookProgressKey:
             .boolean(false),
+          AndroidWebDAVBackupConfiguration.webDAVDeviceNameKey:
+            .string("Pixel"),
+          AndroidWebDAVBackupConfiguration.onlyLatestBackupKey:
+            .boolean(false),
         ])
       ),
       to: archiveURL
@@ -45,6 +49,8 @@ struct AndroidWebDAVConfigAppRestoreTests {
     #expect(plan.settings.serverAddress == "https://dav.example/root")
     #expect(plan.settings.directoryName == "shared-books")
     #expect(plan.settings.syncBookProgress == false)
+    #expect(plan.settings.webDAVDeviceName == "Pixel")
+    #expect(plan.settings.onlyLatestBackup == false)
     #expect(
       plan.credential
         == .resolved(
