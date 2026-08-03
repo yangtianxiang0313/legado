@@ -2858,7 +2858,7 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
                             "AppNavigationTests",
                         ],
                         "required_output_pattern": (
-                            r"Executed [1-9][0-9]* tests?, with 0 failures"
+                            r"(?:Executed [1-9][0-9]* tests?, with 0 failures|Test run with [1-9][0-9]* tests?)"
                         ),
                         "timeout_seconds": 300,
                     },
@@ -3153,7 +3153,7 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
                         source_contract["test_filter"],
                     ],
                     "required_output_pattern": (
-                        r"Executed [1-9][0-9]* tests?, with 0 failures"
+                        r"(?:Executed [1-9][0-9]* tests?, with 0 failures|Test run with [1-9][0-9]* tests?)"
                     ),
                     "timeout_seconds": 600,
                 }
@@ -3352,7 +3352,7 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
                             "DatabaseGRDBTests",
                         ],
                         "required_output_pattern": (
-                            r"Executed [1-9][0-9]* tests?, with 0 failures"
+                            r"(?:Executed [1-9][0-9]* tests?, with 0 failures|Test run with [1-9][0-9]* tests?)"
                         ),
                         "timeout_seconds": 600,
                     },

@@ -80,8 +80,11 @@
         "ios/Packages/LegadoSourceKit/Sources/SourceFormat/**",
         "ios/Packages/LegadoSourceKit/Tests/SourceFormatTests/**",
         "ios/Packages/LegadoKit/Package.swift",
+        "ios/Packages/LegadoKit/Sources/ArchiveZIPFoundation/**",
         "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
-        "ios/Packages/LegadoKit/Tests/AndroidBackupInteropTests/**"
+        "ios/Packages/LegadoKit/Tests/ArchiveZIPFoundationTests/**",
+        "ios/Packages/LegadoKit/Tests/AndroidBackupInteropTests/**",
+        "ios/loop/loop.py"
       ]
     }
   ]

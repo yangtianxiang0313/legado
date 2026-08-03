@@ -18,6 +18,7 @@ let package = Package(
                 "IntegrationKit",
                 "WebDAVFoundation",
                 "ArchiveZIPFoundation",
+                "AndroidBackupInterop",
                 "SourceRuntimeComposition",
                 "SourceNetworkComposition",
             ]
@@ -31,6 +32,7 @@ let package = Package(
                 "IntegrationKit",
                 "WebDAVFoundation",
                 "ArchiveZIPFoundation",
+                "AndroidBackupInterop",
                 "SourceRuntimeComposition",
                 "SourceScriptComposition",
                 "SourceNetworkComposition",
@@ -110,6 +112,16 @@ let package = Package(
                 .product(name: "LegadoCoreKit", package: "LegadoCoreKit"),
                 "ReaderCore",
                 .product(name: "ZIPFoundation", package: "ZIPFoundation"),
+            ]
+        ),
+        .target(
+            name: "AndroidBackupInterop",
+            dependencies: [
+                "ArchiveZIPFoundation",
+                .product(
+                    name: "LegadoSourceFormatKit",
+                    package: "LegadoSourceKit"
+                ),
             ]
         ),
         .target(
@@ -217,6 +229,17 @@ let package = Package(
         .testTarget(
             name: "ArchiveZIPFoundationTests",
             dependencies: ["ArchiveZIPFoundation"]
+        ),
+        .testTarget(
+            name: "AndroidBackupInteropTests",
+            dependencies: [
+                "AndroidBackupInterop",
+                "ArchiveZIPFoundation",
+                .product(
+                    name: "LegadoSourceFormatKit",
+                    package: "LegadoSourceKit"
+                ),
+            ]
         ),
     ],
     swiftLanguageModes: [.v6]

@@ -10,6 +10,10 @@ public enum BookSourceCodec {
     try JSONValueCodec.encode(source.jsonValue)
   }
 
+  public static func encodeMany(_ sources: [BookSourceDTO]) throws -> Data {
+    try JSONValueCodec.encode(.array(sources.map(\.jsonValue)))
+  }
+
   public static func decodeMany(
     _ data: Data,
     maximumDepth: Int = 128

@@ -10,6 +10,10 @@ let package = Package(
     ],
     products: [
         .library(
+            name: "LegadoSourceFormatKit",
+            targets: ["SourceFormat"]
+        ),
+        .library(
             name: "LegadoSourceRuntimeKit",
             targets: [
                 "SourceFormat",
