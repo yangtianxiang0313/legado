@@ -1076,6 +1076,26 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/Apps/Legado/App/**",
             ],
         }
+    if target == "IOS-SOURCE-RUNTIME-HTTP-TTS-REQUEST-001":
+        return {
+            "owner": "SourceRuntime",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-002",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-011",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/Packages/LegadoSourceKit/Sources/SourceRuntime/**",
+                "ios/Packages/LegadoSourceKit/Tests/SourceRuntimeTests/**",
+                "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+                "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+            ],
+        }
     if target == "IOS-DEPENDENCY-SWIFTSOUP-HTML-001":
         return {
             "owner": "DependencyControl",
@@ -3555,6 +3575,20 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_id": "http-tts-interop-tests",
             "test_filter": "HTTPTextToSpeechInteropTests",
             "acceptance_id": "http-tts-interop-acceptance",
+        }
+    if target == "IOS-SOURCE-RUNTIME-HTTP-TTS-REQUEST-001":
+        delivery_contracts["SourceRuntime"] = {
+            "goal": (
+                "按冻结 Android HttpReadAloudService 与内置引擎模板语义，"
+                "实现 speakText/speakSpeed 请求编译、Cookie、重试及音频 Content-Type 校验。"
+            ),
+            "rule": (
+                "HTTP TTS 请求与响应校验位于 SourceRuntime；AppUseCases 只映射持久化引擎配置，"
+                "本切片不依赖 AVFoundation 或 SwiftUI。"
+            ),
+            "test_id": "http-tts-runtime-tests",
+            "test_filter": "HTTPTextToSpeechRuntimeTests",
+            "acceptance_id": "http-tts-runtime-acceptance",
         }
     if (
         architecture["owner"] == "AppNavigation"
