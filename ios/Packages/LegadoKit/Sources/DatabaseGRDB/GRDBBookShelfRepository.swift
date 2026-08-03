@@ -5,7 +5,8 @@ import GRDB
 import LibraryDomain
 
 public actor GRDBBookShelfRepository:
-  BookShelfRepository, RuleSubscriptionRepository, RSSRepository
+  BookShelfRepository, RuleSubscriptionRepository, RSSRepository,
+  HTTPTextToSpeechRepository
 {
   private let database: DatabaseQueue
 
@@ -1085,6 +1086,43 @@ public actor GRDBBookShelfRepository:
     }
   }
 
+  public func httpTextToSpeechEngines() async throws
+    -> [HTTPTextToSpeechEngine]
+  {
+    try await database.read { db in
+      try HTTPTextToSpeechRecord
+        .order(Column("name").asc, Column("id").asc)
+        .fetchAll(db)
+        .map { try $0.value }
+    }
+  }
+
+  public func upsertHTTPTextToSpeechEngine(
+    _ engine: HTTPTextToSpeechEngine
+  ) async throws {
+    try await database.write { db in
+      var record = try HTTPTextToSpeechRecord(value: engine)
+      try record.save(db)
+    }
+  }
+
+  public func androidHTTPTextToSpeechEngines() async throws
+    -> [HTTPTextToSpeechEngine]
+  {
+    try await httpTextToSpeechEngines()
+  }
+
+  public func restoreAndroidHTTPTextToSpeechEngines(
+    _ values: [HTTPTextToSpeechEngine]
+  ) async throws {
+    try await database.write { db in
+      for value in values {
+        var record = try HTTPTextToSpeechRecord(value: value)
+        try record.save(db)
+      }
+    }
+  }
+
   public func restoreAndroidReadRecords(
     _ records: [LibraryDomain.ReadRecord]
   ) async throws {
@@ -1377,6 +1415,13 @@ public actor GRDBBookShelfRepository:
         table.column("starTime", .integer).notNull().indexed()
         table.column("payload", .blob).notNull()
         table.primaryKey(["origin", "link"])
+      }
+    }
+    migrator.registerMigration("addHTTPTextToSpeechInterop") { db in
+      try db.create(table: "httpTextToSpeechEngines") { table in
+        table.column("id", .integer).notNull().primaryKey()
+        table.column("name", .text).notNull().indexed()
+        table.column("payload", .blob).notNull()
       }
     }
     return migrator
@@ -1793,6 +1838,28 @@ private struct RSSStarRecord:
   }
 
   var value: RSSStar { get throws { try JSONDecoder().decode(RSSStar.self, from: payload) } }
+}
+
+private struct HTTPTextToSpeechRecord:
+  Codable, FetchableRecord, MutablePersistableRecord
+{
+  static let databaseTableName = "httpTextToSpeechEngines"
+
+  var id: Int64
+  var name: String
+  var payload: Data
+
+  init(value: HTTPTextToSpeechEngine) throws {
+    id = value.id
+    name = value.name
+    payload = try JSONEncoder().encode(value)
+  }
+
+  var value: HTTPTextToSpeechEngine {
+    get throws {
+      try JSONDecoder().decode(HTTPTextToSpeechEngine.self, from: payload)
+    }
+  }
 }
 
 private struct ChapterContentRecord:

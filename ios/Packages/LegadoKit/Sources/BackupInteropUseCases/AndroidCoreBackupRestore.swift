@@ -14,6 +14,7 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
   public let ruleSubscriptionCount: Int
   public let rssSourceCount: Int
   public let rssStarCount: Int
+  public let httpTextToSpeechEngineCount: Int
 
   public init(
     bookCount: Int,
@@ -25,7 +26,8 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
     searchHistoryCount: Int = 0,
     ruleSubscriptionCount: Int = 0,
     rssSourceCount: Int = 0,
-    rssStarCount: Int = 0
+    rssStarCount: Int = 0,
+    httpTextToSpeechEngineCount: Int = 0
   ) {
     self.bookCount = bookCount
     self.groupCount = groupCount
@@ -37,6 +39,7 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
     self.ruleSubscriptionCount = ruleSubscriptionCount
     self.rssSourceCount = rssSourceCount
     self.rssStarCount = rssStarCount
+    self.httpTextToSpeechEngineCount = httpTextToSpeechEngineCount
   }
 }
 
@@ -52,6 +55,9 @@ public protocol AndroidCoreBackupRestoreRepository: Sendable {
   func restoreAndroidSearchHistory(_ entries: [SearchHistoryEntry]) async throws
   func restoreAndroidRuleSubscriptions(_ values: [RuleSubscription]) async throws
   func restoreAndroidRSS(sources: [RSSSource], stars: [RSSStar]) async throws
+  func restoreAndroidHTTPTextToSpeechEngines(
+    _ values: [HTTPTextToSpeechEngine]
+  ) async throws
 }
 
 public extension AndroidCoreBackupRestoreRepository {
@@ -66,6 +72,10 @@ public extension AndroidCoreBackupRestoreRepository {
   func restoreAndroidRSS(
     sources: [RSSSource],
     stars: [RSSStar]
+  ) async throws {}
+
+  func restoreAndroidHTTPTextToSpeechEngines(
+    _ values: [HTTPTextToSpeechEngine]
   ) async throws {}
 }
 
@@ -104,6 +114,10 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     let rssStars = AndroidRSSInteropAdapter.restoreStars(
       try AndroidBackupArchive.readRSSStars(from: archiveURL)
     )
+    let httpTextToSpeechEngines =
+      AndroidHTTPTextToSpeechInteropAdapter.restoreValues(
+        try AndroidBackupArchive.readHTTPTextToSpeechEngines(from: archiveURL)
+      )
 
     let library = try await repository.restoreAndroidLibrary(libraryPlan)
     if !bookSources.isEmpty {
@@ -127,6 +141,11 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
         stars: rssStars
       )
     }
+    if !httpTextToSpeechEngines.isEmpty {
+      try await repository.restoreAndroidHTTPTextToSpeechEngines(
+        httpTextToSpeechEngines
+      )
+    }
     return AndroidCoreBackupRestoreSummary(
       bookCount: library.bookCount,
       groupCount: library.groupCount,
@@ -137,7 +156,8 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
       searchHistoryCount: searchHistory.count,
       ruleSubscriptionCount: ruleSubscriptions.count,
       rssSourceCount: rssSources.count,
-      rssStarCount: rssStars.count
+      rssStarCount: rssStars.count,
+      httpTextToSpeechEngineCount: httpTextToSpeechEngines.count
     )
   }
 

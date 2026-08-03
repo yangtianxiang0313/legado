@@ -15,6 +15,7 @@ public struct AndroidLibraryBackupSummary: Equatable, Sendable {
   public let ruleSubscriptionCount: Int
   public let rssSourceCount: Int
   public let rssStarCount: Int
+  public let httpTextToSpeechEngineCount: Int
 
   public init(
     bookCount: Int,
@@ -26,7 +27,8 @@ public struct AndroidLibraryBackupSummary: Equatable, Sendable {
     searchHistoryCount: Int = 0,
     ruleSubscriptionCount: Int = 0,
     rssSourceCount: Int = 0,
-    rssStarCount: Int = 0
+    rssStarCount: Int = 0,
+    httpTextToSpeechEngineCount: Int = 0
   ) {
     self.bookCount = bookCount
     self.groupCount = groupCount
@@ -38,6 +40,7 @@ public struct AndroidLibraryBackupSummary: Equatable, Sendable {
     self.ruleSubscriptionCount = ruleSubscriptionCount
     self.rssSourceCount = rssSourceCount
     self.rssStarCount = rssStarCount
+    self.httpTextToSpeechEngineCount = httpTextToSpeechEngineCount
   }
 }
 
@@ -48,6 +51,7 @@ public protocol AndroidLibraryBackupRepository: Sendable {
   func androidRuleSubscriptions() async throws -> [RuleSubscription]
   func androidRSSSources() async throws -> [RSSSource]
   func androidRSSStars() async throws -> [RSSStar]
+  func androidHTTPTextToSpeechEngines() async throws -> [HTTPTextToSpeechEngine]
 }
 
 public extension AndroidLibraryBackupRepository {
@@ -56,6 +60,7 @@ public extension AndroidLibraryBackupRepository {
   func androidRuleSubscriptions() async throws -> [RuleSubscription] { [] }
   func androidRSSSources() async throws -> [RSSSource] { [] }
   func androidRSSStars() async throws -> [RSSStar] { [] }
+  func androidHTTPTextToSpeechEngines() async throws -> [HTTPTextToSpeechEngine] { [] }
 }
 
 public enum AndroidLibraryBackupError: Error, Equatable, Sendable {
@@ -90,6 +95,7 @@ public struct AndroidLibraryBackupUseCase: Sendable {
     let ruleSubscriptions = try await repository.androidRuleSubscriptions()
     let rssSources = try await repository.androidRSSSources()
     let rssStars = try await repository.androidRSSStars()
+    let httpTextToSpeechEngines = try await repository.androidHTTPTextToSpeechEngines()
     let contents = try AndroidLibraryBackupAdapter.contents(
       from: plan,
       bookSources: bookSources,
@@ -98,7 +104,8 @@ public struct AndroidLibraryBackupUseCase: Sendable {
       searchHistory: searchHistory,
       ruleSubscriptions: ruleSubscriptions,
       rssSources: rssSources,
-      rssStars: rssStars
+      rssStars: rssStars,
+      httpTextToSpeechEngines: httpTextToSpeechEngines
     )
     try AndroidBackupArchive.write(
       contents,
@@ -114,7 +121,8 @@ public struct AndroidLibraryBackupUseCase: Sendable {
       searchHistoryCount: contents.searchHistory.count,
       ruleSubscriptionCount: contents.ruleSubscriptions.count,
       rssSourceCount: contents.rssSources.count,
-      rssStarCount: contents.rssStars.count
+      rssStarCount: contents.rssStars.count,
+      httpTextToSpeechEngineCount: contents.httpTextToSpeechEngines.count
     )
   }
 }
@@ -131,7 +139,8 @@ public enum AndroidLibraryBackupAdapter {
       searchHistory: [],
       ruleSubscriptions: [],
       rssSources: [],
-      rssStars: []
+      rssStars: [],
+      httpTextToSpeechEngines: []
     )
   }
 
@@ -143,7 +152,8 @@ public enum AndroidLibraryBackupAdapter {
     searchHistory: [SearchHistoryEntry] = [],
     ruleSubscriptions: [RuleSubscription] = [],
     rssSources: [RSSSource] = [],
-    rssStars: [RSSStar] = []
+    rssStars: [RSSStar] = [],
+    httpTextToSpeechEngines: [HTTPTextToSpeechEngine] = []
   ) throws -> AndroidBackupContents {
     let sourceData = try SourceManagementPolicy.exportData(
       bookSources,
@@ -161,7 +171,11 @@ public enum AndroidLibraryBackupAdapter {
         ruleSubscriptions
       ),
       rssSources: AndroidRSSInteropAdapter.backupSources(rssSources),
-      rssStars: AndroidRSSInteropAdapter.backupStars(rssStars)
+      rssStars: AndroidRSSInteropAdapter.backupStars(rssStars),
+      httpTextToSpeechEngines:
+        AndroidHTTPTextToSpeechInteropAdapter.backupDocuments(
+          httpTextToSpeechEngines
+        )
     )
   }
 

@@ -270,6 +270,12 @@ private struct AppAndroidCoreBackupRestoreRepository:
     ) async throws {
         try await repository.restoreAndroidRSS(sources: sources, stars: stars)
     }
+
+    func restoreAndroidHTTPTextToSpeechEngines(
+        _ values: [HTTPTextToSpeechEngine]
+    ) async throws {
+        try await repository.restoreAndroidHTTPTextToSpeechEngines(values)
+    }
 }
 
 private struct AppAndroidLibraryBackupRepository:
@@ -301,6 +307,12 @@ private struct AppAndroidLibraryBackupRepository:
 
     func androidRSSStars() async throws -> [RSSStar] {
         try await repository.androidRSSStars()
+    }
+
+    func androidHTTPTextToSpeechEngines() async throws
+        -> [HTTPTextToSpeechEngine]
+    {
+        try await repository.androidHTTPTextToSpeechEngines()
     }
 }
 

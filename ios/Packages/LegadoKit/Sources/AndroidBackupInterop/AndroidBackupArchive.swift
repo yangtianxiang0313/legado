@@ -13,6 +13,7 @@ public struct AndroidBackupContents: Equatable, Sendable {
     public var ruleSubscriptions: [AndroidRuleSubscriptionDTO]
     public var rssSources: [AndroidRSSSourceDTO]
     public var rssStars: [AndroidRSSStarDTO]
+    public var httpTextToSpeechEngines: [AndroidHTTPTextToSpeechDTO]
 
     public init(
         bookSources: [BookSourceDTO] = [],
@@ -24,7 +25,8 @@ public struct AndroidBackupContents: Equatable, Sendable {
         searchHistory: [AndroidSearchHistoryDTO] = [],
         ruleSubscriptions: [AndroidRuleSubscriptionDTO] = [],
         rssSources: [AndroidRSSSourceDTO] = [],
-        rssStars: [AndroidRSSStarDTO] = []
+        rssStars: [AndroidRSSStarDTO] = [],
+        httpTextToSpeechEngines: [AndroidHTTPTextToSpeechDTO] = []
     ) {
         self.bookSources = bookSources
         self.replacementRules = replacementRules
@@ -36,6 +38,7 @@ public struct AndroidBackupContents: Equatable, Sendable {
         self.ruleSubscriptions = ruleSubscriptions
         self.rssSources = rssSources
         self.rssStars = rssStars
+        self.httpTextToSpeechEngines = httpTextToSpeechEngines
     }
 }
 
@@ -51,6 +54,7 @@ public enum AndroidBackupArchive {
     public static let ruleSubscriptionsMember = "sourceSub.json"
     public static let rssSourcesMember = "rssSources.json"
     public static let rssStarsMember = "rssStar.json"
+    public static let httpTextToSpeechMember = "httpTTS.json"
 
     public static func write(
         _ contents: AndroidBackupContents,
@@ -135,6 +139,16 @@ public enum AndroidBackupArchive {
                 .init(
                     path: rssStarsMember,
                     data: try AndroidRSSCodec.encodeStars(contents.rssStars)
+                )
+            )
+        }
+        if !contents.httpTextToSpeechEngines.isEmpty {
+            members.append(
+                .init(
+                    path: httpTextToSpeechMember,
+                    data: try AndroidHTTPTextToSpeechCodec.encodeMany(
+                        contents.httpTextToSpeechEngines
+                    )
                 )
             )
         }
@@ -268,5 +282,17 @@ public enum AndroidBackupArchive {
             rssStarsMember, from: archiveURL, maximumBytes: maximumMemberBytes
         ) else { return [] }
         return try AndroidRSSCodec.decodeStars(data)
+    }
+
+    public static func readHTTPTextToSpeechEngines(
+        from archiveURL: URL,
+        maximumMemberBytes: UInt64 = 32 * 1_024 * 1_024
+    ) throws -> [AndroidHTTPTextToSpeechDTO] {
+        guard let data = try ArchiveZIPFoundation.read(
+            httpTextToSpeechMember,
+            from: archiveURL,
+            maximumBytes: maximumMemberBytes
+        ) else { return [] }
+        return try AndroidHTTPTextToSpeechCodec.decodeMany(data)
     }
 }

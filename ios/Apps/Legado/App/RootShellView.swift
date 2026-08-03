@@ -908,6 +908,10 @@ private struct RootContentView: View {
                         "、\(summary.rssSourceCount) 个 RSS 源、"
                         + "\(summary.rssStarCount) 条 RSS 收藏"
                 }
+                if summary.httpTextToSpeechEngineCount > 0 {
+                    androidBackupImportStatus +=
+                        "、\(summary.httpTextToSpeechEngineCount) 个在线朗读引擎"
+                }
             } catch {
                 androidBackupImportStatus = "Android 备份导入失败"
             }
@@ -948,7 +952,8 @@ private struct RootContentView: View {
                     + "\(summary.searchHistoryCount) 条搜索历史、"
                     + "\(summary.ruleSubscriptionCount) 条规则订阅、"
                     + "\(summary.rssSourceCount) 个 RSS 源、"
-                    + "\(summary.rssStarCount) 条 RSS 收藏"
+                    + "\(summary.rssStarCount) 条 RSS 收藏、"
+                    + "\(summary.httpTextToSpeechEngineCount) 个在线朗读引擎"
                 showsAndroidBackupExporter = true
             } catch {
                 androidBackupExportStatus = "Android 备份生成失败"
