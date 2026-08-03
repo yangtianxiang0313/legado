@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P83-WEBDAV-LATEST-BACKUP-DISCOVERY-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "priority": 1,
+  "title": "P83 WebDAV 跨端新备份发现",
+  "objective": "依据冻结 Android AppWebDav.lastBackUp 与 MainActivity.backupSync，让 iOS 启动时识别 WebDAV 上由另一端产生的最新 backup*.zip；仅当其修改时间比本地已处理水位新超过一分钟时提示恢复，并在用户确认后复用现有 Android backup.zip 恢复链路。",
+  "validation_policy": "最新文件选择与一分钟水位规则使用聚焦测试；App 接线做增量构建，最终启动提示与确认恢复只运行一次 iPhone Simulator 场景。",
+  "stages": [
+    {
+      "id": "P83-S1",
+      "title": "最新备份发现合同",
+      "selectors": [
+        {
+          "id": "P83-S1-DISCOVERY",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-APP-NAVIGATION-WEBDAV-LATEST-DISCOVERY-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P83-S2",
+      "title": "启动提示与恢复接线",
+      "selectors": [
+        {
+          "id": "P83-S2-PROMPT",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-APP-NAVIGATION-WEBDAV-LATEST-BACKUP-PROMPT-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-APP-NAVIGATION-WEBDAV-LATEST-DISCOVERY-001",
+      "title": "实现 Android 语义的云端最新备份发现决策",
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+      "fixture_id": "rl-webdav-latest-backup-discovery-001",
+      "package_path": "ios/Packages/LegadoKit",
+      "validation": "tests",
+      "test_filter": "WebDAVLatestBackupDiscoveryTests",
+      "prerequisite_task_ids": [
+        "IOS-APP-NAVIGATION-WEBDAV-BACKUP-SYNC-001"
+      ],
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+        "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/help/AppWebDav.kt",
+          "symbol_id": "kotlin://io.legado.app.help.AppWebDav/lastBackUp"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/ui/main/MainActivity.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.main.MainActivity/backupSync"
+        }
+      ]
+    },
+    {
+      "target": "IOS-APP-NAVIGATION-WEBDAV-LATEST-BACKUP-PROMPT-001",
+      "title": "启动时提示并恢复跨端最新 WebDAV 备份",
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+      "fixture_id": "ui-webdav-latest-backup-prompt-v1",
+      "validation": "simulator",
+      "prerequisite_task_ids": [
+        "IOS-APP-NAVIGATION-WEBDAV-LATEST-DISCOVERY-001"
+      ],
+      "additional_allowed_paths": [
+        "ios/Apps/Legado/App/**",
+        "ios/Apps/Legado/UITests/**",
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/harness/ui/**"
+      ],
+      "ui_contract": {
+        "goal": "启动后发现跨端较新的 WebDAV backup.zip 时展示一次恢复提示；取消不会重复提示同一版本，确认后复用现有恢复链路并刷新本地数据。",
+        "scenario_id": "ui-webdav-latest-backup-prompt-v1",
+        "test_method": "testLatestWebDAVBackupDiscoveryAndRestore"
+      },
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/ui/main/MainActivity.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.main.MainActivity/backupSync"
+        }
+      ]
+    }
+  ]
+}
