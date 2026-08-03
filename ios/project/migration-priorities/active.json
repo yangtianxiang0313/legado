@@ -1051,6 +1051,8 @@
         "ios/harness/github_oracle_receipt.py",
         "ios/harness/tests/test_android_oracle_runner.py",
         "ios/harness/tests/test_github_oracle_receipt.py",
+        "ios/harness/tests/test_android_golden_publisher.py",
+        "ios/publisher/android_golden_publisher.py",
         "ios/harness/fixtures/manifest.json",
         "ios/harness/source-lab/manifest.json",
         "ios/harness/goldens/android-legado-v1/rs-wikisource-public-domain-001.json",

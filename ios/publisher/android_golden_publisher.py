@@ -198,6 +198,7 @@ def _fixture_binding(
             f"ios/harness/fixtures/source-lab/{scenario_id}",
             f"ios/harness/fixtures/runtime-lab/{scenario_id}",
             f"ios/harness/fixtures/integration-lab/{scenario_id}",
+            f"ios/harness/fixtures/real-source/{scenario_id}",
         }
         or not isinstance(digest, str)
         or HEX64.fullmatch(digest) is None

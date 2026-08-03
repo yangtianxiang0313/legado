@@ -357,6 +357,28 @@ class AndroidGoldenPublisherTests(unittest.TestCase):
             report["status"],
         )
 
+    def test_prepare_accepts_real_source_fixture_from_frozen_manifest(self):
+        real_source_path = (
+            "ios/harness/fixtures/real-source/"
+            f"{self.scenario}"
+        )
+        self.proposal["fixtures"][0]["fixture_path"] = real_source_path
+        self._refresh_proposal()
+        manifest = (
+            self.publisher_root
+            / "ios/harness/fixtures/manifest.json"
+        )
+        value = json.loads(manifest.read_bytes())
+        value["fixtures"][0]["path"] = real_source_path
+        manifest.write_bytes(ci_proposal._dump(value))
+
+        report = self._prepare(self.root / "real-source-fixture")
+
+        self.assertEqual(
+            "staged_for_external_publisher",
+            report["status"],
+        )
+
     def test_prepare_rejects_authorization_and_fixture_drift(self):
         cases = (
             {
