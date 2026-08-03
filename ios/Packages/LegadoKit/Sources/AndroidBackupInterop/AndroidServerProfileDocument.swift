@@ -87,7 +87,7 @@ public enum AndroidServerProfileCodec {
     if let values = try? decodePlaintext(data, maximumDepth: maximumDepth) {
       return values
     }
-    guard let backupPassword, !backupPassword.isEmpty else {
+    guard let backupPassword else {
       throw AndroidServerProfileCodecError.backupPasswordRequired
     }
     guard let payload = String(data: data, encoding: .utf8) else {
@@ -111,9 +111,6 @@ public enum AndroidServerProfileCodec {
     _ values: [AndroidServerProfileDTO],
     backupPassword: String
   ) throws -> Data {
-    guard !backupPassword.isEmpty else {
-      throw AndroidServerProfileCodecError.backupPasswordRequired
-    }
     let plaintext = try encodePlaintext(values)
     guard let json = String(data: plaintext, encoding: .utf8) else {
       throw AndroidServerProfileCodecError.invalidPayloadEncoding

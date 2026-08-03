@@ -434,8 +434,7 @@ struct RootShellView: View {
         -> AndroidBackupExportContext
     {
         guard
-            let backupPassword = try await androidBackupPasswordStore.password(),
-            !backupPassword.isEmpty
+            let backupPassword = try await androidBackupPasswordStore.password()
         else { throw AndroidLibraryBackupError.backupPasswordRequired }
 
         let storedProfiles = WebDAVDefaultServerBridge.androidExportProfiles(
@@ -1481,16 +1480,15 @@ private struct RootContentView: View {
                     }
                     .accessibilityIdentifier("action.settings.androidBackup.import")
                     SecureField(
-                        "Android 备份口令（含 WebDAV 凭据时必填）",
+                        "Android 备份口令（可留空）",
                         text: $androidBackupPassword
                     )
                     .accessibilityIdentifier(
                         "field.settings.androidBackup.password"
                     )
-                    Button("保存为自动备份口令") {
+                    Button("保存为自动备份口令（空值兼容 Android 默认）") {
                         saveAutomaticBackupPassword()
                     }
-                    .disabled(androidBackupPassword.isEmpty)
                     .accessibilityIdentifier(
                         "action.settings.androidBackup.savePassword"
                     )
@@ -1847,13 +1845,6 @@ private struct RootContentView: View {
                         try await webDAVServerProfiles
                             .selectedWebDAVServerProfileID()
                     )
-                if !storedServerProfiles.isEmpty
-                    && androidBackupPassword.isEmpty
-                {
-                    androidBackupExportStatus =
-                        "导出 WebDAV 服务器需要填写 Android 备份口令"
-                    return
-                }
                 var serverProfileExports: [
                     AndroidWebDAVServerProfileExportInput
                 ] = []
@@ -1876,11 +1867,6 @@ private struct RootContentView: View {
                 if webDAVSettings.value.serverAddress.isEmpty {
                     webDAVConfiguration = nil
                 } else {
-                    guard !androidBackupPassword.isEmpty else {
-                        androidBackupExportStatus =
-                            "导出 WebDAV 配置需要填写 Android 备份口令"
-                        return
-                    }
                     let credentials = try await webDAVCredentials.credentials(
                         for: webDAVSettings.value.credentialReference
                     )

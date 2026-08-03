@@ -241,7 +241,7 @@ public struct AndroidLibraryBackupUseCase: Sendable {
       )
     )
     if !webDAVServerProfiles.isEmpty {
-      guard let backupPassword, !backupPassword.isEmpty else {
+      guard let backupPassword else {
         throw AndroidLibraryBackupError.backupPasswordRequired
       }
       contents.serverProfilesPayload = try AndroidServerProfileCodec
@@ -283,9 +283,6 @@ public struct AndroidLibraryBackupUseCase: Sendable {
   ) throws -> AndroidSharedPreferencesDocument? {
     var values: [String: AndroidSharedPreferenceValue] = [:]
     if let input {
-      guard !input.backupPassword.isEmpty else {
-        throw AndroidLibraryBackupError.backupPasswordRequired
-      }
       values[AndroidWebDAVBackupConfiguration.serverAddressKey] =
         .string(input.serverAddress)
       values[AndroidWebDAVBackupConfiguration.usernameKey] =

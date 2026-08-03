@@ -93,6 +93,46 @@ struct AndroidWebDAVConfigAppRestoreTests {
     #expect(await repository.webDAVPlan() == nil)
     #expect(await repository.libraryRestoreCount() == 0)
   }
+
+  @Test func defaultEmptyPasswordRestoresWithoutPrompt() async throws {
+    let repository = WebDAVConfigRestoreRepositoryStub()
+    let useCase = AndroidCoreBackupRestoreUseCase(repository: repository)
+    let directory = FileManager.default.temporaryDirectory
+      .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    try FileManager.default.createDirectory(
+      at: directory,
+      withIntermediateDirectories: true
+    )
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let archiveURL = directory.appendingPathComponent("backup.zip")
+    let encryptedPassword = try AndroidBackupAES.encryptBase64(
+      "webdav-secret",
+      backupPassword: ""
+    )
+    try AndroidBackupArchive.write(
+      AndroidBackupContents(
+        sharedPreferences: AndroidSharedPreferencesDocument(values: [
+          AndroidWebDAVBackupConfiguration.serverAddressKey:
+            .string("https://dav.empty-password.test/dav"),
+          AndroidWebDAVBackupConfiguration.usernameKey: .string("reader"),
+          AndroidWebDAVBackupConfiguration.passwordKey:
+            .string(encryptedPassword),
+        ])
+      ),
+      to: archiveURL
+    )
+
+    let summary = try await useCase.restore(from: archiveURL)
+    let plan = try #require(await repository.webDAVPlan())
+
+    #expect(summary.webDAVConfigurationCount == 1)
+    #expect(
+      plan.credential == .resolved(
+        username: "reader",
+        password: "webdav-secret"
+      )
+    )
+  }
 }
 
 private actor WebDAVConfigRestoreRepositoryStub:

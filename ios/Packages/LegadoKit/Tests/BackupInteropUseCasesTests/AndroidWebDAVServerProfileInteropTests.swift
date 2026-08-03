@@ -41,6 +41,19 @@ struct AndroidWebDAVServerProfileInteropTests {
     #expect(restored == [profile])
   }
 
+  @Test func emptyPasswordMatchesAndroidDefaultLocalPassword() throws {
+    let payload = try AndroidServerProfileCodec.encodeArchivePayload(
+      [profile],
+      backupPassword: ""
+    )
+    let restored = try AndroidServerProfileCodec.decodeArchivePayload(
+      payload,
+      backupPassword: ""
+    )
+
+    #expect(restored == [profile])
+  }
+
   @Test func encryptedPayloadRequiresTheCorrectPassword() throws {
     let payload = try AndroidServerProfileCodec.encodeArchivePayload(
       [profile],

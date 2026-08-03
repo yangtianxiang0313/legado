@@ -27,10 +27,6 @@ public actor KeychainAndroidBackupPasswordStore:
   }
 
   public func save(_ password: String) throws {
-    guard !password.isEmpty else {
-      try remove()
-      return
-    }
     let query = keychainQuery()
     SecItemDelete(query as CFDictionary)
     var item = query

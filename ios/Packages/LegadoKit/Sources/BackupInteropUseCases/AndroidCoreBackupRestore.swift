@@ -245,20 +245,33 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     let webDAVConfiguration = projectedWebDAVConfiguration.flatMap {
       $0.isPresent ? $0 : nil
     }
-    let webDAVImportPlan = try webDAVConfiguration.map {
-      try Self.webDAVImportPlan($0, backupPassword: backupPassword)
+    let effectiveBackupPassword = backupPassword ?? ""
+    let webDAVImportPlan: AndroidWebDAVConfigurationImportPlan?
+    do {
+      webDAVImportPlan = try webDAVConfiguration.map {
+        try Self.webDAVImportPlan(
+          $0,
+          backupPassword: effectiveBackupPassword
+        )
+      }
+    } catch AndroidCoreBackupRestoreError.invalidBackupPassword
+      where backupPassword == nil
+    {
+      throw AndroidCoreBackupRestoreError.backupPasswordRequired
     }
     let serverProfilePlan: AndroidServerProfileImportPlan
     do {
       serverProfilePlan = try AndroidServerProfileImportAdapter.plan(
         from: archiveURL,
-        backupPassword: backupPassword,
+        backupPassword: effectiveBackupPassword,
         selectedID: projectedWebDAVConfiguration?.remoteServerID
       )
     } catch AndroidServerProfileCodecError.backupPasswordRequired {
       throw AndroidCoreBackupRestoreError.backupPasswordRequired
     } catch AndroidServerProfileCodecError.invalidBackupPassword {
-      throw AndroidCoreBackupRestoreError.invalidBackupPassword
+      throw backupPassword == nil
+        ? AndroidCoreBackupRestoreError.backupPasswordRequired
+        : AndroidCoreBackupRestoreError.invalidBackupPassword
     }
 
     if !serverProfilePlan.entries.isEmpty
@@ -353,7 +366,7 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
   ) throws -> AndroidWebDAVConfigurationImportPlan {
     let credential: AndroidWebDAVCredentialImportState
     if let payload = value.unresolvedPasswordPayload, !payload.isEmpty {
-      guard let backupPassword, !backupPassword.isEmpty else {
+      guard let backupPassword else {
         throw AndroidCoreBackupRestoreError.backupPasswordRequired
       }
       let password: String
