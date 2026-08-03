@@ -258,7 +258,7 @@ public enum ReaderContentRefreshScope: Equatable, Sendable {
 
 public protocol BookShelfRepository:
   Sendable, ReaderReplacementRuleRepository, ReadRecordStore,
-  LocalTextTOCRuleRepository
+  LocalTextTOCRuleRepository, WebDAVShelfProgressRepository
 {
   func stage(_ candidate: ShelfBookCandidate) async throws -> ShelfBookItem
   func add(
