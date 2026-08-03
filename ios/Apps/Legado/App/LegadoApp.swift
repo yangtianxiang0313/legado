@@ -35,6 +35,7 @@ struct LegadoApp: App {
     private let backupRestore: AndroidCoreBackupRestoreUseCase
     private let libraryBackup: AndroidLibraryBackupUseCase
     private let webDAVBackupSync: WebDAVBackupSyncUseCase
+    private let webDAVServerProfiles: any WebDAVServerProfileRepository
 
     init() {
         let processArguments = ProcessInfo.processInfo.arguments
@@ -119,6 +120,7 @@ struct LegadoApp: App {
         do {
             let libraryRepository = try GRDBBookShelfRepository
                 .applicationSupport()
+            self.webDAVServerProfiles = libraryRepository
             let sourceRepository = UserDefaultsSourceCatalogRepository()
             self.backupRestore = AndroidCoreBackupRestoreUseCase(
                 repository: AppAndroidCoreBackupRestoreRepository(
@@ -263,6 +265,7 @@ struct LegadoApp: App {
                     backupRestore: backupRestore,
                     libraryBackup: libraryBackup,
                     webDAVBackupSync: webDAVBackupSync,
+                    webDAVServerProfiles: webDAVServerProfiles,
                     startupCase: startupCase
                 )
             } else {
@@ -288,7 +291,8 @@ struct LegadoApp: App {
                     webDAVProgressUploader: webDAVProgressUploader,
                     backupRestore: backupRestore,
                     libraryBackup: libraryBackup,
-                    webDAVBackupSync: webDAVBackupSync
+                    webDAVBackupSync: webDAVBackupSync,
+                    webDAVServerProfiles: webDAVServerProfiles
                 )
             }
         }
@@ -405,6 +409,52 @@ private struct AppAndroidCoreBackupRestoreRepository:
                 directoryName: plan.settings.directoryName
             )
         }
+    }
+
+    func restoreAndroidWebDAVServerProfiles(
+        _ plan: AndroidServerProfileImportPlan
+    ) async throws {
+        try await AndroidWebDAVServerProfileRestoreUseCase(
+            repository: repository,
+            vault: AppAndroidWebDAVServerCredentialVault(
+                store: webDAVCredentials
+            )
+        ).restore(plan)
+    }
+}
+
+private struct AppAndroidWebDAVServerCredentialVault:
+    AndroidWebDAVServerCredentialVault
+{
+    let store: KeychainWebDAVCredentialStore
+
+    func credential(
+        for reference: WebDAVCredentialReference
+    ) async -> AndroidWebDAVServerCredential? {
+        guard let value = try? await store.credentials(for: reference) else {
+            return nil
+        }
+        return AndroidWebDAVServerCredential(
+            username: value.username,
+            password: value.password
+        )
+    }
+
+    func save(
+        _ credential: AndroidWebDAVServerCredential,
+        for reference: WebDAVCredentialReference
+    ) async throws {
+        try await store.save(
+            WebDAVBasicCredentials(
+                username: credential.username,
+                password: credential.password
+            ),
+            for: reference
+        )
+    }
+
+    func remove(reference: WebDAVCredentialReference) async {
+        await store.remove(reference: reference)
     }
 }
 

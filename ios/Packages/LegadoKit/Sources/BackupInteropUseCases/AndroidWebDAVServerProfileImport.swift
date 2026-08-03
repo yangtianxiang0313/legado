@@ -35,9 +35,14 @@ public enum AndroidServerProfileImportEntry: Equatable, Sendable {
 
 public struct AndroidServerProfileImportPlan: Equatable, Sendable {
   public let entries: [AndroidServerProfileImportEntry]
+  public let selectedID: Int64?
 
-  public init(entries: [AndroidServerProfileImportEntry]) {
+  public init(
+    entries: [AndroidServerProfileImportEntry],
+    selectedID: Int64? = nil
+  ) {
     self.entries = entries
+    self.selectedID = selectedID
   }
 
   public var webDAVProfiles: [AndroidWebDAVServerProfile] {
@@ -51,13 +56,24 @@ public struct AndroidServerProfileImportPlan: Equatable, Sendable {
 public enum AndroidServerProfileImportAdapter {
   public static func plan(
     from archiveURL: URL,
-    backupPassword: String?
+    backupPassword: String?,
+    selectedID: Int64? = nil
   ) throws -> AndroidServerProfileImportPlan {
     let values = try AndroidBackupArchive.readServerProfiles(
       from: archiveURL,
       backupPassword: backupPassword
     )
-    return AndroidServerProfileImportPlan(entries: values.map(project))
+    return plan(values: values, selectedID: selectedID)
+  }
+
+  public static func plan(
+    values: [AndroidServerProfileDTO],
+    selectedID: Int64?
+  ) -> AndroidServerProfileImportPlan {
+    AndroidServerProfileImportPlan(
+      entries: values.map(project),
+      selectedID: selectedID
+    )
   }
 
   private static func project(

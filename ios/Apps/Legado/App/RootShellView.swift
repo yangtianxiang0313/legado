@@ -49,6 +49,7 @@ struct RootShellView: View {
     let backupRestore: AndroidCoreBackupRestoreUseCase
     let libraryBackup: AndroidLibraryBackupUseCase
     let webDAVBackupSync: WebDAVBackupSyncUseCase
+    let webDAVServerProfiles: any WebDAVServerProfileRepository
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var didLoadLibrary = false
 
@@ -275,7 +276,8 @@ struct RootShellView: View {
                     await appThemeProfiles.reload()
                 },
                 libraryBackup: libraryBackup,
-                webDAVBackupSync: webDAVBackupSync
+                webDAVBackupSync: webDAVBackupSync,
+                webDAVServerProfiles: webDAVServerProfiles
             )
             .navigationDestination(for: AppRoute.self) { route in
                 destination(for: route, on: root)
@@ -756,6 +758,7 @@ private struct RootContentView: View {
     let reloadBackupDomains: () async -> Void
     let libraryBackup: AndroidLibraryBackupUseCase
     let webDAVBackupSync: WebDAVBackupSyncUseCase
+    let webDAVServerProfiles: any WebDAVServerProfileRepository
     @State private var webDAVAccount = ProcessInfo.processInfo.arguments.contains(
         "--webdav-test-double"
     ) ? "reader" : ""
@@ -1134,6 +1137,10 @@ private struct RootContentView: View {
                 if summary.webDAVConfigurationCount > 0 {
                     androidBackupImportStatus += "、1 份 WebDAV 配置"
                 }
+                if summary.webDAVServerProfileCount > 0 {
+                    androidBackupImportStatus +=
+                        "、\(summary.webDAVServerProfileCount) 个 WebDAV 服务器"
+                }
             } catch AndroidCoreBackupRestoreError.backupPasswordRequired {
                 androidBackupImportStatus = "请输入 Android 备份口令后重试"
             } catch AndroidCoreBackupRestoreError.invalidBackupPassword {
@@ -1158,6 +1165,35 @@ private struct RootContentView: View {
                 defer {
                     try? FileManager.default.removeItem(
                         at: archiveURL.deletingLastPathComponent()
+                    )
+                }
+                let storedServerProfiles = try await webDAVServerProfiles
+                    .webDAVServerProfiles()
+                let selectedServerID = try await webDAVServerProfiles
+                    .selectedWebDAVServerProfileID()
+                if !storedServerProfiles.isEmpty
+                    && androidBackupPassword.isEmpty
+                {
+                    androidBackupExportStatus =
+                        "导出 WebDAV 服务器需要填写 Android 备份口令"
+                    return
+                }
+                var serverProfileExports: [
+                    AndroidWebDAVServerProfileExportInput
+                ] = []
+                for profile in storedServerProfiles {
+                    let credential = try await webDAVCredentials.credentials(
+                        for: profile.credentialReference
+                    )
+                    serverProfileExports.append(
+                        AndroidWebDAVServerProfileExportInput(
+                            id: profile.id,
+                            name: profile.name,
+                            serverAddress: profile.serverAddress,
+                            username: credential.username,
+                            password: credential.password,
+                            sortNumber: profile.sortNumber
+                        )
                     )
                 }
                 let webDAVConfiguration: AndroidWebDAVBackupExportInput?
@@ -1185,7 +1221,10 @@ private struct RootContentView: View {
                     bookSources: backupSources,
                     replacementRules: backupReplacementRules,
                     readerPreferences: readerPreferences.value,
-                    webDAVConfiguration: webDAVConfiguration
+                    webDAVConfiguration: webDAVConfiguration,
+                    webDAVServerProfiles: serverProfileExports,
+                    selectedWebDAVServerID: selectedServerID,
+                    backupPassword: androidBackupPassword
                 )
                 androidBackupPassword = ""
                 androidBackupExportDocument = AndroidBackupZipDocument(
@@ -1205,6 +1244,10 @@ private struct RootContentView: View {
                     + "\(summary.httpTextToSpeechEngineCount) 个在线朗读引擎"
                 if summary.webDAVConfigurationCount > 0 {
                     androidBackupExportStatus += "、1 份 WebDAV 配置"
+                }
+                if summary.webDAVServerProfileCount > 0 {
+                    androidBackupExportStatus +=
+                        "、\(summary.webDAVServerProfileCount) 个 WebDAV 服务器"
                 }
                 showsAndroidBackupExporter = true
             } catch {
@@ -2078,6 +2121,7 @@ struct StartupAcceptanceView: View {
     let backupRestore: AndroidCoreBackupRestoreUseCase
     let libraryBackup: AndroidLibraryBackupUseCase
     let webDAVBackupSync: WebDAVBackupSyncUseCase
+    let webDAVServerProfiles: any WebDAVServerProfileRepository
     let startupCase: StartupAcceptanceCase
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -2135,7 +2179,8 @@ struct StartupAcceptanceView: View {
                 webDAVProgressUploader: webDAVProgressUploader,
                 backupRestore: backupRestore,
                 libraryBackup: libraryBackup,
-                webDAVBackupSync: webDAVBackupSync
+                webDAVBackupSync: webDAVBackupSync,
+                webDAVServerProfiles: webDAVServerProfiles
             )
         }
     }

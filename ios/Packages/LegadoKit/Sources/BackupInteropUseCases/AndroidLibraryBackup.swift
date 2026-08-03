@@ -23,6 +23,7 @@ public struct AndroidLibraryBackupSummary: Equatable, Sendable {
   public let keyboardAssistCount: Int
   public let themeConfigCount: Int
   public let webDAVConfigurationCount: Int
+  public let webDAVServerProfileCount: Int
 
   public init(
     bookCount: Int,
@@ -41,7 +42,8 @@ public struct AndroidLibraryBackupSummary: Equatable, Sendable {
     dictionaryRuleCount: Int = 0,
     keyboardAssistCount: Int = 0,
     themeConfigCount: Int = 0,
-    webDAVConfigurationCount: Int = 0
+    webDAVConfigurationCount: Int = 0,
+    webDAVServerProfileCount: Int = 0
   ) {
     self.bookCount = bookCount
     self.groupCount = groupCount
@@ -60,6 +62,7 @@ public struct AndroidLibraryBackupSummary: Equatable, Sendable {
     self.keyboardAssistCount = keyboardAssistCount
     self.themeConfigCount = themeConfigCount
     self.webDAVConfigurationCount = webDAVConfigurationCount
+    self.webDAVServerProfileCount = webDAVServerProfileCount
   }
 }
 
@@ -82,6 +85,31 @@ public struct AndroidWebDAVBackupExportInput: Equatable, Sendable {
     self.password = password
     self.directoryName = directoryName
     self.backupPassword = backupPassword
+  }
+}
+
+public struct AndroidWebDAVServerProfileExportInput: Equatable, Sendable {
+  public let id: Int64
+  public let name: String
+  public let serverAddress: String
+  public let username: String
+  public let password: String
+  public let sortNumber: Int
+
+  public init(
+    id: Int64,
+    name: String,
+    serverAddress: String,
+    username: String,
+    password: String,
+    sortNumber: Int
+  ) {
+    self.id = id
+    self.name = name
+    self.serverAddress = serverAddress
+    self.username = username
+    self.password = password
+    self.sortNumber = sortNumber
   }
 }
 
@@ -147,7 +175,10 @@ public struct AndroidLibraryBackupUseCase: Sendable {
       bookSources: bookSources,
       replacementRules: replacementRules,
       readerPreferences: readerPreferences,
-      webDAVConfiguration: nil
+      webDAVConfiguration: nil,
+      webDAVServerProfiles: [],
+      selectedWebDAVServerID: nil,
+      backupPassword: nil
     )
   }
 
@@ -156,7 +187,10 @@ public struct AndroidLibraryBackupUseCase: Sendable {
     bookSources: [BookSourceDraft],
     replacementRules: [ReaderReplacementRule],
     readerPreferences: ReaderPreferences?,
-    webDAVConfiguration: AndroidWebDAVBackupExportInput?
+    webDAVConfiguration: AndroidWebDAVBackupExportInput?,
+    webDAVServerProfiles: [AndroidWebDAVServerProfileExportInput] = [],
+    selectedWebDAVServerID: Int64? = nil,
+    backupPassword: String? = nil
   ) async throws -> AndroidLibraryBackupSummary {
     let plan = try await repository.androidLibraryBackupPlan()
     let readRecords = try await repository.androidReadRecords()
@@ -176,7 +210,7 @@ public struct AndroidLibraryBackupUseCase: Sendable {
     let dictionaryRules = try await repository.dictionaryRules()
     let keyboardAssists = try await repository.keyboardAssists()
     let themeProfiles = try await repository.appThemeProfiles()
-    let contents = try AndroidLibraryBackupAdapter.contents(
+    var contents = try AndroidLibraryBackupAdapter.contents(
       from: plan,
       bookSources: bookSources,
       replacementRules: replacementRules,
@@ -191,10 +225,21 @@ public struct AndroidLibraryBackupUseCase: Sendable {
       dictionaryRules: dictionaryRules,
       keyboardAssists: keyboardAssists,
       themeProfiles: themeProfiles,
-      sharedPreferences: try webDAVConfiguration.map(
-        Self.sharedPreferences
+      sharedPreferences: try Self.sharedPreferences(
+        webDAVConfiguration,
+        selectedServerID: selectedWebDAVServerID
       )
     )
+    if !webDAVServerProfiles.isEmpty {
+      guard let backupPassword, !backupPassword.isEmpty else {
+        throw AndroidLibraryBackupError.backupPasswordRequired
+      }
+      contents.serverProfilesPayload = try AndroidServerProfileCodec
+        .encodeArchivePayload(
+          try webDAVServerProfiles.map(Self.serverProfileDTO),
+          backupPassword: backupPassword
+        )
+    }
     try AndroidBackupArchive.write(
       contents,
       to: archiveURL
@@ -217,31 +262,60 @@ public struct AndroidLibraryBackupUseCase: Sendable {
       dictionaryRuleCount: contents.dictionaryRules.count,
       keyboardAssistCount: contents.keyboardAssists.count,
       themeConfigCount: contents.themeConfigs.count,
-      webDAVConfigurationCount: contents.sharedPreferences == nil ? 0 : 1
+      webDAVConfigurationCount: webDAVConfiguration == nil ? 0 : 1,
+      webDAVServerProfileCount: webDAVServerProfiles.count
     )
   }
 
   private static func sharedPreferences(
-    _ input: AndroidWebDAVBackupExportInput
-  ) throws -> AndroidSharedPreferencesDocument {
-    guard !input.backupPassword.isEmpty else {
-      throw AndroidLibraryBackupError.backupPasswordRequired
-    }
-    return AndroidSharedPreferencesDocument(values: [
-      AndroidWebDAVBackupConfiguration.serverAddressKey:
-        .string(input.serverAddress),
-      AndroidWebDAVBackupConfiguration.usernameKey:
-        .string(input.username),
-      AndroidWebDAVBackupConfiguration.passwordKey:
+    _ input: AndroidWebDAVBackupExportInput?,
+    selectedServerID: Int64?
+  ) throws -> AndroidSharedPreferencesDocument? {
+    var values: [String: AndroidSharedPreferenceValue] = [:]
+    if let input {
+      guard !input.backupPassword.isEmpty else {
+        throw AndroidLibraryBackupError.backupPasswordRequired
+      }
+      values[AndroidWebDAVBackupConfiguration.serverAddressKey] =
+        .string(input.serverAddress)
+      values[AndroidWebDAVBackupConfiguration.usernameKey] =
+        .string(input.username)
+      values[AndroidWebDAVBackupConfiguration.passwordKey] =
         .string(
           try AndroidBackupAES.encryptBase64(
             input.password,
             backupPassword: input.backupPassword
           )
-        ),
-      AndroidWebDAVBackupConfiguration.directoryNameKey:
-        .string(input.directoryName),
-    ])
+        )
+      values[AndroidWebDAVBackupConfiguration.directoryNameKey] =
+        .string(input.directoryName)
+    }
+    if let selectedServerID {
+      values[AndroidWebDAVBackupConfiguration.remoteServerIDKey] =
+        .long(selectedServerID)
+    }
+    return values.isEmpty ? nil : AndroidSharedPreferencesDocument(values: values)
+  }
+
+  private static func serverProfileDTO(
+    _ input: AndroidWebDAVServerProfileExportInput
+  ) throws -> AndroidServerProfileDTO {
+    let config = try JSONValueCodec.encode(
+      .object([
+        "url": .string(input.serverAddress),
+        "username": .string(input.username),
+        "password": .string(input.password),
+      ])
+    )
+    guard let configString = String(data: config, encoding: .utf8) else {
+      throw AndroidServerProfileCodecError.invalidPayloadEncoding
+    }
+    return AndroidServerProfileDTO(
+      id: input.id,
+      name: input.name,
+      config: configString,
+      sortNumber: input.sortNumber
+    )
   }
 }
 

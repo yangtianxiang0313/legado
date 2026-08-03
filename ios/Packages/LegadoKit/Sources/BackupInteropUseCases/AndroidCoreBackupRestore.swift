@@ -23,6 +23,7 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
   public let keyboardAssistCount: Int
   public let themeConfigCount: Int
   public let webDAVConfigurationCount: Int
+  public let webDAVServerProfileCount: Int
 
   public init(
     bookCount: Int,
@@ -42,7 +43,8 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
     dictionaryRuleCount: Int = 0,
     keyboardAssistCount: Int = 0,
     themeConfigCount: Int = 0,
-    webDAVConfigurationCount: Int = 0
+    webDAVConfigurationCount: Int = 0,
+    webDAVServerProfileCount: Int = 0
   ) {
     self.bookCount = bookCount
     self.groupCount = groupCount
@@ -62,6 +64,7 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
     self.keyboardAssistCount = keyboardAssistCount
     self.themeConfigCount = themeConfigCount
     self.webDAVConfigurationCount = webDAVConfigurationCount
+    self.webDAVServerProfileCount = webDAVServerProfileCount
   }
 }
 
@@ -116,6 +119,9 @@ public protocol AndroidCoreBackupRestoreRepository: Sendable {
   func restoreAndroidWebDAVConfiguration(
     _ plan: AndroidWebDAVConfigurationImportPlan
   ) async throws
+  func restoreAndroidWebDAVServerProfiles(
+    _ plan: AndroidServerProfileImportPlan
+  ) async throws
 }
 
 public extension AndroidCoreBackupRestoreRepository {
@@ -148,6 +154,9 @@ public extension AndroidCoreBackupRestoreRepository {
   func restoreAndroidThemeProfiles(_ values: [AppThemeProfile]) async throws {}
   func restoreAndroidWebDAVConfiguration(
     _ plan: AndroidWebDAVConfigurationImportPlan
+  ) async throws {}
+  func restoreAndroidWebDAVServerProfiles(
+    _ plan: AndroidServerProfileImportPlan
   ) async throws {}
 }
 
@@ -217,12 +226,38 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     let themeProfiles = AndroidThemeConfigInteropAdapter.restoreValues(
       try AndroidBackupArchive.readThemeConfigs(from: archiveURL)
     )
-    let webDAVConfiguration = try AndroidBackupArchive
-      .readWebDAVBackupConfiguration(from: archiveURL)
+    let sharedPreferences = try AndroidBackupArchive.readSharedPreferences(
+      from: archiveURL
+    )
+    let projectedWebDAVConfiguration = sharedPreferences.map(
+      AndroidWebDAVBackupConfiguration.init(document:)
+    )
+    let webDAVConfiguration = projectedWebDAVConfiguration.flatMap {
+      $0.isPresent ? $0 : nil
+    }
     let webDAVImportPlan = try webDAVConfiguration.map {
       try Self.webDAVImportPlan($0, backupPassword: backupPassword)
     }
+    let serverProfilePlan: AndroidServerProfileImportPlan
+    do {
+      serverProfilePlan = try AndroidServerProfileImportAdapter.plan(
+        from: archiveURL,
+        backupPassword: backupPassword,
+        selectedID: projectedWebDAVConfiguration?.remoteServerID
+      )
+    } catch AndroidServerProfileCodecError.backupPasswordRequired {
+      throw AndroidCoreBackupRestoreError.backupPasswordRequired
+    } catch AndroidServerProfileCodecError.invalidBackupPassword {
+      throw AndroidCoreBackupRestoreError.invalidBackupPassword
+    }
 
+    if !serverProfilePlan.entries.isEmpty
+      || serverProfilePlan.selectedID != nil
+    {
+      try await repository.restoreAndroidWebDAVServerProfiles(
+        serverProfilePlan
+      )
+    }
     if let webDAVImportPlan {
       try await repository.restoreAndroidWebDAVConfiguration(
         webDAVImportPlan
@@ -291,7 +326,8 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
       dictionaryRuleCount: dictionaryRules.count,
       keyboardAssistCount: keyboardAssists.count,
       themeConfigCount: themeProfiles.count,
-      webDAVConfigurationCount: webDAVConfiguration == nil ? 0 : 1
+      webDAVConfigurationCount: webDAVConfiguration == nil ? 0 : 1,
+      webDAVServerProfileCount: serverProfilePlan.webDAVProfiles.count
     )
   }
 

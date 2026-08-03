@@ -7,7 +7,8 @@ import LibraryDomain
 public actor GRDBBookShelfRepository:
   BookShelfRepository, RuleSubscriptionRepository, RSSRepository,
   HTTPTextToSpeechRepository, DictionaryRuleRepository,
-  KeyboardAssistRepository, AppThemeProfileRepository
+  KeyboardAssistRepository, AppThemeProfileRepository,
+  WebDAVServerProfileRepository
 {
   private let database: DatabaseQueue
 
@@ -456,6 +457,46 @@ public actor GRDBBookShelfRepository:
         try db.execute(
           sql: "UPDATE books SET orderValue = ? WHERE bookID = ?",
           arguments: [index, bookID.rawValue]
+        )
+      }
+    }
+  }
+
+  public func webDAVServerProfiles() async throws -> [WebDAVServerProfile] {
+    try await database.read { db in
+      try WebDAVServerProfileRecord
+        .order(Column("sortNumber").asc, Column("id").asc)
+        .fetchAll(db)
+        .map(\.value)
+    }
+  }
+
+  public func selectedWebDAVServerProfileID() async throws -> Int64? {
+    try await database.read { db in
+      try Int64.fetchOne(
+        db,
+        sql: "SELECT selectedID FROM webDAVServerSelection WHERE singleton = 0"
+      )
+    }
+  }
+
+  public func replaceWebDAVServerProfiles(
+    _ profiles: [WebDAVServerProfile],
+    selectedID: Int64?
+  ) async throws {
+    try await database.write { db in
+      _ = try WebDAVServerProfileRecord.deleteAll(db)
+      for profile in profiles {
+        var record = WebDAVServerProfileRecord(value: profile)
+        try record.insert(db)
+      }
+      try db.execute(
+        sql: "DELETE FROM webDAVServerSelection WHERE singleton = 0"
+      )
+      if let selectedID {
+        try db.execute(
+          sql: "INSERT INTO webDAVServerSelection (singleton, selectedID) VALUES (0, ?)",
+          arguments: [selectedID]
         )
       }
     }
@@ -1571,6 +1612,19 @@ public actor GRDBBookShelfRepository:
         table.column("payload", .blob).notNull()
       }
     }
+    migrator.registerMigration("addWebDAVServerProfileInterop") { db in
+      try db.create(table: "webDAVServerProfiles") { table in
+        table.column("id", .integer).notNull().primaryKey()
+        table.column("name", .text).notNull()
+        table.column("serverAddress", .text).notNull()
+        table.column("sortNumber", .integer).notNull().indexed()
+        table.column("credentialReference", .text).notNull().unique()
+      }
+      try db.create(table: "webDAVServerSelection") { table in
+        table.column("singleton", .integer).notNull().primaryKey()
+        table.column("selectedID", .integer).notNull()
+      }
+    }
     return migrator
   }
 
@@ -1582,6 +1636,36 @@ public actor GRDBBookShelfRepository:
       )
     }
     return result
+  }
+}
+
+private struct WebDAVServerProfileRecord:
+  Codable, FetchableRecord, MutablePersistableRecord
+{
+  static let databaseTableName = "webDAVServerProfiles"
+
+  var id: Int64
+  var name: String
+  var serverAddress: String
+  var sortNumber: Int
+  var credentialReference: String
+
+  init(value: WebDAVServerProfile) {
+    id = value.id
+    name = value.name
+    serverAddress = value.serverAddress
+    sortNumber = value.sortNumber
+    credentialReference = value.credentialReference.rawValue
+  }
+
+  var value: WebDAVServerProfile {
+    WebDAVServerProfile(
+      id: id,
+      name: name,
+      serverAddress: serverAddress,
+      sortNumber: sortNumber,
+      credentialReference: .init(credentialReference)
+    )
   }
 }
 

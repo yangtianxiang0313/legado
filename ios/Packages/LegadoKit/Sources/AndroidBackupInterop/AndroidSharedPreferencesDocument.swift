@@ -98,6 +98,7 @@ public struct AndroidWebDAVBackupConfiguration: Equatable, Sendable {
   public static let usernameKey = "web_dav_account"
   public static let passwordKey = "web_dav_password"
   public static let directoryNameKey = "webDavDir"
+  public static let remoteServerIDKey = "remoteServerId"
 
   public let serverAddress: String?
   public let username: String?
@@ -105,17 +106,20 @@ public struct AndroidWebDAVBackupConfiguration: Equatable, Sendable {
   /// be treated as a usable password until an explicit resolver validates it.
   public let unresolvedPasswordPayload: String?
   public let directoryName: String?
+  public let remoteServerID: Int64?
 
   public init(
     serverAddress: String?,
     username: String?,
     unresolvedPasswordPayload: String?,
-    directoryName: String?
+    directoryName: String?,
+    remoteServerID: Int64? = nil
   ) {
     self.serverAddress = serverAddress
     self.username = username
     self.unresolvedPasswordPayload = unresolvedPasswordPayload
     self.directoryName = directoryName
+    self.remoteServerID = remoteServerID
   }
 
   public init(document: AndroidSharedPreferencesDocument) {
@@ -123,7 +127,8 @@ public struct AndroidWebDAVBackupConfiguration: Equatable, Sendable {
       serverAddress: document.string(Self.serverAddressKey),
       username: document.string(Self.usernameKey),
       unresolvedPasswordPayload: document.string(Self.passwordKey),
-      directoryName: document.string(Self.directoryNameKey)
+      directoryName: document.string(Self.directoryNameKey),
+      remoteServerID: document.integer(Self.remoteServerIDKey)
     )
   }
 
@@ -139,6 +144,15 @@ private extension AndroidSharedPreferencesDocument {
   func string(_ key: String) -> String? {
     guard case .string(let value)? = values[key] else { return nil }
     return value
+  }
+
+
+  func integer(_ key: String) -> Int64? {
+    switch values[key] {
+    case .int(let value): Int64(value)
+    case .long(let value): value
+    default: nil
+    }
   }
 }
 
