@@ -27,6 +27,8 @@ LOGICAL_ORIGIN = "http://sourcelab.test"
 INTEGRATION_LOGICAL_ORIGIN = "http://integrationlab.test"
 BASELINE_PATH = "ios/project/baseline.json"
 INVENTORY_PATH = "ios/project/android-intake/inventory-manifest.json"
+FIXTURE_MANIFEST_PATH = "ios/harness/fixtures/manifest.json"
+SOURCE_LAB_MANIFEST_PATH = "ios/harness/source-lab/manifest.json"
 CANONICALIZER_PATH = "ios/harness/normalization/canonical-v1.json"
 KOTLIN_RUNNER = "LegadoOracleInstrumentedTest.kt"
 OVERLAY_RELATIVE = (
@@ -2173,6 +2175,26 @@ def repository_bindings(
 ) -> Dict[str, str]:
     identity = frozen_identity(root)
     contract = _scenario_contract(scenario_id)
+    fixture_manifest = _read_json(root / FIXTURE_MANIFEST_PATH)
+    source_lab_manifest = _read_json(root / SOURCE_LAB_MANIFEST_PATH)
+    fixture_entries = {
+        entry.get("id"): entry
+        for entry in fixture_manifest.get("fixtures", [])
+        if isinstance(entry, dict)
+    }
+    scenario_entries = {
+        entry.get("id"): entry
+        for entry in source_lab_manifest.get("scenarios", [])
+        if isinstance(entry, dict)
+    }
+    fixture_entry = fixture_entries.get(scenario_id)
+    scenario_entry = scenario_entries.get(scenario_id)
+    if (
+        not isinstance(fixture_entry, dict)
+        or not isinstance(scenario_entry, dict)
+        or scenario_entry.get("status") != contract["status"]
+    ):
+        raise AndroidOracleRunnerError("SCENARIO_BINDING_MISSING")
     fixture_kind = str(
         contract.get("fixture_kind", "source_lab_scenario")
     )
@@ -2193,6 +2215,13 @@ def repository_bindings(
         raise AndroidOracleRunnerError("SCENARIO_KIND_DRIFT")
     observed_fixture_sha256 = fixture_digest(fixture_directory)
     observed_case_sha256 = _file_sha(case_path)
+    if fixture_entry.get("sha256") != observed_fixture_sha256:
+        raise AndroidOracleRunnerError("FIXTURE_DIGEST_DRIFT")
+    if (
+        fixture_entry.get("path") != expected_path
+        or scenario_entry.get("path") != expected_path
+    ):
+        raise AndroidOracleRunnerError("SCENARIO_PATH_DRIFT")
     bindings = {
         **identity,
         "scenario_id": scenario_id,
@@ -2200,10 +2229,14 @@ def repository_bindings(
         "runner_digest": runner_digest(),
         "fixture_kind": fixture_kind,
         "fixture_path": expected_path,
-        "fixture_sha256": observed_fixture_sha256,
-        "scenario_sha256": observed_case_sha256,
+        "fixture_sha256": str(fixture_entry["sha256"]),
+        "scenario_sha256": str(scenario_entry["sha256"]),
         "input_sha256": _file_sha(input_path),
         "case_sha256": observed_case_sha256,
+        "fixture_manifest_sha256": _sha256(_canonical(fixture_manifest)),
+        "source_lab_manifest_sha256": _sha256(
+            _canonical(source_lab_manifest)
+        ),
         "canonicalizer_sha256": _sha256(
             _canonical(_read_json(root / CANONICALIZER_PATH))
         ),

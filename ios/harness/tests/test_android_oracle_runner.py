@@ -1612,11 +1612,14 @@ class AndroidOracleRunnerTests(unittest.TestCase):
             "fixture_digest",
             return_value="0" * 64,
         ):
-            observed = runner.repository_bindings(
-                ROOT,
-                "sl-source-session-rate-limit-shared-state-001",
-            )
-        self.assertEqual("0" * 64, observed["fixture_sha256"])
+            with self.assertRaisesRegex(
+                runner.AndroidOracleRunnerError,
+                "FIXTURE_DIGEST_DRIFT",
+            ):
+                runner.repository_bindings(
+                    ROOT,
+                    "sl-source-session-rate-limit-shared-state-001",
+                )
 
     def test_product_tree_drift_fails_before_runner_execution(self):
         baseline = {
