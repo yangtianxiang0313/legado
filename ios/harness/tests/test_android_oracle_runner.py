@@ -1071,21 +1071,28 @@ def jsonpath_regex_raw_artifact():
     }
 
 
-def content_cache_queue_completion_raw_artifact():
-    scenario = "sl-content-cache-queue-completion-runtime-001"
+def content_cache_queue_completion_raw_artifact(
+    scenario="sl-content-cache-queue-completion-runtime-001",
+):
     contract = runner.SCENARIO_CONTRACTS[scenario]
     requests = []
     cases = []
     for index, (case_id, operation) in enumerate(
         contract["expected_cases"]
     ):
-        request = {
-            "method": "GET",
-            "url": f"{runner.LOGICAL_ORIGIN}/cache/{case_id}",
-            "headers": [],
-            "body": None,
-            "timeout_ms": None,
-        }
+        if contract.get("fixture_kind") == "android_runtime_scenario":
+            request = {
+                "operation": operation,
+                "arguments": {"mode": "probe", "case_index": index},
+            }
+        else:
+            request = {
+                "method": "GET",
+                "url": f"{runner.LOGICAL_ORIGIN}/cache/{case_id}",
+                "headers": [],
+                "body": None,
+                "timeout_ms": None,
+            }
         requests.append(request)
         cases.append(
             {
@@ -1102,8 +1109,16 @@ def content_cache_queue_completion_raw_artifact():
     return {
         "schema_version": 1,
         "scenario_id": scenario,
-        "device_origin": "http://127.0.0.1:49152",
-        "logical_origin": runner.LOGICAL_ORIGIN,
+        "device_origin": (
+            "android-runtime://local"
+            if contract.get("fixture_kind") == "android_runtime_scenario"
+            else "http://127.0.0.1:49152"
+        ),
+        "logical_origin": (
+            "android-runtime://local"
+            if contract.get("fixture_kind") == "android_runtime_scenario"
+            else runner.LOGICAL_ORIGIN
+        ),
         "request_plan": requests,
         "cases": cases,
     }
@@ -2600,6 +2615,31 @@ class AndroidOracleRunnerTests(unittest.TestCase):
         scenario = "sl-content-cache-queue-completion-runtime-001"
         artifact = runner.normalize_raw_artifact(
             content_cache_queue_completion_raw_artifact(),
+            bindings(),
+            scenario,
+        )
+        projected = artifact["result"]["value"][
+            "portable_known_projection"
+        ]["cases"]
+        self.assertEqual(
+            [
+                case_id
+                for case_id, _ in
+                runner.SCENARIO_CONTRACTS[scenario]["expected_cases"]
+            ],
+            [case["id"] for case in projected],
+        )
+        self.assertNotIn(
+            "source_lab_observation",
+            artifact["result"]["value"]["android_characterization"],
+        )
+
+    def test_offline_cache_lifecycle_uses_structured_stimulus_without_fake_network_hits(
+        self,
+    ):
+        scenario = "rl-reader-cache-offline-queue-001"
+        artifact = runner.normalize_raw_artifact(
+            content_cache_queue_completion_raw_artifact(scenario),
             bindings(),
             scenario,
         )

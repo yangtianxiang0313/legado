@@ -201,8 +201,7 @@ class LegadoOracleInstrumentedTest {
             isAndroidRuntimeScenario &&
                 scenarioId in setOf(
                     "rl-reader-progress-webdav-conflict-runtime-001",
-                    "rl-reader-progress-webdav-ios-to-android-001",
-                    "rl-reader-cache-offline-queue-001"
+                    "rl-reader-progress-webdav-ios-to-android-001"
                 ) ->
                 requiredArgument("deviceOrigin").trimEnd('/')
             isAndroidRuntimeScenario -> "android-runtime://local"
@@ -242,12 +241,11 @@ class LegadoOracleInstrumentedTest {
         if (
             scenarioId in setOf(
                 "rl-reader-progress-webdav-conflict-runtime-001",
-                "rl-reader-progress-webdav-ios-to-android-001",
-                "rl-reader-cache-offline-queue-001"
+                "rl-reader-progress-webdav-ios-to-android-001"
             )
         ) {
             require(deviceOrigin.startsWith("http://127.0.0.1:")) {
-                "Loopback runtime must use the run-scoped device origin"
+                "WebDAV progress runtime must use the run-scoped loopback origin"
             }
         }
         if (isRealSourceScenario) {
@@ -9900,18 +9898,21 @@ class LegadoOracleInstrumentedTest {
                 "Content cache scenario only accepts " +
                     "content_cache_queue_completion stimuli"
             }
-            val requestValue = value.getJSONObject("request")
-            val request = request(
-                deviceOrigin + requestValue.getString("target")
-            )
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = if (isAndroidRuntimeScenario) {
+                JSONObject()
+                    .put("operation", "content_cache_queue_completion")
+                    .put("arguments", JSONObject(arguments.toString()))
+            } else {
+                val requestValue = value.getJSONObject("request")
+                request(deviceOrigin + requestValue.getString("target"))
+            }
             runCase(
                 value.getString("id"),
                 "content_cache_queue_completion",
-                request
+                stimulus
             ) {
-                contentCacheQueueCompletionProjection(
-                    value.getJSONObject("arguments")
-                )
+                contentCacheQueueCompletionProjection(arguments)
             }
         }
     }

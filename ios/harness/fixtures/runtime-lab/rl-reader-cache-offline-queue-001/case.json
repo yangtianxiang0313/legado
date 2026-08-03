@@ -10,25 +10,9 @@
   "source": null,
   "input": "input.json",
   "transport": {
-    "mode": "fixture_and_loopback",
+    "mode": "none",
     "external_network": "deny",
-    "responses": [
-      {
-        "id": "aggregate-summary-clear-keeps-queue",
-        "match": {"method": "GET", "path": "/cache/aggregate-summary-clear-keeps-queue"},
-        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
-      },
-      {
-        "id": "retry-budget-and-concurrent-exception",
-        "match": {"method": "GET", "path": "/cache/retry-budget-and-concurrent-exception"},
-        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
-      },
-      {
-        "id": "close-discards-registry-and-recreates-model",
-        "match": {"method": "GET", "path": "/cache/close-discards-registry-and-recreates-model"},
-        "respond": {"status": 200, "headers": {"content-type": "text/plain; charset=utf-8"}, "body_file": "responses/ok.txt"}
-      }
-    ]
+    "responses": []
   },
   "coverage": [
     {
@@ -61,7 +45,7 @@
     "locale": "en_US_POSIX",
     "random_seed": 44,
     "network_allowed": false,
-    "logical_origin": "http://sourcelab.test",
+    "logical_origin": null,
     "database_reset_per_case": true
   },
   "limits": {

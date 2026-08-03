@@ -4,26 +4,18 @@
     {
       "id": "aggregate-summary-clear-keeps-queue",
       "operation": "content_cache_queue_completion",
-      "request": {
-        "method": "GET",
-        "target": "/ok.txt"
-      },
       "arguments": {
         "mode": "aggregate_clear",
-        "book_url": "http://books.test/offline-aggregate",
+        "book_url": "book://offline-aggregate",
         "book_name": "Offline Aggregate"
       }
     },
     {
       "id": "retry-budget-and-concurrent-exception",
       "operation": "content_cache_queue_completion",
-      "request": {
-        "method": "GET",
-        "target": "/ok.txt"
-      },
       "arguments": {
         "mode": "retry_budget",
-        "book_url": "http://books.test/offline-retry",
+        "book_url": "book://offline-retry",
         "book_name": "Offline Retry",
         "chapter_url": "/retry/chapter-7",
         "chapter_title": "Chapter Seven",
@@ -35,13 +27,9 @@
     {
       "id": "close-discards-registry-and-recreates-model",
       "operation": "content_cache_queue_completion",
-      "request": {
-        "method": "GET",
-        "target": "/ok.txt"
-      },
       "arguments": {
         "mode": "close_recreate",
-        "book_url": "http://books.test/offline-close",
+        "book_url": "book://offline-close",
         "book_name": "Offline Close",
         "fresh_index": 9
       }
