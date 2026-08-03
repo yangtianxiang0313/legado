@@ -140,6 +140,13 @@
       "selectors": [
         {"id": "P67-S19-RSS-RUNTIME", "claim_ids": [], "task_ids": ["IOS-SOURCE-RUNTIME-RSS-ARTICLE-PIPELINE-001"]}
       ]
+    },
+    {
+      "id": "P67-S20",
+      "title": "RSS 正文与收藏双端闭环",
+      "selectors": [
+        {"id": "P67-S20-RSS-READ-STAR", "claim_ids": [], "task_ids": ["IOS-RSS-ANDROID-CONTENT-STAR-FLOW-001"]}
+      ]
     }
   ],
   "deliveries": [
@@ -628,6 +635,32 @@
         "ios/Packages/LegadoSourceKit/Tests/SourceRuntimeTests/**",
         "ios/Packages/LegadoKit/Sources/AppUseCases/**",
         "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+        "ios/Apps/Legado/App/**",
+        "ios/loop/loop.py"
+      ]
+    },
+    {
+      "target": "IOS-RSS-ANDROID-CONTENT-STAR-FLOW-001",
+      "title": "实现 Android RSS 正文规则与收藏写回闭环",
+      "prerequisite_task_ids": [
+        "IOS-SOURCE-RUNTIME-RSS-ARTICLE-PIPELINE-001"
+      ],
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+      "fixture_id": "rl-source-runtime-rss-content-star-001",
+      "validation": "tests",
+      "test_filter": "RSSContentStarTests",
+      "source_anchors": [
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/model/rss/Rss.kt","symbol_id":"kotlin://io.legado.app.model.rss.Rss/getContentAwait"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/ui/rss/read/ReadRssViewModel.kt","symbol_id":"kotlin://io.legado.app.ui.rss.read.ReadRssViewModel"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/data/entities/RssStar.kt","symbol_id":"kotlin://io.legado.app.data.entities.RssStar"}
+      ],
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoSourceKit/Sources/SourceRuntime/**",
+        "ios/Packages/LegadoSourceKit/Tests/SourceRuntimeTests/**",
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+        "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+        "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
         "ios/Apps/Legado/App/**",
         "ios/loop/loop.py"
       ]

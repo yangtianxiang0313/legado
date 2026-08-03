@@ -1031,6 +1031,29 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/Apps/Legado/App/**",
             ],
         }
+    if target == "IOS-RSS-ANDROID-CONTENT-STAR-FLOW-001":
+        return {
+            "owner": "SourceRuntime",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-002",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-011",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/Packages/LegadoSourceKit/Sources/SourceRuntime/**",
+                "ios/Packages/LegadoSourceKit/Tests/SourceRuntimeTests/**",
+                "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+                "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+                "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+                "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+                "ios/Apps/Legado/App/**",
+            ],
+        }
     if target == "IOS-DEPENDENCY-SWIFTSOUP-HTML-001":
         return {
             "owner": "DependencyControl",
@@ -3482,6 +3505,20 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_id": "rss-runtime-tests",
             "test_filter": "RSSRuntimeTests",
             "acceptance_id": "rss-runtime-acceptance",
+        }
+    if target == "IOS-RSS-ANDROID-CONTENT-STAR-FLOW-001":
+        delivery_contracts["SourceRuntime"] = {
+            "goal": (
+                "按冻结 Android Rss.getContentAwait 与 ReadRssViewModel 语义，"
+                "实现 ruleContent 正文获取、阅读入口和 RssStar 收藏写回闭环。"
+            ),
+            "rule": (
+                "正文请求与规则解析留在 SourceRuntime；AppUseCases 管理阅读和收藏用例；"
+                "DatabaseGRDB 只实现仓储，SwiftUI 只展示并触发用例。"
+            ),
+            "test_id": "rss-content-star-tests",
+            "test_filter": "RSSContentStarTests",
+            "acceptance_id": "rss-content-star-acceptance",
         }
     if (
         architecture["owner"] == "AppNavigation"
