@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P75-ANDROID-BACKUP-PREFLIGHT-001",
+  "status": "pending",
+  "mode": "critical_path_only",
+  "priority": 1,
+  "title": "P75 Android 备份全域预检",
+  "objective": "依据冻结 Android Backup/Restore 的真实成员集合，在 iOS 写入任何数据前结构化列出每个归档成员的 supported、deferred、unsafe 或 malformed 状态，禁止未知或损坏成员被静默跳过。",
+  "validation_policy": "只运行 AndroidBackupInterop 与 BackupInteropUseCases 聚焦测试；不启动模拟器、不访问网络。",
+  "stages": [
+    {
+      "id": "P75-S1",
+      "title": "备份成员清单与写入前失败闭环",
+      "selectors": [
+        {
+          "id": "P75-S1-PREFLIGHT",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-INTEGRATION-ANDROID-BACKUP-PREFLIGHT-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-INTEGRATION-ANDROID-BACKUP-PREFLIGHT-001",
+      "title": "Android backup.zip 全域结构化预检与原子恢复保护",
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-02",
+      "fixture_id": "rl-integration-android-backup-preflight-001",
+      "package_path": "ios/Packages/LegadoKit",
+      "validation": "tests",
+      "test_filter": "AndroidBackupPreflightTests",
+      "prerequisite_task_ids": [
+        "IOS-APP-ANDROID-WEBDAV-SERVER-PROFILE-PERSISTENCE-001"
+      ],
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/ArchiveZIPFoundation/**",
+        "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
+        "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+        "ios/Packages/LegadoKit/Tests/AndroidBackupInteropTests/**",
+        "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**",
+        "ios/loop/loop.py"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/help/storage/Backup.kt",
+          "symbol_id": "kotlin://io.legado.app.help.storage.Backup/backup"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/help/storage/Restore.kt",
+          "symbol_id": "kotlin://io.legado.app.help.storage.Restore/restore"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/help/DirectLinkUpload.kt",
+          "symbol_id": "kotlin://io.legado.app.help.DirectLinkUpload/ruleFileName"
+        }
+      ]
+    }
+  ]
+}

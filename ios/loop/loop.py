@@ -689,6 +689,27 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/Packages/LegadoKit/Tests/AndroidBackupInteropTests/**",
             ],
         }
+    if target == "IOS-INTEGRATION-ANDROID-BACKUP-PREFLIGHT-001":
+        return {
+            "owner": "IntegrationKit",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-002",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-011",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/Packages/LegadoKit/Sources/ArchiveZIPFoundation/**",
+                "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
+                "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+                "ios/Packages/LegadoKit/Tests/AndroidBackupInteropTests/**",
+                "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**",
+            ],
+        }
     if target == "IOS-INTEGRATION-ANDROID-WEBDAV-CONFIG-XML-001":
         return {
             "owner": "IntegrationKit",
@@ -4107,6 +4128,20 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_id": "android-backup-booksource-codec-tests",
             "test_filter": "AndroidBackupInteropTests|SourceFormatTests",
             "acceptance_id": "android-backup-booksource-codec-acceptance",
+        }
+    if target == "IOS-INTEGRATION-ANDROID-BACKUP-PREFLIGHT-001":
+        delivery_contracts["IntegrationKit"] = {
+            "goal": (
+                "依据冻结 Android Backup/Restore 的成员集合，在任何恢复写入前"
+                "输出逐成员 supported、deferred、unsafe 或 malformed 结论。"
+            ),
+            "rule": (
+                "AndroidBackupInterop 负责归档成员识别与结构化预检；"
+                "BackupInteropUseCases 必须先预检再写入，未知或损坏成员不得静默跳过。"
+            ),
+            "test_id": "android-backup-preflight-tests",
+            "test_filter": "AndroidBackupPreflightTests",
+            "acceptance_id": "android-backup-preflight-acceptance",
         }
     if target == "IOS-INTEGRATION-IOS-BACKUP-ANDROID-RESTORE-ORACLE-001":
         delivery_contracts["IntegrationKit"] = {
