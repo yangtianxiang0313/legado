@@ -29,8 +29,8 @@ struct LegadoApp: App {
     @State private var ruleSubscriptions: RuleSubscriptionStore
     @State private var rssStore: RSSStore
     @State private var webDAVSettings: WebDAVConnectionSettingsStore
-    @State private var webDAVBackupDiscoveryCheckpoint:
-        WebDAVBackupDiscoveryCheckpointStore
+    @State private var webDAVBackupCheckpoint:
+        WebDAVBackupCheckpointStore
     private let webDAVCredentials: KeychainWebDAVCredentialStore
     private let webDAVClient: any WebDAVConnectionInitializing
     private let webDAVProgressLoader: any WebDAVBookProgressLoading
@@ -105,18 +105,18 @@ struct LegadoApp: App {
             repository: webDAVSettingsRepository
         )
         _webDAVSettings = State(initialValue: webDAVSettingsStore)
-        let backupDiscoveryCheckpoint =
-            WebDAVBackupDiscoveryCheckpointStore(
+        let backupCheckpoint =
+            WebDAVBackupCheckpointStore(
                 repository:
-                    UserDefaultsWebDAVBackupDiscoveryCheckpointRepository()
+                    UserDefaultsWebDAVBackupCheckpointRepository()
             )
-        if processArguments.contains(
-            "--reset-webdav-backup-discovery"
-        ) {
-            backupDiscoveryCheckpoint.reset()
+        if processArguments.contains("--reset-webdav-backup-discovery")
+            || processArguments.contains("--reset-webdav-backup-checkpoint")
+        {
+            backupCheckpoint.reset()
         }
-        _webDAVBackupDiscoveryCheckpoint = State(
-            initialValue: backupDiscoveryCheckpoint
+        _webDAVBackupCheckpoint = State(
+            initialValue: backupCheckpoint
         )
         if processArguments.contains("--reset-root-visibility") {
             rootVisibilityRepository.save(RootVisibilityPreferences())
@@ -285,8 +285,7 @@ struct LegadoApp: App {
                     ruleSubscriptions: ruleSubscriptions,
                     rssStore: rssStore,
                     webDAVSettings: webDAVSettings,
-                    webDAVBackupDiscoveryCheckpoint:
-                        webDAVBackupDiscoveryCheckpoint,
+                    webDAVBackupCheckpoint: webDAVBackupCheckpoint,
                     webDAVCredentials: webDAVCredentials,
                     webDAVClient: webDAVClient,
                     webDAVProgressLoader: webDAVProgressLoader,
@@ -315,8 +314,7 @@ struct LegadoApp: App {
                     ruleSubscriptions: ruleSubscriptions,
                     rssStore: rssStore,
                     webDAVSettings: webDAVSettings,
-                    webDAVBackupDiscoveryCheckpoint:
-                        webDAVBackupDiscoveryCheckpoint,
+                    webDAVBackupCheckpoint: webDAVBackupCheckpoint,
                     webDAVCredentials: webDAVCredentials,
                     webDAVClient: webDAVClient,
                     webDAVProgressLoader: webDAVProgressLoader,
@@ -581,19 +579,19 @@ private final class UserDefaultsWebDAVConnectionSettingsRepository:
 }
 
 @MainActor
-private final class UserDefaultsWebDAVBackupDiscoveryCheckpointRepository:
-    WebDAVBackupDiscoveryCheckpointRepository
+private final class UserDefaultsWebDAVBackupCheckpointRepository:
+    WebDAVBackupCheckpointRepository
 {
     private let defaults: UserDefaults
     private let key = "webdav.backup.lastHandledMilliseconds.v1"
 
     init(defaults: UserDefaults = .standard) { self.defaults = defaults }
 
-    func loadLastHandledMilliseconds() -> Int64 {
+    func loadLastBackupMilliseconds() -> Int64 {
         (defaults.object(forKey: key) as? NSNumber)?.int64Value ?? 0
     }
 
-    func saveLastHandledMilliseconds(_ value: Int64) {
+    func saveLastBackupMilliseconds(_ value: Int64) {
         defaults.set(value, forKey: key)
     }
 }

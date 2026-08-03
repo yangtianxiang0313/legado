@@ -69,8 +69,7 @@ struct RootShellView: View {
     @Bindable var ruleSubscriptions: RuleSubscriptionStore
     @Bindable var rssStore: RSSStore
     @Bindable var webDAVSettings: WebDAVConnectionSettingsStore
-    @Bindable var webDAVBackupDiscoveryCheckpoint:
-        WebDAVBackupDiscoveryCheckpointStore
+    @Bindable var webDAVBackupCheckpoint: WebDAVBackupCheckpointStore
     let webDAVCredentials: KeychainWebDAVCredentialStore
     let webDAVClient: any WebDAVConnectionInitializing
     let webDAVProgressLoader: any WebDAVBookProgressLoading
@@ -81,8 +80,10 @@ struct RootShellView: View {
     let webDAVServerProfiles: any WebDAVServerProfileRepository
     let webDAVRemoteBooks: any WebDAVRemoteBookTransferring
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.scenePhase) private var scenePhase
     @State private var didLoadLibrary = false
     @State private var webDAVBackupNotice: WebDAVBackupNotice?
+    @State private var isAutomaticBackupRunning = false
 
     var body: some View {
         Group {
@@ -234,6 +235,14 @@ struct RootShellView: View {
         .onChange(of: rootVisibility.value) { _, _ in
             router.reconcileVisibleRoots(visibleRoots)
         }
+        .onChange(of: scenePhase) { _, phase in
+            // Android invokes autoBack from Activity.onPause/onDestroy. The
+            // inactive transition is the closest iOS lifecycle boundary that
+            // still gives the asynchronous upload time to finish.
+            if phase == .inactive {
+                performAutomaticWebDAVBackupIfNeeded()
+            }
+        }
     }
 
     private func discoverLatestWebDAVBackup() async {
@@ -247,13 +256,13 @@ struct RootShellView: View {
             WebDAVLatestBackupDiscovery.decide(
                 files: files,
                 lastHandledMilliseconds:
-                    webDAVBackupDiscoveryCheckpoint.lastHandledMilliseconds
+                    webDAVBackupCheckpoint.lastBackupMilliseconds
             )
         else { return }
 
         // Android advances LocalConfig.lastBackup before showing the dialog,
         // so cancelling does not repeatedly prompt for the same remote file.
-        webDAVBackupDiscoveryCheckpoint.markHandled(checkpoint)
+        webDAVBackupCheckpoint.markBackup(checkpoint)
         webDAVBackupNotice = .offer(file)
     }
 
@@ -270,6 +279,9 @@ struct RootShellView: View {
                 fileName: file.name
             ) {
             case .restored(let summary):
+                webDAVBackupCheckpoint.markBackup(
+                    Int64(Date().timeIntervalSince1970 * 1_000)
+                )
                 if let projection = summary.readerConfigProjection {
                     readerPreferences.apply(projection)
                 }
@@ -289,6 +301,34 @@ struct RootShellView: View {
                 )
             case .failed:
                 webDAVBackupNotice = .failure("无法恢复 \(file.name)")
+            }
+        }
+    }
+
+    private func performAutomaticWebDAVBackupIfNeeded() {
+        guard !isAutomaticBackupRunning else { return }
+        guard
+            let configuration = webDAVSettings.value.connectionConfiguration
+        else { return }
+        isAutomaticBackupRunning = true
+        Task {
+            defer { isAutomaticBackupRunning = false }
+            let result = await webDAVBackupSync.automaticBackup(
+                configuration: configuration,
+                now: Date(),
+                lastBackupMilliseconds:
+                    webDAVBackupCheckpoint.lastBackupMilliseconds,
+                deviceName: webDAVSettings.value.webDAVDeviceName,
+                bookSources: sourceCatalog.sources,
+                replacementRules: replacementRules.rules,
+                readerPreferences: readerPreferences.value
+            )
+            switch result {
+            case .remoteAlreadyExists(_, let checkpoint),
+                 .uploaded(_, let checkpoint, _):
+                webDAVBackupCheckpoint.markBackup(checkpoint)
+            case .notDue, .failed:
+                break
             }
         }
     }
@@ -380,6 +420,7 @@ struct RootShellView: View {
                 ),
                 backupSources: sourceCatalog.sources,
                 backupReplacementRules: replacementRules.rules,
+                webDAVBackupCheckpoint: webDAVBackupCheckpoint,
                 openSearch: {
                     router.push(.searchBooks, on: .shelf)
                 },
@@ -1036,6 +1077,7 @@ private struct RootContentView: View {
     let persistedSources: [BookSourceDraft]
     let backupSources: [BookSourceDraft]
     let backupReplacementRules: [ReaderReplacementRule]
+    @Bindable var webDAVBackupCheckpoint: WebDAVBackupCheckpointStore
     let openSearch: () -> Void
     let openSources: () -> Void
     let openExploreSource: (ExploreSourceSummary) -> Void
@@ -1265,6 +1307,35 @@ private struct RootContentView: View {
                     )
                     .accessibilityIdentifier(
                         "toggle.settings.webdav.syncBookProgress"
+                    )
+                    TextField("备份设备名称", text: Binding(
+                        get: { webDAVSettings.value.webDAVDeviceName },
+                        set: {
+                            webDAVSettings.updateBackupPreferences(
+                                deviceName: $0,
+                                onlyLatestBackup:
+                                    webDAVSettings.value.onlyLatestBackup
+                            )
+                        }
+                    ))
+                    .accessibilityIdentifier(
+                        "field.settings.webdav.deviceName"
+                    )
+                    Toggle(
+                        "Android 本地仅保留最新备份",
+                        isOn: Binding(
+                            get: { webDAVSettings.value.onlyLatestBackup },
+                            set: {
+                                webDAVSettings.updateBackupPreferences(
+                                    deviceName:
+                                        webDAVSettings.value.webDAVDeviceName,
+                                    onlyLatestBackup: $0
+                                )
+                            }
+                        )
+                    )
+                    .accessibilityIdentifier(
+                        "toggle.settings.webdav.onlyLatestBackup"
                     )
                     Button("测试连接") { testWebDAVConnection() }
                         .accessibilityIdentifier("action.settings.webdav.test")
@@ -1531,7 +1602,11 @@ private struct RootContentView: View {
                         password: credentials.password,
                         directoryName: webDAVSettings.value.directoryName,
                         backupPassword: androidBackupPassword,
-                        syncBookProgress: webDAVSettings.value.syncBookProgress
+                        syncBookProgress: webDAVSettings.value.syncBookProgress,
+                        webDAVDeviceName:
+                            webDAVSettings.value.webDAVDeviceName,
+                        onlyLatestBackup:
+                            webDAVSettings.value.onlyLatestBackup
                     )
                 }
                 let summary = try await libraryBackup.export(
@@ -1628,7 +1703,7 @@ private struct RootContentView: View {
         Task {
             let fileName = WebDAVBackupSyncUseCase.androidFileName(
                 date: Date(),
-                deviceName: "iOS"
+                deviceName: webDAVSettings.value.webDAVDeviceName
             )
             let result = await webDAVBackupSync.upload(
                 configuration: configuration,
@@ -1639,6 +1714,9 @@ private struct RootContentView: View {
             )
             switch result {
             case .uploaded(_, let summary):
+                webDAVBackupCheckpoint.markBackup(
+                    Int64(Date().timeIntervalSince1970 * 1_000)
+                )
                 webDAVBackupStatus =
                     "已上传 \(summary.bookCount) 本书、"
                     + "\(summary.bookSourceCount) 个书源"
@@ -1684,6 +1762,9 @@ private struct RootContentView: View {
                 fileName: file.name
             ) {
             case .restored(let summary):
+                webDAVBackupCheckpoint.markBackup(
+                    Int64(Date().timeIntervalSince1970 * 1_000)
+                )
                 if let projection = summary.readerConfigProjection {
                     readerPreferences.apply(projection)
                 }
@@ -2436,8 +2517,7 @@ struct StartupAcceptanceView: View {
     @Bindable var ruleSubscriptions: RuleSubscriptionStore
     @Bindable var rssStore: RSSStore
     @Bindable var webDAVSettings: WebDAVConnectionSettingsStore
-    @Bindable var webDAVBackupDiscoveryCheckpoint:
-        WebDAVBackupDiscoveryCheckpointStore
+    @Bindable var webDAVBackupCheckpoint: WebDAVBackupCheckpointStore
     let webDAVCredentials: KeychainWebDAVCredentialStore
     let webDAVClient: any WebDAVConnectionInitializing
     let webDAVProgressLoader: any WebDAVBookProgressLoading
@@ -2498,8 +2578,7 @@ struct StartupAcceptanceView: View {
                 ruleSubscriptions: ruleSubscriptions,
                 rssStore: rssStore,
                 webDAVSettings: webDAVSettings,
-                webDAVBackupDiscoveryCheckpoint:
-                    webDAVBackupDiscoveryCheckpoint,
+                webDAVBackupCheckpoint: webDAVBackupCheckpoint,
                 webDAVCredentials: webDAVCredentials,
                 webDAVClient: webDAVClient,
                 webDAVProgressLoader: webDAVProgressLoader,
