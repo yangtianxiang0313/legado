@@ -192,7 +192,8 @@ final class LegadoAppUITests: XCTestCase {
         importButton.tap()
         let status = element("state.settings.androidBackup.import")
         XCTAssertTrue(status.waitForExistence(timeout: 8))
-        XCTAssertEqual("已导入 1 本书、1 个分组、1 条书签", status.label)
+        let importResult = status.label
+        XCTAssertEqual("已导入 1 本书、1 个分组、1 条书签", importResult)
 
         selectRoot("root.shelf", label: "书架")
         XCTAssertTrue(app.staticTexts["iOS Oracle Book"].waitForExistence(timeout: 8))
@@ -202,7 +203,7 @@ final class LegadoAppUITests: XCTestCase {
             "projection": contract.projection,
             "screen": "screen.root.settings",
             "action": "action.settings.androidBackup.import",
-            "result": status.label,
+            "result": importResult,
             "restored_book": "iOS Oracle Book",
         ])
     }
