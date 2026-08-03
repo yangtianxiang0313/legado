@@ -9,6 +9,7 @@ public struct AndroidBackupContents: Equatable, Sendable {
     public var bookGroups: [AndroidBookGroupDTO]
     public var bookmarks: [AndroidBookmarkDTO]
     public var readRecords: [AndroidReadRecordDTO]
+    public var searchHistory: [AndroidSearchHistoryDTO]
 
     public init(
         bookSources: [BookSourceDTO] = [],
@@ -16,7 +17,8 @@ public struct AndroidBackupContents: Equatable, Sendable {
         books: [AndroidBookDTO] = [],
         bookGroups: [AndroidBookGroupDTO] = [],
         bookmarks: [AndroidBookmarkDTO] = [],
-        readRecords: [AndroidReadRecordDTO] = []
+        readRecords: [AndroidReadRecordDTO] = [],
+        searchHistory: [AndroidSearchHistoryDTO] = []
     ) {
         self.bookSources = bookSources
         self.replacementRules = replacementRules
@@ -24,6 +26,7 @@ public struct AndroidBackupContents: Equatable, Sendable {
         self.bookGroups = bookGroups
         self.bookmarks = bookmarks
         self.readRecords = readRecords
+        self.searchHistory = searchHistory
     }
 }
 
@@ -35,6 +38,7 @@ public enum AndroidBackupArchive {
     public static let bookGroupsMember = "bookGroup.json"
     public static let bookmarksMember = "bookmark.json"
     public static let readRecordsMember = "readRecord.json"
+    public static let searchHistoryMember = "searchHistory.json"
 
     public static func write(
         _ contents: AndroidBackupContents,
@@ -85,6 +89,14 @@ public enum AndroidBackupArchive {
                 .init(
                     path: readRecordsMember,
                     data: try AndroidReadRecordCodec.encodeMany(contents.readRecords)
+                )
+            )
+        }
+        if !contents.searchHistory.isEmpty {
+            members.append(
+                .init(
+                    path: searchHistoryMember,
+                    data: try AndroidSearchHistoryCodec.encodeMany(contents.searchHistory)
                 )
             )
         }
@@ -176,5 +188,15 @@ public enum AndroidBackupArchive {
             readRecordsMember, from: archiveURL, maximumBytes: maximumMemberBytes
         ) else { return [] }
         return try AndroidReadRecordCodec.decodeMany(data)
+    }
+
+    public static func readSearchHistory(
+        from archiveURL: URL,
+        maximumMemberBytes: UInt64 = 32 * 1_024 * 1_024
+    ) throws -> [AndroidSearchHistoryDTO] {
+        guard let data = try ArchiveZIPFoundation.read(
+            searchHistoryMember, from: archiveURL, maximumBytes: maximumMemberBytes
+        ) else { return [] }
+        return try AndroidSearchHistoryCodec.decodeMany(data)
     }
 }

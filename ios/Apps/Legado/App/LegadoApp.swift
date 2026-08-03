@@ -237,6 +237,12 @@ private struct AppAndroidCoreBackupRestoreRepository:
     ) async throws {
         try await repository.restoreAndroidReadRecords(records)
     }
+
+    func restoreAndroidSearchHistory(
+        _ entries: [SearchHistoryEntry]
+    ) async throws {
+        try await repository.restoreAndroidSearchHistory(entries)
+    }
 }
 
 private struct AppAndroidLibraryBackupRepository:
@@ -252,6 +258,10 @@ private struct AppAndroidLibraryBackupRepository:
 
     func androidReadRecords() async throws -> [LibraryDomain.ReadRecord] {
         try await repository.androidReadRecords()
+    }
+
+    func androidSearchHistory() async throws -> [SearchHistoryEntry] {
+        try await repository.androidSearchHistory()
     }
 }
 

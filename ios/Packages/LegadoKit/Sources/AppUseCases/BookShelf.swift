@@ -273,6 +273,8 @@ public protocol BookShelfRepository:
   ) async throws -> [ReadingBookmark]
   func saveBookmark(_ bookmark: ReadingBookmark) async throws
   func deleteBookmark(id: String) async throws
+  func searchHistory() async throws -> [SearchHistoryEntry]
+  func upsertSearchHistory(_ entry: SearchHistoryEntry) async throws
   func reset() async throws
 }
 
@@ -282,6 +284,10 @@ public extension BookShelfRepository {
   }
 
   func upsert(_ record: ReadRecord) async throws {}
+
+  func searchHistory() async throws -> [SearchHistoryEntry] { [] }
+
+  func upsertSearchHistory(_ entry: SearchHistoryEntry) async throws {}
 
   func shelfGroups() async throws -> [ShelfGroupItem] {
     []
@@ -455,6 +461,7 @@ public final class ShelfLibrary {
   public internal(set) var offlineCacheState: OfflineCacheState = .idle
   public internal(set) var offlineCacheProgress = 0
   public internal(set) var lastOfflineCacheReport: OfflineCacheReport?
+  public private(set) var searchHistory: [SearchHistoryEntry] = []
 
   let repository: any BookShelfRepository
   private var allBooks: [ShelfBookItem] = []
@@ -506,6 +513,27 @@ public final class ShelfLibrary {
 
   private static var nowMilliseconds: Int64 {
     Int64(Date().timeIntervalSince1970 * 1_000)
+  }
+
+  public func reloadSearchHistory() async {
+    searchHistory = (try? await repository.searchHistory()) ?? []
+  }
+
+  public func recordSearchKeyword(
+    _ keyword: String,
+    atMilliseconds nowMilliseconds: Int64? = nil
+  ) async {
+    let word = keyword.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !word.isEmpty else { return }
+    let existing = (try? await repository.searchHistory())?
+      .first { $0.word == word }
+    let entry = SearchHistoryEntry(
+      word: word,
+      usage: (existing?.usage ?? 0) + 1,
+      lastUseTime: nowMilliseconds ?? Self.nowMilliseconds
+    )
+    try? await repository.upsertSearchHistory(entry)
+    await reloadSearchHistory()
   }
 
   public func reload() async {

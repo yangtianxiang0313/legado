@@ -196,7 +196,8 @@ struct RootShellView: View {
         switch route {
         case .searchBooks:
             SearchBooksView(
-                persistedSources: sourceCatalog.sources
+                persistedSources: sourceCatalog.sources,
+                library: library
             ) { result in
                 router.push(
                     .bookDetail(SearchBookRoute(result: result)),
@@ -881,6 +882,10 @@ private struct RootContentView: View {
                     androidBackupImportStatus +=
                         "、\(summary.readRecordCount) 条阅读记录"
                 }
+                if summary.searchHistoryCount > 0 {
+                    androidBackupImportStatus +=
+                        "、\(summary.searchHistoryCount) 条搜索历史"
+                }
             } catch {
                 androidBackupImportStatus = "Android 备份导入失败"
             }
@@ -917,7 +922,8 @@ private struct RootContentView: View {
                     + "\(summary.bookmarkCount) 条书签、"
                     + "\(summary.bookSourceCount) 个书源、"
                     + "\(summary.replacementRuleCount) 条替换规则、"
-                    + "\(summary.readRecordCount) 条阅读记录"
+                    + "\(summary.readRecordCount) 条阅读记录、"
+                    + "\(summary.searchHistoryCount) 条搜索历史"
                 showsAndroidBackupExporter = true
             } catch {
                 androidBackupExportStatus = "Android 备份生成失败"
@@ -1143,13 +1149,16 @@ private struct ExploreSourceView: View {
 
 private struct SearchBooksView: View {
     let openBookDetail: (SearchResult) -> Void
+    @Bindable var library: ShelfLibrary
     @State private var session: SearchSession
 
     init(
         persistedSources: [BookSourceDraft],
+        library: ShelfLibrary,
         openBookDetail: @escaping (SearchResult) -> Void
     ) {
         self.openBookDetail = openBookDetail
+        self.library = library
         _session = State(
             initialValue: SearchEnvironment.makeSession(
                 persistedSources: persistedSources
@@ -1159,6 +1168,16 @@ private struct SearchBooksView: View {
 
     var body: some View {
         List {
+            if session.query.isEmpty, !library.searchHistory.isEmpty {
+                Section("搜索历史") {
+                    ForEach(library.searchHistory, id: \.word) { entry in
+                        Button(entry.word) {
+                            session.query = entry.word
+                            submitSearch()
+                        }
+                    }
+                }
+            }
             if session.results.isEmpty {
                 ContentUnavailableView {
                     Label(
@@ -1213,7 +1232,10 @@ private struct SearchBooksView: View {
             prompt: "书名或作者"
         )
         .onSubmit(of: .search) {
-            session.search()
+            submitSearch()
+        }
+        .task {
+            await library.reloadSearchHistory()
         }
         .overlay {
             if session.loadingState.showsProgress {
@@ -1226,7 +1248,7 @@ private struct SearchBooksView: View {
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
                 Button {
-                    session.search()
+                    submitSearch()
                 } label: {
                     Image(systemName: "magnifyingglass")
                 }
@@ -1243,6 +1265,14 @@ private struct SearchBooksView: View {
                 }
                 scopeMenu
             }
+        }
+    }
+
+    private func submitSearch() {
+        let keyword = session.query
+        Task {
+            await library.recordSearchKeyword(keyword)
+            session.search()
         }
     }
 

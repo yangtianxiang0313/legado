@@ -249,6 +249,18 @@ public protocol SearchBooksExecuting: Sendable {
   ) async throws -> [SearchResult]
 }
 
+public struct SearchHistoryEntry: Equatable, Sendable {
+  public let word: String
+  public let usage: Int
+  public let lastUseTime: Int64
+
+  public init(word: String, usage: Int = 1, lastUseTime: Int64) {
+    self.word = word
+    self.usage = usage
+    self.lastUseTime = lastUseTime
+  }
+}
+
 public struct SourceSearchBooksExecutor: SearchBooksExecuting, Sendable {
   private let sources: [SearchSourceDescriptor]
   private let transport: any HTTPTransport

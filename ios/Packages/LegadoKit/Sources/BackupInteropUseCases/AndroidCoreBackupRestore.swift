@@ -10,6 +10,7 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
   public let bookSourceCount: Int
   public let replacementRuleCount: Int
   public let readRecordCount: Int
+  public let searchHistoryCount: Int
 
   public init(
     bookCount: Int,
@@ -17,7 +18,8 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
     bookmarkCount: Int,
     bookSourceCount: Int,
     replacementRuleCount: Int,
-    readRecordCount: Int = 0
+    readRecordCount: Int = 0,
+    searchHistoryCount: Int = 0
   ) {
     self.bookCount = bookCount
     self.groupCount = groupCount
@@ -25,6 +27,7 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
     self.bookSourceCount = bookSourceCount
     self.replacementRuleCount = replacementRuleCount
     self.readRecordCount = readRecordCount
+    self.searchHistoryCount = searchHistoryCount
   }
 }
 
@@ -37,6 +40,13 @@ public protocol AndroidCoreBackupRestoreRepository: Sendable {
     _ rules: [ReaderReplacementRule]
   ) async throws
   func restoreAndroidReadRecords(_ records: [LibraryDomain.ReadRecord]) async throws
+  func restoreAndroidSearchHistory(_ entries: [SearchHistoryEntry]) async throws
+}
+
+public extension AndroidCoreBackupRestoreRepository {
+  func restoreAndroidSearchHistory(
+    _ entries: [SearchHistoryEntry]
+  ) async throws {}
 }
 
 public struct AndroidCoreBackupRestoreUseCase: Sendable {
@@ -62,6 +72,9 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     let readRecords = AndroidReadRecordInteropAdapter.restoreValues(
       try AndroidBackupArchive.readReadRecords(from: archiveURL)
     )
+    let searchHistory = AndroidSearchHistoryInteropAdapter.restoreValues(
+      try AndroidBackupArchive.readSearchHistory(from: archiveURL)
+    )
 
     let library = try await repository.restoreAndroidLibrary(libraryPlan)
     if !bookSources.isEmpty {
@@ -73,13 +86,17 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     if !readRecords.isEmpty {
       try await repository.restoreAndroidReadRecords(readRecords)
     }
+    if !searchHistory.isEmpty {
+      try await repository.restoreAndroidSearchHistory(searchHistory)
+    }
     return AndroidCoreBackupRestoreSummary(
       bookCount: library.bookCount,
       groupCount: library.groupCount,
       bookmarkCount: library.bookmarkCount,
       bookSourceCount: bookSources.count,
       replacementRuleCount: replacementRules.count,
-      readRecordCount: readRecords.count
+      readRecordCount: readRecords.count,
+      searchHistoryCount: searchHistory.count
     )
   }
 

@@ -947,6 +947,37 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
     }
   }
 
+  public func searchHistory() async throws -> [SearchHistoryEntry] {
+    try await database.read { db in
+      try SearchHistoryRecord
+        .order(Column("lastUseTime").desc)
+        .fetchAll(db)
+        .map(\.value)
+    }
+  }
+
+  public func upsertSearchHistory(_ entry: SearchHistoryEntry) async throws {
+    try await database.write { db in
+      var record = SearchHistoryRecord(value: entry)
+      try record.save(db)
+    }
+  }
+
+  public func androidSearchHistory() async throws -> [SearchHistoryEntry] {
+    try await searchHistory()
+  }
+
+  public func restoreAndroidSearchHistory(
+    _ entries: [SearchHistoryEntry]
+  ) async throws {
+    try await database.write { db in
+      for entry in entries {
+        var record = SearchHistoryRecord(value: entry)
+        try record.save(db)
+      }
+    }
+  }
+
   public func restoreAndroidReadRecords(
     _ records: [LibraryDomain.ReadRecord]
   ) async throws {
@@ -960,6 +991,7 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
 
   public func reset() async throws {
     try await database.write { db in
+      _ = try SearchHistoryRecord.deleteAll(db)
       _ = try ReadRecordRecord.deleteAll(db)
       _ = try AndroidLibraryBookmarkRecord.deleteAll(db)
       _ = try AndroidLibraryGroupRecord.deleteAll(db)
@@ -1200,6 +1232,13 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
         table.column("readTime", .integer).notNull()
         table.column("lastRead", .integer).notNull().indexed()
         table.primaryKey(["deviceID", "bookName"])
+      }
+    }
+    migrator.registerMigration("addSearchHistoryInterop") { db in
+      try db.create(table: "searchHistory") { table in
+        table.column("word", .text).notNull().primaryKey()
+        table.column("usage", .integer).notNull()
+        table.column("lastUseTime", .integer).notNull().indexed()
       }
     }
     return migrator
@@ -1515,6 +1554,26 @@ private struct ReadRecordRecord:
       readTime: readTime,
       lastRead: lastRead
     )
+  }
+}
+
+private struct SearchHistoryRecord:
+  Codable, FetchableRecord, MutablePersistableRecord
+{
+  static let databaseTableName = "searchHistory"
+
+  var word: String
+  var usage: Int
+  var lastUseTime: Int64
+
+  init(value: SearchHistoryEntry) {
+    word = value.word
+    usage = value.usage
+    lastUseTime = value.lastUseTime
+  }
+
+  var value: SearchHistoryEntry {
+    SearchHistoryEntry(word: word, usage: usage, lastUseTime: lastUseTime)
   }
 }
 
