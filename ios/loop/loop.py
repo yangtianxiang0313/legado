@@ -1010,6 +1010,27 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/Apps/Legado/App/**",
             ],
         }
+    if target == "IOS-SOURCE-RUNTIME-RSS-ARTICLE-PIPELINE-001":
+        return {
+            "owner": "SourceRuntime",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-002",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-011",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/Packages/LegadoSourceKit/Sources/SourceRuntime/**",
+                "ios/Packages/LegadoSourceKit/Tests/SourceRuntimeTests/**",
+                "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+                "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+                "ios/Apps/Legado/App/**",
+            ],
+        }
     if target == "IOS-DEPENDENCY-SWIFTSOUP-HTML-001":
         return {
             "owner": "DependencyControl",
@@ -3447,6 +3468,20 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_id": "rss-interop-tests",
             "test_filter": "RSSInteropTests",
             "acceptance_id": "rss-interop-acceptance",
+        }
+    if target == "IOS-SOURCE-RUNTIME-RSS-ARTICLE-PIPELINE-001":
+        delivery_contracts["SourceRuntime"] = {
+            "goal": (
+                "复用既有请求、Cookie、重定向、DOM/JSONPath/Regex 规则能力，"
+                "实现 Android RSS 文章首屏、下一页和字段解析主链。"
+            ),
+            "rule": (
+                "RSS pipeline 位于 SourceRuntime，不依赖 AppUseCases 或 SwiftUI；"
+                "AppUseCases 只组合 RSSSource 到运行时定义并管理会话状态。"
+            ),
+            "test_id": "rss-runtime-tests",
+            "test_filter": "RSSRuntimeTests",
+            "acceptance_id": "rss-runtime-acceptance",
         }
     if (
         architecture["owner"] == "AppNavigation"

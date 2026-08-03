@@ -133,6 +133,13 @@
       "selectors": [
         {"id": "P67-S18-RSS-DATA", "claim_ids": [], "task_ids": ["IOS-RSS-ANDROID-SOURCE-STAR-INTEROP-001"]}
       ]
+    },
+    {
+      "id": "P67-S19",
+      "title": "RSS 文章请求与规则解析主链",
+      "selectors": [
+        {"id": "P67-S19-RSS-RUNTIME", "claim_ids": [], "task_ids": ["IOS-SOURCE-RUNTIME-RSS-ARTICLE-PIPELINE-001"]}
+      ]
     }
   ],
   "deliveries": [
@@ -597,6 +604,30 @@
         "ios/Packages/LegadoKit/Sources/AppUseCases/**",
         "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
         "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+        "ios/Apps/Legado/App/**",
+        "ios/loop/loop.py"
+      ]
+    },
+    {
+      "target": "IOS-SOURCE-RUNTIME-RSS-ARTICLE-PIPELINE-001",
+      "title": "复用 SourceRuntime 实现 RSS 文章请求、分页与规则解析",
+      "prerequisite_task_ids": [
+        "IOS-RSS-ANDROID-SOURCE-STAR-INTEROP-001"
+      ],
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+      "fixture_id": "rl-source-runtime-rss-article-pipeline-001",
+      "validation": "tests",
+      "test_filter": "RSSRuntimeTests",
+      "source_anchors": [
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/model/rss/Rss.kt","symbol_id":"kotlin://io.legado.app.model.rss.Rss/getArticlesAwait"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/model/rss/RssParserByRule.kt","symbol_id":"kotlin://io.legado.app.model.rss.RssParserByRule/parseXML"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/ui/rss/article/RssArticlesViewModel.kt","symbol_id":"kotlin://io.legado.app.ui.rss.article.RssArticlesViewModel"}
+      ],
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoSourceKit/Sources/SourceRuntime/**",
+        "ios/Packages/LegadoSourceKit/Tests/SourceRuntimeTests/**",
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
         "ios/Apps/Legado/App/**",
         "ios/loop/loop.py"
       ]
