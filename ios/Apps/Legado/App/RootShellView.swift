@@ -21,6 +21,7 @@ struct RootShellView: View {
     let webDAVCredentials: KeychainWebDAVCredentialStore
     let webDAVClient: any WebDAVConnectionInitializing
     let libraryRestore: AndroidLibraryRestoreUseCase
+    let libraryBackup: AndroidLibraryBackupUseCase
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var didLoadLibrary = false
 
@@ -172,7 +173,8 @@ struct RootShellView: View {
                 webDAVSettings: webDAVSettings,
                 webDAVCredentials: webDAVCredentials,
                 webDAVClient: webDAVClient,
-                libraryRestore: libraryRestore
+                libraryRestore: libraryRestore,
+                libraryBackup: libraryBackup
             )
             .navigationDestination(for: AppRoute.self) { route in
                 destination(for: route, on: root)
@@ -620,6 +622,7 @@ private struct RootContentView: View {
     let webDAVCredentials: KeychainWebDAVCredentialStore
     let webDAVClient: any WebDAVConnectionInitializing
     let libraryRestore: AndroidLibraryRestoreUseCase
+    let libraryBackup: AndroidLibraryBackupUseCase
     @State private var webDAVAccount = ProcessInfo.processInfo.arguments.contains(
         "--webdav-test-double"
     ) ? "reader" : ""
@@ -629,6 +632,9 @@ private struct RootContentView: View {
     @State private var webDAVStatus = ""
     @State private var showsAndroidBackupImporter = false
     @State private var androidBackupImportStatus = ""
+    @State private var showsAndroidBackupExporter = false
+    @State private var androidBackupExportDocument = AndroidBackupZipDocument()
+    @State private var androidBackupExportStatus = ""
 
     var body: some View {
         if root == .shelf {
@@ -713,6 +719,16 @@ private struct RootContentView: View {
                         Text(androidBackupImportStatus)
                             .accessibilityIdentifier("state.settings.androidBackup.import")
                     }
+                    Button {
+                        prepareAndroidBackupExport()
+                    } label: {
+                        Label("导出 Android backup.zip", systemImage: "square.and.arrow.up")
+                    }
+                    .accessibilityIdentifier("action.settings.androidBackup.export")
+                    if !androidBackupExportStatus.isEmpty {
+                        Text(androidBackupExportStatus)
+                            .accessibilityIdentifier("state.settings.androidBackup.export")
+                    }
                 }
 
                 VStack(alignment: .leading, spacing: 10) {
@@ -786,6 +802,20 @@ private struct RootContentView: View {
                 androidBackupImportStatus = "备份文件选择失败"
             }
         }
+        .fileExporter(
+            isPresented: $showsAndroidBackupExporter,
+            document: androidBackupExportDocument,
+            contentType: .zip,
+            defaultFilename: "backup"
+        ) { result in
+            switch result {
+            case .success:
+                androidBackupExportStatus = androidBackupExportStatus
+                    .replacingOccurrences(of: "已准备", with: "已导出")
+            case .failure:
+                androidBackupExportStatus = "Android 备份保存失败"
+            }
+        }
     }
 
     private func beginAndroidBackupImport() {
@@ -832,6 +862,37 @@ private struct RootContentView: View {
                     + "\(summary.bookmarkCount) 条书签"
             } catch {
                 androidBackupImportStatus = "Android 备份导入失败"
+            }
+        }
+    }
+
+    private func prepareAndroidBackupExport() {
+        androidBackupExportStatus = "正在准备…"
+        let archiveURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+            .appendingPathComponent("backup.zip")
+        Task {
+            do {
+                try FileManager.default.createDirectory(
+                    at: archiveURL.deletingLastPathComponent(),
+                    withIntermediateDirectories: true
+                )
+                defer {
+                    try? FileManager.default.removeItem(
+                        at: archiveURL.deletingLastPathComponent()
+                    )
+                }
+                let summary = try await libraryBackup.export(to: archiveURL)
+                androidBackupExportDocument = AndroidBackupZipDocument(
+                    data: try Data(contentsOf: archiveURL)
+                )
+                androidBackupExportStatus =
+                    "已准备 \(summary.bookCount) 本书、"
+                    + "\(summary.groupCount) 个分组、"
+                    + "\(summary.bookmarkCount) 条书签"
+                showsAndroidBackupExporter = true
+            } catch {
+                androidBackupExportStatus = "Android 备份生成失败"
             }
         }
     }
@@ -1403,6 +1464,7 @@ struct StartupAcceptanceView: View {
     let webDAVCredentials: KeychainWebDAVCredentialStore
     let webDAVClient: any WebDAVConnectionInitializing
     let libraryRestore: AndroidLibraryRestoreUseCase
+    let libraryBackup: AndroidLibraryBackupUseCase
     let startupCase: StartupAcceptanceCase
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -1450,7 +1512,8 @@ struct StartupAcceptanceView: View {
                 webDAVSettings: webDAVSettings,
                 webDAVCredentials: webDAVCredentials,
                 webDAVClient: webDAVClient,
-                libraryRestore: libraryRestore
+                libraryRestore: libraryRestore,
+                libraryBackup: libraryBackup
             )
         }
     }
@@ -1554,6 +1617,24 @@ struct StartupAcceptanceView: View {
 
     private func advancePrompt() {
         promptIndex += 1
+    }
+}
+
+private struct AndroidBackupZipDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.zip] }
+
+    var data: Data
+
+    init(data: Data = Data()) {
+        self.data = data
+    }
+
+    init(configuration: ReadConfiguration) throws {
+        data = configuration.file.regularFileContents ?? Data()
+    }
+
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        FileWrapper(regularFileWithContents: data)
     }
 }
 

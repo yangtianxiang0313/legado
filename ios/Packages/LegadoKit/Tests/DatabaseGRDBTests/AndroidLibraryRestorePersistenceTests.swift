@@ -144,6 +144,37 @@ struct AndroidLibraryRestorePersistenceTests {
     #expect(library.books.isEmpty)
   }
 
+  @Test func includesNativeIOSBookmarksInAndroidBackupSnapshot() async throws {
+    let databaseURL = temporaryDatabaseURL()
+    defer { try? FileManager.default.removeItem(at: databaseURL.deletingLastPathComponent()) }
+    let repository = try GRDBBookShelfRepository(path: databaseURL.path)
+    let book = try await repository.add(
+      candidate(name: "iOS Native", bookURL: "https://ios.invalid/native"),
+      groupID: 0
+    )
+    try await repository.saveBookmark(
+      ReadingBookmark(
+        id: "ios-bookmark",
+        bookID: book.id,
+        chapterID: ChapterID(rawValue: "chapter-3"),
+        chapterIndex: 3,
+        characterOffset: 27,
+        chapterTitle: "Chapter Four",
+        excerpt: "native excerpt",
+        createdAtMilliseconds: 1_700_000_000_456
+      )
+    )
+
+    let plan = try await repository.androidLibraryBackupPlan()
+    let bookmark = try #require(plan.bookmarks.first)
+
+    #expect(bookmark.bookName == "iOS Native")
+    #expect(bookmark.bookAuthor == "Android Author")
+    #expect(bookmark.chapterIndex == 3)
+    #expect(bookmark.chapterPosition == 27)
+    #expect(bookmark.content == "native excerpt")
+  }
+
   private func restoreBook() -> AndroidLibraryRestoreBook {
     AndroidLibraryRestoreBook(
       candidate: candidate(

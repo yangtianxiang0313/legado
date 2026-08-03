@@ -876,6 +876,47 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
     }
   }
 
+  public func androidLibraryBackupPlan() async throws
+    -> AndroidLibraryRestorePlan
+  {
+    try await database.read { db in
+      let books = try BookRecord
+        .order(Column("orderValue").asc)
+        .fetchAll(db)
+      let groups = try AndroidLibraryGroupRecord
+        .order(Column("orderValue").asc)
+        .fetchAll(db)
+        .map(\.value)
+      var bookmarksByTime = Dictionary(
+        uniqueKeysWithValues: try AndroidLibraryBookmarkRecord
+          .fetchAll(db)
+          .map(\.value)
+          .map { ($0.time, $0) }
+      )
+      let booksByID = Dictionary(
+        uniqueKeysWithValues: books.map { ($0.bookID, $0) }
+      )
+      for record in try ReadingBookmarkRecord.fetchAll(db) {
+        guard let book = booksByID[record.bookID] else { continue }
+        bookmarksByTime[record.createdAtMilliseconds] = Bookmark(
+          time: record.createdAtMilliseconds,
+          bookName: book.name,
+          bookAuthor: book.author,
+          chapterIndex: record.chapterIndex,
+          chapterPosition: record.characterOffset,
+          chapterName: record.chapterTitle,
+          bookText: record.excerpt,
+          content: record.excerpt
+        )
+      }
+      return AndroidLibraryRestorePlan(
+        books: books.map(\.androidRestoreValue),
+        groups: groups,
+        bookmarks: bookmarksByTime.values.sorted { $0.time < $1.time }
+      )
+    }
+  }
+
   public func reset() async throws {
     try await database.write { db in
       _ = try AndroidLibraryBookmarkRecord.deleteAll(db)

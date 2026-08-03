@@ -24,6 +24,7 @@ struct LegadoApp: App {
     private let webDAVCredentials: KeychainWebDAVCredentialStore
     private let webDAVClient: any WebDAVConnectionInitializing
     private let libraryRestore: AndroidLibraryRestoreUseCase
+    private let libraryBackup: AndroidLibraryBackupUseCase
 
     init() {
         let processArguments = ProcessInfo.processInfo.arguments
@@ -85,6 +86,11 @@ struct LegadoApp: App {
                 .applicationSupport()
             self.libraryRestore = AndroidLibraryRestoreUseCase(
                 repository: AppAndroidLibraryRestoreRepository(
+                    repository: libraryRepository
+                )
+            )
+            self.libraryBackup = AndroidLibraryBackupUseCase(
+                repository: AppAndroidLibraryBackupRepository(
                     repository: libraryRepository
                 )
             )
@@ -159,6 +165,7 @@ struct LegadoApp: App {
                     webDAVCredentials: webDAVCredentials,
                     webDAVClient: webDAVClient,
                     libraryRestore: libraryRestore,
+                    libraryBackup: libraryBackup,
                     startupCase: startupCase
                 )
             } else {
@@ -174,7 +181,8 @@ struct LegadoApp: App {
                     webDAVSettings: webDAVSettings,
                     webDAVCredentials: webDAVCredentials,
                     webDAVClient: webDAVClient,
-                    libraryRestore: libraryRestore
+                    libraryRestore: libraryRestore,
+                    libraryBackup: libraryBackup
                 )
             }
         }
@@ -190,6 +198,18 @@ private struct AppAndroidLibraryRestoreRepository:
         _ plan: AndroidLibraryRestorePlan
     ) async throws -> AndroidLibraryRestoreSummary {
         try await repository.restoreAndroidLibrary(plan)
+    }
+}
+
+private struct AppAndroidLibraryBackupRepository:
+    AndroidLibraryBackupRepository
+{
+    let repository: GRDBBookShelfRepository
+
+    func androidLibraryBackupPlan() async throws
+        -> AndroidLibraryRestorePlan
+    {
+        try await repository.androidLibraryBackupPlan()
     }
 }
 
