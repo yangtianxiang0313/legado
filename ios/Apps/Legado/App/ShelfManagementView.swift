@@ -91,7 +91,7 @@ struct ShelfManagementView: View {
         }
         .fileImporter(
             isPresented: $fileImporterPresented,
-            allowedContentTypes: [.plainText],
+            allowedContentTypes: supportedLocalBookTypes,
             allowsMultipleSelection: false
         ) { result in
             guard case .success(let urls) = result,
@@ -104,10 +104,14 @@ struct ShelfManagementView: View {
                 do {
                     let file = try ManagedBookFileStore
                         .importSelectedURL(url)
-                    let item = await library.importLocalText(
+                    let payload: LocalBookPayload = file.fileName
+                        .lowercased().hasSuffix(".epub")
+                        ? .epub(try ManagedBookFileStore.epubMembers(from: file))
+                        : .text(file.data)
+                    let item = await library.importLocalBook(
                         fileName: file.fileName,
                         managedReference: file.reference,
-                        data: file.data
+                        payload: payload
                     )
                     importStatus = item == nil
                         ? (library.errorMessage ?? "导入失败")
@@ -150,6 +154,14 @@ struct ShelfManagementView: View {
                 transfer: webDAVRemoteBooks
             )
         }
+    }
+
+    private var supportedLocalBookTypes: [UTType] {
+        var values: [UTType] = [.plainText]
+        if let epub = UTType(filenameExtension: "epub") {
+            values.append(epub)
+        }
+        return values
     }
 
     private var header: some View {

@@ -848,15 +848,24 @@ public final class ShelfLibrary {
     managedReference: String,
     data: Data
   ) async -> ShelfBookItem? {
-    guard fileName.lowercased().hasSuffix(".txt") else {
-      errorMessage = "当前只支持真实可解析的 TXT 文件"
-      return nil
-    }
+    await importLocalBook(
+      fileName: fileName,
+      managedReference: managedReference,
+      payload: .text(data)
+    )
+  }
+
+  @discardableResult
+  public func importLocalBook(
+    fileName: String,
+    managedReference: String,
+    payload: LocalBookPayload
+  ) async -> ShelfBookItem? {
     let metadata = LocalBookImporter.importDocument(
       LocalBookImportInput(
         opaqueReference: managedReference,
         fileName: fileName,
-        byteCount: data.count,
+        byteCount: payload.byteCount,
         existingBook: nil
       )
     )
@@ -867,22 +876,52 @@ public final class ShelfLibrary {
       return nil
     }
     do {
-      let tocRules = try await repository.localTextTOCRules()
-      let document = try LocalTextBookParser.parse(data, tocRules: tocRules)
+      let parsed: (name: String, author: String, kind: String, document: LocalTextBookDocument)
+      switch payload {
+      case .text(let data):
+        guard fileName.lowercased().hasSuffix(".txt") else {
+          errorMessage = "文件格式与内容不匹配"
+          return nil
+        }
+        parsed = (
+          imported.name,
+          imported.author,
+          "本地 TXT",
+          try LocalTextBookParser.parse(
+            data,
+            tocRules: try await repository.localTextTOCRules()
+          )
+        )
+      case .epub(let members):
+        guard fileName.lowercased().hasSuffix(".epub") else {
+          errorMessage = "文件格式与内容不匹配"
+          return nil
+        }
+        let epub = try EPUBBookParser.parse(
+          members: members,
+          fallbackTitle: fileName
+        )
+        parsed = (
+          epub.title,
+          epub.author,
+          "本地 EPUB",
+          LocalTextBookDocument(chapters: epub.chapters)
+        )
+      }
       let item = try await repository.importLocalText(
         candidate: ShelfBookCandidate(
-          name: imported.name,
-          author: imported.author,
-          kind: "本地 TXT",
-          lastChapter: document.chapters.last?.title ?? "",
-          intro: document.chapters.first?.content.prefix(500)
+          name: parsed.name,
+          author: parsed.author,
+          kind: parsed.kind,
+          lastChapter: parsed.document.chapters.last?.title ?? "",
+          intro: parsed.document.chapters.first?.content.prefix(500)
             .description ?? "",
           bookURL: managedReference,
           coverURL: nil,
           originName: fileName,
           sourceID: "local-file"
         ),
-        chapters: document.chapters
+        chapters: parsed.document.chapters
       )
       await reload()
       errorMessage = nil
@@ -891,6 +930,8 @@ public final class ShelfLibrary {
       errorMessage = "不能导入空文件"
     } catch LocalTextBookFailure.unsupportedEncoding {
       errorMessage = "无法识别 TXT 编码"
+    } catch let error as EPUBBookFailure {
+      errorMessage = "无法解析 EPUB：\(error)"
     } catch {
       errorMessage = "本地书籍导入失败"
     }

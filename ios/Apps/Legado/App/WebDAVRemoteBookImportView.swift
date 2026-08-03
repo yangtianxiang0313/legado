@@ -142,8 +142,9 @@ struct WebDAVRemoteBookImportView: View {
             await browser.open(resource)
             return
         }
-        guard resource.name.lowercased().hasSuffix(".txt") else {
-            importStatus = "当前 iOS 阅读内核仅支持导入 TXT"
+        let lowercasedName = resource.name.lowercased()
+        guard lowercasedName.hasSuffix(".txt") || lowercasedName.hasSuffix(".epub") else {
+            importStatus = "当前 iOS 阅读内核支持 TXT 和 EPUB"
             return
         }
         guard let download = await browser.download(resource) else {
@@ -155,11 +156,14 @@ struct WebDAVRemoteBookImportView: View {
                 data: download.data,
                 fileName: download.name
             )
+            let payload: LocalBookPayload = lowercasedName.hasSuffix(".epub")
+                ? .epub(try ManagedBookFileStore.epubMembers(from: file))
+                : .text(file.data)
             guard
-                let item = await library.importLocalText(
+                let item = await library.importLocalBook(
                     fileName: file.fileName,
                     managedReference: file.reference,
-                    data: file.data
+                    payload: payload
                 )
             else {
                 importStatus = library.errorMessage ?? "远程书导入失败"

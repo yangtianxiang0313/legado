@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P86-LOCAL-BOOK-FORMAT-INTEROP-001",
+  "status": "completed",
+  "mode": "critical_path_only",
+  "priority": 1,
+  "title": "P86 Android/iOS 本地书格式互通",
+  "objective": "依据冻结 Android LocalBook 与 EpubFile，把本地文件、WebDAV 下载和后续归档解包统一接入格式分发边界；先完成 EPUB 元数据、目录、正文到现有书架/阅读器模型的真实纵切，再复用该边界扩展 ZIP 与其他格式。",
+  "validation_policy": "EPUB ZIP 容器、OPF 元数据、导航目录、spine 回退和正文使用聚焦测试；App 接线完成后只做一次增量构建；直到形成文件选择→书架→阅读器完整路径才运行一台 iPhone Simulator。",
+  "stages": [
+    {
+      "id": "P86-S1",
+      "title": "独立格式边界与 EPUB 解析",
+      "selectors": [
+        {
+          "id": "P86-S1-EPUB",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-APP-NAVIGATION-LOCAL-EPUB-FORMAT-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P86-S2",
+      "title": "统一导入接线",
+      "selectors": [
+        {
+          "id": "P86-S2-DISPATCH",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-APP-NAVIGATION-LOCAL-BOOK-FORMAT-DISPATCH-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P86-S3",
+      "title": "用户主路径验收",
+      "selectors": [
+        {
+          "id": "P86-S3-UI",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-APP-NAVIGATION-LOCAL-EPUB-IMPORT-UI-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-APP-NAVIGATION-LOCAL-EPUB-FORMAT-001",
+      "title": "实现独立 EPUB 元数据、目录和正文解析器",
+      "requirement_ref": "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01",
+      "fixture_id": "rl-local-epub-format-001",
+      "package_path": "ios/Packages/LegadoKit",
+      "validation": "tests",
+      "test_filter": "LocalBookFormatsTests",
+      "prerequisite_task_ids": [],
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Package.swift",
+        "ios/Packages/LegadoKit/Sources/LocalBookFormats/**",
+        "ios/Packages/LegadoKit/Tests/LocalBookFormatsTests/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/model/localBook/LocalBook.kt",
+          "symbol_id": "kotlin://io.legado.app.model.localBook.LocalBook/getChapterList"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/model/localBook/EpubFile.kt",
+          "symbol_id": "kotlin://io.legado.app.model.localBook.EpubFile/getChapterList"
+        }
+      ]
+    },
+    {
+      "target": "IOS-APP-NAVIGATION-LOCAL-BOOK-FORMAT-DISPATCH-001",
+      "title": "让书架和 WebDAV 共用 TXT/EPUB 格式分发器",
+      "requirement_ref": "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01",
+      "fixture_id": "app-local-book-format-dispatch-v1",
+      "package_path": "ios/Packages/LegadoKit",
+      "validation": "build",
+      "prerequisite_task_ids": [
+        "IOS-APP-NAVIGATION-LOCAL-EPUB-FORMAT-001"
+      ],
+      "additional_allowed_paths": [
+        "ios/Apps/Legado/App/**",
+        "ios/Packages/LegadoKit/Package.swift",
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+        "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/model/localBook/LocalBook.kt",
+          "symbol_id": "kotlin://io.legado.app.model.localBook.LocalBook/importFile"
+        }
+      ]
+    },
+    {
+      "target": "IOS-APP-NAVIGATION-LOCAL-EPUB-IMPORT-UI-001",
+      "title": "完成 EPUB 文件选择、入架和阅读主路径",
+      "requirement_ref": "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01",
+      "fixture_id": "ui-local-epub-import-v1",
+      "package_path": "ios/Packages/LegadoKit",
+      "validation": "simulator",
+      "prerequisite_task_ids": [
+        "IOS-APP-NAVIGATION-LOCAL-BOOK-FORMAT-DISPATCH-001"
+      ],
+      "additional_allowed_paths": [
+        "ios/Apps/Legado/App/**",
+        "ios/Apps/Legado/UITests/**"
+      ],
+      "ui_contract": {
+        "goal": "在 iPhone Simulator 选择真实最小 EPUB，书架显示 EPUB 元数据，打开后目录和正文可读；结构与 Android 本地 EPUB 主路径一致。",
+        "scenario_id": "ui-local-epub-import-v1",
+        "test_method": "testLocalEPUBImportAndReadFlow"
+      },
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/ui/book/import/local/ImportBookViewModel.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.import.local.ImportBookViewModel/addToBookshelf"
+        }
+      ]
+    }
+  ]
+}

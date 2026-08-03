@@ -2352,6 +2352,63 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testLocalEPUBImportAndReadFlow() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+            "--seed-epub-import",
+        ]
+        app.launch()
+
+        require("projection.\(contract.projection)")
+        require("screen.root.shelf")
+        let book = app.staticTexts["跨端论语"].firstMatch
+        XCTAssertTrue(book.waitForExistence(timeout: 12))
+        book.tap()
+        require("screen.bookDetail")
+        XCTAssertTrue(app.staticTexts["作者：孔门"].firstMatch.exists)
+        requireButton("action.bookDetail.startReading").tap()
+        require("screen.chapterTOC")
+        XCTAssertTrue(app.staticTexts["学而"].firstMatch.exists)
+        XCTAssertTrue(app.staticTexts["为政"].firstMatch.exists)
+        require("action.chapter.select.0").tap()
+        require("screen.reader")
+        XCTAssertEqual(require("label.reader.chapterTitle").label, "学而")
+        let content = app.textViews["text.reader.content"].firstMatch
+        XCTAssertTrue(content.waitForExistence(timeout: 8))
+        XCTAssertTrue(content.label.contains("时习之，不亦说乎"), content.label)
+
+        app.terminate()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+        ]
+        app.launch()
+        require("screen.root.shelf")
+        XCTAssertTrue(
+            app.staticTexts["跨端论语"].firstMatch.waitForExistence(timeout: 8)
+        )
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "format": "epub",
+            "book": "跨端论语",
+            "author": "孔门",
+            "chapter_count": 2,
+            "opened_chapter": "学而",
+            "content_visible": true,
+            "persisted_after_relaunch": true,
+        ])
+    }
+
     func testWebDAVLocalBookUploadFlow() throws {
         let environment = ProcessInfo.processInfo.environment
         let contract = try XCTUnwrap(

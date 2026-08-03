@@ -1,5 +1,6 @@
 import AppNavigation
 import AppUseCases
+import ArchiveZIPFoundation
 import BackupInteropUseCases
 import Foundation
 import IntegrationKit
@@ -205,6 +206,11 @@ struct RootShellView: View {
                 "--seed-book-import"
             ) {
                 await seedBookImport()
+            }
+            if ProcessInfo.processInfo.arguments.contains(
+                "--seed-epub-import"
+            ) {
+                await seedEPUBImport()
             }
             if ProcessInfo.processInfo.arguments.contains(
                 "--seed-offline-cache"
@@ -991,6 +997,79 @@ struct RootShellView: View {
             fileName: file.fileName,
             managedReference: file.reference,
             data: file.data
+        )
+    }
+
+    private func seedEPUBImport() async {
+        guard library.books.isEmpty else { return }
+        let archiveURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("legado-ui-minimal.epub")
+        let members = [
+            ArchiveZIPFoundation.Member(
+                path: "mimetype",
+                data: Data("application/epub+zip".utf8)
+            ),
+            ArchiveZIPFoundation.Member(
+                path: "META-INF/container.xml",
+                data: Data("""
+                <container xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+                  <rootfiles><rootfile full-path="OEBPS/content.opf"/></rootfiles>
+                </container>
+                """.utf8)
+            ),
+            ArchiveZIPFoundation.Member(
+                path: "OEBPS/content.opf",
+                data: Data("""
+                <package xmlns="http://www.idpf.org/2007/opf">
+                  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                    <dc:title>跨端论语</dc:title><dc:creator>孔门</dc:creator>
+                  </metadata>
+                  <manifest>
+                    <item id="nav" href="nav.xhtml" properties="nav"/>
+                    <item id="one" href="Text/one.xhtml"/>
+                    <item id="two" href="Text/two.xhtml"/>
+                  </manifest>
+                  <spine><itemref idref="one"/><itemref idref="two"/></spine>
+                </package>
+                """.utf8)
+            ),
+            ArchiveZIPFoundation.Member(
+                path: "OEBPS/nav.xhtml",
+                data: Data("""
+                <html xmlns="http://www.w3.org/1999/xhtml"><body><nav><ol>
+                  <li><a href="Text/one.xhtml">学而</a></li>
+                  <li><a href="Text/two.xhtml">为政</a></li>
+                </ol></nav></body></html>
+                """.utf8)
+            ),
+            ArchiveZIPFoundation.Member(
+                path: "OEBPS/Text/one.xhtml",
+                data: Data("""
+                <html xmlns="http://www.w3.org/1999/xhtml"><head><title>学而</title></head>
+                <body><p>学而时习之，不亦说乎。</p></body></html>
+                """.utf8)
+            ),
+            ArchiveZIPFoundation.Member(
+                path: "OEBPS/Text/two.xhtml",
+                data: Data("""
+                <html xmlns="http://www.w3.org/1999/xhtml"><head><title>为政</title></head>
+                <body><p>为政以德，譬如北辰。</p></body></html>
+                """.utf8)
+            ),
+        ]
+        guard
+            (try? ArchiveZIPFoundation.create(members: members, at: archiveURL)) != nil,
+            let data = try? Data(contentsOf: archiveURL),
+            let file = try? ManagedBookFileStore.persist(
+                data: data,
+                fileName: "跨端论语.epub"
+            ),
+            let unpacked = try? ManagedBookFileStore.epubMembers(from: file)
+        else { return }
+        _ = await library.importLocalBook(
+            fileName: file.fileName,
+            managedReference: file.reference,
+            payload: .epub(unpacked)
         )
     }
 
