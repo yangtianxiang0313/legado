@@ -231,6 +231,13 @@
       "selectors": [
         {"id": "P67-S32-REAL-SOURCE-CAPTURE", "claim_ids": [], "task_ids": ["IOS-SOURCE-REAL-WIKISOURCE-ANDROID-CAPTURE-001"]}
       ]
+    },
+    {
+      "id": "P67-S33",
+      "title": "iOS 真实书源四段结构化对齐",
+      "selectors": [
+        {"id": "P67-S33-IOS-REAL-SOURCE-COMPARE", "claim_ids": [], "task_ids": ["IOS-SOURCE-REAL-WIKISOURCE-IOS-COMPARE-001"]}
+      ]
     }
   ],
   "deliveries": [
@@ -1062,6 +1069,32 @@
         "ios/harness/goldens/releases/**",
         "ios/project/external-execution-receipts/**",
         "ios/project/business-knowledge/**",
+        "ios/loop/loop.py"
+      ]
+    },
+    {
+      "target": "IOS-SOURCE-REAL-WIKISOURCE-IOS-COMPARE-001",
+      "title": "iOS 对同一维基文库书源执行四段链路并对齐 Android 真值",
+      "prerequisite_task_ids": ["IOS-SOURCE-REAL-WIKISOURCE-ANDROID-CAPTURE-001"],
+      "requirement_ref": "REQ-ANDROID-SOURCE-PIPELINE-001@1#RC-01",
+      "fixture_id": "rs-wikisource-public-domain-001",
+      "validation": "tests",
+      "package_path": "ios/Packages/LegadoKit",
+      "test_filter": "RealSourceInteropConformanceTests",
+      "source_anchors": [
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/model/webBook/WebBook.kt","symbol_id":"kotlin://io.legado.app.model.webBook.WebBook"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/model/webBook/SearchModel.kt","symbol_id":"kotlin://io.legado.app.model.webBook.SearchModel"}
+      ],
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Package.swift",
+        "ios/Packages/LegadoKit/Sources/ConformanceCLI/**",
+        "ios/Packages/LegadoKit/Tests/ConformanceCLITests/**",
+        "ios/Packages/LegadoSourceKit/Sources/SourceRuntime/**",
+        "ios/Packages/LegadoSourceKit/Sources/RuleRuntime/**",
+        "ios/Packages/LegadoSourceKit/Tests/SourceRuntimeTests/**",
+        "ios/harness/fixtures/real-source/rs-wikisource-public-domain-001/**",
+        "ios/harness/goldens/android-legado-v1/rs-wikisource-public-domain-001.json",
+        "ios/harness/real-source/**",
         "ios/loop/loop.py"
       ]
     }
