@@ -1466,6 +1466,7 @@ def owner_contract(target: str) -> Mapping[str, Any]:
     if target in {
         "IOS-INTEGRATION-WEBDAV-CONNECTION-FOUNDATION-001",
         "IOS-INTEGRATION-WEBDAV-READER-PROGRESS-CODEC-001",
+        "IOS-INTEGRATION-WEBDAV-READER-PROGRESS-UPLOAD-001",
     }:
         return {
             "owner": "IntegrationKit",
