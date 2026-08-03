@@ -106,6 +106,12 @@ public enum AndroidBackupArchive {
         try BookSourceCodec.decodeMany(data)
     }
 
+    public static func encodeBookSources(
+        _ sources: [BookSourceDTO]
+    ) throws -> Data {
+        try BookSourceCodec.encodeMany(sources)
+    }
+
     public static func readReplacementRules(
         from archiveURL: URL,
         maximumMemberBytes: UInt64 = 32 * 1_024 * 1_024

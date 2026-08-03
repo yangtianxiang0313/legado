@@ -23,7 +23,7 @@ struct LegadoApp: App {
     @State private var webDAVSettings: WebDAVConnectionSettingsStore
     private let webDAVCredentials: KeychainWebDAVCredentialStore
     private let webDAVClient: any WebDAVConnectionInitializing
-    private let libraryRestore: AndroidLibraryRestoreUseCase
+    private let backupRestore: AndroidCoreBackupRestoreUseCase
     private let libraryBackup: AndroidLibraryBackupUseCase
 
     init() {
@@ -84,9 +84,11 @@ struct LegadoApp: App {
         do {
             let libraryRepository = try GRDBBookShelfRepository
                 .applicationSupport()
-            self.libraryRestore = AndroidLibraryRestoreUseCase(
-                repository: AppAndroidLibraryRestoreRepository(
-                    repository: libraryRepository
+            let sourceRepository = UserDefaultsSourceCatalogRepository()
+            self.backupRestore = AndroidCoreBackupRestoreUseCase(
+                repository: AppAndroidCoreBackupRestoreRepository(
+                    repository: libraryRepository,
+                    sourceRepository: sourceRepository
                 )
             )
             self.libraryBackup = AndroidLibraryBackupUseCase(
@@ -106,7 +108,7 @@ struct LegadoApp: App {
             )
             _sourceCatalog = State(
                 initialValue: SourceCatalog(
-                    repository: UserDefaultsSourceCatalogRepository()
+                    repository: sourceRepository
                 )
             )
             let synthesizer: any SystemSpeechSynthesizing =
@@ -164,7 +166,7 @@ struct LegadoApp: App {
                     webDAVSettings: webDAVSettings,
                     webDAVCredentials: webDAVCredentials,
                     webDAVClient: webDAVClient,
-                    libraryRestore: libraryRestore,
+                    backupRestore: backupRestore,
                     libraryBackup: libraryBackup,
                     startupCase: startupCase
                 )
@@ -181,7 +183,7 @@ struct LegadoApp: App {
                     webDAVSettings: webDAVSettings,
                     webDAVCredentials: webDAVCredentials,
                     webDAVClient: webDAVClient,
-                    libraryRestore: libraryRestore,
+                    backupRestore: backupRestore,
                     libraryBackup: libraryBackup
                 )
             }
@@ -189,15 +191,30 @@ struct LegadoApp: App {
     }
 }
 
-private struct AppAndroidLibraryRestoreRepository:
-    AndroidLibraryRestoreRepository
+private struct AppAndroidCoreBackupRestoreRepository:
+    AndroidCoreBackupRestoreRepository
 {
     let repository: GRDBBookShelfRepository
+    let sourceRepository: UserDefaultsSourceCatalogRepository
 
     func restoreAndroidLibrary(
         _ plan: AndroidLibraryRestorePlan
     ) async throws -> AndroidLibraryRestoreSummary {
         try await repository.restoreAndroidLibrary(plan)
+    }
+
+    func restoreAndroidBookSources(
+        _ sources: [BookSourceDraft]
+    ) async throws {
+        try await sourceRepository.saveSources(sources)
+    }
+
+    func restoreAndroidReplacementRules(
+        _ rules: [ReaderReplacementRule]
+    ) async throws {
+        for rule in rules {
+            try await repository.saveReplacementRule(rule)
+        }
     }
 }
 

@@ -90,6 +90,29 @@ public struct AndroidReplaceRuleDTO: Equatable, Sendable {
   }
   public var order: SourceField<Int64> { integer("order") }
 
+  public var restoreProjection: AndroidReplaceRuleRestoreProjection {
+    AndroidReplaceRuleRestoreProjection(
+      id: value(id) ?? 0,
+      name: value(name) ?? "",
+      pattern: value(pattern) ?? "",
+      replacement: value(replacement) ?? "",
+      scope: value(scope),
+      scopeTitle: value(scopeTitle) ?? false,
+      scopeContent: value(scopeContent) ?? true,
+      excludeScope: value(excludeScope),
+      isEnabled: value(isEnabled) ?? true,
+      isRegex: value(isRegex) ?? true,
+      order: value(order) ?? Int64(Int32.min)
+    )
+  }
+
+  private func value<Value: Equatable & Sendable>(
+    _ field: SourceField<Value>
+  ) -> Value? {
+    guard case .value(let value) = field else { return nil }
+    return value
+  }
+
   private func string(_ name: String) -> SourceField<String> {
     project(name) { value in
       guard case .string(let string) = value else { return nil }
@@ -120,6 +143,20 @@ public struct AndroidReplaceRuleDTO: Equatable, Sendable {
     guard let value = transform(raw) else { return .typeMismatch(raw) }
     return .value(value)
   }
+}
+
+public struct AndroidReplaceRuleRestoreProjection: Equatable, Sendable {
+  public let id: Int64
+  public let name: String
+  public let pattern: String
+  public let replacement: String
+  public let scope: String?
+  public let scopeTitle: Bool
+  public let scopeContent: Bool
+  public let excludeScope: String?
+  public let isEnabled: Bool
+  public let isRegex: Bool
+  public let order: Int64
 }
 
 public enum AndroidReplaceRuleCodec {

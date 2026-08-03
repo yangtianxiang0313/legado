@@ -20,7 +20,7 @@ struct RootShellView: View {
     @Bindable var webDAVSettings: WebDAVConnectionSettingsStore
     let webDAVCredentials: KeychainWebDAVCredentialStore
     let webDAVClient: any WebDAVConnectionInitializing
-    let libraryRestore: AndroidLibraryRestoreUseCase
+    let backupRestore: AndroidCoreBackupRestoreUseCase
     let libraryBackup: AndroidLibraryBackupUseCase
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var didLoadLibrary = false
@@ -175,7 +175,11 @@ struct RootShellView: View {
                 webDAVSettings: webDAVSettings,
                 webDAVCredentials: webDAVCredentials,
                 webDAVClient: webDAVClient,
-                libraryRestore: libraryRestore,
+                backupRestore: backupRestore,
+                reloadBackupDomains: {
+                    await sourceCatalog.reload()
+                    await replacementRules.reload()
+                },
                 libraryBackup: libraryBackup
             )
             .navigationDestination(for: AppRoute.self) { route in
@@ -625,7 +629,8 @@ private struct RootContentView: View {
     @Bindable var webDAVSettings: WebDAVConnectionSettingsStore
     let webDAVCredentials: KeychainWebDAVCredentialStore
     let webDAVClient: any WebDAVConnectionInitializing
-    let libraryRestore: AndroidLibraryRestoreUseCase
+    let backupRestore: AndroidCoreBackupRestoreUseCase
+    let reloadBackupDomains: () async -> Void
     let libraryBackup: AndroidLibraryBackupUseCase
     @State private var webDAVAccount = ProcessInfo.processInfo.arguments.contains(
         "--webdav-test-double"
@@ -858,12 +863,20 @@ private struct RootContentView: View {
                 }
             }
             do {
-                let summary = try await libraryRestore.restore(from: url)
+                let summary = try await backupRestore.restore(from: url)
                 await library.reload()
+                await reloadBackupDomains()
                 androidBackupImportStatus =
                     "已导入 \(summary.bookCount) 本书、"
                     + "\(summary.groupCount) 个分组、"
                     + "\(summary.bookmarkCount) 条书签"
+                if summary.bookSourceCount > 0
+                    || summary.replacementRuleCount > 0
+                {
+                    androidBackupImportStatus +=
+                        "、\(summary.bookSourceCount) 个书源、"
+                        + "\(summary.replacementRuleCount) 条替换规则"
+                }
             } catch {
                 androidBackupImportStatus = "Android 备份导入失败"
             }
@@ -1473,7 +1486,7 @@ struct StartupAcceptanceView: View {
     @Bindable var webDAVSettings: WebDAVConnectionSettingsStore
     let webDAVCredentials: KeychainWebDAVCredentialStore
     let webDAVClient: any WebDAVConnectionInitializing
-    let libraryRestore: AndroidLibraryRestoreUseCase
+    let backupRestore: AndroidCoreBackupRestoreUseCase
     let libraryBackup: AndroidLibraryBackupUseCase
     let startupCase: StartupAcceptanceCase
 
@@ -1522,7 +1535,7 @@ struct StartupAcceptanceView: View {
                 webDAVSettings: webDAVSettings,
                 webDAVCredentials: webDAVCredentials,
                 webDAVClient: webDAVClient,
-                libraryRestore: libraryRestore,
+                backupRestore: backupRestore,
                 libraryBackup: libraryBackup
             )
         }
