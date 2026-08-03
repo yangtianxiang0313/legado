@@ -480,7 +480,7 @@
       "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
       "fixture_id": "rl-reader-history-read-record-runtime-risk-001",
       "validation": "tests",
-      "test_filter": "AppUseCasesTests|DatabaseGRDBTests|ReaderCoreTests",
+      "test_filter": "nativeReadingSessionsAccumulateWithoutCountingBackgroundTime",
       "source_anchors": [
         {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/help/ReadBook.kt","symbol_id":"kotlin://io.legado.app.help.ReadBook/upReadTime"},
         {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt","symbol_id":"kotlin://io.legado.app.ui.book.read.ReadBookActivity"},

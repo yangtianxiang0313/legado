@@ -7,6 +7,42 @@ import Testing
 
 @Suite("AndroidLibraryRestorePersistenceTests")
 struct AndroidLibraryRestorePersistenceTests {
+  @MainActor
+  @Test func nativeReadingSessionsAccumulateWithoutCountingBackgroundTime()
+    async throws
+  {
+    let databaseURL = temporaryDatabaseURL()
+    defer { try? FileManager.default.removeItem(at: databaseURL.deletingLastPathComponent()) }
+    let repository = try GRDBBookShelfRepository(path: databaseURL.path)
+    let library = ShelfLibrary(
+      repository: repository,
+      readRecordDeviceID: "ios-device"
+    )
+
+    await library.beginReadingRecord(
+      bookName: "互通测试书",
+      atMilliseconds: 1_000
+    )
+    await library.settleReadingRecord(atMilliseconds: 4_500)
+    await library.beginReadingRecord(
+      bookName: "互通测试书",
+      atMilliseconds: 20_000
+    )
+    await library.settleReadingRecord(atMilliseconds: 22_500)
+
+    let records = try await repository.androidReadRecords()
+    #expect(
+      records == [
+        ReadRecord(
+          deviceID: "ios-device",
+          bookName: "互通测试书",
+          readTime: 5,
+          lastRead: 22_500
+        )
+      ]
+    )
+  }
+
   @Test func atomicallyUpsertsCompleteAndroidLibraryPlan() async throws {
     let databaseURL = temporaryDatabaseURL()
     defer { try? FileManager.default.removeItem(at: databaseURL.deletingLastPathComponent()) }

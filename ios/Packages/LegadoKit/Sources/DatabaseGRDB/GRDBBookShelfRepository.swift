@@ -926,6 +926,27 @@ public actor GRDBBookShelfRepository: BookShelfRepository {
     }
   }
 
+  public func records(
+    bookName: String
+  ) async throws -> [LibraryDomain.ReadRecord] {
+    try await database.read { db in
+      try ReadRecordRecord
+        .filter(Column("bookName") == bookName)
+        .order(Column("deviceID").asc)
+        .fetchAll(db)
+        .map(\.value)
+    }
+  }
+
+  public func upsert(
+    _ value: LibraryDomain.ReadRecord
+  ) async throws {
+    try await database.write { db in
+      var record = ReadRecordRecord(value: value)
+      try record.save(db)
+    }
+  }
+
   public func restoreAndroidReadRecords(
     _ records: [LibraryDomain.ReadRecord]
   ) async throws {

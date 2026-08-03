@@ -99,7 +99,8 @@ struct LegadoApp: App {
             )
             _library = State(
                 initialValue: ShelfLibrary(
-                    repository: libraryRepository
+                    repository: libraryRepository,
+                    readRecordDeviceID: ReadRecordDeviceIdentity.current()
                 )
             )
             _replacementRules = State(
@@ -189,6 +190,19 @@ struct LegadoApp: App {
                 )
             }
         }
+    }
+}
+
+private enum ReadRecordDeviceIdentity {
+    private static let key = "reader.readRecord.deviceID"
+
+    static func current(defaults: UserDefaults = .standard) -> String {
+        if let existing = defaults.string(forKey: key), !existing.isEmpty {
+            return existing
+        }
+        let created = "ios-" + UUID().uuidString.lowercased()
+        defaults.set(created, forKey: key)
+        return created
     }
 }
 

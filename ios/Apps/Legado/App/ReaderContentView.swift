@@ -158,6 +158,7 @@ struct ReaderContentView: View {
                 ? nil
                 : book.candidate.sourceID
             readerBook = book
+            await library.beginReadingRecord(bookName: book.candidate.name)
             bookmarked = await library.isBookmarked(
                 bookID: target.bookID,
                 chapterID: chapter.id,
@@ -208,9 +209,21 @@ struct ReaderContentView: View {
             }
         }
         .onChange(of: scenePhase) { _, phase in
-            guard phase != .active else { return }
+            Task {
+                if phase == .active {
+                    if let bookName = readerBook?.candidate.name {
+                        await library.beginReadingRecord(bookName: bookName)
+                    }
+                } else {
+                    await saveCurrentProgress()
+                    await library.settleReadingRecord()
+                }
+            }
+        }
+        .onDisappear {
             Task {
                 await saveCurrentProgress()
+                await library.settleReadingRecord()
             }
         }
         .sheet(isPresented: $menuPresented) {

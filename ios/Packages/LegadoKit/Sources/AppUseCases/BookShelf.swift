@@ -184,7 +184,7 @@ public enum ReaderContentRefreshScope: Equatable, Sendable {
 }
 
 public protocol BookShelfRepository:
-  Sendable, ReaderReplacementRuleRepository
+  Sendable, ReaderReplacementRuleRepository, ReadRecordStore
 {
   func stage(_ candidate: ShelfBookCandidate) async throws -> ShelfBookItem
   func add(
@@ -277,6 +277,12 @@ public protocol BookShelfRepository:
 }
 
 public extension BookShelfRepository {
+  func records(bookName: String) async throws -> [ReadRecord] {
+    []
+  }
+
+  func upsert(_ record: ReadRecord) async throws {}
+
   func shelfGroups() async throws -> [ShelfGroupItem] {
     []
   }
@@ -452,9 +458,54 @@ public final class ShelfLibrary {
 
   let repository: any BookShelfRepository
   private var allBooks: [ShelfBookItem] = []
+  private let readRecordDeviceID: String
+  private var readRecordSession: ReadRecordSession?
 
-  public init(repository: any BookShelfRepository) {
+  public init(
+    repository: any BookShelfRepository,
+    readRecordDeviceID: String = "ios"
+  ) {
     self.repository = repository
+    self.readRecordDeviceID = readRecordDeviceID
+  }
+
+  public func beginReadingRecord(
+    bookName: String,
+    atMilliseconds nowMilliseconds: Int64? = nil
+  ) async {
+    guard !bookName.isEmpty else { return }
+    if readRecordSession?.bookName == bookName { return }
+    if readRecordSession != nil {
+      await settleReadingRecord(atMilliseconds: nowMilliseconds)
+    }
+    do {
+      let records = try await repository.records(bookName: bookName)
+      readRecordSession = NativeReadRecordPolicy.resetSession(
+        records: records,
+        bookName: bookName,
+        deviceID: readRecordDeviceID,
+        readStartTimeMilliseconds: nowMilliseconds ?? Self.nowMilliseconds
+      )
+    } catch {
+      readRecordSession = nil
+    }
+  }
+
+  public func settleReadingRecord(
+    atMilliseconds nowMilliseconds: Int64? = nil
+  ) async {
+    guard let session = readRecordSession else { return }
+    readRecordSession = nil
+    let update = NativeReadRecordPolicy.settle(
+      session: session,
+      nowMilliseconds: nowMilliseconds ?? Self.nowMilliseconds
+    )
+    guard let record = update.recordToPersist else { return }
+    try? await repository.upsert(record)
+  }
+
+  private static var nowMilliseconds: Int64 {
+    Int64(Date().timeIntervalSince1970 * 1_000)
   }
 
   public func reload() async {
