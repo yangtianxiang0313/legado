@@ -1,1 +1,1 @@
-{"active_task":"IOS-CHARACTERIZE-READER-CACHE-OFFLINE-QUEUE-001","attempt":0,"last_completed":{"at":"2026-08-03T18:05:20Z","sequence":895,"task_id":"IOS-APP-NAVIGATION-WEBDAV-BACKUP-SYNC-001"},"schema_version":2,"status":"running","verification":null}
+{"active_task":null,"attempt":0,"last_completed":{"at":"2026-08-03T19:39:17Z","sequence":898,"task_id":"IOS-CHARACTERIZE-READER-CACHE-OFFLINE-QUEUE-001"},"schema_version":2,"status":"idle","verification":null}
