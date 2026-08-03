@@ -184,6 +184,12 @@
       "sha256": "c08c648e810de79efc7b9082cd6f2afa1650b5a2335fc5a8d73f5d2f4f45299a"
     },
     {
+      "id": "rl-reader-progress-webdav-ios-to-android-001",
+      "status": "candidate",
+      "path": "ios/harness/fixtures/runtime-lab/rl-reader-progress-webdav-ios-to-android-001",
+      "sha256": "c43202fb8b5e74e87451bae2c37a2505860a91a193225c57c2536cbee2a4dc22"
+    },
+    {
       "id": "rl-reader-session-chapter-navigation-001",
       "status": "candidate",
       "path": "ios/harness/fixtures/runtime-lab/rl-reader-session-chapter-navigation-001",

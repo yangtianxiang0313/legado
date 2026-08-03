@@ -199,7 +199,10 @@ class LegadoOracleInstrumentedTest {
     private val deviceOrigin by lazy {
         when {
             isAndroidRuntimeScenario &&
-                scenarioId == "rl-reader-progress-webdav-conflict-runtime-001" ->
+                scenarioId in setOf(
+                    "rl-reader-progress-webdav-conflict-runtime-001",
+                    "rl-reader-progress-webdav-ios-to-android-001"
+                ) ->
                 requiredArgument("deviceOrigin").trimEnd('/')
             isAndroidRuntimeScenario -> "android-runtime://local"
             isIntegrationLabScenario ->
@@ -236,7 +239,10 @@ class LegadoOracleInstrumentedTest {
             }
         }
         if (
-            scenarioId == "rl-reader-progress-webdav-conflict-runtime-001"
+            scenarioId in setOf(
+                "rl-reader-progress-webdav-conflict-runtime-001",
+                "rl-reader-progress-webdav-ios-to-android-001"
+            )
         ) {
             require(deviceOrigin.startsWith("http://127.0.0.1:")) {
                 "WebDAV progress runtime must use the run-scoped loopback origin"
@@ -292,6 +298,8 @@ class LegadoOracleInstrumentedTest {
                 runReaderProgressRuntimeCases()
             "rl-reader-progress-webdav-conflict-runtime-001" ->
                 runReaderProgressWebDavConflictCases()
+            "rl-reader-progress-webdav-ios-to-android-001" ->
+                runReaderProgressWebDavIOSToAndroidCases()
             "rl-reader-progress-save-runtime-001" ->
                 runReaderProgressSaveRuntimeCases()
             "rl-ui-book-detail-conditional-actions-001" ->
@@ -5019,6 +5027,65 @@ class LegadoOracleInstrumentedTest {
                 .remove(PreferKey.syncBookProgress)
                 .commit()
             clearProgressRuntimeState()
+        }
+    }
+
+    private suspend fun runReaderProgressWebDavIOSToAndroidCases() {
+        val values = input.getJSONArray("cases")
+        for (index in 0 until values.length()) {
+            val value = values.getJSONObject(index)
+            val operation = value.getString("operation")
+            require(operation == "ios_progress_android_read") {
+                "Unsupported iOS progress interop operation: $operation"
+            }
+            val arguments = value.getJSONObject("arguments")
+            val stimulus = JSONObject()
+                .put("operation", operation)
+                .put("arguments", JSONObject(arguments.toString()))
+            runCase(value.getString("id"), operation, stimulus) {
+                readerProgressWebDavIOSToAndroidProjection(
+                    value.getString("id"),
+                    arguments
+                )
+            }
+        }
+    }
+
+    private suspend fun readerProgressWebDavIOSToAndroidProjection(
+        caseId: String,
+        arguments: JSONObject
+    ): JSONObject {
+        val target = InstrumentationRegistry.getInstrumentation().targetContext
+        val preferences = target.defaultSharedPreferences
+        val authorizationField = AppWebDav::class.java
+            .getDeclaredField("authorization")
+            .apply { isAccessible = true }
+        val book = Book(
+            bookUrl = "/android-runtime/reader-progress/ios-progress.txt",
+            originName = "RuntimeLab",
+            name = arguments.getString("name"),
+            author = arguments.getString("author")
+        )
+        preferences.edit()
+            .putString(PreferKey.webDavUrl, "$deviceOrigin/dav/$caseId/")
+            .commit()
+        authorizationField.set(
+            AppWebDav,
+            Authorization("oracle-user", "oracle-password")
+        )
+        return try {
+            val progress = AppWebDav.getBookProgress(book)
+            JSONObject()
+                .put("decoded", progress != null)
+                .put("name", progress?.name)
+                .put("author", progress?.author)
+                .put("chapter_index", progress?.durChapterIndex)
+                .put("char_position", progress?.durChapterPos)
+                .put("chapter_time", progress?.durChapterTime)
+                .put("chapter_title", progress?.durChapterTitle)
+        } finally {
+            authorizationField.set(AppWebDav, null)
+            preferences.edit().remove(PreferKey.webDavUrl).commit()
         }
     }
 

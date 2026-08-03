@@ -75,4 +75,23 @@ final class WebDAVBookProgressTests: XCTestCase {
             )
         }
     }
+
+    func testIOSInteropPayloadIsProducedByTheProductCodec() throws {
+        let document = WebDAVBookProgressDocument(
+            name: "SyncBook",
+            author: "SyncAuthor",
+            durChapterIndex: 2,
+            durChapterPos: 15,
+            durChapterTime: 200,
+            durChapterTitle: "第三章"
+        )
+
+        XCTAssertEqual(
+            #"{"author":"SyncAuthor","durChapterIndex":2,"durChapterPos":15,"durChapterTime":200,"durChapterTitle":"第三章","name":"SyncBook"}"#,
+            String(
+                decoding: try AndroidWebDAVBookProgressCodec.encode(document),
+                as: UTF8.self
+            )
+        )
+    }
 }

@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "android_runtime_scenario",
+  "id": "rl-reader-progress-webdav-ios-to-android-001",
+  "revision": 1,
+  "status": "candidate",
+  "operation": "android_runtime",
+  "capabilities": ["reader.progress", "integration.webdav", "data.interop.ios-to-android"],
+  "compatibility_profile": "android-legado-v1",
+  "source": null,
+  "input": "input.json",
+  "transport": {
+    "mode": "fixture_and_loopback",
+    "external_network": "deny",
+    "responses": [{
+      "id": "ios-progress-payload",
+      "match": {
+        "method": "GET",
+        "path": "/dav/ios-codec-payload-is-read-by-android/legado/bookProgress/SyncBook_SyncAuthor.json"
+      },
+      "respond": {
+        "status": 200,
+        "headers": {"content-type": "application/json; charset=utf-8"},
+        "body_file": "responses/ios-progress.json"
+      }
+    }]
+  },
+  "coverage": [{
+    "behavior": "reader.progress-webdav-ios-to-android",
+    "cases": [{
+      "id": "ios-codec-payload-is-read-by-android",
+      "role": "nominal",
+      "android_fact_refs": ["AF-APP-WEBDAV-GET-BOOK-PROGRESS"],
+      "branch_refs": ["Android AppWebDav.getBookProgress downloads and deserializes the iOS codec payload"]
+    }]
+  }],
+  "determinism": {
+    "clock": "fixed_input_times",
+    "timezone": "UTC",
+    "locale": "en_US_POSIX",
+    "random_seed": 0,
+    "network_allowed": false,
+    "logical_origin": "http://sourcelab.test",
+    "database_reset_per_case": true
+  },
+  "limits": {
+    "timeout_ms": 5000,
+    "max_response_bytes": 1048576,
+    "max_request_body_bytes": 65536,
+    "max_requests": 4,
+    "max_concurrency": 1
+  },
+  "provenance": {
+    "kind": "synthetic",
+    "source_refs": [
+      "ios/Packages/LegadoKit/Sources/IntegrationKit/WebDAVBookProgress.swift#AndroidWebDAVBookProgressCodec.encode",
+      "app/src/main/java/io/legado/app/help/AppWebDav.kt#getBookProgress",
+      "app/src/main/java/io/legado/app/data/entities/BookProgress.kt"
+    ],
+    "introduced_by": "IOS-INTEGRATION-WEBDAV-READER-PROGRESS-IOS-TO-ANDROID-001"
+  }
+}

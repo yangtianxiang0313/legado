@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "cases": [{
+    "id": "ios-codec-payload-is-read-by-android",
+    "operation": "ios_progress_android_read",
+    "arguments": {
+      "name": "SyncBook",
+      "author": "SyncAuthor"
+    }
+  }]
+}

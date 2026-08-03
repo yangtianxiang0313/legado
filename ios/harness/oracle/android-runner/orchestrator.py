@@ -1077,6 +1077,27 @@ SCENARIO_CONTRACTS = {
             "cloud-behind-chapter-can-manually-rollback",
         }),
     },
+    "rl-reader-progress-webdav-ios-to-android-001": {
+        "status": "candidate",
+        "fixture_kind": "android_runtime_scenario",
+        "runtime_loopback": True,
+        "result_type": "integration_runtime",
+        "stage_names": (
+            "fixture_setup",
+            "ios_payload_serve",
+            "android_app_webdav_read",
+            "result_mapping",
+        ),
+        "expected_cases": (
+            (
+                "ios-codec-payload-is-read-by-android",
+                "ios_progress_android_read",
+            ),
+        ),
+        "nominal_cases": frozenset({
+            "ios-codec-payload-is-read-by-android",
+        }),
+    },
     "rl-reader-progress-save-runtime-001": {
         "status": "candidate",
         "fixture_kind": "android_runtime_scenario",
@@ -1987,6 +2008,9 @@ SCENARIO_CONTRACTS = {
     },
 }
 ROUTE_OBSERVATION_SCENARIOS = {
+    "rl-reader-progress-webdav-ios-to-android-001": (
+        "ios-progress-payload",
+    ),
     "rl-reader-progress-webdav-conflict-runtime-001": (
         "cloud-ahead",
         "cloud-behind-position",
