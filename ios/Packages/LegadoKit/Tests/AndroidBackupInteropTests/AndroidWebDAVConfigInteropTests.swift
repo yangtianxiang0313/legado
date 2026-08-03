@@ -26,6 +26,7 @@ struct AndroidWebDAVConfigInteropTests {
         <boolean name="precisionSearch" value="true" />
         <boolean name="autoChangeSource" value="false" />
         <boolean name="changeSourceCheckAuthor" value="true" />
+        <int name="preDownloadNum" value="17" />
         <boolean name="ttsFollowSys" value="false" />
         <int name="ttsSpeechRate" value="15" />
         <int name="threadCount" value="8" />
@@ -58,6 +59,7 @@ struct AndroidWebDAVConfigInteropTests {
     #expect(application.usesPrecisionSearch == true)
     #expect(application.automaticallyChangesSource == false)
     #expect(application.changeSourceChecksAuthor == true)
+    #expect(application.preDownloadCount == 17)
     #expect(application.ttsFollowsSystemRate == false)
     #expect(application.ttsSpeechRate == 15)
     #expect(document.values["onlyLatestBackup"] == .boolean(false))

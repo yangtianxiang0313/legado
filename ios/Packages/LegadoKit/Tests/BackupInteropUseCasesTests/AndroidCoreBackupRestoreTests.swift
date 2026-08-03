@@ -79,6 +79,7 @@ struct AndroidCoreBackupRestoreUseCaseTests {
           AndroidApplicationBackupPreferences.autoChangeSourceKey: .boolean(false),
           AndroidApplicationBackupPreferences.changeSourceCheckAuthorKey:
             .boolean(true),
+          AndroidApplicationBackupPreferences.preDownloadNumKey: .int(17),
           AndroidApplicationBackupPreferences.ttsFollowSystemKey: .boolean(false),
           AndroidApplicationBackupPreferences.ttsSpeechRateKey: .int(15),
         ])
@@ -98,7 +99,7 @@ struct AndroidCoreBackupRestoreUseCaseTests {
     #expect(summary.localTextTOCRuleCount == 1)
     #expect(summary.readerConfigCount == 2)
     #expect(summary.dictionaryRuleCount == 1)
-    #expect(summary.applicationPreferenceCount == 12)
+    #expect(summary.applicationPreferenceCount == 13)
     #expect(Set(summary.preflight.members.map(\.path)) == Set([
       "bookSource.json", "config.xml", "dictRule.json", "readConfig.json",
       "readRecord.json", "replaceRule.json", "shareReadConfig.json",
@@ -131,6 +132,7 @@ struct AndroidCoreBackupRestoreUseCaseTests {
         == false
     )
     #expect(snapshot.sourceSwitchPreferences?.requiresAuthorMatch == true)
+    #expect(snapshot.readerPreferences?.preDownloadCount == 17)
   }
 
 }
@@ -149,6 +151,7 @@ private actor CoreRestoreRepositoryStub: AndroidCoreBackupRestoreRepository {
     AndroidReadingHistoryPreferencesImportPlan?
   private var searchScopePreferences: AndroidSearchScopePreferencesImportPlan?
   private var sourceSwitchPreferences: AndroidSourceSwitchPreferencesImportPlan?
+  private var readerPreferences: AndroidReaderPreferencesImportPlan?
 
   func restoreAndroidDatabaseDomains(
     _ payload: AndroidCoreDatabaseRestorePayload
@@ -238,6 +241,12 @@ private actor CoreRestoreRepositoryStub: AndroidCoreBackupRestoreRepository {
     sourceSwitchPreferences = plan
   }
 
+  func restoreAndroidReaderPreferences(
+    _ plan: AndroidReaderPreferencesImportPlan
+  ) async throws {
+    readerPreferences = plan
+  }
+
   func snapshot() -> (
     sources: [BookSourceDraft],
     rules: [ReaderReplacementRule],
@@ -250,13 +259,14 @@ private actor CoreRestoreRepositoryStub: AndroidCoreBackupRestoreRepository {
     readAloudPreferences: AndroidReadAloudPreferencesImportPlan?,
     readingHistoryPreferences: AndroidReadingHistoryPreferencesImportPlan?,
     searchScopePreferences: AndroidSearchScopePreferencesImportPlan?,
-    sourceSwitchPreferences: AndroidSourceSwitchPreferencesImportPlan?
+    sourceSwitchPreferences: AndroidSourceSwitchPreferencesImportPlan?,
+    readerPreferences: AndroidReaderPreferencesImportPlan?
   ) {
     (
       sources, rules, records, tocRules, readerConfig, dictionaryRules,
       navigationPreferences, globalShelfSortMode, readAloudPreferences,
       readingHistoryPreferences, searchScopePreferences,
-      sourceSwitchPreferences
+      sourceSwitchPreferences, readerPreferences
     )
   }
 }

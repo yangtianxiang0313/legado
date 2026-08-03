@@ -44,6 +44,42 @@ public struct OfflineCacheRequest: Equatable, Sendable {
   }
 }
 
+public struct ReaderChapterPrefetchPlan: Equatable, Sendable {
+  public let forward: [Int]
+  public let backward: [Int]
+
+  public init(
+    currentChapterIndex: Int,
+    chapterCount: Int,
+    preDownloadCount: Int
+  ) {
+    guard chapterCount > 0, preDownloadCount >= 2 else {
+      forward = []
+      backward = []
+      return
+    }
+    let lastIndex = chapterCount - 1
+    let forwardStart = currentChapterIndex + 2
+    let forwardEnd = min(currentChapterIndex + preDownloadCount, lastIndex)
+    forward = forwardStart <= forwardEnd
+      ? Array(forwardStart...forwardEnd)
+      : []
+
+    let backwardStart = currentChapterIndex - 2
+    let backwardEnd = max(
+      0,
+      currentChapterIndex - min(5, preDownloadCount)
+    )
+    backward = backwardStart >= backwardEnd
+      ? Array(stride(from: backwardStart, through: backwardEnd, by: -1))
+      : []
+  }
+
+  public var isEmpty: Bool {
+    forward.isEmpty && backward.isEmpty
+  }
+}
+
 private enum OfflineCacheFailure: Error {
   case emptyContent
 }
@@ -83,8 +119,53 @@ public extension ShelfLibrary {
     requests: [OfflineCacheRequest],
     loader: any ReaderContentLoading
   ) async -> OfflineCacheReport {
-    offlineCacheState = .caching
-    offlineCacheProgress = 0
+    await cacheOffline(
+      requests: requests,
+      loader: loader,
+      tracksManualCacheProgress: true
+    )
+  }
+
+  @discardableResult
+  func prefetchReaderChapters(
+    bookID: LibraryDomain.BookID,
+    currentChapterIndex: Int,
+    preDownloadCount: Int,
+    loader: any ReaderContentLoading
+  ) async -> OfflineCacheReport {
+    let chapterCount = await chapters(bookID: bookID).count
+    let plan = ReaderChapterPrefetchPlan(
+      currentChapterIndex: currentChapterIndex,
+      chapterCount: chapterCount,
+      preDownloadCount: preDownloadCount
+    )
+    let requests: [OfflineCacheRequest] = [
+      plan.forward, plan.backward,
+    ].compactMap { indexes -> OfflineCacheRequest? in
+      guard let lower = indexes.min(), let upper = indexes.max() else {
+        return nil
+      }
+      return OfflineCacheRequest(
+        bookID: bookID,
+        chapterIndexes: lower...upper
+      )
+    }
+    return await cacheOffline(
+      requests: requests,
+      loader: loader,
+      tracksManualCacheProgress: false
+    )
+  }
+
+  private func cacheOffline(
+    requests: [OfflineCacheRequest],
+    loader: any ReaderContentLoading,
+    tracksManualCacheProgress: Bool
+  ) async -> OfflineCacheReport {
+    if tracksManualCacheProgress {
+      offlineCacheState = .caching
+      offlineCacheProgress = 0
+    }
     let registry = SourceCacheQueueRegistry()
     var requestedCount = 0
     var cachedCount = 0
@@ -132,7 +213,9 @@ public extension ShelfLibrary {
             index: chapter.index,
             key: chapter.id.rawValue
           )
-          offlineCacheProgress += 1
+          if tracksManualCacheProgress {
+            offlineCacheProgress += 1
+          }
           continue
         }
 
@@ -181,6 +264,12 @@ public extension ShelfLibrary {
             cachedCount += 1
             finished = true
           } catch {
+            if Task.isCancelled {
+              await queue.stop()
+              cancelledCount += 1
+              finished = true
+              continue
+            }
             let transition = await queue.recordFailure(
               index: chapter.index,
               key: chapter.id.rawValue,
@@ -192,7 +281,9 @@ public extension ShelfLibrary {
             }
           }
         }
-        offlineCacheProgress += 1
+        if tracksManualCacheProgress {
+          offlineCacheProgress += 1
+        }
       }
       await registry.finish(book.candidate.bookURL)
     }
@@ -204,9 +295,11 @@ public extension ShelfLibrary {
       failedCount: failedCount,
       cancelledCount: cancelledCount
     )
-    lastOfflineCacheReport = report
-    offlineCacheState =
-      failedCount > 0 ? .failed : .completed
+    if tracksManualCacheProgress {
+      lastOfflineCacheReport = report
+      offlineCacheState =
+        failedCount > 0 ? .failed : .completed
+    }
     return report
   }
 }

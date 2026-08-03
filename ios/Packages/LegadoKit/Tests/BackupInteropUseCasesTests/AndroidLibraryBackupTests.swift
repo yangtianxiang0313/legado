@@ -91,7 +91,8 @@ struct AndroidLibraryBackupUseCaseTests {
         readAloudPreferences: ReadAloudPreferences(
           followsSystemRate: false,
           speechRatePreference: 15
-        )
+        ),
+        readerPreferences: ReaderPreferences(preDownloadCount: 17)
       ),
       webDAVConfiguration: nil
     )
@@ -156,6 +157,7 @@ struct AndroidLibraryBackupUseCaseTests {
     #expect(sharedPreferences.usesPrecisionSearch == true)
     #expect(sharedPreferences.automaticallyChangesSource == false)
     #expect(sharedPreferences.changeSourceChecksAuthor == true)
+    #expect(sharedPreferences.preDownloadCount == 17)
     #expect(sharedPreferences.ttsFollowsSystemRate == false)
     #expect(sharedPreferences.ttsSpeechRate == 15)
   }

@@ -41,9 +41,19 @@ public final class ReaderPreferencesStore {
     update { $0.autoPageEnabled = enabled }
   }
 
+  public func setPreDownloadCount(_ count: Int) {
+    update { $0.preDownloadCount = count }
+  }
+
   public func reset() {
     value = ReaderPreferences()
     repository.save(value)
+  }
+
+  public func replace(_ preferences: ReaderPreferences) {
+    let updated = preferences.normalized()
+    value = updated
+    repository.save(updated)
   }
 
   public func apply(_ projection: AndroidReaderConfigProjection) {

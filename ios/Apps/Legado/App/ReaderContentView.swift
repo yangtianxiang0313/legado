@@ -65,6 +65,7 @@ struct ReaderContentView: View {
     @State private var webDAVProgressMessage: String?
     @State private var syncingWebDAVProgress = false
     @State private var automaticSourceRecoveryMessage: String?
+    @State private var prefetchTask: Task<Void, Never>?
 
     init(
         target: ReaderRoute,
@@ -290,6 +291,12 @@ struct ReaderContentView: View {
                 chapter: effectiveChapter,
                 characterOffset: effectiveOffset
             )
+            if session.state == .loaded {
+                startReaderPrefetch(
+                    book: effectiveBook,
+                    chapter: effectiveChapter
+                )
+            }
             await synchronizeWebDAVProgress()
             if
                 readAloud.state == .awaitingNextChapter,
@@ -355,6 +362,8 @@ struct ReaderContentView: View {
             }
         }
         .onDisappear {
+            prefetchTask?.cancel()
+            prefetchTask = nil
             Task {
                 await saveCurrentProgress()
                 await webDAVProgressUploader.flush()
@@ -419,6 +428,31 @@ struct ReaderContentView: View {
         }
         .sheet(isPresented: $showsDictionaryLookup) {
             DictionaryLookupView(store: dictionaryLookup)
+        }
+    }
+
+    private func startReaderPrefetch(
+        book: ShelfBookItem,
+        chapter: BookChapter
+    ) {
+        prefetchTask?.cancel()
+        let count = readerPreferences.value.preDownloadCount
+        guard
+            count >= 2,
+            !AndroidWebDAVBookOrigin.isLocalSource(
+                book.candidate.sourceID
+            )
+        else {
+            prefetchTask = nil
+            return
+        }
+        prefetchTask = Task {
+            _ = await library.prefetchReaderChapters(
+                bookID: book.id,
+                currentChapterIndex: chapter.index,
+                preDownloadCount: count,
+                loader: contentLoader
+            )
         }
     }
 
@@ -917,6 +951,14 @@ struct ReaderContentView: View {
                 )
             }
             Section("章节") {
+                Stepper(
+                    "预下载章节数 \(readerPreferences.value.preDownloadCount)",
+                    value: preDownloadCountBinding,
+                    in: ReaderPreferences.preDownloadCountRange
+                )
+                .accessibilityIdentifier(
+                    "action.reader.updatePreDownloadCount"
+                )
                 Button {
                     refreshReaderContent(.current)
                 } label: {
@@ -2086,6 +2128,13 @@ struct ReaderContentView: View {
         Binding(
             get: { readerPreferences.value.autoPageEnabled },
             set: { readerPreferences.setAutoPageEnabled($0) }
+        )
+    }
+
+    private var preDownloadCountBinding: Binding<Int> {
+        Binding(
+            get: { readerPreferences.value.preDownloadCount },
+            set: { readerPreferences.setPreDownloadCount($0) }
         )
     }
 

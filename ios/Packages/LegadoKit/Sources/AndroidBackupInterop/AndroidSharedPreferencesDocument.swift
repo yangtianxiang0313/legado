@@ -169,6 +169,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
   public static let precisionSearchKey = "precisionSearch"
   public static let autoChangeSourceKey = "autoChangeSource"
   public static let changeSourceCheckAuthorKey = "changeSourceCheckAuthor"
+  public static let preDownloadNumKey = "preDownloadNum"
   public static let ttsFollowSystemKey = "ttsFollowSys"
   public static let ttsSpeechRateKey = "ttsSpeechRate"
 
@@ -182,6 +183,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
   public let usesPrecisionSearch: Bool?
   public let automaticallyChangesSource: Bool?
   public let changeSourceChecksAuthor: Bool?
+  public let preDownloadCount: Int64?
   public let ttsFollowsSystemRate: Bool?
   public let ttsSpeechRate: Int64?
 
@@ -196,6 +198,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
     usesPrecisionSearch: Bool? = nil,
     automaticallyChangesSource: Bool? = nil,
     changeSourceChecksAuthor: Bool? = nil,
+    preDownloadCount: Int64? = nil,
     ttsFollowsSystemRate: Bool? = nil,
     ttsSpeechRate: Int64? = nil
   ) {
@@ -209,6 +212,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
     self.usesPrecisionSearch = usesPrecisionSearch
     self.automaticallyChangesSource = automaticallyChangesSource
     self.changeSourceChecksAuthor = changeSourceChecksAuthor
+    self.preDownloadCount = preDownloadCount
     self.ttsFollowsSystemRate = ttsFollowsSystemRate
     self.ttsSpeechRate = ttsSpeechRate
   }
@@ -227,6 +231,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
       changeSourceChecksAuthor: document.boolean(
         Self.changeSourceCheckAuthorKey
       ),
+      preDownloadCount: document.integer(Self.preDownloadNumKey),
       ttsFollowsSystemRate: document.boolean(Self.ttsFollowSystemKey),
       ttsSpeechRate: document.integer(Self.ttsSpeechRateKey)
     )
@@ -240,6 +245,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
       || usesPrecisionSearch != nil
       || automaticallyChangesSource != nil
       || changeSourceChecksAuthor != nil
+      || preDownloadCount != nil
       || ttsFollowsSystemRate != nil || ttsSpeechRate != nil
   }
 }

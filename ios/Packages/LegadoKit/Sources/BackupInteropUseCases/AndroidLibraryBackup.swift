@@ -106,6 +106,7 @@ public struct AndroidApplicationBackupExportInput: Equatable, Sendable {
   public let searchScopePreferences: SearchScopePreferences
   public let sourceSwitchPreferences: SourceSwitchPreferences
   public let readAloudPreferences: ReadAloudPreferences
+  public let readerPreferences: ReaderPreferences
 
   public init(
     showsDiscovery: Bool,
@@ -115,7 +116,8 @@ public struct AndroidApplicationBackupExportInput: Equatable, Sendable {
     readingHistoryPreferences: ReadingHistoryPreferences = .init(),
     searchScopePreferences: SearchScopePreferences = .init(),
     sourceSwitchPreferences: SourceSwitchPreferences = .init(),
-    readAloudPreferences: ReadAloudPreferences = .init()
+    readAloudPreferences: ReadAloudPreferences = .init(),
+    readerPreferences: ReaderPreferences = .init()
   ) {
     self.showsDiscovery = showsDiscovery
     self.showsRSS = showsRSS
@@ -125,6 +127,7 @@ public struct AndroidApplicationBackupExportInput: Equatable, Sendable {
     self.searchScopePreferences = searchScopePreferences
     self.sourceSwitchPreferences = sourceSwitchPreferences
     self.readAloudPreferences = readAloudPreferences
+    self.readerPreferences = readerPreferences
   }
 }
 
@@ -375,6 +378,10 @@ public struct AndroidLibraryBackupUseCase: Sendable {
       values[AndroidApplicationBackupPreferences.changeSourceCheckAuthorKey] =
         .boolean(
           applicationPreferences.sourceSwitchPreferences.requiresAuthorMatch
+        )
+      values[AndroidApplicationBackupPreferences.preDownloadNumKey] =
+        .int(
+          Int32(applicationPreferences.readerPreferences.preDownloadCount)
         )
       values[AndroidApplicationBackupPreferences.ttsFollowSystemKey] =
         .boolean(

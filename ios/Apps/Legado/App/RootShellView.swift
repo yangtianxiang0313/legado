@@ -512,7 +512,8 @@ struct RootShellView: View {
                 readingHistoryPreferences: readingHistoryPreferences.value,
                 searchScopePreferences: searchScopePreferences.value,
                 sourceSwitchPreferences: sourceSwitchPreferences.value,
-                readAloudPreferences: readAloudPreferences.value
+                readAloudPreferences: readAloudPreferences.value,
+                readerPreferences: readerPreferences.value
             ),
             webDAVConfiguration: primaryConfiguration,
             webDAVServerProfiles: profileExports,
@@ -2072,7 +2073,8 @@ private struct RootContentView: View {
                             sourceSwitchPreferences:
                                 sourceSwitchPreferences.value,
                             readAloudPreferences:
-                                readAloudPreferences.value
+                                readAloudPreferences.value,
+                            readerPreferences: readerPreferences.value
                         ),
                     webDAVConfiguration: webDAVConfiguration,
                     webDAVServerProfiles: serverProfileExports,

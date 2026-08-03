@@ -185,6 +185,14 @@ struct LegadoApp: App {
         let sourceSwitchPreferencesStore = SourceSwitchPreferencesStore(
             repository: sourceSwitchPreferencesRepository
         )
+        let readerPreferencesRepository =
+            UserDefaultsReaderPreferencesRepository()
+        if processArguments.contains("--reset-reader-preferences") {
+            readerPreferencesRepository.save(ReaderPreferences())
+        }
+        let readerPreferencesStore = ReaderPreferencesStore(
+            repository: readerPreferencesRepository
+        )
         _rootVisibility = State(initialValue: rootVisibilityStore)
         _readAloudPreferences = State(
             initialValue: readAloudPreferencesStore
@@ -197,6 +205,9 @@ struct LegadoApp: App {
         )
         _sourceSwitchPreferences = State(
             initialValue: sourceSwitchPreferencesStore
+        )
+        _readerPreferences = State(
+            initialValue: readerPreferencesStore
         )
         _router = State(
             initialValue: AppRouter(
@@ -222,6 +233,7 @@ struct LegadoApp: App {
                         readingHistoryPreferencesStore,
                     searchScopePreferences: searchScopePreferencesStore,
                     sourceSwitchPreferences: sourceSwitchPreferencesStore,
+                    readerPreferences: readerPreferencesStore,
                     webDAVSettings: webDAVSettingsStore,
                     webDAVCredentials: webDAVCredentials
                 )
@@ -319,18 +331,6 @@ struct LegadoApp: App {
             _readAloud = State(
                 initialValue: ReadAloudSession(
                     synthesizer: synthesizer
-                )
-            )
-            let preferencesRepository =
-                UserDefaultsReaderPreferencesRepository()
-            if processArguments.contains(
-                "--reset-reader-preferences"
-            ) {
-                preferencesRepository.save(ReaderPreferences())
-            }
-            _readerPreferences = State(
-                initialValue: ReaderPreferencesStore(
-                    repository: preferencesRepository
                 )
             )
             _bookDetailPreferences = State(
@@ -447,6 +447,7 @@ private struct AppAndroidCoreBackupRestoreRepository:
     let readingHistoryPreferences: ReadingHistoryPreferencesStore
     let searchScopePreferences: SearchScopePreferencesStore
     let sourceSwitchPreferences: SourceSwitchPreferencesStore
+    let readerPreferences: ReaderPreferencesStore
     let webDAVSettings: WebDAVConnectionSettingsStore
     let webDAVCredentials: KeychainWebDAVCredentialStore
 
@@ -487,6 +488,10 @@ private struct AppAndroidCoreBackupRestoreRepository:
                 }
                 if let preferences = payload.sourceSwitchPreferences {
                     try await restoreAndroidSourceSwitchPreferences(preferences)
+                }
+                if let preferences = payload.readerPreferences,
+                   preferences.isPresent {
+                    try await restoreAndroidReaderPreferences(preferences)
                 }
                 if !payload.bookSources.isEmpty {
                     try await sourceRepository.saveSources(
@@ -545,6 +550,9 @@ private struct AppAndroidCoreBackupRestoreRepository:
             sourceSwitchPreferences: await MainActor.run {
                 sourceSwitchPreferences.value
             },
+            readerPreferences: await MainActor.run {
+                readerPreferences.value
+            },
             webDAVSettings: settings,
             mainCredential: mainCredential,
             serverProfiles: serverProfiles,
@@ -575,6 +583,7 @@ private struct AppAndroidCoreBackupRestoreRepository:
             sourceSwitchPreferences.replace(
                 checkpoint.sourceSwitchPreferences
             )
+            readerPreferences.replace(checkpoint.readerPreferences)
         }
 
         let importedServerReferences = Set(
@@ -827,6 +836,16 @@ private struct AppAndroidCoreBackupRestoreRepository:
         }
     }
 
+    func restoreAndroidReaderPreferences(
+        _ plan: AndroidReaderPreferencesImportPlan
+    ) async throws {
+        await MainActor.run {
+            if let count = plan.preDownloadCount {
+                readerPreferences.setPreDownloadCount(count)
+            }
+        }
+    }
+
     func restoreAndroidWebDAVServerProfiles(
         _ plan: AndroidServerProfileImportPlan
     ) async throws {
@@ -846,6 +865,7 @@ private struct AppAndroidCoreRestoreCheckpoint: Sendable {
     let readingHistoryPreferences: ReadingHistoryPreferences
     let searchScopePreferences: SearchScopePreferences
     let sourceSwitchPreferences: SourceSwitchPreferences
+    let readerPreferences: ReaderPreferences
     let webDAVSettings: WebDAVConnectionSettings
     let mainCredential: WebDAVBasicCredentials?
     let serverProfiles: [WebDAVServerProfile]
