@@ -2668,23 +2668,25 @@ def normalize_raw_artifact(
     return artifact
 
 
-def characterization_document(
+def local_run_document(
     artifact: Mapping[str, Any],
     bindings: Mapping[str, str],
     *,
     emulator_serial: str,
     scenario_id: str = DEFAULT_SCENARIO_ID,
 ) -> Dict[str, Any]:
+    artifact_sha256 = _sha256(_canonical(artifact))
     return {
         "schema_version": 1,
-        "kind": "android_runtime_characterization",
-        "fixture_id": scenario_id,
+        "kind": "android_oracle_local_run",
+        "authority": "local_unverified",
+        "status": "candidate_only",
         "scenario_id": scenario_id,
-        "compatibility_profile": "android-legado-v1",
-        "oracle": {
-            "android_git_commit": bindings["android_git_commit"],
-            "runner_digest": bindings["runner_digest"],
+        "emulator": {
+            "serial_sha256": _sha256(emulator_serial.encode("utf-8")),
         },
+        "bindings": dict(bindings),
+        "artifact_sha256": artifact_sha256,
         "artifact": dict(artifact),
     }
 
@@ -2725,17 +2727,10 @@ def _output_path(
     scenario_id: str = DEFAULT_SCENARIO_ID,
 ) -> Path:
     output_root = root / ".harness-runtime/android-oracle"
-    golden = (
-        root
-        / "ios/harness/goldens/android-legado-v1"
-        / f"{scenario_id}.json"
-    ).absolute()
     if requested is None:
         return output_root / f"{scenario_id}-local-run.json"
     candidate = requested if requested.is_absolute() else root / requested
     candidate = candidate.absolute()
-    if candidate == golden:
-        return candidate
     try:
         candidate.relative_to(output_root.absolute())
     except ValueError as error:
@@ -3127,7 +3122,7 @@ def run_characterization(
             bindings,
             scenario_id,
         )
-        document = characterization_document(
+        document = local_run_document(
             artifact,
             bindings,
             emulator_serial=serial,
@@ -3139,19 +3134,15 @@ def run_characterization(
             scenario_id,
         )
         payload = _canonical(document)
-        golden_output = output_path == (
-            root
-            / "ios/harness/goldens/android-legado-v1"
-            / f"{scenario_id}.json"
-        ).absolute()
         _atomic_write(
             output_path,
             payload,
-            private=not golden_output,
+            private=True,
         )
         return {
             "schema_version": 1,
-            "status": "characterized",
+            "authority": "local_unverified",
+            "status": "candidate_only",
             "scenario_id": scenario_id,
             "runner_digest": bindings["runner_digest"],
             "golden_sha256": _sha256(payload),

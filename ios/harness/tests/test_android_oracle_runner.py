@@ -2697,25 +2697,23 @@ class AndroidOracleRunnerTests(unittest.TestCase):
             ]["exceptions"],
         )
 
-    def test_characterization_document_is_direct_and_runtime_can_be_private(self):
+    def test_local_run_document_is_candidate_only_and_private(self):
         artifact = runner.normalize_raw_artifact(
             raw_artifact(),
             bindings(),
         )
-        document = runner.characterization_document(
+        document = runner.local_run_document(
             artifact,
             bindings(),
             emulator_serial="emulator-5554",
         )
         self.assertEqual(
-            "android_runtime_characterization",
+            "android_oracle_local_run",
             document["kind"],
         )
-        self.assertEqual(runner.SCENARIO_ID, document["fixture_id"])
-        self.assertEqual(
-            bindings()["android_git_commit"],
-            document["oracle"]["android_git_commit"],
-        )
+        self.assertEqual("local_unverified", document["authority"])
+        self.assertEqual("candidate_only", document["status"])
+        self.assertEqual(bindings(), document["bindings"])
         self.assertNotIn(
             "emulator-5554",
             json.dumps(document, ensure_ascii=False),
@@ -2733,19 +2731,20 @@ class AndroidOracleRunnerTests(unittest.TestCase):
                 stat.S_IMODE(path.parent.stat().st_mode),
             )
 
-    def test_output_allows_only_runtime_or_exact_scenario_golden(self):
+    def test_output_allows_only_runtime(self):
         scenario_golden = (
             ROOT
             / "ios/harness/goldens/android-legado-v1"
             / f"{runner.SCENARIO_ID}.json"
         )
-        self.assertEqual(
-            scenario_golden,
+        with self.assertRaisesRegex(
+            runner.AndroidOracleRunnerError,
+            "OUTPUT_OUTSIDE_RUNTIME",
+        ):
             runner._output_path(
                 ROOT,
                 scenario_golden,
-            ),
-        )
+            )
         with self.assertRaisesRegex(
             runner.AndroidOracleRunnerError,
             "OUTPUT_OUTSIDE_RUNTIME",
