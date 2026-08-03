@@ -581,12 +581,26 @@ public actor GRDBBookShelfRepository:
     chapters: [LocalTextChapter],
     splitsLongChapters: Bool
   ) async throws -> ShelfBookItem {
+    try await rebuildLocalText(
+      bookID: bookID,
+      chapters: chapters,
+      splitsLongChapters: splitsLongChapters,
+      managedReference: nil
+    )
+  }
+
+  public func rebuildLocalText(
+    bookID: LibraryDomain.BookID,
+    chapters: [LocalTextChapter],
+    splitsLongChapters: Bool,
+    managedReference: String?
+  ) async throws -> ShelfBookItem {
     try await database.write { db in
       guard
         var record = try BookRecord
           .filter(Column("bookID") == bookID.rawValue)
           .fetchOne(db),
-        record.sourceID == "local-file"
+        AndroidWebDAVBookOrigin.isLocalSource(record.sourceID)
       else {
         throw ShelfMutationFailure.missingBook
       }
@@ -601,6 +615,10 @@ public actor GRDBBookShelfRepository:
           .map { ($0.chapterID, $0.content) }
       )
       record.splitsLongChapters = splitsLongChapters
+      if let managedReference {
+        record.bookURL = managedReference
+        record.bookRequestExpression = managedReference
+      }
       record.chapterCount = chapters.count
       record.lastChapter = chapters.last?.title ?? ""
       record.updateError = false

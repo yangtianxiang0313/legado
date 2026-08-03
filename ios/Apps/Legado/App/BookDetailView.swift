@@ -348,7 +348,11 @@ struct BookDetailView: View {
     }
 
     private var activeBookKind: BookDetailBookKind {
-        guard activeCandidate?.sourceID == "local-file" else {
+        guard
+            AndroidWebDAVBookOrigin.isLocalSource(
+                activeCandidate?.sourceID ?? ""
+            )
+        else {
             return .remote
         }
         return activeCandidate?.kind

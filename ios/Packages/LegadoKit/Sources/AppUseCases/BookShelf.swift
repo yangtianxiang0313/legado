@@ -315,6 +315,12 @@ public protocol BookShelfRepository:
     chapters: [LocalTextChapter],
     splitsLongChapters: Bool
   ) async throws -> ShelfBookItem
+  func rebuildLocalText(
+    bookID: LibraryDomain.BookID,
+    chapters: [LocalTextChapter],
+    splitsLongChapters: Bool,
+    managedReference: String?
+  ) async throws -> ShelfBookItem
   func chapterContent(
     bookID: LibraryDomain.BookID,
     chapterID: LibraryDomain.ChapterID
@@ -468,6 +474,19 @@ public extension BookShelfRepository {
     splitsLongChapters: Bool
   ) async throws -> ShelfBookItem {
     throw BookImportFailure.unsupportedRepository
+  }
+
+  func rebuildLocalText(
+    bookID: LibraryDomain.BookID,
+    chapters: [LocalTextChapter],
+    splitsLongChapters: Bool,
+    managedReference: String?
+  ) async throws -> ShelfBookItem {
+    try await rebuildLocalText(
+      bookID: bookID,
+      chapters: chapters,
+      splitsLongChapters: splitsLongChapters
+    )
   }
 
   func chapterContent(
@@ -842,7 +861,7 @@ public final class ShelfLibrary {
   ) async -> ShelfBookItem? {
     guard
       let current = try? await repository.book(id: bookID),
-      current.candidate.sourceID == "local-file"
+      AndroidWebDAVBookOrigin.isLocalSource(current.candidate.sourceID)
     else {
       errorMessage = "仅本地 TXT 支持拆分长章节"
       return nil
@@ -874,7 +893,7 @@ public final class ShelfLibrary {
   ) async -> ShelfBookItem? {
     guard
       let current = try? await repository.book(id: bookID),
-      current.candidate.sourceID == "local-file"
+      AndroidWebDAVBookOrigin.isLocalSource(current.candidate.sourceID)
     else {
       errorMessage = "仅本地 TXT 支持重新读取"
       return nil
@@ -884,6 +903,42 @@ public final class ShelfLibrary {
       bookID: bookID,
       data: data
     )
+  }
+
+  @discardableResult
+  public func restoreWebDAVLocalText(
+    bookID: LibraryDomain.BookID,
+    managedReference: String,
+    data: Data,
+    splitsLongChapters: Bool? = nil
+  ) async -> ShelfBookItem? {
+    guard
+      let current = try? await repository.book(id: bookID),
+      AndroidWebDAVBookOrigin.decode(current.candidate.sourceID) != nil
+    else {
+      errorMessage = "书籍没有可恢复的 WebDAV 来源"
+      return nil
+    }
+    do {
+      let shouldSplit = splitsLongChapters ?? current.splitsLongChapters
+      let document = try LocalTextBookParser.parse(
+        data,
+        splitLongChapters: shouldSplit,
+        tocRules: try await repository.localTextTOCRules()
+      )
+      let updated = try await repository.rebuildLocalText(
+        bookID: bookID,
+        chapters: document.chapters,
+        splitsLongChapters: shouldSplit,
+        managedReference: managedReference
+      )
+      await reload()
+      errorMessage = nil
+      return updated
+    } catch {
+      errorMessage = "无法恢复 WebDAV 本地书"
+      return nil
+    }
   }
 
   public func readerContentLoader(

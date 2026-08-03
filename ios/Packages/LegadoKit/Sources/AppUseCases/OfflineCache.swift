@@ -103,7 +103,7 @@ public extension ShelfLibrary {
         request.chapterIndexes?.contains(chapter.index) ?? true
       }
       requestedCount += chapters.count
-      if book.candidate.sourceID == "local-file" {
+      if AndroidWebDAVBookOrigin.isLocalSource(book.candidate.sourceID) {
         skippedCount += chapters.count
         continue
       }

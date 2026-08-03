@@ -934,8 +934,9 @@ struct ReaderContentView: View {
                         chapterID: target.chapterID,
                         title: document.title,
                         content: document.content,
-                        canReset:
-                            readerBook?.candidate.sourceID != "local-file"
+                        canReset: !AndroidWebDAVBookOrigin.isLocalSource(
+                            readerBook?.candidate.sourceID ?? ""
+                        )
                     )
                     menuPresented = false
                     Task {

@@ -348,19 +348,22 @@ struct RootShellView: View {
                     UIPasteboard.general.string = value
                 },
                 refreshBookInfo: { item in
-                    if item.candidate.sourceID == "local-file" {
-                        guard
-                            let url = URL(
-                                string: item.candidate.bookURL
-                            ),
-                            url.isFileURL,
-                            let data = try? Data(contentsOf: url)
-                        else {
+                    if AndroidWebDAVBookOrigin.isLocalSource(
+                        item.candidate.sourceID
+                    ) {
+                        guard let file = await localBookFile(for: item) else {
                             return nil
+                        }
+                        if file.reference != item.candidate.bookURL {
+                            return await library.restoreWebDAVLocalText(
+                                bookID: item.id,
+                                managedReference: file.reference,
+                                data: file.data
+                            )
                         }
                         return await library.refreshLocalText(
                             bookID: item.id,
-                            data: data
+                            data: file.data
                         )
                     }
                     return await library.refreshBookInfo(
@@ -451,20 +454,22 @@ struct RootShellView: View {
                     )
                 },
                 setSplitLongChapters: { item, enabled in
-                    guard
-                        let url = URL(
-                            string: item.candidate.bookURL
-                        ),
-                        url.isFileURL,
-                        let data = try? Data(contentsOf: url)
-                    else {
+                    guard let file = await localBookFile(for: item) else {
                         return nil
+                    }
+                    if file.reference != item.candidate.bookURL {
+                        return await library.restoreWebDAVLocalText(
+                            bookID: item.id,
+                            managedReference: file.reference,
+                            data: file.data,
+                            splitsLongChapters: enabled
+                        )
                     }
                     return await library
                         .setLocalTextLongChapterSplitting(
                             enabled,
                             bookID: item.id,
-                            data: data
+                            data: file.data
                         )
                 },
                 availableSources: sourceCatalog.sources,
@@ -497,7 +502,9 @@ struct RootShellView: View {
                 },
                 uploadLocalBook: { item in
                     guard
-                        item.candidate.sourceID == "local-file",
+                        AndroidWebDAVBookOrigin.isLocalSource(
+                            item.candidate.sourceID
+                        ),
                         let fileURL = URL(
                             string: item.candidate.bookURL
                         ),
@@ -636,6 +643,36 @@ struct RootShellView: View {
     private func sourceDraft(id: String) -> BookSourceDraft {
         sourceCatalog.source(id: id)
             ?? BookSourceDraft(sourceURL: id, name: id)
+    }
+
+    private func localBookFile(
+        for item: ShelfBookItem
+    ) async -> ManagedBookFile? {
+        if
+            let url = URL(string: item.candidate.bookURL),
+            url.isFileURL,
+            let data = try? Data(contentsOf: url)
+        {
+            return ManagedBookFile(
+                reference: item.candidate.bookURL,
+                fileName: item.candidate.originName,
+                data: data
+            )
+        }
+        let outcome = await WebDAVLocalBookRecoveryUseCase(
+            repository: webDAVServerProfiles,
+            transfer: webDAVRemoteBooks
+        ).recover(
+            sourceID: item.candidate.sourceID,
+            fallbackFileName: item.candidate.originName
+        )
+        guard case .recovered(_, let fileName, _, let data) = outcome else {
+            return nil
+        }
+        return try? ManagedBookFileStore.persist(
+            data: data,
+            fileName: fileName
+        )
     }
 
     private func pathBinding(for root: RootRoute) -> Binding<[AppRoute]> {
