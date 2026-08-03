@@ -1051,6 +1051,7 @@ SCENARIO_CONTRACTS = {
     "rl-reader-progress-webdav-conflict-runtime-001": {
         "status": "candidate",
         "fixture_kind": "android_runtime_scenario",
+        "runtime_loopback": True,
         "result_type": "reader_runtime",
         "stage_names": (
             "fixture_setup",
@@ -1986,6 +1987,11 @@ SCENARIO_CONTRACTS = {
     },
 }
 ROUTE_OBSERVATION_SCENARIOS = {
+    "rl-reader-progress-webdav-conflict-runtime-001": (
+        "cloud-ahead",
+        "cloud-behind-position",
+        "cloud-behind-chapter",
+    ),
     "sl-source-debug-android-truth-001": (
         "debug-search",
         "debug-book",
@@ -2410,7 +2416,12 @@ def normalize_raw_artifact(
     device_origin = raw.get("device_origin")
     expected_device_origin = contract.get("device_origin")
     if runtime_scenario:
-        device_origin_valid = device_origin == "android-runtime://local"
+        device_origin_valid = (
+            isinstance(device_origin, str)
+            and device_origin.startswith("http://127.0.0.1:")
+            if contract.get("runtime_loopback") is True
+            else device_origin == "android-runtime://local"
+        )
     elif isinstance(expected_device_origin, str):
         device_origin_valid = device_origin == expected_device_origin
     else:
@@ -3018,6 +3029,23 @@ def _integration_lab_transport_mode(
     return str(mode)
 
 
+def _runtime_transport_mode(
+    root: Path,
+    scenario_id: str,
+) -> str:
+    case = _read_json(
+        root
+        / "ios/harness/fixtures/runtime-lab"
+        / scenario_id
+        / "case.json"
+    )
+    transport = case.get("transport") if isinstance(case, dict) else None
+    mode = transport.get("mode") if isinstance(transport, dict) else None
+    if mode not in {"none", "fixture_and_loopback"}:
+        raise AndroidOracleRunnerError("RUNTIME_TRANSPORT_MODE_INVALID")
+    return str(mode)
+
+
 def _render_inputs(root: Path, scenario_id: str) -> Dict[str, Any]:
     contract = _scenario_contract(scenario_id)
     _, directory = fixture_root(root, scenario_id, contract)
@@ -3166,7 +3194,17 @@ def run_characterization(
             if integration_scenario
             else None
         )
-        if runtime_scenario or real_source_scenario:
+        runtime_transport_mode = (
+            _runtime_transport_mode(root, scenario_id)
+            if runtime_scenario
+            else None
+        )
+        if (
+            runtime_scenario
+            and runtime_transport_mode == "fixture_and_loopback"
+        ):
+            server_context = _source_lab_server(root, scenario_id)
+        elif runtime_scenario or real_source_scenario:
             server_context = contextlib.nullcontext(None)
         elif (
             integration_scenario
@@ -3220,7 +3258,7 @@ def run_characterization(
                     timeout=30,
                 )
                 device_origin = f"http://127.0.0.1:{reverse_port}"
-                if not integration_scenario:
+                if not integration_scenario and not runtime_scenario:
                     source = _render_source(
                         root,
                         device_origin,
