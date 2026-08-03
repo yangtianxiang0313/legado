@@ -1115,6 +1115,33 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/Apps/Legado/App/**",
             ],
         }
+    if target == "IOS-LOCAL-TXT-ANDROID-TOC-RULE-INTEROP-001":
+        return {
+            "owner": "LibraryDomain",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-002",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-011",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
+                "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+                "ios/Packages/LegadoKit/Sources/LibraryDomain/**",
+                "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+                "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+                "ios/Packages/LegadoKit/Tests/AndroidBackupInteropTests/**",
+                "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**",
+                "ios/Packages/LegadoKit/Tests/LibraryDomainTests/**",
+                "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+                "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+                "ios/Apps/Legado/App/**",
+            ],
+        }
     if target == "IOS-DEPENDENCY-SWIFTSOUP-HTML-001":
         return {
             "owner": "DependencyControl",
@@ -3622,6 +3649,20 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_id": "http-tts-playback-tests",
             "test_filter": "HTTPTextToSpeechPlaybackTests",
             "acceptance_id": "http-tts-playback-acceptance",
+        }
+    if target == "IOS-LOCAL-TXT-ANDROID-TOC-RULE-INTEROP-001":
+        delivery_contracts["LibraryDomain"] = {
+            "goal": (
+                "按 Android TxtTocRule、Restore 与 TextFile.getTocRule 源码，保真导入 "
+                "txtTocRule.json，并让启用规则按 Android 次序和最大匹配数驱动本地 TXT 分章。"
+            ),
+            "rule": (
+                "AndroidBackupInterop 保真文档；AppUseCases 声明仓储端口，DatabaseGRDB 持久化；"
+                "LibraryDomain 只接收纯值规则并执行解析，不依赖数据库、SwiftUI 或 Android 类型。"
+            ),
+            "test_id": "local-txt-toc-rule-interop-tests",
+            "test_filter": "LocalTextTOCRuleInteropTests",
+            "acceptance_id": "local-txt-toc-rule-interop-acceptance",
         }
     if (
         architecture["owner"] == "AppNavigation"
