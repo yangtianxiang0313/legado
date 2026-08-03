@@ -25,6 +25,7 @@ TASK_PATH = LOOP_ROOT / "task.json"
 CURRENT_PATH = LOOP_ROOT / "current.json"
 EVENTS_PATH = LOOP_ROOT / "events.jsonl"
 PRIORITY_PATH = Path("ios/project/migration-priorities/active.json")
+COMPLETED_PRIORITY_ROOT = Path("ios/project/migration-priorities/completed")
 FRONTIER_CANDIDATE_ROOT = Path("ios/project/migration-frontier/candidates")
 RUNTIME_ROOT = Path(".harness-runtime/loop")
 LOCK_PATH = RUNTIME_ROOT / "loop.lock"
@@ -1330,6 +1331,26 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/harness/fixtures/real-source/rs-wikisource-public-domain-001/**",
             ],
         }
+    if target == "IOS-LOOP-ANDROID-INVENTORY-ROLLOVER-001":
+        return {
+            "owner": "LoopControl",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-002",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-011",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/loop/**",
+                "ios/project/migration-priorities/**",
+                "ios/project/migration-frontier/**",
+                "ios/project/android-intake/inventory-manifest.json",
+            ],
+        }
     if target == "IOS-DEPENDENCY-SWIFTSOUP-HTML-001":
         return {
             "owner": "DependencyControl",
@@ -2478,6 +2499,165 @@ def replenish_priority_policy(root: Path) -> Mapping[str, Any] | None:
     }
 
 
+def declared_priority_task_ids(policy: Mapping[str, Any]) -> set[str]:
+    """Return every task explicitly owned by a priority policy."""
+    task_ids = {
+        str(delivery["target"])
+        for delivery in policy.get("deliveries", [])
+        if isinstance(delivery, dict)
+        and isinstance(delivery.get("target"), str)
+    }
+    for stage in policy.get("stages", []):
+        if not isinstance(stage, dict):
+            continue
+        for selector in stage.get("selectors", []):
+            if not isinstance(selector, dict):
+                continue
+            task_ids.update(
+                str(task_id)
+                for task_id in selector.get("task_ids", [])
+                if isinstance(task_id, str)
+            )
+    return task_ids
+
+
+def retire_exhausted_priority_policy(
+    root: Path,
+) -> Mapping[str, Any] | None:
+    """Archive active policy only after all of its declared work completed."""
+    policy = active_priority_policy(root)
+    if policy is None:
+        return None
+    declared = declared_priority_task_ids(policy)
+    if not declared or not declared.issubset(completed_task_ids(root)):
+        return None
+    archived = {**policy, "status": "completed"}
+    destination = (
+        root / COMPLETED_PRIORITY_ROOT / f"{policy['id']}.json"
+    )
+    if destination.is_file():
+        existing = read_json(destination)
+        if (
+            existing.get("id") != policy["id"]
+            or existing.get("status") != "completed"
+        ):
+            raise LoopError("PRIORITY_POLICY_ARCHIVE_CONFLICT")
+    else:
+        write_json(destination, archived)
+    (root / PRIORITY_PATH).unlink()
+    return {
+        "id": policy["id"],
+        "path": destination.relative_to(root).as_posix(),
+    }
+
+
+def characterization_frontier_rank(
+    candidate: Mapping[str, Any],
+) -> tuple[int, str]:
+    """Prefer cross-platform portability before single-device features."""
+    claim = candidate.get("claim", {})
+    semantic_key = str(
+        claim.get("semantic_key", "")
+        if isinstance(claim, dict)
+        else ""
+    ).lower()
+    interop_terms = (
+        "webdav",
+        "backup",
+        "restore",
+        "interop",
+        "sync",
+        "conflict",
+        "portable",
+    )
+    rank = 0 if any(term in semantic_key for term in interop_terms) else 10
+    return rank, str(candidate.get("task_id", ""))
+
+
+def activate_android_inventory_policy(
+    root: Path,
+) -> Mapping[str, Any] | None:
+    """Publish one ranked characterization from the frozen Android inventory."""
+    if (root / PRIORITY_PATH).is_file():
+        return None
+    candidates = pending_characterizations(root)
+    if not candidates:
+        return None
+    selected = min(candidates, key=characterization_frontier_rank)
+    task_id = str(selected["task_id"])
+    claim = selected.get("claim", {})
+    claim_id = str(claim.get("id", ""))
+    topic = str(claim.get("topic", task_id))
+    suffix = task_id.removeprefix("IOS-CHARACTERIZE-")
+    policy = {
+        "schema_version": 1,
+        "id": f"MILESTONE-AUTO-{suffix}",
+        "status": "active",
+        "mode": "critical_path_only",
+        "priority": 1000,
+        "title": f"Android 真源自动续接：{topic}",
+        "objective": (
+            "从冻结 Android 业务清单一次续接一个能力；"
+            "双端数据互通、同步和冲突语义优先。"
+        ),
+        "validation_policy": (
+            "源码语义主导，结构化 characterization 为实现输入；"
+            "不得用测试覆盖率替代源码对齐。"
+        ),
+        "stages": [
+            {
+                "id": "AUTO-S1",
+                "title": topic,
+                "selectors": [
+                    {
+                        "id": "AUTO-ANDROID-CHARACTERIZATION",
+                        "claim_ids": [claim_id],
+                        "task_ids": [task_id],
+                    }
+                ],
+            }
+        ],
+        "deliveries": [],
+    }
+    write_json(root / PRIORITY_PATH, policy)
+    return {
+        "id": policy["id"],
+        "task_id": task_id,
+        "reason": "cross_platform_interop_first"
+        if characterization_frontier_rank(selected)[0] == 0
+        else "android_inventory_order",
+    }
+
+
+def rollover_priority_policy(root: Path) -> Mapping[str, Any] | None:
+    """Retire an exhausted milestone and publish its next Android-derived work."""
+    retired = retire_exhausted_priority_policy(root)
+    if (root / PRIORITY_PATH).is_file():
+        return None
+    activated = replenish_priority_policy(root)
+    source = "migration_frontier"
+    if activated is None:
+        activated = activate_android_inventory_policy(root)
+        source = "android_inventory"
+    if retired is None and activated is None:
+        return None
+    return {
+        "retired": retired,
+        "activated": activated,
+        "source": source if activated is not None else None,
+    }
+
+
+def next_task_with_rollover(
+    root: Path,
+) -> tuple[Mapping[str, Any] | None, Mapping[str, Any] | None]:
+    task = next_task(root)
+    if task is not None:
+        return task, None
+    transition = rollover_priority_policy(root)
+    return next_task(root), transition
+
+
 def priority_match(
     policy: Mapping[str, Any],
     *,
@@ -3575,6 +3755,19 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
         if isinstance(android_commit, str):
             android_baseline = {"android_commit": android_commit}
     delivery_contracts = {
+        "LoopControl": {
+            "goal": (
+                "里程碑完成后继续从冻结 Android 业务清单派生工作，"
+                "并优先选择备份、同步、冲突等双端互通能力。"
+            ),
+            "rule": (
+                "仅当当前策略声明的任务全部完成时才能归档；自动策略一次只"
+                "选择一个 Android characterization，且不得绕过架构、需求和验证。"
+            ),
+            "test_id": "loop-rollover-tests",
+            "test_filter": "",
+            "acceptance_id": "android-inventory-rollover",
+        },
         "DependencyControl": {
             "goal": (
                 "一次只启用一个已批准的精确版本依赖，物化独立适配层与"
@@ -5129,7 +5322,7 @@ def start(root: Path) -> Mapping[str, Any]:
     state = current(root)
     if state["status"] != "idle":
         raise LoopError(f"TASK_ALREADY_ACTIVE:{state['active_task']}")
-    task = next_task(root)
+    task, _ = next_task_with_rollover(root)
     if task is None:
         raise LoopError("QUEUE_EMPTY")
     task = dict(task)
@@ -5778,19 +5971,8 @@ def advance(
     doctor(root)
     state = current(root)
     if state["status"] == "idle":
-        task = next_task(root)
+        task, transition = next_task_with_rollover(root)
         if task is None:
-            replenished = replenish_priority_policy(root)
-            if replenished is not None:
-                started = start(root)
-                return {
-                    "schema_version": SCHEMA_VERSION,
-                    "status": "running",
-                    "action": "implement",
-                    "task": started,
-                    "replenished": replenished,
-                    "reconciliation": reconciliation,
-                }
             return {
                 "schema_version": SCHEMA_VERSION,
                 "status": "queue_empty",
@@ -5804,6 +5986,11 @@ def advance(
             "status": "running",
             "action": "implement",
             "task": started,
+            **(
+                {"queue_transition": transition}
+                if transition is not None
+                else {}
+            ),
             "reconciliation": reconciliation,
         }
 
@@ -5942,7 +6129,17 @@ def dispatch(root: Path, args: argparse.Namespace) -> Mapping[str, Any]:
     if args.command == "status":
         return current(root)
     if args.command == "next":
-        return next_task(root) or {
+        task, transition = next_task_with_rollover(root)
+        if task is not None:
+            return {
+                **task,
+                **(
+                    {"queue_transition": transition}
+                    if transition is not None
+                    else {}
+                ),
+            }
+        return {
             "schema_version": SCHEMA_VERSION,
             "status": "queue_empty",
             "queue": queue_status(root),

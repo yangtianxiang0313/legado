@@ -613,6 +613,114 @@ class MinimalLoopTests(unittest.TestCase):
                 loop.priority_policy_deliveries(root)[0]["target"],
             )
 
+    def test_exhausted_policy_rolls_over_to_interop_characterization(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            completed_task = "IOS-DONE-001"
+            self.write(
+                root,
+                loop.EVENTS_PATH.as_posix(),
+                {
+                    "schema_version": 2,
+                    "sequence": 1,
+                    "at": "2026-08-03T00:00:00Z",
+                    "event": "task_completed",
+                    "task_id": completed_task,
+                    "details": {},
+                },
+            )
+            active = {
+                "schema_version": 1,
+                "id": "MILESTONE-DONE-001",
+                "status": "active",
+                "mode": "critical_path_only",
+                "stages": [{
+                    "id": "S1",
+                    "title": "Done",
+                    "selectors": [{
+                        "id": "DONE",
+                        "claim_ids": [],
+                        "task_ids": [completed_task],
+                    }],
+                }],
+                "deliveries": [],
+            }
+            self.write(root, loop.PRIORITY_PATH.as_posix(), active)
+            offline = {
+                "task_id": "IOS-CHARACTERIZE-READER-CACHE-001",
+                "claim": {
+                    "id": "BKC-OFFLINE-001",
+                    "semantic_key": "reader.cache.offline-queue",
+                    "topic": "离线队列",
+                },
+            }
+            webdav = {
+                "task_id": "IOS-CHARACTERIZE-WEBDAV-CONFLICT-001",
+                "claim": {
+                    "id": "BKC-WEBDAV-001",
+                    "semantic_key": (
+                        "reader.progress.webdav-conflict-runtime"
+                    ),
+                    "topic": "WebDAV 进度冲突",
+                },
+            }
+
+            with patch.object(
+                loop,
+                "pending_characterizations",
+                return_value=[offline, webdav],
+            ):
+                transition = loop.rollover_priority_policy(root)
+
+            self.assertEqual(
+                "MILESTONE-DONE-001",
+                transition["retired"]["id"],
+            )
+            self.assertEqual("android_inventory", transition["source"])
+            self.assertEqual(
+                "IOS-CHARACTERIZE-WEBDAV-CONFLICT-001",
+                transition["activated"]["task_id"],
+            )
+            archived = loop.read_json(
+                root
+                / loop.COMPLETED_PRIORITY_ROOT
+                / "MILESTONE-DONE-001.json"
+            )
+            self.assertEqual("completed", archived["status"])
+            policy = loop.active_priority_policy(root)
+            self.assertEqual(
+                ["IOS-CHARACTERIZE-WEBDAV-CONFLICT-001"],
+                policy["stages"][0]["selectors"][0]["task_ids"],
+            )
+
+    def test_incomplete_policy_is_never_retired(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            active = {
+                "schema_version": 1,
+                "id": "MILESTONE-IN-PROGRESS-001",
+                "status": "active",
+                "mode": "critical_path_only",
+                "stages": [{
+                    "id": "S1",
+                    "title": "Not done",
+                    "selectors": [{
+                        "id": "PENDING",
+                        "claim_ids": [],
+                        "task_ids": ["IOS-PENDING-001"],
+                    }],
+                }],
+                "deliveries": [],
+            }
+            self.write(root, loop.PRIORITY_PATH.as_posix(), active)
+
+            self.assertIsNone(loop.rollover_priority_policy(root))
+            self.assertEqual(
+                "MILESTONE-IN-PROGRESS-001",
+                loop.active_priority_policy(root)["id"],
+            )
+            self.assertFalse((root / loop.COMPLETED_PRIORITY_ROOT).exists())
+
     def test_completed_event_removes_delivery_from_queue(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
