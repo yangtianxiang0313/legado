@@ -1056,6 +1056,8 @@
         "ios/harness/fixtures/manifest.json",
         "ios/harness/source-lab/manifest.json",
         "ios/harness/goldens/android-legado-v1/rs-wikisource-public-domain-001.json",
+        "ios/harness/goldens/manifest.json",
+        "ios/harness/goldens/releases/**",
         "ios/project/external-execution-receipts/**",
         "ios/project/business-knowledge/**",
         "ios/loop/loop.py"
