@@ -56,6 +56,13 @@
       "selectors": [
         {"id": "P67-S7-LIBRARY-IMPORT", "claim_ids": [], "task_ids": ["IOS-INTEGRATION-ANDROID-LIBRARY-IMPORT-ADAPTER-001"]}
       ]
+    },
+    {
+      "id": "P67-S8",
+      "title": "Android 用户书库原子恢复到 iOS 数据库",
+      "selectors": [
+        {"id": "P67-S8-LIBRARY-PERSISTENCE", "claim_ids": [], "task_ids": ["IOS-DATABASE-ANDROID-LIBRARY-RESTORE-001"]}
+      ]
     }
   ],
   "deliveries": [
@@ -229,6 +236,30 @@
         "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
         "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
         "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**",
+        "ios/loop/loop.py"
+      ]
+    },
+    {
+      "target": "IOS-DATABASE-ANDROID-LIBRARY-RESTORE-001",
+      "title": "Android 用户书库恢复计划原子写入 GRDB",
+      "prerequisite_task_ids": [
+        "IOS-INTEGRATION-ANDROID-LIBRARY-IMPORT-ADAPTER-001"
+      ],
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+      "fixture_id": "rl-integration-backup-ios-library-to-android-001",
+      "validation": "tests",
+      "test_filter": "AndroidLibraryRestorePersistenceTests",
+      "source_anchors": [
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/help/storage/Restore.kt","symbol_id":"kotlin://io.legado.app.help.storage.Restore/restore"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/data/dao/BookDao.kt","symbol_id":"kotlin://io.legado.app.data.dao.BookDao"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/data/dao/BookGroupDao.kt","symbol_id":"kotlin://io.legado.app.data.dao.BookGroupDao"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/data/dao/BookmarkDao.kt","symbol_id":"kotlin://io.legado.app.data.dao.BookmarkDao"}
+      ],
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Package.swift",
+        "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+        "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+        "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
         "ios/loop/loop.py"
       ]
     }

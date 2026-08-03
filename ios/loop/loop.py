@@ -783,6 +783,24 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**",
             ],
         }
+    if target == "IOS-DATABASE-ANDROID-LIBRARY-RESTORE-001":
+        return {
+            "owner": "DatabaseGRDB",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/Packages/LegadoKit/Package.swift",
+                "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+                "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+                "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+            ],
+        }
     if target == "IOS-DEPENDENCY-SWIFTSOUP-HTML-001":
         return {
             "owner": "DependencyControl",
@@ -3164,6 +3182,20 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_id": "android-library-import-adapter-tests",
             "test_filter": "BackupInteropUseCasesTests",
             "acceptance_id": "android-library-import-adapter-acceptance",
+        }
+    if target == "IOS-DATABASE-ANDROID-LIBRARY-RESTORE-001":
+        delivery_contracts["DatabaseGRDB"] = {
+            "goal": (
+                "将 Android 用户书库恢复计划在单一 GRDB 事务中落库：书籍按 "
+                "bookUrl 更新或插入，分组与书签按 Android 主键覆盖。"
+            ),
+            "rule": (
+                "持久化端口定义在 BackupInteropUseCases；DatabaseGRDB 只实现端口。"
+                "分组位掩码必须完整保存；书签不得因目录或 chapterID 尚不存在而丢弃。"
+            ),
+            "test_id": "android-library-restore-persistence-tests",
+            "test_filter": "AndroidLibraryRestorePersistenceTests",
+            "acceptance_id": "android-library-restore-persistence-acceptance",
         }
     if (
         architecture["owner"] == "AppNavigation"
