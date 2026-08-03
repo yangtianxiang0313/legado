@@ -1142,6 +1142,24 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/Apps/Legado/App/**",
             ],
         }
+    if target == "IOS-READER-ANDROID-CONFIG-INTEROP-001":
+        return {
+            "owner": "ReaderCore",
+            "architecture_refs": ["ARCH-001", "ARCH-002", "ARCH-005", "ARCH-008", "ARCH-011", "ARCH-014", "ARCH-017", "ARCH-018"],
+            "allowed_paths": [
+                "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
+                "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+                "ios/Packages/LegadoKit/Sources/ReaderCore/**",
+                "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+                "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+                "ios/Packages/LegadoKit/Tests/AndroidBackupInteropTests/**",
+                "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**",
+                "ios/Packages/LegadoKit/Tests/ReaderCoreTests/**",
+                "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+                "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+                "ios/Apps/Legado/App/**",
+            ],
+        }
     if target == "IOS-DEPENDENCY-SWIFTSOUP-HTML-001":
         return {
             "owner": "DependencyControl",
@@ -3663,6 +3681,20 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_id": "local-txt-toc-rule-interop-tests",
             "test_filter": "LocalTextTOCRuleInteropTests",
             "acceptance_id": "local-txt-toc-rule-interop-acceptance",
+        }
+    if target == "IOS-READER-ANDROID-CONFIG-INTEROP-001":
+        delivery_contracts["ReaderCore"] = {
+            "goal": (
+                "按 Android ReadBookConfig、Backup 与 Restore 源码，无损往返 readConfig.json 和 "
+                "shareReadConfig.json，并把共享样式的 textSize、lineSpacingExtra 投影到 iOS 阅读器。"
+            ),
+            "rule": (
+                "AndroidBackupInterop 保留完整 JSON；ReaderCore 仅定义可移植投影；AppUseCases 负责应用到 "
+                "ReaderPreferences；不得从缺失的 config.xml 状态推断选中样式、夜间模式或亮度。"
+            ),
+            "test_id": "reader-config-interop-tests",
+            "test_filter": "ReaderConfigInteropTests",
+            "acceptance_id": "reader-config-interop-acceptance",
         }
     if (
         architecture["owner"] == "AppNavigation"
