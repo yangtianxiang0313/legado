@@ -10471,8 +10471,8 @@ class LegadoOracleInstrumentedTest {
 
     private fun cacheProbeBook(arguments: JSONObject): Book = Book(
         bookUrl = arguments.getString("book_url"),
-        origin = source.bookSourceUrl,
-        originName = source.bookSourceName,
+        origin = cacheSource.bookSourceUrl,
+        originName = cacheSource.bookSourceName,
         name = arguments.getString("book_name")
     )
 
