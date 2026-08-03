@@ -21,6 +21,7 @@ public struct AndroidBackupContents: Equatable, Sendable {
     public var keyboardAssists: [AndroidKeyboardAssistDTO]
     public var themeConfigs: [AndroidThemeConfigDTO]
     public var sharedPreferences: AndroidSharedPreferencesDocument?
+    public var serverProfilesPayload: Data?
 
     public init(
         bookSources: [BookSourceDTO] = [],
@@ -40,7 +41,8 @@ public struct AndroidBackupContents: Equatable, Sendable {
         dictionaryRules: [AndroidDictionaryRuleDTO] = [],
         keyboardAssists: [AndroidKeyboardAssistDTO] = [],
         themeConfigs: [AndroidThemeConfigDTO] = [],
-        sharedPreferences: AndroidSharedPreferencesDocument? = nil
+        sharedPreferences: AndroidSharedPreferencesDocument? = nil,
+        serverProfilesPayload: Data? = nil
     ) {
         self.bookSources = bookSources
         self.replacementRules = replacementRules
@@ -60,6 +62,7 @@ public struct AndroidBackupContents: Equatable, Sendable {
         self.keyboardAssists = keyboardAssists
         self.themeConfigs = themeConfigs
         self.sharedPreferences = sharedPreferences
+        self.serverProfilesPayload = serverProfilesPayload
     }
 }
 
@@ -83,6 +86,7 @@ public enum AndroidBackupArchive {
     public static let keyboardAssistsMember = "keyboardAssists.json"
     public static let themeConfigsMember = "themeConfig.json"
     public static let sharedPreferencesMember = "config.xml"
+    public static let serverProfilesMember = "servers.json"
 
     public static func write(
         _ contents: AndroidBackupContents,
@@ -246,6 +250,11 @@ public enum AndroidBackupArchive {
                     path: sharedPreferencesMember,
                     data: AndroidSharedPreferencesCodec.encode(sharedPreferences)
                 )
+            )
+        }
+        if let serverProfilesPayload = contents.serverProfilesPayload {
+            members.append(
+                .init(path: serverProfilesMember, data: serverProfilesPayload)
             )
         }
         try ArchiveZIPFoundation.create(members: members, at: archiveURL)
@@ -484,5 +493,21 @@ public enum AndroidBackupArchive {
         ) else { return nil }
         let configuration = AndroidWebDAVBackupConfiguration(document: document)
         return configuration.isPresent ? configuration : nil
+    }
+
+    public static func readServerProfiles(
+        from archiveURL: URL,
+        backupPassword: String?,
+        maximumMemberBytes: UInt64 = 4 * 1_024 * 1_024
+    ) throws -> [AndroidServerProfileDTO] {
+        guard let data = try ArchiveZIPFoundation.read(
+            serverProfilesMember,
+            from: archiveURL,
+            maximumBytes: maximumMemberBytes
+        ) else { return [] }
+        return try AndroidServerProfileCodec.decodeArchivePayload(
+            data,
+            backupPassword: backupPassword
+        )
     }
 }
