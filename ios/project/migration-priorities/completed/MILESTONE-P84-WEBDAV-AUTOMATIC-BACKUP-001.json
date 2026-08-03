@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "MILESTONE-P84-WEBDAV-AUTOMATIC-BACKUP-001",
-  "status": "active",
+  "status": "completed",
   "mode": "critical_path_only",
   "priority": 1,
   "title": "P84 WebDAV 跨端每日自动备份",
