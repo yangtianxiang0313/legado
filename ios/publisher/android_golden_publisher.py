@@ -259,6 +259,11 @@ def _migrate_manifest(
                 "authorization",
                 "github_environment_review",
             )
+        if entry.get("authorization") == "local_android_runner":
+            entry.setdefault(
+                "runner_image_digest",
+                "local-unverified",
+            )
         required = {
             "android_git_commit": HEX40,
             "runner_digest": HEX64,

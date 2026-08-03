@@ -114,6 +114,7 @@ class AndroidGoldenPublisherTests(unittest.TestCase):
             + "\n",
             encoding="utf-8",
         )
+
         self.payload = ci_proposal._dump(
             {
                 "schema_version": 1,
@@ -181,6 +182,31 @@ class AndroidGoldenPublisherTests(unittest.TestCase):
 
     def tearDown(self):
         self.temporary.cleanup()
+
+    def test_manifest_marks_legacy_local_runner_image_unverified(self):
+        entry = {
+            "android_git_commit": self.android_commit,
+            "authorization": "local_android_runner",
+            "canonicalizer_sha256": self.canonicalizer,
+            "profile": publisher.PROFILE,
+            "runner_digest": "9" * 64,
+        }
+        fixtures, _ = publisher._migrate_manifest(
+            {
+                "schema_version": 2,
+                "oracle": {
+                    "android_git_commit": self.android_commit,
+                    "profile": publisher.PROFILE,
+                },
+                "canonicalizer_sha256": self.canonicalizer,
+                "fixtures": {"legacy-local": entry},
+            }
+        )
+
+        self.assertEqual(
+            "local-unverified",
+            fixtures["legacy-local"]["runner_image_digest"],
+        )
 
     def test_prepare_is_deterministic_scenario_aware_and_migrates_v1(self):
         before = self._repository_status()
