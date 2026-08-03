@@ -182,6 +182,13 @@
       "selectors": [
         {"id": "P67-S25-READER-CONFIG", "claim_ids": [], "task_ids": ["IOS-READER-ANDROID-CONFIG-INTEROP-001"]}
       ]
+    },
+    {
+      "id": "P67-S26",
+      "title": "字典规则双端互通与阅读查询",
+      "selectors": [
+        {"id": "P67-S26-DICTIONARY", "claim_ids": [], "task_ids": ["IOS-READER-ANDROID-DICTIONARY-INTEROP-001"]}
+      ]
     }
   ],
   "deliveries": [
@@ -824,6 +831,33 @@
         "ios/Packages/LegadoKit/Tests/AndroidBackupInteropTests/**",
         "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**",
         "ios/Packages/LegadoKit/Tests/ReaderCoreTests/**",
+        "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+        "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+        "ios/Apps/Legado/App/**",
+        "ios/loop/loop.py"
+      ]
+    },
+    {
+      "target": "IOS-READER-ANDROID-DICTIONARY-INTEROP-001",
+      "title": "Android dictRule.json 驱动 iOS 阅读器词典查询",
+      "prerequisite_task_ids": ["IOS-READER-ANDROID-CONFIG-INTEROP-001"],
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+      "fixture_id": "rl-reader-dictionary-interop-001",
+      "validation": "tests",
+      "test_filter": "DictionaryInteropTests",
+      "source_anchors": [
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/data/entities/DictRule.kt","symbol_id":"kotlin://io.legado.app.data.entities.DictRule"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/ui/dict/DictViewModel.kt","symbol_id":"kotlin://io.legado.app.ui.dict.DictViewModel"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/help/storage/Backup.kt","symbol_id":"kotlin://io.legado.app.help.storage.Backup/backup"}
+      ],
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoSourceKit/Sources/SourceRuntime/**",
+        "ios/Packages/LegadoSourceKit/Tests/SourceRuntimeTests/**",
+        "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
+        "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+        "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**",
         "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
         "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
         "ios/Apps/Legado/App/**",

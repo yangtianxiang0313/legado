@@ -1160,6 +1160,23 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/Apps/Legado/App/**",
             ],
         }
+    if target == "IOS-READER-ANDROID-DICTIONARY-INTEROP-001":
+        return {
+            "owner": "SourceRuntime",
+            "architecture_refs": ["ARCH-001", "ARCH-002", "ARCH-005", "ARCH-008", "ARCH-011", "ARCH-014", "ARCH-017", "ARCH-018"],
+            "allowed_paths": [
+                "ios/Packages/LegadoSourceKit/Sources/SourceRuntime/**",
+                "ios/Packages/LegadoSourceKit/Tests/SourceRuntimeTests/**",
+                "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
+                "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+                "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+                "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+                "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**",
+                "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+                "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+                "ios/Apps/Legado/App/**",
+            ],
+        }
     if target == "IOS-DEPENDENCY-SWIFTSOUP-HTML-001":
         return {
             "owner": "DependencyControl",
@@ -3695,6 +3712,20 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_id": "reader-config-interop-tests",
             "test_filter": "ReaderConfigInteropTests",
             "acceptance_id": "reader-config-interop-acceptance",
+        }
+    if target == "IOS-READER-ANDROID-DICTIONARY-INTEROP-001":
+        delivery_contracts["SourceRuntime"] = {
+            "goal": (
+                "按 Android DictRule.search 与 DictViewModel 源码，无损互通 dictRule.json，按 sortNumber "
+                "加载启用规则，用 key 编译 urlRule、请求正文并以 showRule 解析展示结果，接通阅读器词典入口。"
+            ),
+            "rule": (
+                "SourceRuntime 承担 URL/网络/规则解析；AppUseCases 管理规则和查询状态；DatabaseGRDB 持久化；"
+                "SwiftUI 只展示查询输入、规则标签、结构化结果和错误，不复制 Android UI 类。"
+            ),
+            "test_id": "dictionary-interop-tests",
+            "test_filter": "DictionaryInteropTests",
+            "acceptance_id": "dictionary-interop-acceptance",
         }
     if (
         architecture["owner"] == "AppNavigation"
