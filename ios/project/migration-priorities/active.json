@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "id": "MILESTONE-P82-WEBDAV-SHELF-PROGRESS-SYNC-001",
+  "status": "active",
+  "mode": "critical_path_only",
+  "priority": 1,
+  "title": "P82 WebDAV 书架进度批量互通",
+  "objective": "依据冻结 Android App.onCreate 与 AppWebDav.downloadAllBookProgress，让 iOS 启动时在用户启用进度同步且 WebDAV 可用时批量检查书架，自动应用云端更靠后的阅读进度，忽略回退，并输出结构化同步结果。",
+  "validation_policy": "批量决策、局部失败与持久化使用聚焦测试；配置接线做一次 App 增量构建，不新增模拟器矩阵。",
+  "stages": [
+    {
+      "id": "P82-S1",
+      "title": "书架级批量同步合同",
+      "selectors": [
+        {
+          "id": "P82-S1-BULK",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-APP-WEBDAV-SHELF-PROGRESS-SYNC-001"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P82-S2",
+      "title": "Android 配置互通与启动接线",
+      "selectors": [
+        {
+          "id": "P82-S2-STARTUP",
+          "claim_ids": [],
+          "task_ids": [
+            "IOS-APP-WEBDAV-SHELF-PROGRESS-STARTUP-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "deliveries": [
+    {
+      "target": "IOS-APP-WEBDAV-SHELF-PROGRESS-SYNC-001",
+      "title": "实现 Android 语义的书架进度批量同步",
+      "requirement_ref": "REQ-ANDROID-MIGRATION-CHARACTERIZATION-001@1#RC-01",
+      "fixture_id": "rl-app-webdav-shelf-progress-sync-001",
+      "package_path": "ios/Packages/LegadoKit",
+      "validation": "tests",
+      "test_filter": "WebDAVShelfProgressSyncTests",
+      "prerequisite_task_ids": [
+        "IOS-APP-NAVIGATION-WEBDAV-READER-PROGRESS-UPLOAD-LIFECYCLE-001"
+      ],
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+        "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+        "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/help/AppWebDav.kt",
+          "symbol_id": "kotlin://io.legado.app.help.AppWebDav/downloadAllBookProgress"
+        }
+      ]
+    },
+    {
+      "target": "IOS-APP-WEBDAV-SHELF-PROGRESS-STARTUP-001",
+      "title": "接通 syncBookProgress 配置与 iOS 启动批量同步",
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+      "fixture_id": "app-webdav-shelf-progress-startup-v1",
+      "validation": "build",
+      "prerequisite_task_ids": [
+        "IOS-APP-WEBDAV-SHELF-PROGRESS-SYNC-001"
+      ],
+      "additional_allowed_paths": [
+        "ios/Apps/Legado/App/**",
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
+        "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+        "ios/Packages/LegadoKit/Tests/AndroidBackupInteropTests/**",
+        "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**"
+      ],
+      "source_anchors": [
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/App.kt",
+          "symbol_id": "kotlin://io.legado.app.App/onCreate"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/help/config/AppConfig.kt",
+          "symbol_id": "kotlin://io.legado.app.help.config.AppConfig/syncBookProgress"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/constant/PreferKey.kt",
+          "symbol_id": "kotlin://io.legado.app.constant.PreferKey/syncBookProgress"
+        }
+      ]
+    }
+  ]
+}
