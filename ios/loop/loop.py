@@ -1189,6 +1189,22 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/Apps/Legado/App/**",
             ],
         }
+    if target == "IOS-SOURCE-ANDROID-KEYBOARD-ASSISTS-INTEROP-001":
+        return {
+            "owner": "AppUseCases",
+            "architecture_refs": ["ARCH-001", "ARCH-002", "ARCH-005", "ARCH-008", "ARCH-011", "ARCH-014", "ARCH-017", "ARCH-018"],
+            "allowed_paths": [
+                "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
+                "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+                "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+                "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+                "ios/Packages/LegadoKit/Tests/AndroidBackupInteropTests/**",
+                "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**",
+                "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+                "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+                "ios/Apps/Legado/App/**",
+            ],
+        }
     if target == "IOS-DEPENDENCY-SWIFTSOUP-HTML-001":
         return {
             "owner": "DependencyControl",
@@ -3752,6 +3768,20 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_id": "dictionary-jsoup-compatibility-tests",
             "test_filter": "DictionaryJSoupCompatibilityTests",
             "acceptance_id": "dictionary-jsoup-compatibility-acceptance",
+        }
+    if target == "IOS-SOURCE-ANDROID-KEYBOARD-ASSISTS-INTEROP-001":
+        delivery_contracts["AppUseCases"] = {
+            "goal": (
+                "按 Android KeyboardAssist、Backup/Restore 与 KeyboardToolPop 源码，无损往返 "
+                "keyboardAssists.json 和 backup.zip，按 type、serialNo 投影辅助键，并在 iOS 书源规则编辑器点击 key 插入 value。"
+            ),
+            "rule": (
+                "AndroidBackupInterop 保留完整 JSON 字段；AppUseCases 声明排序、存储与插入语义；"
+                "DatabaseGRDB 持久化，SwiftUI 只投影辅助键并提交插入动作，不复制 Android PopupWindow。"
+            ),
+            "test_id": "keyboard-assist-interop-tests",
+            "test_filter": "KeyboardAssistInteropTests",
+            "acceptance_id": "keyboard-assist-interop-acceptance",
         }
     if (
         architecture["owner"] == "AppNavigation"
