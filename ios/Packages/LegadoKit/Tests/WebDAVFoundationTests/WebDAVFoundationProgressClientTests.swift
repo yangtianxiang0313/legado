@@ -71,6 +71,79 @@ final class WebDAVFoundationProgressClientTests: XCTestCase {
         XCTAssertEqual(.failed(.identityMismatch), result)
     }
 
+    func testUploadsAndroidCompatibleProgressWithPUT() async throws {
+        let transport = ProgressTransport(
+            response: WebDAVHTTPDataResponse(
+                statusCode: 204,
+                body: Data()
+            )
+        )
+        let client = WebDAVFoundationProgressClient(
+            credentials: ProgressCredentials(),
+            transport: transport
+        )
+        let document = WebDAVBookProgressDocument(
+            name: "SyncBook",
+            author: "SyncAuthor",
+            durChapterIndex: 2,
+            durChapterPos: 15,
+            durChapterTime: 200,
+            durChapterTitle: "第三章"
+        )
+
+        let result = await client.save(
+            configuration: try configuration(),
+            document: document
+        )
+
+        XCTAssertEqual(.saved, result)
+        let capturedRequest = await transport.request
+        let recordedRequest = try XCTUnwrap(capturedRequest)
+        XCTAssertEqual("PUT", recordedRequest.httpMethod)
+        XCTAssertEqual(
+            "https://dav.example.test/dav/legado/bookProgress/SyncBook_SyncAuthor.json",
+            recordedRequest.url?.absoluteString
+        )
+        XCTAssertEqual(
+            "application/json",
+            recordedRequest.value(forHTTPHeaderField: "Content-Type")
+        )
+        XCTAssertEqual(
+            document,
+            try AndroidWebDAVBookProgressCodec.decode(
+                XCTUnwrap(recordedRequest.httpBody),
+                expectedIdentity: identity
+            )
+        )
+    }
+
+    func testMapsUploadAuthenticationRejection() async throws {
+        let client = WebDAVFoundationProgressClient(
+            credentials: ProgressCredentials(),
+            transport: ProgressTransport(
+                response: WebDAVHTTPDataResponse(
+                    statusCode: 401,
+                    body: Data()
+                )
+            )
+        )
+        let document = WebDAVBookProgressDocument(
+            name: identity.name,
+            author: identity.author,
+            durChapterIndex: 0,
+            durChapterPos: 0,
+            durChapterTime: 0,
+            durChapterTitle: nil
+        )
+
+        let result = await client.save(
+            configuration: try configuration(),
+            document: document
+        )
+
+        XCTAssertEqual(.failed(.authenticationRejected), result)
+    }
+
     private let identity = WebDAVBookIdentity(
         name: "SyncBook",
         author: "SyncAuthor"

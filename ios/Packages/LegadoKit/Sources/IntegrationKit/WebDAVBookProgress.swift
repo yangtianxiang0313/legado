@@ -160,3 +160,24 @@ public protocol WebDAVBookProgressLoading: Sendable {
         identity: WebDAVBookIdentity
     ) async -> WebDAVBookProgressLoadResult
 }
+
+public enum WebDAVBookProgressSaveFailure: Sendable, Equatable {
+    case invalidConfiguration
+    case credentialUnavailable
+    case authenticationRejected
+    case remoteRejected(statusCode: Int)
+    case invalidPayload
+    case transportUnavailable
+}
+
+public enum WebDAVBookProgressSaveResult: Sendable, Equatable {
+    case saved
+    case failed(WebDAVBookProgressSaveFailure)
+}
+
+public protocol WebDAVBookProgressSaving: Sendable {
+    func save(
+        configuration: WebDAVConnectionConfiguration,
+        document: WebDAVBookProgressDocument
+    ) async -> WebDAVBookProgressSaveResult
+}
