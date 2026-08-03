@@ -185,7 +185,7 @@ class AndroidGoldenPublisherTests(unittest.TestCase):
 
     def test_manifest_marks_legacy_local_runner_image_unverified(self):
         entry = {
-            "android_git_commit": self.android_commit,
+            "android_git_commit": self.android_commit[:-1],
             "authorization": "local_android_runner",
             "canonicalizer_sha256": self.canonicalizer,
             "profile": publisher.PROFILE,
@@ -206,6 +206,10 @@ class AndroidGoldenPublisherTests(unittest.TestCase):
         self.assertEqual(
             "local-unverified",
             fixtures["legacy-local"]["runner_image_digest"],
+        )
+        self.assertEqual(
+            self.android_commit,
+            fixtures["legacy-local"]["android_git_commit"],
         )
 
     def test_prepare_is_deterministic_scenario_aware_and_migrates_v1(self):

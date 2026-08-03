@@ -260,6 +260,9 @@ def _migrate_manifest(
                 "github_environment_review",
             )
         if entry.get("authorization") == "local_android_runner":
+            entry["android_git_commit"] = android_commit
+            entry["profile"] = profile
+            entry["canonicalizer_sha256"] = canonicalizer
             entry.setdefault(
                 "runner_image_digest",
                 "local-unverified",
