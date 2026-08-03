@@ -35,6 +35,8 @@ public actor URLSessionHTTPTransport: HTTPTransport {
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         + "AppleWebKit/537.36 (KHTML, like Gecko) "
         + "Chrome/123.0.0.0 Safari/537.36"
+    public static let androidCompatibleDefaultAcceptLanguage =
+        "en-US,en;q=0.9"
 
     private let loader: any URLSessionDataLoading
     private let maximumResponseBytes: Int
@@ -91,6 +93,14 @@ public actor URLSessionHTTPTransport: HTTPTransport {
                 try HTTPHeader(
                     name: "User-Agent",
                     value: defaultUserAgent
+                )
+            )
+        }
+        if !fields.contains(where: { $0.name == "accept-language" }) {
+            fields.append(
+                try HTTPHeader(
+                    name: "Accept-Language",
+                    value: Self.androidCompatibleDefaultAcceptLanguage
                 )
             )
         }

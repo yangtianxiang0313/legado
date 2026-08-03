@@ -1298,10 +1298,15 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/Packages/LegadoKit/Tests/ConformanceCLITests/**",
                 "ios/Packages/LegadoSourceKit/Sources/SourceRuntime/**",
                 "ios/Packages/LegadoSourceKit/Sources/RuleRuntime/**",
+                "ios/Packages/LegadoSourceKit/Sources/HTMLSwiftSoup/**",
+                "ios/Packages/LegadoSourceKit/Sources/NetworkFoundation/**",
                 "ios/Packages/LegadoSourceKit/Tests/SourceRuntimeTests/**",
+                "ios/Packages/LegadoSourceKit/Tests/HTMLSwiftSoupTests/**",
+                "ios/Packages/LegadoSourceKit/Tests/NetworkFoundationTests/**",
                 "ios/harness/fixtures/real-source/rs-wikisource-public-domain-001/**",
                 "ios/harness/goldens/android-legado-v1/rs-wikisource-public-domain-001.json",
                 "ios/harness/real-source/**",
+                "ios/loop/loop.py",
             ],
         }
     if target == "IOS-DEPENDENCY-SWIFTSOUP-HTML-001":

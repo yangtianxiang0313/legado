@@ -1131,26 +1131,120 @@ public struct HTMLCSSSourceRuntime: Sendable {
     node: HTMLNode,
     chapterURL: URL
   ) -> String {
-    let lines = node.children.compactMap { child -> String? in
-      switch child.name {
-      case "p":
-        let text = child.normalizedText
-        return text.isEmpty ? nil : "　　" + text
-      case "img":
-        guard let raw = child.attributes["src"], let url = URL(string: raw, relativeTo: chapterURL)?.absoluteURL else {
-          return nil
+    guard var value = node.outerHTML else {
+      let lines = node.children.compactMap { child -> String? in
+        switch child.name {
+        case "p":
+          let text = child.normalizedText
+          return text.isEmpty ? nil : "　　" + text
+        case "img":
+          guard
+            let raw = child.attributes["src"],
+            let url = URL(
+              string: raw,
+              relativeTo: chapterURL
+            )?.absoluteURL
+          else { return nil }
+          return "　　<img src=\"\(url.absoluteString)\">"
+        default:
+          let text = child.normalizedText
+          return text.isEmpty ? nil : "　　" + text
         }
-        return "　　<img src=\"\(url.absoluteString)\">"
-      default:
-        let text = child.normalizedText
-        return text.isEmpty ? nil : "　　" + text
       }
+      if lines.isEmpty {
+        let text = node.normalizedText
+        return text.isEmpty ? "" : "　　" + text
+      }
+      return lines.joined(separator: "\n")
     }
-    if lines.isEmpty {
-      let text = node.normalizedText
-      return text.isEmpty ? "" : "　　" + text
+    value = replacing(
+      value,
+      pattern: #"<(?:script|style)\b[^>]*>[\s\S]*?</(?:script|style)>"#,
+      with: ""
+    )
+    value = replacing(value, pattern: #"(&nbsp;)+"#, with: " ")
+    value = replacing(value, pattern: #"(&ensp;|&emsp;)"#, with: " ")
+    value = replacing(
+      value,
+      pattern: #"(&thinsp;|&zwnj;|&zwj;|\u{2009}|\u{200C}|\u{200D})"#,
+      with: ""
+    )
+    value = replacing(
+      value,
+      pattern: #"</?(?:div|p|br|hr|h\d|article|dd|dl)[^>]*>"#,
+      with: "\n"
+    )
+    value = replacing(value, pattern: #"<!--[\s\S]*?-->"#, with: "")
+    value = replacing(
+      value,
+      pattern: #"</?(?!img)[a-zA-Z]+(?=[ >])[^<>]*>"#,
+      with: ""
+    )
+    value = absoluteImageSources(in: value, relativeTo: chapterURL)
+    value = replacing(value, pattern: #"\s*\n+\s*"#, with: "\n　　")
+    value = replacing(value, pattern: #"^[\n\s]+"#, with: "　　")
+    return replacing(value, pattern: #"[\n\s]+$"#, with: "")
+  }
+
+  private func replacing(
+    _ value: String,
+    pattern: String,
+    with replacement: String
+  ) -> String {
+    value.replacingOccurrences(
+      of: pattern,
+      with: replacement,
+      options: .regularExpression
+    )
+  }
+
+  private func absoluteImageSources(
+    in html: String,
+    relativeTo baseURL: URL
+  ) -> String {
+    guard
+      let expression = try? NSRegularExpression(
+        pattern: #"<img[^>]*>"#,
+        options: [.caseInsensitive]
+      ),
+      let dataSource = try? NSRegularExpression(
+        pattern: #"\sdata-[^=>]*=\s*\"([^\">]*)\""#,
+        options: [.caseInsensitive]
+      ),
+      let source = try? NSRegularExpression(
+        pattern: #"\ssrc\s*=\s*\"([^\">]*)\""#,
+        options: [.caseInsensitive]
+      )
+    else { return html }
+    let result = NSMutableString(string: html)
+    let matches = expression.matches(
+      in: html,
+      range: NSRange(html.startIndex..., in: html)
+    )
+    for match in matches.reversed() {
+      guard let tagRange = Range(match.range(at: 0), in: html) else {
+        continue
+      }
+      let tag = String(html[tagRange])
+      let tagRangeUTF16 = NSRange(tag.startIndex..., in: tag)
+      let sourceMatch = dataSource.firstMatch(
+        in: tag,
+        range: tagRangeUTF16
+      ) ?? source.firstMatch(in: tag, range: tagRangeUTF16)
+      guard
+        let sourceMatch,
+        let sourceRange = Range(sourceMatch.range(at: 1), in: tag),
+        let absolute = URL(
+          string: String(tag[sourceRange]),
+          relativeTo: baseURL
+        )?.absoluteURL
+      else { continue }
+      result.replaceCharacters(
+        in: match.range(at: 0),
+        with: "<img src=\"\(absolute.absoluteString)\">"
+      )
     }
-    return lines.joined(separator: "\n")
+    return result as String
   }
 
   private func paginationEndpoints(

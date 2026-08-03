@@ -9,6 +9,13 @@ struct ConformanceCommand {
       output = try await ConformanceRunner.run(
         fixtureDirectory: URL(fileURLWithPath: arguments[0], isDirectory: true)
       )
+    } else if arguments.count == 2, arguments[0] == "real-source" {
+      output = try await RealSourceInteropConformanceRunner.runLive(
+        fixtureDirectory: URL(
+          fileURLWithPath: arguments[1],
+          isDirectory: true
+        )
+      )
     } else if arguments.count == 2, arguments[0] == "run-task" {
       let run = try await MinimalTaskConformanceRunner.run(
         taskPath: arguments[1]
@@ -30,6 +37,6 @@ struct ConformanceCommand {
 
 enum ConformanceCommandError: String, Error {
   case usage =
-    "usage: ConformanceCLI <fixture-directory> | run-task <task-path>"
+    "usage: ConformanceCLI <fixture-directory> | real-source <fixture-directory> | run-task <task-path>"
   case comparisonFailed = "structured comparison failed"
 }

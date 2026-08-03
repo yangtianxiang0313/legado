@@ -60,4 +60,16 @@ final class HTMLSwiftSoupTests: XCTestCase {
             )
         }
     }
+
+    func testJsoupCompatibleUnquotedUnicodeAttributeOperand() throws {
+        let result = try SwiftSoupHTMLSelectorBackend().select(
+            html: """
+                <a title="論語/學而第一" href="/wiki/論語/學而第一">學而第一</a>
+                <a title="孟子/梁惠王上" href="/wiki/孟子/梁惠王上">梁惠王上</a>
+                """,
+            selector: "a[title^=論語/]"
+        )
+
+        XCTAssertEqual(result.map(\.text), ["學而第一"])
+    }
 }

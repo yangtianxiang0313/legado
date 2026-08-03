@@ -15,10 +15,59 @@ public struct SwiftSoupHTMLSelectorBackend: HTMLSelectorBackend, Sendable {
     ) throws -> [HTMLSelectionProjection] {
         do {
             let document = try SwiftSoup.parse(html)
-            return try document.select(selector).array().map(project)
+            return try document.select(
+                jsoupCompatibleSelector(selector)
+            ).array().map(project)
         } catch {
             throw SwiftSoupHTMLSelectorError.selectionFailed(selector: selector)
         }
+    }
+
+    /// Jsoup accepts unquoted attribute values such as `[title^=論語/]`, while
+    /// SwiftSoup rejects the slash. Legado sources rely on Jsoup's tolerant form.
+    private func jsoupCompatibleSelector(_ selector: String) -> String {
+        var result = ""
+        var cursor = selector.startIndex
+
+        while let opening = selector[cursor...].firstIndex(of: "[") {
+            result += selector[cursor..<opening]
+            guard let closing = selector[opening...].firstIndex(of: "]") else {
+                result += selector[opening...]
+                return result
+            }
+
+            let bodyStart = selector.index(after: opening)
+            let body = String(selector[bodyStart..<closing])
+            result += "[" + normalizedAttributeBody(body) + "]"
+            cursor = selector.index(after: closing)
+        }
+
+        result += selector[cursor...]
+        return result
+    }
+
+    private func normalizedAttributeBody(_ body: String) -> String {
+        let operators = ["^=", "$=", "*=", "~=", "|=", "="]
+        guard let match = operators.compactMap({ operation -> (String, Range<String.Index>)? in
+            body.range(of: operation).map { (operation, $0) }
+        }).min(by: { $0.1.lowerBound < $1.1.lowerBound }) else {
+            return body
+        }
+
+        let operand = body[match.1.upperBound...]
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !operand.isEmpty,
+              operand.first != "\"",
+              operand.first != "'"
+        else {
+            return body
+        }
+
+        let prefix = body[..<match.1.upperBound]
+        let escaped = operand
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"")
+        return "\(prefix)\"\(escaped)\""
     }
 
     private func project(_ element: Element) throws -> HTMLSelectionProjection {

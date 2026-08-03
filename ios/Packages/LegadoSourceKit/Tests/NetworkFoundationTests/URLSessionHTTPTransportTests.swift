@@ -46,6 +46,10 @@ final class URLSessionHTTPTransportTests: XCTestCase {
             URLSessionHTTPTransport.androidCompatibleDefaultUserAgent
         )
         XCTAssertEqual(
+            request.value(forHTTPHeaderField: "Accept-Language"),
+            URLSessionHTTPTransport.androidCompatibleDefaultAcceptLanguage
+        )
+        XCTAssertEqual(
             request.value(forHTTPHeaderField: "Keep-Alive"),
             "300"
         )
@@ -69,6 +73,30 @@ final class URLSessionHTTPTransportTests: XCTestCase {
             ["network"]
         )
         XCTAssertEqual(response.body.bytes, Data("payload".utf8))
+    }
+
+    func testPreservesExplicitAcceptLanguage() async throws {
+        let loader = RecordingLoader(result: .success(okResponse()))
+        let transport = URLSessionHTTPTransport(loader: loader)
+
+        _ = try await transport.execute(
+            HTTPRequest(
+                method: .get,
+                url: try HTTPURL("https://example.com"),
+                headers: HTTPHeaders([
+                    try HTTPHeader(
+                        name: "Accept-Language",
+                        value: "zh-TW"
+                    ),
+                ])
+            )
+        )
+
+        let request = await loader.lastRequest()
+        XCTAssertEqual(
+            request?.value(forHTTPHeaderField: "Accept-Language"),
+            "zh-TW"
+        )
     }
 
     func testPreservesExplicitUserAgentAndRemovesNullSentinel()

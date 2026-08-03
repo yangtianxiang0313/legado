@@ -191,6 +191,8 @@ let package = Package(
                     name: "LegadoSourceFullCompatKit",
                     package: "LegadoSourceKit"
                 ),
+                "SourceRuntimeComposition",
+                "SourceNetworkComposition",
                 "LibraryDomain",
                 "ReaderCore",
                 "TestSupport",
