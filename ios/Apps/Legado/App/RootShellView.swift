@@ -44,6 +44,7 @@ struct RootShellView: View {
     @Bindable var webDAVSettings: WebDAVConnectionSettingsStore
     let webDAVCredentials: KeychainWebDAVCredentialStore
     let webDAVClient: any WebDAVConnectionInitializing
+    let webDAVProgressLoader: any WebDAVBookProgressLoading
     let backupRestore: AndroidCoreBackupRestoreUseCase
     let libraryBackup: AndroidLibraryBackupUseCase
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -123,6 +124,11 @@ struct RootShellView: View {
                 "--seed-pagination-cache"
             ) {
                 await seedPaginationCache()
+            }
+            if ProcessInfo.processInfo.arguments.contains(
+                "--seed-webdav-progress"
+            ) {
+                await seedWebDAVProgress()
             }
         }
         .onChange(of: rootVisibility.value) { _, _ in
@@ -484,6 +490,8 @@ struct RootShellView: View {
                 dictionaryLookup: dictionaryLookup,
                 readerPreferences: readerPreferences,
                 replacementRules: replacementRules,
+                webDAVSettings: webDAVSettings,
+                webDAVProgressLoader: webDAVProgressLoader,
                 openTOC: {
                     router.push(.chapterTOC(target.bookID), on: root)
                 },
@@ -701,6 +709,21 @@ struct RootShellView: View {
             bookID: book.id,
             chapterIndex: chapter.index,
             characterOffset: 0,
+            chapterTitle: chapter.title
+        )
+    }
+
+    private func seedWebDAVProgress() async {
+        await seedOfflineCache()
+        guard let book = library.books.first else { return }
+        let chapters = await library.chapters(bookID: book.id)
+            .sorted { $0.index < $1.index }
+        guard chapters.indices.contains(1) else { return }
+        let chapter = chapters[1]
+        await library.saveReadingProgress(
+            bookID: book.id,
+            chapterIndex: chapter.index,
+            characterOffset: 90,
             chapterTitle: chapter.title
         )
     }
@@ -1880,6 +1903,7 @@ struct StartupAcceptanceView: View {
     @Bindable var webDAVSettings: WebDAVConnectionSettingsStore
     let webDAVCredentials: KeychainWebDAVCredentialStore
     let webDAVClient: any WebDAVConnectionInitializing
+    let webDAVProgressLoader: any WebDAVBookProgressLoading
     let backupRestore: AndroidCoreBackupRestoreUseCase
     let libraryBackup: AndroidLibraryBackupUseCase
     let startupCase: StartupAcceptanceCase
@@ -1935,6 +1959,7 @@ struct StartupAcceptanceView: View {
                 webDAVSettings: webDAVSettings,
                 webDAVCredentials: webDAVCredentials,
                 webDAVClient: webDAVClient,
+                webDAVProgressLoader: webDAVProgressLoader,
                 backupRestore: backupRestore,
                 libraryBackup: libraryBackup
             )

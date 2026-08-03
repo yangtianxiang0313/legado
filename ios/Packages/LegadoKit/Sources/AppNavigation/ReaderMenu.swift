@@ -30,6 +30,7 @@ public enum ReaderMenuAction: String, CaseIterable, Codable, Hashable, Sendable 
     case refreshCurrent = "reader.refreshCurrent"
     case refreshAfter = "reader.refreshAfter"
     case refreshAll = "reader.refreshAll"
+    case syncProgress = "reader.syncProgress"
     case cacheOffline = "reader.cacheOffline"
     case addBookmark = "reader.addBookmark"
     case startReadAloud = "reader.startReadAloud"
@@ -77,6 +78,7 @@ public enum ReaderMenuCatalog {
         .refreshCurrent,
         .refreshAfter,
         .refreshAll,
+        .syncProgress,
         .cacheOffline,
         .addBookmark,
         .startReadAloud,

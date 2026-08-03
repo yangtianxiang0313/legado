@@ -1,5 +1,6 @@
 import AppNavigation
 import AppUseCases
+import IntegrationKit
 import LibraryDomain
 import ReaderCore
 import SwiftUI
@@ -14,6 +15,8 @@ struct ReaderContentView: View {
     @Bindable var dictionaryLookup: DictionaryLookupStore
     @Bindable var readerPreferences: ReaderPreferencesStore
     @Bindable var replacementRules: ReaderReplacementRuleStore
+    @Bindable var webDAVSettings: WebDAVConnectionSettingsStore
+    let webDAVProgressLoader: any WebDAVBookProgressLoading
     let openTOC: () -> Void
     let openChapter: (ChapterID, Int) -> Void
     let openBookInfo: (ShelfBookItem) -> Void
@@ -47,6 +50,9 @@ struct ReaderContentView: View {
     @State private var contentEditorDraft: ReaderContentEditorDraft?
     @State private var replacementDraft: ReaderReplacementRule?
     @State private var readerImages: [String: UIImage] = [:]
+    @State private var pendingCloudProgress: ReadingProgress?
+    @State private var webDAVProgressMessage: String?
+    @State private var syncingWebDAVProgress = false
 
     init(
         target: ReaderRoute,
@@ -57,6 +63,8 @@ struct ReaderContentView: View {
         dictionaryLookup: DictionaryLookupStore,
         readerPreferences: ReaderPreferencesStore,
         replacementRules: ReaderReplacementRuleStore,
+        webDAVSettings: WebDAVConnectionSettingsStore,
+        webDAVProgressLoader: any WebDAVBookProgressLoading,
         openTOC: @escaping () -> Void,
         openChapter: @escaping (ChapterID, Int) -> Void,
         openBookInfo: @escaping (ShelfBookItem) -> Void,
@@ -70,6 +78,8 @@ struct ReaderContentView: View {
         self.dictionaryLookup = dictionaryLookup
         self.readerPreferences = readerPreferences
         self.replacementRules = replacementRules
+        self.webDAVSettings = webDAVSettings
+        self.webDAVProgressLoader = webDAVProgressLoader
         self.openTOC = openTOC
         self.openChapter = openChapter
         self.openBookInfo = openBookInfo
@@ -139,6 +149,42 @@ struct ReaderContentView: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("screen.reader")
+        .overlay(alignment: .top) {
+            if let webDAVProgressMessage {
+                Text(webDAVProgressMessage)
+                    .font(.caption.weight(.semibold))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(.regularMaterial, in: .capsule)
+                    .padding(.top, 8)
+                    .accessibilityIdentifier(
+                        "state.reader.webdavProgress"
+                    )
+            }
+        }
+        .alert(
+            "当前进度超过云端",
+            isPresented: Binding(
+                get: { pendingCloudProgress != nil },
+                set: { if !$0 { pendingCloudProgress = nil } }
+            ),
+            presenting: pendingCloudProgress
+        ) { progress in
+            Button("保留本地", role: .cancel) {
+                pendingCloudProgress = nil
+                webDAVProgressMessage = "已保留本地进度"
+            }
+            Button("使用云端", role: .destructive) {
+                pendingCloudProgress = nil
+                applyConfirmedCloudProgress(progress)
+            }
+        } message: { progress in
+            Text(
+                "云端位于第 \(progress.position.chapterIndex + 1) 章"
+                    + " · 位置 \(progress.position.characterOffset)，"
+                    + "是否回退？"
+            )
+        }
         .task(id: target) {
             guard
                 let book = await library.item(id: target.bookID),
@@ -177,6 +223,7 @@ struct ReaderContentView: View {
                 chapter: chapter,
                 characterOffset: target.characterOffset
             )
+            await synchronizeWebDAVProgress()
             if
                 readAloud.state == .awaitingNextChapter,
                 readAloud.bookID == target.bookID,
@@ -741,6 +788,24 @@ struct ReaderContentView: View {
 
     private var moreMenu: some View {
         List {
+            Section("跨端同步") {
+                Button {
+                    menuPresented = false
+                    Task { await synchronizeWebDAVProgress() }
+                } label: {
+                    Label(
+                        syncingWebDAVProgress ? "正在同步进度…" : "同步云端进度",
+                        systemImage: "arrow.triangle.2.circlepath.icloud"
+                    )
+                }
+                .disabled(
+                    syncingWebDAVProgress
+                        || webDAVSettings.value.connectionConfiguration == nil
+                )
+                .accessibilityIdentifier(
+                    ReaderMenuAction.syncProgress.accessibilityIdentifier
+                )
+            }
             Section("查找与替换") {
                 Button {
                     menuPresented = false
@@ -1675,6 +1740,80 @@ struct ReaderContentView: View {
                 : 0,
             chapterTitle: chapter.title
         )
+    }
+
+    @MainActor
+    private func synchronizeWebDAVProgress() async {
+        guard
+            !syncingWebDAVProgress,
+            webDAVSettings.value.connectionConfiguration != nil
+        else { return }
+        syncingWebDAVProgress = true
+        let outcome = await library.synchronizeWebDAVReaderProgress(
+            bookID: target.bookID,
+            configuration: webDAVSettings.value.connectionConfiguration,
+            loader: webDAVProgressLoader
+        )
+        syncingWebDAVProgress = false
+        switch outcome {
+        case .applied(let progress):
+            webDAVProgressMessage = "已同步云端进度"
+            navigateToCloudProgress(progress)
+        case .confirmationRequired(let progress):
+            pendingCloudProgress = progress
+        case .failed(let failure):
+            webDAVProgressMessage = webDAVProgressFailureMessage(failure)
+        }
+    }
+
+    private func applyConfirmedCloudProgress(_ progress: ReadingProgress) {
+        Task { @MainActor in
+            let outcome = await library.confirmWebDAVReaderProgress(
+                progress,
+                bookID: target.bookID
+            )
+            switch outcome {
+            case .applied(let applied):
+                webDAVProgressMessage = "已回退到云端进度"
+                navigateToCloudProgress(applied)
+            case .confirmationRequired:
+                webDAVProgressMessage = "云端进度仍需确认"
+            case .failed(let failure):
+                webDAVProgressMessage = webDAVProgressFailureMessage(failure)
+            }
+        }
+    }
+
+    private func navigateToCloudProgress(_ progress: ReadingProgress) {
+        guard
+            let chapter = chapters.first(where: {
+                $0.index == progress.position.chapterIndex
+            }),
+            chapter.id != target.chapterID
+                || progress.position.characterOffset != currentReaderOffset
+        else { return }
+        openChapter(chapter.id, progress.position.characterOffset)
+    }
+
+    private func webDAVProgressFailureMessage(
+        _ failure: WebDAVReaderProgressSyncFailure
+    ) -> String {
+        switch failure {
+        case .invalidConfiguration:
+            return "请先配置 WebDAV"
+        case .missingBook:
+            return "当前书籍不存在"
+        case .persistenceUnavailable:
+            return "云端进度保存失败"
+        case .remote(.notFound):
+            return "云端没有该书进度"
+        case .remote(.authenticationRejected):
+            return "WebDAV 认证失败"
+        case .remote(.identityMismatch):
+            return "云端进度不属于当前书籍"
+        case .remote:
+            return "云端进度读取失败"
+        }
     }
 
     private func savePaginationProgress() async {

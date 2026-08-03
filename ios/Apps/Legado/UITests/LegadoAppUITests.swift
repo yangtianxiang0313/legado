@@ -1334,6 +1334,94 @@ final class LegadoAppUITests: XCTestCase {
         ])
     }
 
+    func testWebDAVReaderProgressSync() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let contract = try XCTUnwrap(
+            SimulatorContract(environment: environment),
+            "The running simulator is not part of the accepted UI matrix"
+        )
+        XCUIDevice.shared.orientation = .portrait
+
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+            "--webdav-test-double",
+            "--seed-webdav-progress",
+            "--webdav-progress-cloud-ahead",
+        ]
+        app.launch()
+        require("projection.\(contract.projection)")
+        openSeededReader()
+        waitForText("第三章 归途", in: "label.reader.chapterTitle")
+        XCTAssertEqual(
+            "已同步云端进度",
+            require("state.reader.webdavProgress").label
+        )
+
+        app.terminate()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "--reset-library",
+            "--webdav-test-double",
+            "--seed-webdav-progress",
+            "--webdav-progress-cloud-behind",
+        ]
+        app.launch()
+        require("projection.\(contract.projection)")
+        openSeededReader()
+
+        let firstAlert = app.alerts["当前进度超过云端"].firstMatch
+        XCTAssertTrue(firstAlert.waitForExistence(timeout: 8))
+        firstAlert.buttons["保留本地"].tap()
+        XCTAssertEqual(
+            "第二章 回声",
+            require("label.reader.chapterTitle").label
+        )
+        XCTAssertEqual(
+            "已保留本地进度",
+            require("state.reader.webdavProgress").label
+        )
+
+        requireButton("action.reader.openPrimaryMenu").tap()
+        requireByScrolling(
+            "action.reader.openMore",
+            in: "overlay.reader.primaryMenu"
+        ).tap()
+        require("overlay.reader.more")
+        requireByScrolling(
+            "action.reader.syncProgress",
+            in: "overlay.reader.more"
+        ).tap()
+
+        let secondAlert = app.alerts["当前进度超过云端"].firstMatch
+        XCTAssertTrue(secondAlert.waitForExistence(timeout: 8))
+        secondAlert.buttons["使用云端"].tap()
+        waitForText("第一章 启航", in: "label.reader.chapterTitle")
+        XCTAssertEqual(
+            "已同步云端进度",
+            require("state.reader.webdavProgress").label
+        )
+
+        emit([
+            "simulator_id": contract.simulatorID,
+            "projection": contract.projection,
+            "cloud_ahead": [
+                "confirmation_requested": false,
+                "final_chapter": "第三章 归途",
+            ],
+            "cloud_behind_rejected": [
+                "confirmation_requested": true,
+                "final_chapter": "第二章 回声",
+            ],
+            "cloud_behind_accepted": [
+                "confirmation_requested": true,
+                "final_chapter": "第一章 启航",
+            ],
+        ])
+    }
+
     func testSourceEditorDebugRoutes() throws {
         let environment = ProcessInfo.processInfo.environment
         let contract = try XCTUnwrap(
