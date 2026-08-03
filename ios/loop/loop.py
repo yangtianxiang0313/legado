@@ -1177,6 +1177,18 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/Apps/Legado/App/**",
             ],
         }
+    if target == "IOS-SOURCE-RUNTIME-DICTIONARY-JSOUP-001":
+        return {
+            "owner": "SourceRuntime",
+            "architecture_refs": ["ARCH-001", "ARCH-002", "ARCH-005", "ARCH-008", "ARCH-011", "ARCH-014", "ARCH-017", "ARCH-018"],
+            "allowed_paths": [
+                "ios/Packages/LegadoSourceKit/Sources/SourceRuntime/**",
+                "ios/Packages/LegadoSourceKit/Sources/HTMLSwiftSoup/**",
+                "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+                "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+                "ios/Apps/Legado/App/**",
+            ],
+        }
     if target == "IOS-DEPENDENCY-SWIFTSOUP-HTML-001":
         return {
             "owner": "DependencyControl",
@@ -3726,6 +3738,20 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_id": "dictionary-interop-tests",
             "test_filter": "DictionaryInteropTests",
             "acceptance_id": "dictionary-interop-acceptance",
+        }
+    if target == "IOS-SOURCE-RUNTIME-DICTIONARY-JSOUP-001":
+        delivery_contracts["SourceRuntime"] = {
+            "goal": (
+                "按 Android 内置百度汉语 DictRule 的 org.jsoup 脚本，移除固定噪声 selector，"
+                "返回 #content-panel innerHTML，并通过独立 DOM 变换端口接入 SwiftSoup。"
+            ),
+            "rule": (
+                "SourceRuntime 只识别冻结的 Jsoup 脚本语义并依赖 DOM 端口；HTMLSwiftSoup 实现解析/移除/"
+                "innerHTML，不把 SwiftSoup 类型泄漏到运行时或 AppUseCases；其他 Java 脚本继续明确失败。"
+            ),
+            "test_id": "dictionary-jsoup-compatibility-tests",
+            "test_filter": "DictionaryJSoupCompatibilityTests",
+            "acceptance_id": "dictionary-jsoup-compatibility-acceptance",
         }
     if (
         architecture["owner"] == "AppNavigation"

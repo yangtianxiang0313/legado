@@ -189,6 +189,13 @@
       "selectors": [
         {"id": "P67-S26-DICTIONARY", "claim_ids": [], "task_ids": ["IOS-READER-ANDROID-DICTIONARY-INTEROP-001"]}
       ]
+    },
+    {
+      "id": "P67-S27",
+      "title": "字典 Jsoup 脚本兼容",
+      "selectors": [
+        {"id": "P67-S27-DICTIONARY-JSOUP", "claim_ids": [], "task_ids": ["IOS-SOURCE-RUNTIME-DICTIONARY-JSOUP-001"]}
+      ]
     }
   ],
   "deliveries": [
@@ -860,6 +867,27 @@
         "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**",
         "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
         "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+        "ios/Apps/Legado/App/**",
+        "ios/loop/loop.py"
+      ]
+    },
+    {
+      "target": "IOS-SOURCE-RUNTIME-DICTIONARY-JSOUP-001",
+      "title": "兼容 Android 内置百度字典 Jsoup 展示脚本",
+      "prerequisite_task_ids": ["IOS-READER-ANDROID-DICTIONARY-INTEROP-001"],
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+      "fixture_id": "rl-reader-dictionary-jsoup-001",
+      "validation": "tests",
+      "test_filter": "DictionaryJSoupCompatibilityTests",
+      "source_anchors": [
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/assets/defaultData/dictRules.json","symbol_id":"asset://defaultData/dictRules.json#百度汉语"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/data/entities/DictRule.kt","symbol_id":"kotlin://io.legado.app.data.entities.DictRule/search"}
+      ],
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoSourceKit/Sources/SourceRuntime/**",
+        "ios/Packages/LegadoSourceKit/Sources/HTMLSwiftSoup/**",
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
         "ios/Apps/Legado/App/**",
         "ios/loop/loop.py"
       ]
