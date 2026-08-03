@@ -21,3 +21,17 @@ public struct DirectLinkUploadRule: Codable, Equatable, Sendable {
     self.unknownFields = unknownFields
   }
 }
+
+public protocol DirectLinkUploadRuleRepository: Sendable {
+  func directLinkUploadRule() async throws -> DirectLinkUploadRule?
+  func restoreAndroidDirectLinkUploadRule(
+    _ value: DirectLinkUploadRule
+  ) async throws
+}
+
+public extension DirectLinkUploadRuleRepository {
+  func directLinkUploadRule() async throws -> DirectLinkUploadRule? { nil }
+  func restoreAndroidDirectLinkUploadRule(
+    _ value: DirectLinkUploadRule
+  ) async throws {}
+}

@@ -120,6 +120,9 @@ public protocol AndroidCoreBackupRestoreRepository: Sendable {
   func restoreAndroidDictionaryRules(_ values: [DictionaryRule]) async throws
   func restoreAndroidKeyboardAssists(_ values: [KeyboardAssist]) async throws
   func restoreAndroidThemeProfiles(_ values: [AppThemeProfile]) async throws
+  func restoreAndroidDirectLinkUploadRule(
+    _ value: DirectLinkUploadRule
+  ) async throws
   func restoreAndroidWebDAVConfiguration(
     _ plan: AndroidWebDAVConfigurationImportPlan
   ) async throws
@@ -156,6 +159,9 @@ public extension AndroidCoreBackupRestoreRepository {
   func restoreAndroidDictionaryRules(_ values: [DictionaryRule]) async throws {}
   func restoreAndroidKeyboardAssists(_ values: [KeyboardAssist]) async throws {}
   func restoreAndroidThemeProfiles(_ values: [AppThemeProfile]) async throws {}
+  func restoreAndroidDirectLinkUploadRule(
+    _ value: DirectLinkUploadRule
+  ) async throws {}
   func restoreAndroidWebDAVConfiguration(
     _ plan: AndroidWebDAVConfigurationImportPlan
   ) async throws {}
@@ -234,6 +240,10 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     let themeProfiles = AndroidThemeConfigInteropAdapter.restoreValues(
       try AndroidBackupArchive.readThemeConfigs(from: archiveURL)
     )
+    let directLinkUploadRule = AndroidDirectLinkUploadRuleInteropAdapter
+      .restoreValue(
+        try AndroidBackupArchive.readDirectLinkUploadRule(from: archiveURL)
+      )
     let sharedPreferences = try AndroidBackupArchive.readSharedPreferences(
       from: archiveURL
     )
@@ -314,6 +324,11 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     }
     if !themeProfiles.isEmpty {
       try await repository.restoreAndroidThemeProfiles(themeProfiles)
+    }
+    if let directLinkUploadRule {
+      try await repository.restoreAndroidDirectLinkUploadRule(
+        directLinkUploadRule
+      )
     }
     return AndroidCoreBackupRestoreSummary(
       bookCount: library.bookCount,

@@ -32,12 +32,10 @@ struct AndroidBackupPreflightTests {
       "themeConfig.json",
       "config.xml",
     ]))
-    #expect(AndroidBackupArchive.deferredMemberNames == [
-      "directLinkUploadRule.json"
-    ])
+    #expect(AndroidBackupArchive.deferredMemberNames.isEmpty)
   }
 
-  @Test func reportsSupportedAndDeferredMembersBeforeRestore() async throws {
+  @Test func reportsAllMappedMembersAsSupportedBeforeRestore() async throws {
     let archiveURL = try makeArchive([
       .init(path: "bookshelf.json", data: Data("[]".utf8)),
       .init(
@@ -58,7 +56,7 @@ struct AndroidBackupPreflightTests {
       "bookshelf.json", "directLinkUploadRule.json",
     ])
     #expect(summary.preflight.members.map(\.disposition) == [
-      .supported, .deferred,
+      .supported, .supported,
     ])
     #expect(!summary.preflight.hasBlockingIssues)
     #expect(await repository.writeCount == 1)

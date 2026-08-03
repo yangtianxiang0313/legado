@@ -414,6 +414,12 @@ private struct AppAndroidCoreBackupRestoreRepository:
         try await repository.restoreAndroidThemeProfiles(values)
     }
 
+    func restoreAndroidDirectLinkUploadRule(
+        _ value: DirectLinkUploadRule
+    ) async throws {
+        try await repository.restoreAndroidDirectLinkUploadRule(value)
+    }
+
     func restoreAndroidWebDAVConfiguration(
         _ plan: AndroidWebDAVConfigurationImportPlan
     ) async throws {
@@ -529,6 +535,10 @@ private struct AppAndroidLibraryBackupRepository:
 
     func appThemeProfiles() async throws -> [AppThemeProfile] {
         try await repository.appThemeProfiles()
+    }
+
+    func directLinkUploadRule() async throws -> DirectLinkUploadRule? {
+        try await repository.directLinkUploadRule()
     }
 }
 

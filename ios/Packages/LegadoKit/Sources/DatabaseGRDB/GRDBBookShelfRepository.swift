@@ -8,6 +8,7 @@ public actor GRDBBookShelfRepository:
   BookShelfRepository, RuleSubscriptionRepository, RSSRepository,
   HTTPTextToSpeechRepository, DictionaryRuleRepository,
   KeyboardAssistRepository, AppThemeProfileRepository,
+  DirectLinkUploadRuleRepository,
   WebDAVServerProfileRepository
 {
   private let database: DatabaseQueue
@@ -1342,6 +1343,21 @@ public actor GRDBBookShelfRepository:
     }
   }
 
+  public func directLinkUploadRule() async throws -> DirectLinkUploadRule? {
+    try await database.read { db in
+      try DirectLinkUploadRuleRecord.fetchOne(db, key: 1)?.value
+    }
+  }
+
+  public func restoreAndroidDirectLinkUploadRule(
+    _ value: DirectLinkUploadRule
+  ) async throws {
+    try await database.write { db in
+      var record = try DirectLinkUploadRuleRecord(value: value)
+      try record.save(db)
+    }
+  }
+
   public func restoreAndroidReadRecords(
     _ records: [LibraryDomain.ReadRecord]
   ) async throws {
@@ -1677,6 +1693,12 @@ public actor GRDBBookShelfRepository:
       try db.create(table: "appThemeProfiles") { table in
         table.column("name", .text).notNull().primaryKey()
         table.column("night", .boolean).notNull().indexed()
+        table.column("payload", .blob).notNull()
+      }
+    }
+    migrator.registerMigration("addAndroidDirectLinkUploadRuleInterop") { db in
+      try db.create(table: "directLinkUploadRule") { table in
+        table.column("singleton", .integer).notNull().primaryKey()
         table.column("payload", .blob).notNull()
       }
     }
@@ -2250,6 +2272,24 @@ private struct AppThemeProfileRecord:
 
   var value: AppThemeProfile {
     get throws { try JSONDecoder().decode(AppThemeProfile.self, from: payload) }
+  }
+}
+
+private struct DirectLinkUploadRuleRecord:
+  Codable, FetchableRecord, MutablePersistableRecord
+{
+  static let databaseTableName = "directLinkUploadRule"
+  var singleton = 1
+  var payload: Data
+
+  init(value: DirectLinkUploadRule) throws {
+    payload = try JSONEncoder().encode(value)
+  }
+
+  var value: DirectLinkUploadRule {
+    get throws {
+      try JSONDecoder().decode(DirectLinkUploadRule.self, from: payload)
+    }
   }
 }
 

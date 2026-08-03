@@ -42,9 +42,7 @@ public struct AndroidBackupPreflightReport: Sendable, Equatable {
 }
 
 public extension AndroidBackupArchive {
-  static let deferredMemberNames: Set<String> = [
-    "directLinkUploadRule.json"
-  ]
+  static let deferredMemberNames: Set<String> = []
 
   static let supportedMemberNames: Set<String> = [
     bookSourcesMember,
@@ -66,6 +64,7 @@ public extension AndroidBackupArchive {
     themeConfigsMember,
     sharedPreferencesMember,
     serverProfilesMember,
+    directLinkUploadRuleMember,
   ]
 
   static var knownAndroidMemberNames: Set<String> {
@@ -162,7 +161,7 @@ public extension AndroidBackupArchive {
     }
     let object = try JSONSerialization.jsonObject(with: data)
     let expectsObject = path == sharedReaderConfigMember
-      || path == "directLinkUploadRule.json"
+      || path == directLinkUploadRuleMember
     if expectsObject {
       guard object is [String: Any] else {
         throw PreflightSyntaxError.invalidJSON

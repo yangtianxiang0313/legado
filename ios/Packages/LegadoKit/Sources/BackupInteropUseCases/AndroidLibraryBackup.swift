@@ -135,6 +135,7 @@ public protocol AndroidLibraryBackupRepository: Sendable {
   func dictionaryRules() async throws -> [DictionaryRule]
   func keyboardAssists() async throws -> [KeyboardAssist]
   func appThemeProfiles() async throws -> [AppThemeProfile]
+  func directLinkUploadRule() async throws -> DirectLinkUploadRule?
 }
 
 public extension AndroidLibraryBackupRepository {
@@ -149,6 +150,7 @@ public extension AndroidLibraryBackupRepository {
   func dictionaryRules() async throws -> [DictionaryRule] { [] }
   func keyboardAssists() async throws -> [KeyboardAssist] { [] }
   func appThemeProfiles() async throws -> [AppThemeProfile] { [] }
+  func directLinkUploadRule() async throws -> DirectLinkUploadRule? { nil }
 }
 
 public enum AndroidLibraryBackupError: Error, Equatable, Sendable {
@@ -219,6 +221,7 @@ public struct AndroidLibraryBackupUseCase: Sendable {
     let dictionaryRules = try await repository.dictionaryRules()
     let keyboardAssists = try await repository.keyboardAssists()
     let themeProfiles = try await repository.appThemeProfiles()
+    let directLinkUploadRule = try await repository.directLinkUploadRule()
     var contents = try AndroidLibraryBackupAdapter.contents(
       from: plan,
       bookSources: bookSources,
@@ -234,6 +237,7 @@ public struct AndroidLibraryBackupUseCase: Sendable {
       dictionaryRules: dictionaryRules,
       keyboardAssists: keyboardAssists,
       themeProfiles: themeProfiles,
+      directLinkUploadRule: directLinkUploadRule,
       sharedPreferences: try Self.sharedPreferences(
         webDAVConfiguration,
         selectedServerID: selectedWebDAVServerID
@@ -372,6 +376,7 @@ public enum AndroidLibraryBackupAdapter {
     dictionaryRules: [DictionaryRule] = [],
     keyboardAssists: [KeyboardAssist] = [],
     themeProfiles: [AppThemeProfile] = [],
+    directLinkUploadRule: DirectLinkUploadRule? = nil,
     sharedPreferences: AndroidSharedPreferencesDocument? = nil
   ) throws -> AndroidBackupContents {
     let sourceData = try SourceManagementPolicy.exportData(
@@ -405,6 +410,10 @@ public enum AndroidLibraryBackupAdapter {
         AndroidKeyboardAssistInteropAdapter.backupDocuments(keyboardAssists),
       themeConfigs:
         AndroidThemeConfigInteropAdapter.backupDocuments(themeProfiles),
+      directLinkUploadRule:
+        AndroidDirectLinkUploadRuleInteropAdapter.backupDocument(
+          directLinkUploadRule
+        ),
       sharedPreferences: sharedPreferences
     )
   }
