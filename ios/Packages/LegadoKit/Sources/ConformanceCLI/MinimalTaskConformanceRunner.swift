@@ -48,6 +48,8 @@ public enum MinimalTaskConformanceRunner {
         || fixtureID == ReaderProgressSaveConformanceRunner.fixtureID
         || fixtureID == ReaderPrefetchConformanceRunner.fixtureID
         || fixtureID
+          == ReaderOfflineCacheQueueConformanceRunner.fixtureID
+        || fixtureID
           == ReaderContentAcquisitionConformanceRunner.fixtureID
         || fixtureID
           == ReaderContentNormalizationConformanceRunner.fixtureID
@@ -144,6 +146,19 @@ public enum MinimalTaskConformanceRunner {
     }
     if fixtureID == ReaderPrefetchConformanceRunner.fixtureID {
       let run = try ReaderPrefetchConformanceRunner.run(
+        fixtureDirectory: fixtureDirectory
+      )
+      return try finish(
+        taskID: taskID,
+        fixtureID: fixtureID,
+        goldenPath: goldenPath,
+        actualArtifact: run.artifact,
+        canonicalPlans: run.requestPlan,
+        root: root
+      )
+    }
+    if fixtureID == ReaderOfflineCacheQueueConformanceRunner.fixtureID {
+      let run = try ReaderOfflineCacheQueueConformanceRunner.run(
         fixtureDirectory: fixtureDirectory
       )
       return try finish(
