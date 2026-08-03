@@ -28,7 +28,7 @@
       "id": "BKC-UI-SOURCE-BULK-MENU-001",
       "revision": 4,
       "semantic_key": "ui.source.bulk-selection-menu",
-      "kind": "static_declaration",
+      "kind": "composite_static_fact",
       "topic": "书源批量选择与管理",
       "statement": "Android 书源管理页直接暴露全选、反选和连续区间选择；选中书源可批量启停、启停发现、置顶、置底、增删分组、删除、导出与分享。置顶和置底保持选中项原有顺序，分组修改基于现有分组集合，导出只包含当前选择且保持当前筛选排序。上述确定性规则由冻结源码完整表达，不为该 UI 切片创建专用 Android runner 或 Golden；iOS 使用平台原生多选与分享界面，完整书源管理流程在里程碑统一运行 Simulator。",
       "subject_keys": [

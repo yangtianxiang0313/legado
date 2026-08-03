@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "kind": "ArchitectureDriver",
+  "id": "DRV-READER-CACHE-OFFLINE-QUEUE-001",
+  "revision": 1,
+  "status": "resolved",
+  "semantic_key": "reader.cache.offline-queue-compatibility-boundary",
+  "title": "用 ReaderCore 状态机隔离 Android 离线缓存全局队列语义",
+  "claim_refs": [
+    {
+      "id": "BKC-RD-OFFLINE-CACHE-QUEUE-001",
+      "revision": 2
+    }
+  ],
+  "forces": [
+    {
+      "quality_attribute": "compatibility",
+      "scenario": "ReaderCore 必须逐场景复现受保护 Android Golden 中的聚合统计、clear 与 close 的不同边界、三次普通失败预算、ConcurrentException 不计数以及 stop 后不重排；expected 不得由 iOS 实现反向生成。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "modularity",
+      "scenario": "队列状态、失败预算和注册表生命周期属于 ReaderCore；章节下载、正文缓存、后台执行和进度通知通过端口表达，核心不得依赖 SwiftUI、URLSession、文件系统实现、Android Service 或 Golden 文件。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "concurrency_safety",
+      "scenario": "用 actor 或等价串行隔离维护 book identity 到 QueueModel 的注册表，禁止复制 Android 可变全局集合；旧句柄在 close 后的观测与新 generation 必须可区分。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "lifecycle_safety",
+      "scenario": "clearMetrics 只清理成功失败统计，closeRegistry 才停止等待、移除注册并创建后续新 generation；两个操作必须使用不同 API，避免 UI 清统计时误取消下载。",
+      "criticality": "critical"
+    },
+    {
+      "quality_attribute": "determinism",
+      "scenario": "等待、下载中、成功、错误、停止与重试过渡必须由显式事件驱动并产生稳定 Snapshot，使 ConformanceCLI 无需网络、磁盘或 wall-clock 即可逐项对齐 Golden。",
+      "criticality": "high"
+    },
+    {
+      "quality_attribute": "scope_control",
+      "scenario": "本切片不声明进程恢复、后台存活、真实下载并发、磁盘预算或旧 in-flight 任务最终完成语义；这些能力必须继续从 Android 源码产生独立任务。",
+      "criticality": "high"
+    }
+  ],
+  "decision_questions": [
+    "如何用稳定 BookCacheIdentity 和 generation 表达注册表重建，同时允许测试观察已分离旧句柄？",
+    "如何把普通失败、并发占用和主动停止建模为互斥事件，避免用错误字符串推断重试策略？",
+    "如何拆分 QueueRegistry、CacheExecutionPort 与 Snapshot，使 UI 可以定制而不接触 Android 全局集合？"
+  ],
+  "resolution": {
+    "state": "resolved",
+    "adr_refs": [
+      "ADR-0001",
+      "ADR-0002"
+    ],
+    "work_item_refs": [
+      "IOS-CHARACTERIZE-READER-CACHE-OFFLINE-QUEUE-001",
+      "IOS-READER-CORE-CACHE-OFFLINE-QUEUE-001"
+    ]
+  },
+  "promotion": {
+    "approval_ref": "android-golden-publisher-v2:30846192239/1",
+    "approved_by": "loop-v2:verified-android-golden"
+  },
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-READER-CACHE-OFFLINE-QUEUE-001"
+}

@@ -5,9 +5,9 @@
   "inventory_control_sha256": "bfe8a9ee77e70953ac00834a190849d3e0d508dfb6531b4cc4c322ca9cc5df9c",
   "policy_sha256": "7a7ec55432f4c7409b3574ab03f8e8ac86fab5d327501d6918d2217942e30d19",
   "control_sha256": "ae5deca7fb2d7db402c009488449a7c2cb49e969d9747d7122b43d159653bc87",
-  "authority_sha256": "393519a8689f2976bc329d93f0940007a37f4149ed803a7bb8c948e899f93bfc",
-  "coverage_sha256": "69dc664e94138742e73d68387d59da1512c030bf4e4ddd053752bfc19316b313",
-  "proposal_sha256": "f5af27fb849f05afa9b9a1a508bc03f5ec07b8b6e68031ce2c3bda90882a848e",
+  "authority_sha256": "18049277982f147778558a28b40cb0ddff0e24b5d2b67606c8879d2da9a7374c",
+  "coverage_sha256": "4370d264808a35f2dd331ed7adf2ea3a30b4b450a3fd1ae57e73e2f52aba41b9",
+  "proposal_sha256": "d953972073d8f9b951edb1e9d92eb0898f041e11ca54ea29c7898fd47207b73a",
   "tombstone_sha256": "205ccdd2a1fd953914aeb8b01efc85bbabe6be1c2e143f9d04a83636a902d8d9",
   "packets": [
     {
@@ -175,6 +175,19 @@
       "claim_refs": [
         {
           "id": "BKC-BOOKMARK-RUNTIME-RISK-001",
+          "revision": 2
+        }
+      ]
+    },
+    {
+      "id": "BKP-READER-CACHE-OFFLINE-QUEUE-001",
+      "revision": 1,
+      "semantic_key": "reader.cache.offline-queue-runtime-golden",
+      "path": "ios/project/business-knowledge/packets/published/BKP-READER-CACHE-OFFLINE-QUEUE-001/r0001.json",
+      "record_sha256": "9f4c60645fc150e3ce30ecf8e48d1b1df47f590ae7cd908d70b3aa1ea43bac49",
+      "claim_refs": [
+        {
+          "id": "BKC-RD-OFFLINE-CACHE-QUEUE-001",
           "revision": 2
         }
       ]
@@ -720,6 +733,14 @@
       "resolution_state": "resolved"
     },
     {
+      "id": "DRV-READER-CACHE-OFFLINE-QUEUE-001",
+      "revision": 1,
+      "semantic_key": "reader.cache.offline-queue-compatibility-boundary",
+      "path": "ios/project/business-knowledge/drivers/published/DRV-READER-CACHE-OFFLINE-QUEUE-001/r0001.json",
+      "record_sha256": "4e99012ecf6839e96716ed7db3058e4ad80b7efc8d85b3b991d09e57273f49e4",
+      "resolution_state": "resolved"
+    },
+    {
       "id": "DRV-READER-CACHE-PREFETCH-POLICY-001",
       "revision": 1,
       "semantic_key": "reader.cache.prefetch-policy-compatibility-boundary",
@@ -1063,6 +1084,15 @@
       ]
     },
     {
+      "id": "BKL-READER-CACHE-OFFLINE-QUEUE-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/coverage/BKL-READER-CACHE-OFFLINE-QUEUE-001.json",
+      "record_sha256": "61377311353eb543664aebd0c3609915115c50688e182b15801684b961dae666",
+      "entry_ids": [
+        "BKE-READER-CACHE-OFFLINE-QUEUE-001"
+      ]
+    },
+    {
       "id": "BKL-READER-CACHE-PREFETCH-POLICY-001",
       "revision": 1,
       "path": "ios/project/business-knowledge/coverage/BKL-READER-CACHE-PREFETCH-POLICY-001.json",
@@ -1389,6 +1419,12 @@
       "sha256": "6c368b570fc4ab9900f12786e508b06bf12e4279f2f9be7caee20468f3c79e07"
     },
     {
+      "id": "BKP-BOOK-PROGRESS-REMAP-ALIAS-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/packets/proposals/BKP-BOOK-PROGRESS-REMAP-ALIAS-001/r0001.json",
+      "sha256": "d180b5297a786f2bd6e605548dfebb59c1c4639b6912789301f938bf7f3330f5"
+    },
+    {
       "id": "BKP-INTEGRATIONS-001",
       "revision": 3,
       "path": "ios/project/business-knowledge/packets/proposals/BKP-INTEGRATIONS-001/r0003.json",
@@ -1405,6 +1441,12 @@
       "revision": 1,
       "path": "ios/project/business-knowledge/packets/proposals/BKP-READER-LIFECYCLE-001/r0001.json",
       "sha256": "054d8d312e4a85a17293e6e10e53a2e8783ea19724cac8e76637ea0f552702c6"
+    },
+    {
+      "id": "BKP-SOURCE-BULK-MANAGEMENT-001",
+      "revision": 1,
+      "path": "ios/project/business-knowledge/packets/proposals/BKP-SOURCE-BULK-MANAGEMENT-001/r0001.json",
+      "sha256": "879c122b49003040175bc59f3ecbdd4f734aa6e881b05d425d98e5c9b0542067"
     },
     {
       "id": "BKP-SOURCE-IMPORT-RUNTIME-001",

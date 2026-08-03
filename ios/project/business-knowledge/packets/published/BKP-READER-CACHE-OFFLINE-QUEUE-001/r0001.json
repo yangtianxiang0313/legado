@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "kind": "BusinessKnowledgePacket",
+  "id": "BKP-READER-CACHE-OFFLINE-QUEUE-001",
+  "revision": 1,
+  "status": "published",
+  "semantic_key": "reader.cache.offline-queue-runtime-golden",
+  "title": "受保护 Android Golden 验证的离线缓存队列生命周期",
+  "baseline": {
+    "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+    "inventory_control_sha256": "833d45693ccef34aa7875b4deebb0d0ba5f177dce7739ea18e2ad94539448122"
+  },
+  "scope": {
+    "bounded_contexts": [
+      "reader.cache",
+      "reader.session"
+    ],
+    "capability_refs": [
+      "CAP-CONFORMANCE",
+      "CAP-CORE"
+    ],
+    "subject_keys": [
+      "reader.cache",
+      "reader.content"
+    ]
+  },
+  "claims": [
+    {
+      "id": "BKC-RD-OFFLINE-CACHE-QUEUE-001",
+      "revision": 2,
+      "semantic_key": "reader.cache.offline-queue",
+      "kind": "runtime_behavior",
+      "topic": "离线缓存队列统计、重试与关闭重建",
+      "statement": "在 rl-reader-cache-offline-queue-001 的 3 个固定 Android 场景中，downloadSummary 聚合全部已注册模型的下载中与等待数量，并叠加全局成功与失败集合；CacheBook.clear 只清空成功与失败统计，不移除两个活动模型，也不改变等待或下载中集合。普通失败依次累计为 1、2、3，前两次重新排队，第三次不再排队且模型停止；ConcurrentException 不增加普通失败计数但会重新排队；模型已 stop 时普通失败计数仍增加但不重新排队。CacheBook.close 会清空每个模型的等待集合、全局注册表以及成功失败统计；已取得的旧模型句柄仍保留其下载中索引并同时报告 stopped，之后同一 bookUrl 的 getOrCreate 返回不同模型，只包含新加入的等待索引。结论只冻结上述同步可观察状态，不外推真实网络下载、线程池并发与公平性、后台存活、进程终止恢复、磁盘配额、任务持久化、换源或旧下载中任务最终如何收口。",
+      "subject_keys": [
+        "reader.cache",
+        "reader.content"
+      ],
+      "depends_on": [
+        {
+          "id": "BKC-RD-CONTENT-ACQUISITION-001",
+          "revision": 2
+        }
+      ],
+      "support": {
+        "state": "runtime_verified",
+        "fact_refs": [],
+        "source_anchors": [
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "cdcbbf5696c1d2b018e25c2819c0461e8c667866",
+            "path": "app/src/main/java/io/legado/app/model/CacheBook.kt",
+            "symbol_id": "kotlin://io.legado.app.model.CacheBook.CacheBookModel"
+          },
+          {
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "git_blob": "4916633d8c891cbdb2fc28a66c93a9b4750fa938",
+            "path": "app/src/main/java/io/legado/app/service/CacheBookService.kt",
+            "symbol_id": "kotlin://io.legado.app.service.CacheBookService"
+          }
+        ],
+        "runtime_evidence": [
+          {
+            "relation": "supports",
+            "kind": "android_characterization",
+            "artifact_uri": "ios/harness/goldens/android-legado-v1/rl-reader-cache-offline-queue-001.json",
+            "artifact_sha256": "13947689ea33e1525b05ec928562e1d9c5c798eb34a5ed87e0b4f8dca1466438",
+            "projection_pointer": "/artifact/result/value",
+            "observed_sha256": "080b2c8ed2f4e4b2bfb0ef3d5486b213e564cfe448478c0a7b03364d748b41b1",
+            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+            "runner_digest": "3cddaad8fe544c8969ed8d5d91802fbaff119bf5168e6f0f6c8d850b9adfc912",
+            "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
+          }
+        ],
+        "runtime_requirement": "android_characterization"
+      },
+      "conflicts_with": [],
+      "supersedes": {
+        "id": "BKC-RD-OFFLINE-CACHE-QUEUE-001",
+        "revision": 1
+      }
+    }
+  ],
+  "supersedes": null,
+  "created_by": "IOS-CHARACTERIZE-READER-CACHE-OFFLINE-QUEUE-001"
+}

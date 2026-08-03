@@ -53,10 +53,12 @@
             "relation": "supports",
             "kind": "android_characterization",
             "artifact_uri": "ios/harness/goldens/android-legado-v1/rl-reader-progress-toc-remap-001.json",
-            "artifact_sha256": "94c85e59eac8e456f2b03fd9f21156435c9a16e2f2817d1e9b8c840cb792ef1a",
-            "projection_pointer": "/artifact/result/value",
-            "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-            "runner_digest": "1c1016b710dedc4d59130f4f25d1f7614f6cbba3d479113e45edee692b883573"
+        "artifact_sha256": "94c85e59eac8e456f2b03fd9f21156435c9a16e2f2817d1e9b8c840cb792ef1a",
+        "projection_pointer": "/artifact/result/value",
+        "observed_sha256": "552fd46b6f3072e3f393b8d827f79a6b330cfb54a6c3abb36451db45bb06ae54",
+        "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+        "runner_digest": "1c1016b710dedc4d59130f4f25d1f7614f6cbba3d479113e45edee692b883573",
+        "canonicalizer_sha256": "c4d944b1b8a115421a95c42c8aab77e6aeee9f6dac0752abad1a5263d4d45d97"
           }
         ],
         "runtime_requirement": "android_characterization"
