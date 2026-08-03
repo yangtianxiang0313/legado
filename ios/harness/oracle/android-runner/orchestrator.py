@@ -3066,6 +3066,7 @@ def _instrumentation_arguments(
     logical_origin: str,
     scenario_id: str,
     input_base64: str,
+    runtime_loopback: bool = False,
 ) -> list[str]:
     arguments = [
         str(adb),
@@ -3082,10 +3083,10 @@ def _instrumentation_arguments(
     ]
     if source_base64 is not None:
         arguments.extend(["-e", "sourceBase64", source_base64])
-    if integration_scenario:
+    if integration_scenario or runtime_loopback:
         if device_origin is None:
             raise AndroidOracleRunnerError(
-                "INTEGRATION_DEVICE_ORIGIN_MISSING"
+                "LOOPBACK_DEVICE_ORIGIN_MISSING"
             )
         arguments.extend(["-e", "deviceOrigin", device_origin])
     arguments.extend(
@@ -3276,6 +3277,9 @@ def run_characterization(
                 serial=serial,
                 source_base64=source_base64,
                 integration_scenario=integration_scenario,
+                runtime_loopback=(
+                    contract.get("runtime_loopback") is True
+                ),
                 device_origin=device_origin,
                 logical_origin=logical_origin,
                 scenario_id=scenario_id,

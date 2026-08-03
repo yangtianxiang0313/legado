@@ -198,6 +198,9 @@ class LegadoOracleInstrumentedTest {
     }
     private val deviceOrigin by lazy {
         when {
+            isAndroidRuntimeScenario &&
+                scenarioId == "rl-reader-progress-webdav-conflict-runtime-001" ->
+                requiredArgument("deviceOrigin").trimEnd('/')
             isAndroidRuntimeScenario -> "android-runtime://local"
             isIntegrationLabScenario ->
                 requiredArgument("deviceOrigin").trimEnd('/')
@@ -230,6 +233,13 @@ class LegadoOracleInstrumentedTest {
                 require(deviceOrigin.startsWith("http://127.0.0.1:")) {
                     "Integration Oracle must use the run-scoped loopback origin"
                 }
+            }
+        }
+        if (
+            scenarioId == "rl-reader-progress-webdav-conflict-runtime-001"
+        ) {
+            require(deviceOrigin.startsWith("http://127.0.0.1:")) {
+                "WebDAV progress runtime must use the run-scoped loopback origin"
             }
         }
         if (isRealSourceScenario) {
