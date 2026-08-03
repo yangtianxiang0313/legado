@@ -67,6 +67,41 @@ public struct ShelfBookCandidate: Equatable, Sendable {
   }
 }
 
+public enum AndroidWebDAVBookOrigin {
+  public static let prefix = "webDav::"
+
+  public static func encode(
+    remoteURL: URL,
+    serverID: Int64
+  ) -> String {
+    let attributes = "{\"serverID\":\(serverID)}"
+    return prefix + remoteURL.absoluteString + "," + attributes
+  }
+
+  public static func applying(
+    to candidate: ShelfBookCandidate,
+    remoteURL: URL,
+    serverID: Int64
+  ) -> ShelfBookCandidate {
+    ShelfBookCandidate(
+      name: candidate.name,
+      author: candidate.author,
+      kind: candidate.kind,
+      lastChapter: candidate.lastChapter,
+      intro: candidate.intro,
+      bookURL: candidate.bookURL,
+      tocURL: candidate.tocURL,
+      bookRequestExpression: candidate.bookRequestExpression,
+      coverURL: candidate.coverURL,
+      customCoverURL: candidate.customCoverURL,
+      customIntro: candidate.customIntro,
+      originName: candidate.originName,
+      sourceID: encode(remoteURL: remoteURL, serverID: serverID),
+      variables: candidate.variables
+    )
+  }
+}
+
 public struct BookMetadataUpdate: Equatable, Sendable {
   public let name: String
   public let author: String
@@ -593,6 +628,32 @@ public final class ShelfLibrary {
 
   public func item(id: LibraryDomain.BookID) async -> ShelfBookItem? {
     try? await repository.book(id: id)
+  }
+
+  @discardableResult
+  public func markWebDAVOrigin(
+    for book: ShelfBookItem,
+    remoteURL: URL,
+    serverID: Int64
+  ) async -> ShelfBookItem? {
+    do {
+      let updated = try await repository.updateBookInfo(
+        bookID: book.id,
+        candidate: AndroidWebDAVBookOrigin.applying(
+          to: book.candidate,
+          remoteURL: remoteURL,
+          serverID: serverID
+        )
+      )
+      if updated.membership.isInBookshelf {
+        await reload()
+      }
+      errorMessage = nil
+      return updated
+    } catch {
+      errorMessage = "无法保存 WebDAV 书籍来源"
+      return nil
+    }
   }
 
   @discardableResult

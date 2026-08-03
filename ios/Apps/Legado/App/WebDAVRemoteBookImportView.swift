@@ -140,6 +140,19 @@ struct WebDAVRemoteBookImportView: View {
                 importStatus = library.errorMessage ?? "远程书导入失败"
                 return
             }
+            guard let profileID = browser.selectedProfileID else {
+                importStatus = "远程书服务器身份丢失"
+                return
+            }
+            let persisted = await library.markWebDAVOrigin(
+                for: item,
+                remoteURL: resource.url,
+                serverID: profileID
+            )
+            guard persisted != nil else {
+                importStatus = library.errorMessage ?? "远程书来源保存失败"
+                return
+            }
             importStatus = "已导入《\(item.candidate.name)》"
             dismiss()
         } catch {
