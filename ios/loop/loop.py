@@ -970,6 +970,26 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/Apps/Legado/App/**",
             ],
         }
+    if target == "IOS-SOURCE-ANDROID-RULE-SUBSCRIPTION-INTEROP-001":
+        return {
+            "owner": "IntegrationKit",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
+                "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+                "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+                "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+                "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+                "ios/Apps/Legado/App/**",
+            ],
+        }
     if target == "IOS-DEPENDENCY-SWIFTSOUP-HTML-001":
         return {
             "owner": "DependencyControl",
@@ -3379,6 +3399,20 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_id": "search-history-interop-tests",
             "test_filter": "SearchHistoryInteropTests",
             "acceptance_id": "search-history-interop-acceptance",
+        }
+    if target == "IOS-SOURCE-ANDROID-RULE-SUBSCRIPTION-INTEROP-001":
+        delivery_contracts["IntegrationKit"] = {
+            "goal": (
+                "按冻结 Android RuleSub 主键、URL 唯一约束、类型、排序和更新时间"
+                "语义，实现 sourceSub.json 双向互通及 iOS 可管理订阅入口。"
+            ),
+            "rule": (
+                "AndroidBackupInterop 保留格式与未知字段；AppUseCases 拥有订阅模型和"
+                "CRUD 端口；DatabaseGRDB 实现持久化；App UI 只编排管理与导入。"
+            ),
+            "test_id": "rule-subscription-interop-tests",
+            "test_filter": "RuleSubscriptionInteropTests",
+            "acceptance_id": "rule-subscription-interop-acceptance",
         }
     if (
         architecture["owner"] == "AppNavigation"

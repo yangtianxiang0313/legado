@@ -119,6 +119,13 @@
       "selectors": [
         {"id": "P67-S16-SEARCH-HISTORY", "claim_ids": [], "task_ids": ["IOS-SEARCH-ANDROID-HISTORY-INTEROP-001"]}
       ]
+    },
+    {
+      "id": "P67-S17",
+      "title": "规则订阅双端互通",
+      "selectors": [
+        {"id": "P67-S17-RULE-SUBSCRIPTION", "claim_ids": [], "task_ids": ["IOS-SOURCE-ANDROID-RULE-SUBSCRIPTION-INTEROP-001"]}
+      ]
     }
   ],
   "deliveries": [
@@ -529,6 +536,33 @@
         "ios/Packages/LegadoKit/Tests/AndroidBackupInteropTests/**",
         "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**",
         "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+        "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+        "ios/Apps/Legado/App/**",
+        "ios/loop/loop.py"
+      ]
+    },
+    {
+      "target": "IOS-SOURCE-ANDROID-RULE-SUBSCRIPTION-INTEROP-001",
+      "title": "Android sourceSub.json 与 iOS 规则订阅管理互通",
+      "prerequisite_task_ids": [
+        "IOS-SEARCH-ANDROID-HISTORY-INTEROP-001"
+      ],
+      "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
+      "fixture_id": "rl-integration-backup-ios-library-to-android-001",
+      "validation": "tests",
+      "test_filter": "RuleSubscriptionInteropTests",
+      "source_anchors": [
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/data/entities/RuleSub.kt","symbol_id":"kotlin://io.legado.app.data.entities.RuleSub"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/data/dao/RuleSubDao.kt","symbol_id":"kotlin://io.legado.app.data.dao.RuleSubDao"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/ui/rss/subscription/RuleSubActivity.kt","symbol_id":"kotlin://io.legado.app.ui.rss.subscription.RuleSubActivity"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/help/storage/Backup.kt","symbol_id":"kotlin://io.legado.app.help.storage.Backup/backup"},
+        {"android_commit":"30bfdf70224ed3006f2777777ff414ebdb3a9eb3","path":"app/src/main/java/io/legado/app/help/storage/Restore.kt","symbol_id":"kotlin://io.legado.app.help.storage.Restore/restore"}
+      ],
+      "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/AndroidBackupInterop/**",
+        "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+        "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+        "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
         "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
         "ios/Apps/Legado/App/**",
         "ios/loop/loop.py"
