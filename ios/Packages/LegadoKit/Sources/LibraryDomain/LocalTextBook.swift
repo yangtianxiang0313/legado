@@ -18,6 +18,31 @@ public struct LocalTextBookDocument: Equatable, Sendable {
   }
 }
 
+public struct LocalTextTOCRule: Codable, Equatable, Identifiable, Sendable {
+  public let id: Int64
+  public var name: String
+  public var rule: String
+  public var example: String?
+  public var serialNumber: Int
+  public var isEnabled: Bool
+
+  public init(
+    id: Int64,
+    name: String,
+    rule: String,
+    example: String? = nil,
+    serialNumber: Int = -1,
+    isEnabled: Bool = true
+  ) {
+    self.id = id
+    self.name = name
+    self.rule = rule
+    self.example = example
+    self.serialNumber = serialNumber
+    self.isEnabled = isEnabled
+  }
+}
+
 public enum LocalTextBookFailure: Error, Equatable, Sendable {
   case emptyFile
   case unsupportedEncoding
@@ -41,7 +66,8 @@ public enum LocalTextBookParser {
 
   public static func parse(
     _ data: Data,
-    splitLongChapters: Bool = true
+    splitLongChapters: Bool = true,
+    tocRules: [LocalTextTOCRule] = []
   ) throws -> LocalTextBookDocument {
     guard !data.isEmpty else {
       throw LocalTextBookFailure.emptyFile
@@ -49,8 +75,9 @@ public enum LocalTextBookParser {
     guard let text = decode(data) else {
       throw LocalTextBookFailure.unsupportedEncoding
     }
-    let hasTOC = containsChapterHeading(in: text)
-    let parsed = chapters(in: text)
+    let selectedPattern = selectedPattern(in: text, rules: tocRules)
+    let hasTOC = selectedPattern != nil
+    let parsed = chapters(in: text, pattern: selectedPattern)
     let shouldSplit = !hasTOC || splitLongChapters
     guard shouldSplit else {
       return LocalTextBookDocument(chapters: parsed)
@@ -83,7 +110,10 @@ public enum LocalTextBookParser {
       ?? String(data: data, encoding: .utf16)
   }
 
-  private static func chapters(in text: String) -> [LocalTextChapter] {
+  private static func chapters(
+    in text: String,
+    pattern: NSRegularExpression?
+  ) -> [LocalTextChapter] {
     let lines = text.components(separatedBy: .newlines)
     var chapters: [LocalTextChapter] = []
     var title: String?
@@ -103,13 +133,9 @@ public enum LocalTextBookParser {
 
     for line in lines {
       let candidate = line.trimmingCharacters(in: .whitespacesAndNewlines)
-      let range = NSRange(candidate.startIndex..., in: candidate)
       if
         !candidate.isEmpty,
-        chapterPattern.firstMatch(
-          in: candidate,
-          range: range
-        )?.range == range
+        matchesHeading(line, pattern: pattern)
       {
         appendCurrent()
         title = candidate
@@ -133,18 +159,53 @@ public enum LocalTextBookParser {
     return chapters
   }
 
-  private static func containsChapterHeading(in text: String) -> Bool {
-    text.components(separatedBy: .newlines).contains { line in
-      let candidate = line.trimmingCharacters(
-        in: .whitespacesAndNewlines
-      )
-      guard !candidate.isEmpty else { return false }
-      let range = NSRange(candidate.startIndex..., in: candidate)
-      return chapterPattern.firstMatch(
-        in: candidate,
-        range: range
-      )?.range == range
+  private static func selectedPattern(
+    in text: String,
+    rules: [LocalTextTOCRule]
+  ) -> NSRegularExpression? {
+    guard !rules.isEmpty else {
+      return text.components(separatedBy: .newlines).contains {
+        matchesHeading($0, pattern: chapterPattern)
+      } ? chapterPattern : nil
     }
+    var maximumMatchCount = 1
+    var selected: NSRegularExpression?
+    let ordered = rules
+      .filter(\.isEnabled)
+      .sorted {
+        if $0.serialNumber != $1.serialNumber {
+          return $0.serialNumber < $1.serialNumber
+        }
+        return $0.id < $1.id
+      }
+      .reversed()
+    let range = NSRange(text.startIndex..., in: text)
+    for rule in ordered {
+      guard let pattern = try? NSRegularExpression(
+        pattern: rule.rule,
+        options: [.anchorsMatchLines]
+      ) else { continue }
+      let matchCount = pattern.numberOfMatches(in: text, range: range)
+      if matchCount >= maximumMatchCount {
+        maximumMatchCount = matchCount
+        selected = pattern
+      }
+    }
+    return selected
+  }
+
+  private static func matchesHeading(
+    _ line: String,
+    pattern: NSRegularExpression?
+  ) -> Bool {
+    guard let pattern else { return false }
+    let candidate = "\n" + line
+    let range = NSRange(candidate.startIndex..., in: candidate)
+    guard let match = pattern.firstMatch(in: candidate, range: range) else {
+      return false
+    }
+    return match.range.location > 0
+      && NSMaxRange(match.range) == range.length
   }
 
   private static func split(

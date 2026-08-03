@@ -16,6 +16,7 @@ public struct AndroidLibraryBackupSummary: Equatable, Sendable {
   public let rssSourceCount: Int
   public let rssStarCount: Int
   public let httpTextToSpeechEngineCount: Int
+  public let localTextTOCRuleCount: Int
 
   public init(
     bookCount: Int,
@@ -28,7 +29,8 @@ public struct AndroidLibraryBackupSummary: Equatable, Sendable {
     ruleSubscriptionCount: Int = 0,
     rssSourceCount: Int = 0,
     rssStarCount: Int = 0,
-    httpTextToSpeechEngineCount: Int = 0
+    httpTextToSpeechEngineCount: Int = 0,
+    localTextTOCRuleCount: Int = 0
   ) {
     self.bookCount = bookCount
     self.groupCount = groupCount
@@ -41,6 +43,7 @@ public struct AndroidLibraryBackupSummary: Equatable, Sendable {
     self.rssSourceCount = rssSourceCount
     self.rssStarCount = rssStarCount
     self.httpTextToSpeechEngineCount = httpTextToSpeechEngineCount
+    self.localTextTOCRuleCount = localTextTOCRuleCount
   }
 }
 
@@ -52,6 +55,7 @@ public protocol AndroidLibraryBackupRepository: Sendable {
   func androidRSSSources() async throws -> [RSSSource]
   func androidRSSStars() async throws -> [RSSStar]
   func androidHTTPTextToSpeechEngines() async throws -> [HTTPTextToSpeechEngine]
+  func localTextTOCRules() async throws -> [LocalTextTOCRule]
 }
 
 public extension AndroidLibraryBackupRepository {
@@ -61,6 +65,7 @@ public extension AndroidLibraryBackupRepository {
   func androidRSSSources() async throws -> [RSSSource] { [] }
   func androidRSSStars() async throws -> [RSSStar] { [] }
   func androidHTTPTextToSpeechEngines() async throws -> [HTTPTextToSpeechEngine] { [] }
+  func localTextTOCRules() async throws -> [LocalTextTOCRule] { [] }
 }
 
 public enum AndroidLibraryBackupError: Error, Equatable, Sendable {
@@ -96,6 +101,7 @@ public struct AndroidLibraryBackupUseCase: Sendable {
     let rssSources = try await repository.androidRSSSources()
     let rssStars = try await repository.androidRSSStars()
     let httpTextToSpeechEngines = try await repository.androidHTTPTextToSpeechEngines()
+    let localTextTOCRules = try await repository.localTextTOCRules()
     let contents = try AndroidLibraryBackupAdapter.contents(
       from: plan,
       bookSources: bookSources,
@@ -105,7 +111,8 @@ public struct AndroidLibraryBackupUseCase: Sendable {
       ruleSubscriptions: ruleSubscriptions,
       rssSources: rssSources,
       rssStars: rssStars,
-      httpTextToSpeechEngines: httpTextToSpeechEngines
+      httpTextToSpeechEngines: httpTextToSpeechEngines,
+      localTextTOCRules: localTextTOCRules
     )
     try AndroidBackupArchive.write(
       contents,
@@ -122,7 +129,8 @@ public struct AndroidLibraryBackupUseCase: Sendable {
       ruleSubscriptionCount: contents.ruleSubscriptions.count,
       rssSourceCount: contents.rssSources.count,
       rssStarCount: contents.rssStars.count,
-      httpTextToSpeechEngineCount: contents.httpTextToSpeechEngines.count
+      httpTextToSpeechEngineCount: contents.httpTextToSpeechEngines.count,
+      localTextTOCRuleCount: contents.localTextTOCRules.count
     )
   }
 }
@@ -140,7 +148,8 @@ public enum AndroidLibraryBackupAdapter {
       ruleSubscriptions: [],
       rssSources: [],
       rssStars: [],
-      httpTextToSpeechEngines: []
+      httpTextToSpeechEngines: [],
+      localTextTOCRules: []
     )
   }
 
@@ -153,7 +162,8 @@ public enum AndroidLibraryBackupAdapter {
     ruleSubscriptions: [RuleSubscription] = [],
     rssSources: [RSSSource] = [],
     rssStars: [RSSStar] = [],
-    httpTextToSpeechEngines: [HTTPTextToSpeechEngine] = []
+    httpTextToSpeechEngines: [HTTPTextToSpeechEngine] = [],
+    localTextTOCRules: [LocalTextTOCRule] = []
   ) throws -> AndroidBackupContents {
     let sourceData = try SourceManagementPolicy.exportData(
       bookSources,
@@ -175,7 +185,9 @@ public enum AndroidLibraryBackupAdapter {
       httpTextToSpeechEngines:
         AndroidHTTPTextToSpeechInteropAdapter.backupDocuments(
           httpTextToSpeechEngines
-        )
+        ),
+      localTextTOCRules:
+        AndroidLocalTextTOCRuleInteropAdapter.backupDocuments(localTextTOCRules)
     )
   }
 

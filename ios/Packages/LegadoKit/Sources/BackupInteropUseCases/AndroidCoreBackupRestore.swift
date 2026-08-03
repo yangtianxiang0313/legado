@@ -15,6 +15,7 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
   public let rssSourceCount: Int
   public let rssStarCount: Int
   public let httpTextToSpeechEngineCount: Int
+  public let localTextTOCRuleCount: Int
 
   public init(
     bookCount: Int,
@@ -27,7 +28,8 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
     ruleSubscriptionCount: Int = 0,
     rssSourceCount: Int = 0,
     rssStarCount: Int = 0,
-    httpTextToSpeechEngineCount: Int = 0
+    httpTextToSpeechEngineCount: Int = 0,
+    localTextTOCRuleCount: Int = 0
   ) {
     self.bookCount = bookCount
     self.groupCount = groupCount
@@ -40,6 +42,7 @@ public struct AndroidCoreBackupRestoreSummary: Equatable, Sendable {
     self.rssSourceCount = rssSourceCount
     self.rssStarCount = rssStarCount
     self.httpTextToSpeechEngineCount = httpTextToSpeechEngineCount
+    self.localTextTOCRuleCount = localTextTOCRuleCount
   }
 }
 
@@ -57,6 +60,9 @@ public protocol AndroidCoreBackupRestoreRepository: Sendable {
   func restoreAndroidRSS(sources: [RSSSource], stars: [RSSStar]) async throws
   func restoreAndroidHTTPTextToSpeechEngines(
     _ values: [HTTPTextToSpeechEngine]
+  ) async throws
+  func restoreAndroidLocalTextTOCRules(
+    _ values: [LocalTextTOCRule]
   ) async throws
 }
 
@@ -76,6 +82,10 @@ public extension AndroidCoreBackupRestoreRepository {
 
   func restoreAndroidHTTPTextToSpeechEngines(
     _ values: [HTTPTextToSpeechEngine]
+  ) async throws {}
+
+  func restoreAndroidLocalTextTOCRules(
+    _ values: [LocalTextTOCRule]
   ) async throws {}
 }
 
@@ -118,6 +128,9 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
       AndroidHTTPTextToSpeechInteropAdapter.restoreValues(
         try AndroidBackupArchive.readHTTPTextToSpeechEngines(from: archiveURL)
       )
+    let localTextTOCRules = AndroidLocalTextTOCRuleInteropAdapter.restoreValues(
+      try AndroidBackupArchive.readLocalTextTOCRules(from: archiveURL)
+    )
 
     let library = try await repository.restoreAndroidLibrary(libraryPlan)
     if !bookSources.isEmpty {
@@ -146,6 +159,9 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
         httpTextToSpeechEngines
       )
     }
+    if !localTextTOCRules.isEmpty {
+      try await repository.restoreAndroidLocalTextTOCRules(localTextTOCRules)
+    }
     return AndroidCoreBackupRestoreSummary(
       bookCount: library.bookCount,
       groupCount: library.groupCount,
@@ -157,7 +173,8 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
       ruleSubscriptionCount: ruleSubscriptions.count,
       rssSourceCount: rssSources.count,
       rssStarCount: rssStars.count,
-      httpTextToSpeechEngineCount: httpTextToSpeechEngines.count
+      httpTextToSpeechEngineCount: httpTextToSpeechEngines.count,
+      localTextTOCRuleCount: localTextTOCRules.count
     )
   }
 

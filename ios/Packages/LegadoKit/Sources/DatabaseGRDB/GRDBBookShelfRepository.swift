@@ -1123,6 +1123,26 @@ public actor GRDBBookShelfRepository:
     }
   }
 
+  public func localTextTOCRules() async throws -> [LocalTextTOCRule] {
+    try await database.read { db in
+      try LocalTextTOCRuleRecord
+        .order(Column("serialNumber").asc, Column("id").asc)
+        .fetchAll(db)
+        .map { try $0.value }
+    }
+  }
+
+  public func restoreAndroidLocalTextTOCRules(
+    _ values: [LocalTextTOCRule]
+  ) async throws {
+    try await database.write { db in
+      for value in values {
+        var record = try LocalTextTOCRuleRecord(value: value)
+        try record.save(db)
+      }
+    }
+  }
+
   public func restoreAndroidReadRecords(
     _ records: [LibraryDomain.ReadRecord]
   ) async throws {
@@ -1421,6 +1441,13 @@ public actor GRDBBookShelfRepository:
       try db.create(table: "httpTextToSpeechEngines") { table in
         table.column("id", .integer).notNull().primaryKey()
         table.column("name", .text).notNull().indexed()
+        table.column("payload", .blob).notNull()
+      }
+    }
+    migrator.registerMigration("addLocalTextTOCRuleInterop") { db in
+      try db.create(table: "localTextTOCRules") { table in
+        table.column("id", .integer).notNull().primaryKey()
+        table.column("serialNumber", .integer).notNull().indexed()
         table.column("payload", .blob).notNull()
       }
     }
@@ -1858,6 +1885,28 @@ private struct HTTPTextToSpeechRecord:
   var value: HTTPTextToSpeechEngine {
     get throws {
       try JSONDecoder().decode(HTTPTextToSpeechEngine.self, from: payload)
+    }
+  }
+}
+
+private struct LocalTextTOCRuleRecord:
+  Codable, FetchableRecord, MutablePersistableRecord
+{
+  static let databaseTableName = "localTextTOCRules"
+
+  var id: Int64
+  var serialNumber: Int
+  var payload: Data
+
+  init(value: LocalTextTOCRule) throws {
+    id = value.id
+    serialNumber = value.serialNumber
+    payload = try JSONEncoder().encode(value)
+  }
+
+  var value: LocalTextTOCRule {
+    get throws {
+      try JSONDecoder().decode(LocalTextTOCRule.self, from: payload)
     }
   }
 }

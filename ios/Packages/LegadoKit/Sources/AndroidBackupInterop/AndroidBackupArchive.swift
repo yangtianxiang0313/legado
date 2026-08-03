@@ -14,6 +14,7 @@ public struct AndroidBackupContents: Equatable, Sendable {
     public var rssSources: [AndroidRSSSourceDTO]
     public var rssStars: [AndroidRSSStarDTO]
     public var httpTextToSpeechEngines: [AndroidHTTPTextToSpeechDTO]
+    public var localTextTOCRules: [AndroidLocalTextTOCRuleDTO]
 
     public init(
         bookSources: [BookSourceDTO] = [],
@@ -26,7 +27,8 @@ public struct AndroidBackupContents: Equatable, Sendable {
         ruleSubscriptions: [AndroidRuleSubscriptionDTO] = [],
         rssSources: [AndroidRSSSourceDTO] = [],
         rssStars: [AndroidRSSStarDTO] = [],
-        httpTextToSpeechEngines: [AndroidHTTPTextToSpeechDTO] = []
+        httpTextToSpeechEngines: [AndroidHTTPTextToSpeechDTO] = [],
+        localTextTOCRules: [AndroidLocalTextTOCRuleDTO] = []
     ) {
         self.bookSources = bookSources
         self.replacementRules = replacementRules
@@ -39,6 +41,7 @@ public struct AndroidBackupContents: Equatable, Sendable {
         self.rssSources = rssSources
         self.rssStars = rssStars
         self.httpTextToSpeechEngines = httpTextToSpeechEngines
+        self.localTextTOCRules = localTextTOCRules
     }
 }
 
@@ -55,6 +58,7 @@ public enum AndroidBackupArchive {
     public static let rssSourcesMember = "rssSources.json"
     public static let rssStarsMember = "rssStar.json"
     public static let httpTextToSpeechMember = "httpTTS.json"
+    public static let localTextTOCRulesMember = "txtTocRule.json"
 
     public static func write(
         _ contents: AndroidBackupContents,
@@ -148,6 +152,16 @@ public enum AndroidBackupArchive {
                     path: httpTextToSpeechMember,
                     data: try AndroidHTTPTextToSpeechCodec.encodeMany(
                         contents.httpTextToSpeechEngines
+                    )
+                )
+            )
+        }
+        if !contents.localTextTOCRules.isEmpty {
+            members.append(
+                .init(
+                    path: localTextTOCRulesMember,
+                    data: try AndroidLocalTextTOCRuleCodec.encodeMany(
+                        contents.localTextTOCRules
                     )
                 )
             )
@@ -294,5 +308,17 @@ public enum AndroidBackupArchive {
             maximumBytes: maximumMemberBytes
         ) else { return [] }
         return try AndroidHTTPTextToSpeechCodec.decodeMany(data)
+    }
+
+    public static func readLocalTextTOCRules(
+        from archiveURL: URL,
+        maximumMemberBytes: UInt64 = 32 * 1_024 * 1_024
+    ) throws -> [AndroidLocalTextTOCRuleDTO] {
+        guard let data = try ArchiveZIPFoundation.read(
+            localTextTOCRulesMember,
+            from: archiveURL,
+            maximumBytes: maximumMemberBytes
+        ) else { return [] }
+        return try AndroidLocalTextTOCRuleCodec.decodeMany(data)
     }
 }

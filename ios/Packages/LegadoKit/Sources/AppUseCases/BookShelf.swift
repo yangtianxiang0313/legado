@@ -184,7 +184,8 @@ public enum ReaderContentRefreshScope: Equatable, Sendable {
 }
 
 public protocol BookShelfRepository:
-  Sendable, ReaderReplacementRuleRepository, ReadRecordStore
+  Sendable, ReaderReplacementRuleRepository, ReadRecordStore,
+  LocalTextTOCRuleRepository
 {
   func stage(_ candidate: ShelfBookCandidate) async throws -> ShelfBookItem
   func add(
@@ -707,7 +708,8 @@ public final class ShelfLibrary {
       return nil
     }
     do {
-      let document = try LocalTextBookParser.parse(data)
+      let tocRules = try await repository.localTextTOCRules()
+      let document = try LocalTextBookParser.parse(data, tocRules: tocRules)
       let item = try await repository.importLocalText(
         candidate: ShelfBookCandidate(
           name: imported.name,
@@ -752,7 +754,8 @@ public final class ShelfLibrary {
     do {
       let document = try LocalTextBookParser.parse(
         data,
-        splitLongChapters: enabled
+        splitLongChapters: enabled,
+        tocRules: try await repository.localTextTOCRules()
       )
       let updated = try await repository.rebuildLocalText(
         bookID: bookID,
