@@ -845,6 +845,32 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
             ],
         }
+    if target == "IOS-APP-WEBDAV-REMOTE-BOOK-IMPORT-001":
+        return {
+            "owner": "AppNavigation",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-002",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-011",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/Apps/Legado/App/**",
+                "ios/Apps/Legado/UITests/**",
+                "ios/Apps/Legado/project.yml",
+                "ios/Apps/Legado/Legado.xcodeproj/project.pbxproj",
+                "ios/Packages/LegadoKit/Sources/AppUseCases/**",
+                "ios/Packages/LegadoKit/Sources/IntegrationKit/**",
+                "ios/Packages/LegadoKit/Sources/WebDAVFoundation/**",
+                "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+                "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
+                "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+            ],
+        }
     if target == "IOS-INTEGRATION-IOS-BACKUP-ANDROID-RESTORE-ORACLE-001":
         return {
             "owner": "IntegrationKit",
