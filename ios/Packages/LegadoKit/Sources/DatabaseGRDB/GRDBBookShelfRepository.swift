@@ -402,6 +402,23 @@ public actor GRDBBookShelfRepository:
     }
   }
 
+  public func setBookResegmentsContent(
+    bookID: LibraryDomain.BookID,
+    enabled: Bool
+  ) async throws -> ShelfBookItem {
+    try await database.write { db in
+      guard var book = try BookRecord
+        .filter(Column("bookID") == bookID.rawValue)
+        .fetchOne(db)
+      else {
+        throw ShelfMutationFailure.missingBook
+      }
+      book.resegmentsContent = enabled
+      try book.update(db)
+      return book.item
+    }
+  }
+
   public func applySourceSwitch(
     bookID: LibraryDomain.BookID,
     candidate: ShelfBookCandidate,
@@ -435,7 +452,8 @@ public actor GRDBBookShelfRepository:
           splitsLongChapters: record.splitsLongChapters,
           usesReplacementRules: record.usesReplacementRules,
           ttsEngine: record.ttsEngine,
-          imageStyle: record.imageStyle
+          imageStyle: record.imageStyle,
+          resegmentsContent: record.resegmentsContent
         )
       }
 
@@ -473,7 +491,8 @@ public actor GRDBBookShelfRepository:
           splitsLongChapters: item.splitsLongChapters,
           usesReplacementRules: item.usesReplacementRules,
           ttsEngine: item.ttsEngine,
-          imageStyle: item.imageStyle
+          imageStyle: item.imageStyle,
+          resegmentsContent: item.resegmentsContent
         )
       }
       return item
@@ -1134,6 +1153,7 @@ public actor GRDBBookShelfRepository:
         record.usesReplacementRules = value.usesReplacementRules
         record.ttsEngine = value.ttsEngine
         record.imageStyle = value.imageStyle
+        record.resegmentsContent = value.resegmentsContent
         record.androidType = value.androidType
         record.originOrder = value.originOrder
         record.syncTime = value.syncTime
@@ -1196,6 +1216,7 @@ public actor GRDBBookShelfRepository:
         record.usesReplacementRules = value.usesReplacementRules
         record.ttsEngine = value.ttsEngine
         record.imageStyle = value.imageStyle
+        record.resegmentsContent = value.resegmentsContent
         record.androidType = value.androidType
         record.originOrder = value.originOrder
         record.syncTime = value.syncTime
@@ -1947,6 +1968,12 @@ public actor GRDBBookShelfRepository:
         table.add(column: "imageStyle", .text)
       }
     }
+    migrator.registerMigration("preserveBookContentResegment") { db in
+      try db.alter(table: "books") { table in
+        table.add(column: "resegmentsContent", .boolean)
+          .notNull().defaults(to: false)
+      }
+    }
     migrator.registerMigration("addAndroidReadRecordInterop") { db in
       try db.create(table: "readRecords") { table in
         table.column("deviceID", .text).notNull()
@@ -2149,6 +2176,7 @@ private struct BookRecord:
   var usesReplacementRules: Bool
   var ttsEngine: String?
   var imageStyle: String?
+  var resegmentsContent: Bool
   var androidType: Int64
   var originOrder: Int64
   var syncTime: Int64
@@ -2196,6 +2224,7 @@ private struct BookRecord:
     self.usesReplacementRules = true
     self.ttsEngine = nil
     self.imageStyle = nil
+    self.resegmentsContent = false
     self.androidType = 0
     self.originOrder = 0
     self.syncTime = 0
@@ -2260,7 +2289,8 @@ private struct BookRecord:
       splitsLongChapters: splitsLongChapters,
       usesReplacementRules: usesReplacementRules,
       ttsEngine: ttsEngine,
-      imageStyle: imageStyle
+      imageStyle: imageStyle,
+      resegmentsContent: resegmentsContent
     )
   }
 
@@ -2302,6 +2332,7 @@ private struct BookRecord:
       usesReplacementRules: usesReplacementRules,
       ttsEngine: ttsEngine,
       imageStyle: imageStyle,
+      resegmentsContent: resegmentsContent,
       androidType: androidType,
       originOrder: originOrder,
       syncTime: syncTime,

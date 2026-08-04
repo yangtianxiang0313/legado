@@ -35,6 +35,7 @@ public struct AndroidLibraryRestoreBook: Equatable, Sendable {
   public let usesReplacementRules: Bool
   public let ttsEngine: String?
   public let imageStyle: String?
+  public let resegmentsContent: Bool
   public let androidType: Int64
   public let originOrder: Int64
   public let syncTime: Int64
@@ -57,6 +58,7 @@ public struct AndroidLibraryRestoreBook: Equatable, Sendable {
     usesReplacementRules: Bool = true,
     ttsEngine: String? = nil,
     imageStyle: String? = nil,
+    resegmentsContent: Bool = false,
     androidType: Int64,
     originOrder: Int64,
     syncTime: Int64,
@@ -78,6 +80,7 @@ public struct AndroidLibraryRestoreBook: Equatable, Sendable {
     self.usesReplacementRules = usesReplacementRules
     self.ttsEngine = ttsEngine
     self.imageStyle = imageStyle
+    self.resegmentsContent = resegmentsContent
     self.androidType = androidType
     self.originOrder = originOrder
     self.syncTime = syncTime
@@ -206,6 +209,7 @@ public enum AndroidLibraryImportAdapter {
       usesReplacementRules: readConfig.boolean("useReplaceRule") ?? true,
       ttsEngine: readConfig.string("ttsEngine"),
       imageStyle: readConfig.string("imageStyle"),
+      resegmentsContent: readConfig.boolean("reSegment") ?? false,
       androidType: fields.integer("type") ?? 0,
       originOrder: fields.integer("originOrder") ?? 0,
       syncTime: fields.integer("syncTime") ?? 0,

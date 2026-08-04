@@ -44,6 +44,7 @@ public struct ReaderContentNormalizationInput: Equatable, Sendable {
   public let content: String
   public let includeTitle: Bool
   public let useReplacementRules: Bool
+  public let resegmentContent: Bool
   public let paragraphIndent: String
   public let rules: [ReaderContentReplacementRule]
 
@@ -54,6 +55,7 @@ public struct ReaderContentNormalizationInput: Equatable, Sendable {
     content: String,
     includeTitle: Bool,
     useReplacementRules: Bool,
+    resegmentContent: Bool = false,
     paragraphIndent: String,
     rules: [ReaderContentReplacementRule]
   ) {
@@ -63,6 +65,7 @@ public struct ReaderContentNormalizationInput: Equatable, Sendable {
     self.content = content
     self.includeTitle = includeTitle
     self.useReplacementRules = useReplacementRules
+    self.resegmentContent = resegmentContent
     self.paragraphIndent = paragraphIndent
     self.rules = rules
   }
@@ -131,6 +134,13 @@ public enum AndroidReaderContentNormalizationPolicy {
           content = remainder
           sameTitleRemoved = true
         }
+      }
+
+      if input.resegmentContent {
+        content = AndroidContentResegment.resegment(
+          content,
+          chapterName: input.chapterTitle
+        )
       }
 
       if input.useReplacementRules {

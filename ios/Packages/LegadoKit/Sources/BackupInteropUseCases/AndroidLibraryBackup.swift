@@ -565,6 +565,7 @@ public enum AndroidLibraryBackupAdapter {
     if let imageStyle = value.imageStyle {
       readConfig["imageStyle"] = .string(imageStyle)
     }
+    readConfig["reSegment"] = .bool(value.resegmentsContent)
     return AndroidBookDTO(
       bookURL: value.candidate.bookURL,
       tocURL: value.candidate.tocURL ?? "",

@@ -174,6 +174,7 @@ public struct ShelfBookItem: Identifiable, Equatable, Sendable {
   public let usesReplacementRules: Bool
   public let ttsEngine: String?
   public let imageStyle: String?
+  public let resegmentsContent: Bool
 
   public init(
     id: LibraryDomain.BookID,
@@ -190,7 +191,8 @@ public struct ShelfBookItem: Identifiable, Equatable, Sendable {
     splitsLongChapters: Bool = true,
     usesReplacementRules: Bool = true,
     ttsEngine: String? = nil,
-    imageStyle: String? = nil
+    imageStyle: String? = nil,
+    resegmentsContent: Bool = false
   ) {
     self.id = id
     self.candidate = candidate
@@ -207,6 +209,7 @@ public struct ShelfBookItem: Identifiable, Equatable, Sendable {
     self.usesReplacementRules = usesReplacementRules
     self.ttsEngine = ttsEngine
     self.imageStyle = imageStyle
+    self.resegmentsContent = resegmentsContent
   }
 
   public var unreadChapterCount: Int {
@@ -321,6 +324,10 @@ public protocol BookShelfRepository:
   func setBookImageStyle(
     bookID: LibraryDomain.BookID,
     value: String?
+  ) async throws -> ShelfBookItem
+  func setBookResegmentsContent(
+    bookID: LibraryDomain.BookID,
+    enabled: Bool
   ) async throws -> ShelfBookItem
   func applySourceSwitch(
     bookID: LibraryDomain.BookID,
@@ -505,6 +512,16 @@ public extension BookShelfRepository {
   func setBookImageStyle(
     bookID: LibraryDomain.BookID,
     value: String?
+  ) async throws -> ShelfBookItem {
+    guard let book = try await book(id: bookID) else {
+      throw ShelfMutationFailure.missingBook
+    }
+    return book
+  }
+
+  func setBookResegmentsContent(
+    bookID: LibraryDomain.BookID,
+    enabled: Bool
   ) async throws -> ShelfBookItem {
     guard let book = try await book(id: bookID) else {
       throw ShelfMutationFailure.missingBook
@@ -1235,6 +1252,29 @@ public final class ShelfLibrary {
       return updated
     } catch {
       errorMessage = "无法保存本书图片样式"
+      return nil
+    }
+  }
+
+  @discardableResult
+  public func setBookResegmentsContent(
+    bookID: LibraryDomain.BookID,
+    enabled: Bool
+  ) async -> ShelfBookItem? {
+    do {
+      let updated = try await repository.setBookResegmentsContent(
+        bookID: bookID,
+        enabled: enabled
+      )
+      if let index = books.firstIndex(where: { $0.id == bookID }) {
+        books[index] = updated
+      }
+      allBooks = try await repository.shelfBooks()
+      projectBooks()
+      errorMessage = nil
+      return updated
+    } catch {
+      errorMessage = "无法保存本书段落重排设置"
       return nil
     }
   }

@@ -1062,6 +1062,19 @@ struct ReaderContentView: View {
                 .accessibilityIdentifier("action.reader.imageStyle")
 
                 Button {
+                    toggleBookContentResegment()
+                } label: {
+                    Label(
+                        readerBook?.resegmentsContent == true
+                            ? "关闭段落重排"
+                            : "开启段落重排",
+                        systemImage: "text.alignleft"
+                    )
+                }
+                .disabled(readerBook == nil)
+                .accessibilityIdentifier("action.reader.reSegment")
+
+                Button {
                     toggleCurrentBookmark()
                 } label: {
                     Label(
@@ -1972,7 +1985,9 @@ struct ReaderContentView: View {
                             usesReplacementRules:
                                 readerBook.usesReplacementRules,
                             ttsEngine: readerBook.ttsEngine,
-                            imageStyle: readerBook.imageStyle
+                            imageStyle: readerBook.imageStyle,
+                            resegmentsContent:
+                                readerBook.resegmentsContent
                         ),
                         chapters: preview.chapters,
                         suggestedChapterID:
@@ -2347,6 +2362,29 @@ struct ReaderContentView: View {
                 let updated = await library.setBookImageStyle(
                     bookID: readerBook.id,
                     value: value
+                )
+            else { return }
+            self.readerBook = updated
+            await session.load(
+                book: updated,
+                chapter: chapter,
+                characterOffset: offset
+            )
+        }
+    }
+
+    private func toggleBookContentResegment() {
+        guard
+            let readerBook,
+            let chapter = chapters.first(where: { $0.id == target.chapterID })
+        else { return }
+        let offset = session.document?.position.characterOffset
+            ?? target.characterOffset
+        Task {
+            guard
+                let updated = await library.setBookResegmentsContent(
+                    bookID: readerBook.id,
+                    enabled: !readerBook.resegmentsContent
                 )
             else { return }
             self.readerBook = updated
