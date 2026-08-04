@@ -1,8 +1,10 @@
 import AppUseCases
+import CoreImage.CIFilterBuiltins
 import Foundation
 import PhotosUI
 import SourceRuntime
 import SwiftUI
+import UIKit
 import UniformTypeIdentifiers
 import Vision
 
@@ -23,6 +25,9 @@ struct SourceManagementView: View {
     @State private var showsDeleteConfirmation = false
     @State private var exportDocument = SourceJSONDocument()
     @State private var showsExporter = false
+    @State private var sourceQRCodeImage: UIImage?
+    @State private var showsSourceQRCode = false
+    @State private var showsSourceQRCodeError = false
 
     private var visibleSources: [BookSourceDraft] {
         SourceManagementPolicy.visibleSources(
@@ -274,6 +279,45 @@ struct SourceManagementView: View {
             contentType: .json,
             defaultFilename: "bookSource.json"
         ) { _ in }
+        .sheet(isPresented: $showsSourceQRCode) {
+            NavigationStack {
+                VStack(spacing: 20) {
+                    if let sourceQRCodeImage {
+                        Image(uiImage: sourceQRCodeImage)
+                            .interpolation(.none)
+                            .resizable()
+                            .scaledToFit()
+                            .padding()
+                            .accessibilityIdentifier(
+                                "image.source.export.qr"
+                            )
+                        ShareLink(
+                            item: Image(uiImage: sourceQRCodeImage),
+                            preview: SharePreview(
+                                "Legado 书源二维码",
+                                image: Image(uiImage: sourceQRCodeImage)
+                            )
+                        ) {
+                            Label(
+                                "分享二维码图片",
+                                systemImage: "square.and.arrow.up"
+                            )
+                        }
+                    }
+                }
+                .navigationTitle("书源二维码")
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("完成") { showsSourceQRCode = false }
+                    }
+                }
+            }
+        }
+        .alert("无法生成二维码", isPresented: $showsSourceQRCodeError) {
+            Button("确定", role: .cancel) {}
+        } message: {
+            Text("该书源定义过大，请改用 JSON 文件或系统分享。")
+        }
     }
 
     private var filterMenu: some View {
@@ -380,6 +424,13 @@ struct SourceManagementView: View {
                 ) {
                     Label("分享", systemImage: "square.and.arrow.up")
                 }
+                Button {
+                    generateSourceQRCode()
+                } label: {
+                    Label("二维码", systemImage: "qrcode")
+                }
+                .disabled(selection.count != 1)
+                .accessibilityIdentifier("action.source.export.qr")
             } label: {
                 Label("批量操作", systemImage: "ellipsis.circle")
             }
@@ -436,6 +487,35 @@ struct SourceManagementView: View {
         Task {
             _ = await catalog.apply(mutation, selectedIDs: selected)
         }
+    }
+
+    private func generateSourceQRCode() {
+        guard selection.count == 1,
+              let payload = try? catalog.exportData(selectedIDs: selection),
+              let image = SourceQRCodeImageRenderer.render(payload)
+        else {
+            showsSourceQRCodeError = true
+            return
+        }
+        sourceQRCodeImage = image
+        showsSourceQRCode = true
+    }
+}
+
+private enum SourceQRCodeImageRenderer {
+    static func render(_ payload: Data) -> UIImage? {
+        let filter = CIFilter.qrCodeGenerator()
+        filter.message = payload
+        filter.correctionLevel = "L"
+        guard let output = filter.outputImage?.transformed(
+            by: CGAffineTransform(scaleX: 10, y: 10)
+        ) else { return nil }
+        let context = CIContext()
+        guard let image = context.createCGImage(
+            output,
+            from: output.extent
+        ) else { return nil }
+        return UIImage(cgImage: image)
     }
 }
 
