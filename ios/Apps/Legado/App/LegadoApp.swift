@@ -44,6 +44,8 @@ struct LegadoApp: App {
     @State private var replacementRules: ReaderReplacementRuleStore
     @State private var ruleSubscriptions: RuleSubscriptionStore
     @State private var rssStore: RSSStore
+    @State private var onlineImportRequest: AndroidOnlineImportRequest?
+    @State private var onlineImportError: String?
     @State private var webDAVSettings: WebDAVConnectionSettingsStore
     @State private var webDAVBackupCheckpoint:
         WebDAVBackupCheckpointStore
@@ -421,7 +423,41 @@ struct LegadoApp: App {
                     webDAVServerProfiles: webDAVServerProfiles,
                     webDAVRemoteBooks: webDAVRemoteBooks
                 )
+                .onOpenURL(perform: openOnlineImportLink)
+                .sheet(item: $onlineImportRequest) { request in
+                    AndroidOnlineImportView(
+                        request: request,
+                        catalog: sourceCatalog,
+                        rssStore: rssStore,
+                        replacementRules: replacementRules,
+                        dismiss: { onlineImportRequest = nil }
+                    )
+                }
+                .alert(
+                    "无法导入",
+                    isPresented: Binding(
+                        get: { onlineImportError != nil },
+                        set: { if !$0 { onlineImportError = nil } }
+                    )
+                ) {
+                    Button("好", role: .cancel) {}
+                } message: {
+                    Text(onlineImportError ?? "链接无效")
+                }
             }
+        }
+    }
+
+    private func openOnlineImportLink(_ url: URL) {
+        do {
+            onlineImportRequest = try AndroidOnlineImportLinkParser.parse(url)
+            onlineImportError = nil
+        } catch AndroidOnlineImportLinkError.unsupportedTarget {
+            onlineImportError = "此 Android 一键导入类型尚未支持"
+        } catch AndroidOnlineImportLinkError.missingSourceURL {
+            onlineImportError = "导入链接缺少 src 地址"
+        } catch {
+            onlineImportError = "不是有效的 Legado 一键导入链接"
         }
     }
 }

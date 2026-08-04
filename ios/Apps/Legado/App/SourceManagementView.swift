@@ -856,6 +856,133 @@ private struct RuleSubscriptionImportPreviewView: View {
     }
 }
 
+struct AndroidOnlineImportView: View {
+    let request: AndroidOnlineImportRequest
+    @Bindable var catalog: SourceCatalog
+    @Bindable var rssStore: RSSStore
+    @Bindable var replacementRules: ReaderReplacementRuleStore
+    let dismiss: () -> Void
+
+    @State private var isLoading = true
+    @State private var message: String?
+    @State private var rssCandidates: [RSSRuleSubscriptionCandidate] = []
+    @State private var replacementCandidates:
+        [ReplacementRuleSubscriptionCandidate] = []
+    @State private var selectedCandidateIDs: Set<UUID> = []
+
+    var body: some View {
+        switch request.target {
+        case .bookSource:
+            NavigationStack {
+                SourceImportView(
+                    catalog: catalog,
+                    initialPayload: request.sourceURL,
+                    automaticallyParsesInitialPayload: true,
+                    dismiss: dismiss
+                )
+            }
+        case .rssSource, .replaceRule:
+            NavigationStack {
+                structuredImportContent
+            }
+            .task(id: request.id) { await loadStructuredPayload() }
+        }
+    }
+
+    @ViewBuilder
+    private var structuredImportContent: some View {
+        if isLoading {
+            ProgressView("正在下载导入内容…")
+                .navigationTitle("一键导入")
+                .toolbar { cancelToolbarItem }
+        } else if let message {
+            ContentUnavailableView(
+                "无法导入",
+                systemImage: "exclamationmark.triangle",
+                description: Text(message)
+            )
+            .navigationTitle("一键导入")
+            .toolbar { cancelToolbarItem }
+        } else {
+            RuleSubscriptionImportPreviewView(
+                sheet: request.target == .rssSource ? .rss : .replacement,
+                rssCandidates: rssCandidates,
+                replacementCandidates: replacementCandidates,
+                selection: $selectedCandidateIDs,
+                cancel: dismiss,
+                commit: commitStructuredPayload
+            )
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var cancelToolbarItem: some ToolbarContent {
+        ToolbarItem(placement: .cancellationAction) {
+            Button("取消", action: dismiss)
+        }
+    }
+
+    private func loadStructuredPayload() async {
+        isLoading = true
+        message = nil
+        defer { isLoading = false }
+        let data: Data
+        do {
+            data = try await SearchEnvironment
+                .loadRemoteRuleSubscriptionPayload(request.sourceURL)
+        } catch RemoteSourceDefinitionLoadError.invalidURL {
+            message = "src 地址无效"
+            return
+        } catch RemoteSourceDefinitionLoadError.unsuccessfulStatus(let status) {
+            message = "下载失败（HTTP \(status)）"
+            return
+        } catch {
+            message = "无法下载导入内容"
+            return
+        }
+        do {
+            switch request.target {
+            case .rssSource:
+                rssCandidates = try AndroidRuleSubscriptionPayloadImport
+                    .decodeRSSSources(data)
+                    .map(RSSRuleSubscriptionCandidate.init(value:))
+                selectedCandidateIDs = Set(rssCandidates.map(\.id))
+            case .replaceRule:
+                replacementCandidates = try
+                    AndroidRuleSubscriptionPayloadImport
+                        .decodeReplacementRules(data)
+                        .map(ReplacementRuleSubscriptionCandidate.init(value:))
+                selectedCandidateIDs = Set(replacementCandidates.map(\.id))
+            case .bookSource:
+                break
+            }
+        } catch {
+            message = "导入内容格式不正确"
+        }
+    }
+
+    private func commitStructuredPayload() {
+        switch request.target {
+        case .rssSource:
+            let values = rssCandidates
+                .filter { selectedCandidateIDs.contains($0.id) }
+                .map(\.value)
+            Task {
+                if await rssStore.importSources(values) { dismiss() }
+            }
+        case .replaceRule:
+            let values = replacementCandidates
+                .filter { selectedCandidateIDs.contains($0.id) }
+                .map(\.value)
+            Task {
+                if await replacementRules.importRules(values) { dismiss() }
+            }
+        case .bookSource:
+            break
+        }
+    }
+}
+
 private struct RuleSubscriptionEditor: View {
     @State var value: RuleSubscription
     let save: (RuleSubscription) async -> Void
@@ -889,9 +1016,10 @@ private struct RuleSubscriptionEditor: View {
     }
 }
 
-private struct SourceImportView: View {
+struct SourceImportView: View {
     @Bindable var catalog: SourceCatalog
     let dismiss: () -> Void
+    let automaticallyParsesInitialPayload: Bool
 
     @State private var payload = ""
     @State private var candidates: [SourceImportCandidate]?
@@ -908,10 +1036,12 @@ private struct SourceImportView: View {
     init(
         catalog: SourceCatalog,
         initialPayload: String = "",
+        automaticallyParsesInitialPayload: Bool = false,
         dismiss: @escaping () -> Void
     ) {
         self.catalog = catalog
         self.dismiss = dismiss
+        self.automaticallyParsesInitialPayload = automaticallyParsesInitialPayload
         _payload = State(initialValue: initialPayload)
     }
 
@@ -984,6 +1114,11 @@ private struct SourceImportView: View {
         .onChange(of: selectedQRCodeImage) { _, item in
             guard let item else { return }
             loadQRCode(item)
+        }
+        .task {
+            if automaticallyParsesInitialPayload, candidates == nil {
+                parse()
+            }
         }
     }
 
