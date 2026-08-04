@@ -23,6 +23,14 @@ enum SearchEnvironment {
         persistentStore: ReaderImageFileStore()
     )
 
+    static func loadRemoteSourceDefinitions(_ address: String) async throws
+        -> Data
+    {
+        try await RemoteSourceDefinitionLoader(
+            transport: makeTransport(externalBaseURL: nil)
+        ).load(address)
+    }
+
     static func debugSource(
         _ source: BookSourceDraft,
         input: String

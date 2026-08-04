@@ -624,6 +624,7 @@ private struct SourceImportView: View {
     @State private var payload = ""
     @State private var candidates: [SourceImportCandidate]?
     @State private var showsFileImporter = false
+    @State private var isLoadingRemotePayload = false
     @State private var message: String?
     @State private var keepName = false
     @State private var keepGroup = false
@@ -675,10 +676,13 @@ private struct SourceImportView: View {
             }
             ToolbarItem(placement: .confirmationAction) {
                 if candidates == nil {
-                    Button("解析", action: parse)
+                    Button(
+                        isLoadingRemotePayload ? "下载中…" : "解析",
+                        action: parse
+                    )
                         .disabled(payload.trimmingCharacters(
                             in: .whitespacesAndNewlines
-                        ).isEmpty)
+                        ).isEmpty || isLoadingRemotePayload)
                         .accessibilityIdentifier("action.source.import.parse")
                 } else {
                     Button("导入", action: commit)
@@ -754,10 +758,38 @@ private struct SourceImportView: View {
     }
 
     private func parse() {
+        let normalized = payload.trimmingCharacters(
+            in: .whitespacesAndNewlines
+        )
+        if normalized.hasPrefix("http://")
+            || normalized.hasPrefix("https://")
+        {
+            isLoadingRemotePayload = true
+            message = nil
+            Task {
+                defer { isLoadingRemotePayload = false }
+                do {
+                    let data = try await SearchEnvironment
+                        .loadRemoteSourceDefinitions(normalized)
+                    preview(data)
+                } catch RemoteSourceDefinitionLoadError.invalidURL {
+                    message = "书源链接无效"
+                } catch RemoteSourceDefinitionLoadError.unsuccessfulStatus(
+                    let status
+                ) {
+                    message = "下载失败（HTTP \(status)）"
+                } catch {
+                    message = "无法下载在线书源"
+                }
+            }
+            return
+        }
+        preview(Data(normalized.utf8))
+    }
+
+    private func preview(_ data: Data) {
         do {
-            let imported = try SourceDefinitionImport.decode(
-                Data(payload.utf8)
-            )
+            let imported = try SourceDefinitionImport.decode(data)
             candidates = SourceImportPolicy.preview(
                 incoming: imported,
                 existing: catalog.sources
