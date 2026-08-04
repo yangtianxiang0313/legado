@@ -10,6 +10,10 @@ let package = Package(
     ],
     products: [
         .library(
+            name: "LegadoShareInteropKit",
+            targets: ["BackupInteropUseCases"]
+        ),
+        .library(
             name: "LegadoStoreSafeKit",
             targets: [
                 "AppUseCases",

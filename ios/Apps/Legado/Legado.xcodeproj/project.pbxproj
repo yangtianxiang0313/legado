@@ -7,10 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		18881D2BBDC40358D944F49F /* LegadoShareInteropKit in Frameworks */ = {isa = PBXBuildFile; productRef = 3A6989740091F21ECA3D3143 /* LegadoShareInteropKit */; };
 		1A247BC9DA1F87E2A09B5044 /* ShelfManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1461305771304D0B5A9934B5 /* ShelfManagementView.swift */; };
 		261A3F991AB45FAFE8C369C9 /* WebDAVRemoteBookImportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00EAA0DCE058466B9090B40F /* WebDAVRemoteBookImportView.swift */; };
-		2C1E8A1A7F2B4D329AEE1101 /* WebDAVServerManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C1E8A1A7F2B4D329AEE1102 /* WebDAVServerManagementView.swift */; };
+		26C11D3F645B1AD24B26B09B /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A97D8A981D8CEB88016E9EE7 /* ShareViewController.swift */; };
 		26C1753D9C50964A3EA59600 /* ChapterTOCView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 148BB4F7EFBC9D40BED6769D /* ChapterTOCView.swift */; };
+		3DF438540698E7A3C4EF1860 /* LegadoShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 2B13339EB9E47FCE0053AEDE /* LegadoShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		43C9CC50E606D602CCB8AD79 /* WebDAVServerManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EBD51B44C9950CC287B095F /* WebDAVServerManagementView.swift */; };
 		4E0588B991A4FC81B896DF1E /* ReaderPageTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEFB0E99A597F60739406609 /* ReaderPageTextView.swift */; };
 		682ADA9807FEE6DA793B5B45 /* SourceManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C9DD517B1446521069518EC /* SourceManagementView.swift */; };
 		7156F98B0DD6A96BA68B2DD7 /* SourceLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6745EA056C92C63BE1082180 /* SourceLoginView.swift */; };
@@ -28,6 +31,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		76C666E5B8E2B62176985E42 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C88D041936DFBF20C4AA23 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8C5664FD7B547A8793CA98FE;
+			remoteInfo = LegadoShareExtension;
+		};
 		F48AE1B1346E729A68FB1BFF /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 97C88D041936DFBF20C4AA23 /* Project object */;
@@ -36,6 +46,20 @@
 			remoteInfo = LegadoApp;
 		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		7FD3ED82CAD391EB14AA94B3 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				3DF438540698E7A3C4EF1860 /* LegadoShareExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		00EAA0DCE058466B9090B40F /* WebDAVRemoteBookImportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebDAVRemoteBookImportView.swift; sourceTree = "<group>"; };
@@ -46,15 +70,20 @@
 		1AA56687558EF2C28A2F526F /* RootShellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootShellView.swift; sourceTree = "<group>"; };
 		1BF1DDFF0D03D90900CACB9C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		1C9DD517B1446521069518EC /* SourceManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceManagementView.swift; sourceTree = "<group>"; };
-		2C1E8A1A7F2B4D329AEE1102 /* WebDAVServerManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebDAVServerManagementView.swift; sourceTree = "<group>"; };
+		2B13339EB9E47FCE0053AEDE /* LegadoShareExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = LegadoShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		35F4A6E9B82AF44A887F2980 /* LegadoAppUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegadoAppUITests.swift; sourceTree = "<group>"; };
 		3686CB4663D9CA2D25774397 /* source.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = source.json; sourceTree = "<group>"; };
+		3A6668C1BF725F94F7D43DDD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		41F121F4FC3DD3B968A18419 /* LegadoApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = LegadoApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4B7A35C572707AC4073E55C1 /* ReaderImageFileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderImageFileStore.swift; sourceTree = "<group>"; };
 		6745EA056C92C63BE1082180 /* SourceLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceLoginView.swift; sourceTree = "<group>"; };
 		7347A313DD725C4724AF05DC /* LegadoKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = LegadoKit; path = ../../Packages/LegadoKit; sourceTree = SOURCE_ROOT; };
 		7C9B37DC68383564F773D013 /* SourceCatalogEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceCatalogEnvironment.swift; sourceTree = "<group>"; };
+		8EBD51B44C9950CC287B095F /* WebDAVServerManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebDAVServerManagementView.swift; sourceTree = "<group>"; };
 		8F643378684698E56A60BB42 /* BookDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookDetailView.swift; sourceTree = "<group>"; };
+		A97D8A981D8CEB88016E9EE7 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
+		BA88B7576CC8C1A46EC658C8 /* LegadoShareExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LegadoShareExtension.entitlements; sourceTree = "<group>"; };
+		D88BD33CB3A840E5D4351E96 /* LegadoApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LegadoApp.entitlements; sourceTree = "<group>"; };
 		DB97AF8062C9ACB83622DB4D /* LegadoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegadoApp.swift; sourceTree = "<group>"; };
 		DEFB0E99A597F60739406609 /* ReaderPageTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderPageTextView.swift; sourceTree = "<group>"; };
 		F888FA69C591B5A9AC6E9D5B /* ManagedBookFileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagedBookFileStore.swift; sourceTree = "<group>"; };
@@ -70,6 +99,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		CE465101BEDE3165C0AD97FE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				18881D2BBDC40358D944F49F /* LegadoShareInteropKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -79,6 +116,7 @@
 				8F643378684698E56A60BB42 /* BookDetailView.swift */,
 				148BB4F7EFBC9D40BED6769D /* ChapterTOCView.swift */,
 				1BF1DDFF0D03D90900CACB9C /* Info.plist */,
+				D88BD33CB3A840E5D4351E96 /* LegadoApp.entitlements */,
 				DB97AF8062C9ACB83622DB4D /* LegadoApp.swift */,
 				F888FA69C591B5A9AC6E9D5B /* ManagedBookFileStore.swift */,
 				FF7E0504B02B52095E37595C /* ReaderContentView.swift */,
@@ -91,7 +129,7 @@
 				6745EA056C92C63BE1082180 /* SourceLoginView.swift */,
 				1C9DD517B1446521069518EC /* SourceManagementView.swift */,
 				00EAA0DCE058466B9090B40F /* WebDAVRemoteBookImportView.swift */,
-				2C1E8A1A7F2B4D329AEE1102 /* WebDAVServerManagementView.swift */,
+				8EBD51B44C9950CC287B095F /* WebDAVServerManagementView.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -102,6 +140,7 @@
 				2A805717CBB3DE17E51458F1 /* App */,
 				3BD761BCFA0F9CC75BD6063C /* Packages */,
 				DA6CB44455DAAE7C30F8FBF1 /* rs-wikisource-public-domain-001 */,
+				F5B0C521EE48E467D2FDF27A /* ShareExtension */,
 				34C9BFA67068D407FDAA7A51 /* UITests */,
 				7A9998A08F31415169D8903D /* Products */,
 			);
@@ -128,6 +167,7 @@
 			children = (
 				41F121F4FC3DD3B968A18419 /* LegadoApp.app */,
 				03D812586C316D23E78AB8E6 /* LegadoAppUITests.xctest */,
+				2B13339EB9E47FCE0053AEDE /* LegadoShareExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -141,6 +181,16 @@
 			path = "../../harness/fixtures/real-source/rs-wikisource-public-domain-001";
 			sourceTree = "<group>";
 		};
+		F5B0C521EE48E467D2FDF27A /* ShareExtension */ = {
+			isa = PBXGroup;
+			children = (
+				3A6668C1BF725F94F7D43DDD /* Info.plist */,
+				BA88B7576CC8C1A46EC658C8 /* LegadoShareExtension.entitlements */,
+				A97D8A981D8CEB88016E9EE7 /* ShareViewController.swift */,
+			);
+			path = ShareExtension;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -150,10 +200,12 @@
 			buildPhases = (
 				DE9F2369F90DD8C39A34EA59 /* Sources */,
 				78FFFBA393B62E79CCCA9967 /* Frameworks */,
+				7FD3ED82CAD391EB14AA94B3 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				3596C4520DFFFA19A7A31483 /* PBXTargetDependency */,
 			);
 			name = LegadoApp;
 			packageProductDependencies = (
@@ -162,6 +214,25 @@
 			productName = LegadoApp;
 			productReference = 41F121F4FC3DD3B968A18419 /* LegadoApp.app */;
 			productType = "com.apple.product-type.application";
+		};
+		8C5664FD7B547A8793CA98FE /* LegadoShareExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8C070F6D52DA6760E58765F7 /* Build configuration list for PBXNativeTarget "LegadoShareExtension" */;
+			buildPhases = (
+				097235AED627A2F24077AC74 /* Sources */,
+				CE465101BEDE3165C0AD97FE /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LegadoShareExtension;
+			packageProductDependencies = (
+				3A6989740091F21ECA3D3143 /* LegadoShareInteropKit */,
+			);
+			productName = LegadoShareExtension;
+			productReference = 2B13339EB9E47FCE0053AEDE /* LegadoShareExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 		BC191D74B28DCA14DD66D159 /* LegadoAppUITests */ = {
 			isa = PBXNativeTarget;
@@ -215,6 +286,7 @@
 			targets = (
 				55315C6346F89ED3EB625180 /* LegadoApp */,
 				BC191D74B28DCA14DD66D159 /* LegadoAppUITests */,
+				8C5664FD7B547A8793CA98FE /* LegadoShareExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -231,6 +303,14 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		097235AED627A2F24077AC74 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				26C11D3F645B1AD24B26B09B /* ShareViewController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		4C052587CC9CC8EBF52FC0F7 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -257,13 +337,18 @@
 				7156F98B0DD6A96BA68B2DD7 /* SourceLoginView.swift in Sources */,
 				682ADA9807FEE6DA793B5B45 /* SourceManagementView.swift in Sources */,
 				261A3F991AB45FAFE8C369C9 /* WebDAVRemoteBookImportView.swift in Sources */,
-				2C1E8A1A7F2B4D329AEE1101 /* WebDAVServerManagementView.swift in Sources */,
+				43C9CC50E606D602CCB8AD79 /* WebDAVServerManagementView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		3596C4520DFFFA19A7A31483 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8C5664FD7B547A8793CA98FE /* LegadoShareExtension */;
+			targetProxy = 76C666E5B8E2B62176985E42 /* PBXContainerItemProxy */;
+		};
 		4F32623BAF8F299EB769FFFF /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 55315C6346F89ED3EB625180 /* LegadoApp */;
@@ -272,10 +357,31 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		0434CD335BCE309F4C7E1683 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ShareExtension/LegadoShareExtension.entitlements;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ShareExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.yangtianxiang.legado.app.share;
+				PRODUCT_NAME = LegadoShareExtension;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
 		0DB7629B31FF90725B515881 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = App/LegadoApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = App/Info.plist;
@@ -363,6 +469,26 @@
 			};
 			name = Debug;
 		};
+		8970842B81696B536D6C72CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ShareExtension/LegadoShareExtension.entitlements;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ShareExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.yangtianxiang.legado.app.share;
+				PRODUCT_NAME = LegadoShareExtension;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		8AB3E3FCC8820D9722F576DE /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -448,6 +574,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = App/LegadoApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = App/Info.plist;
@@ -482,6 +609,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
+		8C070F6D52DA6760E58765F7 /* Build configuration list for PBXNativeTarget "LegadoShareExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0434CD335BCE309F4C7E1683 /* Debug */,
+				8970842B81696B536D6C72CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		C5A9AF168B7272EB87E8395A /* Build configuration list for PBXProject "Legado" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -501,6 +637,10 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		3A6989740091F21ECA3D3143 /* LegadoShareInteropKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LegadoShareInteropKit;
+		};
 		8A799DD0032467FB0842EF83 /* LegadoFullCompatKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = LegadoFullCompatKit;

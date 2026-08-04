@@ -35,6 +35,20 @@
                ReferencedContainer = "container:Legado.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "8C5664FD7B547A8793CA98FE"
+               BuildableName = "LegadoShareExtension.appex"
+               BlueprintName = "LegadoShareExtension"
+               ReferencedContainer = "container:Legado.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction

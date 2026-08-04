@@ -25,6 +25,7 @@ private extension DefaultHomePage {
 
 @main
 struct LegadoApp: App {
+    @Environment(\.scenePhase) private var scenePhase
     @State private var router = AppRouter()
     @State private var library: ShelfLibrary
     @State private var sourceCatalog: SourceCatalog
@@ -46,6 +47,7 @@ struct LegadoApp: App {
     @State private var rssStore: RSSStore
     @State private var onlineImportRequest: AndroidOnlineImportRequest?
     @State private var onlineImportError: String?
+    @State private var processedShareTokens: Set<String> = []
     @State private var localTextTOCRules: LocalTextTOCRuleStore
     @State private var readerConfigProfiles: AndroidReaderConfigProfileStore
     @State private var webDAVSettings: WebDAVConnectionSettingsStore
@@ -436,6 +438,11 @@ struct LegadoApp: App {
                     webDAVRemoteBooks: webDAVRemoteBooks
                 )
                 .onOpenURL(perform: openOnlineImportLink)
+                .onChange(of: scenePhase) { _, phase in
+                    if phase == .active {
+                        openPendingSharedPayload()
+                    }
+                }
                 .sheet(item: $onlineImportRequest) { request in
                     AndroidOnlineImportView(
                         request: request,
@@ -471,6 +478,10 @@ struct LegadoApp: App {
             openAssociatedFile(url)
             return
         }
+        if let token = AndroidShareInbox.token(from: url) {
+            openSharedInbox(token: token)
+            return
+        }
         do {
             onlineImportRequest = try AndroidOnlineImportLinkParser.parse(url)
             onlineImportError = nil
@@ -492,25 +503,89 @@ struct LegadoApp: App {
                 onlineImportError = "导入文件超过 32 MB 限制"
                 return
             }
-            let data = try Data(contentsOf: url, options: [.mappedIfSafe])
-            let target: AndroidOnlineImportTarget
-            if url.pathExtension.lowercased() == "zip" {
-                target = .readerConfig
-            } else {
-                target = try AndroidAssociatedImportClassifier
-                    .classifyJSON(data)
-            }
-            onlineImportRequest = AndroidOnlineImportRequest(
-                target: target,
-                sourceURL: url.absoluteString,
-                inlineData: data
+            try openAssociatedData(
+                Data(contentsOf: url, options: [.mappedIfSafe]),
+                suggestedName: url.lastPathComponent,
+                sourceURL: url.absoluteString
             )
-            onlineImportError = nil
         } catch AndroidAssociatedImportError.ambiguous {
             onlineImportError = "文件同时匹配多种 Android 数据类型"
         } catch {
             onlineImportError = "无法识别此 Android 导出文件"
         }
+    }
+
+    private func openSharedInbox(token: String) {
+        guard !processedShareTokens.contains(token) else { return }
+        do {
+            let payload = try AndroidShareInbox.applicationGroup()
+                .consume(token: token)
+            processedShareTokens.insert(token)
+            switch payload.kind {
+            case .file:
+                try openAssociatedData(
+                    payload.data,
+                    suggestedName: payload.suggestedName,
+                    sourceURL: "shared://\(payload.suggestedName ?? "payload")"
+                )
+            case .text, .url:
+                try openSharedText(payload.data)
+            }
+        } catch AndroidAssociatedImportError.ambiguous {
+            onlineImportError = "分享内容同时匹配多种 Android 数据类型"
+        } catch AndroidShareInboxError.missingPayload {
+            onlineImportError = "分享内容已被处理或已经失效"
+        } catch {
+            onlineImportError = "无法识别此分享内容"
+        }
+    }
+
+    private func openPendingSharedPayload() {
+        guard onlineImportRequest == nil,
+              let inbox = try? AndroidShareInbox.applicationGroup(),
+              let token = try? inbox.pendingTokens().first
+        else { return }
+        openSharedInbox(token: token)
+    }
+
+    private func openSharedText(_ data: Data) throws {
+        guard let text = String(data: data, encoding: .utf8)?
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+            !text.isEmpty
+        else { throw AndroidAssociatedImportError.unrecognized }
+        if let url = URL(string: text),
+           ["legado", "yuedu"].contains(url.scheme?.lowercased() ?? "") {
+            onlineImportRequest = try AndroidOnlineImportLinkParser.parse(url)
+            onlineImportError = nil
+            return
+        }
+        try openAssociatedData(
+            data,
+            suggestedName: "shared.json",
+            sourceURL: "shared://text"
+        )
+    }
+
+    private func openAssociatedData(
+        _ data: Data,
+        suggestedName: String?,
+        sourceURL: String
+    ) throws {
+        guard data.count <= AndroidShareInbox.maximumPayloadBytes else {
+            throw AndroidShareInboxError.payloadTooLarge
+        }
+        let target: AndroidOnlineImportTarget
+        if suggestedName?.lowercased().hasSuffix(".zip") == true {
+            target = .readerConfig
+        } else {
+            target = try AndroidAssociatedImportClassifier.classifyJSON(data)
+        }
+        onlineImportRequest = AndroidOnlineImportRequest(
+            target: target,
+            sourceURL: sourceURL,
+            inlineData: data
+        )
+        onlineImportError = nil
     }
 }
 

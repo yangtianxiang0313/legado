@@ -19,11 +19,31 @@ targets:
     dependencies:
       - package: LegadoKit
         product: LegadoFullCompatKit
+      - target: LegadoShareExtension
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.yangtianxiang.legado.app
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: App/Info.plist
+        CODE_SIGN_ENTITLEMENTS: App/LegadoApp.entitlements
+        TARGETED_DEVICE_FAMILY: "1,2"
+  LegadoShareExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - ShareExtension
+    dependencies:
+      - package: LegadoKit
+        product: LegadoShareInteropKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.yangtianxiang.legado.app.share
+        PRODUCT_NAME: LegadoShareExtension
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: ShareExtension/Info.plist
+        CODE_SIGN_ENTITLEMENTS: ShareExtension/LegadoShareExtension.entitlements
+        SKIP_INSTALL: YES
+        SWIFT_STRICT_CONCURRENCY: minimal
         TARGETED_DEVICE_FAMILY: "1,2"
   LegadoAppUITests:
     type: bundle.ui-testing
@@ -44,6 +64,7 @@ schemes:
     build:
       targets:
         LegadoApp: all
+        LegadoShareExtension: all
         LegadoAppUITests:
           - test
     test:
