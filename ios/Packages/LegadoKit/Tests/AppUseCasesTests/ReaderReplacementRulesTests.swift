@@ -44,7 +44,7 @@ final class ReaderReplacementRulesTests: XCTestCase {
     )
 
     XCTAssertEqual(document.title, "第一章")
-    XCTAssertEqual(document.content, "　　保留正文")
+    XCTAssertEqual(document.content, "保留正文")
     XCTAssertEqual(document.position.characterOffset, 2)
     XCTAssertEqual(document.imageStyle, "FULL")
   }

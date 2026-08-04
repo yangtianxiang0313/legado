@@ -9,6 +9,10 @@ struct ReaderPageTextView: UIViewRepresentable {
     let imageSources: [Int: String]
     let fontSize: Double
     let lineSpacing: Double
+    let textWeight: Int
+    let letterSpacing: Double
+    let paragraphSpacing: Int
+    let paragraphIndent: String
 
     func makeUIView(context: Context) -> UITextView {
         let view = UITextView()
@@ -25,11 +29,21 @@ struct ReaderPageTextView: UIViewRepresentable {
     func updateUIView(_ view: UITextView, context: Context) {
         let paragraph = NSMutableParagraphStyle()
         paragraph.lineSpacing = lineSpacing
+        let font = UIFont.systemFont(
+            ofSize: fontSize,
+            weight: readerTextWeight(textWeight)
+        )
+        paragraph.paragraphSpacing = font.lineHeight
+            * Double(paragraphSpacing) / 10
+        paragraph.firstLineHeadIndent = (
+            paragraphIndent as NSString
+        ).size(withAttributes: [.font: font]).width
         let value = NSMutableAttributedString(
             string: text,
             attributes: [
-                .font: UIFont.systemFont(ofSize: fontSize),
+                .font: font,
                 .paragraphStyle: paragraph,
+                .kern: fontSize * letterSpacing,
                 .foregroundColor: UIColor.label,
             ]
         )
@@ -71,6 +85,10 @@ struct ReaderScrollableTextView: UIViewRepresentable {
     let imageSources: [Int: String]
     let fontSize: Double
     let lineSpacing: Double
+    let textWeight: Int
+    let letterSpacing: Double
+    let paragraphSpacing: Int
+    let paragraphIndent: String
     let initialCharacterOffset: Int
     let identity: String
     let offsetChanged: (Int) -> Void
@@ -97,11 +115,21 @@ struct ReaderScrollableTextView: UIViewRepresentable {
         context.coordinator.offsetChanged = offsetChanged
         let paragraph = NSMutableParagraphStyle()
         paragraph.lineSpacing = lineSpacing
+        let font = UIFont.systemFont(
+            ofSize: fontSize,
+            weight: readerTextWeight(textWeight)
+        )
+        paragraph.paragraphSpacing = font.lineHeight
+            * Double(paragraphSpacing) / 10
+        paragraph.firstLineHeadIndent = (
+            paragraphIndent as NSString
+        ).size(withAttributes: [.font: font]).width
         let value = NSMutableAttributedString(
             string: text,
             attributes: [
-                .font: UIFont.systemFont(ofSize: fontSize),
+                .font: font,
                 .paragraphStyle: paragraph,
+                .kern: fontSize * letterSpacing,
                 .foregroundColor: UIColor.label,
             ]
         )
@@ -135,7 +163,9 @@ struct ReaderScrollableTextView: UIViewRepresentable {
             .trimmingCharacters(in: .whitespacesAndNewlines)
 
         let restoreKey = "\(identity):\(initialCharacterOffset):"
-            + "\(fontSize):\(lineSpacing):\(attachments.count)"
+            + "\(fontSize):\(lineSpacing):\(textWeight):"
+            + "\(letterSpacing):\(paragraphSpacing):"
+            + "\(paragraphIndent):\(attachments.count)"
         guard context.coordinator.restoreKey != restoreKey else { return }
         context.coordinator.restoreKey = restoreKey
         context.coordinator.isRestoring = true
@@ -187,5 +217,13 @@ struct ReaderScrollableTextView: UIViewRepresentable {
             )
             offsetChanged(min(character, view.textStorage.length))
         }
+    }
+}
+
+private func readerTextWeight(_ rawValue: Int) -> UIFont.Weight {
+    switch rawValue {
+    case 1: .bold
+    case 2: .light
+    default: .regular
     }
 }

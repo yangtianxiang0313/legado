@@ -16,10 +16,25 @@ public struct ReaderViewport: Equatable, Hashable, Sendable {
 public struct ReaderTypography: Equatable, Hashable, Sendable {
   public let fontSize: Double
   public let lineSpacing: Double
+  public let textWeight: Int
+  public let letterSpacing: Double
+  public let paragraphSpacing: Int
+  public let paragraphIndent: String
 
-  public init(fontSize: Double, lineSpacing: Double) {
+  public init(
+    fontSize: Double,
+    lineSpacing: Double,
+    textWeight: Int = 0,
+    letterSpacing: Double = 0.1,
+    paragraphSpacing: Int = 2,
+    paragraphIndent: String = "　　"
+  ) {
     self.fontSize = fontSize
     self.lineSpacing = lineSpacing
+    self.textWeight = textWeight
+    self.letterSpacing = letterSpacing
+    self.paragraphSpacing = paragraphSpacing
+    self.paragraphIndent = paragraphIndent
   }
 }
 

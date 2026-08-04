@@ -504,8 +504,19 @@ struct ReaderContentView: View {
                 sourceContent: document.content
             )
             let viewport = ReaderViewport(
-                width: max(1, proxy.size.width - 48),
-                height: max(1, proxy.size.height - 132)
+                width: max(
+                    1,
+                    proxy.size.width
+                        - Double(readerLayout.paddingLeft)
+                        - Double(readerLayout.paddingRight)
+                ),
+                height: max(
+                    1,
+                    proxy.size.height
+                        - (readerLayout.titleMode == 2 ? 48 : 92)
+                        - Double(readerLayout.paddingTop)
+                        - Double(readerLayout.paddingBottom)
+                )
             )
             let imageLayouts = readerImageLayouts(
                 projection: projection,
@@ -540,9 +551,16 @@ struct ReaderContentView: View {
                     anchor.sourceURL
             }
             VStack(alignment: .leading, spacing: 16) {
-                Text(document.title)
-                    .font(.title2.bold())
-                    .accessibilityIdentifier("label.reader.chapterTitle")
+                if readerLayout.titleMode != 2 {
+                    Text(document.title)
+                        .font(.title2.bold())
+                        .frame(
+                            maxWidth: .infinity,
+                            alignment: readerLayout.titleMode == 1
+                                ? .center : .leading
+                        )
+                        .accessibilityIdentifier("label.reader.chapterTitle")
+                }
 
                 Group {
                     if pagination.state == .ready {
@@ -552,7 +570,11 @@ struct ReaderContentView: View {
                             images: readerImages,
                             imageSources: pageImageSources,
                             fontSize: readerPreferences.value.fontSize,
-                            lineSpacing: readerPreferences.value.lineSpacing
+                            lineSpacing: readerPreferences.value.lineSpacing,
+                            textWeight: readerLayout.textWeight,
+                            letterSpacing: readerLayout.letterSpacing,
+                            paragraphSpacing: readerLayout.paragraphSpacing,
+                            paragraphIndent: readerLayout.paragraphIndent
                         )
                         .id(
                             "\(document.position.chapterID.rawValue)-"
@@ -624,8 +646,10 @@ struct ReaderContentView: View {
                     .accessibilityIdentifier("action.reader.page.next")
                 }
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 20)
+            .padding(.leading, Double(readerLayout.paddingLeft))
+            .padding(.trailing, Double(readerLayout.paddingRight))
+            .padding(.top, Double(readerLayout.paddingTop))
+            .padding(.bottom, Double(readerLayout.paddingBottom))
             .task(
                 id: ReaderPaginationRenderKey(
                     chapterID: document.position.chapterID.rawValue,
@@ -634,7 +658,8 @@ struct ReaderContentView: View {
                     height: Int(viewport.height.rounded()),
                     fontSize: readerPreferences.value.fontSize,
                     lineSpacing: readerPreferences.value.lineSpacing,
-                    imageCount: readerImages.count
+                    imageCount: readerImages.count,
+                    layout: readerLayout
                 )
             ) {
                 pagination.layout(
@@ -642,7 +667,11 @@ struct ReaderContentView: View {
                     viewport: viewport,
                     typography: ReaderTypography(
                         fontSize: readerPreferences.value.fontSize,
-                        lineSpacing: readerPreferences.value.lineSpacing
+                        lineSpacing: readerPreferences.value.lineSpacing,
+                        textWeight: readerLayout.textWeight,
+                        letterSpacing: readerLayout.letterSpacing,
+                        paragraphSpacing: readerLayout.paragraphSpacing,
+                        paragraphIndent: readerLayout.paragraphIndent
                     ),
                     imageAttachments: imageLayouts
                 )
@@ -658,8 +687,19 @@ struct ReaderContentView: View {
                 sourceContent: document.content
             )
             let viewport = ReaderViewport(
-                width: max(1, proxy.size.width - 48),
-                height: max(1, proxy.size.height - 92)
+                width: max(
+                    1,
+                    proxy.size.width
+                        - Double(readerLayout.paddingLeft)
+                        - Double(readerLayout.paddingRight)
+                ),
+                height: max(
+                    1,
+                    proxy.size.height
+                        - (readerLayout.titleMode == 2 ? 0 : 44)
+                        - Double(readerLayout.paddingTop)
+                        - Double(readerLayout.paddingBottom)
+                )
             )
             let imageLayouts = readerImageLayouts(
                 projection: projection,
@@ -672,9 +712,16 @@ struct ReaderContentView: View {
                 result[anchor.layoutCharacterOffset] = anchor.sourceURL
             }
             VStack(alignment: .leading, spacing: 16) {
-                Text(document.title)
-                    .font(.title2.bold())
-                    .accessibilityIdentifier("label.reader.chapterTitle")
+                if readerLayout.titleMode != 2 {
+                    Text(document.title)
+                        .font(.title2.bold())
+                        .frame(
+                            maxWidth: .infinity,
+                            alignment: readerLayout.titleMode == 1
+                                ? .center : .leading
+                        )
+                        .accessibilityIdentifier("label.reader.chapterTitle")
+                }
                 ReaderScrollableTextView(
                     text: projection.layoutText,
                     attachments: imageLayouts,
@@ -682,6 +729,10 @@ struct ReaderContentView: View {
                     imageSources: imageSources,
                     fontSize: readerPreferences.value.fontSize,
                     lineSpacing: readerPreferences.value.lineSpacing,
+                    textWeight: readerLayout.textWeight,
+                    letterSpacing: readerLayout.letterSpacing,
+                    paragraphSpacing: readerLayout.paragraphSpacing,
+                    paragraphIndent: readerLayout.paragraphIndent,
                     initialCharacterOffset: projection.layoutOffset(
                         forSourceOffset: scrollCharacterOffset
                     ),
@@ -694,8 +745,10 @@ struct ReaderContentView: View {
                 )
                 .accessibilityIdentifier("text.reader.content")
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 20)
+            .padding(.leading, Double(readerLayout.paddingLeft))
+            .padding(.trailing, Double(readerLayout.paddingRight))
+            .padding(.top, Double(readerLayout.paddingTop))
+            .padding(.bottom, Double(readerLayout.paddingBottom))
             .task(id: document.position.chapterID) {
                 refreshBookmarkState()
             }
@@ -708,6 +761,10 @@ struct ReaderContentView: View {
             globalValue: readerPreferences.value.pageAnimation,
             isImageBook: ((readerBook?.androidBookType ?? 0) & 64) != 0
         )
+    }
+
+    private var readerLayout: ReaderLayoutPreferences {
+        readerPreferences.value.layout
     }
 
     private var pageTransition: AnyTransition {
@@ -1288,10 +1345,77 @@ struct ReaderContentView: View {
                     ReaderMenuAction.configurePageAnimation
                         .accessibilityIdentifier
                 )
-                menuPlaceholder(
-                    .updateReadingSettings,
-                    title: "阅读设置",
-                    systemImage: "gearshape"
+                DisclosureGroup {
+                    Picker(
+                        "字重",
+                        selection: layoutIntBinding(\.textWeight)
+                    ) {
+                        Text("正常").tag(0)
+                        Text("粗体").tag(1)
+                        Text("细体").tag(2)
+                    }
+                    Picker(
+                        "段首缩进",
+                        selection: paragraphIndentBinding
+                    ) {
+                        ForEach(0...4, id: \.self) { count in
+                            Text(count == 0 ? "无缩进" : "缩进 \(count) 字")
+                                .tag(count)
+                        }
+                    }
+                    Picker(
+                        "标题",
+                        selection: layoutIntBinding(\.titleMode)
+                    ) {
+                        Text("左对齐").tag(0)
+                        Text("居中").tag(1)
+                        Text("隐藏").tag(2)
+                    }
+                    VStack(alignment: .leading) {
+                        Text(
+                            "字间距 "
+                                + String(
+                                    format: "%.2f",
+                                    readerLayout.letterSpacing
+                                )
+                        )
+                        Slider(
+                            value: layoutDoubleBinding(\.letterSpacing),
+                            in: -0.5...0.5,
+                            step: 0.01
+                        )
+                    }
+                    Stepper(
+                        "段间距 \(readerLayout.paragraphSpacing)",
+                        value: layoutIntBinding(\.paragraphSpacing),
+                        in: 0...20
+                    )
+                    Stepper(
+                        "上边距 \(readerLayout.paddingTop)",
+                        value: layoutIntBinding(\.paddingTop),
+                        in: 0...200
+                    )
+                    Stepper(
+                        "下边距 \(readerLayout.paddingBottom)",
+                        value: layoutIntBinding(\.paddingBottom),
+                        in: 0...100
+                    )
+                    Stepper(
+                        "左边距 \(readerLayout.paddingLeft)",
+                        value: layoutIntBinding(\.paddingLeft),
+                        in: 0...100
+                    )
+                    Stepper(
+                        "右边距 \(readerLayout.paddingRight)",
+                        value: layoutIntBinding(\.paddingRight),
+                        in: 0...100
+                    )
+                } label: {
+                    Label("阅读设置", systemImage: "gearshape")
+                }
+                .accessibilityIdentifier(
+                    ReaderMenuAction.updateReadingSettings
+                        .accessibilityIdentifier
                 )
             }
         }
@@ -2508,6 +2632,48 @@ struct ReaderContentView: View {
         )
     }
 
+    private func layoutIntBinding(
+        _ keyPath: WritableKeyPath<ReaderLayoutPreferences, Int>
+    ) -> Binding<Int> {
+        Binding(
+            get: { readerLayout[keyPath: keyPath] },
+            set: { value in
+                readerPreferences.setLayout {
+                    $0[keyPath: keyPath] = value
+                }
+            }
+        )
+    }
+
+    private func layoutDoubleBinding(
+        _ keyPath: WritableKeyPath<ReaderLayoutPreferences, Double>
+    ) -> Binding<Double> {
+        Binding(
+            get: { readerLayout[keyPath: keyPath] },
+            set: { value in
+                readerPreferences.setLayout {
+                    $0[keyPath: keyPath] = value
+                }
+            }
+        )
+    }
+
+    private var paragraphIndentBinding: Binding<Int> {
+        Binding(
+            get: {
+                readerLayout.paragraphIndent.filter { $0 == "　" }.count
+            },
+            set: { count in
+                readerPreferences.setLayout {
+                    $0.paragraphIndent = String(
+                        repeating: "　",
+                        count: count
+                    )
+                }
+            }
+        )
+    }
+
     private func updateBookImageStyle(_ value: String?) {
         guard
             let readerBook,
@@ -2742,6 +2908,7 @@ private struct ReaderPaginationRenderKey: Hashable {
     let fontSize: Double
     let lineSpacing: Double
     let imageCount: Int
+    let layout: ReaderLayoutPreferences
 }
 
 private struct ReaderContentEditorDraft: Identifiable {

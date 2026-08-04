@@ -285,7 +285,7 @@ public struct ReplacementNormalizingReaderContentLoader:
         includeTitle: false,
         useReplacementRules: book.usesReplacementRules,
         resegmentContent: book.resegmentsContent,
-        paragraphIndent: "　　",
+        paragraphIndent: "",
         rules: storedRules.map(\.contentRule)
       )
     )

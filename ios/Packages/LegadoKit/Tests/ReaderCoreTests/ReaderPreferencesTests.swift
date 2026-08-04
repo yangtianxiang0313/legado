@@ -14,6 +14,7 @@ final class ReaderPreferencesTests: XCTestCase {
     XCTAssertEqual(value.preDownloadCount, 10)
     XCTAssertFalse(value.tocUsesReplacementRules)
     XCTAssertEqual(value.pageAnimation, 0)
+    XCTAssertEqual(value.layout, ReaderLayoutPreferences())
   }
 
   func testValuesAreClampedAtDomainBoundary() {
@@ -21,13 +22,31 @@ final class ReaderPreferencesTests: XCTestCase {
       brightness: -10,
       fontSize: 200,
       lineSpacing: -1,
-      preDownloadCount: 20_000
+      preDownloadCount: 20_000,
+      layout: ReaderLayoutPreferences(
+        textWeight: 99,
+        letterSpacing: 4,
+        paragraphSpacing: 99,
+        titleMode: 99,
+        paddingTop: 999,
+        paddingBottom: 999,
+        paddingLeft: 999,
+        paddingRight: 999
+      )
     )
 
     XCTAssertEqual(value.brightness, 0.4)
     XCTAssertEqual(value.fontSize, 32)
     XCTAssertEqual(value.lineSpacing, 0)
     XCTAssertEqual(value.preDownloadCount, 9_999)
+    XCTAssertEqual(value.layout.textWeight, 2)
+    XCTAssertEqual(value.layout.letterSpacing, 0.5)
+    XCTAssertEqual(value.layout.paragraphSpacing, 20)
+    XCTAssertEqual(value.layout.titleMode, 2)
+    XCTAssertEqual(value.layout.paddingTop, 200)
+    XCTAssertEqual(value.layout.paddingBottom, 100)
+    XCTAssertEqual(value.layout.paddingLeft, 100)
+    XCTAssertEqual(value.layout.paddingRight, 100)
   }
 
   func testLegacyPayloadDefaultsPreDownloadCountToAndroidValue() throws {
@@ -41,5 +60,6 @@ final class ReaderPreferencesTests: XCTestCase {
     XCTAssertEqual(value.preDownloadCount, 10)
     XCTAssertFalse(value.tocUsesReplacementRules)
     XCTAssertEqual(value.pageAnimation, 0)
+    XCTAssertEqual(value.layout, ReaderLayoutPreferences())
   }
 }

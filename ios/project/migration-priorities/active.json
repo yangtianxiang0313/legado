@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "id": "MILESTONE-P113-ANDROID-EPUB-DELTAG-INTEROP-001",
-  "title": "P113 Android EPUB 标签过滤互通",
+  "id": "MILESTONE-P114-ANDROID-READER-LAYOUT-CONFIG-INTEROP-001",
+  "title": "P114 Android 阅读排版配置互通",
   "status": "active",
   "priority": 1,
   "mode": "critical_path_only",
-  "objective": "迁移 Android Book.readConfig.delTag 的 EPUB 阅读语义：保留 rubyTag=4 与 hTag=2 位掩码，Android 备份恢复后重新解析本地 EPUB 时分别移除 rp/rt 注音或 h1...h6 标题，并修复 iOS 本地 EPUB 刷新仍按 TXT 解码的问题。",
-  "validation_policy": "以冻结 Android EpubFile.getContent/getBody 和 Book.readConfig.delTag 为合同；用内存 EPUB fixture 验证标签组合及重新解析，用备份/数据库往返验证原始位掩码，最后执行通用 App 构建。",
+  "objective": "把 Android ReadBookConfig.Config 中可跨平台的核心排版合同迁移到 iOS：字重、字间距、段间距、段首缩进、标题显示与对齐、正文边距；从 Android shared readConfig 恢复并可回写，替换 iOS 更多设置中的阅读设置占位入口。",
+  "validation_policy": "冻结 Android ReadBookConfig.Config 字段和默认值为权威；聚焦验证旧偏好兼容、Android shared config 双向往返及排版投影，最后执行通用 App 构建，不启动可见 Simulator。",
   "stages": [
     {
-      "id": "P113-S1",
-      "title": "EPUB delTag 配置、解析与刷新闭环",
+      "id": "P114-S1",
+      "title": "全局阅读排版配置与原生文本投影",
       "selectors": [
         {
-          "id": "P113-S1-EPUB-DELTAG",
+          "id": "P114-S1-READER-LAYOUT",
           "claim_ids": [],
           "task_ids": [
-            "IOS-APP-NAVIGATION-ANDROID-EPUB-DELTAG-INTEROP-001"
+            "IOS-APP-NAVIGATION-ANDROID-READER-LAYOUT-CONFIG-INTEROP-001"
           ]
         }
       ]
@@ -24,38 +24,33 @@
   ],
   "deliveries": [
     {
-      "target": "IOS-APP-NAVIGATION-ANDROID-EPUB-DELTAG-INTEROP-001",
-      "title": "迁移 Android EPUB delTag 并打通本地 EPUB 重新解析",
-      "fixture_id": "build-android-epub-deltag-interop-v1",
+      "target": "IOS-APP-NAVIGATION-ANDROID-READER-LAYOUT-CONFIG-INTEROP-001",
+      "title": "迁移 Android 核心阅读排版配置并替换 iOS 阅读设置占位入口",
+      "fixture_id": "build-android-reader-layout-config-interop-v1",
       "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
       "prerequisite_task_ids": [
-        "IOS-APP-NAVIGATION-ANDROID-BOOK-PAGE-ANIMATION-INTEROP-V2-001"
+        "IOS-APP-NAVIGATION-ANDROID-EPUB-DELTAG-INTEROP-001"
       ],
       "validation": "build",
       "additional_allowed_paths": [
+        "ios/Packages/LegadoKit/Sources/ReaderCore/**",
         "ios/Packages/LegadoKit/Sources/AppUseCases/**",
         "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
-        "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+        "ios/Packages/LegadoKit/Tests/ReaderCoreTests/**",
         "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
         "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**",
-        "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
         "ios/Apps/Legado/App/**"
       ],
       "source_anchors": [
         {
           "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "path": "app/src/main/java/io/legado/app/data/entities/Book.kt",
-          "symbol_id": "kotlin://io.legado.app.data.entities.Book/getDelTag"
+          "path": "app/src/main/java/io/legado/app/help/config/ReadBookConfig.kt",
+          "symbol_id": "kotlin://io.legado.app.help.config.ReadBookConfig.Config"
         },
         {
           "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "path": "app/src/main/java/io/legado/app/model/localBook/EpubFile.kt",
-          "symbol_id": "kotlin://io.legado.app.model.localBook.EpubFile/getContent"
-        },
-        {
-          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "path": "app/src/main/java/io/legado/app/ui/book/read/ReadBookActivity.kt",
-          "symbol_id": "kotlin://io.legado.app.ui.book.read.ReadBookActivity/onCompatOptionsItemSelected"
+          "path": "app/src/main/java/io/legado/app/ui/book/read/config/ReadStyleDialog.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.read.config.ReadStyleDialog"
         }
       ]
     }

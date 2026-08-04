@@ -1747,13 +1747,21 @@ final class NativeTextPaginator: ReaderImageAttachmentPaginating {
 
         let paragraph = NSMutableParagraphStyle()
         paragraph.lineSpacing = typography.lineSpacing
+        let font = UIFont.systemFont(
+            ofSize: typography.fontSize,
+            weight: readerFontWeight(typography.textWeight)
+        )
+        paragraph.paragraphSpacing = font.lineHeight
+            * Double(typography.paragraphSpacing) / 10
+        paragraph.firstLineHeadIndent = (
+            typography.paragraphIndent as NSString
+        ).size(withAttributes: [.font: font]).width
         let attributed = NSMutableAttributedString(
             string: content,
             attributes: [
-                .font: UIFont.systemFont(
-                    ofSize: typography.fontSize
-                ),
+                .font: font,
                 .paragraphStyle: paragraph,
+                .kern: typography.fontSize * typography.letterSpacing,
             ]
         )
         for attachmentLayout in imageAttachments.sorted(
@@ -1815,6 +1823,14 @@ final class NativeTextPaginator: ReaderImageAttachmentPaginating {
             ]
         }
         return result
+    }
+}
+
+private func readerFontWeight(_ rawValue: Int) -> UIFont.Weight {
+    switch rawValue {
+    case 1: .bold
+    case 2: .light
+    default: .regular
     }
 }
 

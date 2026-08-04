@@ -53,6 +53,14 @@ public final class ReaderPreferencesStore {
     update { $0.pageAnimation = value.rawValue }
   }
 
+  public func setLayout(
+    _ mutation: (inout ReaderLayoutPreferences) -> Void
+  ) {
+    update { preferences in
+      mutation(&preferences.layout)
+    }
+  }
+
   public func reset() {
     value = ReaderPreferences()
     repository.save(value)
