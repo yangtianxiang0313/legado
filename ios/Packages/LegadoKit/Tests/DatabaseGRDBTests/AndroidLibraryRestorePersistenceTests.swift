@@ -218,12 +218,14 @@ struct AndroidLibraryRestorePersistenceTests {
     #expect(stored.chapterCount == 10)
     #expect(stored.reversesTableOfContents)
     #expect(stored.ttsEngine == "42")
+    #expect(stored.imageStyle == "FULL")
     #expect(storedRestoreBook.lastCheckTime == 1_700_000_000_100)
     #expect(storedRestoreBook.reversesTableOfContents)
     #expect(!storedRestoreBook.splitsLongChapters)
     #expect(!stored.usesReplacementRules)
     #expect(!storedRestoreBook.usesReplacementRules)
     #expect(storedRestoreBook.ttsEngine == "42")
+    #expect(storedRestoreBook.imageStyle == "FULL")
     #expect(storedRestoreBook.androidType == 1)
     #expect(storedRestoreBook.originOrder == 2)
     #expect(storedRestoreBook.syncTime == 1_700_000_000_999)
@@ -468,6 +470,7 @@ struct AndroidLibraryRestorePersistenceTests {
       splitsLongChapters: false,
       usesReplacementRules: false,
       ttsEngine: "42",
+      imageStyle: "FULL",
       androidType: 1,
       originOrder: 2,
       syncTime: 1_700_000_000_999,

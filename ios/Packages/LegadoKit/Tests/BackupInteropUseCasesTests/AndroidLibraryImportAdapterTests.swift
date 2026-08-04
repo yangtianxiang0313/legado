@@ -8,7 +8,7 @@ import Testing
   let book = try #require(
     AndroidBookCodec.decodeMany(
       Data(
-        #"[{"bookUrl":"https://android.invalid/book","tocUrl":"https://android.invalid/toc","origin":"https://android.invalid/source","originName":"Android Source","name":"Android Book","author":"Android Author","kind":"fiction","coverUrl":"https://android.invalid/cover","intro":"intro","customIntro":"custom intro","customTag":"favorite","charset":"GBK","type":1,"group":9,"latestChapterTitle":"Chapter Ten","latestChapterTime":1700000000000,"lastCheckCount":2,"totalChapterNum":10,"durChapterTitle":"Chapter Four","durChapterIndex":3,"durChapterPos":27,"durChapterTime":1700000000123,"wordCount":"10000","canUpdate":false,"order":6,"originOrder":2,"variable":"{\"token\":\"kept\",\"count\":3}","readConfig":{"reverseToc":true,"splitLongChapter":false,"useReplaceRule":false,"ttsEngine":"42"},"syncTime":1700000000999}]"#
+        #"[{"bookUrl":"https://android.invalid/book","tocUrl":"https://android.invalid/toc","origin":"https://android.invalid/source","originName":"Android Source","name":"Android Book","author":"Android Author","kind":"fiction","coverUrl":"https://android.invalid/cover","intro":"intro","customIntro":"custom intro","customTag":"favorite","charset":"GBK","type":1,"group":9,"latestChapterTitle":"Chapter Ten","latestChapterTime":1700000000000,"lastCheckCount":2,"totalChapterNum":10,"durChapterTitle":"Chapter Four","durChapterIndex":3,"durChapterPos":27,"durChapterTime":1700000000123,"wordCount":"10000","canUpdate":false,"order":6,"originOrder":2,"variable":"{\"token\":\"kept\",\"count\":3}","readConfig":{"reverseToc":true,"splitLongChapter":false,"useReplaceRule":false,"ttsEngine":"42","imageStyle":"FULL"},"syncTime":1700000000999}]"#
           .utf8
       )
     ).first
@@ -36,6 +36,7 @@ import Testing
   #expect(!restored.splitsLongChapters)
   #expect(!restored.usesReplacementRules)
   #expect(restored.ttsEngine == "42")
+  #expect(restored.imageStyle == "FULL")
   #expect(!restored.canUpdate)
   #expect(restored.customTag == "favorite")
   #expect(restored.charset == "GBK")

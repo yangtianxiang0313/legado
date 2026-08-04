@@ -18,7 +18,7 @@ final class ReaderReplacementRulesTests: XCTestCase {
         )
       ]
     )
-    let book = makeBook()
+    let book = makeBook(imageStyle: "FULL")
     let chapter = makeChapter(bookID: book.id)
     let loader = ReplacementNormalizingReaderContentLoader(
       base: FixedReaderContentLoader(
@@ -30,7 +30,8 @@ final class ReaderReplacementRulesTests: XCTestCase {
             characterOffset: 2
           ),
           title: "第一章",
-          content: "第一章\n广告\n保留正文"
+          content: "第一章\n广告\n保留正文",
+          imageStyle: "DEFAULT"
         )
       ),
       rules: repository
@@ -45,6 +46,7 @@ final class ReaderReplacementRulesTests: XCTestCase {
     XCTAssertEqual(document.title, "第一章")
     XCTAssertEqual(document.content, "　　保留正文")
     XCTAssertEqual(document.position.characterOffset, 2)
+    XCTAssertEqual(document.imageStyle, "FULL")
   }
 
   func testStoreRejectsInvalidRegexAndPersistsToggle() async {
@@ -117,7 +119,10 @@ final class ReaderReplacementRulesTests: XCTestCase {
     )
   }
 
-  private func makeBook(usesReplacementRules: Bool = true) -> ShelfBookItem {
+  private func makeBook(
+    usesReplacementRules: Bool = true,
+    imageStyle: String? = nil
+  ) -> ShelfBookItem {
     ShelfBookItem(
       id: BookID(rawValue: "book"),
       candidate: ShelfBookCandidate(
@@ -134,7 +139,8 @@ final class ReaderReplacementRulesTests: XCTestCase {
       membership: .member(groupID: 0),
       order: 0,
       chapterCount: 1,
-      usesReplacementRules: usesReplacementRules
+      usesReplacementRules: usesReplacementRules,
+      imageStyle: imageStyle
     )
   }
 

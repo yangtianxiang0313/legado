@@ -562,6 +562,9 @@ public enum AndroidLibraryBackupAdapter {
     if let ttsEngine = value.ttsEngine {
       readConfig["ttsEngine"] = .string(ttsEngine)
     }
+    if let imageStyle = value.imageStyle {
+      readConfig["imageStyle"] = .string(imageStyle)
+    }
     return AndroidBookDTO(
       bookURL: value.candidate.bookURL,
       tocURL: value.candidate.tocURL ?? "",

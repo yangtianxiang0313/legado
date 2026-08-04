@@ -207,6 +207,7 @@ struct AndroidLibraryBackupUseCaseTests {
           reversesTableOfContents: true,
           splitsLongChapters: false,
           ttsEngine: "42",
+          imageStyle: "FULL",
           androidType: 1,
           originOrder: 2,
           syncTime: 1_700_000_000_999,

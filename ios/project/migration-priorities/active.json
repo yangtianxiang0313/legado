@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "id": "MILESTONE-P110-ANDROID-BOOK-IMAGE-STYLE-INTEROP-001",
-  "title": "P110 Android 单书图片样式双端互通",
+  "id": "MILESTONE-P111-ANDROID-CONTENT-RESEGMENT-ALGORITHM-001",
+  "title": "P111 Android 正文重分段算法迁移",
   "status": "active",
   "mode": "critical_path_only",
   "priority": 1,
-  "objective": "恢复、消费并回写 Android Book.readConfig.imageStyle；iOS 阅读器以单书样式覆盖书源默认图片样式，并支持 DEFAULT、FULL、TEXT 三种 Android 模式。",
-  "validation_policy": "源码语义主导；聚焦验证 readConfig 往返、单书覆盖优先级和三种图片布局投影，再执行通用 App 构建，不启动可视模拟器。",
+  "objective": "将冻结 Android ContentHelp.reSegment 作为独立 ReaderCore 算法完整迁移，而非用简化正则替代；保留段落粘合、引号方向、提示语断句、字典保护和随机长段切分语义，并接回 Book.readConfig.reSegment。",
+  "validation_policy": "源码语义主导；固定随机数端口验证确定性分支及边界不变量，测试用于防回归而非反推算法；完成后执行通用 App 构建。",
   "stages": [
     {
-      "id": "P110-S1",
-      "title": "单书图片样式配置与阅读投影",
+      "id": "P111-S1",
+      "title": "ContentHelp 重分段算法与单书开关",
       "selectors": [
         {
-          "id": "P110-S1-BOOK-IMAGE-STYLE",
+          "id": "P111-S1-CONTENT-RESEGMENT",
           "claim_ids": [],
           "task_ids": [
-            "IOS-APP-NAVIGATION-ANDROID-BOOK-IMAGE-STYLE-INTEROP-001"
+            "IOS-APP-NAVIGATION-ANDROID-CONTENT-RESEGMENT-ALGORITHM-001"
           ]
         }
       ]
@@ -24,12 +24,12 @@
   ],
   "deliveries": [
     {
-      "target": "IOS-APP-NAVIGATION-ANDROID-BOOK-IMAGE-STYLE-INTEROP-001",
-      "title": "恢复并消费 Android 单书图片样式配置",
-      "fixture_id": "build-android-book-image-style-interop-v1",
+      "target": "IOS-APP-NAVIGATION-ANDROID-CONTENT-RESEGMENT-ALGORITHM-001",
+      "title": "完整迁移 Android ContentHelp.reSegment 并接入单书配置",
+      "fixture_id": "build-android-content-resegment-algorithm-v1",
       "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
       "prerequisite_task_ids": [
-        "IOS-APP-NAVIGATION-ANDROID-BOOK-TTS-ENGINE-INTEROP-001"
+        "IOS-APP-NAVIGATION-ANDROID-BOOK-IMAGE-STYLE-INTEROP-001"
       ],
       "validation": "build",
       "additional_allowed_paths": [
@@ -46,18 +46,18 @@
       "source_anchors": [
         {
           "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/help/book/ContentHelp.kt",
+          "symbol_id": "kotlin://io.legado.app.help.book.ContentHelp/reSegment"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/help/book/ContentProcessor.kt",
+          "symbol_id": "kotlin://io.legado.app.help.book.ContentProcessor/getContent"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
           "path": "app/src/main/java/io/legado/app/data/entities/Book.kt",
-          "symbol_id": "kotlin://io.legado.app.data.entities.Book/getImageStyle"
-        },
-        {
-          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "path": "app/src/main/java/io/legado/app/model/ReadBook.kt",
-          "symbol_id": "kotlin://io.legado.app.model.ReadBook/upWebBook"
-        },
-        {
-          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "path": "app/src/main/java/io/legado/app/ui/book/read/page/provider/TextChapterLayout.kt",
-          "symbol_id": "kotlin://io.legado.app.ui.book.read.page.provider.TextChapterLayout/getImageSpan"
+          "symbol_id": "kotlin://io.legado.app.data.entities.Book/getReSegment"
         }
       ]
     }

@@ -173,6 +173,7 @@ public struct ShelfBookItem: Identifiable, Equatable, Sendable {
   public let splitsLongChapters: Bool
   public let usesReplacementRules: Bool
   public let ttsEngine: String?
+  public let imageStyle: String?
 
   public init(
     id: LibraryDomain.BookID,
@@ -188,7 +189,8 @@ public struct ShelfBookItem: Identifiable, Equatable, Sendable {
     reversesTableOfContents: Bool = false,
     splitsLongChapters: Bool = true,
     usesReplacementRules: Bool = true,
-    ttsEngine: String? = nil
+    ttsEngine: String? = nil,
+    imageStyle: String? = nil
   ) {
     self.id = id
     self.candidate = candidate
@@ -204,6 +206,7 @@ public struct ShelfBookItem: Identifiable, Equatable, Sendable {
     self.splitsLongChapters = splitsLongChapters
     self.usesReplacementRules = usesReplacementRules
     self.ttsEngine = ttsEngine
+    self.imageStyle = imageStyle
   }
 
   public var unreadChapterCount: Int {
@@ -312,6 +315,10 @@ public protocol BookShelfRepository:
     enabled: Bool
   ) async throws -> ShelfBookItem
   func setBookTTSEngine(
+    bookID: LibraryDomain.BookID,
+    value: String?
+  ) async throws -> ShelfBookItem
+  func setBookImageStyle(
     bookID: LibraryDomain.BookID,
     value: String?
   ) async throws -> ShelfBookItem
@@ -486,6 +493,16 @@ public extension BookShelfRepository {
   }
 
   func setBookTTSEngine(
+    bookID: LibraryDomain.BookID,
+    value: String?
+  ) async throws -> ShelfBookItem {
+    guard let book = try await book(id: bookID) else {
+      throw ShelfMutationFailure.missingBook
+    }
+    return book
+  }
+
+  func setBookImageStyle(
     bookID: LibraryDomain.BookID,
     value: String?
   ) async throws -> ShelfBookItem {
@@ -1195,6 +1212,29 @@ public final class ShelfLibrary {
       return updated
     } catch {
       errorMessage = "无法保存本书朗读引擎"
+      return nil
+    }
+  }
+
+  @discardableResult
+  public func setBookImageStyle(
+    bookID: LibraryDomain.BookID,
+    value: String?
+  ) async -> ShelfBookItem? {
+    do {
+      let updated = try await repository.setBookImageStyle(
+        bookID: bookID,
+        value: value
+      )
+      if let index = books.firstIndex(where: { $0.id == bookID }) {
+        books[index] = updated
+      }
+      allBooks = try await repository.shelfBooks()
+      projectBooks()
+      errorMessage = nil
+      return updated
+    } catch {
+      errorMessage = "无法保存本书图片样式"
       return nil
     }
   }

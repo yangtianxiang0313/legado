@@ -292,7 +292,9 @@ public struct ReplacementNormalizingReaderContentLoader:
       position: raw.position,
       title: normalized.displayTitle,
       content: normalized.renderedText,
-      imageStyle: raw.imageStyle,
+      imageStyle: book.imageStyle?.trimmingCharacters(
+        in: .whitespacesAndNewlines
+      ).isEmpty == false ? book.imageStyle : raw.imageStyle,
       imageDecode: raw.imageDecode
     )
   }

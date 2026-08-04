@@ -1039,6 +1039,28 @@ struct ReaderContentView: View {
                 )
             }
             Section("阅读工具") {
+                Menu {
+                    Button("跟随书源") {
+                        updateBookImageStyle(nil)
+                    }
+                    Button("默认适配（DEFAULT）") {
+                        updateBookImageStyle("DEFAULT")
+                    }
+                    Button("全宽显示（FULL）") {
+                        updateBookImageStyle("FULL")
+                    }
+                    Button("文字嵌入（TEXT）") {
+                        updateBookImageStyle("TEXT")
+                    }
+                } label: {
+                    Label(
+                        "图片样式：\(readerBook?.imageStyle ?? "跟随书源")",
+                        systemImage: "photo"
+                    )
+                }
+                .disabled(readerBook == nil)
+                .accessibilityIdentifier("action.reader.imageStyle")
+
                 Button {
                     toggleCurrentBookmark()
                 } label: {
@@ -1949,7 +1971,8 @@ struct ReaderContentView: View {
                                 readerBook.splitsLongChapters,
                             usesReplacementRules:
                                 readerBook.usesReplacementRules,
-                            ttsEngine: readerBook.ttsEngine
+                            ttsEngine: readerBook.ttsEngine,
+                            imageStyle: readerBook.imageStyle
                         ),
                         chapters: preview.chapters,
                         suggestedChapterID:
@@ -2310,6 +2333,29 @@ struct ReaderContentView: View {
             get: { readerPreferences.value.preDownloadCount },
             set: { readerPreferences.setPreDownloadCount($0) }
         )
+    }
+
+    private func updateBookImageStyle(_ value: String?) {
+        guard
+            let readerBook,
+            let chapter = chapters.first(where: { $0.id == target.chapterID })
+        else { return }
+        let offset = session.document?.position.characterOffset
+            ?? target.characterOffset
+        Task {
+            guard
+                let updated = await library.setBookImageStyle(
+                    bookID: readerBook.id,
+                    value: value
+                )
+            else { return }
+            self.readerBook = updated
+            await session.load(
+                book: updated,
+                chapter: chapter,
+                characterOffset: offset
+            )
+        }
     }
 
     private func tocDisplayTitle(_ rawTitle: String) -> String {
