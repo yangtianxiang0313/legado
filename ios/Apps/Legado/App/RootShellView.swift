@@ -971,7 +971,9 @@ struct RootShellView: View {
         case .sourceManagement:
             SourceManagementView(
                 catalog: sourceCatalog,
-                ruleSubscriptions: ruleSubscriptions
+                ruleSubscriptions: ruleSubscriptions,
+                rssStore: rssStore,
+                replacementRules: replacementRules
             ) { sourceID in
                 router.push(.sourceEditor(sourceID), on: root)
             }

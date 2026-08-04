@@ -553,9 +553,10 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     let bookSources = try SourceDefinitionImport.decode(
       AndroidBackupArchive.encodeBookSources(bookSourceDTOs)
     )
-    let replacementRules = try AndroidBackupArchive.readReplacementRules(
-      from: archiveURL
-    ).map(Self.mapReplacementRule)
+    let replacementRules = try AndroidReplacementRuleInteropAdapter
+      .restoreValues(
+        AndroidBackupArchive.readReplacementRules(from: archiveURL)
+      )
     let readRecords = AndroidReadRecordInteropAdapter.restoreValues(
       try AndroidBackupArchive.readReadRecords(from: archiveURL)
     )
@@ -816,28 +817,4 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     )
   }
 
-  private static func mapReplacementRule(
-    _ value: AndroidReplaceRuleDTO
-  ) throws -> ReaderReplacementRule {
-    let projection = value.restoreProjection
-    guard let order = Int(exactly: projection.order) else {
-      throw AndroidLibraryImportError.integerOutOfRange(
-        field: "replaceRule.order",
-        value: projection.order
-      )
-    }
-    return ReaderReplacementRule(
-      id: String(projection.id),
-      name: projection.name,
-      pattern: projection.pattern,
-      replacement: projection.replacement,
-      scope: projection.scope,
-      excludeScope: projection.excludeScope,
-      appliesToTitle: projection.scopeTitle,
-      appliesToContent: projection.scopeContent,
-      isEnabled: projection.isEnabled,
-      isRegex: projection.isRegex,
-      order: order
-    )
-  }
 }

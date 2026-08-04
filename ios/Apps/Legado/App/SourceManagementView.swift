@@ -1,4 +1,5 @@
 import AppUseCases
+import BackupInteropUseCases
 import CoreImage.CIFilterBuiltins
 import Foundation
 import PhotosUI
@@ -11,6 +12,8 @@ import Vision
 struct SourceManagementView: View {
     @Bindable var catalog: SourceCatalog
     @Bindable var ruleSubscriptions: RuleSubscriptionStore
+    @Bindable var rssStore: RSSStore
+    @Bindable var replacementRules: ReaderReplacementRuleStore
     let openEditor: (String?) -> Void
     @State private var showsImport = false
     @State private var showsSubscriptions = false
@@ -222,7 +225,9 @@ struct SourceManagementView: View {
             NavigationStack {
                 RuleSubscriptionView(
                     store: ruleSubscriptions,
-                    catalog: catalog
+                    catalog: catalog,
+                    rssStore: rssStore,
+                    replacementRules: replacementRules
                 )
             }
         }
@@ -539,9 +544,17 @@ private struct SourceJSONDocument: FileDocument {
 private struct RuleSubscriptionView: View {
     @Bindable var store: RuleSubscriptionStore
     @Bindable var catalog: SourceCatalog
+    @Bindable var rssStore: RSSStore
+    @Bindable var replacementRules: ReaderReplacementRuleStore
     @State private var editing: RuleSubscription?
     @State private var importPayload = ""
     @State private var showsImporter = false
+    @State private var previewSheet: RuleSubscriptionPreviewSheet?
+    @State private var rssCandidates: [RSSRuleSubscriptionCandidate] = []
+    @State private var replacementCandidates:
+        [ReplacementRuleSubscriptionCandidate] = []
+    @State private var selectedCandidateIDs: Set<UUID> = []
+    @State private var loadingSubscriptionID: Int64?
     @State private var message: String?
 
     var body: some View {
@@ -573,12 +586,11 @@ private struct RuleSubscriptionView: View {
                             Button("编辑") { editing = subscription }
                                 .buttonStyle(.borderless)
                         }
-                        if subscription.type == 0 {
-                            Button("从订阅导入书源") {
-                                load(subscription)
-                            }
-                            .buttonStyle(.bordered)
+                        Button(importButtonTitle(subscription.type)) {
+                            load(subscription)
                         }
+                        .buttonStyle(.bordered)
+                        .disabled(loadingSubscriptionID != nil)
                     }
                     .swipeActions {
                         Button("删除", role: .destructive) {
@@ -632,6 +644,18 @@ private struct RuleSubscriptionView: View {
                 )
             }
         }
+        .sheet(item: $previewSheet) { sheet in
+            NavigationStack {
+                RuleSubscriptionImportPreviewView(
+                    sheet: sheet,
+                    rssCandidates: rssCandidates,
+                    replacementCandidates: replacementCandidates,
+                    selection: $selectedCandidateIDs,
+                    cancel: { previewSheet = nil },
+                    commit: commitPreview
+                )
+            }
+        }
     }
 
     private func typeName(_ type: Int) -> String {
@@ -643,25 +667,191 @@ private struct RuleSubscriptionView: View {
         }
     }
 
+    private func importButtonTitle(_ type: Int) -> String {
+        if loadingSubscriptionID != nil { return "加载中…" }
+        switch type {
+        case 0: return "从订阅导入书源"
+        case 1: return "从订阅导入 RSS"
+        case 2: return "从订阅导入替换规则"
+        default: return "无法导入未知订阅"
+        }
+    }
+
     private func load(_ subscription: RuleSubscription) {
         Task {
-            guard let url = URL(string: subscription.url) else {
-                message = "订阅地址无效"
+            guard (0...2).contains(subscription.type) else {
+                message = "不支持的订阅类型"
                 return
             }
+            loadingSubscriptionID = subscription.id
+            defer { loadingSubscriptionID = nil }
             do {
-                let (data, response) = try await URLSession.shared.data(from: url)
-                if let http = response as? HTTPURLResponse,
-                   !(200..<300).contains(http.statusCode) {
-                    message = "订阅请求失败（\(http.statusCode)）"
+                let data = try await SearchEnvironment
+                    .loadRemoteRuleSubscriptionPayload(subscription.url)
+                switch subscription.type {
+                case 0:
+                    importPayload = String(decoding: data, as: UTF8.self)
+                    showsImporter = true
+                case 1:
+                    rssCandidates = try AndroidRuleSubscriptionPayloadImport
+                        .decodeRSSSources(data)
+                        .map(RSSRuleSubscriptionCandidate.init(value:))
+                    selectedCandidateIDs = Set(rssCandidates.map(\.id))
+                    previewSheet = .rss
+                case 2:
+                    replacementCandidates = try
+                        AndroidRuleSubscriptionPayloadImport
+                            .decodeReplacementRules(data)
+                            .map(
+                                ReplacementRuleSubscriptionCandidate
+                                    .init(value:)
+                            )
+                    selectedCandidateIDs = Set(
+                        replacementCandidates.map(\.id)
+                    )
+                    previewSheet = .replacement
+                default:
                     return
                 }
-                importPayload = String(decoding: data, as: UTF8.self)
-                showsImporter = true
                 message = nil
+            } catch RemoteSourceDefinitionLoadError.invalidURL {
+                message = "订阅地址无效"
+            } catch RemoteSourceDefinitionLoadError.unsuccessfulStatus(
+                let status
+            ) {
+                message = "订阅请求失败（HTTP \(status)）"
             } catch {
-                message = "无法加载订阅"
+                message = "订阅内容格式不正确"
             }
+        }
+    }
+
+    private func commitPreview() {
+        switch previewSheet {
+        case .rss:
+            let values = rssCandidates
+                .filter { selectedCandidateIDs.contains($0.id) }
+                .map(\.value)
+            guard !values.isEmpty else {
+                message = "没有选中 RSS 订阅源"
+                return
+            }
+            Task {
+                if await rssStore.importSources(values) {
+                    message = "已导入 \(values.count) 个 RSS 订阅源"
+                    previewSheet = nil
+                } else {
+                    message = rssStore.errorMessage
+                }
+            }
+        case .replacement:
+            let values = replacementCandidates
+                .filter { selectedCandidateIDs.contains($0.id) }
+                .map(\.value)
+            guard !values.isEmpty else {
+                message = "没有选中替换规则"
+                return
+            }
+            Task {
+                if await replacementRules.importRules(values) {
+                    message = "已导入 \(values.count) 条替换规则"
+                    previewSheet = nil
+                } else {
+                    message = replacementRules.errorMessage
+                }
+            }
+        case nil:
+            break
+        }
+    }
+}
+
+private enum RuleSubscriptionPreviewSheet: String, Identifiable {
+    case rss
+    case replacement
+
+    var id: String { rawValue }
+}
+
+private struct RSSRuleSubscriptionCandidate: Identifiable {
+    let id = UUID()
+    let value: RSSSource
+}
+
+private struct ReplacementRuleSubscriptionCandidate: Identifiable {
+    let id = UUID()
+    let value: ReaderReplacementRule
+}
+
+private struct RuleSubscriptionImportPreviewView: View {
+    let sheet: RuleSubscriptionPreviewSheet
+    let rssCandidates: [RSSRuleSubscriptionCandidate]
+    let replacementCandidates: [ReplacementRuleSubscriptionCandidate]
+    @Binding var selection: Set<UUID>
+    let cancel: () -> Void
+    let commit: () -> Void
+
+    var body: some View {
+        List {
+            switch sheet {
+            case .rss:
+                if rssCandidates.isEmpty {
+                    ContentUnavailableView("没有可导入的 RSS", systemImage: "tray")
+                }
+                ForEach(rssCandidates) { candidate in
+                    candidateToggle(id: candidate.id) {
+                        Text(candidate.value.sourceName.isEmpty
+                            ? candidate.value.sourceURL
+                            : candidate.value.sourceName)
+                        Text(candidate.value.sourceURL)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            case .replacement:
+                if replacementCandidates.isEmpty {
+                    ContentUnavailableView("没有可导入的替换规则", systemImage: "tray")
+                }
+                ForEach(replacementCandidates) { candidate in
+                    candidateToggle(id: candidate.id) {
+                        Text(candidate.value.name.isEmpty
+                            ? candidate.value.pattern
+                            : candidate.value.name)
+                        Text(candidate.value.pattern)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                    }
+                }
+            }
+        }
+        .navigationTitle(sheet == .rss ? "导入 RSS" : "导入替换规则")
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("取消", action: cancel)
+            }
+            ToolbarItem(placement: .confirmationAction) {
+                Button("导入", action: commit)
+                    .disabled(selection.isEmpty)
+            }
+        }
+    }
+
+    private func candidateToggle<Content: View>(
+        id: UUID,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        Toggle(isOn: Binding(
+            get: { selection.contains(id) },
+            set: { selected in
+                if selected {
+                    selection.insert(id)
+                } else {
+                    selection.remove(id)
+                }
+            }
+        )) {
+            VStack(alignment: .leading, spacing: 3, content: content)
         }
     }
 }

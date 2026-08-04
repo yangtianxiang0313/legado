@@ -218,6 +218,20 @@ public final class RSSStore {
       errorMessage = "无法更新 RSS 收藏"
     }
   }
+
+  @discardableResult
+  public func importSources(_ values: [RSSSource]) async -> Bool {
+    do {
+      for source in values {
+        try await repository.upsertRSSSource(source)
+      }
+      await reload()
+      return true
+    } catch {
+      errorMessage = "无法导入 RSS 订阅源"
+      return false
+    }
+  }
 }
 
 public struct RSSArticleItem: Identifiable, Equatable, Sendable {

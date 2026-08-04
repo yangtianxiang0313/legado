@@ -26,6 +26,18 @@ enum SearchEnvironment {
     static func loadRemoteSourceDefinitions(_ address: String) async throws
         -> Data
     {
+        try await loadRemoteImportPayload(address)
+    }
+
+    static func loadRemoteRuleSubscriptionPayload(
+        _ address: String
+    ) async throws -> Data {
+        try await loadRemoteImportPayload(address)
+    }
+
+    private static func loadRemoteImportPayload(_ address: String) async throws
+        -> Data
+    {
         try await RemoteSourceDefinitionLoader(
             transport: makeTransport(externalBaseURL: nil)
         ).load(address)

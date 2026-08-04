@@ -185,6 +185,24 @@ public final class ReaderReplacementRuleStore {
     }
   }
 
+  @discardableResult
+  public func importRules(_ values: [ReaderReplacementRule]) async -> Bool {
+    if let message = values.compactMap(\.validationMessage).first {
+      errorMessage = message
+      return false
+    }
+    do {
+      for rule in values {
+        try await repository.saveReplacementRule(rule)
+      }
+      await reload()
+      return true
+    } catch {
+      errorMessage = "无法导入替换规则"
+      return false
+    }
+  }
+
   public var nextOrder: Int {
     (rules.map(\.order).max() ?? -1) + 1
   }
