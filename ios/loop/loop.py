@@ -969,6 +969,33 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/project/external-execution-receipts/**",
             ],
         }
+    if (
+        target
+        == "IOS-INTEGRATION-IOS-READER-CONFIG-BACKUP-ANDROID-RESTORE-ORACLE-001"
+    ):
+        return {
+            "owner": "IntegrationKit",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/harness/oracle/android-runner/**",
+                "ios/harness/oracle/request-registry.json",
+                "ios/harness/fixtures/manifest.json",
+                "ios/harness/source-lab/manifest.json",
+                "ios/harness/fixtures/runtime-lab/rl-integration-backup-ios-library-to-android-001/**",
+                "ios/harness/goldens/android-legado-v1/rl-integration-backup-ios-library-to-android-001.json",
+                "ios/harness/goldens/manifest.json",
+                "ios/harness/goldens/releases/**",
+                "ios/harness/tests/test_android_oracle_runner.py",
+                "ios/project/external-execution-receipts/**",
+            ],
+        }
     if target == "IOS-INTEGRATION-ANDROID-LIBRARY-IMPORT-ADAPTER-001":
         return {
             "owner": "IntegrationKit",
@@ -4132,6 +4159,23 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_filter": "IntegrationKitTests",
             "acceptance_id": "android-backup-archive-golden",
         }
+    if (
+        target
+        == "IOS-INTEGRATION-IOS-READER-CONFIG-BACKUP-ANDROID-RESTORE-ORACLE-001"
+    ):
+        delivery_contracts["IntegrationKit"] = {
+            "goal": (
+                "让 iOS 导出的单书阅读配置经冻结 Android Restore 真进程恢复后"
+                "保持字段语义一致，并输出可审计的结构化投影；不扩张产品功能。"
+            ),
+            "rule": (
+                "只复用既有 iOS→Android 书库恢复场景；Android 真源取证一次，"
+                "日常验证仅运行 Oracle 合同测试。"
+            ),
+            "test_id": "ios-reader-config-android-restore-oracle",
+            "test_filter": "",
+            "acceptance_id": "ios-reader-config-android-restore-golden",
+        }
     if target == "IOS-INTEGRATION-ANDROID-BACKUP-BOOKSOURCE-CODEC-001":
         delivery_contracts["IntegrationKit"] = {
             "goal": (
@@ -5853,6 +5897,97 @@ def validate_android_golden(
     return sorted(set(failures)), golden_sha256
 
 
+def validate_android_truth_freshness(
+    root: Path,
+    task: Mapping[str, Any],
+) -> Mapping[str, Any] | None:
+    source = task.get("source", {})
+    source_contract = source.get("source_contract", {})
+    if not (
+        isinstance(source_contract, dict)
+        and source_contract.get("android_truth_capture") is True
+    ):
+        return None
+    fixture_id = source_contract.get("fixture_id")
+    if not isinstance(fixture_id, str) or not fixture_id:
+        failures = ["android_truth_fixture_missing"]
+        observed_sha256 = None
+    else:
+        failures: list[str] = []
+        manifest = read_json(root / "ios/harness/fixtures/manifest.json")
+        fixture_entry = next(
+            (
+                value
+                for value in manifest.get("fixtures", [])
+                if isinstance(value, dict) and value.get("id") == fixture_id
+            ),
+            None,
+        )
+        fixture_path = (
+            root / str(fixture_entry.get("path"))
+            if isinstance(fixture_entry, dict)
+            else None
+        )
+        input_path = fixture_path / "input.json" if fixture_path else None
+        golden_path = (
+            root
+            / "ios/harness/goldens/android-legado-v1"
+            / f"{fixture_id}.json"
+        )
+        try:
+            golden_payload = golden_path.read_bytes()
+            golden = json.loads(golden_payload)
+            observed_sha256 = digest(golden_payload)
+        except (OSError, UnicodeError, json.JSONDecodeError):
+            golden = None
+            observed_sha256 = None
+            failures.append("android_truth_golden_missing")
+        if input_path is None or not input_path.is_file():
+            failures.append("android_truth_input_missing")
+        elif not isinstance(golden, dict) or golden.get("input_sha256") != digest(
+            input_path.read_bytes()
+        ):
+            failures.append("android_truth_input_stale")
+        runner_files = [
+            root
+            / "ios/harness/oracle/android-runner/LegadoOracleInstrumentedTest.kt",
+            root / "ios/harness/oracle/android-runner/orchestrator.py",
+            root / "ios/harness/integration-lab/integration_lab.py",
+        ]
+        runner_entries = [
+            {
+                "path": path.relative_to(root).as_posix(),
+                "sha256": digest(path.read_bytes()),
+            }
+            for path in sorted(runner_files, key=lambda value: value.as_posix())
+            if path.is_file()
+        ]
+        runner_digest = digest(
+            json.dumps(
+                runner_entries,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        )
+        if (
+            not isinstance(golden, dict)
+            or golden.get("oracle", {}).get("runner_digest") != runner_digest
+        ):
+            failures.append("android_truth_runner_stale")
+    return {
+        "id": "android-truth-freshness",
+        "exit_code": 0 if not failures else 1,
+        "android_truth_freshness_passed": not failures,
+        **(
+            {"observed_sha256": observed_sha256}
+            if observed_sha256 is not None
+            else {}
+        ),
+        **({"failures": sorted(set(failures))} if failures else {}),
+    }
+
+
 def validate_architecture_decision(
     root: Path,
     task: Mapping[str, Any],
@@ -6156,6 +6291,11 @@ def run_acceptance(
         )
         results.append(structured_result)
         passed = structured_result["structured_output_passed"] is True
+    if passed:
+        freshness_result = validate_android_truth_freshness(root, task)
+        if freshness_result is not None:
+            results.append(freshness_result)
+            passed = freshness_result["android_truth_freshness_passed"] is True
     report = {
         "schema_version": SCHEMA_VERSION,
         "task_id": task["id"],

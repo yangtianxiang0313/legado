@@ -1092,6 +1092,15 @@ class LegadoOracleInstrumentedTest {
                             "split_long_chapter",
                             restoredBook?.readConfig?.splitLongChapter
                         )
+                        .put("page_animation", restoredBook?.readConfig?.pageAnim)
+                        .put("resegment_content", restoredBook?.readConfig?.reSegment)
+                        .put("image_style", restoredBook?.readConfig?.imageStyle)
+                        .put(
+                            "use_replacement_rules",
+                            restoredBook?.readConfig?.useReplaceRule
+                        )
+                        .put("deleted_epub_tag_mask", restoredBook?.readConfig?.delTag)
+                        .put("tts_engine", restoredBook?.readConfig?.ttsEngine)
                 )
                 .put(
                     "group",

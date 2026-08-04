@@ -46,7 +46,7 @@
     {
       "id": "rl-integration-backup-ios-library-to-android-001",
       "path": "ios/harness/fixtures/runtime-lab/rl-integration-backup-ios-library-to-android-001",
-      "sha256": "71dde24e2566c150420a7e4b6d4600a8c240b0cc0aad6ea5fe3d3faa970d8c1b"
+      "sha256": "4645a9aa19cc6ec142e20684a193d7e5af0b11b327a5c556d0d5744195a2793c"
     },
     {
       "id": "rl-discovery-search-book-persistence-lifecycle-001",
