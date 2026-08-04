@@ -2,6 +2,7 @@ import AppNavigation
 import AppUseCases
 import ArchiveZIPFoundation
 import BackupInteropUseCases
+import CoreTransferable
 import Foundation
 import IntegrationKit
 import SwiftUI
@@ -81,6 +82,7 @@ struct RootShellView: View {
     @Bindable var sourceSwitchPreferences: SourceSwitchPreferencesStore
     @Bindable var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
     @Bindable var dictionaryLookup: DictionaryLookupStore
+    @Bindable var localTextTOCRules: LocalTextTOCRuleStore
     @Bindable var keyboardAssists: KeyboardAssistStore
     @Bindable var appThemeProfiles: AppThemeProfileStore
     @Bindable var readerPreferences: ReaderPreferencesStore
@@ -269,6 +271,7 @@ struct RootShellView: View {
             await rssStore.reload()
             await httpTextToSpeechEngines.reload()
             await dictionaryLookup.reload()
+            await localTextTOCRules.reload()
             await keyboardAssists.reload()
             await appThemeProfiles.reload()
             router.reconcileVisibleRoots(visibleRoots)
@@ -394,6 +397,7 @@ struct RootShellView: View {
                 await rssStore.reload()
                 await httpTextToSpeechEngines.reload()
                 await dictionaryLookup.reload()
+                await localTextTOCRules.reload()
                 await keyboardAssists.reload()
                 await appThemeProfiles.reload()
                 webDAVBackupNotice = .result(
@@ -609,6 +613,28 @@ struct RootShellView: View {
                 ),
                 backupSources: sourceCatalog.sources,
                 backupReplacementRules: replacementRules.rules,
+                portableRuleExports: {
+                    try [
+                        AndroidPortableDataExport.rssSources(
+                            rssStore.sources
+                        ),
+                        AndroidPortableDataExport.replacementRules(
+                            replacementRules.rules
+                        ),
+                        AndroidPortableDataExport.httpTextToSpeech(
+                            httpTextToSpeechEngines.engines
+                        ),
+                        AndroidPortableDataExport.dictionaryRules(
+                            dictionaryLookup.allRules
+                        ),
+                        AndroidPortableDataExport.localTextTOCRules(
+                            localTextTOCRules.rules
+                        ),
+                        AndroidPortableDataExport.themes(
+                            appThemeProfiles.profiles
+                        ),
+                    ]
+                },
                 webDAVBackupCheckpoint: webDAVBackupCheckpoint,
                 openSearch: {
                     router.push(.searchBooks, on: .shelf)
@@ -661,6 +687,7 @@ struct RootShellView: View {
                     await rssStore.reload()
                     await httpTextToSpeechEngines.reload()
                     await dictionaryLookup.reload()
+                    await localTextTOCRules.reload()
                     await keyboardAssists.reload()
                     await appThemeProfiles.reload()
                 },
@@ -1494,6 +1521,7 @@ private struct RootContentView: View {
     let persistedSources: [BookSourceDraft]
     let backupSources: [BookSourceDraft]
     let backupReplacementRules: [ReaderReplacementRule]
+    let portableRuleExports: () throws -> [AndroidPortableExportFile]
     @Bindable var webDAVBackupCheckpoint: WebDAVBackupCheckpointStore
     let openSearch: () -> Void
     let openSources: () -> Void
@@ -1650,6 +1678,20 @@ private struct RootContentView: View {
                         Text(androidBackupExportStatus)
                             .accessibilityIdentifier("state.settings.androidBackup.export")
                     }
+                    Menu {
+                        ForEach(AndroidPortableExportKind.allCases, id: \.rawValue) {
+                            kind in
+                            portableExportAction(kind)
+                        }
+                    } label: {
+                        Label(
+                            "导出 Android 规则数据",
+                            systemImage: "square.and.arrow.up.on.square"
+                        )
+                    }
+                    .accessibilityIdentifier(
+                        "action.settings.androidPortable.export"
+                    )
                 }
 
                 VStack(alignment: .leading, spacing: 10) {
@@ -1924,6 +1966,41 @@ private struct RootContentView: View {
             case .failure:
                 androidBackupExportStatus = "Android 备份保存失败"
             }
+        }
+    }
+
+    @ViewBuilder
+    private func portableExportAction(_ kind: AndroidPortableExportKind)
+        -> some View
+    {
+        if let file = try? portableRuleExports().first(where: {
+            $0.kind == kind
+        }) {
+            ShareLink(
+                item: AndroidPortableShareItem(file: file),
+                preview: SharePreview(
+                    file.filename,
+                    image: Image(systemName: "doc.text")
+                )
+            ) {
+                Text(portableExportTitle(kind))
+            }
+        } else {
+            Button(portableExportTitle(kind)) {}
+                .disabled(true)
+        }
+    }
+
+    private func portableExportTitle(_ kind: AndroidPortableExportKind)
+        -> String
+    {
+        switch kind {
+        case .rssSources: "RSS 源"
+        case .replacementRules: "替换规则"
+        case .httpTextToSpeech: "HTTP TTS"
+        case .dictionaryRules: "词典规则"
+        case .localTextTOCRules: "本地目录规则"
+        case .themes: "主题模板"
         }
     }
 
@@ -3031,6 +3108,7 @@ struct StartupAcceptanceView: View {
     @Bindable var sourceSwitchPreferences: SourceSwitchPreferencesStore
     @Bindable var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
     @Bindable var dictionaryLookup: DictionaryLookupStore
+    @Bindable var localTextTOCRules: LocalTextTOCRuleStore
     @Bindable var keyboardAssists: KeyboardAssistStore
     @Bindable var appThemeProfiles: AppThemeProfileStore
     @Bindable var readerPreferences: ReaderPreferencesStore
@@ -3097,6 +3175,7 @@ struct StartupAcceptanceView: View {
                 sourceSwitchPreferences: sourceSwitchPreferences,
                 httpTextToSpeechEngines: httpTextToSpeechEngines,
                 dictionaryLookup: dictionaryLookup,
+                localTextTOCRules: localTextTOCRules,
                 keyboardAssists: keyboardAssists,
                 appThemeProfiles: appThemeProfiles,
                 readerPreferences: readerPreferences,
@@ -3238,6 +3317,19 @@ private struct AndroidBackupZipDocument: FileDocument {
 
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
         FileWrapper(regularFileWithContents: data)
+    }
+}
+
+private struct AndroidPortableShareItem: Transferable {
+    let file: AndroidPortableExportFile
+
+    static var transferRepresentation: some TransferRepresentation {
+        DataRepresentation(exportedContentType: .json) { item in
+            item.file.data
+        }
+        .suggestedFileName { item in
+            item.file.filename
+        }
     }
 }
 

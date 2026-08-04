@@ -63,6 +63,7 @@ public struct SourceRuntimeDictionaryLookupExecutor:
 @MainActor
 @Observable
 public final class DictionaryLookupStore {
+  public private(set) var allRules: [DictionaryRule] = []
   public private(set) var rules: [DictionaryRule] = []
   public private(set) var query = ""
   public private(set) var selectedRuleName: String?
@@ -83,14 +84,15 @@ public final class DictionaryLookupStore {
 
   public func reload() async {
     do {
-      rules = try await repository.dictionaryRules()
-        .filter(\.isEnabled)
+      allRules = try await repository.dictionaryRules()
         .sorted {
           if $0.sortNumber != $1.sortNumber {
             return $0.sortNumber < $1.sortNumber
           }
           return $0.name < $1.name
         }
+      rules = allRules
+        .filter(\.isEnabled)
       if selectedRuleName == nil || !rules.contains(where: {
         $0.name == selectedRuleName
       }) {

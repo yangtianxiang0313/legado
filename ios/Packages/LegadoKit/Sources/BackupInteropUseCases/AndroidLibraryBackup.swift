@@ -490,7 +490,9 @@ public enum AndroidLibraryBackupAdapter {
     )
     return AndroidBackupContents(
       bookSources: try AndroidBackupArchive.decodeBookSources(sourceData),
-      replacementRules: try replacementRules.map(mapReplacementRule),
+      replacementRules: try AndroidReplaceRuleInteropAdapter.backupDocuments(
+        replacementRules
+      ),
       books: try plan.books.map(mapBook),
       bookGroups: try plan.groups.map(mapGroup),
       bookmarks: try plan.bookmarks.map(mapBookmark),
@@ -521,34 +523,6 @@ public enum AndroidLibraryBackupAdapter {
         ),
       sharedPreferences: sharedPreferences
     )
-  }
-
-  private static func mapReplacementRule(
-    _ value: ReaderReplacementRule
-  ) throws -> AndroidReplaceRuleDTO {
-    AndroidReplaceRuleDTO(
-      id: Int64(value.id) ?? stableAndroidID(value.id),
-      name: value.name,
-      pattern: value.pattern,
-      replacement: value.replacement,
-      scope: value.scope,
-      scopeTitle: value.appliesToTitle,
-      scopeContent: value.appliesToContent,
-      excludeScope: value.excludeScope,
-      isEnabled: value.isEnabled,
-      isRegex: value.isRegex,
-      order: try int32(Int64(value.order), field: "replaceRule.order")
-    )
-  }
-
-  private static func stableAndroidID(_ value: String) -> Int64 {
-    var hash: UInt64 = 14_695_981_039_346_656_037
-    for byte in value.utf8 {
-      hash ^= UInt64(byte)
-      hash &*= 1_099_511_628_211
-    }
-    let positive = hash & UInt64(Int64.max)
-    return positive == 0 ? 1 : Int64(positive)
   }
 
   private static func mapBook(_ value: AndroidLibraryRestoreBook) throws
