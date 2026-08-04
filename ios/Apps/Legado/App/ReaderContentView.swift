@@ -66,6 +66,9 @@ struct ReaderContentView: View {
     @State private var syncingWebDAVProgress = false
     @State private var automaticSourceRecoveryMessage: String?
     @State private var prefetchTask: Task<Void, Never>?
+    @State private var sourceSwitchCandidates:
+        [SourceSwitchCandidatePreview] = []
+    @State private var loadingSourceSwitchCandidates = false
 
     init(
         target: ReaderRoute,
@@ -1091,6 +1094,7 @@ struct ReaderContentView: View {
                 sourceAuthorMatchToggle(
                     identifier: "toggle.reader.bookSource.authorMatch"
                 )
+                sourceSwitchEnrichmentToggles
             }
             if let bookSourceSwitchMessage {
                 Section {
@@ -1102,28 +1106,27 @@ struct ReaderContentView: View {
                 }
             }
             Section("可用书源") {
-                if switchableBookSources.isEmpty {
-                    Text("没有其他已启用书源")
+                if sourceSwitchCandidates.isEmpty {
+                    Text(
+                        loadingSourceSwitchCandidates
+                            ? "正在搜索候选书源…"
+                            : "没有匹配的候选书源"
+                    )
                         .foregroundStyle(.secondary)
                         .accessibilityIdentifier(
                             "state.reader.bookSource.empty"
                         )
                 }
-                ForEach(switchableBookSources) { source in
+                ForEach(sourceSwitchCandidates) { preview in
                     Button {
-                        switchReaderBookSource(to: source)
+                        switchReaderBookSource(to: preview)
                     } label: {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(source.name)
-                            Text(source.sourceURL)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
+                        sourceSwitchCandidateLabel(preview)
                     }
                     .disabled(switchingBookSource)
                     .accessibilityIdentifier(
                         "action.reader.bookSource."
-                            + source.sourceURL
+                            + preview.source.sourceURL
                     )
                 }
             }
@@ -1141,6 +1144,9 @@ struct ReaderContentView: View {
         .navigationTitle("书籍换源")
         .navigationBarTitleDisplayMode(.inline)
         .accessibilityIdentifier("overlay.reader.bookSource")
+        .task(id: sourceSwitchPreferences.value) {
+            await refreshSourceSwitchCandidates()
+        }
     }
 
     private var switchableBookSources: [BookSourceDraft] {
@@ -1159,6 +1165,7 @@ struct ReaderContentView: View {
                 sourceAuthorMatchToggle(
                     identifier: "toggle.reader.chapterSource.authorMatch"
                 )
+                sourceSwitchEnrichmentToggles
             }
             if let chapterSourceMessage {
                 Section {
@@ -1220,21 +1227,24 @@ struct ReaderContentView: View {
                 }
             } else {
                 Section("选择书源") {
-                    ForEach(switchableBookSources) { source in
+                    if sourceSwitchCandidates.isEmpty {
+                        Text(
+                            loadingSourceSwitchCandidates
+                                ? "正在搜索候选书源…"
+                                : "没有匹配的候选书源"
+                        )
+                        .foregroundStyle(.secondary)
+                    }
+                    ForEach(sourceSwitchCandidates) { preview in
                         Button {
-                            loadChapterSource(from: source)
+                            loadChapterSource(from: preview)
                         } label: {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(source.name)
-                                Text(source.sourceURL)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
+                            sourceSwitchCandidateLabel(preview)
                         }
                         .disabled(loadingChapterSource)
                         .accessibilityIdentifier(
-                            "action.reader.chapterSource.source."
-                                + source.sourceURL
+                                "action.reader.chapterSource.source."
+                                + preview.source.sourceURL
                         )
                     }
                 }
@@ -1257,6 +1267,9 @@ struct ReaderContentView: View {
         .navigationTitle("章节换源")
         .navigationBarTitleDisplayMode(.inline)
         .accessibilityIdentifier("overlay.reader.chapterSource")
+        .task(id: sourceSwitchPreferences.value) {
+            await refreshSourceSwitchCandidates()
+        }
     }
 
     private var offlineCacheMenu: some View {
@@ -1787,20 +1800,30 @@ struct ReaderContentView: View {
         }
     }
 
-    private func switchReaderBookSource(to source: BookSourceDraft) {
+    private func switchReaderBookSource(
+        to preview: SourceSwitchCandidatePreview
+    ) {
         guard let readerBook else { return }
         switchingBookSource = true
         bookSourceSwitchMessage = nil
         Task {
             do {
-                let resolved = try await SearchEnvironment
-                    .resolveSourceSwitch(
-                        current: readerBook,
-                        target: source,
-                        persistedSources: persistedSources,
-                        requiresAuthorMatch: sourceSwitchPreferences.value
-                            .requiresAuthorMatch
-                    )
+                let resolved: (
+                    candidate: ShelfBookCandidate,
+                    chapters: [BookChapter]
+                )
+                if preview.chapters.isEmpty {
+                    resolved = try await SearchEnvironment
+                        .resolveSourceSwitch(
+                            current: readerBook,
+                            target: preview.source,
+                            persistedSources: persistedSources,
+                            requiresAuthorMatch: sourceSwitchPreferences.value
+                                .requiresAuthorMatch
+                        )
+                } else {
+                    resolved = (preview.candidate, preview.chapters)
+                }
                 guard
                     let switched = await library.switchSource(
                         current: readerBook,
@@ -1843,7 +1866,9 @@ struct ReaderContentView: View {
         }
     }
 
-    private func loadChapterSource(from source: BookSourceDraft) {
+    private func loadChapterSource(
+        from preview: SourceSwitchCandidatePreview
+    ) {
         guard
             let readerBook,
             let currentChapter = chapters.first(where: {
@@ -1854,15 +1879,40 @@ struct ReaderContentView: View {
         chapterSourceMessage = nil
         Task {
             do {
-                chapterSourceResolution =
-                    try await SearchEnvironment.resolveChapterSource(
-                        current: readerBook,
-                        currentChapter: currentChapter,
-                        target: source,
-                        persistedSources: persistedSources,
-                        requiresAuthorMatch: sourceSwitchPreferences.value
-                            .requiresAuthorMatch
+                if preview.chapters.isEmpty {
+                    chapterSourceResolution =
+                        try await SearchEnvironment.resolveChapterSource(
+                            current: readerBook,
+                            currentChapter: currentChapter,
+                            target: preview.source,
+                            persistedSources: persistedSources,
+                            requiresAuthorMatch: sourceSwitchPreferences.value
+                                .requiresAuthorMatch
+                        )
+                } else {
+                    let remap = try AndroidReaderTOCRemapPolicy.remap(
+                        ReaderTOCRemapInput(
+                            oldChapterIndex: currentChapter.index,
+                            oldChapterTitle: currentChapter.title,
+                            oldChapterListSize: readerBook.chapterCount,
+                            newChapterTitles: preview.chapters.map(\.title)
+                        )
                     )
+                    chapterSourceResolution = ChapterSourceResolution(
+                        source: preview.source,
+                        book: ShelfBookItem(
+                            id: readerBook.id,
+                            candidate: preview.candidate,
+                            membership: readerBook.membership,
+                            order: readerBook.order,
+                            chapterCount: preview.chapters.count,
+                            progress: readerBook.progress
+                        ),
+                        chapters: preview.chapters,
+                        suggestedChapterID:
+                            preview.chapters[remap.selectedIndex].id
+                    )
+                }
             } catch {
                 chapterSourceMessage =
                     "目标书源目录加载失败："
@@ -1887,6 +1937,87 @@ struct ReaderContentView: View {
             )
         )
         .accessibilityIdentifier(identifier)
+    }
+
+    @ViewBuilder
+    private var sourceSwitchEnrichmentToggles: some View {
+        Toggle(
+            "加载详情",
+            isOn: Binding(
+                get: { sourceSwitchPreferences.value.loadsBookInfo },
+                set: { sourceSwitchPreferences.setLoadsBookInfo($0) }
+            )
+        )
+        .accessibilityIdentifier("toggle.reader.sourceSwitch.loadInfo")
+        Toggle(
+            "加载目录",
+            isOn: Binding(
+                get: {
+                    sourceSwitchPreferences.value.loadsTableOfContents
+                },
+                set: {
+                    sourceSwitchPreferences.setLoadsTableOfContents($0)
+                }
+            )
+        )
+        .accessibilityIdentifier("toggle.reader.sourceSwitch.loadToc")
+        Toggle(
+            "检测章节字数",
+            isOn: Binding(
+                get: {
+                    sourceSwitchPreferences.value.loadsChapterWordCount
+                },
+                set: {
+                    sourceSwitchPreferences.setLoadsChapterWordCount($0)
+                }
+            )
+        )
+        .accessibilityIdentifier("toggle.reader.sourceSwitch.loadWordCount")
+    }
+
+    private func refreshSourceSwitchCandidates() async {
+        guard let readerBook else {
+            sourceSwitchCandidates = []
+            return
+        }
+        loadingSourceSwitchCandidates = true
+        let currentChapter = chapters.first { $0.id == target.chapterID }
+        sourceSwitchCandidates = await SearchEnvironment
+            .loadSourceSwitchCandidates(
+                current: readerBook,
+                currentChapter: currentChapter,
+                targets: switchableBookSources,
+                persistedSources: persistedSources,
+                preferences: sourceSwitchPreferences.value,
+                sourceConcurrency:
+                    searchScopePreferences.value.effectiveSourceConcurrency,
+                replacementRules: replacementRules.rules
+            )
+        loadingSourceSwitchCandidates = false
+    }
+
+    @ViewBuilder
+    private func sourceSwitchCandidateLabel(
+        _ preview: SourceSwitchCandidatePreview
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(preview.source.name)
+            if !preview.candidate.lastChapter.isEmpty {
+                Text(preview.candidate.lastChapter)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            if let message = preview.chapterWordCountMessage {
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            if let milliseconds = preview.responseTimeMilliseconds {
+                Text("耗时：\(milliseconds) ms")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+        }
     }
 
     private func replaceCurrentChapterContent(

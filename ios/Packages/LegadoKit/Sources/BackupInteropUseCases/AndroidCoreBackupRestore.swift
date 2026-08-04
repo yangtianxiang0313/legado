@@ -178,18 +178,29 @@ public struct AndroidSourceSwitchPreferencesImportPlan:
 {
   public let automaticallyRecoversMissingSource: Bool?
   public let requiresAuthorMatch: Bool?
+  public let loadsBookInfo: Bool?
+  public let loadsTableOfContents: Bool?
+  public let loadsChapterWordCount: Bool?
 
   public init(
     automaticallyRecoversMissingSource: Bool? = nil,
-    requiresAuthorMatch: Bool? = nil
+    requiresAuthorMatch: Bool? = nil,
+    loadsBookInfo: Bool? = nil,
+    loadsTableOfContents: Bool? = nil,
+    loadsChapterWordCount: Bool? = nil
   ) {
     self.automaticallyRecoversMissingSource =
       automaticallyRecoversMissingSource
     self.requiresAuthorMatch = requiresAuthorMatch
+    self.loadsBookInfo = loadsBookInfo
+    self.loadsTableOfContents = loadsTableOfContents
+    self.loadsChapterWordCount = loadsChapterWordCount
   }
 
   public var isPresent: Bool {
     automaticallyRecoversMissingSource != nil || requiresAuthorMatch != nil
+      || loadsBookInfo != nil || loadsTableOfContents != nil
+      || loadsChapterWordCount != nil
   }
 }
 
@@ -637,7 +648,10 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
     let sourceSwitchPreferences = projectedApplicationPreferences.map {
       AndroidSourceSwitchPreferencesImportPlan(
         automaticallyRecoversMissingSource: $0.automaticallyChangesSource,
-        requiresAuthorMatch: $0.changeSourceChecksAuthor
+        requiresAuthorMatch: $0.changeSourceChecksAuthor,
+        loadsBookInfo: $0.changeSourceLoadsInfo,
+        loadsTableOfContents: $0.changeSourceLoadsTOC,
+        loadsChapterWordCount: $0.changeSourceLoadsWordCount
       )
     }.flatMap { $0.isPresent ? $0 : nil }
     let readerPreferences = projectedApplicationPreferences.map {
@@ -745,6 +759,10 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
         projectedApplicationPreferences?.automaticallyChangesSource
           .map { _ in 1 },
         projectedApplicationPreferences?.changeSourceChecksAuthor
+          .map { _ in 1 },
+        projectedApplicationPreferences?.changeSourceLoadsInfo.map { _ in 1 },
+        projectedApplicationPreferences?.changeSourceLoadsTOC.map { _ in 1 },
+        projectedApplicationPreferences?.changeSourceLoadsWordCount
           .map { _ in 1 },
         projectedApplicationPreferences?.preDownloadCount.map { _ in 1 },
       ].compactMap { $0 }.count,

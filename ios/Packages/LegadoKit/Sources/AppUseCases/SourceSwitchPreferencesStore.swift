@@ -5,19 +5,31 @@ public struct SourceSwitchPreferences:
 {
   public var automaticallyRecoversMissingSource: Bool
   public var requiresAuthorMatch: Bool
+  public var loadsBookInfo: Bool
+  public var loadsTableOfContents: Bool
+  public var loadsChapterWordCount: Bool
 
   public init(
     automaticallyRecoversMissingSource: Bool = true,
-    requiresAuthorMatch: Bool = false
+    requiresAuthorMatch: Bool = false,
+    loadsBookInfo: Bool = false,
+    loadsTableOfContents: Bool = false,
+    loadsChapterWordCount: Bool = false
   ) {
     self.automaticallyRecoversMissingSource =
       automaticallyRecoversMissingSource
     self.requiresAuthorMatch = requiresAuthorMatch
+    self.loadsBookInfo = loadsBookInfo
+    self.loadsTableOfContents = loadsTableOfContents
+    self.loadsChapterWordCount = loadsChapterWordCount
   }
 
   private enum CodingKeys: String, CodingKey {
     case automaticallyRecoversMissingSource
     case requiresAuthorMatch
+    case loadsBookInfo
+    case loadsTableOfContents
+    case loadsChapterWordCount
   }
 
   public init(from decoder: any Decoder) throws {
@@ -29,6 +41,18 @@ public struct SourceSwitchPreferences:
     requiresAuthorMatch = try container.decodeIfPresent(
       Bool.self,
       forKey: .requiresAuthorMatch
+    ) ?? false
+    loadsBookInfo = try container.decodeIfPresent(
+      Bool.self,
+      forKey: .loadsBookInfo
+    ) ?? false
+    loadsTableOfContents = try container.decodeIfPresent(
+      Bool.self,
+      forKey: .loadsTableOfContents
+    ) ?? false
+    loadsChapterWordCount = try container.decodeIfPresent(
+      Bool.self,
+      forKey: .loadsChapterWordCount
     ) ?? false
   }
 }
@@ -60,6 +84,24 @@ public final class SourceSwitchPreferencesStore {
   public func setRequiresAuthorMatch(_ enabled: Bool) {
     var updated = value
     updated.requiresAuthorMatch = enabled
+    replace(updated)
+  }
+
+  public func setLoadsBookInfo(_ enabled: Bool) {
+    var updated = value
+    updated.loadsBookInfo = enabled
+    replace(updated)
+  }
+
+  public func setLoadsTableOfContents(_ enabled: Bool) {
+    var updated = value
+    updated.loadsTableOfContents = enabled
+    replace(updated)
+  }
+
+  public func setLoadsChapterWordCount(_ enabled: Bool) {
+    var updated = value
+    updated.loadsChapterWordCount = enabled
     replace(updated)
   }
 

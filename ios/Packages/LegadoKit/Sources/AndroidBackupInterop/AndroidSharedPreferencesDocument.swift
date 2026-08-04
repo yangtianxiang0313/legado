@@ -170,6 +170,9 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
   public static let threadCountKey = "threadCount"
   public static let autoChangeSourceKey = "autoChangeSource"
   public static let changeSourceCheckAuthorKey = "changeSourceCheckAuthor"
+  public static let changeSourceLoadInfoKey = "changeSourceLoadInfo"
+  public static let changeSourceLoadTocKey = "changeSourceLoadToc"
+  public static let changeSourceLoadWordCountKey = "changeSourceLoadWordCount"
   public static let preDownloadNumKey = "preDownloadNum"
   public static let ttsFollowSystemKey = "ttsFollowSys"
   public static let ttsSpeechRateKey = "ttsSpeechRate"
@@ -185,6 +188,9 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
   public let threadCount: Int64?
   public let automaticallyChangesSource: Bool?
   public let changeSourceChecksAuthor: Bool?
+  public let changeSourceLoadsInfo: Bool?
+  public let changeSourceLoadsTOC: Bool?
+  public let changeSourceLoadsWordCount: Bool?
   public let preDownloadCount: Int64?
   public let ttsFollowsSystemRate: Bool?
   public let ttsSpeechRate: Int64?
@@ -201,6 +207,9 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
     threadCount: Int64? = nil,
     automaticallyChangesSource: Bool? = nil,
     changeSourceChecksAuthor: Bool? = nil,
+    changeSourceLoadsInfo: Bool? = nil,
+    changeSourceLoadsTOC: Bool? = nil,
+    changeSourceLoadsWordCount: Bool? = nil,
     preDownloadCount: Int64? = nil,
     ttsFollowsSystemRate: Bool? = nil,
     ttsSpeechRate: Int64? = nil
@@ -216,6 +225,9 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
     self.threadCount = threadCount
     self.automaticallyChangesSource = automaticallyChangesSource
     self.changeSourceChecksAuthor = changeSourceChecksAuthor
+    self.changeSourceLoadsInfo = changeSourceLoadsInfo
+    self.changeSourceLoadsTOC = changeSourceLoadsTOC
+    self.changeSourceLoadsWordCount = changeSourceLoadsWordCount
     self.preDownloadCount = preDownloadCount
     self.ttsFollowsSystemRate = ttsFollowsSystemRate
     self.ttsSpeechRate = ttsSpeechRate
@@ -236,6 +248,11 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
       changeSourceChecksAuthor: document.boolean(
         Self.changeSourceCheckAuthorKey
       ),
+      changeSourceLoadsInfo: document.boolean(Self.changeSourceLoadInfoKey),
+      changeSourceLoadsTOC: document.boolean(Self.changeSourceLoadTocKey),
+      changeSourceLoadsWordCount: document.boolean(
+        Self.changeSourceLoadWordCountKey
+      ),
       preDownloadCount: document.integer(Self.preDownloadNumKey),
       ttsFollowsSystemRate: document.boolean(Self.ttsFollowSystemKey),
       ttsSpeechRate: document.integer(Self.ttsSpeechRateKey)
@@ -251,6 +268,9 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
       || threadCount != nil
       || automaticallyChangesSource != nil
       || changeSourceChecksAuthor != nil
+      || changeSourceLoadsInfo != nil
+      || changeSourceLoadsTOC != nil
+      || changeSourceLoadsWordCount != nil
       || preDownloadCount != nil
       || ttsFollowsSystemRate != nil || ttsSpeechRate != nil
   }

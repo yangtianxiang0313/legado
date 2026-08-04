@@ -826,6 +826,19 @@ struct RootShellView: View {
                         )
                 },
                 availableSources: sourceCatalog.sources,
+                sourceSwitchPreferences: sourceSwitchPreferences,
+                loadSourceSwitchCandidates: { current, sources, preferences in
+                    await SearchEnvironment.loadSourceSwitchCandidates(
+                        current: current,
+                        currentChapter: nil,
+                        targets: sources,
+                        persistedSources: sourceCatalog.sources,
+                        preferences: preferences,
+                        sourceConcurrency: searchScopePreferences.value
+                            .effectiveSourceConcurrency,
+                        replacementRules: replacementRules.rules
+                    )
+                },
                 switchSource: { current, source in
                     do {
                         let resolved = try await SearchEnvironment

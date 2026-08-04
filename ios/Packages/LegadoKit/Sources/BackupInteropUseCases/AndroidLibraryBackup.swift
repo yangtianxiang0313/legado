@@ -385,6 +385,19 @@ public struct AndroidLibraryBackupUseCase: Sendable {
         .boolean(
           applicationPreferences.sourceSwitchPreferences.requiresAuthorMatch
         )
+      values[AndroidApplicationBackupPreferences.changeSourceLoadInfoKey] =
+        .boolean(
+          applicationPreferences.sourceSwitchPreferences.loadsBookInfo
+        )
+      values[AndroidApplicationBackupPreferences.changeSourceLoadTocKey] =
+        .boolean(
+          applicationPreferences.sourceSwitchPreferences.loadsTableOfContents
+        )
+      values[
+        AndroidApplicationBackupPreferences.changeSourceLoadWordCountKey
+      ] = .boolean(
+        applicationPreferences.sourceSwitchPreferences.loadsChapterWordCount
+      )
       values[AndroidApplicationBackupPreferences.preDownloadNumKey] =
         .int(
           Int32(applicationPreferences.readerPreferences.preDownloadCount)

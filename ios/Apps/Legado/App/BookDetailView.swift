@@ -191,6 +191,10 @@ struct BookDetailView: View {
     let setSplitLongChapters:
         ((ShelfBookItem, Bool) async -> ShelfBookItem?)?
     let availableSources: [BookSourceDraft]
+    let sourceSwitchPreferences: SourceSwitchPreferencesStore?
+    let loadSourceSwitchCandidates:
+        ((ShelfBookItem, [BookSourceDraft], SourceSwitchPreferences) async
+            -> [SourceSwitchCandidatePreview])?
     let switchSource:
         ((ShelfBookItem, BookSourceDraft) async -> BookSourceSwitchOutcome)?
     let uploadLocalBook:
@@ -200,6 +204,9 @@ struct BookDetailView: View {
     @State private var showsSourceSwitch = false
     @State private var switchingSource = false
     @State private var sourceSwitchMessage: String?
+    @State private var sourceSwitchCandidates:
+        [SourceSwitchCandidatePreview] = []
+    @State private var loadingSourceSwitchCandidates = false
     @State private var showsBookVariable = false
     @State private var bookVariableDraft = ""
     @State private var savingBookVariable = false
@@ -241,6 +248,8 @@ struct BookDetailView: View {
         self.setSourceVariable = nil
         self.setSplitLongChapters = nil
         self.availableSources = []
+        self.sourceSwitchPreferences = nil
+        self.loadSourceSwitchCandidates = nil
         self.switchSource = nil
         self.uploadLocalBook = nil
         _storedItem = State(initialValue: nil)
@@ -265,6 +274,13 @@ struct BookDetailView: View {
         setSplitLongChapters:
             @escaping (ShelfBookItem, Bool) async -> ShelfBookItem?,
         availableSources: [BookSourceDraft],
+        sourceSwitchPreferences: SourceSwitchPreferencesStore,
+        loadSourceSwitchCandidates:
+            @escaping (
+                ShelfBookItem,
+                [BookSourceDraft],
+                SourceSwitchPreferences
+            ) async -> [SourceSwitchCandidatePreview],
         switchSource:
             @escaping (
                 ShelfBookItem,
@@ -287,6 +303,8 @@ struct BookDetailView: View {
         self.setSourceVariable = setSourceVariable
         self.setSplitLongChapters = setSplitLongChapters
         self.availableSources = availableSources
+        self.sourceSwitchPreferences = sourceSwitchPreferences
+        self.loadSourceSwitchCandidates = loadSourceSwitchCandidates
         self.switchSource = switchSource
         self.uploadLocalBook = uploadLocalBook
         _storedItem = State(initialValue: nil)
@@ -443,21 +461,86 @@ struct BookDetailView: View {
         }
         .sheet(isPresented: $showsSourceSwitch) {
             NavigationStack {
-                List(switchableSources) { source in
-                    Button {
-                        performSourceSwitch(source)
-                    } label: {
-                        VStack(alignment: .leading, spacing: 5) {
-                            Text(source.name)
-                            Text(source.sourceURL)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                List {
+                    if let sourceSwitchPreferences {
+                        Section("候选增强") {
+                            Toggle(
+                                "加载详情",
+                                isOn: Binding(
+                                    get: {
+                                        sourceSwitchPreferences.value
+                                            .loadsBookInfo
+                                    },
+                                    set: {
+                                        sourceSwitchPreferences
+                                            .setLoadsBookInfo($0)
+                                    }
+                                )
+                            )
+                            Toggle(
+                                "加载目录",
+                                isOn: Binding(
+                                    get: {
+                                        sourceSwitchPreferences.value
+                                            .loadsTableOfContents
+                                    },
+                                    set: {
+                                        sourceSwitchPreferences
+                                            .setLoadsTableOfContents($0)
+                                    }
+                                )
+                            )
+                            Toggle(
+                                "检测章节字数",
+                                isOn: Binding(
+                                    get: {
+                                        sourceSwitchPreferences.value
+                                            .loadsChapterWordCount
+                                    },
+                                    set: {
+                                        sourceSwitchPreferences
+                                            .setLoadsChapterWordCount($0)
+                                    }
+                                )
+                            )
                         }
                     }
-                    .disabled(switchingSource)
-                    .accessibilityIdentifier(
-                        "action.bookDetail.switchSource.\(source.sourceURL)"
-                    )
+                    Section("匹配书源") {
+                        if sourceSwitchCandidates.isEmpty {
+                            Text(
+                                loadingSourceSwitchCandidates
+                                    ? "正在搜索候选书源…"
+                                    : "没有匹配的候选书源"
+                            )
+                            .foregroundStyle(.secondary)
+                        }
+                        ForEach(sourceSwitchCandidates) { preview in
+                            Button {
+                                performSourceSwitch(preview.source)
+                            } label: {
+                                VStack(alignment: .leading, spacing: 5) {
+                                    Text(preview.source.name)
+                                    if !preview.candidate.lastChapter.isEmpty {
+                                        Text(preview.candidate.lastChapter)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    if let message =
+                                        preview.chapterWordCountMessage
+                                    {
+                                        Text(message)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                            }
+                            .disabled(switchingSource)
+                            .accessibilityIdentifier(
+                                "action.bookDetail.switchSource."
+                                    + preview.source.sourceURL
+                            )
+                        }
+                    }
                 }
                 .overlay {
                     if switchingSource {
@@ -478,6 +561,9 @@ struct BookDetailView: View {
                     }
                 }
                 .accessibilityIdentifier("screen.bookSource.switch")
+                .task(id: sourceSwitchPreferences?.value) {
+                    await refreshSourceSwitchCandidates()
+                }
             }
         }
         .sheet(isPresented: $showsBookVariable) {
@@ -960,6 +1046,24 @@ struct BookDetailView: View {
                 sourceSwitchMessage = message
             }
         }
+    }
+
+    private func refreshSourceSwitchCandidates() async {
+        guard
+            let storedItem,
+            let sourceSwitchPreferences,
+            let loadSourceSwitchCandidates
+        else {
+            sourceSwitchCandidates = []
+            return
+        }
+        loadingSourceSwitchCandidates = true
+        sourceSwitchCandidates = await loadSourceSwitchCandidates(
+            storedItem,
+            switchableSources,
+            sourceSwitchPreferences.value
+        )
+        loadingSourceSwitchCandidates = false
     }
 
     private func saveBookVariable() {

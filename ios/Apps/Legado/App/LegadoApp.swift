@@ -835,6 +835,15 @@ private struct AppAndroidCoreBackupRestoreRepository:
             if let enabled = plan.requiresAuthorMatch {
                 value.requiresAuthorMatch = enabled
             }
+            if let enabled = plan.loadsBookInfo {
+                value.loadsBookInfo = enabled
+            }
+            if let enabled = plan.loadsTableOfContents {
+                value.loadsTableOfContents = enabled
+            }
+            if let enabled = plan.loadsChapterWordCount {
+                value.loadsChapterWordCount = enabled
+            }
             sourceSwitchPreferences.replace(value)
         }
     }

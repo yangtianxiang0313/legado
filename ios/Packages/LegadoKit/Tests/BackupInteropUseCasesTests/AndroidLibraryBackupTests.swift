@@ -87,7 +87,10 @@ struct AndroidLibraryBackupUseCaseTests {
         ),
         sourceSwitchPreferences: SourceSwitchPreferences(
           automaticallyRecoversMissingSource: false,
-          requiresAuthorMatch: true
+          requiresAuthorMatch: true,
+          loadsBookInfo: true,
+          loadsTableOfContents: false,
+          loadsChapterWordCount: true
         ),
         readAloudPreferences: ReadAloudPreferences(
           followsSystemRate: false,
@@ -159,6 +162,9 @@ struct AndroidLibraryBackupUseCaseTests {
     #expect(sharedPreferences.threadCount == 8)
     #expect(sharedPreferences.automaticallyChangesSource == false)
     #expect(sharedPreferences.changeSourceChecksAuthor == true)
+    #expect(sharedPreferences.changeSourceLoadsInfo == true)
+    #expect(sharedPreferences.changeSourceLoadsTOC == false)
+    #expect(sharedPreferences.changeSourceLoadsWordCount == true)
     #expect(sharedPreferences.preDownloadCount == 17)
     #expect(sharedPreferences.ttsFollowsSystemRate == false)
     #expect(sharedPreferences.ttsSpeechRate == 15)

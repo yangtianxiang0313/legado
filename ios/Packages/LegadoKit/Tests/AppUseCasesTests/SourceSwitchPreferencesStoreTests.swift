@@ -43,6 +43,58 @@ final class SourceSwitchPreferencesStoreTests: XCTestCase {
 
     XCTAssertFalse(decoded.automaticallyRecoversMissingSource)
     XCTAssertFalse(decoded.requiresAuthorMatch)
+    XCTAssertFalse(decoded.loadsBookInfo)
+    XCTAssertFalse(decoded.loadsTableOfContents)
+    XCTAssertFalse(decoded.loadsChapterWordCount)
+  }
+
+  func testCandidateProbePlanMatchesAndroidImplicationChain() {
+    XCTAssertEqual(
+      SourceSwitchCandidateProbePlan(
+        preferences: SourceSwitchPreferences(loadsBookInfo: true)
+      ),
+      SourceSwitchCandidateProbePlan(
+        loadsBookInfo: true,
+        loadsTableOfContents: false,
+        loadsChapterWordCount: false
+      )
+    )
+    XCTAssertEqual(
+      SourceSwitchCandidateProbePlan(
+        preferences: SourceSwitchPreferences(
+          loadsChapterWordCount: true
+        )
+      ),
+      SourceSwitchCandidateProbePlan(
+        loadsBookInfo: true,
+        loadsTableOfContents: true,
+        loadsChapterWordCount: true
+      )
+    )
+  }
+
+  func testWordCountSortingMatchesAndroidComparatorTail() {
+    let values = [
+      preview("order", count: 500, chapter: 30, order: 0),
+      preview("long-old", count: 1_200, chapter: 10, order: 2),
+      preview("long-new", count: 1_100, chapter: 20, order: 3),
+      preview("long-new-more", count: 1_500, chapter: 20, order: 4),
+    ]
+
+    XCTAssertEqual(
+      AndroidSourceSwitchCandidatePolicy.sorted(
+        values,
+        loadsChapterWordCount: true
+      ).map(\.id),
+      ["long-new-more", "long-new", "long-old", "order"]
+    )
+    XCTAssertEqual(
+      AndroidSourceSwitchCandidatePolicy.sorted(
+        values,
+        loadsChapterWordCount: false
+      ).map(\.id),
+      ["order", "long-old", "long-new", "long-new-more"]
+    )
   }
 
   func testCandidateIdentityAlwaysChecksTitleAndOptionallyAuthor() {
@@ -118,6 +170,47 @@ final class SourceSwitchPreferencesStoreTests: XCTestCase {
       .sourceAvailable
     )
   }
+}
+
+private extension SourceSwitchCandidateProbePlan {
+  init(
+    loadsBookInfo: Bool,
+    loadsTableOfContents: Bool,
+    loadsChapterWordCount: Bool
+  ) {
+    self.init(
+      preferences: SourceSwitchPreferences(
+        loadsBookInfo: loadsBookInfo,
+        loadsTableOfContents: loadsTableOfContents,
+        loadsChapterWordCount: loadsChapterWordCount
+      )
+    )
+  }
+}
+
+private func preview(
+  _ id: String,
+  count: Int,
+  chapter: Int,
+  order: Int
+) -> SourceSwitchCandidatePreview {
+  SourceSwitchCandidatePreview(
+    source: BookSourceDraft(sourceURL: id, name: id),
+    candidate: ShelfBookCandidate(
+      name: "书",
+      author: "作者",
+      kind: "",
+      lastChapter: "",
+      intro: "",
+      bookURL: id,
+      coverURL: nil,
+      originName: id,
+      sourceID: id
+    ),
+    probedChapterNumber: chapter,
+    chapterWordCount: count,
+    originOrder: order
+  )
 }
 
 @MainActor

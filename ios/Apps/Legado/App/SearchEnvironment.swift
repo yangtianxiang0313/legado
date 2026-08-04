@@ -581,63 +581,20 @@ enum SearchEnvironment {
         candidate: ShelfBookCandidate,
         chapters: [LibraryDomain.BookChapter]
     ) {
+        let raw = try await resolveSourceSwitchCandidate(
+            current: current,
+            target: target,
+            persistedSources: persistedSources,
+            requiresAuthorMatch: requiresAuthorMatch
+        )
         let externalBaseURL = ProcessInfo.processInfo.environment[
             "LEGADO_SEARCH_BASE_URL"
         ]
-        let baseURL = externalBaseURL ?? "http://legado.local"
-        let sources = makeSources(
-            baseURL: baseURL,
-            persistedSources: persistedSources,
-            includeDisabled: true
-        )
-        guard let descriptor = sources.first(where: {
-            $0.id == target.sourceURL
-        }) else {
-            throw SourceSwitchEnvironmentError.unsupportedSource
-        }
+        let descriptor = raw.descriptor
         let transport = makeTransport(externalBaseURL: externalBaseURL)
-        let results = try await SourceSearchBooksExecutor(
-            sources: [descriptor],
-            transport: transport,
-            cookieStore: cookieStore,
-            dynamicWebPagePort: dynamicWebPagePort,
-            scriptRuntime: scriptRuntime,
-            htmlSelectorBackend: htmlSelectorBackend
-        ).search(
-            query: current.candidate.name,
-            scope: .source(
-                name: descriptor.name,
-                identifier: descriptor.id
-            )
-        )
-        let matchingResult = results.first(where: {
-            SourceSwitchCandidateIdentityPolicy.matches(
-                currentTitle: current.candidate.name,
-                currentAuthor: normalizedAuthor(current.candidate.author),
-                candidateTitle: $0.name,
-                candidateAuthor: normalizedAuthor($0.author),
-                requiresAuthorMatch: requiresAuthorMatch
-            )
-        })
-        guard let result = matchingResult else {
-            throw SourceSwitchEnvironmentError.bookNotFound
-        }
-        let candidate = ShelfBookCandidate(
-            name: result.name,
-            author: result.author,
-            kind: result.kind,
-            lastChapter: result.lastChapter,
-            intro: result.intro,
-            bookURL: result.bookURL,
-            bookRequestExpression: result.bookRequestExpression,
-            coverURL: result.coverURL,
-            originName: result.originName,
-            sourceID: descriptor.id,
-            variables: result.variables
-        )
         let transient = ShelfBookItem(
             id: current.id,
-            candidate: candidate,
+            candidate: raw.candidate,
             membership: current.membership,
             order: current.order,
             chapterCount: current.chapterCount,
@@ -652,20 +609,262 @@ enum SearchEnvironment {
             htmlSelectorBackend: htmlSelectorBackend
         ).load(book: transient)
         let resolvedCandidate = ShelfBookCandidate(
-            name: candidate.name,
-            author: candidate.author,
-            kind: candidate.kind,
-            lastChapter: candidate.lastChapter,
-            intro: candidate.intro,
-            bookURL: candidate.bookURL,
+            name: raw.candidate.name,
+            author: raw.candidate.author,
+            kind: raw.candidate.kind,
+            lastChapter: raw.candidate.lastChapter,
+            intro: raw.candidate.intro,
+            bookURL: raw.candidate.bookURL,
             tocURL: loaded.tocURL,
-            bookRequestExpression: candidate.bookRequestExpression,
-            coverURL: candidate.coverURL,
-            originName: candidate.originName,
-            sourceID: candidate.sourceID,
+            bookRequestExpression: raw.candidate.bookRequestExpression,
+            coverURL: raw.candidate.coverURL,
+            originName: raw.candidate.originName,
+            sourceID: raw.candidate.sourceID,
             variables: loaded.bookVariables
         )
         return (resolvedCandidate, loaded.chapters)
+    }
+
+    static func loadSourceSwitchCandidates(
+        current: ShelfBookItem,
+        currentChapter: LibraryDomain.BookChapter?,
+        targets: [BookSourceDraft],
+        persistedSources: [BookSourceDraft],
+        preferences: SourceSwitchPreferences,
+        sourceConcurrency: Int,
+        replacementRules: [ReaderReplacementRule] = []
+    ) async -> [SourceSwitchCandidatePreview] {
+        let limit = min(max(sourceConcurrency, 1), 9)
+        var previews: [SourceSwitchCandidatePreview] = []
+        for start in stride(from: 0, to: targets.count, by: limit) {
+            let end = min(start + limit, targets.count)
+            let batch = await withTaskGroup(
+                of: SourceSwitchCandidatePreview?.self,
+                returning: [SourceSwitchCandidatePreview].self
+            ) { group in
+                for target in targets[start..<end] {
+                    group.addTask {
+                        try? await loadSourceSwitchCandidate(
+                            current: current,
+                            currentChapter: currentChapter,
+                            target: target,
+                            persistedSources: persistedSources,
+                            preferences: preferences,
+                            replacementRules: replacementRules
+                        )
+                    }
+                }
+                var values: [SourceSwitchCandidatePreview] = []
+                for await value in group {
+                    if let value { values.append(value) }
+                }
+                return values
+            }
+            previews.append(contentsOf: batch)
+        }
+        return AndroidSourceSwitchCandidatePolicy.sorted(
+            previews,
+            loadsChapterWordCount: preferences.loadsChapterWordCount
+        )
+    }
+
+    private static func loadSourceSwitchCandidate(
+        current: ShelfBookItem,
+        currentChapter: LibraryDomain.BookChapter?,
+        target: BookSourceDraft,
+        persistedSources: [BookSourceDraft],
+        preferences: SourceSwitchPreferences,
+        replacementRules: [ReaderReplacementRule]
+    ) async throws -> SourceSwitchCandidatePreview {
+        let raw = try await resolveSourceSwitchCandidate(
+            current: current,
+            target: target,
+            persistedSources: persistedSources,
+            requiresAuthorMatch: preferences.requiresAuthorMatch
+        )
+        let externalBaseURL = ProcessInfo.processInfo.environment[
+            "LEGADO_SEARCH_BASE_URL"
+        ]
+        let transport = makeTransport(externalBaseURL: externalBaseURL)
+        let plan = SourceSwitchCandidateProbePlan(preferences: preferences)
+        var candidate = raw.candidate
+        var chapters: [LibraryDomain.BookChapter] = []
+        let transient: (ShelfBookCandidate) -> ShelfBookItem = { candidate in
+            ShelfBookItem(
+                id: current.id,
+                candidate: candidate,
+                membership: current.membership,
+                order: current.order,
+                chapterCount: current.chapterCount,
+                progress: current.progress
+            )
+        }
+        if plan.loadsBookInfo, candidate.tocURL == nil {
+            candidate = try await SourceBookInfoLoader(
+                sources: [raw.descriptor],
+                transport: transport,
+                cookieStore: cookieStore,
+                dynamicWebPagePort: dynamicWebPagePort,
+                scriptRuntime: scriptRuntime,
+                htmlSelectorBackend: htmlSelectorBackend
+            ).load(book: transient(candidate))
+        }
+        if plan.loadsTableOfContents {
+            let loaded = try await SourceBookChapterLoader(
+                sources: [raw.descriptor],
+                transport: transport,
+                cookieStore: cookieStore,
+                dynamicWebPagePort: dynamicWebPagePort,
+                scriptRuntime: scriptRuntime,
+                htmlSelectorBackend: htmlSelectorBackend
+            ).load(book: transient(candidate))
+            chapters = loaded.chapters
+            candidate = ShelfBookCandidate(
+                name: candidate.name,
+                author: candidate.author,
+                kind: candidate.kind,
+                lastChapter: candidate.lastChapter,
+                intro: candidate.intro,
+                bookURL: candidate.bookURL,
+                tocURL: loaded.tocURL ?? candidate.tocURL,
+                bookRequestExpression: candidate.bookRequestExpression,
+                coverURL: candidate.coverURL,
+                originName: candidate.originName,
+                sourceID: candidate.sourceID,
+                variables: loaded.bookVariables
+            )
+        }
+
+        var probedChapterNumber: Int?
+        var wordCount: Int?
+        var wordCountMessage: String?
+        var responseTimeMilliseconds: Int?
+        if plan.loadsChapterWordCount, !chapters.isEmpty {
+            let selectedIndex: Int
+            if let currentChapter {
+                selectedIndex = try AndroidReaderTOCRemapPolicy.remap(
+                    ReaderTOCRemapInput(
+                        oldChapterIndex: currentChapter.index,
+                        oldChapterTitle: currentChapter.title,
+                        oldChapterListSize: current.chapterCount,
+                        newChapterTitles: chapters.map(\.title)
+                    )
+                ).selectedIndex
+            } else {
+                selectedIndex = chapters.count - 1
+            }
+            let chapter = chapters[selectedIndex]
+            let next = chapters.indices.contains(selectedIndex + 1)
+                ? chapters[selectedIndex + 1]
+                : nil
+            probedChapterNumber = selectedIndex + 1
+            let started = ContinuousClock.now
+            do {
+                let content = try await loadChapterSourceContent(
+                    book: transient(candidate),
+                    chapter: chapter,
+                    nextChapter: next,
+                    persistedSources: persistedSources
+                )
+                let normalized = AndroidReaderContentNormalizationPolicy
+                    .normalize(
+                        ReaderContentNormalizationInput(
+                            bookName: current.candidate.name,
+                            bookOrigin: current.candidate.sourceID,
+                            chapterTitle: chapter.title,
+                            content: content,
+                            includeTitle: false,
+                            useReplacementRules: true,
+                            paragraphIndent: "　　",
+                            rules: replacementRules.map(\.contentRule)
+                        )
+                    ).renderedText
+                let measuredWordCount = normalized.utf16.count
+                wordCount = measuredWordCount
+                wordCountMessage = "[\(selectedIndex + 1)] \(chapter.title)\n字数：\(measuredWordCount)"
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch {
+                wordCount = -1
+                wordCountMessage = "[\(selectedIndex + 1)] \(chapter.title)\n获取字数失败"
+            }
+            let elapsed = started.duration(to: .now).components
+            responseTimeMilliseconds = Int(elapsed.seconds) * 1_000
+                + Int(elapsed.attoseconds / 1_000_000_000_000_000)
+        }
+        return SourceSwitchCandidatePreview(
+            source: target,
+            candidate: candidate,
+            chapters: chapters,
+            probedChapterNumber: probedChapterNumber,
+            chapterWordCount: wordCount,
+            chapterWordCountMessage: wordCountMessage,
+            responseTimeMilliseconds: responseTimeMilliseconds,
+            originOrder: raw.descriptor.definition.originOrder
+        )
+    }
+
+    private static func resolveSourceSwitchCandidate(
+        current: ShelfBookItem,
+        target: BookSourceDraft,
+        persistedSources: [BookSourceDraft],
+        requiresAuthorMatch: Bool
+    ) async throws -> RawSourceSwitchCandidate {
+        let externalBaseURL = ProcessInfo.processInfo.environment[
+            "LEGADO_SEARCH_BASE_URL"
+        ]
+        let baseURL = externalBaseURL ?? "http://legado.local"
+        let sources = makeSources(
+            baseURL: baseURL,
+            persistedSources: persistedSources,
+            includeDisabled: true
+        )
+        guard let descriptor = sources.first(where: {
+            $0.id == target.sourceURL
+        }) else {
+            throw SourceSwitchEnvironmentError.unsupportedSource
+        }
+        let results = try await SourceSearchBooksExecutor(
+            sources: [descriptor],
+            transport: makeTransport(externalBaseURL: externalBaseURL),
+            cookieStore: cookieStore,
+            dynamicWebPagePort: dynamicWebPagePort,
+            scriptRuntime: scriptRuntime,
+            htmlSelectorBackend: htmlSelectorBackend
+        ).search(
+            query: current.candidate.name,
+            scope: .source(
+                name: descriptor.name,
+                identifier: descriptor.id
+            )
+        )
+        guard let result = results.first(where: {
+            SourceSwitchCandidateIdentityPolicy.matches(
+                currentTitle: current.candidate.name,
+                currentAuthor: normalizedAuthor(current.candidate.author),
+                candidateTitle: $0.name,
+                candidateAuthor: normalizedAuthor($0.author),
+                requiresAuthorMatch: requiresAuthorMatch
+            )
+        }) else {
+            throw SourceSwitchEnvironmentError.bookNotFound
+        }
+        return RawSourceSwitchCandidate(
+            descriptor: descriptor,
+            candidate: ShelfBookCandidate(
+                name: result.name,
+                author: result.author,
+                kind: result.kind,
+                lastChapter: result.lastChapter,
+                intro: result.intro,
+                bookURL: result.bookURL,
+                bookRequestExpression: result.bookRequestExpression,
+                coverURL: result.coverURL,
+                originName: result.originName,
+                sourceID: descriptor.id,
+                variables: result.variables
+            )
+        )
     }
 
     static func sourceIsAvailable(
@@ -1044,6 +1243,11 @@ enum SearchEnvironment {
             return .invalidPattern
         }
     }
+}
+
+private struct RawSourceSwitchCandidate: Sendable {
+    let descriptor: SearchSourceDescriptor
+    let candidate: ShelfBookCandidate
 }
 
 private enum SourceSwitchEnvironmentError: Error {
