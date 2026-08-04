@@ -2,6 +2,7 @@ import AppUseCases
 import BackupInteropUseCases
 import CoreImage.CIFilterBuiltins
 import Foundation
+import LibraryDomain
 import PhotosUI
 import SourceRuntime
 import SwiftUI
@@ -862,6 +863,8 @@ struct AndroidOnlineImportView: View {
     @Bindable var rssStore: RSSStore
     @Bindable var replacementRules: ReaderReplacementRuleStore
     @Bindable var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
+    @Bindable var dictionaryLookup: DictionaryLookupStore
+    @Bindable var localTextTOCRules: LocalTextTOCRuleStore
     let dismiss: () -> Void
 
     @State private var isLoading = true
@@ -871,6 +874,8 @@ struct AndroidOnlineImportView: View {
         [ReplacementRuleSubscriptionCandidate] = []
     @State private var selectedCandidateIDs: Set<UUID> = []
     @State private var httpTTSCandidates: [HTTPTextToSpeechCandidate] = []
+    @State private var dictionaryCandidates: [DictionaryRuleCandidate] = []
+    @State private var localTOCCandidates: [LocalTextTOCRuleCandidate] = []
 
     var body: some View {
         switch request.target {
@@ -883,7 +888,8 @@ struct AndroidOnlineImportView: View {
                     dismiss: dismiss
                 )
             }
-        case .rssSource, .replaceRule, .httpTTS:
+        case .rssSource, .replaceRule, .httpTTS, .dictionaryRule,
+             .localTextTOCRule:
             NavigationStack {
                 structuredImportContent
             }
@@ -905,19 +911,19 @@ struct AndroidOnlineImportView: View {
             )
             .navigationTitle("一键导入")
             .toolbar { cancelToolbarItem }
-        } else if request.target == .httpTTS {
-            List(httpTTSCandidates) { candidate in
+        } else if request.target == .httpTTS
+                    || request.target == .dictionaryRule
+                    || request.target == .localTextTOCRule {
+            List(genericCandidates) { candidate in
                 candidateToggle(id: candidate.id) {
-                    Text(candidate.value.name.isEmpty
-                        ? String(candidate.value.id)
-                        : candidate.value.name)
-                    Text(candidate.value.url)
+                    Text(candidate.title)
+                    Text(candidate.subtitle)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
                 }
             }
-            .navigationTitle("导入在线朗读引擎")
+            .navigationTitle(genericImportTitle)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("取消", action: dismiss)
@@ -982,6 +988,16 @@ struct AndroidOnlineImportView: View {
                     .decodeHTTPTextToSpeechEngines(data)
                     .map(HTTPTextToSpeechCandidate.init(value:))
                 selectedCandidateIDs = Set(httpTTSCandidates.map(\.id))
+            case .dictionaryRule:
+                dictionaryCandidates = try AndroidOnlineImportPayloadImport
+                    .decodeDictionaryRules(data)
+                    .map(DictionaryRuleCandidate.init(value:))
+                selectedCandidateIDs = Set(dictionaryCandidates.map(\.id))
+            case .localTextTOCRule:
+                localTOCCandidates = try AndroidOnlineImportPayloadImport
+                    .decodeLocalTextTOCRules(data)
+                    .map(LocalTextTOCRuleCandidate.init(value:))
+                selectedCandidateIDs = Set(localTOCCandidates.map(\.id))
             case .bookSource:
                 break
             }
@@ -1015,8 +1031,52 @@ struct AndroidOnlineImportView: View {
                     dismiss()
                 }
             }
+        case .dictionaryRule:
+            let values = dictionaryCandidates
+                .filter { selectedCandidateIDs.contains($0.id) }
+                .map(\.value)
+            Task {
+                if await dictionaryLookup.importRules(values) { dismiss() }
+            }
+        case .localTextTOCRule:
+            let values = localTOCCandidates
+                .filter { selectedCandidateIDs.contains($0.id) }
+                .map(\.value)
+            Task {
+                if await localTextTOCRules.importRules(values) { dismiss() }
+            }
         case .bookSource:
             break
+        }
+    }
+
+    private var genericCandidates: [NamedImportCandidate] {
+        switch request.target {
+        case .httpTTS:
+            httpTTSCandidates.map {
+                NamedImportCandidate(id: $0.id, title: $0.value.name,
+                    subtitle: $0.value.url)
+            }
+        case .dictionaryRule:
+            dictionaryCandidates.map {
+                NamedImportCandidate(id: $0.id, title: $0.value.name,
+                    subtitle: $0.value.urlRule)
+            }
+        case .localTextTOCRule:
+            localTOCCandidates.map {
+                NamedImportCandidate(id: $0.id, title: $0.value.name,
+                    subtitle: $0.value.rule)
+            }
+        default: []
+        }
+    }
+
+    private var genericImportTitle: String {
+        switch request.target {
+        case .httpTTS: "导入在线朗读引擎"
+        case .dictionaryRule: "导入词典规则"
+        case .localTextTOCRule: "导入本地目录规则"
+        default: "一键导入"
         }
     }
 
@@ -1039,6 +1099,22 @@ struct AndroidOnlineImportView: View {
 private struct HTTPTextToSpeechCandidate: Identifiable {
     let id = UUID()
     let value: HTTPTextToSpeechEngine
+}
+
+private struct DictionaryRuleCandidate: Identifiable {
+    let id = UUID()
+    let value: DictionaryRule
+}
+
+private struct LocalTextTOCRuleCandidate: Identifiable {
+    let id = UUID()
+    let value: LocalTextTOCRule
+}
+
+private struct NamedImportCandidate: Identifiable {
+    let id: UUID
+    let title: String
+    let subtitle: String
 }
 
 private struct RuleSubscriptionEditor: View {

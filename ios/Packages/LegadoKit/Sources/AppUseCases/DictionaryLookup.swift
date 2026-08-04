@@ -126,4 +126,16 @@ public final class DictionaryLookupStore {
       errorMessage = "词典查询失败"
     }
   }
+
+  @discardableResult
+  public func importRules(_ values: [DictionaryRule]) async -> Bool {
+    do {
+      try await repository.restoreAndroidDictionaryRules(values)
+      await reload()
+      return true
+    } catch {
+      errorMessage = "无法导入词典规则"
+      return false
+    }
+  }
 }

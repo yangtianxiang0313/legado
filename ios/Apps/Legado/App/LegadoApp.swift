@@ -46,6 +46,7 @@ struct LegadoApp: App {
     @State private var rssStore: RSSStore
     @State private var onlineImportRequest: AndroidOnlineImportRequest?
     @State private var onlineImportError: String?
+    @State private var localTextTOCRules: LocalTextTOCRuleStore
     @State private var webDAVSettings: WebDAVConnectionSettingsStore
     @State private var webDAVBackupCheckpoint:
         WebDAVBackupCheckpointStore
@@ -294,6 +295,11 @@ struct LegadoApp: App {
             _rssStore = State(
                 initialValue: RSSStore(repository: libraryRepository)
             )
+            _localTextTOCRules = State(
+                initialValue: LocalTextTOCRuleStore(
+                    repository: libraryRepository
+                )
+            )
             _sourceCatalog = State(
                 initialValue: SourceCatalog(
                     repository: sourceRepository
@@ -431,6 +437,8 @@ struct LegadoApp: App {
                         rssStore: rssStore,
                         replacementRules: replacementRules,
                         httpTextToSpeechEngines: httpTextToSpeechEngines,
+                        dictionaryLookup: dictionaryLookup,
+                        localTextTOCRules: localTextTOCRules,
                         dismiss: { onlineImportRequest = nil }
                     )
                 }

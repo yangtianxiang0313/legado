@@ -1,6 +1,7 @@
 import AndroidBackupInterop
 import AppUseCases
 import Foundation
+import LibraryDomain
 
 public enum AndroidReplacementRuleInteropAdapter {
   public static func restoreValues(
@@ -57,6 +58,22 @@ public enum AndroidOnlineImportPayloadImport {
   ) throws -> [HTTPTextToSpeechEngine] {
     AndroidHTTPTextToSpeechInteropAdapter.restoreValues(
       try AndroidHTTPTextToSpeechCodec.decodeMany(data)
+    )
+  }
+
+  public static func decodeDictionaryRules(
+    _ data: Data
+  ) throws -> [DictionaryRule] {
+    AndroidDictionaryRuleInteropAdapter.restoreValues(
+      try AndroidDictionaryRuleCodec.decodeMany(data)
+    )
+  }
+
+  public static func decodeLocalTextTOCRules(
+    _ data: Data
+  ) throws -> [LocalTextTOCRule] {
+    AndroidLocalTextTOCRuleInteropAdapter.restoreValues(
+      try AndroidLocalTextTOCRuleCodec.decodeMany(data)
     )
   }
 }

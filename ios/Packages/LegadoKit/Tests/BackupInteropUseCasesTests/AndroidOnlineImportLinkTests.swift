@@ -1,5 +1,6 @@
 import BackupInteropUseCases
 import Foundation
+import LibraryDomain
 import Testing
 
 @Suite("Android online import link")
@@ -9,6 +10,8 @@ struct AndroidOnlineImportLinkTests {
     ("yuedu://import/rssSource?src=https%3A%2F%2Fexample.test%2Frss.json", AndroidOnlineImportTarget.rssSource),
     ("legado://import/replaceRule?src=https%3A%2F%2Fexample.test%2Frules.json", AndroidOnlineImportTarget.replaceRule),
     ("legado://import/httpTTS?src=https%3A%2F%2Fexample.test%2Ftts.json", AndroidOnlineImportTarget.httpTTS),
+    ("legado://import/dictRule?src=https%3A%2F%2Fexample.test%2Fdict.json", AndroidOnlineImportTarget.dictionaryRule),
+    ("yuedu://import/textTocRule?src=https%3A%2F%2Fexample.test%2Ftoc.json", AndroidOnlineImportTarget.localTextTOCRule),
     ("legado://booksource/importonline?src=https%3A%2F%2Fexample.test%2Fbook.json", AndroidOnlineImportTarget.bookSource),
   ])
   func parsesAndroidCompatibleLink(
@@ -23,11 +26,27 @@ struct AndroidOnlineImportLinkTests {
 
   @Test func rejectsUnsupportedAndroidTarget() throws {
     let url = try #require(URL(
-      string: "legado://import/dictRule?src=https%3A%2F%2Fexample.test%2Fdict.json"
+      string: "legado://import/theme?src=https%3A%2F%2Fexample.test%2Ftheme.json"
     ))
     #expect(throws: AndroidOnlineImportLinkError.unsupportedTarget) {
       try AndroidOnlineImportLinkParser.parse(url)
     }
+  }
+
+  @Test func decodesDictionaryAndLocalTOCPayloads() throws {
+    let dictionaries = try AndroidOnlineImportPayloadImport
+      .decodeDictionaryRules(Data(
+        #"[{"name":"汉典","urlRule":"https://dict.example/{{key}}","showRule":"$.body","enabled":true,"sortNumber":2}]"#.utf8
+      ))
+    #expect(dictionaries.first?.name == "汉典")
+    #expect(dictionaries.first?.sortNumber == 2)
+
+    let tocRules = try AndroidOnlineImportPayloadImport
+      .decodeLocalTextTOCRules(Data(
+        #"[{"id":9,"name":"章节","rule":"^第.+章$","serialNumber":3,"enable":true}]"#.utf8
+      ))
+    #expect(tocRules.first?.id == 9)
+    #expect(tocRules.first?.rule == "^第.+章$")
   }
 
   @Test func decodesHTTPTextToSpeechPayload() throws {
