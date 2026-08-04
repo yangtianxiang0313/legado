@@ -868,6 +868,7 @@ struct AndroidOnlineImportView: View {
     @Bindable var dictionaryLookup: DictionaryLookupStore
     @Bindable var localTextTOCRules: LocalTextTOCRuleStore
     @Bindable var readerConfigProfiles: AndroidReaderConfigProfileStore
+    @Bindable var directLinkUploadRule: DirectLinkUploadRuleStore
     @Bindable var appThemeProfiles: AppThemeProfileStore
     let dismiss: () -> Void
 
@@ -916,6 +917,12 @@ struct AndroidOnlineImportView: View {
                 initialData: request.inlineData,
                 dismiss: dismiss,
                 onComplete: { _ in }
+            )
+        case .directLinkUploadRule:
+            DirectLinkUploadRuleImportView(
+                data: request.inlineData,
+                store: directLinkUploadRule,
+                dismiss: dismiss
             )
         case .rssSource, .replaceRule, .httpTTS, .dictionaryRule,
              .localTextTOCRule, .theme:
@@ -1045,6 +1052,8 @@ struct AndroidOnlineImportView: View {
                 break
             case .bookshelfList:
                 break
+            case .directLinkUploadRule:
+                break
             }
         } catch {
             message = "导入内容格式不正确"
@@ -1104,6 +1113,8 @@ struct AndroidOnlineImportView: View {
         case .readerConfig:
             break
         case .bookshelfList:
+            break
+        case .directLinkUploadRule:
             break
         }
     }
@@ -1363,6 +1374,71 @@ private struct LocalTextTOCRuleCandidate: Identifiable {
 private struct AppThemeProfileCandidate: Identifiable {
     let id = UUID()
     let value: AppThemeProfile
+}
+
+private struct DirectLinkUploadRuleImportView: View {
+    let data: Data?
+    @Bindable var store: DirectLinkUploadRuleStore
+    let dismiss: () -> Void
+    @State private var rule: DirectLinkUploadRule?
+    @State private var message: String?
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if let rule {
+                    Form {
+                        Section("规则预览") {
+                            LabeledContent("注释", value: rule.summary)
+                            LabeledContent("上传 URL", value: rule.uploadURL)
+                            LabeledContent(
+                                "下载地址规则",
+                                value: rule.downloadURLRule
+                            )
+                            LabeledContent(
+                                "上传前压缩",
+                                value: rule.compress ? "是" : "否"
+                            )
+                        }
+                    }
+                } else {
+                    ContentUnavailableView(
+                        "无法导入直链上传规则",
+                        systemImage: "link.badge.plus",
+                        description: Text(message ?? "JSON 内容无效")
+                    )
+                }
+            }
+            .navigationTitle("导入直链上传规则")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消", action: dismiss)
+                }
+                if rule != nil {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("导入") {
+                            guard let rule else { return }
+                            Task {
+                                if await store.save(rule) { dismiss() }
+                                else { message = store.errorMessage }
+                            }
+                        }
+                    }
+                }
+            }
+            .task {
+                guard let data else {
+                    message = "没有规则数据"
+                    return
+                }
+                do {
+                    rule = try AndroidDirectLinkUploadRuleExchange.decode(data)
+                } catch {
+                    message = "不是有效的 Android 直链上传规则"
+                }
+            }
+        }
+    }
 }
 
 private struct NamedImportCandidate: Identifiable {

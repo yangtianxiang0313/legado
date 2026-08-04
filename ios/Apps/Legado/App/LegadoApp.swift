@@ -50,6 +50,7 @@ struct LegadoApp: App {
     @State private var processedShareTokens: Set<String> = []
     @State private var localTextTOCRules: LocalTextTOCRuleStore
     @State private var readerConfigProfiles: AndroidReaderConfigProfileStore
+    @State private var directLinkUploadRule: DirectLinkUploadRuleStore
     @State private var webDAVSettings: WebDAVConnectionSettingsStore
     @State private var webDAVBackupCheckpoint:
         WebDAVBackupCheckpointStore
@@ -308,6 +309,11 @@ struct LegadoApp: App {
                     repository: libraryRepository
                 )
             )
+            _directLinkUploadRule = State(
+                initialValue: DirectLinkUploadRuleStore(
+                    repository: libraryRepository
+                )
+            )
             _sourceCatalog = State(
                 initialValue: SourceCatalog(
                     repository: sourceRepository
@@ -384,6 +390,7 @@ struct LegadoApp: App {
                     dictionaryLookup: dictionaryLookup,
                     localTextTOCRules: localTextTOCRules,
                     readerConfigProfiles: readerConfigProfiles,
+                    directLinkUploadRule: directLinkUploadRule,
                     keyboardAssists: keyboardAssists,
                     appThemeProfiles: appThemeProfiles,
                     readerPreferences: readerPreferences,
@@ -420,6 +427,7 @@ struct LegadoApp: App {
                     dictionaryLookup: dictionaryLookup,
                     localTextTOCRules: localTextTOCRules,
                     readerConfigProfiles: readerConfigProfiles,
+                    directLinkUploadRule: directLinkUploadRule,
                     keyboardAssists: keyboardAssists,
                     appThemeProfiles: appThemeProfiles,
                     readerPreferences: readerPreferences,
@@ -458,6 +466,7 @@ struct LegadoApp: App {
                         dictionaryLookup: dictionaryLookup,
                         localTextTOCRules: localTextTOCRules,
                         readerConfigProfiles: readerConfigProfiles,
+                        directLinkUploadRule: directLinkUploadRule,
                         appThemeProfiles: appThemeProfiles,
                         dismiss: { onlineImportRequest = nil }
                     )

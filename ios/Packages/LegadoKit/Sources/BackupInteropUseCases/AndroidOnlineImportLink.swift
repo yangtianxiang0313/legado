@@ -13,6 +13,7 @@ public enum AndroidOnlineImportTarget: String, Equatable, Hashable, Sendable {
   case readerConfig
   case theme
   case bookshelfList
+  case directLinkUploadRule
 }
 
 public struct AndroidOnlineImportRequest: Identifiable, Equatable, Sendable {
@@ -66,6 +67,11 @@ public enum AndroidAssociatedImportClassifier {
     if let values = try? AndroidBookshelfListCodec.decode(data),
       values.contains(where: { !$0.name.isEmpty })
     { matches.append(.bookshelfList) }
+    if let value = try? AndroidDirectLinkUploadRuleExchange.decode(data),
+      !value.uploadURL.isEmpty,
+      !value.downloadURLRule.isEmpty,
+      !value.summary.isEmpty
+    { matches.append(.directLinkUploadRule) }
     let unique = Array(Set(matches))
     guard !unique.isEmpty else { throw AndroidAssociatedImportError.unrecognized }
     guard unique.count == 1 else { throw AndroidAssociatedImportError.ambiguous }

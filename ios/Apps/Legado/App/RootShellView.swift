@@ -85,6 +85,7 @@ struct RootShellView: View {
     @Bindable var dictionaryLookup: DictionaryLookupStore
     @Bindable var localTextTOCRules: LocalTextTOCRuleStore
     @Bindable var readerConfigProfiles: AndroidReaderConfigProfileStore
+    @Bindable var directLinkUploadRule: DirectLinkUploadRuleStore
     @Bindable var keyboardAssists: KeyboardAssistStore
     @Bindable var appThemeProfiles: AppThemeProfileStore
     @Bindable var readerPreferences: ReaderPreferencesStore
@@ -275,6 +276,7 @@ struct RootShellView: View {
             await dictionaryLookup.reload()
             await localTextTOCRules.reload()
             await readerConfigProfiles.reload()
+            await directLinkUploadRule.reload()
             await keyboardAssists.reload()
             await appThemeProfiles.reload()
             router.reconcileVisibleRoots(visibleRoots)
@@ -402,6 +404,7 @@ struct RootShellView: View {
                 await dictionaryLookup.reload()
                 await localTextTOCRules.reload()
                 await readerConfigProfiles.reload()
+                await directLinkUploadRule.reload()
                 await keyboardAssists.reload()
                 await appThemeProfiles.reload()
                 webDAVBackupNotice = .result(
@@ -623,6 +626,7 @@ struct RootShellView: View {
                         preferences: readerPreferences.value
                     ),
                 ].compactMap { $0 } + readerConfigProfiles.profiles,
+                directLinkUploadRule: directLinkUploadRule,
                 portableRuleExports: {
                     try [
                         AndroidPortableDataExport.rssSources(
@@ -699,6 +703,7 @@ struct RootShellView: View {
                     await dictionaryLookup.reload()
                     await localTextTOCRules.reload()
                     await readerConfigProfiles.reload()
+                    await directLinkUploadRule.reload()
                     await keyboardAssists.reload()
                     await appThemeProfiles.reload()
                 },
@@ -1533,6 +1538,7 @@ private struct RootContentView: View {
     let backupSources: [BookSourceDraft]
     let backupReplacementRules: [ReaderReplacementRule]
     let readerConfigProfiles: [AndroidReaderConfigDTO]
+    @Bindable var directLinkUploadRule: DirectLinkUploadRuleStore
     let portableRuleExports: () throws -> [AndroidPortableExportFile]
     @Bindable var webDAVBackupCheckpoint: WebDAVBackupCheckpointStore
     let openSearch: () -> Void
@@ -1575,6 +1581,7 @@ private struct RootContentView: View {
     @State private var androidBackupExportStatus = ""
     @State private var webDAVBackupFiles: [WebDAVBackupFile] = []
     @State private var webDAVBackupStatus = ""
+    @State private var directLinkRuleSettingsPresented = false
 
     var body: some View {
         if root == .shelf {
@@ -1736,6 +1743,17 @@ private struct RootContentView: View {
                             "action.settings.androidReaderConfig.export"
                         )
                     }
+                    Button {
+                        directLinkRuleSettingsPresented = true
+                    } label: {
+                        Label(
+                            "直链上传规则",
+                            systemImage: "link.badge.plus"
+                        )
+                    }
+                    .accessibilityIdentifier(
+                        "action.settings.directLinkUploadRule"
+                    )
                 }
 
                 VStack(alignment: .leading, spacing: 10) {
@@ -2010,6 +2028,12 @@ private struct RootContentView: View {
             case .failure:
                 androidBackupExportStatus = "Android 备份保存失败"
             }
+        }
+        .sheet(isPresented: $directLinkRuleSettingsPresented) {
+            DirectLinkUploadRuleSettingsView(
+                store: directLinkUploadRule,
+                dismiss: { directLinkRuleSettingsPresented = false }
+            )
         }
     }
 
@@ -3154,6 +3178,7 @@ struct StartupAcceptanceView: View {
     @Bindable var dictionaryLookup: DictionaryLookupStore
     @Bindable var localTextTOCRules: LocalTextTOCRuleStore
     @Bindable var readerConfigProfiles: AndroidReaderConfigProfileStore
+    @Bindable var directLinkUploadRule: DirectLinkUploadRuleStore
     @Bindable var keyboardAssists: KeyboardAssistStore
     @Bindable var appThemeProfiles: AppThemeProfileStore
     @Bindable var readerPreferences: ReaderPreferencesStore
@@ -3222,6 +3247,7 @@ struct StartupAcceptanceView: View {
                 dictionaryLookup: dictionaryLookup,
                 localTextTOCRules: localTextTOCRules,
                 readerConfigProfiles: readerConfigProfiles,
+                directLinkUploadRule: directLinkUploadRule,
                 keyboardAssists: keyboardAssists,
                 appThemeProfiles: appThemeProfiles,
                 readerPreferences: readerPreferences,
@@ -3391,6 +3417,115 @@ private struct AndroidReaderConfigShareItem: Transferable {
                 for: item.configuration
             )
         }
+    }
+}
+
+private struct DirectLinkUploadRuleShareItem: Transferable {
+    let data: Data
+
+    static var transferRepresentation: some TransferRepresentation {
+        DataRepresentation(exportedContentType: .json) { $0.data }
+            .suggestedFileName { _ in
+                AndroidDirectLinkUploadRuleExchange.filename
+            }
+    }
+}
+
+private struct DirectLinkUploadRuleSettingsView: View {
+    @Bindable var store: DirectLinkUploadRuleStore
+    let dismiss: () -> Void
+    @State private var draft = DirectLinkUploadRule(
+        uploadURL: "",
+        downloadURLRule: "",
+        summary: ""
+    )
+    @State private var message: String?
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Android 直链上传规则") {
+                    TextField("上传 URL", text: $draft.uploadURL, axis: .vertical)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                    TextField(
+                        "下载地址规则",
+                        text: $draft.downloadURLRule,
+                        axis: .vertical
+                    )
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    TextField("注释", text: $draft.summary)
+                    Toggle("上传前压缩", isOn: $draft.compress)
+                }
+                Section("与 Android 交换") {
+                    Button("从剪贴板粘贴规则") {
+                        importClipboard()
+                    }
+                    Button("复制规则到剪贴板") {
+                        copyRule()
+                    }
+                    if let data = try? AndroidDirectLinkUploadRuleExchange
+                        .encode(draft) {
+                        ShareLink(
+                            item: DirectLinkUploadRuleShareItem(data: data),
+                            preview: SharePreview(
+                                AndroidDirectLinkUploadRuleExchange.filename,
+                                image: Image(systemName: "link.badge.plus")
+                            )
+                        ) {
+                            Label("分享规则文件", systemImage: "square.and.arrow.up")
+                        }
+                    }
+                }
+                if let status = message ?? store.errorMessage {
+                    Section {
+                        Text(status)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .navigationTitle("直链上传规则")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消", action: dismiss)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("保存") {
+                        Task {
+                            if await store.save(draft) { dismiss() }
+                        }
+                    }
+                }
+            }
+            .task {
+                await store.reload()
+                if let value = store.rule { draft = value }
+            }
+        }
+    }
+
+    private func importClipboard() {
+        guard let text = UIPasteboard.general.string,
+              let data = text.data(using: .utf8),
+              let value = try? AndroidDirectLinkUploadRuleExchange.decode(data)
+        else {
+            message = "剪贴板为空或格式不正确"
+            return
+        }
+        draft = value
+        message = "已载入 Android 规则，请确认后保存"
+    }
+
+    private func copyRule() {
+        guard let data = try? AndroidDirectLinkUploadRuleExchange.encode(draft),
+              let text = String(data: data, encoding: .utf8)
+        else {
+            message = "规则无法编码"
+            return
+        }
+        UIPasteboard.general.string = text
+        message = "已复制 Android 规则 JSON"
     }
 }
 
