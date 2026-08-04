@@ -467,6 +467,74 @@ enum SearchEnvironment {
         let value = rawValue.trimmingCharacters(
             in: .whitespacesAndNewlines
         )
+        let resolved = try await resolveBookURL(
+            value,
+            persistedSources: persistedSources
+        )
+        let candidate = resolved.candidate
+        if let existing = await library.item(forURL: candidate.bookURL) {
+            return existing
+        }
+        await library.add(candidate)
+        guard
+            let item = await library.item(forURL: candidate.bookURL)
+        else {
+            throw BookURLImportEnvironmentError.persistenceFailed
+        }
+        let toc = library.chapterSession(
+            loader: SourceBookChapterLoader(
+                sources: [resolved.source],
+                transport: makeTransport(
+                    externalBaseURL: ProcessInfo.processInfo.environment[
+                        "LEGADO_SEARCH_BASE_URL"
+                    ]
+                ),
+                cookieStore: cookieStore,
+                dynamicWebPagePort: dynamicWebPagePort,
+                scriptRuntime: scriptRuntime,
+                htmlSelectorBackend: htmlSelectorBackend
+            )
+        )
+        await toc.load(book: item, force: true)
+        guard let reloaded = await library.item(forURL: candidate.bookURL) else {
+            throw BookURLImportEnvironmentError.persistenceFailed
+        }
+        return reloaded
+    }
+
+    static func previewBookURL(
+        _ rawValue: String,
+        library: ShelfLibrary,
+        persistedSources: [BookSourceDraft]
+    ) async throws -> BookURLImportPreview {
+        let value = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let resolved = try await resolveBookURL(
+            value,
+            persistedSources: persistedSources
+        )
+        if await library.item(forURL: resolved.candidate.bookURL) != nil {
+            throw BookURLImportEnvironmentError.alreadyOnShelf
+        }
+        return BookURLImportPreview(candidate: resolved.candidate)
+    }
+
+    static func commitBookURLPreview(
+        _ preview: BookURLImportPreview,
+        library: ShelfLibrary
+    ) async throws -> ShelfBookItem {
+        if await library.item(forURL: preview.candidate.bookURL) != nil {
+            throw BookURLImportEnvironmentError.alreadyOnShelf
+        }
+        await library.add(preview.candidate)
+        guard let item = await library.item(forURL: preview.candidate.bookURL)
+        else { throw BookURLImportEnvironmentError.persistenceFailed }
+        return item
+    }
+
+    private static func resolveBookURL(
+        _ value: String,
+        persistedSources: [BookSourceDraft]
+    ) async throws -> (candidate: ShelfBookCandidate, source: SearchSourceDescriptor) {
         guard
             let bookEndpoint = try? SourceEndpoint(
                 resolving: value,
@@ -477,10 +545,6 @@ enum SearchEnvironment {
             throw BookURLImportEnvironmentError.invalidURL
         }
         let logicalBookURL = bookEndpoint.logicalURL.absoluteString
-        if let existing = await library.item(forURL: logicalBookURL) {
-            return existing
-        }
-
         let externalBaseURL = ProcessInfo.processInfo.environment[
             "LEGADO_SEARCH_BASE_URL"
         ]
@@ -490,11 +554,13 @@ enum SearchEnvironment {
             persistedSources: persistedSources,
             includeDisabled: true
         )
+        let preferredSourceURL = bookURLPreferredSource(value)
         let matches = sources.map { source in
             RemoteBookSourceCandidate(
                 sourceID: source.id,
                 sourceName: source.name,
-                match: source.definition.sourceURL == baseURL
+                match: source.definition.sourceURL == preferredSourceURL
+                    || source.definition.sourceURL == baseURL
                     ? .exactBase
                     : patternMatch(
                         source.definition.bookURLPattern,
@@ -503,7 +569,11 @@ enum SearchEnvironment {
             )
         }
         guard
-            let selectedIndex = matches.firstIndex(where: {
+            let selectedIndex = preferredSourceURL.flatMap { preferred in
+                sources.firstIndex(where: {
+                    $0.definition.sourceURL == preferred
+                })
+            } ?? matches.firstIndex(where: {
                 $0.match == .exactBase
             }) ?? matches.firstIndex(where: {
                 $0.match == .pattern
@@ -565,31 +635,27 @@ enum SearchEnvironment {
             sourceID: selected.id,
             variables: execution.book.variables
         )
-        await library.add(candidate)
+        return (candidate, selected)
+    }
+
+    private static func bookURLPreferredSource(_ expression: String) -> String? {
         guard
-            let item = await library.item(forURL: logicalBookURL)
-        else {
-            throw BookURLImportEnvironmentError.persistenceFailed
-        }
-        let toc = library.chapterSession(
-            loader: SourceBookChapterLoader(
-                sources: [selected],
-                transport: makeTransport(
-                    externalBaseURL: externalBaseURL
-                ),
-                cookieStore: cookieStore,
-                dynamicWebPagePort: dynamicWebPagePort,
-                scriptRuntime: scriptRuntime,
-                htmlSelectorBackend: htmlSelectorBackend
+            let separator = expression.range(
+                of: #",\s*(?=\{)"#,
+                options: .regularExpression
             )
-        )
-        await toc.load(book: item, force: true)
-        guard
-            let reloaded = await library.item(forURL: logicalBookURL)
-        else {
-            throw BookURLImportEnvironmentError.persistenceFailed
+        else { return nil }
+        let option = String(expression[separator.upperBound...])
+        guard let data = option.data(using: .utf8) else { return nil }
+        struct Option: Decodable {
+            let origin: String?
+            let bookSourceUrl: String?
         }
-        return reloaded
+        guard let decoded = try? JSONDecoder().decode(Option.self, from: data)
+        else { return nil }
+        let value = decoded.origin ?? decoded.bookSourceUrl
+        guard let value, !value.isEmpty else { return nil }
+        return value
     }
 
     static func resolveSourceSwitch(
@@ -1295,6 +1361,11 @@ private enum BookURLImportEnvironmentError: Error {
     case sourceNotFound
     case fetchFailed
     case persistenceFailed
+    case alreadyOnShelf
+}
+
+struct BookURLImportPreview: Equatable {
+    let candidate: ShelfBookCandidate
 }
 
 private actor OfflineBookSourceTransport: HTTPTransport {

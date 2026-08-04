@@ -859,6 +859,7 @@ private struct RuleSubscriptionImportPreviewView: View {
 
 struct AndroidOnlineImportView: View {
     let request: AndroidOnlineImportRequest
+    @Bindable var library: ShelfLibrary
     @Bindable var catalog: SourceCatalog
     @Bindable var rssStore: RSSStore
     @Bindable var replacementRules: ReaderReplacementRuleStore
@@ -888,6 +889,13 @@ struct AndroidOnlineImportView: View {
                     dismiss: dismiss
                 )
             }
+        case .addToBookshelf:
+            AndroidBookURLImportView(
+                bookURL: request.sourceURL,
+                library: library,
+                persistedSources: catalog.sources,
+                dismiss: dismiss
+            )
         case .rssSource, .replaceRule, .httpTTS, .dictionaryRule,
              .localTextTOCRule:
             NavigationStack {
@@ -1000,6 +1008,8 @@ struct AndroidOnlineImportView: View {
                 selectedCandidateIDs = Set(localTOCCandidates.map(\.id))
             case .bookSource:
                 break
+            case .addToBookshelf:
+                break
             }
         } catch {
             message = "导入内容格式不正确"
@@ -1047,6 +1057,8 @@ struct AndroidOnlineImportView: View {
             }
         case .bookSource:
             break
+        case .addToBookshelf:
+            break
         }
     }
 
@@ -1092,6 +1104,91 @@ struct AndroidOnlineImportView: View {
             }
         )) {
             VStack(alignment: .leading, spacing: 3, content: content)
+        }
+    }
+}
+
+private struct AndroidBookURLImportView: View {
+    let bookURL: String
+    @Bindable var library: ShelfLibrary
+    let persistedSources: [BookSourceDraft]
+    let dismiss: () -> Void
+    @State private var preview: BookURLImportPreview?
+    @State private var isLoading = true
+    @State private var message: String?
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if isLoading {
+                    ProgressView("正在匹配书源并加载书籍…")
+                } else if let preview {
+                    Form {
+                        Section("书籍预览") {
+                            LabeledContent("书名", value: preview.candidate.name)
+                            LabeledContent("作者", value: preview.candidate.author)
+                            LabeledContent("书源", value: preview.candidate.originName)
+                            if !preview.candidate.lastChapter.isEmpty {
+                                LabeledContent(
+                                    "最新章节",
+                                    value: preview.candidate.lastChapter
+                                )
+                            }
+                        }
+                        if !preview.candidate.intro.isEmpty {
+                            Section("简介") { Text(preview.candidate.intro) }
+                        }
+                    }
+                } else {
+                    ContentUnavailableView(
+                        "无法添加书籍",
+                        systemImage: "book.closed",
+                        description: Text(message ?? "未找到匹配书源")
+                    )
+                }
+            }
+            .navigationTitle("添加到书架")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消", action: dismiss)
+                }
+                if preview != nil {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("加入书架", action: commit)
+                    }
+                }
+            }
+            .task(id: bookURL) { await load() }
+        }
+    }
+
+    private func load() async {
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            preview = try await SearchEnvironment.previewBookURL(
+                bookURL,
+                library: library,
+                persistedSources: persistedSources
+            )
+        } catch {
+            message = "书籍地址无效、已在书架或没有匹配书源"
+        }
+    }
+
+    private func commit() {
+        guard let preview else { return }
+        Task {
+            do {
+                _ = try await SearchEnvironment.commitBookURLPreview(
+                    preview,
+                    library: library
+                )
+                dismiss()
+            } catch {
+                message = "加入书架失败"
+                self.preview = nil
+            }
         }
     }
 }

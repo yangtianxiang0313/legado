@@ -12,6 +12,7 @@ struct AndroidOnlineImportLinkTests {
     ("legado://import/httpTTS?src=https%3A%2F%2Fexample.test%2Ftts.json", AndroidOnlineImportTarget.httpTTS),
     ("legado://import/dictRule?src=https%3A%2F%2Fexample.test%2Fdict.json", AndroidOnlineImportTarget.dictionaryRule),
     ("yuedu://import/textTocRule?src=https%3A%2F%2Fexample.test%2Ftoc.json", AndroidOnlineImportTarget.localTextTOCRule),
+    ("legado://import/addToBookshelf?src=https%3A%2F%2Fbooks.example%2Fnovel%2F1", AndroidOnlineImportTarget.addToBookshelf),
     ("legado://booksource/importonline?src=https%3A%2F%2Fexample.test%2Fbook.json", AndroidOnlineImportTarget.bookSource),
   ])
   func parsesAndroidCompatibleLink(
@@ -21,7 +22,7 @@ struct AndroidOnlineImportLinkTests {
       try #require(URL(string: value.0))
     )
     #expect(request.target == value.1)
-    #expect(request.sourceURL.hasPrefix("https://example.test/"))
+    #expect(request.sourceURL.hasPrefix("https://"))
   }
 
   @Test func rejectsUnsupportedAndroidTarget() throws {

@@ -433,6 +433,7 @@ struct LegadoApp: App {
                 .sheet(item: $onlineImportRequest) { request in
                     AndroidOnlineImportView(
                         request: request,
+                        library: library,
                         catalog: sourceCatalog,
                         rssStore: rssStore,
                         replacementRules: replacementRules,
