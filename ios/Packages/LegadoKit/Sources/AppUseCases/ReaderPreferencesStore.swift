@@ -49,6 +49,10 @@ public final class ReaderPreferencesStore {
     update { $0.tocUsesReplacementRules = enabled }
   }
 
+  public func setPageAnimation(_ value: AndroidReaderPageAnimation) {
+    update { $0.pageAnimation = value.rawValue }
+  }
+
   public func reset() {
     value = ReaderPreferences()
     repository.save(value)

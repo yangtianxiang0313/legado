@@ -16,10 +16,17 @@ final class ReaderConfigInteropTests: XCTestCase {
     )
     let store = ReaderPreferencesStore(repository: repository)
 
-    store.apply(AndroidReaderConfigProjection(fontSize: 28, lineSpacing: 18))
+    store.apply(
+      AndroidReaderConfigProjection(
+        fontSize: 28,
+        lineSpacing: 18,
+        pageAnimation: 3
+      )
+    )
 
     XCTAssertEqual(store.value.fontSize, 28)
     XCTAssertEqual(store.value.lineSpacing, 18)
+    XCTAssertEqual(store.value.pageAnimation, 3)
     XCTAssertTrue(store.value.darkTheme)
     XCTAssertEqual(store.value.brightness, 0.7)
     XCTAssertTrue(store.value.autoPageEnabled)

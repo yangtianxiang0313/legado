@@ -34,7 +34,8 @@ public struct AndroidReaderConfigBundle: Equatable, Sendable {
     guard let sharedStyle else { return nil }
     return AndroidReaderConfigProjection(
       fontSize: sharedStyle.integer("textSize").map(Double.init),
-      lineSpacing: sharedStyle.integer("lineSpacingExtra").map(Double.init)
+      lineSpacing: sharedStyle.integer("lineSpacingExtra").map(Double.init),
+      pageAnimation: sharedStyle.integer("pageAnim").map(Int.init)
     )
   }
 
@@ -47,6 +48,9 @@ public struct AndroidReaderConfigBundle: Equatable, Sendable {
     )
     fields["lineSpacingExtra"] = .number(
       JSONNumber(Int64(preferences.lineSpacing.rounded()))
+    )
+    fields["pageAnim"] = .number(
+      JSONNumber(Int64(preferences.pageAnimation))
     )
     let updated = try? AndroidReaderConfigDTO(jsonValue: .object(fields))
     return AndroidReaderConfigBundle(

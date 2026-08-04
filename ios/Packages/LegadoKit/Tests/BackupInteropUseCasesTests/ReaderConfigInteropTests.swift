@@ -7,7 +7,7 @@ import XCTest
 final class ReaderConfigInteropTests: XCTestCase {
   func testDocumentsRoundTripLosslesslyAndSharedStyleProjectsPortableFields() throws {
     let listData = Data(#"[{"name":"paper","textSize":18,"future":{"x":1}}]"#.utf8)
-    let sharedData = Data(##"{"name":"shared","textSize":26,"lineSpacingExtra":15,"bgStr":"#ffeecc"}"##.utf8)
+    let sharedData = Data(##"{"name":"shared","textSize":26,"lineSpacingExtra":15,"pageAnim":1,"bgStr":"#ffeecc"}"##.utf8)
     let bundle = try AndroidReaderConfigBundle(
       stylesData: listData,
       sharedStyleData: sharedData
@@ -15,6 +15,7 @@ final class ReaderConfigInteropTests: XCTestCase {
 
     XCTAssertEqual(bundle.projection?.fontSize, 26)
     XCTAssertEqual(bundle.projection?.lineSpacing, 15)
+    XCTAssertEqual(bundle.projection?.pageAnimation, 1)
     XCTAssertEqual(
       try AndroidReaderConfigCodec.decodeList(bundle.encodedStyles()),
       try AndroidReaderConfigCodec.decodeList(listData)
@@ -27,10 +28,11 @@ final class ReaderConfigInteropTests: XCTestCase {
     )
 
     let exported = bundle.applying(
-      ReaderPreferences(fontSize: 30, lineSpacing: 8)
+      ReaderPreferences(fontSize: 30, lineSpacing: 8, pageAnimation: 3)
     )
     XCTAssertEqual(exported.sharedStyle?.integer("textSize"), 30)
     XCTAssertEqual(exported.sharedStyle?.integer("lineSpacingExtra"), 8)
+    XCTAssertEqual(exported.sharedStyle?.integer("pageAnim"), 3)
     XCTAssertEqual(
       exported.sharedStyle?.rawFields["bgStr"],
       .string("#ffeecc")

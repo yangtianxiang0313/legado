@@ -13,6 +13,7 @@ final class ReaderPreferencesTests: XCTestCase {
     XCTAssertFalse(value.autoPageEnabled)
     XCTAssertEqual(value.preDownloadCount, 10)
     XCTAssertFalse(value.tocUsesReplacementRules)
+    XCTAssertEqual(value.pageAnimation, 0)
   }
 
   func testValuesAreClampedAtDomainBoundary() {
@@ -39,5 +40,6 @@ final class ReaderPreferencesTests: XCTestCase {
 
     XCTAssertEqual(value.preDownloadCount, 10)
     XCTAssertFalse(value.tocUsesReplacementRules)
+    XCTAssertEqual(value.pageAnimation, 0)
   }
 }

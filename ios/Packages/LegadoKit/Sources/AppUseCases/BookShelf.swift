@@ -175,6 +175,8 @@ public struct ShelfBookItem: Identifiable, Equatable, Sendable {
   public let ttsEngine: String?
   public let imageStyle: String?
   public let resegmentsContent: Bool
+  public let pageAnimation: Int?
+  public let androidBookType: Int64
 
   public init(
     id: LibraryDomain.BookID,
@@ -192,7 +194,9 @@ public struct ShelfBookItem: Identifiable, Equatable, Sendable {
     usesReplacementRules: Bool = true,
     ttsEngine: String? = nil,
     imageStyle: String? = nil,
-    resegmentsContent: Bool = false
+    resegmentsContent: Bool = false,
+    pageAnimation: Int? = nil,
+    androidBookType: Int64 = 0
   ) {
     self.id = id
     self.candidate = candidate
@@ -210,6 +214,8 @@ public struct ShelfBookItem: Identifiable, Equatable, Sendable {
     self.ttsEngine = ttsEngine
     self.imageStyle = imageStyle
     self.resegmentsContent = resegmentsContent
+    self.pageAnimation = pageAnimation
+    self.androidBookType = androidBookType
   }
 
   public var unreadChapterCount: Int {
@@ -328,6 +334,10 @@ public protocol BookShelfRepository:
   func setBookResegmentsContent(
     bookID: LibraryDomain.BookID,
     enabled: Bool
+  ) async throws -> ShelfBookItem
+  func setBookPageAnimation(
+    bookID: LibraryDomain.BookID,
+    value: Int?
   ) async throws -> ShelfBookItem
   func applySourceSwitch(
     bookID: LibraryDomain.BookID,
@@ -522,6 +532,16 @@ public extension BookShelfRepository {
   func setBookResegmentsContent(
     bookID: LibraryDomain.BookID,
     enabled: Bool
+  ) async throws -> ShelfBookItem {
+    guard let book = try await book(id: bookID) else {
+      throw ShelfMutationFailure.missingBook
+    }
+    return book
+  }
+
+  func setBookPageAnimation(
+    bookID: LibraryDomain.BookID,
+    value: Int?
   ) async throws -> ShelfBookItem {
     guard let book = try await book(id: bookID) else {
       throw ShelfMutationFailure.missingBook
@@ -1275,6 +1295,29 @@ public final class ShelfLibrary {
       return updated
     } catch {
       errorMessage = "无法保存本书段落重排设置"
+      return nil
+    }
+  }
+
+  @discardableResult
+  public func setBookPageAnimation(
+    bookID: LibraryDomain.BookID,
+    value: Int?
+  ) async -> ShelfBookItem? {
+    do {
+      let updated = try await repository.setBookPageAnimation(
+        bookID: bookID,
+        value: value
+      )
+      if let index = books.firstIndex(where: { $0.id == bookID }) {
+        books[index] = updated
+      }
+      allBooks = try await repository.shelfBooks()
+      projectBooks()
+      errorMessage = nil
+      return updated
+    } catch {
+      errorMessage = "无法保存本书翻页动画"
       return nil
     }
   }

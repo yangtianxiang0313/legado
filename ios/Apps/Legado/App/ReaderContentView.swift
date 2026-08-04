@@ -69,6 +69,8 @@ struct ReaderContentView: View {
     @State private var sourceSwitchCandidates:
         [SourceSwitchCandidatePreview] = []
     @State private var loadingSourceSwitchCandidates = false
+    @State private var scrollCharacterOffset = 0
+    @State private var pageTurnDirection = 1
 
     init(
         target: ReaderRoute,
@@ -131,7 +133,11 @@ struct ReaderContentView: View {
     var body: some View {
         Group {
             if let document = session.document {
-                pagedContent(document)
+                if effectivePageAnimation.usesContinuousScroll {
+                    scrollingContent(document)
+                } else {
+                    pagedContent(document)
+                }
             } else if session.state == .failed {
                 VStack(spacing: 16) {
                     ContentUnavailableView(
@@ -292,6 +298,7 @@ struct ReaderContentView: View {
                 chapterID: effectiveChapter.id,
                 characterOffset: effectiveOffset
             )
+            scrollCharacterOffset = effectiveOffset
             await session.load(
                 book: effectiveBook,
                 chapter: effectiveChapter,
@@ -547,6 +554,11 @@ struct ReaderContentView: View {
                             fontSize: readerPreferences.value.fontSize,
                             lineSpacing: readerPreferences.value.lineSpacing
                         )
+                        .id(
+                            "\(document.position.chapterID.rawValue)-"
+                                + "\(pagination.currentPageIndex)"
+                        )
+                        .transition(pageTransition)
                         if !pageAttachments.isEmpty {
                             Text("本页含 \(pageAttachments.count) 张插图")
                                 .font(.caption)
@@ -640,6 +652,92 @@ struct ReaderContentView: View {
         }
     }
 
+    private func scrollingContent(_ document: ReaderDocument) -> some View {
+        GeometryReader { proxy in
+            let projection = ReaderContentImageProjection(
+                sourceContent: document.content
+            )
+            let viewport = ReaderViewport(
+                width: max(1, proxy.size.width - 48),
+                height: max(1, proxy.size.height - 92)
+            )
+            let imageLayouts = readerImageLayouts(
+                projection: projection,
+                viewport: viewport,
+                imageStyle: document.imageStyle
+            )
+            let imageSources: [Int: String] = projection.imageAnchors.reduce(
+                into: [:]
+            ) { result, anchor in
+                result[anchor.layoutCharacterOffset] = anchor.sourceURL
+            }
+            VStack(alignment: .leading, spacing: 16) {
+                Text(document.title)
+                    .font(.title2.bold())
+                    .accessibilityIdentifier("label.reader.chapterTitle")
+                ReaderScrollableTextView(
+                    text: projection.layoutText,
+                    attachments: imageLayouts,
+                    images: readerImages,
+                    imageSources: imageSources,
+                    fontSize: readerPreferences.value.fontSize,
+                    lineSpacing: readerPreferences.value.lineSpacing,
+                    initialCharacterOffset: projection.layoutOffset(
+                        forSourceOffset: scrollCharacterOffset
+                    ),
+                    identity: document.position.chapterID.rawValue,
+                    offsetChanged: { layoutOffset in
+                        scrollCharacterOffset = projection.sourceOffset(
+                            forLayoutOffset: layoutOffset
+                        )
+                    }
+                )
+                .accessibilityIdentifier("text.reader.content")
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
+            .task(id: document.position.chapterID) {
+                refreshBookmarkState()
+            }
+        }
+    }
+
+    private var effectivePageAnimation: AndroidReaderPageAnimation {
+        AndroidReaderPageAnimation.resolve(
+            bookValue: readerBook?.pageAnimation,
+            globalValue: readerPreferences.value.pageAnimation,
+            isImageBook: ((readerBook?.androidBookType ?? 0) & 64) != 0
+        )
+    }
+
+    private var pageTransition: AnyTransition {
+        switch effectivePageAnimation {
+        case .cover:
+            return .asymmetric(
+                insertion: .move(
+                    edge: pageTurnDirection >= 0 ? .trailing : .leading
+                ),
+                removal: .opacity
+            )
+        case .slide:
+            return .asymmetric(
+                insertion: .move(
+                    edge: pageTurnDirection >= 0 ? .trailing : .leading
+                ),
+                removal: .move(
+                    edge: pageTurnDirection >= 0 ? .leading : .trailing
+                )
+            )
+        case .simulation:
+            return .asymmetric(
+                insertion: .scale(scale: 0.96).combined(with: .opacity),
+                removal: .scale(scale: 1.04).combined(with: .opacity)
+            )
+        case .none, .scroll:
+            return .identity
+        }
+    }
+
     private func readerImageLayouts(
         projection: ReaderContentImageProjection,
         viewport: ReaderViewport,
@@ -690,7 +788,10 @@ struct ReaderContentView: View {
     }
 
     private var currentReaderOffset: Int {
-        pagination.state == .ready
+        if effectivePageAnimation.usesContinuousScroll {
+            return scrollCharacterOffset
+        }
+        return pagination.state == .ready
             ? pagination.currentCharacterOffset
             : target.characterOffset
     }
@@ -1138,10 +1239,26 @@ struct ReaderContentView: View {
                 .accessibilityIdentifier(
                     ReaderMenuAction.editContent.accessibilityIdentifier
                 )
-                menuPlaceholder(
-                    .configurePageAnimation,
-                    title: "翻页动画",
-                    systemImage: "rectangle.on.rectangle"
+                Menu {
+                    Button("跟随全局") {
+                        updateBookPageAnimation(-1)
+                    }
+                    ForEach(AndroidReaderPageAnimation.allCases, id: \.rawValue) {
+                        value in
+                        Button(pageAnimationTitle(value)) {
+                            updateBookPageAnimation(value.rawValue)
+                        }
+                    }
+                } label: {
+                    Label(
+                        "翻页动画：\(pageAnimationTitle(effectivePageAnimation))",
+                        systemImage: "rectangle.on.rectangle"
+                    )
+                }
+                .disabled(readerBook == nil)
+                .accessibilityIdentifier(
+                    ReaderMenuAction.configurePageAnimation
+                        .accessibilityIdentifier
                 )
                 menuPlaceholder(
                     .updateReadingSettings,
@@ -1732,7 +1849,16 @@ struct ReaderContentView: View {
     }
 
     private func movePagedReader(by delta: Int) {
-        if pagination.movePage(by: delta) != nil {
+        pageTurnDirection = delta
+        let moved: Int?
+        if effectivePageAnimation == .none {
+            moved = pagination.movePage(by: delta)
+        } else {
+            moved = withAnimation(.easeInOut(duration: 0.24)) {
+                pagination.movePage(by: delta)
+            }
+        }
+        if moved != nil {
             Task {
                 await savePaginationProgress()
                 refreshBookmarkState()
@@ -1987,7 +2113,9 @@ struct ReaderContentView: View {
                             ttsEngine: readerBook.ttsEngine,
                             imageStyle: readerBook.imageStyle,
                             resegmentsContent:
-                                readerBook.resegmentsContent
+                                readerBook.resegmentsContent,
+                            pageAnimation: readerBook.pageAnimation,
+                            androidBookType: readerBook.androidBookType
                         ),
                         chapters: preview.chapters,
                         suggestedChapterID:
@@ -2393,6 +2521,34 @@ struct ReaderContentView: View {
                 chapter: chapter,
                 characterOffset: offset
             )
+        }
+    }
+
+    private func updateBookPageAnimation(_ value: Int?) {
+        guard let readerBook else { return }
+        let anchor = currentReaderOffset
+        Task {
+            await saveCurrentProgress()
+            guard
+                let updated = await library.setBookPageAnimation(
+                    bookID: readerBook.id,
+                    value: value
+                )
+            else { return }
+            self.readerBook = updated
+            scrollCharacterOffset = anchor
+        }
+    }
+
+    private func pageAnimationTitle(
+        _ value: AndroidReaderPageAnimation
+    ) -> String {
+        switch value {
+        case .cover: "覆盖"
+        case .slide: "滑动"
+        case .simulation: "仿真"
+        case .scroll: "滚动"
+        case .none: "无动画"
         }
     }
 

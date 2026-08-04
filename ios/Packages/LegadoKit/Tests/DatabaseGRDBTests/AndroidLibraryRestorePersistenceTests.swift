@@ -7,6 +7,42 @@ import Testing
 
 @Suite("AndroidLibraryRestorePersistenceTests")
 struct AndroidLibraryRestorePersistenceTests {
+  @Test func bookPageAnimationCanOverrideAndReturnToGlobalSelection()
+    async throws
+  {
+    let databaseURL = temporaryDatabaseURL()
+    defer {
+      try? FileManager.default.removeItem(
+        at: databaseURL.deletingLastPathComponent()
+      )
+    }
+    let repository = try GRDBBookShelfRepository(path: databaseURL.path)
+    let book = try await repository.add(
+      candidate(name: "翻页模式", bookURL: "https://android.invalid/page-anim"),
+      groupID: 0
+    )
+
+    let overridden = try await repository.setBookPageAnimation(
+      bookID: book.id,
+      value: 3
+    )
+    #expect(overridden.pageAnimation == 3)
+    #expect(
+      try await repository.restoredAndroidLibraryPlan().books.first?
+        .pageAnimation == 3
+    )
+
+    let inherited = try await repository.setBookPageAnimation(
+      bookID: book.id,
+      value: -1
+    )
+    #expect(inherited.pageAnimation == -1)
+    #expect(
+      try await repository.restoredAndroidLibraryPlan().books.first?
+        .pageAnimation == -1
+    )
+  }
+
   @Test func bookTTSEngineCanOverrideAndReturnToGlobalSelection() async throws {
     let databaseURL = temporaryDatabaseURL()
     defer { try? FileManager.default.removeItem(at: databaseURL.deletingLastPathComponent()) }
@@ -220,6 +256,7 @@ struct AndroidLibraryRestorePersistenceTests {
     #expect(stored.ttsEngine == "42")
     #expect(stored.imageStyle == "FULL")
     #expect(stored.resegmentsContent)
+    #expect(stored.pageAnimation == 3)
     #expect(storedRestoreBook.lastCheckTime == 1_700_000_000_100)
     #expect(storedRestoreBook.reversesTableOfContents)
     #expect(!storedRestoreBook.splitsLongChapters)
@@ -228,6 +265,7 @@ struct AndroidLibraryRestorePersistenceTests {
     #expect(storedRestoreBook.ttsEngine == "42")
     #expect(storedRestoreBook.imageStyle == "FULL")
     #expect(storedRestoreBook.resegmentsContent)
+    #expect(storedRestoreBook.pageAnimation == 3)
     #expect(storedRestoreBook.androidType == 1)
     #expect(storedRestoreBook.originOrder == 2)
     #expect(storedRestoreBook.syncTime == 1_700_000_000_999)
@@ -474,6 +512,7 @@ struct AndroidLibraryRestorePersistenceTests {
       ttsEngine: "42",
       imageStyle: "FULL",
       resegmentsContent: true,
+      pageAnimation: 3,
       androidType: 1,
       originOrder: 2,
       syncTime: 1_700_000_000_999,

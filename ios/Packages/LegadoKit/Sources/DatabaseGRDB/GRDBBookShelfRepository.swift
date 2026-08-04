@@ -419,6 +419,23 @@ public actor GRDBBookShelfRepository:
     }
   }
 
+  public func setBookPageAnimation(
+    bookID: LibraryDomain.BookID,
+    value: Int?
+  ) async throws -> ShelfBookItem {
+    try await database.write { db in
+      guard var book = try BookRecord
+        .filter(Column("bookID") == bookID.rawValue)
+        .fetchOne(db)
+      else {
+        throw ShelfMutationFailure.missingBook
+      }
+      book.pageAnimation = value
+      try book.update(db)
+      return book.item
+    }
+  }
+
   public func applySourceSwitch(
     bookID: LibraryDomain.BookID,
     candidate: ShelfBookCandidate,
@@ -453,7 +470,9 @@ public actor GRDBBookShelfRepository:
           usesReplacementRules: record.usesReplacementRules,
           ttsEngine: record.ttsEngine,
           imageStyle: record.imageStyle,
-          resegmentsContent: record.resegmentsContent
+          resegmentsContent: record.resegmentsContent,
+          pageAnimation: record.pageAnimation,
+          androidBookType: record.androidType
         )
       }
 
@@ -492,7 +511,9 @@ public actor GRDBBookShelfRepository:
           usesReplacementRules: item.usesReplacementRules,
           ttsEngine: item.ttsEngine,
           imageStyle: item.imageStyle,
-          resegmentsContent: item.resegmentsContent
+          resegmentsContent: item.resegmentsContent,
+          pageAnimation: item.pageAnimation,
+          androidBookType: item.androidBookType
         )
       }
       return item
@@ -1154,6 +1175,7 @@ public actor GRDBBookShelfRepository:
         record.ttsEngine = value.ttsEngine
         record.imageStyle = value.imageStyle
         record.resegmentsContent = value.resegmentsContent
+        record.pageAnimation = value.pageAnimation
         record.androidType = value.androidType
         record.originOrder = value.originOrder
         record.syncTime = value.syncTime
@@ -1217,6 +1239,7 @@ public actor GRDBBookShelfRepository:
         record.ttsEngine = value.ttsEngine
         record.imageStyle = value.imageStyle
         record.resegmentsContent = value.resegmentsContent
+        record.pageAnimation = value.pageAnimation
         record.androidType = value.androidType
         record.originOrder = value.originOrder
         record.syncTime = value.syncTime
@@ -1974,6 +1997,11 @@ public actor GRDBBookShelfRepository:
           .notNull().defaults(to: false)
       }
     }
+    migrator.registerMigration("preserveBookPageAnimation") { db in
+      try db.alter(table: "books") { table in
+        table.add(column: "pageAnimation", .integer)
+      }
+    }
     migrator.registerMigration("addAndroidReadRecordInterop") { db in
       try db.create(table: "readRecords") { table in
         table.column("deviceID", .text).notNull()
@@ -2177,6 +2205,7 @@ private struct BookRecord:
   var ttsEngine: String?
   var imageStyle: String?
   var resegmentsContent: Bool
+  var pageAnimation: Int?
   var androidType: Int64
   var originOrder: Int64
   var syncTime: Int64
@@ -2225,6 +2254,7 @@ private struct BookRecord:
     self.ttsEngine = nil
     self.imageStyle = nil
     self.resegmentsContent = false
+    self.pageAnimation = nil
     self.androidType = 0
     self.originOrder = 0
     self.syncTime = 0
@@ -2290,7 +2320,9 @@ private struct BookRecord:
       usesReplacementRules: usesReplacementRules,
       ttsEngine: ttsEngine,
       imageStyle: imageStyle,
-      resegmentsContent: resegmentsContent
+      resegmentsContent: resegmentsContent,
+      pageAnimation: pageAnimation,
+      androidBookType: androidType
     )
   }
 
@@ -2333,6 +2365,7 @@ private struct BookRecord:
       ttsEngine: ttsEngine,
       imageStyle: imageStyle,
       resegmentsContent: resegmentsContent,
+      pageAnimation: pageAnimation,
       androidType: androidType,
       originOrder: originOrder,
       syncTime: syncTime,

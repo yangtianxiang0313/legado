@@ -13,6 +13,7 @@ public struct ReaderPreferences:
   public var autoPageEnabled: Bool
   public var preDownloadCount: Int
   public var tocUsesReplacementRules: Bool
+  public var pageAnimation: Int
 
   public init(
     darkTheme: Bool = false,
@@ -21,7 +22,8 @@ public struct ReaderPreferences:
     lineSpacing: Double = 12,
     autoPageEnabled: Bool = false,
     preDownloadCount: Int = 10,
-    tocUsesReplacementRules: Bool = false
+    tocUsesReplacementRules: Bool = false,
+    pageAnimation: Int = AndroidReaderPageAnimation.cover.rawValue
   ) {
     self.darkTheme = darkTheme
     self.brightness = brightness
@@ -30,6 +32,7 @@ public struct ReaderPreferences:
     self.autoPageEnabled = autoPageEnabled
     self.preDownloadCount = preDownloadCount
     self.tocUsesReplacementRules = tocUsesReplacementRules
+    self.pageAnimation = pageAnimation
     normalize()
   }
 
@@ -41,6 +44,7 @@ public struct ReaderPreferences:
     case autoPageEnabled
     case preDownloadCount
     case tocUsesReplacementRules
+    case pageAnimation
   }
 
   public init(from decoder: any Decoder) throws {
@@ -65,7 +69,11 @@ public struct ReaderPreferences:
       tocUsesReplacementRules: try container.decodeIfPresent(
         Bool.self,
         forKey: .tocUsesReplacementRules
-      ) ?? false
+      ) ?? false,
+      pageAnimation: try container.decodeIfPresent(
+        Int.self,
+        forKey: .pageAnimation
+      ) ?? AndroidReaderPageAnimation.cover.rawValue
     )
   }
 
@@ -74,6 +82,9 @@ public struct ReaderPreferences:
     fontSize = Self.fontSizeRange.clamp(fontSize)
     lineSpacing = Self.lineSpacingRange.clamp(lineSpacing)
     preDownloadCount = Self.preDownloadCountRange.clamp(preDownloadCount)
+    if AndroidReaderPageAnimation(rawValue: pageAnimation) == nil {
+      pageAnimation = AndroidReaderPageAnimation.cover.rawValue
+    }
   }
 
   public func normalized() -> Self {

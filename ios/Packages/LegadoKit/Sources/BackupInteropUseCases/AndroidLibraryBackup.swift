@@ -566,6 +566,9 @@ public enum AndroidLibraryBackupAdapter {
       readConfig["imageStyle"] = .string(imageStyle)
     }
     readConfig["reSegment"] = .bool(value.resegmentsContent)
+    if let pageAnimation = value.pageAnimation {
+      readConfig["pageAnim"] = .number(JSONNumber(Int64(pageAnimation)))
+    }
     return AndroidBookDTO(
       bookURL: value.candidate.bookURL,
       tocURL: value.candidate.tocURL ?? "",

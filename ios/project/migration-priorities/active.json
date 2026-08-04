@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "id": "MILESTONE-P111-ANDROID-CONTENT-RESEGMENT-ALGORITHM-001",
-  "title": "P111 Android 正文重分段算法迁移",
+  "id": "MILESTONE-P112-ANDROID-BOOK-PAGE-ANIMATION-INTEROP-001",
+  "title": "P112 Android 单书翻页模式互通",
   "status": "active",
-  "mode": "critical_path_only",
   "priority": 1,
-  "objective": "将冻结 Android ContentHelp.reSegment 作为独立 ReaderCore 算法完整迁移，而非用简化正则替代；保留段落粘合、引号方向、提示语断句、字典保护和随机长段切分语义，并接回 Book.readConfig.reSegment。",
-  "validation_policy": "源码语义主导；固定随机数端口验证确定性分支及边界不变量，测试用于防回归而非反推算法；完成后执行通用 App 构建。",
+  "mode": "critical_path_only",
+  "objective": "迁移 Android Book.readConfig.pageAnim 的单书覆盖与全局继承语义，把当前 iOS 阅读器中的翻页动画占位入口替换为真实能力；优先保证 Android 备份恢复后阅读模式一致。",
+  "validation_policy": "源码语义主导；聚焦验证 readConfig 往返、继承/覆盖映射和阅读器结构切换，最后执行通用 App 构建，不启动可见 Simulator。",
   "stages": [
     {
-      "id": "P111-S1",
-      "title": "ContentHelp 重分段算法与单书开关",
+      "id": "P112-S1",
+      "title": "单书 pageAnim 配置与阅读器投影",
       "selectors": [
         {
-          "id": "P111-S1-CONTENT-RESEGMENT",
+          "id": "P112-S1-PAGE-ANIM",
           "claim_ids": [],
           "task_ids": [
-            "IOS-APP-NAVIGATION-ANDROID-CONTENT-RESEGMENT-ALGORITHM-001"
+            "IOS-APP-NAVIGATION-ANDROID-BOOK-PAGE-ANIMATION-INTEROP-V2-001"
           ]
         }
       ]
@@ -24,12 +24,12 @@
   ],
   "deliveries": [
     {
-      "target": "IOS-APP-NAVIGATION-ANDROID-CONTENT-RESEGMENT-ALGORITHM-001",
-      "title": "完整迁移 Android ContentHelp.reSegment 并接入单书配置",
-      "fixture_id": "build-android-content-resegment-algorithm-v1",
+      "target": "IOS-APP-NAVIGATION-ANDROID-BOOK-PAGE-ANIMATION-INTEROP-V2-001",
+      "title": "迁移 Android 单书 pageAnim 并替换 iOS 翻页动画占位入口",
+      "fixture_id": "build-android-book-page-animation-interop-v1",
       "requirement_ref": "REQ-IOS-ANDROID-BACKUP-INTEROP-001@1#RC-01",
       "prerequisite_task_ids": [
-        "IOS-APP-NAVIGATION-ANDROID-BOOK-IMAGE-STYLE-INTEROP-001"
+        "IOS-APP-NAVIGATION-ANDROID-CONTENT-RESEGMENT-ALGORITHM-001"
       ],
       "validation": "build",
       "additional_allowed_paths": [
@@ -41,23 +41,24 @@
         "ios/Packages/LegadoKit/Tests/AppUseCasesTests/**",
         "ios/Packages/LegadoKit/Tests/BackupInteropUseCasesTests/**",
         "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
-        "ios/Apps/Legado/App/**"
+        "ios/Apps/Legado/App/**",
+        "ios/project/migration-priorities/completed/**"
       ],
       "source_anchors": [
         {
           "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "path": "app/src/main/java/io/legado/app/help/book/ContentHelp.kt",
-          "symbol_id": "kotlin://io.legado.app.help.book.ContentHelp/reSegment"
-        },
-        {
-          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
-          "path": "app/src/main/java/io/legado/app/help/book/ContentProcessor.kt",
-          "symbol_id": "kotlin://io.legado.app.help.book.ContentProcessor/getContent"
-        },
-        {
-          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
           "path": "app/src/main/java/io/legado/app/data/entities/Book.kt",
-          "symbol_id": "kotlin://io.legado.app.data.entities.Book/getReSegment"
+          "symbol_id": "kotlin://io.legado.app.data.entities.Book/getPageAnim"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/constant/PageAnim.kt",
+          "symbol_id": "kotlin://io.legado.app.constant.PageAnim"
+        },
+        {
+          "android_commit": "30bfdf70224ed3006f2777777ff414ebdb3a9eb3",
+          "path": "app/src/main/java/io/legado/app/ui/book/read/BaseReadBookActivity.kt",
+          "symbol_id": "kotlin://io.legado.app.ui.book.read.BaseReadBookActivity/showPageAnimConfig"
         }
       ]
     }
