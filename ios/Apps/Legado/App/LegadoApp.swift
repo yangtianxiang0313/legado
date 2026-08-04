@@ -221,11 +221,13 @@ struct LegadoApp: App {
         do {
             let libraryRepository = try GRDBBookShelfRepository
                 .applicationSupport()
+            let readRecordDeviceID = ReadRecordDeviceIdentity.current()
             self.webDAVServerProfiles = libraryRepository
             let sourceRepository = UserDefaultsSourceCatalogRepository()
             self.backupRestore = AndroidCoreBackupRestoreUseCase(
                 repository: AppAndroidCoreBackupRestoreRepository(
                     repository: libraryRepository,
+                    localReadRecordDeviceID: readRecordDeviceID,
                     sourceRepository: sourceRepository,
                     rootVisibility: rootVisibilityStore,
                     readAloudPreferences: readAloudPreferencesStore,
@@ -274,7 +276,7 @@ struct LegadoApp: App {
             _library = State(
                 initialValue: ShelfLibrary(
                     repository: libraryRepository,
-                    readRecordDeviceID: ReadRecordDeviceIdentity.current()
+                    readRecordDeviceID: readRecordDeviceID
                 )
             )
             _replacementRules = State(
@@ -441,6 +443,7 @@ private struct AppAndroidCoreBackupRestoreRepository:
     AndroidCoreBackupRestoreRepository
 {
     let repository: GRDBBookShelfRepository
+    let localReadRecordDeviceID: String
     let sourceRepository: UserDefaultsSourceCatalogRepository
     let rootVisibility: RootVisibilityPreferencesStore
     let readAloudPreferences: ReadAloudPreferencesStore
@@ -501,7 +504,8 @@ private struct AppAndroidCoreBackupRestoreRepository:
             },
             commitDatabase: {
                 try await repository.restoreAndroidDatabaseDomains(
-                    payload.database
+                    payload.database,
+                    localReadRecordDeviceID: localReadRecordDeviceID
                 )
             },
             rollbackExternal: { checkpoint in
@@ -645,7 +649,10 @@ private struct AppAndroidCoreBackupRestoreRepository:
     func restoreAndroidDatabaseDomains(
         _ payload: AndroidCoreDatabaseRestorePayload
     ) async throws -> AndroidLibraryRestoreSummary {
-        try await repository.restoreAndroidDatabaseDomains(payload)
+        try await repository.restoreAndroidDatabaseDomains(
+            payload,
+            localReadRecordDeviceID: localReadRecordDeviceID
+        )
     }
 
     func restoreAndroidLibrary(

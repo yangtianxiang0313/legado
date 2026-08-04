@@ -1032,6 +1032,24 @@ def owner_contract(target: str) -> Mapping[str, Any]:
                 "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
             ],
         }
+    if target == "IOS-DATABASE-ANDROID-READ-RECORD-RESTORE-CONFLICT-001":
+        return {
+            "owner": "DatabaseGRDB",
+            "architecture_refs": [
+                "ARCH-001",
+                "ARCH-005",
+                "ARCH-008",
+                "ARCH-014",
+                "ARCH-017",
+                "ARCH-018",
+            ],
+            "allowed_paths": [
+                "ios/Packages/LegadoKit/Sources/BackupInteropUseCases/**",
+                "ios/Packages/LegadoKit/Sources/DatabaseGRDB/**",
+                "ios/Packages/LegadoKit/Tests/DatabaseGRDBTests/**",
+                "ios/Apps/Legado/App/**",
+            ],
+        }
     if target == "IOS-APP-NAVIGATION-ANDROID-LIBRARY-IMPORT-001":
         return {
             "owner": "AppNavigation",
@@ -4321,6 +4339,21 @@ def build_task(root: Path, delivery: Mapping[str, Any]) -> Mapping[str, Any]:
             "test_id": "android-library-restore-persistence-tests",
             "test_filter": "AndroidLibraryRestorePersistenceTests",
             "acceptance_id": "android-library-restore-persistence-acceptance",
+        }
+    if target == "IOS-DATABASE-ANDROID-READ-RECORD-RESTORE-CONFLICT-001":
+        delivery_contracts["DatabaseGRDB"] = {
+            "goal": (
+                "对齐冻结 Android Restore 的阅读记录冲突语义；导入旧备份时，"
+                "当前设备同书记录只能前进，不能覆盖为更小累计时长。"
+            ),
+            "rule": (
+                "设备身份由 App 组合根注入，BackupInteropUseCases 不读取平台全局；"
+                "DatabaseGRDB 在同一恢复事务内比较当前设备记录，其他设备仍按"
+                "Android 复合主键覆盖。"
+            ),
+            "test_id": "android-read-record-restore-conflict-tests",
+            "test_filter": "AndroidLibraryRestorePersistenceTests",
+            "acceptance_id": "android-read-record-restore-conflict-acceptance",
         }
     if target == "IOS-SEARCH-ANDROID-HISTORY-INTEROP-001":
         delivery_contracts["IntegrationKit"] = {

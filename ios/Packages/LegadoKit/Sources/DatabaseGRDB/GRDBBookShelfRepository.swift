@@ -1221,7 +1221,8 @@ public actor GRDBBookShelfRepository:
   }
 
   public func restoreAndroidDatabaseDomains(
-    _ payload: AndroidCoreDatabaseRestorePayload
+    _ payload: AndroidCoreDatabaseRestorePayload,
+    localReadRecordDeviceID: String? = nil
   ) async throws -> AndroidLibraryRestoreSummary {
     let encodedReaderStyles = try payload.readerConfigBundle.encodedStyles()
     let encodedSharedReaderStyle = try payload.readerConfigBundle
@@ -1282,6 +1283,17 @@ public actor GRDBBookShelfRepository:
         try record.save(db)
       }
       for value in payload.readRecords {
+        if value.deviceID == localReadRecordDeviceID,
+          let current = try ReadRecordRecord
+            .filter(
+              Column("deviceID") == value.deviceID
+                && Column("bookName") == value.bookName
+            )
+            .fetchOne(db),
+          current.readTime >= value.readTime
+        {
+          continue
+        }
         var record = ReadRecordRecord(value: value)
         try record.save(db)
       }
