@@ -76,4 +76,12 @@ public enum AndroidOnlineImportPayloadImport {
       try AndroidLocalTextTOCRuleCodec.decodeMany(data)
     )
   }
+
+  public static func decodeThemeProfiles(_ data: Data) throws
+    -> [AppThemeProfile]
+  {
+    AndroidThemeConfigInteropAdapter.restoreValues(
+      try AndroidThemeConfigCodec.decodeMany(data)
+    )
+  }
 }

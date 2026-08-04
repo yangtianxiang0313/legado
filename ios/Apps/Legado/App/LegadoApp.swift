@@ -447,6 +447,7 @@ struct LegadoApp: App {
                         dictionaryLookup: dictionaryLookup,
                         localTextTOCRules: localTextTOCRules,
                         readerConfigProfiles: readerConfigProfiles,
+                        appThemeProfiles: appThemeProfiles,
                         dismiss: { onlineImportRequest = nil }
                     )
                 }

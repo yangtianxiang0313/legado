@@ -92,4 +92,16 @@ public final class AppThemeProfileStore {
     selectedName = name
     selection.saveSelectedThemeName(name)
   }
+
+  @discardableResult
+  public func importProfiles(_ values: [AppThemeProfile]) async -> Bool {
+    do {
+      try await repository.restoreAndroidThemeProfiles(values)
+      await reload()
+      return true
+    } catch {
+      errorMessage = "无法导入主题模板"
+      return false
+    }
+  }
 }

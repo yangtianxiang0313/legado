@@ -15,6 +15,7 @@ struct AndroidOnlineImportLinkTests {
     ("yuedu://import/textTocRule?src=https%3A%2F%2Fexample.test%2Ftoc.json", AndroidOnlineImportTarget.localTextTOCRule),
     ("legado://import/addToBookshelf?src=https%3A%2F%2Fbooks.example%2Fnovel%2F1", AndroidOnlineImportTarget.addToBookshelf),
     ("legado://import/readConfig?src=https%3A%2F%2Fexample.test%2Freader.zip", AndroidOnlineImportTarget.readerConfig),
+    ("legado://import/theme?src=https%3A%2F%2Fexample.test%2Ftheme.json", AndroidOnlineImportTarget.theme),
     ("legado://booksource/importonline?src=https%3A%2F%2Fexample.test%2Fbook.json", AndroidOnlineImportTarget.bookSource),
   ])
   func parsesAndroidCompatibleLink(
@@ -29,11 +30,20 @@ struct AndroidOnlineImportLinkTests {
 
   @Test func rejectsUnsupportedAndroidTarget() throws {
     let url = try #require(URL(
-      string: "legado://import/theme?src=https%3A%2F%2Fexample.test%2Ftheme.json"
+      string: "legado://import/unknown?src=https%3A%2F%2Fexample.test%2Funknown.json"
     ))
     #expect(throws: AndroidOnlineImportLinkError.unsupportedTarget) {
       try AndroidOnlineImportLinkParser.parse(url)
     }
+  }
+
+  @Test func decodesThemePayload() throws {
+    let values = try AndroidOnlineImportPayloadImport.decodeThemeProfiles(
+      Data(##"[{"themeName":"深夜","isNightTheme":true,"primaryColor":"#101010","accentColor":"#ff8800","backgroundColor":"#000000","bottomBackground":"#080808"}]"##.utf8)
+    )
+    #expect(values.first?.name == "深夜")
+    #expect(values.first?.isNightTheme == true)
+    #expect(values.first?.accentColor == "#ff8800")
   }
 
   @Test func decodesDictionaryAndLocalTOCPayloads() throws {

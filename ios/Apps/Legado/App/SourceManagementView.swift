@@ -868,6 +868,7 @@ struct AndroidOnlineImportView: View {
     @Bindable var dictionaryLookup: DictionaryLookupStore
     @Bindable var localTextTOCRules: LocalTextTOCRuleStore
     @Bindable var readerConfigProfiles: AndroidReaderConfigProfileStore
+    @Bindable var appThemeProfiles: AppThemeProfileStore
     let dismiss: () -> Void
 
     @State private var isLoading = true
@@ -879,6 +880,7 @@ struct AndroidOnlineImportView: View {
     @State private var httpTTSCandidates: [HTTPTextToSpeechCandidate] = []
     @State private var dictionaryCandidates: [DictionaryRuleCandidate] = []
     @State private var localTOCCandidates: [LocalTextTOCRuleCandidate] = []
+    @State private var themeCandidates: [AppThemeProfileCandidate] = []
 
     var body: some View {
         switch request.target {
@@ -905,7 +907,7 @@ struct AndroidOnlineImportView: View {
                 dismiss: dismiss
             )
         case .rssSource, .replaceRule, .httpTTS, .dictionaryRule,
-             .localTextTOCRule:
+             .localTextTOCRule, .theme:
             NavigationStack {
                 structuredImportContent
             }
@@ -929,7 +931,8 @@ struct AndroidOnlineImportView: View {
             .toolbar { cancelToolbarItem }
         } else if request.target == .httpTTS
                     || request.target == .dictionaryRule
-                    || request.target == .localTextTOCRule {
+                    || request.target == .localTextTOCRule
+                    || request.target == .theme {
             List(genericCandidates) { candidate in
                 candidateToggle(id: candidate.id) {
                     Text(candidate.title)
@@ -1014,6 +1017,11 @@ struct AndroidOnlineImportView: View {
                     .decodeLocalTextTOCRules(data)
                     .map(LocalTextTOCRuleCandidate.init(value:))
                 selectedCandidateIDs = Set(localTOCCandidates.map(\.id))
+            case .theme:
+                themeCandidates = try AndroidOnlineImportPayloadImport
+                    .decodeThemeProfiles(data)
+                    .map(AppThemeProfileCandidate.init(value:))
+                selectedCandidateIDs = Set(themeCandidates.map(\.id))
             case .bookSource:
                 break
             case .addToBookshelf:
@@ -1065,6 +1073,13 @@ struct AndroidOnlineImportView: View {
             Task {
                 if await localTextTOCRules.importRules(values) { dismiss() }
             }
+        case .theme:
+            let values = themeCandidates
+                .filter { selectedCandidateIDs.contains($0.id) }
+                .map(\.value)
+            Task {
+                if await appThemeProfiles.importProfiles(values) { dismiss() }
+            }
         case .bookSource:
             break
         case .addToBookshelf:
@@ -1091,6 +1106,15 @@ struct AndroidOnlineImportView: View {
                 NamedImportCandidate(id: $0.id, title: $0.value.name,
                     subtitle: $0.value.rule)
             }
+        case .theme:
+            themeCandidates.map {
+                NamedImportCandidate(
+                    id: $0.id,
+                    title: $0.value.name,
+                    subtitle: ($0.value.isNightTheme ? "深色" : "浅色")
+                        + " · \($0.value.primaryColor) · \($0.value.accentColor)"
+                )
+            }
         default: []
         }
     }
@@ -1100,6 +1124,7 @@ struct AndroidOnlineImportView: View {
         case .httpTTS: "导入在线朗读引擎"
         case .dictionaryRule: "导入词典规则"
         case .localTextTOCRule: "导入本地目录规则"
+        case .theme: "导入主题"
         default: "一键导入"
         }
     }
@@ -1342,6 +1367,11 @@ private struct DictionaryRuleCandidate: Identifiable {
 private struct LocalTextTOCRuleCandidate: Identifiable {
     let id = UUID()
     let value: LocalTextTOCRule
+}
+
+private struct AppThemeProfileCandidate: Identifiable {
+    let id = UUID()
+    let value: AppThemeProfile
 }
 
 private struct NamedImportCandidate: Identifiable {
