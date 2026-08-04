@@ -57,6 +57,7 @@ struct AndroidWebDAVConfigInteropTests {
     #expect(application.searchScope == "科幻,奇幻")
     #expect(application.searchGroup == "")
     #expect(application.usesPrecisionSearch == true)
+    #expect(application.threadCount == 8)
     #expect(application.automaticallyChangesSource == false)
     #expect(application.changeSourceChecksAuthor == true)
     #expect(application.preDownloadCount == 17)

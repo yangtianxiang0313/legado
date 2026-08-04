@@ -76,6 +76,7 @@ struct AndroidCoreBackupRestoreUseCaseTests {
           AndroidApplicationBackupPreferences.searchScopeKey: .string("科幻"),
           AndroidApplicationBackupPreferences.searchGroupKey: .string("科幻"),
           AndroidApplicationBackupPreferences.precisionSearchKey: .boolean(true),
+          AndroidApplicationBackupPreferences.threadCountKey: .int(8),
           AndroidApplicationBackupPreferences.autoChangeSourceKey: .boolean(false),
           AndroidApplicationBackupPreferences.changeSourceCheckAuthorKey:
             .boolean(true),
@@ -99,7 +100,7 @@ struct AndroidCoreBackupRestoreUseCaseTests {
     #expect(summary.localTextTOCRuleCount == 1)
     #expect(summary.readerConfigCount == 2)
     #expect(summary.dictionaryRuleCount == 1)
-    #expect(summary.applicationPreferenceCount == 13)
+    #expect(summary.applicationPreferenceCount == 14)
     #expect(Set(summary.preflight.members.map(\.path)) == Set([
       "bookSource.json", "config.xml", "dictRule.json", "readConfig.json",
       "readRecord.json", "replaceRule.json", "shareReadConfig.json",
@@ -127,6 +128,7 @@ struct AndroidCoreBackupRestoreUseCaseTests {
     #expect(snapshot.searchScopePreferences?.serializedScope == "科幻")
     #expect(snapshot.searchScopePreferences?.changeSourceGroup == "科幻")
     #expect(snapshot.searchScopePreferences?.usesPrecisionSearch == true)
+    #expect(snapshot.searchScopePreferences?.sourceConcurrency == 8)
     #expect(
       snapshot.sourceSwitchPreferences?.automaticallyRecoversMissingSource
         == false

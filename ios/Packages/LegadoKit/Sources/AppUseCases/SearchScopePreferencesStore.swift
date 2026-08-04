@@ -6,30 +6,39 @@ public struct SearchScopePreferences:
   public var serializedScope: String
   public var changeSourceGroup: String
   public var usesPrecisionSearch: Bool
+  public var sourceConcurrency: Int
+
+  public static let sourceConcurrencyRange = 1...999
+  public static let androidMaximumEffectiveConcurrency = 9
 
   public init(
     serializedScope: String = "",
     changeSourceGroup: String = "",
-    usesPrecisionSearch: Bool = false
+    usesPrecisionSearch: Bool = false,
+    sourceConcurrency: Int = 16
   ) {
     self.serializedScope = serializedScope
     self.changeSourceGroup = changeSourceGroup
     self.usesPrecisionSearch = usesPrecisionSearch
+    self.sourceConcurrency = Self.normalizedConcurrency(sourceConcurrency)
   }
 
   public init(
     scope: SearchScopeSelection,
-    usesPrecisionSearch: Bool = false
+    usesPrecisionSearch: Bool = false,
+    sourceConcurrency: Int = 16
   ) {
     serializedScope = scope.serialized
     changeSourceGroup = Self.androidSearchGroup(for: scope)
     self.usesPrecisionSearch = usesPrecisionSearch
+    self.sourceConcurrency = Self.normalizedConcurrency(sourceConcurrency)
   }
 
   private enum CodingKeys: String, CodingKey {
     case serializedScope
     case changeSourceGroup
     case usesPrecisionSearch
+    case sourceConcurrency
   }
 
   public init(from decoder: any Decoder) throws {
@@ -46,6 +55,12 @@ public struct SearchScopePreferences:
       Bool.self,
       forKey: .usesPrecisionSearch
     ) ?? false
+    sourceConcurrency = Self.normalizedConcurrency(
+      try container.decodeIfPresent(
+        Int.self,
+        forKey: .sourceConcurrency
+      ) ?? 16
+    )
   }
 
   public var scope: SearchScopeSelection {
@@ -58,6 +73,15 @@ public struct SearchScopePreferences:
       $0.trimmingCharacters(in: .whitespacesAndNewlines)
         == changeSourceGroup
     }
+  }
+
+  public var effectiveSourceConcurrency: Int {
+    min(sourceConcurrency, Self.androidMaximumEffectiveConcurrency)
+  }
+
+  private static func normalizedConcurrency(_ value: Int) -> Int {
+    min(max(value, sourceConcurrencyRange.lowerBound),
+        sourceConcurrencyRange.upperBound)
   }
 
   private static func androidSearchGroup(
@@ -92,7 +116,8 @@ public final class SearchScopePreferencesStore {
     replace(
       SearchScopePreferences(
         scope: scope,
-        usesPrecisionSearch: value.usesPrecisionSearch
+        usesPrecisionSearch: value.usesPrecisionSearch,
+        sourceConcurrency: value.sourceConcurrency
       )
     )
   }
@@ -100,6 +125,15 @@ public final class SearchScopePreferencesStore {
   public func setUsesPrecisionSearch(_ enabled: Bool) {
     var updated = value
     updated.usesPrecisionSearch = enabled
+    replace(updated)
+  }
+
+  public func setSourceConcurrency(_ count: Int) {
+    var updated = value
+    updated.sourceConcurrency = min(
+      max(count, SearchScopePreferences.sourceConcurrencyRange.lowerBound),
+      SearchScopePreferences.sourceConcurrencyRange.upperBound
+    )
     replace(updated)
   }
 

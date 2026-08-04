@@ -370,6 +370,12 @@ public struct AndroidLibraryBackupUseCase: Sendable {
         .boolean(
           applicationPreferences.searchScopePreferences.usesPrecisionSearch
         )
+      values[AndroidApplicationBackupPreferences.threadCountKey] =
+        .int(
+          Int32(
+            applicationPreferences.searchScopePreferences.sourceConcurrency
+          )
+        )
       values[AndroidApplicationBackupPreferences.autoChangeSourceKey] =
         .boolean(
           applicationPreferences.sourceSwitchPreferences

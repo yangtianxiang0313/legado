@@ -139,28 +139,50 @@ enum SearchEnvironment {
             baseURL: baseURL,
             persistedSources: persistedSources
         )
+        let groups = Array(
+            Set(
+                sources.flatMap {
+                    $0.group.split(separator: ",").map {
+                        String($0).trimmingCharacters(
+                            in: .whitespacesAndNewlines
+                        )
+                    }
+                }.filter { !$0.isEmpty }
+            )
+        ).sorted()
+        guard let scopePreferences else {
+            return SearchSession(
+                scope: scope,
+                groups: groups,
+                executor: SourceSearchBooksExecutor(
+                    sources: sources,
+                    transport: transport,
+                    cookieStore: cookieStore,
+                    dynamicWebPagePort: dynamicWebPagePort,
+                    scriptRuntime: scriptRuntime,
+                    htmlSelectorBackend: htmlSelectorBackend
+                )
+            )
+        }
+        let searchCookieStore = cookieStore
+        let searchDynamicWebPagePort = dynamicWebPagePort
+        let searchScriptRuntime = scriptRuntime
+        let searchHTMLSelectorBackend = htmlSelectorBackend
         return SearchSession(
             scope: scope,
-            groups: Array(
-                Set(
-                    sources.flatMap {
-                        $0.group.split(separator: ",").map {
-                            String($0).trimmingCharacters(
-                                in: .whitespacesAndNewlines
-                            )
-                        }
-                    }.filter { !$0.isEmpty }
+            groups: groups,
+            scopePreferences: scopePreferences,
+            executorFactory: { concurrency in
+                SourceSearchBooksExecutor(
+                    sources: sources,
+                    transport: transport,
+                    cookieStore: searchCookieStore,
+                    dynamicWebPagePort: searchDynamicWebPagePort,
+                    scriptRuntime: searchScriptRuntime,
+                    htmlSelectorBackend: searchHTMLSelectorBackend,
+                    sourceConcurrency: concurrency
                 )
-            ).sorted(),
-            executor: SourceSearchBooksExecutor(
-                sources: sources,
-                transport: transport,
-                cookieStore: cookieStore,
-                dynamicWebPagePort: dynamicWebPagePort,
-                scriptRuntime: scriptRuntime,
-                htmlSelectorBackend: htmlSelectorBackend
-            ),
-            scopePreferences: scopePreferences
+            }
         )
     }
 

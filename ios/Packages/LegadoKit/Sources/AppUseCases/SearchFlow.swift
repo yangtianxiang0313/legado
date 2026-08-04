@@ -312,6 +312,7 @@ public struct SourceSearchBooksExecutor: SearchBooksExecuting, Sendable {
   private let dynamicWebPagePort: (any SourceDynamicWebPagePort)?
   private let scriptRuntime: (any SourceScriptRuntime)?
   private let htmlSelectorBackend: (any HTMLSelectorBackend)?
+  private let maxConcurrentSources: Int
 
   public init(
     sources: [SearchSourceDescriptor],
@@ -319,7 +320,8 @@ public struct SourceSearchBooksExecutor: SearchBooksExecuting, Sendable {
     cookieStore: SourceCookieStore = SourceCookieStore(),
     dynamicWebPagePort: (any SourceDynamicWebPagePort)? = nil,
     scriptRuntime: (any SourceScriptRuntime)? = nil,
-    htmlSelectorBackend: (any HTMLSelectorBackend)? = nil
+    htmlSelectorBackend: (any HTMLSelectorBackend)? = nil,
+    sourceConcurrency: Int = 16
   ) {
     self.sources = sources
     self.transport = transport
@@ -327,6 +329,10 @@ public struct SourceSearchBooksExecutor: SearchBooksExecuting, Sendable {
     self.dynamicWebPagePort = dynamicWebPagePort
     self.scriptRuntime = scriptRuntime
     self.htmlSelectorBackend = htmlSelectorBackend
+    maxConcurrentSources = min(
+      max(sourceConcurrency, 1),
+      SearchScopePreferences.androidMaximumEffectiveConcurrency
+    )
   }
 
   public func search(
@@ -336,20 +342,17 @@ public struct SourceSearchBooksExecutor: SearchBooksExecuting, Sendable {
     let selected = sources.filter(scope.includes)
     var batches: [[SearchBookCandidate]] = []
     var metadata: [String: SourceSearchBook] = [:]
+    let outcomes = await executeSearches(
+      selected,
+      query: query
+    ).sorted { $0.offset < $1.offset }
     var lastError: (any Error)?
 
-    for source in selected {
-      do {
-        let execution = try await SourceSearchPipeline(
-          definition: source.definition,
-          transport: transport,
-          cookieStore: cookieStore,
-          dynamicWebPagePort: dynamicWebPagePort,
-          scriptRuntime: scriptRuntime,
-          htmlSelectorBackend: htmlSelectorBackend
-        ).search(SourceSearchInput(keyword: query, page: 1))
+    for outcome in outcomes {
+      switch outcome.result {
+      case .success(let books):
         batches.append(
-          execution.books.map {
+          books.map {
             metadata[$0.bookURL] = $0
             return SearchBookCandidate(
               name: $0.name,
@@ -361,7 +364,7 @@ public struct SourceSearchBooksExecutor: SearchBooksExecuting, Sendable {
             )
           }
         )
-      } catch {
+      case .failure(let error):
         lastError = error
       }
     }
@@ -394,6 +397,78 @@ public struct SourceSearchBooksExecutor: SearchBooksExecuting, Sendable {
       )
     }
   }
+
+  private func executeSearches(
+    _ selected: [SearchSourceDescriptor],
+    query: String
+  ) async -> [SourceSearchOutcome] {
+    guard !selected.isEmpty else { return [] }
+    return await withTaskGroup(
+      of: SourceSearchOutcome.self,
+      returning: [SourceSearchOutcome].self
+    ) { group in
+      var nextOffset = 0
+      let initialCount = min(maxConcurrentSources, selected.count)
+      for offset in 0..<initialCount {
+        addSearchTask(
+          to: &group,
+          source: selected[offset],
+          offset: offset,
+          query: query
+        )
+        nextOffset += 1
+      }
+
+      var outcomes: [SourceSearchOutcome] = []
+      while let outcome = await group.next() {
+        outcomes.append(outcome)
+        if nextOffset < selected.count {
+          addSearchTask(
+            to: &group,
+            source: selected[nextOffset],
+            offset: nextOffset,
+            query: query
+          )
+          nextOffset += 1
+        }
+      }
+      return outcomes
+    }
+  }
+
+  private func addSearchTask(
+    to group: inout TaskGroup<SourceSearchOutcome>,
+    source: SearchSourceDescriptor,
+    offset: Int,
+    query: String
+  ) {
+    group.addTask {
+      do {
+        let execution = try await SourceSearchPipeline(
+          definition: source.definition,
+          transport: transport,
+          cookieStore: cookieStore,
+          dynamicWebPagePort: dynamicWebPagePort,
+          scriptRuntime: scriptRuntime,
+          htmlSelectorBackend: htmlSelectorBackend
+        ).search(SourceSearchInput(keyword: query, page: 1))
+        return SourceSearchOutcome(
+          offset: offset,
+          result: .success(execution.books)
+        )
+      } catch {
+        return SourceSearchOutcome(
+          offset: offset,
+          result: .failure(error)
+        )
+      }
+    }
+  }
+
+  private struct SourceSearchOutcome: Sendable {
+    let offset: Int
+    let result: Result<[SourceSearchBook], any Error>
+  }
 }
 
 @MainActor
@@ -406,7 +481,9 @@ public final class SearchSession {
   public private(set) var errorMessage: String?
 
   private let groups: [String]
-  private let executor: any SearchBooksExecuting
+  private var executor: any SearchBooksExecuting
+  private let executorFactory:
+    (@Sendable (Int) -> any SearchBooksExecuting)?
   private let scopePreferences: SearchScopePreferencesStore?
   private var searchTask: Task<Void, Never>?
 
@@ -420,6 +497,7 @@ public final class SearchSession {
     self.query = query
     self.groups = groups
     self.executor = executor
+    executorFactory = nil
     self.scopePreferences = scopePreferences
     let requestedScope = scopePreferences?.value.scope ?? scope
     let menu = SearchScopeMenuState(scope: requestedScope, groups: groups)
@@ -432,12 +510,41 @@ public final class SearchSession {
     }
   }
 
+  public init(
+    query: String = "",
+    scope: SearchScopeSelection = .all,
+    groups: [String],
+    scopePreferences: SearchScopePreferencesStore,
+    executorFactory: @escaping @Sendable (Int) -> any SearchBooksExecuting
+  ) {
+    self.query = query
+    self.groups = groups
+    self.scopePreferences = scopePreferences
+    self.executorFactory = executorFactory
+    executor = executorFactory(
+      scopePreferences.value.effectiveSourceConcurrency
+    )
+    let requestedScope = scopePreferences.value.scope
+    let menu = SearchScopeMenuState(scope: requestedScope, groups: groups)
+    self.scope = menu.scope
+    results = []
+    loadingState = .idle
+    errorMessage = nil
+    if menu.scope != requestedScope {
+      scopePreferences.setScope(menu.scope)
+    }
+  }
+
   public var scopeMenu: SearchScopeMenuState {
     SearchScopeMenuState(scope: scope, groups: groups)
   }
 
   public var usesPrecisionSearch: Bool {
     scopePreferences?.value.usesPrecisionSearch ?? false
+  }
+
+  public var sourceConcurrency: Int {
+    scopePreferences?.value.sourceConcurrency ?? 16
   }
 
   public func selectAllSources() {
@@ -465,6 +572,18 @@ public final class SearchSession {
     if !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
       search()
     }
+  }
+
+  public func setSourceConcurrency(_ count: Int) {
+    guard let scopePreferences, let executorFactory else { return }
+    scopePreferences.setSourceConcurrency(count)
+    executor = executorFactory(
+      scopePreferences.value.effectiveSourceConcurrency
+    )
+    guard !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+      return
+    }
+    search()
   }
 
   public func search() {

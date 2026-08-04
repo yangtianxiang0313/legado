@@ -817,6 +817,9 @@ private struct AppAndroidCoreBackupRestoreRepository:
             if let enabled = plan.usesPrecisionSearch {
                 value.usesPrecisionSearch = enabled
             }
+            if let count = plan.sourceConcurrency {
+                value.sourceConcurrency = count
+            }
             searchScopePreferences.replace(value)
         }
     }

@@ -167,6 +167,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
   public static let searchScopeKey = "searchScope"
   public static let searchGroupKey = "searchGroup"
   public static let precisionSearchKey = "precisionSearch"
+  public static let threadCountKey = "threadCount"
   public static let autoChangeSourceKey = "autoChangeSource"
   public static let changeSourceCheckAuthorKey = "changeSourceCheckAuthor"
   public static let preDownloadNumKey = "preDownloadNum"
@@ -181,6 +182,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
   public let searchScope: String?
   public let searchGroup: String?
   public let usesPrecisionSearch: Bool?
+  public let threadCount: Int64?
   public let automaticallyChangesSource: Bool?
   public let changeSourceChecksAuthor: Bool?
   public let preDownloadCount: Int64?
@@ -196,6 +198,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
     searchScope: String? = nil,
     searchGroup: String? = nil,
     usesPrecisionSearch: Bool? = nil,
+    threadCount: Int64? = nil,
     automaticallyChangesSource: Bool? = nil,
     changeSourceChecksAuthor: Bool? = nil,
     preDownloadCount: Int64? = nil,
@@ -210,6 +213,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
     self.searchScope = searchScope
     self.searchGroup = searchGroup
     self.usesPrecisionSearch = usesPrecisionSearch
+    self.threadCount = threadCount
     self.automaticallyChangesSource = automaticallyChangesSource
     self.changeSourceChecksAuthor = changeSourceChecksAuthor
     self.preDownloadCount = preDownloadCount
@@ -227,6 +231,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
       searchScope: document.string(Self.searchScopeKey),
       searchGroup: document.string(Self.searchGroupKey),
       usesPrecisionSearch: document.boolean(Self.precisionSearchKey),
+      threadCount: document.integer(Self.threadCountKey),
       automaticallyChangesSource: document.boolean(Self.autoChangeSourceKey),
       changeSourceChecksAuthor: document.boolean(
         Self.changeSourceCheckAuthorKey
@@ -243,6 +248,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
       || enablesReadRecord != nil
       || searchScope != nil || searchGroup != nil
       || usesPrecisionSearch != nil
+      || threadCount != nil
       || automaticallyChangesSource != nil
       || changeSourceChecksAuthor != nil
       || preDownloadCount != nil

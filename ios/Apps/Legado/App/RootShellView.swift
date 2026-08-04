@@ -2550,6 +2550,16 @@ private struct SearchBooksView: View {
             )
             .accessibilityIdentifier("toggle.search.precision")
 
+            Stepper(
+                "并发书源数 \(session.sourceConcurrency)",
+                value: Binding(
+                    get: { session.sourceConcurrency },
+                    set: { session.setSourceConcurrency($0) }
+                ),
+                in: SearchScopePreferences.sourceConcurrencyRange
+            )
+            .accessibilityIdentifier("action.search.sourceConcurrency")
+
             Button {
                 session.selectAllSources()
             } label: {

@@ -37,6 +37,49 @@ final class SearchScopePreferencesStoreTests: XCTestCase {
     )
 
     XCTAssertFalse(decoded.usesPrecisionSearch)
+    XCTAssertEqual(decoded.sourceConcurrency, 16)
+    XCTAssertEqual(decoded.effectiveSourceConcurrency, 9)
+  }
+
+  func testSourceConcurrencyMatchesAndroidStoredAndEffectiveRanges() {
+    let repository = SearchScopePreferencesRepositoryStub(
+      loaded: SearchScopePreferences(sourceConcurrency: 16)
+    )
+    let store = SearchScopePreferencesStore(repository: repository)
+
+    XCTAssertEqual(store.value.sourceConcurrency, 16)
+    XCTAssertEqual(store.value.effectiveSourceConcurrency, 9)
+
+    store.setSourceConcurrency(0)
+    XCTAssertEqual(store.value.sourceConcurrency, 1)
+    XCTAssertEqual(store.value.effectiveSourceConcurrency, 1)
+
+    store.setSourceConcurrency(2_000)
+    XCTAssertEqual(store.value.sourceConcurrency, 999)
+    XCTAssertEqual(store.value.effectiveSourceConcurrency, 9)
+  }
+
+  func testChangingConcurrencyImmediatelyRebuildsSearchExecutor() {
+    let repository = SearchScopePreferencesRepositoryStub(
+      loaded: SearchScopePreferences(sourceConcurrency: 16)
+    )
+    let store = SearchScopePreferencesStore(repository: repository)
+    let recorder = SearchExecutorFactoryRecorder()
+    let session = SearchSession(
+      groups: [],
+      scopePreferences: store,
+      executorFactory: { concurrency in
+        recorder.record(concurrency)
+        return SearchBooksExecutorStub()
+      }
+    )
+
+    XCTAssertEqual(recorder.values, [9])
+
+    session.setSourceConcurrency(3)
+
+    XCTAssertEqual(store.value.sourceConcurrency, 3)
+    XCTAssertEqual(recorder.values, [9, 3])
   }
 
   func testAndroidPrecisionProjectionRanksAndFiltersResults() {
@@ -168,6 +211,19 @@ private actor SearchBooksExecutorStub: SearchBooksExecuting {
   }
 
   func callCount() -> Int { calls }
+}
+
+private final class SearchExecutorFactoryRecorder: @unchecked Sendable {
+  private let lock = NSLock()
+  private var storage: [Int] = []
+
+  var values: [Int] {
+    lock.withLock { storage }
+  }
+
+  func record(_ value: Int) {
+    lock.withLock { storage.append(value) }
+  }
 }
 
 @MainActor

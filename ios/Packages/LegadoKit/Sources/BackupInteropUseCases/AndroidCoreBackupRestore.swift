@@ -152,20 +152,24 @@ public struct AndroidSearchScopePreferencesImportPlan:
   public let serializedScope: String?
   public let changeSourceGroup: String?
   public let usesPrecisionSearch: Bool?
+  public let sourceConcurrency: Int?
 
   public init(
     serializedScope: String? = nil,
     changeSourceGroup: String? = nil,
-    usesPrecisionSearch: Bool? = nil
+    usesPrecisionSearch: Bool? = nil,
+    sourceConcurrency: Int? = nil
   ) {
     self.serializedScope = serializedScope
     self.changeSourceGroup = changeSourceGroup
     self.usesPrecisionSearch = usesPrecisionSearch
+    self.sourceConcurrency = sourceConcurrency
   }
 
   public var isPresent: Bool {
     serializedScope != nil || changeSourceGroup != nil
       || usesPrecisionSearch != nil
+      || sourceConcurrency != nil
   }
 }
 
@@ -620,7 +624,14 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
       AndroidSearchScopePreferencesImportPlan(
         serializedScope: $0.searchScope,
         changeSourceGroup: $0.searchGroup,
-        usesPrecisionSearch: $0.usesPrecisionSearch
+        usesPrecisionSearch: $0.usesPrecisionSearch,
+        sourceConcurrency: $0.threadCount
+          .flatMap(Int.init(exactly:))
+          .flatMap {
+            SearchScopePreferences.sourceConcurrencyRange.contains($0)
+              ? $0
+              : nil
+          }
       )
     }.flatMap { $0.isPresent ? $0 : nil }
     let sourceSwitchPreferences = projectedApplicationPreferences.map {
@@ -730,6 +741,7 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
         projectedApplicationPreferences?.searchScope.map { _ in 1 },
         projectedApplicationPreferences?.searchGroup.map { _ in 1 },
         projectedApplicationPreferences?.usesPrecisionSearch.map { _ in 1 },
+        projectedApplicationPreferences?.threadCount.map { _ in 1 },
         projectedApplicationPreferences?.automaticallyChangesSource
           .map { _ in 1 },
         projectedApplicationPreferences?.changeSourceChecksAuthor
