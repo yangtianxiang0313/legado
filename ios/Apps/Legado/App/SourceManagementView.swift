@@ -1,4 +1,5 @@
 import AppUseCases
+import AndroidBackupInterop
 import BackupInteropUseCases
 import CoreImage.CIFilterBuiltins
 import Foundation
@@ -866,6 +867,7 @@ struct AndroidOnlineImportView: View {
     @Bindable var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
     @Bindable var dictionaryLookup: DictionaryLookupStore
     @Bindable var localTextTOCRules: LocalTextTOCRuleStore
+    @Bindable var readerConfigProfiles: AndroidReaderConfigProfileStore
     let dismiss: () -> Void
 
     @State private var isLoading = true
@@ -894,6 +896,12 @@ struct AndroidOnlineImportView: View {
                 bookURL: request.sourceURL,
                 library: library,
                 persistedSources: catalog.sources,
+                dismiss: dismiss
+            )
+        case .readerConfig:
+            AndroidReaderConfigOnlineImportView(
+                sourceURL: request.sourceURL,
+                store: readerConfigProfiles,
                 dismiss: dismiss
             )
         case .rssSource, .replaceRule, .httpTTS, .dictionaryRule,
@@ -1010,6 +1018,8 @@ struct AndroidOnlineImportView: View {
                 break
             case .addToBookshelf:
                 break
+            case .readerConfig:
+                break
             }
         } catch {
             message = "导入内容格式不正确"
@@ -1058,6 +1068,8 @@ struct AndroidOnlineImportView: View {
         case .bookSource:
             break
         case .addToBookshelf:
+            break
+        case .readerConfig:
             break
         }
     }
@@ -1190,6 +1202,130 @@ private struct AndroidBookURLImportView: View {
                 self.preview = nil
             }
         }
+    }
+}
+
+private struct AndroidReaderConfigOnlineImportView: View {
+    let sourceURL: String
+    @Bindable var store: AndroidReaderConfigProfileStore
+    let dismiss: () -> Void
+    @State private var payload: AndroidReaderConfigArchivePayload?
+    @State private var isLoading = true
+    @State private var message: String?
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if isLoading {
+                    ProgressView("正在下载阅读配置…")
+                } else if let payload {
+                    Form {
+                        Section("配置预览") {
+                            LabeledContent("名称", value: payload.name)
+                            if let fontSize = payload.projection?.fontSize {
+                                LabeledContent("字号", value: fontSize.formatted())
+                            }
+                            if let spacing = payload.projection?.lineSpacing {
+                                LabeledContent("行距", value: spacing.formatted())
+                            }
+                            LabeledContent(
+                                "附带资源",
+                                value: "\(payload.resources.count) 个"
+                            )
+                        }
+                    }
+                } else {
+                    ContentUnavailableView(
+                        "无法导入阅读配置",
+                        systemImage: "doc.zipper",
+                        description: Text(message ?? "ZIP 内容无效")
+                    )
+                }
+            }
+            .navigationTitle("导入阅读配置")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消", action: dismiss)
+                }
+                if payload != nil {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("导入", action: commit)
+                    }
+                }
+            }
+            .task(id: sourceURL) { await load() }
+        }
+    }
+
+    private func load() async {
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            let data = try await SearchEnvironment
+                .loadRemoteRuleSubscriptionPayload(sourceURL)
+            let temporary = FileManager.default.temporaryDirectory
+                .appendingPathComponent(UUID().uuidString + ".zip")
+            defer { try? FileManager.default.removeItem(at: temporary) }
+            try data.write(to: temporary, options: .atomic)
+            payload = try AndroidReaderConfigArchiveImport.decode(
+                from: temporary
+            )
+        } catch {
+            message = "下载失败或不是有效的 Android 阅读配置 ZIP"
+        }
+    }
+
+    private func commit() {
+        guard let payload else { return }
+        Task {
+            do {
+                let configuration = try ReaderConfigAssetStore.materialize(
+                    payload
+                )
+                if await store.importProfile(configuration) { dismiss() }
+            } catch {
+                message = "无法保存阅读配置资源"
+                self.payload = nil
+            }
+        }
+    }
+}
+
+private enum ReaderConfigAssetStore {
+    static func materialize(
+        _ payload: AndroidReaderConfigArchivePayload
+    ) throws -> AndroidReaderConfigDTO {
+        let root = try FileManager.default.url(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: true
+        ).appendingPathComponent("ReaderConfigAssets", isDirectory: true)
+        let safeName = payload.name.unicodeScalars.map {
+            CharacterSet.alphanumerics.contains($0) ? Character(String($0)) : "_"
+        }
+        let directory = root.appendingPathComponent(
+            String(safeName),
+            isDirectory: true
+        )
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true
+        )
+        var fields = payload.configuration.rawFields
+        for key in ["textFont", "bgStr"] {
+            guard case .string(let rawPath) = fields[key], !rawPath.isEmpty else {
+                continue
+            }
+            let fileName = URL(fileURLWithPath: rawPath).lastPathComponent
+            guard let resource = payload.resources.first(where: {
+                URL(fileURLWithPath: $0.key).lastPathComponent == fileName
+            }) else { continue }
+            let destination = directory.appendingPathComponent(fileName)
+            try resource.value.write(to: destination, options: .atomic)
+            fields[key] = .string(destination.path)
+        }
+        return try AndroidReaderConfigDTO(jsonValue: .object(fields))
     }
 }
 

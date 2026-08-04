@@ -47,6 +47,7 @@ struct LegadoApp: App {
     @State private var onlineImportRequest: AndroidOnlineImportRequest?
     @State private var onlineImportError: String?
     @State private var localTextTOCRules: LocalTextTOCRuleStore
+    @State private var readerConfigProfiles: AndroidReaderConfigProfileStore
     @State private var webDAVSettings: WebDAVConnectionSettingsStore
     @State private var webDAVBackupCheckpoint:
         WebDAVBackupCheckpointStore
@@ -300,6 +301,11 @@ struct LegadoApp: App {
                     repository: libraryRepository
                 )
             )
+            _readerConfigProfiles = State(
+                initialValue: AndroidReaderConfigProfileStore(
+                    repository: libraryRepository
+                )
+            )
             _sourceCatalog = State(
                 initialValue: SourceCatalog(
                     repository: sourceRepository
@@ -440,6 +446,7 @@ struct LegadoApp: App {
                         httpTextToSpeechEngines: httpTextToSpeechEngines,
                         dictionaryLookup: dictionaryLookup,
                         localTextTOCRules: localTextTOCRules,
+                        readerConfigProfiles: readerConfigProfiles,
                         dismiss: { onlineImportRequest = nil }
                     )
                 }

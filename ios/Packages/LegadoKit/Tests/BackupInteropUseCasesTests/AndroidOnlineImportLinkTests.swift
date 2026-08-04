@@ -1,4 +1,5 @@
 import BackupInteropUseCases
+import ArchiveZIPFoundation
 import Foundation
 import LibraryDomain
 import Testing
@@ -13,6 +14,7 @@ struct AndroidOnlineImportLinkTests {
     ("legado://import/dictRule?src=https%3A%2F%2Fexample.test%2Fdict.json", AndroidOnlineImportTarget.dictionaryRule),
     ("yuedu://import/textTocRule?src=https%3A%2F%2Fexample.test%2Ftoc.json", AndroidOnlineImportTarget.localTextTOCRule),
     ("legado://import/addToBookshelf?src=https%3A%2F%2Fbooks.example%2Fnovel%2F1", AndroidOnlineImportTarget.addToBookshelf),
+    ("legado://import/readConfig?src=https%3A%2F%2Fexample.test%2Freader.zip", AndroidOnlineImportTarget.readerConfig),
     ("legado://booksource/importonline?src=https%3A%2F%2Fexample.test%2Fbook.json", AndroidOnlineImportTarget.bookSource),
   ])
   func parsesAndroidCompatibleLink(
@@ -48,6 +50,25 @@ struct AndroidOnlineImportLinkTests {
       ))
     #expect(tocRules.first?.id == 9)
     #expect(tocRules.first?.rule == "^第.+章$")
+  }
+
+  @Test func decodesReaderConfigArchiveAndResources() throws {
+    let url = FileManager.default.temporaryDirectory
+      .appendingPathComponent(UUID().uuidString + ".zip")
+    defer { try? FileManager.default.removeItem(at: url) }
+    try ArchiveZIPFoundation.create(members: [
+      .init(
+        path: "readConfig.json",
+        data: Data(#"{"name":"纸张","textSize":21,"lineSpacingExtra":9,"textFont":"custom.ttf"}"#.utf8)
+      ),
+      .init(path: "custom.ttf", data: Data([0, 1, 2, 3])),
+    ], at: url)
+
+    let payload = try AndroidReaderConfigArchiveImport.decode(from: url)
+    #expect(payload.name == "纸张")
+    #expect(payload.projection?.fontSize == 21)
+    #expect(payload.projection?.lineSpacing == 9)
+    #expect(payload.resources["custom.ttf"] == Data([0, 1, 2, 3]))
   }
 
   @Test func decodesHTTPTextToSpeechPayload() throws {

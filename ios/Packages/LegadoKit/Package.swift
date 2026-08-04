@@ -134,6 +134,7 @@ let package = Package(
         .target(
             name: "BackupInteropUseCases",
             dependencies: [
+                "ArchiveZIPFoundation",
                 .product(name: "LegadoCoreKit", package: "LegadoCoreKit"),
                 "AndroidBackupInterop",
                 "AppUseCases",
@@ -267,6 +268,7 @@ let package = Package(
             name: "BackupInteropUseCasesTests",
             dependencies: [
                 "AndroidBackupInterop",
+                "ArchiveZIPFoundation",
                 "BackupInteropUseCases",
                 "IntegrationKit",
                 .product(name: "LegadoCoreKit", package: "LegadoCoreKit"),

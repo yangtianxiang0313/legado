@@ -2665,6 +2665,8 @@ private struct LocalTextTOCRuleRecord:
   }
 }
 
+extension GRDBBookShelfRepository: AndroidReaderConfigProfileRepository {}
+
 private struct AndroidReaderConfigRecord:
   Codable, FetchableRecord, MutablePersistableRecord
 {
