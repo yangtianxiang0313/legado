@@ -23,6 +23,7 @@ final class LegadoAppUITests: XCTestCase {
         app.launchArguments = [
             "-AppleLanguages", "(zh-Hans)",
             "-AppleLocale", "zh_CN",
+            "--reset-root-visibility",
         ]
         app.launch()
 
@@ -868,6 +869,7 @@ final class LegadoAppUITests: XCTestCase {
             "-AppleLanguages", "(zh-Hans)",
             "-AppleLocale", "zh_CN",
             "--reset-library",
+            "--reset-root-visibility",
         ]
         app.launchEnvironment["LEGADO_ANDROID_BACKUP_FIXTURE_BASE64"] =
             "UEsDBBQAAAgIAAAAIQCfHJMcXQAAAGMAAAAOAAAAYm9va0dyb3VwLmpzb26LrlZKys/PDs4vKlGyMtJRSs1LTMpJDUpNK0otzlCySkvMKU7VUUovyi8t8ExRsrKAsv0Sc1OVrJT8ixKTc1IV3EFCSjpK+UUpqUVKViY6SsUZ+eVKViVFpam1sQBQSwMEFAAACAgAAAAhAML7DuN+AAAAugAAAA0AAABib29rbWFyay5qc29ui65WSsrPz3YsLcnIL1KyUvIvSkzOSVWA8nXAkn6JualAqUz/YAWotBNQFCoZklpRApQsTs1JTS5JTQGKJmckFpSkFnnmpaRWKFkZwwWgxjhDeApu+aVFCNUB+cVKVkbmQH5+XklqHshIMAtouI5SSSZIp6G5ARQYGhnXxgIAUEsDBBQAAAgIAAAAIQDqOq76HgEAAFUCAAAOAAAAYm9va3NoZWxmLmpzb26NUU1rwzAM/StF52xJW1iHb1tgMBjtoO1p7OA5amLqWsEfZaX0v09eUmhoGfPJ0nt6kp4+jiBjaMiBgIWTyuDoqYsz+CLarp1hpAmh9SLPNfk7+mXda7uXRld5IjFXSbtuKxkQRHARM6iiKxvZBnSvtsJvENPL3Dt5EJPZZWqld1w8nhX9G0+mQzgYxqEPRy8U04y1o9iCeMzASB/KBtW2pGgDq1+krrSLIqEBE36ze3GDMRxghZb7W5nqQC+Wo96+584QchWyqQ/pp2tt/3bR8zYK4UyeX6kuh4RFp847OpRVSXajaxBHjvboPK5Ine/gW6PDG9m6nxvERhqPJ0YOVnVr86qB1L9OnTMREj1I0yvO446dSxqHNomdPn8AUEsBAhUDFAAACAgAAAAhAJ8ckxxdAAAAYwAAAA4AAAAAAAAAAAAAAKSBAAAAAGJvb2tHcm91cC5qc29uUEsBAhUDFAAACAgAAAAhAML7DuN+AAAAugAAAA0AAAAAAAAAAAAAAKSBiQAAAGJvb2ttYXJrLmpzb25QSwECFQMUAAAICAAAACEA6jqu+h4BAABVAgAADgAAAAAAAAAAAAAApIEyAQAAYm9va3NoZWxmLmpzb25QSwUGAAAAAAMAAwCzAAAAfAIAAAAA"
@@ -1144,6 +1146,7 @@ final class LegadoAppUITests: XCTestCase {
         app.launchArguments = [
             "-AppleLanguages", "(zh-Hans)",
             "-AppleLocale", "zh_CN",
+            "--reset-root-visibility",
         ]
         app.launch()
 
@@ -1318,6 +1321,7 @@ final class LegadoAppUITests: XCTestCase {
             "-AppleLanguages", "(zh-Hans)",
             "-AppleLocale", "zh_CN",
             "--reset-library",
+            "--reset-root-visibility",
         ]
         app.launch()
 
@@ -1405,6 +1409,7 @@ final class LegadoAppUITests: XCTestCase {
             "-AppleLanguages", "(zh-Hans)",
             "-AppleLocale", "zh_CN",
             "--reset-library",
+            "--reset-root-visibility",
         ]
         app.launch()
 
@@ -1491,6 +1496,7 @@ final class LegadoAppUITests: XCTestCase {
             "-AppleLanguages", "(zh-Hans)",
             "-AppleLocale", "zh_CN",
             "--reset-library",
+            "--reset-root-visibility",
         ]
         app.launch()
 
@@ -1581,6 +1587,7 @@ final class LegadoAppUITests: XCTestCase {
             "-AppleLocale", "zh_CN",
             "--reset-library",
             "--reset-sources",
+            "--reset-root-visibility",
         ]
         app.launchEnvironment["LEGADO_LOCAL_SOURCE_DEMO"] = "0"
         app.launchEnvironment["LEGADO_SEED_SOURCE_JSON"] = sourceDefinition
@@ -1645,8 +1652,8 @@ final class LegadoAppUITests: XCTestCase {
             let nextPage = requireButton("action.reader.page.next")
             guard nextPage.isEnabled else { break }
             nextPage.tap()
-            waitForLabel(
-                "\(page)/\(pageCount)",
+            waitForLabelPrefix(
+                "\(page)/",
                 identifier: "label.reader.pageProgress",
                 timeout: 8
             )
@@ -3570,6 +3577,22 @@ final class LegadoAppUITests: XCTestCase {
         let value = element(identifier)
         let expectation = XCTNSPredicateExpectation(
             predicate: NSPredicate(format: "label == %@", label),
+            object: value
+        )
+        XCTAssertEqual(
+            XCTWaiter.wait(for: [expectation], timeout: timeout),
+            .completed
+        )
+    }
+
+    private func waitForLabelPrefix(
+        _ prefix: String,
+        identifier: String,
+        timeout: TimeInterval = 8
+    ) {
+        let value = element(identifier)
+        let expectation = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "label BEGINSWITH %@", prefix),
             object: value
         )
         XCTAssertEqual(

@@ -607,44 +607,6 @@ struct ReaderContentView: View {
                     .accessibilityIdentifier("state.reader.inlineImage")
                 }
 
-                HStack {
-                    Button {
-                        movePagedReader(by: -1)
-                    } label: {
-                        Label("上一页", systemImage: "chevron.left")
-                    }
-                    .disabled(
-                        pagination.currentPageIndex == 0
-                            && !canOpenPreviousChapter
-                    )
-                    .accessibilityIdentifier("action.reader.page.previous")
-
-                    Spacer()
-
-                    Text(
-                        pagination.pageCount > 0
-                            ? "\(pagination.currentPageIndex + 1)"
-                                + "/\(pagination.pageCount)"
-                            : "—"
-                    )
-                    .monospacedDigit()
-                    .accessibilityIdentifier("label.reader.pageProgress")
-
-                    Spacer()
-
-                    Button {
-                        movePagedReader(by: 1)
-                    } label: {
-                        Label("下一页", systemImage: "chevron.right")
-                    }
-                    .disabled(
-                        pagination.pageCount > 0
-                            && pagination.currentPageIndex
-                                == pagination.pageCount - 1
-                            && !canOpenNextChapter
-                    )
-                    .accessibilityIdentifier("action.reader.page.next")
-                }
             }
             .padding(.leading, Double(readerLayout.paddingLeft))
             .padding(.trailing, Double(readerLayout.paddingRight))
@@ -678,6 +640,50 @@ struct ReaderContentView: View {
                 await savePaginationProgress()
                 refreshBookmarkState()
             }
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            pageControls
+                .padding(.horizontal, Double(readerLayout.paddingLeft))
+                .padding(.vertical, 8)
+                .background(.bar)
+        }
+    }
+
+    private var pageControls: some View {
+        HStack {
+            Button {
+                movePagedReader(by: -1)
+            } label: {
+                Label("上一页", systemImage: "chevron.left")
+            }
+            .disabled(
+                pagination.currentPageIndex == 0 && !canOpenPreviousChapter
+            )
+            .accessibilityIdentifier("action.reader.page.previous")
+
+            Spacer()
+
+            Text(
+                pagination.pageCount > 0
+                    ? "\(pagination.currentPageIndex + 1)/\(pagination.pageCount)"
+                    : "—"
+            )
+            .monospacedDigit()
+            .accessibilityIdentifier("label.reader.pageProgress")
+
+            Spacer()
+
+            Button {
+                movePagedReader(by: 1)
+            } label: {
+                Label("下一页", systemImage: "chevron.right")
+            }
+            .disabled(
+                pagination.pageCount > 0
+                    && pagination.currentPageIndex == pagination.pageCount - 1
+                    && !canOpenNextChapter
+            )
+            .accessibilityIdentifier("action.reader.page.next")
         }
     }
 
