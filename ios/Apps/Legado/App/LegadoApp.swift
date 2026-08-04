@@ -467,6 +467,10 @@ struct LegadoApp: App {
     }
 
     private func openOnlineImportLink(_ url: URL) {
+        if url.isFileURL {
+            openAssociatedFile(url)
+            return
+        }
         do {
             onlineImportRequest = try AndroidOnlineImportLinkParser.parse(url)
             onlineImportError = nil
@@ -476,6 +480,36 @@ struct LegadoApp: App {
             onlineImportError = "导入链接缺少 src 地址"
         } catch {
             onlineImportError = "不是有效的 Legado 一键导入链接"
+        }
+    }
+
+    private func openAssociatedFile(_ url: URL) {
+        let granted = url.startAccessingSecurityScopedResource()
+        defer { if granted { url.stopAccessingSecurityScopedResource() } }
+        do {
+            let values = try url.resourceValues(forKeys: [.fileSizeKey])
+            guard (values.fileSize ?? 0) <= 32 * 1_024 * 1_024 else {
+                onlineImportError = "导入文件超过 32 MB 限制"
+                return
+            }
+            let data = try Data(contentsOf: url, options: [.mappedIfSafe])
+            let target: AndroidOnlineImportTarget
+            if url.pathExtension.lowercased() == "zip" {
+                target = .readerConfig
+            } else {
+                target = try AndroidAssociatedImportClassifier
+                    .classifyJSON(data)
+            }
+            onlineImportRequest = AndroidOnlineImportRequest(
+                target: target,
+                sourceURL: url.absoluteString,
+                inlineData: data
+            )
+            onlineImportError = nil
+        } catch AndroidAssociatedImportError.ambiguous {
+            onlineImportError = "文件同时匹配多种 Android 数据类型"
+        } catch {
+            onlineImportError = "无法识别此 Android 导出文件"
         }
     }
 }

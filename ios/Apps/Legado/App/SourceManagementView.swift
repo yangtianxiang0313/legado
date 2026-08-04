@@ -888,7 +888,9 @@ struct AndroidOnlineImportView: View {
             NavigationStack {
                 SourceImportView(
                     catalog: catalog,
-                    initialPayload: request.sourceURL,
+                    initialPayload: request.inlineData.map {
+                        String(decoding: $0, as: UTF8.self)
+                    } ?? request.sourceURL,
                     automaticallyParsesInitialPayload: true,
                     dismiss: dismiss
                 )
@@ -903,6 +905,7 @@ struct AndroidOnlineImportView: View {
         case .readerConfig:
             AndroidReaderConfigOnlineImportView(
                 sourceURL: request.sourceURL,
+                archiveData: request.inlineData,
                 store: readerConfigProfiles,
                 dismiss: dismiss
             )
@@ -977,8 +980,12 @@ struct AndroidOnlineImportView: View {
         defer { isLoading = false }
         let data: Data
         do {
-            data = try await SearchEnvironment
-                .loadRemoteRuleSubscriptionPayload(request.sourceURL)
+            data = if let inlineData = request.inlineData {
+                inlineData
+            } else {
+                try await SearchEnvironment
+                    .loadRemoteRuleSubscriptionPayload(request.sourceURL)
+            }
         } catch RemoteSourceDefinitionLoadError.invalidURL {
             message = "src 地址无效"
             return
@@ -1232,6 +1239,7 @@ private struct AndroidBookURLImportView: View {
 
 private struct AndroidReaderConfigOnlineImportView: View {
     let sourceURL: String
+    let archiveData: Data?
     @Bindable var store: AndroidReaderConfigProfileStore
     let dismiss: () -> Void
     @State private var payload: AndroidReaderConfigArchivePayload?
@@ -1286,8 +1294,12 @@ private struct AndroidReaderConfigOnlineImportView: View {
         isLoading = true
         defer { isLoading = false }
         do {
-            let data = try await SearchEnvironment
-                .loadRemoteRuleSubscriptionPayload(sourceURL)
+            let data = if let archiveData {
+                archiveData
+            } else {
+                try await SearchEnvironment
+                    .loadRemoteRuleSubscriptionPayload(sourceURL)
+            }
             let temporary = FileManager.default.temporaryDirectory
                 .appendingPathComponent(UUID().uuidString + ".zip")
             defer { try? FileManager.default.removeItem(at: temporary) }

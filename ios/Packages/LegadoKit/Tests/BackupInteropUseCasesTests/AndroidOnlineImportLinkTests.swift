@@ -46,6 +46,32 @@ struct AndroidOnlineImportLinkTests {
     #expect(values.first?.accentColor == "#ff8800")
   }
 
+  @Test(arguments: [
+    (#"[{"bookSourceUrl":"https://source.example","bookSourceName":"书源"}]"#, AndroidOnlineImportTarget.bookSource),
+    (#"[{"sourceUrl":"https://rss.example","sourceName":"RSS"}]"#, AndroidOnlineImportTarget.rssSource),
+    (#"[{"name":"替换","pattern":"ad","replacement":""}]"#, AndroidOnlineImportTarget.replaceRule),
+    (#"[{"name":"朗读","url":"https://tts.example/{{speakText}}"}]"#, AndroidOnlineImportTarget.httpTTS),
+    (#"[{"name":"词典","urlRule":"https://dict.example/{{key}}","showRule":"$.body"}]"#, AndroidOnlineImportTarget.dictionaryRule),
+    (#"[{"name":"章节","rule":"^第.+章$"}]"#, AndroidOnlineImportTarget.localTextTOCRule),
+  ])
+  func classifiesAssociatedJSON(
+    value: (String, AndroidOnlineImportTarget)
+  ) throws {
+    #expect(
+      try AndroidAssociatedImportClassifier.classifyJSON(Data(value.0.utf8))
+        == value.1
+    )
+  }
+
+  @Test func rejectsAmbiguousAssociatedJSON() {
+    let data = Data(
+      #"[{"name":"冲突","rule":"x","url":"https://tts.example"}]"#.utf8
+    )
+    #expect(throws: AndroidAssociatedImportError.ambiguous) {
+      try AndroidAssociatedImportClassifier.classifyJSON(data)
+    }
+  }
+
   @Test func decodesDictionaryAndLocalTOCPayloads() throws {
     let dictionaries = try AndroidOnlineImportPayloadImport
       .decodeDictionaryRules(Data(
