@@ -1568,7 +1568,7 @@ private final class SelectableSpeechSynthesizer:
         onEvent: @escaping @MainActor @Sendable (SystemSpeechEvent) -> Void
     ) {
         stop()
-        guard let engine = engineStore.selectedEngine else {
+        guard let engine = engineStore.effectiveEngine else {
             usesHTTP = false
             system.speak(
                 segments,

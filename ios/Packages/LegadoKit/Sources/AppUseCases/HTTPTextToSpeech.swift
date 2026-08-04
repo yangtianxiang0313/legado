@@ -50,6 +50,30 @@ public protocol HTTPTextToSpeechRepository: Sendable {
   func upsertHTTPTextToSpeechEngine(_ engine: HTTPTextToSpeechEngine) async throws
 }
 
+public enum AndroidBookTTSEngineSelection: Equatable, Sendable {
+  case global
+  case system(rawValue: String)
+  case http(id: Int64)
+
+  public static func resolve(
+    _ rawValue: String?,
+    availableHTTPIds: Set<Int64>
+  ) -> Self {
+    guard let rawValue else { return .global }
+    guard
+      let id = Int64(rawValue),
+      availableHTTPIds.contains(id)
+    else {
+      return .system(rawValue: rawValue)
+    }
+    return .http(id: id)
+  }
+
+  public static func androidRawValue(forHTTPID id: Int64?) -> String {
+    id.map(String.init) ?? ""
+  }
+}
+
 @MainActor
 public protocol HTTPTextToSpeechSelectionPersistence: AnyObject {
   func selectedHTTPTextToSpeechEngineID() -> Int64?
@@ -61,6 +85,8 @@ public protocol HTTPTextToSpeechSelectionPersistence: AnyObject {
 public final class HTTPTextToSpeechEngineStore {
   public private(set) var engines: [HTTPTextToSpeechEngine] = []
   public private(set) var selectedEngineID: Int64?
+  public private(set) var activeBookSelection: AndroidBookTTSEngineSelection =
+    .global
   public private(set) var errorMessage: String?
 
   private let repository: any HTTPTextToSpeechRepository
@@ -77,6 +103,17 @@ public final class HTTPTextToSpeechEngineStore {
 
   public var selectedEngine: HTTPTextToSpeechEngine? {
     selectedEngineID.flatMap { id in engines.first { $0.id == id } }
+  }
+
+  public var effectiveEngine: HTTPTextToSpeechEngine? {
+    switch activeBookSelection {
+    case .global:
+      selectedEngine
+    case .system:
+      nil
+    case .http(let id):
+      engines.first { $0.id == id }
+    }
   }
 
   public func reload() async {
@@ -97,6 +134,13 @@ public final class HTTPTextToSpeechEngineStore {
     }
     selectedEngineID = id
     persistence.saveSelectedHTTPTextToSpeechEngineID(id)
+  }
+
+  public func applyBookSelection(_ rawValue: String?) {
+    activeBookSelection = AndroidBookTTSEngineSelection.resolve(
+      rawValue,
+      availableHTTPIds: Set(engines.map(\.id))
+    )
   }
 }
 

@@ -554,7 +554,15 @@ public enum AndroidLibraryBackupAdapter {
   private static func mapBook(_ value: AndroidLibraryRestoreBook) throws
     -> AndroidBookDTO
   {
-    AndroidBookDTO(
+    var readConfig: [String: JSONValue] = [
+      "reverseToc": .bool(value.reversesTableOfContents),
+      "splitLongChapter": .bool(value.splitsLongChapters),
+      "useReplaceRule": .bool(value.usesReplacementRules),
+    ]
+    if let ttsEngine = value.ttsEngine {
+      readConfig["ttsEngine"] = .string(ttsEngine)
+    }
+    return AndroidBookDTO(
       bookURL: value.candidate.bookURL,
       tocURL: value.candidate.tocURL ?? "",
       origin: value.candidate.sourceID,
@@ -592,11 +600,7 @@ public enum AndroidLibraryBackupAdapter {
       order: try int32(value.order, field: "order"),
       originOrder: try int32(value.originOrder, field: "originOrder"),
       variable: try encodedVariables(value.candidate.variables),
-      readConfig: [
-        "reverseToc": .bool(value.reversesTableOfContents),
-        "splitLongChapter": .bool(value.splitsLongChapters),
-        "useReplaceRule": .bool(value.usesReplacementRules),
-      ],
+      readConfig: readConfig,
       syncTime: value.syncTime
     )
   }

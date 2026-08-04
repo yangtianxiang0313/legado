@@ -31,6 +31,42 @@ final class HTTPTextToSpeechPlaybackTests: XCTestCase {
     XCTAssertNil(persistence.value)
   }
 
+  func testBookSelectionOverridesGlobalAndInvalidAndroidValuesUseSystem()
+    async
+  {
+    let repository = PlaybackEngineRepository(engines: [
+      HTTPTextToSpeechEngine(
+        id: 42,
+        name: "Book HTTP TTS",
+        url: "https://tts.example.com/book"
+      ),
+      HTTPTextToSpeechEngine(
+        id: 7,
+        name: "Global HTTP TTS",
+        url: "https://tts.example.com/global"
+      ),
+    ])
+    let store = HTTPTextToSpeechEngineStore(
+      repository: repository,
+      persistence: PlaybackSelectionPersistence()
+    )
+    await store.reload()
+    store.select(7)
+
+    store.applyBookSelection("42")
+    XCTAssertEqual(store.effectiveEngine?.id, 42)
+
+    store.applyBookSelection(nil)
+    XCTAssertEqual(store.effectiveEngine?.id, 7)
+
+    store.applyBookSelection("")
+    XCTAssertNil(store.effectiveEngine)
+    store.applyBookSelection("999")
+    XCTAssertNil(store.effectiveEngine)
+    store.applyBookSelection(#"{"value":"android.system.tts"}"#)
+    XCTAssertNil(store.effectiveEngine)
+  }
+
   func testReadAloudStateMachineKeepsPauseResumeAndSegmentProgress() {
     let synthesizer = PlaybackSynthesizer()
     let session = ReadAloudSession(synthesizer: synthesizer)

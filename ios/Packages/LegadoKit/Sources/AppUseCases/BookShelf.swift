@@ -172,6 +172,7 @@ public struct ShelfBookItem: Identifiable, Equatable, Sendable {
   public let reversesTableOfContents: Bool
   public let splitsLongChapters: Bool
   public let usesReplacementRules: Bool
+  public let ttsEngine: String?
 
   public init(
     id: LibraryDomain.BookID,
@@ -186,7 +187,8 @@ public struct ShelfBookItem: Identifiable, Equatable, Sendable {
     canUpdate: Bool = true,
     reversesTableOfContents: Bool = false,
     splitsLongChapters: Bool = true,
-    usesReplacementRules: Bool = true
+    usesReplacementRules: Bool = true,
+    ttsEngine: String? = nil
   ) {
     self.id = id
     self.candidate = candidate
@@ -201,6 +203,7 @@ public struct ShelfBookItem: Identifiable, Equatable, Sendable {
     self.reversesTableOfContents = reversesTableOfContents
     self.splitsLongChapters = splitsLongChapters
     self.usesReplacementRules = usesReplacementRules
+    self.ttsEngine = ttsEngine
   }
 
   public var unreadChapterCount: Int {
@@ -307,6 +310,10 @@ public protocol BookShelfRepository:
   func setReversesTableOfContents(
     bookID: LibraryDomain.BookID,
     enabled: Bool
+  ) async throws -> ShelfBookItem
+  func setBookTTSEngine(
+    bookID: LibraryDomain.BookID,
+    value: String?
   ) async throws -> ShelfBookItem
   func applySourceSwitch(
     bookID: LibraryDomain.BookID,
@@ -471,6 +478,16 @@ public extension BookShelfRepository {
   func setReversesTableOfContents(
     bookID: LibraryDomain.BookID,
     enabled: Bool
+  ) async throws -> ShelfBookItem {
+    guard let book = try await book(id: bookID) else {
+      throw ShelfMutationFailure.missingBook
+    }
+    return book
+  }
+
+  func setBookTTSEngine(
+    bookID: LibraryDomain.BookID,
+    value: String?
   ) async throws -> ShelfBookItem {
     guard let book = try await book(id: bookID) else {
       throw ShelfMutationFailure.missingBook
@@ -1155,6 +1172,29 @@ public final class ShelfLibrary {
       return updated
     } catch {
       errorMessage = "无法切换目录顺序"
+      return nil
+    }
+  }
+
+  @discardableResult
+  public func setBookTTSEngine(
+    bookID: LibraryDomain.BookID,
+    value: String?
+  ) async -> ShelfBookItem? {
+    do {
+      let updated = try await repository.setBookTTSEngine(
+        bookID: bookID,
+        value: value
+      )
+      if let index = books.firstIndex(where: { $0.id == bookID }) {
+        books[index] = updated
+      }
+      allBooks = try await repository.shelfBooks()
+      projectBooks()
+      errorMessage = nil
+      return updated
+    } catch {
+      errorMessage = "无法保存本书朗读引擎"
       return nil
     }
   }

@@ -206,6 +206,7 @@ struct AndroidLibraryBackupUseCaseTests {
           canUpdate: false,
           reversesTableOfContents: true,
           splitsLongChapters: false,
+          ttsEngine: "42",
           androidType: 1,
           originOrder: 2,
           syncTime: 1_700_000_000_999,

@@ -280,6 +280,9 @@ struct ReaderContentView: View {
                 effectiveChapter = recovery.chapter
                 effectiveOffset = recovery.characterOffset
             }
+            httpTextToSpeechEngines.applyBookSelection(
+                effectiveBook.ttsEngine
+            )
             await library.beginReadingRecord(
                 bookName: effectiveBook.candidate.name,
                 enabled: readingHistoryPreferences.value.recordsReadingTime
@@ -422,9 +425,38 @@ struct ReaderContentView: View {
                 ReadAloudEngineSettingsView(
                     store: httpTextToSpeechEngines,
                     preferences: readAloudPreferences,
-                    select: { id in
+                    selectForBook: { id in
+                        readAloud.stop()
+                        guard let readerBook else { return }
+                        let rawValue = AndroidBookTTSEngineSelection
+                            .androidRawValue(forHTTPID: id)
+                        Task {
+                            guard
+                                let updated = await library.setBookTTSEngine(
+                                    bookID: readerBook.id,
+                                    value: rawValue
+                                )
+                            else { return }
+                            self.readerBook = updated
+                            httpTextToSpeechEngines.applyBookSelection(
+                                updated.ttsEngine
+                            )
+                        }
+                    },
+                    selectGlobally: { id in
                         readAloud.stop()
                         httpTextToSpeechEngines.select(id)
+                        guard let readerBook else { return }
+                        Task {
+                            guard
+                                let updated = await library.setBookTTSEngine(
+                                    bookID: readerBook.id,
+                                    value: nil
+                                )
+                            else { return }
+                            self.readerBook = updated
+                            httpTextToSpeechEngines.applyBookSelection(nil)
+                        }
                     }
                 )
             }
@@ -1916,7 +1948,8 @@ struct ReaderContentView: View {
                             splitsLongChapters:
                                 readerBook.splitsLongChapters,
                             usesReplacementRules:
-                                readerBook.usesReplacementRules
+                                readerBook.usesReplacementRules,
+                            ttsEngine: readerBook.ttsEngine
                         ),
                         chapters: preview.chapters,
                         suggestedChapterID:
@@ -2461,7 +2494,8 @@ private struct ReaderContentEditor: View {
 private struct ReadAloudEngineSettingsView: View {
     @Bindable var store: HTTPTextToSpeechEngineStore
     @Bindable var preferences: ReadAloudPreferencesStore
-    let select: (Int64?) -> Void
+    let selectForBook: (Int64?) -> Void
+    let selectGlobally: (Int64?) -> Void
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -2551,13 +2585,18 @@ private struct ReadAloudEngineSettingsView: View {
     }
 
     private func engineRow(id: Int64?, name: String) -> some View {
-        Button {
-            select(id)
+        Menu {
+            Button("仅本书使用") {
+                selectForBook(id)
+            }
+            Button("设为全局并让本书继承") {
+                selectGlobally(id)
+            }
         } label: {
             HStack {
                 Text(name)
                 Spacer()
-                if store.selectedEngineID == id {
+                if isEffective(id) {
                     Image(systemName: "checkmark")
                         .foregroundStyle(.tint)
                 }
@@ -2568,6 +2607,17 @@ private struct ReadAloudEngineSettingsView: View {
             id.map { "action.reader.readAloudEngine.\($0)" }
                 ?? "action.reader.readAloudEngine.system"
         )
+    }
+
+    private func isEffective(_ id: Int64?) -> Bool {
+        switch store.activeBookSelection {
+        case .global:
+            return store.selectedEngineID == id
+        case .system:
+            return id == nil
+        case .http(let selectedID):
+            return id == selectedID
+        }
     }
 }
 
