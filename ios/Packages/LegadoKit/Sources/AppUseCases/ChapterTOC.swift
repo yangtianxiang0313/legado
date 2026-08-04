@@ -26,6 +26,76 @@ public struct BookChapterLoadResult: Equatable, Sendable {
   }
 }
 
+public enum ReaderTOCOrderPolicy {
+  public struct Projection: Equatable, Sendable {
+    public let chapters: [LibraryDomain.BookChapter]
+    public let progress: ReadingProgress
+
+    public init(
+      chapters: [LibraryDomain.BookChapter],
+      progress: ReadingProgress
+    ) {
+      self.chapters = chapters
+      self.progress = progress
+    }
+  }
+
+  public static func ordered(
+    _ chapters: [LibraryDomain.BookChapter],
+    reversed: Bool
+  ) -> [LibraryDomain.BookChapter] {
+    let sourceOrder = chapters.sorted {
+      if $0.index == $1.index { return $0.id.rawValue < $1.id.rawValue }
+      return $0.index < $1.index
+    }
+    let ordered = reversed ? Array(sourceOrder.reversed()) : sourceOrder
+    return ordered.enumerated().map { index, chapter in
+      LibraryDomain.BookChapter(
+        id: chapter.id,
+        bookID: chapter.bookID,
+        sourceID: chapter.sourceID,
+        index: index,
+        title: chapter.title,
+        url: chapter.url,
+        requestExpression: chapter.requestExpression,
+        isPay: chapter.isPay,
+        isVIP: chapter.isVIP,
+        isVolume: chapter.isVolume,
+        variables: chapter.variables
+      )
+    }
+  }
+
+  public static func migrating(
+    _ chapters: [LibraryDomain.BookChapter],
+    progress: ReadingProgress,
+    reversed: Bool
+  ) -> Projection {
+    let sourceOrder = ordered(chapters, reversed: false)
+    let current = sourceOrder.first(where: {
+      $0.index == progress.position.chapterIndex
+    }) ?? sourceOrder.first(where: { $0.title == progress.chapterTitle })
+    let projected = ordered(sourceOrder, reversed: reversed)
+    let remappedIndex = current.flatMap { current in
+      projected.firstIndex(where: { $0.id == current.id })
+    } ?? min(
+      max(0, progress.position.chapterIndex),
+      max(0, projected.count - 1)
+    )
+    return Projection(
+      chapters: projected,
+      progress: ReadingProgress(
+        position: ReadingPosition(
+          chapterIndex: remappedIndex,
+          characterOffset: progress.position.characterOffset
+        ),
+        chapterTitle: current?.title ?? progress.chapterTitle,
+        updatedAtMilliseconds: progress.updatedAtMilliseconds
+      )
+    )
+  }
+}
+
 public struct SourceBookChapterLoader: BookChapterLoading, Sendable {
   private let sources: [SearchSourceDescriptor]
   private let transport: any HTTPTransport
@@ -152,9 +222,13 @@ public final class ChapterTOCSession {
 
     do {
       let fetched = try await loader.load(book: book)
+      let ordered = ReaderTOCOrderPolicy.ordered(
+        fetched.chapters,
+        reversed: book.reversesTableOfContents
+      )
       let update = ChapterTOCUpdatePolicy.shelfUpdate(
         existing: existing,
-        fetched: fetched.chapters
+        fetched: ordered
       )
       chapters = try await repository.applyTOCUpdate(
         bookID: book.id,

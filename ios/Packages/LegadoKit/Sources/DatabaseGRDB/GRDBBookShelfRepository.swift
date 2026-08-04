@@ -324,6 +324,50 @@ public actor GRDBBookShelfRepository:
     }
   }
 
+  public func setReversesTableOfContents(
+    bookID: LibraryDomain.BookID,
+    enabled: Bool
+  ) async throws -> ShelfBookItem {
+    try await database.write { db in
+      guard var book = try BookRecord
+        .filter(Column("bookID") == bookID.rawValue)
+        .fetchOne(db)
+      else {
+        throw ShelfMutationFailure.missingBook
+      }
+      guard book.reversesTableOfContents != enabled else {
+        return book.item
+      }
+      var records = try ChapterRecord
+        .filter(Column("bookID") == bookID.rawValue)
+        .order(Column("chapterIndex").asc)
+        .fetchAll(db)
+      let currentChapterID = records.first(where: {
+        $0.chapterIndex == book.progressChapterIndex
+      })?.chapterID
+      records.reverse()
+      for index in records.indices {
+        records[index].chapterIndex = -(index + 1)
+        try records[index].update(db)
+      }
+      for index in records.indices {
+        records[index].chapterIndex = index
+        try records[index].update(db)
+      }
+      book.reversesTableOfContents = enabled
+      if
+        let currentChapterID,
+        let remappedIndex = records.firstIndex(where: {
+          $0.chapterID == currentChapterID
+        })
+      {
+        book.progressChapterIndex = remappedIndex
+      }
+      try book.update(db)
+      return book.item
+    }
+  }
+
   public func applySourceSwitch(
     bookID: LibraryDomain.BookID,
     candidate: ShelfBookCandidate,
@@ -352,7 +396,10 @@ public actor GRDBBookShelfRepository:
           membership: .staged,
           order: order,
           chapterCount: chapters.count,
-          progress: progress
+          progress: progress,
+          reversesTableOfContents: record.reversesTableOfContents,
+          splitsLongChapters: record.splitsLongChapters,
+          usesReplacementRules: record.usesReplacementRules
         )
       }
 
@@ -381,7 +428,14 @@ public actor GRDBBookShelfRepository:
           membership: membership,
           order: item.order,
           chapterCount: item.chapterCount,
-          progress: item.progress
+          progress: item.progress,
+          latestChapterTime: item.latestChapterTime,
+          lastCheckTime: item.lastCheckTime,
+          latestCheckCount: item.latestCheckCount,
+          canUpdate: item.canUpdate,
+          reversesTableOfContents: item.reversesTableOfContents,
+          splitsLongChapters: item.splitsLongChapters,
+          usesReplacementRules: item.usesReplacementRules
         )
       }
       return item
@@ -2146,6 +2200,7 @@ private struct BookRecord:
       lastCheckTime: lastCheckTime,
       latestCheckCount: latestCheckCount,
       canUpdate: canUpdate,
+      reversesTableOfContents: reversesTableOfContents,
       splitsLongChapters: splitsLongChapters,
       usesReplacementRules: usesReplacementRules
     )

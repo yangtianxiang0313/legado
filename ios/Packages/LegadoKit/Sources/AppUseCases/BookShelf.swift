@@ -169,6 +169,7 @@ public struct ShelfBookItem: Identifiable, Equatable, Sendable {
   public let lastCheckTime: Int64
   public let latestCheckCount: Int
   public let canUpdate: Bool
+  public let reversesTableOfContents: Bool
   public let splitsLongChapters: Bool
   public let usesReplacementRules: Bool
 
@@ -183,6 +184,7 @@ public struct ShelfBookItem: Identifiable, Equatable, Sendable {
     lastCheckTime: Int64 = 0,
     latestCheckCount: Int = 0,
     canUpdate: Bool = true,
+    reversesTableOfContents: Bool = false,
     splitsLongChapters: Bool = true,
     usesReplacementRules: Bool = true
   ) {
@@ -196,6 +198,7 @@ public struct ShelfBookItem: Identifiable, Equatable, Sendable {
     self.lastCheckTime = max(0, lastCheckTime)
     self.latestCheckCount = max(0, latestCheckCount)
     self.canUpdate = canUpdate
+    self.reversesTableOfContents = reversesTableOfContents
     self.splitsLongChapters = splitsLongChapters
     self.usesReplacementRules = usesReplacementRules
   }
@@ -301,6 +304,10 @@ public protocol BookShelfRepository:
     bookID: LibraryDomain.BookID,
     progress: ReadingProgress
   ) async throws
+  func setReversesTableOfContents(
+    bookID: LibraryDomain.BookID,
+    enabled: Bool
+  ) async throws -> ShelfBookItem
   func applySourceSwitch(
     bookID: LibraryDomain.BookID,
     candidate: ShelfBookCandidate,
@@ -460,6 +467,16 @@ public extension BookShelfRepository {
     bookID: LibraryDomain.BookID,
     progress: ReadingProgress
   ) async throws {}
+
+  func setReversesTableOfContents(
+    bookID: LibraryDomain.BookID,
+    enabled: Bool
+  ) async throws -> ShelfBookItem {
+    guard let book = try await book(id: bookID) else {
+      throw ShelfMutationFailure.missingBook
+    }
+    return book
+  }
 
   func shelfSortMode(groupID: Int?) async throws -> ShelfSortMode {
     .recentlyRead
@@ -1119,6 +1136,29 @@ public final class ShelfLibrary {
     (try? await repository.chapters(bookID: bookID)) ?? []
   }
 
+  @discardableResult
+  public func setReversesTableOfContents(
+    bookID: LibraryDomain.BookID,
+    enabled: Bool
+  ) async -> ShelfBookItem? {
+    do {
+      let updated = try await repository.setReversesTableOfContents(
+        bookID: bookID,
+        enabled: enabled
+      )
+      if let index = books.firstIndex(where: { $0.id == bookID }) {
+        books[index] = updated
+      }
+      allBooks = try await repository.shelfBooks()
+      projectBooks()
+      errorMessage = nil
+      return updated
+    } catch {
+      errorMessage = "无法切换目录顺序"
+      return nil
+    }
+  }
+
   public func cacheChapterContent(
     _ content: String,
     bookID: LibraryDomain.BookID,
@@ -1289,11 +1329,16 @@ public final class ShelfLibrary {
           variables: $0.variables
         )
       }
+      let tocOrder = ReaderTOCOrderPolicy.migrating(
+        normalizedChapters,
+        progress: progress,
+        reversed: latest.reversesTableOfContents
+      )
       let item = try await repository.applySourceSwitch(
         bookID: latest.id,
         candidate: candidate,
-        chapters: normalizedChapters,
-        progress: progress,
+        chapters: tocOrder.chapters,
+        progress: tocOrder.progress,
         persist: latest.membership.isInBookshelf
       )
       if latest.membership.isInBookshelf {
@@ -1553,9 +1598,7 @@ public final class ShelfLibrary {
     guard let progress = migration.book.progress else {
       throw BookSourceSwitchFailure.missingMigratedProgress
     }
-    return (
-      progress,
-      chapters.map {
+    let normalizedChapters = chapters.map {
         LibraryDomain.BookChapter(
           id: $0.id,
           bookID: current.id,
@@ -1570,7 +1613,12 @@ public final class ShelfLibrary {
           variables: $0.variables
         )
       }
+    let tocOrder = ReaderTOCOrderPolicy.migrating(
+      normalizedChapters,
+      progress: progress,
+      reversed: current.reversesTableOfContents
     )
+    return (tocOrder.progress, tocOrder.chapters)
   }
 }
 

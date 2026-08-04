@@ -7,6 +7,60 @@ import Testing
 
 @Suite("AndroidLibraryRestorePersistenceTests")
 struct AndroidLibraryRestorePersistenceTests {
+  @Test func reversingTOCPreservesCurrentChapterIdentityAndRoundTripsFlag()
+    async throws
+  {
+    let databaseURL = temporaryDatabaseURL()
+    defer { try? FileManager.default.removeItem(at: databaseURL.deletingLastPathComponent()) }
+    let repository = try GRDBBookShelfRepository(path: databaseURL.path)
+    let book = try await repository.add(
+      candidate(name: "倒序目录", bookURL: "https://android.invalid/reverse"),
+      groupID: 0
+    )
+    let chapters = ["one", "two", "three"].enumerated().map { index, id in
+      BookChapter(
+        id: ChapterID(rawValue: id),
+        bookID: book.id,
+        sourceID: book.candidate.sourceID,
+        index: index,
+        title: id,
+        url: "https://android.invalid/reverse/\(id)"
+      )
+    }
+    _ = try await repository.applyTOCUpdate(
+      bookID: book.id,
+      update: .replaced(previousCount: 0, chapters: chapters)
+    )
+    try await repository.saveReadingProgress(
+      bookID: book.id,
+      progress: ReadingProgress(
+        position: ReadingPosition(chapterIndex: 0, characterOffset: 9),
+        chapterTitle: "one",
+        updatedAtMilliseconds: 100
+      )
+    )
+
+    let reversed = try await repository.setReversesTableOfContents(
+      bookID: book.id,
+      enabled: true
+    )
+    let reversedChapters = try await repository.chapters(bookID: book.id)
+
+    #expect(reversed.reversesTableOfContents)
+    #expect(reversed.progress?.position.chapterIndex == 2)
+    #expect(reversed.progress?.position.characterOffset == 9)
+    #expect(reversedChapters.map(\.id.rawValue) == ["three", "two", "one"])
+    #expect(reversedChapters.map(\.index) == [0, 1, 2])
+
+    let restored = try await repository.setReversesTableOfContents(
+      bookID: book.id,
+      enabled: false
+    )
+    #expect(!restored.reversesTableOfContents)
+    #expect(restored.progress?.position.chapterIndex == 0)
+    #expect(try await repository.chapters(bookID: book.id) == chapters)
+  }
+
   @MainActor
   @Test func nativeReadingSessionsAccumulateWithoutCountingBackgroundTime()
     async throws
@@ -132,6 +186,7 @@ struct AndroidLibraryRestorePersistenceTests {
     #expect(stored.progress?.position.chapterIndex == 3)
     #expect(stored.progress?.position.characterOffset == 27)
     #expect(stored.chapterCount == 10)
+    #expect(stored.reversesTableOfContents)
     #expect(storedRestoreBook.lastCheckTime == 1_700_000_000_100)
     #expect(storedRestoreBook.reversesTableOfContents)
     #expect(!storedRestoreBook.splitsLongChapters)

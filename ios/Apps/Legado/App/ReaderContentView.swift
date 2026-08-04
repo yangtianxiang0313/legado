@@ -1906,7 +1906,17 @@ struct ReaderContentView: View {
                             membership: readerBook.membership,
                             order: readerBook.order,
                             chapterCount: preview.chapters.count,
-                            progress: readerBook.progress
+                            progress: readerBook.progress,
+                            latestChapterTime: readerBook.latestChapterTime,
+                            lastCheckTime: readerBook.lastCheckTime,
+                            latestCheckCount: readerBook.latestCheckCount,
+                            canUpdate: readerBook.canUpdate,
+                            reversesTableOfContents:
+                                readerBook.reversesTableOfContents,
+                            splitsLongChapters:
+                                readerBook.splitsLongChapters,
+                            usesReplacementRules:
+                                readerBook.usesReplacementRules
                         ),
                         chapters: preview.chapters,
                         suggestedChapterID:

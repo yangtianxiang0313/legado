@@ -30,6 +30,29 @@ struct ChapterTOCView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Button {
+                        Task {
+                            guard
+                                let book,
+                                let updated = await library
+                                    .setReversesTableOfContents(
+                                        bookID: book.id,
+                                        enabled: !book.reversesTableOfContents
+                                    )
+                            else { return }
+                            self.book = updated
+                            await session?.load(book: updated)
+                        }
+                    } label: {
+                        Label(
+                            "倒序目录",
+                            systemImage: book?.reversesTableOfContents == true
+                                ? "checkmark" : "arrow.up.arrow.down"
+                        )
+                    }
+                    .disabled(book == nil || session?.state == .loading)
+                    .accessibilityIdentifier("action.chapterTOC.reverse")
+
+                    Button {
                         readerPreferences.setTOCUsesReplacementRules(
                             !readerPreferences.value.tocUsesReplacementRules
                         )
