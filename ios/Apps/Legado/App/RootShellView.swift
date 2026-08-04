@@ -1,5 +1,6 @@
 import AppNavigation
 import AppUseCases
+import AndroidBackupInterop
 import ArchiveZIPFoundation
 import BackupInteropUseCases
 import CoreTransferable
@@ -83,6 +84,7 @@ struct RootShellView: View {
     @Bindable var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
     @Bindable var dictionaryLookup: DictionaryLookupStore
     @Bindable var localTextTOCRules: LocalTextTOCRuleStore
+    @Bindable var readerConfigProfiles: AndroidReaderConfigProfileStore
     @Bindable var keyboardAssists: KeyboardAssistStore
     @Bindable var appThemeProfiles: AppThemeProfileStore
     @Bindable var readerPreferences: ReaderPreferencesStore
@@ -272,6 +274,7 @@ struct RootShellView: View {
             await httpTextToSpeechEngines.reload()
             await dictionaryLookup.reload()
             await localTextTOCRules.reload()
+            await readerConfigProfiles.reload()
             await keyboardAssists.reload()
             await appThemeProfiles.reload()
             router.reconcileVisibleRoots(visibleRoots)
@@ -398,6 +401,7 @@ struct RootShellView: View {
                 await httpTextToSpeechEngines.reload()
                 await dictionaryLookup.reload()
                 await localTextTOCRules.reload()
+                await readerConfigProfiles.reload()
                 await keyboardAssists.reload()
                 await appThemeProfiles.reload()
                 webDAVBackupNotice = .result(
@@ -613,6 +617,12 @@ struct RootShellView: View {
                 ),
                 backupSources: sourceCatalog.sources,
                 backupReplacementRules: replacementRules.rules,
+                readerConfigProfiles: [
+                    try? AndroidReaderConfigArchiveExport.configuration(
+                        name: "iOS 当前阅读配置",
+                        preferences: readerPreferences.value
+                    ),
+                ].compactMap { $0 } + readerConfigProfiles.profiles,
                 portableRuleExports: {
                     try [
                         AndroidPortableDataExport.rssSources(
@@ -688,6 +698,7 @@ struct RootShellView: View {
                     await httpTextToSpeechEngines.reload()
                     await dictionaryLookup.reload()
                     await localTextTOCRules.reload()
+                    await readerConfigProfiles.reload()
                     await keyboardAssists.reload()
                     await appThemeProfiles.reload()
                 },
@@ -1521,6 +1532,7 @@ private struct RootContentView: View {
     let persistedSources: [BookSourceDraft]
     let backupSources: [BookSourceDraft]
     let backupReplacementRules: [ReaderReplacementRule]
+    let readerConfigProfiles: [AndroidReaderConfigDTO]
     let portableRuleExports: () throws -> [AndroidPortableExportFile]
     @Bindable var webDAVBackupCheckpoint: WebDAVBackupCheckpointStore
     let openSearch: () -> Void
@@ -1692,6 +1704,38 @@ private struct RootContentView: View {
                     .accessibilityIdentifier(
                         "action.settings.androidPortable.export"
                     )
+                    if !readerConfigProfiles.isEmpty {
+                        Menu {
+                            ForEach(readerConfigProfiles.indices, id: \.self) {
+                                index in
+                                let configuration = readerConfigProfiles[index]
+                                let filename = AndroidReaderConfigArchiveExport
+                                    .suggestedFilename(for: configuration)
+                                ShareLink(
+                                    item: AndroidReaderConfigShareItem(
+                                        configuration: configuration
+                                    ),
+                                    preview: SharePreview(
+                                        filename,
+                                        image: Image(systemName: "doc.zipper")
+                                    )
+                                ) {
+                                    Text(filename.replacingOccurrences(
+                                        of: ".zip",
+                                        with: ""
+                                    ))
+                                }
+                            }
+                        } label: {
+                            Label(
+                                "导出 Android 阅读配置",
+                                systemImage: "doc.zipper"
+                            )
+                        }
+                        .accessibilityIdentifier(
+                            "action.settings.androidReaderConfig.export"
+                        )
+                    }
                 }
 
                 VStack(alignment: .leading, spacing: 10) {
@@ -3109,6 +3153,7 @@ struct StartupAcceptanceView: View {
     @Bindable var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
     @Bindable var dictionaryLookup: DictionaryLookupStore
     @Bindable var localTextTOCRules: LocalTextTOCRuleStore
+    @Bindable var readerConfigProfiles: AndroidReaderConfigProfileStore
     @Bindable var keyboardAssists: KeyboardAssistStore
     @Bindable var appThemeProfiles: AppThemeProfileStore
     @Bindable var readerPreferences: ReaderPreferencesStore
@@ -3176,6 +3221,7 @@ struct StartupAcceptanceView: View {
                 httpTextToSpeechEngines: httpTextToSpeechEngines,
                 dictionaryLookup: dictionaryLookup,
                 localTextTOCRules: localTextTOCRules,
+                readerConfigProfiles: readerConfigProfiles,
                 keyboardAssists: keyboardAssists,
                 appThemeProfiles: appThemeProfiles,
                 readerPreferences: readerPreferences,
@@ -3329,6 +3375,21 @@ private struct AndroidPortableShareItem: Transferable {
         }
         .suggestedFileName { item in
             item.file.filename
+        }
+    }
+}
+
+private struct AndroidReaderConfigShareItem: Transferable {
+    let configuration: AndroidReaderConfigDTO
+
+    static var transferRepresentation: some TransferRepresentation {
+        DataRepresentation(exportedContentType: .zip) { item in
+            try AndroidReaderConfigArchiveExport.encode(item.configuration).data
+        }
+        .suggestedFileName { item in
+            AndroidReaderConfigArchiveExport.suggestedFilename(
+                for: item.configuration
+            )
         }
     }
 }

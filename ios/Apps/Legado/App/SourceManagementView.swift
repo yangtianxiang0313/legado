@@ -1316,53 +1316,20 @@ private struct AndroidReaderConfigOnlineImportView: View {
         guard let payload else { return }
         Task {
             do {
-                let configuration = try ReaderConfigAssetStore.materialize(
-                    payload
-                )
+                let root = try FileManager.default.url(
+                    for: .applicationSupportDirectory,
+                    in: .userDomainMask,
+                    appropriateFor: nil,
+                    create: true
+                ).appendingPathComponent("ReaderConfigAssets", isDirectory: true)
+                let configuration = try AndroidReaderConfigAssetMaterializer
+                    .materialize(payload, rootURL: root)
                 if await store.importProfile(configuration) { dismiss() }
             } catch {
                 message = "无法保存阅读配置资源"
                 self.payload = nil
             }
         }
-    }
-}
-
-private enum ReaderConfigAssetStore {
-    static func materialize(
-        _ payload: AndroidReaderConfigArchivePayload
-    ) throws -> AndroidReaderConfigDTO {
-        let root = try FileManager.default.url(
-            for: .applicationSupportDirectory,
-            in: .userDomainMask,
-            appropriateFor: nil,
-            create: true
-        ).appendingPathComponent("ReaderConfigAssets", isDirectory: true)
-        let safeName = payload.name.unicodeScalars.map {
-            CharacterSet.alphanumerics.contains($0) ? Character(String($0)) : "_"
-        }
-        let directory = root.appendingPathComponent(
-            String(safeName),
-            isDirectory: true
-        )
-        try FileManager.default.createDirectory(
-            at: directory,
-            withIntermediateDirectories: true
-        )
-        var fields = payload.configuration.rawFields
-        for key in ["textFont", "bgStr"] {
-            guard case .string(let rawPath) = fields[key], !rawPath.isEmpty else {
-                continue
-            }
-            let fileName = URL(fileURLWithPath: rawPath).lastPathComponent
-            guard let resource = payload.resources.first(where: {
-                URL(fileURLWithPath: $0.key).lastPathComponent == fileName
-            }) else { continue }
-            let destination = directory.appendingPathComponent(fileName)
-            try resource.value.write(to: destination, options: .atomic)
-            fields[key] = .string(destination.path)
-        }
-        return try AndroidReaderConfigDTO(jsonValue: .object(fields))
     }
 }
 
