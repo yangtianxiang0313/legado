@@ -861,6 +861,7 @@ struct AndroidOnlineImportView: View {
     @Bindable var catalog: SourceCatalog
     @Bindable var rssStore: RSSStore
     @Bindable var replacementRules: ReaderReplacementRuleStore
+    @Bindable var httpTextToSpeechEngines: HTTPTextToSpeechEngineStore
     let dismiss: () -> Void
 
     @State private var isLoading = true
@@ -869,6 +870,7 @@ struct AndroidOnlineImportView: View {
     @State private var replacementCandidates:
         [ReplacementRuleSubscriptionCandidate] = []
     @State private var selectedCandidateIDs: Set<UUID> = []
+    @State private var httpTTSCandidates: [HTTPTextToSpeechCandidate] = []
 
     var body: some View {
         switch request.target {
@@ -881,7 +883,7 @@ struct AndroidOnlineImportView: View {
                     dismiss: dismiss
                 )
             }
-        case .rssSource, .replaceRule:
+        case .rssSource, .replaceRule, .httpTTS:
             NavigationStack {
                 structuredImportContent
             }
@@ -903,6 +905,28 @@ struct AndroidOnlineImportView: View {
             )
             .navigationTitle("一键导入")
             .toolbar { cancelToolbarItem }
+        } else if request.target == .httpTTS {
+            List(httpTTSCandidates) { candidate in
+                candidateToggle(id: candidate.id) {
+                    Text(candidate.value.name.isEmpty
+                        ? String(candidate.value.id)
+                        : candidate.value.name)
+                    Text(candidate.value.url)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+            }
+            .navigationTitle("导入在线朗读引擎")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消", action: dismiss)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("导入", action: commitStructuredPayload)
+                        .disabled(selectedCandidateIDs.isEmpty)
+                }
+            }
         } else {
             RuleSubscriptionImportPreviewView(
                 sheet: request.target == .rssSource ? .rss : .replacement,
@@ -953,6 +977,11 @@ struct AndroidOnlineImportView: View {
                         .decodeReplacementRules(data)
                         .map(ReplacementRuleSubscriptionCandidate.init(value:))
                 selectedCandidateIDs = Set(replacementCandidates.map(\.id))
+            case .httpTTS:
+                httpTTSCandidates = try AndroidOnlineImportPayloadImport
+                    .decodeHTTPTextToSpeechEngines(data)
+                    .map(HTTPTextToSpeechCandidate.init(value:))
+                selectedCandidateIDs = Set(httpTTSCandidates.map(\.id))
             case .bookSource:
                 break
             }
@@ -977,10 +1006,39 @@ struct AndroidOnlineImportView: View {
             Task {
                 if await replacementRules.importRules(values) { dismiss() }
             }
+        case .httpTTS:
+            let values = httpTTSCandidates
+                .filter { selectedCandidateIDs.contains($0.id) }
+                .map(\.value)
+            Task {
+                if await httpTextToSpeechEngines.importEngines(values) {
+                    dismiss()
+                }
+            }
         case .bookSource:
             break
         }
     }
+
+    private func candidateToggle<Content: View>(
+        id: UUID,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        Toggle(isOn: Binding(
+            get: { selectedCandidateIDs.contains(id) },
+            set: { selected in
+                if selected { selectedCandidateIDs.insert(id) }
+                else { selectedCandidateIDs.remove(id) }
+            }
+        )) {
+            VStack(alignment: .leading, spacing: 3, content: content)
+        }
+    }
+}
+
+private struct HTTPTextToSpeechCandidate: Identifiable {
+    let id = UUID()
+    let value: HTTPTextToSpeechEngine
 }
 
 private struct RuleSubscriptionEditor: View {

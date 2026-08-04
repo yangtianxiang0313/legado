@@ -50,3 +50,13 @@ public enum AndroidRuleSubscriptionPayloadImport {
     )
   }
 }
+
+public enum AndroidOnlineImportPayloadImport {
+  public static func decodeHTTPTextToSpeechEngines(
+    _ data: Data
+  ) throws -> [HTTPTextToSpeechEngine] {
+    AndroidHTTPTextToSpeechInteropAdapter.restoreValues(
+      try AndroidHTTPTextToSpeechCodec.decodeMany(data)
+    )
+  }
+}

@@ -4,6 +4,7 @@ public enum AndroidOnlineImportTarget: String, Equatable, Sendable {
   case bookSource
   case rssSource
   case replaceRule
+  case httpTTS
 }
 
 public struct AndroidOnlineImportRequest: Identifiable, Equatable, Sendable {
@@ -55,6 +56,7 @@ public enum AndroidOnlineImportLinkParser {
     case "booksource": target = .bookSource
     case "rsssource": target = .rssSource
     case "replacerule", "replace": target = .replaceRule
+    case "httptts": target = .httpTTS
     default: throw AndroidOnlineImportLinkError.unsupportedTarget
     }
     return AndroidOnlineImportRequest(target: target, sourceURL: sourceURL)

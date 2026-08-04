@@ -142,6 +142,20 @@ public final class HTTPTextToSpeechEngineStore {
       availableHTTPIds: Set(engines.map(\.id))
     )
   }
+
+  @discardableResult
+  public func importEngines(_ values: [HTTPTextToSpeechEngine]) async -> Bool {
+    do {
+      for engine in values {
+        try await repository.upsertHTTPTextToSpeechEngine(engine)
+      }
+      await reload()
+      return true
+    } catch {
+      errorMessage = "无法导入在线朗读引擎"
+      return false
+    }
+  }
 }
 
 public protocol HTTPTextToSpeechAudioLoading: Sendable {

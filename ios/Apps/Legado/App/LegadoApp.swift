@@ -430,6 +430,7 @@ struct LegadoApp: App {
                         catalog: sourceCatalog,
                         rssStore: rssStore,
                         replacementRules: replacementRules,
+                        httpTextToSpeechEngines: httpTextToSpeechEngines,
                         dismiss: { onlineImportRequest = nil }
                     )
                 }
