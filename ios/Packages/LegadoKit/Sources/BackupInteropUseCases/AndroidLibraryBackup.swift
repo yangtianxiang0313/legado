@@ -402,6 +402,10 @@ public struct AndroidLibraryBackupUseCase: Sendable {
         .int(
           Int32(applicationPreferences.readerPreferences.preDownloadCount)
         )
+      values[AndroidApplicationBackupPreferences.tocUiUseReplaceKey] =
+        .boolean(
+          applicationPreferences.readerPreferences.tocUsesReplacementRules
+        )
       values[AndroidApplicationBackupPreferences.ttsFollowSystemKey] =
         .boolean(
           applicationPreferences.readAloudPreferences.followsSystemRate
@@ -591,6 +595,7 @@ public enum AndroidLibraryBackupAdapter {
       readConfig: [
         "reverseToc": .bool(value.reversesTableOfContents),
         "splitLongChapter": .bool(value.splitsLongChapters),
+        "useReplaceRule": .bool(value.usesReplacementRules),
       ],
       syncTime: value.syncTime
     )

@@ -908,6 +908,8 @@ struct RootShellView: View {
             ChapterTOCView(
                 bookID: bookID,
                 library: library,
+                readerPreferences: readerPreferences,
+                replacementRules: replacementRules,
                 persistedSources: sourceCatalog.sources,
                 openReader: { chapter in
                     router.push(

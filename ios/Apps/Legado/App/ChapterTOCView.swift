@@ -5,6 +5,8 @@ import SwiftUI
 struct ChapterTOCView: View {
     let bookID: LibraryDomain.BookID
     @Bindable var library: ShelfLibrary
+    @Bindable var readerPreferences: ReaderPreferencesStore
+    @Bindable var replacementRules: ReaderReplacementRuleStore
     let persistedSources: [BookSourceDraft]
     let openReader: (LibraryDomain.BookChapter) -> Void
 
@@ -24,6 +26,28 @@ struct ChapterTOCView: View {
         }
         .navigationTitle(book?.candidate.name ?? "目录")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Button {
+                        readerPreferences.setTOCUsesReplacementRules(
+                            !readerPreferences.value.tocUsesReplacementRules
+                        )
+                    } label: {
+                        Label(
+                            "目录标题净化",
+                            systemImage: readerPreferences.value
+                                .tocUsesReplacementRules
+                                ? "checkmark" : "text.badge.xmark"
+                        )
+                    }
+                    .disabled(book?.usesReplacementRules == false)
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+                .accessibilityIdentifier("menu.chapterTOC.more")
+            }
+        }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("screen.chapterTOC")
         .task(id: bookID) {
@@ -55,7 +79,7 @@ struct ChapterTOCView: View {
             List(session.chapters) { chapter in
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(chapter.title)
+                        Text(displayTitle(for: chapter.title))
                         Text("第 \(chapter.index + 1) 章")
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -92,7 +116,7 @@ struct ChapterTOCView: View {
                 if let selected = session.chapters.first(
                     where: { $0.id == selectedChapterID }
                 ) {
-                    Text("已选择：\(selected.title)")
+                    Text("已选择：\(displayTitle(for: selected.title))")
                         .font(.footnote.weight(.semibold))
                         .frame(maxWidth: .infinity)
                         .padding()
@@ -103,5 +127,15 @@ struct ChapterTOCView: View {
                 }
             }
         }
+    }
+
+    private func displayTitle(for rawTitle: String) -> String {
+        guard let book else { return rawTitle }
+        return ReaderTOCTitleProjection.title(
+            for: rawTitle,
+            book: book,
+            globalEnabled: readerPreferences.value.tocUsesReplacementRules,
+            rules: replacementRules.rules
+        )
     }
 }

@@ -12,6 +12,7 @@ public struct ReaderPreferences:
   public var lineSpacing: Double
   public var autoPageEnabled: Bool
   public var preDownloadCount: Int
+  public var tocUsesReplacementRules: Bool
 
   public init(
     darkTheme: Bool = false,
@@ -19,7 +20,8 @@ public struct ReaderPreferences:
     fontSize: Double = 20,
     lineSpacing: Double = 12,
     autoPageEnabled: Bool = false,
-    preDownloadCount: Int = 10
+    preDownloadCount: Int = 10,
+    tocUsesReplacementRules: Bool = false
   ) {
     self.darkTheme = darkTheme
     self.brightness = brightness
@@ -27,6 +29,7 @@ public struct ReaderPreferences:
     self.lineSpacing = lineSpacing
     self.autoPageEnabled = autoPageEnabled
     self.preDownloadCount = preDownloadCount
+    self.tocUsesReplacementRules = tocUsesReplacementRules
     normalize()
   }
 
@@ -37,6 +40,7 @@ public struct ReaderPreferences:
     case lineSpacing
     case autoPageEnabled
     case preDownloadCount
+    case tocUsesReplacementRules
   }
 
   public init(from decoder: any Decoder) throws {
@@ -57,7 +61,11 @@ public struct ReaderPreferences:
       preDownloadCount: try container.decodeIfPresent(
         Int.self,
         forKey: .preDownloadCount
-      ) ?? 10
+      ) ?? 10,
+      tocUsesReplacementRules: try container.decodeIfPresent(
+        Bool.self,
+        forKey: .tocUsesReplacementRules
+      ) ?? false
     )
   }
 

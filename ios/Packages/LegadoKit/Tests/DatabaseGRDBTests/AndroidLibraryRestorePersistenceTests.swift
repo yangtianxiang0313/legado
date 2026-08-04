@@ -135,6 +135,8 @@ struct AndroidLibraryRestorePersistenceTests {
     #expect(storedRestoreBook.lastCheckTime == 1_700_000_000_100)
     #expect(storedRestoreBook.reversesTableOfContents)
     #expect(!storedRestoreBook.splitsLongChapters)
+    #expect(!stored.usesReplacementRules)
+    #expect(!storedRestoreBook.usesReplacementRules)
     #expect(storedRestoreBook.androidType == 1)
     #expect(storedRestoreBook.originOrder == 2)
     #expect(storedRestoreBook.syncTime == 1_700_000_000_999)
@@ -377,6 +379,7 @@ struct AndroidLibraryRestorePersistenceTests {
       canUpdate: false,
       reversesTableOfContents: true,
       splitsLongChapters: false,
+      usesReplacementRules: false,
       androidType: 1,
       originOrder: 2,
       syncTime: 1_700_000_000_999,

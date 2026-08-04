@@ -855,6 +855,9 @@ private struct AppAndroidCoreBackupRestoreRepository:
             if let count = plan.preDownloadCount {
                 readerPreferences.setPreDownloadCount(count)
             }
+            if let enabled = plan.tocUsesReplacementRules {
+                readerPreferences.setTOCUsesReplacementRules(enabled)
+            }
         }
     }
 

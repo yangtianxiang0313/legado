@@ -283,7 +283,7 @@ public struct ReplacementNormalizingReaderContentLoader:
         chapterTitle: raw.title,
         content: raw.content,
         includeTitle: false,
-        useReplacementRules: true,
+        useReplacementRules: book.usesReplacementRules,
         paragraphIndent: "　　",
         rules: storedRules.map(\.contentRule)
       )

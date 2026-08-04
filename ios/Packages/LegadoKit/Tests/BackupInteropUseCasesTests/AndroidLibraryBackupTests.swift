@@ -96,7 +96,10 @@ struct AndroidLibraryBackupUseCaseTests {
           followsSystemRate: false,
           speechRatePreference: 15
         ),
-        readerPreferences: ReaderPreferences(preDownloadCount: 17)
+        readerPreferences: ReaderPreferences(
+          preDownloadCount: 17,
+          tocUsesReplacementRules: true
+        )
       ),
       webDAVConfiguration: nil
     )
@@ -166,6 +169,7 @@ struct AndroidLibraryBackupUseCaseTests {
     #expect(sharedPreferences.changeSourceLoadsTOC == false)
     #expect(sharedPreferences.changeSourceLoadsWordCount == true)
     #expect(sharedPreferences.preDownloadCount == 17)
+    #expect(sharedPreferences.tocUsesReplacementRules == true)
     #expect(sharedPreferences.ttsFollowsSystemRate == false)
     #expect(sharedPreferences.ttsSpeechRate == 15)
   }

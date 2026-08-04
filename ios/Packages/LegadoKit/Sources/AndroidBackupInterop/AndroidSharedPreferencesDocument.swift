@@ -174,6 +174,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
   public static let changeSourceLoadTocKey = "changeSourceLoadToc"
   public static let changeSourceLoadWordCountKey = "changeSourceLoadWordCount"
   public static let preDownloadNumKey = "preDownloadNum"
+  public static let tocUiUseReplaceKey = "tocUiUseReplace"
   public static let ttsFollowSystemKey = "ttsFollowSys"
   public static let ttsSpeechRateKey = "ttsSpeechRate"
 
@@ -192,6 +193,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
   public let changeSourceLoadsTOC: Bool?
   public let changeSourceLoadsWordCount: Bool?
   public let preDownloadCount: Int64?
+  public let tocUsesReplacementRules: Bool?
   public let ttsFollowsSystemRate: Bool?
   public let ttsSpeechRate: Int64?
 
@@ -211,6 +213,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
     changeSourceLoadsTOC: Bool? = nil,
     changeSourceLoadsWordCount: Bool? = nil,
     preDownloadCount: Int64? = nil,
+    tocUsesReplacementRules: Bool? = nil,
     ttsFollowsSystemRate: Bool? = nil,
     ttsSpeechRate: Int64? = nil
   ) {
@@ -229,6 +232,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
     self.changeSourceLoadsTOC = changeSourceLoadsTOC
     self.changeSourceLoadsWordCount = changeSourceLoadsWordCount
     self.preDownloadCount = preDownloadCount
+    self.tocUsesReplacementRules = tocUsesReplacementRules
     self.ttsFollowsSystemRate = ttsFollowsSystemRate
     self.ttsSpeechRate = ttsSpeechRate
   }
@@ -254,6 +258,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
         Self.changeSourceLoadWordCountKey
       ),
       preDownloadCount: document.integer(Self.preDownloadNumKey),
+      tocUsesReplacementRules: document.boolean(Self.tocUiUseReplaceKey),
       ttsFollowsSystemRate: document.boolean(Self.ttsFollowSystemKey),
       ttsSpeechRate: document.integer(Self.ttsSpeechRateKey)
     )
@@ -272,6 +277,7 @@ public struct AndroidApplicationBackupPreferences: Equatable, Sendable {
       || changeSourceLoadsTOC != nil
       || changeSourceLoadsWordCount != nil
       || preDownloadCount != nil
+      || tocUsesReplacementRules != nil
       || ttsFollowsSystemRate != nil || ttsSpeechRate != nil
   }
 }

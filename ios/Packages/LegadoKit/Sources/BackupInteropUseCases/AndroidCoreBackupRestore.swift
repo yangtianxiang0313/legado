@@ -206,13 +206,18 @@ public struct AndroidSourceSwitchPreferencesImportPlan:
 
 public struct AndroidReaderPreferencesImportPlan: Equatable, Sendable {
   public let preDownloadCount: Int?
+  public let tocUsesReplacementRules: Bool?
 
-  public init(preDownloadCount: Int? = nil) {
+  public init(
+    preDownloadCount: Int? = nil,
+    tocUsesReplacementRules: Bool? = nil
+  ) {
     self.preDownloadCount = preDownloadCount
+    self.tocUsesReplacementRules = tocUsesReplacementRules
   }
 
   public var isPresent: Bool {
-    preDownloadCount != nil
+    preDownloadCount != nil || tocUsesReplacementRules != nil
   }
 }
 
@@ -660,7 +665,8 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
           .flatMap(Int.init(exactly:))
           .flatMap {
             ReaderPreferences.preDownloadCountRange.contains($0) ? $0 : nil
-          }
+          },
+        tocUsesReplacementRules: $0.tocUsesReplacementRules
       )
     }.flatMap { $0.isPresent ? $0 : nil }
     let webDAVConfiguration = projectedWebDAVConfiguration.flatMap {
@@ -765,6 +771,7 @@ public struct AndroidCoreBackupRestoreUseCase: Sendable {
         projectedApplicationPreferences?.changeSourceLoadsWordCount
           .map { _ in 1 },
         projectedApplicationPreferences?.preDownloadCount.map { _ in 1 },
+        projectedApplicationPreferences?.tocUsesReplacementRules.map { _ in 1 },
       ].compactMap { $0 }.count,
       webDAVConfigurationCount: webDAVConfiguration == nil ? 0 : 1,
       webDAVServerProfileCount: serverProfilePlan.webDAVProfiles.count,

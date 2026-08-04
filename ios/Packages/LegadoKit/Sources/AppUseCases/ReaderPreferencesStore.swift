@@ -45,6 +45,10 @@ public final class ReaderPreferencesStore {
     update { $0.preDownloadCount = count }
   }
 
+  public func setTOCUsesReplacementRules(_ enabled: Bool) {
+    update { $0.tocUsesReplacementRules = enabled }
+  }
+
   public func reset() {
     value = ReaderPreferences()
     repository.save(value)

@@ -170,6 +170,7 @@ public struct ShelfBookItem: Identifiable, Equatable, Sendable {
   public let latestCheckCount: Int
   public let canUpdate: Bool
   public let splitsLongChapters: Bool
+  public let usesReplacementRules: Bool
 
   public init(
     id: LibraryDomain.BookID,
@@ -182,7 +183,8 @@ public struct ShelfBookItem: Identifiable, Equatable, Sendable {
     lastCheckTime: Int64 = 0,
     latestCheckCount: Int = 0,
     canUpdate: Bool = true,
-    splitsLongChapters: Bool = true
+    splitsLongChapters: Bool = true,
+    usesReplacementRules: Bool = true
   ) {
     self.id = id
     self.candidate = candidate
@@ -195,6 +197,7 @@ public struct ShelfBookItem: Identifiable, Equatable, Sendable {
     self.latestCheckCount = max(0, latestCheckCount)
     self.canUpdate = canUpdate
     self.splitsLongChapters = splitsLongChapters
+    self.usesReplacementRules = usesReplacementRules
   }
 
   public var unreadChapterCount: Int {

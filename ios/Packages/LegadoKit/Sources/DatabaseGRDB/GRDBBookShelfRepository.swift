@@ -1039,6 +1039,7 @@ public actor GRDBBookShelfRepository:
         record.canUpdate = value.canUpdate
         record.reversesTableOfContents = value.reversesTableOfContents
         record.splitsLongChapters = value.splitsLongChapters
+        record.usesReplacementRules = value.usesReplacementRules
         record.androidType = value.androidType
         record.originOrder = value.originOrder
         record.syncTime = value.syncTime
@@ -1098,6 +1099,7 @@ public actor GRDBBookShelfRepository:
         record.canUpdate = value.canUpdate
         record.reversesTableOfContents = value.reversesTableOfContents
         record.splitsLongChapters = value.splitsLongChapters
+        record.usesReplacementRules = value.usesReplacementRules
         record.androidType = value.androidType
         record.originOrder = value.originOrder
         record.syncTime = value.syncTime
@@ -1833,6 +1835,12 @@ public actor GRDBBookShelfRepository:
         table.column("content", .text).notNull()
       }
     }
+    migrator.registerMigration("preserveBookReplacementRulePreference") { db in
+      try db.alter(table: "books") { table in
+        table.add(column: "usesReplacementRules", .boolean)
+          .notNull().defaults(to: true)
+      }
+    }
     migrator.registerMigration("addAndroidReadRecordInterop") { db in
       try db.create(table: "readRecords") { table in
         table.column("deviceID", .text).notNull()
@@ -2032,6 +2040,7 @@ private struct BookRecord:
   var canUpdate: Bool
   var reversesTableOfContents: Bool
   var splitsLongChapters: Bool
+  var usesReplacementRules: Bool
   var androidType: Int64
   var originOrder: Int64
   var syncTime: Int64
@@ -2076,6 +2085,7 @@ private struct BookRecord:
     self.canUpdate = true
     self.reversesTableOfContents = false
     self.splitsLongChapters = true
+    self.usesReplacementRules = true
     self.androidType = 0
     self.originOrder = 0
     self.syncTime = 0
@@ -2136,7 +2146,8 @@ private struct BookRecord:
       lastCheckTime: lastCheckTime,
       latestCheckCount: latestCheckCount,
       canUpdate: canUpdate,
-      splitsLongChapters: splitsLongChapters
+      splitsLongChapters: splitsLongChapters,
+      usesReplacementRules: usesReplacementRules
     )
   }
 
@@ -2175,6 +2186,7 @@ private struct BookRecord:
       canUpdate: canUpdate,
       reversesTableOfContents: reversesTableOfContents,
       splitsLongChapters: splitsLongChapters,
+      usesReplacementRules: usesReplacementRules,
       androidType: androidType,
       originOrder: originOrder,
       syncTime: syncTime,

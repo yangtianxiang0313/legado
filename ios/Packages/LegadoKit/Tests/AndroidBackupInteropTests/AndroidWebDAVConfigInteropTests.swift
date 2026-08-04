@@ -30,6 +30,7 @@ struct AndroidWebDAVConfigInteropTests {
         <boolean name="changeSourceLoadToc" value="false" />
         <boolean name="changeSourceLoadWordCount" value="true" />
         <int name="preDownloadNum" value="17" />
+        <boolean name="tocUiUseReplace" value="true" />
         <boolean name="ttsFollowSys" value="false" />
         <int name="ttsSpeechRate" value="15" />
         <int name="threadCount" value="8" />
@@ -67,6 +68,7 @@ struct AndroidWebDAVConfigInteropTests {
     #expect(application.changeSourceLoadsTOC == false)
     #expect(application.changeSourceLoadsWordCount == true)
     #expect(application.preDownloadCount == 17)
+    #expect(application.tocUsesReplacementRules == true)
     #expect(application.ttsFollowsSystemRate == false)
     #expect(application.ttsSpeechRate == 15)
     #expect(document.values["onlyLatestBackup"] == .boolean(false))

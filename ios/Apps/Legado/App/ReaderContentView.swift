@@ -1203,7 +1203,7 @@ struct ReaderContentView: View {
                                     alignment: .leading,
                                     spacing: 3
                                 ) {
-                                    Text(chapter.title)
+                                    Text(tocDisplayTitle(chapter.title))
                                     Text("第 \(chapter.index + 1) 章")
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
@@ -2266,6 +2266,16 @@ struct ReaderContentView: View {
         Binding(
             get: { readerPreferences.value.preDownloadCount },
             set: { readerPreferences.setPreDownloadCount($0) }
+        )
+    }
+
+    private func tocDisplayTitle(_ rawTitle: String) -> String {
+        guard let readerBook else { return rawTitle }
+        return ReaderTOCTitleProjection.title(
+            for: rawTitle,
+            book: readerBook,
+            globalEnabled: readerPreferences.value.tocUsesReplacementRules,
+            rules: replacementRules.rules
         )
     }
 

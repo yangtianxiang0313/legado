@@ -32,6 +32,7 @@ public struct AndroidLibraryRestoreBook: Equatable, Sendable {
   public let canUpdate: Bool
   public let reversesTableOfContents: Bool
   public let splitsLongChapters: Bool
+  public let usesReplacementRules: Bool
   public let androidType: Int64
   public let originOrder: Int64
   public let syncTime: Int64
@@ -51,6 +52,7 @@ public struct AndroidLibraryRestoreBook: Equatable, Sendable {
     canUpdate: Bool,
     reversesTableOfContents: Bool,
     splitsLongChapters: Bool,
+    usesReplacementRules: Bool = true,
     androidType: Int64,
     originOrder: Int64,
     syncTime: Int64,
@@ -69,6 +71,7 @@ public struct AndroidLibraryRestoreBook: Equatable, Sendable {
     self.canUpdate = canUpdate
     self.reversesTableOfContents = reversesTableOfContents
     self.splitsLongChapters = splitsLongChapters
+    self.usesReplacementRules = usesReplacementRules
     self.androidType = androidType
     self.originOrder = originOrder
     self.syncTime = syncTime
@@ -194,6 +197,7 @@ public enum AndroidLibraryImportAdapter {
       canUpdate: fields.boolean("canUpdate") ?? true,
       reversesTableOfContents: readConfig.boolean("reverseToc") ?? false,
       splitsLongChapters: readConfig.boolean("splitLongChapter") ?? true,
+      usesReplacementRules: readConfig.boolean("useReplaceRule") ?? true,
       androidType: fields.integer("type") ?? 0,
       originOrder: fields.integer("originOrder") ?? 0,
       syncTime: fields.integer("syncTime") ?? 0,

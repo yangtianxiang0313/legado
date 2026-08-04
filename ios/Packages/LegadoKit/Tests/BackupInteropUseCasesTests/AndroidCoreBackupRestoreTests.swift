@@ -87,6 +87,8 @@ struct AndroidCoreBackupRestoreUseCaseTests {
           AndroidApplicationBackupPreferences.changeSourceLoadWordCountKey:
             .boolean(true),
           AndroidApplicationBackupPreferences.preDownloadNumKey: .int(17),
+          AndroidApplicationBackupPreferences.tocUiUseReplaceKey:
+            .boolean(true),
           AndroidApplicationBackupPreferences.ttsFollowSystemKey: .boolean(false),
           AndroidApplicationBackupPreferences.ttsSpeechRateKey: .int(15),
         ])
@@ -106,7 +108,7 @@ struct AndroidCoreBackupRestoreUseCaseTests {
     #expect(summary.localTextTOCRuleCount == 1)
     #expect(summary.readerConfigCount == 2)
     #expect(summary.dictionaryRuleCount == 1)
-    #expect(summary.applicationPreferenceCount == 17)
+    #expect(summary.applicationPreferenceCount == 18)
     #expect(Set(summary.preflight.members.map(\.path)) == Set([
       "bookSource.json", "config.xml", "dictRule.json", "readConfig.json",
       "readRecord.json", "replaceRule.json", "shareReadConfig.json",
@@ -144,6 +146,7 @@ struct AndroidCoreBackupRestoreUseCaseTests {
     #expect(snapshot.sourceSwitchPreferences?.loadsTableOfContents == false)
     #expect(snapshot.sourceSwitchPreferences?.loadsChapterWordCount == true)
     #expect(snapshot.readerPreferences?.preDownloadCount == 17)
+    #expect(snapshot.readerPreferences?.tocUsesReplacementRules == true)
   }
 
 }

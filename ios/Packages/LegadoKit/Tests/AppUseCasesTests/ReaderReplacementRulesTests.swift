@@ -77,7 +77,47 @@ final class ReaderReplacementRulesTests: XCTestCase {
     XCTAssertFalse(store.rules[0].isEnabled)
   }
 
-  private func makeBook() -> ShelfBookItem {
+  func testTOCTitleProjectionRequiresGlobalAndBookSwitches() {
+    let rule = ReaderReplacementRule(
+      name: "去序号",
+      pattern: #"第\d+章\s*"#,
+      replacement: "",
+      appliesToTitle: true,
+      appliesToContent: false
+    )
+    let enabledBook = makeBook()
+    let disabledBook = makeBook(usesReplacementRules: false)
+
+    XCTAssertEqual(
+      ReaderTOCTitleProjection.title(
+        for: "第12章 启程",
+        book: enabledBook,
+        globalEnabled: true,
+        rules: [rule]
+      ),
+      "启程"
+    )
+    XCTAssertEqual(
+      ReaderTOCTitleProjection.title(
+        for: "第12章 启程",
+        book: enabledBook,
+        globalEnabled: false,
+        rules: [rule]
+      ),
+      "第12章 启程"
+    )
+    XCTAssertEqual(
+      ReaderTOCTitleProjection.title(
+        for: "第12章 启程",
+        book: disabledBook,
+        globalEnabled: true,
+        rules: [rule]
+      ),
+      "第12章 启程"
+    )
+  }
+
+  private func makeBook(usesReplacementRules: Bool = true) -> ShelfBookItem {
     ShelfBookItem(
       id: BookID(rawValue: "book"),
       candidate: ShelfBookCandidate(
@@ -93,7 +133,8 @@ final class ReaderReplacementRulesTests: XCTestCase {
       ),
       membership: .member(groupID: 0),
       order: 0,
-      chapterCount: 1
+      chapterCount: 1,
+      usesReplacementRules: usesReplacementRules
     )
   }
 

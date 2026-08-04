@@ -95,6 +95,29 @@ public enum ReaderReplacementRuleFailure: Error, Equatable {
   case invalidRule(String)
 }
 
+public enum ReaderTOCTitleProjection {
+  public static func title(
+    for rawTitle: String,
+    book: ShelfBookItem,
+    globalEnabled: Bool,
+    rules: [ReaderReplacementRule]
+  ) -> String {
+    guard globalEnabled, book.usesReplacementRules else { return rawTitle }
+    return AndroidReaderContentNormalizationPolicy.normalize(
+      ReaderContentNormalizationInput(
+        bookName: book.candidate.name,
+        bookOrigin: book.candidate.sourceID,
+        chapterTitle: rawTitle,
+        content: "",
+        includeTitle: false,
+        useReplacementRules: true,
+        paragraphIndent: "",
+        rules: rules.map(\.contentRule)
+      )
+    ).displayTitle
+  }
+}
+
 @MainActor
 @Observable
 public final class ReaderReplacementRuleStore {
