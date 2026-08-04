@@ -37,6 +37,7 @@ public struct AndroidLibraryRestoreBook: Equatable, Sendable {
   public let imageStyle: String?
   public let resegmentsContent: Bool
   public let pageAnimation: Int?
+  public let deletedEPUBTagMask: Int64
   public let androidType: Int64
   public let originOrder: Int64
   public let syncTime: Int64
@@ -61,6 +62,7 @@ public struct AndroidLibraryRestoreBook: Equatable, Sendable {
     imageStyle: String? = nil,
     resegmentsContent: Bool = false,
     pageAnimation: Int? = nil,
+    deletedEPUBTagMask: Int64 = 0,
     androidType: Int64,
     originOrder: Int64,
     syncTime: Int64,
@@ -84,6 +86,7 @@ public struct AndroidLibraryRestoreBook: Equatable, Sendable {
     self.imageStyle = imageStyle
     self.resegmentsContent = resegmentsContent
     self.pageAnimation = pageAnimation
+    self.deletedEPUBTagMask = deletedEPUBTagMask
     self.androidType = androidType
     self.originOrder = originOrder
     self.syncTime = syncTime
@@ -214,6 +217,7 @@ public enum AndroidLibraryImportAdapter {
       imageStyle: readConfig.string("imageStyle"),
       resegmentsContent: readConfig.boolean("reSegment") ?? false,
       pageAnimation: readConfig.integer("pageAnim").map(Int.init),
+      deletedEPUBTagMask: readConfig.integer("delTag") ?? 0,
       androidType: fields.integer("type") ?? 0,
       originOrder: fields.integer("originOrder") ?? 0,
       syncTime: fields.integer("syncTime") ?? 0,

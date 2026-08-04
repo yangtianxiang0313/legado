@@ -177,6 +177,7 @@ public struct ShelfBookItem: Identifiable, Equatable, Sendable {
   public let resegmentsContent: Bool
   public let pageAnimation: Int?
   public let androidBookType: Int64
+  public let deletedEPUBTagMask: Int64
 
   public init(
     id: LibraryDomain.BookID,
@@ -196,7 +197,8 @@ public struct ShelfBookItem: Identifiable, Equatable, Sendable {
     imageStyle: String? = nil,
     resegmentsContent: Bool = false,
     pageAnimation: Int? = nil,
-    androidBookType: Int64 = 0
+    androidBookType: Int64 = 0,
+    deletedEPUBTagMask: Int64 = 0
   ) {
     self.id = id
     self.candidate = candidate
@@ -216,6 +218,7 @@ public struct ShelfBookItem: Identifiable, Equatable, Sendable {
     self.resegmentsContent = resegmentsContent
     self.pageAnimation = pageAnimation
     self.androidBookType = androidBookType
+    self.deletedEPUBTagMask = deletedEPUBTagMask
   }
 
   public var unreadChapterCount: Int {
@@ -338,6 +341,10 @@ public protocol BookShelfRepository:
   func setBookPageAnimation(
     bookID: LibraryDomain.BookID,
     value: Int?
+  ) async throws -> ShelfBookItem
+  func setBookDeletedEPUBTagMask(
+    bookID: LibraryDomain.BookID,
+    value: Int64
   ) async throws -> ShelfBookItem
   func applySourceSwitch(
     bookID: LibraryDomain.BookID,
@@ -542,6 +549,16 @@ public extension BookShelfRepository {
   func setBookPageAnimation(
     bookID: LibraryDomain.BookID,
     value: Int?
+  ) async throws -> ShelfBookItem {
+    guard let book = try await book(id: bookID) else {
+      throw ShelfMutationFailure.missingBook
+    }
+    return book
+  }
+
+  func setBookDeletedEPUBTagMask(
+    bookID: LibraryDomain.BookID,
+    value: Int64
   ) async throws -> ShelfBookItem {
     guard let book = try await book(id: bookID) else {
       throw ShelfMutationFailure.missingBook
@@ -1139,6 +1156,79 @@ public final class ShelfLibrary {
   }
 
   @discardableResult
+  public func refreshLocalEPUB(
+    bookID: LibraryDomain.BookID,
+    members: [String: Data],
+    managedReference: String? = nil
+  ) async -> ShelfBookItem? {
+    guard
+      let current = try? await repository.book(id: bookID),
+      AndroidWebDAVBookOrigin.isLocalSource(current.candidate.sourceID)
+    else {
+      errorMessage = "仅本地 EPUB 支持重新读取"
+      return nil
+    }
+    do {
+      let document = try EPUBBookParser.parse(
+        members: members,
+        fallbackTitle: current.candidate.originName,
+        deletedTags: AndroidEPUBDeletedTags(
+          rawValue: current.deletedEPUBTagMask
+        )
+      )
+      let updated = try await repository.rebuildLocalText(
+        bookID: bookID,
+        chapters: document.chapters,
+        splitsLongChapters: current.splitsLongChapters,
+        managedReference: managedReference
+      )
+      await reload()
+      errorMessage = nil
+      return updated
+    } catch {
+      errorMessage = "无法重新解析本地 EPUB"
+      return nil
+    }
+  }
+
+  @discardableResult
+  public func setEPUBDeletedTags(
+    _ value: AndroidEPUBDeletedTags,
+    bookID: LibraryDomain.BookID,
+    members: [String: Data]
+  ) async -> ShelfBookItem? {
+    guard
+      let current = try? await repository.book(id: bookID),
+      current.candidate.originName.lowercased().hasSuffix(".epub")
+    else {
+      errorMessage = "仅本地 EPUB 支持标签过滤"
+      return nil
+    }
+    do {
+      let document = try EPUBBookParser.parse(
+        members: members,
+        fallbackTitle: current.candidate.originName,
+        deletedTags: value
+      )
+      _ = try await repository.setBookDeletedEPUBTagMask(
+        bookID: bookID,
+        value: value.rawValue
+      )
+      let updated = try await repository.rebuildLocalText(
+        bookID: bookID,
+        chapters: document.chapters,
+        splitsLongChapters: current.splitsLongChapters
+      )
+      await reload()
+      errorMessage = nil
+      return updated
+    } catch {
+      errorMessage = "无法应用 EPUB 标签过滤"
+      return nil
+    }
+  }
+
+  @discardableResult
   public func restoreWebDAVLocalText(
     bookID: LibraryDomain.BookID,
     managedReference: String,
@@ -1170,6 +1260,42 @@ public final class ShelfLibrary {
       return updated
     } catch {
       errorMessage = "无法恢复 WebDAV 本地书"
+      return nil
+    }
+  }
+
+  @discardableResult
+  public func restoreWebDAVLocalEPUB(
+    bookID: LibraryDomain.BookID,
+    managedReference: String,
+    members: [String: Data]
+  ) async -> ShelfBookItem? {
+    guard
+      let current = try? await repository.book(id: bookID),
+      AndroidWebDAVBookOrigin.decode(current.candidate.sourceID) != nil
+    else {
+      errorMessage = "书籍没有可恢复的 WebDAV 来源"
+      return nil
+    }
+    do {
+      let document = try EPUBBookParser.parse(
+        members: members,
+        fallbackTitle: current.candidate.originName,
+        deletedTags: AndroidEPUBDeletedTags(
+          rawValue: current.deletedEPUBTagMask
+        )
+      )
+      let updated = try await repository.rebuildLocalText(
+        bookID: bookID,
+        chapters: document.chapters,
+        splitsLongChapters: current.splitsLongChapters,
+        managedReference: managedReference
+      )
+      await reload()
+      errorMessage = nil
+      return updated
+    } catch {
+      errorMessage = "无法恢复 WebDAV EPUB"
       return nil
     }
   }
@@ -1318,6 +1444,29 @@ public final class ShelfLibrary {
       return updated
     } catch {
       errorMessage = "无法保存本书翻页动画"
+      return nil
+    }
+  }
+
+  @discardableResult
+  public func setBookDeletedEPUBTagMask(
+    bookID: LibraryDomain.BookID,
+    value: Int64
+  ) async -> ShelfBookItem? {
+    do {
+      let updated = try await repository.setBookDeletedEPUBTagMask(
+        bookID: bookID,
+        value: value
+      )
+      if let index = books.firstIndex(where: { $0.id == bookID }) {
+        books[index] = updated
+      }
+      allBooks = try await repository.shelfBooks()
+      projectBooks()
+      errorMessage = nil
+      return updated
+    } catch {
+      errorMessage = "无法保存 EPUB 标签过滤设置"
       return nil
     }
   }

@@ -1175,6 +1175,34 @@ struct ReaderContentView: View {
                 .disabled(readerBook == nil)
                 .accessibilityIdentifier("action.reader.reSegment")
 
+                if readerBook?.candidate.originName.lowercased()
+                    .hasSuffix(".epub") == true
+                {
+                    Button {
+                        toggleEPUBDeletedTag(.rubyAnnotation)
+                    } label: {
+                        Label(
+                            epubTagEnabled(.rubyAnnotation)
+                                ? "保留 EPUB 注音"
+                                : "移除 EPUB 注音",
+                            systemImage: "character.phonetic"
+                        )
+                    }
+                    .accessibilityIdentifier("action.reader.epub.removeRuby")
+
+                    Button {
+                        toggleEPUBDeletedTag(.headings)
+                    } label: {
+                        Label(
+                            epubTagEnabled(.headings)
+                                ? "保留 EPUB 正文标题"
+                                : "移除 EPUB 正文标题",
+                            systemImage: "textformat.size"
+                        )
+                    }
+                    .accessibilityIdentifier("action.reader.epub.removeHeadings")
+                }
+
                 Button {
                     toggleCurrentBookmark()
                 } label: {
@@ -2115,7 +2143,9 @@ struct ReaderContentView: View {
                             resegmentsContent:
                                 readerBook.resegmentsContent,
                             pageAnimation: readerBook.pageAnimation,
-                            androidBookType: readerBook.androidBookType
+                            androidBookType: readerBook.androidBookType,
+                            deletedEPUBTagMask:
+                                readerBook.deletedEPUBTagMask
                         ),
                         chapters: preview.chapters,
                         suggestedChapterID:
@@ -2520,6 +2550,56 @@ struct ReaderContentView: View {
                 book: updated,
                 chapter: chapter,
                 characterOffset: offset
+            )
+        }
+    }
+
+    private func epubTagEnabled(_ tag: AndroidEPUBDeletedTags) -> Bool {
+        AndroidEPUBDeletedTags(
+            rawValue: readerBook?.deletedEPUBTagMask ?? 0
+        ).contains(tag)
+    }
+
+    private func toggleEPUBDeletedTag(_ tag: AndroidEPUBDeletedTags) {
+        guard
+            let readerBook,
+            let url = URL(string: readerBook.candidate.bookURL),
+            url.isFileURL,
+            let data = try? Data(contentsOf: url),
+            let members = try? ManagedBookFileStore.epubMembers(
+                from: ManagedBookFile(
+                    reference: readerBook.candidate.bookURL,
+                    fileName: readerBook.candidate.originName,
+                    data: data
+                )
+            )
+        else { return }
+        var tags = AndroidEPUBDeletedTags(
+            rawValue: readerBook.deletedEPUBTagMask
+        )
+        if tags.contains(tag) { tags.remove(tag) } else { tags.insert(tag) }
+        let anchor = currentReaderOffset
+        Task {
+            await saveCurrentProgress()
+            guard
+                let updated = await library.setEPUBDeletedTags(
+                    tags,
+                    bookID: readerBook.id,
+                    members: members
+                )
+            else { return }
+            self.readerBook = updated
+            chapters = await library.chapters(bookID: readerBook.id)
+                .sorted { $0.index < $1.index }
+            guard
+                let chapter = chapters.first(where: {
+                    $0.id == target.chapterID
+                })
+            else { return }
+            await session.load(
+                book: updated,
+                chapter: chapter,
+                characterOffset: anchor
             )
         }
     }

@@ -569,6 +569,7 @@ public enum AndroidLibraryBackupAdapter {
     if let pageAnimation = value.pageAnimation {
       readConfig["pageAnim"] = .number(JSONNumber(Int64(pageAnimation)))
     }
+    readConfig["delTag"] = .number(JSONNumber(value.deletedEPUBTagMask))
     return AndroidBookDTO(
       bookURL: value.candidate.bookURL,
       tocURL: value.candidate.tocURL ?? "",

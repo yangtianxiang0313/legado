@@ -2,6 +2,36 @@ import AppUseCases
 import XCTest
 
 final class LocalBookFormatsTests: XCTestCase {
+  func testAndroidDeletedTagMaskFiltersRubyAnnotationsAndHeadingsIndependently()
+    throws
+  {
+    let members = singleChapterEPUB(
+      #"<h1>重复标题</h1><p><ruby>漢<rp>(</rp><rt>han</rt><rp>)</rp></ruby>正文</p>"#
+    )
+    let original = try EPUBBookParser.parse(
+      members: members,
+      fallbackTitle: "book.epub"
+    )
+    let rubyFiltered = try EPUBBookParser.parse(
+      members: members,
+      fallbackTitle: "book.epub",
+      deletedTags: .rubyAnnotation
+    )
+    let allFiltered = try EPUBBookParser.parse(
+      members: members,
+      fallbackTitle: "book.epub",
+      deletedTags: [.rubyAnnotation, .headings]
+    )
+
+    XCTAssertTrue(original.chapters[0].content.contains("重复标题"))
+    XCTAssertTrue(original.chapters[0].content.contains("han"))
+    XCTAssertTrue(rubyFiltered.chapters[0].content.contains("重复标题"))
+    XCTAssertFalse(rubyFiltered.chapters[0].content.contains("han"))
+    XCTAssertTrue(rubyFiltered.chapters[0].content.contains("漢正文"))
+    XCTAssertFalse(allFiltered.chapters[0].content.contains("重复标题"))
+    XCTAssertTrue(allFiltered.chapters[0].content.contains("漢正文"))
+  }
+
   func testParsesEPUBMetadataNavigationAndChapterText() throws {
     let document = try EPUBBookParser.parse(
       members: [
@@ -94,5 +124,21 @@ final class LocalBookFormatsTests: XCTestCase {
 
   private func data(_ value: String) -> Data {
     Data(value.utf8)
+  }
+
+  private func singleChapterEPUB(_ body: String) -> [String: Data] {
+    [
+      "META-INF/container.xml": data(
+        "<container><rootfiles><rootfile full-path=\"book.opf\"/>"
+          + "</rootfiles></container>"
+      ),
+      "book.opf": data(
+        "<package><manifest><item id=\"only\" href=\"chapter.xhtml\"/>"
+          + "</manifest><spine><itemref idref=\"only\"/></spine></package>"
+      ),
+      "chapter.xhtml": data(
+        "<html><head><title>章节</title></head><body>\(body)</body></html>"
+      ),
+    ]
   }
 }

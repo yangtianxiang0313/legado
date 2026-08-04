@@ -436,6 +436,23 @@ public actor GRDBBookShelfRepository:
     }
   }
 
+  public func setBookDeletedEPUBTagMask(
+    bookID: LibraryDomain.BookID,
+    value: Int64
+  ) async throws -> ShelfBookItem {
+    try await database.write { db in
+      guard var book = try BookRecord
+        .filter(Column("bookID") == bookID.rawValue)
+        .fetchOne(db)
+      else {
+        throw ShelfMutationFailure.missingBook
+      }
+      book.deletedEPUBTagMask = value
+      try book.update(db)
+      return book.item
+    }
+  }
+
   public func applySourceSwitch(
     bookID: LibraryDomain.BookID,
     candidate: ShelfBookCandidate,
@@ -472,7 +489,8 @@ public actor GRDBBookShelfRepository:
           imageStyle: record.imageStyle,
           resegmentsContent: record.resegmentsContent,
           pageAnimation: record.pageAnimation,
-          androidBookType: record.androidType
+          androidBookType: record.androidType,
+          deletedEPUBTagMask: record.deletedEPUBTagMask
         )
       }
 
@@ -513,7 +531,8 @@ public actor GRDBBookShelfRepository:
           imageStyle: item.imageStyle,
           resegmentsContent: item.resegmentsContent,
           pageAnimation: item.pageAnimation,
-          androidBookType: item.androidBookType
+          androidBookType: item.androidBookType,
+          deletedEPUBTagMask: item.deletedEPUBTagMask
         )
       }
       return item
@@ -1176,6 +1195,7 @@ public actor GRDBBookShelfRepository:
         record.imageStyle = value.imageStyle
         record.resegmentsContent = value.resegmentsContent
         record.pageAnimation = value.pageAnimation
+        record.deletedEPUBTagMask = value.deletedEPUBTagMask
         record.androidType = value.androidType
         record.originOrder = value.originOrder
         record.syncTime = value.syncTime
@@ -1240,6 +1260,7 @@ public actor GRDBBookShelfRepository:
         record.imageStyle = value.imageStyle
         record.resegmentsContent = value.resegmentsContent
         record.pageAnimation = value.pageAnimation
+        record.deletedEPUBTagMask = value.deletedEPUBTagMask
         record.androidType = value.androidType
         record.originOrder = value.originOrder
         record.syncTime = value.syncTime
@@ -2002,6 +2023,12 @@ public actor GRDBBookShelfRepository:
         table.add(column: "pageAnimation", .integer)
       }
     }
+    migrator.registerMigration("preserveBookDeletedEPUBTagMask") { db in
+      try db.alter(table: "books") { table in
+        table.add(column: "deletedEPUBTagMask", .integer)
+          .notNull().defaults(to: 0)
+      }
+    }
     migrator.registerMigration("addAndroidReadRecordInterop") { db in
       try db.create(table: "readRecords") { table in
         table.column("deviceID", .text).notNull()
@@ -2206,6 +2233,7 @@ private struct BookRecord:
   var imageStyle: String?
   var resegmentsContent: Bool
   var pageAnimation: Int?
+  var deletedEPUBTagMask: Int64
   var androidType: Int64
   var originOrder: Int64
   var syncTime: Int64
@@ -2255,6 +2283,7 @@ private struct BookRecord:
     self.imageStyle = nil
     self.resegmentsContent = false
     self.pageAnimation = nil
+    self.deletedEPUBTagMask = 0
     self.androidType = 0
     self.originOrder = 0
     self.syncTime = 0
@@ -2322,7 +2351,8 @@ private struct BookRecord:
       imageStyle: imageStyle,
       resegmentsContent: resegmentsContent,
       pageAnimation: pageAnimation,
-      androidBookType: androidType
+      androidBookType: androidType,
+      deletedEPUBTagMask: deletedEPUBTagMask
     )
   }
 
@@ -2366,6 +2396,7 @@ private struct BookRecord:
       imageStyle: imageStyle,
       resegmentsContent: resegmentsContent,
       pageAnimation: pageAnimation,
+      deletedEPUBTagMask: deletedEPUBTagMask,
       androidType: androidType,
       originOrder: originOrder,
       syncTime: syncTime,

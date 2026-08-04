@@ -33,12 +33,22 @@ public enum EPUBBookFailure: Error, Equatable, Sendable {
   case missingContent(String)
 }
 
+public struct AndroidEPUBDeletedTags: OptionSet, Equatable, Sendable {
+  public let rawValue: Int64
+
+  public init(rawValue: Int64) { self.rawValue = rawValue }
+
+  public static let headings = Self(rawValue: 2)
+  public static let rubyAnnotation = Self(rawValue: 4)
+}
+
 /// EPUB 语义解析保持为纯数据边界。ZIP、文件权限与 WebDAV 均由 App 适配层负责，
 /// 因而本地文件和远程下载可以复用同一份解析逻辑。
 public enum EPUBBookParser {
   public static func parse(
     members: [String: Data],
-    fallbackTitle: String
+    fallbackTitle: String,
+    deletedTags: AndroidEPUBDeletedTags = []
   ) throws -> EPUBBookDocument {
     guard let containerData = members["META-INF/container.xml"] else {
       throw EPUBBookFailure.missingContainer
@@ -80,7 +90,10 @@ public enum EPUBBookParser {
       guard let content = members[resourcePath] else {
         throw EPUBBookFailure.missingContent(resourcePath)
       }
-      let extracted = XHTMLTextDelegate.extract(content)
+      let extracted = XHTMLTextDelegate.extract(
+        content,
+        deletedTags: deletedTags
+      )
       let title = entry.title.trimmingCharacters(in: .whitespacesAndNewlines)
       let fallback = extracted.title.isEmpty
         ? resourcePath.split(separator: "/").last.map(String.init) ?? "第 \(index + 1) 章"
@@ -330,14 +343,37 @@ private final class XHTMLTextDelegate: NSObject, XMLParserDelegate {
   private var inTitle = false
   private var inBody = false
   private var ignoredDepth = 0
+  private let deletedTags: AndroidEPUBDeletedTags
 
-  static func extract(_ data: Data) -> Result {
-    let delegate = XHTMLTextDelegate()
+  init(deletedTags: AndroidEPUBDeletedTags) {
+    self.deletedTags = deletedTags
+  }
+
+  static func extract(
+    _ data: Data,
+    deletedTags: AndroidEPUBDeletedTags
+  ) -> Result {
+    let delegate = XHTMLTextDelegate(deletedTags: deletedTags)
     let parser = XMLParser(data: data)
     parser.shouldProcessNamespaces = true
     parser.delegate = delegate
     if !parser.parse() {
-      let fallback = String(decoding: data, as: UTF8.self)
+      var fallback = String(decoding: data, as: UTF8.self)
+      if deletedTags.contains(.rubyAnnotation) {
+        fallback = fallback.replacingOccurrences(
+          of: #"(?is)<(?:rp|rt)\b[^>]*>.*?</(?:rp|rt)>"#,
+          with: "",
+          options: .regularExpression
+        )
+      }
+      if deletedTags.contains(.headings) {
+        fallback = fallback.replacingOccurrences(
+          of: #"(?is)<h[1-6]\b[^>]*>.*?</h[1-6]>"#,
+          with: "",
+          options: .regularExpression
+        )
+      }
+      fallback = fallback
         .replacingOccurrences(of: "<[^>]+>", with: " ", options: .regularExpression)
       return Result(title: "", body: normalize(fallback))
     }
@@ -354,7 +390,7 @@ private final class XHTMLTextDelegate: NSObject, XMLParserDelegate {
     let element = elementName.lowercased()
     if element == "title" { inTitle = true }
     if element == "body" { inBody = true }
-    if inBody, element == "script" || element == "style" { ignoredDepth += 1 }
+    if inBody, shouldIgnore(element) { ignoredDepth += 1 }
     if inBody, ignoredDepth == 0,
       ["br", "p", "div", "section", "article", "h1", "h2", "h3", "li"]
         .contains(element)
@@ -376,8 +412,21 @@ private final class XHTMLTextDelegate: NSObject, XMLParserDelegate {
   ) {
     let element = elementName.lowercased()
     if element == "title" { inTitle = false }
-    if inBody, element == "script" || element == "style" { ignoredDepth -= 1 }
+    if inBody, shouldIgnore(element) { ignoredDepth -= 1 }
     if element == "body" { inBody = false }
+  }
+
+  private func shouldIgnore(_ element: String) -> Bool {
+    if element == "script" || element == "style" { return true }
+    if deletedTags.contains(.rubyAnnotation), element == "rp" || element == "rt" {
+      return true
+    }
+    if deletedTags.contains(.headings),
+      ["h1", "h2", "h3", "h4", "h5", "h6"].contains(element)
+    {
+      return true
+    }
+    return false
   }
 
   private static func normalize(_ value: String) -> String {

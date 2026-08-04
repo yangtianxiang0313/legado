@@ -257,6 +257,7 @@ struct AndroidLibraryRestorePersistenceTests {
     #expect(stored.imageStyle == "FULL")
     #expect(stored.resegmentsContent)
     #expect(stored.pageAnimation == 3)
+    #expect(stored.deletedEPUBTagMask == 6)
     #expect(storedRestoreBook.lastCheckTime == 1_700_000_000_100)
     #expect(storedRestoreBook.reversesTableOfContents)
     #expect(!storedRestoreBook.splitsLongChapters)
@@ -266,6 +267,7 @@ struct AndroidLibraryRestorePersistenceTests {
     #expect(storedRestoreBook.imageStyle == "FULL")
     #expect(storedRestoreBook.resegmentsContent)
     #expect(storedRestoreBook.pageAnimation == 3)
+    #expect(storedRestoreBook.deletedEPUBTagMask == 6)
     #expect(storedRestoreBook.androidType == 1)
     #expect(storedRestoreBook.originOrder == 2)
     #expect(storedRestoreBook.syncTime == 1_700_000_000_999)
@@ -513,6 +515,7 @@ struct AndroidLibraryRestorePersistenceTests {
       imageStyle: "FULL",
       resegmentsContent: true,
       pageAnimation: 3,
+      deletedEPUBTagMask: 6,
       androidType: 1,
       originOrder: 2,
       syncTime: 1_700_000_000_999,
