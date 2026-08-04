@@ -1,8 +1,10 @@
 import AppUseCases
 import Foundation
+import PhotosUI
 import SourceRuntime
 import SwiftUI
 import UniformTypeIdentifiers
+import Vision
 
 struct SourceManagementView: View {
     @Bindable var catalog: SourceCatalog
@@ -625,6 +627,7 @@ private struct SourceImportView: View {
     @State private var candidates: [SourceImportCandidate]?
     @State private var showsFileImporter = false
     @State private var isLoadingRemotePayload = false
+    @State private var selectedQRCodeImage: PhotosPickerItem?
     @State private var message: String?
     @State private var keepName = false
     @State private var keepGroup = false
@@ -657,6 +660,13 @@ private struct SourceImportView: View {
                         showsFileImporter = true
                     }
                     .accessibilityIdentifier("action.source.import.file")
+                    PhotosPicker(
+                        selection: $selectedQRCodeImage,
+                        matching: .images
+                    ) {
+                        Label("识别二维码图片", systemImage: "qrcode.viewfinder")
+                    }
+                    .accessibilityIdentifier("action.source.import.qr")
                 }
             }
             if let message {
@@ -700,6 +710,10 @@ private struct SourceImportView: View {
             case .failure:
                 message = "无法读取所选文件"
             }
+        }
+        .onChange(of: selectedQRCodeImage) { _, item in
+            guard let item else { return }
+            loadQRCode(item)
         }
     }
 
@@ -839,6 +853,48 @@ private struct SourceImportView: View {
         } catch {
             message = "无法读取所选文件"
         }
+    }
+
+    private func loadQRCode(_ item: PhotosPickerItem) {
+        message = "正在识别二维码…"
+        Task {
+            defer { selectedQRCodeImage = nil }
+            do {
+                guard let data = try await item.loadTransferable(
+                    type: Data.self
+                ) else {
+                    throw SourceQRCodePayloadDecodeError.unreadableImage
+                }
+                payload = try SourceQRCodePayloadDecoder.decode(data)
+                candidates = nil
+                message = "已识别二维码，请继续解析"
+            } catch {
+                message = "图片中没有可识别的二维码"
+            }
+        }
+    }
+}
+
+private enum SourceQRCodePayloadDecodeError: Error {
+    case unreadableImage
+    case payloadMissing
+}
+
+private enum SourceQRCodePayloadDecoder {
+    static func decode(_ data: Data) throws -> String {
+        guard !data.isEmpty else {
+            throw SourceQRCodePayloadDecodeError.unreadableImage
+        }
+        let request = VNDetectBarcodesRequest()
+        request.symbologies = [.qr]
+        try VNImageRequestHandler(data: data).perform([request])
+        guard
+            let payload = request.results?.compactMap(\.payloadStringValue)
+                .first(where: { !$0.isEmpty })
+        else {
+            throw SourceQRCodePayloadDecodeError.payloadMissing
+        }
+        return payload
     }
 }
 
