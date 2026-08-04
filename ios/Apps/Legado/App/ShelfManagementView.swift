@@ -1,4 +1,6 @@
 import AppUseCases
+import BackupInteropUseCases
+import CoreTransferable
 import IntegrationKit
 import LibraryDomain
 import SwiftUI
@@ -20,6 +22,7 @@ struct ShelfManagementView: View {
     @State private var fileImporterPresented = false
     @State private var urlImporterPresented = false
     @State private var webDAVImporterPresented = false
+    @State private var bookshelfListImporterPresented = false
     @State private var importURL = ""
     @State private var importStatus: String?
 
@@ -166,6 +169,15 @@ struct ShelfManagementView: View {
                 transfer: webDAVRemoteBooks
             )
         }
+        .sheet(isPresented: $bookshelfListImporterPresented) {
+            BookshelfListImportView(
+                library: library,
+                persistedSources: persistedSources,
+                initialData: nil,
+                dismiss: { bookshelfListImporterPresented = false },
+                onComplete: { importStatus = $0 }
+            )
+        }
     }
 
     private var supportedLocalBookTypes: [UTType] {
@@ -215,6 +227,37 @@ struct ShelfManagementView: View {
                     .accessibilityIdentifier(
                         "action.bookImport.webdav"
                     )
+                    Button {
+                        bookshelfListImporterPresented = true
+                    } label: {
+                        Label(
+                            "导入 Android 书架清单",
+                            systemImage: "books.vertical"
+                        )
+                    }
+                    .accessibilityIdentifier(
+                        "action.bookshelfList.import"
+                    )
+                    if !library.books.isEmpty,
+                       let data = try? AndroidBookshelfListCodec.export(
+                        library.books
+                       ) {
+                        ShareLink(
+                            item: BookshelfListShareItem(data: data),
+                            preview: SharePreview(
+                                "bookshelf.json",
+                                image: Image(systemName: "books.vertical")
+                            )
+                        ) {
+                            Label(
+                                "分享 Android 书架清单",
+                                systemImage: "square.and.arrow.up"
+                            )
+                        }
+                        .accessibilityIdentifier(
+                            "action.bookshelfList.export"
+                        )
+                    }
                 } label: {
                     Image(systemName: "plus")
                 }
@@ -560,4 +603,232 @@ private extension ShelfSortMode {
             "综合时间"
         }
     }
+}
+
+private struct BookshelfListShareItem: Transferable {
+    let data: Data
+
+    static var transferRepresentation: some TransferRepresentation {
+        DataRepresentation(exportedContentType: .json) { $0.data }
+            .suggestedFileName { _ in "bookshelf.json" }
+    }
+}
+
+struct BookshelfListImportView: View {
+    @Bindable var library: ShelfLibrary
+    let persistedSources: [BookSourceDraft]
+    let initialData: Data?
+    let dismiss: () -> Void
+    let onComplete: (String) -> Void
+
+    @State private var input = ""
+    @State private var resolutions: [BookshelfListResolution]?
+    @State private var isResolving = false
+    @State private var fileImporterPresented = false
+    @State private var message: String?
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                if isResolving {
+                    Section {
+                        ProgressView("正在按书名和作者精确搜索…")
+                    }
+                } else if let resolutions {
+                    Section("结构化匹配结果") {
+                        ForEach(resolutions.indices, id: \.self) { index in
+                            resolutionRow(index)
+                        }
+                    }
+                } else {
+                    Section("Android bookshelf.json 或远程地址") {
+                        TextEditor(text: $input)
+                            .frame(minHeight: 180)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .accessibilityIdentifier(
+                                "field.bookshelfList.import"
+                            )
+                        Button("选择 JSON 文件") {
+                            fileImporterPresented = true
+                        }
+                        .accessibilityIdentifier(
+                            "action.bookshelfList.importFile"
+                        )
+                    }
+                }
+                if let message {
+                    Section {
+                        Text(message)
+                            .foregroundStyle(.secondary)
+                            .accessibilityIdentifier(
+                                "state.bookshelfList.import"
+                            )
+                    }
+                }
+            }
+            .navigationTitle("导入 Android 书架")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消", action: dismiss)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    if resolutions == nil {
+                        Button("解析并匹配") {
+                            Task { await parseAndResolve() }
+                        }
+                        .disabled(
+                            input.trimmingCharacters(
+                                in: .whitespacesAndNewlines
+                            ).isEmpty || isResolving
+                        )
+                    } else {
+                        Button("加入书架") {
+                            Task { await commit() }
+                        }
+                        .disabled(selectedCandidates.isEmpty)
+                    }
+                }
+            }
+            .fileImporter(
+                isPresented: $fileImporterPresented,
+                allowedContentTypes: [.json, .plainText],
+                allowsMultipleSelection: false
+            ) { result in
+                guard case .success(let urls) = result,
+                      let url = urls.first
+                else {
+                    message = "未选择书架清单"
+                    return
+                }
+                loadFile(url)
+            }
+            .task {
+                guard let initialData, resolutions == nil else { return }
+                await resolve(data: initialData)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func resolutionRow(_ index: Int) -> some View {
+        let resolution = resolutions![index]
+        Toggle(isOn: Binding(
+            get: { resolutions?[index].isSelected ?? false },
+            set: { resolutions?[index].isSelected = $0 }
+        )) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(resolution.entry.name)
+                Text(
+                    resolution.entry.author.isEmpty
+                        ? resolution.status
+                        : "\(resolution.entry.author) · \(resolution.status)"
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+        }
+        .disabled(resolution.candidate == nil)
+    }
+
+    private var selectedCandidates: [ShelfBookCandidate] {
+        (resolutions ?? []).compactMap {
+            $0.isSelected ? $0.candidate : nil
+        }
+    }
+
+    private func parseAndResolve() async {
+        let value = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        do {
+            let data: Data
+            if let url = URL(string: value),
+               ["http", "https"].contains(url.scheme?.lowercased() ?? "") {
+                data = try await SearchEnvironment
+                    .loadRemoteRuleSubscriptionPayload(value)
+            } else {
+                data = Data(value.utf8)
+            }
+            await resolve(data: data)
+        } catch {
+            message = "无法下载远程书架清单"
+        }
+    }
+
+    private func resolve(data: Data) async {
+        isResolving = true
+        message = nil
+        defer { isResolving = false }
+        do {
+            let entries = try AndroidBookshelfListCodec.decode(data)
+            var seen: Set<String> = []
+            var values: [BookshelfListResolution] = []
+            for entry in entries {
+                let key = entry.name + "\u{0}" + entry.author
+                guard !entry.name.isEmpty, seen.insert(key).inserted else {
+                    continue
+                }
+                if library.containsBook(name: entry.name, author: entry.author) {
+                    values.append(BookshelfListResolution(
+                        entry: entry,
+                        candidate: nil,
+                        status: "已在书架",
+                        isSelected: false
+                    ))
+                    continue
+                }
+                let candidate = try? await SearchEnvironment
+                    .resolveBookshelfEntry(
+                        entry,
+                        persistedSources: persistedSources
+                    )
+                values.append(BookshelfListResolution(
+                    entry: entry,
+                    candidate: candidate,
+                    status: candidate == nil
+                        ? "启用书源中未找到"
+                        : "已匹配 \(candidate!.originName)",
+                    isSelected: candidate != nil
+                ))
+            }
+            resolutions = values
+            let matched = values.filter { $0.candidate != nil }.count
+            message = "共 \(values.count) 项，匹配 \(matched) 项"
+        } catch {
+            message = "不是有效的 Android bookshelf.json"
+        }
+    }
+
+    private func commit() async {
+        let candidates = selectedCandidates
+        let groupID = library.selectedGroupID ?? 0
+        for candidate in candidates {
+            await library.add(candidate, groupID: groupID)
+        }
+        let summary = "已从 Android 书架清单加入 \(candidates.count) 本书"
+        onComplete(summary)
+        dismiss()
+    }
+
+    private func loadFile(_ url: URL) {
+        let granted = url.startAccessingSecurityScopedResource()
+        defer { if granted { url.stopAccessingSecurityScopedResource() } }
+        do {
+            let values = try url.resourceValues(forKeys: [.fileSizeKey])
+            guard (values.fileSize ?? 0) <= 32 * 1_024 * 1_024 else {
+                message = "书架清单超过 32 MB"
+                return
+            }
+            let data = try Data(contentsOf: url, options: [.mappedIfSafe])
+            Task { await resolve(data: data) }
+        } catch {
+            message = "无法读取书架清单"
+        }
+    }
+}
+
+private struct BookshelfListResolution {
+    let entry: AndroidBookshelfListEntry
+    let candidate: ShelfBookCandidate?
+    let status: String
+    var isSelected: Bool
 }

@@ -1,4 +1,5 @@
 import AppUseCases
+import BackupInteropUseCases
 import Foundation
 import LibraryDomain
 import ReaderCore
@@ -33,6 +34,47 @@ enum SearchEnvironment {
         _ address: String
     ) async throws -> Data {
         try await loadRemoteImportPayload(address)
+    }
+
+    static func resolveBookshelfEntry(
+        _ entry: AndroidBookshelfListEntry,
+        persistedSources: [BookSourceDraft]
+    ) async throws -> ShelfBookCandidate? {
+        let externalBaseURL = ProcessInfo.processInfo.environment[
+            "LEGADO_SEARCH_BASE_URL"
+        ]
+        let baseURL = externalBaseURL ?? "http://legado.local"
+        let sources = makeSources(
+            baseURL: baseURL,
+            persistedSources: persistedSources
+        )
+        let results = try await SourceSearchBooksExecutor(
+            sources: sources,
+            transport: makeTransport(externalBaseURL: externalBaseURL),
+            cookieStore: cookieStore,
+            dynamicWebPagePort: dynamicWebPagePort,
+            scriptRuntime: scriptRuntime,
+            htmlSelectorBackend: htmlSelectorBackend
+        ).search(query: entry.name, scope: .all)
+        guard let result = results.first(where: {
+            $0.name == entry.name
+                && (entry.author.isEmpty
+                    || normalizedAuthor($0.author)
+                        == normalizedAuthor(entry.author))
+        }) else { return nil }
+        return ShelfBookCandidate(
+            name: result.name,
+            author: result.author,
+            kind: result.kind,
+            lastChapter: result.lastChapter,
+            intro: result.intro.isEmpty ? entry.intro : result.intro,
+            bookURL: result.bookURL,
+            bookRequestExpression: result.bookRequestExpression,
+            coverURL: result.coverURL,
+            originName: result.originName,
+            sourceID: result.origin,
+            variables: result.variables
+        )
     }
 
     private static func loadRemoteImportPayload(_ address: String) async throws

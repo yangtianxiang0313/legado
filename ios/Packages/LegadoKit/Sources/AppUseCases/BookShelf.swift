@@ -818,6 +818,12 @@ public final class ShelfLibrary {
     try? await repository.book(id: id)
   }
 
+  public func containsBook(name: String, author: String) -> Bool {
+    allBooks.contains {
+      $0.candidate.name == name && $0.candidate.author == author
+    }
+  }
+
   @discardableResult
   public func markWebDAVOrigin(
     for book: ShelfBookItem,

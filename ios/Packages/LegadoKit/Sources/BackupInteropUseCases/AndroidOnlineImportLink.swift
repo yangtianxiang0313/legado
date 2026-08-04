@@ -12,6 +12,7 @@ public enum AndroidOnlineImportTarget: String, Equatable, Hashable, Sendable {
   case addToBookshelf
   case readerConfig
   case theme
+  case bookshelfList
 }
 
 public struct AndroidOnlineImportRequest: Identifiable, Equatable, Sendable {
@@ -62,6 +63,9 @@ public enum AndroidAssociatedImportClassifier {
     if let values = try? AndroidThemeConfigCodec.decodeMany(data),
       values.contains(where: { !($0.string("themeName") ?? "").isEmpty })
     { matches.append(.theme) }
+    if let values = try? AndroidBookshelfListCodec.decode(data),
+      values.contains(where: { !$0.name.isEmpty })
+    { matches.append(.bookshelfList) }
     let unique = Array(Set(matches))
     guard !unique.isEmpty else { throw AndroidAssociatedImportError.unrecognized }
     guard unique.count == 1 else { throw AndroidAssociatedImportError.ambiguous }

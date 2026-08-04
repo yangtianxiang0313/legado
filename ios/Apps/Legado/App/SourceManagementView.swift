@@ -909,6 +909,14 @@ struct AndroidOnlineImportView: View {
                 store: readerConfigProfiles,
                 dismiss: dismiss
             )
+        case .bookshelfList:
+            BookshelfListImportView(
+                library: library,
+                persistedSources: catalog.sources,
+                initialData: request.inlineData,
+                dismiss: dismiss,
+                onComplete: { _ in }
+            )
         case .rssSource, .replaceRule, .httpTTS, .dictionaryRule,
              .localTextTOCRule, .theme:
             NavigationStack {
@@ -1035,6 +1043,8 @@ struct AndroidOnlineImportView: View {
                 break
             case .readerConfig:
                 break
+            case .bookshelfList:
+                break
             }
         } catch {
             message = "导入内容格式不正确"
@@ -1092,6 +1102,8 @@ struct AndroidOnlineImportView: View {
         case .addToBookshelf:
             break
         case .readerConfig:
+            break
+        case .bookshelfList:
             break
         }
     }
